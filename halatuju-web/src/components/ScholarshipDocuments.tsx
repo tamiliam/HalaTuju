@@ -36,7 +36,7 @@ import { INCOME_PROOF_TYPES } from '@/lib/scholarship'
 import '@/lib/messagesDocuments'
 
 import { uploadRefusal } from '@/lib/uploadCheck'
-import { isSettledDoc } from '@/lib/documentReplace'
+import { isSettledDoc, replaceRefusalText } from '@/lib/documentReplace'
 import {
   docKey,
   CollapsibleSection,
@@ -132,7 +132,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       if (code === 'documents_locked' || code === 'replace_limit_reached') void refresh()   // the stage moved on / the count is used up: redraw
       setError(
         code === 'documents_locked' ? ((e as Error).message || t('scholarship.docs.lockedNote'))
-        : code === 'replace_limit_reached' ? ((e as Error).message || t('scholarship.actionCentre.replaceLimit'))
+        : code === 'replace_limit_reached' ? replaceRefusalText(e, t)
         : code === 'doc_limit_reached' ? t('scholarship.docs.doc_limit_reached')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
           // The server's OWN number on the refusal (a 400 body lands on `fieldErrors`),

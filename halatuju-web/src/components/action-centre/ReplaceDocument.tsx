@@ -6,7 +6,7 @@ import {
   recordDocument, signUploadDocument, uploadFileToSignedUrl,
   type ApplicantDocument, type DocumentLimits,
 } from '@/lib/api'
-import { replacesLeft } from '@/lib/documentReplace'
+import { replaceLimitKey, replaceRefusalText, replacesLeft } from '@/lib/documentReplace'
 import { UploadButtons } from './UploadButtons'
 
 /**
@@ -15,7 +15,8 @@ import { UploadButtons } from './UploadButtons'
  * `replace: true` is only a hint: the server counts every upload into the slot, 3 replaces after the
  * first). Replace is hidden by the caller once documents are locked; with no replaces left (the served
  * `replaces_left`) it gives way to one plain line. The server is the judge: a 409
- * `replace_limit_reached` or `documents_locked` shows its own message.
+ * `replace_limit_reached` or `documents_locked` shows its own message (at the pre-consent hard ceiling,
+ * body code `replace_limit_support`, the support line in her own language).
  */
 export function ReplaceDocument({ doc, requestCode = '', member, token, limits, onDone }: {
   doc: ApplicantDocument
@@ -48,7 +49,7 @@ export function ReplaceDocument({ doc, requestCode = '', member, token, limits, 
       if (code === 'documents_locked' || code === 'replace_limit_reached') onDone()   // the list redraws without Replace
       setError(
         code === 'documents_locked' || code === 'replace_limit_reached'
-          ? ((e as Error).message || t('scholarship.actionCentre.replaceLimit'))
+          ? (code === 'replace_limit_reached' ? replaceRefusalText(e, t) : ((e as Error).message || t('scholarship.actionCentre.replaceLimit')))
         : code === 'unsupported_format' || code === 'upload_incomplete' || code === 'bad_file'
           ? t('scholarship.actionCentre.badFile')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
@@ -73,7 +74,7 @@ export function ReplaceDocument({ doc, requestCode = '', member, token, limits, 
           </p>
         </div>
       ) : (
-        <p className="mt-2 text-sm text-ground-600">{t('scholarship.actionCentre.replaceLimit')}</p>
+        <p className="mt-2 text-sm text-ground-600">{t(replaceLimitKey(doc))}</p>
       )}
       {error && <p role="alert" className="mt-2 text-sm text-critical-600">{error}</p>}
     </div>

@@ -43,6 +43,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     replace_count = serializers.SerializerMethodField()
     replaces_left = serializers.SerializerMethodField()
     replace_limit = serializers.SerializerMethodField()
+    replace_support = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -83,8 +84,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             # doc replaced it. The admin path returns superseded rows to show history;
             # the student GET filters them out.
             'superseded_at', 'superseded_by',
-            # H6: how many replaces this document's slot has used, and the cap.
-            'replace_count', 'replaces_left', 'replace_limit',
+            # H6: how many replaces this document's slot has used, and the cap. `replace_support`: the
+            # slot is shut before consent at the hard ceiling and only support can help (fix round 3).
+            'replace_count', 'replaces_left', 'replace_limit', 'replace_support',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -298,6 +300,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     def get_replace_limit(self, obj):
         from ..document_replace import REPLACE_LIMIT
         return REPLACE_LIMIT
+
+    def get_replace_support(self, obj):
+        return self._slot_answer(obj, 'support_only')
 
     def get_resolved_member(self, obj):
         """The household member this income doc belongs to — stored tag, or name-resolved for a

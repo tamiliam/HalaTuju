@@ -73,3 +73,41 @@ def consent_blockers(application):
     blockers.extend(document_unreadable_blockers(application))
     # One line per code: the income gate and the identity gate can both say "try later" (TD-390).
     return list(dict.fromkeys(blockers))
+
+
+#: The student's own IC codes she clears by sending the card again (never 'ic_service_down': ours).
+_OWN_IC_REDO = ('ic_unreadable', 'ic_nric_mismatch', 'ic_name_mismatch')
+
+
+def consent_blocking_slots(application):
+    """H6 fix round 3 (owner 2026-11-17): the document slots the consent gate is holding this student on,
+    as (slots, missing). `slots` is {(doc_type, household_member, request_code)} of each LIVE copy whose own
+    check puts a code into `consent_blockers` right now: a red (`document_red_blockers`), an unreadable
+    copy (`document_unreadable_blockers`), a not-an-offer-letter offer, her own IC's identity reds, a
+    stranger's STR. `missing` is {(doc_type, member or None)} for each `<type>_missing` code the gate
+    gives (`parent_ic_missing:<member>` names its member), so a slot emptied by Remove counts too. Our own
+    outages and "still checking" codes never count. Read only before consent; empty sets when nothing
+    blocks. The documents' reads are shared through one snapshot."""
+    from ..document_snapshot import latest_doc, live_docs, snapshot_unless_open
+    from ..income_str_ownership import STR_NOT_HOUSEHOLD
+    from ..models import ApplicantDocument
+    with snapshot_unless_open(application):
+        codes = set(consent_blockers(application))
+        if not codes:
+            return set(), set()
+        docs = [d for d, c in document_red_blockers(application, per_doc=True) if c in codes]
+        docs += [d for d, c in document_unreadable_blockers(application, per_doc=True) if c in codes]
+        if 'offer_not_official' in codes:
+            docs.append(latest_doc(application, 'offer_letter'))
+        if codes.intersection(_OWN_IC_REDO):
+            docs.append(latest_doc(application, 'ic'))
+        if STR_NOT_HOUSEHOLD in codes:
+            docs += list(live_docs(application, 'str'))
+    slots = {(d.doc_type, d.household_member or '', d.request_code or '') for d in docs if d is not None}
+    types = {t for t, _label in ApplicantDocument.DOC_TYPES}
+    missing = set()
+    for code in codes:
+        head, _sep, member = code.partition(':')
+        if head.endswith('_missing') and head[:-len('_missing')] in types:
+            missing.add((head[:-len('_missing')], member or None))
+    return slots, missing

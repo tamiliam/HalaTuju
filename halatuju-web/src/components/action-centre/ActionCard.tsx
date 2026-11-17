@@ -34,7 +34,7 @@ import { UploadButtons } from './UploadButtons'
 import { ReplaceDocument } from './ReplaceDocument'
 import { DeclineOptional } from './DeclineOptional'
 import { DocSample } from '@/components/DocSample'
-import { docForItem, replaceLocked } from '@/lib/documentReplace'
+import { docForItem, replaceLocked, replaceRefusalText } from '@/lib/documentReplace'
 import { SetAsideCard, DoneCard, OfficerHoldCard } from './StatusCards'
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
@@ -199,7 +199,7 @@ export function ActionCard({
       if (code === 'documents_locked') onResolved()   // the stage moved on: the list drops this card
       setError(
         code === 'documents_locked' ? ((e as Error).message || t('scholarship.actionCentre.uploadError'))
-        : code === 'replace_limit_reached' ? ((e as Error).message || t('scholarship.actionCentre.replaceLimit'))   // H6
+        : code === 'replace_limit_reached' ? replaceRefusalText(e, t)   // H6 (support at the hard ceiling)
         : code === 'unsupported_format' || code === 'upload_incomplete' || code === 'bad_file'
           ? t('scholarship.actionCentre.badFile')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',

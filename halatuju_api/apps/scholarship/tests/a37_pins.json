@@ -92,7 +92,8 @@
     "superseded_by",
     "replace_count",
     "replaces_left",
-    "replace_limit"
+    "replace_limit",
+    "replace_support"
    ],
    "ApplicationCreateSerializer": [
     "cohort_code",

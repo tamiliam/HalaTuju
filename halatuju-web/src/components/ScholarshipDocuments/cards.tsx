@@ -10,7 +10,7 @@
 import { useState, type ReactNode } from 'react'
 import type { ApplicantDocument } from '@/lib/api'
 import { INCOME_PROOF_TYPES, docFileLayout, formatFileSize } from '@/lib/scholarship'
-import { replacesLeft } from '@/lib/documentReplace'
+import { replaceLimitKey, replacesLeft } from '@/lib/documentReplace'
 import DocumentHelpCoach from '../DocumentHelpCoach'
 
 import {
@@ -113,7 +113,8 @@ function FileChip({
 }) {
   // H6: a slot takes the first upload and 3 replaces, every upload counted by the server (a copy that
   // needs a fix too, Remove included); after that the button gives way to one plain line until a
-  // person asks again. `replaces_left` is the server's own answer.
+  // person asks again (before consent, up to four more while the copy holds the consent gate; at that
+  // ceiling the line names support). `replaces_left` / `replace_support` are the server's own answers.
   const left = replacesLeft(doc)
   const canReplace = !!onUpload && left > 0
   return (
@@ -152,7 +153,7 @@ function FileChip({
       )}
       {onDelete && onUpload && (
         <p className="mt-2 text-sm text-ground-600">
-          {left === 0 ? t('scholarship.actionCentre.replaceLimit')
+          {left === 0 ? t(replaceLimitKey(doc))
             : t(left === 1 ? 'scholarship.actionCentre.replacesLeftOne' : 'scholarship.actionCentre.replacesLeft', { n: String(left) })}
         </p>
       )}

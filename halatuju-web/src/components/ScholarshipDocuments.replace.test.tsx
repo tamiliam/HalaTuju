@@ -87,6 +87,19 @@ describe('replace on the documents tab', () => {
     expect(screen.getByText('scholarship.docs.replace')).toBeTruthy()
   })
 
+  it("before consent a copy holding the gate keeps Replace past three, on the server's count", async () => {
+    await mount(slip({ replace_count: 3, replaces_left: 4, replace_support: false }))
+    expect(screen.getByText('scholarship.docs.replace')).toBeTruthy()
+    expect(screen.getByText('scholarship.actionCentre.replacesLeft:4')).toBeTruthy()
+  })
+
+  it('at the hard ceiling: no Replace, and the line names support, not a reviewer', async () => {
+    await mount(slip({ replace_count: 3, replaces_left: 0, replace_support: true }))
+    expect(screen.queryByText('scholarship.docs.replace')).toBeNull()
+    expect(screen.getByText('scholarship.actionCentre.replaceLimitSupport')).toBeTruthy()
+    expect(screen.queryByText('scholarship.actionCentre.replaceLimit')).toBeNull()
+  })
+
   it('sends replace: true for a settled document', async () => {
     await mount(slip({ replace_count: 0 }))
     expect((await swap()).replace).toBe(true)

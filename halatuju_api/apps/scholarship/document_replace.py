@@ -21,6 +21,16 @@ Remove re-opens (`resolution.after_document_deleted`) carries no person's stamp,
 one herself. An officer's request also gives its own slot (its request code), which a student cannot invent:
 `request_code_refusal` accepts only '' or the code of an officer document request on the case.
 
+THE BLOCKER ALLOWANCE (owner 2026-11-17, fix round 3). Before consent nobody can ask: the reviewer's
+requests are refused until the student consents, so a slot whose copy stops consent would be a dead end
+at four. While `profile_completed_at` is unset AND the consent gate holds the student on this slot (its
+live copy is a red, unreadable, not-an-offer or stranger's copy, or the slot is empty and the gate asks
+for its type: `services.consent_blockers.consent_blocking_slots`), the slot takes up to
+`BLOCKER_EXTRA` (4) more uploads, `HARD_LIMIT` (8) in all. It lapses the moment the copy passes or she
+consents; a copy that does not block gets nothing extra. At the hard ceiling no ask is possible, so the
+409 sends her to support (`replace_limit_support`), not to her reviewer. A person's ask still lets one
+more in at any count.
+
 Slots that predate the counter (no row yet) count their stored copies, superseded ones included; the row is
 seeded from those copies the first time it is written (an upload or a Remove), so history is never lost.
 The documents lock is checked first, in the view, exactly as for any upload.
@@ -36,11 +46,18 @@ from .models import ApplicantDocument
 
 REPLACE_LIMIT = 3
 UPLOAD_LIMIT = REPLACE_LIMIT + 1    # the first upload is free
+BLOCKER_EXTRA = 4                   # pre-consent, while the slot holds the consent gate
+HARD_LIMIT = UPLOAD_LIMIT + BLOCKER_EXTRA
 REPLACE_LIMIT_REACHED = 'replace_limit_reached'
+REPLACE_LIMIT_SUPPORT = 'replace_limit_support'   # the body `code` at the hard ceiling: no ask is possible
 BAD_REQUEST_CODE = 'bad_request_code'
 ASKED_AGAIN_AT = 'asked_again_at'   # ResolutionItem.params stamp written by the admin "Ask again"
 _MESSAGE = ('You have already replaced this document 3 times. If it is still wrong, '
             'your reviewer will ask you for what is needed.')
+# The web shows `scholarship.actionCentre.replaceLimitSupport` (en / ms / ta, with {supportEmail}); this is
+# the English the 409 carries, with the same "write to us at" line as the account-claim refusals.
+_SUPPORT_MESSAGE = ('You have sent this document 8 times and it still stops your application. '
+                    'Please write to us at {email} and we will help.')
 
 #: Types the serializer exposes `authenticity` for (single source: serializers/documents.py reads it).
 AUTH_TYPES = ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf', 'offer_letter',
@@ -112,6 +129,7 @@ class SlotBook:
                         for r in ApplicantDocument.objects.filter(application_id=app.id).order_by()
                         .values(*key).annotate(n=Count('id'), last=Max('uploaded_at'))}
         self._asks = None
+        self._blocking = None
 
     def uploads(self, doc_type, members, request_code):
         """(uploads so far, last upload time or None) over the slot's member keys."""
@@ -132,19 +150,48 @@ class SlotBook:
         return any(t == doc_type and (not who or who in members) and (last is None or at > last)
                    for t, who, at in self._asks)
 
+    def blocks_consent(self, doc_type, members, request_code):
+        """Before consent only: the consent gate holds the student on this slot (its live copy, or its
+        type missing). Read once per book, and only once a slot has used its four uploads."""
+        if self.app.profile_completed_at is not None:
+            return False
+        if self._blocking is None:
+            from .services.consent_blockers import consent_blocking_slots
+            self._blocking = consent_blocking_slots(self.app)
+        slots, missing = self._blocking
+        return (any((doc_type, m, request_code) in slots for m in members)
+                or any(t == doc_type and (who is None or who in members) for t, who in missing))
+
+    def _blocker_left(self, doc_type, members, request_code, n):
+        if n >= HARD_LIMIT or not self.blocks_consent(doc_type, members, request_code):
+            return 0
+        return HARD_LIMIT - n
+
     def allowed(self, doc_type, members, request_code):
         n, _last = self.uploads(doc_type, members, request_code)
-        return n < UPLOAD_LIMIT or self.asked_again(doc_type, members, request_code)
+        return (n < UPLOAD_LIMIT or self.asked_again(doc_type, members, request_code)
+                or self._blocker_left(doc_type, members, request_code, n) > 0)
+
+    def support_only(self, doc_type, members, request_code):
+        """True when the slot is shut and no ask can open it: before consent, at the hard ceiling, its copy
+        still holding the gate. The student is sent to support instead of told her reviewer will ask."""
+        n, _last = self.uploads(doc_type, members, request_code)
+        return (n >= HARD_LIMIT and not self.asked_again(doc_type, members, request_code)
+                and self.blocks_consent(doc_type, members, request_code))
 
     def replaces_used(self, doc_type, members, request_code):
         n, _last = self.uploads(doc_type, members, request_code)
         return max(0, n - 1)
 
     def replaces_left(self, doc_type, members, request_code):
-        """What the student pages show: the replaces left (0..3), or 1 when a person's ask lets one more in."""
+        """What the student pages show: the replaces left (0..3); once those are used, the blocker allowance
+        left (pre-consent, up to the hard ceiling), or 1 when a person's ask lets one more in."""
         n, _last = self.uploads(doc_type, members, request_code)
         left = min(REPLACE_LIMIT, max(0, UPLOAD_LIMIT - n))
-        return left or (1 if self.asked_again(doc_type, members, request_code) else 0)
+        if left:
+            return left
+        ask = 1 if self.asked_again(doc_type, members, request_code) else 0
+        return max(ask, self._blocker_left(doc_type, members, request_code, n))
 
 
 def _counter(application_id, doc_type, member, request_code, exclude_id=None):
@@ -191,7 +238,15 @@ def request_code_refusal(app, doc_type, member, request_code):
     return Response({'error': BAD_REQUEST_CODE, 'code': BAD_REQUEST_CODE}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def replace_refusal():
-    """The 409 for a full slot."""
+def replace_refusal(app=None, support=False):
+    """The 409 for a full slot. `support` (the hard ceiling, `SlotBook.support_only`): the body `code` is
+    `replace_limit_support` and the message names the application's support address (`branding`), the
+    channel the student's other "write to us" messages give; `error` stays `replace_limit_reached`."""
+    if support:
+        from . import branding
+        email = branding.for_application(app).email_support
+        return Response({'error': REPLACE_LIMIT_REACHED, 'code': REPLACE_LIMIT_SUPPORT, 'support_email': email,
+                         'message': _SUPPORT_MESSAGE.format(email=email), 'limit': REPLACE_LIMIT},
+                        status=status.HTTP_409_CONFLICT)
     return Response({'error': REPLACE_LIMIT_REACHED, 'code': REPLACE_LIMIT_REACHED,
                      'message': _MESSAGE, 'limit': REPLACE_LIMIT}, status=status.HTTP_409_CONFLICT)

@@ -2099,6 +2099,7 @@
       "replacesLeft": "You can replace this {n} more times.",
       "replacesLeftOne": "You can replace this 1 more time.",
       "replaceLimit": "You have used all 3 replaces for this document. If it is still wrong, your reviewer will ask you for what is needed.",
+      "replaceLimitSupport": "You have sent this document 8 times and it still stops your application. Please write to us at {supportEmail} and we will help.",
       "section": {
         "needs": "Needs you",
         "sent": "Sent, we are checking",

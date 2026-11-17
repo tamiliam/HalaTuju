@@ -9309,3 +9309,23 @@ serve a per-type `replaceable` / `open` flag.
 
 **Raised 2026-11-17 by student-help fix round 2. No money effect.** A slot with no `document_slot_replaces` row is counted from its stored copies (superseded ones included), so uploads a student Removed before 0212 went live are not counted. One-off, bounded to four more uploads per such slot. Fix: none needed after the first weeks; the rows are seeded on first write.
 *(A - S)*
+
+### [TD-654] An officer ask that names no member gives one more upload to every member's slot of its type - low
+
+**Raised 2026-11-17 by the student-help fix round 2 review. No money effect.** `document_replace.human_asks` matches an officer request with no `params.household_member` to every member slot of that doc type, so one such ask lets one more upload into each person's slot (father, mother, guardian ...), not only the one the officer meant. Bounded: one per member slot per ask. Fix: make the officer request form name the member for member-tagged types, then match only that slot.
+*(A - S)*
+
+### [TD-655] Choosing a member multiplies the upload cap - low
+
+**Raised 2026-11-17 by the student-help fix round 2 review. No money effect.** The slot key includes `household_member`, which the student picks: her own IC can be sent under six member keys at four uploads each, and switching the STR earner before consent opens a fresh STR slot. Each upload is a paid read. Fix: count the student's own types on one slot whatever member is sent, and carry an STR slot's count across an earner switch (or cap per type per application).
+*(A - S)*
+
+### [TD-656] The Done card for a hand-resolved officer request may show the blank slot's counter - low
+
+**Raised 2026-11-17 by the student-help fix round 2 review. No money effect.** `docForItem` finds the live document by type and member, so for an officer request the officer resolved by hand the card can show the counter of the blank-request-code copy while Replace posts to the request's own slot (its own count). The server still refuses at the right count; only the number shown can be off. Fix: serve the request's slot counter on the item, or match the document by `request_code` first.
+*(A - S)*
+
+### [TD-657] The document serializer builds a SlotBook eagerly for a document served alone - low
+
+**Raised 2026-11-17 by the student-help fix round 2 review. No money effect.** `ApplicantDocumentSerializer._slot_answer` calls `self.__dict__.setdefault('_own_slot_book', SlotBook(obj.application))`, which builds the book (and its two queries) on every field read, not once, so a single document served alone costs two extra queries per call. Fix: test for the cached book before building it.
+*(A - S)*

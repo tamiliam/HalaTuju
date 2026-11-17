@@ -436,18 +436,19 @@ def _offer_blocks(application):
 _INCOME_CLUSTER_DOC_TYPES = ('parent_ic', 'salary_slip', 'epf', 'str')
 
 
-def document_red_blockers(application):
+def document_red_blockers(application, per_doc=False):
     """Every RED ('Doesn't match' / rejected / stale) per-document check that must
     clear before consent. Reads the SAME stored verification the student sees in the
     Documents tab (the student_*_check engines — no new OCR). Only a CONFIRMED
     `mismatch` (or STR rejected/stale) blocks; 'pending' / 'unreadable' / 'no_ref' do
     not. IC identity reds are covered separately by ic_identity_blockers. Utility
-    bills (soft hardship signal) are deliberately NOT gated. Returns blocker codes."""
+    bills (soft hardship signal) are deliberately NOT gated. Returns blocker codes; `per_doc` returns
+    [(live document, code)] instead (H6 fix round 3: which COPY holds the student)."""
     from .. import income_engine
     from ..academic_engine import student_slip_check
     from ..pathway_engine import student_offer_check
     from ..doc_red_keys import person_red     # the person-red keys' one home (TD-110)
-    codes = set()
+    codes = []
     # #4 (2026-06-11): a person-mismatch on an income PROOF only hard-blocks when that proof is
     # COMPULSORY for the chosen route — i.e. a salary-route salary slip tagged to a SELECTED
     # working member. An optional/extraneous proof must NOT trap the student at submission: the
@@ -479,11 +480,11 @@ def document_red_blockers(application):
         if dt == 'higher_results':
             from ..academic_engine import _slip_name_status
             if _slip_name_status(doc) == 'mismatch':
-                codes.add('higher_results_name_mismatch')
+                codes.append((doc, 'higher_results_name_mismatch'))
         elif dt == 'results_slip':
             chk = student_slip_check(doc)
             if chk.get('name') == 'mismatch':
-                codes.add('results_slip_name_mismatch')      # identity red -> still hard-blocks
+                codes.append((doc, 'results_slip_name_mismatch'))      # identity red -> still hard-blocks
             # A GRADE / subject mismatch is NO LONGER a hard submission block (owner 2026-07-08):
             # the slip is the authoritative record and the officer sees the exact discrepancy in
             # the cockpit (the slip-check chip), so it is reconciled at review / interview rather
@@ -494,17 +495,17 @@ def document_red_blockers(application):
             # Name / IC are hard identity reds; the pathway-clash is a SOFT "is this
             # where you're going?" signal and is deliberately not gated here.
             if person_red(dt, student_offer_check(doc)):
-                codes.add('offer_letter_mismatch')
+                codes.append((doc, 'offer_letter_mismatch'))
         elif dt == 'parent_ic':
             chk = income_engine.student_income_ic_check(doc)
             if person_red(dt, chk):
-                codes.add('parent_ic_person_mismatch')
+                codes.append((doc, 'parent_ic_person_mismatch'))
         elif dt == 'salary_slip':
             # Only a COMPULSORY salary slip (salary route + a SELECTED working member) blocks on a
             # person-mismatch — an optional/extraneous slip must not (see the note above).
             compulsory = route == 'salary' and (doc.household_member or '') in selected_members
             if compulsory and person_red(dt, income_engine.student_income_proof_check(doc)):
-                codes.add('salary_slip_person_mismatch')
+                codes.append((doc, 'salary_slip_person_mismatch'))
         elif dt == 'epf':
             pass  # EPF is supplementary on BOTH routes (never substitutes the salary slip), so a
                   # person-mismatch on it never blocks submission — the cluster coach handles it.
@@ -512,16 +513,16 @@ def document_red_blockers(application):
             chk = income_engine.student_str_check(doc)
             cs = chk.get('current_status')
             if person_red(dt, chk) or (cs in income_engine.STR_RED_STATES and cs != 'stale'):
-                codes.add('str_person_mismatch')
+                codes.append((doc, 'str_person_mismatch'))
             if cs == 'stale':
                 # TD-403: an EARLIER year's STR gets its own plain ask — "Your STR is from {year}" —
                 # never "doesn't match". The year rides after the colon (`str_stale:2025`).
                 m = income_engine._STR_YEAR_RE.search(chk.get('year') or '')
-                codes.add(f'str_stale:{m.group(1)}' if m else 'str_stale')
+                codes.append((doc, f'str_stale:{m.group(1)}' if m else 'str_stale'))
             elif cs == 'future':
                 # TD-403 (owner 2026-10-26): a LATER year's page (next year's application status) is
                 # not this year's proof — asked for neutrally, never "doesn't match" or "out of date".
-                codes.add('str_not_this_year')
+                codes.append((doc, 'str_not_this_year'))
         elif dt == 'birth_certificate':
             # ⚠ THE FATHER ROW IS DELIBERATELY NOT A BLOCKER (BrightPath #23, owner 2026-09-08).
             # It compares the certificate's father against the patronymic in the STUDENT'S own
@@ -529,14 +530,14 @@ def document_red_blockers(application):
             # foreign or absent father must never be what stops a student submitting. The row is
             # still READ and still shown to the officer; it just does not hold the door.
             if person_red(dt, income_engine.student_bc_check(doc)):
-                codes.add('birth_cert_person_mismatch')
+                codes.append((doc, 'birth_cert_person_mismatch'))
         elif dt == 'guardianship_letter':
             if person_red(dt, income_engine.student_guardianship_check(doc)):
-                codes.add('guardianship_person_mismatch')
-    return list(codes)
+                codes.append((doc, 'guardianship_person_mismatch'))
+    return codes if per_doc else list({code for _doc, code in codes})
 
 
-def document_unreadable_blockers(application):
+def document_unreadable_blockers(application, per_doc=False):
     """Compulsory documents that were uploaded but are UNREADABLE — a bad/blurry/skewed
     photo the student can simply re-take (Gopal already says exactly this). Owner policy:
     don't accept what we can't verify. EXCLUDES our own service outages, which are not the
@@ -546,24 +547,24 @@ def document_unreadable_blockers(application):
     which every reader below treats as 'pending', never 'unreadable'. That has been true since
     2026-10-24; before it, ANY extraction error — Gemini's prepaid credit running out included —
     was stored as 'unreadable' and blocked here, although this docstring already claimed
-    otherwise. Returns blocker codes."""
+    otherwise. Returns blocker codes; `per_doc` returns [(live document, code)] (H6 fix round 3)."""
     from ..academic_engine import student_slip_check
     from ..pathway_engine import student_offer_check
     from ..income_engine import (income_cluster_advice, effective_working_members,
-                                _member_ic_doc, student_income_ic_check)
-    codes = set()
+                                _member_ic_doc, relationship_doc_for, student_income_ic_check)
+    codes = []
     asked = requirements.required_documents(application)      # S3a (D9): only the REQUIRED upload
     slip = latest_doc(application, 'results_slip') if 'results_slip' in asked else None
     if slip and student_slip_check(slip).get('name') == 'unreadable':
-        codes.add('results_slip_unreadable')
+        codes.append((slip, 'results_slip_unreadable'))
     from ..higher_results import higher_doc, student_higher_check   # M4b: the upload the verdict reads
     higher = higher_doc(application) if 'higher_results' in asked else None
     if higher is not None:
         if student_higher_check(higher).get('readable') is False:
-            codes.add('higher_results_unreadable')
+            codes.append((higher, 'higher_results_unreadable'))
     offer = latest_doc(application, 'offer_letter')
     if offer and student_offer_check(offer).get('name') == 'unreadable':
-        codes.add('offer_letter_unreadable')
+        codes.append((offer, 'offer_letter_unreadable'))
     # Income cluster — per earner.
     route = (getattr(application, 'income_route', '') or '').strip()
     if route == 'str':
@@ -585,9 +586,9 @@ def document_unreadable_blockers(application):
             service_down = ((bool(err) and not is_ic_decode_error(err))   # OUR outage → don't block
                             or ic_second_opinion_deferred(ic))            # (TD-390: Gemini's, too)
             if ran and not service_down and not student_income_ic_check(ic).get('readable'):
-                codes.add('income_document_unreadable')
+                codes.append((ic, 'income_document_unreadable'))
         # The relationship doc (BC / guardianship letter) is a Gemini field-extraction doc,
         # so an outage shows as 'pending' — only a genuine bad scan returns this code.
         if income_cluster_advice(application, member) == 'income_rel_doc_unreadable':
-            codes.add('income_document_unreadable')
-    return list(codes)
+            codes.append((latest_doc(application, relationship_doc_for(member)), 'income_document_unreadable'))
+    return codes if per_doc else list({code for _doc, code in codes})

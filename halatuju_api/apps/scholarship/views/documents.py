@@ -214,10 +214,12 @@ class DocumentListCreateView(APIView):
         if refusal:
             return refusal
         # H6: a slot takes four uploads (the first, then three replaces), counted across Remove, plus one
-        # more for each ask a person raised after its last upload (document_replace.py). The lock was
-        # checked above, so a locked student is refused first.
-        if single and not SlotBook(app).allowed(new_doc_type, sweep_members, new_request_code):
-            return replace_refusal()
+        # more for each ask a person raised after its last upload, plus up to four more before consent while
+        # the slot holds the consent gate; at that ceiling the 409 sends her to support
+        # (document_replace.py). The lock was checked above, so a locked student is refused first.
+        book = SlotBook(app) if single else None
+        if single and not book.allowed(new_doc_type, sweep_members, new_request_code):
+            return replace_refusal(app, support=book.support_only(new_doc_type, sweep_members, new_request_code))
         # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
         # client→Storage via the signed URL BEFORE this POST. If that PUT silently failed, we'd
         # record a row pointing at a blob that isn't there — a dead "view" link + an unreadable

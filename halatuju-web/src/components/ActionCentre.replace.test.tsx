@@ -115,6 +115,16 @@ describe('Replace on a Done document', () => {
     pick('new.pdf')
     expect(await screen.findByText('You have already replaced this 3 times.')).toBeTruthy()
   })
+
+  it('a refusal at the pre-consent hard ceiling shows the support line, not the server English', async () => {
+    await mount(0)
+    mockApi.signUploadDocument.mockResolvedValue({ upload_url: 'u', storage_path: 'p' } as never)
+    mockApi.uploadFileToSignedUrl.mockResolvedValue(undefined as never)
+    mockApi.recordDocument.mockRejectedValue(Object.assign(new Error('You have sent this document 8 times'),
+      { code: 'replace_limit_reached', bodyCode: 'replace_limit_support' }))
+    pick('new.pdf')
+    expect(await screen.findByText('scholarship.actionCentre.replaceLimitSupport')).toBeTruthy()
+  })
 })
 
 describe('"I don\'t have this" after the interview lock', () => {

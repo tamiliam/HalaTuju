@@ -1,4 +1,4 @@
-import { isSettledDoc, replacesLeft } from '@/lib/documentReplace'
+import { isSettledDoc, replaceLimitKey, replaceRefusalText, replacesLeft } from '@/lib/documentReplace'
 import type { ApplicantDocument } from '@/lib/api'
 
 const doc = (over: Record<string, unknown> = {}) =>
@@ -30,5 +30,23 @@ describe('isSettledDoc (the replace hint) and replacesLeft', () => {
     expect(replacesLeft(doc({ replace_count: 0, replaces_left: 1 }))).toBe(1)
     expect(replacesLeft(doc({ replace_count: 3, replaces_left: 1 }))).toBe(1)
     expect(replacesLeft(doc({ replace_count: 1, replaces_left: 0 }))).toBe(0)
+  })
+})
+
+describe('the shut slot: reviewer line, or support at the pre-consent hard ceiling (fix round 3)', () => {
+  const t = (key: string) => `[${key}]`
+  it('the served replace_support picks the support line', () => {
+    expect(replaceLimitKey(doc({ replace_support: true }))).toBe('scholarship.actionCentre.replaceLimitSupport')
+    expect(replaceLimitKey(doc({ replace_support: false }))).toBe('scholarship.actionCentre.replaceLimit')
+    expect(replaceLimitKey(doc())).toBe('scholarship.actionCentre.replaceLimit')
+  })
+  it('a replace_limit_support 409 shows the support line in her language, never the reviewer promise', () => {
+    const e = Object.assign(new Error('You have sent this document 8 times'), { code: 'replace_limit_reached', bodyCode: 'replace_limit_support' })
+    expect(replaceRefusalText(e, t)).toBe('[scholarship.actionCentre.replaceLimitSupport]')
+  })
+  it("a plain cap 409 keeps the server's message, else the plain line", () => {
+    const e = Object.assign(new Error('server words'), { code: 'replace_limit_reached', bodyCode: 'replace_limit_reached' })
+    expect(replaceRefusalText(e, t)).toBe('server words')
+    expect(replaceRefusalText(Object.assign(new Error(''), { bodyCode: 'replace_limit_reached' }), t)).toBe('[scholarship.actionCentre.replaceLimit]')
   })
 })
