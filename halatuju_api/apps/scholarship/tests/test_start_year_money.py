@@ -103,7 +103,8 @@ class MoneyIsMainsReading(TestCase):
 
     def test_every_money_reader_gives_mains_year(self):
         for n, (intake, rd, stored, expected) in enumerate(ROWS):
-            with self.subTest(intake=intake, rd=rd, stored=stored):
+            # str(): xdist cannot send a datetime.date in a subTest label between workers.
+            with self.subTest(intake=intake, rd=rd, stored=str(stored)):
                 app = self._case(n, intake, rd, stored, 'row')
                 self.assertEqual(pe.course_start_year(app), expected)
                 self.assertEqual(pe.course_start_year(app), _main_money_year(intake, rd, stored))
