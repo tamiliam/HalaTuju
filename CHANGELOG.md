@@ -192,6 +192,13 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
 
+### chore: merge train A - help H3 stacked on help H2 and help H1, on main (2026-11-17)
+
+Branch help-h3, not pushed. help-h1, then help-h2, then help-h3 rebased in that order onto origin/main; each keeps its own CHANGELOG, decisions and debt entries.
+- Versions: genuineness `MODEL_VERSION` 1.28.0 (H1), 1.29.0 (H2). `VERDICT_ENGINE_VERSION` 2026-11-15.10 (H2), then 2026-11-15.11 here: H3's .9 renumbered to sit above H2's .10 (no rule change). The cockpit lists engine versions sorted as text; ".11" sorts after ".10", and ".9" was never published.
+- Migration 0212 (`cohort_allowed_start_years`) keeps its number: main's latest is 0211.
+- Debt: TD-645 (a confirmation can take the live slot as a course switch) ACCEPTED by the owner on 16 Nov (keep as is, a person checks). TD-647 (f): `org_config` could join `_MODULE_DOORS` in the courses facade test. No TD renumbering was needed (main 633-634, H2 635-639, H3 640-647).
+
 ### docs: H3b tidy - course-start condition in the setting and reviewer text, Waive-not-Resolve line, TD-647 (2026-11-16)
 
 Branch help-h3, not pushed. Copy and debt log only; no logic change. en.json setting and reviewer line now say the course should already have started; FAQ and Reviewer Guide say to use Waive, not Resolve; **TD-647** logs the known soft limits; TD-645 marked "decide before go-live (owner)".

@@ -9159,7 +9159,10 @@ no-guessing rule (by design, safe direction: no ask rather than a wrong one). At
 letters whose `offer_date` reads None, by form, and widen the reader only for forms that are both common and
 unambiguous. *(A - S)*
 
-### [TD-645] Recent-letter ask: a confirmation with a differently read course name takes the live slot as a course switch - medium
+### [TD-645] Recent-letter ask: a confirmation with a differently read course name takes the live slot as a course switch - medium — ACCEPTED 2026-11-16 (owner: keep as is, a person checks)
+
+**Status:** ACCEPTED 2026-11-16 by the owner (option 1, keep as is): the confirmation may take the live slot; it then reads
+suspect and a person checks it. No code change. Marked at the 17 Nov merge train. The text below is history.
 
 **Raised 2026-11-16 by H3b fix round 1 (logged, not fixed; branch number, renumbered at merge).** When she answers
 with a confirmation letter whose programme name or codes read differently from her genuine offer,
@@ -9187,13 +9190,10 @@ reporting date. (b) Numeric reporting dates such as 15/03/2026 or 2026-03-15 are
 (extraction cleanup already rewrites most D/M/Y dates). (c) A recent letter naming someone else still closes the ask
 (the name-mismatch ticket covers it). (d) Resolve re-opens the ask on the next sync; reviewers should use Waive.
 (e) A letter that was recent can age past the window while the case is still at Completed, and the ask re-opens.
+(f) Merge-train note (2026-11-17): `recent_letter` reads its tunable from `org_config` through the courses door
+(`apps/courses/public.py`, H3 rebase fix). The F2b facade test (`test_courses_public_facade.py`) names `org_config` by
+hand beside `_MODULE_DOORS`; it could join `_MODULE_DOORS`. Tidy only, no behaviour.
 *(A - S)*
-
-
-
-
-
-
 
 ### [TD-635] A Form-6 confirmation reads genuine before any letterhead check - low ✅ CLOSED 2026-11-16 (owner: all confirmations suspect, help H2)
 
