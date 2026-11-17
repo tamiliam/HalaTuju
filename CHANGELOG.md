@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
+
+Branch vcard, display only (engine statuses untouched). Migration: none. Services: web.
+- **Subtitle:** on a tile that is not green, a real unresolved problem leads, else the not-checked line (`factSubtitleItem`), so a blue tile no longer reads as proved. en/ms/ta `higher_results_not_checked` now read "Genuineness of higher results is NOT checked yet."
+- **Tone:** `higher_results_not_checked` is not proof (frontend-only `NOT_PROOF_EVIDENCE`; `SOFT_EVIDENCE` and its drift test untouched). Unreadable higher results is red; a different kind (`kind_differs`, `is_spm`) caps at amber. Red beats amber beats blue.
+
 ### feat: sprint THANKS-SCHOLARS - a graduation thank-you is decided on the scholar file, by Scholars holders (2026-11-16)
 
 Branch thanks-scholars, not pushed. Migration: none. Services: both. Decisions: `docs/decisions.md` (2026-11-16, THANKS-SCHOLARS; owner: "Thank yous are part of the scholar maintenance process."; applies R5). Release-note draft: `docs/releases/thanks-release-note-draft.md`.

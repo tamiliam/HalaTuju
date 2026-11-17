@@ -49,6 +49,14 @@ export const SOFT_EVIDENCE = new Set<string>([
   'household_size_confirm',        // Phase 2C: described people > stated household size — soft
 ])
 
+// Evidence codes that are display-only "not proof": the note that genuineness was not checked
+// says nothing is verified. Kept apart from SOFT_EVIDENCE because that set is pinned to the
+// engine's `# SOFT` markers by the drift test; this one is a frontend tone rule.
+const HIGHER_RESULTS_NOT_CHECKED = 'higher_results_not_checked'
+const HIGHER_RESULTS_UNREADABLE = 'higher_results_unreadable'
+const HIGHER_RESULTS_KIND_CODES = ['higher_results_kind_differs', 'higher_results_is_spm']
+export const NOT_PROOF_EVIDENCE = new Set<string>([HIGHER_RESULTS_NOT_CHECKED])
+
 /**
  * Map a verdict fact to a colour tone on a collapsed Kent confidence scale —
  * how sure the engine is that the fact is sound:
@@ -60,21 +68,40 @@ export const SOFT_EVIDENCE = new Set<string>([
  *   gap       → red    (Can't verify — missing/unreadable evidence)
  */
 export function factTileTone(fact: AdminVerdictFact): FactTileTone {
+  // Owner rulings 2026-11-17 (display only; the engine status is untouched).
+  // Precedence: red (unreadable) beats amber (other kind / no real proof) beats blue.
+  const unresolved = new Set(fact.unresolved.map((u) => u.code))
+  if (fact.status !== 'gap' && unresolved.has(HIGHER_RESULTS_UNREADABLE)) return 'red'
+  const kindDiffers = [...HIGHER_RESULTS_KIND_CODES].some((c) => unresolved.has(c))
   switch (fact.status) {
     case 'verified':
-      return 'green'
+      return kindDiffers ? 'amber' : 'green'
     case 'recommend':
       return 'amber'
     case 'review': {
       // Probable needs a green: at least one genuinely-verified value, not just a
-      // declaration or a soft signal. Otherwise it's Unsure.
-      const hasVerified = fact.evidence.some((e) => !SOFT_EVIDENCE.has(e.code))
-      return hasVerified ? 'blue' : 'amber'
+      // declaration, a soft signal or a "not checked" note. Otherwise it's Unsure.
+      const hasVerified = fact.evidence.some((e) => !SOFT_EVIDENCE.has(e.code) && !NOT_PROOF_EVIDENCE.has(e.code))
+      return hasVerified && !kindDiffers ? 'blue' : 'amber'
     }
     case 'gap':
     default:
       return 'red'
   }
+}
+
+/**
+ * The tile's one-line subtitle item. A real unresolved problem leads. Otherwise, on a tile
+ * that is not green, the "genuineness NOT checked yet" note leads the positive lines, so a
+ * blue tile never reads as though the results were proved. Null = fall back to the status.
+ */
+export function factSubtitleItem(fact: AdminVerdictFact): AdminVerdictItem | null {
+  if (fact.unresolved.length > 0) return fact.unresolved[0]
+  if (factTileTone(fact) !== 'green') {
+    const nc = fact.evidence.find((e) => e.code === HIGHER_RESULTS_NOT_CHECKED)
+    if (nc) return nc
+  }
+  return fact.evidence[0] ?? null
 }
 
 // The estimative-probability band each tone names (Kent scale, collapsed to four).

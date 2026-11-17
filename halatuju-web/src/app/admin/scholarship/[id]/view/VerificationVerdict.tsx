@@ -7,7 +7,7 @@
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
-import { factTileTone, TONE_BAND_KEY, verdictItemKey } from '@/lib/officerCockpit'
+import { factSubtitleItem, factTileTone, TONE_BAND_KEY, verdictItemKey } from '@/lib/officerCockpit'
 import { localiseParams } from '@/lib/actionCentre'
 import type { AdminScholarshipDetail, AdminVerdictItem, VerdictCaseSummary } from '@/lib/admin-api'
 
@@ -54,11 +54,8 @@ export function VerificationVerdict({ app, t, caseSummary }: {
             const resolve = (it: AdminVerdictItem) =>
               t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                 localiseParams(it.params, t))
-            const subtitle = f.unresolved.length > 0
-              ? resolve(f.unresolved[0])
-              : f.evidence.length > 0
-              ? resolve(f.evidence[0])
-              : t(`admin.scholarship.verdict.status.${f.status}`)
+            const subItem = factSubtitleItem(f)
+            const subtitle = subItem ? resolve(subItem) : t(`admin.scholarship.verdict.status.${f.status}`)
             // A green (verified) fact is done — the tick says it all, so we drop the
             // description (and its detail block below). Amber/red keep the lead line.
             const isGreen = tone === 'green'
@@ -143,6 +140,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
                 t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                   localiseParams(it.params, t))
               if (factTileTone(f) === 'green' || (f.evidence.length <= 1 && f.unresolved.length === 0)) return null
+              const subItem = factSubtitleItem(f)
               return (
                 <div key={`detail-${f.fact}`} className="text-xs text-ground-600">
                   <span className="font-medium text-ground-500 uppercase text-xs md:text-[10px] tracking-wide">
@@ -156,7 +154,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
                       <span>{resolve(it)}</span>
                     </div>
                   ))}
-                  {f.evidence.slice(1).map((it, i) => (
+                  {f.evidence.filter((it, idx) => it !== subItem && !(idx === 0 && f.unresolved.length > 0)).map((it, i) => (
                     <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
                       <span className="text-positive-700 shrink-0">✓</span>
                       <span>{resolve(it)}</span>
