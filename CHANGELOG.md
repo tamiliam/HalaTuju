@@ -156,6 +156,10 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Tests: `test_td613_departed_holder.py` (both paths end to end, the refusals), `test_decision_reopen.py` updated, `AssignAndWitness.td613.test.tsx`, `cockpitCardStages.test.ts`, `AssignListPicker.test.tsx`.
 - Review round: a suspension alone strands nothing outside `ASSIGNABLE_STATUSES` unless the case was reopened (F1, owner approved 2026-11-15; an award revert stores no marker, so its suspended holder waits for a Restore or a super reopen); detail and list serve `may_unassign` (`services.unassign_refusal`, mixin `serializers_admin/handover.py`), which the cockpit card and list picker read; `rejected_by_unassigned` compares with the holder at the decline (`AssignmentEvent`), not the current one.
 
+### release: 17 Nov 11:00 MYT window - LABELS published (2026-11-17)
+- live e4d81a8fc..d991c39e8 (pushed 11:00 MYT). api halatuju-api-01307-76l, web halatuju-web-01127-g47, both 100% traffic (rollback api-01306-pgs, web-01126-5dd). Both builds green; release-decisions job image d991c39e8; api health 200; site 200.
+- No migration, no data step. LABELS: 1st deploy (web change is a test file only). THANKS not included: own window (16:00 with THANKS-SCHOLARS). Owner phone check sent with the release report. Window closed.
+
 ### release: 16 Nov 21:00 MYT window - F2b stage 2 and Gemini Phase 2 Option A published (2026-11-16)
 - live 119ffd0d3..e4d81a8fc (pushed 21:00 MYT). api halatuju-api-01306-pgs 100% traffic; web unchanged (halatuju-web-01126-5dd, no web build: api-only window). api build green; release-decisions job image e4d81a8fc; api health 200; site 200.
 - No migration, no data step. F2b stage 2: 1st deploy. Gemini Option A (3.8 Flash first; results slip and genuineness kept on 2.5; offer reader MODEL_VERSION 2.5.0): 1st deploy. LABELS + THANKS (on main at 85e395397) not included: no owner yes yet, own window. Owner phone check sent with the release report. Window closed.
