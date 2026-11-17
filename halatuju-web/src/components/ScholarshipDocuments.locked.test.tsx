@@ -49,7 +49,7 @@ describe('locked documents tab', () => {
   it('hides Remove on a held document and says why', async () => {
     await mount({ locked: true, open_doc_types: [] })
     expect(screen.queryByRole('button', { name: 'scholarship.docs.remove' })).toBeNull()
-    expect(screen.getAllByText('scholarship.docs.lockedNote').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('documentsTab.lockedNote').length).toBeGreaterThan(0)
   })
 
   it('an exempt type stays open: its card keeps Remove', async () => {
@@ -60,7 +60,7 @@ describe('locked documents tab', () => {
   it('unlocked: Remove is there as ever, with no lock note', async () => {
     await mount({ locked: false, open_doc_types: [] })
     expect(screen.getByRole('button', { name: 'scholarship.docs.remove' })).toBeTruthy()
-    expect(screen.queryByText('scholarship.docs.lockedNote')).toBeNull()
+    expect(screen.queryByText('documentsTab.lockedNote')).toBeNull()
   })
 
   it('a 409 documents_locked shows the server message plainly', async () => {
@@ -84,10 +84,10 @@ describe('locked documents tab, no application loaded (fallback income card)', (
   }
   it('locked: no upload on the income card, and it says why', async () => {
     await mountBare({ locked: true, open_doc_types: [] })
-    await waitFor(() => expect(within(incomeCard()).queryByText('scholarship.docs.lockedNote')).toBeTruthy())
+    await waitFor(() => expect(within(incomeCard()).queryByText('documentsTab.lockedNote')).toBeTruthy())
     const card = within(incomeCard())
     expect(card.queryByText('documentsTab.card.choose')).toBeNull()
-    expect(card.getByText('scholarship.docs.lockedNote')).toBeTruthy()
+    expect(card.getByText('documentsTab.lockedNote')).toBeTruthy()
   })
   it('unlocked: the income card keeps its upload', async () => {
     await mountBare({ locked: false, open_doc_types: [] })

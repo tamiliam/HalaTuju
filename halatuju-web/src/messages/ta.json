@@ -1384,38 +1384,6 @@
       "incompleteToContinue": "சேமிக்கப்பட்டது. தொடர்வதற்கு முன், * எனக் குறியிடப்பட்ட கட்டாயப் புலங்களை நிரப்பவும்."
     },
     "docs": {
-      "sample": {
-        "link": "See a sample",
-        "title": "Sample: {type}",
-        "alt": "A drawing of a sample {type}",
-        "caption": "This is a sample drawing, not a real {type}. Do not upload it.",
-        "checkHeading": "What we check",
-        "check": {
-          "mykad": { "p1": "IC number matches the one you typed", "p2": "Name is clear and matches your application", "p3": "Whole card in the picture, all four corners", "p4": "Photo is sharp, no glare" },
-          "results_slip": { "p1": "Name and IC number match your application", "p2": "Year 2025 and your Angka Giliran", "p3": "All subjects and grades are shown", "p4": "Lembaga Peperiksaan header with crest" },
-          "higher_results_stpm": { "p1": "Name and IC number match the student's MyKad", "p2": "Angka Giliran (index number) as printed", "p3": "PNGK (CGPA) over all the subjects", "p4": "Subjects and grades; exam year in the title" },
-          "higher_results_matric": { "p1": "Name and IC number match the student's MyKad", "p2": "College name and matric number", "p3": "Session (year) of the programme", "p4": "PNGK/CGPA and a STATUS line showing pass" },
-          "semester_result": { "p1": "Name and matric number match the MyKad and offer", "p2": "Session and semester are the one asked for", "p3": "GPA and CGPA shown at the end", "p4": "University name at the top" },
-          "photo": { "p1": "Plain, light background", "p2": "Face centred and sharp, looking straight ahead", "p3": "No hat, filter or heavy editing", "p4": "No blur, dark light or cropped head" },
-          "offer_letter": { "p1": "Your name matches your MyKad", "p2": "Course and institution are shown", "p3": "Registration or intake date is the coming intake", "p4": "Official letterhead and reference number" },
-          "school_leaving_cert": { "p1": "Student name matches the MyKad", "p2": "IC number and date of birth are correct", "p3": "School name and address at the top", "p4": "Leaving date and reason, with signature and stamp" },
-          "statement_of_intent": { "p1": "Your name, IC number and the course you want", "p2": "Your goals after your studies", "p3": "Your background: family, interests, experiences", "p4": "Your signature (or typed name) and the date" },
-          "reference_letter": { "p1": "Writer's full name and post", "p2": "Signature and official stamp", "p3": "Student's name and IC number match the MyKad", "p4": "Date of the letter is recent" },
-          "guardianship_letter": { "p1": "Parent's full name and IC number", "p2": "Student's full name and IC number", "p3": "Guardian's name, IC number and relationship", "p4": "Parent's signature and the date" },
-          "birth_certificate": { "p1": "Child's full name, same as the MyKad", "p2": "Register number and issuer (JPN Malaysia)", "p3": "Father's name and IC number are shown", "p4": "Mother's name and IC number are shown" },
-          "payslip": { "p1": "Worker name matches and the month is recent", "p2": "EPF, SOCSO, EIS and PCB lines are shown", "p3": "Earnings and deductions add up", "p4": "Nett pay (take-home) is shown" },
-          "epf_statement": { "p1": "Member name, IC number and member number", "p2": "Statement year and date", "p3": "Latest contributions are shown", "p4": "Account balances are shown" },
-          "str": { "p1": "Name and MyKad match the student or parent", "p2": "Status says Lulus (approved)", "p3": "Payment phases for this year (Fasa Bayaran)", "p4": "Total STR amount (Jumlah Bayaran)" },
-          "bank_statement": { "p1": "Account holder is the student, not a parent", "p2": "Account number is readable and matches", "p3": "Bank name or logo at the top", "p4": "Statement date is a recent month" },
-          "income_support_doc": { "p1": "Official stamp and signature of the Ketua Kampung", "p2": "Parent's name and IC match the application", "p3": "Monthly income (RM) is written", "p4": "Signed and dated recently" },
-          "water_bill": { "p1": "Name and address match the parent or guardian", "p2": "Account number is shown", "p3": "Bill date is recent (last 3 months)", "p4": "Amount due (Jumlah Perlu Dibayar)" },
-          "electricity_bill": { "p1": "Name and address of the account holder", "p2": "Bill date and billing period are recent", "p3": "Amount and usage breakdown", "p4": "TNB logo and account number" }
-        },
-        "zoomHint": "Tap the picture to make it bigger.",
-        "enlarge": "Make the sample bigger",
-        "shrink": "Make the sample smaller",
-        "close": "Close"
-      },
       "type": {
         "semester_result": "Semester result slip",
         "ic": "அடையாள அட்டை (IC)",
@@ -1772,8 +1740,7 @@
           "pending": "இன்னும் சரிபார்க்கப்படவில்லை"
         }
       },
-      "unsupportedFormat": "புகைப்படம் அல்லது PDF மட்டுமே ஏற்க முடியும். உங்கள் ஆவணத்தின் தெளிவான புகைப்படம் அல்லது PDF-ஐப் பதிவேற்றவும்.",
-      "lockedNote": "உங்கள் நேர்காணல் கட்டம் தொடங்கிவிட்டதால் இந்த ஆவணத்தை இங்கே மாற்ற முடியாது. ஏதேனும் குறைந்தால் உங்கள் மதிப்பாய்வாளர் கேட்பார்."
+      "unsupportedFormat": "புகைப்படம் அல்லது PDF மட்டுமே ஏற்க முடியும். உங்கள் ஆவணத்தின் தெளிவான புகைப்படம் அல்லது PDF-ஐப் பதிவேற்றவும்."
     },
     "referee": {
       "name": "பரிந்துரையாளர் பெயர்",
@@ -2094,57 +2061,14 @@
       "error": "மன்னிக்கவும், அதைப் புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
     },
     "actionCentre": {
-      "takePhoto": "புகைப்படம் எடுக்கவும்",
-      "section": {
-        "needs": "உங்கள் நடவடிக்கை தேவை",
-        "sent": "அனுப்பப்பட்டது, சரிபார்க்கிறோம்",
-        "done": "முடிந்தது"
-      },
-      "needAgain": "இது மீண்டும் தேவை",
-      "needAgainBody": "கடைசியாக அனுப்பிய கோப்பைப் பயன்படுத்த முடியவில்லை. மீண்டும் அனுப்பவும்.",
-      "badFile": "இந்தக் கோப்பைத் திறக்க முடியவில்லை. தெளிவான புகைப்படம் அல்லது PDF-ஐப் பதிவேற்றவும்.",
-      "sentAnswer": "அனுப்பப்பட்டது. உங்கள் மதிப்பாய்வாளர் இதைப் படிப்பார்.",
-      "loadError": {
-        "title": "பணிகளை ஏற்ற முடியவில்லை",
-        "body": "உங்கள் பணிகளை ஏற்ற முடியவில்லை. இணைப்பைச் சரிபார்த்து மீண்டும் முயலவும்.",
-        "retry": "மீண்டும் முயலவும்"
-      },
-      "why": {
-        "ic": "ஏன் கேட்கிறோம்: நீங்கள் யார் என்பதை உறுதிப்படுத்த.",
-        "results_slip": "ஏன் கேட்கிறோம்: உங்கள் தேர்வு முடிவுகளைச் சரிபார்க்க.",
-        "higher_results": "ஏன் கேட்கிறோம்: உங்கள் STPM, மெட்ரிகுலேஷன் அல்லது பிற உயர்கல்வி முடிவுகளைச் சரிபார்க்க.",
-        "photo": "ஏன் கேட்கிறோம்: நாங்கள் உங்களை நேரில் அறிந்துகொள்ள.",
-        "epf": "ஏன் கேட்கிறோம்: உங்கள் பெற்றோரின் சேமிப்புப் பதிவைப் பார்க்க.",
-        "str": "ஏன் கேட்கிறோம்: உங்கள் குடும்பத்தின் STR நிலையை உறுதிப்படுத்த.",
-        "statement_of_intent": "ஏன் கேட்கிறோம்: நீங்கள் ஏன் இதை விரும்புகிறீர்கள் என்பதை உங்கள் சொந்த வார்த்தைகளில் கேட்க.",
-        "reference_letter": "ஏன் கேட்கிறோம்: உங்களை அறிந்த ஒருவர் உங்களுக்காகப் பேச.",
-        "salary_slip": "ஏன் கேட்கிறோம்: உங்கள் குடும்ப வருமானத்தை உறுதிப்படுத்த.",
-        "income_support_doc": "ஏன் கேட்கிறோம்: சம்பளச் சீட்டு அல்லது STR இல்லாதபோது உங்கள் குடும்ப வருமானத்தைக் காட்ட.",
-        "water_bill": "ஏன் கேட்கிறோம்: உங்கள் குடும்பம் வசிக்கும் இடத்தை உறுதிப்படுத்த.",
-        "electricity_bill": "ஏன் கேட்கிறோம்: உங்கள் குடும்பம் வசிக்கும் இடத்தை உறுதிப்படுத்த.",
-        "offer_letter": "ஏன் கேட்கிறோம்: கல்லூரியில் உங்கள் இடத்தை உறுதிப்படுத்த.",
-        "parent_ic": "ஏன் கேட்கிறோம்: உங்கள் பெற்றோர் அல்லது பாதுகாவலர் யார் என்பதை உறுதிப்படுத்த.",
-        "guardianship_letter": "ஏன் கேட்கிறோம்: உங்கள் பாதுகாவலர் உங்கள் சார்பாகச் செயல்பட முடியும் என்பதைக் காட்ட.",
-        "birth_certificate": "ஏன் கேட்கிறோம்: உங்களை உங்கள் பெற்றோருடன் இணைக்க.",
-        "bank_statement": "ஏன் கேட்கிறோம்: உங்கள் உதவித்தொகை செலுத்தப்படும் வங்கிக் கணக்கை உறுதிப்படுத்த.",
-        "school_leaving_cert": "ஏன் கேட்கிறோம்: நீங்கள் பள்ளியை விட்டு நீங்கிய நேரத்தை உறுதிப்படுத்த.",
-        "semester_result": "ஏன் கேட்கிறோம்: உங்கள் படிப்பில் நீங்கள் எப்படிச் செய்கிறீர்கள் என்பதைப் பார்க்க.",
-        "doc": "ஏன் கேட்கிறோம்: உங்கள் மதிப்பாய்வாளர் உங்கள் விண்ணப்பத்தின் சரிபார்ப்பை முடிக்க.",
-        "confirm": "ஏன் கேட்கிறோம்: உங்களைப் பற்றிய எங்கள் பதிவு சரியாக இருப்பதை உறுதிசெய்ய.",
-        "answer": "ஏன் கேட்கிறோம்: உங்கள் மதிப்பாய்வாளர் உங்கள் நிலையைப் புரிந்துகொள்ள."
-      },
       "title": "கிட்டத்தட்ட முடிந்துவிட்டது, {name}",
       "intro": "சில விரைவான விஷயங்கள் மட்டுமே, உங்கள் விண்ணப்பம் முழுமையடைகிறது.",
-      "lockedTitle": "உங்களிடமிருந்து சில விவரங்கள் தேவை, {name}",
-      "lockedIntro": "உங்கள் விண்ணப்பத்தை நாங்கள் மதிப்பாய்வு செய்து வருகிறோம்; சில கூடுதல் விவரங்கள் தேவை. கீழே உள்ள ஒவ்வொன்றுக்கும் பதிலளிக்கவும் — சில நிமிடங்களே ஆகும்.",
       "generic": {
         "title": "உங்களிடமிருந்து ஒன்று தேவை",
         "desc": "எங்கள் உதவிக் குழுவைத் தொடர்புகொள்ளுங்கள்; என்ன செய்ய வேண்டும் என்று கூறுவோம்."
       },
       "fundedTitle": "கிட்டத்தட்ட முடிந்துவிட்டது, {name} — உங்கள் உதவித்தொகையைப் பெற ஒரே ஒரு படி மட்டுமே",
       "fundedIntro": "உங்கள் விருதுக்கு வாழ்த்துகள்! உங்கள் உதவித்தொகைப் பணம் வழங்குவதற்காக, கீழே உங்கள் வங்கிக் கணக்கு விவரங்களைச் சேர்க்கவும்.",
-      "awaitTitle": "எல்லாம் தயார்",
-      "awaitBody": "உங்கள் விண்ணப்பம் முழுமையடைந்து எங்கள் குழுவின் மதிப்பாய்விற்காக உள்ளது. இப்போது நீங்கள் செய்ய வேண்டியது எதுவுமில்லை — மின்னஞ்சல் வழியாக உங்களைத் தொடர்புகொள்வோம். {email} (ஸ்பேம் கோப்புறை உட்பட) அவ்வப்போது பார்த்துக்கொள்ளவும்.",
       "progressDone": "{total} இல் {done} முடிந்தது",
       "percentComplete": "{pct}% முடிந்தது",
       "toDo": "செய்ய வேண்டியவை",
@@ -2154,7 +2078,6 @@
       "upload": "பதிவேற்று",
       "uploading": "பதிவேற்றுகிறது…",
       "uploadError": "மன்னிக்கவும், பதிவேற்றம் வேலை செய்யவில்லை. மீண்டும் முயற்சிக்கவும்.",
-      "stillChecking": "உங்கள் பதிவேற்றத்தைப் பெற்றோம், இன்னும் சரிபார்த்து வருகிறோம் — சிறிது நேரம் கழித்து இந்தப் பக்கத்தை மீண்டும் ஏற்றவும்.",
       "review": "சரிபார்",
       "confirmPathwayYes": "ஆம், இதுவே என் இறுதிப் பாதை",
       "confirmHouseholdSizeYes": "ஆம், அதுதான் என் குடும்ப அளவு",
@@ -2162,11 +2085,6 @@
       "sending": "அனுப்புகிறது…",
       "sendError": "மன்னிக்கவும், அதை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
       "relevanceNudge": "அது கேள்விக்குப் பதிலளிப்பதாகத் தெரியவில்லை — கேட்கப்பட்டதை மீண்டும் ஒருமுறை பார்க்க முடியுமா?",
-      "replace": "Replace",
-      "replacesLeft": "You can replace this {n} more times.",
-      "replacesLeftOne": "You can replace this 1 more time.",
-      "replaceLimit": "You have used all 3 replaces for this document. If it is still wrong, your reviewer will ask you for what is needed.",
-      "replaceLimitSupport": "You have sent this document as many times as we can take before you submit. Please write to us at {supportEmail} and we will help.",
       "explanationPlaceholder": "உங்கள் பதிலை இங்கே தட்டச்சு செய்யவும்…",
       "allDone": "அனைத்தும் முடிந்தது — உங்கள் விண்ணப்பம் முழுமையடைந்தது!",
       "coach": "நான் {personaName}, நீங்கள் முடிக்க உதவ இங்கே இருக்கிறேன். மேலே உள்ள ஒவ்வொரு அட்டையும் செய்ய வேண்டிய ஒரு வேலை — ஆவணத்தைப் பதிவேற்றுங்கள் அல்லது கேள்விக்குப் பதிலளியுங்கள். பட்டியலை மேலிருந்து கீழாகச் செய்யுங்கள்; ஒவ்வொரு அட்டையின் கீழ் உள்ள குறிப்பு என்ன தேவை என்பதைச் சரியாகச் சொல்கிறது.",
@@ -2605,18 +2523,6 @@
         "accountNumberInvalid": "இந்தக் கணக்கு எண் மிகக் குறுகியதாகத் தெரிகிறது. உங்கள் வங்கி அறிக்கையுடன் சரிபார்த்து முழு எண்ணையும் உள்ளிடவும்.",
         "holderMismatch": "இந்தக் கணக்கு உங்கள் பெயரில் இல்லை. உதவித்தொகை உங்கள் சொந்தக் கணக்கிற்கு மட்டுமே செலுத்த முடியும்."
       },
-      "setAside": "ஒதுக்கப்பட்டது",
-      "setAsideNote": "இது உங்கள் விண்ணப்பப் பரிசீலனையின் ஒரு பகுதியாக இருந்தது. இப்போது உதவித்தொகை வழங்கப்பட்டதால், இதற்குப் பதிலளிக்க வேண்டியதில்லை.",
-      "retry": {
-        "sameFile": "உங்கள் பதிவேற்றம் கிடைத்தது — ஆனால் அது முன்பு அனுப்பிய அதே ஆவணம்தான்; எதுவும் மாறவில்லை. கீழேயுள்ள அறிவுரையைக் கவனமாகப் படித்து, நாங்கள் கேட்கும் குறிப்பிட்ட பக்கத்தை அனுப்பவும்.",
-        "keptPrevious": "உங்கள் பதிவேற்றம் கிடைத்தது; ஆனால் அதில் எங்களுக்குத் தேவையானது இல்லை — எனவே உங்கள் முந்தைய ஆவணத்தையே வைத்திருக்கிறோம் (அது வலுவானது). கீழேயுள்ள அறிவுரையைப் படித்து, நாங்கள் கேட்கும் குறிப்பிட்ட பக்கத்தை அனுப்பவும்.",
-        "notAccepted": "உங்கள் பதிவேற்றம் கிடைத்தது; ஆனால் அது நாங்கள் கேட்ட பக்கம் அல்ல; எனவே இது இன்னும் நிலுவையில் உள்ளது. கீழேயுள்ள அறிவுரையைக் கவனமாகப் படித்து, அந்தக் குறிப்பிட்ட பக்கத்தை அனுப்பவும்."
-      },
-      "officerHold": {
-        "chip": "நாங்கள் இதைப் பரிசீலிக்கிறோம்",
-        "title": "எங்கள் குழுவுடன் இதை நாங்கள் பார்த்து வருகிறோம்",
-        "body": "நன்றி — நீங்கள் அனுப்பியதை நாங்கள் பெற்றுக்கொண்டோம். எங்கள் குழு இப்போது இதை நேரடியாகப் பரிசீலித்து வருகிறது; எனவே இப்போதைக்கு இங்கு நீங்கள் மேலும் எதையும் பதிவேற்ற வேண்டியதில்லை. மேலும் ஏதேனும் தேவைப்பட்டால் உங்களைத் தொடர்புகொள்வோம்."
-      },
       "updatePathwayOnProfile": "உங்கள் சுயவிவரத்தில் புதுப்பிக்கவும்",
       "addStpmSubjects": "எனது STPM பாடங்களைச் சேர்க்கவும்",
       "confirmStpmKoko": "எனது மதிப்பெண்ணை உறுதிப்படுத்தவும்",
@@ -2634,14 +2540,6 @@
         "university": "பல்கலைக்கழகம்"
       },
       "decline": {
-        "button": "I don't have this",
-        "ask": "Why don't you have it?",
-        "cancel": "Cancel",
-        "noteLabel": "Tell us why (required)",
-        "send": "Send",
-        "sending": "Sending…",
-        "error": "Sorry, we couldn't send that. Please try again.",
-        "youTold": "You told us: {reason}",
         "reasons": {
           "epf": {
             "no_epf_job": "Does not work in a job that pays EPF (for example self-employed, farmer, odd jobs)",
@@ -10080,6 +9978,112 @@
     "help": {
       "higher_results": "உங்கள் CGPA காட்டும் அதிகாரப்பூர்வ முடிவுச் சீட்டு அல்லது டிரான்ஸ்கிரிப்டின் படம் அல்லது PDF.",
       "results_slip_optional": "உங்கள் அதிகாரப்பூர்வ SPM முடிவுச் சீட்டின் படம் அல்லது PDF. STPM, மெட்ரிகுலேஷன், அசாசி, டிப்ளோமா விண்ணப்பதாரர்களுக்கு இது விருப்பத்தேர்வு."
+    },
+    "sample": {
+      "link": "See a sample",
+      "title": "Sample: {type}",
+      "alt": "A drawing of a sample {type}",
+      "caption": "This is a sample drawing, not a real {type}. Do not upload it.",
+      "checkHeading": "What we check",
+      "check": {
+        "mykad": { "p1": "IC number matches the one you typed", "p2": "Name is clear and matches your application", "p3": "Whole card in the picture, all four corners", "p4": "Photo is sharp, no glare" },
+        "results_slip": { "p1": "Name and IC number match your application", "p2": "Year 2025 and your Angka Giliran", "p3": "All subjects and grades are shown", "p4": "Lembaga Peperiksaan header with crest" },
+        "higher_results_stpm": { "p1": "Name and IC number match the student's MyKad", "p2": "Angka Giliran (index number) as printed", "p3": "PNGK (CGPA) over all the subjects", "p4": "Subjects and grades; exam year in the title" },
+        "higher_results_matric": { "p1": "Name and IC number match the student's MyKad", "p2": "College name and matric number", "p3": "Session (year) of the programme", "p4": "PNGK/CGPA and a STATUS line showing pass" },
+        "semester_result": { "p1": "Name and matric number match the MyKad and offer", "p2": "Session and semester are the one asked for", "p3": "GPA and CGPA shown at the end", "p4": "University name at the top" },
+        "photo": { "p1": "Plain, light background", "p2": "Face centred and sharp, looking straight ahead", "p3": "No hat, filter or heavy editing", "p4": "No blur, dark light or cropped head" },
+        "offer_letter": { "p1": "Your name matches your MyKad", "p2": "Course and institution are shown", "p3": "Registration or intake date is the coming intake", "p4": "Official letterhead and reference number" },
+        "school_leaving_cert": { "p1": "Student name matches the MyKad", "p2": "IC number and date of birth are correct", "p3": "School name and address at the top", "p4": "Leaving date and reason, with signature and stamp" },
+        "statement_of_intent": { "p1": "Your name, IC number and the course you want", "p2": "Your goals after your studies", "p3": "Your background: family, interests, experiences", "p4": "Your signature (or typed name) and the date" },
+        "reference_letter": { "p1": "Writer's full name and post", "p2": "Signature and official stamp", "p3": "Student's name and IC number match the MyKad", "p4": "Date of the letter is recent" },
+        "guardianship_letter": { "p1": "Parent's full name and IC number", "p2": "Student's full name and IC number", "p3": "Guardian's name, IC number and relationship", "p4": "Parent's signature and the date" },
+        "birth_certificate": { "p1": "Child's full name, same as the MyKad", "p2": "Register number and issuer (JPN Malaysia)", "p3": "Father's name and IC number are shown", "p4": "Mother's name and IC number are shown" },
+        "payslip": { "p1": "Worker name matches and the month is recent", "p2": "EPF, SOCSO, EIS and PCB lines are shown", "p3": "Earnings and deductions add up", "p4": "Nett pay (take-home) is shown" },
+        "epf_statement": { "p1": "Member name, IC number and member number", "p2": "Statement year and date", "p3": "Latest contributions are shown", "p4": "Account balances are shown" },
+        "str": { "p1": "Name and MyKad match the student or parent", "p2": "Status says Lulus (approved)", "p3": "Payment phases for this year (Fasa Bayaran)", "p4": "Total STR amount (Jumlah Bayaran)" },
+        "bank_statement": { "p1": "Account holder is the student, not a parent", "p2": "Account number is readable and matches", "p3": "Bank name or logo at the top", "p4": "Statement date is a recent month" },
+        "income_support_doc": { "p1": "Official stamp and signature of the Ketua Kampung", "p2": "Parent's name and IC match the application", "p3": "Monthly income (RM) is written", "p4": "Signed and dated recently" },
+        "water_bill": { "p1": "Name and address match the parent or guardian", "p2": "Account number is shown", "p3": "Bill date is recent (last 3 months)", "p4": "Amount due (Jumlah Perlu Dibayar)" },
+        "electricity_bill": { "p1": "Name and address of the account holder", "p2": "Bill date and billing period are recent", "p3": "Amount and usage breakdown", "p4": "TNB logo and account number" }
+      },
+      "zoomHint": "Tap the picture to make it bigger.",
+      "enlarge": "Make the sample bigger",
+      "shrink": "Make the sample smaller",
+      "close": "Close"
+    },
+    "lockedNote": "உங்கள் நேர்காணல் கட்டம் தொடங்கிவிட்டதால் இந்த ஆவணத்தை இங்கே மாற்ற முடியாது. ஏதேனும் குறைந்தால் உங்கள் மதிப்பாய்வாளர் கேட்பார்.",
+    "actionCentre": {
+      "takePhoto": "புகைப்படம் எடுக்கவும்",
+      "section": {
+        "needs": "உங்கள் நடவடிக்கை தேவை",
+        "sent": "அனுப்பப்பட்டது, சரிபார்க்கிறோம்",
+        "done": "முடிந்தது"
+      },
+      "needAgain": "இது மீண்டும் தேவை",
+      "needAgainBody": "கடைசியாக அனுப்பிய கோப்பைப் பயன்படுத்த முடியவில்லை. மீண்டும் அனுப்பவும்.",
+      "badFile": "இந்தக் கோப்பைத் திறக்க முடியவில்லை. தெளிவான புகைப்படம் அல்லது PDF-ஐப் பதிவேற்றவும்.",
+      "sentAnswer": "அனுப்பப்பட்டது. உங்கள் மதிப்பாய்வாளர் இதைப் படிப்பார்.",
+      "loadError": {
+        "title": "பணிகளை ஏற்ற முடியவில்லை",
+        "body": "உங்கள் பணிகளை ஏற்ற முடியவில்லை. இணைப்பைச் சரிபார்த்து மீண்டும் முயலவும்.",
+        "retry": "மீண்டும் முயலவும்"
+      },
+      "why": {
+        "ic": "ஏன் கேட்கிறோம்: நீங்கள் யார் என்பதை உறுதிப்படுத்த.",
+        "results_slip": "ஏன் கேட்கிறோம்: உங்கள் தேர்வு முடிவுகளைச் சரிபார்க்க.",
+        "higher_results": "ஏன் கேட்கிறோம்: உங்கள் STPM, மெட்ரிகுலேஷன் அல்லது பிற உயர்கல்வி முடிவுகளைச் சரிபார்க்க.",
+        "photo": "ஏன் கேட்கிறோம்: நாங்கள் உங்களை நேரில் அறிந்துகொள்ள.",
+        "epf": "ஏன் கேட்கிறோம்: உங்கள் பெற்றோரின் சேமிப்புப் பதிவைப் பார்க்க.",
+        "str": "ஏன் கேட்கிறோம்: உங்கள் குடும்பத்தின் STR நிலையை உறுதிப்படுத்த.",
+        "statement_of_intent": "ஏன் கேட்கிறோம்: நீங்கள் ஏன் இதை விரும்புகிறீர்கள் என்பதை உங்கள் சொந்த வார்த்தைகளில் கேட்க.",
+        "reference_letter": "ஏன் கேட்கிறோம்: உங்களை அறிந்த ஒருவர் உங்களுக்காகப் பேச.",
+        "salary_slip": "ஏன் கேட்கிறோம்: உங்கள் குடும்ப வருமானத்தை உறுதிப்படுத்த.",
+        "income_support_doc": "ஏன் கேட்கிறோம்: சம்பளச் சீட்டு அல்லது STR இல்லாதபோது உங்கள் குடும்ப வருமானத்தைக் காட்ட.",
+        "water_bill": "ஏன் கேட்கிறோம்: உங்கள் குடும்பம் வசிக்கும் இடத்தை உறுதிப்படுத்த.",
+        "electricity_bill": "ஏன் கேட்கிறோம்: உங்கள் குடும்பம் வசிக்கும் இடத்தை உறுதிப்படுத்த.",
+        "offer_letter": "ஏன் கேட்கிறோம்: கல்லூரியில் உங்கள் இடத்தை உறுதிப்படுத்த.",
+        "parent_ic": "ஏன் கேட்கிறோம்: உங்கள் பெற்றோர் அல்லது பாதுகாவலர் யார் என்பதை உறுதிப்படுத்த.",
+        "guardianship_letter": "ஏன் கேட்கிறோம்: உங்கள் பாதுகாவலர் உங்கள் சார்பாகச் செயல்பட முடியும் என்பதைக் காட்ட.",
+        "birth_certificate": "ஏன் கேட்கிறோம்: உங்களை உங்கள் பெற்றோருடன் இணைக்க.",
+        "bank_statement": "ஏன் கேட்கிறோம்: உங்கள் உதவித்தொகை செலுத்தப்படும் வங்கிக் கணக்கை உறுதிப்படுத்த.",
+        "school_leaving_cert": "ஏன் கேட்கிறோம்: நீங்கள் பள்ளியை விட்டு நீங்கிய நேரத்தை உறுதிப்படுத்த.",
+        "semester_result": "ஏன் கேட்கிறோம்: உங்கள் படிப்பில் நீங்கள் எப்படிச் செய்கிறீர்கள் என்பதைப் பார்க்க.",
+        "doc": "ஏன் கேட்கிறோம்: உங்கள் மதிப்பாய்வாளர் உங்கள் விண்ணப்பத்தின் சரிபார்ப்பை முடிக்க.",
+        "confirm": "ஏன் கேட்கிறோம்: உங்களைப் பற்றிய எங்கள் பதிவு சரியாக இருப்பதை உறுதிசெய்ய.",
+        "answer": "ஏன் கேட்கிறோம்: உங்கள் மதிப்பாய்வாளர் உங்கள் நிலையைப் புரிந்துகொள்ள."
+      },
+      "stillChecking": "உங்கள் பதிவேற்றத்தைப் பெற்றோம், இன்னும் சரிபார்த்து வருகிறோம் — சிறிது நேரம் கழித்து இந்தப் பக்கத்தை மீண்டும் ஏற்றவும்.",
+      "replace": "Replace",
+      "replacesLeft": "You can replace this {n} more times.",
+      "replacesLeftOne": "You can replace this 1 more time.",
+      "replaceLimit": "You have used all 3 replaces for this document. If it is still wrong, your reviewer will ask you for what is needed.",
+      "replaceLimitSupport": "You have sent this document as many times as we can take before you submit. Please write to us at {supportEmail} and we will help.",
+      "setAside": "ஒதுக்கப்பட்டது",
+      "setAsideNote": "இது உங்கள் விண்ணப்பப் பரிசீலனையின் ஒரு பகுதியாக இருந்தது. இப்போது உதவித்தொகை வழங்கப்பட்டதால், இதற்குப் பதிலளிக்க வேண்டியதில்லை.",
+      "retry": {
+        "sameFile": "உங்கள் பதிவேற்றம் கிடைத்தது — ஆனால் அது முன்பு அனுப்பிய அதே ஆவணம்தான்; எதுவும் மாறவில்லை. கீழேயுள்ள அறிவுரையைக் கவனமாகப் படித்து, நாங்கள் கேட்கும் குறிப்பிட்ட பக்கத்தை அனுப்பவும்.",
+        "keptPrevious": "உங்கள் பதிவேற்றம் கிடைத்தது; ஆனால் அதில் எங்களுக்குத் தேவையானது இல்லை — எனவே உங்கள் முந்தைய ஆவணத்தையே வைத்திருக்கிறோம் (அது வலுவானது). கீழேயுள்ள அறிவுரையைப் படித்து, நாங்கள் கேட்கும் குறிப்பிட்ட பக்கத்தை அனுப்பவும்.",
+        "notAccepted": "உங்கள் பதிவேற்றம் கிடைத்தது; ஆனால் அது நாங்கள் கேட்ட பக்கம் அல்ல; எனவே இது இன்னும் நிலுவையில் உள்ளது. கீழேயுள்ள அறிவுரையைக் கவனமாகப் படித்து, அந்தக் குறிப்பிட்ட பக்கத்தை அனுப்பவும்."
+      },
+      "officerHold": {
+        "chip": "நாங்கள் இதைப் பரிசீலிக்கிறோம்",
+        "title": "எங்கள் குழுவுடன் இதை நாங்கள் பார்த்து வருகிறோம்",
+        "body": "நன்றி — நீங்கள் அனுப்பியதை நாங்கள் பெற்றுக்கொண்டோம். எங்கள் குழு இப்போது இதை நேரடியாகப் பரிசீலித்து வருகிறது; எனவே இப்போதைக்கு இங்கு நீங்கள் மேலும் எதையும் பதிவேற்ற வேண்டியதில்லை. மேலும் ஏதேனும் தேவைப்பட்டால் உங்களைத் தொடர்புகொள்வோம்."
+      },
+      "decline": {
+        "button": "I don't have this",
+        "ask": "Why don't you have it?",
+        "cancel": "Cancel",
+        "noteLabel": "Tell us why (required)",
+        "send": "Send",
+        "sending": "Sending…",
+        "error": "Sorry, we couldn't send that. Please try again.",
+        "youTold": "You told us: {reason}"
+      },
+      "lockedTitle": "உங்களிடமிருந்து சில விவரங்கள் தேவை, {name}",
+      "lockedIntro": "உங்கள் விண்ணப்பத்தை நாங்கள் மதிப்பாய்வு செய்து வருகிறோம்; சில கூடுதல் விவரங்கள் தேவை. கீழே உள்ள ஒவ்வொன்றுக்கும் பதிலளிக்கவும் — சில நிமிடங்களே ஆகும்.",
+      "awaitTitle": "எல்லாம் தயார்",
+      "awaitBody": "உங்கள் விண்ணப்பம் முழுமையடைந்து எங்கள் குழுவின் மதிப்பாய்விற்காக உள்ளது. இப்போது நீங்கள் செய்ய வேண்டியது எதுவுமில்லை — மின்னஞ்சல் வழியாக உங்களைத் தொடர்புகொள்வோம். {email} (ஸ்பேம் கோப்புறை உட்பட) அவ்வப்போது பார்த்துக்கொள்ளவும்."
     }
   },
   "bursaryTabs": {

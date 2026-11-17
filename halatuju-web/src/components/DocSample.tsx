@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useT } from '@/lib/i18n'
+// Its words (`documentsTab.sample.*`) ride in the Documents slice; every path here is a lazy chunk.
+import '@/lib/messagesDocuments'
 import Sheet from '@/components/Sheet'
 import { sampleFor, samplePath } from '@/lib/docSamples'
 
@@ -28,10 +30,10 @@ export function DocSample({ docType, kind, className = '' }: {
     <>
       <button type="button" onClick={() => setOpen(true)} data-sample-link={docType}
         className={`inline-flex min-h-11 items-center text-sm font-medium text-primary-600 underline hover:text-primary-700 ${className}`}>
-        {t('scholarship.docs.sample.link')}
+        {t('documentsTab.sample.link')}
       </button>
-      <SampleViewer open={open} name={name} typeName={typeName} title={t('scholarship.docs.sample.title', { type: typeName })}
-        alt={t('scholarship.docs.sample.alt', { type: typeName })} onClose={() => setOpen(false)} />
+      <SampleViewer open={open} name={name} typeName={typeName} title={t('documentsTab.sample.title', { type: typeName })}
+        alt={t('documentsTab.sample.alt', { type: typeName })} onClose={() => setOpen(false)} />
     </>
   )
 }
@@ -54,24 +56,24 @@ function SampleViewer({ open, name, typeName, title, alt, onClose }: {
       footer={
         <button type="button" onClick={() => { setZoomed(false); onClose() }} data-testid="sample-close"
           className="min-h-11 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
-          {t('scholarship.docs.sample.close')}
+          {t('documentsTab.sample.close')}
         </button>
       }>
       <button type="button" onClick={() => setZoomed((z) => !z)} data-testid="sample-zoom"
-        aria-label={t(zoomed ? 'scholarship.docs.sample.shrink' : 'scholarship.docs.sample.enlarge')}
+        aria-label={t(zoomed ? 'documentsTab.sample.shrink' : 'documentsTab.sample.enlarge')}
         className="block w-full overflow-auto rounded-lg border border-ground-300 p-0">
         <img src={samplePath(name)} alt={alt} className="block h-auto max-w-none"
           style={{ width: zoomed ? '220%' : '100%' }} />
       </button>
-      <p className="mt-2 text-xs text-ground-500">{t('scholarship.docs.sample.zoomHint')}</p>
+      <p className="mt-2 text-xs text-ground-500">{t('documentsTab.sample.zoomHint')}</p>
       <h3 className="mt-4 text-sm font-semibold text-ground-800" data-testid="sample-check-heading">
-        {t('scholarship.docs.sample.checkHeading')}
+        {t('documentsTab.sample.checkHeading')}
       </h3>
       <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm text-ground-700" data-testid="sample-check-list">
-        {CHECK_POINTS.map((n) => <li key={n}>{t(`scholarship.docs.sample.check.${name}.p${n}`)}</li>)}
+        {CHECK_POINTS.map((n) => <li key={n}>{t(`documentsTab.sample.check.${name}.p${n}`)}</li>)}
       </ol>
       <p className="mt-3 text-sm text-ground-600" data-testid="sample-caption">
-        {t('scholarship.docs.sample.caption', { type: inSentence(typeName) })}
+        {t('documentsTab.sample.caption', { type: inSentence(typeName) })}
       </p>
     </Sheet>
   )

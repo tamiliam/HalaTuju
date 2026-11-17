@@ -40,11 +40,11 @@ const mount = async (replaceCount: number, lock = { locked: false, open_doc_type
   mockApi.getResolutionItems.mockResolvedValue({ open: [], resolved: [DONE] })
   mockApi.listDocuments.mockResolvedValue({ documents: [doc(replaceCount)], lock } as never)
   render(<ActionCentre token="tkn" studentName="Test Student" applicationId={6} />)
-  await screen.findByText('scholarship.actionCentre.section.done')
+  await screen.findByText('documentsTab.actionCentre.section.done')
 }
 
 const pick = (name: string) => {
-  const input = screen.getByText('scholarship.actionCentre.replace').querySelector('input') as HTMLInputElement
+  const input = screen.getByText('documentsTab.actionCentre.replace').querySelector('input') as HTMLInputElement
   fireEvent.change(input, { target: { files: [new File(['x'], name, { type: 'application/pdf' })] } })
 }
 
@@ -53,31 +53,31 @@ beforeEach(() => { jest.clearAllMocks() })
 describe('Replace on a Done document', () => {
   it('shows Replace and how many are left', async () => {
     await mount(1)
-    expect(screen.getByText('scholarship.actionCentre.replace')).toBeTruthy()
-    expect(screen.getByText('scholarship.actionCentre.replacesLeft:2')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.replace')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.replacesLeft:2')).toBeTruthy()
     expect(screen.getByText('slip.pdf')).toBeTruthy()
   })
 
   it('says one more time when one is left', async () => {
     await mount(2)
-    expect(screen.getByText('scholarship.actionCentre.replacesLeftOne:1')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.replacesLeftOne:1')).toBeTruthy()
   })
 
   it('after three replaces there is no button, only a plain line', async () => {
     await mount(3)
-    expect(screen.queryByText('scholarship.actionCentre.replace')).toBeNull()
-    expect(screen.getByText('scholarship.actionCentre.replaceLimit')).toBeTruthy()
+    expect(screen.queryByText('documentsTab.actionCentre.replace')).toBeNull()
+    expect(screen.getByText('documentsTab.actionCentre.replaceLimit')).toBeTruthy()
   })
 
   it('is hidden once documents are locked', async () => {
     await mount(0, { locked: true, open_doc_types: [] })
-    expect(screen.queryByText('scholarship.actionCentre.replace')).toBeNull()
-    expect(screen.queryByText('scholarship.actionCentre.replaceLimit')).toBeNull()
+    expect(screen.queryByText('documentsTab.actionCentre.replace')).toBeNull()
+    expect(screen.queryByText('documentsTab.actionCentre.replaceLimit')).toBeNull()
   })
 
   it('a locked case still shows Replace for an exempt type', async () => {
     await mount(0, { locked: true, open_doc_types: ['results_slip'] })
-    expect(screen.getByText('scholarship.actionCentre.replace')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.replace')).toBeTruthy()
   })
 
   it('a replace is recorded with replace: true and the list is reloaded', async () => {
@@ -98,7 +98,7 @@ describe('Replace on a Done document', () => {
       documents: [{ ...doc(0), household_member: 'father', replaces_left: 2 }], lock: { locked: false, open_doc_types: [] },
     } as never)
     render(<ActionCentre token="tkn" studentName="Test Student" applicationId={6} />)
-    await screen.findByText('scholarship.actionCentre.section.done')
+    await screen.findByText('documentsTab.actionCentre.section.done')
     mockApi.signUploadDocument.mockResolvedValue({ upload_url: 'u', storage_path: 'p' } as never)
     mockApi.uploadFileToSignedUrl.mockResolvedValue(undefined as never)
     mockApi.recordDocument.mockResolvedValue({ id: 10 } as never)
@@ -123,7 +123,7 @@ describe('Replace on a Done document', () => {
     mockApi.recordDocument.mockRejectedValue(Object.assign(new Error('You have sent this document 8 times'),
       { code: 'replace_limit_reached', bodyCode: 'replace_limit_support' }))
     pick('new.pdf')
-    expect(await screen.findByText('scholarship.actionCentre.replaceLimitSupport')).toBeTruthy()
+    expect(await screen.findByText('documentsTab.actionCentre.replaceLimitSupport')).toBeTruthy()
   })
 })
 
@@ -143,11 +143,11 @@ describe('"I don\'t have this" after the interview lock', () => {
 
   it('is offered while documents are open', async () => {
     await mountOpen({ locked: false, open_doc_types: [] })
-    expect(screen.getByText('scholarship.actionCentre.decline.button')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.decline.button')).toBeTruthy()
   })
 
   it('is hidden once locked, even for an exempt type (the server refuses it: querying_closed)', async () => {
     await mountOpen({ locked: true, open_doc_types: ['water_bill'] })
-    expect(screen.queryByText('scholarship.actionCentre.decline.button')).toBeNull()
+    expect(screen.queryByText('documentsTab.actionCentre.decline.button')).toBeNull()
   })
 })

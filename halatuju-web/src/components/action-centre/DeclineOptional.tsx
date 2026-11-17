@@ -35,7 +35,7 @@ export function DeclineOptional({ item, token, open, onOpen, onCancel, onDone }:
       await declineResolutionItem(item.id, reason, words, { token })
       onDone()
     } catch {
-      setError(t('scholarship.actionCentre.decline.error'))
+      setError(t('documentsTab.actionCentre.decline.error'))
     } finally {
       setBusy(false)
     }
@@ -47,7 +47,7 @@ export function DeclineOptional({ item, token, open, onOpen, onCancel, onDone }:
     return (
       <button type="button" onClick={onOpen}
         className="mt-2 min-h-11 w-full rounded-xl border border-brand-shape px-4 py-2.5 text-sm font-semibold text-primary-600 transition-colors hover:bg-primary-50">
-        {t('scholarship.actionCentre.decline.button')}
+        {t('documentsTab.actionCentre.decline.button')}
       </button>
     )
   }
@@ -55,7 +55,7 @@ export function DeclineOptional({ item, token, open, onOpen, onCancel, onDone }:
   const face = 'min-h-11 w-full rounded-xl border px-4 py-2.5 text-left text-sm transition-colors disabled:opacity-50'
   return (
     <div>
-      <p className="text-sm font-semibold text-ground-900">{t('scholarship.actionCentre.decline.ask')}</p>
+      <p className="text-sm font-semibold text-ground-900">{t('documentsTab.actionCentre.decline.ask')}</p>
       <div className="mt-2 space-y-2">
         {reasons.map((key) => (
           <button key={key} type="button" disabled={busy}
@@ -69,20 +69,20 @@ export function DeclineOptional({ item, token, open, onOpen, onCancel, onDone }:
       {picked === 'other' && (
         <div className="mt-3 space-y-2">
           <label className="block text-sm font-semibold text-ground-900" htmlFor={`decline-note-${item.id}`}>
-            {t('scholarship.actionCentre.decline.noteLabel')}
+            {t('documentsTab.actionCentre.decline.noteLabel')}
           </label>
           <textarea id={`decline-note-${item.id}`} className="input" rows={3} value={note} disabled={busy}
             maxLength={500} onChange={(e) => setNote(e.target.value)} />
           <button type="button" disabled={busy || !note.trim()} onClick={() => send('other', note.trim())}
             className="min-h-11 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50">
-            {busy ? t('scholarship.actionCentre.decline.sending') : t('scholarship.actionCentre.decline.send')}
+            {busy ? t('documentsTab.actionCentre.decline.sending') : t('documentsTab.actionCentre.decline.send')}
           </button>
         </div>
       )}
       {error && <p role="alert" className="mt-2 text-sm text-critical-600">{error}</p>}
       <button type="button" onClick={cancel} disabled={busy}
         className="mt-3 min-h-11 w-full text-center text-sm font-semibold text-ground-700 underline">
-        {t('scholarship.actionCentre.decline.cancel')}
+        {t('documentsTab.actionCentre.decline.cancel')}
       </button>
     </div>
   )

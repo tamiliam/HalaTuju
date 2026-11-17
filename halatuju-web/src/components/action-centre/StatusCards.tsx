@@ -24,10 +24,10 @@ export function SetAsideCard({ fromLabel, title }: CardProps) {
             <div className="flex items-start justify-between gap-3">
               <h3 className="font-semibold text-ground-500 line-through decoration-caution-300 whitespace-pre-line">{title}</h3>
               <span className={`shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800 ${PHONE_PILL_SM}`}>
-                {t('scholarship.actionCentre.setAside')}
+                {t('documentsTab.actionCentre.setAside')}
               </span>
             </div>
-            <p className="mt-1 text-sm text-ground-500">{t('scholarship.actionCentre.setAsideNote')}</p>
+            <p className="mt-1 text-sm text-ground-500">{t('documentsTab.actionCentre.setAsideNote')}</p>
           </div>
         </div>
       </div>
@@ -77,12 +77,12 @@ export function OfficerHoldCard({ fromLabel }: CardProps) {
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
             <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-              <h3 className="font-semibold text-ground-900">{t('scholarship.actionCentre.officerHold.title')}</h3>
+              <h3 className="font-semibold text-ground-900">{t('documentsTab.actionCentre.officerHold.title')}</h3>
               <span className={`max-w-full rounded-full bg-info-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-info-800 ${PHONE_PILL_SM}`}>
-                {t('scholarship.actionCentre.officerHold.chip')}
+                {t('documentsTab.actionCentre.officerHold.chip')}
               </span>
             </div>
-            <p className="mt-1 text-sm text-ground-600">{t('scholarship.actionCentre.officerHold.body')}</p>
+            <p className="mt-1 text-sm text-ground-600">{t('documentsTab.actionCentre.officerHold.body')}</p>
           </div>
         </div>
       </div>
@@ -101,7 +101,7 @@ export function SentCard({ fromLabel, title, why, detail }: CardProps & { why: s
       {why && <p className="mt-1 text-sm text-ground-600">{why}</p>}
       {detail && <p className="mt-3 break-words rounded-lg bg-ground-50 px-3 py-2 text-sm text-ground-700">{detail}</p>}
       <p className="mt-2 text-sm text-ground-600">
-        {t('scholarship.actionCentre.sentAnswer')}
+        {t('documentsTab.actionCentre.sentAnswer')}
       </p>
     </div>
   )
@@ -117,11 +117,11 @@ export function LoadErrorCard({ onRetry }: { onRetry: () => void }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M8.5 8.5A5 5 0 007 18h10.5M17 14.5A3.5 3.5 0 0015 8a5 5 0 00-2-.5" />
         </svg>
       </div>
-      <h3 className="mt-4 text-lg font-bold text-ground-900">{t('scholarship.actionCentre.loadError.title')}</h3>
-      <p className="mt-1 text-sm text-ground-600">{t('scholarship.actionCentre.loadError.body')}</p>
+      <h3 className="mt-4 text-lg font-bold text-ground-900">{t('documentsTab.actionCentre.loadError.title')}</h3>
+      <p className="mt-1 text-sm text-ground-600">{t('documentsTab.actionCentre.loadError.body')}</p>
       <button type="button" onClick={onRetry} 
         className="mt-4 min-h-11 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover">
-        {t('scholarship.actionCentre.loadError.retry')}
+        {t('documentsTab.actionCentre.loadError.retry')}
       </button>
     </div>
   )

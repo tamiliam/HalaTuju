@@ -1384,38 +1384,6 @@
       "incompleteToContinue": "Disimpan. Sila lengkapkan medan wajib bertanda * sebelum meneruskan."
     },
     "docs": {
-      "sample": {
-        "link": "See a sample",
-        "title": "Sample: {type}",
-        "alt": "A drawing of a sample {type}",
-        "caption": "This is a sample drawing, not a real {type}. Do not upload it.",
-        "checkHeading": "What we check",
-        "check": {
-          "mykad": { "p1": "IC number matches the one you typed", "p2": "Name is clear and matches your application", "p3": "Whole card in the picture, all four corners", "p4": "Photo is sharp, no glare" },
-          "results_slip": { "p1": "Name and IC number match your application", "p2": "Year 2025 and your Angka Giliran", "p3": "All subjects and grades are shown", "p4": "Lembaga Peperiksaan header with crest" },
-          "higher_results_stpm": { "p1": "Name and IC number match the student's MyKad", "p2": "Angka Giliran (index number) as printed", "p3": "PNGK (CGPA) over all the subjects", "p4": "Subjects and grades; exam year in the title" },
-          "higher_results_matric": { "p1": "Name and IC number match the student's MyKad", "p2": "College name and matric number", "p3": "Session (year) of the programme", "p4": "PNGK/CGPA and a STATUS line showing pass" },
-          "semester_result": { "p1": "Name and matric number match the MyKad and offer", "p2": "Session and semester are the one asked for", "p3": "GPA and CGPA shown at the end", "p4": "University name at the top" },
-          "photo": { "p1": "Plain, light background", "p2": "Face centred and sharp, looking straight ahead", "p3": "No hat, filter or heavy editing", "p4": "No blur, dark light or cropped head" },
-          "offer_letter": { "p1": "Your name matches your MyKad", "p2": "Course and institution are shown", "p3": "Registration or intake date is the coming intake", "p4": "Official letterhead and reference number" },
-          "school_leaving_cert": { "p1": "Student name matches the MyKad", "p2": "IC number and date of birth are correct", "p3": "School name and address at the top", "p4": "Leaving date and reason, with signature and stamp" },
-          "statement_of_intent": { "p1": "Your name, IC number and the course you want", "p2": "Your goals after your studies", "p3": "Your background: family, interests, experiences", "p4": "Your signature (or typed name) and the date" },
-          "reference_letter": { "p1": "Writer's full name and post", "p2": "Signature and official stamp", "p3": "Student's name and IC number match the MyKad", "p4": "Date of the letter is recent" },
-          "guardianship_letter": { "p1": "Parent's full name and IC number", "p2": "Student's full name and IC number", "p3": "Guardian's name, IC number and relationship", "p4": "Parent's signature and the date" },
-          "birth_certificate": { "p1": "Child's full name, same as the MyKad", "p2": "Register number and issuer (JPN Malaysia)", "p3": "Father's name and IC number are shown", "p4": "Mother's name and IC number are shown" },
-          "payslip": { "p1": "Worker name matches and the month is recent", "p2": "EPF, SOCSO, EIS and PCB lines are shown", "p3": "Earnings and deductions add up", "p4": "Nett pay (take-home) is shown" },
-          "epf_statement": { "p1": "Member name, IC number and member number", "p2": "Statement year and date", "p3": "Latest contributions are shown", "p4": "Account balances are shown" },
-          "str": { "p1": "Name and MyKad match the student or parent", "p2": "Status says Lulus (approved)", "p3": "Payment phases for this year (Fasa Bayaran)", "p4": "Total STR amount (Jumlah Bayaran)" },
-          "bank_statement": { "p1": "Account holder is the student, not a parent", "p2": "Account number is readable and matches", "p3": "Bank name or logo at the top", "p4": "Statement date is a recent month" },
-          "income_support_doc": { "p1": "Official stamp and signature of the Ketua Kampung", "p2": "Parent's name and IC match the application", "p3": "Monthly income (RM) is written", "p4": "Signed and dated recently" },
-          "water_bill": { "p1": "Name and address match the parent or guardian", "p2": "Account number is shown", "p3": "Bill date is recent (last 3 months)", "p4": "Amount due (Jumlah Perlu Dibayar)" },
-          "electricity_bill": { "p1": "Name and address of the account holder", "p2": "Bill date and billing period are recent", "p3": "Amount and usage breakdown", "p4": "TNB logo and account number" }
-        },
-        "zoomHint": "Tap the picture to make it bigger.",
-        "enlarge": "Make the sample bigger",
-        "shrink": "Make the sample smaller",
-        "close": "Close"
-      },
       "type": {
         "semester_result": "Semester result slip",
         "ic": "Kad pengenalan (IC)",
@@ -1772,8 +1740,7 @@
           "pending": "Belum disemak"
         }
       },
-      "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas.",
-      "lockedNote": "Peringkat temu duga anda telah bermula, jadi dokumen ini tidak lagi boleh diubah di sini. Jika ada yang kurang, penyemak anda akan memintanya daripada anda."
+      "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas."
     },
     "referee": {
       "name": "Nama perujuk",
@@ -2094,57 +2061,14 @@
       "error": "Maaf, kami tidak dapat mengemas kini. Sila cuba lagi."
     },
     "actionCentre": {
-      "takePhoto": "Ambil gambar",
-      "section": {
-        "needs": "Perlu tindakan anda",
-        "sent": "Dihantar, kami sedang menyemak",
-        "done": "Selesai"
-      },
-      "needAgain": "Kami perlukan ini sekali lagi",
-      "needAgainBody": "Kami tidak dapat menggunakan fail terakhir. Sila hantar semula.",
-      "badFile": "Fail ini tidak dapat dibuka. Sila muat naik foto atau PDF yang jelas.",
-      "sentAnswer": "Dihantar. Penyemak anda akan membacanya.",
-      "loadError": {
-        "title": "Tugasan tidak dapat dimuatkan",
-        "body": "Kami tidak dapat memuatkan tugasan anda. Semak sambungan anda dan cuba lagi.",
-        "retry": "Cuba lagi"
-      },
-      "why": {
-        "ic": "Sebab kami minta: untuk mengesahkan siapa anda.",
-        "results_slip": "Sebab kami minta: untuk menyemak keputusan peperiksaan anda.",
-        "higher_results": "Sebab kami minta: untuk menyemak keputusan STPM, matrikulasi atau keputusan tinggi anda yang lain.",
-        "photo": "Sebab kami minta: supaya kami mengenali anda secara peribadi.",
-        "epf": "Sebab kami minta: untuk melihat rekod simpanan ibu bapa anda.",
-        "str": "Sebab kami minta: untuk mengesahkan status STR keluarga anda.",
-        "statement_of_intent": "Sebab kami minta: untuk mendengar sendiri daripada anda mengapa anda mahukannya.",
-        "reference_letter": "Sebab kami minta: supaya seseorang yang mengenali anda dapat menyokong anda.",
-        "salary_slip": "Sebab kami minta: untuk mengesahkan pendapatan keluarga anda.",
-        "income_support_doc": "Sebab kami minta: untuk menunjukkan pendapatan keluarga anda apabila tiada slip gaji atau STR.",
-        "water_bill": "Sebab kami minta: untuk mengesahkan tempat tinggal keluarga anda.",
-        "electricity_bill": "Sebab kami minta: untuk mengesahkan tempat tinggal keluarga anda.",
-        "offer_letter": "Sebab kami minta: untuk mengesahkan tempat anda di kolej.",
-        "parent_ic": "Sebab kami minta: untuk mengesahkan siapa ibu bapa atau penjaga anda.",
-        "guardianship_letter": "Sebab kami minta: untuk menunjukkan bahawa penjaga anda boleh bertindak bagi pihak anda.",
-        "birth_certificate": "Sebab kami minta: untuk mengaitkan anda dengan ibu bapa anda.",
-        "bank_statement": "Sebab kami minta: untuk mengesahkan akaun bank yang akan menerima bursari anda.",
-        "school_leaving_cert": "Sebab kami minta: untuk mengesahkan bila anda meninggalkan sekolah.",
-        "semester_result": "Sebab kami minta: untuk melihat prestasi anda dalam kursus anda.",
-        "doc": "Sebab kami minta: supaya penyemak anda dapat menyiapkan semakan permohonan anda.",
-        "confirm": "Sebab kami minta: untuk memastikan rekod kami tentang anda betul.",
-        "answer": "Sebab kami minta: supaya penyemak anda memahami keadaan anda."
-      },
       "title": "Hampir siap, {name}",
       "intro": "Beberapa perkara cepat lagi dan permohonan anda lengkap.",
-      "lockedTitle": "Beberapa perkara yang kami perlukan daripada anda, {name}",
-      "lockedIntro": "Kami sedang menyemak permohonan anda dan memerlukan sedikit maklumat tambahan. Sila jawab setiap perkara di bawah — ia hanya mengambil beberapa minit.",
       "generic": {
         "title": "Kami memerlukan sesuatu daripada anda",
         "desc": "Sila hubungi pasukan sokongan kami dan kami akan beritahu apa yang perlu dibuat."
       },
       "fundedTitle": "Hampir selesai, {name} — satu langkah untuk menerima biasiswa anda",
       "fundedIntro": "Tahniah atas anugerah anda! Untuk menyediakan pembayaran biasiswa, sila tambah butiran akaun bank anda di bawah.",
-      "awaitTitle": "Semuanya sudah lengkap",
-      "awaitBody": "Permohonan anda telah lengkap dan sedang disemak oleh pasukan kami. Tiada apa-apa lagi yang perlu anda lakukan buat masa ini — kami akan menghubungi anda melalui e-mel. Sila semak {email} (termasuk folder spam) dari semasa ke semasa.",
       "progressDone": "{done} daripada {total} selesai",
       "percentComplete": "{pct}% Lengkap",
       "toDo": "Untuk dibuat",
@@ -2154,7 +2078,6 @@
       "upload": "Muat naik",
       "uploading": "Memuat naik…",
       "uploadError": "Maaf, muat naik itu tidak berjaya. Sila cuba lagi.",
-      "stillChecking": "Kami telah menerima muat naik anda dan sedang menyemaknya — tunggu sebentar, kemudian muat semula halaman ini.",
       "review": "Semak",
       "confirmPathwayYes": "Ya, ini laluan akhir saya",
       "confirmHouseholdSizeYes": "Ya, itu saiz isi rumah saya",
@@ -2162,11 +2085,6 @@
       "sending": "Menghantar…",
       "sendError": "Maaf, kami tidak dapat menghantarnya. Sila cuba lagi.",
       "relevanceNudge": "Itu nampaknya tidak menjawab soalan — boleh anda lihat semula apa yang ditanya?",
-      "replace": "Replace",
-      "replacesLeft": "You can replace this {n} more times.",
-      "replacesLeftOne": "You can replace this 1 more time.",
-      "replaceLimit": "You have used all 3 replaces for this document. If it is still wrong, your reviewer will ask you for what is needed.",
-      "replaceLimitSupport": "You have sent this document as many times as we can take before you submit. Please write to us at {supportEmail} and we will help.",
       "explanationPlaceholder": "Taip jawapan anda di sini…",
       "allDone": "Semua selesai — permohonan anda lengkap!",
       "coach": "Saya {personaName}, di sini untuk membantu anda menyiapkannya. Setiap kad di atas ialah satu perkara untuk dilakukan — muat naik dokumen atau jawab soalan. Ikut senarai dari atas; nota di bawah setiap kad menerangkan dengan tepat apa yang diperlukan.",
@@ -2605,18 +2523,6 @@
         "accountNumberInvalid": "Nombor akaun ini nampak terlalu pendek. Sila semak penyata bank anda dan masukkan nombor akaun yang penuh.",
         "holderMismatch": "Akaun ini bukan atas nama anda. Biasiswa hanya boleh dibayar ke akaun bank milik anda sendiri."
       },
-      "setAside": "Diketepikan",
-      "setAsideNote": "Ini sebahagian daripada semakan permohonan anda. Kini setelah anda menerima bursari, anda tidak perlu menjawabnya.",
-      "retry": {
-        "sameFile": "Kami menerima muat naik anda — tetapi ia dokumen yang sama seperti sebelum ini, jadi tiada apa yang berubah. Sila baca arahan di bawah dengan teliti dan hantar halaman khusus yang kami minta.",
-        "keptPrevious": "Kami menerima muat naik anda, tetapi ia tidak menunjukkan apa yang kami perlukan — jadi kami mengekalkan dokumen anda yang terdahulu (ia lebih kukuh). Sila baca arahan di bawah dan hantar halaman khusus yang kami minta.",
-        "notAccepted": "Kami menerima muat naik anda, tetapi ia bukan halaman yang kami minta, jadi perkara ini masih terbuka. Sila baca arahan di bawah dengan teliti dan hantar halaman khusus itu."
-      },
-      "officerHold": {
-        "chip": "Kami sedang menyemaknya",
-        "title": "Kami sedang menelitinya bersama pasukan kami",
-        "body": "Terima kasih — kami telah menerima apa yang anda hantar. Pasukan kami kini sedang menyemaknya secara peribadi, jadi buat masa ini tiada apa lagi yang perlu anda muat naik di sini. Kami akan menghubungi anda jika kami memerlukan apa-apa lagi."
-      },
       "updatePathwayOnProfile": "Kemas kini di profil anda",
       "addStpmSubjects": "Tambah subjek STPM saya",
       "confirmStpmKoko": "Sahkan markah saya",
@@ -2634,14 +2540,6 @@
         "university": "Universiti"
       },
       "decline": {
-        "button": "I don't have this",
-        "ask": "Why don't you have it?",
-        "cancel": "Cancel",
-        "noteLabel": "Tell us why (required)",
-        "send": "Send",
-        "sending": "Sending…",
-        "error": "Sorry, we couldn't send that. Please try again.",
-        "youTold": "You told us: {reason}",
         "reasons": {
           "epf": {
             "no_epf_job": "Does not work in a job that pays EPF (for example self-employed, farmer, odd jobs)",
@@ -10080,6 +9978,112 @@
     "help": {
       "higher_results": "Gambar atau PDF slip keputusan atau transkrip rasmi anda, yang menunjukkan PNGK anda.",
       "results_slip_optional": "Gambar atau PDF slip keputusan SPM rasmi anda. Pilihan bagi pemohon STPM, Matrikulasi, Asasi dan Diploma."
+    },
+    "sample": {
+      "link": "See a sample",
+      "title": "Sample: {type}",
+      "alt": "A drawing of a sample {type}",
+      "caption": "This is a sample drawing, not a real {type}. Do not upload it.",
+      "checkHeading": "What we check",
+      "check": {
+        "mykad": { "p1": "IC number matches the one you typed", "p2": "Name is clear and matches your application", "p3": "Whole card in the picture, all four corners", "p4": "Photo is sharp, no glare" },
+        "results_slip": { "p1": "Name and IC number match your application", "p2": "Year 2025 and your Angka Giliran", "p3": "All subjects and grades are shown", "p4": "Lembaga Peperiksaan header with crest" },
+        "higher_results_stpm": { "p1": "Name and IC number match the student's MyKad", "p2": "Angka Giliran (index number) as printed", "p3": "PNGK (CGPA) over all the subjects", "p4": "Subjects and grades; exam year in the title" },
+        "higher_results_matric": { "p1": "Name and IC number match the student's MyKad", "p2": "College name and matric number", "p3": "Session (year) of the programme", "p4": "PNGK/CGPA and a STATUS line showing pass" },
+        "semester_result": { "p1": "Name and matric number match the MyKad and offer", "p2": "Session and semester are the one asked for", "p3": "GPA and CGPA shown at the end", "p4": "University name at the top" },
+        "photo": { "p1": "Plain, light background", "p2": "Face centred and sharp, looking straight ahead", "p3": "No hat, filter or heavy editing", "p4": "No blur, dark light or cropped head" },
+        "offer_letter": { "p1": "Your name matches your MyKad", "p2": "Course and institution are shown", "p3": "Registration or intake date is the coming intake", "p4": "Official letterhead and reference number" },
+        "school_leaving_cert": { "p1": "Student name matches the MyKad", "p2": "IC number and date of birth are correct", "p3": "School name and address at the top", "p4": "Leaving date and reason, with signature and stamp" },
+        "statement_of_intent": { "p1": "Your name, IC number and the course you want", "p2": "Your goals after your studies", "p3": "Your background: family, interests, experiences", "p4": "Your signature (or typed name) and the date" },
+        "reference_letter": { "p1": "Writer's full name and post", "p2": "Signature and official stamp", "p3": "Student's name and IC number match the MyKad", "p4": "Date of the letter is recent" },
+        "guardianship_letter": { "p1": "Parent's full name and IC number", "p2": "Student's full name and IC number", "p3": "Guardian's name, IC number and relationship", "p4": "Parent's signature and the date" },
+        "birth_certificate": { "p1": "Child's full name, same as the MyKad", "p2": "Register number and issuer (JPN Malaysia)", "p3": "Father's name and IC number are shown", "p4": "Mother's name and IC number are shown" },
+        "payslip": { "p1": "Worker name matches and the month is recent", "p2": "EPF, SOCSO, EIS and PCB lines are shown", "p3": "Earnings and deductions add up", "p4": "Nett pay (take-home) is shown" },
+        "epf_statement": { "p1": "Member name, IC number and member number", "p2": "Statement year and date", "p3": "Latest contributions are shown", "p4": "Account balances are shown" },
+        "str": { "p1": "Name and MyKad match the student or parent", "p2": "Status says Lulus (approved)", "p3": "Payment phases for this year (Fasa Bayaran)", "p4": "Total STR amount (Jumlah Bayaran)" },
+        "bank_statement": { "p1": "Account holder is the student, not a parent", "p2": "Account number is readable and matches", "p3": "Bank name or logo at the top", "p4": "Statement date is a recent month" },
+        "income_support_doc": { "p1": "Official stamp and signature of the Ketua Kampung", "p2": "Parent's name and IC match the application", "p3": "Monthly income (RM) is written", "p4": "Signed and dated recently" },
+        "water_bill": { "p1": "Name and address match the parent or guardian", "p2": "Account number is shown", "p3": "Bill date is recent (last 3 months)", "p4": "Amount due (Jumlah Perlu Dibayar)" },
+        "electricity_bill": { "p1": "Name and address of the account holder", "p2": "Bill date and billing period are recent", "p3": "Amount and usage breakdown", "p4": "TNB logo and account number" }
+      },
+      "zoomHint": "Tap the picture to make it bigger.",
+      "enlarge": "Make the sample bigger",
+      "shrink": "Make the sample smaller",
+      "close": "Close"
+    },
+    "lockedNote": "Peringkat temu duga anda telah bermula, jadi dokumen ini tidak lagi boleh diubah di sini. Jika ada yang kurang, penyemak anda akan memintanya daripada anda.",
+    "actionCentre": {
+      "takePhoto": "Ambil gambar",
+      "section": {
+        "needs": "Perlu tindakan anda",
+        "sent": "Dihantar, kami sedang menyemak",
+        "done": "Selesai"
+      },
+      "needAgain": "Kami perlukan ini sekali lagi",
+      "needAgainBody": "Kami tidak dapat menggunakan fail terakhir. Sila hantar semula.",
+      "badFile": "Fail ini tidak dapat dibuka. Sila muat naik foto atau PDF yang jelas.",
+      "sentAnswer": "Dihantar. Penyemak anda akan membacanya.",
+      "loadError": {
+        "title": "Tugasan tidak dapat dimuatkan",
+        "body": "Kami tidak dapat memuatkan tugasan anda. Semak sambungan anda dan cuba lagi.",
+        "retry": "Cuba lagi"
+      },
+      "why": {
+        "ic": "Sebab kami minta: untuk mengesahkan siapa anda.",
+        "results_slip": "Sebab kami minta: untuk menyemak keputusan peperiksaan anda.",
+        "higher_results": "Sebab kami minta: untuk menyemak keputusan STPM, matrikulasi atau keputusan tinggi anda yang lain.",
+        "photo": "Sebab kami minta: supaya kami mengenali anda secara peribadi.",
+        "epf": "Sebab kami minta: untuk melihat rekod simpanan ibu bapa anda.",
+        "str": "Sebab kami minta: untuk mengesahkan status STR keluarga anda.",
+        "statement_of_intent": "Sebab kami minta: untuk mendengar sendiri daripada anda mengapa anda mahukannya.",
+        "reference_letter": "Sebab kami minta: supaya seseorang yang mengenali anda dapat menyokong anda.",
+        "salary_slip": "Sebab kami minta: untuk mengesahkan pendapatan keluarga anda.",
+        "income_support_doc": "Sebab kami minta: untuk menunjukkan pendapatan keluarga anda apabila tiada slip gaji atau STR.",
+        "water_bill": "Sebab kami minta: untuk mengesahkan tempat tinggal keluarga anda.",
+        "electricity_bill": "Sebab kami minta: untuk mengesahkan tempat tinggal keluarga anda.",
+        "offer_letter": "Sebab kami minta: untuk mengesahkan tempat anda di kolej.",
+        "parent_ic": "Sebab kami minta: untuk mengesahkan siapa ibu bapa atau penjaga anda.",
+        "guardianship_letter": "Sebab kami minta: untuk menunjukkan bahawa penjaga anda boleh bertindak bagi pihak anda.",
+        "birth_certificate": "Sebab kami minta: untuk mengaitkan anda dengan ibu bapa anda.",
+        "bank_statement": "Sebab kami minta: untuk mengesahkan akaun bank yang akan menerima bursari anda.",
+        "school_leaving_cert": "Sebab kami minta: untuk mengesahkan bila anda meninggalkan sekolah.",
+        "semester_result": "Sebab kami minta: untuk melihat prestasi anda dalam kursus anda.",
+        "doc": "Sebab kami minta: supaya penyemak anda dapat menyiapkan semakan permohonan anda.",
+        "confirm": "Sebab kami minta: untuk memastikan rekod kami tentang anda betul.",
+        "answer": "Sebab kami minta: supaya penyemak anda memahami keadaan anda."
+      },
+      "stillChecking": "Kami telah menerima muat naik anda dan sedang menyemaknya — tunggu sebentar, kemudian muat semula halaman ini.",
+      "replace": "Replace",
+      "replacesLeft": "You can replace this {n} more times.",
+      "replacesLeftOne": "You can replace this 1 more time.",
+      "replaceLimit": "You have used all 3 replaces for this document. If it is still wrong, your reviewer will ask you for what is needed.",
+      "replaceLimitSupport": "You have sent this document as many times as we can take before you submit. Please write to us at {supportEmail} and we will help.",
+      "setAside": "Diketepikan",
+      "setAsideNote": "Ini sebahagian daripada semakan permohonan anda. Kini setelah anda menerima bursari, anda tidak perlu menjawabnya.",
+      "retry": {
+        "sameFile": "Kami menerima muat naik anda — tetapi ia dokumen yang sama seperti sebelum ini, jadi tiada apa yang berubah. Sila baca arahan di bawah dengan teliti dan hantar halaman khusus yang kami minta.",
+        "keptPrevious": "Kami menerima muat naik anda, tetapi ia tidak menunjukkan apa yang kami perlukan — jadi kami mengekalkan dokumen anda yang terdahulu (ia lebih kukuh). Sila baca arahan di bawah dan hantar halaman khusus yang kami minta.",
+        "notAccepted": "Kami menerima muat naik anda, tetapi ia bukan halaman yang kami minta, jadi perkara ini masih terbuka. Sila baca arahan di bawah dengan teliti dan hantar halaman khusus itu."
+      },
+      "officerHold": {
+        "chip": "Kami sedang menyemaknya",
+        "title": "Kami sedang menelitinya bersama pasukan kami",
+        "body": "Terima kasih — kami telah menerima apa yang anda hantar. Pasukan kami kini sedang menyemaknya secara peribadi, jadi buat masa ini tiada apa lagi yang perlu anda muat naik di sini. Kami akan menghubungi anda jika kami memerlukan apa-apa lagi."
+      },
+      "decline": {
+        "button": "I don't have this",
+        "ask": "Why don't you have it?",
+        "cancel": "Cancel",
+        "noteLabel": "Tell us why (required)",
+        "send": "Send",
+        "sending": "Sending…",
+        "error": "Sorry, we couldn't send that. Please try again.",
+        "youTold": "You told us: {reason}"
+      },
+      "lockedTitle": "Beberapa perkara yang kami perlukan daripada anda, {name}",
+      "lockedIntro": "Kami sedang menyemak permohonan anda dan memerlukan sedikit maklumat tambahan. Sila jawab setiap perkara di bawah — ia hanya mengambil beberapa minit.",
+      "awaitTitle": "Semuanya sudah lengkap",
+      "awaitBody": "Permohonan anda telah lengkap dan sedang disemak oleh pasukan kami. Tiada apa-apa lagi yang perlu anda lakukan buat masa ini — kami akan menghubungi anda melalui e-mel. Sila semak {email} (termasuk folder spam) dari semasa ke semasa."
     }
   },
   "bursaryTabs": {

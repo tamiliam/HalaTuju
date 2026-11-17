@@ -154,7 +154,7 @@ function FileChip({
       {onDelete && onUpload && (
         <p className="mt-2 text-sm text-ground-600">
           {left === 0 ? t(replaceLimitKey(doc))
-            : t(left === 1 ? 'scholarship.actionCentre.replacesLeftOne' : 'scholarship.actionCentre.replacesLeft', { n: String(left) })}
+            : t(left === 1 ? 'documentsTab.actionCentre.replacesLeftOne' : 'documentsTab.actionCentre.replacesLeft', { n: String(left) })}
         </p>
       )}
     </div>
@@ -445,7 +445,7 @@ export function SingleDocCard({
       {fileBlock}
       {/* With one file, Replace lives under it (beside Remove). Otherwise ONE full-width button: CHOOSE a
           first file (the big camera-friendly one), or Replace when the card holds more than one. */}
-      {locked && <p className="mt-3 text-sm text-ground-600">{t('scholarship.docs.lockedNote')}</p>}
+      {locked && <p className="mt-3 text-sm text-ground-600">{t('documentsTab.lockedNote')}</p>}
       {layout !== 'chip' && !locked && !(existing.length > 0 && existing.every((d) => replacesLeft(d) === 0)) && (
         <div className="mt-3 flex">
           <UploadTrigger
@@ -538,7 +538,7 @@ export function IncomeProofCard({
           />
         </div>
       )}
-      {locked && <p className="mt-3 text-sm text-ground-600">{t('scholarship.docs.lockedNote')}</p>}
+      {locked && <p className="mt-3 text-sm text-ground-600">{t('documentsTab.lockedNote')}</p>}
       {existing.length > 0 && (
         <ul className="mt-2 space-y-1">
           {existing.map((d) => (

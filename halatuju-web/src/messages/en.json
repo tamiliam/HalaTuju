@@ -1384,38 +1384,6 @@
       "incompleteToContinue": "Saved. Please complete the required fields marked * before continuing."
     },
     "docs": {
-      "sample": {
-        "link": "See a sample",
-        "title": "Sample: {type}",
-        "alt": "A drawing of a sample {type}",
-        "caption": "This is a sample drawing, not a real {type}. Do not upload it.",
-        "checkHeading": "What we check",
-        "check": {
-          "mykad": { "p1": "IC number matches the one you typed", "p2": "Name is clear and matches your application", "p3": "Whole card in the picture, all four corners", "p4": "Photo is sharp, no glare" },
-          "results_slip": { "p1": "Name and IC number match your application", "p2": "Year 2025 and your Angka Giliran", "p3": "All subjects and grades are shown", "p4": "Lembaga Peperiksaan header with crest" },
-          "higher_results_stpm": { "p1": "Name and IC number match the student's MyKad", "p2": "Angka Giliran (index number) as printed", "p3": "PNGK (CGPA) over all the subjects", "p4": "Subjects and grades; exam year in the title" },
-          "higher_results_matric": { "p1": "Name and IC number match the student's MyKad", "p2": "College name and matric number", "p3": "Session (year) of the programme", "p4": "PNGK/CGPA and a STATUS line showing pass" },
-          "semester_result": { "p1": "Name and matric number match the MyKad and offer", "p2": "Session and semester are the one asked for", "p3": "GPA and CGPA shown at the end", "p4": "University name at the top" },
-          "photo": { "p1": "Plain, light background", "p2": "Face centred and sharp, looking straight ahead", "p3": "No hat, filter or heavy editing", "p4": "No blur, dark light or cropped head" },
-          "offer_letter": { "p1": "Your name matches your MyKad", "p2": "Course and institution are shown", "p3": "Registration or intake date is the coming intake", "p4": "Official letterhead and reference number" },
-          "school_leaving_cert": { "p1": "Student name matches the MyKad", "p2": "IC number and date of birth are correct", "p3": "School name and address at the top", "p4": "Leaving date and reason, with signature and stamp" },
-          "statement_of_intent": { "p1": "Your name, IC number and the course you want", "p2": "Your goals after your studies", "p3": "Your background: family, interests, experiences", "p4": "Your signature (or typed name) and the date" },
-          "reference_letter": { "p1": "Writer's full name and post", "p2": "Signature and official stamp", "p3": "Student's name and IC number match the MyKad", "p4": "Date of the letter is recent" },
-          "guardianship_letter": { "p1": "Parent's full name and IC number", "p2": "Student's full name and IC number", "p3": "Guardian's name, IC number and relationship", "p4": "Parent's signature and the date" },
-          "birth_certificate": { "p1": "Child's full name, same as the MyKad", "p2": "Register number and issuer (JPN Malaysia)", "p3": "Father's name and IC number are shown", "p4": "Mother's name and IC number are shown" },
-          "payslip": { "p1": "Worker name matches and the month is recent", "p2": "EPF, SOCSO, EIS and PCB lines are shown", "p3": "Earnings and deductions add up", "p4": "Nett pay (take-home) is shown" },
-          "epf_statement": { "p1": "Member name, IC number and member number", "p2": "Statement year and date", "p3": "Latest contributions are shown", "p4": "Account balances are shown" },
-          "str": { "p1": "Name and MyKad match the student or parent", "p2": "Status says Lulus (approved)", "p3": "Payment phases for this year (Fasa Bayaran)", "p4": "Total STR amount (Jumlah Bayaran)" },
-          "bank_statement": { "p1": "Account holder is the student, not a parent", "p2": "Account number is readable and matches", "p3": "Bank name or logo at the top", "p4": "Statement date is a recent month" },
-          "income_support_doc": { "p1": "Official stamp and signature of the Ketua Kampung", "p2": "Parent's name and IC match the application", "p3": "Monthly income (RM) is written", "p4": "Signed and dated recently" },
-          "water_bill": { "p1": "Name and address match the parent or guardian", "p2": "Account number is shown", "p3": "Bill date is recent (last 3 months)", "p4": "Amount due (Jumlah Perlu Dibayar)" },
-          "electricity_bill": { "p1": "Name and address of the account holder", "p2": "Bill date and billing period are recent", "p3": "Amount and usage breakdown", "p4": "TNB logo and account number" }
-        },
-        "zoomHint": "Tap the picture to make it bigger.",
-        "enlarge": "Make the sample bigger",
-        "shrink": "Make the sample smaller",
-        "close": "Close"
-      },
       "type": {
         "semester_result": "Semester result slip",
         "ic": "Identity card (IC)",
@@ -1772,8 +1740,7 @@
           "pending": "Not checked yet"
         }
       },
-      "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document.",
-      "lockedNote": "Your interview stage has started, so this document can no longer be changed here. If something is missing, your reviewer will ask you for it."
+      "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document."
     },
     "referee": {
       "name": "Referee name",
@@ -2094,62 +2061,14 @@
       "error": "Sorry, we couldn't update that. Please try again."
     },
     "actionCentre": {
-      "takePhoto": "Take a photo",
-      "replace": "Replace",
-      "replacesLeft": "You can replace this {n} more times.",
-      "replacesLeftOne": "You can replace this 1 more time.",
-      "replaceLimit": "You have used all 3 replaces for this document. If it is still wrong, your reviewer will ask you for what is needed.",
-      "replaceLimitSupport": "You have sent this document as many times as we can take before you submit. Please write to us at {supportEmail} and we will help.",
-      "section": {
-        "needs": "Needs you",
-        "sent": "Sent, we are checking",
-        "done": "Done"
-      },
-      "needAgain": "We need this again",
-      "needAgainBody": "We could not use the last file. Please send it again.",
-      "badFile": "This file could not be opened. Please upload a clear photo or PDF.",
-      "sentAnswer": "Sent. Your reviewer will read it.",
-      "loadError": {
-        "title": "Unable to load tasks",
-        "body": "We could not load your tasks. Check your connection and try again.",
-        "retry": "Try again"
-      },
-      "why": {
-        "ic": "Why we ask: to confirm who you are.",
-        "results_slip": "Why we ask: to check your exam results.",
-        "higher_results": "Why we ask: to check your STPM, matriculation or other higher results.",
-        "photo": "Why we ask: so we know who you are in person.",
-        "epf": "Why we ask: to see your parent's savings record.",
-        "str": "Why we ask: to confirm your family's STR status.",
-        "statement_of_intent": "Why we ask: to hear in your own words why you want this.",
-        "reference_letter": "Why we ask: so someone who knows you can speak for you.",
-        "salary_slip": "Why we ask: to confirm your family income.",
-        "income_support_doc": "Why we ask: to show your family's income when there is no payslip or STR.",
-        "water_bill": "Why we ask: to confirm where your family lives.",
-        "electricity_bill": "Why we ask: to confirm where your family lives.",
-        "offer_letter": "Why we ask: to confirm your place at the college.",
-        "parent_ic": "Why we ask: to confirm who your parent or guardian is.",
-        "guardianship_letter": "Why we ask: to show that your guardian can act for you.",
-        "birth_certificate": "Why we ask: to link you to your parents.",
-        "bank_statement": "Why we ask: to confirm the bank account your bursary will be paid into.",
-        "school_leaving_cert": "Why we ask: to confirm when you left school.",
-        "semester_result": "Why we ask: to see how you are doing in your course.",
-        "doc": "Why we ask: so your reviewer can finish checking your application.",
-        "confirm": "Why we ask: to be sure our record of you is right.",
-        "answer": "Why we ask: so your reviewer understands your situation."
-      },
       "title": "Almost there, {name}",
       "intro": "A few quick things and your application is complete.",
-      "lockedTitle": "A few things we need from you, {name}",
-      "lockedIntro": "We're reviewing your application and need a little more from you. Please respond to each item below — it only takes a few minutes.",
       "generic": {
         "title": "We need something from you",
         "desc": "Please contact our support team and we will tell you what to do."
       },
       "fundedTitle": "Almost there, {name} — one step to receive your bursary",
       "fundedIntro": "Congratulations on your award! To set up your bursary payment, please add your bank account details below.",
-      "awaitTitle": "You're all set",
-      "awaitBody": "Your application is complete and with our team for review. There's nothing more for you to do right now — we'll be in touch by email. Please keep an eye on {email} (including the spam folder).",
       "progressDone": "{done} of {total} done",
       "percentComplete": "{pct}% Complete",
       "toDo": "To do",
@@ -2159,7 +2078,6 @@
       "upload": "Upload",
       "uploading": "Uploading…",
       "uploadError": "Sorry, that upload didn't work. Please try again.",
-      "stillChecking": "We've got your upload and we're still checking it — give it a moment, then refresh this page.",
       "review": "Review",
       "confirmPathwayYes": "Yes, this is my final pathway",
       "confirmHouseholdSizeYes": "Yes, that's my household size",
@@ -2605,18 +2523,6 @@
         "accountNumberInvalid": "The account number looks too short. Please check it against your bank statement and enter the full number.",
         "holderMismatch": "This account is not in your name. The bursary can only be paid into a bank account that belongs to you."
       },
-      "setAside": "Set aside",
-      "setAsideNote": "This was part of reviewing your application. Now that you've been awarded, you don't need to answer it.",
-      "retry": {
-        "sameFile": "We received your upload — but it's the same document as before, so it doesn't change anything. Please read the instruction below carefully and send the specific page we're asking for.",
-        "keptPrevious": "We received your upload, but it doesn't show what we need — so we've kept your earlier document on file (it was stronger). Please read the instruction below and send the specific page we're asking for.",
-        "notAccepted": "We received your upload, but it isn't the page we asked for, so this is still open. Please read the instruction below carefully and send that specific page."
-      },
-      "officerHold": {
-        "chip": "We're reviewing this",
-        "title": "We're looking into this with our team",
-        "body": "Thank you — we've received what you sent. Our team is now checking this personally, so there's nothing more you need to upload here for now. We'll be in touch if we need anything else."
-      },
       "updatePathwayOnProfile": "Update on your profile",
       "addStpmSubjects": "Add my STPM subjects",
       "confirmStpmKoko": "Confirm my score",
@@ -2634,14 +2540,6 @@
         "university": "University"
       },
       "decline": {
-        "button": "I don't have this",
-        "ask": "Why don't you have it?",
-        "cancel": "Cancel",
-        "noteLabel": "Tell us why (required)",
-        "send": "Send",
-        "sending": "Sending…",
-        "error": "Sorry, we couldn't send that. Please try again.",
-        "youTold": "You told us: {reason}",
         "reasons": {
           "epf": {
             "no_epf_job": "Does not work in a job that pays EPF (for example self-employed, farmer, odd jobs)",
@@ -10080,6 +9978,112 @@
     "help": {
       "higher_results": "A photo or PDF of your official results slip or transcript, showing your CGPA.",
       "results_slip_optional": "A photo or PDF of your official SPM results slip. Optional for STPM, Matriculation, Asasi and Diploma applicants."
+    },
+    "sample": {
+      "link": "See a sample",
+      "title": "Sample: {type}",
+      "alt": "A drawing of a sample {type}",
+      "caption": "This is a sample drawing, not a real {type}. Do not upload it.",
+      "checkHeading": "What we check",
+      "check": {
+        "mykad": { "p1": "IC number matches the one you typed", "p2": "Name is clear and matches your application", "p3": "Whole card in the picture, all four corners", "p4": "Photo is sharp, no glare" },
+        "results_slip": { "p1": "Name and IC number match your application", "p2": "Year 2025 and your Angka Giliran", "p3": "All subjects and grades are shown", "p4": "Lembaga Peperiksaan header with crest" },
+        "higher_results_stpm": { "p1": "Name and IC number match the student's MyKad", "p2": "Angka Giliran (index number) as printed", "p3": "PNGK (CGPA) over all the subjects", "p4": "Subjects and grades; exam year in the title" },
+        "higher_results_matric": { "p1": "Name and IC number match the student's MyKad", "p2": "College name and matric number", "p3": "Session (year) of the programme", "p4": "PNGK/CGPA and a STATUS line showing pass" },
+        "semester_result": { "p1": "Name and matric number match the MyKad and offer", "p2": "Session and semester are the one asked for", "p3": "GPA and CGPA shown at the end", "p4": "University name at the top" },
+        "photo": { "p1": "Plain, light background", "p2": "Face centred and sharp, looking straight ahead", "p3": "No hat, filter or heavy editing", "p4": "No blur, dark light or cropped head" },
+        "offer_letter": { "p1": "Your name matches your MyKad", "p2": "Course and institution are shown", "p3": "Registration or intake date is the coming intake", "p4": "Official letterhead and reference number" },
+        "school_leaving_cert": { "p1": "Student name matches the MyKad", "p2": "IC number and date of birth are correct", "p3": "School name and address at the top", "p4": "Leaving date and reason, with signature and stamp" },
+        "statement_of_intent": { "p1": "Your name, IC number and the course you want", "p2": "Your goals after your studies", "p3": "Your background: family, interests, experiences", "p4": "Your signature (or typed name) and the date" },
+        "reference_letter": { "p1": "Writer's full name and post", "p2": "Signature and official stamp", "p3": "Student's name and IC number match the MyKad", "p4": "Date of the letter is recent" },
+        "guardianship_letter": { "p1": "Parent's full name and IC number", "p2": "Student's full name and IC number", "p3": "Guardian's name, IC number and relationship", "p4": "Parent's signature and the date" },
+        "birth_certificate": { "p1": "Child's full name, same as the MyKad", "p2": "Register number and issuer (JPN Malaysia)", "p3": "Father's name and IC number are shown", "p4": "Mother's name and IC number are shown" },
+        "payslip": { "p1": "Worker name matches and the month is recent", "p2": "EPF, SOCSO, EIS and PCB lines are shown", "p3": "Earnings and deductions add up", "p4": "Nett pay (take-home) is shown" },
+        "epf_statement": { "p1": "Member name, IC number and member number", "p2": "Statement year and date", "p3": "Latest contributions are shown", "p4": "Account balances are shown" },
+        "str": { "p1": "Name and MyKad match the student or parent", "p2": "Status says Lulus (approved)", "p3": "Payment phases for this year (Fasa Bayaran)", "p4": "Total STR amount (Jumlah Bayaran)" },
+        "bank_statement": { "p1": "Account holder is the student, not a parent", "p2": "Account number is readable and matches", "p3": "Bank name or logo at the top", "p4": "Statement date is a recent month" },
+        "income_support_doc": { "p1": "Official stamp and signature of the Ketua Kampung", "p2": "Parent's name and IC match the application", "p3": "Monthly income (RM) is written", "p4": "Signed and dated recently" },
+        "water_bill": { "p1": "Name and address match the parent or guardian", "p2": "Account number is shown", "p3": "Bill date is recent (last 3 months)", "p4": "Amount due (Jumlah Perlu Dibayar)" },
+        "electricity_bill": { "p1": "Name and address of the account holder", "p2": "Bill date and billing period are recent", "p3": "Amount and usage breakdown", "p4": "TNB logo and account number" }
+      },
+      "zoomHint": "Tap the picture to make it bigger.",
+      "enlarge": "Make the sample bigger",
+      "shrink": "Make the sample smaller",
+      "close": "Close"
+    },
+    "lockedNote": "Your interview stage has started, so this document can no longer be changed here. If something is missing, your reviewer will ask you for it.",
+    "actionCentre": {
+      "takePhoto": "Take a photo",
+      "replace": "Replace",
+      "replacesLeft": "You can replace this {n} more times.",
+      "replacesLeftOne": "You can replace this 1 more time.",
+      "replaceLimit": "You have used all 3 replaces for this document. If it is still wrong, your reviewer will ask you for what is needed.",
+      "replaceLimitSupport": "You have sent this document as many times as we can take before you submit. Please write to us at {supportEmail} and we will help.",
+      "section": {
+        "needs": "Needs you",
+        "sent": "Sent, we are checking",
+        "done": "Done"
+      },
+      "needAgain": "We need this again",
+      "needAgainBody": "We could not use the last file. Please send it again.",
+      "badFile": "This file could not be opened. Please upload a clear photo or PDF.",
+      "sentAnswer": "Sent. Your reviewer will read it.",
+      "loadError": {
+        "title": "Unable to load tasks",
+        "body": "We could not load your tasks. Check your connection and try again.",
+        "retry": "Try again"
+      },
+      "why": {
+        "ic": "Why we ask: to confirm who you are.",
+        "results_slip": "Why we ask: to check your exam results.",
+        "higher_results": "Why we ask: to check your STPM, matriculation or other higher results.",
+        "photo": "Why we ask: so we know who you are in person.",
+        "epf": "Why we ask: to see your parent's savings record.",
+        "str": "Why we ask: to confirm your family's STR status.",
+        "statement_of_intent": "Why we ask: to hear in your own words why you want this.",
+        "reference_letter": "Why we ask: so someone who knows you can speak for you.",
+        "salary_slip": "Why we ask: to confirm your family income.",
+        "income_support_doc": "Why we ask: to show your family's income when there is no payslip or STR.",
+        "water_bill": "Why we ask: to confirm where your family lives.",
+        "electricity_bill": "Why we ask: to confirm where your family lives.",
+        "offer_letter": "Why we ask: to confirm your place at the college.",
+        "parent_ic": "Why we ask: to confirm who your parent or guardian is.",
+        "guardianship_letter": "Why we ask: to show that your guardian can act for you.",
+        "birth_certificate": "Why we ask: to link you to your parents.",
+        "bank_statement": "Why we ask: to confirm the bank account your bursary will be paid into.",
+        "school_leaving_cert": "Why we ask: to confirm when you left school.",
+        "semester_result": "Why we ask: to see how you are doing in your course.",
+        "doc": "Why we ask: so your reviewer can finish checking your application.",
+        "confirm": "Why we ask: to be sure our record of you is right.",
+        "answer": "Why we ask: so your reviewer understands your situation."
+      },
+      "stillChecking": "We've got your upload and we're still checking it — give it a moment, then refresh this page.",
+      "setAside": "Set aside",
+      "setAsideNote": "This was part of reviewing your application. Now that you've been awarded, you don't need to answer it.",
+      "retry": {
+        "sameFile": "We received your upload — but it's the same document as before, so it doesn't change anything. Please read the instruction below carefully and send the specific page we're asking for.",
+        "keptPrevious": "We received your upload, but it doesn't show what we need — so we've kept your earlier document on file (it was stronger). Please read the instruction below and send the specific page we're asking for.",
+        "notAccepted": "We received your upload, but it isn't the page we asked for, so this is still open. Please read the instruction below carefully and send that specific page."
+      },
+      "officerHold": {
+        "chip": "We're reviewing this",
+        "title": "We're looking into this with our team",
+        "body": "Thank you — we've received what you sent. Our team is now checking this personally, so there's nothing more you need to upload here for now. We'll be in touch if we need anything else."
+      },
+      "decline": {
+        "button": "I don't have this",
+        "ask": "Why don't you have it?",
+        "cancel": "Cancel",
+        "noteLabel": "Tell us why (required)",
+        "send": "Send",
+        "sending": "Sending…",
+        "error": "Sorry, we couldn't send that. Please try again.",
+        "youTold": "You told us: {reason}"
+      },
+      "lockedTitle": "A few things we need from you, {name}",
+      "lockedIntro": "We're reviewing your application and need a little more from you. Please respond to each item below — it only takes a few minutes.",
+      "awaitTitle": "You're all set",
+      "awaitBody": "Your application is complete and with our team for review. There's nothing more for you to do right now — we'll be in touch by email. Please keep an eye on {email} (including the spam folder)."
     }
   },
   "bursaryTabs": {

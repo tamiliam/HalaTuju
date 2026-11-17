@@ -8,6 +8,12 @@
  * Documents tab's CHUNK and are in no route's first-load JS. WHY: every core string moves every
  * route, and the higher-results card's words had left the median 0.12 kB under its budget.
  *
+ * Since the student-help bundle trim (2026-11-17) it is ALSO imported by `components/ActionCentre.tsx`
+ * (reached through `components/LazyActionCentre.tsx`, an `import()`) and `components/DocSample.tsx`
+ * (reached only from those two chunks): the Action Centre's newer words and the sample viewer's live
+ * under `documentsTab.actionCentre.*` / `documentsTab.sample.*`. The Action Centre waits for the
+ * slice of the language on screen before it draws, so it never shows those words in English first.
+ *
  * What evaluating this module does (exactly what the admin slice does):
  *  1. merges the English `documentsTab` slice INTO the English catalogue, so the tab's first paint
  *     has every word;

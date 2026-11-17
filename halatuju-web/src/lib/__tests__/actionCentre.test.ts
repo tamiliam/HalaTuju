@@ -464,11 +464,11 @@ describe('H5 sections, honest progress, why line', () => {
   })
 
   it('whyKeyFor names the document, else a generic line, and every key exists in en', () => {
-    expect(whyKeyFor({ kind: 'doc', doc_type: 'ic' })).toBe('scholarship.actionCentre.why.ic')
-    expect(whyKeyFor({ kind: 'doc', doc_type: 'something_new' })).toBe('scholarship.actionCentre.why.doc')
-    expect(whyKeyFor({ kind: 'confirm', doc_type: '' })).toBe('scholarship.actionCentre.why.confirm')
-    expect(whyKeyFor({ kind: 'explanation', doc_type: '' })).toBe('scholarship.actionCentre.why.answer')
-    const why = (en as any).scholarship.actionCentre.why as Record<string, string>
+    expect(whyKeyFor({ kind: 'doc', doc_type: 'ic' })).toBe('documentsTab.actionCentre.why.ic')
+    expect(whyKeyFor({ kind: 'doc', doc_type: 'something_new' })).toBe('documentsTab.actionCentre.why.doc')
+    expect(whyKeyFor({ kind: 'confirm', doc_type: '' })).toBe('documentsTab.actionCentre.why.confirm')
+    expect(whyKeyFor({ kind: 'explanation', doc_type: '' })).toBe('documentsTab.actionCentre.why.answer')
+    const why = (en as any).documentsTab.actionCentre.why as Record<string, string>
     for (const k of ['ic', 'results_slip', 'bank_statement', 'semester_result', 'doc', 'confirm', 'answer']) {
       expect(why[k]).toBeTruthy()
     }

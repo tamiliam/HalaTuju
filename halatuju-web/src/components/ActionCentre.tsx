@@ -14,8 +14,12 @@
  * presentation + the three resolve flows.
  */
 
-import { useEffect, useState, useCallback, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useCallback, type ReactNode } from 'react'
 import { useT } from '@/lib/i18n'
+// The Action Centre's own newer words (`documentsTab.actionCentre.*`, `documentsTab.sample.*`) ride
+// in the Documents slice, which travels with THIS chunk (LazyActionCentre), not every scholarship route.
+import '@/lib/messagesDocuments'
+import { loadCatalogue } from '@/lib/messages'
 import {
   getResolutionItems,
   listDocuments,
@@ -40,6 +44,12 @@ import PostAwardTask from '@/components/scholarship/LazyPostAwardTask'
 import IncomeRouteSwitch from '@/components/LazyIncomeRouteSwitch'   // TD-352: a minority's panel, on demand
 import { ActionCard } from '@/components/action-centre/ActionCard'
 import { SentCard, LoadErrorCard, OfficerHoldCard } from '@/components/action-centre/StatusCards'
+
+/** Resolves once the on-screen language holds every required slice (English always does); never rejects. */
+async function wordsReady(locale: string | undefined): Promise<void> {
+  if (!locale || locale === 'en') return
+  try { await loadCatalogue(locale as Parameters<typeof loadCatalogue>[0]) } catch { /* English fallback */ }
+}
 
 // ── Main component ────────────────────────────────────────────────────────
 
@@ -80,7 +90,11 @@ export default function ActionCentre({
    *  correct it there if they registered with Vircle under a different number. */
   contactPhone?: string
 }) {
-  const { t } = useT()
+  const { t, locale } = useT()
+  // Read by fetchItems without re-fetching the tasks on a language switch (the switch itself
+  // waits for every required slice of the new language).
+  const localeRef = useRef(locale)
+  localeRef.current = locale
   const [open, setOpen] = useState<ResolutionItem[]>([])
   const [resolved, setResolved] = useState<ResolutionItem[]>([])
   // Funded students: leftover review-phase queries shown struck-through amber ("set aside").
@@ -100,6 +114,9 @@ export default function ActionCentre({
       const [r, d] = await Promise.all([
         getResolutionItems({ token }),
         listDocuments({ token }).catch(() => ({ documents: [] as ApplicantDocument[] })),
+        // Nothing is drawn until this settles, so a Malay or Tamil reader never sees the Documents
+        // slice's words in English first. A failed load falls back to English, never blocks.
+        wordsReady(localeRef.current),
       ])
       setOpen(r.open)
       setResolved(r.resolved)
@@ -144,10 +161,10 @@ export default function ActionCentre({
     <div className="rounded-2xl border border-positive-200 bg-positive-50 p-6">
       <div className="flex items-center gap-2">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-positive-fill text-sm text-positive-fill-ink">✓</span>
-        <h2 className="font-semibold text-ground-900">{t('scholarship.actionCentre.awaitTitle')}</h2>
+        <h2 className="font-semibold text-ground-900">{t('documentsTab.actionCentre.awaitTitle')}</h2>
       </div>
       <p className="mt-1 text-sm text-ground-700">
-        {t('scholarship.actionCentre.awaitBody', { email: email || t('scholarship.nextSteps.whatNext.yourEmail') })}
+        {t('documentsTab.actionCentre.awaitBody', { email: email || t('scholarship.nextSteps.whatNext.yourEmail') })}
       </p>
     </div>
   )
@@ -172,7 +189,7 @@ export default function ActionCentre({
   )
 
   // "Sent, we are checking": the student's part is done. Typed answers, and requests handed to a person.
-  const sentCards = sectionOf(t('scholarship.actionCentre.section.sent'), sent.length, sent.map(({ item, kind }) =>
+  const sentCards = sectionOf(t('documentsTab.actionCentre.section.sent'), sent.length, sent.map(({ item, kind }) =>
     kind === 'officer' ? <OfficerHoldCard key={item.id} fromLabel={fromLabelOf(item)} /> : (
       <SentCard key={item.id} fromLabel={fromLabelOf(item)}
         title={itemTitle(item)}
@@ -180,7 +197,7 @@ export default function ActionCentre({
     )))
 
   // "Done": checked and cleared, as green cards.
-  const doneCards = sectionOf(t('scholarship.actionCentre.section.done'), doneItems.length, doneItems.map((item) => (
+  const doneCards = sectionOf(t('documentsTab.actionCentre.section.done'), doneItems.length, doneItems.map((item) => (
     <ActionCard key={item.id} item={item} token={token} onResolved={fetchItems}
       onConfirm={(target) => onConfirm?.(target)} formLocked={formLocked} done
       docs={docs} limits={limits} docsLocked={docLock.locked} openDocTypes={docLock.openTypes} />
@@ -216,7 +233,7 @@ export default function ActionCentre({
         {t(
           funded
             ? 'scholarship.actionCentre.fundedTitle'
-            : formLocked ? 'scholarship.actionCentre.lockedTitle' : 'scholarship.actionCentre.title',
+            : formLocked ? 'documentsTab.actionCentre.lockedTitle' : 'scholarship.actionCentre.title',
           { name: firstName },
         )}
       </h2>
@@ -224,7 +241,7 @@ export default function ActionCentre({
         {t(
           funded
             ? 'scholarship.actionCentre.fundedIntro'
-            : formLocked ? 'scholarship.actionCentre.lockedIntro' : 'scholarship.actionCentre.intro',
+            : formLocked ? 'documentsTab.actionCentre.lockedIntro' : 'scholarship.actionCentre.intro',
         )}
       </p>
 
@@ -240,7 +257,7 @@ export default function ActionCentre({
       </div>
 
       {/* Open tasks first, then the completed ones as green Done cards. */}
-      {sectionOf(t('scholarship.actionCentre.section.needs'), needs.length, (() => {
+      {sectionOf(t('documentsTab.actionCentre.section.needs'), needs.length, (() => {
         // One cluster coach per earner: the FIRST open income task of each member is its
         // anchor; later tasks for the same earner suppress the (duplicate) coach.
         const sorted = needs

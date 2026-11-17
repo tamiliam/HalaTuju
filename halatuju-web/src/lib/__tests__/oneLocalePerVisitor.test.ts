@@ -65,7 +65,8 @@ const STATIC_IMPORT_ALLOWED: Record<string, string> = {
     + 'imported for its side effect by `components/ScholarshipDocuments.tsx`, which every route '
     + 'reaches through an `import()` (`LazyScholarshipDocuments`) — so they ride in the chunk of '
     + 'the TAB and in the first-load JS of no route. The admin slice pattern: weight OFF every '
-    + 'route, not onto one.',
+    + 'route, not onto one. Since the student-help trim (2026-11-17) also by `ActionCentre.tsx` '
+    + '(through `LazyActionCentre`, an `import()`) and `DocSample.tsx` (only inside those chunks).',
   'src/lib/messagesScholarship.ts':
     'TD-416 (2026-10-29). English SCHOLARSHIP words only (`scholarship.*` but its menu and banner '
     + 'children), imported for its side effect by the PAGE of each of the 17 routes that shows them '

@@ -27,7 +27,7 @@ export function UploadButtons({ busy, onFile, uploadKey = 'scholarship.actionCen
         <input type="file" accept="image/*,.pdf" className="sr-only" disabled={busy} onChange={pick} />
       </label>
       <label className={`${face} border border-brand-shape text-primary-600 hover:bg-primary-50 ${busy ? 'opacity-50' : ''}`}>
-        {t('scholarship.actionCentre.takePhoto')}
+        {t('documentsTab.actionCentre.takePhoto')}
         <input type="file" accept="image/*" capture="environment" className="sr-only" disabled={busy} onChange={pick} />
       </label>
     </div>

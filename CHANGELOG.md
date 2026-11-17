@@ -151,6 +151,13 @@ Branch td623, not pushed. No migration. Services: web. Decisions: `docs/decision
 - No api change; the navigation registry's role rows are a follow-up (TD-623 as-built note).
 - Review round (2026-11-15): QC's assignee filter now lists the reviewers (`getAssignableAdmins` loads whenever the filter shows, not only for assigners). `navigation.hasGiftDoor` reads the served `programmes.edit` key (the `programme_settings` door, which the server's `may_edit_programmes` reads) instead of the `programmeConfig` row's role list (declared matrix move: an older payload has no gift door); it decides the Programmes gift grid, the Payments/Spending redirect (`useGiftGate`) and the Programme-group fold. The A10 scan now reads whole files with a comment-blanking tokenizer and catches both quotes, `==`/`!=`, `case`, multi-line role arrays and `…roles.includes(`/`.has(`; snippets must contain the hit; floor 140 of 156; a SERVER class for the sponsor-terms lead-tier mirror. New debt TD-631 (Surveys/Development/Announcements read-only for `.view` holders) and TD-632 (server lead-tier gates; fixture lag).
 
+### perf: student-help bundle trim - the Action Centre is its own chunk; its words ride the Documents slice (2026-11-17)
+
+Branch sh-trim (for student-help), not pushed. No migration. No api change. Services: web.
+- Words: the Action Centre's newer and Action-Centre-only strings (replace, sections, why, decline buttons, set-aside, retry, officer hold, load error, locked and waiting headers) and the sample viewer moved from `scholarship.actionCentre.*` / `scholarship.docs.*` to `documentsTab.actionCentre.*` / `documentsTab.sample.*` / `documentsTab.lockedNote` (same words in all three languages). The decline reasons stay in `scholarship.*` because the officer's case page reads them.
+- Code: `components/LazyActionCentre.tsx` loads the Action Centre by `import()` on `/scholarship/application` (page and next-steps). The Action Centre imports the Documents slice and waits for the slice of the language on screen before it draws, so a Malay or Tamil reader never sees those words in English first. A failed chunk shows the existing network-error line in place.
+- Readings (local exact build): `/scholarship/apply` 201.107 to 198.628 kB (line 198.8), `/profile` 202.785 to 200.306 (200.8), `/scholarship/application` 226.831 to 209.363 (line LOWERED by the ratchet, 218.7 to 210), median 157.091 to 157.104 (157.5). No line raised.
+
 ### chore: merge train B - student-help (H4 to H9) rebased onto merge train A (2026-11-17)
 
 Branch student-help, not pushed. Migration renamed `0212_document_replace_count` to `0213_document_replace_count` (depends on `0212_cohort_allowed_start_years`; same table, same DDL). Services: both (api + web).

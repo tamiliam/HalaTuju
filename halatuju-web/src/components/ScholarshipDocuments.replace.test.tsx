@@ -62,24 +62,24 @@ describe('replace on the documents tab', () => {
   it('a settled document shows Replace and the replaces left', async () => {
     await mount(slip({ replace_count: 1 }))
     expect(screen.getByText('scholarship.docs.replace')).toBeTruthy()
-    expect(screen.getByText('scholarship.actionCentre.replacesLeft:2')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.replacesLeft:2')).toBeTruthy()
   })
 
   it('after three replaces: no Replace, a plain line instead', async () => {
     await mount(slip({ replace_count: 3 }))
     expect(screen.queryByText('scholarship.docs.replace')).toBeNull()
-    expect(screen.getByText('scholarship.actionCentre.replaceLimit')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.replaceLimit')).toBeTruthy()
   })
 
   it('a returned document is capped too: no Replace once the slot is used up', async () => {
     await mount(slip({ replace_count: 3, vision_fields: { student_verdict: 'unreadable' } }))
     expect(screen.queryByText('scholarship.docs.replace')).toBeNull()
-    expect(screen.getByText('scholarship.actionCentre.replaceLimit')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.replaceLimit')).toBeTruthy()
   })
 
   it("shows the server's replaces_left over its own sum (a removed copy still counts)", async () => {
     await mount(slip({ replace_count: 0, replaces_left: 1 }))
-    expect(screen.getByText('scholarship.actionCentre.replacesLeftOne:1')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.replacesLeftOne:1')).toBeTruthy()
   })
 
   it('a person asked again: replaces_left 1 brings Replace back past three', async () => {
@@ -90,14 +90,14 @@ describe('replace on the documents tab', () => {
   it("before consent a copy holding the gate keeps Replace past three, on the server's count", async () => {
     await mount(slip({ replace_count: 3, replaces_left: 4, replace_support: false }))
     expect(screen.getByText('scholarship.docs.replace')).toBeTruthy()
-    expect(screen.getByText('scholarship.actionCentre.replacesLeft:4')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.replacesLeft:4')).toBeTruthy()
   })
 
   it('at the hard ceiling: no Replace, and the line names support, not a reviewer', async () => {
     await mount(slip({ replace_count: 3, replaces_left: 0, replace_support: true }))
     expect(screen.queryByText('scholarship.docs.replace')).toBeNull()
-    expect(screen.getByText('scholarship.actionCentre.replaceLimitSupport')).toBeTruthy()
-    expect(screen.queryByText('scholarship.actionCentre.replaceLimit')).toBeNull()
+    expect(screen.getByText('documentsTab.actionCentre.replaceLimitSupport')).toBeTruthy()
+    expect(screen.queryByText('documentsTab.actionCentre.replaceLimit')).toBeNull()
   })
 
   it('sends replace: true for a settled document', async () => {

@@ -152,9 +152,9 @@ const WHY_DOC_TYPES = new Set([
 ])
 export function whyKeyFor(item: Pick<ResolutionItem, 'kind' | 'doc_type'>): string {
   if (item.kind === 'doc') {
-    return WHY_DOC_TYPES.has(item.doc_type) ? `scholarship.actionCentre.why.${item.doc_type}` : 'scholarship.actionCentre.why.doc'
+    return WHY_DOC_TYPES.has(item.doc_type) ? `documentsTab.actionCentre.why.${item.doc_type}` : 'documentsTab.actionCentre.why.doc'
   }
-  return item.kind === 'confirm' ? 'scholarship.actionCentre.why.confirm' : 'scholarship.actionCentre.why.answer'
+  return item.kind === 'confirm' ? 'documentsTab.actionCentre.why.confirm' : 'documentsTab.actionCentre.why.answer'
 }
 
 // System codes the Action Centre knows how to title/describe from i18n. Officer

@@ -131,7 +131,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       const code = (e as { code?: string })?.code
       if (code === 'documents_locked' || code === 'replace_limit_reached') void refresh()   // the stage moved on / the count is used up: redraw
       setError(
-        code === 'documents_locked' ? ((e as Error).message || t('scholarship.docs.lockedNote'))
+        code === 'documents_locked' ? ((e as Error).message || t('documentsTab.lockedNote'))
         : code === 'replace_limit_reached' ? replaceRefusalText(e, t)
         : code === 'doc_limit_reached' ? t('scholarship.docs.doc_limit_reached')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
@@ -161,7 +161,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
     } catch (e) {
       const locked = (e as { code?: string })?.code === 'documents_locked'
       if (locked) void refresh()
-      setError(locked ? ((e as Error).message || t('scholarship.docs.lockedNote')) : t('scholarship.docs.deleteError'))
+      setError(locked ? ((e as Error).message || t('documentsTab.lockedNote')) : t('scholarship.docs.deleteError'))
     } finally {
       removingRef.current = false
       setDeleting(false)

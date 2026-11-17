@@ -49,9 +49,9 @@ export function ReplaceDocument({ doc, requestCode = '', member, token, limits, 
       if (code === 'documents_locked' || code === 'replace_limit_reached') onDone()   // the list redraws without Replace
       setError(
         code === 'documents_locked' || code === 'replace_limit_reached'
-          ? (code === 'replace_limit_reached' ? replaceRefusalText(e, t) : ((e as Error).message || t('scholarship.actionCentre.replaceLimit')))
+          ? (code === 'replace_limit_reached' ? replaceRefusalText(e, t) : ((e as Error).message || t('documentsTab.actionCentre.replaceLimit')))
         : code === 'unsupported_format' || code === 'upload_incomplete' || code === 'bad_file'
-          ? t('scholarship.actionCentre.badFile')
+          ? t('documentsTab.actionCentre.badFile')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
             { mb: String((e as { fieldErrors?: { max_mb?: number } })?.fieldErrors?.max_mb ?? limits?.max_doc_size_mb ?? 8) })
         : t('scholarship.actionCentre.uploadError'),
@@ -68,9 +68,9 @@ export function ReplaceDocument({ doc, requestCode = '', member, token, limits, 
       )}
       {left > 0 ? (
         <div className="mt-2">
-          <UploadButtons busy={busy} onFile={onFile} uploadKey="scholarship.actionCentre.replace" />
+          <UploadButtons busy={busy} onFile={onFile} uploadKey="documentsTab.actionCentre.replace" />
           <p className="mt-2 text-sm text-ground-600">
-            {t(left === 1 ? 'scholarship.actionCentre.replacesLeftOne' : 'scholarship.actionCentre.replacesLeft', { n: String(left) })}
+            {t(left === 1 ? 'documentsTab.actionCentre.replacesLeftOne' : 'documentsTab.actionCentre.replacesLeft', { n: String(left) })}
           </p>
         </div>
       ) : (

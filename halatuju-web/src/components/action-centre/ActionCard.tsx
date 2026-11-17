@@ -98,10 +98,10 @@ export function ActionCard({
   const attempts = Number(item.params?.attempts || 0)
   const retryNote = item.kind === 'doc' && attempts > 0
     ? t(item.params?.attempt_same_file
-        ? 'scholarship.actionCentre.retry.sameFile'
+        ? 'documentsTab.actionCentre.retry.sameFile'
         : item.params?.attempt_rejected
-          ? 'scholarship.actionCentre.retry.keptPrevious'
-          : 'scholarship.actionCentre.retry.notAccepted')
+          ? 'documentsTab.actionCentre.retry.keptPrevious'
+          : 'documentsTab.actionCentre.retry.notAccepted')
     : ''
   // "From our review assistant" (system / Check 2) vs "From your reviewer" (officer) —
   // so the student knows who's asking, matching the tested Action-Centre design.
@@ -201,7 +201,7 @@ export function ActionCard({
         code === 'documents_locked' ? ((e as Error).message || t('scholarship.actionCentre.uploadError'))
         : code === 'replace_limit_reached' ? replaceRefusalText(e, t)   // H6 (support when shut before consent)
         : code === 'unsupported_format' || code === 'upload_incomplete' || code === 'bad_file'
-          ? t('scholarship.actionCentre.badFile')
+          ? t('documentsTab.actionCentre.badFile')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
             { mb: String((e as { fieldErrors?: { max_mb?: number } })?.fieldErrors?.max_mb ?? limits?.max_doc_size_mb ?? 8) })
         : t('scholarship.actionCentre.uploadError'),
@@ -255,7 +255,7 @@ export function ActionCard({
       <DoneCard fromLabel={fromLabel} title={title}>
         {declined && (
           <p className="mt-1 break-words text-sm text-ground-600">
-            {t('scholarship.actionCentre.decline.youTold', { reason: t(`scholarship.actionCentre.decline.reasons.${item.doc_type}.${declined}`) })}
+            {t('documentsTab.actionCentre.decline.youTold', { reason: t(`scholarship.actionCentre.decline.reasons.${item.doc_type}.${declined}`) })}
             {typeof item.params?.declined_note === 'string' && item.params.declined_note ? ` ${item.params.declined_note}` : ''}
           </p>
         )}
@@ -288,8 +288,8 @@ export function ActionCard({
               note, the coach beneath explains. */}
           {returned && (
             <div role="status" className="mt-2 rounded-lg border border-caution-200 bg-caution-50 px-3 py-2">
-              <p className="text-sm font-semibold text-caution-800">{t('scholarship.actionCentre.needAgain')}</p>
-              <p className="text-sm text-caution-800">{retryNote || t('scholarship.actionCentre.needAgainBody')}</p>
+              <p className="text-sm font-semibold text-caution-800">{t('documentsTab.actionCentre.needAgain')}</p>
+              <p className="text-sm text-caution-800">{retryNote || t('documentsTab.actionCentre.needAgainBody')}</p>
             </div>
           )}
           {desc && <p className="mt-1 text-sm text-ground-500">{desc}</p>}
@@ -331,7 +331,7 @@ export function ActionCard({
                 {/* Rare: the upload landed but its scan hasn't finished yet — keep the task
                     open and reassure, rather than ticking it Done on an unchecked file. */}
                 {stillChecking && (
-                  <p className="mt-3 text-sm text-ground-500">{t('scholarship.actionCentre.stillChecking')}</p>
+                  <p className="mt-3 text-sm text-ground-500">{t('documentsTab.actionCentre.stillChecking')}</p>
                 )}
               </>
             )}

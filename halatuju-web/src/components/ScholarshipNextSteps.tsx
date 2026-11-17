@@ -25,7 +25,8 @@ import {
 import ScholarshipDocuments from '@/components/scholarship/LazyScholarshipDocuments'
 import ScholarshipConsent from '@/components/ScholarshipConsent'
 import ScholarshipReview from '@/components/ScholarshipReview'
-import ActionCentre from '@/components/ActionCentre'
+// Student-help bundle trim: the Action Centre is its own chunk (see the wrapper's note).
+import ActionCentre from '@/components/LazyActionCentre'
 import InfoBox from '@/components/InfoBox'
 import FieldLabel from '@/components/FieldLabel'
 import FamilyRosterFields from '@/components/FamilyRosterFields'

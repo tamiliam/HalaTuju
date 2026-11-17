@@ -49,41 +49,41 @@ beforeEach(() => { jest.clearAllMocks() })
 describe('three sections', () => {
   it('shows Needs you, Sent and Done', async () => {
     await mount([NEEDS], [SENT, DONE])
-    expect(await screen.findByText('scholarship.actionCentre.section.needs')).toBeTruthy()
-    expect(screen.getByText('scholarship.actionCentre.section.sent')).toBeTruthy()
-    expect(screen.getByText('scholarship.actionCentre.section.done')).toBeTruthy()
+    expect(await screen.findByText('documentsTab.actionCentre.section.needs')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.section.sent')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.section.done')).toBeTruthy()
   })
 
   it('a typed answer is Sent: it quotes the answer and says a reviewer will read it', async () => {
     await mount([NEEDS], [SENT])
     expect(await screen.findByText('It is a bus fare')).toBeTruthy()
-    expect(screen.getByText('scholarship.actionCentre.sentAnswer')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.sentAnswer')).toBeTruthy()
   })
 
   it('every open item carries its why-we-ask line', async () => {
     await mount([NEEDS], [])
-    expect(await screen.findByText('scholarship.actionCentre.why.ic')).toBeTruthy()
+    expect(await screen.findByText('documentsTab.actionCentre.why.ic')).toBeTruthy()
   })
 
   it('a section with nothing in it is not drawn', async () => {
     await mount([NEEDS], [])
-    await screen.findByText('scholarship.actionCentre.section.needs')
-    expect(screen.queryByText('scholarship.actionCentre.section.sent')).toBeNull()
-    expect(screen.queryByText('scholarship.actionCentre.section.done')).toBeNull()
+    await screen.findByText('documentsTab.actionCentre.section.needs')
+    expect(screen.queryByText('documentsTab.actionCentre.section.sent')).toBeNull()
+    expect(screen.queryByText('documentsTab.actionCentre.section.done')).toBeNull()
   })
 })
 
 describe('a returned document', () => {
   it('goes back to Needs you saying "We need this again"', async () => {
     await mount([make({ params: { attempts: 1 } })], [])
-    expect(await screen.findByText('scholarship.actionCentre.needAgain')).toBeTruthy()
+    expect(await screen.findByText('documentsTab.actionCentre.needAgain')).toBeTruthy()
   })
 })
 
 describe('uploading', () => {
   it('offers Upload (photo or PDF) and Take a photo (back camera) side by side', async () => {
     await mount([NEEDS], [])
-    await screen.findByText('scholarship.actionCentre.takePhoto')
+    await screen.findByText('documentsTab.actionCentre.takePhoto')
     const inputs = Array.from(document.querySelectorAll('input[type="file"]')) as HTMLInputElement[]
     const camera = inputs.filter((i) => i.getAttribute('capture') === 'environment')
     const normal = inputs.filter((i) => !i.hasAttribute('capture'))
@@ -97,16 +97,16 @@ describe('uploading', () => {
     mockApi.uploadFileToSignedUrl.mockResolvedValue(undefined as never)
     mockApi.recordDocument.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_file' }))
     await mount([NEEDS], [])
-    await screen.findByText('scholarship.actionCentre.takePhoto')
+    await screen.findByText('documentsTab.actionCentre.takePhoto')
     const input = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
     fireEvent.change(input, { target: { files: [new File(['x'], 'scan.pdf', { type: 'application/pdf' })] } })
-    expect(await screen.findByText('scholarship.actionCentre.badFile')).toBeTruthy()
+    expect(await screen.findByText('documentsTab.actionCentre.badFile')).toBeTruthy()
   })
 
   it('a locked-documents refusal shows the server message plainly', async () => {
     mockApi.signUploadDocument.mockRejectedValue(Object.assign(new Error('Documents are closed now.'), { code: 'documents_locked' }))
     await mount([NEEDS], [])
-    await screen.findByText('scholarship.actionCentre.takePhoto')
+    await screen.findByText('documentsTab.actionCentre.takePhoto')
     const input = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
     fireEvent.change(input, { target: { files: [new File(['x'], 'a.pdf', { type: 'application/pdf' })] } })
     expect(await screen.findByText('Documents are closed now.')).toBeTruthy()
@@ -118,11 +118,11 @@ describe('load error', () => {
     mockApi.getResolutionItems.mockRejectedValueOnce(new Error('offline'))
     mockApi.listDocuments.mockResolvedValue({ documents: [] } as never)
     render(<ActionCentre token="tkn" studentName="Test Student" applicationId={6} />)
-    expect(await screen.findByText('scholarship.actionCentre.loadError.title')).toBeTruthy()
+    expect(await screen.findByText('documentsTab.actionCentre.loadError.title')).toBeTruthy()
     mockApi.getResolutionItems.mockResolvedValue({ open: [NEEDS], resolved: [] })
-    fireEvent.click(screen.getByRole('button', { name: 'scholarship.actionCentre.loadError.retry' }))
-    expect(await screen.findByText('scholarship.actionCentre.section.needs')).toBeTruthy()
-    expect(screen.queryByText('scholarship.actionCentre.loadError.title')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'documentsTab.actionCentre.loadError.retry' }))
+    expect(await screen.findByText('documentsTab.actionCentre.section.needs')).toBeTruthy()
+    expect(screen.queryByText('documentsTab.actionCentre.loadError.title')).toBeNull()
   })
 })
 
@@ -131,11 +131,11 @@ describe('load error, second failure', () => {
     mockApi.getResolutionItems.mockRejectedValue(new Error('offline'))
     mockApi.listDocuments.mockResolvedValue({ documents: [] } as never)
     render(<ActionCentre token="tkn" studentName="Test Student" applicationId={6} formLocked />)
-    const retry = await screen.findByRole('button', { name: 'scholarship.actionCentre.loadError.retry' })
+    const retry = await screen.findByRole('button', { name: 'documentsTab.actionCentre.loadError.retry' })
     fireEvent.click(retry)
-    expect(screen.queryByText('scholarship.actionCentre.awaitTitle')).toBeNull()
-    expect(await screen.findByText('scholarship.actionCentre.loadError.title')).toBeTruthy()
-    expect(screen.queryByText('scholarship.actionCentre.awaitTitle')).toBeNull()
+    expect(screen.queryByText('documentsTab.actionCentre.awaitTitle')).toBeNull()
+    expect(await screen.findByText('documentsTab.actionCentre.loadError.title')).toBeTruthy()
+    expect(screen.queryByText('documentsTab.actionCentre.awaitTitle')).toBeNull()
   })
 })
 
@@ -144,17 +144,17 @@ describe('documents lock', () => {
     mockApi.getResolutionItems.mockResolvedValue({ open: [make({ id: 9, doc_type: docType })], resolved: [] })
     mockApi.listDocuments.mockResolvedValue({ documents: [], lock } as never)
     render(<ActionCentre token="tkn" studentName="Test Student" applicationId={6} />)
-    await screen.findByText('scholarship.actionCentre.section.needs')
+    await screen.findByText('documentsTab.actionCentre.section.needs')
   }
   it('locked: Upload and Take a photo are hidden', async () => {
     await withLock({ locked: true, open_doc_types: [] }, 'ic')
     expect(screen.queryByText('scholarship.actionCentre.upload')).toBeNull()
-    expect(screen.queryByText('scholarship.actionCentre.takePhoto')).toBeNull()
+    expect(screen.queryByText('documentsTab.actionCentre.takePhoto')).toBeNull()
   })
   it('locked but the type is exempt: buttons shown', async () => {
     await withLock({ locked: true, open_doc_types: ['bank_statement'] }, 'bank_statement')
     expect(screen.getByText('scholarship.actionCentre.upload')).toBeTruthy()
-    expect(screen.getByText('scholarship.actionCentre.takePhoto')).toBeTruthy()
+    expect(screen.getByText('documentsTab.actionCentre.takePhoto')).toBeTruthy()
   })
   it('not locked: buttons shown', async () => {
     await withLock({ locked: false, open_doc_types: [] }, 'ic')

@@ -23,14 +23,14 @@ export function replacesLeft(doc: Pick<ApplicantDocument, 'replace_count' | 'rep
 
 /** The line a shut slot shows: support when shut before consent (no ask is possible), else the reviewer will ask. */
 export function replaceLimitKey(doc?: Pick<ApplicantDocument, 'replace_support'> | null): string {
-  return doc?.replace_support ? 'scholarship.actionCentre.replaceLimitSupport' : 'scholarship.actionCentre.replaceLimit'
+  return doc?.replace_support ? 'documentsTab.actionCentre.replaceLimitSupport' : 'documentsTab.actionCentre.replaceLimit'
 }
 
 /** The text for a `replace_limit_reached` 409: the pre-consent support line in the student's own
  *  language, else the server's message (the reviewer will ask), else the plain line. */
 export function replaceRefusalText(e: unknown, t: (key: string) => string): string {
-  if ((e as { bodyCode?: string } | null)?.bodyCode === SUPPORT_CODE) return t('scholarship.actionCentre.replaceLimitSupport')
-  return (e as Error | null)?.message || t('scholarship.actionCentre.replaceLimit')
+  if ((e as { bodyCode?: string } | null)?.bodyCode === SUPPORT_CODE) return t('documentsTab.actionCentre.replaceLimitSupport')
+  return (e as Error | null)?.message || t('documentsTab.actionCentre.replaceLimit')
 }
 
 /** True once the stage lock hides Replace for this type (an exempt type stays open). */

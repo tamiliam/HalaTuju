@@ -29,17 +29,19 @@ const Host = ({ item = ITEM, onDone = () => {} }: { item?: ResolutionItem; onDon
   const [open, setOpen] = useState(false)
   return <DeclineOptional item={item} token="tkn" open={open} onOpen={() => setOpen(true)} onCancel={() => setOpen(false)} onDone={onDone} />
 }
-const P = 'scholarship.actionCentre.decline.'
+const P = 'documentsTab.actionCentre.decline.'
+// The reasons stay in the scholarship slice: the admin Outstanding panel reads them too.
+const R = 'scholarship.actionCentre.decline.'
 
 beforeEach(() => { jest.clearAllMocks(); mockApi.declineResolutionItem.mockResolvedValue({} as never) })
 
 describe('DeclineOptional', () => {
   it('shows only the button until it is tapped, then the reasons', () => {
     render(<Host />)
-    expect(screen.queryByText(`${P}reasons.water_bill.landlord_pays`)).toBeNull()
+    expect(screen.queryByText(`${R}reasons.water_bill.landlord_pays`)).toBeNull()
     fireEvent.click(screen.getByText(`${P}button`))
     expect(screen.getByText(`${P}ask`)).toBeTruthy()
-    expect(screen.getByText(`${P}reasons.water_bill.landlord_pays`)).toBeTruthy()
+    expect(screen.getByText(`${R}reasons.water_bill.landlord_pays`)).toBeTruthy()
   })
 
   it('Cancel goes back to the button', () => {
@@ -54,7 +56,7 @@ describe('DeclineOptional', () => {
     const onDone = jest.fn()
     render(<Host onDone={onDone} />)
     fireEvent.click(screen.getByText(`${P}button`))
-    fireEvent.click(screen.getByText(`${P}reasons.water_bill.landlord_pays`))
+    fireEvent.click(screen.getByText(`${R}reasons.water_bill.landlord_pays`))
     await waitFor(() => expect(onDone).toHaveBeenCalled())
     expect(mockApi.declineResolutionItem).toHaveBeenCalledWith(7, 'landlord_pays', '', { token: 'tkn' })
   })
@@ -63,7 +65,7 @@ describe('DeclineOptional', () => {
     const onDone = jest.fn()
     render(<Host onDone={onDone} />)
     fireEvent.click(screen.getByText(`${P}button`))
-    fireEvent.click(screen.getByText(`${P}reasons.water_bill.other`))
+    fireEvent.click(screen.getByText(`${R}reasons.water_bill.other`))
     expect(mockApi.declineResolutionItem).not.toHaveBeenCalled()
     const send = screen.getByText(`${P}send`) as HTMLButtonElement
     expect(send.disabled).toBe(true)
@@ -81,7 +83,7 @@ describe('DeclineOptional', () => {
     const onDone = jest.fn()
     render(<Host onDone={onDone} />)
     fireEvent.click(screen.getByText(`${P}button`))
-    fireEvent.click(screen.getByText(`${P}reasons.water_bill.landlord_pays`))
+    fireEvent.click(screen.getByText(`${R}reasons.water_bill.landlord_pays`))
     expect(await screen.findByText(`${P}error`)).toBeTruthy()
     expect(onDone).not.toHaveBeenCalled()
   })
