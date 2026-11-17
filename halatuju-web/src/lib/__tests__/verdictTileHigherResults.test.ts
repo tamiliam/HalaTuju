@@ -2,7 +2,7 @@
  * Owner rulings 2026-11-17 — the Academic tile, display only. Tone: red (unreadable) beats amber
  * (other kind / no real proof) beats blue. Subtitle: a real problem leads, else "not checked yet".
  */
-import { factSubtitleItem, factTileTone } from '@/lib/officerCockpit'
+import { factDetailItems, factSubtitleItem, factTileTone } from '@/lib/officerCockpit'
 import type { AdminVerdictFact } from '@/lib/admin-api'
 import enMessages from '@/messages/en.json'
 
@@ -46,5 +46,25 @@ describe('Academic tile subtitle', () => {
   test('the owner sentence is the en text', () => {
     const t = (enMessages as any).admin.scholarship.verdict.item.higher_results_not_checked
     expect(t).toBe('Genuineness of higher results is NOT checked yet.')
+  })
+})
+
+describe('Academic tile - status interplay and detail list', () => {
+  test('verified + unreadable is red; verified + kind differs is amber; gap stays red', () => {
+    expect(factTileTone(academic('verified', ['name_ok'], ['higher_results_unreadable']))).toBe('red')
+    expect(factTileTone(academic('verified', ['name_ok'], ['higher_results_kind_differs']))).toBe('amber')
+    expect(factTileTone(academic('gap', []))).toBe('red')
+  })
+  test('detail list: subtitle is unresolved[0] - it is not repeated, evidence[0] is shown', () => {
+    const f = academic('review', ['name_ok', 'cgpa_ok'], ['higher_results_kind_differs', 'x_other'])
+    const d = factDetailItems(f)
+    expect(d.unresolved.map((i) => i.code)).toEqual(['x_other'])
+    expect(d.evidence.map((i) => i.code)).toEqual(['name_ok', 'cgpa_ok'])
+  })
+  test('detail list: subtitle is the not-checked evidence line - everything else shows', () => {
+    const f = academic('review', ['name_ok', 'higher_results_not_checked', 'cgpa_ok'])
+    const d = factDetailItems(f)
+    expect(d.evidence.map((i) => i.code)).toEqual(['name_ok', 'cgpa_ok'])
+    expect(d.unresolved).toEqual([])
   })
 })

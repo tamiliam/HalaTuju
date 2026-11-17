@@ -104,6 +104,15 @@ export function factSubtitleItem(fact: AdminVerdictFact): AdminVerdictItem | nul
   return fact.evidence[0] ?? null
 }
 
+/** The detail list under the tiles: every line except the one the tile's subtitle already shows. */
+export function factDetailItems(fact: AdminVerdictFact): { unresolved: AdminVerdictItem[]; evidence: AdminVerdictItem[] } {
+  const shown = factSubtitleItem(fact)
+  return {
+    unresolved: fact.unresolved.filter((it) => it !== shown),
+    evidence: fact.evidence.filter((it) => it !== shown),
+  }
+}
+
 // The estimative-probability band each tone names (Kent scale, collapsed to four).
 // Used for the tile labels + legend; the i18n key is admin.scholarship.verdict.band.<key>.
 export const TONE_BAND_KEY: Record<FactTileTone, string> = {

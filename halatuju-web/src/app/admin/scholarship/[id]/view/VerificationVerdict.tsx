@@ -7,11 +7,16 @@
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
-import { factSubtitleItem, factTileTone, TONE_BAND_KEY, verdictItemKey } from '@/lib/officerCockpit'
+import { factDetailItems, factSubtitleItem, factTileTone, TONE_BAND_KEY, verdictItemKey } from '@/lib/officerCockpit'
 import { localiseParams } from '@/lib/actionCentre'
-import type { AdminScholarshipDetail, AdminVerdictItem, VerdictCaseSummary } from '@/lib/admin-api'
+import type { AdminScholarshipDetail, AdminVerdictFact, AdminVerdictItem, VerdictCaseSummary } from '@/lib/admin-api'
 
 import type { T } from './shared'
+
+const hasDetail = (f: AdminVerdictFact) => {
+  const d = factDetailItems(f)
+  return d.unresolved.length + d.evidence.length > 0
+}
 
 export function VerificationVerdict({ app, t, caseSummary }: {
   app: AdminScholarshipDetail
@@ -133,14 +138,14 @@ export function VerificationVerdict({ app, t, caseSummary }: {
         )}
         {/* Expanded evidence / unresolved — shown ONLY for facts that still need attention.
             A green fact is hidden here (its tile tick is the whole story). */}
-        {(app.verdict || []).some((f) => factTileTone(f) !== 'green' && (f.evidence.length > 1 || f.unresolved.length > 0)) && (
+        {(app.verdict || []).some((f) => factTileTone(f) !== 'green' && hasDetail(f)) && (
           <div className="mt-3 space-y-2 border-t border-ground-100 pt-3">
             {(app.verdict || []).map((f) => {
               const resolve = (it: AdminVerdictItem) =>
                 t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                   localiseParams(it.params, t))
-              if (factTileTone(f) === 'green' || (f.evidence.length <= 1 && f.unresolved.length === 0)) return null
-              const subItem = factSubtitleItem(f)
+              if (factTileTone(f) === 'green' || !hasDetail(f)) return null
+              const detail = factDetailItems(f)
               return (
                 <div key={`detail-${f.fact}`} className="text-xs text-ground-600">
                   <span className="font-medium text-ground-500 uppercase text-xs md:text-[10px] tracking-wide">
@@ -148,13 +153,13 @@ export function VerificationVerdict({ app, t, caseSummary }: {
                   </span>
                   {/* Findings first (the active reasoning — e.g. the STR verdict leads the
                       income story), then the supporting confirmations. */}
-                  {f.unresolved.map((it, i) => (
+                  {detail.unresolved.map((it, i) => (
                     <div key={`u${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
                       <span className="text-caution-700 shrink-0">•</span>
                       <span>{resolve(it)}</span>
                     </div>
                   ))}
-                  {f.evidence.filter((it, idx) => it !== subItem && !(idx === 0 && f.unresolved.length > 0)).map((it, i) => (
+                  {detail.evidence.map((it, i) => (
                     <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
                       <span className="text-positive-700 shrink-0">✓</span>
                       <span>{resolve(it)}</span>
