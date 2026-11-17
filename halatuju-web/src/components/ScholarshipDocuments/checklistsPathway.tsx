@@ -107,8 +107,8 @@ export function startYearLine(years: number[] | undefined, t: (key: string) => s
   if (!years || years.length === 0) return null
   const text =
     years.length === 1
-      ? t('scholarship.docs.pathwayCheck.startYearOne').replace('{year}', String(years[0]))
-      : t('scholarship.docs.pathwayCheck.startYearMany')
+      ? t('documentsTab.pathwayCheck.startYearOne').replace('{year}', String(years[0]))
+      : t('documentsTab.pathwayCheck.startYearMany')
           .replace('{years}', years.slice(0, -1).join(', '))
           .replace('{last}', String(years[years.length - 1]))
   return (

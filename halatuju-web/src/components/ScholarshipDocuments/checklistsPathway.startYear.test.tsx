@@ -55,7 +55,7 @@ describe('the start-year line on the student offer card', () => {
 
   it('has the copy in every language file, with the same placeholders', () => {
     for (const file of [en, ms, ta]) {
-      const msgs = file.scholarship.docs.pathwayCheck
+      const msgs = file.documentsTab.pathwayCheck
       expect(msgs.startYearOne).toContain('{year}')
       expect(msgs.startYearMany).toContain('{years}')
       expect(msgs.startYearMany).toContain('{last}')

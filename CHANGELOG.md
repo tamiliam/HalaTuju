@@ -197,6 +197,7 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 Branch help-h3, not pushed. help-h1, then help-h2, then help-h3 rebased in that order onto origin/main; each keeps its own CHANGELOG, decisions and debt entries.
 - Versions: genuineness `MODEL_VERSION` 1.28.0 (H1), 1.29.0 (H2). `VERDICT_ENGINE_VERSION` 2026-11-15.10 (H2), then 2026-11-15.11 here: H3's .9 renumbered to sit above H2's .10 (no rule change). The cockpit lists engine versions sorted as text; ".11" sorts after ".10", and ".9" was never published.
 - Migration 0212 (`cohort_allowed_start_years`) keeps its number: main's latest is 0211.
+- Bundle: the start-year note's two sentences moved from `scholarship.docs.pathwayCheck` to `documentsTab.pathwayCheck` (the Documents tab's own slice, loaded with its chunk), so `/scholarship/apply` first-load goes 198.794 to 198.728 kB and `/scholarship/application` drops off the near-line list. Same words, same UI; no ledger line moved.
 - Debt: TD-645 (a confirmation can take the live slot as a course switch) ACCEPTED by the owner on 16 Nov (keep as is, a person checks). TD-647 (f): `org_config` could join `_MODULE_DOORS` in the courses facade test. No TD renumbering was needed (main 633-634, H2 635-639, H3 640-647).
 
 ### docs: H3b tidy - course-start condition in the setting and reviewer text, Waive-not-Resolve line, TD-647 (2026-11-16)

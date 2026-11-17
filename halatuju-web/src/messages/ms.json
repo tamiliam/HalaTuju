@@ -1729,8 +1729,6 @@
         "address": "Alamat",
         "fromLetter": "daripada surat anda",
         "declaredNote": "Sebelum ini anda memilih:",
-        "startYearOne": "Pemberian ini untuk pelajar yang kursusnya bermula pada {year}. Seorang penyemak tetap akan melihat permohonan anda dan membuat keputusan.",
-        "startYearMany": "Pemberian ini untuk pelajar yang kursusnya bermula pada {years} atau {last}. Seorang penyemak tetap akan melihat permohonan anda dan membuat keputusan.",
         "status": {
           "match": "Sepadan",
           "partial": "Sepadan sebahagian",
@@ -9914,6 +9912,10 @@
     }
   },
   "documentsTab": {
+    "pathwayCheck": {
+      "startYearOne": "Pemberian ini untuk pelajar yang kursusnya bermula pada {year}. Seorang penyemak tetap akan melihat permohonan anda dan membuat keputusan.",
+      "startYearMany": "Pemberian ini untuk pelajar yang kursusnya bermula pada {years} atau {last}. Seorang penyemak tetap akan melihat permohonan anda dan membuat keputusan."
+    },
     "card": {
       "choose": "Ambil foto atau pilih fail",
       "removeTitle": "Buang fail ini?",
