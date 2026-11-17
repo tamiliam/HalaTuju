@@ -199,7 +199,7 @@ export function ActionCard({
       if (code === 'documents_locked') onResolved()   // the stage moved on: the list drops this card
       setError(
         code === 'documents_locked' ? ((e as Error).message || t('scholarship.actionCentre.uploadError'))
-        : code === 'replace_limit_reached' ? replaceRefusalText(e, t)   // H6 (support at the hard ceiling)
+        : code === 'replace_limit_reached' ? replaceRefusalText(e, t)   // H6 (support when shut before consent)
         : code === 'unsupported_format' || code === 'upload_incomplete' || code === 'bad_file'
           ? t('scholarship.actionCentre.badFile')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',

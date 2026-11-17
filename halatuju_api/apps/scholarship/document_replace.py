@@ -27,9 +27,12 @@ at four. While `profile_completed_at` is unset AND the consent gate holds the st
 live copy is a red, unreadable, not-an-offer or stranger's copy, or the slot is empty and the gate asks
 for its type: `services.consent_blockers.consent_blocking_slots`), the slot takes up to
 `BLOCKER_EXTRA` (4) more uploads, `HARD_LIMIT` (8) in all. It lapses the moment the copy passes or she
-consents; a copy that does not block gets nothing extra. At the hard ceiling no ask is possible, so the
-409 sends her to support (`replace_limit_support`), not to her reviewer. A person's ask still lets one
-more in at any count.
+consents; a copy that does not block gets nothing extra. A person's ask still lets one more in at any count.
+
+Fix round 4: the map from gate codes to slots is complete BY CONSTRUCTION. A document code the map cannot
+tie to a slot makes every slot of the case count as blocking (`consent_blockers.EVERY_SLOT`), so a new or
+missed code cannot recreate the dead end. And before consent EVERY refusal (at four or at eight) sends her
+to support (`replace_limit_support`), because nobody can ask yet; after consent the reviewer line stands.
 
 Slots that predate the counter (no row yet) count their stored copies, superseded ones included; the row is
 seeded from those copies the first time it is written (an upload or a Remove), so history is never lost.
@@ -49,14 +52,14 @@ UPLOAD_LIMIT = REPLACE_LIMIT + 1    # the first upload is free
 BLOCKER_EXTRA = 4                   # pre-consent, while the slot holds the consent gate
 HARD_LIMIT = UPLOAD_LIMIT + BLOCKER_EXTRA
 REPLACE_LIMIT_REACHED = 'replace_limit_reached'
-REPLACE_LIMIT_SUPPORT = 'replace_limit_support'   # the body `code` at the hard ceiling: no ask is possible
+REPLACE_LIMIT_SUPPORT = 'replace_limit_support'   # the body `code` before consent: no ask is possible
 BAD_REQUEST_CODE = 'bad_request_code'
 ASKED_AGAIN_AT = 'asked_again_at'   # ResolutionItem.params stamp written by the admin "Ask again"
 _MESSAGE = ('You have already replaced this document 3 times. If it is still wrong, '
             'your reviewer will ask you for what is needed.')
 # The web shows `scholarship.actionCentre.replaceLimitSupport` (en / ms / ta, with {supportEmail}); this is
 # the English the 409 carries, with the same "write to us at" line as the account-claim refusals.
-_SUPPORT_MESSAGE = ('You have sent this document 8 times and it still stops your application. '
+_SUPPORT_MESSAGE = ('You have sent this document as many times as we can take before you submit. '
                     'Please write to us at {email} and we will help.')
 
 #: Types the serializer exposes `authenticity` for (single source: serializers/documents.py reads it).
@@ -159,7 +162,9 @@ class SlotBook:
             from .services.consent_blockers import consent_blocking_slots
             self._blocking = consent_blocking_slots(self.app)
         slots, missing = self._blocking
-        return (any((doc_type, m, request_code) in slots for m in members)
+        from .services.consent_blockers import EVERY_SLOT
+        return (EVERY_SLOT in missing
+                or any((doc_type, m, request_code) in slots for m in members)
                 or any(t == doc_type and (who is None or who in members) for t, who in missing))
 
     def _blocker_left(self, doc_type, members, request_code, n):
@@ -173,11 +178,10 @@ class SlotBook:
                 or self._blocker_left(doc_type, members, request_code, n) > 0)
 
     def support_only(self, doc_type, members, request_code):
-        """True when the slot is shut and no ask can open it: before consent, at the hard ceiling, its copy
-        still holding the gate. The student is sent to support instead of told her reviewer will ask."""
-        n, _last = self.uploads(doc_type, members, request_code)
-        return (n >= HARD_LIMIT and not self.asked_again(doc_type, members, request_code)
-                and self.blocks_consent(doc_type, members, request_code))
+        """True when the slot is shut before consent (fix round 4): at four or at eight, whatever holds the
+        gate. Nobody can ask before consent, so the student is sent to support, never told her reviewer will
+        ask. After consent the reviewer line stands."""
+        return self.app.profile_completed_at is None and not self.allowed(doc_type, members, request_code)
 
     def replaces_used(self, doc_type, members, request_code):
         n, _last = self.uploads(doc_type, members, request_code)
@@ -239,7 +243,7 @@ def request_code_refusal(app, doc_type, member, request_code):
 
 
 def replace_refusal(app=None, support=False):
-    """The 409 for a full slot. `support` (the hard ceiling, `SlotBook.support_only`): the body `code` is
+    """The 409 for a full slot. `support` (any refusal before consent, `SlotBook.support_only`): the body `code` is
     `replace_limit_support` and the message names the application's support address (`branding`), the
     channel the student's other "write to us" messages give; `error` stays `replace_limit_reached`."""
     if support:

@@ -25,8 +25,8 @@ export interface ApplicantDocument {
   replace_count?: number
   replaces_left?: number | null
   replace_limit?: number
-  // H6 fix round 3: true when the slot is shut before consent at the hard ceiling (eight uploads, its copy
-  // still holding the consent gate): only support can help, so the line names support, not a reviewer.
+  // H6 fix rounds 3-4: true when the slot is shut before consent (at four or at eight uploads): nobody can
+  // ask yet, so only support can help and the line names support, not a reviewer.
   replace_support?: boolean | null
   // S13: Vision OCR soft-signal fields (populated only for doc_type='ic')
   vision_nric: string

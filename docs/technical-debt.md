@@ -9317,7 +9317,7 @@ serve a per-type `replaceable` / `open` flag.
 
 ### [TD-655] Choosing a member multiplies the upload cap - low
 
-**Raised 2026-11-17 by the student-help fix round 2 review. No money effect.** The slot key includes `household_member`, which the student picks: her own IC can be sent under six member keys at four uploads each, and switching the STR earner before consent opens a fresh STR slot. Each upload is a paid read. Fix: count the student's own types on one slot whatever member is sent, and carry an STR slot's count across an earner switch (or cap per type per application).
+**Raised 2026-11-17 by the student-help fix round 2 review; updated by fix rounds 3 and 4. No money effect.** The slot key includes `household_member`, which the student picks: her own IC can be sent under six member keys, and switching the STR earner before consent opens a fresh STR slot. Since fix round 3 a slot that holds the consent gate takes up to EIGHT uploads before consent (`HARD_LIMIT`), and since fix round 4 a gate code the map cannot tie to a slot opens every slot of the case (`consent_blockers.EVERY_SLOT`), so the bound is now eight per member slot, not four. Each upload is a paid read. Fix: count the student's own types on one slot whatever member is sent, and carry an STR slot's count across an earner switch (or cap per type per application).
 *(A - S)*
 
 ### [TD-656] The Done card for a hand-resolved officer request may show the blank slot's counter - low
@@ -9328,4 +9328,14 @@ serve a per-type `replaceable` / `open` flag.
 ### [TD-657] The document serializer builds a SlotBook eagerly for a document served alone - low
 
 **Raised 2026-11-17 by the student-help fix round 2 review. No money effect.** `ApplicantDocumentSerializer._slot_answer` calls `self.__dict__.setdefault('_own_slot_book', SlotBook(obj.application))`, which builds the book (and its two queries) on every field read, not once, so a single document served alone costs two extra queries per call. Fix: test for the cached book before building it.
+*(A - S)*
+
+### [TD-658] A `<type>_missing` gate code opens every request code's slot of that type - low
+
+**Raised 2026-11-17 by student-help fix round 4. No money effect.** `SlotBook.blocks_consent` matches the `missing` pairs of `consent_blocking_slots` on (doc type, member) only and ignores `request_code`, so a type the gate asks for opens both the blank slot and any officer-request slot of that type to the pre-consent allowance. Bounded: officer requests are refused before consent, so such a slot is rare then, and each is still capped at eight. Fix: carry the request code ('' for the gate's own asks) in `missing` and match it.
+*(A - S)*
+
+### [TD-659] `consent_blocking_slots` reads the red and unreadable checks twice - low
+
+**Raised 2026-11-17 by student-help fix round 4. No money effect.** `consent_blocking_slots` calls `consent_blockers` (which runs `document_red_blockers` and `document_unreadable_blockers`) and then runs both again with `per_doc=True` to find the copies. Inside one snapshot the document reads are shared, but the checks themselves are computed twice: a fixed extra cost per upload request or student list read once a slot has used its four, before consent only. Fix: let `consent_blockers` take an optional sink that collects the `(document, code)` pairs on its one pass.
 *(A - S)*

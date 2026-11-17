@@ -113,8 +113,8 @@ function FileChip({
 }) {
   // H6: a slot takes the first upload and 3 replaces, every upload counted by the server (a copy that
   // needs a fix too, Remove included); after that the button gives way to one plain line until a
-  // person asks again (before consent, up to four more while the copy holds the consent gate; at that
-  // ceiling the line names support). `replaces_left` / `replace_support` are the server's own answers.
+  // person asks again (before consent, up to four more while the copy holds the consent gate; a slot
+  // shut before consent names support). `replaces_left` / `replace_support` are the server's own answers.
   const left = replacesLeft(doc)
   const canReplace = !!onUpload && left > 0
   return (

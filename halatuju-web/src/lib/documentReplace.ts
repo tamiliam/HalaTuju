@@ -3,9 +3,9 @@
  * Action Centre and the Documents tab read the same rule. The rule is the server's
  * (`document_replace.SlotBook`): a slot takes the first upload and three replaces, counted across
  * Remove, plus one more for each ask a person raised after its last upload. Before consent nobody can
- * ask, so a slot whose copy holds the consent gate takes up to four more (eight in all); at that ceiling
- * the server serves `replace_support` and refuses with the body code `replace_limit_support`, and the
- * student is sent to support instead of told her reviewer will ask. The server serves the
+ * ask, so a slot whose copy holds the consent gate takes up to four more (eight in all); any slot shut
+ * before consent (at four or at eight) is served `replace_support` and refused with the body code
+ * `replace_limit_support`, and the student is sent to support instead of told her reviewer will ask. The server serves the
  * answer as `replaces_left` on each document; `replace_limit - replace_count` (3 the fallback) is only
  * for a payload from an older build. The server also refuses a replace once documents are locked,
  * except the types the case still asks for (`open_doc_types`).
@@ -21,12 +21,12 @@ export function replacesLeft(doc: Pick<ApplicantDocument, 'replace_count' | 'rep
   return Math.max(0, (doc.replace_limit ?? FALLBACK_LIMIT) - (doc.replace_count ?? 0))
 }
 
-/** The line a shut slot shows: support at the hard ceiling (no ask is possible), else the reviewer will ask. */
+/** The line a shut slot shows: support when shut before consent (no ask is possible), else the reviewer will ask. */
 export function replaceLimitKey(doc?: Pick<ApplicantDocument, 'replace_support'> | null): string {
   return doc?.replace_support ? 'scholarship.actionCentre.replaceLimitSupport' : 'scholarship.actionCentre.replaceLimit'
 }
 
-/** The text for a `replace_limit_reached` 409: the hard ceiling's support line in the student's own
+/** The text for a `replace_limit_reached` 409: the pre-consent support line in the student's own
  *  language, else the server's message (the reviewer will ask), else the plain line. */
 export function replaceRefusalText(e: unknown, t: (key: string) => string): string {
   if ((e as { bodyCode?: string } | null)?.bodyCode === SUPPORT_CODE) return t('scholarship.actionCentre.replaceLimitSupport')

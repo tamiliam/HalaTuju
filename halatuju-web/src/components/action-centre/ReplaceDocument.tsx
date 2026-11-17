@@ -15,7 +15,7 @@ import { UploadButtons } from './UploadButtons'
  * `replace: true` is only a hint: the server counts every upload into the slot, 3 replaces after the
  * first). Replace is hidden by the caller once documents are locked; with no replaces left (the served
  * `replaces_left`) it gives way to one plain line. The server is the judge: a 409
- * `replace_limit_reached` or `documents_locked` shows its own message (at the pre-consent hard ceiling,
+ * `replace_limit_reached` or `documents_locked` shows its own message (shut before consent,
  * body code `replace_limit_support`, the support line in her own language).
  */
 export function ReplaceDocument({ doc, requestCode = '', member, token, limits, onDone }: {

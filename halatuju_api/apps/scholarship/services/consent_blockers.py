@@ -78,36 +78,93 @@ def consent_blockers(application):
 #: The student's own IC codes she clears by sending the card again (never 'ic_service_down': ours).
 _OWN_IC_REDO = ('ic_unreadable', 'ic_nric_mismatch', 'ic_name_mismatch')
 
+#: H6 fix round 4: the consent-gate codes that NO document upload clears, so they never open a slot. The
+#: profile steps (she fills a form, not a slot) and our own "still checking / try later" (a read of ours
+#: finishes it; `STR_PENDING_OUR_READ` is this same code). EVERY other code the gate can give is a document
+#: code: it is mapped to its slots below, or, unmapped, it opens every slot (`EVERY_SLOT`). A new gate code
+#: therefore opens slots by default; `test_document_replace_blocker` walks the gate's source to prove it.
+NOT_DOCUMENT_CODES = ('quiz_incomplete', 'story_incomplete', 'family_incomplete', 'address_incomplete',
+                      'funding_incomplete', 'income_incomplete')
+OUR_WAIT_CODES = ('ic_service_down',)
+
+#: The safety net, in `missing`: a document code the map below could not tie to a slot holds the gate,
+#: so every document slot of the case counts as blocking (still at most `HARD_LIMIT` uploads each).
+EVERY_SLOT = ('*', None)
+
+#: `income_evidence_missing:<member>`: any one way of showing that member's income would do.
+_INCOME_EVIDENCE_TYPES = ('salary_slip', 'epf', 'income_support_doc')
+
 
 def consent_blocking_slots(application):
-    """H6 fix round 3 (owner 2026-11-17): the document slots the consent gate is holding this student on,
-    as (slots, missing). `slots` is {(doc_type, household_member, request_code)} of each LIVE copy whose own
-    check puts a code into `consent_blockers` right now: a red (`document_red_blockers`), an unreadable
-    copy (`document_unreadable_blockers`), a not-an-offer-letter offer, her own IC's identity reds, a
-    stranger's STR. `missing` is {(doc_type, member or None)} for each `<type>_missing` code the gate
-    gives (`parent_ic_missing:<member>` names its member), so a slot emptied by Remove counts too. Our own
-    outages and "still checking" codes never count. Read only before consent; empty sets when nothing
-    blocks. The documents' reads are shared through one snapshot."""
+    """H6 fix rounds 3 and 4 (owner 2026-11-17): the document slots the consent gate is holding this
+    student on, as (slots, missing). `slots` is {(doc_type, household_member, request_code)}: each LIVE copy
+    whose own check puts a code into `consent_blockers` right now (a red, an unreadable copy, a
+    not-an-offer-letter offer, her own IC's identity reds, a stranger's STR, an STR that needs its
+    recipient's IC number, an unsigned income letter, an STR no card could be matched to), plus the slot
+    keys those codes name even when empty. `missing` is {(doc_type, member or None)} for each `<type>_missing`
+    code (`parent_ic_missing:<member>` names its member), so a slot emptied by Remove counts too.
+
+    BY CONSTRUCTION, not by list: any code that is not in `NOT_DOCUMENT_CODES` / `OUR_WAIT_CODES` and that
+    this map did not tie to at least one slot adds `EVERY_SLOT` to `missing`, so no document code can leave
+    a pre-consent student with a shut slot and nobody able to ask. Read only before consent; empty sets
+    when nothing blocks. The documents' reads are shared through one snapshot."""
+    from ..document_replace import slot_members
     from ..document_snapshot import latest_doc, live_docs, snapshot_unless_open
-    from ..income_str_ownership import STR_NOT_HOUSEHOLD
+    from ..income_declaration import UNAPPROVED
+    from ..income_str_ownership import STR_NEEDS_RECIPIENT_IC, STR_NOT_HOUSEHOLD
     from ..models import ApplicantDocument
+    types = {t for t, _label in ApplicantDocument.DOC_TYPES}
+    slots, missing, tied = set(), set(), set()
+    str_slot = slot_members(application, 'str', '', '')
+
+    def tie(code, docs=(), keys=(), absent=()):
+        """Record what `code` holds; it counts as mapped only when it names at least one slot."""
+        found = {(d.doc_type, d.household_member or '', d.request_code or '') for d in docs if d is not None}
+        found |= set(keys)
+        if any(t == 'str' and not rc for t, _m, rc in found):
+            # The STR that holds the gate may carry an earlier earner's tag; her next STR goes into the
+            # CURRENT earner's slot (`slot_members`), so that slot is the one that must stay open.
+            found |= {('str', m, '') for m in str_slot}
+        slots.update(found)
+        missing.update(absent)
+        if found or absent:
+            tied.add(code)
+
     with snapshot_unless_open(application):
         codes = set(consent_blockers(application))
         if not codes:
             return set(), set()
-        docs = [d for d, c in document_red_blockers(application, per_doc=True) if c in codes]
-        docs += [d for d, c in document_unreadable_blockers(application, per_doc=True) if c in codes]
+        for d, c in document_red_blockers(application, per_doc=True):
+            if c in codes:
+                tie(c, [d])
+        for d, c in document_unreadable_blockers(application, per_doc=True):
+            if c in codes:
+                tie(c, [d])
         if 'offer_not_official' in codes:
-            docs.append(latest_doc(application, 'offer_letter'))
-        if codes.intersection(_OWN_IC_REDO):
-            docs.append(latest_doc(application, 'ic'))
+            tie('offer_not_official', [latest_doc(application, 'offer_letter')])
+        for c in codes.intersection(_OWN_IC_REDO):
+            tie(c, [latest_doc(application, 'ic')])
         if STR_NOT_HOUSEHOLD in codes:
-            docs += list(live_docs(application, 'str'))
-    slots = {(d.doc_type, d.household_member or '', d.request_code or '') for d in docs if d is not None}
-    types = {t for t, _label in ApplicantDocument.DOC_TYPES}
-    missing = set()
-    for code in codes:
-        head, _sep, member = code.partition(':')
-        if head.endswith('_missing') and head[:-len('_missing')] in types:
-            missing.add((head[:-len('_missing')], member or None))
+            tie(STR_NOT_HOUSEHOLD, live_docs(application, 'str'))
+        if 'income_document_unreadable' in codes:
+            # `_unmatched_str_asks`: every card is on file and none matched the STR's recipient: a clearer
+            # STR or a clearer card. (`document_unreadable_blockers` ties its own copies above.)
+            tie('income_document_unreadable', live_docs(application, doc_types=('str', 'parent_ic')))
+        for code in codes:
+            head, _sep, member = code.partition(':')
+            if head == STR_NEEDS_RECIPIENT_IC and member:
+                # The STR read fine but shows no IC number: the STR page that carries it, or the card.
+                tie(code, live_docs(application, 'str'), keys=[('parent_ic', member, '')])
+            elif head == UNAPPROVED and member:
+                # An informal income letter (or a salary-route slip) with no issuer / approver: send it signed.
+                tie(code, live_docs(application, doc_types=('income_support_doc', 'salary_slip'),
+                                    members=[member, '']),
+                    keys=[('income_support_doc', member, ''), ('salary_slip', member, '')])
+            elif head == 'income_evidence_missing' and member:
+                tie(code, absent=[(t, member) for t in _INCOME_EVIDENCE_TYPES])
+            elif head.endswith('_missing') and head[:-len('_missing')] in types:
+                tie(code, absent=[(head[:-len('_missing')], member or None)])
+    exempt = NOT_DOCUMENT_CODES + OUR_WAIT_CODES
+    if any(c.partition(':')[0] not in exempt for c in codes - tied):
+        missing.add(EVERY_SLOT)
     return slots, missing

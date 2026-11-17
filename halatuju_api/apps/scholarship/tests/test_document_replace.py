@@ -238,7 +238,9 @@ class TestDocumentReplace(TestCase):
         app.save()
         DocumentSlotReplaces.objects.create(application=app, doc_type='salary_slip', household_member='', uploads=4)
         r = self._slip(client, app, member='')
-        self.assertEqual((r.status_code, r.json()['code']), (409, 'replace_limit_reached'))
+        # before consent (fix round 4): the refusal names support, as nobody can ask yet
+        self.assertEqual((r.status_code, r.json()['error'], r.json()['code']),
+                         (409, 'replace_limit_reached', 'replace_limit_support'))
         # two legacy blank uploads and two tagged ones are four in the swept slot too
         app2, client2 = self._case()
         app2.income_route, app2.income_earner, app2.profile_completed_at = 'str', 'father', None
