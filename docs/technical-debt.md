@@ -9305,9 +9305,9 @@ serve a per-type `replaceable` / `open` flag.
 **Raised 2026-11-17 by student-help fix round 2. No money effect.** The counter rides each document (`replaces_left`), so a slot with no copy left has nothing to show it on: the card offers Upload and the server refuses with 409 `replace_limit_reached` and its plain message. Fix: serve the slot's `replaces_left` with the lock block for empty slots too.
 *(A - S)*
 
-### [TD-653] A slot Removed before migration 0212 starts its count from the copies left - low
+### [TD-653] A slot Removed before migration 0213 starts its count from the copies left - low
 
-**Raised 2026-11-17 by student-help fix round 2. No money effect.** A slot with no `document_slot_replaces` row is counted from its stored copies (superseded ones included), so uploads a student Removed before 0212 went live are not counted. One-off, bounded to four more uploads per such slot. Fix: none needed after the first weeks; the rows are seeded on first write.
+**Raised 2026-11-17 by student-help fix round 2. No money effect.** A slot with no `document_slot_replaces` row is counted from its stored copies (superseded ones included), so uploads a student Removed before 0213 went live are not counted. One-off, bounded to four more uploads per such slot. Fix: none needed after the first weeks; the rows are seeded on first write.
 *(A - S)*
 
 ### [TD-654] An officer ask that names no member gives one more upload to every member's slot of its type - low
@@ -9338,4 +9338,9 @@ serve a per-type `replaceable` / `open` flag.
 ### [TD-659] `consent_blocking_slots` reads the red and unreadable checks twice - low
 
 **Raised 2026-11-17 by student-help fix round 4. No money effect.** `consent_blocking_slots` calls `consent_blockers` (which runs `document_red_blockers` and `document_unreadable_blockers`) and then runs both again with `per_doc=True` to find the copies. Inside one snapshot the document reads are shared, but the checks themselves are computed twice: a fixed extra cost per upload request or student list read once a slot has used its four, before consent only. Fix: let `consent_blockers` take an optional sink that collects the `(document, code)` pairs on its one pass.
+*(A - S)*
+
+### [TD-660] The H6 consent-gate source-walk test reads only two modules - low
+
+**Raised 2026-11-17 at the Batch B rebase. No money effect.** H6 consent-blocker source-walk test reads only blockers.py and consent_blockers.py; a document code raised in another module relies on the runtime safety net only. (`test_document_replace_blocker.py` `_gate_codes` walks `services/blockers.py` and `services/consent_blockers.py`; a gate code added in a third module is not listed by the walk, so the test cannot prove it maps to a slot, and only the safety net in `consent_blocking_slots` (an unmapped code adds `EVERY_SLOT`, opening every slot) keeps the student from being stuck.) Fix: follow calls into any module the gate reaches, or assert the walk covers every module `consent_blockers` imports from.
 *(A - S)*
