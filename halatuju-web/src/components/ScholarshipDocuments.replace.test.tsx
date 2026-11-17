@@ -1,9 +1,10 @@
 /**
  * @jest-environment jsdom
  *
- * H6: Replace on the Documents tab. A document that reads fine shows how many replaces are left, loses
- * the button after the third, and sends `replace: true`; a returned one is the normal re-upload (no
- * count, no flag). Locked hides Replace (see ScholarshipDocuments.locked.test.tsx).
+ * H6: Replace on the Documents tab. Every upload into a slot counts (a returned copy too), so every
+ * document shows the server's `replaces_left` and loses the button at 0. A settled document still
+ * sends `replace: true` (a hint only); a returned one does not. Locked hides Replace (see
+ * ScholarshipDocuments.locked.test.tsx).
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarshipDocuments from './ScholarshipDocuments'
@@ -70,10 +71,20 @@ describe('replace on the documents tab', () => {
     expect(screen.getByText('scholarship.actionCentre.replaceLimit')).toBeTruthy()
   })
 
-  it('a returned document keeps an uncapped Replace and no count', async () => {
+  it('a returned document is capped too: no Replace once the slot is used up', async () => {
     await mount(slip({ replace_count: 3, vision_fields: { student_verdict: 'unreadable' } }))
+    expect(screen.queryByText('scholarship.docs.replace')).toBeNull()
+    expect(screen.getByText('scholarship.actionCentre.replaceLimit')).toBeTruthy()
+  })
+
+  it("shows the server's replaces_left over its own sum (a removed copy still counts)", async () => {
+    await mount(slip({ replace_count: 0, replaces_left: 1 }))
+    expect(screen.getByText('scholarship.actionCentre.replacesLeftOne:1')).toBeTruthy()
+  })
+
+  it('a person asked again: replaces_left 1 brings Replace back past three', async () => {
+    await mount(slip({ replace_count: 3, replaces_left: 1 }))
     expect(screen.getByText('scholarship.docs.replace')).toBeTruthy()
-    expect(screen.queryByText('scholarship.actionCentre.replaceLimit')).toBeNull()
   })
 
   it('sends replace: true for a settled document', async () => {

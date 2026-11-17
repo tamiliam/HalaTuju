@@ -10,7 +10,7 @@ from django.test import TestCase, override_settings
 
 from apps.scholarship import optional_asks
 from apps.scholarship.check2_queries import DOC_SPECS, sync_check2_queries
-from apps.scholarship.document_replace import open_request_asks
+from apps.scholarship.document_replace import ASKED_AGAIN_AT, human_asks
 from apps.scholarship.models import ResolutionItem
 from apps.scholarship.serializers import ResolutionItemSerializer
 
@@ -118,11 +118,14 @@ class TestDeclineOptionalAsk(TestCase):
         self.assertIn(item.id, [i.id for i in queue])
 
     def test_a_declined_ask_no_longer_exempts_the_replace_cap(self):
+        # a Check 2 ask grants an extra upload only once a reviewer has asked again (a person's ask)
         item = _item(self.app, 'electricity_bill_recheck')
+        item.params = {**item.params, ASKED_AGAIN_AT: '2026-11-17T01:00:00+00:00'}
+        item.save(update_fields=['params'])
         with override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True):
-            self.assertTrue(open_request_asks(self.app, 'electricity_bill', set()))
+            self.assertEqual([t for t, _m, _at in human_asks(self.app)], ['electricity_bill'])
             self._post(item, reason='lost_bill')
-            self.assertFalse(open_request_asks(self.app, 'electricity_bill', set()))
+            self.assertEqual(human_asks(self.app), [])
 
 
 @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)

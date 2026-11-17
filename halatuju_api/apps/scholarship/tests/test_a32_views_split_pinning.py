@@ -19,7 +19,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import URLPattern, URLResolver
 
 from apps.scholarship import urls as scholarship_urls
-from apps.scholarship.models import ApplicantDocument
+from apps.scholarship.models import ApplicantDocument, ResolutionItem
 from apps.scholarship.tests.doc_keys import issued_key
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_application, make_cohort, make_student,
@@ -164,6 +164,13 @@ class DocumentRecordPost(TestCase):
     def _post(self, body):
         return self.client.post(DOCS, body, format='json')
 
+    @staticmethod
+    def _asked(app, code, doc_type, member=''):
+        """An officer's document request: H6 accepts a request code only when one exists."""
+        return ResolutionItem.objects.create(application=app, code=code, doc_type=doc_type, kind='doc',
+                                             source='officer', status='open',
+                                             params={'household_member': member} if member else {})
+
     def _count(self):
         return ApplicantDocument.objects.filter(application=self.app).count()
 
@@ -231,6 +238,8 @@ class DocumentRecordPost(TestCase):
         self.assertEqual(self._count(), 0)
 
     def test_the_other_doc_cap_refuses_a_new_slot_but_not_a_replacement(self):
+        self._asked(self.app, 'officer_1', 'other')
+        self._asked(self.app, 'officer_2', 'other')
         ApplicantDocument.objects.create(application=self.app, doc_type='other', request_code='officer_1',
                                          storage_path=issued_key(self.app, 'other', 'o1'))
         with patch('apps.courses.org_config.value', side_effect=_cfg(max_other=1)):
@@ -322,6 +331,7 @@ class DocumentRecordPost(TestCase):
         self.assertIsNone(father.superseded_at)
 
     def test_an_officer_requested_upload_also_replaces_the_apply_form_copy(self):
+        self._asked(self.app, 'officer_4', 'ic')
         apply_form = ApplicantDocument.objects.create(
             application=self.app, doc_type='ic', request_code='',
             storage_path=issued_key(self.app, 'ic', 'form'))
@@ -383,6 +393,7 @@ class DocumentRecordPost(TestCase):
 
     def test_an_officer_requested_upload_is_never_force_tagged(self):
         app = self._str_app()
+        self._asked(app, 'officer_2', 'salary_slip', 'father')
         self._post_for(app, 'salary_slip', member='father', request_code='officer_2')
         self.assertEqual(self._member_of(app, 'salary_slip'), 'father')
 
@@ -413,21 +424,22 @@ class DocumentRecordPost(TestCase):
 
     def test_higher_results_carries_the_kind_from_results_route(self):
         with patch('apps.scholarship.results_route.upload_kind', return_value='stpm') as kind, \
-                patch('apps.scholarship.slot_writes.create_in_slot', return_value=MagicMock()) as create:
+                patch('apps.scholarship.slot_writes.create_in_slot', return_value=MagicMock(id=0)) as create:
+            self._asked(self.app, 'officer_5', 'higher_results')
             self._post(self._body('higher_results', 'h', request_code='officer_5'))
         kind.assert_called_once()
         self.assertEqual(kind.call_args.args[1], 'officer_5')
         self.assertEqual(create.call_args.args[1]['results_kind'], 'stpm')
 
     def test_other_types_carry_no_results_kind(self):
-        with patch('apps.scholarship.slot_writes.create_in_slot', return_value=MagicMock()) as create:
+        with patch('apps.scholarship.slot_writes.create_in_slot', return_value=MagicMock(id=0)) as create:
             self._post(self._body('ic', 'k'))
         self.assertNotIn('results_kind', create.call_args.args[1])
 
     def test_the_slot_write_gets_the_slot_filter_and_flags(self):
         old = ApplicantDocument.objects.create(application=self.app, doc_type='ic',
                                                storage_path=issued_key(self.app, 'ic', 'old'))
-        with patch('apps.scholarship.slot_writes.create_in_slot', return_value=MagicMock()) as create:
+        with patch('apps.scholarship.slot_writes.create_in_slot', return_value=MagicMock(id=0)) as create:
             self._post(self._body('ic', 'n'))
         kw = create.call_args.kwargs
         self.assertTrue(kw['staged'])

@@ -9278,24 +9278,34 @@ student then sees Upload and only learns the stage is locked from the plain 409 
 `ScholarshipDocuments.tsx` hides the income-proof card's upload when `lock.locked` and none of `INCOME_PROOF_TYPES` is in
 `open_doc_types`; that assumes the server never opens an income type after the lock (true today: only the bank statement,
 semester results and the two late higher-results asks are exempt). If an income type is ever exempted, the card needs a
-per-type check. (d) Two simultaneous POSTs into one slot can both read used=2 and both store 3 (a one-count race; no money effect). (e) The `replace` flag the client sends is now a dead hint on the server. (f) A file refused with 409 `replace_limit_reached` is already in Storage (the existing orphan behaviour of a refused record). (h) The exemption is per type, not per request: an open student-visible doc ask (any source) exempts any copy in that type's slot until it resolves; bounded by the ask closing, 0 money effect. (g) The Documents tab has no per-slot knowledge of an open request, so a settled card with no replaces left still hides Replace while the Action Centre card for the request (no counter) is the path; the server never blocks it.
+per-type check. (d) The one-count race on parallel uploads is TD-649. (e) The `replace` flag the client sends is now a dead hint on the server. (f) A file refused with 409 `replace_limit_reached` is already in Storage (the existing orphan behaviour of a refused record). (h) Fix round 2 (2026-11-17) replaced the per-type exemption: only a person's ask raised after the slot's last upload grants one more upload; system and Check 2 tickets never grant. (g) The Documents tab counter is the server's `replaces_left`; a slot emptied by Remove has no document to carry it (TD-652).
 (g) H8: the callout text drawn inside the sample SVGs ("What we check" blocks) stays English only; the numbered list under the picture is real text and will be translated by Sol. Fix: redraw per language or drop the in-picture callouts.
 (h) H9: the sample-stamp check (`genuineness/sample_stamp.py`) runs once in `upload_read._read_copy`, so (1) a re-read through `vision/` (the re-extract and release-decisions jobs) overwrites the flag with a fresh score and does not re-run it; (2) a document type with no read (photo, letters) is not checked; (3) for a supporting document the model is asked when the OCR text holds SAMPLE / CONTOH / SPECIMEN, or when the OCR text is empty or failed, so a stamp OCR reads as other text is not caught (an IC is always asked); (4) a sample offer letter becomes `not_offer_letter`, which blocks submission like any non-offer. (5) A sample-flagged EPF tagged to a household member still counts as income evidence under the TD-411 exemption (`income_shown.proof_flagged` / `evidence._member_has_epf_value`); fixing it needs a money-side edit, for the owner. Kill switch: env var `SAMPLE_CHECK_ENABLED` (default on; 0 turns the check off). No scorer prompt or logic changed, so no MODEL_VERSION moved (results_doc stays 1.27.0 and the offer reader 2.5.0; the new reader is `SAMPLE_CHECK_VERSION` 1.0.0). MERGE NOTE: the planned results_doc numbers (main 1.27.0, help-h1 and help-h2 each 1.28.0, the second becoming 1.29.0, H9 1.30.0 if it touched it) clash only if H9 later edits that reader; today it does not.
 Fix: (a) keep the failure and show the load-error card or a locked-by-default state; (b)
 serve a per-type `replaceable` / `open` flag.
 *(A - S)*
 
-### [TD-635] Two parallel uploads into one document slot can both pass the replace cap - low
+### [TD-649] Two parallel uploads into one document slot can both pass the replace cap - low
 
-**Raised 2026-11-17 by the student-help review. No money effect.** The cap (`document_replace.replaces_used`) is read, then the new row is written, with no lock between: two uploads sent at the same moment can both see 2 used and both be accepted (4 replaces). Fix: lock the slot row (`select_for_update` on the live copy, or a unique `(slot, replace_count)`).
+**Raised 2026-11-17 by the student-help review. No money effect.** The cap (`document_replace.SlotBook.allowed`) reads `document_slot_replaces.uploads`, then `record_upload` adds one after the copy is stored, with no lock between: two uploads sent at the same moment can both see 3 and both be accepted (5 uploads). Fix: `select_for_update` on the slot's counter row before the check, or an `F('uploads') + 1` update guarded by `uploads < allowed`.
 *(A - S)*
 
-### [TD-636] After the interview lock, a document type stays open by type and stage, not by an open ask - low
+### [TD-650] After the interview lock, a document type stays open by type and stage, not by an open ask - low
 
 **Raised 2026-11-17 by the student-help review. No money effect.** `views/document_lock.py` `doc_type_open` keeps the late higher-results types open by doc type + status, not by whether an ask for that type is actually open, so a student can upload one the case never asked for. Fix: also require an open ask.
 *(A - S)*
 
-### [TD-637] A Check 2 item hidden while its flag is off can still be declined through the API - low
+### [TD-651] A Check 2 item hidden while its flag is off can still be declined through the API - low
 
 **Raised 2026-11-17 by the student-help review. No money effect.** `optional_asks.decline` does not test `CHECK2_STUDENT_QUERIES_ENABLED`, so a student who knows the item id can decline a Check 2 ask the screen does not show. Fix: refuse a decline for an item the student cannot see (`resolution.item_student_visible`).
+*(A - S)*
+
+### [TD-652] A slot emptied by Remove shows Upload even when its four uploads are used - low
+
+**Raised 2026-11-17 by student-help fix round 2. No money effect.** The counter rides each document (`replaces_left`), so a slot with no copy left has nothing to show it on: the card offers Upload and the server refuses with 409 `replace_limit_reached` and its plain message. Fix: serve the slot's `replaces_left` with the lock block for empty slots too.
+*(A - S)*
+
+### [TD-653] A slot Removed before migration 0212 starts its count from the copies left - low
+
+**Raised 2026-11-17 by student-help fix round 2. No money effect.** A slot with no `document_slot_replaces` row is counted from its stored copies (superseded ones included), so uploads a student Removed before 0212 went live are not counted. One-off, bounded to four more uploads per such slot. Fix: none needed after the first weeks; the rows are seeded on first write.
 *(A - S)*

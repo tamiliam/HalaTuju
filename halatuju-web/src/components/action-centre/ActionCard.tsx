@@ -199,6 +199,7 @@ export function ActionCard({
       if (code === 'documents_locked') onResolved()   // the stage moved on: the list drops this card
       setError(
         code === 'documents_locked' ? ((e as Error).message || t('scholarship.actionCentre.uploadError'))
+        : code === 'replace_limit_reached' ? ((e as Error).message || t('scholarship.actionCentre.replaceLimit'))   // H6
         : code === 'unsupported_format' || code === 'upload_incomplete' || code === 'bad_file'
           ? t('scholarship.actionCentre.badFile')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
@@ -247,7 +248,7 @@ export function ActionCard({
   if (setAside) return <SetAsideCard fromLabel={fromLabel} title={title} />
 
   if (done) {
-    // H6: a cleared document can still be replaced until the documents lock (3 times at most).
+    // H6: a cleared document can still be replaced until the documents lock (3 replaces per slot, served).
     const declined = typeof item.params?.declined_reason === 'string' ? item.params.declined_reason : ''
     const sent = item.kind === 'doc' && !declined && !replaceLocked(item.doc_type, docsLocked, openDocTypes) ? docForItem(docs, item) : null
     return (
@@ -259,7 +260,9 @@ export function ActionCard({
           </p>
         )}
         {sent && <ReplaceDocument doc={sent} token={token} limits={limits}
-          requestCode={item.code.startsWith('officer_') ? item.code : ''} onDone={onResolved} />}
+          requestCode={item.code.startsWith('officer_') ? item.code : ''}
+          member={item.code.startsWith('officer_') ? (typeof item.params?.household_member === 'string' ? item.params.household_member : '') : undefined}
+          onDone={onResolved} />}
       </DoneCard>
     )
   }

@@ -1022,6 +1022,12 @@ class TestRequestOwnedSlots(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(self.USER)}')
 
     def _upload(self, doc_type, suffix, request_code='', household_member=''):
+        if request_code:   # H6: a request code is accepted only for a real officer request on the case
+            from apps.scholarship.models import ResolutionItem
+            ResolutionItem.objects.get_or_create(
+                application=self.app, code=request_code, doc_type=doc_type,
+                defaults=dict(kind='doc', source='officer', status='open',
+                              params={'household_member': household_member} if household_member else {}))
         return post_doc(self.client, {
             'doc_type': doc_type, 'storage_path': _key(self.app, doc_type, suffix),
             'request_code': request_code, 'household_member': household_member,

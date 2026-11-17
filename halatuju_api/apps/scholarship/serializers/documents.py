@@ -38,8 +38,10 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     school_leaving_check = serializers.SerializerMethodField()
     # Officer box: whose income doc this is — its tag, else resolved by the name on it. Display-only.
     resolved_member = serializers.SerializerMethodField()
-    # H6: the replaces used on this slot (read off the live copy) and the cap, so the student pages say "N more times" without mirroring the number.
+    # H6: the replaces this slot has used, the replaces it has left (the server's own answer, a person's
+    # ask included) and the cap, so the student pages say "N more times" without mirroring the rule.
     replace_count = serializers.SerializerMethodField()
+    replaces_left = serializers.SerializerMethodField()
     replace_limit = serializers.SerializerMethodField()
 
     class Meta:
@@ -82,7 +84,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             # the student GET filters them out.
             'superseded_at', 'superseded_by',
             # H6: how many replaces this document's slot has used, and the cap.
-            'replace_count', 'replace_limit',
+            'replace_count', 'replaces_left', 'replace_limit',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -274,10 +276,24 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         from ..income_engine import student_income_support_check
         return student_income_support_check(obj)
 
+    def _slot_answer(self, obj, what):
+        """H6: the slot's replaces used / left from `document_replace.SlotBook`, the same book the upload
+        door refuses on (every accepted upload counted, Remove included). The student list passes one book
+        in the context; a document served alone builds its own; a list with no book (admin) gets None."""
+        from ..document_replace import SlotBook, slot_members
+        book = self.context.get('slot_book') if hasattr(self, 'context') else None
+        if book is None and self.parent is None and getattr(obj, 'application_id', None):
+            book = self.__dict__.setdefault('_own_slot_book', SlotBook(obj.application))
+        if book is None:
+            return None
+        members = slot_members(book.app, obj.doc_type, obj.household_member, obj.request_code)
+        return getattr(book, what)(obj.doc_type, members, obj.request_code)
+
     def get_replace_count(self, obj):
-        # The slot's highest count over every copy (the list annotates `slot_max` in its one query), so a
-        # replace the read turned down still counts. A row served alone is the newest, which carries it.
-        return getattr(obj, 'slot_max', None) or obj.replace_count
+        return self._slot_answer(obj, 'replaces_used')
+
+    def get_replaces_left(self, obj):
+        return self._slot_answer(obj, 'replaces_left')
 
     def get_replace_limit(self, obj):
         from ..document_replace import REPLACE_LIMIT
@@ -304,7 +320,8 @@ class DocumentCreateSerializer(serializers.Serializer):
         choices=[c[0] for c in ApplicantDocument.HOUSEHOLD_MEMBER_CHOICES],
         required=False, allow_blank=True, default='')
     # Set ONLY for an Action-Centre reviewer-requested upload (the officer ResolutionItem
-    # code, e.g. 'officer_3') — gives each request its own document slot. Blank otherwise.
+    # code, e.g. 'officer_3') — gives each request its own document slot. Blank otherwise. H6: the view
+    # refuses (400 bad_request_code) any code that is not an officer document request on the case.
     request_code = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
     storage_path = serializers.CharField(max_length=500)
     original_filename = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')

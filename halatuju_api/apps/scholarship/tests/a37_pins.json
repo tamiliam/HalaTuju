@@ -91,6 +91,7 @@
     "superseded_at",
     "superseded_by",
     "replace_count",
+    "replaces_left",
     "replace_limit"
    ],
    "ApplicationCreateSerializer": [

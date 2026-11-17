@@ -124,6 +124,11 @@ class AdminResolutionItemActionView(_AdminBase):
             item.resolved_at = None
             if (item.params or {}).get('declined_reason'):   # H7: asking again clears a student's "I don't have this"
                 item.params = {k: v for k, v in item.params.items() if k not in ('declined_reason', 'declined_note')}
+            # H6: a person asked again, so the document slot takes one more upload past its cap
+            # (document_replace.human_asks). Code-raised tickets never carry this stamp.
+            from ..document_replace import ASKED_AGAIN_AT
+            item.params = {**(item.params if isinstance(item.params, dict) else {}),
+                           ASKED_AGAIN_AT: timezone.now().isoformat()}
         else:
             item.status = 'waived' if action == 'waive' else 'resolved'
             item.resolved_by = getattr(admin, 'email', '') or 'officer'

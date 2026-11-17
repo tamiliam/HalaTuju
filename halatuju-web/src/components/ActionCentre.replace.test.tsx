@@ -91,6 +91,22 @@ describe('Replace on a Done document', () => {
     await waitFor(() => expect(mockApi.listDocuments.mock.calls.length).toBeGreaterThan(1))
   })
 
+  it("an officer request's Replace sends its code and the request's own member", async () => {
+    const OFFICER: ResolutionItem = { ...DONE, id: 5, code: 'officer_7', source: 'officer', params: {} }
+    mockApi.getResolutionItems.mockResolvedValue({ open: [], resolved: [OFFICER] })
+    mockApi.listDocuments.mockResolvedValue({
+      documents: [{ ...doc(0), household_member: 'father', replaces_left: 2 }], lock: { locked: false, open_doc_types: [] },
+    } as never)
+    render(<ActionCentre token="tkn" studentName="Test Student" applicationId={6} />)
+    await screen.findByText('scholarship.actionCentre.section.done')
+    mockApi.signUploadDocument.mockResolvedValue({ upload_url: 'u', storage_path: 'p' } as never)
+    mockApi.uploadFileToSignedUrl.mockResolvedValue(undefined as never)
+    mockApi.recordDocument.mockResolvedValue({ id: 10 } as never)
+    pick('new.pdf')
+    await waitFor(() => expect(mockApi.recordDocument).toHaveBeenCalled())
+    expect(mockApi.recordDocument.mock.calls[0][0]).toMatchObject({ request_code: 'officer_7', household_member: '' })
+  })
+
   it('a refused fourth shows the server message plainly', async () => {
     await mount(0)
     mockApi.signUploadDocument.mockResolvedValue({ upload_url: 'u', storage_path: 'p' } as never)

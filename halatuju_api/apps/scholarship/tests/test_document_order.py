@@ -89,6 +89,8 @@ _OTHER_PICK = re.compile(
 TIMESTAMP_AGGREGATES = {
     # "When did this applicant last upload anything?" — the partner chase list's activity date.
     'apps/scholarship/partner_comms.py': "Max('uploaded_at')",
+    # H6: a slot's last upload time (the counter's seed, and "a person asked after the last upload").
+    'apps/scholarship/document_replace.py': "Max('uploaded_at')",
 }
 
 

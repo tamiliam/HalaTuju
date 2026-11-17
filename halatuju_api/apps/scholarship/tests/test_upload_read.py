@@ -99,6 +99,9 @@ class TestUploadQueue(TestCase):
 
     def test_a_type_with_no_read_is_still_judged_inline(self):
         self.assertFalse(upload_read.needs_read('other'))
+        from apps.scholarship.models import ResolutionItem   # H6: a request code must be a real officer request
+        ResolutionItem.objects.create(application=self.app_a, code='r1', doc_type='other', kind='doc',
+                                      source='officer', status='open')
         with _Reads() as reads:
             r = self.client.post(DOCS, {'doc_type': 'other', 'request_code': 'r1',
                                         'storage_path': _key(self.app_a, 'other', 'r1'),

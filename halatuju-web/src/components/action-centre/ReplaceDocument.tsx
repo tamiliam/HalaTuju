@@ -11,14 +11,16 @@ import { UploadButtons } from './UploadButtons'
 
 /**
  * H6: the file a student has sent, with Replace (and Take a photo) beneath it, for a Sent or Done
- * document. Goes through the same sign, upload and record calls as a normal upload; the record carries
- * `replace: true`, which is what the server counts (3 per document). Replace is hidden by the caller
- * once documents are locked; after the third replace it gives way to one plain line. The server is the
- * judge: a 409 `replace_limit_reached` or `documents_locked` shows its own message.
+ * document. Goes through the same sign, upload and record calls as a normal upload (the record's
+ * `replace: true` is only a hint: the server counts every upload into the slot, 3 replaces after the
+ * first). Replace is hidden by the caller once documents are locked; with no replaces left (the served
+ * `replaces_left`) it gives way to one plain line. The server is the judge: a 409
+ * `replace_limit_reached` or `documents_locked` shows its own message.
  */
-export function ReplaceDocument({ doc, requestCode = '', token, limits, onDone }: {
+export function ReplaceDocument({ doc, requestCode = '', member, token, limits, onDone }: {
   doc: ApplicantDocument
   requestCode?: string
+  member?: string   // an officer request's own member: its slot is (code, member), which the server checks
   token: string | null
   limits?: DocumentLimits | null
   onDone: () => void
@@ -36,7 +38,7 @@ export function ReplaceDocument({ doc, requestCode = '', token, limits, onDone }
       const { upload_url, storage_path } = await signUploadDocument(doc.doc_type, { token })
       await uploadFileToSignedUrl(upload_url, file)
       await recordDocument(
-        { doc_type: doc.doc_type, household_member: doc.household_member, request_code: requestCode, replace: true,
+        { doc_type: doc.doc_type, household_member: member ?? doc.household_member, request_code: requestCode, replace: true,
           storage_path, original_filename: file.name, content_type: file.type, size: file.size },
         { token },
       )

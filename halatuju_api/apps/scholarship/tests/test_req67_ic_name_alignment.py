@@ -120,6 +120,9 @@ def upload_and_read_ic(test, app, tag, *, name=CARD, nric=NRIC, second=None, req
             'original_filename': f'{tag}.jpg', 'size': 1000}
     if request_code:
         body['request_code'] = request_code
+        from apps.scholarship.models import ResolutionItem   # H6: only a real officer request's code is accepted
+        ResolutionItem.objects.get_or_create(application=app, code=request_code, doc_type='ic',
+                                             defaults=dict(kind='doc', source='officer', status='open'))
     with override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
                            DOC_GENUINENESS_CHECK_ENABLED=True, IC_GEMINI_FALLBACK_ENABLED=True), \
             patch('apps.scholarship.storage.object_exists', return_value=True), \

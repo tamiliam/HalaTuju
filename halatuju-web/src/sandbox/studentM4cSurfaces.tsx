@@ -327,14 +327,14 @@ export const STUDENT_REST_SURFACES: Surface[] = [
   {
     slug: 'documents-replace',
     title: 'Documents - Replace, and the limit',
-    note: 'H6: a document the reader accepted shows Replace with how many replaces are left; after the third '
-      + 'the button is gone and one plain line says so. The IC has used 1, the results slip all 3.',
+    note: 'H6: every document shows Replace with how many replaces are left (the server\'s replaces_left); '
+      + 'after the third the button is gone and one plain line says so. The IC has used 1, the results slip all 3.',
     render: () => <SignedIn><ScholarshipDocuments token="sandbox-not-a-real-token" app={sandboxApplication} /></SignedIn>,
     routes: {
       '/api/v1/scholarship/documents/': () => ({
         documents: sandboxDocuments.map((d) => (
-          d.doc_type === 'ic' ? { ...d, replace_count: 1, replace_limit: 3 }
-            : d.doc_type === 'results_slip' ? { ...d, replace_count: 3, replace_limit: 3 } : d)),
+          d.doc_type === 'ic' ? { ...d, replace_count: 1, replaces_left: 2, replace_limit: 3 }
+            : d.doc_type === 'results_slip' ? { ...d, replace_count: 3, replaces_left: 0, replace_limit: 3 } : d)),
         lock: { locked: false, open_doc_types: [] },
       }),
     },

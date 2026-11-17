@@ -1,128 +1,197 @@
-"""H6: a student may replace a sent / done document up to three times.
+"""H6: a document slot takes four student uploads (the first, then three replaces) until a person asks again.
 
-A document is its slot: (application, doc type, household member, request code), the same slot the
-upload door supersedes into. The count lives in the database (`ApplicantDocument.replace_count`), so
-it survives sessions and devices. A Remove deletes the slot's copies, so it parks the highest count in
-`DocumentSlotReplaces` first, and the count is the highest of the copies and that parked row: Remove cannot
-reset the cap. A new upload into a removed slot is not itself a replace (nothing is live), but it is refused
-when the three are used, and otherwise carries the count on unchanged.
+A slot is (application, doc type, household member, request code), the same slot the upload door
+supersedes into; a pre-consent STR-route income doc also sweeps the legacy UNTAGGED copy, so its slot is
+the earner's key plus the blank one (`slot_members`, from the upload door's own `earner_tag`).
 
-THE RULE (the server decides; the client's `replace` flag changes nothing). Every student upload into
-a slot that already has a LIVE copy is a replace, and it counts, UNLESS the live copy is one the
-student must fix, or the case is asking for it again. The principle: the cap never blocks a student
-from fixing something we are asking them to fix, so what the student is shown as "needs you" is exempt.
-Exempt: the live copy was returned by a reviewer (rejected), has a problem verdict from the read, failed
-authenticity (`not_<type>`), or is `suspect` on a type where the serializer SHOWS suspect (`must_fix`);
-or an OPEN doc ask the student can see (any source: system, reviewer, Check 2) targets this slot's type
-(`open_request_asks`, e.g. a stale STR or salary slip that read fine).
-Fixing is the normal retry: never counted, never capped. A live copy still being read, or one that read
-fine with nothing asked, counts - otherwise rapid re-uploads would skip the cap.
+THE RULE (one source of truth; the server decides, the client's `replace` flag changes nothing). Every
+upload the door ACCEPTS is counted in `DocumentSlotReplaces.uploads` for its slot, and the count is never
+lowered: Remove deletes the copies, not the count. Replaces used = uploads - 1 (the first upload is free).
+An upload is refused 409 `replace_limit_reached` once the slot holds `UPLOAD_LIMIT` (4) uploads, whether or
+not the slot was emptied by Remove, whatever the read said about the copy (a returned or problem copy counts
+too: every accepted upload is a paid read), and whatever system ticket is open.
 
-A counted upload's new row carries the slot's highest count + 1; an exempt one carries the highest
-unchanged. The highest is taken across ALL copies (superseded ones too), so a replace the read turned
-down still counts and a refusal cannot reset it. The list serves that same highest (`slot_max`), not
-the live row's own value. The documents lock is checked first, in the view, exactly as for any upload.
+The one exemption: an ask a PERSON raised for this slot's type (and member, where it names one) AFTER the
+slot's last upload. It lets ONE more upload in; that upload moves `last_upload_at` past the ask, so the ask
+is answered as far as the cap goes. A person's ask is (`human_asks`):
+- an officer's request (`source='officer'`, raised at `created_at`), or
+- any doc ask a reviewer re-opened with "Ask again" (`params['asked_again_at']`, stamped by the admin view).
+Never a system or Check 2 ticket on its own: those are raised by code, and the `<type>_missing` ticket that
+Remove re-opens (`resolution.after_document_deleted`) carries no person's stamp, so the student cannot make
+one herself. An officer's request also gives its own slot (its request code), which a student cannot invent:
+`request_code_refusal` accepts only '' or the code of an officer document request on the case.
+
+Slots that predate the counter (no row yet) count their stored copies, superseded ones included; the row is
+seeded from those copies the first time it is written (an upload or a Remove), so history is never lost.
+The documents lock is checked first, in the view, exactly as for any upload.
 """
-from django.db.models import Max
+from django.db import IntegrityError, transaction
+from django.db.models import Count, F, Max
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from rest_framework import status
 from rest_framework.response import Response
 
 from .models import ApplicantDocument
 
 REPLACE_LIMIT = 3
+UPLOAD_LIMIT = REPLACE_LIMIT + 1    # the first upload is free
 REPLACE_LIMIT_REACHED = 'replace_limit_reached'
+BAD_REQUEST_CODE = 'bad_request_code'
+ASKED_AGAIN_AT = 'asked_again_at'   # ResolutionItem.params stamp written by the admin "Ask again"
 _MESSAGE = ('You have already replaced this document 3 times. If it is still wrong, '
             'your reviewer will ask you for what is needed.')
-
-
-def replaces_used(application_id, doc_type, members, request_code):
-    """Replaces the slot has used so far (0 when none)."""
-    from .models import DocumentSlotReplaces
-    top = ApplicantDocument.objects.filter(
-        application_id=application_id, doc_type=doc_type, household_member__in=members,
-        request_code=request_code).aggregate(m=Max('replace_count'))['m']
-    parked = DocumentSlotReplaces.objects.filter(
-        application_id=application_id, doc_type=doc_type, household_member__in=members,
-        request_code=request_code).aggregate(m=Max('replace_count'))['m']
-    return max(top or 0, parked or 0)
-
-
-def park_replaces(application_id, doc_type, household_member, request_code, count):
-    """Remember a removed slot's count (the highest wins), so Remove cannot reset the cap. No row for 0."""
-    if not count:
-        return
-    from .models import DocumentSlotReplaces
-    row, _ = DocumentSlotReplaces.objects.get_or_create(
-        application_id=application_id, doc_type=doc_type, household_member=household_member,
-        request_code=request_code, defaults={'replace_count': count})
-    if row.replace_count < count:
-        row.replace_count = count
-        row.save(update_fields=['replace_count'])
-
-
-_OK_VERDICTS = ('', 'ok', 'review_manually')
 
 #: Types the serializer exposes `authenticity` for (single source: serializers/documents.py reads it).
 AUTH_TYPES = ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf', 'offer_letter',
               'salary_slip', 'electricity_bill', 'water_bill', 'school_leaving_cert', 'higher_results')
 #: Of those, the types where the student is shown ONLY a wrong-type reject (`not_<type>`); a suspect
-#: band is hidden amber noise there. On every other type in AUTH_TYPES suspect IS shown.
+#: band is hidden amber noise there.
 AUTH_WRONG_TYPE_ONLY = ('salary_slip', 'electricity_bill', 'water_bill', 'school_leaving_cert')
-SUSPECT_SHOWN_TYPES = tuple(t for t in AUTH_TYPES if t not in AUTH_WRONG_TYPE_ONLY)
+
+_INCOME_EARNER_DOCS = ('str', 'parent_ic', 'salary_slip', 'epf')
 
 
-def must_fix(live):
-    """True when the live copy is one the student has to fix, so a re-upload is a retry, not a replace."""
-    if live.verification_status == 'rejected':
-        return True
-    vf = live.vision_fields if isinstance(live.vision_fields, dict) else {}
-    if (vf.get('student_verdict') or '') not in _OK_VERDICTS:
-        return True
-    auth = vf.get('authenticity')
-    if isinstance(auth, dict) and auth.get('status'):
-        from .genuineness.bands import shown_status
-        shown = shown_status(auth.get('status'), live.doc_type, auth.get('doc_seen', ''))
-        return shown.startswith('not_') or (shown == 'suspect' and live.doc_type in SUSPECT_SHOWN_TYPES)
-    return False
+def earner_tag(app, doc_type, member, request_code):
+    """(str_income, member): who an STR-route income doc belongs to. The upload door's rule (see
+    `DocumentListCreateView._earner_tag` for why): PRE-CONSENT, on the STR route, a blank-request income
+    doc is the earner's; an IC the student tagged to someone else keeps that tag."""
+    earner = (getattr(app, 'income_earner', '') or '').strip()
+    str_income = (doc_type in _INCOME_EARNER_DOCS and not request_code
+                  and (getattr(app, 'income_route', '') or '').strip() == 'str'
+                  and (doc_type != 'parent_ic' or member in ('', earner))
+                  and app.profile_completed_at is None)   # pre-consent only
+    return str_income, (earner if str_income else member)
 
 
-def open_request_asks(app, doc_type, members):
-    """True when an OPEN doc ask the student can SEE in the Action Centre targets this slot's type (and
-    member, where the ask names one). Any source: a system ticket, a reviewer's request, or a Check 2 ask
-    (income_doc_stale, *_missing ...). Visibility is `resolution.item_student_visible`, the Action Centre's
-    own rule, and a set-aside item (recommended / funded) is not an ask. The ask's `doc_type` is the type
-    the Action Centre upload is stored under, so it is compared to the slot's directly. One query; POST
-    path only."""
+def slot_members(app, doc_type, member, request_code):
+    """The member keys an upload of this (type, member, request code) sweeps: the tagged member, plus the
+    legacy blank one for a pre-consent STR income doc. The door and the list both read it."""
+    str_income, tagged = earner_tag(app, doc_type, member, request_code)
+    return [tagged, ''] if str_income and tagged else [tagged]
+
+
+def human_asks(app):
+    """[(doc_type, member or '', raised_at)] for each OPEN doc ask a PERSON raised that the student can see:
+    an officer's request (its `created_at`) or any ask re-opened with "Ask again" (its stamp). A set-aside
+    auto item (recommended / funded) is not an ask. One query."""
     from django.conf import settings as _settings
     from .models import ResolutionItem
     from .resolution import item_set_aside, item_student_visible
     from .views.common import SET_ASIDE_STATES
     queries_live = getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False)
     aside = app.status in SET_ASIDE_STATES
-    rows = ResolutionItem.objects.filter(application_id=app.id, status='open', kind='doc', doc_type=doc_type)
-    for item in rows:
+    out = []
+    for item in ResolutionItem.objects.filter(application_id=app.id, status='open', kind='doc').exclude(doc_type=''):
         if not item_student_visible(item, queries_live) or (aside and item_set_aside(item)):
             continue
-        who = (item.params or {}).get('household_member') if isinstance(item.params, dict) else ''
-        if not who or who in members:
-            return True
-    return False
+        params = item.params if isinstance(item.params, dict) else {}
+        stamps = [item.created_at] if item.source == 'officer' else []
+        again = params.get(ASKED_AGAIN_AT)
+        again = parse_datetime(again) if isinstance(again, str) else None
+        if again is not None:
+            stamps.append(again)
+        if stamps:
+            out.append((item.doc_type, params.get('household_member') or '', max(stamps)))
+    return out
 
 
-def slot_max_annotation():
-    """Queryset annotation `slot_max`: the slot's highest replace_count over every copy, in the same query."""
-    from django.db.models import OuterRef, Subquery
-    top = (ApplicantDocument.objects
-           .filter(application_id=OuterRef('application_id'), doc_type=OuterRef('doc_type'),
-                   household_member=OuterRef('household_member'), request_code=OuterRef('request_code'))
-           .order_by().values('application_id', 'doc_type', 'household_member', 'request_code')
-           .annotate(m=Max('replace_count')).values('m'))
-    return Subquery(top)
+class SlotBook:
+    """Every slot's upload count for one application: the counter rows, the stored copies of slots with no
+    row yet, and (read only when a slot is full) the open person-raised asks. Two queries, three at most;
+    the upload door and the documents list read the same answers from it."""
+
+    def __init__(self, app):
+        from .models import DocumentSlotReplaces
+        self.app = app
+        key = ('doc_type', 'household_member', 'request_code')
+        self._rows = {(r['doc_type'], r['household_member'], r['request_code']): (r['uploads'], r['last_upload_at'])
+                      for r in DocumentSlotReplaces.objects.filter(application_id=app.id)
+                      .values(*key, 'uploads', 'last_upload_at')}
+        self._copies = {(r['doc_type'], r['household_member'], r['request_code']): (r['n'], r['last'])
+                        for r in ApplicantDocument.objects.filter(application_id=app.id).order_by()
+                        .values(*key).annotate(n=Count('id'), last=Max('uploaded_at'))}
+        self._asks = None
+
+    def uploads(self, doc_type, members, request_code):
+        """(uploads so far, last upload time or None) over the slot's member keys."""
+        total, last = 0, None
+        for m in dict.fromkeys(members):
+            k = (doc_type, m, request_code)
+            n, at = self._rows.get(k) or self._copies.get(k) or (0, None)
+            total += n
+            if at is not None and (last is None or at > last):
+                last = at
+        return total, last
+
+    def asked_again(self, doc_type, members, request_code):
+        """True when a person asked for this slot's type (and member) after its last upload."""
+        _n, last = self.uploads(doc_type, members, request_code)
+        if self._asks is None:
+            self._asks = human_asks(self.app)
+        return any(t == doc_type and (not who or who in members) and (last is None or at > last)
+                   for t, who, at in self._asks)
+
+    def allowed(self, doc_type, members, request_code):
+        n, _last = self.uploads(doc_type, members, request_code)
+        return n < UPLOAD_LIMIT or self.asked_again(doc_type, members, request_code)
+
+    def replaces_used(self, doc_type, members, request_code):
+        n, _last = self.uploads(doc_type, members, request_code)
+        return max(0, n - 1)
+
+    def replaces_left(self, doc_type, members, request_code):
+        """What the student pages show: the replaces left (0..3), or 1 when a person's ask lets one more in."""
+        n, _last = self.uploads(doc_type, members, request_code)
+        left = min(REPLACE_LIMIT, max(0, UPLOAD_LIMIT - n))
+        return left or (1 if self.asked_again(doc_type, members, request_code) else 0)
 
 
-def replace_refusal(used):
-    """A 409 Response if the slot has used all its replaces, else None."""
-    if used < REPLACE_LIMIT:
+def _counter(application_id, doc_type, member, request_code, exclude_id=None):
+    """The slot's counter row, created (seeded from its stored copies) when there is none yet."""
+    from .models import DocumentSlotReplaces
+    key = dict(application_id=application_id, doc_type=doc_type, household_member=member, request_code=request_code)
+    qs = DocumentSlotReplaces.objects.filter(**key)
+    if not qs.exists():
+        copies = ApplicantDocument.objects.filter(**key)
+        if exclude_id is not None:
+            copies = copies.exclude(id=exclude_id)
+        seed = copies.aggregate(n=Count('id'), last=Max('uploaded_at'))
+        try:
+            with transaction.atomic():
+                DocumentSlotReplaces.objects.create(**key, uploads=seed['n'] or 0, last_upload_at=seed['last'])
+        except IntegrityError:   # a parallel request made it first
+            pass
+    return qs
+
+
+def record_upload(application_id, doc_type, member, request_code, doc_id):
+    """Count one accepted upload (the new row `doc_id` is not part of the seed)."""
+    _counter(application_id, doc_type, member, request_code, exclude_id=doc_id).update(
+        uploads=F('uploads') + 1, last_upload_at=timezone.now())
+
+
+def keep_count_before_remove(application_id, doc_type, member, request_code):
+    """Remove hard-deletes the copies: make sure the slot's counter row exists first, so the count stays."""
+    _counter(application_id, doc_type, member, request_code)
+
+
+def request_code_refusal(app, doc_type, member, request_code):
+    """A 400 Response unless the request code is '' or an officer document request on this case for this
+    type (and member: the request's own, '' when it names none). A student cannot invent a slot. Any status:
+    the Done card's Replace sends a resolved request's code, and each code is still one capped slot."""
+    if not request_code:
         return None
+    from .models import ResolutionItem
+    item = ResolutionItem.objects.filter(application_id=app.id, source='officer', kind='doc',
+                                         code=request_code, doc_type=doc_type).first()
+    want = ((item.params or {}).get('household_member') or '') if item and isinstance(item.params, dict) else ''
+    if item is not None and member == want:
+        return None
+    return Response({'error': BAD_REQUEST_CODE, 'code': BAD_REQUEST_CODE}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def replace_refusal():
+    """The 409 for a full slot."""
     return Response({'error': REPLACE_LIMIT_REACHED, 'code': REPLACE_LIMIT_REACHED,
                      'message': _MESSAGE, 'limit': REPLACE_LIMIT}, status=status.HTTP_409_CONFLICT)

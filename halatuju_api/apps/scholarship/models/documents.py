@@ -162,10 +162,6 @@ class ApplicantDocument(models.Model):
     read_plan = models.JSONField(null=True, blank=True)
     read_claimed_at = models.DateTimeField(null=True, blank=True)
     read_attempts = models.PositiveSmallIntegerField(default=0, db_default=0)
-    # H6: how many times the student has replaced this document (a "Replace" on a sent / done one). The
-    # upload that replaces carries the slot's highest count + 1; the cap (3) is `document_replace`.
-    # `db_default` keeps the still-serving old image able to insert.
-    replace_count = models.PositiveSmallIntegerField(default=0, db_default=0)
 
     class Meta:
         db_table = 'applicant_documents'
@@ -198,17 +194,19 @@ class ApplicantDocument(models.Model):
 
 
 class DocumentSlotReplaces(models.Model):
-    """H6: the replaces a document slot has used, kept when the student taps Remove.
+    """H6: how many uploads a document slot has taken, kept when the student taps Remove.
 
-    Remove hard-deletes the slot's whole chain, which is where the replace count lived, so the count
-    is parked here: one row per (application, doc type, household member, request code) with the
-    highest count the slot reached. The cap reads it with the live copies' counts (document_replace.py),
-    so Remove cannot reset it. Written only when a removed slot had used at least one replace."""
+    One row per (application, doc type, household member, request code). `uploads` counts every upload
+    the door accepted into the slot (each is a paid read) and is never lowered: Remove hard-deletes the
+    copies, not this row. Replaces used = uploads - 1; the cap is `document_replace`. `last_upload_at` is
+    when the latest one came in, so a person's ask raised after it can let one more in. A slot with no row
+    yet (older uploads) is counted from its stored copies and seeded from them on first write."""
     application = models.ForeignKey(ScholarshipApplication, on_delete=models.CASCADE, related_name='slot_replaces')
     doc_type = models.CharField(max_length=30)
     household_member = models.CharField(max_length=10, blank=True, default='')
     request_code = models.CharField(max_length=20, blank=True, default='')
-    replace_count = models.PositiveSmallIntegerField(default=0)
+    uploads = models.PositiveSmallIntegerField(default=0)
+    last_upload_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'document_slot_replaces'
@@ -219,7 +217,7 @@ class DocumentSlotReplaces(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.doc_type}/{self.household_member} x{self.replace_count} for application #{self.application_id}'
+        return f'{self.doc_type}/{self.household_member} x{self.uploads} for application #{self.application_id}'
 
 
 class Referee(models.Model):

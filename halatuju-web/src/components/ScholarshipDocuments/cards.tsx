@@ -10,7 +10,7 @@
 import { useState, type ReactNode } from 'react'
 import type { ApplicantDocument } from '@/lib/api'
 import { INCOME_PROOF_TYPES, docFileLayout, formatFileSize } from '@/lib/scholarship'
-import { isSettledDoc, replacesLeft } from '@/lib/documentReplace'
+import { replacesLeft } from '@/lib/documentReplace'
 import DocumentHelpCoach from '../DocumentHelpCoach'
 
 import {
@@ -111,11 +111,11 @@ function FileChip({
   onDelete?: (id: number) => void   // omitted once documents are locked (H5): the file shows, nothing changes it
   t: (key: string, params?: Record<string, string>) => string
 }) {
-  // H6: a document that reads fine is replaced at most 3 times (counted by the server); after that the
-  // button gives way to one plain line. A returned one ("send it again") is never capped or counted.
-  const counted = isSettledDoc(doc)
+  // H6: a slot takes the first upload and 3 replaces, every upload counted by the server (a copy that
+  // needs a fix too, Remove included); after that the button gives way to one plain line until a
+  // person asks again. `replaces_left` is the server's own answer.
   const left = replacesLeft(doc)
-  const canReplace = !!onUpload && !(counted && left === 0)
+  const canReplace = !!onUpload && left > 0
   return (
     <div>
     <div className="flex min-h-11 items-center md:rounded-lg md:border md:border-ground-200 md:bg-ground-50/60 md:px-3 md:py-2">
@@ -150,7 +150,7 @@ function FileChip({
         </button>
       </div>
       )}
-      {onDelete && onUpload && counted && (
+      {onDelete && onUpload && (
         <p className="mt-2 text-sm text-ground-600">
           {left === 0 ? t('scholarship.actionCentre.replaceLimit')
             : t(left === 1 ? 'scholarship.actionCentre.replacesLeftOne' : 'scholarship.actionCentre.replacesLeft', { n: String(left) })}
@@ -445,7 +445,7 @@ export function SingleDocCard({
       {/* With one file, Replace lives under it (beside Remove). Otherwise ONE full-width button: CHOOSE a
           first file (the big camera-friendly one), or Replace when the card holds more than one. */}
       {locked && <p className="mt-3 text-sm text-ground-600">{t('scholarship.docs.lockedNote')}</p>}
-      {layout !== 'chip' && !locked && !(existing.length > 0 && existing.every((d) => isSettledDoc(d) && replacesLeft(d) === 0)) && (
+      {layout !== 'chip' && !locked && !(existing.length > 0 && existing.every((d) => replacesLeft(d) === 0)) && (
         <div className="mt-3 flex">
           <UploadTrigger
             docType={docType}

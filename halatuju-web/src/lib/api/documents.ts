@@ -19,9 +19,11 @@ export interface ApplicantDocument {
   verification_status: string
   uploaded_at: string
   download_url: string | null
-  // H6: replaces this document's slot has used, and the cap (both SERVED; never mirrored). Optional so a
-  // payload from an older build still types; `lib/documentReplace` reads them with a fallback.
+  // H6: replaces this document's slot has used, has left (the server's answer: Remove history and a
+  // person's ask included), and the cap (all SERVED; never mirrored). Optional so a payload from an older
+  // build still types; `lib/documentReplace` reads them with a fallback.
   replace_count?: number
+  replaces_left?: number | null
   replace_limit?: number
   // S13: Vision OCR soft-signal fields (populated only for doc_type='ic')
   vision_nric: string

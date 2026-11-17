@@ -17,7 +17,7 @@ from ..serializers import (
 from ..services import revert_if_profile_incomplete
 from .common import _current_application
 from ..document_replace import (
-    must_fix, open_request_asks, park_replaces, replace_refusal, replaces_used, slot_max_annotation,
+    SlotBook, earner_tag, keep_count_before_remove, record_upload, replace_refusal, request_code_refusal,
 )
 from .document_lock import documents_locked_refusal, lock_state
 from .document_rules import _BYPASS_JUDGE_TYPES, _is_allowed_upload, RELATIONSHIP_DOC_TYPES
@@ -62,7 +62,7 @@ class DocumentListCreateView(APIView):
         # version history for the officer view, never shown back to the student.
         # S4a review H1: an in-programme results slip is EVIDENCE, shown with its result, never here.
         docs = (ApplicantDocument.objects.filter(application=app, superseded_at__isnull=True)
-                .exclude(request_code=SLIP_REQUEST_CODE).annotate(slot_max=slot_max_annotation()) if app else ApplicantDocument.objects.none())
+                .exclude(request_code=SLIP_REQUEST_CODE) if app else ApplicantDocument.objects.none())
         # ⚠ THE LIMITS ARE SERVED, NEVER MIRRORED (Org Config Sprint E). The uploader used to
         # hold its own `8 * 1024 * 1024` so it could warn before a doomed upload; that number is
         # the ORGANISATION's now, so it rides here — the same read the POST below refuses on.
@@ -71,7 +71,10 @@ class DocumentListCreateView(APIView):
         from apps.courses import org_config
         org = app.owning_organisation if app else None
         return Response({
-            'documents': ApplicantDocumentSerializer(docs, many=True).data,
+            # H6: each copy carries its slot's replaces used / left, read from the same book the upload
+            # door refuses on (removed history included).
+            'documents': ApplicantDocumentSerializer(
+                docs, many=True, context={'slot_book': SlotBook(app) if app else None}).data,
             # A2.3: uploads still being read (staged ones too, which the list above does not show),
             # so the page can say "we are still reading N" instead of looking finished.
             'reading': (ApplicantDocument.objects.filter(application=app, read_state='pending').count()
@@ -135,15 +138,8 @@ class DocumentListCreateView(APIView):
         # TD-309: an IC the student EXPLICITLY tagged to someone else (the card the Documents page
         # offers for the member who would settle whose STR it is) keeps that tag — an IC only
         # (review F2): a non-earner STR / slip / EPF is still force-tagged to the earner.
-        _INCOME_EARNER_DOCS = {'str', 'parent_ic', 'salary_slip', 'epf'}
-        str_income = (new_doc_type in _INCOME_EARNER_DOCS and not new_request_code
-                      and (getattr(app, 'income_route', '') or '').strip() == 'str'
-                      and (new_doc_type != 'parent_ic'
-                           or new_member in ('', (getattr(app, 'income_earner', '') or '').strip()))
-                      and app.profile_completed_at is None)   # pre-consent only
-        if str_income:
-            new_member = (getattr(app, 'income_earner', '') or '').strip()
-        return str_income, new_member
+        # One rule, in `document_replace.earner_tag`, so the H6 cap sweeps exactly the slot the door writes.
+        return earner_tag(app, new_doc_type, new_member, new_request_code)
 
     @staticmethod
     def _refuse_over_cap(app, new_doc_type, replaces):
@@ -217,28 +213,11 @@ class DocumentListCreateView(APIView):
         refusal = self._refuse_over_cap(app, new_doc_type, replaces)
         if refusal:
             return refusal
-        # H6: every upload into a slot with a live copy is a replace, counted per slot and capped at three
-        # unless the live copy is one the student must fix (document_replace.py). The lock was checked
-        # above, so a locked student is refused first. The count rides on the new row.
-        if replaces:
-            used = replaces_used(app.id, new_doc_type, sweep_members, new_request_code)
-            if must_fix(live_copy) or open_request_asks(app, new_doc_type, sweep_members):
-                serializer.validated_data['replace_count'] = used
-            else:
-                refusal = replace_refusal(used)
-                if refusal:
-                    return refusal
-                serializer.validated_data['replace_count'] = used + 1
-        elif single:
-            # A slot the student emptied with Remove keeps its count (parked): it is no replace to put a file
-            # back, but once the three are used the slot is shut, like a 4th replace, unless the case asks again.
-            used = replaces_used(app.id, new_doc_type, sweep_members, new_request_code)
-            if used:
-                if not open_request_asks(app, new_doc_type, sweep_members):
-                    refusal = replace_refusal(used)
-                    if refusal:
-                        return refusal
-                serializer.validated_data['replace_count'] = used
+        # H6: a slot takes four uploads (the first, then three replaces), counted across Remove, plus one
+        # more for each ask a person raised after its last upload (document_replace.py). The lock was
+        # checked above, so a locked student is refused first.
+        if single and not SlotBook(app).allowed(new_doc_type, sweep_members, new_request_code):
+            return replace_refusal()
         # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
         # client→Storage via the signed URL BEFORE this POST. If that PUT silently failed, we'd
         # record a row pointing at a blob that isn't there — a dead "view" link + an unreadable
@@ -250,6 +229,13 @@ class DocumentListCreateView(APIView):
         _refusal = recorded_doc_key_refusal(app, new_doc_type, serializer.validated_data.get('storage_path'))
         if _refusal:
             return Response({'error': _refusal, 'code': _refusal}, status=status.HTTP_400_BAD_REQUEST)
+        # H6: a request code must be an officer's document request on this case (for this type and
+        # member), never free text, or a student could open fresh uncapped slots at will. Checked last
+        # of the refusals and before any write; a request code is never force-tagged, so the member is
+        # the one the student sent.
+        refusal = request_code_refusal(app, new_doc_type, new_member, new_request_code)
+        if refusal:
+            return refusal
         # Single-instance re-upload REPLACES the live copy in the slot. Phase 2 (version history):
         # the old row is no longer HARD-deleted — it is stamped `superseded_at` and pointed at the
         # replacement (`superseded_by`), retaining an audit trail shown under the officer "Old /
@@ -282,6 +268,7 @@ class DocumentListCreateView(APIView):
                                          existing_live=existing_live, stale_ids=stale_ids, slot_filter=slot_filter)
         if doc is None:
             return Response({'error': 'upload_conflict', 'code': 'upload_conflict'}, status=status.HTTP_409_CONFLICT)
+        record_upload(app.id, new_doc_type, new_member, new_request_code, doc.id)   # H6: every accepted upload counts
         if queued:
             return Response(upload_read.pending_payload(doc), status=status.HTTP_201_CREATED)
         data = upload_read.read_and_judge(app, doc, staged=staged, stale_ids=stale_ids,
@@ -374,9 +361,10 @@ class DocumentDetailView(APIView):
         if paths:
             delete_own_doc_objects(doc.application, paths)
         application = doc.application
-        # H6: the replace count lived on this chain; park it so Remove cannot reset the cap.
-        park_replaces(application.id, doc.doc_type, doc.household_member, doc.request_code,
-                      max(d.replace_count for d in chain))
+        # H6: the upload count is kept per slot, not on the copies; make sure every slot this chain held
+        # has its counter row before the copies go, so Remove cannot reset the cap.
+        for key in dict.fromkeys((d.doc_type, d.household_member, d.request_code) for d in chain):
+            keep_count_before_remove(application.id, *key)
         # Self-referential FK is SET_NULL, so delete order is safe; one query clears the chain.
         ApplicantDocument.objects.filter(id__in=[d.id for d in chain]).delete()
         # Removing a compulsory document can drop a confirmed profile below
