@@ -4243,7 +4243,7 @@
         "cancel": "Cancel",
         "working": "Saving…",
         "rejectTitle": "Reject this thank-you?",
-        "rejectHint": "It will not be sent. A note is optional and stays with the case.",
+        "rejectHint": "It will not be sent. A note is optional and stays on the scholar's file.",
         "rejectPlaceholder": "Why (optional)",
         "blockedReason": "Held back: it may name the student ({fields}).",
         "blockedHint": "The student must edit it and send it again. You can reject it now.",

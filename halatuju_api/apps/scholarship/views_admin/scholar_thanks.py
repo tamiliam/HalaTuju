@@ -60,6 +60,7 @@ class AdminScholarThanksView(_ThanksBase):
             names = _staff_names(m['approved_by'] for m in messages)
             for m in messages:
                 m['approved_by'] = names.get((m['approved_by'] or '').lower(), '')
+                m['review_note'] = ''   # staff-only, as the activity log's internal rows (review round)
         # A mentor is read-only (`_file_for`); not asking the rule for them saves its scope read.
         return Response({'messages': messages,
                          'may_decide': not as_mentor and self.may_decide_thanks(admin, app)})

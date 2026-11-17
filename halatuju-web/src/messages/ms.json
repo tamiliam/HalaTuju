@@ -4243,7 +4243,7 @@
         "cancel": "Batal",
         "working": "Menyimpan…",
         "rejectTitle": "Tolak ucapan terima kasih ini?",
-        "rejectHint": "Ia tidak akan dihantar. Nota adalah pilihan dan kekal bersama kes.",
+        "rejectHint": "Ia tidak akan dihantar. Nota tidak wajib dan kekal dalam fail penerima biasiswa.",
         "rejectPlaceholder": "Sebab (pilihan)",
         "blockedReason": "Ditahan: ia mungkin mendedahkan pelajar ({fields}).",
         "blockedHint": "Pelajar perlu menyuntingnya dan menghantarnya semula. Anda boleh menolaknya sekarang.",

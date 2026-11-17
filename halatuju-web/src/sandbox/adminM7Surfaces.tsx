@@ -103,9 +103,6 @@ const SCHOLAR_FILE = {
   controls: { can_review_results: true, can_set_substate: true, can_hold: true, close_reasons: ['graduated', 'withdrew'], close_refusal: '' },
 }
 
-/** Sprint P1: a scholar's activity log — staff with and without a photo, the scholar, a fully automatic row,
- *  an email that matches nobody, a call, a long note and a staff-only one. Newest first, as the server pages it;
- *  each time is relative to the run (so it reads "2 hours ago", not a date years back). */
 /** THANKS-SCHOLARS: a waiting thank-you, and the earlier send the check held back. Synthetic words, no student named. */
 const THANKS = [
   { id: 2, application: 1, ref: 'HT-SANDBOX', status: 'pending', scan_result: [], scrubbed_text: '',
@@ -118,6 +115,9 @@ const THANKS = [
 ]
 const THANKS_ROUTE = '/api/v1/admin/scholarship/scholars/1/graduation-messages/'
 
+/** Sprint P1: a scholar's activity log — staff with and without a photo, the scholar, a fully automatic row,
+ *  an email that matches nobody, a call, a long note and a staff-only one. Newest first, as the server pages it;
+ *  each time is relative to the run (so it reads "2 hours ago", not a date years back). */
 const ago = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString()
 const STAFF_A = { name: 'Pentadbir Contoh', photo_url: null, kind: 'staff' }
 const STAFF_B = { name: 'Siti Pegawai Contoh', photo_url: null, kind: 'staff' }

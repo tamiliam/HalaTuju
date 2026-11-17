@@ -23,7 +23,7 @@ Owner, 2026-11-16: "Thank yous are part of the scholar maintenance process."
   permission). An organisation admin holds Scholars on their standard set, so they can approve. A reviewer
   cannot: their work ends at the award, so a reviewer holding Review alone, even the one who was given the
   case, does not see or decide a thank-you.
-- **A mentor** sees their own current student's thank-you, read only, with no buttons.
+- **A mentor** sees their own current student's thank-you, read only, with no buttons. A reject note is staff-only: a mentor never sees it.
 - A thank-you can still be decided after the scholar's file is closed.
 - Earlier versions of a thank-you (each send adds one) are listed underneath, read only.
 

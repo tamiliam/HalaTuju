@@ -173,6 +173,14 @@ class ThanksOnTheScholarFileTest(TestCase):
         self.assertIs(body['may_decide'], False)
         self.assertEqual(body['messages'][0]['approved_by'], 'Siti Lead')
         self.assertNotIn(self.org_admin.email, r.content.decode())
+        # The reject note is staff-only: a mentor gets it blank, never the words.
+        self.assertEqual(body['messages'][0]['review_note'], '')
+        self.assertNotIn('Please write it again.', r.content.decode())
+
+    def test_staff_still_read_the_reject_note(self):
+        self._post(self.org_admin, {'action': 'reject', 'review_note': 'Please write it again.'})
+        self.assertEqual(self._get(self.org_admin).json()['messages'][0]['review_note'],
+                         'Please write it again.')
 
     def test_a_mentor_never_decides(self):
         login = self._mentor_of(self.app)
@@ -180,20 +188,39 @@ class ThanksOnTheScholarFileTest(TestCase):
             self.assertEqual(self._post(login, body).status_code, 403)
         self._assert_untouched()
 
-    def test_staff_who_mentor_read_but_never_decide(self):
+    def _staff_mentor_of(self, app):
         person = make_admin('reviewer', owning_org=self.org)
         from apps.scholarship.models import Mentor
         person.mentor = Mentor.objects.create(organisation=self.org)
         person.save(update_fields=['mentor'])
-        mentoring.assign(self.org_admin, self.app, person.mentor, email_student=False)
+        mentoring.assign(self.org_admin, app, person.mentor, email_student=False)
+        return person
+
+    def test_staff_who_mentor_read_but_never_decide(self):
+        person = self._staff_mentor_of(self.app)
         self.assertIs(self._get(person).json()['may_decide'], False)
         self.assertEqual(self._post(person, {'action': 'approve'}).status_code, 403)
         self._assert_untouched()
 
-    def test_a_mentor_of_another_student_gets_404(self):
+    def test_staff_who_mentor_never_read_the_reject_note(self):
+        person = self._staff_mentor_of(self.app)
+        self._post(self.org_admin, {'action': 'reject', 'review_note': 'Please write it again.'})
+        body = self._get(person).json()
+        self.assertEqual(body['messages'][0]['review_note'], '')
+        self.assertNotIn('Please write it again.', str(body))
+
+    def test_a_mentor_login_of_another_student_reads_404_and_posts_403(self):
         login = self._mentor_of(self.other_app)
         self.assertEqual(self._get(login).status_code, 404)
-        self.assertIn(self._post(login, {'action': 'approve'}).status_code, (403, 404))
+        # A mentor LOGIN may only GET (`mentor_methods`), so its POST stops at the door: 403.
+        self.assertEqual(self._post(login, {'action': 'approve'}).status_code, 403)
+        self._assert_untouched()
+
+    def test_staff_who_mentor_another_student_read_and_post_404(self):
+        person = self._staff_mentor_of(self.other_app)
+        # Staff pass the door, then the file fence finds no assignment here: the same 404 as no file.
+        self.assertEqual(self._get(person).status_code, 404)
+        self.assertEqual(self._post(person, {'action': 'approve'}).status_code, 404)
         self._assert_untouched()
 
     # ── validation, inside the fence ──────────────────────────────────────────────────────────
