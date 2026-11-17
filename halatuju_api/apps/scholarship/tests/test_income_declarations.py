@@ -1036,7 +1036,8 @@ class TheApproverStampAnywhereInItsSection(SimpleTestCase):
 
     def test_the_doc_recognition_version_is_bumped(self):
         from apps.scholarship.genuineness.results_doc import MODEL_VERSION
-        self.assertEqual(MODEL_VERSION, '1.28.0')
+        # H1 bumped it to 1.28.0; help H2 (merged after H1) to 1.29.0.
+        self.assertGreaterEqual(tuple(map(int, MODEL_VERSION.split('.'))), (1, 28, 0))
 
     def test_stamped_and_named_with_an_empty_box_is_approved(self):
         """The fixed answer: signed, stamped (on the Nama / Alamat lines), named, no letterhead — counts, whatever

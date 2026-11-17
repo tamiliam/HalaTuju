@@ -1323,7 +1323,7 @@ on a team label, inactive rows), shown red with one mapping broken on purpose.
    that only mentions the Division stays `not_offer_letter`. The Malay offer is unchanged.
    Why option B: the H2 rounds 1-3 tried to prove a new type genuine (known-name lists, then a closed letterhead,
    VERDICT_ENGINE_VERSION .4 / .6 / .8); each adversarial round found another way in. A person's check is the proof
-   instead. VERDICT_ENGINE_VERSION 2026-11-15.10, MODEL_VERSION 1.28.0. Closed by the owner's 16 Nov ruling:
+   instead. VERDICT_ENGINE_VERSION 2026-11-15.10, MODEL_VERSION 1.29.0. Closed by the owner's 16 Nov ruling:
    TD-635 (main's Form-6 path read genuine before the letterhead check) and TD-638 (main's live polytechnic / UMS /
    Form-6 path read a "not studying now" confirmation genuine) - both now read suspect and a person checks. Open:
    TD-636 (main's Malay matric offer does not check its "Kolej :" line), TD-637 (a fully English confirmation
