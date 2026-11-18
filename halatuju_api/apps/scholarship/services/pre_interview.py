@@ -35,8 +35,8 @@ NOTE_MAX = 2000
 
 def hold_for(application):
     """The QC decline hold for this case's organisation (platform 24 h)."""
-    from apps.courses import org_config
-    hours = org_config.value(application.owning_organisation, 'qc_decline_hold_hours') or 0
+    from apps.courses import public as courses_public
+    hours = courses_public.org_config.value(application.owning_organisation, 'qc_decline_hold_hours') or 0
     return timedelta(hours=hours)
 
 

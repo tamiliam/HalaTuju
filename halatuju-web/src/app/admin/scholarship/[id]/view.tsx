@@ -21,7 +21,7 @@
  * roadmap's Phase 4 says untangling it is DESIGN work, not a move, so it is still drawn inline
  * below. Do not lift it out without that design.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLatest } from '@/lib/useLatest'
 import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
@@ -72,9 +72,6 @@ import { useRequests } from './view/useRequests'
 import { useVerdict } from './view/useVerdict'
 import type { CockpitCtx } from './view/cockpitCtx'
 
-/** #75 re-check 2: a stale refusal's reload takes its door away, so focus goes to the words that stay. */
-const focusOnArrival = (el: HTMLElement | null) => el?.focus()
-
 /**
  * ⚠ `applicationId` EXISTS SO THE SANDBOX CAN MOUNT THIS PAGE (Layer 1 F7c), and it is the only
  * concession made for it. The route supplies the id in production and always wins; the sandbox
@@ -110,7 +107,16 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // (#39 S3: super, a `qc`, an `org_admin`). The backend recorder guard stops anyone QC-ing
   // a verdict they themselves recorded (two-person control).
   const canQc = hasPerm(role, 'qc')
-  const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
+  const [app, setRawApp] = useState<AdminScholarshipDetail | null>(null)
+  // ⚠ #75 re-check 3 (TD-216 class): prev/next changes `id` WITHOUT a remount, so a request sent for
+  // the case before lands after the next one loaded. Every write of `app` goes through this setter,
+  // which drops a payload for any case but the live one (`liveId` is read when the update lands).
+  const liveId = useLatest(id)
+  const isLive = useCallback((d: { id: number }) => d.id === liveId.current, [liveId])
+  const setApp: CockpitCtx['setApp'] = useCallback((next) => setRawApp((prev) => {
+    const d = typeof next === 'function' ? next(prev) : next
+    return d && !isLive(d) ? prev : d
+  }), [isLive])
   // ⚠ The crumb names THIS case's gift, from the payload — `app.programme` (the gift), never
   // `chosen_programme` (the course). A fresh tab opened from a run pins it too (2026-09-28).
   usePinProgramme(app?.programme)
@@ -138,12 +144,29 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const [preInterviewRefusal, setPreInterviewRefusal] = useState<{ appId: number; text: string } | null>(null)
   const preInterviewErr = app && preInterviewRefusal?.appId === app.id ? preInterviewRefusal.text : ''
   const setPreInterviewErr = (text: string) => setPreInterviewRefusal(text && app ? { appId: app.id, text } : null)
-
-  const refreshApp = async () => {
+  // #75 re-check 3 (L-a): the page's refusal takes focus only on the reload its own refusal asked for
+  // (`onStale`), for that one commit; any other reload, and a success, clears the words.
+  const focusRefusal = useRef(false)
+  useEffect(() => { focusRefusal.current = false })
+  const focusOnArrival = useCallback((el: HTMLElement | null) => {
+    if (el && focusRefusal.current) { focusRefusal.current = false; el.focus() }
+  }, [])
+  const reload = async (afterRefusal: boolean) => {
     if (!token) return
-    setApp(await getScholarshipApplication(id, { token }))
+    const d = await getScholarshipApplication(liveId.current, { token })
+    focusRefusal.current = afterRefusal
+    if (!afterRefusal) setPreInterviewRefusal(null)
+    setApp(d)
   }
-  const ctx: CockpitCtx = { id, token, t, app, setApp, setProfile, setBusy, setError, refreshApp }
+  const refreshApp = () => reload(false)
+  const onPreInterviewDone = (next: AdminScholarshipDetail) => { setPreInterviewRefusal(null); setApp(next) }
+  // The hooks' handlers keep the ctx of the render they were made in, so these drop what a request
+  // for an earlier case brings back (busy is never guarded: it must always clear).
+  const forThisCase = <A,>(set: (a: A) => void) => (a: A) => { if (id === liveId.current) set(a) }
+  const ctx: CockpitCtx = {
+    id, token, t, app, setApp, isLive, setProfile: forThisCase(setProfile), setBusy,
+    setError: forThisCase(setError), refreshApp,
+  }
   const verdict = useVerdict(ctx, genLang)
   const interview = useInterview(ctx)
   const requests = useRequests(ctx)
@@ -166,8 +189,10 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     interview.setRubric({})
     interview.setNote('')
     setPreInterviewRefusal(null)
+    setError('')
     getScholarshipApplication(id, { token })
       .then((d) => {
+        if (id !== liveId.current) return   // a later prev/next superseded this load
         setApp(d)
         setProfile(d.sponsor_profile)
         loadInterviewState(d)
@@ -176,11 +201,12 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         // ticks are accurate on first paint (the action responses refresh it after a sign).
         postAward.setBursary(d.bursary_agreement ?? null)
       })
-      .catch(() => setError(t('admin.scholarship.loadFailed')))
+      .catch(() => { if (id === liveId.current) setError(t('admin.scholarship.loadFailed')) })
     getAssignableAdmins({ token }).then((r) => setAdmins(r.admins)).catch(() => {})
     // Check-2 case summary — fetched lazily (in parallel), server-cached; dark-flag aware.
-    getVerdictCaseSummary(id, { token }).then(setCaseSummary).catch(() => {})
-  }, [token, id, live])
+    getVerdictCaseSummary(id, { token })
+      .then((s) => { if (id === liveId.current) setCaseSummary(s) }).catch(() => {})
+  }, [token, id, live, liveId, setApp])
 
   if (!app) return <RecordState loading={!error} />
 
@@ -294,7 +320,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         ['profile_complete', 'interviewing'].includes(app.status) && (
         <InterviewScheduleCard
           appId={id} token={token || ''} schedule={app.interview_schedule}
-          onChange={(s) => setApp((prev) => (prev ? { ...prev, interview_schedule: s } : prev))}
+          onChange={(s) => setApp((prev) => (prev?.id === app.id ? { ...prev, interview_schedule: s } : prev))}
         />
       )}
 
@@ -387,7 +413,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         notesCard={<ReviewerNotesCard appId={app.id} token={token} t={t} isWriter={canAssign}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
         preInterview={<PreInterviewOption app={app} t={t} token={token} busy={busy} canAssign={canAssign}
-          err={preInterviewErr} setErr={setPreInterviewErr} onDone={setApp} onStale={refreshApp} />}
+          err={preInterviewErr} setErr={setPreInterviewErr} onDone={onPreInterviewDone} onStale={() => reload(true)} />}
       />
 
 

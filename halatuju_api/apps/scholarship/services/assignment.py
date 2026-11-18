@@ -338,9 +338,12 @@ def _refuse_stage(application, current, reviewer, now):
 
 def _locked(reviewer):
     """``reviewer`` (or its pk) re-read with its row locked (the permissions editor's lock). A row that
-    has vanished keeps the stale object (None for a pk), which `_can_review` then judges as before."""
+    has vanished keeps the stale object (None for a pk), which `_can_review` then judges as before.
+    ⚠ NO KEY (#75 re-check 3): a reassign's deferred `from_admin` FK check takes KEY SHARE on the old
+    holder at COMMIT; plain FOR UPDATE here blocked it and deadlocked against a racing unassign. NO KEY
+    UPDATE never blocks KEY SHARE, yet still conflicts with the editors' FOR UPDATE and other assigns."""
     from apps.courses.models import PartnerAdmin
-    row = PartnerAdmin.objects.select_for_update().filter(pk=getattr(reviewer, 'pk', reviewer)).first()
+    row = PartnerAdmin.objects.select_for_update(no_key=True).filter(pk=getattr(reviewer, 'pk', reviewer)).first()
     return row or (None if isinstance(reviewer, int) else reviewer)
 
 

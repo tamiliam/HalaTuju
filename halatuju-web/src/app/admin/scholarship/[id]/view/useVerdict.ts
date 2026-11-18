@@ -37,6 +37,7 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
   const [qcOverrideReason, setQcOverrideReason] = useState('')
 
   const loadVerdictState = (d: AdminScholarshipDetail) => {
+    if (!ctx.isLive(d)) return   // #75 re-check 3: an earlier case's answer never fills this one's verdict
     const v = d.officer_verdict ?? {}
     setOfficerVerdict({
       identity: v.identity ?? '',

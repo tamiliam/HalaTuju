@@ -27,6 +27,7 @@ export function useInterview(ctx: CockpitCtx) {
   useEffect(() => { setInterviewError('') }, [findings])
 
   const loadInterviewState = (d: AdminScholarshipDetail) => {
+    if (!ctx.isLive(d)) return   // #75 re-check 3: an earlier case's answer never fills this one's boxes
     const s = d.interview_session
     setFindings(s?.findings ?? {})
     setRubric(s?.rubric ?? {})

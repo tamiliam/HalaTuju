@@ -271,7 +271,6 @@ def funnel(scope):
     """
     from .models import ScholarshipApplication
     from .services.pre_interview import counts as pre_interview_counts   # #75: and by reason
-
     by_status = {code: 0 for code, _ in ScholarshipApplication.STATUS_CHOICES}
     total = 0
     for status in scope.values_list('status', flat=True):

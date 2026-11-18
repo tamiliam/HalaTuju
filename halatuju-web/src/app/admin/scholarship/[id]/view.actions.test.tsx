@@ -16,7 +16,7 @@
  *    from the click through to the arguments AND to the state the officer is left looking at; a
  *    call that lands while the screen says nothing is the shape of BrightPath #20.
  */
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit, OTHER_ADMIN_ID } from '@/test/renderCockpit'
 import { buildApplicationDetail, buildDocument } from '@/test/adminApplicationDetail'
@@ -267,5 +267,100 @@ describe('reject before interview, refused because a colleague got there first (
     await waitFor(() => expect(api.getScholarshipApplication).toHaveBeenLastCalledWith(8, { token: 'test-token' }))
     expect(await screen.findByText('admin.scholarship.assign.assignedTitle')).toBeTruthy()
     expect(screen.queryByTestId('pre-interview-refused')).toBeNull()
+  })
+})
+
+describe('a request still in flight when the officer presses Next (#75 re-check 3, TD-216 class)', () => {
+  const P = 'admin.scholarship.preInterview'
+  const offer = { hold_hours: 24, reasons: ['not_b40'], note_max: 2000 }
+  const case8 = () => buildApplicationDetail('profile_complete', { id: 8, name: 'Test Student 08' } as never)
+  /** Case 7 as a colleague left it: declined before interview, the door gone. */
+  const case7Rejected = () => buildApplicationDetail('rejected', {
+    rejection_category: 'pre_interview', rejection_reason: 'not_b40', pre_interview: undefined,
+  } as never)
+
+  /** Open case 7's reject, press "Yes, reject" with the reply held, then move to case 8. */
+  const rejectThenNext = async () => {
+    const view = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+    await loaded()
+    const reply: { settle: (ok: boolean, v: unknown) => void } = { settle: () => {} }
+    view.api.rejectBeforeInterview.mockReturnValue(new Promise((res, rej) => {
+      reply.settle = (ok, v) => (ok ? res(v as never) : rej(v))
+    }))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fireEvent.change(screen.getByLabelText(`${P}.reasonLabel`), { target: { value: 'not_b40' } })
+    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'Dummy note' } })
+    fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    view.api.getScholarshipApplication.mockImplementation(async (id: number) => (id === 8 ? case8() : case7Rejected()))
+    view.rerender(<AdminScholarshipDetailView applicationId={8} />)
+    expect(await screen.findByText('Test Student 08')).toBeTruthy()
+    return { ...view, reply }
+  }
+  /** Let a held reply land, and everything it sets off, inside `act`. */
+  const land = (fn: () => void) => act(async () => { fn(); await new Promise((r) => setTimeout(r, 30)) })
+
+  it('a reject refused after Next leaves case 8 on screen, with no refusal', async () => {
+    const { api, reply } = await rejectThenNext()
+    const loads = api.getScholarshipApplication.mock.calls.length
+    await land(() => reply.settle(false, Object.assign(new Error('x'), { code: 'bad_status' })))
+    // The stale refusal's reload reads the LIVE case, never the one the request was sent for.
+    expect(api.getScholarshipApplication.mock.calls.length).toBe(loads + 1)
+    expect(api.getScholarshipApplication).toHaveBeenLastCalledWith(8, { token: 'test-token' })
+    expect(screen.getByText('Test Student 08')).toBeTruthy()
+    expect(screen.queryByText('Test Student 07')).toBeNull()
+    expect(screen.queryByTestId('pre-interview-record')).toBeNull()
+    expect(screen.queryByTestId('pre-interview-refused')).toBeNull()
+    expect(screen.queryByText(`${P}.error.bad_status`)).toBeNull()
+  })
+
+  it('a reject that succeeds after Next never puts case 7 on case 8', async () => {
+    const { reply } = await rejectThenNext()
+    await land(() => reply.settle(true, case7Rejected()))
+    expect(screen.getByText('Test Student 08')).toBeTruthy()
+    expect(screen.queryByText('Test Student 07')).toBeNull()
+    expect(screen.queryByTestId('pre-interview-record')).toBeNull()
+  })
+
+  it('an assign still running when Next is pressed leaves case 8 untouched', async () => {
+    const { api, rerender } = renderCockpit({ role: 'org_admin', stage: 'profile_complete' })
+    await loaded()
+    let refuse: (e: unknown) => void = () => {}
+    api.assignApplication.mockReturnValue(new Promise((_, rej) => { refuse = rej }))
+    const card = screen.getByText('admin.scholarship.assignTitle').closest('div') as HTMLElement
+    fireEvent.change(within(card).getByRole('combobox'), { target: { value: String(OTHER_ADMIN_ID) } })
+    api.getScholarshipApplication.mockImplementation(async (id: number) => (id === 8 ? case8()
+      : buildApplicationDetail('assigned', { assigned_to_id: OTHER_ADMIN_ID, assigned_to_name: 'Test Reviewer 05' })))
+    rerender(<AdminScholarshipDetailView applicationId={8} />)
+    expect(await screen.findByText('Test Student 08')).toBeTruthy()
+    await land(() => refuse(Object.assign(new Error('not_assignable'), { code: 'not_assignable' })))
+    expect(api.getScholarshipApplication).toHaveBeenLastCalledWith(7, { token: 'test-token' })
+    // Case 7's reload and its refusal both belong to case 7: case 8 keeps its own record and picker.
+    expect(screen.getByText('Test Student 08')).toBeTruthy()
+    expect(screen.queryByText('admin.scholarship.assign.assignedTitle')).toBeNull()
+    expect(screen.getByText('admin.scholarship.assignTitle')).toBeTruthy()
+    expect(screen.queryByText('admin.scholarship.assign.error.not_assignable')).toBeNull()
+  })
+
+  it('a refusal left standing never takes focus when a later reload moves the door away (L-a)', async () => {
+    const { api } = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+    await loaded()
+    api.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'boom' }))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fireEvent.change(screen.getByLabelText(`${P}.reasonLabel`), { target: { value: 'not_b40' } })
+    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'Dummy note' } })
+    fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    expect(await screen.findByText(`${P}.error.generic`)).toBeTruthy()   // the door stays; the words in it
+    // Later, an assign's reload takes the door away: the old words may not steal focus.
+    api.assignApplication.mockResolvedValue({ id: 7, status: 'assigned', assigned_to_id: OTHER_ADMIN_ID,
+      assigned_to_name: 'Test Reviewer 05', assigned_at: '2026-11-07T00:00:00Z' })
+    api.getScholarshipApplication.mockResolvedValue(buildApplicationDetail('assigned', {
+      assigned_to_id: OTHER_ADMIN_ID, assigned_to_name: 'Test Reviewer 05', pre_interview: undefined } as never))
+    const card = screen.getByText('admin.scholarship.assignTitle').closest('div') as HTMLElement
+    fireEvent.change(within(card).getAllByRole('combobox')[0], { target: { value: String(OTHER_ADMIN_ID) } })
+    expect(await screen.findByText('admin.scholarship.assign.assignedTitle')).toBeTruthy()
+    // The words outlive the door (re-check), but focus stays where the officer left it.
+    expect(document.activeElement).not.toBe(screen.getByTestId('pre-interview-refused'))
   })
 })

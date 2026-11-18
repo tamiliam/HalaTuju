@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #75 re-check 3 - no-key lock on the holder, case page drops a stale case (2026-11-18)
+
+Branch req75, on top of a9fccf12e (main ead73c7e9), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-18, Request #75 re-check 3).
+- Assign and unassign lock the reviewer row FOR NO KEY UPDATE, so a reassign's deferred foreign-key check can never deadlock against an unassign. Same query; no budget moved.
+- Cockpit: a request still in flight when the officer presses Next can no longer put the old case (or its refusal, error, profile, verdict or interview answers) onto the next case's page; a stale refusal's reload reads the case on screen.
+- Cockpit: a refusal left standing never takes focus when a later reload moves the door away; any other reload, and a success, clear it.
+- Tamil `admin.scholarship.assign.reloadAfterAssign`: "காணப் பக்கத்தை".
+- API guards green again after the rebase (no ledger moved): `urls.py` back to 600 lines (the reject-before-interview route moves to `urls_pre_interview.py`, same path), `programme_overview.py` back to its 839 allowance, `pre_interview.py` reads org settings through `apps.courses.public`.
+- Tests: `test_reject_before_interview.py` 44 -> 45 (the holder lock is NO KEY on both the assign and the unassign); `view.actions.test.tsx` +4 (reject refused after Next, reject succeeded after Next, assign after Next, no focus for a standing refusal).
+
 ### refactor: request #75 re-check 2 - refusal kept to its case, unassign retries a moved holder (2026-11-17)
 
 Branch req75, on top of 2c1ee06e4, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-17, Request #75 re-check 2).

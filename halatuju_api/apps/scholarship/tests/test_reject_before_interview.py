@@ -291,6 +291,29 @@ class TheRowLockTest(_Base):
         app.refresh_from_db()
         self.assertIsNone(app.assigned_to_id)
 
+    def test_the_holder_lock_is_no_key_so_a_foreign_key_check_never_waits_on_it(self):
+        # #75 re-check 3 (M-A): a reassign's event names the old holder, and PostgreSQL takes FOR KEY
+        # SHARE on that row at COMMIT (Django's foreign keys are deferred). A plain FOR UPDATE held by
+        # an unassign waiting on the case deadlocked it. SQLite drops the lock clause, so the query
+        # itself is read: every PartnerAdmin row lock the assign and the unassign take is NO KEY.
+        from django.db.models.query import QuerySet
+        from apps.courses.models import PartnerAdmin
+        other = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+        app = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        real_first, locks = QuerySet.first, []
+
+        def first(qs):
+            if qs.model is PartnerAdmin and qs.query.select_for_update:
+                locks.append(qs.query.select_for_no_key_update)
+            return real_first(qs)
+
+        with mock.patch.object(QuerySet, 'first', first):
+            assign_reviewer(app, reviewer=other, by_admin=self.org_admin)    # reassign: the new holder
+            assign_reviewer(app, reviewer=None, by_admin=self.org_admin)     # unassign: the old holder
+        self.assertEqual(locks, [True, True])
+        app.refresh_from_db()
+        self.assertIsNone(app.assigned_to_id)
+
 
 @mock.patch('apps.scholarship.scheduling.emails.send_reviewer_interview_cancelled_email')
 @mock.patch('apps.scholarship.scheduling.emails.send_interview_released_email')

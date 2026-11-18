@@ -105,7 +105,7 @@ from .views_admin import (
     AdminReportingDateView,
     AdminNudgeStudentView,
     AdminRejectView,
-    AdminCancelDeclineView, AdminRejectBeforeInterviewView,   # the second: request #75
+    AdminCancelDeclineView,
     AdminHoldAwardView,
     AdminRefereeDetailView,
     AdminRecordVerdictView,
@@ -220,7 +220,7 @@ from .urls_mentors import urlpatterns as MENTORS_URLS   # mentors (maintenance S
 from .urls_announcements import urlpatterns as ANNOUNCEMENT_URLS   # announcements (maintenance S8)
 from .urls_surveys import urlpatterns as SURVEY_URLS   # surveys (maintenance S9)
 from .urls_development import urlpatterns as DEVELOPMENT_URLS   # development modules (maintenance S10)
-from . import urls_award, urls_billing   # award withdrawal (A1.13, TD-198); overdue banner (nudges)
+from . import urls_award, urls_billing, urls_pre_interview   # award withdrawal (A1.13, TD-198); overdue banner (nudges); #75
 urlpatterns = [
     # Twilio inbound-WhatsApp webhook (STOP/START → opt-out sync; Twilio-signature authed). TD-135.
     path('scholarship/whatsapp/inbound/', WhatsAppInboundView.as_view()),
@@ -563,7 +563,6 @@ urlpatterns = [
          AdminBursaryWitnessView.as_view()),
     # Cool-off controls: cancel a pending decline / hold a pending award before it reveals.
     path('admin/scholarship/applications/<int:pk>/cancel-decline/', AdminCancelDeclineView.as_view()),
-    path('admin/scholarship/applications/<int:pk>/reject-before-interview/', AdminRejectBeforeInterviewView.as_view()),
     path('admin/scholarship/applications/<int:pk>/hold-award/', AdminHoldAwardView.as_view()),
     # F7: super-only audited reviewer (re)assignment.
     path('admin/scholarship/applications/<int:pk>/assign/', AdminAssignReviewerView.as_view()),
@@ -598,4 +597,4 @@ urlpatterns = [
     path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
     # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
     path('admin/reviewer-profile/', ReviewerProfileView.as_view()),
-] + ME_URLS + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + urls_award.urlpatterns + urls_billing.urlpatterns
+] + ME_URLS + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS + ANNOUNCEMENT_URLS + SURVEY_URLS + DEVELOPMENT_URLS + urls_award.urlpatterns + urls_billing.urlpatterns + urls_pre_interview.urlpatterns
