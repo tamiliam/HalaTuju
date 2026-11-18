@@ -59,6 +59,9 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
   const submitRef = useRef<HTMLButtonElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const focusNext = useRef<Focus | null>(null)
+  // Re-check 4 (H1): the page mounts this per case; a reply that lands after Next finds it gone and stops.
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const go = (next: typeof step, focus: Focus) => { focusNext.current = focus; setStep(next) }
   useEffect(() => {
     const target = focusNext.current
@@ -86,9 +89,11 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
     setWorking(true); setErr('')
     try {
       const next = await rejectBeforeInterview(app.id, reason, note, { token })
+      if (!mounted.current) return
       setReason(''); setNote(''); setStep('idle')
       onDone(next)
     } catch (e) {
+      if (!mounted.current) return
       const code = (e as { code?: string }).code || ''
       setErr(t(`${P}.error.${REFUSALS.includes(code) ? code : 'generic'}`))
       if (STALE.includes(code)) {

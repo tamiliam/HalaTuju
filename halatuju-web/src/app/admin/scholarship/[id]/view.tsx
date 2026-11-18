@@ -21,7 +21,7 @@
  * roadmap's Phase 4 says untangling it is DESIGN work, not a move, so it is still drawn inline
  * below. Do not lift it out without that design.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import { useLatest } from '@/lib/useLatest'
 import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
@@ -93,6 +93,24 @@ import type { CockpitCtx } from './view/cockpitCtx'
 export function AdminScholarshipDetailView({ applicationId }: { applicationId?: number }) {
   const params = useParams()
   const id = applicationId ?? Number(params?.id)
+  // ⚠ ONE MOUNT PER CASE (#75 re-check 4, TD-216). Prev/next changes `id` without remounting the
+  // route, so every form, message and choice below used to carry to the next student (a half-made
+  // reject sent for case 8 with case 7's reason). Keyed on the id, the case's whole tree starts fresh,
+  // shows its loading state until its own record arrives, and a reply for the case before lands on an
+  // unmounted tree. Only the two viewing preferences live out here, so they still follow the officer.
+  const [genLang, setGenLang] = useState('en')
+  // Consolidation: the student's own words (note/story/funding) are collapsed by
+  // default under the Sponsor profile — the reviewer checks the AI draft first.
+  const [showOwnWords, setShowOwnWords] = useState(true)
+  const prefs = { genLang, setGenLang, showOwnWords, setShowOwnWords }
+  return <CaseCockpit key={id} id={id} prefs={prefs} />
+}
+
+type SetPref<T> = Dispatch<SetStateAction<T>>
+function CaseCockpit({ id, prefs }: { id: number; prefs: {
+  genLang: string; setGenLang: SetPref<string>; showOwnWords: boolean; setShowOwnWords: SetPref<boolean>
+} }) {
+  const { genLang, setGenLang, showOwnWords, setShowOwnWords } = prefs
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const isSuper = effectiveRole(role) === 'super'
@@ -111,7 +129,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // ⚠ #75 re-check 3 (TD-216 class): prev/next changes `id` WITHOUT a remount, so a request sent for
   // the case before lands after the next one loaded. Every write of `app` goes through this setter,
   // which drops a payload for any case but the live one (`liveId` is read when the update lands).
-  const liveId = useLatest(id)
+  // Re-check 4 (L1): the page's own ref, set after commit, so no render that is thrown away moves it.
+  const liveId = useRef(id)
+  useLayoutEffect(() => { liveId.current = id }, [id])
   const isLive = useCallback((d: { id: number }) => d.id === liveId.current, [liveId])
   const setApp: CockpitCtx['setApp'] = useCallback((next) => setRawApp((prev) => {
     const d = typeof next === 'function' ? next(prev) : next
@@ -133,11 +153,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const [viewerDoc, setViewerDoc] = useState<ViewerDoc | null>(null)   // in-cockpit doc viewer
-  const [genLang, setGenLang] = useState('en')
   const [admins, setAdmins] = useState<Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>>([])
-  // Consolidation: the student's own words (note/story/funding) are collapsed by
-  // default under the Sponsor profile — the reviewer checks the AI draft first.
-  const [showOwnWords, setShowOwnWords] = useState(true)
   // #75 re-check: the reject-before-interview refusal lives HERE, so it survives the reload that a
   // stale refusal triggers even when that reload takes the door (and its component) away. It is
   // kept WITH its case: prev/next changes `id` without a remount (TD-216), and it never follows.
@@ -154,6 +170,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const reload = async (afterRefusal: boolean) => {
     if (!token) return
     const d = await getScholarshipApplication(liveId.current, { token })
+    if (!isLive(d)) return   // re-check 4 (L2): a dropped payload leaves the refusal as it was
     focusRefusal.current = afterRefusal
     if (!afterRefusal) setPreInterviewRefusal(null)
     setApp(d)
@@ -208,7 +225,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       .then((s) => { if (id === liveId.current) setCaseSummary(s) }).catch(() => {})
   }, [token, id, live, liveId, setApp])
 
-  if (!app) return <RecordState loading={!error} />
+  // Re-check 4: nothing is drawn against a record that is not this case's (the key makes it so).
+  if (!app || app.id !== id) return <RecordState loading={!error} />
 
   const d = deriveCockpit(app, t, findings, officerVerdict, verdict.verdictReason)
   const { vtip, decisionReopened, decisionLocked, decisionRecorded } = d
@@ -412,7 +430,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         doAssignWitness={doAssignWitness}
         notesCard={<ReviewerNotesCard appId={app.id} token={token} t={t} isWriter={canAssign}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
-        preInterview={<PreInterviewOption app={app} t={t} token={token} busy={busy} canAssign={canAssign}
+        preInterview={<PreInterviewOption key={app.id} app={app} t={t} token={token} busy={busy} canAssign={canAssign}
           err={preInterviewErr} setErr={setPreInterviewErr} onDone={onPreInterviewDone} onStale={() => reload(true)} />}
       />
 

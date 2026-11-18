@@ -25,7 +25,8 @@
 import { act, fireEvent, screen, within } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
-import { buildInterviewSession } from '@/test/adminApplicationDetail'
+import { buildApplicationDetail, buildInterviewSession } from '@/test/adminApplicationDetail'
+import { AdminScholarshipDetailView } from './view'
 
 installCockpitConsoleGuard()
 
@@ -246,10 +247,10 @@ describe('every interview question needs an answer before the reviewer decides',
   // ── Request #61: "Save & generate final profile" that loses its answer ──────────────────────
   /** Approve, then the Save that records + finalises + submits. */
   const pressSaveAndFinalise = async () => {
-    const { api, app, unmount } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({
+    const { api, app, unmount, rerender } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({
       'motivation:motivation_grit': { verdict: 'resolved', rationale: '' } }) })
     await loaded()
-    return { api, app, unmount, press: () => {
+    return { api, app, unmount, rerender, press: () => {
       fireEvent.click(button('recordVerdict.approve'))
       fireEvent.click(button('recordVerdict.save'))
     } }
@@ -291,6 +292,41 @@ describe('every interview question needs an answer before the reviewer decides',
     press()
     expect(await screen.findByText('admin.scholarship.recordVerdict.finalisePending')).toBeTruthy()
     expect(screen.queryByText('admin.scholarship.recordVerdict.finaliseOk')).toBeNull()
+  })
+
+  it('#75 re-check 4: a verdict message never follows the officer to the next case', async () => {
+    const { api, app, press, rerender } = await pressSaveAndFinalise()
+    api.recordVerdict.mockResolvedValue({ ...app, completeness: { complete: true },
+      finalise_result: { ok: true, pending: true } } as never)
+    api.verifyAcceptApplication.mockRejectedValue(Object.assign(new Error('Dummy refusal'), {
+      code: 'nric_clash', status: 409 }))
+    press()
+    expect(await screen.findByText('admin.scholarship.recordVerdict.finalisePending')).toBeTruthy()
+    api.getScholarshipApplication.mockResolvedValue(
+      buildApplicationDetail('interviewing', { id: 8, name: 'Test Student 08' } as never))
+    rerender(<AdminScholarshipDetailView applicationId={8} />)
+    expect(await screen.findByText('Test Student 08')).toBeTruthy()
+    expect(screen.queryByText('admin.scholarship.recordVerdict.finalisePending')).toBeNull()
+    expect(screen.queryByText('Dummy refusal')).toBeNull()
+  })
+
+  it('#75 re-check 4: a verdict save that lands after Next says nothing on the next case', async () => {
+    const { api, app, press, rerender } = await pressSaveAndFinalise()
+    let arrive: (v: unknown) => void = () => {}
+    api.recordVerdict.mockReturnValue(new Promise((res) => { arrive = res as (v: unknown) => void }))
+    press()
+    api.getScholarshipApplication.mockResolvedValue(
+      buildApplicationDetail('interviewing', { id: 8, name: 'Test Student 08' } as never))
+    rerender(<AdminScholarshipDetailView applicationId={8} />)
+    expect(await screen.findByText('Test Student 08')).toBeTruthy()
+    await act(async () => {
+      arrive({ ...app, completeness: { complete: false }, finalise_result: { ok: true, pending: true } })
+      await new Promise((r) => setTimeout(r, 30))
+    })
+    expect(screen.getByText('Test Student 08')).toBeTruthy()
+    expect(screen.queryByText('Test Student 07')).toBeNull()
+    expect(screen.queryByText('admin.scholarship.decision.notSubmittedIncomplete')).toBeNull()
+    expect(screen.queryByText('admin.scholarship.recordVerdict.finalisePending')).toBeNull()
   })
 
   it('#61: a real server refusal of the save itself still shows its own message', async () => {

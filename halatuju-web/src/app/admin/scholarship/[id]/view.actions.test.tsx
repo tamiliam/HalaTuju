@@ -304,8 +304,8 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
     const { api, reply } = await rejectThenNext()
     const loads = api.getScholarshipApplication.mock.calls.length
     await land(() => reply.settle(false, Object.assign(new Error('x'), { code: 'bad_status' })))
-    // The stale refusal's reload reads the LIVE case, never the one the request was sent for.
-    expect(api.getScholarshipApplication.mock.calls.length).toBe(loads + 1)
+    // Re-check 4: case 7's form went with case 7, so its stale refusal reloads nothing at all.
+    expect(api.getScholarshipApplication.mock.calls.length).toBe(loads)
     expect(api.getScholarshipApplication).toHaveBeenLastCalledWith(8, { token: 'test-token' })
     expect(screen.getByText('Test Student 08')).toBeTruthy()
     expect(screen.queryByText('Test Student 07')).toBeNull()
@@ -362,5 +362,83 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
     expect(await screen.findByText('admin.scholarship.assign.assignedTitle')).toBeTruthy()
     // The words outlive the door (re-check), but focus stays where the officer left it.
     expect(document.activeElement).not.toBe(screen.getByTestId('pre-interview-refused'))
+  })
+})
+
+describe('nothing on the case page carries to the next case (#75 re-check 4, TD-216)', () => {
+  const P = 'admin.scholarship.preInterview'
+  const offer = { hold_hours: 24, reasons: ['not_b40'], note_max: 2000 }
+  const case8 = (stage = 'profile_complete') =>
+    buildApplicationDetail(stage as never, { id: 8, name: 'Test Student 08', pre_interview: offer } as never)
+  const land = (fn: () => void) => act(async () => { fn(); await new Promise((r) => setTimeout(r, 30)) })
+  const openRejectForCase7 = async () => {
+    const view = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+    await loaded()
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fireEvent.change(screen.getByLabelText(`${P}.reasonLabel`), { target: { value: 'not_b40' } })
+    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'Dummy note' } })
+    fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
+    return view
+  }
+  const toCase8 = async (view: ReturnType<typeof renderCockpit>, stage?: string) => {
+    view.api.getScholarshipApplication.mockImplementation(async (id: number) => (id === 8 ? case8(stage)
+      : buildApplicationDetail('profile_complete', { pre_interview: offer } as never)))
+    view.rerender(<AdminScholarshipDetailView applicationId={8} />)
+    expect(await screen.findByText('Test Student 08')).toBeTruthy()
+  }
+
+  it('H1: a reject left at "Are you sure?" on case 7 is gone on case 8, and nothing is sent', async () => {
+    const view = await openRejectForCase7()
+    expect(screen.getByTestId('pre-interview-confirm')).toBeTruthy()
+    await toCase8(view)
+    expect(screen.queryByTestId('pre-interview-confirm')).toBeNull()
+    expect(screen.queryByRole('button', { name: `${P}.confirmYes` })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    expect((screen.getByLabelText(`${P}.reasonLabel`) as HTMLSelectElement).value).toBe('')
+    expect((screen.getByLabelText(`${P}.whyLabel`) as HTMLTextAreaElement).value).toBe('')
+    expect(view.api.rejectBeforeInterview).not.toHaveBeenCalled()
+  })
+
+  it('H1: a refusal that lands after Next never reopens the form on case 8', async () => {
+    const view = await openRejectForCase7()
+    let refuse: (e: unknown) => void = () => {}
+    view.api.rejectBeforeInterview.mockReturnValue(new Promise((_, rej) => { refuse = rej }))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    await toCase8(view)
+    await land(() => refuse(Object.assign(new Error('x'), { code: 'comments_required' })))
+    expect(view.api.rejectBeforeInterview).toHaveBeenCalledTimes(1)
+    expect(view.api.rejectBeforeInterview.mock.calls[0][0]).toBe(7)
+    expect(screen.queryByLabelText(`${P}.reasonLabel`)).toBeNull()
+    expect(screen.queryByDisplayValue('Dummy note')).toBeNull()
+    expect(screen.queryByText(`${P}.error.comments_required`)).toBeNull()
+    expect(screen.getByRole('button', { name: `${P}.start` })).toBeTruthy()
+  })
+
+  it('the page shows its loading state, never case 7, while case 8 loads', async () => {
+    const view = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+    await loaded()
+    let arrive: (v: unknown) => void = () => {}
+    view.api.getScholarshipApplication.mockReturnValue(new Promise((res) => { arrive = res as (v: unknown) => void }))
+    view.rerender(<AdminScholarshipDetailView applicationId={8} />)
+    expect(screen.getByText('common.loading')).toBeTruthy()
+    expect(screen.queryByText('Test Student 07')).toBeNull()
+    expect(screen.queryByRole('button', { name: `${P}.start` })).toBeNull()
+    await land(() => arrive(case8()))
+    expect(screen.getByText('Test Student 08')).toBeTruthy()
+    expect(screen.queryByText('common.loading')).toBeNull()
+  })
+
+  it('M1: the org reject panel open on case 7 is closed and empty on case 8', async () => {
+    const view = renderCockpit({ role: 'org_admin', stage: 'shortlisted' })
+    await loaded()
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.start' }))
+    fireEvent.change(screen.getByLabelText('admin.scholarship.orgReject.whyLabel'), { target: { value: 'Dummy reason' } })
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.submit' }))
+    expect(screen.getByText('admin.scholarship.orgReject.confirmTitle')).toBeTruthy()
+    await toCase8(view, 'shortlisted')
+    expect(screen.queryByText('admin.scholarship.orgReject.confirmTitle')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.start' }))
+    expect((screen.getByLabelText('admin.scholarship.orgReject.whyLabel') as HTMLTextAreaElement).value).toBe('')
+    expect(view.api.orgRejectApplication).not.toHaveBeenCalled()
   })
 })

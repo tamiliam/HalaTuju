@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #75 re-check 4 - nothing on the case page carries to the next case (2026-11-18)
+
+Branch req75, on top of c4f98a3c8 (main 9be194f1a), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged). Services: web. Decisions: `docs/decisions.md` (2026-11-18, Request #75 re-check 4).
+- Cockpit: the case page is mounted once per case (`CaseCockpit key={id}`), so prev/next starts every panel, message and form afresh: a reject-before-interview form left at "Are you sure?" on one case can no longer reject the next case with the first case's reason and note, and a refusal that lands after Next no longer reopens the form on the next case. The org reject panel, the verdict, interview, nudge, reporting-date and witness messages, and the officer's verdict all reset too. The output language and "show own words" choices still carry across cases, as before.
+- Cockpit: while the next case loads, the page shows its loading state instead of the previous case.
+- Cockpit: a dropped payload for an earlier case no longer clears the page's refusal.
+- Tests: `view.actions.test.tsx` +4 (confirm step gone on the next case; a late refusal reopens nothing; loading state while the next case loads; org reject panel closed and empty) and one changed (a stale refusal after Next reloads nothing); `view.decision.test.tsx` +2 (a verdict message, and a verdict save that lands after Next, say nothing on the next case).
+
 ### refactor: request #75 re-check 3 - no-key lock on the holder, case page drops a stale case (2026-11-18)
 
 Branch req75, on top of a9fccf12e (main ead73c7e9), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-18, Request #75 re-check 3).
