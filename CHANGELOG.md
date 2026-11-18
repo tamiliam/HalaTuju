@@ -12,6 +12,14 @@ Branch ocr-s0, not pushed. Migration: none. Services: none. Eval tool only; noth
 - **First real run (held-out):** matriculation, polytechnic and STPM fail on sample size only (4, 4 and 2 documents; 100% agreement). Every university lane is "no rules yet". Other document types report AI agreement only (no truth set); salary and results slips have no text parser.
 - **Tests:** `test_ocr_first_gate.py` (8, the edges) and `test_ocr_first_dryrun.py` (4, three invented letters, a fake course matcher, no value printed).
 
+### feat: sprint S0b - keep the OCR text of each new upload (2026-11-18)
+
+Branch ocr-keep, not pushed. Migration: 0214 (additive, migrate first; Postgres DDL in its docstring). Services: api. OCR-first roadmap; owner said yes on 2026-11-18. Decisions: `docs/decisions.md` (2026-11-18).
+- **Store:** new side table `applicant_document_ocr_text` (`ApplicantDocumentOcrText`): one row per document, the text as the read saw it, `source` (`pdf_text_layer` / `vision_ocr` / `other`), `reader`, `stored_at`. CASCADE with the document (and `ON DELETE CASCADE` in the database). A side table, not a column, so the hot `applicant_documents` rows (SELECT * on every list and snapshot) stay small.
+- **Written at the two choke points** in `vision/ocr.py`: `ocr_document_full` (the upload read and re-reads of every supporting document) and `ocr_document` (field extraction and the letter-of-intent read when no OCR is passed in). New `ocr_keep.keep`: no new OCR or model call, blank text stores nothing (an earlier text stays), a storage failure is logged (id and error type only) inside its own savepoint and never fails or changes the read.
+- **Private:** no reverse accessor, no serializer, admin or export, never copied into `vision_fields`. No reader behaviour change, so no `OFFER_READER_VERSION` or `MODEL_VERSION` bump.
+- **Tests:** new `test_ocr_keep.py` (stored on a read by both choke points and both sources, end to end through the upload read; blank read; storage error; deleted with the document, by Remove and with the application; serializer and allowed-modules guard).
+
 ### fix: a red verdict tile names the reason it is red (2026-11-18)
 
 Branch fix-tile-disqualifier-leads. Migration: none. Services: web. Display only; no verdict, band or amount changes.

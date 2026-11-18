@@ -220,6 +220,36 @@ class DocumentSlotReplaces(models.Model):
         return f'{self.doc_type}/{self.household_member} x{self.uploads} for application #{self.application_id}'
 
 
+OCR_TEXT_SOURCES = [('pdf_text_layer', 'PDF text layer'), ('vision_ocr', 'Cloud Vision OCR'), ('other', 'Other')]
+
+
+class ApplicantDocumentOcrText(models.Model):
+    """OCR S0b: the text a read saw on a document, kept so a new rule can be re-tested on live
+    documents without paying for a second read. PRIVATE: no serializer, admin or export names it,
+    it is never copied into `vision_fields`, and only `ocr_keep.keep` writes it.
+
+    A side table, not a column on `applicant_documents`: that table is read with SELECT * on every
+    list, snapshot and detail call, so a big text there would ride along on each one. Here it is
+    loaded only when asked for. `related_name='+'` gives the document no way to reach it.
+    Deleted WITH the document (CASCADE: Remove, an application delete, any erasure).
+
+    One joined text, exactly as the reader saw it: a digital PDF's text layer is every page joined
+    by newlines; a Cloud Vision read is the image, or page 1 of a scanned PDF."""
+    document = models.OneToOneField(
+        ApplicantDocument, on_delete=models.CASCADE, primary_key=True, related_name='+',
+    )
+    text = models.TextField()
+    source = models.CharField(max_length=20, choices=OCR_TEXT_SOURCES)
+    reader = models.CharField(max_length=40, blank=True, default='')   # which read stored it
+    stored_at = models.DateTimeField()
+
+    class Meta:
+        db_table = 'applicant_document_ocr_text'
+
+    def __str__(self):
+        return f'OCR text ({self.source}) for document #{self.document_id}'
+
+
 class Referee(models.Model):
     """A person who can vouch for the applicant (teacher, counsellor, referring
     org contact). The B40 analysis flagged the absence of a referee."""

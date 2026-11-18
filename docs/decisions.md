@@ -1,5 +1,12 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)
+
+Owner said yes on 2026-11-18. Branch ocr-keep. Migration 0214 (additive). Services: api. We keep the text each read
+already saw (`applicant_document_ocr_text`) so a new rule can be re-tested on live documents for free instead of paying
+for a second read; no new OCR or model call fills it. It is private (no serializer, admin or export; never in
+`vision_fields`) and is deleted with its document.
+
 ## 2026-11-18 — Course match: a bracket option list is a menu, only under a printed code (#804)
 
 Branch reader-260, not live. No migration. Services: api.

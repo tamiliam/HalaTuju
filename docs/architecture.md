@@ -138,6 +138,15 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
   update). Written only by `reviewer_notes.add_note`; read only by `GET/POST admin/scholarship/applications/<pk>/
   reviewer-notes/`. Never in a student or sponsor payload or an AI prompt (`test_reviewer_notes.py` lists the
   only modules that may name it). RLS on, one `service_role` policy.
+- Kept OCR text (OCR-first S0b, 2026-11-18; scholarship 0214): `applicant_document_ocr_text` — one row per
+  document (`document` is the primary key, CASCADE, also `ON DELETE CASCADE` in the database), `text` (one joined
+  text exactly as the read saw it: a digital PDF's whole text layer, or Cloud Vision on the image / page 1 of a scan),
+  `source` (`pdf_text_layer` / `vision_ocr` / `other`), `reader` (which read stored it), `stored_at`. Written only by
+  `ocr_keep.keep`, called from `vision/ocr.py` (`ocr_document_full`, `ocr_document`); best-effort, never fails the
+  read; a blank read keeps the earlier text. A side table so the hot `applicant_documents` rows stay small. PRIVATE:
+  no reverse accessor, no serializer, admin or export, never copied into `vision_fields` (`test_ocr_keep.py` lists
+  the only modules that may name it). Not kept for the MyKad read (`extract_mykad` returns fields only). RLS on, one
+  `service_role` policy.
 
 ## Scheduled work
 
