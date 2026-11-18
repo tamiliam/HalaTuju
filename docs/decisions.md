@@ -257,7 +257,22 @@ loads in 0.00 s (decoded only to paint). (3) A string over 32,767 bytes (pdfium 
 pdfium use: `pdf_pages` (3 rasterisers, page count), `pdf_pdfium_check`, `spm_cert_parse._pdf_words`; pypdfium2 is not
 thread-safe. Corpus max hold for the check: 0.05 s per document. **Open:** a rasterised page holds the lock for its
 whole render — a 20,000 x 20,000 image took 323 s and a 60 MB tiling cell 21.6 s to render, blocking other threads.
-Corpus: 0 of 533 change on either pypdf version.
+Corpus: 0 of 533 change on either pypdf version. (Closed by round 7.)
+**Fix round 7 — a render whitelist, so the lock is held for a bounded render.** Before any rasteriser renders a page
+(`pdf_pages`: Vision page 1, the offer reader's pages, the stacked declaration pages), new `pdf_render_check` walks
+its content WITHOUT pdfium (its own tokenizer: pypdf 5.9 cannot parse 43 real pages) after round 6's load check, now
+on the render path too. A refused page makes the rasteriser return None — the existing "cannot read" outcome
+(`Bad image data.` -> `ic_unreadable`; `no image`; no offer images); it is never scored from hidden text. Caps are
+about 2x the corpus maximum over pages 1-3 + last (778 pages, same on both pypdf versions): one image decoded
+215 MB (max 107.3 MB, a phone photo, doc 1380) and 72 M pixels (max 35.8 M) — summed over a page's draws the same;
+painted device pixels 135 M (max 66.7 M; each fill, stroke, image, shading and group by its clipped box at the
+render scale, a soft mask repaid on every paint under it); operations 110,000 (max 52,913); tokens 520,000 (max
+257,493); tiling cell 8 M px (max 3.87 M), tiles 1,000 (max 1); Type 3 glyph work (glyphs shown x the font's
+largest glyph) 400,000 (max 198,009), at most 256 glyphs of 20,000 bytes (max 68, 9,040), paths only; paints
+under a non-Normal blend mode 8 (max 0: pdfium's cost grows with the square, 16 fills 4.7 s, 32 fills 20 s).
+Whitelists: image filters DCT, Flate, CCITTFax, RunLength, ASCII85 (no JBIG2, JPX, LZW); shadings axial with an
+exponential or stitched-exponential function; no inline images. The render scale was already bounded (200 DPI, longer
+side at most 4,000 px). Worst crafted render under the caps on 6.21.4: 1.8 s (8 blended full-page fills after 36,666 small ones); slowest real page 1: 1.3 s (d1380; slowest 3-page offer 1.2 s).
 **pypdf 5.9 (local) vs 6.21.4 (production):** same verdicts under this rule, except 21 corpus PDFs whose content
 streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
 between the two (pypdf's own changes). Local counts are not production counts.

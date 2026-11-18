@@ -19,7 +19,7 @@ import threading
 from collections import OrderedDict
 from typing import NamedTuple, Optional
 
-from . import pdf_pdfium_check
+from . import pdf_pdfium_check, pdf_render_check
 from .pdfium_lock import pdfium_document
 from .pdf_layer_guards import (_MAX_DOC_FONT_COST, OverBudget as _OverBudget, _doc_may_switch_off, bad_operands,
                                charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check, shown_chars)
@@ -469,13 +469,23 @@ def pdf_text_layer(data: bytes) -> str:
     return '\n'.join(t for t in texts if t is not None).strip()
 
 
+def _checked(data: bytes, pick) -> int:
+    """pypdf's page count when every page ``pick(count)`` names passes `pdf_render_check` (fix round 7: the
+    render runs under the one pdfium lock, so its cost is bounded first); -1 (logged) when one does not."""
+    n, why = pdf_render_check.render_refusal(data, pick)
+    if why:
+        logger.warning('PDF render refused: %s', why)
+    return -1 if why else n
+
+
 def pdf_first_page_png(data: bytes) -> Optional[bytes]:
     """Rasterise page 1 of a PDF to PNG bytes (~200 DPI, within the pixel budget above). None on
-    failure / library missing / an absurd page box. Page 1 only — bounds the Vision cost to 1 unit
-    per doc."""
+    failure / library missing / an absurd page box / a page `pdf_render_check` refuses (the caller's
+    "cannot read" path). Page 1 only — bounds the Vision cost to 1 unit per doc."""
     try:
+        n = _checked(data, lambda n: [0])
         with pdfium_document(data) as pdf:
-            if len(pdf) == 0:
+            if len(pdf) == 0 or len(pdf) != n:
                 return None
             page = pdf[0]
             width, height = page.get_width(), page.get_height()
@@ -495,11 +505,12 @@ def pdf_first_page_png(data: bytes) -> Optional[bytes]:
 def pdf_page_pngs(data: bytes, max_pages: int) -> list:
     """The first ``max_pages`` pages of a PDF, each its OWN PNG (within the pixel budget) — the offer
     reader shows Gemini one image per page, so no page is shrunk to share one raster (offer exact-read
-    S4, 2026-11-01). A page that cannot be rendered ends the list there; [] on any failure."""
-    out = []
+    S4, 2026-11-01). A page that cannot be rendered ends the list there; [] on any failure or a refused page."""
+    out, pick = [], (lambda n: range(min(n, max(0, max_pages))))
     try:
+        n = _checked(data, pick)
         with pdfium_document(data) as pdf:
-            for i in range(min(len(pdf), max(0, max_pages))):
+            for i in pick(len(pdf)) if len(pdf) == n else ():
                 page = pdf[i]
                 scale = raster_scale(page.get_width(), page.get_height())
                 if scale is None:
@@ -572,12 +583,13 @@ def pdf_pages_png(data: bytes) -> Optional[bytes]:
     """ONE PNG of a PDF's pages stacked top to bottom — all of them up to `MAX_STACKED_PAGES`, else the
     first two and the last — so a single multimodal read sees the page that carries the approval. None on
     failure / library missing / an absurd page box (the caller then treats the read as not made)."""
+    pick = (lambda n: list(range(n)) if n <= MAX_STACKED_PAGES else [0, 1, n - 1])
     try:
+        n = _checked(data, pick)
         with pdfium_document(data) as pdf:
-            n = len(pdf)
-            if n == 0:
+            if len(pdf) == 0 or len(pdf) != n:
                 return None
-            indices = list(range(n)) if n <= MAX_STACKED_PAGES else [0, 1, n - 1]
+            indices = pick(n)
             return _stack_pages(indices, {i: pdf[i] for i in indices})
     except (ImportError, OSError, ValueError, RuntimeError) as e:   # pdfium's errors are RuntimeErrors
         logger.warning('PDF page stack failed: %s', e)
