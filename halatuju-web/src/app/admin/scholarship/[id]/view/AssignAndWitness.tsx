@@ -3,7 +3,8 @@
 /**
  * ASSIGN A REVIEWER, and below it THE WITNESS ORGANISATION for a sourceless student.
  *
- * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
+ * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was, except that
+ * #75 re-check 5 moved the assign controls into `AssignControls` so the reject panel keeps one slot.
  */
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import { reviewerCardState, assignOptions } from '@/lib/officerCockpit'
@@ -38,8 +39,8 @@ export function AssignAndWitness({
   /** Request #55: "Notes for the reviewer", drawn directly under Reviewer assigned (owner). */
   notesCard?: ReactNode
   /** Request #75: "Reject before interview", the alternative to assigning (`PreInterviewOption`). It
-   *  renders itself only when the server offers it, so a QC holder without the assign door gets it in a
-   *  card of its own. */
+   *  renders itself only when the server offers it. It always sits in the same slot of the same card: under
+   *  the assign controls, or under its own heading for a QC holder without the assign door (re-check 5). */
   preInterview?: ReactNode
 }) {
   return (<>
@@ -55,82 +56,16 @@ export function AssignAndWitness({
             server's `assignable`, so the card offers a change exactly when the server takes one. ─── */}
       {(() => {
         const card = reviewerCardState(app, decisionLocked)
-        if (!canAssign || !card.shows) {
-          return app.pre_interview && preInterview ? (
-            <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
-              <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.preInterview.title')}</h2>
-              {preInterview}
-            </div>
-          ) : null
-        }
-        const ready = app.query_sla?.ready_for_assignment ?? false
-        const firstAssignBlocked = !app.assigned_to_id && !ready
-        // Once a decision is recorded the reviewer is fixed (it's a finished case) — the
-        // dropdown locks. It unlocks again only if a superadmin REOPENS the decision, or (TD-613)
-        // the holder can no longer work the case.
-        const assignLocked = card.locked
-        const assigned = !!app.assigned_to_id
-        const options = assignOptions(admins, {
-          isSuper,
-          currentAssigneeId: app.assigned_to_id,
-          applicationProgrammeId: app.programme_id ?? null,
-        })
-        // TD-613: a holder who has left (suspended / archived) is not in `admins`; still name them,
-        // so the select shows its own value instead of reading "Unassigned".
-        const holderMissing = assigned && !options.some((a) => a.id === app.assigned_to_id)
+        const assignShows = canAssign && card.shows
+        // #75 re-check 5: ONE card and ONE slot for "Reject before interview", whether or not the assign
+        // controls show above it. The panel holds its own pending reply, so a reload that flips the assign
+        // door must never remount it (its mounted guard would drop the officer's success or refusal).
+        if (!assignShows && !(app.pre_interview && preInterview)) return null
         return (
         <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
-          <h2 className="text-base font-semibold tracking-tight text-ground-900">
-            {assigned ? t('admin.scholarship.assign.assignedTitle') : t('admin.scholarship.assignTitle')}
-          </h2>
-          <select
-            value={app.assigned_to_id ?? ''}
-            disabled={!!busy || firstAssignBlocked || assignLocked}
-            title={assignLocked ? t(decisionLocked ? 'admin.scholarship.assign.lockedHint'
-              : 'admin.scholarship.assign.error.not_assignable')
-              : firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
-            onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
-            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-placeholder max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center"
-          >
-            <option value="" disabled={!card.mayUnassign}>{t('admin.scholarship.unassigned')}</option>
-            {holderMissing && (
-              <option value={app.assigned_to_id ?? ''} disabled>{app.assigned_to_name || app.assigned_to_id}</option>
-            )}
-            {/* Assignable options. The backend already returns the org-fenced, review-capable set
-                (AdminAssignableAdminsView) and SERVES `assignable` per row (#39 S3: may_assign_to —
-                a super any review target, an org_admin their own org's `review` holders; the assign
-                endpoint rejects anything else as bad_assignee). The CURRENT assignee always renders so a later
-                role change never hides them (#66: assigned as qc → promoted to org_admin → was
-                showing "Unassigned"). Role suffixed so a senior assignee is distinguishable.
-                ⚠ A PAUSED reviewer is DISABLED here, not removed — for the same #66 reason, and
-                because a name that simply vanishes leaves the reader guessing. The label says why.
-                The person already holding the case is never disabled: pause stops NEW work, and
-                disabling the current value would make the select unable to show its own state.
-                ⚠ A reviewer who does not cover THIS case's gift is greyed the same way, "Does not
-                cover <gift>" (S-ASSIGN; multi-gift 2026-11-06). Same two reasons, and an empty gift
-                list (every gift) or a case of unknown gift greys nobody.
-                All the rules live in the pure `assignOptions`, where they are tested. */}
-            {options
-              .map((a) => (
-                <option key={a.id} value={a.id} disabled={a.disabled}>
-                  {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
-                  {a.reason === 'paused' ? ` — ${t('admin.reviewers.status.paused')}` : ''}
-                  {a.reason === 'otherGift'
-                    ? ` — ${t('admin.scholarship.assign.doesNotCover', { gift: app.programme?.name ?? '' })}`
-                    : ''}
-                </option>
-              ))}
-          </select>
-          {card.needsNewHolder && !assignLocked ? (
-            <p className="text-xs text-caution-700" data-needs-new-holder>
-              {t('admin.scholarship.assign.needsNewHolderHint')}
-            </p>
-          ) : assignLocked ? (
-            <p className="text-xs text-ground-400">{t(decisionLocked ? 'admin.scholarship.assign.lockedHint'
-              : 'admin.scholarship.assign.error.not_assignable')}</p>
-          ) : firstAssignBlocked && (
-            <p className="text-xs text-caution-700">{t('admin.scholarship.assign.notReadyHint')}</p>
-          )}
+          {assignShows ? <AssignControls app={app} t={t} busy={busy} isSuper={isSuper} card={card}
+            decisionLocked={decisionLocked} admins={admins} doAssign={doAssign} />
+            : <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.preInterview.title')}</h2>}
           {preInterview}
         </div>
         )
@@ -208,4 +143,86 @@ export function AssignAndWitness({
       )}
 
   </>)
+}
+
+/** The assign controls: heading, select and hint. Drawn inside the Reviewer card, above the
+ *  pre-interview slot, which stays put whether or not these show (#75 re-check 5). */
+function AssignControls({ app, t, busy, isSuper, card, decisionLocked, admins, doAssign }: {
+  app: AdminScholarshipDetail
+  t: T
+  busy: string
+  isSuper: boolean
+  card: ReturnType<typeof reviewerCardState>
+  decisionLocked: boolean
+  admins: Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>
+  doAssign: (adminId: number | null) => void
+}) {
+  const ready = app.query_sla?.ready_for_assignment ?? false
+  const firstAssignBlocked = !app.assigned_to_id && !ready
+  // Once a decision is recorded the reviewer is fixed (it's a finished case) — the
+  // dropdown locks. It unlocks again only if a superadmin REOPENS the decision, or (TD-613)
+  // the holder can no longer work the case.
+  const assignLocked = card.locked
+  const assigned = !!app.assigned_to_id
+  const options = assignOptions(admins, {
+    isSuper,
+    currentAssigneeId: app.assigned_to_id,
+    applicationProgrammeId: app.programme_id ?? null,
+  })
+  // TD-613: a holder who has left (suspended / archived) is not in `admins`; still name them,
+  // so the select shows its own value instead of reading "Unassigned".
+  const holderMissing = assigned && !options.some((a) => a.id === app.assigned_to_id)
+  return (<>
+      <h2 className="text-base font-semibold tracking-tight text-ground-900">
+        {assigned ? t('admin.scholarship.assign.assignedTitle') : t('admin.scholarship.assignTitle')}
+      </h2>
+      <select
+        value={app.assigned_to_id ?? ''}
+        disabled={!!busy || firstAssignBlocked || assignLocked}
+        title={assignLocked ? t(decisionLocked ? 'admin.scholarship.assign.lockedHint'
+          : 'admin.scholarship.assign.error.not_assignable')
+          : firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
+        onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
+        className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-placeholder max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center"
+      >
+        <option value="" disabled={!card.mayUnassign}>{t('admin.scholarship.unassigned')}</option>
+        {holderMissing && (
+          <option value={app.assigned_to_id ?? ''} disabled>{app.assigned_to_name || app.assigned_to_id}</option>
+        )}
+        {/* Assignable options. The backend already returns the org-fenced, review-capable set
+            (AdminAssignableAdminsView) and SERVES `assignable` per row (#39 S3: may_assign_to —
+            a super any review target, an org_admin their own org's `review` holders; the assign
+            endpoint rejects anything else as bad_assignee). The CURRENT assignee always renders so a later
+            role change never hides them (#66: assigned as qc → promoted to org_admin → was
+            showing "Unassigned"). Role suffixed so a senior assignee is distinguishable.
+            ⚠ A PAUSED reviewer is DISABLED here, not removed — for the same #66 reason, and
+            because a name that simply vanishes leaves the reader guessing. The label says why.
+            The person already holding the case is never disabled: pause stops NEW work, and
+            disabling the current value would make the select unable to show its own state.
+            ⚠ A reviewer who does not cover THIS case's gift is greyed the same way, "Does not
+            cover <gift>" (S-ASSIGN; multi-gift 2026-11-06). Same two reasons, and an empty gift
+            list (every gift) or a case of unknown gift greys nobody.
+            All the rules live in the pure `assignOptions`, where they are tested. */}
+        {options
+          .map((a) => (
+            <option key={a.id} value={a.id} disabled={a.disabled}>
+              {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
+              {a.reason === 'paused' ? ` — ${t('admin.reviewers.status.paused')}` : ''}
+              {a.reason === 'otherGift'
+                ? ` — ${t('admin.scholarship.assign.doesNotCover', { gift: app.programme?.name ?? '' })}`
+                : ''}
+            </option>
+          ))}
+      </select>
+      {card.needsNewHolder && !assignLocked ? (
+        <p className="text-xs text-caution-700" data-needs-new-holder>
+          {t('admin.scholarship.assign.needsNewHolderHint')}
+        </p>
+      ) : assignLocked ? (
+        <p className="text-xs text-ground-400">{t(decisionLocked ? 'admin.scholarship.assign.lockedHint'
+          : 'admin.scholarship.assign.error.not_assignable')}</p>
+      ) : firstAssignBlocked && (
+        <p className="text-xs text-caution-700">{t('admin.scholarship.assign.notReadyHint')}</p>
+      )}
+    </>)
 }

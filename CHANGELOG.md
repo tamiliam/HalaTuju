@@ -4,10 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #75 re-check 5 - reject door in one slot, remount wording corrected (2026-11-19)
+
+Branch req75, on top of e4c21d021 (main d42121307), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged). Services: web. Decisions: `docs/decisions.md` (2026-11-19, Request #75 re-check 5).
+- Cockpit: "Reject before interview" sits in one slot of one Reviewer card whether or not the assign controls show (`AssignControls`), so a reload that flips the assign card while a reject is pending can no longer drop its success or refusal. The page looks the same.
+- Wording: prev/next already remounts the case page in production (Next keys the `[id]` segment); the per-case key and the stale-case guards from re-checks 2-4 are defence in depth for the `applicationId` prop (tests, sandbox) and any future in-place navigation. Re-checks 2-4 in `docs/decisions.md`, the #75 code comments and this file are corrected.
+- Tests: `AssignAndWitness.preInterviewSlot.test.tsx` +4 (reject pending, the assign card goes away or comes back, then the refusal or the success still shows).
+
 ### refactor: request #75 re-check 4 - nothing on the case page carries to the next case (2026-11-18)
 
 Branch req75, on top of c4f98a3c8 (main 9be194f1a), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged). Services: web. Decisions: `docs/decisions.md` (2026-11-18, Request #75 re-check 4).
-- Cockpit: the case page is mounted once per case (`CaseCockpit key={id}`), so prev/next starts every panel, message and form afresh: a reject-before-interview form left at "Are you sure?" on one case can no longer reject the next case with the first case's reason and note, and a refusal that lands after Next no longer reopens the form on the next case. The org reject panel, the verdict, interview, nudge, reporting-date and witness messages, and the officer's verdict all reset too. The output language and "show own words" choices still carry across cases, as before.
+- Cockpit: the case page is mounted once per case (`CaseCockpit key={id}`), so prev/next starts every panel, message and form afresh: a reject-before-interview form left at "Are you sure?" on one case can no longer reject the next case with the first case's reason and note, and a refusal that lands after Next no longer reopens the form on the next case. The org reject panel, the verdict, interview, nudge, reporting-date and witness messages, and the officer's verdict all reset too. The output language and "show own words" choices are kept outside the per-case key (in production a new case remounts the page and resets them, as before). In production prev/next already remounted the page (corrected in re-check 5); the key is defence in depth for the `applicationId` prop and any future in-place navigation.
 - Cockpit: while the next case loads, the page shows its loading state instead of the previous case.
 - Cockpit: a dropped payload for an earlier case no longer clears the page's refusal.
 - Tests: `view.actions.test.tsx` +4 (confirm step gone on the next case; a late refusal reopens nothing; loading state while the next case loads; org reject panel closed and empty) and one changed (a stale refusal after Next reloads nothing); `view.decision.test.tsx` +2 (a verdict message, and a verdict save that lands after Next, say nothing on the next case).
@@ -25,7 +32,7 @@ Branch req75, on top of a9fccf12e (main ead73c7e9), not pushed. Migration `0215_
 ### refactor: request #75 re-check 2 - refusal kept to its case, unassign retries a moved holder (2026-11-17)
 
 Branch req75, on top of 2c1ee06e4, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-17, Request #75 re-check 2).
-- Cockpit: a reject-before-interview refusal belongs to its case; moving to the next case (prev/next, no remount) no longer carries it. When the reload takes the door away, focus goes to the refusal.
+- Cockpit: a reject-before-interview refusal belongs to its case; moving to the next case in place (the `applicationId` prop; production remounts on a new `[id]`, corrected in re-check 5) no longer carries it. When the reload takes the door away, focus goes to the refusal.
 - Unassign locks the outgoing reviewer by the case's own holder id; if the locked case names someone else (a stale page), it runs once more with that reviewer locked first. No query budget moved.
 - Cockpit: an assign is followed by one reload; a failed reload after a good assign says "Assigned. Reload the page to see the latest." (new key `admin.scholarship.assign.reloadAfterAssign`, en/ms/ta), never "could not assign".
 - Tests: `test_reject_before_interview.py` 40 -> 44 (stale holder retried with the real one locked first; a second move still unassigns; one failing email never stops the others; a rolled-back teardown sends nothing); `view.actions.test.tsx` +1 and two tightened (the refusal stays on its case and takes focus; the `not_assignable` words read exactly).

@@ -261,7 +261,8 @@ describe('reject before interview, refused because a colleague got there first (
     // #75 re-check 2: the door went with the reload, so focus lands on the words that stayed.
     expect(document.activeElement).toBe(screen.getByTestId('pre-interview-refused'))
 
-    // ⚠ prev/next changes the case WITHOUT a remount (TD-216): the next case never inherits it.
+    // ⚠ The `applicationId` prop changes the case in place (production remounts on a new `[id]`; the key
+    // and the guards are defence in depth for this path): the next case never inherits it.
     api.getScholarshipApplication.mockResolvedValue(buildApplicationDetail('assigned', { id: 8 } as never))
     rerender(<AdminScholarshipDetailView applicationId={8} />)
     await waitFor(() => expect(api.getScholarshipApplication).toHaveBeenLastCalledWith(8, { token: 'test-token' }))
@@ -270,6 +271,8 @@ describe('reject before interview, refused because a colleague got there first (
   })
 })
 
+// "Next" here is the `applicationId` prop changing in place. In production a new `[id]` remounts the page
+// (Next's layout-router), so these pin the per-case key and the guards as defence in depth (re-check 5).
 describe('a request still in flight when the officer presses Next (#75 re-check 3, TD-216 class)', () => {
   const P = 'admin.scholarship.preInterview'
   const offer = { hold_hours: 24, reasons: ['not_b40'], note_max: 2000 }
@@ -365,6 +368,7 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
   })
 })
 
+// As above: an in-place `applicationId` change, the path the per-case key guards (production remounts anyway).
 describe('nothing on the case page carries to the next case (#75 re-check 4, TD-216)', () => {
   const P = 'admin.scholarship.preInterview'
   const offer = { hold_hours: 24, reasons: ['not_b40'], note_max: 2000 }

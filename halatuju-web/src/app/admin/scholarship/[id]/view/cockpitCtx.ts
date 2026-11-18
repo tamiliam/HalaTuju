@@ -13,7 +13,8 @@ export interface CockpitCtx {
   token: string | null | undefined
   t: TFn
   app: AdminScholarshipDetail | null
-  /** #75 re-check 3: drops a payload for any case but the live one (prev/next never remounts, TD-216). */
+  /** #75 re-check 3: drops a payload for any case but the live one (TD-216 class). Defence in depth: production
+   *  remounts on a new `[id]`; only an in-place `id` change (the `applicationId` prop) needs it. */
   setApp: Dispatch<SetStateAction<AdminScholarshipDetail | null>>
   /** Is this payload the case on screen now? A loader that fills state from a payload asks first. */
   isLive: (d: { id: number }) => boolean

@@ -93,11 +93,15 @@ import type { CockpitCtx } from './view/cockpitCtx'
 export function AdminScholarshipDetailView({ applicationId }: { applicationId?: number }) {
   const params = useParams()
   const id = applicationId ?? Number(params?.id)
-  // ⚠ ONE MOUNT PER CASE (#75 re-check 4, TD-216). Prev/next changes `id` without remounting the
-  // route, so every form, message and choice below used to carry to the next student (a half-made
-  // reject sent for case 8 with case 7's reason). Keyed on the id, the case's whole tree starts fresh,
-  // shows its loading state until its own record arrives, and a reply for the case before lands on an
-  // unmounted tree. Only the two viewing preferences live out here, so they still follow the officer.
+  // ⚠ ONE MOUNT PER CASE (#75 re-check 4, TD-216; wording corrected in re-check 5). In production a
+  // new `[id]` already remounts this page: Next 15's layout-router keys each segment by
+  // `createRouterCacheKey`, and prev/next (arrows and arrow keys) navigate to `/admin/scholarship/<id>`.
+  // The `applicationId` prop (the tests, the sandbox) changes `id` in place, and there every form,
+  // message and choice below carried to the next student (a half-made reject sent for case 8 with case
+  // 7's reason). Keyed on the id, the case's tree starts fresh on every path, shows its loading state
+  // until its own record arrives, and a reply for the case before lands on an unmounted tree: defence
+  // in depth for the prop path and any future in-place navigation. The two viewing preferences live
+  // out here, so an in-place change keeps them; a production route change resets them, as it always has.
   const [genLang, setGenLang] = useState('en')
   // Consolidation: the student's own words (note/story/funding) are collapsed by
   // default under the Sponsor profile — the reviewer checks the AI draft first.
@@ -126,9 +130,10 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   // a verdict they themselves recorded (two-person control).
   const canQc = hasPerm(role, 'qc')
   const [app, setRawApp] = useState<AdminScholarshipDetail | null>(null)
-  // ⚠ #75 re-check 3 (TD-216 class): prev/next changes `id` WITHOUT a remount, so a request sent for
-  // the case before lands after the next one loaded. Every write of `app` goes through this setter,
-  // which drops a payload for any case but the live one (`liveId` is read when the update lands).
+  // ⚠ #75 re-check 3 (TD-216 class): where `id` changes in place (the prop path; production remounts on a
+  // new `[id]`, see above), a request sent for the case before could land after the next one loaded.
+  // Every write of `app` goes through this setter, which drops a payload for any case but the live one
+  // (`liveId` is read when the update lands). Defence in depth: within one keyed mount it always passes.
   // Re-check 4 (L1): the page's own ref, set after commit, so no render that is thrown away moves it.
   const liveId = useRef(id)
   useLayoutEffect(() => { liveId.current = id }, [id])
@@ -156,7 +161,8 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   const [admins, setAdmins] = useState<Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>>([])
   // #75 re-check: the reject-before-interview refusal lives HERE, so it survives the reload that a
   // stale refusal triggers even when that reload takes the door (and its component) away. It is
-  // kept WITH its case: prev/next changes `id` without a remount (TD-216), and it never follows.
+  // kept WITH its case, so it never follows to another one even where `id` changes in place (the prop
+  // path; defence in depth, as the key above already starts each case afresh).
   const [preInterviewRefusal, setPreInterviewRefusal] = useState<{ appId: number; text: string } | null>(null)
   const preInterviewErr = app && preInterviewRefusal?.appId === app.id ? preInterviewRefusal.text : ''
   const setPreInterviewErr = (text: string) => setPreInterviewRefusal(text && app ? { appId: app.id, text } : null)
