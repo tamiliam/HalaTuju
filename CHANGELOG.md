@@ -274,6 +274,14 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Tests: `test_td613_departed_holder.py` (both paths end to end, the refusals), `test_decision_reopen.py` updated, `AssignAndWitness.td613.test.tsx`, `cockpitCardStages.test.ts`, `AssignListPicker.test.tsx`.
 - Review round: a suspension alone strands nothing outside `ASSIGNABLE_STATUSES` unless the case was reopened (F1, owner approved 2026-11-15; an award revert stores no marker, so its suspended holder waits for a Restore or a super reopen); detail and list serve `may_unassign` (`services.unassign_refusal`, mixin `serializers_admin/handover.py`), which the cockpit card and list picker read; `rejected_by_unassigned` compares with the holder at the decline (`AssignmentEvent`), not the current one.
 
+### release: 18 Nov 11:00 MYT window - Batch A completed, Batch B (student-help H4-H9) and the verdict card fix published (2026-11-18)
+- live 754633ff8..d183eac52 (pushed 11:00 MYT). api halatuju-api-01309-wzn, web halatuju-web-01130-cxj, both 100% traffic (rollback api-01308-4z9, web-01129-574). Both builds green (api 22886 passed; web median 157.111 kB); release-decisions job image d183eac52; api health 200.
+- Migration 0213_document_replace_count (additive, new table document_slot_replaces) applied by hand at about 10:05 with the owner's yes: 0 rows, RLS on, 1 service_role policy, ledger last 0213, advisor 0 errors.
+- Batch A (help H1-H3): 2nd deploy. Hotfix fd13d4652 is test-only (subTest label sends the date as text; xdist DumpError). Batch B student-help (565b4220a): 1st deploy; owner phone check H4-H9 OK before the push. Verdict card fix (68f08dfc2, d183eac52): 1st deploy. Owner phone check for H1-H3 and the card sent with the release report. Window closed.
+
+### release: 17 Nov 21:00 MYT window - Batch A (help H1-H3) pushed; api build red (2026-11-17)
+- live 266a1b946..754633ff8 (pushed 21:00 MYT). Migration 0212_cohort_allowed_start_years applied by hand at about 20:55 (owner yes). Web built green (web-01129-574). The api build failed on one test (test_start_year_money: xdist could not send a datetime.date in a subTest label), so the api stayed on api-01308-4z9 until the 18 Nov 11:00 window. Only effect: the admin start-years box did not save.
+
 ### release: 17 Nov 16:00 MYT window - THANKS and THANKS-SCHOLARS published (2026-11-17)
 - live d991c39e8..266a1b946 (pushed 16:00 MYT). api halatuju-api-01308-4z9, web halatuju-web-01128-86t, both 100% traffic (rollback api-01307-76l, web-01127-g47). Both builds green (web gate: /scholarship/apply 198.647 kB of its 198.8 line, median 157.097 kB); release-decisions job image 266a1b946; api health 200; site 200.
 - No migration, no data step. THANKS (d0c4d219a, 85e395397) and THANKS-SCHOLARS (6854b79bb, 266a1b946): 1st deploy. Owner phone check sent with the release report. Window closed.
