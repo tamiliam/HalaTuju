@@ -130,7 +130,9 @@ The message: the AI prediction matters.
 - Server: `audit.py` (pure counting) and a new `prediction_metrics.py` (the database part). Section key `ai_prediction` on the Programme Overview, and the same object from `verdict-metrics/`. Counts carry green, green_failed, green_agreed, unsure, unsure_passed, rates and a `few` flag (under 30 cases). Also `fact_counts`, `by_version`, `by_month` (Asia/Kuala_Lumpur, oldest first), `doubt_codes`, `qc_agreement` and `by_reviewer` (leads only). Roles with no B40 scope get no key and no data. The section is fixed, so an organisation cannot switch it off. No migration, no new route.
 - Web: `AiPredictionSection.tsx` and `AiPredictionTables.tsx`, mounted on the Programme Overview and on `/admin/organisation/programmes` (silent on 403). `AiReliabilityCard.tsx` is deleted. 36 new keys in en, ms and ta. The browser only formats.
 - Two differences from the approved picture: the trend chart has no 80% axis start and no grey points (the shared `LineChart` has neither); a "few cases" month shows a pill in the values row under the chart.
-- Two follow-ups: `programme_overview.py` is at its growth cap and needs a split before its next change; no dedicated query-budget test for the new section.
+- Scope: a `reviewer` (scope `assigned`) sees numbers for their own assigned applicants only, on both surfaces. The rule is in `prediction_metrics.metrics()`; the served key `counted_scope` is `"all"` or `"assigned"`, and the web shows "Your assigned applicants only." from it.
+- The staff-name lookup for "By reviewer" is fenced to the caller's own organisation (a super is unfiltered); an unmatched recorder is a neutral row; no email is served. The staff Guide and FAQ are updated (English only).
+- Two follow-ups (numbers taken at the push to main): `programme_overview.py` is at its growth cap and needs a split before its next change; there is no dedicated query-budget test for the `ai_prediction` section.
 - Status: built in branch `ll1`. Not merged to `main`. Not published. The owner decides both.
 
 ---

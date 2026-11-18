@@ -322,7 +322,10 @@ Branch ll1, NOT merged to main, not published. Migration: none. Services: both. 
 - **Server:** `audit.py` counts (green, green_failed, green_agreed, unsure, unsure_passed, rates, a `few` flag under 30 cases); new `prediction_metrics.py` reads the database. Section key `ai_prediction` on the Programme Overview, and the same object from `verdict-metrics/`. Also `fact_counts`, `by_version`, `by_month` (Asia/Kuala_Lumpur), `doubt_codes`, `qc_agreement` (verb `qc_decision`) and `by_reviewer` (org admin and super only, never an email). Roles with no B40 scope (finance, partner, source partner, mentor) get neither key nor data. The section is fixed, not in `CUSTOMISABLE`.
 - **Web:** `AiPredictionSection.tsx` and `AiPredictionTables.tsx`, mounted in `SECTION_RENDERERS` and on `/admin/organisation/programmes` (silent on 403). Old `AiReliabilityCard.tsx` and its six keys deleted. 36 new keys under `admin.programmeOverview.aiPrediction` in en, ms and ta.
 - **Known differences from the approved picture:** the trend chart has no 80% axis start and no grey points; a "few cases" month shows a pill under the chart.
-- **Follow-ups:** `programme_overview.py` is at its growth cap and needs a split before its next change; no query-budget test yet for the new section. Staff Guide and FAQ (`src/content/manual/`) not yet updated.
+- **Assigned-only rule:** a `reviewer` (B40 scope `assigned`) gets numbers for their own assigned applicants only, on both surfaces. The rule lives in one place, `prediction_metrics.py` `metrics()`. A served key `counted_scope` says `"all"` or `"assigned"`; the web shows "Your assigned applicants only." from it.
+- **Staff-name fence:** the name lookup for the leads-only "By reviewer" table is fenced to the caller's own organisation (a super is unfiltered). An unmatched recorder shows as a neutral row. An email is never served.
+- **Manual updated (English only):** new FAQ entry "What does the AI prediction block mean?" in `faq.tsx`; a line in `role-org-admin.tsx`; one sentence reworded in `faq-reviewer.tsx` (a Pass or Fail tap records the student's fact; it does not rate the AI).
+- **Follow-ups:** `programme_overview.py` is at its growth cap and needs a split before its next change; no query-budget test yet for the new section.
 
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
