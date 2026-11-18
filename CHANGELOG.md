@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: OCR-first roadmap S0 - the free dry-run harness and the Gate 1 rule (2026-11-18)
+
+Branch ocr-s0, not pushed. Migration: none. Services: none. Eval tool only; nothing in the request path. Plan: `docs/plans/ocr-first-roadmap.md` (committed here).
+- **Gate 1:** new pure `scholarship/ocr_first_gate.py` (`lane_gate`): at least 20 held-out documents, core-field exact-or-blank-correct at least 98% (whole-number test, so 97.9 fails and 98.0 passes), zero wrong on name, IC, institution and programme, and a course match that is never wrong. Returns pass or fail plus every reason.
+- **Dry run:** new `eval/ocr_first_dryrun.py`. Cached OCR text only (no network, no model, no OCR). Runs `offer_exact`, `offer_course_match` and `doc_parse` over the local corpus and prints COUNTS only: a lane table (pass / fail / no rules yet, with the reason), the scorer buckets per core field, course match as unique / none / refused, and agreement with the stored AI answer. Judges the held-out split by default. See `eval/README.md`.
+- **First real run (held-out):** matriculation, polytechnic and STPM fail on sample size only (4, 4 and 2 documents; 100% agreement). Every university lane is "no rules yet". Other document types report AI agreement only (no truth set); salary and results slips have no text parser.
+- **Tests:** `test_ocr_first_gate.py` (8, the edges) and `test_ocr_first_dryrun.py` (4, three invented letters, a fake course matcher, no value printed).
+
+### feat: sprint S0b - keep the OCR text of each new upload (2026-11-18)
+
+Branch ocr-keep, not pushed. Migration: 0214 (additive, migrate first; Postgres DDL in its docstring). Services: api. OCR-first roadmap; owner said yes on 2026-11-18. Decisions: `docs/decisions.md` (2026-11-18).
+- **Store:** new side table `applicant_document_ocr_text` (`ApplicantDocumentOcrText`): one row per document, the text as the read saw it, `source` (`pdf_text_layer` / `vision_ocr` / `other`), `reader`, `stored_at`. CASCADE with the document (and `ON DELETE CASCADE` in the database). A side table, not a column, so the hot `applicant_documents` rows (SELECT * on every list and snapshot) stay small.
+- **Written at the two choke points** in `vision/ocr.py`: `ocr_document_full` (the upload read and re-reads of every supporting document) and `ocr_document` (field extraction and the letter-of-intent read when no OCR is passed in). New `ocr_keep.keep`: no new OCR or model call, blank text stores nothing (an earlier text stays), a storage failure is logged (id and error type only) inside its own savepoint and never fails or changes the read.
+- **Private:** no reverse accessor, no serializer, admin or export, never copied into `vision_fields`. No reader behaviour change, so no `OFFER_READER_VERSION` or `MODEL_VERSION` bump.
+- **Tests:** new `test_ocr_keep.py` (stored on a read by both choke points and both sources, end to end through the upload read; blank read; storage error; deleted with the document, by Remove and with the application; serializer and allowed-modules guard).
+- **Review fix round:** the kept text is capped at 200,000 characters (`ocr_keep.MAX_CHARS`; the head, plus a marker saying it was cut). The write now runs through `transaction.on_commit(..., robust=True)`: the document key is DEFERRABLE INITIALLY DEFERRED, so a savepoint inside a caller's transaction did not cover it and a bad row could have failed the caller's own COMMIT; now it runs after that commit, in its own transaction, and a document deleted meanwhile stores nothing. `ocr_document` reads a PDF's text layer once (it read it twice to name the source); its answers are unchanged. 0214's SQL gains `SET LOCAL lock_timeout = '5s'` and the rollback order (image first, then the table); the model notes that the database `ON DELETE CASCADE` lives only in that hand-run SQL. +9 tests.
+
 ### feat: offer course proof - a tertiary student's degree counts, and a clean letter asks nothing (2026-11-18)
 
 Branch offer-course-proof. Migration: none. Services: api, web. Owner rules R1-R8, 2026-11-18 (#804: "No pathway chosen yet" on an STPM student whose letter names US6310001 at USM). No eligibility, band, amount or gift-rule change beyond these asks. `VERDICT_ENGINE_VERSION` 2026-11-15.11 -> 2026-11-18.1; no genuineness `MODEL_VERSION` bump (the matcher is not doc recognition, as with #337).
@@ -326,6 +343,13 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - TD-613 closed; TD-622 note (R1 cannot retire yet); one new debt item for the suspended-cases banner.
 - Tests: `test_td613_departed_holder.py` (both paths end to end, the refusals), `test_decision_reopen.py` updated, `AssignAndWitness.td613.test.tsx`, `cockpitCardStages.test.ts`, `AssignListPicker.test.tsx`.
 - Review round: a suspension alone strands nothing outside `ASSIGNABLE_STATUSES` unless the case was reopened (F1, owner approved 2026-11-15; an award revert stores no marker, so its suspended holder waits for a Restore or a super reopen); detail and list serve `may_unassign` (`services.unassign_refusal`, mixin `serializers_admin/handover.py`), which the cockpit card and list picker read; `rejected_by_unassigned` compares with the holder at the decline (`AssignmentEvent`), not the current one.
+
+### release: 18 Nov 21:00 MYT window - red tile names its reason, invite empty-gift guard, offer reader 2.6.0 (2026-11-18)
+- live 2447c9583..9be194f1a (pushed 21:00 MYT; owner's yes "option 1" for the tile fix ead73c7e9 and the invite check 4a6ef3fe0, and "a1" for offer reader 2.6.0 to join the batch). api halatuju-api-01311-xkx, web halatuju-web-01132-vw4, both 100% traffic (rollback api-01310-5lq, web-01131-9f6). release-decisions job image 9be194f1a; api health 200.
+- Web build: the first build failed on one flaky jest test (`page.draft.test.tsx:120`, the draft-deletion check; not in this batch, 3 of 3 passes locally). The same trigger was re-run on the same SHA and went green. One deploy, not two.
+- Gates before the push: web 7833 passed. API suite green on the reader branch (Help Me session).
+- Migration none. Services both.
+- Owner phone checks: offer reader PASSED (#822 doc 7409 re-run: reader 2.6.0, one gemini-3.8-flash call, programme / institution / reporting date filled, 0 warnings). Tile fix (#804 red Pathway tile names "Course started in 2024") and invite guard (Send stays grey with no gift): sent to the owner.
 
 ### release: hotfix - the recent-letter ask only when there is no offer letter (2026-11-18)
 - live d183eac52..2447c9583 (pushed about 14:55 MYT, hotfix lane, owner's yes "Hotfix as soon as it is ready and checked"). api halatuju-api-01310-5lq, web halatuju-web-01131-9f6, both 100% traffic (rollback api-01309-wzn, web-01130-cxj). Both builds green; release-decisions job image 2447c9583; api health 200. Main merge 901400605.

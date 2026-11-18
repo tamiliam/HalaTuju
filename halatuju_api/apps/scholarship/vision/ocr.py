@@ -11,6 +11,7 @@ from django.utils import timezone
 from ..pdf_pages import MIN_TEXT_LAYER_CHARS as _MIN_PDF_TEXT, usable_text_layer as _usable_text_layer
 from .mykad import _compact, _extract_address, _extract_name, _extract_nric, _layout_read
 from .gemini_read import _as_image_for_gemini
+from .. import ocr_keep        # OCR S0b: the read's text is kept (private; see ocr_keep.py)
 from .. import vision as _v   # seams resolve on the package: one patch target reaches every caller
 
 logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name as before the split
@@ -212,7 +213,27 @@ def ocr_document(doc) -> dict:
     so the same upload OCRs only once."""
     with _doc_usage_ctx(doc):
         image = _v._fetch_image_bytes(doc.storage_path)
-        return {'text': '', 'error': 'could not fetch image'} if image is None else _v.extract_text(image, doc.content_type)
+        if image is None:
+            return {'text': '', 'error': 'could not fetch image'}
+        out, source = _text_and_source(doc, image)
+    ocr_keep.keep(doc, out.get('text'), source=source, reader='ocr_document')   # OCR S0b: never fails the read
+    return out
+
+
+def _text_and_source(doc, image: bytes):
+    """``extract_text``'s answer for this document, and where it came from. A PDF's text layer is read ONCE,
+    here, as in ``ocr_document_full``: a usable layer is the answer (no Vision call, exactly what
+    ``extract_text`` returns for it); otherwise page 1 is rasterised and ``extract_text`` reads that image,
+    which is the call ``extract_text`` would have made itself. Same answers as calling it on the PDF."""
+    if _v._is_pdf(doc.content_type, image):
+        layer = _usable_text_layer(_v._pdf_text_layer(image))
+        if len(layer) >= _MIN_PDF_TEXT:
+            return {'text': layer, 'error': None}, ocr_keep.PDF_TEXT_LAYER   # digital PDF — no billable call
+        img = _v._pdf_first_page_png(image)
+        if img is None:
+            return {'text': '', 'error': 'Bad image data.'}, ocr_keep.VISION_OCR
+        return _v.extract_text(img, 'image/png'), ocr_keep.VISION_OCR
+    return _v.extract_text(image, doc.content_type), ocr_keep.VISION_OCR
 
 
 def ocr_document_full(doc) -> dict:
@@ -237,8 +258,10 @@ def ocr_document_full(doc) -> dict:
         if _v._is_pdf(doc.content_type, image):
             text = _usable_text_layer(_v._pdf_text_layer(image))
             if len(text) >= _MIN_PDF_TEXT:
+                ocr_keep.keep(doc, text, source=ocr_keep.PDF_TEXT_LAYER, reader='ocr_document_full')
                 return {'text': text, 'words': None, 'image': image, 'error': None}
         r = _v._vision_words(image, doc.content_type)
+        ocr_keep.keep(doc, r.get('text'), source=ocr_keep.VISION_OCR, reader='ocr_document_full')
         return {'text': r.get('text') or '', 'words': r.get('words'), 'image': image,
                 'error': r.get('error')}
 
