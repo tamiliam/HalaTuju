@@ -320,12 +320,15 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
   - Each live document: `id`, `doc_type`, `member`, `results_kind`, `uploaded_at` (UTC text), `verification`, `read_state`, `genuineness`, `model_version`, `parser_version`, `offer_reader_version`, `sample_check_version`. A value that is not a plain code or version is written as `?`.
   - `models`: the running version of every model in the LL3 register.
   - The keys at every level are a fixed allow-list, pinned by a test.
-- Fingerprint: HMAC-SHA256 over three things.
+- Fingerprint: HMAC-SHA256 over five things.
   - The state of each live document, including its stored read.
-  - The declared application fields (`DECLARED_FIELDS`: income route, earners and declared amounts, other family members, parents' names and jobs, pathway, chosen programme, requirements).
+  - The declared application fields (`DECLARED_FIELDS`: income route, earners and declared amounts, other family members, parents' names and jobs, pathway, chosen programme, requirements, reporting date).
   - The profile fields the verdict engine reads (`PROFILE_FIELDS`: name, NRIC, exam types, completed qualifications, SPM/STPM/higher grades and CGPAs, institution type, stream subjects, household size).
-  - Those values are only hashed. They never appear in the record. A field the engine does not read (school, address, contact details) does not move the fingerprint.
-  - At most two queries: the documents, and the profile when it is not already loaded.
+  - The intake's rules the engine reads (`INTAKE_FIELDS`: year, income ceiling, per-head ceiling, minimum STPM PNGK, allowed start years) and the intake's id.
+  - Stage facts from `status` and `profile_completed_at` (`STAGE_FIELDS`), not the raw values: the Malaysian year of the submission stamp, and whether the status is pre-submit, in review, or decided — the only things the engine reads from them. So a re-stamp in the same year, or a status move inside one bucket (interviewing to interviewed at the decision), does not move it.
+  - Those values are only hashed. They never appear in the record. A field the engine does not read (school, address, contact details; intake name, active flag, birth states) does not move the fingerprint.
+  - At most three queries: the documents, and the profile and the intake when not already loaded. The record-verdict view loads both with the case, so there it costs one.
+  - `build_verdict` runs on the same instance first; it writes only private memos, never a hashed field (test).
 - Key: derived from `SECRET_KEY` with a fixed salt. No new environment variable.
   - `key_check` (8 hex characters) changes only when the key changes. It tells a key rotation apart from evidence that moved.
   - A `SECRET_KEY` rotation makes every older fingerprint impossible to compare. So the replay (LL5) must run where the production key is.
@@ -339,7 +342,12 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
 - Schema documentation: there is no separate schema document for this table. The column is described in the model's `help_text` and in the migration's docstring.
 - Known gaps:
   - Some engine helpers read documents from the student's OTHER applications (`wrong_slip.stpm_results_on_file`, `identity.latest_live_ic`). The fingerprint covers only this application's documents.
-  - Settings that switch model behaviour (LL3's known gaps) are not in the fingerprint.
+  - Settings that switch model behaviour (LL3's known gaps), and `SGD_TO_MYR_RATE`, are not in the fingerprint.
+  - The clock is not in the fingerprint. Salary-slip age (`income_engine/freshness.py:48`) and the date checks in `income_engine/occupation.py:66` and `income_engine/utilities.py:241` depend on today, so the same evidence can score differently on a later day.
+  - When an application has no `requirements_snapshot`, the engine reads the live programme catalogue (`requirements.py:126-140`). That catalogue is not in the fingerprint.
+  - The stage facts move at QC accept or reject (in review -> decided). LL5 must hash under the stage as at the decision (`evidence_fingerprint` takes the stage as an argument), or report those cases apart.
+  - The `_CODE` mask lets a single word of up to 40 characters through. The real protection is that every code slot is backed by a fixed choice list or written by the engine; the mask is only a backstop.
+  - Before the merge to `main`: commit `36418b60c` carries a `Phone-check: none needed; ...` trailer (the release tool would list it as a phone check) and docs commit `7278edee9` carries `Services: api` though it builds nothing. Both trailers must be corrected when the branch is prepared for `main`.
 
 ---
 
@@ -360,6 +368,7 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
 
 **Depends on.** A5 sprints R1 and R2 (on the advisor queue) and LL4.
 Cases decided before LL4 have no fingerprint. They enter the report as "evidence state unknown".
+The replay runs with "today" set to `verdict_decided_at` and the stage as at the decision (LL4 known gaps: the clock and the stage), or reports the clock-dependent cases apart.
 
 **Acceptance.**
 - A dry run on a local test database gives the expected counts.
