@@ -187,8 +187,8 @@ class TheOfferSecondRead(SimpleTestCase):
         with mock.patch.object(vision, '_call_gemini_json', fake):
             if kind == 'text':
                 return orr.read_offer('SURAT TAWARAN QORVANE')
-            if kind in ('pdf', 'short'):                # 'short': PAGE_TEXT's page 1 is a header (<200)
-                page_1 = PAGE_TEXT[0] + ('' if kind == 'short' else ' BUTIRAN TAWARAN IJAZAH QORVANE' * 8)
+            if kind in ('pdf', 'short'):                # non-space: 'pdf' 415, 'short' 280 (< 400, header-only)
+                page_1 = PAGE_TEXT[0] + ' BUTIRAN TAWARAN IJAZAH QORVANE' * (7 if kind == 'short' else 12)
                 return orr.read_offer('', image=text_pdf([page_1, *PAGE_TEXT[1:]]), content_type='application/pdf')
             if kind == 'scan':
                 return orr.read_offer('', image=blank_pdf(), content_type='application/pdf')
@@ -352,9 +352,9 @@ class TheOfferSecondRead(SimpleTestCase):
 
     def test_a_header_only_text_layer_gets_the_page_1_image_retry(self):
         """Re-check item 4: a page-1 layer under `RETRY_MIN_TEXT_CHARS` (the body an image) is too thin."""
-        self.assertEqual(orr.RETRY_MIN_TEXT_CHARS, 200)
+        self.assertEqual(orr.RETRY_MIN_TEXT_CHARS, 400)
         fake = _seam({THREE_EIGHT: [BLANK, {}, RESCUE]})
-        ex = self._read(fake, 'short')
+        ex = self._read(fake, 'short')                  # fix round 3: a 280-char layer (once enough) is thin
         shown = ex['offer_reader_inputs']
         self.assertEqual([c['part'] for c in shown['calls']], ['page_1', 'later_pages', 'retry_images'])
         self.assertEqual(len(fake.calls), 3)                                    # still one retry call
@@ -458,6 +458,48 @@ class TheOfferSecondRead(SimpleTestCase):
         ex = self._read(_seam({THREE_EIGHT: [first, second]}))
         self.assertIn('programme_code', ex['offer_reader_inputs']['retry_filled'])
         self.assertEqual(ex['warnings'], kept)                                  # the two stale ones, dropped
+
+    #: Fix round 3: real red flags the old keyword drop lost. Each names a filled field but says nothing absent.
+    BLANK_PROBES = ['The institution name does not match the letterhead.',
+                    'The programme name is printed in a different font.', 'The logo looks fake.',
+                    'The seal appears suspicious.', 'The programme line appears to have been modified.',
+                    'The programme shown is for a different candidate.', 'This is a rejection letter (Dukacita).',
+                    'The programme is inconsistent with the course code.']
+    DATE_PROBES = ['The reporting date was changed by hand.', 'The reporting date looks overwritten.',
+                   'The reporting date (3 Jan 2019) has already passed.']
+
+    def test_only_a_stale_absent_warning_about_a_filled_field_is_dropped(self):
+        """Fix round 3, the flipped rule: drop only when about a filled field AND absent AND no red flag."""
+        blank_filled = ['programme', 'institution', 'intake', 'programme_code', 'reporting_date',
+                        'reporting_date_label']
+        stale = ['The programme could not be found.', 'Kursus tidak dinyatakan.', 'Nama program tidak dapat dibaca.',
+                 'The reporting date not found.', 'The field of study is not printed.']
+        letter = 'The letter date is missing; signed by the Pendaftar.'
+        merged = orr._merge_warnings(self.BLANK_PROBES + self.DATE_PROBES + stale + [letter], [], blank_filled,
+                                     ['blank', 'reporting_date'])
+        self.assertEqual(merged, self.BLANK_PROBES + self.DATE_PROBES + [letter])
+        date_filled = ['reporting_date', 'reporting_date_label']
+        merged = orr._merge_warnings(self.BLANK_PROBES + self.DATE_PROBES + stale + [letter], [], date_filled,
+                                     ['reporting_date'])
+        self.assertEqual(merged, self.BLANK_PROBES + self.DATE_PROBES + stale[:3] + stale[4:] + [letter])
+        for kept in ('Nama calon tidak dapat dibaca.', 'Nama pelajar dan nama program tidak jelas.',
+                     'The programme could not be verified with the institution.',
+                     'The kod kursus could not be read.', 'The programme title is faint.'):
+            with self.subTest(kept=kept):                       # identity, verification, code only, not absent
+                self.assertEqual(orr._merge_warnings([kept], [], ['programme'], ['blank']), [kept])
+
+    def test_the_probe_red_flags_survive_a_real_rescue(self):
+        """Fix round 3, end to end: after a blank retry and after a date-only retry."""
+        first = {**BLANK, 'warnings': self.BLANK_PROBES + ['The programme could not be found.']}
+        ex = self._read(_seam({THREE_EIGHT: [first, {**RESCUE, 'warnings': []}]}))
+        self.assertEqual(set(ex['offer_reader_inputs']['retry_filled']) & {'programme', 'institution'},
+                         {'programme', 'institution'})
+        self.assertEqual(ex['warnings'], self.BLANK_PROBES)
+        letter = 'The letter date is missing; signed by the Pendaftar.'
+        first = {**LETTER, 'warnings': self.DATE_PROBES + [letter, 'The reporting date not found.']}
+        ex = self._read(_seam({THREE_EIGHT: [first, {**LETTER, 'reporting_date': '20 Julai 2031'}]}))
+        self.assertEqual(ex['offer_reader_inputs']['retry_filled'], ['reporting_date', 'reporting_date_label'])
+        self.assertEqual(ex['warnings'], self.DATE_PROBES + [letter])
 
     def test_a_non_string_warning_never_breaks_the_read(self):
         """Re-check item 3: warnings are coerced to strings (empty ones skipped), so the merge never raises."""

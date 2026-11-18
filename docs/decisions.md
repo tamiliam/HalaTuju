@@ -33,7 +33,7 @@ re-ask went to `gemini-2.5-flash`, which has a retirement date, so a 2.5 fall-th
   page 1) or the reporting date is still blank after the merge (the Option A date fallback, now on this setting). One
   call serves both reasons; there is never a second retry. The setting is stripped; a blank value or one containing
   `gemini-2.5` (also `models/gemini-2.5-flash`) falls back to the default with a logged warning.
-- **A different input, page 1 only:** a PDF whose page 1 has a text layer of at least 200 non-space characters
+- **A different input, page 1 only:** a PDF whose page 1 has a text layer of at least 400 non-space characters
   (`RETRY_MIN_TEXT_CHARS`) is re-read from page 1's text alone (no image); a photo, a scanned PDF or a header-only
   layer (the body an image) from the page-1 image at the default media resolution. Never pages 2-3: a reply form
   or a second letter there must not supply the programme, institution, campus or issuer (pages 2-3 dates stay with the
@@ -42,11 +42,17 @@ re-ask went to `gemini-2.5-flash`, which has a retirement date, so a 2.5 fall-th
   IC, IC source, address: a wrong IC blocks as a mismatch). A date-only retry fills the reporting date and its label
   only. A date the retry fills brings the retry's label with it (a first-read label without a date is replaced; the
   label feeds the reporting-date bonus).
-- **Warnings** after a retry that filled something: the first read's stay, except those about a field the retry filled
-  (identity warnings, and red flags about the document such as "not the offer", "edited", "tampered", "forged",
-  "mismatch", always stay; a warning is about the reporting date only when it also names a date, and about the code only
-  when it names a course or programme code); the retry's are added (never its identity ones; a date-only retry adds only
-  its date warnings); no duplicates. Warnings are coerced to strings, so a malformed one never breaks the read.
+- **Warnings** after a retry that filled something: the first read's stay, except a STALE one, dropped only when all
+  three hold: it is about a field the retry filled; it says that field was absent or unreadable ("missing", "not
+  found", "could not", "unclear", "not printed", "tidak dinyatakan", "tidak dapat", "tiada" ...); and it carries no red
+  flag ("not the offer", "edited", "match", "font", "fake", "suspicious", "modified", "different candidate",
+  "Dukacita", "rejection", "inconsistent", "changed", "overwritten", "passed", "verified" ...) and is not about the
+  identity. Everything else stays (fix round 3 flipped the rule: a keyword drop lost real red flags such as "does not
+  match the letterhead"). A warning is about the reporting date only when a report word sits next to a date word (not
+  "the letter date ... signed by the Pendaftar"), about the code only when it names a course or programme code, and
+  "nama" is the identity only beside a person word ("Nama program" is the programme). The retry's are added (never its
+  identity ones; a date-only retry adds only its date warnings); no duplicates. Warnings are coerced to strings, so a
+  malformed one never breaks the read.
 - Recorded in `offer_reader_inputs`: `primary_blank` (always), `retry_for`, `retry_filled`, `reporting_date_from` (when
   the date was asked), and `calls` parts `retry_text_layer` / `retry_images` / `retry_text`. A 3.8 error that fell
   through the cascade is handled as before (no second read). No model name 2.5 is left in the offer reader.
