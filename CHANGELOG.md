@@ -76,6 +76,7 @@ Branch post-award-cut. Migration: none. Services: api, web. Decisions: `docs/dec
   - A finished case is past the award when it has `active_at`, a decline snapshot or `awarded_at`. A reopen never makes it open.
   - The org-reject and reporting-date replies serve the write flags.
   - Tests: new `test_post_award_cut_round2.py`. The access matrix replays every stage on real seeds, checks `case_stage`, and sweeps two writers who cannot read the case. Two AI pins move to `case_stages.ai_off`. A Scholars reader who cannot write is offered no controls. A web test is renamed.
+- **Review round 3 (18 Nov):** finalise-profile answers 400 `case_closed` past the award, even when reopened, because it queues paid Gemini work. Nothing is queued and `finalise_state` is unchanged. The access matrix lists finalise-profile and generate-profile under `case_stages.past_award.except`. Tests: `FinaliseProfileEndsAtTheAward` in `test_post_award_cut_round2.py`.
 
 ### fix: a red verdict tile names the reason it is red (2026-11-18)
 

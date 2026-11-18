@@ -72,11 +72,14 @@ class AdminFinaliseProfileView(_AdminBase):
 
     ⚠ A2.1 review (L1): it RE-QUEUES the profile for the ``finalise-profiles`` cron (pending,
     attempts 0, a new token) instead of calling Gemini inline; this is the retry after 'failed'.
-    Only the queue columns are saved, so it can never revert a row a running job is writing."""
+    Only the queue columns are saved, so it can never revert a row a running job is writing.
+    Refused past the award as generate-profile is (review round 3): the queued cron pass is billable."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
+        if case_stage(app) == PAST_AWARD:
+            return self._case_closed(app)
         result, sp = profile_finalise.queue_finalise(app, request.data.get('language'))
         if sp is None:
             message = {'no_draft': 'Draft a profile first.',

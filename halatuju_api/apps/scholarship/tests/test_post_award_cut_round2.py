@@ -7,6 +7,7 @@ the award, and a case that ended past the award is classified on the award's own
   P1 — owner R5, the review track ends at the award: record-verdict, suggest-gaps (and the
        interview doors, which share the prologue) and generate-profile answer 400 `case_closed`
        past it, a reopen notwithstanding. re-run-vision stays on the case rule.
+  R3 — finalise-profile (a queued, billable cron pass) is refused past the award too.
   M1 — a terminal case is past the award on `active_at`, its decline snapshot, or `awarded_at`;
        a reopen never makes it OPEN.
 """
@@ -16,7 +17,8 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.scholarship import closure, reopen
-from apps.scholarship.models import ApplicantDocument
+from apps.scholarship.models import ApplicantDocument, SponsorProfile
+from apps.scholarship.models.interviews import InterviewSession
 from apps.scholarship.staff_lifecycle import OPEN, PAST_AWARD, PRE_AWARD_END, case_stage
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
@@ -174,3 +176,40 @@ class TheWriteRepliesServeTheFlags(_World):
         r = authed_client(self.reviewer).post(f'{APPS}{self.case("interviewing").id}/reporting-date/',
                                               {'date': '2027-01-04'}, format='json')
         self.assertEqual((r.status_code, r.json()['can_write'], r.json()['can_tranche']), (200, True, True))
+
+
+class FinaliseProfileEndsAtTheAward(_World):
+    """Review round 3: finalise-profile queues a billable cron pass (refine + anon blurb), so it is
+    refused past the award as generate-profile is, a reopen notwithstanding."""
+    def ready(self, stage, **kw):
+        app = self.case(stage, **kw)
+        sp, _ = SponsorProfile.objects.get_or_create(application=app)
+        draft = [f.name for f in SponsorProfile._meta.fields if f.name in ('draft_markdown', 'markdown')]
+        SponsorProfile.objects.filter(pk=sp.pk).update(**{f: 'draft text' for f in draft})
+        InterviewSession.objects.create(application=app, interviewer=self.reviewer, status='submitted',
+                                        submitted_at=timezone.now())
+        return app
+
+    def finalise(self, who, app):
+        before = SponsorProfile.objects.get(application=app).finalise_state
+        with mock.patch('apps.scholarship.profile_finalise.queue_finalise') as queue:
+            r = authed_client(who).post(f'{APPS}{app.id}/finalise-profile/', {}, format='json')
+        after = SponsorProfile.objects.get(application=app).finalise_state
+        return r, queue.called, before == after
+
+    def test_refused_past_the_award_a_reopen_notwithstanding(self):
+        for name, who, app in (('admin', self.admin, self.ready('active')),
+                               ('scholars_only', self.scholars_only, self.ready('active')),
+                               ('super, reopened', self.super,
+                                self.ready('active', decision_reopened_at=timezone.now()))):
+            with self.subTest(who=name):
+                self.assertEqual(case_stage(app), PAST_AWARD)
+                r, queued, unchanged = self.finalise(who, app)
+                self.assertEqual((r.status_code, r.json()['code'], queued, unchanged),
+                                 (400, 'case_closed', False, True))
+
+    def test_an_open_case_still_queues(self):
+        app = self.ready('interviewing')
+        r = authed_client(self.reviewer).post(f'{APPS}{app.id}/finalise-profile/', {}, format='json')
+        self.assertEqual((r.status_code, SponsorProfile.objects.get(application=app).finalise_state),
+                         (200, 'pending'))

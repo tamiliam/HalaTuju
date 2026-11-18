@@ -194,6 +194,18 @@ And some of them have finance permissions." The legacy role code is separate cle
     are allowed nowhere. generate-profile and suggest-gaps no longer need an AI pin on the funded case.
   - The org-reject and reporting-date replies now serve the write flags (`_detail_payload`).
 
+- Review round 3 (18 Nov):
+  - **finalise-profile ends at the award.** It queues the cron's refine and anon blurb, which is paid Gemini work, so
+    past the award it answers 400 `case_closed` like generate-profile, even when reopened. The check runs after the
+    write fence, so the access matrix lists both pairs under `case_stages.past_award.except` with that reason. A grep
+    of the admin views found no other door that queues or starts paid work past the award: record-verdict (the other
+    `queue_finalise` caller) and suggest-gaps sit behind `_require_open_case`; generate-profile was gated in round 2;
+    re-run-vision stays open by the round 2 decision; the verdict case summary is a cached GET read. Left as it was:
+    the cron (`run_finalise`) does not check the case, so a profile queued before the award can still be refined after it.
+  - Accepted as they are: the two ways a fallen-through award is classified (back at recommended it is OPEN; closed
+    with no snapshot it fails closed to the lead keys).
+  - Accepted as they are: anon-profile publish and PUT profile stay open to past-award file writers, because they make no paid call.
+
 **Revisit if:** a post-award step needs the reviewer to act again (R5's own revisit line). Or if the payments model
 splits tranche release from preparing a run.
 

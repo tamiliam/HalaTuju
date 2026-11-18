@@ -172,7 +172,24 @@
     "org_admin_a",
     "admin_a"
    ],
-   "except": {}
+   "except": {
+    "POST api/v1/admin/scholarship/applications/<int:pk>/finalise-profile/": {
+     "allow": [
+      "super",
+      "org_admin_a",
+      "admin_a"
+     ],
+     "why": "STATE: past the award the door answers 400 case_closed to every caller, a reopen notwithstanding (review round 3: the queued cron refine and anon blurb is billable Gemini work); the write fence still runs first, so these callers reach the 400 and every other caller is still refused"
+    },
+    "POST api/v1/admin/scholarship/applications/<int:pk>/generate-profile/": {
+     "allow": [
+      "super",
+      "org_admin_a",
+      "admin_a"
+     ],
+     "why": "STATE: past the award the door answers 400 case_closed to every caller, a reopen notwithstanding (review round 2: the profile generation is billable Gemini work); the write fence still runs first, so these callers reach the 400 and every other caller is still refused"
+    }
+   }
   },
   "ai_off": [
    "POST api/v1/admin/scholarship/applications/<int:pk>/generate-profile/",
