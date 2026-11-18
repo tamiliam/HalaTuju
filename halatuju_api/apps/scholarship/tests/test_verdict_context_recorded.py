@@ -1,6 +1,7 @@
 """LL4 phase 2 - `record-verdict` stores the record of what fed the decision.
 
-Pins: recording a verdict stores the record (documents, models, fingerprint) in the same save; a
+Pins: recording a verdict stores the record (documents, models, fingerprint) in the same save, and
+the stored fingerprint is the one the saved row gives when rebuilt; a
 builder that fails still lets the decision save, with `{schema, error}` stored; an old decided row
 with an empty record still loads and serialises; re-recording replaces the record; and the column
 is staff-internal: neither the admin detail response, the record-verdict response nor the
@@ -61,6 +62,15 @@ class TestRecordVerdictStoresTheContext(TestCase):
         self.assertEqual(record['key_check'], vc.key_check())
         self.assertEqual(len(app.ai_verdict_snapshot), 4)
         self.assertEqual(app.verdict_reason, REASON)
+
+    def test_the_stored_fingerprint_matches_the_stored_row(self):
+        """No false movement: rebuilt from the saved row straight after the decision, the
+        fingerprint is the one stored (the engine ran first on the same instance and wrote no
+        hashed field; the save wrote none either)."""
+        self.assertEqual(self._record().status_code, 200)
+        app = self._stored()
+        self.assertEqual(vc.build_verdict_context(app)['fingerprint'],
+                         app.ai_verdict_context['fingerprint'])
 
     def test_a_failed_builder_still_saves_the_decision(self):
         with mock.patch.object(vc, 'build_verdict_context', side_effect=RuntimeError('boom')):

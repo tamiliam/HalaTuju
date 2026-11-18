@@ -7,6 +7,8 @@ evidence state unknown". Nothing is backfilled: the evidence of an old decision 
 
 ⚠ MIGRATE-FIRST, BY HAND, and ONLY WITH THE OWNER'S YES, before the publish (scholarship ledger
 0217 -> 0218; 0217 must be applied first). Then record the `django_migrations` row.
+⚠ THE OWNER RUNS THE SQL BELOW BY HAND: NOBODY RUNS `migrate` AGAINST PRODUCTION (the code path
+carries the same 5s lock_timeout only as a backstop).
 
 Pre-check (read-only; expect 1, then 0, then no row):
 
@@ -61,11 +63,21 @@ _ADD = {
 }
 
 
+def _give_up_rather_than_queue(schema_editor):
+    """The same guard as the hand-run SQL above, should `migrate` ever run against Postgres: the
+    migration runs in one transaction there (atomic), so `SET LOCAL` holds for the ALTER and ends
+    with it. It changes no result, only how long the ALTER may wait for the table lock."""
+    if schema_editor.connection.vendor == 'postgresql':
+        schema_editor.execute("SET LOCAL lock_timeout = '5s'")
+
+
 def _add_column(apps, schema_editor):
+    _give_up_rather_than_queue(schema_editor)
     schema_editor.execute(_ADD[schema_editor.connection.vendor])
 
 
 def _drop_column(apps, schema_editor):
+    _give_up_rather_than_queue(schema_editor)
     schema_editor.execute('ALTER TABLE "scholarship_applications" DROP COLUMN "ai_verdict_context"')
 
 

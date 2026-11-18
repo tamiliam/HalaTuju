@@ -1,11 +1,13 @@
 """LL4 phase 1 - the record of what fed a decision (`verdict_context`).
 
-Pins: the record is built from at most TWO queries (the documents, and the profile when it is not
-already loaded); its keys at every level are an explicit allow-list and every value is a plain int
-or str; no fixture PII reaches it; the evidence fingerprint is stable for the same evidence (twice,
-in another row order, after a fresh fetch, in another time zone) and moves when a document is
-replaced, removed, added, re-read, or its stored status or version moves, and when any declared
-field or any listed profile field moves, but NOT when an unrelated field (of either row) moves;
+Pins: the record is built from at most THREE queries (the documents, and the profile and the intake
+when they are not already loaded; one under the record-verdict view's own fetch); its keys at every
+level are an explicit allow-list and every value is a plain int or str; no fixture PII reaches it;
+the evidence fingerprint is stable for the same evidence (twice, in another row order, after a fresh
+fetch, in another time zone, after the engine has run on the same instance) and moves when a
+document is replaced, removed, added, re-read, or its stored status or version moves, and when any
+declared field, listed profile field, intake rule or stage fact moves, but NOT when an unrelated
+field (of any of the three rows) moves or the status moves inside one bucket the engine reads;
 `key_check` and the fingerprint follow the secret key; the safe wrapper returns the failed record
 and logs no PII. All data is made up.
 """
@@ -19,13 +21,14 @@ from django.utils import timezone
 from apps.courses.models import StudentProfile
 from apps.scholarship import verdict_context as vc
 from apps.scholarship.model_registry import MODELS
-from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
-from apps.scholarship.tests.factories import fake_nric, make_application
+from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.tests.factories import fake_nric, make_application, make_cohort
+from apps.scholarship.verdict_engine import build_verdict
 
 #: Made-up PII planted in the fixture. None of it may reach the record or the log.
 NRIC = fake_nric()
-FATHER = 'ARUMUGAM A/L KANDASAMY'
-MOTHER = 'MEENA A/P RAJU'
+FATHER = 'TEST FATHER A/L SAMPLE'
+MOTHER = 'TEST MOTHER A/P SAMPLE'
 ADDRESS = '12 JALAN CONTOH 3, TAMAN UJIAN'
 INCOME = 1234.56
 
@@ -55,13 +58,14 @@ CHANGED_VALUES = {
     'chosen_programme': {'course': 'other'},
     'pathway_confirmed_at': datetime.datetime(2026, 2, 3, 4, 5, 6, tzinfo=datetime.timezone.utc),
     'requirements_snapshot': {'docs': ['ic']},
+    'reporting_date': datetime.date(2026, 3, 1),
 }
 
 #: A new value for each listed profile field (LL4 phase 2). Its keys must be exactly
 #: `PROFILE_FIELDS`, so a field added to the fingerprint needs a test value here.
 CHANGED_PROFILE_VALUES = {
     'name': 'SOMEONE ELSE',
-    'nric': '991231-01-0001',
+    'nric': fake_nric(),
     'exam_type': 'stpm',
     'results_exam_type': 'stpm',
     'completed_qualifications': ['spm', 'stpm'],
@@ -83,6 +87,24 @@ UNLISTED_PROFILE_VALUES = {
     'postal_code': '99999',
     'contact_phone': '0100000000',
 }
+#: A new value for each intake rule. Its keys must be exactly `INTAKE_FIELDS`.
+CHANGED_INTAKE_VALUES = {
+    'year': 2031,
+    'income_ceiling': 4321,
+    'per_capita_ceiling': 765,
+    'min_stpm_pngk': 2.75,
+    'allowed_start_years': [2030, 2031],
+}
+#: Intake fields the engine does not read on the verdict path: changing them must not move it.
+UNLISTED_INTAKE_VALUES = {
+    'name': 'Another Made-up Intake',
+    'is_active': False,
+    'allowed_birth_states': ['14'],
+}
+#: Two instants in the same Malaysian year (a resubmission re-stamps), and one in the next.
+SUBMIT_A = datetime.datetime(2026, 3, 1, 2, 0, tzinfo=datetime.timezone.utc)
+SUBMIT_B = datetime.datetime(2026, 9, 9, 9, 0, tzinfo=datetime.timezone.utc)
+SUBMIT_NEXT_YEAR = datetime.datetime(2026, 12, 31, 17, 0, tzinfo=datetime.timezone.utc)  # 1 Jan MYT
 
 
 def _vision(status='genuine', model_version='1.2.0', parser_version='spm_slip 1.1.0', name=FATHER):
@@ -109,6 +131,10 @@ class _Base(TestCase):
     def _fp(self, app=None):
         return vc.build_verdict_context(app or self.app)['fingerprint']
 
+    def _stage(self, status, submitted_at):
+        """Set the two stage columns in memory (status, submission stamp)."""
+        self.app.status, self.app.profile_completed_at = status, submitted_at
+
 
 class TestTheRecord(_Base):
     def test_the_record_is_built(self):
@@ -131,20 +157,31 @@ class TestTheRecord(_Base):
         ids = [d['id'] for d in vc.build_verdict_context(self.app)['documents']]
         self.assertEqual(ids, [self.ic.id])
 
-    def test_the_documents_and_the_profile_cost_two_queries(self):
-        """A fresh application: one query for the documents, one for its profile. No more."""
+    def test_the_documents_the_profile_and_the_intake_cost_three_queries(self):
+        """A fresh application: one query each for the documents, its profile and its intake."""
         app = ScholarshipApplication.objects.get(pk=self.app.pk)
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             vc.build_verdict_context(app)
 
     def test_a_loaded_profile_costs_no_extra_query(self):
         app = ScholarshipApplication.objects.select_related('profile').get(pk=self.app.pk)
+        with self.assertNumQueries(2):
+            vc.build_verdict_context(app)
+
+    def test_under_the_record_verdict_fetch_it_costs_one_query(self):
+        """The record-verdict view loads the profile and the intake with the case
+        (`views_admin/base.py`): only the documents are left to read."""
+        app = ScholarshipApplication.objects.select_related('profile', 'cohort').get(pk=self.app.pk)
         with self.assertNumQueries(1):
             vc.build_verdict_context(app)
 
-    def test_every_declared_field_is_a_column_of_the_application(self):
+    def test_every_declared_and_stage_field_is_a_column_of_the_application(self):
         columns = {f.name for f in ScholarshipApplication._meta.concrete_fields}
-        self.assertEqual(sorted(set(vc.DECLARED_FIELDS) - columns), [])
+        self.assertEqual(sorted(set(vc.DECLARED_FIELDS + vc.STAGE_FIELDS) - columns), [])
+
+    def test_every_intake_field_is_a_column_of_the_intake(self):
+        columns = {f.name for f in ScholarshipCohort._meta.concrete_fields}
+        self.assertEqual(sorted(set(vc.INTAKE_FIELDS) - columns), [])
 
     def test_every_profile_field_is_a_column_of_the_profile(self):
         columns = {f.name for f in StudentProfile._meta.concrete_fields}
@@ -152,6 +189,11 @@ class TestTheRecord(_Base):
 
     def test_an_application_without_a_profile_still_builds(self):
         self.app.profile = None
+        record = vc.build_verdict_context(self.app)
+        self.assertEqual(set(record), TOP_KEYS)
+
+    def test_an_application_without_an_intake_still_builds(self):
+        self.app.cohort = None
         record = vc.build_verdict_context(self.app)
         self.assertEqual(set(record), TOP_KEYS)
 
@@ -195,6 +237,17 @@ class TestTheAllowList(_Base):
                        'made_up_subject_xyz', 'A+'):
             self.assertNotIn(secret, text)
 
+    def test_no_intake_or_stage_value_reaches_the_record(self):
+        """The intake rules and the stage facts are hashed only: when every one of them moves, the
+        record moves in its fingerprint and nowhere else."""
+        before = vc.build_verdict_context(self.app)
+        for name, value in CHANGED_INTAKE_VALUES.items():
+            setattr(self.app.cohort, name, value)
+        self.app.profile_completed_at, self.app.status = SUBMIT_A, 'recommended'
+        after = vc.build_verdict_context(self.app)
+        self.assertNotEqual(after.pop('fingerprint'), before.pop('fingerprint'))
+        self.assertEqual(after, before)
+
     def test_the_failed_record_has_its_own_pinned_keys(self):
         self.assertEqual(set(vc.failed_record(vc.BUILD_FAILED)), FAILED_KEYS)
 
@@ -210,12 +263,16 @@ class TestTheFingerprintHolds(_Base):
     def test_same_evidence_same_fingerprint(self):
         self.assertEqual(self._fp(), self._fp())
 
+    def _parts(self):
+        return (vc.declared_values(self.app), vc.profile_values(self.app),
+                vc.intake_values(self.app), vc.stage_facts(self.app))
+
     def test_the_row_order_does_not_count(self):
         rows = vc._live_document_rows(self.app)
-        declared = vc.declared_values(self.app)
-        profile = vc.profile_values(self.app)
-        self.assertEqual(vc.evidence_fingerprint(rows, declared, profile),
-                         vc.evidence_fingerprint(list(reversed(rows)), declared, profile))
+        declared, profile, intake, stage = self._parts()
+        self.assertEqual(vc.evidence_fingerprint(rows, declared, profile, intake, stage),
+                         vc.evidence_fingerprint(list(reversed(rows)), declared, profile, intake,
+                                                 stage))
 
     def test_a_fresh_fetch_gives_the_same_fingerprint(self):
         self.assertEqual(self._fp(), self._fp(ScholarshipApplication.objects.get(pk=self.app.pk)))
@@ -224,11 +281,21 @@ class TestTheFingerprintHolds(_Base):
         utc = datetime.datetime(2026, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)
         myt = utc.astimezone(datetime.timezone(datetime.timedelta(hours=8)))
         rows = vc._live_document_rows(self.app)
-        declared = vc.declared_values(self.app)
-        profile = vc.profile_values(self.app)
-        a = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=utc), profile)
-        b = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=myt), profile)
+        declared, profile, intake, stage = self._parts()
+        a = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=utc), profile,
+                                    intake, stage)
+        b = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=myt), profile,
+                                    intake, stage)
         self.assertEqual(a, b)
+
+    def test_running_the_engine_first_does_not_move_it(self):
+        """The view runs `build_verdict` on the same instance before it builds the record. The
+        engine writes only private memos on it, never a hashed field: the fingerprint after the
+        run equals the one before it and the one of a fresh fetch of the stored row."""
+        before = self._fp()
+        build_verdict(self.app)
+        self.assertEqual(self._fp(), before)
+        self.assertEqual(self._fp(ScholarshipApplication.objects.get(pk=self.app.pk)), before)
 
     def test_an_unrelated_field_does_not_move_it(self):
         before = self._fp()
@@ -245,6 +312,35 @@ class TestTheFingerprintHolds(_Base):
             setattr(self.app.profile, name, value)
         self.assertEqual(self._fp(), before)
 
+    def test_an_unlisted_intake_field_does_not_move_it(self):
+        self.assertFalse(set(UNLISTED_INTAKE_VALUES) & set(vc.INTAKE_FIELDS))
+        before = self._fp()
+        for name, value in UNLISTED_INTAKE_VALUES.items():
+            self.assertNotEqual(getattr(self.app.cohort, name), value)
+            setattr(self.app.cohort, name, value)
+        self.assertEqual(self._fp(), before)
+
+    def test_a_resubmission_in_the_same_year_does_not_move_it(self):
+        """The engine reads the submission stamp only for being there and for its Malaysian year
+        (`str_route.str_this_year`): a re-stamp inside the year is not new evidence."""
+        self._stage('interviewing', SUBMIT_A)
+        before = self._fp()
+        self._stage('interviewing', SUBMIT_B)
+        self.assertEqual(self._fp(), before)
+
+    def test_a_status_move_inside_one_bucket_does_not_move_it(self):
+        """Moves that happen at or after the decision without changing any fact the engine
+        reads: verify-accept / submit-decline (interviewing -> interviewed), and the student's
+        confirmation once stamped (shortlisted -> profile_complete with the stamp)."""
+        for old, new, stamp in (('interviewing', 'interviewed', SUBMIT_A),
+                                ('shortlisted', 'profile_complete', SUBMIT_A),
+                                ('recommended', 'rejected', SUBMIT_A)):
+            with self.subTest(old=old, new=new):
+                self._stage(old, stamp)
+                before = self._fp()
+                self._stage(new, stamp)
+                self.assertEqual(self._fp(), before)
+
     @override_settings(SECRET_KEY='made-up-key-for-the-pinned-fingerprint-0000000000')
     def test_the_canonical_form_is_pinned(self):
         """A fixed input under a fixed key gives a fixed answer: any change to the canonical form
@@ -255,14 +351,20 @@ class TestTheFingerprintHolds(_Base):
                    vision_fields_run_at=None, vision_run_at=None)
         declared = {name: None for name in vc.DECLARED_FIELDS}
         profile = {name: None for name in vc.PROFILE_FIELDS}
+        intake = dict({name: None for name in vc.INTAKE_FIELDS}, cohort_id=None)
+        stage = {'submitted_year': 2026, 'pre_submit_status': None, 'in_review_status': True,
+                 'decided_status': False}
+        self.assertEqual(set(stage), set(vc.stage_facts(self.app)))
         self.assertEqual(vc.key_check(), PINNED_KEY_CHECK)
-        self.assertEqual(vc.evidence_fingerprint([row], declared, profile), PINNED_FINGERPRINT)
+        self.assertEqual(vc.evidence_fingerprint([row], declared, profile, intake, stage),
+                         PINNED_FINGERPRINT)
 
 
 PINNED_KEY_CHECK = 'cad1960c'
-#: Re-pinned in LL4 phase 2 when the profile values joined the payload (the pin is new in branch
-#: ll4, so no stored fingerprint was ever computed under the old form).
-PINNED_FINGERPRINT = '0f742f8b910def3013c9848425d44ec81b1ba42f483a97c4ef459685cb048ed3'
+#: Re-pinned in LL4 phase 2 when the profile values joined the payload, and again in the LL4 review
+#: round when the intake rules and the stage facts joined it. The pin is new in branch ll4: no
+#: stored fingerprint was ever computed under either earlier form.
+PINNED_FINGERPRINT = 'b100b11d535ff6c579785254cfaff190bfd8eb9fb9dd882aa514becece925fbc'
 
 
 class TestTheFingerprintMoves(_Base):
@@ -327,6 +429,43 @@ class TestTheFingerprintMoves(_Base):
                 setattr(profile, name, value)
                 self.assertNotEqual(self._fp(), before)
                 setattr(profile, name, old)
+
+    def test_every_intake_rule(self):
+        self.assertEqual(set(CHANGED_INTAKE_VALUES), set(vc.INTAKE_FIELDS))
+        cohort = self.app.cohort
+        for name, value in CHANGED_INTAKE_VALUES.items():
+            with self.subTest(field=name):
+                before = self._fp()
+                old = getattr(cohort, name)
+                self.assertNotEqual(old, value)
+                setattr(cohort, name, value)
+                self.assertNotEqual(self._fp(), before)
+                setattr(cohort, name, old)
+
+    def test_another_intake(self):
+        """The same rules under another intake still move it: the case was judged in that one."""
+        other = make_cohort(**{name: getattr(self.app.cohort, name) for name in vc.INTAKE_FIELDS})
+        self._moved(lambda: setattr(self.app, 'cohort', other))
+
+    def test_a_submission_in_another_year(self):
+        self._stage('interviewing', SUBMIT_A)
+        self._moved(lambda: self._stage('interviewing', SUBMIT_NEXT_YEAR))
+
+    def test_a_submission(self):
+        self._stage('shortlisted', None)
+        self._moved(lambda: self._stage('profile_complete', SUBMIT_A))
+
+    def test_an_unstamped_case_leaving_the_pre_submit_statuses(self):
+        """No stamp: `str_this_year` reads the intake year once the status is past shortlisted."""
+        self._stage('shortlisted', None)
+        self._moved(lambda: self._stage('interviewing', None))
+
+    def test_a_case_being_decided(self):
+        """QC accept: the engine reads the decided statuses (`higher_owed._too_late`) and the
+        in-review ones (`amounts._to_myr`), so this one moves it. LL5 replays under the stage as
+        at the decision (`evidence_fingerprint` takes the stage as an argument)."""
+        self._stage('interviewing', SUBMIT_A)
+        self._moved(lambda: self._stage('recommended', SUBMIT_A))
 
 
 class TestTheKey(_Base):
