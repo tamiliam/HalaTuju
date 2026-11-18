@@ -14,7 +14,9 @@ This module is the half that DESCRIBES each model:
   cascades are the main case. `halatuju/ai_registry.py` stores no model names (it reads the
   cascades live), so listing it alone would let a model switch ship with no bump; pinning
   `profile_engine.FLASH_25_CASCADE` closes that. A pin also takes in every same-module top-level
-  name its definition uses, so a pinned list built from another list follows it.
+  name its definition uses, so a pinned list built from another list follows it. The guard walks
+  a pin's imports like a listed file's (`pin_imports`), drops the pinned module's own version
+  line, and refuses a module that changes a pinned name after defining it.
 
 `model_versions/<model>.json` is the append-only log of the versions, each with the digest of the
 source it was recorded against. `tests/test_model_versions.py` is the guard that fails when the
@@ -23,7 +25,8 @@ source moves and the version does not.
 THE DIGEST does not depend on the Python version (production runs 3.11, a laptop may run 3.13),
 so it is NOT an `ast.dump`, whose output changes between releases. For each file it reads the
 text, makes line endings irrelevant, then removes comments, docstrings and the statement that sets
-the model's own version constant, strips trailing spaces and drops blank lines. Lines INSIDE a
+the model's own version constant (which must be one plain string on lines of its own, see
+`version_assignment`), strips trailing spaces and drops blank lines. Lines INSIDE a
 multi-line string (a prompt) are kept exactly, blank lines and trailing spaces included, because
 there they are part of what the model is sent. Line numbers never enter the digest.
 
@@ -35,6 +38,7 @@ import hashlib
 import io
 import json
 import pathlib
+import re
 import tokenize
 
 _APP = 'apps/scholarship'
@@ -91,7 +95,10 @@ MODELS = {
         'files': [f'{_G}/school_leaving_doc.py'],
         'pins': [(f'{_G}/results_doc.py', '_any_token'),
                  (f'{_G}/results_doc.py', '_norm_fold_upper_alnum'),
-                 (f'{_G}/results_doc.py', 'misfiled_as')],
+                 (f'{_G}/results_doc.py', 'misfiled_as'),
+                 # what misfiled_as reaches in other files (LL3 review: pins follow their imports)
+                 (f'{_G}/bands.py', 'GENUINE_MIN'),
+                 (f'{_G}/stpm_doc.py', 'STPM_LISTS')],
     },
     # LL3 phase 2: the two AI genuineness reads that had no version. Both call Gemini on the
     # 2.5 Flash cascade, so they carry the AI register and the cascade pin like sample_stamp.
@@ -119,7 +126,13 @@ MODELS = {
                  (f'{_APP}/vision/sanitize.py', '_drop_expected_warnings'),
                  (f'{_APP}/offer_course_match.py', 'COURSE_CODE_RE'),
                  (f'{_APP}/offer_course_match.py', '_LOCAL_CODE_RE'),
-                 (f'{_APP}/offer_ic.py', 'guard_nric')],
+                 (f'{_APP}/offer_ic.py', 'guard_nric'),
+                 # what the pins above reach in other files (LL3 review: pins follow their imports)
+                 (f'{_APP}/vision/judge.py', '_strip_name_label'),
+                 (f'{_APP}/name_order.py', 'patronymic_reversed')]
+        + [(f'{_APP}/vision/names.py', name) for name in (
+            'name_match', 'nric_close', 'nric_dob_agrees', 'nric_match', '_split_glued_markers',
+            'canonical_name_tokens')],
     },
     'offer_parse': {
         'constant': (f'{_APP}/offer_parse.py', 'PARSER_VERSION'),
@@ -136,7 +149,8 @@ MODELS = {
     'matric_parse': {
         'constant': (f'{_APP}/matric_parse.py', 'PARSER_VERSION'),
         'files': [f'{_APP}/matric_parse.py'],
-        'pins': [(f'{_APP}/poly_diploma_parse.py', 'CONNECTORS')]
+        'pins': [(f'{_APP}/poly_diploma_parse.py', 'CONNECTORS'),
+                 (f'{_APP}/academic_engine.py', '_group_rows')]     # stpm_parse._rows_of's lazy import
         + [(f'{_APP}/stpm_parse.py', name) for name in (
             'GRADE_POINTS', '_NRIC_RE', '_after', '_clean_name', '_letters', '_rows_of')],
     },
@@ -182,11 +196,33 @@ def _docstring_nodes(tree):
 def _assigns_name(node, names):
     if isinstance(node, ast.Assign):
         targets = node.targets
-    elif isinstance(node, ast.AnnAssign):
+    elif isinstance(node, (ast.AnnAssign, ast.AugAssign)):
         targets = [node.target]
     else:
         return False
     return any(isinstance(t, ast.Name) and t.id in names for t in targets)
+
+
+def version_assignment(tree, name):
+    """The ONE top-level statement that sets the version constant `name`. Because the digest drops
+    that statement's rows whole, it must be safe to drop: exactly one top-level assignment, of a
+    plain string, to that name alone, with no other statement on its rows. Anything else could hide
+    logic (`MODEL_VERSION = '1.0.0'; THRESHOLD = 0.70`) or a second value, so it raises ValueError."""
+    hits = [node for node in tree.body if _assigns_name(node, (name,))]
+    if len(hits) != 1:
+        raise ValueError(f'{name} must be set exactly once at the top level of the file; found '
+                         f'{len(hits)}. The version guard cannot tell which one counts.')
+    node = hits[0]
+    plain = (isinstance(node, ast.Assign) and len(node.targets) == 1) or isinstance(node, ast.AnnAssign)
+    if not (plain and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)):
+        raise ValueError(f"{name} must be a plain string set on its own (like {name} = '1.0.0'), so "
+                         'that dropping it from the digest drops nothing else.')
+    for other in ast.walk(tree):
+        if (isinstance(other, ast.stmt) and other is not node
+                and other.lineno <= node.end_lineno and other.end_lineno >= node.lineno):
+            raise ValueError(f'{name} shares a line with other code (row {other.lineno}). Put the '
+                             'version on lines of its own: the digest drops those lines whole.')
+    return node
 
 
 def _string_rows(text):
@@ -218,18 +254,19 @@ def _comment_starts(text):
 def clean_model_source(text, drop_names=(), keep_rows=None):
     """The text a model digest is taken over (see the module docstring).
 
-    `text` already has `\\n` line endings. `drop_names` are top-level names whose assignment is
-    removed (the model's own version constant). `keep_rows`, when given, keeps only those
-    1-based rows (a pin's statements); everything else about the cleaning is the same.
+    `text` already has `\\n` line endings. `drop_names` are top-level version names whose one
+    assignment is removed (`version_assignment` refuses an unsafe one). `keep_rows`, when given,
+    keeps only those 1-based rows (a pin's statements); everything else about the cleaning is the
+    same.
     """
     tree = ast.parse(text)
     lines = [ln.encode('utf-8') for ln in text.split('\n')]
     cut = []                                   # (row1, byte_col1, row2, byte_col2), 1-based rows
     for node in _docstring_nodes(tree):
         cut.append((node.lineno, node.col_offset, node.end_lineno, node.end_col_offset))
-    for node in tree.body:
-        if drop_names and _assigns_name(node, drop_names):
-            cut.append((node.lineno, 0, node.end_lineno, len(lines[node.end_lineno - 1])))
+    for name in sorted(set(drop_names)):
+        node = version_assignment(tree, name)
+        cut.append((node.lineno, 0, node.end_lineno, len(lines[node.end_lineno - 1])))
     text_lines = text.split('\n')
     for row, col in _comment_starts(text).items():
         byte_col = len(text_lines[row - 1][:col].encode('utf-8'))
@@ -266,12 +303,15 @@ def _defined_names(node):
     return {t.id for t in targets if isinstance(t, ast.Name)}
 
 
-def pinned_model_text(root, rel, name):
-    """The cleaned text of the top-level statements defining `name` in `rel`, plus (transitively)
-    every same-module top-level name those statements use. Raises KeyError if `name` is not
-    defined at the top level of `rel`, so a pin cannot go quietly empty."""
-    text = _model_text(root, rel)
-    tree = ast.parse(text)
+#: A version constant's name (`MODEL_VERSION`, `PARSER_VERSION`, ...).
+VERSION_NAME = re.compile(r'(^|_)VERSION$')
+
+_DEFS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+
+
+def _pin_closure(tree, rel, name):
+    """(names, nodes): `name` plus every same-module top-level name its definition uses,
+    transitively, and the top-level statements that define them."""
     homes = {}
     for node in tree.body:
         for defined in _defined_names(node):
@@ -287,11 +327,96 @@ def pinned_model_text(root, rel, name):
         for node in homes[current]:
             nodes.append(node)
             todo.extend(n.id for n in ast.walk(node) if isinstance(n, ast.Name))
+    return wanted, nodes
+
+
+def _module_level(tree):
+    """Every statement that runs at import time: the top level and the bodies of top-level
+    if / try / with / for blocks, but never the inside of a function or class."""
+    todo = list(tree.body)
+    while todo:
+        node = todo.pop()
+        yield node
+        if not isinstance(node, _DEFS):
+            todo.extend(child for child in ast.iter_child_nodes(node) if isinstance(child, ast.stmt))
+            for handler in getattr(node, 'handlers', []):
+                todo.extend(handler.body)
+
+
+def _base_name(node):
+    while isinstance(node, (ast.Subscript, ast.Attribute, ast.Starred)):
+        node = node.value
+    return node.id if isinstance(node, ast.Name) else None
+
+
+def _touched_names(node):
+    """Names a module-level statement rebinds, augments, item- or attribute-assigns, deletes or
+    calls a method on. Its own nested statements are visited separately by `_module_level`."""
+    targets = []
+    if isinstance(node, (ast.Assign, ast.Delete)):
+        targets = list(node.targets)
+    elif isinstance(node, (ast.AnnAssign, ast.AugAssign, ast.For, ast.AsyncFor)):
+        targets = [node.target]
+    elif isinstance(node, (ast.With, ast.AsyncWith)):
+        targets = [item.optional_vars for item in node.items if item.optional_vars is not None]
+    touched = set()
+    while targets:
+        target = targets.pop()
+        if isinstance(target, (ast.Tuple, ast.List)):
+            targets.extend(target.elts)
+        else:
+            touched.add(_base_name(target))   # C, C[k], C.attr, *C  ->  C
+    if isinstance(node, (ast.Import, ast.ImportFrom)):
+        touched.update((a.asname or a.name).split('.')[0] for a in node.names)
+    if isinstance(node, _DEFS):
+        touched.add(node.name)               # a second definition; its body is not module-level
+        return touched
+    for child in ast.iter_child_nodes(node):
+        if isinstance(child, ast.stmt):
+            continue
+        for part in ast.walk(child):
+            if isinstance(part, ast.NamedExpr):
+                touched.add(part.target.id)
+            elif isinstance(part, ast.Call) and isinstance(part.func, ast.Attribute):
+                touched.add(_base_name(part.func.value))
+    touched.discard(None)
+    return touched
+
+
+def _refuse_later_changes(tree, rel, names, nodes):
+    """A pin covers a definition, not what the module does to it afterwards: `C += [...]`,
+    `C.insert(...)`, `C[k] = ...` or a `C = ...` inside an if / try block would change the answer
+    and leave the digest alone. So any such statement on a pinned name raises ValueError. (A
+    second plain top-level `C = ...` is a definition: the pin already reads it.)"""
+    own = {id(node) for node in nodes}
+    for node in _module_level(tree):
+        if id(node) in own:
+            continue
+        clash = sorted(_touched_names(node) & names)
+        if clash:
+            raise ValueError(
+                f'{rel} row {node.lineno} changes {", ".join(clash)} after its definition. A pin '
+                'reads only the definition, so this change would not move the digest. Fold it into '
+                'the definition, or list the file in the model\'s files instead of pinning.')
+
+
+def pinned_model_text(root, rel, name):
+    """The cleaned text of the top-level statements defining `name` in `rel`, plus (transitively)
+    every same-module top-level name those statements use. Raises KeyError if `name` is not
+    defined at the top level of `rel`, so a pin cannot go quietly empty, and ValueError if the
+    module changes a pinned name after defining it. The pinned module's OWN version constants are
+    dropped (as in its own digest): its version is not this model's logic, and keeping it would
+    turn this model red at every bump of that other model."""
+    text = _model_text(root, rel)
+    tree = ast.parse(text)
+    names, nodes = _pin_closure(tree, rel, name)
+    _refuse_later_changes(tree, rel, names, nodes)
+    versions = {n for n in names if VERSION_NAME.search(n)}
     rows = set()
     for node in nodes:
         first = min([node.lineno] + [d.lineno for d in getattr(node, 'decorator_list', [])])
         rows.update(range(first, node.end_lineno + 1))
-    return clean_model_source(text, keep_rows=rows)
+    return clean_model_source(text, drop_names=versions, keep_rows=rows)
 
 
 # --- the digest --------------------------------------------------------------------------------
@@ -304,7 +429,10 @@ def model_digest(root, key):
     parts = []
     for rel in expand_model_files(root, spec['files']):
         drop = (const_name,) if rel == const_file else ()
-        parts.append((rel, clean_model_source(_model_text(root, rel), drop_names=drop)))
+        try:
+            parts.append((rel, clean_model_source(_model_text(root, rel), drop_names=drop)))
+        except ValueError as exc:
+            raise ValueError(f'{rel}: {exc}') from exc
     for rel, name in spec['pins']:
         parts.append((f'pin:{rel}:{name}', pinned_model_text(root, rel, name)))
     h = hashlib.sha256()
@@ -318,12 +446,10 @@ def model_digest(root, key):
 def read_model_version(root, key):
     """The model's version, read statically from its constant (no import, so no Django)."""
     rel, name = MODELS[key]['constant']
-    tree = ast.parse(_model_text(root, rel))
-    for node in tree.body:
-        if (_assigns_name(node, (name,)) and isinstance(node.value, ast.Constant)
-                and isinstance(node.value.value, str)):
-            return node.value.value
-    raise KeyError(f'{rel} has no top-level string {name}')
+    try:
+        return version_assignment(ast.parse(_model_text(root, rel)), name).value.value
+    except ValueError as exc:
+        raise ValueError(f'{rel}: {exc}') from exc
 
 
 def _refuse_duplicate_keys(pairs):
@@ -357,21 +483,27 @@ def _package_of(rel):
     return parts[:-1]                          # `pkg/__init__` and `pkg/mod` both live in `pkg`
 
 
-def model_imports(root, rel):
-    """Every `apps.*` dependency of one file, as sorted (target file, name) pairs. `name` is the
-    imported name, `*` for a star import or a module used whole, or `<attr>` for each `mod.<attr>`
-    used after `from pkg import mod`. Lazy imports inside functions count the same."""
+def _import_nodes(nodes):
+    for top in nodes:
+        for node in ast.walk(top):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                yield node
+
+
+def _resolve_imports(root, rel, imports, scope, only_local=None):
+    """The `apps.*` (target file, name) pairs of the `imports` statements. `scope` is where a
+    module imported whole (`from pkg import mod`) has its `mod.<attr>` uses read; `only_local`,
+    when given, keeps only the imports that bind one of those local names."""
     root = pathlib.Path(root)
-    tree = ast.parse(_model_text(root, rel))
     found, as_module = set(), {}
-    for node in ast.walk(tree):
+    for node in imports:
         if isinstance(node, ast.Import):
             for alias in node.names:
+                if only_local is not None and (alias.asname or alias.name.split('.')[0]) not in only_local:
+                    continue
                 target = _module_file(root, alias.name) if alias.name.startswith('apps.') else None
                 if target:
                     found.add((target, '*'))
-            continue
-        if not isinstance(node, ast.ImportFrom):
             continue
         if node.level:
             pkg = _package_of(rel)[:len(_package_of(rel)) - (node.level - 1)]
@@ -381,6 +513,8 @@ def model_imports(root, rel):
         if not dotted.startswith('apps.'):
             continue
         for alias in node.names:
+            if only_local is not None and (alias.asname or alias.name) not in only_local | {'*'}:
+                continue
             sub = _module_file(root, f'{dotted}.{alias.name}') if alias.name != '*' else None
             if sub:
                 as_module[alias.asname or alias.name] = sub
@@ -389,9 +523,31 @@ def model_imports(root, rel):
                 if target:
                     found.add((target, alias.name))
     for local, target in as_module.items():
-        attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)
+        attrs = {n.attr for top in scope for n in ast.walk(top) if isinstance(n, ast.Attribute)
                  and isinstance(n.value, ast.Name) and n.value.id == local}
         found.update((target, attr) for attr in (attrs or {'*'}))
+    return found
+
+
+def model_imports(root, rel):
+    """Every `apps.*` dependency of one file, as sorted (target file, name) pairs. `name` is the
+    imported name, `*` for a star import or a module used whole, or `<attr>` for each `mod.<attr>`
+    used after `from pkg import mod`. Lazy imports inside functions count the same."""
+    tree = ast.parse(_model_text(root, rel))
+    return sorted(_resolve_imports(root, rel, _import_nodes([tree]), [tree]))
+
+
+def pin_imports(root, rel, name):
+    """The same walk over a PIN: every `apps.*` dependency of the pinned closure (the statements
+    `pinned_model_text` reads). That is the imports inside those statements (lazy ones), plus each
+    import at the top of the module whose name the closure uses. A pinned helper that reaches into
+    another file is then caught like a listed file's import."""
+    tree = ast.parse(_model_text(root, rel))
+    names, nodes = _pin_closure(tree, rel, name)
+    used = {n.id for node in nodes for n in ast.walk(node) if isinstance(n, ast.Name)}
+    found = _resolve_imports(root, rel, _import_nodes(nodes), nodes)
+    module_level = [n for n in _module_level(tree) if isinstance(n, (ast.Import, ast.ImportFrom))]
+    found |= _resolve_imports(root, rel, module_level, nodes, only_local=used)
     return sorted(found)
 
 

@@ -1,7 +1,7 @@
 {
   "1.0.0": {
-    "digest": "ac2cfd101d3205be4993928bf28127ea337c8f4de08e3049e22ddac668e7f84e",
-    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day.",
+    "digest": "7db017d13fb4398d68b34665b8f5178ad7c80444fe7d1ea5314a7a2e4d1f338d",
+    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day. Digest re-seeded 2026-11-19 (LL3 review round, before any merge): the misfiled_as pin now drops results_doc's own version line and also pins GENUINE_MIN and STPM_LISTS.",
     "also_ok": []
   }
 }

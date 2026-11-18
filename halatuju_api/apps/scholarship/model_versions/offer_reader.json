@@ -1,7 +1,7 @@
 {
   "2.6.0": {
-    "digest": "ba55b7ca8429648a8cbdabd28535313c7a025b308bdf20413d7bb147528f45e7",
-    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day.",
+    "digest": "196cffe3cbf7cad10f278d1fd86c0a8812bb2ef1aab976706b4d962df5ca0f7e",
+    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day. Digest re-seeded 2026-11-19 (LL3 review round, before any merge): the pins now follow their imports (vision/names.py, vision/judge.py, name_order.py).",
     "also_ok": []
   }
 }

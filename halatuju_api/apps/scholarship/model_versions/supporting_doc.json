@@ -1,7 +1,7 @@
 {
   "1.0.0": {
     "digest": "95327c4e3f1c47d29fa2e1ba723d59d2b7247560b77cbe1ecae8e7e9ccb1b1c3",
-    "note": "First version (LL3 phase 2, 2026-11-19): the holistic supporting-document genuineness read already in use (str / birth_certificate / epf), now stamped as model_version on each new result. Older stored results carry no version (no back-fill).",
+    "note": "First version (LL3 phase 2, 2026-11-19): the holistic supporting-document genuineness read. In live use it is reached only as the STR fallback (an STR the signature scorer leaves unrecognised); birth_certificate and epf go through the signature path, not this model. Now stamped as model_version on each new result. Older stored results carry no version (no back-fill).",
     "also_ok": []
   }
 }

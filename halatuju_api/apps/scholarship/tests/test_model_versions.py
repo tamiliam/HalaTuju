@@ -69,6 +69,17 @@ _VERDICT_SECOND_LEVEL = [f'apps/scholarship/{name}.py:*' for name in (
     'services/offer_link', 'session_year', 'stpm_names', 'str_check_memo', 'vision/__init__',
     'wrong_slip')]
 _VISION = 'apps/scholarship/vision/__init__.py'
+_G = 'apps/scholarship/genuineness'
+_NOT_REACHED_FROM_MISFILED_AS = (
+    "Named in the pinned results_doc.misfiled_as closure, but only on branches misfiled_as never "
+    "takes: it scores STR with doc_type='str', whose identity path returns before the band, the "
+    'EPF screen and every offer branch. A change here cannot move school_leaving_doc answers; a '
+    'change to that routing is in the pinned closure and moves the digest itself.')
+_MISFILED_AS_UNREACHED = [
+    f'{_G}/bands.py:band_for', f'{_G}/epf_app_doc.py:epf_app_scores',
+    f'{_G}/epf_app_doc.py:screen_at_most_suspect', f'{_G}/offer_issuers.py:unfingerprinted_offer',
+    f'{_G}/offer_rulings.py:apply_rulings', f'{_G}/offer_signatures.py:english_ua_lists'] + [
+    f'{_G}/offer_signatures.py:{kind}_OFFER_SIGNATURES' for kind in ('MATRIC', 'PISMP', 'POLY', 'STPM', 'UA')]
 
 #: Per model: dependencies that are logic but are not (yet) in the model's files.
 _KNOWN_GAPS = {
@@ -84,6 +95,7 @@ _KNOWN_GAPS = {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
     },
+    'school_leaving_doc': dict.fromkeys(_MISFILED_AS_UNREACHED, _NOT_REACHED_FROM_MISFILED_AS),
     'ic': {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
@@ -129,7 +141,43 @@ _NOT_A_MODEL_VERSION = {
         'The version of the sponsor terms text it seeds. Legal text, not a model.',
 }
 
-_VERSION_NAME = re.compile(r'(^|_)VERSION$')
+#: Gaps no import walk can see, each with where it lives (`<file>:<text that must still be
+#: there>`, checked below so the record cannot outlive the code) or `guard:` for a limit of the
+#: guard itself. A change through any of these can move answers with no version bump.
+_KNOWN_GAPS_OUTSIDE_THE_WALK = {
+    'apps/scholarship/offer_reader.py:OFFER_RETRY_MODEL':
+        'A setting (Django setting or env var) that picks the Gemini model of the offer second '
+        'read. Not in any digest: switching it changes offer_reader answers with no bump.',
+    'apps/scholarship/income_engine/amounts.py:SGD_TO_MYR_RATE':
+        'A setting: the SGD to MYR rate behind Singapore salaries. Changing it moves verdict '
+        'engine income answers with no bump.',
+    'apps/scholarship/genuineness/sample_stamp.py:SAMPLE_CHECK_ENABLED':
+        'An env var that turns the sample check on or off. Not in any digest.',
+    'apps/scholarship/genuineness/__init__.py:def assess':
+        'Decision logic no model registers: which scorer each document type goes to, and the STR '
+        'choice (signature scorer first, the holistic supporting_doc read only when it says '
+        'unrecognised). It routes between models, so it belongs to none of them alone.',
+    "apps/scholarship/vision/authenticity.py:st = 'suspect' if auth['status'] == 'unrecognised'":
+        "Decision logic no model registers: the offer's legacy 'unrecognised' is stored as "
+        "'suspect', and an empty or failed OCR gives no signal (never a penalty). This file "
+        'stores what the scorers return; it is not in any digest.',
+    'guard:append-only logs':
+        'The logs are append-only by convention plus two checks (the last entry is the current '
+        'version; no repeated keys). Editing the current entry\'s digest in place, deleting old '
+        'entries or a version that goes backwards is caught by review only.',
+    'guard:version census':
+        'The *VERSION census sees only top-level names ending in VERSION inside apps/scholarship. '
+        'A model versioned under another name, or in another app, is not found.',
+    'guard:income_engine glob':
+        'The glob income_engine/*.py also reads untracked local files, so a scratch file there '
+        'turns the guard red on that machine only.',
+    'guard:python 3.11':
+        'Built and run on Python 3.13 only. Before merge this file must run once on 3.11 (Cloud '
+        'Build). The 72 registered and pinned files were scanned on 2026-11-19: no multi-line '
+        'f-string, BOM or form feed, so the digests should match.',
+}
+
+_VERSION_NAME = registry.VERSION_NAME
 
 _FIX = (
     '  What to do:\n'
@@ -159,21 +207,31 @@ def _pinned_by(spec, target, name):
                for pin_file, pin_name in spec['pins'])
 
 
+def _model_dependencies(key):
+    """(importing file or pin label, target, name) for every `apps.*` import of every listed
+    file AND of every pin's closure (a pinned helper's lazy import is a dependency too)."""
+    spec = registry.MODELS[key]
+    for rel in _registered_files(key):
+        if rel not in _WALK_SKIPS_SOURCE:
+            for target, name in registry.model_imports(API_ROOT, rel):
+                yield rel, target, name
+    for pin_file, pin_name in spec['pins']:
+        for target, name in registry.pin_imports(API_ROOT, pin_file, pin_name):
+            yield f'pin:{pin_file}:{pin_name}', target, name
+
+
 def _unmet_dependencies(key):
-    """(dependency, importing file, exemption used or None) for every `apps.*` import of every
-    listed file that is not itself a listed file or a pin."""
+    """(dependency, importing file or pin, exemption used or None) for every `apps.*` import of
+    every listed file and pin that is not itself a listed file or a pin."""
     spec, files = registry.MODELS[key], _registered_files(key)
     gaps = _KNOWN_GAPS.get(key, {})
     out = []
-    for rel in files:
-        if rel in _WALK_SKIPS_SOURCE:
+    for rel, target, name in _model_dependencies(key):
+        if target in files or _pinned_by(spec, target, name):
             continue
-        for target, name in registry.model_imports(API_ROOT, rel):
-            if target in files or _pinned_by(spec, target, name):
-                continue
-            used = next((k for k in (f'{target}:{name}', f'{target}:*')
-                         if k in _NOT_LOGIC or k in gaps), None)
-            out.append((f'{target}:{name}', rel, used))
+        used = next((k for k in (f'{target}:{name}', f'{target}:*')
+                     if k in _NOT_LOGIC or k in gaps), None)
+        out.append((f'{target}:{name}', rel, used))
     return out
 
 
@@ -296,6 +354,26 @@ class TestTheRegisterCannotGoStale(SimpleTestCase):
         stale += [f'_KNOWN_GAPS: {k}' for k in sorted(set(_KNOWN_GAPS) - set(registry.MODELS))]
         self.assertEqual(stale, [], 'These exemptions cover nothing now; delete them:\n  '
                          + '\n  '.join(stale))
+
+    def test_a_pins_own_imports_are_walked_too(self):
+        """Guard the guard (LL3 review): a pinned helper's lazy import is a dependency. These three
+        were missed when only listed files were walked."""
+        deps = {key: {(rel, f'{t}:{n}') for rel, t, n in _model_dependencies(key)}
+                for key in ('matric_parse', 'offer_reader', 'school_leaving_doc')}
+        self.assertIn(('pin:apps/scholarship/stpm_parse.py:_rows_of',
+                       'apps/scholarship/academic_engine.py:_group_rows'), deps['matric_parse'])
+        self.assertIn(('pin:apps/scholarship/offer_ic.py:guard_nric', f'{_VISION}:nric_close'),
+                      deps['offer_reader'])
+        self.assertIn((f'pin:{_G}/results_doc.py:misfiled_as', f'{_G}/offer_rulings.py:apply_rulings'),
+                      deps['school_leaving_doc'])
+
+    def test_every_gap_outside_the_walk_still_names_real_code(self):
+        for key in _KNOWN_GAPS_OUTSIDE_THE_WALK:
+            if not key.startswith('guard:'):
+                rel, needle = key.split(':', 1)
+                with self.subTest(gap=key):
+                    self.assertIn(needle, (API_ROOT / rel).read_text(encoding='utf-8'),
+                                  'the code this gap names has moved; update or delete the record')
 
     def test_every_version_constant_in_the_app_is_registered_or_reasoned(self):
         """A NEW model cannot ship unregistered: any module-level `*VERSION` constant in the app
@@ -437,3 +515,72 @@ class TestTheDigestIsStable(SimpleTestCase):
             with self.subTest(edited=edited):
                 digest = _sample_digest(extra={'engine.py': edited.encode()}, pins=pins)
                 self.assertEqual(digest != base, moves)
+
+
+def _pin_text(engine, name='CASCADE'):
+    with tempfile.TemporaryDirectory() as tmp:
+        (pathlib.Path(tmp) / 'engine.py').write_bytes(engine.encode())
+        return registry.pinned_model_text(tmp, 'engine.py', name)
+
+
+class TestTheDigestHidesNothing(SimpleTestCase):
+    """LL3 review round: each case below gave the SAME digest for different logic before."""
+
+    def test_the_version_line_must_stand_alone(self):
+        """Dropping the version line must drop nothing else, and there must be one value only."""
+        for source in ("MODEL_VERSION = '1.0.0'; THRESHOLD = 0.70\n",
+                       "MODEL_VERSION = '1.0.0'\nX = 1\nMODEL_VERSION = '2.0.0'\n",
+                       "THRESHOLD = MODEL_VERSION = '1.0.0'\n",
+                       "MODEL_VERSION = '1.0.0' if True else '0'\n",
+                       "MODEL_VERSION = '1.0.0'\nMODEL_VERSION += 'x'\n",
+                       'X = 1\n'):
+            with self.subTest(source=source):
+                with self.assertRaises(ValueError):
+                    registry.clean_model_source(source, drop_names=('MODEL_VERSION',))
+                with self.assertRaises(ValueError):
+                    _sample_digest(source)
+        self.assertEqual(registry.clean_model_source(
+            "MODEL_VERSION = (\n    '1.0.0')  # note\nX = 1\n", drop_names=('MODEL_VERSION',)), 'X = 1')
+
+    def test_a_pin_leaves_out_its_modules_own_version(self):
+        """school_leaving_doc pins results_doc.misfiled_as, which returns results_doc's version: a
+        results_doc bump must not turn school_leaving_doc red. Its logic still counts."""
+        engine = "MODEL_VERSION = '1.29.0'\nCASCADE = ['m', MODEL_VERSION]\n"
+        base = _pin_text(engine)
+        self.assertNotIn('1.29.0', base)
+        self.assertEqual(_pin_text(engine.replace('1.29.0', '1.30.0')), base)
+        self.assertNotEqual(_pin_text(engine.replace("'m'", "'n'")), base)
+        with self.assertRaises(ValueError):
+            _pin_text(engine.replace("'1.29.0'\n", "'1.29.0'; X = 2\n"))
+
+    def test_a_pinned_name_changed_later_is_refused(self):
+        engine = "CASCADE = ['a']\nBASE = {}\n"
+        self.assertEqual(_pin_text(engine), "CASCADE = ['a']")
+        for later in ("CASCADE += ['b']", "CASCADE.insert(0, 'b')", "CASCADE[0] = 'b'",
+                      "CASCADE.extend(['b'])", "if True:\n    CASCADE.append('b')",
+                      "del CASCADE[0]", "for CASCADE in [[]]:\n    pass"):
+            with self.subTest(later=later):
+                with self.assertRaises(ValueError):
+                    _pin_text(engine + later + '\n')
+        for harmless in ("BASE.update(x=1)", "OTHER = list(CASCADE)", "BASE[CASCADE[0]] = 1"):
+            with self.subTest(harmless=harmless):
+                self.assertEqual(_pin_text(engine + harmless + '\n'), "CASCADE = ['a']")
+
+    def test_a_pins_lazy_and_module_imports_are_its_dependencies(self):
+        tree = {'apps/__init__.py': '', 'apps/x/__init__.py': '', 'apps/x/other.py': 'T = 1\nU = 2\n',
+                'apps/x/engine.py': ('from apps.x.other import U\n'
+                                     'def helper():\n    from .other import T\n    return T\n'
+                                     'def unrelated():\n    return U\n')}
+        with tempfile.TemporaryDirectory() as tmp:
+            for rel, text in tree.items():
+                (pathlib.Path(tmp) / rel).parent.mkdir(parents=True, exist_ok=True)
+                (pathlib.Path(tmp) / rel).write_text(text)
+            self.assertEqual(registry.pin_imports(tmp, 'apps/x/engine.py', 'helper'),
+                             [('apps/x/other.py', 'T')])
+            self.assertEqual(registry.pin_imports(tmp, 'apps/x/engine.py', 'unrelated'),
+                             [('apps/x/other.py', 'U')])
+
+    def test_the_supporting_doc_note_names_its_one_live_path(self):
+        note = registry.load_version_log(API_ROOT, 'supporting_doc')['1.0.0']['note']
+        self.assertIn('STR fallback', note)
+        self.assertNotIn('(str / birth_certificate / epf)', note)
