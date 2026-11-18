@@ -316,6 +316,14 @@ Branch fix-recent-letter-confirm. Migration: none. Services: both. Owner, 2026-1
 - **Words:** module docstring, Reviewer Guide / FAQ, and the en / ms / ta student and settings strings no longer say offer letter for this ask (ms / ta first drafts for Sol).
 - **Tests:** `test_recent_letter.py` reworked for confirmation-only.
 
+### feat: sprint LL1 - an AI prediction section on the Programme Overview and the Organisation page (2026-11-18)
+
+Branch ll1, NOT merged to main, not published. Migration: none. Services: both. Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL1 as built).
+- **Server:** `audit.py` counts (green, green_failed, green_agreed, unsure, unsure_passed, rates, a `few` flag under 30 cases); new `prediction_metrics.py` reads the database. Section key `ai_prediction` on the Programme Overview, and the same object from `verdict-metrics/`. Also `fact_counts`, `by_version`, `by_month` (Asia/Kuala_Lumpur), `doubt_codes`, `qc_agreement` (verb `qc_decision`) and `by_reviewer` (org admin and super only, never an email). Roles with no B40 scope (finance, partner, source partner, mentor) get neither key nor data. The section is fixed, not in `CUSTOMISABLE`.
+- **Web:** `AiPredictionSection.tsx` and `AiPredictionTables.tsx`, mounted in `SECTION_RENDERERS` and on `/admin/organisation/programmes` (silent on 403). Old `AiReliabilityCard.tsx` and its six keys deleted. 36 new keys under `admin.programmeOverview.aiPrediction` in en, ms and ta.
+- **Known differences from the approved picture:** the trend chart has no 80% axis start and no grey points; a "few cases" month shows a pill under the chart.
+- **Follow-ups:** `programme_overview.py` is at its growth cap and needs a split before its next change; no query-budget test yet for the new section. Staff Guide and FAQ (`src/content/manual/`) not yet updated.
+
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
 Branch vcard, display only (engine statuses untouched). Migration: none. Services: web.

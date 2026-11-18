@@ -99,7 +99,7 @@ The message: the AI prediction matters.
 - [AiReliabilityCard.tsx](../../halatuju-web/src/components/AiReliabilityCard.tsx) — show two numbers for each fact, the doubt table, and the count behind each number.
 - Placement (owner, 2026-11-18): a new "AI prediction" section on **both** Overview pages:
   - Programme Overview: [admin/programme/overview/page.tsx](../../halatuju-web/src/app/admin/programme/overview/page.tsx), as a new entry in `SECTION_RENDERERS` (`src/components/admin/overview/OverviewSections.tsx`), so it also works with `CustomiseLayout`. It reads `verdict-metrics/?cohort=`.
-  - Organisation Overview: [admin/organisation/page.tsx](../../halatuju-web/src/app/admin/organisation/page.tsx). It reads the same endpoint with no cohort.
+  - Organisation Overview: `/admin/organisation/programmes` ([ProgrammesLanding.tsx](../../halatuju-web/src/components/admin/ProgrammesLanding.tsx)). (`admin/organisation/page.tsx` is only a redirect.) It reads the same endpoint with no cohort.
   - The old hidden mount at [admin/scholarship/page.tsx:31](../../halatuju-web/src/app/admin/scholarship/page.tsx#L31) and `:338` is deleted.
 - Check at sprint start: the roles that can open each Overview page against the roles that the endpoint permits. Partner and finance stay refused.
 - `src/messages/{en,ms,ta}.json` — keys under `admin.scholarship.reliability`.
@@ -125,6 +125,13 @@ The message: the AI prediction matters.
 - Trailers: `Services: both`. No migration.
 
 **Complexity.** Medium. About 14 files. Sonnet builds. Fresh Sonnet reviewer.
+
+**LL1 as built (18 Nov 2026).**
+- Server: `audit.py` (pure counting) and a new `prediction_metrics.py` (the database part). Section key `ai_prediction` on the Programme Overview, and the same object from `verdict-metrics/`. Counts carry green, green_failed, green_agreed, unsure, unsure_passed, rates and a `few` flag (under 30 cases). Also `fact_counts`, `by_version`, `by_month` (Asia/Kuala_Lumpur, oldest first), `doubt_codes`, `qc_agreement` and `by_reviewer` (leads only). Roles with no B40 scope get no key and no data. The section is fixed, so an organisation cannot switch it off. No migration, no new route.
+- Web: `AiPredictionSection.tsx` and `AiPredictionTables.tsx`, mounted on the Programme Overview and on `/admin/organisation/programmes` (silent on 403). `AiReliabilityCard.tsx` is deleted. 36 new keys in en, ms and ta. The browser only formats.
+- Two differences from the approved picture: the trend chart has no 80% axis start and no grey points (the shared `LineChart` has neither); a "few cases" month shows a pill in the values row under the chart.
+- Two follow-ups: `programme_overview.py` is at its growth cap and needs a split before its next change; no dedicated query-budget test for the new section.
+- Status: built in branch `ll1`. Not merged to `main`. Not published. The owner decides both.
 
 ---
 
