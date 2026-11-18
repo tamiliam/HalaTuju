@@ -212,6 +212,82 @@ class TestPredictionEndpointAndOverview(TestCase):
             body = self.get(who).json()
             self.assertNotIn('by_reviewer', body)
             self.assertIn('overall', body)
+        # QC reads the whole organisation; a reviewer with nothing assigned reads nothing
+        self.assertEqual(self.get(self.qc).json()['applications'], 3)
+        self.assertEqual(self.get(self.reviewer).json()['applications'], 0)
+
+    # ── LL1 review fixes: a reviewer is counted over their assigned applicants only ───────────
+    def _assign(self, admin, *apps):
+        from apps.scholarship.models import ScholarshipApplication
+        ScholarshipApplication.objects.filter(pk__in=[a.pk for a in apps]).update(assigned_to=admin)
+
+    def _both(self, who):
+        return self.get(who).json(), self.get(who, OVERVIEW).json()['ai_prediction']
+
+    def test_a_reviewer_is_counted_over_assigned_applications_only(self):
+        self._assign(self.reviewer, self.a1)
+        for body in self._both(self.reviewer):
+            self.assertEqual(body['applications'], 1)
+            self.assertEqual(body['counted_scope'], 'assigned')
+            self.assertEqual(body['overrides'], 1)
+            self.assertNotIn('by_reviewer', body)
+            # only a1's QC rows (accept + reopen); a2, a3 and the other tenant's are not here
+            qc = body['qc_agreement']
+            self.assertEqual((qc['accept'], qc['reopen'], qc['reject'], qc['total']), (1, 1, 0, 2))
+
+    def test_a_reviewer_with_nothing_assigned_gets_zero_counts(self):
+        for body in self._both(self.reviewer):
+            self.assertEqual(body['applications'], 0)
+            self.assertEqual(body['counted_scope'], 'assigned')
+            self.assertEqual(body['qc_agreement']['total'], 0)
+            self.assertEqual(body['overall']['green'], 0)
+
+    def test_a_finance_user_granted_review_is_treated_as_a_reviewer(self):
+        fin = make_admin('finance', owning_org=self.org, permissions=['review'])
+        self._assign(fin, self.a2)
+        for body in self._both(fin):
+            self.assertEqual(body['applications'], 1)
+            self.assertEqual(body['counted_scope'], 'assigned')
+            self.assertNotIn('by_reviewer', body)
+            self.assertEqual(body['qc_agreement']['total'], 1)
+
+    def test_lead_qc_and_view_only_admin_get_the_whole_organisation(self):
+        self._assign(self.reviewer, self.a1)
+        viewer = make_admin('admin', owning_org=self.org)
+        for who in (self.lead, self.qc, viewer):
+            for body in self._both(who):
+                self.assertEqual(body['applications'], 3)
+                self.assertEqual(body['counted_scope'], 'all')
+                self.assertEqual(body['qc_agreement']['total'], 4)
+                self.assertEqual('by_reviewer' in body, who is self.lead)
+
+    # ── the other tenant ──────────────────────────────────────────────────────────────────────
+    def test_an_organisation_b_lead_and_reviewer_never_receive_organisation_a_data(self):
+        lead_b = make_admin('org_admin', owning_org=self.other, name='Bea Lead')
+        rev_b = make_admin('reviewer', owning_org=self.other, name='Ravi B')
+        self._assign(rev_b, self.f1)
+        for body in self._both(lead_b):
+            self.assertEqual(body['applications'], 1)
+            self.assertEqual(body['qc_agreement']['total'], 1)    # f1's row only, not A's four
+            self.assertNotIn('Rita Reviewer', str(body))
+        for body in self._both(rev_b):
+            self.assertEqual(body['applications'], 1)
+            self.assertEqual(body['qc_agreement']['total'], 1)
+
+    def test_the_staff_name_lookup_is_fenced_to_the_organisation(self):
+        # a recorder email that is staff ONLY in organisation B, on an organisation A application
+        make_admin('reviewer', owning_org=self.other, name='Other Org Namesake',
+                   email='b-staff@example.test')
+        make_application('awaiting_qc', outcome='recommend', cohort=self.cohort,
+                         ai_verdict_snapshot=snap(), officer_verdict=officer(),
+                         verdict_decided_by='b-staff@example.test',
+                         verdict_decided_at=datetime.datetime(2026, 5, 11, 4, 0, tzinfo=UTC),
+                         ai_verdict_engine_version='v1')
+        rows = self.get(self.lead).json()['by_reviewer']
+        self.assertNotIn('Other Org Namesake', str(rows))
+        self.assertEqual(sum(r['applications'] for r in rows if r['label_key'] == 'unmatched_reviewer'), 2)
+        # an organisation-less super keeps the unfiltered lookup
+        self.assertIn('Other Org Namesake', str(self.get(self.super).json()['by_reviewer']))
 
     # ── the gate ──────────────────────────────────────────────────────────────────────────────
     def test_finance_and_partner_are_refused(self):

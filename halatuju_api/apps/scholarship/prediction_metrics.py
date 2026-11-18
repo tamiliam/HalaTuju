@@ -32,21 +32,23 @@ def may_see_reviewers(admin) -> bool:
     return bool(admin is not None and (admin.is_super or sp.is_lead_tier(admin)))
 
 
-def _staff_by_email(emails):
-    """lowercased email → (id, name) for the staff rows holding any of ``emails`` (one query)."""
+def _staff_by_email(emails, admin):
+    """lowercased email → (id, name) for the staff rows holding any of ``emails`` (one query),
+    fenced to the caller's organisation (a super reads every organisation)."""
     if not emails:
         return {}
-    # org-fence: the emails come from applications already inside the caller's fence; this only
-    # resolves a display name for them.
-    rows = (PartnerAdmin.objects.annotate(email_lower=Lower('email'))
+    staff = PartnerAdmin.objects.all()
+    if not admin.is_super:
+        staff = staff.filter(owning_organisation_id=admin.owning_organisation_id)   # org-fence
+    rows = (staff.annotate(email_lower=Lower('email'))
             .filter(email_lower__in=emails).order_by('-pk').values_list('email_lower', 'pk', 'name'))
     return {email: (pk, name or '') for email, pk, name in rows}   # oldest row wins (ordered -pk)
 
 
-def _reviewer_rows(records) -> list:
+def _reviewer_rows(records, admin) -> list:
     """The four counts per recorder, as people — never an email."""
     emails = {(r[4] or '').strip().lower() for r in records} - {''}
-    staff = _staff_by_email(emails)
+    staff = _staff_by_email(emails, admin)
     keyed = []
     for r in records:
         who = staff.get((r[4] or '').strip().lower())
@@ -96,13 +98,22 @@ def qc_agreement(applications) -> dict:
 
 def metrics(applications, admin) -> dict:
     """The whole answer for ``applications`` (a FENCED queryset): `audit.override_metrics`, the QC
-    agreement, and — for the lead tier only — `by_reviewer`."""
+    agreement, and — for the lead tier only — `by_reviewer`.
+
+    ONE narrowing, for both callers: a `review`-only holder (`b40_scope` 'assigned') is counted over
+    the applications assigned to them, the same rule the Applications list applies. `counted_scope`
+    says which ('all' / 'assigned') so the page never works it out."""
+    from .views_admin.base import b40_scope   # in the function: the views package imports this module
+    counted = 'assigned' if b40_scope(admin) == 'assigned' else 'all'
+    if counted == 'assigned':
+        applications = applications.filter(assigned_to=admin)
     decided = applications.filter(verdict_decided_at__isnull=False)
     records = list(decided.values_list(
         'ai_verdict_snapshot', 'officer_verdict', 'ai_verdict_engine_version',
         'verdict_decided_at', 'verdict_decided_by'))
     out = audit.override_metrics(records)
     out['qc_agreement'] = qc_agreement(decided)
+    out['counted_scope'] = counted
     if may_see_reviewers(admin):
-        out['by_reviewer'] = _reviewer_rows(records)
+        out['by_reviewer'] = _reviewer_rows(records, admin)
     return out
