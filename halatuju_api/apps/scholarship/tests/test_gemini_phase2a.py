@@ -409,55 +409,24 @@ class TheOfferSecondRead(SimpleTestCase):
         self.assertEqual(ex['fields']['reporting_date_label'], 'Tarikh Mula Kuliah')
         self.assertEqual(ex['offer_reader_inputs']['retry_filled'], [])
 
-    def test_a_rescue_keeps_the_identity_warnings_and_drops_only_the_filled_ones(self):
-        """Review finding 5."""
+    def test_a_rescue_keeps_every_first_read_warning_and_adds_the_retrys_but_not_identity(self):
+        """Review finding 5; fix round 4: no first-read warning is ever dropped, even a stale one."""
         first = {**BLANK, 'warnings': ['The IC number is blurred.', "The student's name is partly cut off.",
                                        'The programme and the institution could not be found.',
                                        'The page has a coffee stain.', 'The campus line is faint.']}
         second = {**RESCUE, 'warnings': ['The campus line is faint.', 'The IC number looks different.',
                                          'The intake session is printed twice.']}
         ex = self._read(_seam({THREE_EIGHT: [first, second]}))
-        self.assertEqual(ex['warnings'], ['The IC number is blurred.', "The student's name is partly cut off.",
-                                          'The page has a coffee stain.', 'The campus line is faint.',
-                                          'The intake session is printed twice.'])
+        self.assertEqual(ex['warnings'], first['warnings'] + ['The intake session is printed twice.'])
 
-    def test_a_date_only_retry_drops_the_stale_date_warning_and_adds_only_date_warnings(self):
+    def test_a_date_only_retry_keeps_every_warning_and_adds_only_date_warnings(self):
         first = {**LETTER, 'warnings': ['The reporting date could not be found.', 'The IC number is blurred.']}
         second = {**LETTER, 'reporting_date': '20 Julai 2031', 'reporting_date_label': 'Tarikh Pendaftaran',
                   'warnings': ['The registration date is handwritten.', 'The programme title is faint.']}
         ex = self._read(_seam({THREE_EIGHT: [first, second]}))
-        self.assertEqual(ex['warnings'], ['The IC number is blurred.', 'The registration date is handwritten.'])
+        self.assertEqual(ex['warnings'], first['warnings'] + ['The registration date is handwritten.'])
         ex = self._read(_seam({THREE_EIGHT: [first, {**LETTER, 'warnings': ['Faint.']}]}))   # nothing filled
         self.assertEqual(ex['warnings'], first['warnings'])
-
-    def test_a_date_only_retry_keeps_warnings_that_only_mention_reporting_or_registration(self):
-        """Re-check item 1(a): the date pair needs a date word too."""
-        probes = ['This looks like a registration confirmation slip, not the offer letter itself',
-                  'The letterhead shows only the Pejabat Pendaftar, not the faculty.',
-                  'The reporting venue is not printed.']
-        stale = ['The reporting date could not be found.', 'The Tarikh Lapor Diri label has no date beside it.']
-        first = {**LETTER, 'warnings': probes + stale}
-        second = {**LETTER, 'reporting_date': '20 Julai 2031', 'reporting_date_label': 'Tarikh Pendaftaran'}
-        ex = self._read(_seam({THREE_EIGHT: [first, second]}))
-        self.assertEqual(ex['offer_reader_inputs']['retry_filled'], ['reporting_date', 'reporting_date_label'])
-        self.assertEqual(orr._merge_warnings(first['warnings'], [], ex['offer_reader_inputs']['retry_filled'],
-                                             ['reporting_date']), probes)      # the two stale ones, dropped
-        # End to end the venue note goes too, but by the older "optional field not printed" noise filter.
-        self.assertEqual(ex['warnings'], probes[:2])
-
-    def test_a_blank_retry_keeps_code_and_red_flag_warnings_it_did_not_answer(self):
-        """Re-check item 1(b)(c): only a COURSE code warning is about `programme_code`; a red flag about the
-        document always stays, whatever field it names."""
-        kept = ['The QR code at the bottom could not be checked.', 'The programme name looks edited.',
-                'The institution name may have been altered.', 'The programme and the IC show a mismatch.',
-                'The institution logo looks forged.', 'This is not an offer letter from the institution.',
-                'The programme line looks tampered with.', 'Ini bukan surat tawaran program ini.']
-        first = {**BLANK, 'warnings': kept + ['The course code could not be found.',
-                                              'The programme and the institution could not be found.']}
-        second = {**RESCUE, 'programme_code': 'UW6526001', 'warnings': []}
-        ex = self._read(_seam({THREE_EIGHT: [first, second]}))
-        self.assertIn('programme_code', ex['offer_reader_inputs']['retry_filled'])
-        self.assertEqual(ex['warnings'], kept)                                  # the two stale ones, dropped
 
     #: Fix round 3: real red flags the old keyword drop lost. Each names a filled field but says nothing absent.
     BLANK_PROBES = ['The institution name does not match the letterhead.',
@@ -467,42 +436,73 @@ class TheOfferSecondRead(SimpleTestCase):
                     'The programme is inconsistent with the course code.']
     DATE_PROBES = ['The reporting date was changed by hand.', 'The reporting date looks overwritten.',
                    'The reporting date (3 Jan 2019) has already passed.']
+    #: The warnings the old drop rule (fix rounds 1-3) removed or argued over: stale "not found" notes, code
+    #: and red-flag notes, reporting / registration mentions, identity notes.
+    OLD_PROBES = ['The programme could not be found.', 'Kursus tidak dinyatakan.', 'Nama program tidak dapat dibaca.',
+                  'The reporting date not found.', 'The field of study is not printed.',
+                  'The letter date is missing; signed by the Pendaftar.',
+                  'The programme and the institution could not be found.', 'The course code could not be found.',
+                  'The Tarikh Lapor Diri label has no date beside it.', 'The reporting date could not be found.',
+                  'This looks like a registration confirmation slip, not the offer letter itself',
+                  'The letterhead shows only the Pejabat Pendaftar, not the faculty.',
+                  'The reporting venue is not printed.', 'The QR code at the bottom could not be checked.',
+                  'The programme name looks edited.', 'The institution name may have been altered.',
+                  'The programme and the IC show a mismatch.', 'The institution logo looks forged.',
+                  'This is not an offer letter from the institution.', 'The programme line looks tampered with.',
+                  'Ini bukan surat tawaran program ini.', 'Nama calon tidak dapat dibaca.',
+                  'Nama pelajar dan nama program tidak jelas.',
+                  'The programme could not be verified with the institution.', 'The kod kursus could not be read.',
+                  'The programme title is faint.']
 
-    def test_only_a_stale_absent_warning_about_a_filled_field_is_dropped(self):
-        """Fix round 3, the flipped rule: drop only when about a filled field AND absent AND no red flag."""
-        blank_filled = ['programme', 'institution', 'intake', 'programme_code', 'reporting_date',
-                        'reporting_date_label']
-        stale = ['The programme could not be found.', 'Kursus tidak dinyatakan.', 'Nama program tidak dapat dibaca.',
-                 'The reporting date not found.', 'The field of study is not printed.']
-        letter = 'The letter date is missing; signed by the Pendaftar.'
-        merged = orr._merge_warnings(self.BLANK_PROBES + self.DATE_PROBES + stale + [letter], [], blank_filled,
-                                     ['blank', 'reporting_date'])
-        self.assertEqual(merged, self.BLANK_PROBES + self.DATE_PROBES + [letter])
-        date_filled = ['reporting_date', 'reporting_date_label']
-        merged = orr._merge_warnings(self.BLANK_PROBES + self.DATE_PROBES + stale + [letter], [], date_filled,
-                                     ['reporting_date'])
-        self.assertEqual(merged, self.BLANK_PROBES + self.DATE_PROBES + stale[:3] + stale[4:] + [letter])
-        for kept in ('Nama calon tidak dapat dibaca.', 'Nama pelajar dan nama program tidak jelas.',
-                     'The programme could not be verified with the institution.',
-                     'The kod kursus could not be read.', 'The programme title is faint.'):
-            with self.subTest(kept=kept):                       # identity, verification, code only, not absent
-                self.assertEqual(orr._merge_warnings([kept], [], ['programme'], ['blank']), [kept])
+    def test_every_first_read_warning_survives_a_blank_and_a_date_only_retry(self):
+        """Fix round 4 (a): the first read's warnings are all kept, in order, whatever they say."""
+        first = self.BLANK_PROBES + self.DATE_PROBES + self.OLD_PROBES
+        self.assertEqual(len(set(first)), len(first))
+        for reasons in (['blank', 'reporting_date'], ['blank'], ['reporting_date']):
+            with self.subTest(reasons=reasons):
+                self.assertEqual(orr._merge_warnings(first, [], reasons), first)
 
     def test_the_probe_red_flags_survive_a_real_rescue(self):
-        """Fix round 3, end to end: after a blank retry and after a date-only retry."""
+        """End to end, after a blank retry and after a date-only retry: the stale notes stay too."""
         first = {**BLANK, 'warnings': self.BLANK_PROBES + ['The programme could not be found.']}
         ex = self._read(_seam({THREE_EIGHT: [first, {**RESCUE, 'warnings': []}]}))
         self.assertEqual(set(ex['offer_reader_inputs']['retry_filled']) & {'programme', 'institution'},
                          {'programme', 'institution'})
-        self.assertEqual(ex['warnings'], self.BLANK_PROBES)
+        self.assertEqual(ex['warnings'], first['warnings'])
         letter = 'The letter date is missing; signed by the Pendaftar.'
-        first = {**LETTER, 'warnings': self.DATE_PROBES + [letter, 'The reporting date not found.']}
+        first = {**LETTER, 'warnings': self.DATE_PROBES + [letter, 'The reporting date could not be found.']}
         ex = self._read(_seam({THREE_EIGHT: [first, {**LETTER, 'reporting_date': '20 Julai 2031'}]}))
         self.assertEqual(ex['offer_reader_inputs']['retry_filled'], ['reporting_date', 'reporting_date_label'])
-        self.assertEqual(ex['warnings'], self.DATE_PROBES + [letter])
+        self.assertEqual(ex['warnings'], first['warnings'])
+
+    def test_retry_identity_warnings_are_not_added(self):
+        """Fix round 4 (b): the identity never comes from the retry, so neither do its notes."""
+        identity = ['The IC number looks different.', "The student's name is partly cut off.",
+                    'Nama calon tidak dapat dibaca.', 'The address is incomplete.', 'No. K/P tidak jelas.',
+                    'The MyKad number is printed twice.', 'The name of the candidate is smudged.']
+        other = ['Nama program tidak dapat dibaca.', 'The intake session is printed twice.']   # "nama" of the programme
+        for reasons in (['blank'], ['blank', 'reporting_date']):
+            with self.subTest(reasons=reasons):
+                self.assertEqual(orr._merge_warnings(['First.'], identity + other, reasons), ['First.'] + other)
+
+    def test_a_date_only_retry_adds_only_its_date_warnings(self):
+        """Fix round 4 (c): a date word next to a report word; a venue, a slip or the letter date is not one."""
+        dated = ['The registration date is handwritten.', 'Tarikh lapor diri tidak jelas.',
+                 'The date of registration is smudged.']
+        undated = ['The programme title is faint.', 'The reporting venue is not printed.',
+                   'This looks like a registration confirmation slip.',
+                   'The letter date is missing; signed by the Pendaftar.']
+        self.assertEqual(orr._merge_warnings(['First.'], undated[:2] + dated + undated[2:], ['reporting_date']),
+                         ['First.'] + dated)
+
+    def test_duplicate_warnings_are_removed_in_order(self):
+        """Fix round 4 (d)."""
+        self.assertEqual(orr._merge_warnings(['A.', 'B.', 'A.'], ['B.', 'C.', 'C.', 'A.'], ['blank']),
+                         ['A.', 'B.', 'C.'])
 
     def test_a_non_string_warning_never_breaks_the_read(self):
-        """Re-check item 3: warnings are coerced to strings (empty ones skipped), so the merge never raises."""
+        """Re-check item 3; fix round 4 (e): warnings are coerced to strings (empty ones skipped), so the
+        merge never raises."""
         first = {**BLANK, 'warnings': [['a', 'list'], None, '', '  ', 7, 'The page has a coffee stain.']}
         second = {**RESCUE, 'warnings': [{'odd': 1}, 'The campus line is faint.', None]}
         ex = self._read(_seam({THREE_EIGHT: [first, second]}))
@@ -510,7 +510,8 @@ class TheOfferSecondRead(SimpleTestCase):
         self.assertEqual(ex['fields']['programme'], 'IJAZAH SARJANA MUDA QORVANE')
         self.assertEqual(ex['warnings'], ["['a', 'list']", '7', 'The page has a coffee stain.', "{'odd': 1}",
                                           'The campus line is faint.'])
-        self.assertEqual(orr._merge_warnings('One warning.', None, [], ['blank']), ['One warning.'])
+        self.assertEqual(orr._merge_warnings('One warning.', None, ['blank']), ['One warning.'])
+        self.assertEqual(orr._merge_warnings([None, 7, ['x']], [{'a': 1}, 3.5], ['reporting_date']), ['7', "['x']"])
         ex = self._read(_seam({THREE_EIGHT: [{**DATED, 'warnings': [['x'], 'Faint.']}]}))   # no retry at all
         self.assertEqual((ex['error'], ex['warnings']), ('', ["['x']", 'Faint.']))
 

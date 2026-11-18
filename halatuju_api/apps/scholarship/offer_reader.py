@@ -85,8 +85,8 @@ absent, not empty) and the read was kept as if it were whole. So:
     is still blank after the merge — the 2.5.0 date fallback, now on this model and input: it fills the
     date and its label only. A date the retry fills brings ITS label with it (the label feeds the
     reporting-date bonus). One call serves both; never a second retry. It fills blanks only: the first
-    read always wins. Warnings: the first read's stay, except a stale one (about a field the retry filled
-    AND saying it was absent; never a red flag or identity); the retry's are added (not identity). Recorded as
+    read always wins. Warnings: every first-read warning stays; the retry's are added (not identity; date
+    ones only after a date-only retry). Recorded as
     `primary_blank` (always; the page-1 test), `retry_for`, `retry_filled`, `reporting_date_from` (when the
     date was asked) and `calls` parts `retry_*` (never counted as pages).
   * The text-only path has no other input, so its second read re-asks the same OCR text.
@@ -448,35 +448,15 @@ def _fill_blanks(data: dict, answer: dict, reasons: list) -> list:
     return filled
 
 
-#: What a warning is about, by its words (warnings are free text in plain language, `_WARNING_VOICE`).
-#: Conservative: a warning that names no field is about none and always stays. The date pair needs a date
-#: word NEXT TO a report word ("the reporting venue", "a registration slip", "the letter date ... signed by
-#: the Pendaftar" are not about the reporting date).
+#: Which RETRY warnings are added (warnings are free text in plain language, `_WARNING_VOICE`). The date
+#: pair needs a date word NEXT TO a report word ("the reporting venue", "a registration slip", "the letter
+#: date ... signed by the Pendaftar" are not about the reporting date).
 _DATE_WORDS = (r'(?<!letter )(?<!offer )(?<!issue )\b(?:date|tarikh)\b(?! surat)\W+(?:\w+\W+){0,3}?'
                r'(?:report|regist|lapor|daftar)|(?:report|regist|lapor|daftar)\w*\W+(?:\w+\W+)?(?:date|tarikh)\b')
-_WARN_WORDS = {
-    'programme': r'programme|\bprogram\b|\bcourse\b(?! code)|(?<!kod )\bkursus\b|field of study',
-    'programme_code': r'(?:course|programme|program) codes?|\bkod (?:kursus|program)',
-    'institution': r'institution|universit|college|kolej|politeknik|polytechnic|institut|matri[ck]ul',
-    'campus': r'campus|kampus|branch|cawangan', 'reporting_venue': r'venue|hostel|residential|kediaman',
-    'issuer': r'issuer|issued by|issuing|letterhead', 'stream': r'stream|jurusan',
-    'offer_date': r'offer date|issue date|date of (?:the )?(?:offer|letter)|letter date|date the letter',
-    'intake': r'intake|session|\bsesi\b|semester|ambilan|academic year',
-    'reporting_date': _DATE_WORDS, 'reporting_date_label': _DATE_WORDS,
-    'bidang_pengkhususan': r'speciali[sz]|pengkhususan|bidang', 'elektif': r'elective|elektif',
-    'aliran': r'aliran|school stream|\bsjk'}
 _PERSON = r'\b(?:calon|pelajar|candidate|student|penerima)\b'
 _IDENTITY_WORDS = (r'(?s)\b(?:ic|nric|mykad|identity card|kad pengenalan|k/p)\b|address|alamat'
                    rf'|\bnama\b(?=.*{_PERSON})|{_PERSON}.*\bnama\b'      # "nama" alone may be the programme's
                    r"|\b(?:student|candidate|applicant)(?:'s)? (?:full )?name|name of the (?:student|candidate)")
-#: A stale warning says its field was ABSENT or UNREADABLE; only such a warning may go once the field is filled.
-_ABSENT_WORDS = (r"missing|not found|could not|couldn't|cannot|can't|\bblank|\bempty|unclear|illegible|unreadable"
-                 r'|not printed|not stated|not shown|not visible|tidak dinyatakan|tidak dapat|tidak jelas|\btiada\b'
-                 r'|\bno date\b|without (?:a )?date')
-#: A red flag about the document itself: never dropped, whatever field it names or absence it reports.
-_RED_FLAG_WORDS = (r'not an offer|not the offer|bukan surat tawaran|edited|tamper|altered|forged|match|font|fake'
-                   r'|suspicious|modified|different candidate|dukacita|rejection|inconsistent|changed|overwritten'
-                   r'|passed|verif')
 
 
 def _texts(warnings) -> list:
@@ -485,27 +465,14 @@ def _texts(warnings) -> list:
             if w is not None and str(w).strip()]
 
 
-def _about(warning: str, fields) -> bool:
-    s = str(warning or '').lower()
-    return any(re.search(_WARN_WORDS[f], s) for f in fields if f in _WARN_WORDS)
-
-
-def _about_identity(warning: str) -> bool:
-    return bool(re.search(_IDENTITY_WORDS, str(warning or '').lower()))
-
-
-def _merge_warnings(first: list, retry: list, filled: list, reasons: list) -> list:
-    """The warnings after a second read that filled ``filled``: the first read's, less the STALE ones (about
-    a field the retry filled AND saying it was absent or unreadable, `_ABSENT_WORDS`, AND no red flag and no
-    identity: everything else stays); plus the retry's (never about the identity, which is not taken from it;
-    a date-only retry adds only its date warnings). Each warning is coerced to a string (`_texts`). No
-    duplicates."""
-    first, retry = _texts(first), _texts(retry)
-    kept = [w for w in first if _about_identity(w) or re.search(_RED_FLAG_WORDS, w.lower())
-            or not (_about(w, filled) and re.search(_ABSENT_WORDS, w.lower()))]
-    added = [w for w in retry if not _about_identity(w)
-             and ('blank' in reasons or _about(w, REPORTING_DATE_FIELDS))]
-    return list(dict.fromkeys(kept + added))
+def _merge_warnings(first: list, retry: list, reasons: list) -> list:
+    """The warnings after a second read that filled something: EVERY first-read warning (fix round 4: none is
+    ever dropped; a stale "not found" beside a filled field is only a reviewer note), plus the retry's —
+    never about the identity (`_IDENTITY_WORDS`; it is not taken from the retry), and only its date
+    warnings (`_DATE_WORDS`) after a date-only retry. Coerced to strings (`_texts`); no duplicates, in order."""
+    added = [w for w in _texts(retry) if not re.search(_IDENTITY_WORDS, w.lower())
+             and ('blank' in reasons or re.search(_DATE_WORDS, w.lower()))]
+    return list(dict.fromkeys(_texts(first) + added))
 
 
 def _second_read(data: dict, read: dict, ocr_text: str, warnings: list):
@@ -523,7 +490,7 @@ def _second_read(data: dict, read: dict, ocr_text: str, warnings: list):
     if 'reporting_date' in reasons:
         info['reporting_date_from'] = model if 'reporting_date' in filled else ''
     if filled:
-        warnings = _merge_warnings(warnings, answer.get('warnings') or [], filled, reasons)
+        warnings = _merge_warnings(warnings, answer.get('warnings') or [], reasons)
     return info, warnings
 
 

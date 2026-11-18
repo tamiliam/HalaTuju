@@ -42,17 +42,10 @@ re-ask went to `gemini-2.5-flash`, which has a retirement date, so a 2.5 fall-th
   IC, IC source, address: a wrong IC blocks as a mismatch). A date-only retry fills the reporting date and its label
   only. A date the retry fills brings the retry's label with it (a first-read label without a date is replaced; the
   label feeds the reporting-date bonus).
-- **Warnings** after a retry that filled something: the first read's stay, except a STALE one, dropped only when all
-  three hold: it is about a field the retry filled; it says that field was absent or unreadable ("missing", "not
-  found", "could not", "unclear", "not printed", "tidak dinyatakan", "tidak dapat", "tiada" ...); and it carries no red
-  flag ("not the offer", "edited", "match", "font", "fake", "suspicious", "modified", "different candidate",
-  "Dukacita", "rejection", "inconsistent", "changed", "overwritten", "passed", "verified" ...) and is not about the
-  identity. Everything else stays (fix round 3 flipped the rule: a keyword drop lost real red flags such as "does not
-  match the letterhead"). A warning is about the reporting date only when a report word sits next to a date word (not
-  "the letter date ... signed by the Pendaftar"), about the code only when it names a course or programme code, and
-  "nama" is the identity only beside a person word ("Nama program" is the programme). The retry's are added (never its
-  identity ones; a date-only retry adds only its date warnings); no duplicates. Warnings are coerced to strings, so a
-  malformed one never breaks the read.
+- **Warnings** after a retry that filled something: EVERY first-read warning stays (fix round 4, after three
+  review rounds in which keyword dropping kept losing real red flags; a stale "not found" beside a filled field is only
+  a reviewer note), plus the retry's, never its identity ones and only its date ones after a date-only retry, without
+  duplicates; warnings are coerced to strings, so a malformed one never breaks the read.
 - Recorded in `offer_reader_inputs`: `primary_blank` (always), `retry_for`, `retry_filled`, `reporting_date_from` (when
   the date was asked), and `calls` parts `retry_text_layer` / `retry_images` / `retry_text`. A 3.8 error that fell
   through the cascade is handled as before (no second read). No model name 2.5 is left in the offer reader.
