@@ -377,8 +377,10 @@ class CentreLinesDoNotOutrankTheLetterheadTest(TestCase):
 
 
 class PrintedCodeOpensTheMenuTest(TestCase):
-    """#804 (2026-11-18): a catalogue "[a / b / c]" option list is a MENU, not a specialisation — but
-    only when the letter PRINTS that course's own UPU code. A name-only letter keeps TD-150 as before."""
+    """#804 (2026-11-18): a catalogue "[a / b / c]" option list is a MENU, not a specialisation. Owner
+    chose B2 the same day ("The course code is an additional information only, and could be used"):
+    the menu opens for a name-only letter too; a printed code is extra evidence that picks and
+    confirms the course."""
 
     MENU = ('Sarjana Muda Sains Kemasyarakatan dengan Kepujian '
             '[Antropologi dan Sosiologi / Ekonomi / Sains Politik / Pengajian Pembangunan]')
@@ -405,8 +407,18 @@ class PrintedCodeOpensTheMenuTest(TestCase):
         self.assertEqual(_cid(prog, 'USM KAMPUS INDUK'), 'US6310001')       # the acronym line, as printed
         self.assertEqual(op.resolve_catalogue_course(prog, self.USM)['course_id'], 'US6310001')
 
-    def test_the_same_letter_without_the_code_is_still_refused(self):
-        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN', self.USM))
+    def test_the_same_letter_without_the_code_also_matches(self):
+        # Owner B2 (2026-11-18) reverses f6a78571f's name-only refusal: the code is extra evidence only.
+        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN', self.USM), 'US6310001')
+
+    def test_a_masters_letter_is_not_pinned(self):
+        # The level word stays exact (pinned_match, which the link / realign / confirm share): a Master's
+        # "SARJANA" is not "SARJANA MUDA", with or without the code.
+        from apps.scholarship.offer_course_match import pinned_match
+        for prog in ('SARJANA SAINS KEMASYARAKATAN DENGAN KEPUJIAN',
+                     'SARJANA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001'):
+            self.assertEqual(pinned_match(prog, self.USM, self.USM), ('unresolved', None))
+        self.assertEqual(pinned_match('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN', self.USM, self.USM)[0], '')
 
     def test_a_printed_code_at_a_different_named_institution_is_still_refused(self):
         self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001', UM))

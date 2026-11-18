@@ -434,6 +434,16 @@ class TestGoldenFacts(_GoldenBase):
                 ('', {'course_id': 'X1', 'course_name': 'Asasi Sains', 'institution': 'UM'}, 'asasi')
                 if knobs.get('resolvable') else ('unresolved', None, '')),
         }
+        # Re-review 2026-11-18: the hearing reads the letter's pinned course BEFORE the linker (no pinned
+        # course, no link), and the linker writes only a course the letter pins - so the same knob pins it
+        # ('unresolved' is the linker's word for "no pinned course"). Stubbed, not run for real: the real
+        # test builds a process-wide catalogue cache, so its collaborator calls depend on test order.
+        patches['apps.scholarship.services.offer_link.pinned_course'] = lambda *a, **k: (
+            {'course_id': 'X1', 'course_name': 'Asasi Sains', 'institution': 'UM'}
+            if knobs.get('resolvable') else None)
+        # The autofill's own loose catalogue match (an offer_letter_auto pick, re-review fix 2): no catalogue
+        # here, as recorded - stubbed for the same reason.
+        patches[f'{OP}.resolve_catalogue_course'] = lambda *a, **k: None
         with ExitStack() as stack:
             _patched(stack, patches)
             fact = verdict_engine._verdict_pathway(app)

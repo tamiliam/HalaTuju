@@ -40,11 +40,10 @@ def pinned_course(cp, programme, institution, issuer=''):
 
 def labels_describe(stored_name, course_name):
     """Do the stored labels name THIS catalogue course? The matcher's own test, after its own noise
-    stripping — so a name copied off an older or different letter is caught (``labels_disagree``).
-    The course is already pinned, so its bracket option list reads as a menu (``coded``)."""
+    stripping — so a name copied off an older or different letter is caught (``labels_disagree``)."""
     from ..offer_course_match import _names, letter_programme
     from ..pathway_engine import distinctive_tokens
-    return _names(distinctive_tokens(letter_programme(stored_name or '')), course_name or '', coded=True)
+    return _names(distinctive_tokens(letter_programme(stored_name or '')), course_name or '')
 
 
 def picker_pathways():

@@ -94,23 +94,57 @@ def declared_degree(application):
 
 
 def _letter_course(chk, prog, inst):
-    """The ONE catalogue course the letter pins at ONE campus at its own stated level — the linker's own
-    test (``offer_link.pinned_course``, which ``plan_offer_link`` and the realignment share), else None."""
+    """The ONE catalogue course the letter pins at ONE campus at its own stated level - the linker's own
+    test (``offer_link.pinned_course``, which ``plan_offer_link`` and the realignment share), else None.
+    The letter's values are stripped as ``plan_offer_link`` strips them."""
     from .services import offer_link
-    return offer_link.pinned_course({}, prog, inst, chk.get('issuer') or '')
+    return offer_link.pinned_course({}, (prog or '').strip(), (inst or '').strip(),
+                                    (chk.get('issuer') or '').strip())
 
 
-def _linked_course(application, offer, chk, prog, inst):
+def _autofilled_course(cp, cid, chk, prog, inst):
+    """The course the offer autofill already wrote from THIS letter (re-review 2026-11-18): source
+    ``offer_letter_auto`` and the stored id equals the autofill's own LOOSE catalogue match
+    (``offer_sync._adopt_unlocked_pathway``), so a linked record is never told to pick its course."""
+    if (cp.get('source') or '') != 'offer_letter_auto':
+        return None
+    from . import card_display, offer_pathway as _op
+    g_prog, g_inst, _rep = card_display.sanitise_offer_slots(prog, inst)
+    loose = _op.resolve_catalogue_course(g_prog, g_inst, (chk.get('issuer') or '').strip())
+    return loose if loose and loose.get('course_id') == cid else None
+
+
+def _linked_course(application, offer, chk, prog, inst, pinned):
     """R4 / R5's clean match (review 2026-11-18): the course the linker WILL write for this letter
-    (``plan_offer_link`` — an empty pick needs a GENUINE letter), or the one it already wrote from this
-    letter; else None, and she is asked to pick (R6). A loose name match that nothing links is not clean."""
+    (``plan_offer_link`` - an empty pick needs a GENUINE letter), or the one already written from this
+    letter; else None, and she is asked to pick (R6). A loose name match that nothing links is not clean.
+
+    ``pinned`` is the caller's cached ``_letter_course``. Re-review 2026-11-18:
+    - an already-linked pick is read here, as ``plan_offer_link`` would (``not_offer_sourced`` /
+      ``has_course_id``), without its queries: clean when it is the letter's pinned course, or the
+      autofill's own loose match (``_autofilled_course``);
+    - no pinned course means no link, so ``plan_offer_link`` (its ``querying_locked`` query) is not run
+      (A2.4 query budget, detail-with-offer-letter);
+    - a decided record (``decided``, ``querying_locked``) the linker no longer touches still has the
+      letter's ONE course: clean, so the decision never gains a new student query."""
     from .services import offer_link
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    cid = (cp.get('course_id') or '').strip()
+    if cid:
+        if (cp.get('source') or '') not in offer_link.OFFER_SOURCES:
+            return None
+        match = pinned()
+        if match and match['course_id'] == cid:
+            return match
+        return _autofilled_course(cp, cid, chk, prog, inst)
+    match = pinned()
+    if match is None:
+        return None
     reason, new_cp, _ = offer_link.plan_offer_link(application, offer, chk)
     if not reason:
         return new_cp
-    if reason == 'has_course_id':
-        cp, match = application.chosen_programme, _letter_course(chk, prog, inst)
-        return match if match and match['course_id'] == (cp.get('course_id') or '').strip() else None
+    if reason in ('decided', 'querying_locked'):
+        return match
     return None
 
 
@@ -228,7 +262,7 @@ def offer_pathway_fact(application, offer):
             if kind not in _clean:
                 _clean[kind] = None if _op.is_pre_u(offer_type) else (
                     _letter_course(chk, prog, inst) if kind == 'pinned'
-                    else _linked_course(application, offer, chk, prog, inst))
+                    else _linked_course(application, offer, chk, prog, inst, lambda: clean('pinned')))
             return _clean[kind]
 
         # A TERTIARY student with no degree pick of her own (nothing, or only her named top choices)

@@ -51,7 +51,7 @@ _FACULTY_TAIL_RE = re.compile(r'\s(?:FAKULTI|FACULTY|KULLIYYAH|PUSAT PENGAJIAN)\
 #: The catalogue's campus parenthetical.
 _CAMPUS_PAREN_RE = re.compile(r'\((?:kampus|cawangan|campus)\b[^)]*\)', re.I)
 #: The catalogue's option MENU: a square-bracketed list of two or more options split by " / "
-#: ("[Antropologi dan Sosiologi / Ekonomi / Sains Politik]"). Read only under a printed code (``_names``).
+#: ("[Antropologi dan Sosiologi / Ekonomi / Sains Politik]"). Read by ``_names`` (owner B2, 2026-11-18).
 _MENU_RE = re.compile(r'\[[^\]/]*(?:/[^\]/]*)+\]')
 _TERTIARY = ('asasi', 'pismp', 'diploma', 'degree')
 
@@ -246,7 +246,7 @@ def _printed_course(programme, institution, issuer, index=None):
         row = _course_row(code, institution, issuer, index)
         if row is None:
             continue
-        if not _names(pj, row['course_name'], coded=True):
+        if not _names(pj, row['course_name']):
             return {}
         rows = _campus_rows(code)
         place = letter_place(code, institution, issuer, rows=rows, index=index)
@@ -524,9 +524,9 @@ def _one_edit(a, b):
 
 
 def _states_one_option(pj, spec, menu):
-    """Under a printed code, does the letter state the course WITHOUT its menu (every word of the
-    rest) plus at most the words of ONE listed option? A word in no listed option ("Psikologi"),
-    or words from two options, never pass."""
+    """Does the letter state the course WITHOUT its menu (every word of the rest) plus at most the
+    words of ONE listed option? A word in no listed option ("Psikologi"), or words from two options,
+    never pass."""
     core = distinctive_tokens(_MENU_RE.sub(' ', spec)) - _NON_SPECIFYING_WORDS
     letter = pj - _NON_SPECIFYING_WORDS
     if not core or not core <= letter:
@@ -535,20 +535,21 @@ def _states_one_option(pj, spec, menu):
     return not extra or any(extra <= distinctive_tokens(o) for o in menu.group(0)[1:-1].split('/'))
 
 
-def _names(pj, course_name, coded=False):
+def _names(pj, course_name):
     """Do the letter's words name this catalogue course? Aligned, and not a specialisation the
     letter never states (TD-150); the PISMP aliran suffix is not a specialisation.
 
-    ``coded`` - the course is already fixed by its own UPU code: the letter PRINTS it
-    (``_printed_course``), or stored labels are checked against a pinned course
-    (``offer_link.labels_describe``). Only then is a catalogue option list in square brackets
-    ("... Kemasyarakatan dengan Kepujian [Antropologi dan Sosiologi / Ekonomi / ...]") a MENU the
-    student picks from later (#804, owner R7, 2026-11-18): the letter must state the rest of the name
-    and at most ONE option (``_states_one_option``), and the menu is left out of the TD-150 test.
-    Alignment still reads the whole name. A name-only match never opens the menu, so TD-150 refuses it."""
+    A catalogue option list in square brackets ("... Kemasyarakatan dengan Kepujian [Antropologi dan
+    Sosiologi / Ekonomi / ...]") is a MENU the student picks from later, never a specialisation
+    (#804, owner R7; owner chose B2 on 2026-11-18: "The course code is an additional information
+    only, and could be used"). It opens for a name-only letter and under a printed code alike: the
+    letter must state the rest of the name and at most ONE option (``_states_one_option``), and the
+    menu is left out of the TD-150 test. Alignment still reads the whole name; the level, campus and
+    other-institution rules are the matcher's own and unchanged. A printed code whose course the
+    letter's name contradicts is still refused (``_printed_course`` returns {}, no name fallback)."""
     base = catalogue_name(course_name)
     spec = _ALIRAN_SUFFIX_RE.sub('', base)
-    menu = _MENU_RE.search(spec) if coded else None
+    menu = _MENU_RE.search(spec)
     if menu:
         if not _states_one_option(pj, spec, menu):
             return False

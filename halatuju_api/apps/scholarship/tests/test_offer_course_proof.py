@@ -56,29 +56,39 @@ class BracketOptionListTest(TestCase):
     def test_the_804_printed_code_matches(self):
         self.assertEqual(_cid(LETTER_804, ''), 'US6310001')
 
-    def test_the_menu_opens_only_under_a_printed_code(self):
-        # A name-only letter keeps TD-150: the options read as a specialisation it never states.
-        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN'))
-        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI) DENGAN KEPUJIAN'))
+    # Owner B2 (2026-11-18): the menu opens with or without a printed code; the code is extra evidence.
+    def test_the_base_name_alone_matches(self):
+        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN'), 'US6310001')
 
     def test_the_base_name_with_one_listed_option_matches(self):
-        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI) DENGAN KEPUJIAN - US6310001'),
-                         'US6310001')
-        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN (SAINS POLITIK) - US6310001'),
-                         'US6310001')
+        for suffix in ('', ' - US6310001'):
+            self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI) DENGAN KEPUJIAN' + suffix),
+                             'US6310001')
+            self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN (SAINS POLITIK)' + suffix),
+                             'US6310001')
 
     def test_words_from_two_options_are_not_a_clean_match(self):
-        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI DAN SAINS POLITIK) - US6310001'))
-        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI, ANTROPOLOGI) - US6310001'))
+        for suffix in ('', ' - US6310001'):
+            self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI DAN SAINS POLITIK)' + suffix))
+            self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI, ANTROPOLOGI)' + suffix))
 
     def test_an_option_not_in_the_list_is_not_a_clean_match(self):
         self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (PSIKOLOGI) DENGAN KEPUJIAN'))
         self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (PSIKOLOGI) - US6310001', ''))
 
+    def test_a_masters_level_word_is_not_a_clean_match(self):
+        # The level is pinned_match's exact test (the linker's), not the name matcher's.
+        from apps.scholarship.offer_course_match import pinned_match
+        self.assertEqual(pinned_match('SARJANA SAINS KEMASYARAKATAN DENGAN KEPUJIAN', USM, USM), ('unresolved', None))
+
+    def test_a_printed_code_naming_another_course_never_falls_back_to_the_name(self):
+        # The letter's name is the menu course, but the code is ARTS's: refused, not matched on the name.
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6220001'))
+
     def test_a_bracket_mid_name(self):
-        self.assertEqual(_cid('SARJANA MUDA SASTERA (SEJARAH) DENGAN KEPUJIAN - US6220001'), 'US6220001')
+        self.assertEqual(_cid('SARJANA MUDA SASTERA (SEJARAH) DENGAN KEPUJIAN'), 'US6220001')
+        self.assertEqual(_cid('SARJANA MUDA SASTERA DENGAN KEPUJIAN'), 'US6220001')
         self.assertEqual(_cid('SARJANA MUDA SASTERA DENGAN KEPUJIAN - US6220001'), 'US6220001')
-        self.assertIsNone(_cid('SARJANA MUDA SASTERA DENGAN KEPUJIAN'))
 
     def test_the_core_name_is_still_required(self):
         self.assertIsNone(_cid('SARJANA MUDA EKONOMI DENGAN KEPUJIAN'))
@@ -209,6 +219,54 @@ class HearingTest(_Tertiary):
         self.assertEqual(self.app.chosen_programme.get('course_id'), 'US6310001')
         f = self.pathway()
         self.assertEqual((f['status'], f['unresolved']), ('verified', []))
+
+    # Re-review 2026-11-18: a record the autofill ALREADY linked from this letter (its own loose catalogue
+    # match, source offer_letter_auto) is never told to pick its course, though the strict pin refuses
+    # the letter. No pre-U school, so the autofill adopts the letter.
+    def _autofilled_is_not_asked(self, programme):
+        from apps.scholarship.services.offer_sync import autofill_pathway_from_offer
+        self.app.pre_u_institution = ''
+        self.app.save()
+        self.offer(programme=programme)
+        autofill_pathway_from_offer(self.app)
+        self.app.refresh_from_db()
+        cp = self.app.chosen_programme or {}
+        self.assertEqual((cp.get('course_id'), cp.get('source')), ('US6310001', 'offer_letter_auto'))
+        self.assertNotIn('pathway_undeclared', self.codes())
+
+    def test_an_autofilled_record_with_no_level_word_is_not_asked(self):
+        self._autofilled_is_not_asked('SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001')
+
+    def test_an_autofilled_record_with_a_sarjana_letter_is_not_asked(self):
+        self._autofilled_is_not_asked('SARJANA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001')
+
+    def test_an_autofilled_record_with_a_diploma_letter_is_not_asked(self):
+        self._autofilled_is_not_asked('DIPLOMA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001')
+
+    def test_a_picker_course_id_is_not_taken_for_the_autofill(self):
+        # The loose match counts only for the autofill's own write, never a student's picked id.
+        from apps.scholarship.verdict_pathway import _autofilled_course
+        cp = {'course_id': 'US6310001', 'source': 'picker'}
+        self.assertIsNone(_autofilled_course(cp, 'US6310001', {'issuer': USM}, LETTER_804, USM))
+
+    # Re-review 2026-11-18: a DECIDED record (verdict recorded) the linker no longer touches keeps the
+    # letter's ONE course as clean, so the decision never gains a new student query.
+    def test_a_decided_record_gains_no_pick_ask(self):
+        from apps.scholarship.check2_confirms import _sync_pathway_confirm
+        self.app.verdict_decided_at = timezone.now()
+        self.app.save()
+        self.offer()
+        self.assertNotIn('pathway_undeclared', self.codes())
+        _sync_pathway_confirm(self.app, {}, timezone.now())
+        self.assertFalse(ResolutionItem.objects.filter(application=self.app, code='pathway_undeclared').exists())
+
+    def test_an_awarded_record_gains_no_pick_ask(self):
+        self.app.status = 'awarded'
+        self.app.verdict_decided_at = timezone.now()
+        self.app.officer_verdict = {'overall': 'award'}
+        self.app.save()
+        self.offer()
+        self.assertNotIn('pathway_undeclared', self.codes())
 
     def test_an_unscored_letter_still_gets_no_hearing(self):
         self.offer(programme='SARJANA MUDA PSIKOLOGI DENGAN KEPUJIAN', status='')

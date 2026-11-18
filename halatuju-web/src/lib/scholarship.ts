@@ -574,7 +574,8 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   // The Uncertain (waiting) branch: owner 2026-11-18 made two answers compulsory on /apply: all
   // three degrees (shown to tertiary students only; a box counts only with a picked course id, as
   // top_choices stores it) and at least one "where are you right now" chip. The SPM leaning and
-  // the note stay optional. Nothing on the server mirrors this (the 'sure' fields are web-only too).
+  // the note stay optional. This check lives on /apply only; the server does not validate these
+  // fields (nor the 'sure' ones).
   if (form.pathwayCertainty === 'uncertain') {
     if (tertiary && [0, 1, 2].some((i) => !form.topChoices[i]?.courseId)) return 'topChoices'
     if (form.uncertaintyReasons.length === 0) return 'uncertaintyReasons'
