@@ -485,20 +485,15 @@ class AdminVerdictMetricsView(_AdminBase):
             return self._deny()
         if self._b40_scope(admin) == 'none':   # #39 S3 `see_all` or `review`; T5b: or `qc`
             return self._deny_role()
-        from ..audit import override_metrics
+        from ..prediction_metrics import metrics
         # org-fence: _org_scoped applied below (fences the metrics roll-up).
-        qs = (ScholarshipApplication.objects
-              .filter(verdict_decided_at__isnull=False)
-              .only('ai_verdict_snapshot', 'ai_verdict_engine_version',
-                    'officer_verdict', 'cohort_id'))
-        qs = self._org_scoped(qs, admin)   # super global
+        qs = self._org_scoped(ScholarshipApplication.objects.all(), admin)   # super global
         cohort = request.query_params.get('cohort')
         if cohort:
             qs = qs.filter(cohort_id=cohort)
-        # ⚠ TRIPLES, NOT PAIRS — the engine version rides with the prediction it produced, so the
-        # roll-up can say which generations it is averaging (`engine_versions` in the response).
-        rows = ((a.ai_verdict_snapshot, a.officer_verdict, a.ai_verdict_engine_version) for a in qs)
-        return Response(override_metrics(rows))
+        # LL1: the counting and the QC / reviewer reads live in `prediction_metrics` (the Overview's
+        # `ai_prediction` section calls the same function); `by_reviewer` is the lead tier's only.
+        return Response(metrics(qs, admin))
 
 
 class AdminAssignReviewerView(_AdminBase):

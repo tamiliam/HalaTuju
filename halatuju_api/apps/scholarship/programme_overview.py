@@ -56,7 +56,7 @@ from django.utils import timezone
 
 from apps.courses.public import staff_tables
 
-from . import payments, spend_report, surface_gates
+from . import payments, prediction_metrics, spend_report, surface_gates
 from .spending_import import TX_SPEND
 
 _ZERO = Decimal('0.00')
@@ -78,7 +78,7 @@ PAGES = ('qc', 'mine')
 MONEY_KEYS = ('spending', 'payments_prepare', 'payments_check', 'payments_approve')
 SECTION_KEYS = {'funnel': ('see_all',), 'money': MONEY_KEYS, 'attention': ('see_all',),
                 'applications_series': ('see_all',), 'money_series': MONEY_KEYS,
-                'qc': ('qc',), 'mine': ('review',)}
+                'qc': ('qc',), 'mine': ('review',), 'ai_prediction': ('see_all', 'qc', 'review')}
 
 
 def may_customise(admin):
@@ -100,14 +100,12 @@ def _opens(admin, section):
 
 
 def sections_for(admin):
-    """The sections `admin` may receive, from their keys (`SECTION_KEYS`); `()` for none, which the view
-    answers with a 403. A super holds every key: every widget. ⚠ THE PAGES ARE A TEAM MEMBER'S (a kind
-    of account, `staff_tables.team_member`): the super and the organisation admin hold `review` and `qc`
-    too, and their Overview is the programme's alone. A partner, source or mentor login holds no key."""
+    """The sections `admin` may receive, from their keys (`SECTION_KEYS`); `()` for none (the view's 403).
+    ⚠ THE PAGES ARE A TEAM MEMBER'S (`staff_tables.team_member`), though a super or org admin holds their keys."""
     if admin is None:
         return ()
     pages = PAGES if staff_tables.team_member(admin) else ()
-    return tuple(s for s in (*FULL, *pages) if _opens(admin, s))
+    return tuple(s for s in (*FULL, 'ai_prediction', *pages) if _opens(admin, s))
 
 
 # ── the fence ─────────────────────────────────────────────────────────────────────────────────
@@ -828,6 +826,8 @@ def build(admin, org, programme, *, cohort=None, now=None, withhold=()):
                  'transactions': r['transactions']}
                 for r in by_category(scope)],
         }
+    if 'ai_prediction' in sections:
+        payload['ai_prediction'] = prediction_metrics.metrics(scope, admin)
     if 'mine' in sections:
         payload['mine'] = mine(
             scope, admin, now=now, clocks=clocks,

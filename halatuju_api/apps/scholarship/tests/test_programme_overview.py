@@ -261,12 +261,14 @@ class RolesAndShapeTests(_Base):
         # and the page shows the Customise button by its presence. `layout_source` travels with
         # it (request #42, 2026-10-22): whether the layout is the gift's own.
         expected = {
-            'ov-su': _FULL | {'layout', 'layout_source'},
-            'ov-oa': _FULL | {'layout', 'layout_source'},
-            'ov-adm': _FULL,
+            # LL1: `ai_prediction` is offered wherever the verdict-metrics door opens (see_all, qc, review);
+            # finance never receives it.
+            'ov-su': _FULL | {'layout', 'layout_source', 'ai_prediction'},
+            'ov-oa': _FULL | {'layout', 'layout_source', 'ai_prediction'},
+            'ov-adm': _FULL | {'ai_prediction'},
             'ov-fin': _ALWAYS | {'money', 'money_series'},
-            'ov-qc': _ALWAYS | {'qc'},
-            'ov-rev': _ALWAYS | {'mine'},
+            'ov-qc': _ALWAYS | {'qc', 'ai_prediction'},
+            'ov-rev': _ALWAYS | {'mine', 'ai_prediction'},
         }
         for uid, keys in expected.items():
             with self.subTest(uid=uid):
@@ -736,13 +738,14 @@ class LayoutTests(_Base):
         self.assertNotIn('money', fin)
         self.assertEqual(fin['sections'], ['money_series'])
         # A reviewer never had `money`; their page is untouched by a layout that hides it.
-        self.assertEqual(self._body('ov-rev')['sections'], ['mine'])
+        self.assertEqual(self._body('ov-rev')['sections'], ['ai_prediction', 'mine'])
 
     def test_sections_follow_the_stored_order(self):
         self._store(self._rows(['money_series', 'funnel', 'money', 'attention',
                                 'applications_series']))
         self.assertEqual(self._body('ov-oa')['sections'],
-                         ['money_series', 'funnel', 'money', 'attention', 'applications_series'])
+                         ['money_series', 'funnel', 'money', 'attention', 'applications_series',
+                          'ai_prediction'])
         # A narrowed role keeps the layout's order among the widgets it may see.
         self.assertEqual(self._body('ov-fin')['sections'], ['money_series', 'money'])
 
@@ -775,7 +778,7 @@ class LayoutTests(_Base):
 
     def test_no_row_means_every_widget_on_in_default_order(self):
         body = self._body('ov-oa')
-        self.assertEqual(body['sections'], _WIDGETS)
+        self.assertEqual(body['sections'], [*_WIDGETS, 'ai_prediction'])
         self.assertEqual(body['layout'], self._rows(_WIDGETS))
 
     def test_the_platform_scope_with_no_gift_has_no_layout_to_apply(self):
@@ -826,7 +829,7 @@ class GiftLayoutTests(_Base):
                                                off=('attention',)))
         body = self._body('ov-oa')
         self.assertEqual(body['sections'],
-                         ['money', 'funnel', 'applications_series', 'money_series'])
+                         ['money', 'funnel', 'applications_series', 'money_series', 'ai_prediction'])
         self.assertEqual(body['layout_source'], 'gift')
         # The other gift and the all-gifts page still read the organisation's layout.
         self.assertNotIn('funnel', self._body('ov-oa', '?programme=ov-gift2')['sections'])
@@ -838,8 +841,8 @@ class GiftLayoutTests(_Base):
     def test_a_gift_layout_still_never_widens_a_role(self):
         self._store_gift(self.gift, self._rows(_WIDGETS, off=('money',)))
         self.assertEqual(self._body('ov-fin')['sections'], ['money_series'])
-        self.assertEqual(self._body('ov-rev')['sections'], ['mine'])
-        self.assertEqual(self._body('ov-qc')['sections'], ['qc'])
+        self.assertEqual(self._body('ov-rev')['sections'], ['ai_prediction', 'mine'])
+        self.assertEqual(self._body('ov-qc')['sections'], ['ai_prediction', 'qc'])
         self.assertNotIn('layout_source', self._body('ov-adm'))
 
     def test_the_super_reads_the_named_gifts_own_layout(self):
