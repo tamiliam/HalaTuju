@@ -382,6 +382,7 @@ Branch ll2b, NOT merged to main, not published. Migration: none. Services: web. 
 - **Fix owed from LL2 (own commit):** the "Why it failed" cell shows the Few cases pill when `few_green`.
 - **Guide and FAQ:** QC Guide section "Facts in doubt" and a QC FAQ entry; one line each in the reviewer Guide and FAQ (English only).
 - **Tests:** 19 new (`view.secondLook.test.tsx` 12, `AiPredictionQcChecked.test.tsx` 7) plus 2 in `AiPredictionReasons.test.tsx`. `mobileStandard.test.ts` now sweeps `FactsInDoubt.tsx` (rule 15 and the pill ledger: tightened, not loosened).
+- **Review round (api + web):** the web sends every shown fact (`agreed` untapped, `disagreed` tapped); accept keeps only facts in both the payload and the current in-doubt set (`{}` records nothing; closes the stale-tab gap); reopen/reject keep only `disagreed`. The QC activity row's meta now keeps the answers and the in-doubt groups (fact names only), so a send-back's tap survives a re-record. A non-dict stored verdict never fails a QC decision. Taps reset per case. AI prediction card footer: "Only the facts in doubt are checked by the QC. The other numbers compare the AI with the reviewer." Guide/FAQ say "agreed with the reviewer", never "right". Tests: 7 new server, 1 new web; 5 server and 5 web tests updated to the new send rule.
 
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
