@@ -16,7 +16,7 @@ Branch req73, not pushed. Migration `0216_two_way_notes` (additive). Services: b
 
 ### refactor: request #73 review round - right closed wording, cleaner marks, billed alert (2026-11-16)
 
-Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration (0213 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, review round).
+Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration (0216 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, review round).
 - Before Awaiting review (Submitted, Shortlisted) the card says notes can be added "once the case reaches Awaiting review", not that they are finished. The notes payload serves `reason` (`not_yet` | `finished` | null when open) and a refused POST says `notes_not_yet` or `notes_closed` the same way (en, ms, ta).
 - The org admin's own notes read "Org admin (you)" (en, ms, ta), as the reviewer's read "Reviewer (you)".
 - Adding a note clears the writer's own New note mark on that case.
@@ -27,9 +27,13 @@ Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration 
 - Tamil: தரக் கட்டுப்பாடு, புதிய குறிப்புள்ள, and the two email lines corrected. No email golden moved.
 - Tests: `test_reviewer_notes.py` and `test_staff_notifications.py` (not yet / finished, clear on reply, sweep after unassign, other side only, billing, cool-down, fence, list query count with notes, a reader clearing only their own case); `useNewNoteCount.test.tsx`; `ReviewerNotesCard.test.tsx` ("(you)" only on your own notes, both sides; the not-yet hint and refusal).
 
+### test: request #73 re-check 3 - the email window, the savepoint and the second sweep pinned (2026-11-18)
+
+- Tests only (`test_staff_notifications.py`): the 10-minute email window in both directions, the assignment housekeeping's savepoint, and its second sweep. Two accepted gaps are recorded in `docs/decisions.md` item 24. No production code change.
+
 ### refactor: request #73 re-check 2 - first email after an assignment mark, holder-fenced bell (2026-11-18)
 
-Branch req73, a fourth commit on top of 7154d22e6, not pushed. No new migration (0213 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, items 22-25).
+Branch req73, a fourth commit on top of 7154d22e6, not pushed. No new migration (0216 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, items 22-25).
 - The New note mark given at assignment no longer silences the reviewer's first real email. The email cool-down now asks whether the NOTE is recent (and, for the reviewer, written since they were assigned), not whether the mark is.
 - A super who has held a case since before 9 Nov now sees that case's marks in the bell. The bell counts the caller's own organisation or a case they hold.
 - The assignment housekeeping sweeps again after marking, so a reassignment in between leaves no stale mark. Accepted and recorded: if the reviewer opens the notes before the cron runs, the mark appears once and clears on the next open.
@@ -38,7 +42,7 @@ Branch req73, a fourth commit on top of 7154d22e6, not pushed. No new migration 
 
 ### refactor: request #73 re-check - notes card keyed to its case, bell refresh, sweep never blocks mail (2026-11-17)
 
-Branch req73, a third commit on top of e1a6e5e42, not pushed. No new migration (0213 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, re-check round).
+Branch req73, a third commit on top of e1a6e5e42, not pushed. No new migration (0216 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, re-check round).
 - Prev/next on the applicant's page no longer carries the notes card over: a draft typed on one student is gone on the next, and Add posts only to the student on screen. A late answer for the previous student is dropped.
 - Opening or adding a note updates the bell at once, not up to a minute later. The bell also refreshes when the tab becomes visible again, and an older answer never overwrites a newer one.
 - A failure in the new-note housekeeping no longer holds up the reviewer and student assignment emails; it is logged.

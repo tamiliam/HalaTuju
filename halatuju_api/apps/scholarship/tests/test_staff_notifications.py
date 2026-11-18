@@ -295,6 +295,44 @@ class MarkAtAssignmentTest(_Base):
         staff_notifications.after_assignment(self.app.id)
         self.assertEqual(StaffNotification.objects.filter(recipient=self.reviewer).count(), 1)
 
+    def test_a_failure_late_in_the_housekeeping_takes_its_marks_back_and_the_mail_still_goes(self):
+        """#73 re-check 3 L1: the savepoint, shown on any database. The first sweep and the marking succeed, the
+        second sweep raises: the marks made inside the savepoint are gone, and the assignment email went."""
+        self._post(self.org_admin, 'before anyone holds it')
+        self._assign(self.reviewer)
+        real, calls = staff_notifications.sweep, []
+
+        def second_one_fails(application_id):
+            calls.append(application_id)
+            if len(calls) == 2:
+                raise RuntimeError('the second sweep')
+            return real(application_id)
+        with mock.patch.object(staff_notifications, 'sweep', side_effect=second_one_fails), \
+                mock.patch('apps.scholarship.emails.send_reviewer_assigned_email') as to_reviewer, \
+                mock.patch('apps.scholarship.emails.send_student_assigned_reviewer_email'), \
+                self.assertLogs('apps.scholarship.assign_notify', level='WARNING'):
+            counts = assign_notify.send_pending()
+        self.assertEqual(len(calls), 2)                             # it got as far as the second sweep
+        self.assertEqual(counts['sent'], 1)
+        to_reviewer.assert_called_once()
+        self.assertFalse(StaffNotification.objects.exists())       # the mark was rolled back with the savepoint
+
+    def test_the_second_sweep_clears_a_mark_left_by_a_reassignment_mid_way(self):
+        """#73 re-check 3 L2: the case moves on just after the holder is marked; the second sweep (re-check 2
+        L-C) takes the old holder's mark away."""
+        self._post(self.org_admin, 'before anyone holds it')
+        type(self.app).objects.filter(pk=self.app.pk).update(assigned_to=self.reviewer)
+        later = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+        real = staff_notifications.mark_unread_for_the_holder
+
+        def mark_then_reassign(application_id):
+            made = real(application_id)
+            type(self.app).objects.filter(pk=application_id).update(assigned_to=later)
+            return made
+        with mock.patch.object(staff_notifications, 'mark_unread_for_the_holder', side_effect=mark_then_reassign):
+            staff_notifications.after_assignment(self.app.id)
+        self.assertEqual(self._rows(self.reviewer), 0)
+
     def test_the_mark_never_silences_the_next_real_email(self):
         """#73 re-check 2 M-A: the cool-down asks whether the NOTE is recent, so a fresh mark for an older note
         does not hold back the first email the holder should get; nor does a note from before they held it."""
@@ -362,18 +400,37 @@ class WhoHearsTest(_Base):
         self.assertEqual(len(seen), 1)
         self.assertEqual((seen[0]['org_id'], seen[0]['app_id']), (self.org.id, self.app.id))
 
+    def _ten_minutes_pass(self):
+        """The case was assigned an hour ago, and its notes are now just older than the cool-down: only the
+        WINDOW running out can let the next email through, never `assigned_at` (#73 re-check 3 M1)."""
+        type(self.app).objects.filter(pk=self.app.pk).update(assigned_at=timezone.now() - timedelta(hours=1))
+        self.app.refresh_from_db()
+        # The cool-down asks the NOTE's age (#73 re-check 2 M-A). A literal 11 minutes, never `EMAIL_COOL_DOWN`
+        # plus one, so these tests pin TEN minutes: a longer window fails them.
+        ReviewerNote.objects.update(created_at=timezone.now() - timedelta(minutes=11))
+
     def test_one_email_per_person_per_case_per_ten_minutes(self):
         self._post(self.org_admin, 'one')
         self._post(self.org_admin2, 'two')               # a minute later in effect: rows, no second email
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(self._rows(self.reviewer), 2)    # the mark still counts both
-        ReviewerNote.objects.update(   # the cool-down asks the NOTE's age (#73 re-check 2 M-A)
-            created_at=timezone.now() - staff_notifications.EMAIL_COOL_DOWN - timedelta(minutes=1))
+        self._ten_minutes_pass()
         self._post(self.org_admin, 'three')
         self.assertEqual(len(mail.outbox), 2)
         other = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
         self._post(self.org_admin, 'another case', app=other)   # per case: another student emails at once
         self.assertEqual(len(mail.outbox), 3)
+
+    def test_the_org_admin_side_also_gets_one_email_per_ten_minutes(self):
+        """#73 re-check 3 M1: the reviewer-to-org-admin direction has no `assigned_at` start; only the window."""
+        def emails_to(who):
+            return sum(1 for m in mail.outbox if m.to == [who.email])
+        self._post(self.reviewer, 'one')
+        self._post(self.reviewer, 'two')                 # a burst: rows, no second email
+        self.assertEqual((emails_to(self.org_admin), emails_to(self.org_admin2)), (1, 1))
+        self._ten_minutes_pass()
+        self._post(self.reviewer, 'three')
+        self.assertEqual((emails_to(self.org_admin), emails_to(self.org_admin2)), (2, 2))
 
     def test_someone_who_read_and_replied_is_emailed_for_the_next_turn(self):
         """#73 re-check L4: the cool-down counts UNSEEN rows only; it is for bursts, not for a conversation."""
