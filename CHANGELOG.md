@@ -27,6 +27,15 @@ Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration 
 - Tamil: தரக் கட்டுப்பாடு, புதிய குறிப்புள்ள, and the two email lines corrected. No email golden moved.
 - Tests: `test_reviewer_notes.py` and `test_staff_notifications.py` (not yet / finished, clear on reply, sweep after unassign, other side only, billing, cool-down, fence, list query count with notes, a reader clearing only their own case); `useNewNoteCount.test.tsx`; `ReviewerNotesCard.test.tsx` ("(you)" only on your own notes, both sides; the not-yet hint and refusal).
 
+### refactor: request #73 re-check 2 - first email after an assignment mark, holder-fenced bell (2026-11-18)
+
+Branch req73, a fourth commit on top of 7154d22e6, not pushed. No new migration (0213 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, items 22-25).
+- The New note mark given at assignment no longer silences the reviewer's first real email. The email cool-down now asks whether the NOTE is recent (and, for the reviewer, written since they were assigned), not whether the mark is.
+- A super who has held a case since before 9 Nov now sees that case's marks in the bell. The bell counts the caller's own organisation or a case they hold.
+- The assignment housekeeping sweeps again after marking, so a reassignment in between leaves no stale mark. Accepted and recorded: if the reviewer opens the notes before the cron runs, the mark appears once and clears on the next open.
+- A read-only reader opening the notes no longer makes the bell ask again. Coming back to the tab asks once, not twice.
+- Tests: `test_staff_notifications.py` (one email after an assignment mark; a holder with no organisation; a real database error in the sweep, with the mail sent and the connection still working; the housekeeping run twice marks once); `ReviewerNotesCard.test.tsx` (a reader does not tell the bell); `useNewNoteCount.test.tsx` (focus and visibility are one ask).
+
 ### refactor: request #73 re-check - notes card keyed to its case, bell refresh, sweep never blocks mail (2026-11-17)
 
 Branch req73, a third commit on top of e1a6e5e42, not pushed. No new migration (0213 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, re-check round).

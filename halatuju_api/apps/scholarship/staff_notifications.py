@@ -24,14 +24,16 @@ it as the reviewer (L6). The assignment writer itself is not touched: its query 
 
 ⚠ AT ASSIGNMENT (#73 re-check L7) the holder gets a mark for every org admin side note on the case that no
 reviewer has read yet, so a note written while nobody held the case is not lost. No email: the assignment
-email already goes. A note an earlier reviewer read is not marked again.
+email already goes. A note an earlier reviewer read is not marked again. The cron sweeps once more after
+marking, so a reassignment in between leaves no stale mark (re-check 2 L-C).
 
 ⚠ THE EMAIL is billed to the case's organisation (`usage.usage_context(application=...)`) and cools down
-over bursts: a person who still has an UNSEEN row on the case from the last `EMAIL_COOL_DOWN` gets the row
-and the mark, but no second email. Someone who read the note and replied is emailed for the next turn
-(#73 re-check L4).
+over bursts: a person who still has an UNSEEN row on the case for a note written in the last
+`EMAIL_COOL_DOWN` gets the row and the mark, but no second email. Someone who read the note and replied is
+emailed for the next turn (#73 re-check L4); a mark made at assignment never silences the next email (M-A).
 
-⚠ THE BELL COUNT is fenced to the caller's own organisation (`org_id`), on top of the recipient.
+⚠ THE BELL COUNT is fenced to the caller's own organisation (`org_id`), or a case the caller holds (a super
+who held a case before T1 keeps it, #73 re-check 2 L-A), on top of the recipient.
 
 ⚠ NO TEXT. A row holds ids only; the email says only that there is a new note, and links to the student page.
 """
@@ -86,13 +88,21 @@ def notify(application, *, kind, source_id, recipients):
 def alert_by_email(application, *, author_role, recipients, source_id):
     """After the commit, email ``recipients`` (the other side, `the_other_side`) that there is a new note on
     the case. Never the text. Billed to the case's organisation. Cools down: nobody who still has another
-    UNSEEN row on this case from the last `EMAIL_COOL_DOWN` is emailed again. Best-effort, never raises."""
+    UNSEEN row on this case for a note written in the last `EMAIL_COOL_DOWN` is emailed again. Best-effort,
+    never raises."""
     ids = [p.id for p in recipients if p.email]
     if not ids:
         return
+    # Recent is the NOTE behind the row, not the row, and for the holder only a note from since they were
+    # assigned (#73 re-check 2 M-A): a mark made at assignment, for a note written before it, must not
+    # silence the first real email after it. `assigned_at` is on the locked row: still one query.
+    since = timezone.now() - EMAIL_COOL_DOWN
+    if author_role == ORG_ADMIN and application.assigned_at is not None:
+        since = max(since, application.assigned_at)
+    fresh = ReviewerNote.objects.filter(application_id=application.id, created_at__gte=since).values('pk')
     recent = set(StaffNotification.objects.filter(
         application_id=application.id, recipient_id__in=ids, kind=REVIEWER_NOTE, seen_at__isnull=True,
-        created_at__gte=timezone.now() - EMAIL_COOL_DOWN,
+        source_id__in=fresh,
     ).exclude(source_id=source_id).values_list('recipient_id', flat=True))
     to = [p.email for p in recipients if p.email and p.id not in recent]
     if not to:
@@ -155,11 +165,13 @@ def mark_unread_for_the_holder(application_id):
 
 
 def after_assignment(application_id):
-    """The assign-emails cron's housekeeping for one case: `sweep`, then `mark_unread_for_the_holder`.
-    In its own savepoint; the caller logs and carries on if it raises (it must never hold up the mail)."""
+    """The assign-emails cron's housekeeping for one case: `sweep`, `mark_unread_for_the_holder`, then
+    `sweep` again, so a reassignment between the two leaves no stale mark (#73 re-check 2 L-C). In its own
+    savepoint; the caller logs and carries on if it raises (it must never hold up the mail)."""
     with transaction.atomic():
         sweep(application_id)
         mark_unread_for_the_holder(application_id)
+        sweep(application_id)
 
 
 def _unseen_from_the_other_side(admin):
@@ -184,8 +196,10 @@ def with_new_note(queryset, admin):
 def unseen_counts(admin):
     """The bell line's numbers, in one query: how many STUDENTS have a new note from a reviewer, and how many
     from the org admin side (the second is a reviewer's own cases)."""
-    # org-fence: the caller's own organisation, on top of their own rows (#73 review).
-    counts = _unseen_from_the_other_side(admin).filter(org_id=admin.owning_organisation_id).aggregate(
+    # org-fence: the caller's own organisation, on top of their own rows (#73 review), or a case they hold
+    # (#73 re-check 2 L-A: a super kept a case they held before T1, with no organisation of their own).
+    fence = Q(org_id=admin.owning_organisation_id) | Q(application__assigned_to_id=admin.id)
+    counts = _unseen_from_the_other_side(admin).filter(fence).aggregate(
         from_reviewer=Count('application_id', distinct=True, filter=Q(note_role=REVIEWER)),
         from_org_admin=Count('application_id', distinct=True, filter=Q(note_role=ORG_ADMIN)))
     return {k: v or 0 for k, v in counts.items()}

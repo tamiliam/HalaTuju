@@ -9,6 +9,9 @@ const NONE: NewNoteCount = { from_reviewer: 0, from_org_admin: 0 }
 /** A route change asks again at most once a minute (#73 review): the count is a hint, not a live feed. */
 export const NEW_NOTE_THROTTLE_MS = 60_000
 
+/** `focus` and `visibilitychange` within this many ms of each other are one return to the tab: one ask. */
+export const RETURN_COALESCE_MS = 1_000
+
 /** Fired by the notes card after a notes GET or POST succeeds: the server has just cleared that case's mark,
  *  so the bell asks again at once instead of waiting out the minute (#73 re-check M2). */
 export const NOTES_READ_EVENT = 'halatuju:notes-read'
@@ -56,12 +59,20 @@ export function useNewNoteCount(token: string | null | undefined, pathname: stri
 
   useEffect(() => {
     const now = () => load(true)
-    const onVisible = () => { if (document.visibilityState === 'visible') load(true) }
-    window.addEventListener('focus', now)
+    // Coming back to a tab fires `focus` AND `visibilitychange` together: one ask, not two (re-check 2 L-E).
+    let back = 0
+    const onBack = () => {
+      const at = Date.now()
+      if (at - back < RETURN_COALESCE_MS) return
+      back = at
+      load(true)
+    }
+    const onVisible = () => { if (document.visibilityState === 'visible') onBack() }
+    window.addEventListener('focus', onBack)
     window.addEventListener(NOTES_READ_EVENT, now)
     document.addEventListener('visibilitychange', onVisible)
     return () => {
-      window.removeEventListener('focus', now)
+      window.removeEventListener('focus', onBack)
       window.removeEventListener(NOTES_READ_EVENT, now)
       document.removeEventListener('visibilitychange', onVisible)
     }

@@ -3,12 +3,12 @@
  *
  * Request #73 review: the bell's new-note count is asked once on sign-in, then on a route change at most once a
  * minute, and again at once whenever the window regains focus, the tab becomes visible, or the notes card says a
- * case was just read (re-check M2). An older answer never overwrites a newer one (re-check L9). No token,
- * nothing asked.
+ * case was just read (re-check M2). An older answer never overwrites a newer one (re-check L9). Focus and the
+ * tab becoming visible together are one ask (re-check 2 L-E). No token, nothing asked.
  */
 import { act, renderHook, waitFor } from '@testing-library/react'
 
-import { NEW_NOTE_THROTTLE_MS, announceNotesRead, useNewNoteCount } from '../useNewNoteCount'
+import { NEW_NOTE_THROTTLE_MS, RETURN_COALESCE_MS, announceNotesRead, useNewNoteCount } from '../useNewNoteCount'
 import * as adminApi from '@/lib/admin-api'
 
 jest.mock('@/lib/admin-api', () => ({
@@ -100,4 +100,23 @@ it('an older answer arriving last never overwrites a newer one (re-check L9)', a
   await act(async () => { answers[1]({ from_reviewer: 0, from_org_admin: 1 }) })
   await act(async () => { answers[0]({ from_reviewer: 5, from_org_admin: 0 }) })
   expect(result.current).toEqual({ from_reviewer: 0, from_org_admin: 1 })
+})
+
+it('focus and the tab becoming visible together are one ask; a later return asks again (re-check 2 L-E)', async () => {
+  mount()
+  await waitFor(() => expect(counts).toHaveBeenCalledTimes(1))
+  jest.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+  now = START + 5_000
+  act(() => {
+    document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(new Event('focus'))
+  })
+  await waitFor(() => expect(counts).toHaveBeenCalledTimes(2))
+  now = START + 5_000 + RETURN_COALESCE_MS - 1
+  act(() => { window.dispatchEvent(new Event('focus')) })
+  await Promise.resolve()
+  expect(counts).toHaveBeenCalledTimes(2)
+  now = START + 5_000 + RETURN_COALESCE_MS + 1
+  act(() => { window.dispatchEvent(new Event('focus')) })
+  await waitFor(() => expect(counts).toHaveBeenCalledTimes(3))
 })

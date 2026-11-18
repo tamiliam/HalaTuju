@@ -73,7 +73,8 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
     if (!token) return
     let live = true
     getReviewerNotes(appId, { token })
-      .then((d) => { if (live) { setData(d); setLoadFailed(false); announceNotesRead() } })
+      // A reader has no rows to clear, so the bell is told only for a writer's read (#73 re-check 2 L-E).
+      .then((d) => { if (live) { setData(d); setLoadFailed(false); if (d.viewer !== 'reader') announceNotesRead() } })
       // Review R6: a failed REFRESH is said out loud; the notes already on screen stay, marked stale.
       .catch(() => { if (live) setLoadFailed(true) })
     return () => { live = false }

@@ -321,4 +321,18 @@ describe('the bell is told', () => {
       window.removeEventListener(NOTES_READ_EVENT, heard)
     }
   })
+
+  it('never for a read-only reader: they have no mark to clear (re-check 2 L-E)', async () => {
+    const heard = jest.fn()
+    window.addEventListener(NOTES_READ_EVENT, heard)
+    try {
+      get.mockResolvedValue(payload({ viewer: 'reader', can_add: false }))
+      mount()
+      await waitFor(() => expect(get).toHaveBeenCalled())
+      await act(async () => { await Promise.resolve() })
+      expect(heard).not.toHaveBeenCalled()
+    } finally {
+      window.removeEventListener(NOTES_READ_EVENT, heard)
+    }
+  })
 })

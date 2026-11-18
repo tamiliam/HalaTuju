@@ -25,7 +25,7 @@ from unittest import mock
 from datetime import timedelta
 
 from django.core import mail
-from django.db import connection
+from django.db import DatabaseError, connection
 from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
@@ -238,6 +238,24 @@ class ReassignmentTest(_Base):
         to_reviewer.assert_called_once()
         self.assertIn('new-note housekeeping failed', '\n'.join(logs.output))
 
+    def test_a_real_database_error_in_the_sweep_leaves_the_mail_and_the_connection_working(self):
+        """#73 re-check 2 L-D: the savepoint rolls the broken statement back, so the cron carries on."""
+        def broken(_application_id):
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT * FROM no_such_table_req73')
+        with mock.patch.object(staff_notifications, 'sweep', side_effect=broken), \
+                mock.patch('apps.scholarship.emails.send_reviewer_assigned_email') as to_reviewer, \
+                mock.patch('apps.scholarship.emails.send_student_assigned_reviewer_email'), \
+                self.assertLogs('apps.scholarship.assign_notify', level='WARNING') as logs:
+            counts = assign_notify.send_pending()
+        self.assertEqual(counts['sent'], 1)
+        to_reviewer.assert_called_once()
+        failed = [r for r in logs.records if 'housekeeping failed' in r.getMessage()]
+        self.assertEqual(len(failed), 1)
+        self.assertTrue(issubclass(failed[0].exc_info[0], DatabaseError))   # a real one, not a mock's
+        self.assertEqual(StaffNotification.objects.count(), 0)           # the connection still answers
+        self.assertEqual(self._post(self.org_admin).status_code, 201)
+
 
 class MarkAtAssignmentTest(_Base):
     """#73 re-check L7: a note written while nobody held the case reaches nobody until the case is assigned;
@@ -268,6 +286,24 @@ class MarkAtAssignmentTest(_Base):
         self.assertEqual(mail.outbox, [])                          # no new-note email: the assignment email goes
         self._cron()                                               # a second run adds nothing
         self.assertEqual(StaffNotification.objects.count(), 1)
+
+    def test_after_assignment_twice_marks_once(self):
+        """#73 re-check 2 L-D: the housekeeping itself is idempotent, not just the cron's claim."""
+        self._post(self.org_admin, 'before anyone holds it')
+        type(self.app).objects.filter(pk=self.app.pk).update(assigned_to=self.reviewer)
+        staff_notifications.after_assignment(self.app.id)
+        staff_notifications.after_assignment(self.app.id)
+        self.assertEqual(StaffNotification.objects.filter(recipient=self.reviewer).count(), 1)
+
+    def test_the_mark_never_silences_the_next_real_email(self):
+        """#73 re-check 2 M-A: the cool-down asks whether the NOTE is recent, so a fresh mark for an older note
+        does not hold back the first email the holder should get; nor does a note from before they held it."""
+        self._post(self.org_admin, 'before anyone holds it')                # moments before, not ten minutes
+        self._assign(self.reviewer)
+        self._cron()
+        self.assertEqual(self._rows(self.reviewer), 1)
+        self._post(self.org_admin, 'a new note, a minute after the assignment')
+        self.assertEqual([m.to for m in mail.outbox], [[self.reviewer.email]])
 
     def test_a_note_an_earlier_reviewer_read_is_not_marked_again(self):
         self._assign(self.reviewer)
@@ -331,7 +367,7 @@ class WhoHearsTest(_Base):
         self._post(self.org_admin2, 'two')               # a minute later in effect: rows, no second email
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(self._rows(self.reviewer), 2)    # the mark still counts both
-        StaffNotification.objects.update(
+        ReviewerNote.objects.update(   # the cool-down asks the NOTE's age (#73 re-check 2 M-A)
             created_at=timezone.now() - staff_notifications.EMAIL_COOL_DOWN - timedelta(minutes=1))
         self._post(self.org_admin, 'three')
         self.assertEqual(len(mail.outbox), 2)
@@ -434,6 +470,15 @@ class BellCountTest(_Base):
         self.assertEqual(staff_notifications.unseen_counts(self.org_admin)['from_reviewer'], 0)
         self._post(self.reviewer)
         self.assertEqual(staff_notifications.unseen_counts(self.org_admin)['from_reviewer'], 1)
+
+    def test_a_holder_with_no_organisation_counts_their_own_case(self):
+        """#73 re-check 2 L-A: a super who held a case before T1 keeps it (T1-d); their bell counts it."""
+        sup = make_admin('reviewer', super_admin=True, email='sup73@example.test')
+        held = make_application('interviewing', cohort=self.cohort, reviewer=sup)
+        self.assertIsNone(sup.owning_organisation_id)
+        self._post(self.org_admin, app=held)
+        self.assertEqual(staff_notifications.unseen_counts(sup), {'from_reviewer': 0, 'from_org_admin': 1})
+        self.assertEqual(authed_client(sup).get(COUNT).data, {'from_reviewer': 0, 'from_org_admin': 1})
 
     def test_one_query(self):
         self._post(self.reviewer)
