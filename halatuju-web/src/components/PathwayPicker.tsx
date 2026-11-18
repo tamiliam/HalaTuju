@@ -134,7 +134,9 @@ export default function PathwayPicker({
       : {
           pathwayCertainty: 'uncertain', chosenPathway: '',
           pathwaysConsidered: form.pathwaysConsidered.length ? form.pathwaysConsidered : ['stpm'],
-          uncertaintyReasons: form.uncertaintyReasons.length ? form.uncertaintyReasons : ['exploring'],
+          // On /apply "where are you now" is required, so the student picks it herself (review
+          // 2026-11-18); /profile keeps its 'exploring' default.
+          uncertaintyReasons: form.uncertaintyReasons.length ? form.uncertaintyReasons : apply ? [] : ['exploring'],
         }
   )
   const setPathway = (key: string) => {

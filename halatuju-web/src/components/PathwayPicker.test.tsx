@@ -91,10 +91,10 @@ const SPM = { ...sandboxProfileFormSix, results_held: 'spm' }
 const STPM = { ...sandboxProfileStpm, results_held: 'stpm' }
 
 let latest: PathwayForm = FORM
-function Harness({ profile, initial = FORM }: { profile: Record<string, unknown>; initial?: PathwayForm }) {
+function Harness({ profile, initial = FORM, apply = false }: { profile: Record<string, unknown>; initial?: PathwayForm; apply?: boolean }) {
   const [form, setForm] = useState<PathwayForm>(initial)
   latest = form
-  return <PathwayPicker value={form} onChange={(p) => setForm((f) => ({ ...f, ...p }))} profile={profile as never} token="tkn" />
+  return <PathwayPicker value={form} onChange={(p) => setForm((f) => ({ ...f, ...p }))} profile={profile as never} token="tkn" apply={apply} />
 }
 const mount = (profile: Record<string, unknown>, initial?: PathwayForm) => render(<Harness profile={profile} initial={initial} />)
 const click = (key: string) => fireEvent.click(screen.getByText(key).closest('button') as HTMLButtonElement)
@@ -116,6 +116,23 @@ it('asks the offer question, with the two stored answers', () => {
   expect(screen.queryByRole('switch')).toBeNull()          // nothing to narrow while waiting
   click('scholarship.apply.plan.sure')
   expect(latest.pathwayCertainty).toBe('sure')
+})
+
+// Review 2026-11-18: "where are you now" is REQUIRED on /apply, so it starts empty there for her to
+// pick; /profile keeps its 'exploring' default.
+it('waiting on /apply leaves "where are you now" for her to pick; /profile keeps the default', () => {
+  render(<Harness profile={SPM} apply />)
+  click('scholarship.apply.plan.uncertain')
+  expect(latest.uncertaintyReasons).toEqual([])
+  click('scholarship.apply.plan.sure')
+  click('scholarship.apply.plan.uncertain')
+  expect(latest.uncertaintyReasons).toEqual([])
+})
+
+it('waiting on /profile still starts at "exploring"', () => {
+  mount(SPM)
+  click('scholarship.apply.plan.uncertain')
+  expect(latest.uncertaintyReasons).toEqual(['exploring'])
 })
 
 it('with an offer: EVERY pathway, and no results asked for', async () => {

@@ -869,17 +869,6 @@
       ],
       "kwargs": {}
      }
-    ],
-    [
-     "resolve_catalogue_course",
-     {
-      "args": [
-       "Asasi Sains",
-       "UM",
-       ""
-      ],
-      "kwargs": {}
-     }
     ]
    ],
    "fact": {
@@ -905,17 +894,6 @@
       "args": [
        "PISMP",
        "IPG"
-      ],
-      "kwargs": {}
-     }
-    ],
-    [
-     "resolve_catalogue_course",
-     {
-      "args": [
-       "PISMP",
-       "IPG",
-       ""
       ],
       "kwargs": {}
      }
@@ -979,17 +957,6 @@
       ],
       "kwargs": {}
      }
-    ],
-    [
-     "resolve_catalogue_course",
-     {
-      "args": [
-       "Asasi Sains",
-       "UM",
-       ""
-      ],
-      "kwargs": {}
-     }
     ]
    ],
    "fact": {
@@ -1023,17 +990,6 @@
       "args": [
        "Asasi Sains",
        "UM"
-      ],
-      "kwargs": {}
-     }
-    ],
-    [
-     "resolve_catalogue_course",
-     {
-      "args": [
-       "Asasi Sains",
-       "UM",
-       ""
       ],
       "kwargs": {}
      }
@@ -1090,17 +1046,6 @@
       "args": [
        "Asasi Sains",
        "UM"
-      ],
-      "kwargs": {}
-     }
-    ],
-    [
-     "resolve_catalogue_course",
-     {
-      "args": [
-       "Asasi Sains",
-       "UM",
-       ""
       ],
       "kwargs": {}
      }

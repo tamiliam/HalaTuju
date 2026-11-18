@@ -93,13 +93,34 @@ def declared_degree(application):
     return label(pick) if pick else '; '.join(filter(None, (label(c) for c in _top_choices(application))))
 
 
+def _letter_course(chk, prog, inst):
+    """The ONE catalogue course the letter pins at ONE campus at its own stated level — the linker's own
+    test (``offer_link.pinned_course``, which ``plan_offer_link`` and the realignment share), else None."""
+    from .services import offer_link
+    return offer_link.pinned_course({}, prog, inst, chk.get('issuer') or '')
+
+
+def _linked_course(application, offer, chk, prog, inst):
+    """R4 / R5's clean match (review 2026-11-18): the course the linker WILL write for this letter
+    (``plan_offer_link`` — an empty pick needs a GENUINE letter), or the one it already wrote from this
+    letter; else None, and she is asked to pick (R6). A loose name match that nothing links is not clean."""
+    from .services import offer_link
+    reason, new_cp, _ = offer_link.plan_offer_link(application, offer, chk)
+    if not reason:
+        return new_cp
+    if reason == 'has_course_id':
+        cp, match = application.chosen_programme, _letter_course(chk, prog, inst)
+        return match if match and match['course_id'] == (cp.get('course_id') or '').strip() else None
+    return None
+
+
 def _same_course(application, clean):
     """R2 (owner 2026-11-18): her own pick IS the course the letter cleanly names — by course id, or
     for a name-only pick by the matcher's own name test — so a word clash elsewhere asks nothing."""
     pick = _own_pick(application)
     if not pick:
         return False
-    match = clean()
+    match = clean('pinned')
     if not match:
         return False
     cid = (pick.get('course_id') or '').strip()
@@ -112,13 +133,14 @@ def _same_course(application, clean):
 
 
 def _course_ask(application, chk, prog, inst, offer_type, clean, pismp_extra):
-    """The ask for a student with no pick of her own (owner 2026-11-18): none when the letter is a CLEAN
-    match — ONE catalogue course (R4, R5; the autofill links it); the one-tap confirm for a pre-U letter
-    whose stream parses or a unique-bidang PISMP letter (as before); else pick your course (R6)."""
+    """The ask for a student with no pick of her own (owner 2026-11-18): the one-tap confirm for a
+    unique-bidang PISMP letter (as before, checked first); none when the linker links the letter's ONE
+    catalogue course (R4, R5); the one-tap confirm for a pre-U letter whose stream parses (as before);
+    else pick your course (R6)."""
     from . import offer_pathway as _op
-    if clean():
-        return None
     pismp_unique = offer_type == 'pismp' and bool(_op.resolve_pismp_course((chk.get('bidang') or '').strip()))
+    if not pismp_unique and clean('linked'):
+        return None
     pre_u_parsed = _op.is_pre_u(offer_type) and _op.offer_is_resolvable(prog, inst, chk.get('issuer') or '')
     extra = pismp_extra() if offer_type == 'pismp' else {}
     if pre_u_parsed or pismp_unique:
@@ -170,9 +192,10 @@ def offer_pathway_fact(application, offer):
     #   Case 3 — SAME family but the institution/stream CLASHES (the #117 within-type case): the
     #     generic "is this where you're going?" confirm. Not re-asked once confirmed (minor drift).
     #   Case 1 — the student declared NOTHING (#127), or is a tertiary student with no pick of her own
-    #     (owner 2026-11-18): a letter naming ONE catalogue course → no ask (the autofill links it); a
-    #     pre-U letter whose stream parses, or a unique-bidang PISMP letter → one-tap confirm; anything
-    #     else (no one course in our list) → pick your course on the profile (pathway_undeclared).
+    #     (owner 2026-11-18): a unique-bidang PISMP letter → one-tap confirm; a letter whose ONE catalogue
+    #     course the linker writes (plan_offer_link: one campus, its own level, a genuine letter for an
+    #     empty pick) → no ask; a pre-U letter whose stream parses → one-tap confirm; anything else →
+    #     pick your course on the profile (pathway_undeclared).
     from . import offer_pathway as _op
     from .pathway_engine import offer_hearing_ok
     if offer_hearing_ok(offer):
@@ -196,14 +219,17 @@ def offer_pathway_fact(application, offer):
                 extra['aliran_hint'] = _op.infer_pismp_aliran(profile)
             return extra
 
-        # The CLEAN match (owner 2026-11-18): the letter names ONE catalogue course. Read once, lazily.
-        _clean = []
+        # The CLEAN match (owner 2026-11-18; review): 'pinned' = the letter pins ONE catalogue course at
+        # its own level (R2); 'linked' = the linker writes, or wrote, that course for her (R4 / R5).
+        # Never for a pre-U letter (no course id). Each read once, lazily.
+        _clean = {}
 
-        def clean():
-            if not _clean:
-                _clean.append(None if _op.is_pre_u(offer_type) else
-                              _op.resolve_catalogue_course(prog, inst, chk.get('issuer') or ''))
-            return _clean[0]
+        def clean(kind):
+            if kind not in _clean:
+                _clean[kind] = None if _op.is_pre_u(offer_type) else (
+                    _letter_course(chk, prog, inst) if kind == 'pinned'
+                    else _linked_course(application, offer, chk, prog, inst))
+            return _clean[kind]
 
         # A TERTIARY student with no degree pick of her own (nothing, or only her named top choices)
         # is never asked "is this where you're going?" against her old pre-U school (R5); a clean

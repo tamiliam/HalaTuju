@@ -96,9 +96,9 @@ class _Tertiary(TestCase):
         self.app.top_choices = []
         self.app.save()
 
-    def offer(self, programme=LETTER_804, institution=USM, issuer=USM, status='genuine'):
+    def offer(self, programme=LETTER_804, institution=USM, issuer=USM, status='genuine', **extra):
         fields = {'candidate_name': NAME, 'candidate_nric': NRIC, 'programme': programme,
-                  'institution': institution, 'issuer': issuer}
+                  'institution': institution, 'issuer': issuer, **extra}
         return ApplicantDocument.objects.create(
             application=self.app, doc_type='offer_letter', storage_path=f'{self.app.id}/offer_letter/x',
             vision_run_at=timezone.now(),
@@ -166,6 +166,40 @@ class HearingTest(_Tertiary):
         self.offer(programme='SARJANA MUDA PSIKOLOGI DENGAN KEPUJIAN')
         self.assertEqual(self.codes(), ['pathway_undeclared'])
 
+    # Review 2026-11-18: "clean" is what the LINKER writes, not a loose name match. Her old pre-U school
+    # makes the offer check a mismatch, so the autofill only fills an empty pick (fill_empty_pick: one
+    # campus, the letter's own level, a GENUINE letter); anything it will not link asks her to pick.
+    def _asks_and_stays_unlinked(self, programme, status='genuine'):
+        from apps.scholarship.services.offer_sync import autofill_pathway_from_offer
+        self.offer(programme=programme, status=status)
+        f = self.pathway()
+        codes = [i['code'] for i in f['unresolved']]       # a suspect letter adds its own red line too
+        self.assertIn('pathway_undeclared', codes)
+        self.assertNotIn('pathway_confirm', codes)
+        self.assertNotEqual(f['status'], 'verified')
+        autofill_pathway_from_offer(self.app)
+        self.app.refresh_from_db()
+        self.assertFalse((self.app.chosen_programme or {}).get('course_id'))
+
+    def test_a_letter_with_no_level_word_is_not_clean(self):
+        self._asks_and_stays_unlinked('SAINS KEMASYARAKATAN')
+
+    def test_a_masters_letter_is_not_clean(self):
+        self._asks_and_stays_unlinked('SARJANA SAINS KEMASYARAKATAN (EKONOMI)')
+
+    def test_a_suspect_letter_is_not_clean_for_an_empty_pick(self):
+        self._asks_and_stays_unlinked('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN', status='suspect')
+
+    def test_804_with_an_empty_pick_asks_nothing_and_is_linked(self):
+        from apps.scholarship.services.offer_sync import autofill_pathway_from_offer
+        self.offer()
+        self.assertEqual(self.codes(), [])
+        autofill_pathway_from_offer(self.app)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.chosen_programme.get('course_id'), 'US6310001')
+        f = self.pathway()
+        self.assertEqual((f['status'], f['unresolved']), ('verified', []))
+
     def test_an_unscored_letter_still_gets_no_hearing(self):
         self.offer(programme='SARJANA MUDA PSIKOLOGI DENGAN KEPUJIAN', status='')
         self.assertEqual(self.codes(), [])
@@ -195,6 +229,20 @@ class SpmUnchangedTest(_Tertiary):
     def test_r4_a_clean_letter_asks_nothing(self):
         self.offer()
         self.assertEqual(self.codes(), [])
+
+    def test_a_unique_pismp_letter_keeps_the_one_tap_confirm(self):
+        # Review 2026-11-18: the PISMP one-tap confirm is checked BEFORE the clean match, so even a
+        # letter the linker would link keeps it (CHANGELOG: "unique-bidang PISMP keep theirs").
+        from unittest import mock
+        course = {'course_id': 'PISMP-SJKT-BT', 'course_name': 'Bahasa Tamil (SJKT)', 'aliran': 'sjkt'}
+        linked = ('', {'course_id': 'PISMP-SJKT-BT', 'course_name': 'Bahasa Tamil (SJKT)'}, 'pismp')
+        self.offer(programme='PROGRAM IJAZAH SARJANA MUDA PERGURUAN', institution='IPG Kampus Contoh',
+                   issuer='IPG Kampus Contoh', bidang_pengkhususan='Bahasa Tamil')
+        with mock.patch('apps.scholarship.offer_pathway.resolve_pismp_course', return_value=course), \
+                mock.patch('apps.scholarship.services.offer_link.plan_offer_link', return_value=linked):
+            f = self.pathway()
+        self.assertEqual([i['code'] for i in f['unresolved']], ['pathway_confirm'])
+        self.assertEqual(f['unresolved'][0]['params']['course_id'], 'PISMP-SJKT-BT')
 
     def test_r8_no_context_line_change(self):
         from apps.scholarship.verdict_pathway import declared_degree
