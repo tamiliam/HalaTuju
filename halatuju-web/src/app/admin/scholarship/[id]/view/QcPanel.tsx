@@ -7,12 +7,13 @@
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
-import type { Dispatch, SetStateAction } from 'react'
-import type { AdminScholarshipDetail } from '@/lib/admin-api'
+import { useState, type Dispatch, type SetStateAction } from 'react'
+import type { AdminScholarshipDetail, QcDecisionPayload } from '@/lib/admin-api'
 import { hasPerm } from '@/lib/staffPermissions'
 
 import type { T, AdminRole } from './shared'
 import Toggle from '@/components/Toggle'
+import { FactsInDoubt, factChecksFor, inDoubtOf } from './FactsInDoubt'
 
 /** TD-483: the cockpit's words for a QC-door refusal code (`qc_separation.MESSAGES`), or null for a
  * code it does not know (the caller then shows the server's English sentence). */
@@ -45,7 +46,8 @@ export function QcPanel({
   busy: string
   canQc: boolean
   role: AdminRole
-  doQcDecision: (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) => void
+  doQcDecision: (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string,
+    factChecks?: QcDecisionPayload['fact_checks']) => void
   qcReopenOpen: boolean
   setQcReopenOpen: Dispatch<SetStateAction<boolean>>
   qcComments: string
@@ -57,6 +59,16 @@ export function QcPanel({
   qcOverrideReason: string
   setQcOverrideReason: Dispatch<SetStateAction<string>>
 }) {
+  // LL2b: the QC's "Disagree" taps on the facts in doubt, kept for THIS verdict round only (a new
+  // verdict after a reopen starts with no taps). With no fact in doubt no block shows and no
+  // `fact_checks` key is sent — the request is exactly as before LL2b.
+  const round = app.verdict_decided_at ?? ''
+  const [taps, setTaps] = useState<{ round: string; facts: string[] }>({ round, facts: [] })
+  const tapped = taps.round === round ? taps.facts : []
+  const doubt = inDoubtOf(app)
+  const checks = doubt.length > 0 ? factChecksFor(doubt, tapped) : undefined
+  const decide = (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) =>
+    doQcDecision(decision, overrideReason, checks)
   return (<>
 
       {/* ── Quality Control — the QC gate on an AWAITING-QC ('interviewed') case (a `qc` role or
@@ -95,11 +107,13 @@ export function QcPanel({
               {canQc && <> {t('admin.scholarship.qcDecision.gapFloorSuper')}</>}
             </p>
           )}
+          <FactsInDoubt items={doubt} t={t} tapped={tapped} busy={!!busy}
+            setTapped={(facts) => setTaps({ round, facts })} />
           {!qcReopenOpen && !qcOverrideOpen ? (
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => {
-                  if (!floorBlocked) { doQcDecision('accept'); return }
+                  if (!floorBlocked) { decide('accept'); return }
                   if (canQc) { setQcOverrideOpen(true); setQcOverrideReason('') }
                 }}
                 disabled={!!busy || (floorBlocked && !canQc)}
@@ -124,7 +138,7 @@ export function QcPanel({
                 placeholder={t('admin.scholarship.qcDecision.overridePlaceholder')}
                 className="w-full rounded border border-critical-300 px-2 py-1.5 text-sm" />
               <div className="flex items-center gap-2">
-                <button onClick={() => doQcDecision('accept', qcOverrideReason)}
+                <button onClick={() => decide('accept', qcOverrideReason)}
                   disabled={!!busy || !qcOverrideReason.trim()}
                   className="rounded-lg bg-critical-fill px-3 py-1.5 text-xs font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.overrideConfirm')}
@@ -154,7 +168,7 @@ export function QcPanel({
               </label>
               )}
               <div className="flex items-center gap-2">
-                <button onClick={() => doQcDecision(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
+                <button onClick={() => decide(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-caution-fill-ink disabled:opacity-50 ${qcRejectMode ? 'bg-critical-fill hover:bg-critical-fill-hover' : 'bg-caution-fill hover:bg-caution-fill-hover'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
                   {busy === 'qc' ? t('common.loading')
                     : t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectConfirm' : 'admin.scholarship.qcDecision.reopenConfirm')}

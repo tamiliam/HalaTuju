@@ -2,7 +2,13 @@
  * Made-up "AI prediction" payloads for the section and landing tests (LL1). Nobody real is in here:
  * the reviewers are invented names, and every figure is invented to be easy to find on the screen.
  */
-import type { PredictionCounts, ReviewerRow, VerdictMetrics } from '@/lib/admin-api'
+import type { PredictionCounts, QcCheckedCounts, ReviewerRow, VerdictMetrics } from '@/lib/admin-api'
+
+/** LL2b: one block of "checked by the QC" counts. */
+export const qcChecked = (over: Partial<QcCheckedCounts> = {}): QcCheckedCounts => ({
+  in_doubt: 0, checked: 0, not_checked: 0, agreed: 0, disagreed: 0, ai_green_checked: 0,
+  ai_wrong_checked: 0, ai_right_reviewer_wrong_checked: 0, few: false, few_ai_green: false, ...over,
+})
 
 export const counts = (over: Partial<PredictionCounts> = {}): PredictionCounts => ({
   green: 100, green_failed: 10, green_agreed: 90, green_agree_rate: 0.9, green_fail_rate: 0.1,

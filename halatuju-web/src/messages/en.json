@@ -5237,7 +5237,17 @@
         "overrideConfirm": "Record reason & accept",
         "reverifyTitle": "The IC lock was released",
         "reverifyHint": "This intake has a \"Born in\" rule and the student's IC is no longer locked, so Accept is refused. Re-verify the IC here: it locks the IC again and checks that no other account holds it verified. The case stays awaiting QC and the reviewer is not told. Unless you are a super admin, someone else then does the QC.",
-        "reverifyButton": "Re-verify IC"
+        "reverifyButton": "Re-verify IC",
+        "secondLook": {
+          "title": "Facts in doubt",
+          "help": "The reviewer and the AI did not agree on these facts. You agree with the reviewer unless you tap Disagree.",
+          "aiSaid": "AI said",
+          "reviewerSaid": "Reviewer said",
+          "disagree": "Disagree with the reviewer",
+          "undo": "You disagree. Tap to undo.",
+          "agree": "You agree with the reviewer.",
+          "butDecision": "but the decision is {decision}"
+        }
       },
       "caveats": {
         "studentAnswer": "Student's answer",
@@ -7640,7 +7650,11 @@
         "unmatchedReviewer": "Reviewer not matched to an account",
         "notGiven": "Not given",
         "unnamedReviewer": "Reviewer not named",
+        "qcChecked": "Facts in doubt, checked by the QC",
         "col": {
+          "qcChecked": "Checked by the QC",
+          "qcAgreed": "Agreed with the reviewer",
+          "qcDisagreed": "Disagreed with the reviewer",
           "reasons": "Why it failed",
           "sure": "AI sure, reviewer agreed",
           "doubt": "AI in doubt, reviewer passed",

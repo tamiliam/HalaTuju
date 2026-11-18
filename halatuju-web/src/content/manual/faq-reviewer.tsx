@@ -191,7 +191,10 @@ export const REVIEWER_FAQ: QA[] = [
         four facts and still <strong>Decline</strong> — for instance, income verified but above the B40 line.
         A Pass or Fail tap records the student&rsquo;s fact; it does not rate the AI.
         If you Fail a fact the system showed as green, tap one reason for it before you save. If you Approve
-        while a fact is on Fail, you see a warning, but you can still go ahead.</>,
+        while a fact is on Fail, you see a warning, but you can still go ahead. QC then takes a second look at
+        those facts (a Fail on a green fact, or a Fail you still approved) and either agrees with you or taps
+        <strong> Disagree</strong>. The answers count how often the AI was right; leads also see how often QC
+        disagreed with each reviewer, to support reviewers, not to rank them.</>,
     },
     {
       q: <>Can I undo a decision after I Save?</>,

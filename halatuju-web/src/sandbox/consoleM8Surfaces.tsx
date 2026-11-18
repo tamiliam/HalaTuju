@@ -72,7 +72,13 @@ const aiCounts = (green: number, agreed: number, over: Record<string, unknown> =
   few_green: false, few_unsure: false, few: false, ...over,
 })
 const aiReviewer = (id: number | null, name: string, label_key: string | null, applications: number) => ({
-  ...aiCounts(100, 90), id, name, label_key, applications,
+  ...aiCounts(100, 90), id, name, label_key, applications, qc_checked: 4, qc_overturned: 1,
+})
+// LL2b: "checked by the QC" counts for one fact (in doubt, checked, disagreed).
+const qcB = (in_doubt: number, checked: number, disagreed: number) => ({
+  in_doubt, checked, not_checked: in_doubt - checked, agreed: checked - disagreed, disagreed,
+  ai_green_checked: checked, ai_wrong_checked: checked - disagreed, ai_right_reviewer_wrong_checked: disagreed,
+  few: checked < 30, few_ai_green: checked < 30,
 })
 const AI_METRICS = {
   applications: 50, fact_decisions: 200, overrides: 20, override_rate: 0.1, per_fact: {},
@@ -92,6 +98,7 @@ const AI_METRICS = {
     { fact: 'academic', code: 'grade_blurred', passed: 3, failed: 1, total: 4, fail_rate: 0.25, pass_rate: 0.75, few: true },
   ],
   qc_agreement: { accept: 17, reopen: 2, reject: 1, total: 20, accept_rate: 0.85, few: false, by_month: {} },
+  qc_checked: { total: qcB(40, 34, 5), facts: { identity: qcB(0, 0, 0), academic: qcB(6, 5, 1), pathway: qcB(4, 4, 2), income: qcB(30, 25, 2) } },
   by_reviewer: [aiReviewer(7, LONG_TAMIL, null, 12), aiReviewer(null, 'x', 'unmatched_reviewer', 3),
     aiReviewer(null, 'y', 'unnamed_reviewer', 2)],
 }

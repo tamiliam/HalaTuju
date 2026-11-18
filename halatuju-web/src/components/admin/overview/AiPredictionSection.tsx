@@ -22,7 +22,9 @@ import type { JSX } from 'react'
 import { LineChart } from '@/components/admin/charts/Charts'
 import type { VerdictMetrics } from '@/lib/admin-api'
 import { monthOf, thinTicks } from '@/lib/programmeOverview'
-import { DoubtTable, FactTable, Figure, FewPill, ReviewerTable, VersionTable, pct } from './AiPredictionTables'
+import {
+  DoubtTable, FactTable, Figure, FewPill, QcCheckedTable, ReviewerTable, VersionTable, pct,
+} from './AiPredictionTables'
 import type { SectionProps, Translate } from './sectionTypes'
 
 /** ⚠ The i18n guard resolves `${K}.` templates by this LITERAL name. */
@@ -167,6 +169,14 @@ export function AiPredictionBlock({ ai, t, note }: { ai: VerdictMetrics; t: Tran
           )}
 
           <Decision ai={ai} t={t} />
+
+          {/* LL2b: nothing when no fact was in doubt, or the payload predates the key. */}
+          {!!ai.qc_checked?.total.in_doubt && (
+            <div data-testid="ai-qc-checked">
+              <h3 className={`${H3} mb-2`}>{t(`${K}.qcChecked`)}</h3>
+              <QcCheckedTable t={t} facts={ai.qc_checked.facts} />
+            </div>
+          )}
 
           {Object.keys(versions).length > 0 && (
             <details className="rounded-xl border border-ground-200 px-3" data-testid="ai-by-version">

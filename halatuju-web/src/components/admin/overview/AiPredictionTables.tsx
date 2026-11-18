@@ -11,7 +11,7 @@
  */
 
 import TableFrame, { TH } from '@/components/admin/TableFrame'
-import type { PredictionCounts, DoubtRow, ReviewerRow } from '@/lib/admin-api'
+import type { PredictionCounts, DoubtRow, ReviewerRow, QcCheckedCounts } from '@/lib/admin-api'
 import { tOr } from '@/lib/i18n'
 import { PHONE_PILL_SM } from '@/lib/phonePill'
 import type { Translate } from './sectionTypes'
@@ -149,6 +149,40 @@ export function FactTable({ t, counts, reasons, notGiven }: {
   )
 }
 
+/** LL2b: the facts in doubt the QC checked, by fact — counts only. A fact with none in doubt has
+ *  no row; the served `few` flag adds the pill. The caller draws this only when the total in doubt
+ *  is above 0. */
+export function QcCheckedTable({ t, facts }: { t: Translate; facts: Record<string, QcCheckedCounts> }) {
+  const rows = FACT_CODES.filter((f) => facts[f]?.in_doubt)
+  return (
+    <TableFrame phoneRows minWidth={520} label={t(`${K}.qcChecked`)}>
+      <table className="w-full">
+        <thead className={HEAD}>
+          <tr>
+            <th className={TH}>{t(`${K}.col.fact`)}</th>
+            <th className={TH}>{t(`${K}.col.qcChecked`)}</th>
+            <th className={TH}>{t(`${K}.col.qcAgreed`)}</th>
+            <th className={TH}>{t(`${K}.col.qcDisagreed`)}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((f) => (
+            <tr key={f} className={ROW} data-testid={`ai-qc-${f}`}>
+              <td className={NAME}>{factName(t, f)}</td>
+              <td className={TD} data-label={t(`${K}.col.qcChecked`)}>
+                {t(`${K}.xOfY`, { a: String(facts[f].checked), b: String(facts[f].in_doubt) })}
+                {facts[f].few && <> <FewPill t={t} /></>}
+              </td>
+              <td className={TD} data-label={t(`${K}.col.qcAgreed`)}>{facts[f].agreed}</td>
+              <td className={TD} data-label={t(`${K}.col.qcDisagreed`)}>{facts[f].disagreed}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableFrame>
+  )
+}
+
 export function DoubtTable({ t, rows }: { t: Translate; rows: readonly DoubtRow[] }) {
   return (
     <TableFrame phoneRows minWidth={520} label={t(`${K}.doubts`)}>
@@ -205,6 +239,8 @@ function reviewerName(t: Translate, r: ReviewerRow): string {
 }
 
 export function ReviewerTable({ t, rows }: { t: Translate; rows: readonly ReviewerRow[] }) {
+  // LL2b: the two QC columns appear only when the server served them (older payloads have none).
+  const qc = rows.some((r) => r.qc_checked !== undefined)
   return (
     <TableFrame phoneRows minWidth={620} label={t(`${K}.byReviewer`)}>
       <table className="w-full">
@@ -213,6 +249,7 @@ export function ReviewerTable({ t, rows }: { t: Translate; rows: readonly Review
             <th className={TH}>{t(`${K}.col.reviewer`)}</th>
             <th className={TH}>{t(`${K}.col.applications`)}</th>
             <CountHeads t={t} />
+            {qc && <><th className={TH}>{t(`${K}.col.qcChecked`)}</th><th className={TH}>{t(`${K}.col.qcDisagreed`)}</th></>}
           </tr>
         </thead>
         <tbody>
@@ -221,6 +258,10 @@ export function ReviewerTable({ t, rows }: { t: Translate; rows: readonly Review
               <td className={NAME}>{reviewerName(t, r)}</td>
               <td className={TD} data-label={t(`${K}.col.applications`)}>{r.applications}</td>
               <CountCells t={t} c={r} />
+              {qc && <>
+                <td className={TD} data-label={t(`${K}.col.qcChecked`)}>{r.qc_checked ?? 0}</td>
+                <td className={TD} data-label={t(`${K}.col.qcDisagreed`)}>{r.qc_overturned ?? 0}</td>
+              </>}
             </tr>
           ))}
         </tbody>

@@ -5237,7 +5237,17 @@
         "overrideConfirm": "Rekod sebab & terima",
         "reverifyTitle": "Kunci IC telah dibuka",
         "reverifyHint": "Pengambilan ini mempunyai syarat \"Tempat lahir\" dan IC pelajar tidak lagi dikunci, jadi Terima ditolak. Sahkan semula IC di sini: ia mengunci IC sekali lagi dan menyemak bahawa tiada akaun lain yang memegangnya sebagai disahkan. Kes ini kekal menunggu QC dan penyemak tidak dimaklumkan. Melainkan anda super admin, orang lain akan membuat QC selepas itu.",
-        "reverifyButton": "Sahkan semula IC"
+        "reverifyButton": "Sahkan semula IC",
+        "secondLook": {
+          "title": "Fakta yang diragui",
+          "help": "Penyemak dan AI tidak sependapat tentang fakta ini. Anda bersetuju dengan penyemak melainkan anda menekan Tidak setuju.",
+          "aiSaid": "Kata AI",
+          "reviewerSaid": "Kata penyemak",
+          "disagree": "Tidak setuju dengan penyemak",
+          "undo": "Anda tidak setuju. Tekan untuk batal.",
+          "agree": "Anda bersetuju dengan penyemak.",
+          "butDecision": "tetapi keputusannya {decision}"
+        }
       },
       "caveats": {
         "studentAnswer": "Jawapan pelajar",
@@ -7640,7 +7650,11 @@
         "unmatchedReviewer": "Penyemak tidak dipadankan dengan akaun",
         "notGiven": "Tidak diberi",
         "unnamedReviewer": "Penyemak tanpa nama",
+        "qcChecked": "Fakta yang diragui, disemak oleh QC",
         "col": {
+          "qcChecked": "Disemak oleh QC",
+          "qcAgreed": "Setuju dengan penyemak",
+          "qcDisagreed": "Tidak setuju dengan penyemak",
           "reasons": "Sebab gagal",
           "sure": "AI yakin, penyemak setuju",
           "doubt": "AI ragu, penyemak meluluskan",

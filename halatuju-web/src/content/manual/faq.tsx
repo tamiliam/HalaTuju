@@ -112,6 +112,13 @@ export const FAQ: Record<Audience, QA[]> = {
         integrity.</>,
     },
     {
+      q: <>What is the <strong>Facts in doubt</strong> box?</>,
+      a: <>A second look at the facts where the reviewer and the AI did not agree. You agree with the reviewer
+        unless you tap <strong>Disagree with the reviewer</strong> on a fact (tap again to undo). Your answer goes
+        with your decision and never holds it up. It only counts how often the AI, or the reviewer, was
+        right; it does not change the case.</>,
+    },
+    {
       q: <>Why is Accept blocked on this case?</>,
       a: <>A verdict fact is still <strong className="text-critical-700">red</strong> — the gap floor blocks Accept so a
         red fact never reaches sponsors unexamined. Resolve the gap or reopen to the reviewer; if you&rsquo;re

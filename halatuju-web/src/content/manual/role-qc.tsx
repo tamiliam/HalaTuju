@@ -55,6 +55,21 @@ export const roleQc: ManualChapter = {
       ),
     },
     {
+      anchor: 'qc-facts-in-doubt',
+      perm: 'qc',
+      title: 'Facts in doubt',
+      body: (
+        <>Above the buttons, a small <strong>Facts in doubt</strong> box lists only the facts where the reviewer
+        and the AI did not agree: the AI said green and the reviewer said Fail, or the reviewer said Fail but
+        still recommended the student. Each one shows what the AI said, what the reviewer said and their
+        reason. <strong>Doing nothing means you agree with the reviewer.</strong> If you do not, tap
+        <strong> Disagree with the reviewer</strong> on that fact; tap it again to undo. Your answer is sent with
+        your Accept, Reopen or Reject. It never blocks or delays your decision. The answers feed the
+        <strong> checked by the QC</strong> numbers on the AI prediction card, so the team can see where the AI
+        is wrong and where it is right.</>
+      ),
+    },
+    {
       anchor: 'qc-gap-floor',
       perm: 'qc',
       title: 'The gap floor',

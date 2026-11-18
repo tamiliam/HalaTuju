@@ -8,7 +8,7 @@ import { useState } from 'react'
 import {
   verifyAcceptApplication, rejectApplication, submitDeclineApplication, orgRejectApplication,
   recordVerdict, reopenDecision, cancelReopen, recordQcDecision,
-  type AdminScholarshipDetail,
+  type AdminScholarshipDetail, type QcDecisionPayload,
 } from '@/lib/admin-api'
 import { isClearAccept, verdictSaveOutcome, verdictSaveErrorText } from '@/lib/officerCockpit'
 import { interviewRefusalText } from '@/lib/interviewCompleteness'
@@ -233,7 +233,11 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
   // reviewer at 'interviewing' with the gaps comments (emailed to the assigned reviewer).
   // V5 gap floor: while a verdict fact is red the server refuses accept (verdict_gap_floor);
   // a super passes it with overrideReason, which the server records.
-  const doQcDecision = async (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) => {
+  // LL2b: `factChecks` = the QC's taps on the "Facts in doubt" block; undefined when no block shows.
+  const doQcDecision = async (
+    decision: 'accept' | 'reopen' | 'reject', overrideReason?: string,
+    factChecks?: QcDecisionPayload['fact_checks'],
+  ) => {
     if (!token) return
     // Reopen AND reject both carry the shared-with-reviewer comment (the gaps / the reject reason).
     const carriesComments = decision === 'reopen' || decision === 'reject'
@@ -242,7 +246,8 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
     try {
       const result = await recordQcDecision(
         id, { decision, comments: carriesComments ? qcComments.trim() : undefined,
-              override_reason: overrideReason?.trim() || undefined }, { token })
+              override_reason: overrideReason?.trim() || undefined,
+              ...(factChecks ? { fact_checks: factChecks } : {}) }, { token })
       setApp(result)
       setProfile(result.sponsor_profile)
       loadVerdictState(result)
@@ -252,7 +257,7 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
       const code = (e as { code?: string })?.code
       // TD-483: every separation code in en / ms / ta (was only `self_verdict_qc_forbidden`).
       setError(qcRefusalText(code, t)
-        || (e instanceof Error ? e.message : t('admin.scholarship.qcDecision.error')))
+        || (e instanceof Error && code !== 'bad_fact_checks' ? e.message : t('admin.scholarship.qcDecision.error')))
     } finally { setBusy('') }
   }
 
