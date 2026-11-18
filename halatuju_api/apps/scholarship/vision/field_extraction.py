@@ -3,6 +3,7 @@ genuineness fingerprint and the clobber guard (moved from ``vision.py``, audit s
 the one long read is now a helper per document family, same calls in the same order)."""
 
 import logging
+import re
 
 from django.utils import timezone
 
@@ -18,26 +19,64 @@ from .. import vision as _v   # seams resolve on the package: one patch target r
 logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name as before the split
 
 
+#: The SPM slip reader's version, stored as ``parser_version`` beside a deterministic read (and as
+#: ``reader`` in the fallback's diag). 1.1.0 (OCR-first S4, 2026-11-18): the gate reads the DOCUMENT;
+#: the profile's `results_held` is a hint only (1.0.0, unstamped: it vetoed every non-SPM profile).
+SLIP_READER_VERSION = 'spm_slip 1.1.0'
+
+#: Results that are NOT SPM, by the title the page prints, beside the higher kinds `results_kind`
+#: already recognises (STPM / Matriculation / Asasi / Diploma). Whole words only. A vocational
+#: certificate (SVM / SPMV) is issued by the same Lembaga Peperiksaan, so the parser's own marker
+#: would pass it: it is refused here by its title.
+_NOT_SPM_TITLES = (
+    ('spmv', r'SIJIL\s+PELAJARAN\s+MALAYSIA\s+VOKASIONAL|SIJIL\s+PELAJARAN\s+VOKASIONAL\s+MALAYSIA|SPMV|SPVM'),
+    ('svm', r'SIJIL\s+VOKASIONAL\s+MALAYSIA|SVM'),
+    ('igcse', r'IGCSE'),
+    ('o_level', r'GCE\s+O\s*-?\s*LEVEL|O\s*-\s*LEVEL|ORDINARY\s+LEVEL'),
+    ('stam', r'SIJIL\s+TINGGI\s+AGAMA\s+MALAYSIA|STAM'),
+    ('uec', r'UNIFIED\s+EXAMINATION\s+CERTIFICATE|UEC'),
+)
+
+
+def slip_not_spm_kind(text) -> str:
+    """The kind of NON-SPM results ``text`` (a page's words, in row order) names, or '' when it names
+    none. A higher kind first (`results_kind.kinds_seen`: STPM, Matriculation, Asasi, Diploma, the
+    vocabulary `wrong_slip.HIGHER_KINDS` routes), then the titles in ``_NOT_SPM_TITLES``."""
+    from ..results_kind import kinds_seen
+    up = (text or '').upper()
+    higher = [k for k in kinds_seen(up) if k != 'spm']
+    if higher:
+        return higher[0]
+    return next((kind for kind, p in _NOT_SPM_TITLES if re.search(rf'(?<![A-Z])(?:{p})(?![A-Z])', up)), '')
+
+
 def _extract_slip_deterministic(doc, image, words=None):
     """``(result|None, diag)``. Positional OCR parse of an SPM results slip →
-    ``{fields, warnings, error}``, or None to fall back to Gemini (no image, a student who HOLDS
-    STPM results, or no parse). ``diag`` says WHY (incl. a sample of what Vision read), so a
-    Gemini-fallback slip can be diagnosed later. Y/X geometry pairs each subject with the grade on
+    ``{fields, warnings, error, parser_version}``, or None to fall back to Gemini (no image, a page
+    that is not SPM results, or no parse). ``diag`` says WHY (incl. a sample of what Vision read), so
+    a Gemini-fallback slip can be diagnosed later. Y/X geometry pairs each subject with the grade on
     its own row, which Gemini mis-transposes on a watermark. ``words`` (a prior read of the SAME
-    blob) skips a second billable Vision call. The gate reads `results_held` (owner, 2026-10-02,
-    TD-324: 1 live Form Six explorer's SPM slip had been skipped, 0 live the other way)."""
+    blob) skips a second billable Vision call.
+
+    The gate reads the DOCUMENT (OCR-first S4, owner-approved roadmap 2026-11-18): a page naming
+    non-SPM results (`slip_not_spm_kind`) is refused as ``not_spm_exam``; every other page goes to
+    the parser, whose own SPM markers decide. The profile's `results_held` is a HINT recorded in the
+    diag, never a veto (it was, TD-324: 115 of 158 AI-read slips skipped the parser, mostly an STPM
+    or diploma student's own SPM slip). The parser only READS: no profile grade is written."""
     if image is None:
         return None, {'reason': 'no_image'}
     from apps.courses import public as courses_public
-    exam_type = courses_public.results_held(getattr(doc.application, 'profile', None)).lower()
-    if exam_type and exam_type != 'spm':
-        return None, {'reason': 'not_spm_exam', 'exam_type': exam_type}
+    held = courses_public.results_held(getattr(doc.application, 'profile', None)).lower()
     wd = {'words': words, 'error': None} if words is not None else _v._vision_words(image, doc.content_type)
     if wd.get('error'):
-        return None, {'reason': 'vision_error', 'error': wd['error']}
+        return None, {'reason': 'vision_error', 'error': wd['error'], 'reader': SLIP_READER_VERSION}
     if not wd.get('words'):
-        return None, {'reason': 'no_words'}
-    from ..academic_engine import parse_spm_slip
+        return None, {'reason': 'no_words', 'reader': SLIP_READER_VERSION}
+    from ..academic_engine import _group_rows, parse_spm_slip
+    kind = slip_not_spm_kind(' '.join(w['text'] for row in _group_rows(wd['words']) for w in row))
+    if kind:
+        return None, {'reason': 'not_spm_exam', 'exam_type': kind, 'by': 'document',
+                      'profile_held': held, 'reader': SLIP_READER_VERSION}
     parsed = parse_spm_slip(wd['words'])
     if not parsed:
         # The deterministic parse couldn't lock onto the table (a format/orientation the
@@ -49,8 +88,10 @@ def _extract_slip_deterministic(doc, image, words=None):
                     'h': w['h'],
                     'angle': (round(w['angle'], 1) if w.get('angle') is not None else None)}
                    for w in wd['words']]
-        return None, {'reason': 'parse_none', 'word_count': len(wd['words']), 'capture': capture}
-    return {'fields': parsed, 'warnings': [], 'error': ''}, {'reason': 'ok'}
+        return None, {'reason': 'parse_none', 'word_count': len(wd['words']), 'capture': capture,
+                      'reader': SLIP_READER_VERSION}
+    return ({'fields': parsed, 'warnings': [], 'error': '', 'parser_version': SLIP_READER_VERSION},
+            {'reason': 'ok', 'profile_held': held})
 
 
 def run_field_extraction_for_document(doc, *, names, postcode='', city='', street='', check_address=False, ocr=None) -> dict:

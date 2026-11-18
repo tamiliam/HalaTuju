@@ -12,7 +12,9 @@
    results-held (the shortlist gate, the sponsor band, the slip parser) on the declaration
    pending the production probe. The same day the owner ruled "switch all three" (TD-324: 68
    live agree, 1 Form Six explorer, 0 the other way), and their cells were amended in that
-   change — each amended row says so. That is the only reason any cell here has moved.
+   change — each amended row says so. OCR-first S4 (2026-11-18, owner-approved roadmap) took the
+   slip parser OFF the profile: its gate reads the document, so its column is True on every shape
+   (the rows marked S4 moved False→True). Those are the only reasons any cell here has moved.
 3. **A source guard** that none of the six readers reads the ambiguous field by name again.
 """
 import re
@@ -129,31 +131,34 @@ def _readers(p):
 #     2026-10-28: semester_ask now ALSO excuses a holder of tertiary results (`results_held`
 #     tertiary — an STPM completer has left Form Six); the three rows marked 10-28 moved True→False.
 #   payload — SWITCHED to results_held in sprint 4; the four rows marked * changed then.
+#   parser — dated 2026-11-18 (OCR-first S4): the slip gate reads the DOCUMENT; the profile's
+#     results_held is a hint only, never a veto. With no words every shape now reaches the parser
+#     ('no_words'), so the column is True everywhere; the rows marked S4 moved False→True.
 TABLE = {
     #                                   head    held    shortl  pool    leave  sem    parser payload
     'declared_spm':                    ('spm',  'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
-    'declared_stpm_with_stpm':         ('stpm', 'stpm', 'stpm', 'STPM', False, False, False, 'stpm'),  # 10-28
+    'declared_stpm_with_stpm':         ('stpm', 'stpm', 'stpm', 'STPM', False, False, True,  'stpm'),  # 10-28 S4
     'form_six_explorer':               ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),   # * TD-324
-    'declared_stpm_both':              ('stpm', 'stpm', 'stpm', 'STPM', False, False, False, 'stpm'),  # 10-28
+    'declared_stpm_both':              ('stpm', 'stpm', 'stpm', 'STPM', False, False, True,  'stpm'),  # 10-28 S4
     'explorer_recorded_spm':           ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),   # * TD-324
-    'declared_spm_recorded_stpm':      ('spm',  'stpm', 'stpm', 'STPM', True,  False, False, 'stpm'),  # * TD-324
+    'declared_spm_recorded_stpm':      ('spm',  'stpm', 'stpm', 'STPM', True,  False, True,  'stpm'),  # * TD-324 S4
     'declared_stpm_both_recorded_spm': ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),   # * TD-324
     'mirage_15':                       ('spm',  'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
-    'declared_stpm_nothing':           ('stpm', 'stpm', 'stpm', 'STPM', False, False, False, 'stpm'),  # 10-28
+    'declared_stpm_nothing':           ('stpm', 'stpm', 'stpm', 'STPM', False, False, True,  'stpm'),  # 10-28 S4
     'blank':                           ('',     '',     'spm',  'SPM',  True,  False, True,  ''),
     # Third results route S2a (2026-10-25) — NEW rows; the rows above are unchanged. The third
     # route is heading-for neither SPM nor STPM, so both income asks stay quiet (leave / sem False).
     'matric_completed':                ('matric', 'matric', 'matric', 'Matriculation',
-                                        False, False, False, 'matric'),
+                                        False, False, True, 'matric'),     # S4
     'asasi_completed':                 ('asasi', 'asasi', 'asasi', 'Asasi',
-                                        False, False, False, 'asasi'),
+                                        False, False, True, 'asasi'),      # S4
     'diploma_completed':               ('diploma', 'diploma', 'diploma', 'Diploma',
-                                        False, False, False, 'diploma'),
+                                        False, False, True, 'diploma'),    # S4
     'third_card_tapped_no_results':    ('matric', 'spm', 'spm', 'SPM',
                                         False, False, True, 'spm'),
     'third_card_nothing':              ('diploma', 'diploma', 'diploma', 'Diploma',
-                                        False, False, False, 'diploma'),
-    'highest_stpm_then_spm':           ('spm',  'stpm', 'stpm', 'STPM', True,  False, False, 'stpm'),
+                                        False, False, True, 'diploma'),    # S4
+    'highest_stpm_then_spm':           ('spm',  'stpm', 'stpm', 'STPM', True,  False, True,  'stpm'),  # S4
     'd1_legacy_recorded_spm_with_stpm': ('spm', 'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
     'completed_spm_typed_stpm':        ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),
 }
@@ -219,11 +224,13 @@ class TestTheCharacterisationTable(SimpleTestCase):
                 self.assertEqual(got['payload'], payload)
 
     def test_the_results_readers_equal_results_held(self):
-        """⚠ THE FENCE. shortlisting, pool and the slip parser MEAN results-held and read it.
+        """⚠ THE FENCE. shortlisting and pool MEAN results-held and read it.
         Dated: sprint 4 held them on the declaration (this test then asserted they equalled
-        `heading_for`); the owner's ruling of 2026-10-02 (TD-324) switched all three, and this
-        fence now holds them on `results_held`. If it fails, a reader drifted off the question it
-        means — and a change to `results_held` itself moves all three at once."""
+        `heading_for`); the owner's ruling of 2026-10-02 (TD-324) switched them and the slip
+        parser, and this fence held all three on `results_held`. OCR-first S4 (2026-11-18) took the
+        slip parser out of the fence: it decides by the document, so it is reached on every shape.
+        If it fails, a reader drifted off the question it means — and a change to `results_held`
+        itself moves both at once."""
         for shape in SHAPES:
             p = _profile(shape)
             held = results_held(p) or 'spm'
@@ -233,7 +240,7 @@ class TestTheCharacterisationTable(SimpleTestCase):
                 # the band's first word is the qualification's name: 'SPM' / 'STPM' as before,
                 # 'Matriculation' / 'Asasi' / 'Diploma' for the third route (S2a)
                 self.assertEqual(got['pool'], exam_questions.QUALIFICATION_LABELS[held])
-                self.assertEqual(got['spm_parser'], held == 'spm')
+                self.assertTrue(got['spm_parser'])     # S4: the profile is a hint, never a veto
 
 
 class TestTheConvertedReadersOnTheExplorer(TestCase):
@@ -344,9 +351,13 @@ class TestTheResultsReadersOnThePromoteShape(TestCase):
     def test_the_sponsor_band_reads_her_stpm_results(self):
         self.assertEqual(pool.academic_band(self.student), 'STPM · PNGK 3.5')
 
-    def test_the_slip_gate_skips_the_spm_parser(self):
-        self.assertEqual(_slip_gate(self.app),
-                         {'reason': 'not_spm_exam', 'exam_type': 'stpm'})
+    def test_the_slip_gate_no_longer_skips_the_spm_parser(self):
+        # Dated 2026-11-18 (OCR-first S4): this asserted {'reason': 'not_spm_exam', 'exam_type':
+        # 'stpm'} — the profile vetoed the parser. Her SPM slip is now judged by what it says; her
+        # recorded STPM is kept as a hint in the diag only.
+        diag = _slip_gate(self.app)
+        self.assertEqual(diag.get('reason'), 'no_words')   # got past the gate
+        self.assertEqual(diag.get('reader'), vision.field_extraction.SLIP_READER_VERSION)
 
 
 #: The six readers TD-218 names (the admin serializers were converted first, as

@@ -7,6 +7,10 @@ already saw (`applicant_document_ocr_text`) so a new rule can be re-tested on li
 for a second read; no new OCR or model call fills it. It is private (no serializer, admin or export; never in
 `vision_fields`) and is deleted with its document.
 
+## 2026-11-18 — SPM slip gate reads the document, not the profile (OCR-first S4)
+
+The SPM slip parser is refused only when the page itself names non-SPM results (STPM, Matriculation, Asasi, Diploma, SPMV / SVM, IGCSE, O-level, STAM, UEC); the profile's `results_held` is a hint, never a veto (the owner-approved OCR-first roadmap supersedes TD-324 for the slip reader only; the parser only reads, so no profile or STPM data is written).
+
 ## 2026-11-18 — Course match: a bracket option list is a menu, only under a printed code (#804)
 
 Branch reader-260, not live. No migration. Services: api.

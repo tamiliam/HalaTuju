@@ -44,6 +44,16 @@ Branch apply-plans-required. Migration: none. Services: web. Owner: "make the th
 - **Server:** none. The submit serializer does not validate the 'sure' fields either, so nothing to mirror; students who already submitted are untouched.
 - **Tests:** `scholarship.test.ts` (each field missing / present, sure branch, SPM exemption, error order) and `page.plans.test.tsx` (required mark).
 
+### feat: OCR-first S4 - the SPM slip gate reads the document, not the profile (2026-11-18)
+
+Branch ocr-s4, not pushed. Migration: none. Services: api. Decisions: `docs/decisions.md` (2026-11-18, OCR-first S4).
+- **The problem:** `_extract_slip_deterministic` refused the positional parser whenever the profile's `results_held` was not 'spm', so an STPM, Matriculation or Diploma student's own SPM slip always went to the model (115 of 158 AI-read slips).
+- **The rule now:** a page that names non-SPM results (`slip_not_spm_kind`: the higher kinds `results_kind` already knows, then SPMV / SVM, IGCSE, O-level, STAM, UEC by whole-word title) is refused as `not_spm_exam` (`by: 'document'`); every other page goes to `parse_spm_slip`, whose own SPM markers lock it. `results_held` is recorded as `profile_held` in the diag, never a veto.
+- **Downstream:** nothing writes slip grades to the profile, and eligibility reads the profile only, so STPM data is never overwritten. For a tertiary student the slip check compares only against her own `spm_prereq_grades`, as before. results_doc genuineness scores the OCR text, not the capture, so `MODEL_VERSION` (1.29.0) is not bumped. Cost: a non-SPM-profile slip read without cached word boxes now makes one Vision words call.
+- **Stamp:** new `SLIP_READER_VERSION` 'spm_slip 1.1.0', stored as `parser_version` on a deterministic slip read and as `reader` on the fallback diag.
+- **Gate (cached corpus, counts only):** SPM slips locked 3/5 before (SPM profile only) and 3/5 under every profile after; SPM certificates 6/7 likewise; 0 non-SPM pages lock; the 82 slips locked when read are all still accepted; 0 grade differences against the old parse.
+- **Tests:** new `test_slip_gate_s4.py` (synthetic words); `test_exam_questions.py` table parser column dated S4 (True on every shape), the fence and the promote-shape gate test amended.
+
 ### fix: a red verdict tile names the reason it is red (2026-11-18)
 
 Branch fix-tile-disqualifier-leads. Migration: none. Services: web. Display only; no verdict, band or amount changes.
