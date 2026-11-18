@@ -2,9 +2,9 @@
 
 Every Flash job moves to gemini-3.8-flash first, 2.5 Flash as its fallback. Two exceptions stay on
 2.5 Flash first, exactly as before: the SPM results-slip READ (3.8 returned malformed grades on 26
-of 98 slips in the paid eval) and the three GENUINENESS jobs (not tested on 3.8). The offer reader
-re-asks 2.5 Flash for the reporting date when 3.8 returns none (lost on 4 of 84 letters).
-`docs/decisions.md`, 2026-11-16.
+of 98 slips in the paid eval) and the three GENUINENESS jobs (not tested on 3.8). The offer reader's
+second read (2.6.0, `OFFER_RETRY_MODEL`, never 2.5) replaced its 2.5 reporting-date re-ask.
+`docs/decisions.md`, 2026-11-16 and 2026-11-18.
 
 No call leaves the machine: the genai client is a fake, or the seam is patched.
 """
@@ -135,12 +135,20 @@ class TheGenuinenessJobsStayOn2_5(_RealSeam):
                          'gemini-3.8-flash')
 
 
-# ── The offer reader's reporting-date fallback ───────────────────────────────────────────────────
+# ── The offer reader's second read (2.6.0; it replaced 2.5.0's reporting-date re-ask on 2.5) ────────
 
 LETTER = {'candidate_name': 'ZORBEX A/L QUENTARO', 'candidate_nric': '010203-14-5678',
           'candidate_nric_source': 'label', 'programme': 'IJAZAH SARJANA MUDA QORVANE',
           'institution': 'UNIVERSITI QORVANE', 'campus': 'KAMPUS PERLAK', 'intake': 'SESI 1-2031/2032',
           'offer_date': '3 Mac 2031', 'reporting_date': '', 'reporting_date_label': '', 'warnings': []}
+DATED = {**LETTER, 'reporting_date': '17 Ogos 2031', 'reporting_date_label': 'Tarikh Lapor Diri'}
+#: The live blank read (docs 7395, 7409): programme, institution and intake MISSING, not empty.
+BLANK = {k: v for k, v in LETTER.items() if k not in orr.CORE_FIELDS}
+#: A second read that found everything — and a DIFFERENT identity, which must never be taken.
+RESCUE = {**LETTER, 'candidate_name': 'QUENTARO A/L ZORBEX', 'candidate_nric': '990101-14-9999',
+          'reporting_date': '20 Julai 2031', 'reporting_date_label': 'Tarikh Pendaftaran',
+          'warnings': ['The campus line is faint.']}
+THREE_EIGHT = 'gemini-3.8-flash'
 
 
 def _seam(by_model):
@@ -150,85 +158,198 @@ def _seam(by_model):
 
     def fake(prompt, schema, **kw):
         model = (kw.get('models') or MODEL_CASCADE)[0]
-        fake.calls.append((model, schema, kw))
+        fake.calls.append((model, schema, kw, prompt))
         a = dict(scripts[model].pop(0))
         return a if '_error' in a else {**a, '_model': model}
     fake.calls = []
     return fake
 
 
-class TheOfferReportingDateFallback(SimpleTestCase):
-    def _read(self, fake, **kw):
+class TheOfferSchema(SimpleTestCase):
+    def test_every_field_is_required_and_an_empty_string_still_answers(self):
+        required = orr.OFFER_SCHEMA['required']
+        self.assertEqual(set(required), set(orr._FIELDS) | {'candidate_nric_source'})
+        self.assertNotIn('warnings', required)
+        self.assertTrue(all(orr.OFFER_SCHEMA['properties'][f]['type'] == 'string' for f in required))
+        self.assertEqual(orr.LATER_SCHEMA['required'], list(orr.LATER_FIELDS))
+
+    def test_the_sdk_takes_the_required_list(self):
+        """Offline: the installed google-genai parses the schema WITH its required list (both models
+        are sent the same `response_schema`)."""
+        from google.genai import types
+        for schema in (orr.OFFER_SCHEMA, orr.LATER_SCHEMA):
+            self.assertEqual(types.Schema.model_validate(schema).required, schema['required'])
+
+
+class TheOfferSecondRead(SimpleTestCase):
+    def _read(self, fake, kind='photo'):
+        from apps.scholarship.tests.test_offer_reader import PAGE_TEXT, blank_pdf, text_pdf
         with mock.patch.object(vision, '_call_gemini_json', fake):
-            if kw.get('text'):
+            if kind == 'text':
                 return orr.read_offer('SURAT TAWARAN QORVANE')
+            if kind == 'pdf':
+                return orr.read_offer('', image=text_pdf(PAGE_TEXT), content_type='application/pdf')
+            if kind == 'scan':
+                return orr.read_offer('', image=blank_pdf(), content_type='application/pdf')
             return orr.read_offer('', image=_png(), content_type='image/png')
 
-    def test_it_fires_when_3_8_returns_no_reporting_date(self):
-        fake = _seam({'gemini-3.8-flash': [LETTER],
-                      'gemini-2.5-flash': [{**LETTER, 'programme': 'SOMETHING ELSE',
-                                            'reporting_date': '20 Julai 2031',
-                                            'reporting_date_label': 'Tarikh Pendaftaran'}]})
+    def test_missing_core_keys_count_as_blank_and_the_retry_fills_them(self):
+        fake = _seam({THREE_EIGHT: [BLANK, RESCUE]})
         ex = self._read(fake)
-        self.assertEqual([c[0] for c in fake.calls], ['gemini-3.8-flash', 'gemini-2.5-flash'])
-        self.assertEqual(fake.calls[1][2]['models'], ['gemini-2.5-flash'])
+        self.assertEqual(len(fake.calls), 2)
         f = ex['fields']
+        self.assertEqual((f['programme'], f['institution'], f['intake']),
+                         ('IJAZAH SARJANA MUDA QORVANE', 'UNIVERSITI QORVANE', 'SESI 1-2031/2032'))
         self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('20 Jul 2031', 'Tarikh Pendaftaran'))
-        self.assertEqual(f['programme'], 'IJAZAH SARJANA MUDA QORVANE')        # 3.8's other fields stay
-        self.assertEqual(f['offer_date'], '3 Mac 2031')
+        self.assertEqual(f['candidate_name'], 'ZORBEX A/L QUENTARO')            # identity: first read only
+        self.assertEqual(ex['_raw_identity']['candidate_nric'], '010203-14-5678')
+        self.assertIn('The campus line is faint.', ex['warnings'])                # the rescue's own warnings
         shown = ex['offer_reader_inputs']
-        self.assertEqual(shown['reporting_date_from'], 'gemini-2.5-flash')
-        self.assertEqual([c['part'] for c in shown['calls']], ['page_1', 'fallback_page_1'])
-        self.assertEqual(shown['pages'], 1)                                     # a re-ask is not a page
-        self.assertEqual(ex['offer_reader_version'], '2.5.0')
+        self.assertIs(shown['primary_blank'], True)
+        self.assertEqual(shown['retry_for'], ['blank', 'reporting_date'])
+        self.assertEqual(set(shown['retry_filled']),
+                         {'programme', 'institution', 'intake', 'reporting_date', 'reporting_date_label'})
+        self.assertEqual(shown['reporting_date_from'], THREE_EIGHT)
+        self.assertEqual([c['part'] for c in shown['calls']], ['page_1', 'retry_images'])
+        self.assertEqual([c['model'] for c in shown['calls']], [THREE_EIGHT, THREE_EIGHT])
+        self.assertEqual(shown['pages'], 1)                                     # a retry is not a page
+        self.assertEqual(ex['offer_reader_version'], '2.6.0')
 
-    def test_it_does_not_fire_when_3_8_has_the_date(self):
-        fake = _seam({'gemini-3.8-flash': [{**LETTER, 'reporting_date': '17 Ogos 2031',
-                                            'reporting_date_label': 'Tarikh Lapor Diri'}]})
+    def test_a_retry_that_comes_back_blank_too_keeps_the_blank_read_and_never_retries_again(self):
+        for second in (BLANK, {'_error': 'All AI models failed: x'}):
+            with self.subTest(second=second.get('_error', 'blank')):
+                fake = _seam({THREE_EIGHT: [BLANK, second]})
+                ex = self._read(fake)
+                self.assertEqual(len(fake.calls), 2)                            # one retry, no more
+                self.assertEqual(ex['error'], '')
+                for field in orr.CORE_FIELDS:
+                    self.assertFalse(ex['fields'].get(field))
+                self.assertEqual(ex['fields']['candidate_name'], 'ZORBEX A/L QUENTARO')
+                shown = ex['offer_reader_inputs']
+                self.assertIs(shown['primary_blank'], True)
+                self.assertEqual(shown['retry_filled'], [])
+                self.assertEqual(shown['reporting_date_from'], '')
+
+    def test_a_full_first_read_makes_no_retry(self):
+        fake = _seam({THREE_EIGHT: [DATED]})
         ex = self._read(fake)
         self.assertEqual(len(fake.calls), 1)
         self.assertEqual(ex['fields']['reporting_date'], '17 Aug 2031')
-        self.assertNotIn('reporting_date_from', ex['offer_reader_inputs'])
+        shown = ex['offer_reader_inputs']
+        self.assertIs(shown['primary_blank'], False)
+        for key in ('retry_for', 'retry_filled', 'reporting_date_from'):
+            self.assertNotIn(key, shown)
 
-    def test_it_does_not_fire_when_2_5_already_answered(self):
-        """3.8 failed and the cascade answered on 2.5: asking 2.5 again would only repeat it."""
+    def test_a_partly_filled_first_read_is_not_blank(self):
+        """Programme and institution blank but the intake read: not a failed read, so no retry."""
+        fake = _seam({THREE_EIGHT: [{**DATED, 'programme': '', 'institution': ''}]})
+        ex = self._read(fake)
+        self.assertEqual(len(fake.calls), 1)
+        self.assertIs(ex['offer_reader_inputs']['primary_blank'], False)
+        self.assertEqual(ex['fields']['intake'], 'SESI 1-2031/2032')
+
+    def test_the_retry_fills_blanks_only(self):
+        first = {**BLANK, 'candidate_name': '', 'campus': 'KAMPUS PERLAK', 'offer_date': '3 Mac 2031'}
+        second = {**RESCUE, 'campus': 'KAMPUS LAIN', 'offer_date': '9 Mac 2031', 'stream': 'Sains'}
+        ex = self._read(_seam({THREE_EIGHT: [first, second]}))
+        f = ex['fields']
+        self.assertEqual(f['campus'], 'KAMPUS PERLAK')                          # never overwritten
+        self.assertEqual(f['offer_date'], '3 Mac 2031')
+        self.assertEqual(f['stream'], 'Sains')                                  # a blank, filled
+        self.assertEqual(f['programme'], 'IJAZAH SARJANA MUDA QORVANE')
+        self.assertFalse(f.get('candidate_name'))                               # identity is never filled
+        filled = ex['offer_reader_inputs']['retry_filled']
+        self.assertNotIn('campus', filled)
+        self.assertFalse(set(filled) & set(orr._NOT_FROM_RETRY))
+
+    def test_a_date_only_retry_takes_the_date_pair_only(self):
+        second = {**LETTER, 'programme': 'SOMETHING ELSE', 'stream': 'Sains',
+                  'reporting_date': '20 Julai 2031', 'reporting_date_label': 'Tarikh Pendaftaran'}
+        ex = self._read(_seam({THREE_EIGHT: [LETTER, second]}))
+        f = ex['fields']
+        self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('20 Jul 2031', 'Tarikh Pendaftaran'))
+        self.assertEqual(f['programme'], 'IJAZAH SARJANA MUDA QORVANE')
+        self.assertFalse(f.get('stream'))                                       # not a blank read
+        shown = ex['offer_reader_inputs']
+        self.assertIs(shown['primary_blank'], False)
+        self.assertEqual(shown['retry_for'], ['reporting_date'])
+        self.assertEqual(shown['retry_filled'], ['reporting_date', 'reporting_date_label'])
+        self.assertEqual(shown['reporting_date_from'], THREE_EIGHT)
+
+    def test_the_date_fallback_and_the_retry_use_the_setting(self):
+        other = 'gemini-retry-under-test'
+        fake = _seam({THREE_EIGHT: [LETTER], other: [{**LETTER, 'reporting_date': '20 Julai 2031'}]})
+        with override_settings(OFFER_RETRY_MODEL=other):
+            ex = self._read(fake)
+        self.assertEqual(fake.calls[1][2]['models'], [other])                   # that model only, no cascade
+        self.assertEqual(ex['offer_reader_inputs']['reporting_date_from'], other)
+        self.assertEqual(ex['fields']['reporting_date'], '20 Jul 2031')
+
+    def test_the_setting_defaults_to_3_8_the_env_overrides_it_and_no_2_5_is_hard_coded(self):
+        with override_settings(OFFER_RETRY_MODEL=''), mock.patch.dict('os.environ', {}) as env:
+            env.pop('OFFER_RETRY_MODEL', None)
+            self.assertEqual(orr.retry_model(), THREE_EIGHT)
+            env['OFFER_RETRY_MODEL'] = 'gemini-from-env'
+            self.assertEqual(orr.retry_model(), 'gemini-from-env')
+        constants = [v for k, v in vars(orr).items() if not k.startswith('__') and isinstance(v, str)]
+        self.assertFalse([v for v in constants if '2.5' in v])
+        self.assertFalse(hasattr(orr, 'REPORTING_DATE_FALLBACK_MODEL'))
+
+    def test_a_text_layer_pdf_gets_the_text_first_retry(self):
+        fake = _seam({THREE_EIGHT: [BLANK, {}, RESCUE]})                         # page 1, pages 2-3, retry
+        ex = self._read(fake, 'pdf')
+        shown = ex['offer_reader_inputs']
+        self.assertEqual([c['part'] for c in shown['calls']], ['page_1', 'later_pages', 'retry_text_layer'])
+        _, schema, kw, prompt = fake.calls[2]
+        self.assertIs(schema, orr.OFFER_SCHEMA)
+        self.assertNotIn('images', kw)                                          # text alone, no image
+        self.assertNotIn('media_resolution', kw)
+        self.assertEqual(kw['models'], [THREE_EIGHT])
+        self.assertIn('--- PAGE 1 ---\nSURAT TAWARAN QORVANE', prompt)
+        self.assertIn('--- PAGE 3 ---', prompt)
+        self.assertNotIn('PAGE FOUR', prompt)                                   # only the pages shown
+        self.assertNotIn('IMAGE decides', prompt)
+        self.assertEqual(ex['fields']['programme'], 'IJAZAH SARJANA MUDA QORVANE')
+        self.assertEqual(shown['pages'], 3)                                     # unchanged by the retry
+
+    def test_a_photo_gets_the_image_retry_at_the_default_resolution(self):
+        fake = _seam({THREE_EIGHT: [BLANK, RESCUE]})
+        self._read(fake)
+        first, second = fake.calls[0][2], fake.calls[1][2]
+        self.assertEqual(first['media_resolution'], orr.MEDIA_RESOLUTION)
+        self.assertEqual(len(second['images']), 1)
+        self.assertNotIn('media_resolution', second)
+
+    def test_a_scanned_pdf_gets_the_image_retry(self):
+        fake = _seam({THREE_EIGHT: [BLANK, RESCUE]})
+        ex = self._read(fake, 'scan')
+        self.assertEqual([c['part'] for c in ex['offer_reader_inputs']['calls']], ['page_1', 'retry_images'])
+        self.assertEqual(len(fake.calls[1][2]['images']), 1)
+        self.assertNotIn('media_resolution', fake.calls[1][2])
+
+    def test_the_text_only_read_re_asks_its_ocr_text(self):
+        fake = _seam({THREE_EIGHT: [BLANK, RESCUE]})
+        ex = self._read(fake, 'text')
+        self.assertNotIn('images', fake.calls[1][2])
+        self.assertEqual(ex['offer_reader_inputs']['calls'][-1]['part'], 'retry_text')
+        self.assertEqual(ex['fields']['institution'], 'UNIVERSITI QORVANE')
+
+    def test_the_3_8_error_path_is_unchanged(self):
+        """3.8 failed and the cascade answered on 2.5: kept as before, no second read. Every model
+        failed: the error, as before."""
         def fake(prompt, schema, **kw):
             fake.calls.append(kw)
-            return {**LETTER, '_model': 'gemini-2.5-flash'}
+            return {**BLANK, '_model': 'gemini-2.5-flash'}
         fake.calls = []
-        self._read(fake)
+        ex = self._read(fake)
         self.assertEqual(len(fake.calls), 1)
+        self.assertIs(ex['offer_reader_inputs']['primary_blank'], True)
+        self.assertNotIn('retry_for', ex['offer_reader_inputs'])
 
-    def test_an_empty_or_failed_re_ask_keeps_the_3_8_read(self):
-        for answer in ({**LETTER, 'programme': 'OTHER'}, {'_error': 'All AI models failed: x'}):
-            with self.subTest(answer=answer.get('_error', 'empty')):
-                fake = _seam({'gemini-3.8-flash': [LETTER], 'gemini-2.5-flash': [answer]})
-                ex = self._read(fake)
-                self.assertEqual(ex['error'], '')
-                self.assertEqual(ex['fields']['reporting_date'], '')
-                self.assertEqual(ex['fields']['programme'], 'IJAZAH SARJANA MUDA QORVANE')
-                self.assertEqual(ex['offer_reader_inputs']['reporting_date_from'], '')
-
-    def test_the_text_only_read_falls_back_too(self):
-        fake = _seam({'gemini-3.8-flash': [LETTER],
-                      'gemini-2.5-flash': [{**LETTER, 'reporting_date': '20 Julai 2031'}]})
-        ex = self._read(fake, text=True)
-        self.assertNotIn('images', fake.calls[1][2])
-        self.assertEqual(ex['fields']['reporting_date'], '20 Jul 2031')
-        self.assertEqual(ex['offer_reader_inputs']['calls'][-1]['part'], 'fallback_text')
-
-    def test_a_multi_page_letter_re_asks_the_later_pages_when_page_1_has_none(self):
-        from apps.scholarship.tests.test_offer_reader import PAGE_TEXT, text_pdf
-        fake = _seam({'gemini-3.8-flash': [LETTER, {'reporting_date': ''}],
-                      'gemini-2.5-flash': [LETTER, {'reporting_date': '20 Julai 2031',
-                                                    'reporting_date_label': 'Tarikh Pendaftaran'}]})
-        with mock.patch.object(vision, '_call_gemini_json', fake):
-            ex = orr.read_offer('', image=text_pdf(PAGE_TEXT), content_type='application/pdf')
-        parts = [c['part'] for c in ex['offer_reader_inputs']['calls']]
-        self.assertEqual(parts, ['page_1', 'later_pages', 'fallback_page_1', 'fallback_later_pages'])
-        self.assertIs(fake.calls[3][1], orr.LATER_SCHEMA)
-        self.assertEqual(ex['fields']['reporting_date'], '20 Jul 2031')
-        self.assertEqual(ex['offer_reader_inputs']['pages'], 3)                # unchanged by the re-ask
+        failed = _seam({THREE_EIGHT: [{'_error': 'All AI models failed: x'}]})
+        ex = self._read(failed)
+        self.assertEqual(len(failed.calls), 1)
+        self.assertEqual((ex['fields'], ex['error']), ({}, 'All AI models failed: x'))
 
 
 # ── The apply-copy draft and the batch commands ──────────────────────────────────────────────────

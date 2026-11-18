@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-18 — Offer reader 2.6.0: a blank read is a failed read; one second read on a current model, never 2.5
+
+**Approved by the owner on 2026-11-18** as the immediate fix. Branch reader-260, not live. No migration. Services: api.
+Changes the offer-letter line of the 2026-11-16 Option A entry below.
+
+**Why.** On 2.5.0, 3.8 Flash sometimes returned a valid answer with `programme`, `institution` and `intake` all
+blank (4 of 32 live reads, against 0 of 161 on 2.4.0; docs 7395, 7409, 7416, 7687). On those reads the three keys
+were MISSING from the answer, not empty: the schema listed no `required` fields, so the model could drop them. The
+input was not the cause (for 7409 the 2.5 re-ask was shown byte-identical input and read it). The Option A date
+re-ask went to `gemini-2.5-flash`, which has a retirement date, so a 2.5 fall-through is not acceptable.
+
+**Rulings**
+
+- `OFFER_SCHEMA` lists every field as `required` (and `LATER_SCHEMA` its fields). An empty string is still the answer
+  when the letter does not print a value.
+- **One second read**, on one model only: setting `OFFER_RETRY_MODEL` (env-overridable, default `gemini-3.8-flash`).
+  It runs when 3.8 (the cascade head) answered and either all three of programme, institution and intake are blank (a
+  missing key counts as blank) or the reporting date is blank (the Option A date fallback, now on this setting). One
+  call serves both reasons; there is never a second retry.
+- **A different input:** a PDF whose page 1 has a text layer is re-read from that text alone (pages 1-3, no image); a
+  photo or a scanned PDF from its page images at the default media resolution. The text-only path re-asks its OCR text.
+- **Fill blanks only.** The first read always wins. A blank read may be filled in any field except the identity (name,
+  IC, IC source, address: a wrong IC blocks as a mismatch). A date-only retry fills the reporting date and its label
+  only.
+- Recorded in `offer_reader_inputs`: `primary_blank` (always), `retry_for`, `retry_filled`, `reporting_date_from` (when
+  the date was asked), and `calls` parts `retry_text_layer` / `retry_images` / `retry_text`. A 3.8 error that fell
+  through the cascade is handled as before (no second read). No model name 2.5 is left in the offer reader.
+- `OFFER_READER_VERSION` 2.5.0 -> 2.6.0. No other stamp moves: offer genuineness reads the OCR text, not these fields.
+- **Long-term direction (not built):** OCR + plain rules first, the AI read only below a confidence threshold. The
+  reader is split into steps (`_ai_read`, then `_second_read`) so that stage can slot in front.
+
+**Cost.** Nothing extra on a full read. A blank read or a read with no reporting date costs one more 3.8 call: text
+only for a text-layer PDF, or 1-3 images at the default resolution (about 258 tokens each).
+
 ## 2026-11-16 — THANKS-SCHOLARS: a graduation thank-you is scholar maintenance, decided on the scholar file
 
 Branch thanks-scholars, not pushed. No migration. Services: both. Supersedes the THANKS entry below (the `review` key

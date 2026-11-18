@@ -11,6 +11,15 @@ Branch fix-tile-disqualifier-leads. Migration: none. Services: web. Display only
 - **The fix:** `factSubtitleItem` (`cockpitVerdict.ts`) lets a confident disqualifier (`CONFIDENT_DISQUALIFIERS`: not an official offer, income over the limit, funded or overseas programme, start year outside) lead the subtitle. The other lines show in the detail list below the tiles, as before.
 - **Tests:** new `disqualifier-drift.test.ts` pins the web list to `award.CONFIDENT_DISQUALIFIERS` in both directions and covers the #804 order.
 
+### fix: offer reader 2.6.0 - a blank read gets one second read on a current model, never 2.5 (2026-11-18)
+
+Branch reader-260, not pushed. Migration: none. Services: api. Decisions: `docs/decisions.md` (2026-11-18; owner approved as the immediate fix).
+- **Schema:** `OFFER_SCHEMA` and `LATER_SCHEMA` now list every field as `required` (an empty string still allowed). On the blank 2.5.0 reads the programme, institution and intake keys were missing.
+- **Second read:** when 3.8 answered and programme, institution and intake are all blank, or the reporting date is blank, the reader asks `OFFER_RETRY_MODEL` (new env var, default `gemini-3.8-flash`, read in `offer_reader.retry_model` because `settings/base.py` is a frozen oversize file) once, with a different input: the text layer alone for a PDF that has one, otherwise the page images at the default resolution. It fills blanks only, never the identity; never a second retry. Replaces the 2.5.0 reporting-date re-ask on `gemini-2.5-flash`.
+- **Stamp:** `offer_reader_inputs` gains `primary_blank`, `retry_for`, `retry_filled`; `calls` parts `retry_*` replace `fallback_*`. `OFFER_READER_VERSION` 2.5.0 -> 2.6.0.
+- **Shape:** `read_offer` is now steps (`_ai_read`, `_second_read`, clean-up) so an OCR-first stage can slot in front later.
+- **Tests:** `test_gemini_phase2a.py` offer block rewritten (15 tests: schema, retry, no retry, fill-blanks-only, setting, inputs per file kind, error path).
+
 ### fix: the recent-letter ask applies to confirmation letters only, never to offer letters (2026-11-18)
 
 Branch fix-recent-letter-confirm. Migration: none. Services: both. Owner, 2026-11-18: "The recent requirement only applies to confirmation letter. Not to offer letters." Decisions: `docs/decisions.md` (H3b ruling).
