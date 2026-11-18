@@ -15,6 +15,14 @@ Branch offer-course-proof. Migration: none. Services: api, web. Owner rules R1-R
 - **Reviewer copy:** the cockpit line for `pathway_undeclared` now reads "The offer letter did not match one course in our list - the student is asked to pick their course."; new reviewer FAQ "When is the student asked to pick her course?" (`faq-reviewer.tsx`, `docs/reviewer-guide-content.md`).
 - **Tests:** new `test_offer_course_proof.py` (29: bracket positive / negative, #804 shape, R2-R8, check2 sync close and raise, autofill, linker, empty-pick fill); 19 of them fail on the base commit. A3.4 golden `facts` section RE-RECORDED for this owner-approved rule change: the harness now fakes `resolve_catalogue_course` from the `resolvable` knob; one answer changed, `p14_undeclared_resolvable` (nothing declared, letter names one course) from the one-tap `pathway_confirm` to verified with no ask (R4); p15/p16/p16b/p16c differ only in the collaborator call log.
 
+### feat: apply step 4, the waiting branch needs the three degrees and "where are you right now" (2026-11-18, TD-???)
+
+Branch apply-plans-required. Migration: none. Services: web. Owner: "make the three options compulsory and where are you also compulsory."
+- **Web:** `applyFormError` now blocks a waiting ('uncertain') student with no "where are you right now" chip (`uncertaintyReasons`), and a tertiary (STPM / third route) student without all three degree boxes filled (`topChoices`; a box counts only with a picked course id, as `top_choices` stores it). The note and the SPM leaning stay optional; the 'sure' branch is unchanged. Both errors jump to the My Plans tab (`ERROR_TAB`).
+- **Form:** PathwayPicker shows the required marks on both labels when `apply` is set; /profile does not pass `apply`, so it is unchanged. The heading now reads "Which 3 degrees did you apply for?" (en / ms / ta; ms / ta first drafts for Sol).
+- **Server:** none. The submit serializer does not validate the 'sure' fields either, so nothing to mirror; students who already submitted are untouched.
+- **Tests:** `scholarship.test.ts` (each field missing / present, sure branch, SPM exemption, error order) and `page.plans.test.tsx` (required mark).
+
 ### fix: a red verdict tile names the reason it is red (2026-11-18)
 
 Branch fix-tile-disqualifier-leads. Migration: none. Services: web. Display only; no verdict, band or amount changes.

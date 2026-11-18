@@ -571,7 +571,14 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   }
   // A decided STPM student picks a degree directly (no SPM pathway/track step).
   if (form.pathwayCertainty === 'sure' && tertiary && !form.chosenProgramme) return 'chosenProgramme'
-  // The Uncertain branch is intentionally non-blocking — leanings/reasons/note are optional.
+  // The Uncertain (waiting) branch: owner 2026-11-18 made two answers compulsory on /apply: all
+  // three degrees (shown to tertiary students only; a box counts only with a picked course id, as
+  // top_choices stores it) and at least one "where are you right now" chip. The SPM leaning and
+  // the note stay optional. Nothing on the server mirrors this (the 'sure' fields are web-only too).
+  if (form.pathwayCertainty === 'uncertain') {
+    if (tertiary && [0, 1, 2].some((i) => !form.topChoices[i]?.courseId)) return 'topChoices'
+    if (form.uncertaintyReasons.length === 0) return 'uncertaintyReasons'
+  }
   // My Support — consent + the signed declaration are both required to apply.
   if (!form.consentToContact) return 'consent'
   if (!form.declarationName.trim()) return 'declaration'

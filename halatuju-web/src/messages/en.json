@@ -988,8 +988,8 @@
           "khas": "Pendidikan Khas"
         },
         "bidangLabel": "Subject you want to teach",
-        "topProgrammesLabel": "Which degrees did you apply for? (up to 3)",
-        "topProgrammesTip": "Pick up to three degrees you have applied for. This is optional.",
+        "topProgrammesLabel": "Which 3 degrees did you apply for?",
+        "topProgrammesTip": "Name the three degrees you have applied for. All three are needed.",
         "trackLabel": "Which matriculation track?",
         "trackTip": "Pick the track your offer is for. It sets which colleges you can choose from.",
         "track": {
@@ -1073,6 +1073,8 @@
         "phone": "Please enter a valid phone number, e.g. 012-345 6789.",
         "parentPhone": "Please enter a valid phone number for your parent or guardian, or leave it blank.",
         "pathwayCertainty": "Let us know whether you've decided on a pathway.",
+        "topChoices": "Please choose all three degrees you applied for.",
+        "uncertaintyReasons": "Please tell us where you are right now (pick at least one).",
         "chosenPathway": "Please choose the pathway you've decided on.",
         "preUTrack": "Please choose your matriculation track or STPM stream.",
         "preUInstitution": "Please choose your college or school.",

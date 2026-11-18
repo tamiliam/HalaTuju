@@ -393,7 +393,7 @@ describe('applyFormError — Plans pathway question', () => {
     expect(applyFormError(baseForm({ pathwayCertainty: '' }))).toBe('pathwayCertainty')
   })
   it('"uncertain" is always a valid answer (never traps an unsure student)', () => {
-    expect(applyFormError(baseForm({ pathwayCertainty: 'uncertain', chosenPathway: '' }))).toBeNull()
+    expect(applyFormError(baseForm({ pathwayCertainty: 'uncertain', chosenPathway: '', uncertaintyReasons: ['exploring'] }))).toBeNull()
   })
   it('a decided SPM leaver must pick a pathway', () => {
     expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }))).toBe('chosenPathway')
@@ -431,9 +431,26 @@ describe('applyFormError — Plans pathway question', () => {
     expect(applyFormError(baseForm({ chosenPathway: '', preUTrack: '', preUInstitution: '', chosenProgramme: null }), 'stpm')).toBe('chosenProgramme')
     expect(applyFormError(baseForm({ chosenPathway: '', preUTrack: '', preUInstitution: '', chosenProgramme: { courseId: 'D1', courseName: 'BSc', fieldKey: 'science' } }), 'stpm')).toBeNull()
   })
-  it('the Uncertain branch never blocks (leanings/reasons/note all optional)', () => {
-    expect(applyFormError(baseForm({ pathwayCertainty: 'uncertain', chosenPathway: '', chosenProgramme: null, uncertaintyReasons: [], uncertaintyNote: '' }))).toBeNull()
-    expect(applyFormError(baseForm({ pathwayCertainty: 'uncertain', chosenPathway: '', chosenProgramme: null }), 'stpm')).toBeNull()
+  it('the waiting branch: "where are you right now" needs at least one chip; leaning and note stay optional', () => {
+    const waiting = { pathwayCertainty: 'uncertain' as const, chosenPathway: '', chosenProgramme: null, pathwaysConsidered: [], uncertaintyNote: '' }
+    expect(applyFormError(baseForm({ ...waiting, uncertaintyReasons: [] }))).toBe('uncertaintyReasons')
+    expect(applyFormError(baseForm({ ...waiting, uncertaintyReasons: ['exploring'] }))).toBeNull()
+  })
+  it('the waiting branch: a tertiary student must fill all three degree boxes', () => {
+    const tc = (n: number) => ({ courseId: `D${n}`, courseName: `Degree ${n}`, institution: 'UM' })
+    const waiting = { pathwayCertainty: 'uncertain' as const, chosenPathway: '', chosenProgramme: null, uncertaintyReasons: ['exploring'] }
+    expect(applyFormError(baseForm({ ...waiting, topChoices: [] }), 'stpm')).toBe('topChoices')
+    expect(applyFormError(baseForm({ ...waiting, topChoices: [tc(1), tc(2)] }), 'stpm')).toBe('topChoices')
+    expect(applyFormError(baseForm({ ...waiting, topChoices: [tc(1), null, tc(3)] }), 'stpm')).toBe('topChoices')
+    expect(applyFormError(baseForm({ ...waiting, topChoices: [tc(1), { ...tc(2), courseId: '' }, tc(3)] }), 'stpm')).toBe('topChoices')
+    expect(applyFormError(baseForm({ ...waiting, topChoices: [tc(1), tc(2), tc(3)] }), 'stpm')).toBeNull()
+    // degrees come before the chips in error order
+    expect(applyFormError(baseForm({ ...waiting, uncertaintyReasons: [], topChoices: [] }), 'stpm')).toBe('topChoices')
+    // an SPM leaver never sees the degree boxes, so they are not asked for
+    expect(applyFormError(baseForm({ ...waiting, topChoices: [] }), 'spm')).toBeNull()
+  })
+  it('the sure branch is unchanged: no degrees or chips needed', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: 'sure', uncertaintyReasons: [], topChoices: [] }))).toBeNull()
   })
 })
 

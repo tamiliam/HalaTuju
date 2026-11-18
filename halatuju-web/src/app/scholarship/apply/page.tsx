@@ -58,7 +58,7 @@ const ERROR_TAB: Record<string, TabKey> = {
   org: 'personal', state: 'personal', phone: 'personal',
   householdSize: 'family', householdSizeMax: 'family', income: 'family', parentPhone: 'family',
   pathwayCertainty: 'plans', chosenPathway: 'plans', chosenProgramme: 'plans',
-  preUTrack: 'plans', preUInstitution: 'plans',
+  preUTrack: 'plans', preUInstitution: 'plans', topChoices: 'plans', uncertaintyReasons: 'plans',
   consent: 'support', declaration: 'support',
   // A name mismatch is fixed on the About Me name (the usual culprit — a pre-filled
   // Google handle), so land the student there; an inline hint shows in both places.
