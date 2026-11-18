@@ -20,6 +20,64 @@ export interface VerdictMetrics {
   /** Which verdict_engine generations this roll-up averaged, {version: applications}.
    *  More than one key means the rate below BLENDS predictors — see the card. */
   engine_versions?: Record<string, number>
+  /** LL1: the AI prediction scoreboard. Every figure is counted and rounded by the server; the
+   *  browser only prints them. Absent from a payload means "this reader may not see it". */
+  overall?: PredictionCounts
+  fact_counts?: Record<string, PredictionCounts>
+  by_version?: Record<string, PredictionCounts>
+  by_month?: Record<string, PredictionCounts>
+  doubt_codes?: DoubtRow[]
+  qc_agreement?: QcAgreement
+  /** Leads only: ABSENT (not empty) for everyone else. */
+  by_reviewer?: ReviewerRow[]
+}
+
+/** One block of the scoreboard. "Green" = the AI was sure; "unsure" = the AI was in doubt.
+ *  Rates are 0..1 (4 places). A `few_*` flag means too few cases to quote a percent. */
+export interface PredictionCounts {
+  green: number
+  green_failed: number
+  green_agreed: number
+  green_agree_rate: number
+  green_fail_rate: number
+  unsure: number
+  unsure_passed: number
+  unsure_pass_rate: number
+  few_green: boolean
+  few_unsure: boolean
+  few: boolean
+}
+
+export interface DoubtRow {
+  fact: string
+  code: string
+  passed: number
+  failed: number
+  total: number
+  fail_rate: number
+  pass_rate: number
+  few: boolean
+}
+
+export interface QcCounts {
+  accept: number
+  reopen: number
+  reject: number
+  total: number
+  accept_rate: number
+  few: boolean
+}
+
+export interface QcAgreement extends QcCounts {
+  by_month: Record<string, QcCounts>
+}
+
+export interface ReviewerRow extends PredictionCounts {
+  id: number | null
+  name: string
+  /** null = a named reviewer; otherwise a neutral label to translate instead of `name`. */
+  label_key: 'unmatched_reviewer' | 'unnamed_reviewer' | null
+  applications: number
 }
 
 /** Reverse a recorded decision (super-only): holds the sponsor profile from the pool

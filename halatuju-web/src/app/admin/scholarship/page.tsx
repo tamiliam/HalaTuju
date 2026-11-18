@@ -29,7 +29,6 @@ import {
 } from '@/lib/admin-api'
 import { Pagination } from '@/components/Pagination'
 import { lazySource } from '@/components/source/LazySource'
-// import AiReliabilityCard from '@/components/AiReliabilityCard' // hidden 2026-06-13 — re-add when placement is decided (component retained)
 import { referralAcronym } from '@/lib/scholarship'
 import { FIXED_REFERRAL_CODES, referralLabel } from '@/lib/referralSources'
 import { APPLICATION_STATUSES, statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
@@ -335,8 +334,6 @@ function StaffScholarshipList() {
 
       <ApplicationUrlChips readyF={readyF} bandF={bandF} onClearReady={() => { setReadyF(false); setPage(1) }}
         onClearBand={() => { setBandF(''); setPage(1) }} withdrawalF={withdrawalF} onClearWithdrawal={() => { setWithdrawalF(''); setPage(1) }} />
-
-      {/* AI reliability card hidden 2026-06-13 — placement TBD by owner; component kept in components/AiReliabilityCard.tsx */}
 
       {/* ⚠ ONE SET OF FILTERS, TWO PLACES (Mobile M6a). From `md` they sit in the row as they always
           did; on a phone the search stays on the page and the rest open in the shared Sheet behind

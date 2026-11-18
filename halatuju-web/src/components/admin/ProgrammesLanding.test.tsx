@@ -11,12 +11,19 @@
  *  * `opens` decides the link: the gift's Overview, or the mentor's students narrowed to this gift;
  *  * nothing assigned → the empty state, not an empty grid.
  */
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import ProgrammesLanding, { cardHref } from './ProgrammesLanding'
 import * as api from '@/lib/admin-api/myProgrammes'
+import * as verdictApi from '@/lib/admin-api/verdict'
+import { metrics } from '@/test/aiPredictionFixture'
 
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: mockLocale }) }))
+jest.mock('@/lib/i18n', () => ({
+  ...jest.requireActual('@/lib/i18n'),
+  useT: () => ({ t: (k: string) => k, locale: mockLocale }),
+}))
+// LL1: the AI prediction block at the foot of the page. Refused unless a test serves it.
+jest.mock('@/lib/admin-api/verdict', () => ({ getVerdictMetrics: jest.fn() }))
 let mockLocale = 'en'
 let mockRole: Record<string, unknown> = { role: 'reviewer' }
 jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }) }))   // TD-623: the keys the server serves
@@ -29,6 +36,7 @@ jest.mock('./GiftProgrammes', () => ({
 }))
 
 const mockApi = api as jest.Mocked<typeof api>
+const mockVerdict = verdictApi.getVerdictMetrics as jest.Mock
 
 const prog = (over: Partial<api.MyProgramme> = {}): api.MyProgramme => ({
   id: 7, code: 'b40', name_en: 'B40 Gift', name_ms: 'Hadiah B40', name_ta: 'பி40 கொடை',
@@ -40,6 +48,7 @@ const serve = (programmes: api.MyProgramme[], every_gift = false) =>
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockVerdict.mockRejectedValue(new Error('forbidden'))
   mockLocale = 'en'
   mockRole = { role: 'reviewer' }
 })
@@ -182,5 +191,37 @@ describe('nothing assigned', () => {
     mockApi.getMyProgrammes.mockRejectedValue(new Error('boom'))
     render(<ProgrammesLanding />)
     expect(await screen.findByText('admin.programmes.loadFailed')).toBeTruthy()
+  })
+})
+
+// LL1: the AI prediction block, all programmes together. The server decides who gets it.
+describe('the AI prediction block at the foot of the page', () => {
+  it('draws the block, with the all-programmes note, when verdict-metrics is served', async () => {
+    mockRole = { role: 'org_admin' }
+    mockVerdict.mockResolvedValue(metrics())
+    render(<ProgrammesLanding />)
+    const block = await screen.findByTestId('overview-ai-prediction')
+    expect(within(block).getByText('admin.programmeOverview.aiPrediction.allProgrammes')).toBeTruthy()
+    expect(mockVerdict).toHaveBeenCalledTimes(1)
+    // No cohort: the whole organisation.
+    expect(mockVerdict).toHaveBeenCalledWith({ token: 'tok' })
+  })
+
+  it('draws nothing, no banner and no console noise, when the server refuses (403)', async () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => undefined)
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+    mockRole = { role: 'reviewer' }
+    serve([prog({ cases: 1 })])
+    mockVerdict.mockRejectedValue(Object.assign(new Error('Forbidden'), { status: 403 }))
+    render(<ProgrammesLanding />)
+    await screen.findByTestId('my-programme-b40')
+    await waitFor(() => expect(mockVerdict).toHaveBeenCalled())
+    expect(screen.queryByTestId('overview-ai-prediction')).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByText('admin.programmes.loadFailed')).toBeNull()
+    expect(spy).not.toHaveBeenCalled()
+    expect(warn).not.toHaveBeenCalled()
+    spy.mockRestore()
+    warn.mockRestore()
   })
 })

@@ -335,11 +335,7 @@ describe('no route outside /admin reaches the admin slice', () => {
  * only says "no route mounts it today". The test below fails the day one IS mounted, so the line
  * cannot go stale.
  */
-const UNROUTED: Record<string, string> = {
-  'components/AiReliabilityCard.tsx':
-    'Hidden from /admin/scholarship on 2026-06-13 pending the owner\'s placement decision; the '
-    + 'component is kept (see the comment at its old import in app/admin/scholarship/page.tsx).',
-}
+const UNROUTED: Record<string, string> = {}
 
 /**
  * ═══ TD-416 (2026-10-29): THE SCHOLARSHIP AND SPONSOR SLICES ══════════════════════════════════

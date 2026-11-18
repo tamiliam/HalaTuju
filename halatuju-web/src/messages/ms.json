@@ -4815,13 +4815,6 @@
         "hide": "Sembunyikan kata-kata pelajar sendiri"
       },
       "studentNote": "Nota pelajar",
-      "reliability": {
-        "title": "Kebolehharapan AI",
-        "subtitle": "Berapa kerap cadangan AI sepadan dengan keputusan penyemak — merentas {n} permohonan yang telah disemak.",
-        "overall": "Keseluruhan",
-        "empty": "Belum ada permohonan yang disemak — kebolehharapan AI akan dipaparkan di sini setelah penyemak merekod keputusan mereka.",
-        "mixedEngines": "Angka ini ialah purata bagi {n} versi enjin pemeriksaan ({versions}). Enjin telah berubah selepas sebahagian daripada keputusan ini direkodkan, jadi tafsirkan aliran ini dengan berhati-hati."
-      },
       "verdict": {
         "title": "Ramalan AI",
         "intro": "AI telah cuba menyemak butiran ini, tetapi kami memerlukan anda untuk membuat pertimbangan akhir.",
@@ -7604,6 +7597,45 @@
         "completed": "Semakan disiapkan",
         "turnaround": "Pelajar menunggu median {days} hari dari keputusan penilai sehingga semakan anda.",
         "none": "Tiada apa-apa menunggu semakan dalam pemberian ini."
+      },
+      "aiPrediction": {
+        "title": "Ramalan AI",
+        "sub": "Kekerapan penyemak bersetuju dengan ramalan AI. AI menyemak empat fakta bagi setiap permohonan; penyemak kemudian membuat keputusan akhir.",
+        "empty": "Belum ada permohonan yang disemak. Angka akan muncul selepas penyemak merekodkan keputusan mereka.",
+        "sureTile": "Apabila AI yakin, penyemak bersetuju",
+        "doubtTile": "Apabila AI ragu, penyemak meluluskan fakta itu",
+        "factsOf": "{a} daripada {b} fakta",
+        "xOfY": "{a} daripada {b}",
+        "fewCases": "Kes sedikit",
+        "trend": "Apabila AI yakin, mengikut bulan",
+        "trendChart": "Kadar fakta yang dipersetujui penyemak apabila AI yakin, mengikut bulan",
+        "trendHint": "Setiap angka ialah kadar fakta yang AI yakin dan penyemak bersetuju. Bulan yang kesnya sedikit hanya menunjukkan bilangan.",
+        "byFact": "Mengikut fakta",
+        "doubts": "Keraguan yang paling kerap diluluskan penyemak",
+        "doubtsHint": "Keraguan yang kerap diluluskan penyemak mungkin terlalu berhati-hati bagi AI.",
+        "decision": "Keputusan",
+        "decisionNote": "Keputusan semakan kualiti",
+        "qcAgreed": "diterima pada semakan kualiti",
+        "qcOther": "Dikembalikan: {reopen}. Ditolak: {reject}.",
+        "byVersion": "Mengikut versi enjin",
+        "byReviewer": "Mengikut penyemak",
+        "leadsOnly": "Ketua sahaja",
+        "reviewerHint": "Dipaparkan kepada ketua sahaja, untuk menyokong penyemak dan bukan untuk menarafkan mereka.",
+        "footer": "Fakta yang belum disemak oleh QC.",
+        "allProgrammes": "Semua program bersama.",
+        "versionUnknown": "Versi tidak diketahui",
+        "unmatchedReviewer": "Penyemak tidak dipadankan dengan akaun",
+        "unnamedReviewer": "Penyemak tanpa nama",
+        "col": {
+          "sure": "AI yakin, penyemak setuju",
+          "doubt": "AI ragu, penyemak meluluskan",
+          "fact": "Fakta",
+          "doubtCode": "Keraguan",
+          "passed": "Diluluskan penyemak",
+          "version": "Versi",
+          "reviewer": "Penyemak",
+          "applications": "Permohonan"
+        }
       }
     },
     "programme": {

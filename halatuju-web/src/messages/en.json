@@ -4815,13 +4815,6 @@
         "hide": "Hide the student's own words"
       },
       "studentNote": "Student's note",
-      "reliability": {
-        "title": "AI reliability",
-        "subtitle": "How often the AI's suggestion matched the reviewer's decision — across {n} reviewed application(s).",
-        "overall": "Overall",
-        "empty": "No reviewed applications yet — the AI's reliability will appear here once reviewers record their verdicts.",
-        "mixedEngines": "This figure averages {n} versions of the checking engine ({versions}). The engine has changed since some of these decisions were recorded, so read the trend with care."
-      },
       "verdict": {
         "title": "AI Prediction",
         "intro": "AI has attempted to check these details, but we need you to make the final judgement.",
@@ -7604,6 +7597,45 @@
         "completed": "Checks completed",
         "turnaround": "Students waited a median of {days} days from the reviewer's verdict to your check.",
         "none": "Nothing is waiting to be checked in this gift."
+      },
+      "aiPrediction": {
+        "title": "AI prediction",
+        "sub": "How often reviewers agreed with what the AI predicted. The AI checks four facts on each application; a reviewer then makes the final call.",
+        "empty": "No reviewed applications yet. Figures will appear once reviewers record their verdicts.",
+        "sureTile": "When the AI was sure, reviewers agreed",
+        "doubtTile": "When the AI was in doubt, reviewers passed the fact",
+        "factsOf": "{a} of {b} facts",
+        "xOfY": "{a} of {b}",
+        "fewCases": "Few cases",
+        "trend": "When the AI was sure, by month",
+        "trendChart": "Share of facts the reviewer agreed with when the AI was sure, by month",
+        "trendHint": "Each figure is the share of facts the AI was sure about that a reviewer agreed with. Months with few cases show the count only.",
+        "byFact": "By fact",
+        "doubts": "Doubts that reviewers pass most often",
+        "doubtsHint": "A doubt that reviewers often pass may be one the AI is too cautious about.",
+        "decision": "Decision",
+        "decisionNote": "What the quality check decided",
+        "qcAgreed": "accepted at the quality check",
+        "qcOther": "Sent back: {reopen}. Rejected: {reject}.",
+        "byVersion": "By engine version",
+        "byReviewer": "By reviewer",
+        "leadsOnly": "Leads only",
+        "reviewerHint": "Shown to leads only, to support reviewers and not to rank them.",
+        "footer": "Facts not yet checked by the QC.",
+        "allProgrammes": "All programmes together.",
+        "versionUnknown": "Unknown version",
+        "unmatchedReviewer": "Reviewer not matched to an account",
+        "unnamedReviewer": "Reviewer not named",
+        "col": {
+          "sure": "AI sure, reviewer agreed",
+          "doubt": "AI in doubt, reviewer passed",
+          "fact": "Fact",
+          "doubtCode": "Doubt",
+          "passed": "Reviewer passed",
+          "version": "Version",
+          "reviewer": "Reviewer",
+          "applications": "Applications"
+        }
       }
     },
     "programme": {

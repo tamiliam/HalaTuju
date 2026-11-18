@@ -29,6 +29,7 @@ import TableFrame, { TH, TH_RIGHT } from '@/components/admin/TableFrame'
 import type { ProgrammeOverview } from '@/lib/admin-api'
 import { APPLICATION_STATUSES, statusLabelKey } from '@/lib/applicationStatus'
 import { formatDate } from '@/lib/formatDate'
+import { AiPredictionSection } from './AiPredictionSection'
 import { PreInterviewCounts } from './PreInterviewCounts'
 import {
   FULL_AXIS_BOX, SMALL_AXIS_BOX, WIDE_AXIS_BOX, bandTone, monthOf, monthTicks, num,
@@ -584,4 +585,5 @@ export const SECTION_RENDERERS: Record<string, (props: SectionProps) => JSX.Elem
   money_series: MoneySeriesSection,
   mine: MineSection,
   qc: QcSection,
+  ai_prediction: AiPredictionSection,
 }

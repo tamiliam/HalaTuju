@@ -4,6 +4,7 @@
  */
 import { adminFetch, adminMutate, giftQuery } from './client'
 import type { ApiOptions } from './client'
+import type { VerdictMetrics } from './verdict'
 
 // ── Programme Overview — "how is this gift doing?", shaped by the reader's keys
 //
@@ -176,6 +177,9 @@ export interface ProgrammeOverview {
            cases: OverviewMyCase[]; pace: OverviewPace }
   qc?: { awaiting: number; oldest_waiting_days: number | null
          cases: OverviewQcCase[]; pace: OverviewPace }
+  /** LL1: the AI prediction scoreboard — the same object `verdict-metrics/` serves. Present only
+   *  for a reader the server allows; its presence is the permission. */
+  ai_prediction?: VerdictMetrics
   /** The round the figures were narrowed to, echoed back — `null` when the whole history is shown. */
   intake: OverviewIntake | null
   /** The chosen gift's rounds, newest year first. `[]` when no gift is chosen (the picker hides). */
