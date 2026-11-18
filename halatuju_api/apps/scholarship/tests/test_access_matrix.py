@@ -319,3 +319,40 @@ def test_a_granted_team_member_opens_what_an_org_admin_does(world, route, method
 
 def test_the_granted_differences_are_still_served():
     assert set(GRANTED_DIFFERS) <= set(PAIRS)
+
+
+# ── POST-AWARD-CUT review (18 Nov): the per-case writes in the two OTHER case stages ─────────────────
+#: app_a is seeded ACTIVE, so the matrix above proves only the past-the-award stage (the Scholars holder
+#: writes, the reviewer and QC do not). The manifest's `case_stages` lists the pairs whose callers turn on
+#: the stage; each is replayed here with app_a moved to an OPEN case (still assigned to reviewer_a) and to
+#: one that ENDED BEFORE THE AWARD (`students.approve` holders and supers only, owner 18 Nov).
+STAGES = MANIFEST['case_stages']
+STAGE_PAIRS = [tuple(p.split(' ', 1)) for p in STAGES['pairs']]
+
+
+def test_the_case_stage_pairs_are_served_entries():
+    for method, route in STAGE_PAIRS:
+        assert (route, method.lower()) in ENTRIES, f'case_stages names {method} {route}, which has no entry'
+    for stage in ('open', 'pre_award_end'):
+        assert set(STAGES[stage]['except']) <= set(STAGES['pairs']), stage
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('stage', ['open', 'pre_award_end'])
+@pytest.mark.parametrize('method,route', STAGE_PAIRS, ids=lambda v: v)
+def test_a_case_stage_decides_who_writes(world, stage, method, route):
+    from apps.scholarship.models import ScholarshipApplication
+    spec = STAGES[stage]
+    allow = set(spec['except'].get(f'{method} {route}', spec)['allow'])
+    wrong = []
+    for role in roles_for(route):
+        cache.clear()
+        with transaction.atomic():
+            ScholarshipApplication.objects.filter(pk=world.app_a.pk).update(status=spec['status'])
+            code = world.call(role, route, method.lower()).status_code
+            transaction.set_rollback(True)
+        # A crash is wrong, unless the matrix pins the route's status for an ENV reason (the AI is off).
+        broke = code in BROKEN or (code >= 500 and PINNED.get((route, method.lower(), 'super'), (None,))[0] != code)
+        if (role in allow) == (code in HIDE) or broke:
+            wrong.append(f'{role}: {code}')
+    assert not wrong, f'{stage} {method} {route}: allowed {sorted(allow)}, but ' + ', '.join(wrong)

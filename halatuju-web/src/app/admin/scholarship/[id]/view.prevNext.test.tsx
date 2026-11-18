@@ -21,7 +21,7 @@ beforeEach(() => { sessionStorage.clear(); cockpitRouterPush.mockClear() })
 describe('the cockpit header steps through the list it came from', () => {
   it('offers both steps and where the case sits (id 7 is the middle of 5, 7, 9)', async () => {
     writeListNav('scholarship', { ids: [5, 7, 9], backHref: '/admin/scholarship', labelKey: 'x' })
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     const nav = await screen.findByTestId('cockpit-prev-next')
     const links = Array.from(nav.querySelectorAll('a')).map((a) => a.getAttribute('href'))
@@ -33,7 +33,7 @@ describe('the cockpit header steps through the list it came from', () => {
 
   it('greys the step at either end', async () => {
     writeListNav('scholarship', { ids: [7, 9], backHref: '/admin/scholarship', labelKey: 'x' })
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     const nav = await screen.findByTestId('cockpit-prev-next')
     expect(Array.from(nav.querySelectorAll('a')).map((a) => a.getAttribute('href')))
@@ -42,13 +42,13 @@ describe('the cockpit header steps through the list it came from', () => {
 
   it('shows no steps for a case that is not in the record (a direct link)', async () => {
     writeListNav('scholarship', { ids: [1, 2, 3], backHref: '/admin/scholarship', labelKey: 'x' })
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     expect(screen.queryByTestId('cockpit-prev-next')).toBeNull()
   })
 
   it('shows no steps when nothing was left behind', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     expect(screen.queryByTestId('cockpit-prev-next')).toBeNull()
   })
@@ -60,7 +60,7 @@ describe('the arrow keys step through the same list', () => {
 
   it('ArrowRight goes to the next case and ArrowLeft to the previous one', async () => {
     seed()
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     await screen.findByTestId('cockpit-prev-next')
     key('ArrowRight')
@@ -72,7 +72,7 @@ describe('the arrow keys step through the same list', () => {
 
   it('does nothing while the officer is typing in a box', async () => {
     seed()
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     await screen.findByTestId('cockpit-prev-next')
     const box = document.querySelector('textarea, input:not([type="hidden"])') as HTMLElement
@@ -86,7 +86,7 @@ describe('the arrow keys step through the same list', () => {
 
   it('does nothing while the confirm dialog is open', async () => {
     seed()
-    renderCockpit({ role: 'super', stage: 'rejected' })
+    renderCockpit({ role: 'super', writes: true, stage: 'rejected' })
     await loaded()
     await screen.findByTestId('cockpit-prev-next')
     fireEvent.click(screen.getAllByRole('button', { name: 'admin.scholarship.cooloff.cancelDecline' })[0])

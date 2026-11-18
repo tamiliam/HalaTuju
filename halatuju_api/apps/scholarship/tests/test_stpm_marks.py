@@ -140,6 +140,6 @@ class TestTheCockpitIsServedTheMarks(TestCase):
         self.assertEqual(body['stpm_marks']['cgpa'], 'match')
         self.assertEqual(body['stpm_marks']['grades']['MATH_T'], {'status': 'match', 'doc': 'A-'})
         # The gift's key stays the serializer's last; the view's keys (_detail_payload: qc_refusal,
-        # POST-AWARD-CUT's can_write/can_cancel_decline, rejected_by_unassigned, withdrawal_request).
-        self.assertEqual(list(body)[-6:], ['programme', 'qc_refusal', 'can_write', 'can_cancel_decline',
-                                           'rejected_by_unassigned', 'withdrawal_request'])
+        # POST-AWARD-CUT's three write flags, rejected_by_unassigned, withdrawal_request).
+        self.assertEqual(list(body)[-7:], ['programme', 'qc_refusal', 'can_write', 'can_cancel_decline',
+                                           'can_tranche', 'rejected_by_unassigned', 'withdrawal_request'])

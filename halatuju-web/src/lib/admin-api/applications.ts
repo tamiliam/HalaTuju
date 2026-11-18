@@ -312,9 +312,9 @@ export interface AdminScholarshipDetail {
   // TD-227: a `/reject/` decline made by someone other than the assignee (null = the record cannot say).
   rejected_by_unassigned?: boolean | null
   // TD-483: the code the QC door would refuse THIS viewer with (null = may decide, or not a QC case).
-  // Only on the detail read and the `/reject/` reply; other replies omit it. So do `can_write` / `can_cancel_decline`.
+  // Only on the detail read and the `/reject/` reply; other replies omit it. So do the three write flags.
   qc_refusal?: string | null
-  can_write?: boolean; can_cancel_decline?: boolean
+  can_write?: boolean; can_cancel_decline?: boolean; can_tranche?: boolean
   // A1.13b: the case's latest award-withdrawal request and this viewer's step (`award_withdrawal_chain.
   // payload_for`). Null (or absent) unless the case is awarded or recommended and there is something to show.
   withdrawal_request?: AwardWithdrawalRequest | null

@@ -29,7 +29,7 @@ describe("the officer's Outstanding list", () => {
     ['mother_ic_for_str_missing'],
     ['mother_ic_for_str_unreadable'],
   ])('lists %s as the upload the student was asked for', async (code) => {
-    renderCockpit({ role: 'super', stage: 'profile_complete',
+    renderCockpit({ role: 'super', writes: true, stage: 'profile_complete',
                     build: { resolution_items: [ASK(code)] } })
     const title = await screen.findByText(`scholarship.actionCentre.item.${code}.title`,
                                           { exact: false })

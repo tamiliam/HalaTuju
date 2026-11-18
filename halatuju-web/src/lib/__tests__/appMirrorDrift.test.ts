@@ -159,16 +159,21 @@ describe('who may write on a case — view.tsx canWrite is SERVED by views_admin
     const fn = py.slice(py.indexOf('def _can_review_app('), py.indexOf('def _may_write_file('))
     expect(fn).toContain('return may_write_case(admin, app)')
     const rule = py.slice(py.indexOf('def may_write_case('), py.indexOf('class _AdminBase('))
-    expect(rule).toContain('if not is_open_case(status or app.status, app.decision_reopened_at):')
+    // One classification (`staff_lifecycle.case_stage`): open, past the award, or ended before it.
+    expect(rule).toContain('stage = case_stage(app, status)')
     expect(rule).toContain('return may_write_file(admin, app)')
-    // The cancel-decline door (owner 17 Nov) is served too, as `can_cancel_decline`.
+    expect(rule).toContain('return surface_gates.may_decide(admin)')
+    // The cancel-decline door (owner 17 Nov) and the tranche door are served too, beside `can_write`.
     expect(rule).toContain('return may_write_case(admin, app, status=back_to)')
-    const payload = readApi('apps/scholarship/views_admin/applications.py')
-    expect(payload).toContain("data['can_write'] = may_write_case(admin, app)")
-    expect(payload).toContain("data['can_cancel_decline'] = may_cancel_held_decline(admin, app)")
+    expect(rule).toContain("'can_write': may_write_case(admin, app)")
+    expect(rule).toContain("'can_cancel_decline': may_cancel_held_decline(admin, app)")
+    expect(rule).toContain("'can_tranche': may_tranche(admin, app)")
+    expect(readApi('apps/scholarship/views_admin/applications.py')).toContain('data.update(served_write_flags(admin, app))')
+    // The tranche door refuses on the same predicate the flag serves.
+    expect(readApi('apps/scholarship/views_admin/lifecycle.py')).toContain('if tranche_key_held(admin, app):')
     const view = web('src/app/admin/scholarship/[id]/view.tsx')
-    expect(view).toContain("served.current = { write: app.can_write, cancelDecline: app.can_cancel_decline === true }")
-    expect(view).toContain('const canWrite = served.current.write')
+    expect(view).toContain("served.current = { write: app.can_write, cancelDecline: app.can_cancel_decline === true, tranche: app.can_tranche === true }")
+    expect(view).toContain('const canWrite = served.current.write, canTranche = served.current.tranche')
     // POST-AWARD-CUT: the old browser copy of the rule is gone, and must not come back.
     expect(view).not.toContain("const canWrite = hasPerm(role, 'qc')")
     expect(view).not.toContain('app.assigned_to_id === (role?.admin_id ?? null)')

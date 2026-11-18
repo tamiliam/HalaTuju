@@ -44,7 +44,7 @@ describe('a verdict saved but not yet submitted says which verdict it was', () =
     // `record-verdict` moves no status, so the case is still `interviewing` with the decline
     // written on it. Before #24 this read "your recommendation has not been submitted" and
     // offered "Save & generate final profile" — both describing the opposite decision.
-    renderCockpit({ role: 'super', stage: 'verdict_recorded', build: { outcome: 'decline' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'verdict_recorded', build: { outcome: 'decline' } })
     await loaded()
     expect(screen.getByText('admin.scholarship.recordVerdict.savedNotSubmittedDecline')).toBeTruthy()
     expect(screen.queryByText('admin.scholarship.recordVerdict.savedNotSubmitted')).toBeNull()
@@ -56,7 +56,7 @@ describe('a verdict saved but not yet submitted says which verdict it was', () =
      async () => {
     // The mirror case, asserted so the test above cannot pass by the page simply saying
     // "decline" everywhere.
-    renderCockpit({ role: 'super', stage: 'verdict_recorded', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'verdict_recorded', build: { outcome: 'recommend' } })
     await loaded()
     expect(screen.getByText('admin.scholarship.recordVerdict.savedNotSubmitted')).toBeTruthy()
     expect(screen.queryByText('admin.scholarship.recordVerdict.savedNotSubmittedDecline')).toBeNull()
@@ -69,7 +69,7 @@ describe('a verdict saved but not yet submitted says which verdict it was', () =
     // else — no `verified_at` — so a stuck-check that reads only the stamp calls this stuck for
     // ever and invites the reviewer to press Approve, which would replace her decline with a
     // recommendation. The panel here is the FROZEN record, not a form.
-    renderCockpit({ role: 'super', stage: 'awaiting_qc', build: { outcome: 'decline' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'awaiting_qc', build: { outcome: 'decline' } })
     await loaded()
     expect(screen.queryByText('admin.scholarship.recordVerdict.savedNotSubmittedDecline')).toBeNull()
     expect(screen.queryByText('admin.scholarship.recordVerdict.savedNotSubmitted')).toBeNull()
@@ -78,7 +78,7 @@ describe('a verdict saved but not yet submitted says which verdict it was', () =
   })
 
   it('a RECOMMEND awaiting QC is not stuck either — verify-accept left its stamp', async () => {
-    renderCockpit({ role: 'super', stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
     await loaded()
     expect(screen.queryByText('admin.scholarship.recordVerdict.savedNotSubmitted')).toBeNull()
     expect(noButton('recordVerdict.approve')).toBeNull()
@@ -91,7 +91,7 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
     // The whole of BrightPath #21. `verdict_decided_at` is set and `verified_at` is not, so the
     // submit never ran; locking the panel on the first stamp is what left application 144 with
     // no exit but a super-only Reopen recorded against a reviewer who did nothing wrong.
-    renderCockpit({ role: 'super', stage: 'verdict_recorded', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'verdict_recorded', build: { outcome: 'recommend' } })
     await loaded()
     expect(button('recordVerdict.approve').disabled).toBe(false)
     expect(button('recordVerdict.save').disabled).toBe(false)
@@ -100,7 +100,7 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
   it('the assigned reviewer herself can press it — not only a super', async () => {
     // She is the person who has to finish it, and Reopen is super-only. `canWrite` admits the
     // ASSIGNED reviewer, which is why the fixture's `assigned_to_id` is her own admin id.
-    renderCockpit({ role: 'reviewer', stage: 'verdict_recorded', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'verdict_recorded', build: { outcome: 'recommend' } })
     await loaded()
     expect(button('recordVerdict.approve').disabled).toBe(false)
   })
@@ -110,7 +110,7 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
     // written. Approve must be visible (so the reviewer knows where she is going) and refused
     // (so she cannot skip the four facts). Without this the test above would also pass on a
     // page that simply never disables anything.
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     expect(button('recordVerdict.approve').disabled).toBe(true)
     expect(button('recordVerdict.decline').disabled).toBe(true)
@@ -121,7 +121,7 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
      async () => {
     // The third state, and the one the lock exists FOR: once the case really has moved to QC
     // the verdict is frozen. A super may still Reopen it; nobody may edit it in place.
-    renderCockpit({ role: 'super', stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
     await loaded()
     expect(noButton('recordVerdict.approve')).toBeNull()
     expect(noButton('recordVerdict.decline')).toBeNull()
@@ -131,7 +131,7 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
   it('a reopened decision unlocks the panel again', async () => {
     // A super reopen re-opens the WHOLE case for revision, for the assigned reviewer too.
     renderCockpit({
-      role: 'reviewer', stage: 'awaiting_qc',
+      role: 'reviewer', writes: true, stage: 'awaiting_qc',
       build: { outcome: 'recommend', decision_reopened_at: '2026-06-03T09:00:00.000Z',
                decision_reopen_reason: 'The offer letter was superseded.' },
     })
@@ -159,7 +159,7 @@ describe('every interview question needs an answer before the reviewer decides',
   it('⚠ #32: a submitted interview with an unanswered item keeps both asleep, for every role',
      async () => {
     for (const role of ROLES) {
-      const { unmount } = renderCockpit({ role, stage: 'interviewing', build: ready({}) })
+      const { unmount } = renderCockpit({ role, writes: true, stage: 'interviewing', build: ready({}) })
       await loaded()
       expect(button('recordVerdict.approve').disabled).toBe(true)
       expect(button('recordVerdict.decline').disabled).toBe(true)
@@ -170,7 +170,7 @@ describe('every interview question needs an answer before the reviewer decides',
 
   it('"See conclusion" is an answer: the same case wakes, for every role', async () => {
     for (const role of ROLES) {
-      const { unmount } = renderCockpit({ role, stage: 'interviewing', build: ready({
+      const { unmount } = renderCockpit({ role, writes: true, stage: 'interviewing', build: ready({
         'motivation:motivation_grit': { verdict: '', rationale: 'See conclusion' } }) })
       await loaded()
       expect(button('recordVerdict.approve').disabled).toBe(false)
@@ -181,7 +181,7 @@ describe('every interview question needs an answer before the reviewer decides',
   })
 
   it('a DELETED item is not owed an answer', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({
       'motivation:motivation_grit': { verdict: 'deleted', rationale: '' } }) })
     await loaded()
     expect(button('recordVerdict.approve').disabled).toBe(false)
@@ -191,14 +191,14 @@ describe('every interview question needs an answer before the reviewer decides',
      async () => {
     // A recorded APPROVE (overall 'accept') — `ready()` blanks the outcome, so it is put back.
     const base = ready({})
-    renderCockpit({ role: 'reviewer', stage: 'verdict_recorded', build: {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'verdict_recorded', build: {
       outcome: 'recommend', ...base, officer_verdict: { ...base.officer_verdict, overall: 'accept' } } })
     await loaded()
     expect(button('recordVerdict.approve').disabled).toBe(false)
   })
 
   it('a REOPENED decision is the reviewer\'s again, so the rule binds', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'verdict_recorded', build: {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'verdict_recorded', build: {
       outcome: 'recommend', ...ready({}), decision_reopened_at: '2026-06-03T09:00:00.000Z' } })
     await loaded()
     expect(button('recordVerdict.approve').disabled).toBe(true)
@@ -206,7 +206,7 @@ describe('every interview question needs an answer before the reviewer decides',
 
   it('⚠ review F1: a HOLD on file is not a decision — the empty interview still holds the buttons',
      async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({}, {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({}, {
       verdict_decided_at: '2026-06-01T09:00:00.000Z',
       officer_verdict: { identity: 'pass', academic: 'pass', income: 'pass', pathway: 'pass',
                          overall: 'hold' } }) })
@@ -217,7 +217,7 @@ describe('every interview question needs an answer before the reviewer decides',
 
   it('review F4: at QC\'s stage with no decision recorded, the rule does not reach', async () => {
     // Mirrors the api's `_REVIEWER_STAGE`: an `interviewed` case is QC's, not the reviewer's.
-    renderCockpit({ role: 'super', stage: 'interviewing', build: ready({}, { status: 'interviewed' }) })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: ready({}, { status: 'interviewed' }) })
     await loaded()
     expect(screen.queryByText('admin.scholarship.recordVerdict.findingsIncomplete')).toBeNull()
   })
@@ -225,7 +225,7 @@ describe('every interview question needs an answer before the reviewer decides',
   it('review F5: the decision door\'s refusal is shown in words, and a Decline stops there',
      async () => {
     for (const choice of ['recordVerdict.approve', 'recordVerdict.decline']) {
-      const { api, unmount } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({
+      const { api, unmount } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({
         'motivation:motivation_grit': { verdict: 'resolved', rationale: '' } }) })
       await loaded()
       api.recordVerdict.mockRejectedValue(Object.assign(new Error('Every interview question…'), {
@@ -245,7 +245,7 @@ describe('every interview question needs an answer before the reviewer decides',
   // ── Request #61: "Save & generate final profile" that loses its answer ──────────────────────
   /** Approve, then the Save that records + finalises + submits. */
   const pressSaveAndFinalise = async () => {
-    const { api, app, unmount } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({
+    const { api, app, unmount } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({
       'motivation:motivation_grit': { verdict: 'resolved', rationale: '' } }) })
     await loaded()
     return { api, app, unmount, press: () => {
@@ -302,7 +302,7 @@ describe('every interview question needs an answer before the reviewer decides',
   })
 
   it('the submit refusal names how many are left, in words', async () => {
-    const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({}, {
+    const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({}, {
       interview_session: buildInterviewSession({ status: 'draft', findings: {} }) }) })
     await loaded()
     api.saveInterview.mockResolvedValue({} as never)
@@ -318,7 +318,7 @@ describe('every interview question needs an answer before the reviewer decides',
      async () => {
     // A reviewer pressed Submit, the refusal printed only at the foot of the right-hand Decision
     // card, and from where he stood nothing happened. It must be inside the interview section.
-    const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({}, {
+    const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({}, {
       interview_session: buildInterviewSession({ status: 'draft', findings: {} }) }) })
     await loaded()
     api.saveInterview.mockResolvedValue({} as never)
@@ -337,7 +337,7 @@ describe('every interview question needs an answer before the reviewer decides',
 
   it('case 254: the live count under Submit says how many are left BEFORE she presses',
      async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({}, {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: ready({}, {
       interview_session: buildInterviewSession({ status: 'draft', findings: {} }) }) })
     await loaded()
     expect(screen.getByText('admin.scholarship.interview.stillToAnswer')).toBeTruthy()
@@ -352,7 +352,7 @@ describe('the reviewer line names what she actually decided', () => {
   it('reads "declined by" on the decline road', async () => {
     // Owner, on the live screen, 2026-09-18: a DECLINED case awaiting QC read "Interviewed and
     // recommended by". Same family as the banner above — one sentence serving two outcomes.
-    renderCockpit({ role: 'super', stage: 'awaiting_qc', build: { outcome: 'decline' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'awaiting_qc', build: { outcome: 'decline' } })
     await loaded()
     const line = screen.getByText(/admin\.scholarship\.interviewed/)
     expect(line.textContent).toContain('admin.scholarship.interviewedDeclinedBy')
@@ -363,7 +363,7 @@ describe('the reviewer line names what she actually decided', () => {
   })
 
   it('reads "recommended by" on the recommend road', async () => {
-    renderCockpit({ role: 'super', stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
     await loaded()
     const line = screen.getByText(/admin\.scholarship\.interviewed/)
     expect(line.textContent).toContain('admin.scholarship.interviewedRecommendedBy')
@@ -377,7 +377,7 @@ describe('reopening a recorded decision', () => {
     // A reopen asserts a reviewer error and is counted against her, so the reason is not
     // optional. Asserted through the button's own state, not through the handler.
     const { api } = renderCockpit({
-      role: 'super', stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+      role: 'super', writes: true, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
     await loaded()
     fireEvent.click(button('recordVerdict.reopen'))
     expect(button('recordVerdict.reopenConfirm').disabled).toBe(true)
@@ -390,7 +390,7 @@ describe('reopening a recorded decision', () => {
 
   // TD-349: the api refuses to reopen a decline whose email is still embargoed (decline_pending).
   it('a PENDING decline offers its cancel in Reopen\'s place, never a Reopen', async () => {
-    const { api, app } = renderCockpit({ role: 'super', stage: 'rejected' })   // email embargoed
+    const { api, app } = renderCockpit({ role: 'super', writes: true, stage: 'rejected' })   // email embargoed
     api.cancelPendingDecline.mockResolvedValue(app)
     await loaded()
     expect(noButton('recordVerdict.reopen')).toBeNull()
@@ -407,7 +407,7 @@ describe('reopening a recorded decision', () => {
   })
 
   it('once the decline email has gone, Reopen is offered again', async () => {
-    renderCockpit({ role: 'super', stage: 'rejected',
+    renderCockpit({ role: 'super', writes: true, stage: 'rejected',
                     build: { pending_rejection_category: '', decline_due_at: null } })
     await loaded()
     expect(button('recordVerdict.reopen')).toBeTruthy()
@@ -416,13 +416,13 @@ describe('reopening a recorded decision', () => {
 
   // TD-358: an officer sees the student who was never emailed her decision.
   it('shows the no-email banner only when the decision email has not gone', async () => {
-    renderCockpit({ role: 'super', stage: 'rejected', build: { decision_mail: 'no_address' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'rejected', build: { decision_mail: 'no_address' } })
     await loaded()
     expect(screen.getByTestId('decision-mail-banner').textContent).toBe('admin.scholarship.untold.noAddress')
   })
 
   it('shows no banner when she was told', async () => {
-    renderCockpit({ role: 'super', stage: 'rejected', build: { decision_mail: '' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'rejected', build: { decision_mail: '' } })
     await loaded()
     expect(screen.queryByTestId('decision-mail-banner')).toBeNull()
   })

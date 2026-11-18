@@ -19,11 +19,11 @@ const flagged = () => ({ ...buildApplicationDetail('awarded'), guardian_needs_ca
 
 describe('the shared-phone flag and Record call', () => {
   it('shows the flag only when the payload says the parent needs a call', async () => {
-    const view = renderCockpit({ role: 'super', app: flagged() })
+    const view = renderCockpit({ role: 'super', writes: true, app: flagged() })
     await loaded()
     expect(screen.getByText('admin.scholarship.call.needs')).toBeTruthy()
     view.unmount()
-    renderCockpit({ role: 'super', stage: 'awarded' })
+    renderCockpit({ role: 'super', writes: true, stage: 'awarded' })
     await loaded()
     expect(screen.queryByText('admin.scholarship.call.needs')).toBeNull()
   })

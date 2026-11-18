@@ -41,7 +41,7 @@ describe('the document drawer files the support letter under income', () => {
   const bankStatement = () => buildDocument('bank_statement', { id: 311 })
 
   it('⚠ THE INCOME-SUPPORT LETTER IS IN THE INCOME SECTION', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing',
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
                     build: { documents: [letter()] } })
     await loaded()
     expect(within(groupBlock('income')).getByText(DRAWER_TYPE('income_support_doc'))).toBeTruthy()
@@ -52,7 +52,7 @@ describe('the document drawer files the support letter under income', () => {
   it('and a real "other" document still lands in the other bucket', async () => {
     // The control: without it the assertion above also passes on a map that swept every type
     // into income, which is the same defect pointing the other way.
-    renderCockpit({ role: 'super', stage: 'interviewing',
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
                     build: { documents: [letter(), bankStatement()] } })
     await loaded()
     expect(within(groupBlock('other')).getByText(DRAWER_TYPE('bank_statement'))).toBeTruthy()
@@ -83,7 +83,7 @@ describe('a document request carries the fact its type belongs to', () => {
   }
 
   const mounted = async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'shortlisted' })
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'shortlisted' })
     await loaded()
     api.raiseResolutionItem.mockResolvedValue(buildApplicationDetail('shortlisted', {}))
     return api

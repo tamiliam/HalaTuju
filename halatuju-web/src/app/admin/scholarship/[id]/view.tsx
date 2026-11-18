@@ -111,12 +111,13 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // `chosen_programme` (the course). A fresh tab opened from a run pins it too (2026-09-28).
   usePinProgramme(app?.programme)
   // Execute (verify/verdict/interview/etc.): SERVED, never derived here — `can_write` is the server's one
-  // rule (`views_admin.base.may_write_case`, POST-AWARD-CUT 2026-11-17: an open case is super, `qc` org-wide
-  // or the assignee; past the award only super or a `scholars` holder). A write reply that omits it keeps
-  // the last value served; so does `can_cancel_decline`. drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
-  const served = useRef({ write: false, cancelDecline: false })
-  if (typeof app?.can_write === 'boolean') served.current = { write: app.can_write, cancelDecline: app.can_cancel_decline === true }
-  const canWrite = served.current.write
+  // rule (`views_admin.base.may_write_case`, POST-AWARD-CUT: an open case is super, `qc` org-wide or the
+  // assignee; past the award super or a `scholars` holder; ended before it super or a `students.approve`
+  // holder). A write reply that omits it keeps the last value served; so do `can_cancel_decline` and
+  // `can_tranche` (the tranche steps). drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
+  const served = useRef({ write: false, cancelDecline: false, tranche: false })
+  if (typeof app?.can_write === 'boolean') served.current = { write: app.can_write, cancelDecline: app.can_cancel_decline === true, tranche: app.can_tranche === true }
+  const canWrite = served.current.write, canTranche = served.current.tranche
   const [caseSummary, setCaseSummary] = useState<VerdictCaseSummary | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
   const [busy, setBusy] = useState('')
@@ -377,7 +378,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       </div>{/* end cockpit grid */}
 
       <PostAwardPanels
-        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite} orgSuper={holdsDoor(role, 'decide')} mayOpenFile={mayOpen('/admin/scholars', role)}
+        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite} canTranche={canTranche} orgSuper={holdsDoor(role, 'decide')} mayOpenFile={mayOpen('/admin/scholars', role)}
         bursary={bursary} bursaryMsg={bursaryMsg}
         doCountersignBursary={doCountersignBursary} doWitnessBursary={doWitnessBursary}
         disbAmount={disbAmount} setDisbAmount={setDisbAmount}

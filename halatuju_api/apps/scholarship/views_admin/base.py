@@ -26,7 +26,7 @@ from apps.courses import public as courses_public
 from .. import qc_separation
 from ..models import ScholarshipApplication
 from ..services import review_writes_closed
-from ..staff_lifecycle import is_open_case
+from ..staff_lifecycle import OPEN, PAST_AWARD, PRE_AWARD_END, case_stage
 
 
 def b40_scope(admin):
@@ -98,41 +98,76 @@ def org_allows(admin, app):
 def may_write_file(admin, app):
     """The scholar-file WRITE (S1-d): a `scholars` holder (a super passes every key) on a file of
     their own organisation. THE ONE DEFINITION — the scholar-file views ask it through
-    `_may_write_file`, and `may_write_case` asks it for every case past the open stage."""
+    `_may_write_file`, and `may_write_case` asks it for every case past the award. INTERIM on the
+    view switch: SCHOLARS-SPLIT moves the everyday file changes to the admin switch (owner 18 Nov)."""
     return holds_scholars_key(admin) and org_allows(admin, app)
 
 
 def may_write_case(admin, app, status=None):
     """May this admin WRITE (act) on this application? THE ONE RULE (`_can_review_app`, and the
-    `can_write` the case detail serves so the cockpit never re-derives it).
+    `can_write` the case detail serves so the cockpit never re-derives it). Three-way on
+    `staff_lifecycle.case_stage`, the one classification (owner rulings 12, 16, 17 and 18 Nov):
 
-    super — always. While the case is OPEN (`staff_lifecycle.is_open_case`: before the award, or a
-    REOPENED decision at any status) the rule is unchanged: a B40 scope, the own organisation, then
-    `qc` org-wide or the case ASSIGNED to them. Once it is NOT open, neither the assignment nor `qc`
-    writes (owner R5 2026-11-12, 16 and 17 Nov: the reviewer's relationship ends at awarded; QCs are
-    reviewers with additional permission); the writer is a `scholars` holder of the own organisation
-    (`may_write_file`) — who may hold no B40 scope at all, so that branch is asked first. Reads are
-    untouched: an assigned reviewer still SEES their past students (`_scoped_application`).
+      OPEN          — unchanged: a B40 scope, the own organisation, then `qc` org-wide or the case
+                      ASSIGNED to them;
+      PAST_AWARD    — a `scholars` holder of the own organisation (`may_write_file`), who may hold no
+                      B40 scope at all. The reviewer's link is severed at `awarded`, and a reopen
+                      never revives it ("QCs are reviewers as well");
+      PRE_AWARD_END — a `students.approve` holder of the own organisation ("Those with 'Reject or
+                      close applications' permissions"); a reviewer or QC only if they hold it.
+    super — always. Each door's own extra checks still apply. Reads are untouched: an assigned
+    reviewer still SEES their past students (`_scoped_application`).
     `status` judges the case at another status — ONLY `may_cancel_held_decline` passes it."""
+    from .. import surface_gates
     if admin is None or app is None:
         return False
     if admin.is_super:
         return True
-    if not is_open_case(status or app.status, app.decision_reopened_at):
+    stage = case_stage(app, status)
+    if stage == PAST_AWARD:
         return may_write_file(admin, app)
-    if b40_scope(admin) == 'none' or not org_allows(admin, app):
+    if not org_allows(admin, app):
+        return False
+    if stage == PRE_AWARD_END:
+        return surface_gates.may_decide(admin)
+    if b40_scope(admin) == 'none':
         return False
     return admin.has_perm('qc') or app.assigned_to_id == admin.id
+
+
+def may_tranche(admin, app):
+    """May this admin write a TRANCHE (schedule, release, withhold, return, mark_due)? Past an open case
+    THE PAYMENTS KEY DECIDES (owner 18 Nov: "Payments is a separate page. So the permissions are
+    separate."): `payments.may_prepare`. The case rule's Scholars key only opens the scholar's file;
+    it grants no tranche step. `_tranche_refusal` asks the payments half; the detail serves the whole
+    as `can_tranche`. See docs/decisions.md 2026-11-17."""
+    return may_write_case(admin, app) and tranche_key_held(admin, app)
+
+
+def tranche_key_held(admin, app):
+    """The payments half of `may_tranche`, the half that decides: an open case needs nothing more; any
+    other needs `payments.may_prepare` (`payments_prepare` or the lead tier; a super passes every key)."""
+    from .. import payments
+    return case_stage(app) == OPEN or payments.may_prepare(admin)
+
+
+def served_write_flags(admin, app):
+    """The write flags the case detail serves (`can_write`, `can_cancel_decline`, `can_tranche`), so
+    the cockpit draws each control from the server's own door and derives nothing."""
+    return {'can_write': may_write_case(admin, app),
+            'can_cancel_decline': may_cancel_held_decline(admin, app),   # owner 17 Nov: its own door
+            'can_tranche': may_tranche(admin, app)}
 
 
 def may_cancel_held_decline(admin, app):
     """cancel-decline's own door (owner, 17 Nov: "Reviewer + QC"). A decline still EMBARGOED (the
     student not told) that was taken BEFORE the award is judged as the open case the cancel returns
-    it to, so the assignee and `qc` keep the door; every other case asks the one rule unchanged.
+    it to, so the assignee and `qc` keep the door; every other case asks the one rule unchanged
+    (a held decline of a funded student is PAST_AWARD: the Scholars holders', owner 18 Nov).
     For this door only: no other write on a rejected case reopens."""
     from ..services.decline import held_decline_restore_target   # no query: the facts are on the row
     back_to = held_decline_restore_target(app) if app is not None else None
-    if back_to and is_open_case(back_to, None):
+    if back_to and case_stage(app, back_to) == OPEN:
         return may_write_case(admin, app, status=back_to)
     return may_write_case(admin, app)
 
@@ -329,9 +364,10 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
     def _can_review_app(self, admin, app):
         """True if this admin may WRITE (review-act) on this application — `may_write_case`, the one
         rule. While the case is open: super; `qc` holders on ANY case of their OWN org; anyone else
-        in scope ONLY on cases ASSIGNED to them; partner/finance never (no B40 scope). Past the open
-        stage (awarded onwards, and terminal cases not reopened): super, or a `scholars` holder of
-        the own org — the assignment and `qc` no longer write (POST-AWARD-CUT, 2026-11-17).
+        in scope ONLY on cases ASSIGNED to them; no one without a B40 scope. Past the award:
+        super, or a `scholars` holder of the own org; a case that ended before the award: super, or a
+        `students.approve` holder of the own org — the assignment and `qc` no longer write there
+        (POST-AWARD-CUT, 2026-11-17 and 18 Nov; `staff_lifecycle.case_stage`).
         (org_admin/qc writing across the org is safe because the QC separation guard in _require_qc
         (`qc_separation.refusal`) stops anyone QC-ing a case they were assigned (ever), interviewed,
         verify-accepted or recorded the verdict on.)"""
@@ -374,8 +410,8 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
         ⚠ ADD A NEW REVIEW-TRACK WRITE HERE, NOT TO `_require_app_write`. The two are separate
         because some per-application writes are legitimate on a closed case (cancelling a decline,
         correcting a reporting date, re-running a document read); making the status gate universal
-        would break them. Since POST-AWARD-CUT (2026-11-17) those are done by a `scholars` holder or a
-        super, not the assignee — `may_write_case`. See `services.review_writes_closed` for why
+        would break them. Since POST-AWARD-CUT (2026-11-17/18) those are done by a `scholars` holder
+        (past the award) or a `students.approve` holder (ended before it), not the assignee — `may_write_case`. See `services.review_writes_closed` for why
         a REOPENED case is open however terminal its status reads.
         """
         app, admin, err = self._require_app_write(request, pk)

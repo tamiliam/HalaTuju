@@ -120,6 +120,7 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
   // POST-AWARD-CUT: served per viewer (`may_write_case`); the sandbox officer may act on this case.
   can_write: true,
   can_cancel_decline: true,
+  can_tranche: true,
   bucket: 'shortlisted',
   shortlist_reason: 'Strong results, income well inside B40.',
   rejection_category: '',

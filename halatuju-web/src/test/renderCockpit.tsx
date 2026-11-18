@@ -106,25 +106,9 @@ function authFor({ role, adminId, token = 'test-token', permissions }: CockpitAu
   }
 }
 
-/** The statuses the server counts as an OPEN case (`staff_lifecycle.OPEN_CASE_STATUSES`). */
-const OPEN_STATUSES = ['submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'recommended']
-
-/**
- * POST-AWARD-CUT: the `can_write` and `can_cancel_decline` the server would serve THIS test officer
- * (`views_admin.base.may_write_case` / `may_cancel_held_decline`), for a fixture that carries none.
- * An open case: a B40 key and (`qc` or the assignee). Past it: the `scholars` key. A super: always.
- * A held decline (rejected, `decline_due_at` set) is judged as the open case it would return to.
- */
-function servedWriteFlags(app: AdminScholarshipDetail, role: ReturnType<typeof authFor>['role']) {
-  const keys = role.permissions
-  const judge = (open: boolean) => role.is_super_admin || (open
-    ? ['see_all', 'qc', 'review'].some((k) => keys.includes(k))
-      && (keys.includes('qc') || app.assigned_to_id === role.admin_id)
-    : keys.includes('scholars'))
-  const open = OPEN_STATUSES.includes(app.status) || !!app.decision_reopened_at
-  const held = app.status === 'rejected' && !!app.decline_due_at
-  return { can_write: judge(open), can_cancel_decline: judge(open || held) }
-}
+/** POST-AWARD-CUT: the three write flags the server serves (`views_admin.base.served_write_flags`). */
+type WriteFlags = Partial<Pick<AdminScholarshipDetail, 'can_write' | 'can_cancel_decline' | 'can_tranche'>>
+const ALL_WRITES: WriteFlags = { can_write: true, can_cancel_decline: true, can_tranche: true }
 
 /**
  * Every admin-api call the cockpit makes ON MOUNT, primed with a sane empty answer.
@@ -167,6 +151,12 @@ export interface CockpitOptions extends CockpitAuth {
    * Everything else is primed as usual, so the failure under test is the one being asked for.
    */
   loadFails?: boolean
+  /**
+   * POST-AWARD-CUT review: the served write flags, ALWAYS stated by the test — the harness never works
+   * them out from the role (the server's rule has one home). A flag neither here nor on `app` is false,
+   * the safe default. `true` = all three (a writer who also holds the tranche key).
+   */
+  writes?: true | WriteFlags
 }
 
 export interface MountedCockpit extends RenderResult {
@@ -191,7 +181,10 @@ export function renderCockpit(options: CockpitOptions): MountedCockpit {
   const given = options.app
     ?? buildApplicationDetail(options.stage ?? 'interviewing', options.build ?? {})
   const auth = authFor(options)
-  const app = given.can_write === undefined ? { ...given, ...servedWriteFlags(given, auth.role) } : given
+  const flags = options.writes === true ? ALL_WRITES : options.writes ?? {}
+  const app = { ...given, can_write: flags.can_write ?? given.can_write ?? false,
+    can_cancel_decline: flags.can_cancel_decline ?? given.can_cancel_decline ?? false,
+    can_tranche: flags.can_tranche ?? given.can_tranche ?? false }
   authModule.__cockpitAuth = auth
   primeCockpitApi(app)
   if (options.loadFails) {

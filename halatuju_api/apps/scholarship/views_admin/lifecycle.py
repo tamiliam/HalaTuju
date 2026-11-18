@@ -15,20 +15,18 @@ from .. import surface_gates
 from ..models import Disbursement, Programme, ScholarshipApplication
 from ..serializers_admin import AdminApplicationDetailSerializer
 
-from ..staff_lifecycle import is_open_case
 from .applications import _detail_payload
-from .base import _AdminBase
+from .base import _AdminBase, tranche_key_held
 
 
 def _tranche_refusal(admin, app):
-    """POST-AWARD-CUT (owner, 17 Nov: "Scholars + payments"). Past the open case the case rule has
-    already asked for the Scholars file-writer; a tranche write (schedule, release, withhold,
-    return, mark_due) ALSO needs `payments.may_prepare` — the key `on_hold` reads: `payments_prepare`
-    or the lead tier (a super passes every key). Not `payments_approve`: that is a run's final
-    signature, and no preset holds it with `scholars`, so it would leave a tranche to a super
-    alone. While the case is open, today's rule stands (tranches are for funded cases anyway)."""
-    from .. import payments
-    if is_open_case(app.status, app.decision_reopened_at) or payments.may_prepare(admin):
+    """POST-AWARD-CUT. The case rule has already opened the file (past the award: the Scholars key,
+    which grants no tranche step). Past an open case a tranche write (schedule, release, withhold,
+    return, mark_due) is DECIDED by the payments key, `payments.may_prepare` (owner 18 Nov: "Payments
+    is a separate page. So the permissions are separate."), via `base.tranche_key_held`, the same
+    predicate the detail serves as `can_tranche`. Not `payments_approve`: that is a payment run's final
+    signature. A REOPENED funded case is not open."""
+    if tranche_key_held(admin, app):
         return None
     return Response({'error': 'tranche_needs_payments', 'code': 'tranche_needs_payments'},
                     status=status.HTTP_403_FORBIDDEN)

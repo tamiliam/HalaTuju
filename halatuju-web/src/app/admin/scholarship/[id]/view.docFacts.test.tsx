@@ -32,7 +32,7 @@ const proof = (nric: string, nric_status: IncomeProofCheck['nric_status']): Inco
 
 describe('TD-157 — the Singapore payslip says what it was counted at', () => {
   it('a converted slip carries the note; an ordinary one does not', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing', build: { documents: [
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: { documents: [
       buildDocument('salary_slip', { id: 401, household_member: 'father', sgd_conversion: SG,
         income_proof_check: proof('', 'no_ref') }),
       buildDocument('salary_slip', { id: 402, household_member: 'mother', sgd_conversion: null,
@@ -52,7 +52,7 @@ describe('TD-157 — the Singapore payslip says what it was counted at', () => {
 
 describe('TD-220 — the payslip IC chip names its failure', () => {
   it('a number read that differs says "does not match"', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing', build: { documents: [
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: { documents: [
       buildDocument('salary_slip', { id: 403, household_member: 'father',
         income_proof_check: proof('751206-06-5041', 'mismatch') }),
     ] } })
@@ -62,7 +62,7 @@ describe('TD-220 — the payslip IC chip names its failure', () => {
   })
 
   it('a slip that could not be read says so', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing', build: { documents: [
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: { documents: [
       buildDocument('salary_slip', { id: 404, household_member: 'father',
         vision_fields: { student_verdict: 'unreadable' },
         income_proof_check: proof('', 'no_ref') }),
@@ -75,7 +75,7 @@ describe('TD-220 — the payslip IC chip names its failure', () => {
 
 describe('TD-158 — a wrong-type birth certificate shows no green row', () => {
   it('its Child / Mother / Father chips are red, beside a Wrong type chip', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing', build: { documents: [
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: { documents: [
       buildDocument('birth_certificate', { id: 405,
         authenticity: { status: 'not_birth_certificate', reason: 'x' },
         bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '',

@@ -86,15 +86,61 @@ Branch post-award-cut, not pushed. No migration. Services: api, web. Builds on R
   / return / mark_due) need the Scholars file-writer AND a payments key. Before award, today's rule.
 - Owner, 17 Nov (b) "Reviewer + QC": cancel-decline on a pre-award decline still in its embargo stays with the assignee
   and QC. An embargoed decline counts as open for that one door only.
+- Owner, 18 Nov (cases that ended BEFORE an award: rejected and told, withdrawn, expired, a stalled close): "Those with
+  "Reject or close applications" permissions." That label is the `students.approve` key (staff_tables door 'decide';
+  `surface_gates.may_decide`).
+- Owner, 18 Nov (the four Scholars switches): "Under scholars, there are four permission switches: 1) View only. 2) Maker.
+  3) Approver. 4) Administrative (sending letter, etc.), which could be absorbed into maker." These four already exist:
+  Scholars, "The Scholars page and every scholar's file" (`scholars` / `scholars.view`, the view switch); "Ask to
+  withdraw an award" (`award_withdraw_request`, the maker); "Approve award withdrawals" (`award_withdraw_approve`, the
+  approver); "Suspend or end a scholarship" (`scholars.approve`, the senior letters, the administrative switch).
+- Owner, 18 Nov, direct: "I understood the first item as view only. The second, ask to withdraw as the maker. The third
+  as approver. And the fourth: "Suspend or end a scholarship / Send the suspension and termination letters on a
+  scholar's file." as the admin. All four switches may need to be reconfigured and reworded. Perhaps the Admin (4th)
+  item may need to be moved to 2nd place. Maker (current 2nd place) and Approver (current 3d place) are special powers."
+- Owner, 18 Nov (a funded student's held decline): "Reviewers linked to applicants from Award Review (when assigned) to
+  Awarded. The link is severed at that point. They can view the students he reviewed/QCed but they cannot do anything.
+  They have zero access to scholars page. If these students are scholars (i.e. awarded students who have accepted the
+  award), then the four permissions apply to them, and those with the right permissions would have access to these
+  students." So that cancel stays with Scholars holders, as built; the reviewer's and QC's write ends at `awarded`.
+- Owner, 18 Nov, direct: "Payments is a separate page. So the permissions are separate." So the tranche steps (schedule,
+  release, withhold, return) are governed by the PAYMENTS permissions, not by a Scholars switch. In the tranche rule the
+  Scholars key stands only for "can reach this scholar's file"; under SCHOLARS-SPLIT it becomes the view key.
+- Owner, 18 Nov, direct: "Scholars page is about scholars admin management/maintenance. While it may get input from
+  payment and spending (which are finance functions), those functions are not managed under scholars. And scholars
+  could get assigned to mentors just like applicants get assigned to reviewers. Mentors like reviewers (non-QC) could
+  only could only see students that are assigned to them, and they could do certain things in there."
 
 **The rule (one home: `views_admin/base.may_write_case`, asked by `_can_review_app` and served as `can_write`).**
+Three-way on ONE classification, `staff_lifecycle.case_stage` (review round, 18 Nov):
 - A super: always.
-- An OPEN case (`staff_lifecycle.is_open_case`: submitted to recommended, or a reopened decision at any status): unchanged.
-  A B40 scope, the own organisation, then `qc` org-wide or the assignee.
-- Not open: only `may_write_file`, a `scholars` holder of the own organisation. It is the same function the scholar file
-  and the thank-you decision (`may_decide_thanks`) use. That branch is asked before the B40 scope, so a Scholars-only
-  holder is not refused early. The open-case rule does not widen for them.
-- Reads are unchanged (`_scoped_application`, the detail GET): the assigned reviewer still sees past students.
+- OPEN (submitted to recommended, or a reopened decision BEFORE the award): unchanged. A B40 scope, the own
+  organisation, then `qc` org-wide or the assignee.
+- PAST THE AWARD (awarded, active, maintenance; a decline or close of a funded file; and a REOPENED funded case, which
+  is never open): only `may_write_file`, a `scholars` holder of the own organisation. It is the same function the
+  scholar file and the thank-you decision (`may_decide_thanks`) use, asked before the B40 scope.
+- ENDED BEFORE THE AWARD (rejected, withdrawn, expired, a close of an unfunded case): a `students.approve` holder of the
+  own organisation (`surface_gates.may_decide`).
+- `staff_lifecycle.is_open_case` stays the WORKLOAD count (it mirrors the `open_cases` SQL); it is no longer the write rule.
+- Reads are unchanged (`_scoped_application`, the detail GET): the assigned reviewer still sees past students. A
+  `students.approve` holder without `see_all` or `qc` cannot read an ended case (403), though the write door lets them
+  act on it by a direct call. Reported, not widened; the organisation admin preset holds both.
+
+**Target, a later sprint SCHOLARS-SPLIT (owner 18 Nov; no code change in this sprint).** Scholars becomes view only. The
+admin switch (`scholars.approve`, reworded and moved to second place) carries the everyday scholar-file changes. Maker
+and approver stay as the special withdrawal powers. Interim until then: `may_write_file` (`_may_write_file`) stays on
+the Scholars key, the one place SCHOLARS-SPLIT swaps the switch in. Tranches are not part of that split (owner, 18 Nov:
+payments has its own permissions): a tranche write needs file access plus `payments.may_prepare`
+(`base.may_tranche` / `tranche_key_held`). The payments key decides; the Scholars key only opens the file.
+
+**Target model (owner 18 Nov; later sprints, no code change here).** The Scholars switches cover file upkeep only.
+Payments and spending are finance functions, under their own switches. A mentor sees only their assigned scholars, as
+a reviewer sees only their assigned applicants; what a mentor may change is to be ruled later. The interim tranche rule
+(file access plus `payments.may_prepare`) is TIGHTER than the target ("Payments switches alone"): an admin with the
+Payments switches and no Scholars switch cannot act on a tranche today. The later step: an admin with the Payments
+switches (and no Scholars switch) acts on tranches from the Payments page. Nothing is widened in this sprint. (Owner,
+18 Nov: "There is no 'finance person'. Finance and view only admin are legacy roles. … Today, there are only admins.
+And some of them have finance permissions." The legacy role code is separate clean-up work.)
 
 **Decisions made in the build.**
 - Every write that goes through `_require_app_write`, `_require_open_case` or `_can_review_app` now follows the rule.
@@ -102,7 +148,7 @@ Branch post-award-cut, not pushed. No migration. Services: api, web. Builds on R
   award withdrawal (its own seats), verdict reopen (super), and assign (`may_assign`).
 - Tranches (a): `_tranche_refusal` in `views_admin/lifecycle.py` asks `payments.may_prepare` (`payments_prepare` or the
   lead tier), the key `on_hold` already reads, for all five tranche writes. Refusal: 403 `tranche_needs_payments`. Not
-  `payments_approve`: that is a payment run's final signature, finance holds it, and no preset holds it together with
+  `payments_approve`: that is a payment run's final signature, and no preset holds it together with
   `scholars`. Requiring it would leave tranche releases to a super alone.
 - Cancel-decline (b): `may_cancel_held_decline` judges a held decline by the status the cancel would restore
   (`held_decline_restore_target`). If that status is open, the open-case rule applies. A contractual decline of a
@@ -112,6 +158,13 @@ Branch post-award-cut, not pushed. No migration. Services: api, web. Builds on R
   served (some write replies leave the flag out). Cancel-decline, hold-award and the document Re-run are hidden without it.
 - The admin preset gains org-wide writes on funded cases, through `scholars`. This includes tranches, because it also
   holds `payments_prepare`.
+- Review round (18 Nov, after an adversarial review): the tranche door and the served `can_tranche` ask one predicate
+  (`base.tranche_key_held`); the cockpit draws Release, Withhold, the Schedule form and the phone note on `can_tranche`.
+  The access matrix replays the 28 per-case write pairs with the case moved to OPEN and to ENDED BEFORE THE AWARD
+  (`case_stages` in the manifest). The cockpit test harness no longer works out the flags: each test states them,
+  default false.
+- Left for a TD (found, pre-existing, not changed): `org_allows` passes when neither side has an organisation;
+  `AdminDisbursementActionView` answers 403, not 404, across organisations; some write replies leave out the write flags.
 
 **Revisit if:** a post-award step needs the reviewer to act again (R5's own revisit line). Or if the payments model
 splits tranche release from preparing a run.

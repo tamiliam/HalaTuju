@@ -22,7 +22,7 @@ const qcPanel = () => screen.queryByText('admin.scholarship.qcDecision.title')
 
 describe('TD-483: the QC panel follows the server rule', () => {
   it('a QC the server would refuse sees why, and no panel', async () => {
-    renderCockpit({ role: 'qc', stage: 'awaiting_qc',
+    renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
                     build: { outcome: 'recommend', qc_refusal: 'self_assigned_qc_forbidden' } })
     await loaded()
     expect(qcPanel()).toBeNull()
@@ -31,7 +31,7 @@ describe('TD-483: the QC panel follows the server rule', () => {
   })
 
   it('a QC the server clears sees the panel and no note', async () => {
-    renderCockpit({ role: 'qc', stage: 'awaiting_qc',
+    renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
                     build: { outcome: 'recommend', qc_refusal: null } })
     await loaded()
     expect(qcPanel()).toBeTruthy()
@@ -39,7 +39,7 @@ describe('TD-483: the QC panel follows the server rule', () => {
   })
 
   it('a refusal on the click is shown in the cockpit language, for every code', async () => {
-    const { api } = renderCockpit({ role: 'qc', stage: 'awaiting_qc',
+    const { api } = renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
                                     build: { outcome: 'recommend', qc_refusal: null } })
     await loaded()
     const refused = Object.assign(new Error('You interviewed this student.'),
@@ -55,7 +55,7 @@ describe('TD-227: a decline needs a reason, and says who', () => {
   afterEach(() => { jest.restoreAllMocks() })
 
   it('Cancel sends nothing; a blank reason is refused; a reason is sent', async () => {
-    const { api, app } = renderCockpit({ role: 'super', stage: 'active' })
+    const { api, app } = renderCockpit({ role: 'super', writes: true, stage: 'active' })
     await loaded()
     const decline = () => fireEvent.click(
       screen.getByRole('button', { name: 'admin.scholarship.reject.declineContractual' }))
@@ -81,7 +81,7 @@ describe('TD-227: a decline needs a reason, and says who', () => {
   })
 
   it('the record of an interview decline shows the reason and that it was not the assignee', async () => {
-    renderCockpit({ role: 'super', stage: 'rejected',
+    renderCockpit({ role: 'super', writes: true, stage: 'rejected',
                     build: { rejection_category: 'interview', rejection_comments: 'Never attended.',
                              rejected_by_unassigned: true } })
     await loaded()
@@ -91,7 +91,7 @@ describe('TD-227: a decline needs a reason, and says who', () => {
   })
 
   it('the assignee\'s own decline carries no such note', async () => {
-    renderCockpit({ role: 'super', stage: 'rejected',
+    renderCockpit({ role: 'super', writes: true, stage: 'rejected',
                     build: { rejection_category: 'interview', rejection_comments: 'Never attended.',
                              rejected_by_unassigned: false } })
     await loaded()

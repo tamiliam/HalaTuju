@@ -33,22 +33,30 @@ for (const stage of STAGES) {
   }
 }
 
+// What the server serves as `can_write`: an open case for all four roles; a case that ended
+// before the award for a `students.approve` holder (the org admin) only (owner, 18 Nov).
+const ENDED_BEFORE_AWARD: readonly Stage[] = ['rejected', 'expired']
+const PAST_AWARD: readonly Stage[] = ['awarded', 'active', 'maintenance', 'closed']
+const servedWrite = (stage: Stage, role: AdminRoleName) =>
+  ENDED_BEFORE_AWARD.includes(stage) ? role === 'org_admin' : !PAST_AWARD.includes(stage)
+
 describe('the phone decision bar (Mobile M6b)', () => {
   it.each(CASES)('$stage · $role · $outcome: the bar shows exactly when the card offers Save', async ({ stage, role, outcome }) => {
-    renderCockpit({ role, stage, build: outcome ? { outcome } : {} })
+    renderCockpit({ role, stage, writes: { can_write: servedWrite(stage, role) },
+                   build: outcome ? { outcome } : {} })
     await loaded()
     expect(!!bar()).toBe(saveOffered())
   })
 
   it('the matrix is not empty on either side (the test would pass on an absent bar otherwise)', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing' })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing' })
     await loaded()
     expect(saveOffered()).toBe(true)
     expect(bar()).not.toBeNull()
   })
 
   it('it carries data-page-bar and is a phone-only, sticky bar', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing' })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing' })
     await loaded()
     const b = bar() as HTMLElement
     expect(b.hasAttribute('data-page-bar')).toBe(true)
@@ -56,7 +64,7 @@ describe('the phone decision bar (Mobile M6b)', () => {
   })
 
   it('its button scrolls to the decision section and calls NO endpoint', async () => {
-    const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing' })
+    const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing' })
     await loaded()
     const section = document.getElementById('decision-section') as HTMLElement
     expect(section).not.toBeNull()
@@ -72,7 +80,7 @@ describe('the phone decision bar (Mobile M6b)', () => {
   })
 
   it('it names the outcome the card has chosen, and a dash before any', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing' })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing' })
     await loaded()
     const outcome = () => (document.querySelector('[data-bar-outcome]') as HTMLElement).textContent
     expect(outcome()).toBe('—')
@@ -84,7 +92,7 @@ describe('the phone decision bar (Mobile M6b)', () => {
   ] as const)('a recorded %s case: the bar names it, and follows a change of choice', async (recorded, label) => {
     // A verdict saved but not yet submitted: the controls are LIVE and pre-filled with the recorded outcome
     // (the #21 / #24 stage), so both buttons can be pressed — asserted, so this cannot pass by skipping.
-    renderCockpit({ role: 'super', stage: 'verdict_recorded', build: { outcome: recorded } })
+    renderCockpit({ role: 'super', writes: true, stage: 'verdict_recorded', build: { outcome: recorded } })
     await loaded()
     const outcome = () => (document.querySelector('[data-bar-outcome]') as HTMLElement).textContent
     expect(outcome()).toBe(label)
@@ -96,7 +104,7 @@ describe('the phone decision bar (Mobile M6b)', () => {
   })
 
   it('"Ready to save" only while nothing is in flight (the page passes canSave && !busy)', async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'verdict_recorded', build: { outcome: 'decline' } })
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'verdict_recorded', build: { outcome: 'decline' } })
     await loaded()
     const ready = () => document.querySelector('[data-decision-bar]')!.textContent ?? ''
     const save = screen.getByRole('button', { name: 'admin.scholarship.recordVerdict.saveDecline' }) as HTMLButtonElement

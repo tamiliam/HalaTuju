@@ -27,7 +27,7 @@ describe('the questions are asked in a dialog, never in window.confirm', () => {
   afterEach(() => { nativeConfirm.mockRestore() })
 
   it('cancel a scheduled decline: asks, and Keep does nothing', async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'rejected' })
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'rejected' })
     await loaded()
     fireEvent.click(screen.getAllByRole('button', NAME('cooloff.cancelDecline'))[0])
     const dialog = screen.getByRole('alertdialog')
@@ -39,7 +39,7 @@ describe('the questions are asked in a dialog, never in window.confirm', () => {
   })
 
   it('cancel a scheduled decline: the confirm button runs it once', async () => {
-    const { api, app } = renderCockpit({ role: 'super', stage: 'rejected' })
+    const { api, app } = renderCockpit({ role: 'super', writes: true, stage: 'rejected' })
     api.cancelPendingDecline.mockResolvedValue(app)
     await loaded()
     fireEvent.click(screen.getAllByRole('button', NAME('cooloff.cancelDecline'))[0])
@@ -53,7 +53,7 @@ describe('the questions are asked in a dialog, never in window.confirm', () => {
   })
 
   it('a money question cannot be dismissed with Escape or the backdrop', async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'rejected' })
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'rejected' })
     await loaded()
     fireEvent.click(screen.getAllByRole('button', NAME('cooloff.cancelDecline'))[0])
     fireEvent.keyDown(document, { key: 'Escape' })
@@ -63,7 +63,7 @@ describe('the questions are asked in a dialog, never in window.confirm', () => {
 
   it('hold a pending award: asks first, then holds', async () => {
     const { api, app } = renderCockpit({
-      role: 'super', stage: 'recommended', build: { award_due_at: '2026-12-01T00:00:00Z' } })
+      role: 'super', writes: true, stage: 'recommended', build: { award_due_at: '2026-12-01T00:00:00Z' } })
     api.holdPendingAward.mockResolvedValue(app)
     await loaded()
     fireEvent.click(screen.getByRole('button', NAME('cooloff.holdAward')))
@@ -79,7 +79,7 @@ describe('the questions are asked in a dialog, never in window.confirm', () => {
 
   it('the reminder to a student: asks first, Keep sends nothing, Send sends once', async () => {
     const { api, app } = renderCockpit({
-      role: 'super', stage: 'shortlisted', build: { nudge: NUDGE_ON } })
+      role: 'super', writes: true, stage: 'shortlisted', build: { nudge: NUDGE_ON } })
     api.nudgeStudent.mockResolvedValue(app)
     await loaded()
     fireEvent.click(screen.getByRole('button', NAME('blockers.nudge.send')))
@@ -101,7 +101,7 @@ describe('the questions are asked in a dialog, never in window.confirm', () => {
 describe('the referral pill names its source without a hover', () => {
   it('shows the full name as text (it was a hover-only title)', async () => {
     renderCockpit({
-      role: 'super', stage: 'interviewing',
+      role: 'super', writes: true, stage: 'interviewing',
       build: { referral_source: 'smc', source: { id: 3, code: 'smc', name: 'Test Referring Organisation' } },
     })
     await loaded()

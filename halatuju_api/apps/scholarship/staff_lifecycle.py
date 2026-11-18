@@ -106,8 +106,46 @@ OPEN_CASE_STATUSES = ('submitted', 'shortlisted', 'profile_complete', 'interview
 
 
 def is_open_case(status, reopened_at):
-    """One case row against the rule `open_cases` counts in SQL (a reopened decision is open at any status)."""
+    """One case row against the rule `open_cases` counts in SQL (a reopened decision is open at any status).
+    ⚠ A WORKLOAD count, not the write rule: who may WRITE on a case asks `case_stage`."""
     return status in OPEN_CASE_STATUSES or reopened_at is not None
+
+
+#: The three stages the WRITE rule tells apart (`views_admin.base.may_write_case`; owner 18 Nov).
+OPEN, PAST_AWARD, PRE_AWARD_END = 'open', 'past_award', 'pre_award_end'
+
+
+def case_stage(app, status=None):
+    """Which write stage ``app`` is in — THE ONE CLASSIFICATION the write rule reads (POST-AWARD-CUT).
+
+      OPEN          — a status before the award, or a PRE-award ending whose decision was REOPENED;
+      PAST_AWARD    — awarded / active / maintenance (a reopen never reopens these: `reopen_decision`
+                      leaves the status and sets only `decision_reopened_at`), a closed file the
+                      student has (`maintenance_scope.has_file`), or a decline taken past the award
+                      (`pre_decline_status`, the snapshot `cancel_pending_decline` restores);
+      PRE_AWARD_END — rejected, withdrawn, expired or closed before the award, not reopened.
+    Owner 18 Nov: the reviewer's link runs from assignment to `awarded` and is severed there. ⚠ A
+    close straight from `awarded` recorded as stalled / withdrawn, with no wallet and no
+    `active_at`, reads as PRE_AWARD_END (`has_file` fails closed on it); both sides need a lead key.
+    ``status`` judges the case at another status (cancel-decline judges a held decline at the
+    status it returns to)."""
+    from .closure import POST_AWARD_STATUSES
+    status = status or app.status
+    if status in OPEN_CASE_STATUSES:
+        return OPEN
+    if status in POST_AWARD_STATUSES:
+        return PAST_AWARD
+    if status == app.status and _ended_past_the_award(app):
+        return PAST_AWARD
+    return OPEN if app.decision_reopened_at is not None else PRE_AWARD_END
+
+
+def _ended_past_the_award(app):
+    from .closure import POST_AWARD_STATUSES
+    from .maintenance_scope import has_file
+    if app.status == 'rejected':
+        return app.pre_decline_status in POST_AWARD_STATUSES
+    return app.status == 'closed' and has_file(app)
 
 
 def open_cases(admin):

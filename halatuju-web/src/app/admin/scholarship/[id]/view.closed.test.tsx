@@ -38,14 +38,14 @@ describe('an expired case — nothing was ever decided, so there is nothing to d
     // `expired` branches off `shortlisted`: the student never completed, the reminders lapsed and
     // the daily sweep closed the file. No verdict, no reviewer, no interview — so both cards are
     // pure dead control.
-    renderCockpit({ role: 'super', stage: 'expired' })
+    renderCockpit({ role: 'super', writes: true, stage: 'expired' })
     await loaded()
     expect(screen.queryByText(DECISION)).toBeNull()
     expect(screen.queryByText(INTERVIEW)).toBeNull()
   })
 
   it('offers no live control anywhere in the review panel', async () => {
-    renderCockpit({ role: 'super', stage: 'expired' })
+    renderCockpit({ role: 'super', writes: true, stage: 'expired' })
     await loaded()
     for (const key of ['recordVerdict.approve', 'recordVerdict.decline', 'recordVerdict.save',
                        'gaps.suggest', 'interview.submit']) {
@@ -57,7 +57,7 @@ describe('an expired case — nothing was ever decided, so there is nothing to d
     // "Nothing outstanding — all student tasks are clear" reads as an achievement. On 43 of the
     // 44 records nothing was outstanding because nothing was ever asked, and one of them was
     // rejected over the college named on their offer letter.
-    renderCockpit({ role: 'super', stage: 'expired' })
+    renderCockpit({ role: 'super', writes: true, stage: 'expired' })
     await loaded()
     expect(screen.queryByText('admin.scholarship.outstanding.empty')).toBeNull()
   })
@@ -65,7 +65,7 @@ describe('an expired case — nothing was ever decided, so there is nothing to d
   it('but KEEPS a record that exists — a Check 2 box with items in it stays', async () => {
     // The mirror half. Hiding a record is a different mistake from hiding a dead control.
     renderCockpit({
-      role: 'super', stage: 'expired',
+      role: 'super', writes: true, stage: 'expired',
       build: { resolution_items: [{
         id: 900, fact: 'identity', code: 'ic_missing', params: {},
         prompt: 'Please upload your own IC.', kind: 'doc', doc_type: 'ic', status: 'open',
@@ -92,14 +92,14 @@ describe('a rejected case with no verdict — the org-admin reject', () => {
   }
 
   it('hides the decision and interview cards', async () => {
-    renderCockpit({ role: 'super', stage: 'shortlisted', build: orgRejected })
+    renderCockpit({ role: 'super', writes: true, stage: 'shortlisted', build: orgRejected })
     await loaded()
     expect(screen.queryByText(DECISION)).toBeNull()
     expect(screen.queryByText(INTERVIEW)).toBeNull()
   })
 
   it('shows the read-only record instead: the reason, who, and when', async () => {
-    renderCockpit({ role: 'super', stage: 'shortlisted', build: orgRejected })
+    renderCockpit({ role: 'super', writes: true, stage: 'shortlisted', build: orgRejected })
     await loaded()
     expect(screen.getByText('admin.scholarship.orgReject.recordTitle')).toBeTruthy()
     expect(screen.getByText('No documents were supplied after four reminders.')).toBeTruthy()
@@ -110,7 +110,7 @@ describe('a rejected case with no verdict — the org-admin reject', () => {
 
   it('offers no way to reject it a second time', async () => {
     // `ORG_REJECT_FROM` is `shortlisted` only; a card rendered outside it is a button that 400s.
-    renderCockpit({ role: 'org_admin', stage: 'shortlisted', build: orgRejected })
+    renderCockpit({ role: 'org_admin', writes: true, stage: 'shortlisted', build: orgRejected })
     await loaded()
     expect(screen.queryByRole('button', { name: 'admin.scholarship.orgReject.start' })).toBeNull()
   })
@@ -121,7 +121,7 @@ describe('a rejected case WITH a verdict — the trail is the audit record and s
     // ⚠ A decline is a TWO-PERSON decision exactly like a recommend: the reviewer records it,
     // a QC upholds it. Rendering only "Declined by {rejected_by}" credited the whole decision to
     // the QC and erased the reviewer who interviewed the student (#56, owner 2026-07-25).
-    renderCockpit({ role: 'super', stage: 'rejected' })
+    renderCockpit({ role: 'super', writes: true, stage: 'rejected' })
     await loaded()
     expect(screen.getByText(DECISION)).toBeTruthy()
     const trail = screen.getAllByText(/admin\.scholarship\.(interviewedDeclinedBy|recordVerdict\.declineAcceptedBy)/)
@@ -133,7 +133,7 @@ describe('a rejected case WITH a verdict — the trail is the audit record and s
   })
 
   it('shows the frozen justification, and no box to edit it in', async () => {
-    renderCockpit({ role: 'super', stage: 'rejected' })
+    renderCockpit({ role: 'super', writes: true, stage: 'rejected' })
     await loaded()
     expect(screen.getByText('The evidence supports the conclusion recorded here.')).toBeTruthy()
     expect(screen.queryByPlaceholderText(
@@ -143,7 +143,7 @@ describe('a rejected case WITH a verdict — the trail is the audit record and s
   })
 
   it('keeps the interview box, because the interview really happened', async () => {
-    renderCockpit({ role: 'super', stage: 'rejected' })
+    renderCockpit({ role: 'super', writes: true, stage: 'rejected' })
     await loaded()
     expect(screen.getByText(INTERVIEW)).toBeTruthy()
   })
@@ -158,7 +158,7 @@ describe('a closed case — TD-352: closed joined the off-ramps', () => {
   }
 
   it('a stalled close at interviewing hides the decision and interview cards', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing', build: stalled })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: stalled })
     await loaded()
     expect(screen.queryByText(DECISION)).toBeNull()
     expect(screen.queryByText(INTERVIEW)).toBeNull()
@@ -169,7 +169,7 @@ describe('a closed case — TD-352: closed joined the off-ramps', () => {
   })
 
   it('a FUNDED close keeps its decision record and its interview — the audit trail survives', async () => {
-    renderCockpit({ role: 'super', stage: 'closed' })
+    renderCockpit({ role: 'super', writes: true, stage: 'closed' })
     await loaded()
     expect(screen.getByText(DECISION)).toBeTruthy()
     expect(screen.getByText(INTERVIEW)).toBeTruthy()
@@ -185,7 +185,7 @@ describe('closed before it was funded is not post-award (TD-352 review round 1, 
 
   it('closed at interviewed on a DECLINE verdict: no "recommended by", no post-award chips, no witness card', async () => {
     renderCockpit({
-      role: 'super', stage: 'awaiting_qc',
+      role: 'super', writes: true, stage: 'awaiting_qc',
       build: { outcome: 'decline', ...sourceless, status: 'closed', closure_reason: 'stalled',
                closed_at: '2026-10-06T09:00:00.000Z', closed_by: 'officer@example.test' },
     })
@@ -198,7 +198,7 @@ describe('closed before it was funded is not post-award (TD-352 review round 1, 
   })
 
   it('a FUNDED close keeps all three', async () => {
-    renderCockpit({ role: 'super', stage: 'closed', build: sourceless })
+    renderCockpit({ role: 'super', writes: true, stage: 'closed', build: sourceless })
     await loaded()
     expect(screen.getByText(RECOMMENDED_BY)).toBeTruthy()
     expect(screen.getByText('admin.scholarship.statuses.active')).toBeTruthy()

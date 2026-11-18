@@ -2,8 +2,9 @@
  * @jest-environment jsdom
  *
  * POST-AWARD-CUT (2026-11-17): the cockpit draws a write control only on the SERVED flags —
- * `can_write` (`may_write_case`) and `can_cancel_decline` (`may_cancel_held_decline`). It works
- * neither out from the role: a served `false` hides the control even for a role that once wrote.
+ * `can_write` (`may_write_case`), `can_cancel_decline` (`may_cancel_held_decline`) and `can_tranche`
+ * (`may_tranche`). It works none out from the role: a served `false` hides the control even for a role
+ * that once wrote. Each test states the flags it is served (the harness defaults them to false).
  */
 import { screen } from '@testing-library/react'
 
@@ -25,13 +26,13 @@ describe('the cool-off buttons follow the served flags', () => {
   })
 
   it('a Scholars holder sees Hold on the same case', async () => {
-    renderCockpit({ role: 'admin', stage: 'awarded', build: AWARD_DUE })
+    renderCockpit({ role: 'admin', stage: 'awarded', build: AWARD_DUE, writes: { can_write: true } })
     await loaded()
     expect(screen.getByRole('button', HOLD)).toBeTruthy()
   })
 
   it('a held pre-award decline keeps its cancel for the assignee, though can_write is false', async () => {
-    const { app } = renderCockpit({ role: 'reviewer', stage: 'rejected' })
+    const { app } = renderCockpit({ role: 'reviewer', stage: 'rejected', writes: { can_cancel_decline: true } })
     await loaded()
     expect(app.can_write).toBe(false)
     expect(screen.getByRole('button', CANCEL)).toBeTruthy()
@@ -42,5 +43,27 @@ describe('the cool-off buttons follow the served flags', () => {
     renderCockpit({ role: 'qc', app })
     await loaded()
     expect(screen.queryByRole('button', CANCEL)).toBeNull()
+  })
+})
+
+describe('the tranche controls follow the served can_tranche (review round, 18 Nov)', () => {
+  const TRANCHE = { disbursements: [{ id: 1, sequence: 1, amount: '1200.00', status: 'scheduled' as const,
+    label: 'Semester 1', scheduled_for: null, released_at: null, actioned_by: '', reference: '', note: '',
+    sponsorship_id: null, created_at: '' }] }
+
+  it('a writer without the tranche key sees no Release, Withhold or Schedule', async () => {
+    renderCockpit({ role: 'admin', stage: 'maintenance', build: TRANCHE, writes: { can_write: true } })
+    await loaded()
+    expect(screen.queryByRole('button', { name: 'admin.disbursement.action.release' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'admin.disbursement.action.withhold' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'admin.disbursement.schedule' })).toBeNull()
+    expect(screen.queryByText('admin.disbursement.useComputer')).toBeNull()
+  })
+
+  it('served can_tranche brings them back', async () => {
+    renderCockpit({ role: 'admin', stage: 'maintenance', build: TRANCHE, writes: true })
+    await loaded()
+    expect(screen.getByRole('button', { name: 'admin.disbursement.action.release' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'admin.disbursement.schedule' })).toBeTruthy()
   })
 })

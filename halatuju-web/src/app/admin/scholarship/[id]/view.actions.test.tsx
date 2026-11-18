@@ -43,13 +43,13 @@ const letterWithDate = (extra: Record<string, unknown> = {}) => [buildDocument('
 
 describe('the reporting-date box appears only where a human may settle it', () => {
   it('is offered while the reviewer holds the case', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     expect(dateBox()).toBeTruthy()
   })
 
   it('is NOT offered once the letter carries a readable date', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing',
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
                     build: { documents: letterWithDate() } })
     await loaded()
     expect(dateBox()).toBeNull()
@@ -58,7 +58,7 @@ describe('the reporting-date box appears only where a human may settle it', () =
   it('⚠ A SUPERSEDED OFFER DOES NOT COUNT — the box comes back', async () => {
     // The value shown has to come from the CURRENT offer, or the screen and the column driving
     // the bursary can disagree (#120). A replaced letter is history, not the pathway.
-    renderCockpit({ role: 'super', stage: 'interviewing',
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
                     build: { documents: letterWithDate({ superseded_at: '2026-05-20T09:00:00.000Z' }) } })
     await loaded()
     expect(dateBox()).toBeTruthy()
@@ -67,7 +67,7 @@ describe('the reporting-date box appears only where a human may settle it', () =
   it.each(['shortlisted', 'profile_complete', 'awaiting_qc', 'recommended'] as const)(
     'is not offered at %s', async (stage) => {
       const roads = stage === 'awaiting_qc'
-      renderCockpit({ role: 'super', stage,
+      renderCockpit({ role: 'super', writes: true, stage,
                       build: { reporting_date: null,
                                ...(roads ? { outcome: 'recommend' as const } : {}) } })
       await loaded()
@@ -79,7 +79,7 @@ describe('the reporting-date box appears only where a human may settle it', () =
     // interviewing), so it is checked explicitly rather than by status — otherwise a case
     // bounced back from Recommended would miss the box.
     renderCockpit({
-      role: 'super', stage: 'awaiting_qc',
+      role: 'super', writes: true, stage: 'awaiting_qc',
       build: { outcome: 'recommend', reporting_date: null,
                decision_reopened_at: '2026-06-03T09:00:00.000Z' },
     })
@@ -88,7 +88,7 @@ describe('the reporting-date box appears only where a human may settle it', () =
   })
 
   it('refuses to save an empty date, then sends the one that was typed', async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'interviewing',
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
                                     build: { reporting_date: null } })
     await loaded()
     const save = () => screen.getByRole('button',
@@ -107,7 +107,7 @@ describe('the reporting-date box appears only where a human may settle it', () =
   })
 
   it('a failed save says why and keeps the typed date (TD-165)', async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'interviewing',
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
                                     build: { reporting_date: null } })
     await loaded()
     fireEvent.change(dateBox() as HTMLInputElement, { target: { value: '2026-07-01' } })
@@ -128,7 +128,7 @@ describe('assigning a reviewer', () => {
   }
 
   it('sends the chosen reviewer, and the card then names them', async () => {
-    const { api } = renderCockpit({ role: 'org_admin', stage: 'profile_complete' })
+    const { api } = renderCockpit({ role: 'org_admin', writes: true, stage: 'profile_complete' })
     await loaded()
     const picker = assignPicker('assignTitle')
     expect(picker.value).toBe('')
@@ -151,14 +151,14 @@ describe('assigning a reviewer', () => {
   })
 
   it('is not offered to a reviewer, who cannot hand their own case on', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'profile_complete' })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'profile_complete' })
     await loaded()
     expect(screen.queryByText('admin.scholarship.assignTitle')).toBeNull()
     expect(screen.queryByText('admin.scholarship.assign.assignedTitle')).toBeNull()
   })
 
   it('locks once the decision is recorded — a finished case keeps its reviewer', async () => {
-    renderCockpit({ role: 'super', stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
     await loaded()
     expect(assignPicker('assign.assignedTitle').disabled).toBe(true)
     expect(screen.getByText('admin.scholarship.assign.lockedHint')).toBeTruthy()
@@ -167,7 +167,7 @@ describe('assigning a reviewer', () => {
 
 describe('raising a query with the student', () => {
   it('sends what was written, and the question then appears in Outstanding', async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'shortlisted' })
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'shortlisted' })
     await loaded()
     const send = () => screen.getByRole('button',
       { name: 'admin.scholarship.raiseQuerySend' }) as HTMLButtonElement
@@ -200,7 +200,7 @@ describe('raising a query with the student', () => {
   it('is closed once the interview is concluded, and says WHY', async () => {
     // The copy used to hard-code "the interview is concluded" on cases that never held one —
     // a terminal status locks querying too. `queryingLockReason` returns which it was.
-    renderCockpit({ role: 'super', stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
     await loaded()
     expect(screen.queryByRole('button',
       { name: 'admin.scholarship.raiseQuerySend' })).toBeNull()

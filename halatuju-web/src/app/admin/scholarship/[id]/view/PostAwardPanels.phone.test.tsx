@@ -17,7 +17,7 @@ const ROWS = [
 const props = (over: Record<string, unknown> = {}) => ({
   app: { id: 5, status: 'maintenance', maintenance_substate: 'on_track', disbursements: ROWS, has_file: true,
     closure_reason: '', closed_at: null } as unknown as AdminScholarshipDetail,
-  t: t as never, busy: '', isSuper: false, canWrite: true, orgSuper: true, mayOpenFile: true,
+  t: t as never, busy: '', isSuper: false, canWrite: true, canTranche: true, orgSuper: true, mayOpenFile: true,
   bursary: null, bursaryMsg: '', doCountersignBursary: jest.fn(), doWitnessBursary: jest.fn(),
   disbAmount: '500', setDisbAmount: jest.fn(), disbLabel: '', setDisbLabel: jest.fn(), disbMsg: '',
   doScheduleTranche: jest.fn(), doDisbursementAction: jest.fn(), doSetSubstate: jest.fn(),
@@ -54,7 +54,8 @@ describe('payments are read-only on a phone (Mobile M6b)', () => {
   })
 
   it('a person who cannot write sees neither the controls nor the note (nothing changed for them)', () => {
-    render(<PostAwardPanels {...props({ canWrite: false })} />)
+    // POST-AWARD-CUT review: the controls follow the served `can_tranche`, which is never true without `can_write`.
+    render(<PostAwardPanels {...props({ canWrite: false, canTranche: false })} />)
     expect(screen.queryByText('admin.disbursement.useComputer')).toBeNull()
     expect(screen.queryByRole('button', { name: 'admin.disbursement.schedule' })).toBeNull()
   })

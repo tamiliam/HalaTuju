@@ -18,7 +18,7 @@ const NOTES = {
 }
 
 it('sits directly under Reviewer assigned, with the box, for the org admin', async () => {
-  const { api } = renderCockpit({ role: 'org_admin', stage: 'interviewing' })
+  const { api } = renderCockpit({ role: 'org_admin', writes: true, stage: 'interviewing' })
   api.getReviewerNotes.mockResolvedValue({ ...NOTES, can_add: true })
   const note = await screen.findByText('Please ask about the older brother.')
   const assigned = screen.getByText('admin.scholarship.assign.assignedTitle')
@@ -30,7 +30,7 @@ it('sits directly under Reviewer assigned, with the box, for the org admin', asy
 })
 
 it('the assigned reviewer reads the notes, with no box', async () => {
-  const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing' })
+  const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing' })
   api.getReviewerNotes.mockResolvedValue({ ...NOTES, can_add: false })
   expect(await screen.findByText('Please ask about the older brother.')).toBeTruthy()
   expect(screen.getByText(`${P}.introReader`)).toBeTruthy()

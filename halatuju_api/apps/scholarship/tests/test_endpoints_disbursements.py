@@ -299,8 +299,10 @@ class TestCloseApplication(_FundedCase):
         # TD-352: a never-funded case in play CAN now be closed (test_close_stalled.py); a
         # finished one still cannot.
         declined = make_application('rejected', cohort=self.cohort, reviewer=self.reviewer)
-        r = self.client.post(f'{API}applications/{declined.id}/close/',
-                             {'closure_reason': 'withdrawn'}, format='json')
+        # A case that ended before the award is written by a `students.approve` holder (owner,
+        # 18 Nov), so the org admin asks: the refusal is then the closure service's own.
+        r = authed_client(self.org_admin).post(f'{API}applications/{declined.id}/close/',
+                                               {'closure_reason': 'withdrawn'}, format='json')
         self.assertEqual((r.status_code, r.json()['error']), (400, 'not_closeable'))
         declined.refresh_from_db()
         self.assertEqual(declined.status, 'rejected')

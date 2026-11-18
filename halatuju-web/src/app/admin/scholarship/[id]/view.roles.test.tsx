@@ -79,7 +79,7 @@ describe('the QC decision panel at AWAITING QC', () => {
   it('reads CONFIRM DECLINE, not Accept, when the verdict is a decline', async () => {
     // A decline at QC confirms a REJECTION, not a recommendation (owner 2026-07-19). The red
     // primary button is the whole difference between upholding a decline and awarding a bursary.
-    renderCockpit({ role: 'qc', stage: 'awaiting_qc', build: { outcome: 'decline' } })
+    renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc', build: { outcome: 'decline' } })
     await loaded()
     expect(screen.getByRole('button',
       { name: 'admin.scholarship.qcDecision.confirmDecline' })).toBeTruthy()
@@ -100,7 +100,7 @@ describe('the QC decision panel at AWAITING QC', () => {
   })
 
   it('accepting sends the QC decision, with no comment attached', async () => {
-    const { api } = renderCockpit({ role: 'qc', stage: 'awaiting_qc',
+    const { api } = renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
                                     build: { outcome: 'recommend' } })
     await loaded()
     api.recordQcDecision.mockResolvedValue(buildApplicationDetail('recommended'))
@@ -115,7 +115,7 @@ describe('the QC decision panel at AWAITING QC', () => {
 
   it('reopening refuses to send until the gaps are written down', async () => {
     // The comment is emailed to the reviewer and is the only thing telling her what to fix.
-    const { api } = renderCockpit({ role: 'qc', stage: 'awaiting_qc',
+    const { api } = renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
                                     build: { outcome: 'recommend' } })
     await loaded()
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.reopen' }))
@@ -167,7 +167,7 @@ describe('rejecting a stuck applicant outright', () => {
     // Unlike every other decline this one is IMMEDIATE and IRREVERSIBLE: there is no cool-off
     // and therefore no Cancel banner to undo it. The confirm step IS the safety net, so it is
     // in-page rather than a `window.confirm` the browser can suppress.
-    const { api } = renderCockpit({ role: 'org_admin', stage: 'shortlisted' })
+    const { api } = renderCockpit({ role: 'org_admin', writes: true, stage: 'shortlisted' })
     await loaded()
 
     // 1 — idle → form
@@ -203,7 +203,7 @@ describe('rejecting a stuck applicant outright', () => {
 
   it('backing out of the confirm step keeps the typed reason', async () => {
     // A transient failure or a second thought must not cost the officer their sentence.
-    renderCockpit({ role: 'org_admin', stage: 'shortlisted' })
+    renderCockpit({ role: 'org_admin', writes: true, stage: 'shortlisted' })
     await loaded()
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.start' }))
     fireEvent.change(screen.getByLabelText('admin.scholarship.orgReject.whyLabel'),
@@ -217,7 +217,7 @@ describe('rejecting a stuck applicant outright', () => {
   it('a reason of spaces only is no reason — Continue stays disabled (TD-165)', async () => {
     // The endpoint refuses a blank reason (400 comments_required) after `.strip()`; the button
     // must refuse the same thing, or the officer reaches the confirm step with nothing to send.
-    renderCockpit({ role: 'org_admin', stage: 'shortlisted' })
+    renderCockpit({ role: 'org_admin', writes: true, stage: 'shortlisted' })
     await loaded()
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.start' }))
     fireEvent.change(screen.getByLabelText('admin.scholarship.orgReject.whyLabel'),
@@ -229,7 +229,7 @@ describe('rejecting a stuck applicant outright', () => {
   it('⚠ A FAILED REJECT KEEPS THE TYPED REASON and says why (TD-165)', async () => {
     // The action is irreversible and the reason is its only audit record; a transient server
     // failure must leave the officer on the confirm step with their sentence intact.
-    const { api } = renderCockpit({ role: 'org_admin', stage: 'shortlisted' })
+    const { api } = renderCockpit({ role: 'org_admin', writes: true, stage: 'shortlisted' })
     await loaded()
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.start' }))
     fireEvent.change(screen.getByLabelText('admin.scholarship.orgReject.whyLabel'),

@@ -32,7 +32,7 @@ const proof = (points: IncomeProofCheck['points']): IncomeProofCheck => ({
 })
 const refused = (figure_refused?: boolean) => (figure_refused === undefined ? {} : { figure_refused })
 const one = (doc: ReturnType<typeof buildDocument>) =>
-  renderCockpit({ role: 'super', stage: 'interviewing', build: { documents: [doc] } })
+  renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: { documents: [doc] } })
 
 describe('TD-323 — the payslip Amount chip follows the engine', () => {
   it('a refused amount is amber "looks misread", and the green Amount chip is gone', async () => {

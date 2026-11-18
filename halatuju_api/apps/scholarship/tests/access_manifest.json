@@ -121,6 +121,65 @@
    "reason": "BUG: profile PUT 500 for non-students"
   }
  ],
+ "case_stages": {
+  "_about": "POST-AWARD-CUT review (18 Nov). app_a is seeded ACTIVE (past the award), so `entries` prove only that stage. These per-case write pairs turn on the case stage (`staff_lifecycle.case_stage`), so test_access_matrix.py replays each with app_a moved, in a rolled-back transaction, to an OPEN case and to one that ENDED BEFORE THE AWARD. allow = must NOT get 401/403/404; every other caller of the route must be refused (401/403/404). `except` = a pair whose callers differ in that stage, with the reason.",
+  "open": {
+   "status": "interviewing",
+   "allow": [
+    "super",
+    "org_admin_a",
+    "qc_a",
+    "reviewer_a"
+   ],
+   "except": {
+    "POST api/v1/admin/scholarship/applications/<int:pk>/close/": {
+     "allow": [
+      "super",
+      "org_admin_a"
+     ],
+     "why": "TD-352: a pre-award close is an organisation admin's or a super's"
+    }
+   }
+  },
+  "pre_award_end": {
+   "status": "withdrawn",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "except": {}
+  },
+  "pairs": [
+   "PATCH api/v1/admin/scholarship/applications/<int:pk>/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/anon-profile/publish/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/cancel-decline/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/close/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/disbursements/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/documents/<int:doc_id>/re-run-vision/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/finalise-profile/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/generate-profile/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/hold-award/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/interview-slots/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/interview/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/interview/reopen/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/interview/submit/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/maintenance/",
+   "PUT api/v1/admin/scholarship/applications/<int:pk>/profile/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/publish/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/record-verdict/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/referees/",
+   "DELETE api/v1/admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/reject/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/reporting-date/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/request-info/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/resolution-items/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/submit-decline/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/suggest-gaps/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/verify-accept/",
+   "POST api/v1/admin/scholarship/disbursements/<int:pk>/<str:action>/",
+   "POST api/v1/admin/scholarship/resolution-items/<int:item_id>/<str:action>/"
+  ]
+ },
  "entries": [
   {
    "route": "api/v1/admin/admin-emails/",

@@ -32,7 +32,7 @@ from ..services import (
 )
 from ..sponsorship import hold_pending_award
 
-from .base import _AdminBase, may_cancel_held_decline, may_write_case
+from .base import _AdminBase, may_cancel_held_decline, served_write_flags
 
 
 # ⚠ THE PACKAGE'S name, spelled out — never `__name__`. A submodule logger reads
@@ -46,14 +46,13 @@ def _detail_payload(app, admin):
     line budget): `qc_refusal` (TD-483), the code the QC door would refuse this viewer with, from
     the same `qc_separation` rule, so the cockpit hides a QC panel the server would refuse; and
     `rejected_by_unassigned` (TD-227), whether a `/reject/` decline was made by someone other than
-    the assigned reviewer. `can_write` (POST-AWARD-CUT) is `may_write_case`, so the cockpit never re-derives it."""
+    the assigned reviewer. The write flags (POST-AWARD-CUT) are `served_write_flags`, so the cockpit never re-derives them."""
     from .. import qc_separation
     from ..services.decline import rejected_by_unassigned
     with snapshot_unless_open(app):   # A2.4: the POSTs that answer with the case read documents once too
         data = AdminApplicationDetailSerializer(app, context={'admin': admin}).data
         data['qc_refusal'] = qc_separation.for_viewer(admin, app)
-        data['can_write'] = may_write_case(admin, app)
-        data['can_cancel_decline'] = may_cancel_held_decline(admin, app)   # owner 17 Nov: its own door
+        data.update(served_write_flags(admin, app))   # can_write, can_cancel_decline, can_tranche
         data['rejected_by_unassigned'] = rejected_by_unassigned(app)
         data['withdrawal_request'] = withdrawal_chain.payload_for(app, admin)   # A1.13b; no query unless awarded
     return data

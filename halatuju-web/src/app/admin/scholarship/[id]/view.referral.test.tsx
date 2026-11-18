@@ -21,7 +21,7 @@ type Org = { id: number; code: string; name: string } | null
  *  application's source under `source` (sources Sprint C); the old `referred_by_org` key for the
  *  same value was served one release and left in Sprint D. */
 const pill = async (referral_source: string, source: Org, text: string) => {
-  renderCockpit({ role: 'super', app: buildApplicationDetail('interviewing', {
+  renderCockpit({ role: 'super', writes: true, app: buildApplicationDetail('interviewing', {
     referral_source, source,
   }) })
   await screen.findByText('Test Student 07')
@@ -35,7 +35,7 @@ describe("the referral pill reads THIS application's source (sources Sprint C)",
   })
 
   it('no longer reads the retired `referred_by_org` key (sources Sprint D)', async () => {
-    renderCockpit({ role: 'super', app: buildApplicationDetail('interviewing', {
+    renderCockpit({ role: 'super', writes: true, app: buildApplicationDetail('interviewing', {
       referral_source: 'newsrc', source: null,
       ...({ referred_by_org: { id: 3, code: 'newsrc', name: 'A New Source' } } as object),
     }) })

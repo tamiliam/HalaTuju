@@ -31,7 +31,7 @@ import type { BursaryAgreement } from '@/lib/api'
 import type { T } from './shared'
 
 export function PostAwardPanels({
-  app, t, busy, isSuper, canWrite, orgSuper, mayOpenFile,
+  app, t, busy, isSuper, canWrite, canTranche, orgSuper, mayOpenFile,
   bursary, bursaryMsg, doCountersignBursary, doWitnessBursary,
   disbAmount, setDisbAmount, disbLabel, setDisbLabel, disbMsg,
   doScheduleTranche, doDisbursementAction, doSetSubstate,
@@ -42,6 +42,8 @@ export function PostAwardPanels({
   busy: string
   isSuper: boolean
   canWrite: boolean
+  /** The served `can_tranche` (`views_admin.base.may_tranche`, the api's tranche door): Release, Withhold, Schedule. */
+  canTranche: boolean
   /** super or org_admin — the only roles the api lets close a PRE-award case (TD-352). */
   orgSuper: boolean
   /** Sprint S1: whether the reader may open the Scholars page (`mayOpen('/admin/scholars')`, the menu's
@@ -274,7 +276,7 @@ export function PostAwardPanels({
                       </div>
                       {/* ⚠ READ-ONLY ON A PHONE (owner, Mobile M6b): typed money and payment actions are
                           done at a desk. Hidden below md only — from md these are the controls they were. */}
-                      {canWrite && (
+                      {canTranche && (
                         <div className="flex flex-wrap gap-1.5 max-md:hidden" data-payment-actions>
                           {actionsFor(d.status).map((action) => (
                             <button key={action} type="button"
@@ -292,12 +294,12 @@ export function PostAwardPanels({
               </div>
             )}
 
-            {canWrite && (
+            {canTranche && (
               <p className="rounded-lg bg-info-50 px-3 py-2 text-sm text-info-700 md:hidden" data-payments-use-computer>
                 {t('admin.disbursement.useComputer')}
               </p>
             )}
-            {canWrite && (
+            {canTranche && (
               <div className="flex flex-wrap items-end gap-2 border-t pt-3 max-md:hidden" data-schedule-tranche>
                 <div>
                   <label className="block text-xs md:text-[11px] font-medium text-ground-600 mb-1">{t('admin.disbursement.amountLabel')}</label>

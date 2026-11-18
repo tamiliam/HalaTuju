@@ -15,7 +15,7 @@ import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 installCockpitConsoleGuard()
 
 it('a re-render does not re-read the case', async () => {
-  const { api } = renderCockpit({ role: 'super', stage: 'profile_complete',
+  const { api } = renderCockpit({ role: 'super', writes: true, stage: 'profile_complete',
                                   build: { officer_requests: 'open' } })
   await screen.findByText('Test Student 07')
   const reads = () => [

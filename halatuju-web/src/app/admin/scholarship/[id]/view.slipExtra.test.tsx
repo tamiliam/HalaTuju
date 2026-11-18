@@ -27,7 +27,7 @@ const check = (over: Partial<AcademicCheck>): AcademicCheck => ({
 })
 
 const mount = async (academic: AcademicCheck, verdict = buildVerdict()) => {
-  renderCockpit({ role: 'super', stage: 'interviewing', build: {
+  renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: {
     documents: [buildDocument('results_slip', { id: 320, academic_check: academic })], verdict } })
   await loaded()
 }

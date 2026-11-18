@@ -46,7 +46,7 @@ describe('the Correct action on the parent/guardian phone', () => {
     ['guardian_contact_locked', 'profile.contactLocked'],
     ['guardian_phone_invalid', 'scholarship.apply.error.phone'],
   ])('a %s refusal reads as words, not "something went wrong" (review F6)', async (code, words) => {
-    const { api } = renderCockpit({ role: 'super', stage: 'awarded' })
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'awarded' })
     await loaded()
     api.correctGuardianContact.mockRejectedValue(Object.assign(new Error(code), { code }))
     fireEvent.click(correct()!)

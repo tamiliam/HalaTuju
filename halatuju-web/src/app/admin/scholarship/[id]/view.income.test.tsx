@@ -60,7 +60,7 @@ describe('an unusable income document is listed, marked, and chased', () => {
       id: 401, household_member: 'father',
       authenticity: { status: 'not_salary', reason: 'reads as a MyKad' },
     })
-    renderCockpit({ role: 'super', stage: 'interviewing', build: {
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: {
       documents: [fatherIc(), slip],
       income_shown: shownFor({
         unusable: [{ doc_id: 401, doc_type: 'salary_slip', reason: 'not_salary' }] }),
@@ -75,7 +75,7 @@ describe('an unusable income document is listed, marked, and chased', () => {
 
   it('⚠ A BLANK EPF: the same treatment — nothing could be read off it', async () => {
     const epf = buildDocument('epf', { id: 402, household_member: 'father' })
-    renderCockpit({ role: 'super', stage: 'interviewing', build: {
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: {
       documents: [fatherIc(), epf],
       income_shown: shownFor({
         unusable: [{ doc_id: 402, doc_type: 'epf', reason: 'no_value' }] }),
@@ -91,7 +91,7 @@ describe('an unusable income document is listed, marked, and chased', () => {
     // The owner's third way (2026-07-25). This household could submit and was chased for a payslip
     // it cannot produce (F1, application 144 / Janani); the panel now agrees it is evidenced.
     const letter = buildDocument('income_support_doc', { id: 403, household_member: 'father' })
-    renderCockpit({ role: 'super', stage: 'interviewing', build: {
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: {
       documents: [fatherIc(), letter],
       income_shown: shownFor({ shown: true, way: 'declared_letter', documents: [403] }),
     } })
@@ -112,7 +112,7 @@ describe('an unusable income document is listed, marked, and chased', () => {
       id: 404, household_member: 'father',
       str_check: { current_status: 'current' } as AdminApplicantDocument['str_check'],
     })
-    renderCockpit({ role: 'super', stage: 'interviewing', build: {
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: {
       income_route: 'str', income_earner: 'father',
       documents: [fatherIc(), str],
       income_shown: shownFor({}),      // shown: false — no STR arm, by the owner's ruling
@@ -134,7 +134,7 @@ describe('an unusable income document is listed, marked, and chased', () => {
       id: 405, household_member: 'father',
       authenticity: { status: 'not_salary', reason: 'reads as a MyKad' },
     })
-    renderCockpit({ role: 'super', stage: 'interviewing', build: {
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: {
       documents: [fatherIc(), slip],
     } })
     await loaded()

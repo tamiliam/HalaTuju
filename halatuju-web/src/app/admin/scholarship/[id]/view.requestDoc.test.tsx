@@ -29,7 +29,7 @@ const refusal = (status: number, error: string) =>
 /** Raise a query that fails with `rejection`; resolves to the line the screen then shows. (The
  *  wait for that line starts straight after the click, so the failed call settles inside it.) */
 async function raiseAndFail(rejection: unknown): Promise<string | null> {
-  const { api } = renderCockpit({ role: 'super', stage: 'profile_complete',
+  const { api } = renderCockpit({ role: 'super', writes: true, stage: 'profile_complete',
                                   build: { officer_requests: 'open' } })
   await loaded()
   api.raiseResolutionItem.mockRejectedValue(rejection)
@@ -40,7 +40,7 @@ async function raiseAndFail(rejection: unknown): Promise<string | null> {
 
 describe('while the student is still at their Documents step', () => {
   it('replaces the request controls with one line saying why', async () => {
-    renderCockpit({ role: 'super', stage: 'shortlisted',
+    renderCockpit({ role: 'super', writes: true, stage: 'shortlisted',
                     build: { officer_requests: 'documents_step' } })
     await loaded()
     expect(screen.getByText('admin.scholarship.requestsDocumentsStep')).toBeTruthy()
@@ -49,7 +49,7 @@ describe('while the student is still at their Documents step', () => {
   })
 
   it('offers the controls once requests are open', async () => {
-    renderCockpit({ role: 'super', stage: 'profile_complete', build: { officer_requests: 'open' } })
+    renderCockpit({ role: 'super', writes: true, stage: 'profile_complete', build: { officer_requests: 'open' } })
     await loaded()
     expect(docTitle()).toBeTruthy()
     expect(screen.queryByText('admin.scholarship.requestsDocumentsStep')).toBeNull()
@@ -65,7 +65,7 @@ describe('a request that fails is never silent', () => {
   })
 
   it('⚠ the same holds for "Request a document" itself', async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'profile_complete',
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'profile_complete',
                                     build: { officer_requests: 'open' } })
     await loaded()
     api.raiseResolutionItem.mockRejectedValue(refusal(400, 'querying_closed'))
