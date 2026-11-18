@@ -4810,7 +4810,15 @@
           "certain": "Certain",
           "probable": "Probable",
           "unsure": "Unsure",
-          "unverifiable": "Can't verify"
+          "unverifiable": "Can't verify",
+          "ruleNotMet": "Rule not met"
+        },
+        "bandHint": {
+          "certain": "The documents back it up.",
+          "probable": "Likely fine, worth a glance.",
+          "unsure": "Needs your judgement.",
+          "unverifiable": "Proof is missing or unreadable.",
+          "ruleNotMet": "A gift rule is broken."
         },
         "item": {
           "ic_low_confidence": "The identity card may not be a genuine photo of a physical MyKad — confirm the card at interview.",

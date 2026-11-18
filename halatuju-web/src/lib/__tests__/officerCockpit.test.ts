@@ -1,6 +1,7 @@
 import {
   assignOptions,
   factTileTone,
+  factBandKey,
   groupDocumentsByFact,
   aiSuggestionFor,
   documentPill,
@@ -97,6 +98,55 @@ describe('factTileTone', () => {
 
   it('returns red for gap', () => {
     expect(factTileTone(fact('identity', 'gap'))).toBe('red')
+  })
+})
+
+describe('red tile reason: Rule not met vs Cant verify', () => {
+  const withUnresolved = (status: AdminVerdictFact['status'], code: string, evidence: string[] = []): AdminVerdictFact => ({
+    ...fact('pathway', status, evidence), unresolved: [{ code, params: {} }],
+  })
+  const bandText = (f: AdminVerdictFact) => {
+    const band = (enMessages as any).admin.scholarship.verdict.band
+    return band[factBandKey(f)]
+  }
+
+  it('a review fact with offer_not_official is red and reads Rule not met', () => {
+    const f = withUnresolved('review', 'offer_not_official', ['nric_match'])
+    expect(factTileTone(f)).toBe('red')
+    expect(bandText(f)).toBe('Rule not met')
+  })
+
+  it('a gap fact with pathway_funded_or_abroad is red and reads Rule not met', () => {
+    const f = withUnresolved('gap', 'pathway_funded_or_abroad')
+    expect(factTileTone(f)).toBe('red')
+    expect(bandText(f)).toBe('Rule not met')
+  })
+
+  it('a plain gap is red and reads Cant verify', () => {
+    const f = fact('identity', 'gap')
+    expect(factTileTone(f)).toBe('red')
+    expect(bandText(f)).toBe("Can't verify")
+  })
+
+  it('HIGHER_RESULTS_UNREADABLE stays Cant verify', () => {
+    const f = withUnresolved('review', 'higher_results_unreadable')
+    expect(factTileTone(f)).toBe('red')
+    expect(bandText(f)).toBe("Can't verify")
+  })
+
+  it('verified and review facts with no disqualifier are unchanged', () => {
+    expect(factTileTone(fact('identity', 'verified'))).toBe('green')
+    expect(bandText(fact('identity', 'verified'))).toBe('Certain')
+    expect(factTileTone(fact('identity', 'review', ['nric_match']))).toBe('blue')
+    expect(bandText(fact('identity', 'review', ['nric_match']))).toBe('Probable')
+  })
+
+  it('has the new band and hint keys in en, ms and ta', () => {
+    for (const m of [enMessages, msMessages, taMessages] as any[]) {
+      const v = m.admin.scholarship.verdict
+      expect(v.band.ruleNotMet).toBeTruthy()
+      for (const k of ['certain', 'probable', 'unsure', 'unverifiable', 'ruleNotMet']) expect(v.bandHint[k]).toBeTruthy()
+    }
   })
 })
 

@@ -7,7 +7,7 @@
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
-import { factDetailItems, factSubtitleItem, factTileTone, TONE_BAND_KEY, verdictItemKey } from '@/lib/officerCockpit'
+import { factBandKey, factDetailItems, factSubtitleItem, factTileTone, TONE_BAND_KEY, verdictItemKey } from '@/lib/officerCockpit'
 import { localiseParams } from '@/lib/actionCentre'
 import type { AdminScholarshipDetail, AdminVerdictFact, AdminVerdictItem, VerdictCaseSummary } from '@/lib/admin-api'
 
@@ -78,7 +78,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
                 </div>
                 {/* The estimative-probability band (Kent scale) the colour stands for. */}
                 <p className={`text-xs md:text-[10px] font-semibold uppercase tracking-wide max-md:break-words ${labelColour}`}>
-                  {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tone]}`)}
+                  {t(`admin.scholarship.verdict.band.${factBandKey(f)}`)}
                 </p>
                 {!isGreen && (
                   <p className="text-xs md:text-[11px] text-ground-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
@@ -93,12 +93,17 @@ export function VerificationVerdict({ app, t, caseSummary }: {
         {/* Legend — the confidence scale the tile colours encode (green→red). */}
         {(app.verdict || []).length > 0 && (
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-[10px] text-ground-400">
-            {(['green', 'blue', 'amber', 'red'] as const).map((tn) => (
-              <span key={tn} className="flex items-center gap-1">
-                <span className={`h-2 w-2 rounded-full ${ {green:'bg-positive-500',blue:'bg-brand-shape',amber:'bg-caution-500',red:'bg-critical-500'}[tn] }`} aria-hidden />
-                {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tn]}`)}
-              </span>
-            ))}
+            {(['green', 'blue', 'amber', 'red', 'red'] as const).map((tn, i) => {
+              const key = i === 4 ? 'ruleNotMet' : TONE_BAND_KEY[tn]
+              return (
+                <span key={key} className="flex items-center gap-1"
+                  title={t(`admin.scholarship.verdict.bandHint.${key}`)}>
+                  <span className={`h-2 w-2 rounded-full ${ {green:'bg-positive-500',blue:'bg-brand-shape',amber:'bg-caution-500',red:'bg-critical-500'}[tn] }`} aria-hidden />
+                  {t(`admin.scholarship.verdict.band.${key}`)}
+                  <span className="hidden md:inline normal-case"> — {t(`admin.scholarship.verdict.bandHint.${key}`)}</span>
+                </span>
+              )
+            })}
           </div>
         )}
         {/* Course-switch banner (owner 2026-07-10): the live offer replaced a genuinely different

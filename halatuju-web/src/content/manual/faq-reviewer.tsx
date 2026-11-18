@@ -218,6 +218,14 @@ export const REVIEWER_FAQ: QA[] = [
         with no offer letter yet, the Pathway card shows the degree she named as context.</>,
     },
     {
+      q: <>A card is red. How do I tell <strong>&ldquo;Can&rsquo;t verify&rdquo;</strong> from <strong>&ldquo;Rule not met&rdquo;</strong>?</>,
+      a: <>Read the word under the card name. <strong>Can&rsquo;t verify</strong> means proof is missing or
+        unreadable: ask for it or read the document yourself. <strong>Rule not met</strong> means a gift rule is
+        broken (income above the B40 line, a fully funded or overseas programme, a course starting outside the
+        allowed years, or an offer that is not official). A card with a broken rule is always red, even when its
+        status is Review. The legend under the cards explains both.</>,
+    },
+    {
       q: <>The Pathway card is red with <strong>&ldquo;Fully funded or overseas programme&rdquo;</strong>. Why?</>,
       a: <>Her chosen programme is the <strong>American Degree Program</strong> under MARA, which is fully funded,
         or a preparation programme for study abroad (&ldquo;Program Persediaan &hellip; Luar Negara&rdquo;, run by

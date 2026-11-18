@@ -57,6 +57,11 @@ const HIGHER_RESULTS_UNREADABLE = 'higher_results_unreadable'
 const HIGHER_RESULTS_KIND_CODES = ['higher_results_kind_differs', 'higher_results_is_spm']
 export const NOT_PROOF_EVIDENCE = new Set<string>([HIGHER_RESULTS_NOT_CHECKED])
 
+/** True when the fact carries a confident disqualifier (a broken gift rule), whatever its status. */
+export function hasRuleNotMet(fact: AdminVerdictFact): boolean {
+  return fact.unresolved.some((u) => CONFIDENT_DISQUALIFIERS.has(u.code))
+}
+
 /**
  * Map a verdict fact to a colour tone on a collapsed Kent confidence scale —
  * how sure the engine is that the fact is sound:
@@ -66,11 +71,13 @@ export const NOT_PROOF_EVIDENCE = new Set<string>([HIGHER_RESULTS_NOT_CHECKED])
  *                        soft-signal-only / incomplete. Blue requires a green.)
  *   recommend → amber  (Unsure   — even odds; the coordinator places the verdict)
  *   gap       → red    (Can't verify — missing/unreadable evidence)
+ *   any status with a confident disqualifier → red (Rule not met — a gift rule is broken)
  */
 export function factTileTone(fact: AdminVerdictFact): FactTileTone {
   // Owner rulings 2026-11-17 (display only; the engine status is untouched).
   // Precedence: red (unreadable) beats amber (other kind / no real proof) beats blue.
   const unresolved = new Set(fact.unresolved.map((u) => u.code))
+  if (hasRuleNotMet(fact)) return 'red'
   if (fact.status !== 'gap' && unresolved.has(HIGHER_RESULTS_UNREADABLE)) return 'red'
   const kindDiffers = [...HIGHER_RESULTS_KIND_CODES].some((c) => unresolved.has(c))
   switch (fact.status) {
@@ -130,6 +137,12 @@ export function factDetailItems(fact: AdminVerdictFact): { unresolved: AdminVerd
 
 // The estimative-probability band each tone names (Kent scale, collapsed to four).
 // Used for the tile labels + legend; the i18n key is admin.scholarship.verdict.band.<key>.
+/** The band key a fact's tile shows: red splits into 'ruleNotMet' (broken rule) and 'unverifiable' (no proof). */
+export function factBandKey(fact: AdminVerdictFact): string {
+  const tone = factTileTone(fact)
+  return tone === 'red' && hasRuleNotMet(fact) ? 'ruleNotMet' : TONE_BAND_KEY[tone]
+}
+
 export const TONE_BAND_KEY: Record<FactTileTone, string> = {
   green: 'certain',
   blue: 'probable',

@@ -4810,7 +4810,15 @@
           "certain": "Pasti",
           "probable": "Berkemungkinan",
           "unsure": "Tidak pasti",
-          "unverifiable": "Tidak dapat disahkan"
+          "unverifiable": "Tidak dapat disahkan",
+          "ruleNotMet": "Syarat tidak dipenuhi"
+        },
+        "bandHint": {
+          "certain": "Dokumen menyokongnya.",
+          "probable": "Mungkin tiada masalah, wajar disemak.",
+          "unsure": "Perlu pertimbangan anda.",
+          "unverifiable": "Bukti tiada atau tidak boleh dibaca.",
+          "ruleNotMet": "Satu syarat hadiah dilanggar."
         },
         "item": {
           "ic_low_confidence": "Kad pengenalan mungkin bukan foto MyKad fizikal yang tulen — sahkan kad semasa temu duga.",

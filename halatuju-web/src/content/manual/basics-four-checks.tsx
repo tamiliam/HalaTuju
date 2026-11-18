@@ -30,6 +30,9 @@ export const basicsFourChecks: ManualChapter = {
             <li><strong className="text-caution-700">Amber — Unsure.</strong> Needs a human judgement.</li>
             <li><strong className="text-critical-700">Red — Can&rsquo;t verify.</strong> The evidence is missing or
             unreadable — someone must act on it.</li>
+            <li><strong className="text-critical-700">Red — Rule not met.</strong> A gift rule is broken (for example,
+            income above the B40 line, a fully funded or overseas programme, a course that started outside the
+            allowed years, or an offer that is not official). The card is always red, even when proof was found.</li>
           </ul>
           <span className="mt-2 block">Green tiles you can move past quickly; the real work is the
           <strong> amber</strong> and <strong>red</strong> ones. A red <em>Pathway</em> usually means no offer

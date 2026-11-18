@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: red tile names its reason: Rule not met vs Can't verify (2026-11-18)
+
+Branch rule-not-met, not pushed. Migration: none. Services: web. Display only; no API or engine change, the disqualifier list is untouched.
+- A cockpit card with a confident disqualifier (for example offer_not_official) is always red and reads "Rule not met", even when its status is Review (it could show blue or amber before). A card red for missing or unreadable proof still reads "Can't verify".
+- The tone legend shows both red words with a one-line meaning each (en, ms, ta). The reviewer Guide (colour code) and FAQ say the same.
+- Tests: new cases in `officerCockpit.test.ts`.
+
 ### feat: OCR-first roadmap S0 - the free dry-run harness and the Gate 1 rule (2026-11-18)
 
 Branch ocr-s0, not pushed. Migration: none. Services: none. Eval tool only; nothing in the request path. Plan: `docs/plans/ocr-first-roadmap.md` (committed here).
