@@ -7,6 +7,7 @@ Every letter here is invented.
 from unittest import mock
 
 from django.test import SimpleTestCase, TestCase
+from django.utils import timezone
 
 from apps.courses.models import Institution
 from apps.scholarship import award, offer_private
@@ -154,11 +155,132 @@ class APublicPlaceIsNeverFlaggedByTheReason(_Base):
         self.assertIsNone(self._item(app))
 
 
+class ThePublicVetoKnowsMoreNames(_Base):
+    """Review fix 2026-11-19: IIUM's English name, the catalogue aliases, the wingless public types and
+    the English university names all veto the reason signal (never the name signal)."""
+
+    def test_iiums_english_letter_with_a_sdn_bhd_fee_line_is_not_flagged(self):
+        from apps.scholarship.genuineness import signature_genuineness
+        from apps.scholarship.tests.test_req66_iium_english_offer import IIUM_SDN_BHD
+        reason = signature_genuineness(IIUM_SDN_BHD, doc_type='offer_letter')['reason']
+        self.assertTrue(reason.startswith(offer_private.IPTS_REASON_OPENINGS), reason)   # the private-wing reason
+        for k, (inst, iss) in enumerate((('International Islamic University Malaysia', ''),
+                                         ('', 'International Islamic University Malaysia (IIUM)'))):
+            with self.subTest(inst or iss):
+                app = self._app(f'iium{k}')
+                self._offer(app, institution=inst, issuer=iss, programme='Bachelor of Contoh Studies (Honours)',
+                            reason=reason)
+                self.assertIsNone(self._item(app))
+
+    def test_a_catalogue_alias_vetoes(self):
+        app = self._app('ump')
+        self._offer(app, institution='Universiti Malaysia Pahang Al-Sultan Abdullah', reason=COLLEGE_REASON)
+        self.assertIsNone(self._item(app))
+
+    def test_each_wingless_public_type_vetoes_without_a_catalogue_campus(self):
+        for k, inst in enumerate(('Kolej Komuniti Contoh Jaya', 'Kolej Matrikulasi Contoh', 'Kolej Vokasional Contoh',
+                                  'Institut Pendidikan Guru Kampus Contoh', 'IPG Kampus Contoh', 'Politeknik Contoh',
+                                  'Contoh Polytechnic', 'Contoh Community College')):
+            with self.subTest(inst):
+                app = self._app(f'type{k}')
+                self._offer(app, institution=inst, reason=COLLEGE_REASON)
+                self.assertIsNone(self._item(app))
+
+    def test_english_university_names_veto(self):
+        for k, inst in enumerate(('University of Malaya', 'University Putra Malaysia',
+                                  'National University of Malaysia', 'University of Science Malaysia')):
+            with self.subTest(inst):
+                app = self._app(f'en{k}')
+                self._offer(app, institution=inst, reason=ARM_REASON)
+                self.assertIsNone(self._item(app))
+
+    def test_a_private_college_still_flags_by_its_reason(self):
+        app = self._app('still')
+        self._offer(app, institution='Contoh University College', reason=COLLEGE_REASON)
+        self.assertEqual(self._item(app)['params']['signal'], 'reason')
+
+
+class SpaceOnlyOnThePlace(_Base):
+    def test_a_space_programme_at_a_public_university_is_not_flagged(self):
+        app = self._app('space-prog')
+        self._offer(app, institution='Universiti Kebangsaan Malaysia', programme='Bachelor of Space Science')
+        self.assertIsNone(self._item(app))
+        self.assertFalse(offer_private.names_private_body('Space Science', 'Kolej Contoh', ''))
+
+    def test_space_on_the_institution_or_issuer_still_flags(self):
+        self.assertTrue(offer_private.names_private_body('Diploma Perniagaan', 'UTM SPACE', ''))
+        self.assertTrue(offer_private.names_private_body('Diploma Perniagaan', '', 'UTMSPACE / SPACE'))
+
+    def test_the_wing_phrases_still_read_on_the_programme(self):
+        self.assertTrue(offer_private.names_private_body('Diploma Perniagaan (Pendidikan Berterusan)', '', ''))
+
+
+class OnlyTheLatestLetterCounts(_Base):
+    """A re-upload supersedes the old letter (one live letter per slot); only the live one is read."""
+
+    def _replace(self, old, app, **kw):
+        old.superseded_at = timezone.now()
+        old.save(update_fields=['superseded_at'])
+        return self._offer(app, **kw)
+
+    def test_a_later_public_letter_clears_the_flag(self):
+        app = self._app('later-public')
+        first = self._offer(app, institution='Kolej Poly-Tech MARA')
+        self.assertIsNotNone(self._item(app))
+        self._replace(first, app, institution='Politeknik Ungku Omar')
+        self.assertIsNone(self._item(app))
+
+    def test_a_later_ipts_letter_raises_it(self):
+        app = self._app('later-ipts')
+        first = self._offer(app, institution='Politeknik Ungku Omar')
+        self.assertIsNone(self._item(app))
+        self._replace(first, app, institution='Kolej Poly-Tech MARA')
+        self.assertIsNotNone(self._item(app))
+
+
+class AlongsideTheOtherPathwayRules(_Base):
+    def _codes(self, app):
+        return [i['code'] for i in self._pathway(app)['unresolved']]
+
+    def test_funded_or_abroad_and_ipts_both_show_in_a_stable_order(self):
+        app = self._app('adp')
+        app.chosen_programme = {'course_name': 'American Degree Program', 'institution': 'Kolej Poly-Tech MARA'}
+        app.save(update_fields=['chosen_programme'])
+        self._offer(app, institution='Kolej Poly-Tech MARA')
+        codes = self._codes(app)
+        self.assertEqual(self._pathway(app)['status'], 'gap')
+        self.assertLess(codes.index('pathway_funded_or_abroad'), codes.index(CODE))
+        self.assertEqual(codes, self._codes(app))
+        self.assertEqual(award.verdict_disqualifier(build_verdict(app)), 'pathway_funded_or_abroad')
+
+    def test_ipts_and_a_start_year_outside_the_intake_both_show(self):
+        cohort = ScholarshipCohort.objects.create(code='ipts-sy', name='Degree', year=2026,
+                                                  allowed_start_years=[2025, 2026])
+        app = self._app('sy')
+        app.cohort = cohort
+        app.save(update_fields=['cohort'])
+        doc = self._offer(app, institution='Kolej Poly-Tech MARA')
+        doc.vision_fields['fields'].update({'intake': '2024', 'reporting_date': '10 JUN 2024'})
+        doc.save(update_fields=['vision_fields'])
+        codes = self._codes(app)
+        self.assertLess(codes.index(CODE), codes.index('pathway_start_year_outside'))
+        self.assertEqual(self._pathway(app)['status'], 'gap')
+
+
 class NoLineWithoutARead(_Base):
     def test_an_unread_letter_gives_no_line(self):
         app = self._app('unread')
         self._offer(app, read=False)
         self.assertIsNone(self._item(app))
+
+    def test_the_read_deferred_guard_is_what_stops_a_letter_with_fields(self):
+        """The letter carries private fields; only the guard's answer differs between the two runs."""
+        app = self._app('deferred')
+        self._offer(app, institution='Kolej Poly-Tech MARA', reason=COLLEGE_REASON)
+        self.assertIsNotNone(self._item(app))
+        with mock.patch('apps.scholarship.read_errors.read_deferred', return_value=True):
+            self.assertIsNone(offer_private.private_offer_signal(
+                ApplicantDocument.objects.filter(application=app).latest('id')))
 
     def test_no_letter_gives_no_line(self):
         app = self._app('none')

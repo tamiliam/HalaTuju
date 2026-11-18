@@ -14,11 +14,13 @@ Two signals, both read off a letter that has been READ (`read_deferred`, the TD-
 an unread one gives no line, as `start_year`):
 
   1. NAME — the read programme, institution or issuer names a private wing or a named private body
-     (`catalogue_levels.private_arm_letter`, `offer_reading._PRIVATE_BODIES`). No public-name veto: "UTM
-     SPACE" names a public university AND its private wing, and it is the wing that teaches.
+     (`results_doc._PRIVATE_ARM_PHRASES`, `offer_reading._PRIVATE_BODIES`; the bare word SPACE on the
+     institution / issuer only). No public-name veto: "UTM SPACE" names a public university AND its
+     private wing, and it is the wing that teaches.
   2. SAVED REASON — the letter's stored genuineness reason opens with one of the three IPTS openings
      (`IPTS_REASON_OPENINGS`). It counts ONLY when the read institution / issuer names NO known public
-     body (the genuineness public lists, the public-university names and short forms, and the course
+     body (the genuineness public lists, the public-university names, short forms, English names and
+     catalogue aliases, the wingless public types such as Kolej Komuniti or IPG, and the course
      catalogue's institutions by `CampusReader`), and when there IS a read institution or issuer: a
      public place is never flagged for a gap in our own lists, and a letter we cannot classify keeps
      today's behaviour.
@@ -29,6 +31,8 @@ shortlist's own `upu_status == 'ipts'` gate is a different, declared answer and 
 Not caught (TD, docs/technical-debt.md): an offer scored before MODEL_VERSION 1.8.0 or never scored has
 no IPTS reason, and a private college named on no list is caught only by its reason.
 """
+import functools
+
 from .genuineness.offer_issuers import PRIVATE_ARM_OPENING, PRIVATE_COLLEGE_OPENING, PRIVATE_OFFER_TAG, _UA_SHORT
 from .genuineness.offer_reading import _PRIVATE_BODIES, _TAG, _public_names
 
@@ -56,18 +60,46 @@ def _letter_lines(offer):
 
 
 def names_private_body(programme, institution, issuer):
-    """Signal 1: the letter's own lines name a private wing or a named private body."""
-    from .catalogue_levels import private_arm_letter
-    if private_arm_letter(programme, f'{institution} {issuer}'):
-        return True
-    text = _folded(f'{programme} ; {institution} ; {issuer}')
-    return any(b in text for b in _PRIVATE_BODIES)
+    """Signal 1: the letter's own lines name a private wing or a named private body. The phrases of
+    `results_doc._PRIVATE_ARM_PHRASES` and `_PRIVATE_BODIES` are read on every line, but the bare word
+    SPACE only on the institution / issuer: a programme such as "Space Science" names no wing."""
+    from .genuineness.results_doc import _PRIVATE_ARM_PHRASES
+    every = _folded(f'{programme} ; {institution} ; {issuer}')
+    return (any(p in every for p in _PRIVATE_ARM_PHRASES) or ' SPACE ' in _folded(f'{institution} ; {issuer}')
+            or any(b in every for b in _PRIVATE_BODIES))
+
+
+#: Public TYPES with no private wing, read even when no catalogue campus matches (a public place is
+#: never flagged for a gap in our lists): community, matriculation and vocational colleges, the teacher
+#: training institutes (IPG, "IPG Kampus X") and the polytechnics, Malay and English.
+_PUBLIC_TYPES = (' KOLEJ KOMUNITI ', ' COMMUNITY COLLEGE ', ' KOLEJ MATRIKULASI ', ' MATRICULATION COLLEGE ',
+                 ' KOLEJ VOKASIONAL ', ' VOCATIONAL COLLEGE ', ' INSTITUT PENDIDIKAN GURU ',
+                 ' INSTITUTE OF TEACHER EDUCATION ', ' IPG ', ' IPGM ', ' POLITEKNIK ', ' POLYTECHNIC ')
+#: English names that the University -> Universiti fold (`_english_folded`) does not reach.
+_ENGLISH_UA = (' NATIONAL UNIVERSITY OF MALAYSIA ', ' UNIVERSITY OF SCIENCE MALAYSIA ',
+               ' UNIVERSITY OF TECHNOLOGY MALAYSIA ', ' NATIONAL DEFENCE UNIVERSITY OF MALAYSIA ')
+
+
+@functools.lru_cache(maxsize=1)
+def _public_markers():
+    """Every padded public name the reason veto reads: the genuineness public lists, the public-university
+    short forms, IIUM's English name, the catalogue's aliases, the public types and the English names."""
+    from .genuineness.offer_signatures import _IIUM_EN
+    from .offer_course_match import _ALIASES
+    aliases = tuple(_folded(n) for names in _ALIASES.values() for n in names)
+    return (tuple(_public_names()) + tuple(f' {a} ' for a in _UA_SHORT) + (f' {_IIUM_EN} ',) + aliases
+            + _PUBLIC_TYPES + _ENGLISH_UA)
+
+
+def _english_folded(text):
+    """A folded line with "University (of)" read as "Universiti": "University of Malaya" names UM."""
+    return text.replace(' UNIVERSITY OF ', ' UNIVERSITI ').replace(' UNIVERSITY ', ' UNIVERSITI ')
 
 
 def names_public_body(institution, issuer):
     """True when the read institution or issuer names a known public body (signal 2's veto)."""
     text = _folded(f'{institution} ; {issuer}')
-    if any(n in text for n in _public_names()) or any(f' {a} ' in text for a in _UA_SHORT):
+    if any(m in t for t in (text, _english_folded(text)) for m in _public_markers()):
         return True
     from .offer_course_match import CampusReader, catalogue_index
     index = catalogue_index()                     # one read of the table, only when it is needed

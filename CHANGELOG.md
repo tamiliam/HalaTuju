@@ -12,6 +12,7 @@ Branch offer-private, not pushed. Migration: none. Services: api, web. Owner rul
 - **Reason openings as constants:** `offer_issuers.PRIVATE_COLLEGE_OPENING`, `PRIVATE_ARM_OPENING`, `PRIVATE_OFFER_TAG`; the three saved reasons are built from them, byte for byte as before (pinned).
 - **Copy:** reviewer line in en / ms / ta (ms / ta drafts), a verdict-narrative phrase, a Guide line (Your decision) and a new FAQ entry; the "Rule not met" FAQ lists the IPTS case.
 - **Tests:** new `test_offer_private_rule.py` (each signal, the public-name veto incl. a catalogue row, UTM SPACE, unread / no letter, suspect -> gap, disqualifier leads, amount and consent blockers unchanged, reason pins, version floor); narrative and web drift tests extended.
+- **Review fix (2026-11-19):** the reason signal's public-name veto also reads IIUM's English name, the catalogue aliases, the wingless public types (Kolej Komuniti, Kolej Matrikulasi, Kolej Vokasional, IPG, Politeknik, English forms) and English university names ("University of Malaya"); the bare word SPACE is read on the institution / issuer only, never the programme ("Space Science"). Tests: IIUM English letter with a Sdn Bhd fee line, each type, latest letter only, ADP + IPTS and IPTS + start year together, the read_deferred guard.
 - **Debt:** TD-665, TD-666, TD-667.
 
 ### feat: red tile names its reason: Rule not met vs Can't verify (2026-11-18)
