@@ -74,15 +74,21 @@ absent, not empty) and the read was kept as if it were whole. So:
   * **The schema REQUIRES every field** (`required`; an empty string is still the answer when the letter
     does not print it), so the model answers each key instead of dropping it.
   * **One second read** (`_second_read`) on ONE model, `retry_model()` (`OFFER_RETRY_MODEL`, env-overridable,
-    default 3.8 Flash), shown a DIFFERENT input from the first read: a PDF whose page 1 has a text layer → that
-    text alone (pages 1-3, no image); a photo or a scanned PDF → its page images at the DEFAULT media
-    resolution. It runs only when the preferred model (`MODEL_CASCADE[0]`) answered — a 3.8 error that
-    fell through the cascade is handled as before — and (a) all of `CORE_FIELDS` are blank (a missing
-    key is blank): it may then fill ANY blank field except the identity (`_NOT_FROM_RETRY`; a wrong IC
-    blocks); or (b) the reporting date is blank — the 2.5.0 date fallback, now on this model and input:
-    it fills the date and its label only. One call serves both; never a second retry. It fills blanks
-    only: the first read always wins. Recorded as `primary_blank` (always), `retry_for`, `retry_filled`,
-    `reporting_date_from` (when the date was asked) and `calls` parts `retry_*` (never counted as pages).
+    default 3.8 Flash; a 2.5 value is refused), shown PAGE 1 ONLY, as a DIFFERENT input from the first read: a
+    PDF whose page 1 has a text layer → that text alone (no image); a photo or a scanned PDF → the page-1
+    image at the DEFAULT media resolution. Never pages 2-3: a reply form or a second letter there must not
+    supply the programme, institution, campus or issuer. It runs only when the preferred model
+    (`MODEL_CASCADE[0]`) answered — a 3.8 error that fell through the cascade is handled as before — and
+    (a) the PAGE-1 answer, BEFORE the pages 2-3 merge, has all of `CORE_FIELDS` (programme, institution)
+    blank (a missing key is blank; an intake from pages 2-3 does not hide a blank page 1): it may then fill
+    ANY blank field except the identity (`_NOT_FROM_RETRY`; a wrong IC blocks); or (b) the reporting date
+    is still blank after the merge — the 2.5.0 date fallback, now on this model and input: it fills the
+    date and its label only. A date the retry fills brings ITS label with it (the label feeds the
+    reporting-date bonus). One call serves both; never a second retry. It fills blanks only: the first
+    read always wins. Warnings: the first read's stay, except those about a field the retry filled
+    (identity warnings always stay); the retry's are added (never its identity ones). Recorded as
+    `primary_blank` (always; the page-1 test), `retry_for`, `retry_filled`, `reporting_date_from` (when the
+    date was asked) and `calls` parts `retry_*` (never counted as pages).
   * The text-only path has no other input, so its second read re-asks the same OCR text.
 The AI read (`_ai_read`) and the second read are separate steps, so a deterministic OCR-first stage with a
 confidence threshold (the owner's long-term direction) can slot in front of them later.
@@ -96,7 +102,10 @@ The genuineness score (`results_doc.MODEL_VERSION`) does not read these fields a
 """
 from __future__ import annotations
 
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 #: Semantic version of the AI offer reader — see the module docstring.
 OFFER_READER_VERSION = '2.6.0'
@@ -136,8 +145,9 @@ LATER_SCHEMA = {'type': 'object', 'properties': {
     'required': list(LATER_FIELDS)}
 #: The second read's model when the setting is unset (2.6.0; never a 2.5 model — it has a retirement date).
 DEFAULT_RETRY_MODEL = 'gemini-3.8-flash'
-#: All three blank after the first read = a failed read (the 2.5.0 blank answers), so the second read runs.
-CORE_FIELDS = ('programme', 'institution', 'intake')
+#: Both blank in the PAGE-1 answer (before the pages 2-3 merge) = a failed read (the 2.5.0 blank answers had
+#: these and the intake missing), so the second read runs. The intake is left out: pages 2-3 can supply it.
+CORE_FIELDS = ('programme', 'institution')
 #: Never taken from the second read: identity comes from the first read only (a wrong IC BLOCKS as a
 #: mismatch, so a blank is the lesser harm).
 _NOT_FROM_RETRY = ('candidate_name', 'candidate_nric', 'candidate_nric_source', 'candidate_address')
@@ -265,23 +275,14 @@ def text_prompt(ocr_text: str) -> str:
             + f'\n\nOCR TEXT:\n{(ocr_text or "")[:MAX_OCR_CHARS]}')
 
 
-def text_layer_prompt(page_texts, total_pages: int = 1) -> str:
-    """The second read of a PDF with a text layer (2.6.0): the text of the pages shown, page by page,
-    and NO image — a different input from the first read's high-detail page-1 image."""
-    shown = len(page_texts)
-    body = '\n\n'.join(f'--- PAGE {i} ---\n{t}' for i, t in enumerate(page_texts, 1) if t)[:MAX_TEXT_CHARS]
-    which = 'page 1' if shown <= 1 else f'pages 1-{shown}'
-    return (_ask(f'Here is the text of {which} of a {max(total_pages, shown)}-page Malaysian offer letter '
-                 f'PDF, page by page.{_PAGE1_RULE}') + _fenced(body, _TEXT_ONLY_HEAD))
-
-
-def retry_image_prompt(shown: int, total_pages: int = 1, text_layer: str = '') -> str:
-    """The second read of a photo or a scanned PDF (2.6.0): every page shown, in one call, at the default
-    media resolution — a different input from the first read's high-detail page 1."""
-    if shown <= 1:
-        return image_prompt(total_pages, text_layer)
-    return (_ask(f'These are pages 1-{shown} of a {max(total_pages, shown)}-page Malaysian offer letter file, '
-                 f'in order. Read the images carefully.{_PAGE1_RULE}') + _fenced(text_layer))
+def text_layer_prompt(page1_text: str, total_pages: int = 1) -> str:
+    """The second read of a PDF whose page 1 has a text layer (2.6.0): page 1's text and NO image — a
+    different input from the first read's high-detail page-1 image. Page 1 only (pages 2-3 can hold a
+    reply form or a second letter)."""
+    shown = ('a Malaysian offer letter PDF' if total_pages <= 1 else
+             f'page 1 of a {total_pages}-page Malaysian offer letter PDF (the other pages are not shown)')
+    return (_ask(f'Here is the text of {shown}.{_PAGE1_RULE}')
+            + _fenced((page1_text or '')[:MAX_TEXT_CHARS], _TEXT_ONLY_HEAD))
 
 
 def offer_inputs(data: bytes, content_type: str) -> dict:
@@ -355,16 +356,22 @@ def retry_model() -> str:
     the frozen oversize-file ledger (`test_code_standards`), so this module holds the one default."""
     import os
     from django.conf import settings
-    return (getattr(settings, 'OFFER_RETRY_MODEL', '') or os.environ.get('OFFER_RETRY_MODEL', '')
-            or DEFAULT_RETRY_MODEL)
+    model = (str(getattr(settings, 'OFFER_RETRY_MODEL', '') or '').strip()
+             or os.environ.get('OFFER_RETRY_MODEL', '').strip())
+    if model.lower().startswith('gemini-2.5'):
+        logger.warning('OFFER_RETRY_MODEL=%s refused (2.5 Flash is retiring); using %s', model,
+                       DEFAULT_RETRY_MODEL)
+        return DEFAULT_RETRY_MODEL
+    return model or DEFAULT_RETRY_MODEL
 
 
 def _ai_read(ocr_text, image, content_type) -> dict:
-    """STEP 1, THE AI READ → ``{data, inputs, p1_text, calls, merged}``; ``data`` carries ``_error`` when
-    there was nothing to read or the read failed. Page 1 at high detail with its text layer, then pages
+    """STEP 1, THE AI READ → ``{data, inputs, p1_text, calls, merged, p1_blank}``; ``data`` carries ``_error``
+    when there was nothing to read or the read failed. Page 1 at high detail with its text layer, then pages
     2-3 when page 1 left a `LATER_TRIGGER` field blank, merged (page 1 always wins); the text-only path
-    reads the OCR text. (A future OCR-first stage with a threshold would run before this step.)"""
-    calls, later, merged = [], {}, []
+    reads the OCR text. ``p1_blank``: the page-1 answer had every `CORE_FIELDS` blank, judged BEFORE the
+    merge. (A future OCR-first stage with a threshold would run before this step.)"""
+    calls, later, merged, p1_blank = [], {}, [], False
     if image is not None:
         inputs = offer_inputs(image, content_type)
         p1_text = inputs['page_texts'][0] if inputs['page_texts'] else ''
@@ -383,39 +390,40 @@ def _ai_read(ocr_text, image, content_type) -> dict:
                     'merged': merged}
         data = _ask_gemini(text_prompt(ocr_text), OFFER_SCHEMA, calls)
     if '_error' not in data:
+        p1_blank = all(_blank(data, f) for f in CORE_FIELDS)       # before pages 2-3 can hide it
         merged = [f for f in LATER_FIELDS if _blank(data, f) and later.get(f)]
         data.update({f: later[f] for f in merged})                  # page 1 always wins
-    return {'data': data, 'inputs': inputs, 'p1_text': p1_text, 'calls': calls, 'merged': merged}
+    return {'data': data, 'inputs': inputs, 'p1_text': p1_text, 'calls': calls, 'merged': merged,
+            'p1_blank': p1_blank}
 
 
-def _retry_reasons(data: dict, calls: list) -> list:
-    """Why the second read runs: 'blank' (all `CORE_FIELDS` blank) and / or 'reporting_date' (none read).
-    Only when the PREFERRED model (`MODEL_CASCADE[0]`) answered the first call: a read answered further
-    down the cascade (the preferred model erred) or by an unknown model is kept as before."""
+def _retry_reasons(read: dict, data: dict) -> list:
+    """Why the second read runs: 'blank' (the PAGE-1 answer had every `CORE_FIELDS` blank, before the merge)
+    and / or 'reporting_date' (none after the merge). Only when the PREFERRED model (`MODEL_CASCADE[0]`)
+    answered the first call: a read answered further down the cascade (the preferred model erred) or by an
+    unknown model is kept as before."""
     from .profile_engine import MODEL_CASCADE
+    calls = read['calls']
     if not calls or calls[0]['model'] != MODEL_CASCADE[0]:
         return []
-    return [reason for reason, hit in (('blank', all(_blank(data, f) for f in CORE_FIELDS)),
+    return [reason for reason, hit in (('blank', read['p1_blank']),
                                        ('reporting_date', _blank(data, 'reporting_date'))) if hit]
 
 
 def _retry_call(read: dict, ocr_text: str, model: str) -> dict:
-    """The second read's ONE call, on ``model`` only, with a DIFFERENT input from the first read:
-    a PDF whose page 1 has a text layer → its text alone (part ``retry_text_layer``); a photo or a
-    scanned PDF → every page shown at the default media resolution (``retry_images``); the text-only
-    path → the same OCR text, its only input (``retry_text``)."""
+    """The second read's ONE call, on ``model`` only, shown PAGE 1 ONLY as a DIFFERENT input from the first
+    read: a PDF whose page 1 has a text layer → that text alone (part ``retry_text_layer``); a photo or a
+    scanned PDF → the page-1 image at the default media resolution (``retry_images``); the text-only path →
+    the same OCR text, its only input (``retry_text``). Never pages 2-3 (a reply form or a second letter)."""
     inputs, calls, only = read['inputs'], read['calls'], [model]
+    total = (inputs or {}).get('pages_in_file', 1)
     if inputs is None:
         data, part = _ask_gemini(text_prompt(ocr_text), OFFER_SCHEMA, calls, models=only), 'retry_text'
     elif read['p1_text']:
-        shown = len(inputs['images'])
-        data = _ask_gemini(text_layer_prompt(inputs['page_texts'][:shown], inputs.get('pages_in_file', 1)),
-                           OFFER_SCHEMA, calls, models=only)
+        data = _ask_gemini(text_layer_prompt(read['p1_text'], total), OFFER_SCHEMA, calls, models=only)
         part = 'retry_text_layer'
     else:
-        data = _ask_gemini(retry_image_prompt(len(inputs['images']), inputs.get('pages_in_file', 1),
-                                              inputs['text_layer']),
-                           OFFER_SCHEMA, calls, images=inputs['images'], models=only)
+        data = _ask_gemini(image_prompt(total), OFFER_SCHEMA, calls, images=inputs['images'][:1], models=only)
         part = 'retry_images'
     calls[-1]['part'] = part
     return data
@@ -423,35 +431,72 @@ def _retry_call(read: dict, ocr_text: str, model: str) -> dict:
 
 def _fill_blanks(data: dict, answer: dict, reasons: list) -> list:
     """Fill ``data``'s blanks from the second read's ``answer``, IN PLACE; never overwrite. 'blank' →
-    any field but the identity (`_NOT_FROM_RETRY`); 'reporting_date' alone → the date pair only. The
-    date's label is taken only together with a date the first read did not have."""
-    fields = ([f for f in _FIELDS if f not in _NOT_FROM_RETRY] if 'blank' in reasons
-              else list(REPORTING_DATE_FIELDS))
-    if not (_blank(data, 'reporting_date') and not _blank(answer, 'reporting_date')):
-        fields = [f for f in fields if f != 'reporting_date_label']
+    any field but the identity (`_NOT_FROM_RETRY`); 'reporting_date' alone → the date pair only. A date
+    the retry fills brings ITS label with it, replacing a label the first read had without a date (the
+    label feeds the reporting-date bonus); with no date filled the label is never taken."""
+    fields = ([f for f in _FIELDS if f not in _NOT_FROM_RETRY and f != 'reporting_date_label']
+              if 'blank' in reasons else ['reporting_date'])
     filled = [f for f in fields if _blank(data, f) and not _blank(answer, f)]
     data.update({f: answer[f] for f in filled})
+    if 'reporting_date' in filled:
+        data['reporting_date_label'] = answer.get('reporting_date_label') or ''
+        filled.insert(filled.index('reporting_date') + 1, 'reporting_date_label')
     return filled
 
 
-def _second_read(data: dict, read: dict, ocr_text: str):
-    """STEP 2, THE SECOND READ (2.6.0) → (what to stamp, the second read's warnings or None). At most
-    ONE call (`_retry_reasons`, `_retry_call`), filling blanks only (`_fill_blanks`); a failed or empty
-    answer leaves the first read as it was. Never a second retry."""
-    info = {'primary_blank': all(_blank(data, f) for f in CORE_FIELDS)}
-    reasons = _retry_reasons(data, read['calls'])
+#: What a warning is about, by its words (warnings are free text in plain language, `_WARNING_VOICE`).
+#: Conservative: a warning that names no field is about none and always stays.
+_WARN_WORDS = {
+    'programme': r'programme|\bprogram\b|\bcourse\b(?! code)', 'programme_code': r'\bcodes?\b|\bkod\b',
+    'institution': r'institution|universit|college|kolej|politeknik|polytechnic|institut|matri[ck]ul',
+    'campus': r'campus|kampus|branch|cawangan', 'reporting_venue': r'venue|hostel|residential|kediaman',
+    'issuer': r'issuer|issued by|issuing|letterhead', 'stream': r'stream|jurusan',
+    'offer_date': r'offer date|issue date|date of (?:the )?(?:offer|letter)|letter date|date the letter',
+    'intake': r'intake|session|\bsesi\b|semester|ambilan|academic year',
+    'reporting_date': r'report|regist|lapor|daftar', 'reporting_date_label': r'report|regist|lapor|daftar',
+    'bidang_pengkhususan': r'speciali[sz]|pengkhususan|bidang', 'elektif': r'elective|elektif',
+    'aliran': r'aliran|school stream|\bsjk'}
+_IDENTITY_WORDS = (r'\b(?:ic|nric|mykad|identity card|kad pengenalan|k/p)\b|address|alamat|\bnama\b'
+                   r"|\b(?:student|candidate|applicant)(?:'s)? (?:full )?name|name of the (?:student|candidate)")
+
+
+def _about(warning: str, fields) -> bool:
+    s = str(warning or '').lower()
+    return any(re.search(_WARN_WORDS[f], s) for f in fields if f in _WARN_WORDS)
+
+
+def _about_identity(warning: str) -> bool:
+    return bool(re.search(_IDENTITY_WORDS, str(warning or '').lower()))
+
+
+def _merge_warnings(first: list, retry: list, filled: list, reasons: list) -> list:
+    """The warnings after a second read that filled ``filled``: the first read's, less those about a field
+    the retry filled (an identity warning always stays: the identity is the first read's); plus the retry's
+    (never about the identity, which is not taken from it; a date-only retry adds only its date warnings).
+    No duplicates."""
+    kept = [w for w in first if _about_identity(w) or not _about(w, filled)]
+    added = [w for w in retry if not _about_identity(w)
+             and ('blank' in reasons or _about(w, REPORTING_DATE_FIELDS))]
+    return list(dict.fromkeys(kept + added))
+
+
+def _second_read(data: dict, read: dict, ocr_text: str, warnings: list):
+    """STEP 2, THE SECOND READ (2.6.0) → (what to stamp, the warnings). At most ONE call (`_retry_reasons`,
+    `_retry_call`), filling blanks only (`_fill_blanks`); a failed or empty answer leaves the first read
+    (and its warnings) as it was. Never a second retry."""
+    info = {'primary_blank': read['p1_blank']}
+    reasons = _retry_reasons(read, data)
     if not reasons:
-        return info, None
+        return info, warnings
     model = retry_model()
     answer = _retry_call(read, ocr_text, model)
     filled = [] if '_error' in answer else _fill_blanks(data, answer, reasons)
     info.update(retry_for=reasons, retry_filled=filled)
     if 'reporting_date' in reasons:
         info['reporting_date_from'] = model if 'reporting_date' in filled else ''
-    # A blank first read's warnings describe the blank read; once the second read filled the core, its own
-    # warnings are the ones that describe the stored fields.
-    rescued = 'blank' in reasons and any(f in filled for f in CORE_FIELDS)
-    return info, (answer.get('warnings') or [] if rescued else None)
+    if filled:
+        warnings = _merge_warnings(warnings, answer.get('warnings') or [], filled, reasons)
+    return info, warnings
 
 
 def _read_stamp(inputs, calls) -> dict:
@@ -478,10 +523,8 @@ def read_offer(ocr_text: str, *, image=None, content_type: str = '', profile_nri
     data, inputs, p1_text = read['data'], read['inputs'], read['p1_text']
     if '_error' in data:
         return {'fields': {}, 'warnings': [], 'error': data['_error'], **_read_stamp(inputs, read['calls'])}
-    warnings = vision._drop_expected_warnings('offer_letter', data.pop('warnings', []) or [])
-    info, retry_warnings = _second_read(data, read, ocr_text)
-    if retry_warnings is not None:
-        warnings = vision._drop_expected_warnings('offer_letter', retry_warnings)
+    info, warnings = _second_read(data, read, ocr_text, data.pop('warnings', []) or [])
+    warnings = vision._drop_expected_warnings('offer_letter', warnings)
     stamp = _read_stamp(inputs, read['calls'])
     stamp['offer_reader_inputs'].update(info)
     merged = read['merged']

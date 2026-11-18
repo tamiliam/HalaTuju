@@ -143,7 +143,7 @@ LETTER = {'candidate_name': 'ZORBEX A/L QUENTARO', 'candidate_nric': '010203-14-
           'offer_date': '3 Mac 2031', 'reporting_date': '', 'reporting_date_label': '', 'warnings': []}
 DATED = {**LETTER, 'reporting_date': '17 Ogos 2031', 'reporting_date_label': 'Tarikh Lapor Diri'}
 #: The live blank read (docs 7395, 7409): programme, institution and intake MISSING, not empty.
-BLANK = {k: v for k, v in LETTER.items() if k not in orr.CORE_FIELDS}
+BLANK = {k: v for k, v in LETTER.items() if k not in ('programme', 'institution', 'intake')}
 #: A second read that found everything — and a DIFFERENT identity, which must never be taken.
 RESCUE = {**LETTER, 'candidate_name': 'QUENTARO A/L ZORBEX', 'candidate_nric': '990101-14-9999',
           'reporting_date': '20 Julai 2031', 'reporting_date_label': 'Tarikh Pendaftaran',
@@ -241,12 +241,39 @@ class TheOfferSecondRead(SimpleTestCase):
             self.assertNotIn(key, shown)
 
     def test_a_partly_filled_first_read_is_not_blank(self):
-        """Programme and institution blank but the intake read: not a failed read, so no retry."""
-        fake = _seam({THREE_EIGHT: [{**DATED, 'programme': '', 'institution': ''}]})
+        """Programme blank but the institution read (or the other way round): not a failed read, no retry."""
+        for gap in ('programme', 'institution'):
+            with self.subTest(gap=gap):
+                fake = _seam({THREE_EIGHT: [{**DATED, gap: ''}]})
+                ex = self._read(fake)
+                self.assertEqual(len(fake.calls), 1)
+                self.assertIs(ex['offer_reader_inputs']['primary_blank'], False)
+
+    def test_programme_and_institution_blank_is_a_blank_read_even_with_an_intake(self):
+        fake = _seam({THREE_EIGHT: [{**DATED, 'programme': '', 'institution': ''}, RESCUE]})
         ex = self._read(fake)
-        self.assertEqual(len(fake.calls), 1)
-        self.assertIs(ex['offer_reader_inputs']['primary_blank'], False)
-        self.assertEqual(ex['fields']['intake'], 'SESI 1-2031/2032')
+        self.assertEqual(len(fake.calls), 2)
+        shown = ex['offer_reader_inputs']
+        self.assertIs(shown['primary_blank'], True)
+        self.assertEqual(shown['retry_for'], ['blank'])
+        self.assertEqual(set(shown['retry_filled']), {'programme', 'institution'})
+        self.assertEqual(ex['fields']['intake'], 'SESI 1-2031/2032')            # the first read's, kept
+
+    def test_a_blank_page_1_is_rescued_even_when_pages_2_3_give_the_intake(self):
+        """Review finding 1: the blank test is on the PAGE-1 answer, before the pages 2-3 merge."""
+        later = {'intake': 'SESI 1-2031/2032', 'reporting_date': '17 Ogos 2031',
+                 'reporting_date_label': 'Tarikh Lapor Diri'}
+        fake = _seam({THREE_EIGHT: [BLANK, later, {**RESCUE, 'intake': 'SESI LAIN'}]})
+        ex = self._read(fake, 'pdf')
+        shown = ex['offer_reader_inputs']
+        self.assertEqual([c['part'] for c in shown['calls']], ['page_1', 'later_pages', 'retry_text_layer'])
+        self.assertIs(shown['primary_blank'], True)
+        self.assertEqual(shown['retry_for'], ['blank'])                       # the date came from pages 2-3
+        f = ex['fields']
+        self.assertEqual((f['programme'], f['institution']), ('IJAZAH SARJANA MUDA QORVANE', 'UNIVERSITI QORVANE'))
+        self.assertEqual(f['intake'], 'SESI 1-2031/2032')                       # pages 2-3 still win
+        self.assertEqual(f['reporting_date'], '17 Aug 2031')
+        self.assertEqual(set(shown['retry_filled']), {'programme', 'institution'})
 
     def test_the_retry_fills_blanks_only(self):
         first = {**BLANK, 'candidate_name': '', 'campus': 'KAMPUS PERLAK', 'offer_date': '3 Mac 2031'}
@@ -291,6 +318,14 @@ class TheOfferSecondRead(SimpleTestCase):
             self.assertEqual(orr.retry_model(), THREE_EIGHT)
             env['OFFER_RETRY_MODEL'] = 'gemini-from-env'
             self.assertEqual(orr.retry_model(), 'gemini-from-env')
+        for value, model in (('  gemini-x-flash \n', 'gemini-x-flash'), ('   ', THREE_EIGHT),
+                             ('gemini-2.5-flash', THREE_EIGHT), (' Gemini-2.5-Flash-Lite', THREE_EIGHT)):
+            with self.subTest(value=value), override_settings(OFFER_RETRY_MODEL=value), \
+                    mock.patch.dict('os.environ', {'OFFER_RETRY_MODEL': ' '}), \
+                    self.assertLogs('apps.scholarship.offer_reader', 'WARNING') as logs:
+                orr.logger.warning('marker')                                    # assertLogs needs one record
+                self.assertEqual(orr.retry_model(), model)
+            self.assertEqual(any('refused' in line for line in logs.output), '2.5' in value)
         constants = [v for k, v in vars(orr).items() if not k.startswith('__') and isinstance(v, str)]
         self.assertFalse([v for v in constants if '2.5' in v])
         self.assertFalse(hasattr(orr, 'REPORTING_DATE_FALLBACK_MODEL'))
@@ -305,9 +340,10 @@ class TheOfferSecondRead(SimpleTestCase):
         self.assertNotIn('images', kw)                                          # text alone, no image
         self.assertNotIn('media_resolution', kw)
         self.assertEqual(kw['models'], [THREE_EIGHT])
-        self.assertIn('--- PAGE 1 ---\nSURAT TAWARAN QORVANE', prompt)
-        self.assertIn('--- PAGE 3 ---', prompt)
-        self.assertNotIn('PAGE FOUR', prompt)                                   # only the pages shown
+        self.assertIn('SURAT TAWARAN QORVANE', prompt)
+        for later_page in ('TARIKH PENDAFTARAN DAN TEMPAT', 'SYARAT TAWARAN DAN YURAN', 'PAGE FOUR'):
+            self.assertNotIn(later_page, prompt)                                # review finding 2: page 1 only
+        self.assertIn('page 1 of a 4-page', prompt)
         self.assertNotIn('IMAGE decides', prompt)
         self.assertEqual(ex['fields']['programme'], 'IJAZAH SARJANA MUDA QORVANE')
         self.assertEqual(shown['pages'], 3)                                     # unchanged by the retry
@@ -326,6 +362,58 @@ class TheOfferSecondRead(SimpleTestCase):
         self.assertEqual([c['part'] for c in ex['offer_reader_inputs']['calls']], ['page_1', 'retry_images'])
         self.assertEqual(len(fake.calls[1][2]['images']), 1)
         self.assertNotIn('media_resolution', fake.calls[1][2])
+
+    def test_a_multi_page_scanned_pdf_retries_on_the_page_1_image_only(self):
+        """Review finding 2: a reply form or a second letter on pages 2-3 never reaches the retry."""
+        from PIL import Image
+        buf = io.BytesIO()
+        pages = [Image.new('RGB', (600, 800), c) for c in ('white', 'gray', 'black')]
+        pages[0].save(buf, format='PDF', save_all=True, append_images=pages[1:])
+        fake = _seam({THREE_EIGHT: [BLANK, {}, RESCUE]})
+        with mock.patch.object(vision, '_call_gemini_json', fake):
+            ex = orr.read_offer('', image=buf.getvalue(), content_type='application/pdf')
+        shown = ex['offer_reader_inputs']
+        self.assertEqual([c['part'] for c in shown['calls']], ['page_1', 'later_pages', 'retry_images'])
+        page_1, retry = fake.calls[0][2]['images'], fake.calls[2][2]['images']
+        self.assertEqual(retry, page_1)                                         # the same page-1 image, alone
+        self.assertNotIn('media_resolution', fake.calls[2][2])                  # at the default resolution
+        self.assertIn('page 1 of a 3-page', fake.calls[2][3])
+        self.assertEqual(ex['fields']['programme'], 'IJAZAH SARJANA MUDA QORVANE')
+
+    def test_a_retry_filled_date_brings_its_own_label(self):
+        """Review finding 4: a first-read label with no date never rides on the retry's date."""
+        first = {**LETTER, 'reporting_date_label': 'Tarikh Mula Kuliah'}
+        for label, kept in (('Tarikh Pendaftaran', 'Tarikh Pendaftaran'), ('', '')):
+            with self.subTest(retry_label=label):
+                second = {**LETTER, 'reporting_date': '20 Julai 2031', 'reporting_date_label': label}
+                ex = self._read(_seam({THREE_EIGHT: [first, second]}))
+                self.assertEqual(ex['fields']['reporting_date'], '20 Jul 2031')
+                self.assertEqual(ex['fields']['reporting_date_label'], kept)
+                self.assertEqual(ex['offer_reader_inputs']['retry_filled'], ['reporting_date', 'reporting_date_label'])
+        ex = self._read(_seam({THREE_EIGHT: [first, LETTER]}))                  # no date: the label stays
+        self.assertEqual(ex['fields']['reporting_date_label'], 'Tarikh Mula Kuliah')
+        self.assertEqual(ex['offer_reader_inputs']['retry_filled'], [])
+
+    def test_a_rescue_keeps_the_identity_warnings_and_drops_only_the_filled_ones(self):
+        """Review finding 5."""
+        first = {**BLANK, 'warnings': ['The IC number is blurred.', "The student's name is partly cut off.",
+                                       'The programme and the institution could not be found.',
+                                       'The page has a coffee stain.', 'The campus line is faint.']}
+        second = {**RESCUE, 'warnings': ['The campus line is faint.', 'The IC number looks different.',
+                                         'The intake session is printed twice.']}
+        ex = self._read(_seam({THREE_EIGHT: [first, second]}))
+        self.assertEqual(ex['warnings'], ['The IC number is blurred.', "The student's name is partly cut off.",
+                                          'The page has a coffee stain.', 'The campus line is faint.',
+                                          'The intake session is printed twice.'])
+
+    def test_a_date_only_retry_drops_the_stale_date_warning_and_adds_only_date_warnings(self):
+        first = {**LETTER, 'warnings': ['The reporting date could not be found.', 'The IC number is blurred.']}
+        second = {**LETTER, 'reporting_date': '20 Julai 2031', 'reporting_date_label': 'Tarikh Pendaftaran',
+                  'warnings': ['The registration date is handwritten.', 'The programme title is faint.']}
+        ex = self._read(_seam({THREE_EIGHT: [first, second]}))
+        self.assertEqual(ex['warnings'], ['The IC number is blurred.', 'The registration date is handwritten.'])
+        ex = self._read(_seam({THREE_EIGHT: [first, {**LETTER, 'warnings': ['Faint.']}]}))   # nothing filled
+        self.assertEqual(ex['warnings'], first['warnings'])
 
     def test_the_text_only_read_re_asks_its_ocr_text(self):
         fake = _seam({THREE_EIGHT: [BLANK, RESCUE]})
