@@ -177,7 +177,8 @@ class TestTheRecord(_Base):
 
     def test_every_declared_and_stage_field_is_a_column_of_the_application(self):
         columns = {f.name for f in ScholarshipApplication._meta.concrete_fields}
-        self.assertEqual(sorted(set(vc.DECLARED_FIELDS + vc.STAGE_FIELDS) - columns), [])
+        self.assertEqual(
+            sorted(set(vc.DECLARED_FIELDS + vc.STAGE_FIELDS + (vc.NOTES_FIELD,)) - columns), [])
 
     def test_every_intake_field_is_a_column_of_the_intake(self):
         columns = {f.name for f in ScholarshipCohort._meta.concrete_fields}
@@ -247,6 +248,16 @@ class TestTheAllowList(_Base):
         after = vc.build_verdict_context(self.app)
         self.assertNotEqual(after.pop('fingerprint'), before.pop('fingerprint'))
         self.assertEqual(after, before)
+
+    def test_no_results_note_text_reaches_the_record(self):
+        """The notes are read for one derived fact, hashed only: no note text, kind or id list is
+        written out."""
+        self.app.results_change_notes = [
+            {'kind': 'refiled_higher', 'document_id': self.slip.id, 'by': 'team',
+             'note': 'made_up_note_text_xyz'}]
+        text = vc.canonical_json(vc.build_verdict_context(self.app))
+        for secret in ('made_up_note_text_xyz', 'refiled_higher', vc.MOVED_TO_HIGHER):
+            self.assertNotIn(secret, text)
 
     def test_the_failed_record_has_its_own_pinned_keys(self):
         self.assertEqual(set(vc.failed_record(vc.BUILD_FAILED)), FAILED_KEYS)
@@ -341,6 +352,35 @@ class TestTheFingerprintHolds(_Base):
                 self._stage(new, stamp)
                 self.assertEqual(self._fp(), before)
 
+    def test_the_stored_order_of_the_start_years_does_not_count(self):
+        """The engine reads the years through `start_year.stored_years`, which sorts them and drops
+        a repeat: another stored order of the same years is the same evidence."""
+        self.app.cohort.allowed_start_years = [2025, 2026]
+        before = self._fp()
+        for same in ([2026, 2025], [2026, 2025, 2026]):
+            with self.subTest(years=same):
+                self.app.cohort.allowed_start_years = same
+                self.assertEqual(self._fp(), before)
+
+    def test_results_notes_the_engine_ignores_do_not_move_it(self):
+        """The engine reads only which documents a `refiled_higher` note names
+        (`wrong_slip._moved_here`). Other notes, other keys, a repeat and an id it can never
+        match do not count."""
+        moved = {'kind': 'refiled_higher', 'document_id': self.slip.id, 'by': 'team',
+                 'at': '2026-03-01T10:00:00+08:00', 'submitted': False}
+        self.app.results_change_notes = [moved]
+        before = self._fp()
+        for notes in (
+                [dict(moved, at='2026-04-01T10:00:00+08:00', submitted=True, by='student')],
+                [moved, moved],
+                [moved, {'kind': 'refiled_spm', 'document_id': self.ic.id, 'note': 'made-up text'}],
+                [moved, {'kind': 'team_split', 'note': 'made-up text'}],
+                [moved, {'kind': 'refiled_higher', 'document_id': str(self.ic.id)}],
+                [moved, 'not a note']):
+            with self.subTest(notes=notes):
+                self.app.results_change_notes = notes
+                self.assertEqual(self._fp(), before)
+
     @override_settings(SECRET_KEY='made-up-key-for-the-pinned-fingerprint-0000000000')
     def test_the_canonical_form_is_pinned(self):
         """A fixed input under a fixed key gives a fixed answer: any change to the canonical form
@@ -349,11 +389,13 @@ class TestTheFingerprintHolds(_Base):
         row.update(id=7, doc_type='ic', vision_fields={'authenticity': {'status': 'genuine'}},
                    uploaded_at=datetime.datetime(2026, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
                    vision_fields_run_at=None, vision_run_at=None)
-        declared = {name: None for name in vc.DECLARED_FIELDS}
+        declared = dict({name: None for name in vc.DECLARED_FIELDS}, **{vc.MOVED_TO_HIGHER: []})
         profile = {name: None for name in vc.PROFILE_FIELDS}
         intake = dict({name: None for name in vc.INTAKE_FIELDS}, cohort_id=None)
         stage = {'submitted_year': 2026, 'pre_submit_status': None, 'in_review_status': True,
                  'decided_status': False}
+        self.assertEqual(set(declared), set(vc.declared_values(self.app)))
+        self.assertEqual(set(intake), set(vc.intake_values(self.app)))
         self.assertEqual(set(stage), set(vc.stage_facts(self.app)))
         self.assertEqual(vc.key_check(), PINNED_KEY_CHECK)
         self.assertEqual(vc.evidence_fingerprint([row], declared, profile, intake, stage),
@@ -362,9 +404,10 @@ class TestTheFingerprintHolds(_Base):
 
 PINNED_KEY_CHECK = 'cad1960c'
 #: Re-pinned in LL4 phase 2 when the profile values joined the payload, and again in the LL4 review
-#: round when the intake rules and the stage facts joined it. The pin is new in branch ll4: no
-#: stored fingerprint was ever computed under either earlier form.
-PINNED_FINGERPRINT = 'b100b11d535ff6c579785254cfaff190bfd8eb9fb9dd882aa514becece925fbc'
+#: round when the intake rules and the stage facts joined it, and again in review round 2 when the
+#: moved-to-higher fact (from the results notes) joined the declared values. The pin is new in
+#: branch ll4: no stored fingerprint was ever computed under any earlier form.
+PINNED_FINGERPRINT = '39e586e15d9d3012574ddded20683c6d5ac646c264d3cdab5b2bc5ec770fe63a'
 
 
 class TestTheFingerprintMoves(_Base):
@@ -441,6 +484,27 @@ class TestTheFingerprintMoves(_Base):
                 setattr(cohort, name, value)
                 self.assertNotEqual(self._fp(), before)
                 setattr(cohort, name, old)
+
+    def test_another_set_of_start_years(self):
+        self.app.cohort.allowed_start_years = [2025, 2026]
+        self._moved(lambda: setattr(self.app.cohort, 'allowed_start_years', [2025, 2027]))
+
+    def test_a_start_year_list_of_junk_is_not_an_empty_one(self):
+        """An entry that is not a year is dropped from the reading but keeps the rule ON
+        (`start_year.rule_on`): it accepts nobody, so it is not the same as no rule."""
+        self.app.cohort.allowed_start_years = []
+        self._moved(lambda: setattr(self.app.cohort, 'allowed_start_years', ['not a year']))
+
+    def test_a_document_moved_to_higher_results(self):
+        """The engine counts a not-yet-read higher-results upload as STPM only when a
+        `refiled_higher` note names it (`wrong_slip._moved_here`)."""
+        self._moved(lambda: setattr(self.app, 'results_change_notes', [
+            {'kind': 'refiled_higher', 'document_id': self.slip.id, 'submitted': False}]))
+
+    def test_a_move_note_naming_another_document(self):
+        self.app.results_change_notes = [{'kind': 'refiled_higher', 'document_id': self.slip.id}]
+        self._moved(lambda: setattr(self.app, 'results_change_notes', [
+            {'kind': 'refiled_higher', 'document_id': self.ic.id}]))
 
     def test_another_intake(self):
         """The same rules under another intake still move it: the case was judged in that one."""

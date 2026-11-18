@@ -12,7 +12,8 @@ closes that gap. It holds, for one application at decision time:
 * ``models``: the version every model in the LL3 register (`model_registry.MODELS`) runs at now.
 * ``fingerprint``: one keyed hash (HMAC-SHA256) over the documents (the fields above PLUS the stored
   read itself: `vision_fields` and the OCR columns) and the short fixed list `DECLARED_FIELDS` of
-  what the student declared that the engine reads, `PROFILE_FIELDS`, the fields of her profile
+  what the student declared that the engine reads (plus the one fact the engine derives from the
+  results notes: `moved_to_higher_ids`), `PROFILE_FIELDS`, the fields of her profile
   the engine reads (name, NRIC, results), `INTAKE_FIELDS`, the intake-year rules the engine reads
   (year, income ceilings), and the stage facts the engine derives from `STAGE_FIELDS` (submission
   year, status buckets: `stage_facts`). VALUES ENTER THE HASH ONLY, never the record.
@@ -46,6 +47,7 @@ from django.utils.crypto import salted_hmac
 
 from .genuineness.bands import stored_authenticity, stored_status
 from .model_registry import MODELS
+from .start_year import rule_on, stored_years
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +74,12 @@ DECLARED_FIELDS = (
     'requirements_snapshot',   # which documents this application is asked for (`requirements`)
     'reporting_date',          # course-start year fallback (`pathway_engine.course_start_year`)
 )
+
+#: The application's results notes column. Its raw value (dated free-form notes, some with the
+#: team's text) is NOT hashed, only the one fact the engine derives from it (`moved_to_higher_ids`),
+#: under the declared key `MOVED_TO_HIGHER`. Kept here so a renamed column fails the column test.
+NOTES_FIELD = 'results_change_notes'
+MOVED_TO_HIGHER = 'moved_to_higher_documents'
 
 #: The application's STAGE columns the engine reads. Their raw values are NOT hashed, only the facts
 #: the engine derives from them (`stage_facts`), so the fingerprint moves when, and only when, one of
@@ -239,9 +247,28 @@ def _document_entry(row):
     }
 
 
+def moved_to_higher_ids(notes):
+    """The ids of the documents a `refiled_higher` note names, in order: the only thing the engine
+    reads from the notes (`wrong_slip._moved_here`: a note of that kind whose `document_id` equals
+    the document's id). Every other note, and every other key of a note (its time, its text, who
+    wrote it), is ignored by the engine and so does not count here. An id the engine's `==` would
+    never match to a document id (text, a fraction) is dropped, as it never matches there."""
+    ids = set()
+    for note in notes if isinstance(notes, list) else []:
+        if not (isinstance(note, dict) and note.get('kind') == 'refiled_higher'):
+            continue
+        value = note.get('document_id')
+        if isinstance(value, int) or (isinstance(value, float) and value.is_integer()):
+            ids.add(int(value))
+    return sorted(ids)
+
+
 def declared_values(application):
-    """`{field: value}` of `DECLARED_FIELDS`, for the hash only. A renamed field raises."""
-    return {name: getattr(application, name) for name in DECLARED_FIELDS}
+    """`{field: value}` of `DECLARED_FIELDS`, plus the moved-to-higher fact (`MOVED_TO_HIGHER`)
+    derived from `NOTES_FIELD`, for the hash only. A renamed field raises."""
+    values = {name: getattr(application, name) for name in DECLARED_FIELDS}
+    values[MOVED_TO_HIGHER] = moved_to_higher_ids(getattr(application, NOTES_FIELD))
+    return values
 
 
 def profile_values(application):
@@ -257,12 +284,19 @@ def profile_values(application):
 def intake_values(application):
     """`{field: value}` of `INTAKE_FIELDS` plus `cohort_id`, for the hash only; `None` when the
     application has no intake. Reading `application.cohort` costs one query unless it is already
-    loaded. A renamed field raises."""
+    loaded. A renamed field raises.
+
+    `allowed_start_years` is hashed as the engine reads it (`start_year.reading`): None while the
+    rule is off (`rule_on`), else its years in order (`stored_years`). So a different stored order
+    or a repeated year does not count, and a list of junk (rule on, no year) differs from none."""
     if application.cohort_id is None:   # the column is required; only an unsaved row lacks it
         return None
     cohort = application.cohort
-    return dict({name: getattr(cohort, name) for name in INTAKE_FIELDS},
-                cohort_id=application.cohort_id)
+    values = dict({name: getattr(cohort, name) for name in INTAKE_FIELDS},
+                  cohort_id=application.cohort_id)
+    years = values['allowed_start_years']
+    values['allowed_start_years'] = stored_years(years) if rule_on(years) else None
+    return values
 
 
 def stage_facts(application):
