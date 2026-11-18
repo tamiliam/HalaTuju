@@ -289,6 +289,37 @@ class TestPredictionEndpointAndOverview(TestCase):
         # an organisation-less super keeps the unfiltered lookup
         self.assertIn('Other Org Namesake', str(self.get(self.super).json()['by_reviewer']))
 
+    def test_a_scope_none_admin_is_counted_over_nothing_when_metrics_is_called_directly(self):
+        from apps.scholarship.models import ScholarshipApplication
+        from apps.scholarship.prediction_metrics import metrics
+        for who in (self.partner, self.finance):
+            body = metrics(ScholarshipApplication.objects.all(), who)
+            self.assertEqual(body['applications'], 0)
+            self.assertEqual(body['overall']['green'], 0)
+            self.assertEqual(body['qc_agreement']['total'], 0)
+            self.assertEqual(body['counted_scope'], 'assigned')
+
+    def test_an_organisationless_lead_matches_no_staff_name(self):
+        from apps.scholarship.models import ScholarshipApplication
+        from apps.scholarship.prediction_metrics import metrics
+        orphan = make_admin('org_admin', owning_org=None)
+        make_application('awaiting_qc', outcome='recommend', cohort=self.cohort,
+                         ai_verdict_snapshot=snap(), officer_verdict=officer(),
+                         verdict_decided_by=self.super.email,
+                         verdict_decided_at=datetime.datetime(2026, 5, 11, 4, 0, tzinfo=UTC),
+                         ai_verdict_engine_version='v1')
+        rows = metrics(ScholarshipApplication.objects.all(), orphan)['by_reviewer']
+        self.assertTrue(rows)
+        self.assertEqual({r['label_key'] for r in rows}, {'unmatched_reviewer'})
+        self.assertEqual({r['id'] for r in rows}, {None})
+
+    def test_a_non_numeric_cohort_reads_like_an_unknown_one(self):
+        unknown = self.get(self.lead, f'{METRICS}?cohort=999999')
+        for value in ('abc', '1x', '-1'):
+            r = self.get(self.lead, f'{METRICS}?cohort={value}')
+            self.assertEqual(r.status_code, unknown.status_code)
+            self.assertEqual(r.json()['applications'], 0)
+
     # ── the gate ──────────────────────────────────────────────────────────────────────────────
     def test_finance_and_partner_are_refused(self):
         self.assertEqual(self.get(self.finance).status_code, 403)

@@ -229,7 +229,7 @@ class TestVerdictMetricsEndpoint(TestCase):
                 cohort=cls.cohort, profile=p, status='interviewed', assigned_to=rev,   # LL1: a reviewer counts their own
                 ai_verdict_snapshot=snap, officer_verdict=ov, verdict_decided_at=timezone.now())
         pu = StudentProfile.objects.create(supabase_user_id='undecided', nric='030199-14-1234', name='U')
-        ScholarshipApplication.objects.create(cohort=cls.cohort, profile=pu, status='interviewed')
+        ScholarshipApplication.objects.create(cohort=cls.cohort, profile=pu, status='interviewed', assigned_to=rev)   # assigned, so only "undecided" excludes it
 
     def setUp(self):
         self.client = APIClient()

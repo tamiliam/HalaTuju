@@ -490,7 +490,7 @@ class AdminVerdictMetricsView(_AdminBase):
         qs = self._org_scoped(ScholarshipApplication.objects.all(), admin)   # super global
         cohort = request.query_params.get('cohort')
         if cohort:
-            qs = qs.filter(cohort_id=cohort)
+            qs = qs.filter(cohort_id=cohort if cohort.isdecimal() else 0)   # not a number = no such cohort (id 0)
         # LL1: the counting and the QC / reviewer reads live in `prediction_metrics` (the Overview's
         # `ai_prediction` section calls the same function); `by_reviewer` is the lead tier's only.
         return Response(metrics(qs, admin))

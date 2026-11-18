@@ -39,6 +39,8 @@ def _staff_by_email(emails, admin):
         return {}
     staff = PartnerAdmin.objects.all()
     if not admin.is_super:
+        if admin.owning_organisation_id is None:
+            return {}   # no organisation, no staff to name (never `IS NULL`, which would match supers)
         staff = staff.filter(owning_organisation_id=admin.owning_organisation_id)   # org-fence
     rows = (staff.annotate(email_lower=Lower('email'))
             .filter(email_lower__in=emails).order_by('-pk').values_list('email_lower', 'pk', 'name'))
@@ -102,10 +104,14 @@ def metrics(applications, admin) -> dict:
 
     ONE narrowing, for both callers: a `review`-only holder (`b40_scope` 'assigned') is counted over
     the applications assigned to them, the same rule the Applications list applies. `counted_scope`
-    says which ('all' / 'assigned') so the page never works it out."""
+    says which ('all' / 'assigned') so the page never works it out. FAILS CLOSED: scope 'none'
+    (partner, finance without `review`) counts nothing, reported as 'assigned' (their share is none)."""
     from .views_admin.base import b40_scope   # in the function: the views package imports this module
-    counted = 'assigned' if b40_scope(admin) == 'assigned' else 'all'
-    if counted == 'assigned':
+    scope = b40_scope(admin)
+    counted = 'all' if scope == 'all' else 'assigned'
+    if scope == 'none':
+        applications = applications.none()
+    elif counted == 'assigned':
         applications = applications.filter(assigned_to=admin)
     decided = applications.filter(verdict_decided_at__isnull=False)
     records = list(decided.values_list(

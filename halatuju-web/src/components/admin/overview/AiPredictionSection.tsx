@@ -1,7 +1,7 @@
 'use client'
 /**
  * LL1: "AI prediction" — how often the reviewers agreed with what the AI predicted, drawn on the
- * Programme Overview (a section the server sends) and at the foot of the Organisation page (all
+ * Programme Overview (a section the server sends) and at the foot of the Programmes page (all
  * programmes together). One block, two homes: `AiPredictionBlock` is the whole thing.
  *
  * ⚠⚠ **THE BROWSER ONLY FORMATS** (`docs/domain-rules.md`, serve — never derive in the browser).

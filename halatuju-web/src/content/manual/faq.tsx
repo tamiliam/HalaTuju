@@ -69,7 +69,8 @@ export const FAQ: Record<Audience, QA[]> = {
         shows the count and no percentage. A Pass or Fail tap records the student&rsquo;s fact. It does not
         rate the AI. Only organisation admins see the <strong>By reviewer</strong> table. A reviewer sees
         numbers for their own assigned applicants only. <strong>Decision</strong> is the funder&rsquo;s choice
-        and is counted apart from the facts.</>,
+        and is counted apart from the facts. It sits on a programme&rsquo;s <strong>Overview</strong> and at
+        the foot of the <strong>Programmes</strong> page.</>,
     },
     {
       q: <>I&rsquo;m stuck, or something looks wrong — whom do I contact?</>,
