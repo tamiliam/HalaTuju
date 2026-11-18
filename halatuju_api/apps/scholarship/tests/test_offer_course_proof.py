@@ -56,23 +56,33 @@ class BracketOptionListTest(TestCase):
     def test_the_804_printed_code_matches(self):
         self.assertEqual(_cid(LETTER_804, ''), 'US6310001')
 
-    def test_the_base_name_alone_matches(self):
-        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN'), 'US6310001')
+    def test_the_menu_opens_only_under_a_printed_code(self):
+        # A name-only letter keeps TD-150: the options read as a specialisation it never states.
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN'))
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI) DENGAN KEPUJIAN'))
 
     def test_the_base_name_with_one_listed_option_matches(self):
-        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI) DENGAN KEPUJIAN'), 'US6310001')
-        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN (SAINS POLITIK)'), 'US6310001')
+        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI) DENGAN KEPUJIAN - US6310001'),
+                         'US6310001')
+        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN (SAINS POLITIK) - US6310001'),
+                         'US6310001')
+
+    def test_words_from_two_options_are_not_a_clean_match(self):
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI DAN SAINS POLITIK) - US6310001'))
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI, ANTROPOLOGI) - US6310001'))
 
     def test_an_option_not_in_the_list_is_not_a_clean_match(self):
         self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (PSIKOLOGI) DENGAN KEPUJIAN'))
         self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (PSIKOLOGI) - US6310001', ''))
 
     def test_a_bracket_mid_name(self):
-        self.assertEqual(_cid('SARJANA MUDA SASTERA (SEJARAH) DENGAN KEPUJIAN'), 'US6220001')
-        self.assertEqual(_cid('SARJANA MUDA SASTERA DENGAN KEPUJIAN'), 'US6220001')
+        self.assertEqual(_cid('SARJANA MUDA SASTERA (SEJARAH) DENGAN KEPUJIAN - US6220001'), 'US6220001')
+        self.assertEqual(_cid('SARJANA MUDA SASTERA DENGAN KEPUJIAN - US6220001'), 'US6220001')
+        self.assertIsNone(_cid('SARJANA MUDA SASTERA DENGAN KEPUJIAN'))
 
     def test_the_core_name_is_still_required(self):
         self.assertIsNone(_cid('SARJANA MUDA EKONOMI DENGAN KEPUJIAN'))
+        self.assertIsNone(_cid('SARJANA MUDA EKONOMI DENGAN KEPUJIAN - US6310001'))
 
     def test_labels_describe_reads_the_option_list(self):
         from apps.scholarship.services.offer_link import labels_describe

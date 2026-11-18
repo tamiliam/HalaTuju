@@ -50,6 +50,9 @@ _LOCAL_CODE_RE = re.compile(r'^\s*[A-Z]{2,3}\d{3}\s+')
 _FACULTY_TAIL_RE = re.compile(r'\s(?:FAKULTI|FACULTY|KULLIYYAH|PUSAT PENGAJIAN)\b.*$', re.I | re.S)
 #: The catalogue's campus parenthetical.
 _CAMPUS_PAREN_RE = re.compile(r'\((?:kampus|cawangan|campus)\b[^)]*\)', re.I)
+#: The catalogue's option MENU: a square-bracketed list of two or more options split by " / "
+#: ("[Antropologi dan Sosiologi / Ekonomi / Sains Politik]"). Read only under a printed code (``_names``).
+_MENU_RE = re.compile(r'\[[^\]/]*(?:/[^\]/]*)+\]')
 _TERTIARY = ('asasi', 'pismp', 'diploma', 'degree')
 
 
@@ -243,7 +246,7 @@ def _printed_course(programme, institution, issuer, index=None):
         row = _course_row(code, institution, issuer, index)
         if row is None:
             continue
-        if not _names(pj, row['course_name']):
+        if not _names(pj, row['course_name'], coded=True):
             return {}
         rows = _campus_rows(code)
         place = letter_place(code, institution, issuer, rows=rows, index=index)
@@ -520,35 +523,35 @@ def _one_edit(a, b):
     return any(long_[:i] + long_[i + 1:] == short for i in range(len(long_)))
 
 
-#: A bracketed OPTION LIST in a catalogue name (owner, 2026-11-18, #804): "Sarjana Muda Sains
-#: Kemasyarakatan dengan Kepujian [Antropologi dan Sosiologi / Ekonomi / Sains Politik / Pengajian
-#: Pembangunan]". The words inside are the options a student may take within ONE course, never a
-#: specialisation the letter failed to state — read as tokens, they made every letter for the course
-#: a "less specific" one (TD-150) and a printed code was refused.
-_OPTION_LIST_RE = re.compile(r'\[([^\]]*/[^\]]*)\]')
-
-
-def _names_option_list_course(pj, base):
-    """The letter names the course WITHOUT its option list (every word of the rest) plus at most the
-    words of ONE listed option. A word in no listed option ("Psikologi") never matches this way."""
-    m = _OPTION_LIST_RE.search(base)
-    if not m:
-        return False
-    core = distinctive_tokens(_OPTION_LIST_RE.sub(' ', base)) - _NON_SPECIFYING_WORDS
+def _states_one_option(pj, spec, menu):
+    """Under a printed code, does the letter state the course WITHOUT its menu (every word of the
+    rest) plus at most the words of ONE listed option? A word in no listed option ("Psikologi"),
+    or words from two options, never pass."""
+    core = distinctive_tokens(_MENU_RE.sub(' ', spec)) - _NON_SPECIFYING_WORDS
     letter = pj - _NON_SPECIFYING_WORDS
     if not core or not core <= letter:
         return False
     extra = letter - core
-    return not extra or any(extra <= distinctive_tokens(o) for o in m.group(1).split('/'))
+    return not extra or any(extra <= distinctive_tokens(o) for o in menu.group(0)[1:-1].split('/'))
 
 
-def _names(pj, course_name):
+def _names(pj, course_name, coded=False):
     """Do the letter's words name this catalogue course? Aligned, and not a specialisation the
-    letter never states (TD-150); the PISMP aliran suffix is not a specialisation, and nor is a
-    bracketed option list (``_names_option_list_course``)."""
+    letter never states (TD-150); the PISMP aliran suffix is not a specialisation.
+
+    ``coded`` - the course is already fixed by its own UPU code: the letter PRINTS it
+    (``_printed_course``), or stored labels are checked against a pinned course
+    (``offer_link.labels_describe``). Only then is a catalogue option list in square brackets
+    ("... Kemasyarakatan dengan Kepujian [Antropologi dan Sosiologi / Ekonomi / ...]") a MENU the
+    student picks from later (#804, owner R7, 2026-11-18): the letter must state the rest of the name
+    and at most ONE option (``_states_one_option``), and the menu is left out of the TD-150 test.
+    Alignment still reads the whole name. A name-only match never opens the menu, so TD-150 refuses it."""
     base = catalogue_name(course_name)
-    if _names_option_list_course(pj, base):
-        return True
+    spec = _ALIRAN_SUFFIX_RE.sub('', base)
+    menu = _MENU_RE.search(spec) if coded else None
+    if menu:
+        if not _states_one_option(pj, spec, menu):
+            return False
+        spec = _MENU_RE.sub(' ', spec)
     return (_name_aligns(pj, distinctive_tokens(base))
-            and not names_a_specialisation_the_letter_does_not(
-                pj, distinctive_tokens(_ALIRAN_SUFFIX_RE.sub('', base))))
+            and not names_a_specialisation_the_letter_does_not(pj, distinctive_tokens(spec)))

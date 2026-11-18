@@ -374,3 +374,47 @@ class CentreLinesDoNotOutrankTheLetterheadTest(TestCase):
         # One distinctive word ("Sains", "Teknologi") never names Universiti Sains / Teknologi Malaysia.
         self.assertIsNone(_cid('ASASI SAINS HAYAT', 'Pusat Asasi Sains'))
         self.assertNotEqual(_cid('Asasi Sains', 'Pusat Persediaan Sains dan Teknologi (PPST)'), 'RA-UTM-ASASI')
+
+
+class PrintedCodeOpensTheMenuTest(TestCase):
+    """#804 (2026-11-18): a catalogue "[a / b / c]" option list is a MENU, not a specialisation — but
+    only when the letter PRINTS that course's own UPU code. A name-only letter keeps TD-150 as before."""
+
+    MENU = ('Sarjana Muda Sains Kemasyarakatan dengan Kepujian '
+            '[Antropologi dan Sosiologi / Ekonomi / Sains Politik / Pengajian Pembangunan]')
+    USM = 'Universiti Sains Malaysia'
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_realign_catalogue()
+        usm = Institution.objects.create(institution_id='RA-USM', institution_name=cls.USM,
+                                         acronym='USM', type='IPTA', state='Pulau Pinang')
+        ft = FieldTaxonomy.objects.get(key='realign')
+        for cid, name in (('US6310001', cls.MENU),
+                          # bracket-free, a real specialisation (parenthetical) the letter may not name
+                          ('US6481002', 'Sarjana Muda Sains Komputer (Rangkaian Komputer) dengan Kepujian')):
+            sc = StpmCourse.objects.create(course_id=cid, course_name=name, university=cls.USM,
+                                           institution=usm, field_key=ft)
+            StpmRequirement.objects.create(course=sc, req_bumiputera=False)
+
+    def test_a_printed_code_resolves_a_bracket_menu_course(self):
+        prog = 'SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001'
+        self.assertEqual(match_offer_course(prog, 'UNIVERSITI SAINS MALAYSIA KAMPUS INDUK'),
+                         {'course_id': 'US6310001', 'course_name': self.MENU, 'institution': self.USM})
+        self.assertEqual(_cid(prog, 'KAMPUS INDUK', 'UNIVERSITI SAINS MALAYSIA'), 'US6310001')
+        self.assertEqual(_cid(prog, 'USM KAMPUS INDUK'), 'US6310001')       # the acronym line, as printed
+        self.assertEqual(op.resolve_catalogue_course(prog, self.USM)['course_id'], 'US6310001')
+
+    def test_the_same_letter_without_the_code_is_still_refused(self):
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN', self.USM))
+
+    def test_a_printed_code_at_a_different_named_institution_is_still_refused(self):
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001', UM))
+
+    def test_a_letter_word_outside_the_course_is_still_refused_under_the_code(self):
+        # The menu leaves only the specialisation test; alignment still reads the whole name.
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (FIZIK) - US6310001', self.USM))
+
+    def test_a_real_specialisation_the_letter_does_not_name_is_still_refused(self):
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KOMPUTER DENGAN KEPUJIAN - US6481002', self.USM))
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KOMPUTER DENGAN KEPUJIAN', self.USM))

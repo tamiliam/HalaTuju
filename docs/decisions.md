@@ -1,5 +1,61 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-18 — Course match: a bracket option list is a menu, only under a printed code (#804)
+
+Branch reader-260, not live. No migration. Services: api.
+
+A catalogue name may end in a square-bracketed option list, "Sarjana Muda Sains Kemasyarakatan dengan Kepujian
+[Antropologi dan Sosiologi / Ekonomi / Sains Politik / Pengajian Pembangunan]" (US6310001, USM; 4 of 1,112
+`stpm_courses`). The student picks an option later, so the list is a MENU, not a specialisation. TD-150 read its words
+as one and refused #804's letter, which prints that exact code. **Ruling:** when the letter prints the course's own UPU
+code (`_printed_course`), the bracket list is left out of the TD-150 specialisation test. Alignment still reads the
+whole name, so a letter word outside the course is refused. A name-only letter keeps TD-150 / TD-332 exactly as before,
+and the other-institution, level and campus rules are unchanged.
+
+## 2026-11-18 — Offer reader 2.6.0: a blank read is a failed read; one second read on a current model, never 2.5
+
+**Approved by the owner on 2026-11-18** as the immediate fix. Branch reader-260, not live. No migration. Services: api.
+Changes the offer-letter line of the 2026-11-16 Option A entry below.
+
+**Why.** On 2.5.0, 3.8 Flash sometimes returned a valid answer with `programme`, `institution` and `intake` all
+blank (4 of 32 live reads, against 0 of 161 on 2.4.0; docs 7395, 7409, 7416, 7687). On those reads the three keys
+were MISSING from the answer, not empty: the schema listed no `required` fields, so the model could drop them. The
+input was not the cause (for 7409 the 2.5 re-ask was shown byte-identical input and read it). The Option A date
+re-ask went to `gemini-2.5-flash`, which has a retirement date, so a 2.5 fall-through is not acceptable.
+
+**Rulings**
+
+- `OFFER_SCHEMA` lists every field as `required` (and `LATER_SCHEMA` its fields). An empty string is still the answer
+  when the letter does not print a value.
+- **One second read**, on one model only: setting `OFFER_RETRY_MODEL` (env-overridable, default `gemini-3.8-flash`).
+  It runs when 3.8 (the cascade head) answered and either the PAGE-1 answer has programme and institution both blank
+  (a missing key counts as blank; judged before the pages 2-3 merge, so an intake from a later page cannot hide a blank
+  page 1) or the reporting date is still blank after the merge (the Option A date fallback, now on this setting). One
+  call serves both reasons; there is never a second retry. The setting is stripped; a blank value or one containing
+  `gemini-2.5` (also `models/gemini-2.5-flash`) falls back to the default with a logged warning.
+- **A different input, page 1 only:** a PDF whose page 1 has a text layer of at least 400 non-space characters
+  (`RETRY_MIN_TEXT_CHARS`) is re-read from page 1's text alone (no image); a photo, a scanned PDF or a header-only
+  layer (the body an image) from the page-1 image at the default media resolution. Never pages 2-3: a reply form
+  or a second letter there must not supply the programme, institution, campus or issuer (pages 2-3 dates stay with the
+  existing later-pages read). The text-only path re-asks its OCR text.
+- **Fill blanks only.** The first read always wins. A blank read may be filled in any field except the identity (name,
+  IC, IC source, address: a wrong IC blocks as a mismatch). A date-only retry fills the reporting date and its label
+  only. A date the retry fills brings the retry's label with it (a first-read label without a date is replaced; the
+  label feeds the reporting-date bonus).
+- **Warnings** after a retry that filled something: EVERY first-read warning stays (fix round 4, after three
+  review rounds in which keyword dropping kept losing real red flags; a stale "not found" beside a filled field is only
+  a reviewer note), plus the retry's, never its identity ones and only its date ones after a date-only retry, without
+  duplicates; warnings are coerced to strings, so a malformed one never breaks the read.
+- Recorded in `offer_reader_inputs`: `primary_blank` (always), `retry_for`, `retry_filled`, `reporting_date_from` (when
+  the date was asked), and `calls` parts `retry_text_layer` / `retry_images` / `retry_text`. A 3.8 error that fell
+  through the cascade is handled as before (no second read). No model name 2.5 is left in the offer reader.
+- `OFFER_READER_VERSION` 2.5.0 -> 2.6.0. No other stamp moves: offer genuineness reads the OCR text, not these fields.
+- **Long-term direction (not built):** OCR + plain rules first, the AI read only below a confidence threshold. The
+  reader is split into steps (`_ai_read`, then `_second_read`) so that stage can slot in front.
+
+**Cost.** Nothing extra on a full read. A blank read or a read with no reporting date costs one more 3.8 call: text
+only for a text-layer PDF, or the page-1 image at the default resolution (about 258 tokens).
+
 ## 2026-11-16 — THANKS-SCHOLARS: a graduation thank-you is scholar maintenance, decided on the scholar file
 
 Branch thanks-scholars, not pushed. No migration. Services: both. Supersedes the THANKS entry below (the `review` key
