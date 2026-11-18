@@ -2,6 +2,10 @@
 
 Status: APPROVED by the owner on 2026-11-18. Nothing is built yet. The owner sets the start date of each sprint.
 
+Updated 2026-11-18 (same day, two owner ideas, owner chose option A):
+1. Humans make mistakes too. The tap means "is this fact true for the student?" (owner ruling A). The words on the box change (LL2). A second person checks a small list (new sprint LL2b).
+2. The scoreboard is a trend line on the Organisation Overview and the Programme Overview (LL1), not a hidden card for the super admin.
+
 ## Context
 
 The owner asked for an audit of the HalaTuju prediction chain (2026-11-18).
@@ -21,6 +25,13 @@ The audit found that the system **stores** the lesson but does not **use** it.
 | Inputs of a decided case | Not frozen. Documents change after the decision. |
 | Version bump when logic changes | Habit only. No check. One admitted miss. |
 | Stored ID-card results with no version | 1,053 |
+| Reviewers who made the 21 "wrong green" taps | 6 of 23 (one reviewer made 10) |
+| Cases with a failed fact, but the student was accepted | 5 |
+| Cases with all four facts passed, but the student was declined | 39 (can be normal: merit, interview) |
+
+**The human answer is not always the true answer.** The box title is "Rate AI Prediction" and the buttons say "Pass" / "Fail".
+The code reads the tap as "this fact is true for the student". A reviewer can read it as "the AI did well".
+The stored data cannot tell the two readings apart. So the 3.9% is not a safe number until a second person checks a sample.
 
 So today we cannot say: "version X is better than version Y".
 We also cannot trace an error to the version that made it, in every case.
@@ -35,23 +46,25 @@ The owner approved a plan for steps 1 to 3 of the audit list:
 
 ## Roadmap in one view
 
-Five small sprints. Code name **LL** (learning loop).
+Six small sprints. Code name **LL** (learning loop).
 
 | Sprint | Deliverable | Audit step | Size | Reviewer sees a change? | DB migration |
 |---|---|---|---|---|---|
-| LL1 | Scoreboard on, with two honest numbers | 1 | Low | No (owner view only) | None |
-| LL2 | One-tap reason on "green → fail" | 2 | Low | Yes (one tap, rare) | None |
+| LL1 | Scoreboard on: trend line on the two Overview pages | 1 | Medium | Yes (a new section to read) | None |
+| LL2 | One clear question + one-tap reason on "green → fail" | 2 | Low | Yes (new words, one rare tap) | None |
+| LL2b | Human check: a second person checks a small list | 2 | Medium | QC / leads only | Decide at sprint start |
 | LL3 | Version guard + one version register | 3 (force) | Medium | No | None |
 | LL4 | Record what fed each decision | 3 (freeze) | Medium | No | One additive |
 | LL5 | Replay: score each version against human answers | 3 (replay) | Medium | No | None |
 
-**Why five:** each sprint is one deliverable that the owner can check alone.
+**Why six:** each sprint is one deliverable that the owner can check alone.
 Each sprint touches fewer than 20 files. LL1, LL2 and LL3 do not depend on each other.
+LL2b needs LL2 (the question must be clear before a second person judges the answers).
 LL4 needs LL3. LL5 needs LL4 and the A5 replay harness.
 
 ```
-LL1 ──────────────┐
-LL2 ──────────────┤
+LL1 ──────────────────────┐
+LL2 ──► LL2b ─────────────┤
 LL3 ──► LL4 ──► LL5 ◄── A5 replay harness (sprints R1, R2 — already designed)
 ```
 
@@ -59,7 +72,8 @@ LL3 ──► LL4 ──► LL5 ◄── A5 replay harness (sprints R1, R2 — 
 
 ## Sprint LL1 — Scoreboard on
 
-**Goal.** The owner sees, for each fact, how often the engine is wrong and how often it is too careful.
+**Goal.** Staff see, on the Organisation Overview and the Programme Overview, how well the AI predicts, and how that moves with time.
+The message: the AI prediction matters.
 
 **Why first.** The data exists. No reviewer work. No database change.
 
@@ -67,19 +81,28 @@ LL3 ──► LL4 ──► LL5 ◄── A5 replay harness (sprints R1, R2 — 
 - [audit.py](../../halatuju_api/apps/scholarship/audit.py) — extend `override_metrics`. Keep every existing key. Add:
   - per fact: `green`, `green_failed` (wrong green), `unsure`, `unsure_passed` (too careful);
   - `by_version`: the same four counts for each engine version;
+  - `by_month`: the same four counts for each month of decision (this is the trend line);
+  - `by_reviewer`: the same four counts for each reviewer. The endpoint returns this key to leads only (super admin, org admin; confirm the permission key at sprint start);
   - `doubt_codes`: for each `unresolved` code in the stored snapshot, how many times the human passed and failed that fact.
 - [views_admin/verdict.py:472](../../halatuju_api/apps/scholarship/views_admin/verdict.py#L472) `AdminVerdictMetricsView` — no logic change. It already returns `override_metrics(rows)`.
 - [admin-api/verdict.ts:14](../../halatuju-web/src/lib/admin-api/verdict.ts#L14) `VerdictMetrics` type — add the new keys.
 - [cockpitVerdict.ts:239](../../halatuju-web/src/lib/cockpitVerdict.ts#L239) `verdictReliability` — map the new keys.
 - [AiReliabilityCard.tsx](../../halatuju-web/src/components/AiReliabilityCard.tsx) — show two numbers for each fact, the doubt table, and the count behind each number.
-- [admin/scholarship/page.tsx:31](../../halatuju-web/src/app/admin/scholarship/page.tsx#L31) and `:338` — un-hide the card, **for super admin only**.
+- Placement (owner, 2026-11-18): a new "AI prediction" section on **both** Overview pages:
+  - Programme Overview: [admin/programme/overview/page.tsx](../../halatuju-web/src/app/admin/programme/overview/page.tsx), as a new entry in `SECTION_RENDERERS` (`src/components/admin/overview/OverviewSections.tsx`), so it also works with `CustomiseLayout`. It reads `verdict-metrics/?cohort=`.
+  - Organisation Overview: [admin/organisation/page.tsx](../../halatuju-web/src/app/admin/organisation/page.tsx). It reads the same endpoint with no cohort.
+  - The old hidden mount at [admin/scholarship/page.tsx:31](../../halatuju-web/src/app/admin/scholarship/page.tsx#L31) and `:338` is deleted.
+- Check at sprint start: the roles that can open each Overview page against the roles that the endpoint permits. Partner and finance stay refused.
 - `src/messages/{en,ms,ta}.json` — keys under `admin.scholarship.reliability`.
 - Stitch screen first (HalaTuju Stitch project `10844973747787673276`). Owner approves the picture before template code.
 
 **Design rules.**
 - Always show the count, not only the percent ("6 of 84").
 - Under 30 decisions for a row: show the label "few cases". No colour.
-- Super admin only. Reason: a reviewer who sees "the engine is right 96%" can stop checking.
+- The trend line shows one point for each month, with its count. Some months are small (September 2026 had 2 decisions).
+- Everyone who can open the Overview sees the AI trend. The numbers for each reviewer are for leads only.
+- Until LL2b is live, the section carries one line: "Not yet checked by a second person."
+- Risk to watch: a reviewer who sees "the AI is right 96%" can stop checking. LL2b measures this (reviewer against the second look).
 - The doubt table answers "which doubts do humans always pass?" with zero reviewer effort.
   Example from live data: `str_not_current` → 30 pass, 3 fail. `academic_missing_subjects` → 9 pass, 0 fail.
 
@@ -90,13 +113,24 @@ LL3 ──► LL4 ──► LL5 ◄── A5 replay harness (sprints R1, R2 — 
 - On the live site the card totals equal a read-only count query (692 fact decisions on 2026-11-18, more later).
 - Trailers: `Services: both`. No migration.
 
-**Complexity.** Low. About 10 files. Sonnet builds. Fresh Sonnet reviewer.
+**Complexity.** Medium. About 14 files. Sonnet builds. Fresh Sonnet reviewer.
 
 ---
 
-## Sprint LL2 — One-tap reason on "green → fail"
+## Sprint LL2 — One clear question + one-tap reason on "green → fail"
 
-**Goal.** When a human fails a fact that the engine called green, the human gives the cause with one tap.
+**Goal.** Every reviewer reads the tap the same way. When a human fails a fact that the engine called green, the human gives the cause with one tap.
+
+**Owner ruling (2026-11-18, option A).** The tap is about the **student**: "Is this fact true?"
+It is not a rating of the AI. The system works out if the AI was right.
+The stored value does not change, so the 173 old answers stay valid.
+
+**The clear question (new).**
+- Change the box title `admin.scholarship.recordVerdict.rateTitle` (today "Rate AI Prediction") to words about the student. Draft: "Check the four facts".
+- Add one help line under the title. Draft: "Pass = this fact is true for the student. Fail = it is not true, or not proven."
+- The owner approves the final words in en, ms and ta before the build.
+- A soft warning when a fact is Fail and the decision is Accept: "One fact failed. Do you want to accept?" It warns. It does not block.
+- Files: [RateAndEstimate.tsx:52](../../halatuju-web/src/app/admin/scholarship/%5Bid%5D/view/RateAndEstimate.tsx#L52), `view/DecisionCard.tsx`, `src/messages/{en,ms,ta}.json`.
 
 **Why only this case.** It is about 4 in 100 fact decisions. It is the dangerous error.
 The opposite case ("too careful") needs no tap. The doubt table in LL1 already explains it.
@@ -123,7 +157,39 @@ The opposite case ("too careful") needs no tap. The doubt table in LL1 already e
 - Owner phone check before publish (the reviewer flow changes).
 - Trailers: `Phone-check:`, `Services: both`. No migration.
 
-**Complexity.** Low. About 12 files. Sonnet builds. Fresh reviewer.
+**Complexity.** Low. About 14 files. Sonnet builds. Fresh reviewer.
+
+---
+
+## Sprint LL2b — Human check (a second look)
+
+**Goal.** A second, senior person checks a small list of decided cases. We then know when the first human was wrong, and when the AI was wrong.
+
+**Why.** 6 of 23 reviewers made all 21 "wrong green" taps. One reviewer made 10. Only a second look can say who was right.
+
+**Scope.**
+- The audit list, built by the system with no reviewer work:
+  1. every case where the engine said green and the human said fail;
+  2. every case with a failed fact and an "accept" decision;
+  3. a random sample of the other cases (size: decide at sprint start; draft 1 in 10).
+- The second person records, for each fact on the list: "I agree with the reviewer" or "I do not agree".
+- Where: reuse the QC step if it fits (`views_admin/qc_checks.py`, `view/QcPanel.tsx`). Decide at sprint start. Do not add a new page if the QC step can carry it.
+- Storage: prefer a key in existing JSON (no migration). Decide at sprint start from the reader check.
+- `audit.py` + the Overview section gain "checked" numbers:
+  - AI against the second look (the true score of the AI);
+  - each reviewer against the second look (leads only).
+- First batch: the 21 + 5 cases that exist on 2026-11-18.
+- Reviewer Guide + FAQ updated in the same change.
+
+**Not in scope.** The second look does not change a student's decision. A wrong decision goes through the normal re-open route, by a person.
+
+**Acceptance.**
+- pytest: the list holds the three groups; a second look is saved; the "checked" numbers use it; a reviewer cannot second-look their own case.
+- Role tests: only QC and leads can record a second look.
+- Owner phone check before publish.
+- Trailers: `Phone-check:`, `Services: both`.
+
+**Complexity.** Medium. About 15 files. Opus builds (it touches the decision flow). Adversarial review before push.
 
 ---
 
@@ -203,6 +269,7 @@ The opposite case ("too careful") needs no tap. The doubt table in LL1 already e
   ([2026-11-13-a5-replay-design.md](2026-11-13-a5-replay-design.md); code at `halatuju_api/apps/scholarship/eval/replay/`).
 - The lens runs today's engine over decided cases whose evidence fingerprint (LL4) did not change, and compares the result with `officer_verdict`.
 - Same five read-only safety layers as A5 (read-only role, `BEGIN READ ONLY`, always roll back, statement filter, no keys). Session pooler port 5432, never 6543.
+- Where a second look exists (LL2b), the second look is the true answer. The report shows both scores.
 - Output: counts and hashes only.
 - When it runs: after a release that changes a model version, and once a week. Not before every publish.
   Reason: production data cannot be copied to a home machine, and the candidate code is not on a server before `live` moves.
@@ -220,14 +287,28 @@ Cases decided before LL4 have no fingerprint. They enter the report as "evidence
 
 ---
 
+## Models for the build (house standard: `Settings/_workflows/credit-discipline.md`)
+
+Every agent call names its model. The lead stays thin. One phase for each build agent. At most 2 builders at once in the project.
+
+| Job | Model |
+|---|---|
+| Explore the code, run the gates and the test queue | Haiku |
+| Build LL1 and LL2 (routine: display, words, one tap) | Sonnet |
+| Build LL2b, LL3, LL4, LL5 (decision flow, identity scoring files, replay safety) | Opus |
+| Read the diff of LL1 and LL2 (a fresh agent, not the builder) | Sonnet |
+| Read the diff of LL2b, LL3, LL4, LL5 (fresh agent, adversarial review before the push) | Opus |
+| Look at a picture or a PDF (Stitch screen, screenshot) | A short-lived agent |
+
 ## Owner steps (the only work for the owner)
 
 1. Approve this roadmap.
 2. LL1: approve the Stitch picture. Say yes to the publish.
-3. LL2: phone check. Say yes to the publish.
-4. LL3: say yes to the publish.
-5. LL4: apply one migration by hand. Say yes to the publish.
-6. LL5: run the replay job. Read one report.
+3. LL2: approve the new words (en, ms, ta). Phone check. Say yes to the publish.
+4. LL2b: name the second person (or persons). Phone check. Say yes to the publish.
+5. LL3: say yes to the publish.
+6. LL4: apply one migration by hand. Say yes to the publish.
+7. LL5: run the replay job. Read one report.
 
 ## Not in this plan
 
@@ -247,6 +328,5 @@ Cases decided before LL4 have no fingerprint. They enter the report as "evidence
 
 ## After approval
 
-- Copy this roadmap to `Production/HalaTuju/docs/plans/2026-11-18-learning-loop-roadmap.md`.
-- Add LL1–LL5 to the HalaTuju queue. The owner sets the dates.
+- Add LL1–LL5 (and LL2b) to the HalaTuju queue. The owner sets the dates.
 - Start LL1 with `Settings/_workflows/sprint-start.md`.
