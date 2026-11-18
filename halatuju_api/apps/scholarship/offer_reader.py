@@ -75,8 +75,8 @@ absent, not empty) and the read was kept as if it were whole. So:
     does not print it), so the model answers each key instead of dropping it.
   * **One second read** (`_second_read`) on ONE model, `retry_model()` (`OFFER_RETRY_MODEL`, env-overridable,
     default 3.8 Flash; a 2.5 value is refused), shown PAGE 1 ONLY, as a DIFFERENT input from the first read: a
-    PDF whose page 1 has a text layer → that text alone (no image); a photo or a scanned PDF → the page-1
-    image at the DEFAULT media resolution. Never pages 2-3: a reply form or a second letter there must not
+    PDF whose page 1 has a text layer of `RETRY_MIN_TEXT_CHARS`+ → that text alone (no image); a photo, a
+    scanned PDF or a header-only layer → the page-1 image at the DEFAULT media resolution. Never pages 2-3: a reply form or a second letter there must not
     supply the programme, institution, campus or issuer. It runs only when the preferred model
     (`MODEL_CASCADE[0]`) answered — a 3.8 error that fell through the cascade is handled as before — and
     (a) the PAGE-1 answer, BEFORE the pages 2-3 merge, has all of `CORE_FIELDS` (programme, institution)
@@ -86,7 +86,7 @@ absent, not empty) and the read was kept as if it were whole. So:
     date and its label only. A date the retry fills brings ITS label with it (the label feeds the
     reporting-date bonus). One call serves both; never a second retry. It fills blanks only: the first
     read always wins. Warnings: the first read's stay, except those about a field the retry filled
-    (identity warnings always stay); the retry's are added (never its identity ones). Recorded as
+    (identity and red-flag warnings always stay); the retry's are added (never its identity ones). Recorded as
     `primary_blank` (always; the page-1 test), `retry_for`, `retry_filled`, `reporting_date_from` (when the
     date was asked) and `calls` parts `retry_*` (never counted as pages).
   * The text-only path has no other input, so its second read re-asks the same OCR text.
@@ -145,6 +145,9 @@ LATER_SCHEMA = {'type': 'object', 'properties': {
     'required': list(LATER_FIELDS)}
 #: The second read's model when the setting is unset (2.6.0; never a 2.5 model — it has a retirement date).
 DEFAULT_RETRY_MODEL = 'gemini-3.8-flash'
+#: A page-1 text layer shorter than this (non-space characters: a header, the body an image) is too thin
+#: for the text second read; the page-1 image is retried instead.
+RETRY_MIN_TEXT_CHARS = 200
 #: Both blank in the PAGE-1 answer (before the pages 2-3 merge) = a failed read (the 2.5.0 blank answers had
 #: these and the intake missing), so the second read runs. The intake is left out: pages 2-3 can supply it.
 CORE_FIELDS = ('programme', 'institution')
@@ -358,7 +361,7 @@ def retry_model() -> str:
     from django.conf import settings
     model = (str(getattr(settings, 'OFFER_RETRY_MODEL', '') or '').strip()
              or os.environ.get('OFFER_RETRY_MODEL', '').strip())
-    if model.lower().startswith('gemini-2.5'):
+    if 'gemini-2.5' in model.lower():                               # "models/gemini-2.5-flash" too
         logger.warning('OFFER_RETRY_MODEL=%s refused (2.5 Flash is retiring); using %s', model,
                        DEFAULT_RETRY_MODEL)
         return DEFAULT_RETRY_MODEL
@@ -412,14 +415,15 @@ def _retry_reasons(read: dict, data: dict) -> list:
 
 def _retry_call(read: dict, ocr_text: str, model: str) -> dict:
     """The second read's ONE call, on ``model`` only, shown PAGE 1 ONLY as a DIFFERENT input from the first
-    read: a PDF whose page 1 has a text layer → that text alone (part ``retry_text_layer``); a photo or a
-    scanned PDF → the page-1 image at the default media resolution (``retry_images``); the text-only path →
-    the same OCR text, its only input (``retry_text``). Never pages 2-3 (a reply form or a second letter)."""
+    read: a PDF whose page 1 has a text layer of `RETRY_MIN_TEXT_CHARS`+ → that text alone (part
+    ``retry_text_layer``); a photo, a scanned PDF or a header-only layer → the page-1 image at the default
+    media resolution (``retry_images``); the text-only path → the same OCR text, its only input
+    (``retry_text``). Never pages 2-3 (a reply form or a second letter)."""
     inputs, calls, only = read['inputs'], read['calls'], [model]
     total = (inputs or {}).get('pages_in_file', 1)
     if inputs is None:
         data, part = _ask_gemini(text_prompt(ocr_text), OFFER_SCHEMA, calls, models=only), 'retry_text'
-    elif read['p1_text']:
+    elif len(re.sub(r'\s', '', read['p1_text'] or '')) >= RETRY_MIN_TEXT_CHARS:
         data = _ask_gemini(text_layer_prompt(read['p1_text'], total), OFFER_SCHEMA, calls, models=only)
         part = 'retry_text_layer'
     else:
@@ -445,19 +449,30 @@ def _fill_blanks(data: dict, answer: dict, reasons: list) -> list:
 
 
 #: What a warning is about, by its words (warnings are free text in plain language, `_WARNING_VOICE`).
-#: Conservative: a warning that names no field is about none and always stays.
+#: Conservative: a warning that names no field is about none and always stays. The date pair needs a date
+#: word too ("the reporting venue", "a registration slip" are not about the date).
+_DATE_WORDS = r'(?s)^(?=.*\b(?:date|tarikh))(?=.*(?:report|regist|lapor|daftar))'
 _WARN_WORDS = {
-    'programme': r'programme|\bprogram\b|\bcourse\b(?! code)', 'programme_code': r'\bcodes?\b|\bkod\b',
+    'programme': r'programme|\bprogram\b|\bcourse\b(?! code)',
+    'programme_code': r'(?:course|programme|program) codes?|\bkod (?:kursus|program)',
     'institution': r'institution|universit|college|kolej|politeknik|polytechnic|institut|matri[ck]ul',
     'campus': r'campus|kampus|branch|cawangan', 'reporting_venue': r'venue|hostel|residential|kediaman',
     'issuer': r'issuer|issued by|issuing|letterhead', 'stream': r'stream|jurusan',
     'offer_date': r'offer date|issue date|date of (?:the )?(?:offer|letter)|letter date|date the letter',
     'intake': r'intake|session|\bsesi\b|semester|ambilan|academic year',
-    'reporting_date': r'report|regist|lapor|daftar', 'reporting_date_label': r'report|regist|lapor|daftar',
+    'reporting_date': _DATE_WORDS, 'reporting_date_label': _DATE_WORDS,
     'bidang_pengkhususan': r'speciali[sz]|pengkhususan|bidang', 'elektif': r'elective|elektif',
     'aliran': r'aliran|school stream|\bsjk'}
 _IDENTITY_WORDS = (r'\b(?:ic|nric|mykad|identity card|kad pengenalan|k/p)\b|address|alamat|\bnama\b'
                    r"|\b(?:student|candidate|applicant)(?:'s)? (?:full )?name|name of the (?:student|candidate)")
+#: A red flag about the document itself: never dropped, whatever field it names.
+_RED_FLAG_WORDS = r'not an offer|not the offer|bukan surat tawaran|edited|tamper|altered|forged|mismatch'
+
+
+def _texts(warnings) -> list:
+    """The warnings as strings, empty ones skipped: a non-string (a list) must never break the read."""
+    return [str(w) for w in (warnings if isinstance(warnings, (list, tuple)) else [warnings])
+            if w is not None and str(w).strip()]
 
 
 def _about(warning: str, fields) -> bool:
@@ -471,10 +486,12 @@ def _about_identity(warning: str) -> bool:
 
 def _merge_warnings(first: list, retry: list, filled: list, reasons: list) -> list:
     """The warnings after a second read that filled ``filled``: the first read's, less those about a field
-    the retry filled (an identity warning always stays: the identity is the first read's); plus the retry's
-    (never about the identity, which is not taken from it; a date-only retry adds only its date warnings).
-    No duplicates."""
-    kept = [w for w in first if _about_identity(w) or not _about(w, filled)]
+    the retry filled (an identity or red-flag warning always stays: the identity is the first read's); plus
+    the retry's (never about the identity, which is not taken from it; a date-only retry adds only its date
+    warnings). Each warning is coerced to a string (`_texts`). No duplicates."""
+    first, retry = _texts(first), _texts(retry)
+    kept = [w for w in first if _about_identity(w) or re.search(_RED_FLAG_WORDS, w.lower())
+            or not _about(w, filled)]
     added = [w for w in retry if not _about_identity(w)
              and ('blank' in reasons or _about(w, REPORTING_DATE_FIELDS))]
     return list(dict.fromkeys(kept + added))
@@ -523,7 +540,7 @@ def read_offer(ocr_text: str, *, image=None, content_type: str = '', profile_nri
     data, inputs, p1_text = read['data'], read['inputs'], read['p1_text']
     if '_error' in data:
         return {'fields': {}, 'warnings': [], 'error': data['_error'], **_read_stamp(inputs, read['calls'])}
-    info, warnings = _second_read(data, read, ocr_text, data.pop('warnings', []) or [])
+    info, warnings = _second_read(data, read, ocr_text, _texts(data.pop('warnings', [])))
     warnings = vision._drop_expected_warnings('offer_letter', warnings)
     stamp = _read_stamp(inputs, read['calls'])
     stamp['offer_reader_inputs'].update(info)
