@@ -320,6 +320,11 @@ class TestPredictionEndpointAndOverview(TestCase):
             self.assertEqual(r.status_code, unknown.status_code)
             self.assertEqual(r.json()['applications'], 0)
 
+    def test_a_huge_cohort_value_answers_zero_counts_not_an_overflow(self):
+        r = self.get(self.lead, f'{METRICS}?cohort=99999999999999999999')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['applications'], 0)
+
     # ── the gate ──────────────────────────────────────────────────────────────────────────────
     def test_finance_and_partner_are_refused(self):
         self.assertEqual(self.get(self.finance).status_code, 403)

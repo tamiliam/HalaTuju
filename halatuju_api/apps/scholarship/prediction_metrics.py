@@ -30,7 +30,7 @@ def may_see_reviewers(admin) -> bool:
     """The lead tier: a super (platform) or an organisation admin. Asked by KEY, not by label:
     `manage_team` is lead-tier-only (held by role, never storable for a team member), so a super and
     an organisation admin hold it and nobody else does."""
-    return bool(admin is not None and courses_public.staff_permissions.holds(admin, 'manage_team'))
+    return bool(admin is not None and admin.has_perm('manage_team'))
 
 
 def _staff_by_email(emails, admin):
