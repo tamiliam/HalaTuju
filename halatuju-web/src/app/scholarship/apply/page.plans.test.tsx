@@ -94,3 +94,11 @@ it('the waiting branch keeps its optional answers and the note', async () => {
   expect(screen.getByText('scholarship.apply.plan.uncertainNoteLabel')).toBeTruthy()
   expect(screen.queryByText('scholarship.apply.plan.offerNote')).toBeNull()
 })
+
+it('the waiting branch marks "where are you right now" as required, the leaning stays optional', async () => {
+  await openPlans()
+  await press('scholarship.apply.plan.uncertain')
+  const star = (key: string) => screen.getByText(key).parentElement?.textContent?.includes('*')
+  expect(star('scholarship.apply.plan.reasonLabel')).toBe(true)
+  expect(star('scholarship.apply.plan.leaningLabel')).toBe(false)
+})

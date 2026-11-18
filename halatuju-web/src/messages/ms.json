@@ -988,8 +988,8 @@
           "khas": "Pendidikan Khas"
         },
         "bidangLabel": "Mata pelajaran yang anda mahu ajar",
-        "topProgrammesLabel": "Which degrees did you apply for? (up to 3)",
-        "topProgrammesTip": "Pick up to three degrees you have applied for. This is optional.",
+        "topProgrammesLabel": "Apakah 3 ijazah yang anda mohon?",
+        "topProgrammesTip": "Namakan tiga ijazah yang anda mohon. Ketiga-tiganya diperlukan.",
         "trackLabel": "Trek matrikulasi yang mana?",
         "trackTip": "Pick the track your offer is for. It sets which colleges you can choose from.",
         "track": {
@@ -1073,6 +1073,8 @@
         "phone": "Sila masukkan nombor telefon yang sah, cth. 012-345 6789.",
         "parentPhone": "Sila masukkan nombor telefon yang sah untuk ibu bapa atau penjaga anda, atau biarkan kosong.",
         "pathwayCertainty": "Beritahu kami sama ada anda sudah putuskan laluan.",
+        "topChoices": "Sila pilih ketiga-tiga ijazah yang anda mohon.",
+        "uncertaintyReasons": "Sila beritahu kami di mana anda sekarang (pilih sekurang-kurangnya satu).",
         "chosenPathway": "Sila pilih laluan yang telah anda putuskan.",
         "preUTrack": "Sila pilih trek matrikulasi atau aliran STPM anda.",
         "preUInstitution": "Sila pilih kolej atau sekolah anda.",

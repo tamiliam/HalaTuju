@@ -988,8 +988,8 @@
           "khas": "Pendidikan Khas"
         },
         "bidangLabel": "நீங்கள் கற்பிக்க விரும்பும் பாடம்",
-        "topProgrammesLabel": "Which degrees did you apply for? (up to 3)",
-        "topProgrammesTip": "Pick up to three degrees you have applied for. This is optional.",
+        "topProgrammesLabel": "நீங்கள் விண்ணப்பித்த 3 பட்டப்படிப்புகள் எவை?",
+        "topProgrammesTip": "நீங்கள் விண்ணப்பித்த மூன்று பட்டப்படிப்புகளைக் குறிப்பிடுங்கள். மூன்றும் தேவை.",
         "trackLabel": "எந்த மெட்ரிகுலேஷன் பாதை?",
         "trackTip": "Pick the track your offer is for. It sets which colleges you can choose from.",
         "track": {
@@ -1073,6 +1073,8 @@
         "phone": "சரியான தொலைபேசி எண்ணை உள்ளிடவும், எ.கா. 012-345 6789.",
         "parentPhone": "உங்கள் பெற்றோர் அல்லது பாதுகாவலரின் சரியான தொலைபேசி எண்ணை உள்ளிடவும், அல்லது காலியாக விடவும்.",
         "pathwayCertainty": "ஒரு வழியை முடிவு செய்துவிட்டீர்களா என்பதைத் தெரிவிக்கவும்.",
+        "topChoices": "நீங்கள் விண்ணப்பித்த மூன்று பட்டப்படிப்புகளையும் தேர்ந்தெடுக்கவும்.",
+        "uncertaintyReasons": "நீங்கள் இப்போது எங்கே இருக்கிறீர்கள் என்பதைத் தெரிவிக்கவும் (குறைந்தது ஒன்றைத் தேர்ந்தெடுக்கவும்).",
         "chosenPathway": "நீங்கள் முடிவு செய்த வழியைத் தேர்ந்தெடுக்கவும்.",
         "preUTrack": "உங்கள் மெட்ரிகுலேஷன் அல்லது STPM பிரிவைத் தேர்ந்தெடுக்கவும்.",
         "preUInstitution": "உங்கள் கல்லூரி அல்லது பள்ளியைத் தேர்ந்தெடுக்கவும்.",

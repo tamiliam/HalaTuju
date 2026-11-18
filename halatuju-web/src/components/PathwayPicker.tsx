@@ -310,7 +310,7 @@ export default function PathwayPicker({
         </>
       )}
 
-      {/* Waiting: the same optional answers as before. */}
+      {/* Waiting: the degrees (tertiary) and "where are you now" are required on /apply (marks come from `apply`); the leaning and the note stay optional. */}
       {form.pathwayCertainty === 'uncertain' && (
         <div className="space-y-5">
           <p className="rounded-xl border border-ground-200 bg-ground-50 p-3 text-sm text-ground-600">
@@ -331,7 +331,7 @@ export default function PathwayPicker({
           )}
           {tertiary && onTopChoices && (
             <div>
-              {label('topProgrammesLabel', 'topProgrammesTip', false)}
+              {label('topProgrammesLabel', 'topProgrammesTip')}
               {!current ? (failed ? failedLine : loadingLine) : (
                 <div className="space-y-2">
                   {[0, 1, 2].map((i) => {
@@ -353,7 +353,7 @@ export default function PathwayPicker({
             </div>
           )}
           <div>
-            {label('reasonLabel', 'reasonTip', false)}
+            {label('reasonLabel', 'reasonTip')}
             <div className="flex flex-wrap gap-2">
               {UNCERTAINTY_REASONS.map((r) => (
                 <button key={r} type="button" className={chip(form.uncertaintyReasons.includes(r))}
