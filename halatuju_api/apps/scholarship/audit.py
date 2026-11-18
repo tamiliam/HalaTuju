@@ -174,6 +174,8 @@ def _finish(block: dict) -> dict:
     and the ``few`` flags. ``green_fail_rate`` = green_failed / green; ``unsure_pass_rate`` =
     unsure_passed / unsure; ``few`` = the row's decided total is under ``FEW_BELOW``."""
     g, u = block['green'], block['unsure']
+    block['green_agreed'] = g - block['green_failed']
+    block['green_agree_rate'] = round(block['green_agreed'] / g, 4) if g else 0.0
     block['green_fail_rate'] = round(block['green_failed'] / g, 4) if g else 0.0
     block['unsure_pass_rate'] = round(block['unsure_passed'] / u, 4) if u else 0.0
     block['few_green'] = g < FEW_BELOW
@@ -207,9 +209,10 @@ def _doubt_rows(doubt: dict) -> list:
         total = n['passed'] + n['failed']
         rows.append({'fact': fact, 'code': code, 'passed': n['passed'], 'failed': n['failed'],
                      'total': total,
+                     'pass_rate': round(n['passed'] / total, 4) if total else 0.0,
                      'fail_rate': round(n['failed'] / total, 4) if total else 0.0,
                      'few': total < FEW_BELOW})
-    rows.sort(key=lambda r: (-r['total'], r['fact'], r['code']))
+    rows.sort(key=lambda r: (-r['passed'], -r['total'], r['fact'], r['code']))
     return rows
 
 

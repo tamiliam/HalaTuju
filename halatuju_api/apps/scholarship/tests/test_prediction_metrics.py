@@ -60,9 +60,9 @@ class TestGreenUnsureCounts(SimpleTestCase):
         self.assertEqual(
             m['doubt_codes'],
             [{'fact': 'income', 'code': 'A', 'passed': 1, 'failed': 1, 'total': 2,
-              'fail_rate': 0.5, 'few': True},
+              'pass_rate': 0.5, 'fail_rate': 0.5, 'few': True},
              {'fact': 'income', 'code': 'B', 'passed': 0, 'failed': 1, 'total': 1,
-              'fail_rate': 1.0, 'few': True}])
+              'pass_rate': 0.0, 'fail_rate': 1.0, 'few': True}])
 
     def test_an_undecided_fact_is_not_counted(self):
         # The existing convention: a fact the officer left blank is not a decision.
@@ -96,6 +96,22 @@ class TestGreenUnsureCounts(SimpleTestCase):
         self.assertFalse(o30['few_green'] or o30['few'])
         self.assertTrue(o30['few_unsure'])      # no unsure at all: 0 < 30
         self.assertEqual(with_n(8)['green'], 32)
+
+    def test_agreed_counts_and_rate_are_served(self):
+        records = [(snap(), officer(identity='fail'), 'v')] + [(snap(), officer(), 'v')] * 2
+        o = audit.override_metrics(records)['overall']
+        self.assertEqual((o['green_agreed'], o['green_agree_rate']), (11, round(11 / 12, 4)))
+        none = audit.override_metrics([])['overall']
+        self.assertEqual((none['green_agreed'], none['green_agree_rate']), (0, 0.0))
+
+    def test_doubt_codes_sort_by_passed_then_total(self):
+        records = [
+            (snap({'income': 'gap'}, {'income': ['A']}), officer(income='fail'), 'v'),
+            (snap({'income': 'gap'}, {'income': ['A']}), officer(income='fail'), 'v'),
+            (snap({'income': 'gap'}, {'income': ['B']}), officer(), 'v'),
+        ]
+        rows = audit.override_metrics(records)['doubt_codes']
+        self.assertEqual([(x['code'], x['passed'], x['total']) for x in rows], [('B', 1, 1), ('A', 0, 2)])
 
     def test_rates_are_rounded_like_override_rate(self):
         records = [(snap(), officer(identity='fail'), 'v')] + [(snap(), officer(), 'v')] * 2
