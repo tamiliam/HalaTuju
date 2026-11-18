@@ -471,7 +471,7 @@ class AdminOrgRejectView(_AdminBase):
                    if code == 'comments_required'
                    else 'Only a shortlisted applicant can be rejected here.')
             return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))   # serves the new `can_write`: the case left the review
 
 
 class AdminReportingDateView(_AdminBase):
@@ -500,7 +500,7 @@ class AdminReportingDateView(_AdminBase):
         except ValueError:
             return Response({'error': 'Enter the date the student reports to their institution.',
                              'code': 'date_required'}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))   # serves the write flags, as the detail does
 
 
 class AdminNudgeStudentView(_AdminBase):

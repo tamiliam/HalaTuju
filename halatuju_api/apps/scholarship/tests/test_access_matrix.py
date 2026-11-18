@@ -321,38 +321,59 @@ def test_the_granted_differences_are_still_served():
     assert set(GRANTED_DIFFERS) <= set(PAIRS)
 
 
-# ── POST-AWARD-CUT review (18 Nov): the per-case writes in the two OTHER case stages ─────────────────
-#: app_a is seeded ACTIVE, so the matrix above proves only the past-the-award stage (the Scholars holder
-#: writes, the reviewer and QC do not). The manifest's `case_stages` lists the pairs whose callers turn on
-#: the stage; each is replayed here with app_a moved to an OPEN case (still assigned to reviewer_a) and to
-#: one that ENDED BEFORE THE AWARD (`students.approve` holders and supers only, owner 18 Nov).
+# ── POST-AWARD-CUT review (18 Nov): the per-case writes in every case stage ───────────────────────────
+#: app_a is seeded ACTIVE, so the matrix above proves only the past-the-award stage WITH a scholar file. The
+#: manifest's `case_stages` lists the pairs whose callers turn on the stage; each is replayed here with app_a
+#: moved to every seed of every stage — OPEN (still assigned to reviewer_a), ENDED BEFORE THE AWARD
+#: (`students.approve` holders and supers only, owner 18 Nov) and PAST THE AWARD with no file (awarded with no
+#: wallet; closed from awarded and reopened) — after asserting `case_stage` puts the seed in that stage. The
+#: two writers without a read (`WRITERS_WITHOUT_A_READ`) are swept too and are allowed nowhere (round 2, H1).
 STAGES = MANIFEST['case_stages']
+STAGE_NAMES = ('open', 'pre_award_end', 'past_award')
 STAGE_PAIRS = [tuple(p.split(' ', 1)) for p in STAGES['pairs']]
+#: A seed before the award is a case that never reached it: the active app_a's award stamps are cleared.
+NEVER_AWARDED = {'awarded_at': None, 'active_at': None, 'vircle_activated_at': None}
 
 
 def test_the_case_stage_pairs_are_served_entries():
     for method, route in STAGE_PAIRS:
         assert (route, method.lower()) in ENTRIES, f'case_stages names {method} {route}, which has no entry'
-    for stage in ('open', 'pre_award_end'):
+    for stage in STAGE_NAMES:
         assert set(STAGES[stage]['except']) <= set(STAGES['pairs']), stage
+    assert set(STAGES['ai_off']) <= set(STAGES['pairs'])
+
+
+def _seed_fields(stage, seed):
+    from django.utils import timezone
+    fields = dict(NEVER_AWARDED, decision_reopened_at=None, pre_decline_status='') \
+        if stage != 'past_award' else {'decision_reopened_at': None}
+    fields.update({k: timezone.now() if v == 'now' else v for k, v in seed.items() if k != 'state'})
+    return fields
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize('stage', ['open', 'pre_award_end'])
+@pytest.mark.parametrize('stage', STAGE_NAMES)
 @pytest.mark.parametrize('method,route', STAGE_PAIRS, ids=lambda v: v)
 def test_a_case_stage_decides_who_writes(world, stage, method, route):
     from apps.scholarship.models import ScholarshipApplication
+    from apps.scholarship.staff_lifecycle import case_stage
     spec = STAGES[stage]
     allow = set(spec['except'].get(f'{method} {route}', spec)['allow'])
+    ai_off = f'{method} {route}' in STAGES['ai_off']
     wrong = []
-    for role in roles_for(route):
-        cache.clear()
-        with transaction.atomic():
-            ScholarshipApplication.objects.filter(pk=world.app_a.pk).update(status=spec['status'])
-            code = world.call(role, route, method.lower()).status_code
-            transaction.set_rollback(True)
-        # A crash is wrong, unless the matrix pins the route's status for an ENV reason (the AI is off).
-        broke = code in BROKEN or (code >= 500 and PINNED.get((route, method.lower(), 'super'), (None,))[0] != code)
-        if (role in allow) == (code in HIDE) or broke:
-            wrong.append(f'{role}: {code}')
+    for seed in spec['seeds']:
+        if f'{method} {route}' in seed.get('state', {}):
+            continue
+        for role in roles_for(route) + access_world.WRITERS_WITHOUT_A_READ:
+            cache.clear()
+            with transaction.atomic():
+                ScholarshipApplication.objects.filter(pk=world.app_a.pk).update(**_seed_fields(stage, seed))
+                seen = case_stage(ScholarshipApplication.objects.get(pk=world.app_a.pk))
+                assert seen == stage, f'seed {seed} is {seen}, not {stage}'
+                code = world.call(role, route, method.lower()).status_code
+                transaction.set_rollback(True)
+            # A crash is wrong, unless the AI (off in tests) answers it: 503 for a caller let through.
+            broke = code in BROKEN or (code >= 500 and not (ai_off and code == 503))
+            if (role in allow) == (code in HIDE) or broke:
+                wrong.append(f'{seed["status"]} {role}: {code}')
     assert not wrong, f'{stage} {method} {route}: allowed {sorted(allow)}, but ' + ', '.join(wrong)

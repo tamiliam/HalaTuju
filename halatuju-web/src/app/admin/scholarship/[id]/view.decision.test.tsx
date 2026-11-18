@@ -97,9 +97,10 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
     expect(button('recordVerdict.save').disabled).toBe(false)
   })
 
-  it('the assigned reviewer herself can press it — not only a super', async () => {
-    // She is the person who has to finish it, and Reopen is super-only. `canWrite` admits the
-    // ASSIGNED reviewer, which is why the fixture's `assigned_to_id` is her own admin id.
+  it('a reviewer the server lets write can press it — not only a super', async () => {
+    // The page no longer works out who may write: the server's `can_write` decides (true for the
+    // case's assigned reviewer while it is open), so this proves only that a writing reviewer's
+    // button is live. Who gets `can_write` is the server's test (`may_write_case`).
     renderCockpit({ role: 'reviewer', writes: true, stage: 'verdict_recorded', build: { outcome: 'recommend' } })
     await loaded()
     expect(button('recordVerdict.approve').disabled).toBe(false)

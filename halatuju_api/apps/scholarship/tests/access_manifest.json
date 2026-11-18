@@ -1,5 +1,5 @@
 {
- "_about": "Expected access per (route, method). allow = must NOT get 401/403/404; hide = must be refused, 404 accepted; every other caller must get 401/403. object = the seeded world object the URL id names when the cross-tenant / cross-owner refusal is asserted, else null. Generated from observed behaviour on 2026-11-13; edit by hand from now on. See test_access_matrix.py. pinned = an allowed caller whose exact status is fixed (BUG: a real app fault the test fails on once fixed; ENV: a test-environment limit such as AI or storage switched off). Flags: HOLE (a real gap), INTENT-UNCLEAR (current behaviour recorded, intent unconfirmed), UNCOVERED (nobody can be allowed in this world, so no fence is proved), STATE (the owner is refused for a state reason, so the 403 is not a fence). NOT COVERED by this matrix: maker-checker inside payment runs and credits (the second-person approval rule) is M4 own test work. POST-AWARD-CUT (2026-11-17): app_a is ACTIVE, so its 28 per-case write pairs moved by hand (`views_admin.base.may_write_case`): the assigned reviewer_a and qc_a are refused (a closed case is not theirs to write), and admin_a (the `scholars` key) now reaches them.",
+ "_about": "Expected access per (route, method). allow = must NOT get 401/403/404; hide = must be refused, 404 accepted; every other caller must get 401/403. object = the seeded world object the URL id names when the cross-tenant / cross-owner refusal is asserted, else null. Generated from observed behaviour on 2026-11-13; edit by hand from now on. See test_access_matrix.py. pinned = an allowed caller whose exact status is fixed (BUG: a real app fault the test fails on once fixed; ENV: a test-environment limit such as AI or storage switched off). Flags: HOLE (a real gap), INTENT-UNCLEAR (current behaviour recorded, intent unconfirmed), UNCOVERED (nobody can be allowed in this world, so no fence is proved), STATE (the owner is refused for a state reason, so the 403 is not a fence). NOT COVERED by this matrix: maker-checker inside payment runs and credits (the second-person approval rule) is M4 own test work. POST-AWARD-CUT (2026-11-17): app_a is ACTIVE, so its 28 per-case write pairs moved by hand (`views_admin.base.may_write_case`): the assigned reviewer_a and qc_a are refused (a closed case is not theirs to write), and admin_a (the `scholars` key) now reaches them. Review round 2 (2026-11-18): generate-profile and suggest-gaps answer 400 `case_closed` past the award (the review track ends there), so their AI pins left `pinned` for `case_stages.ai_off`, which the stage replay reads for the OPEN case.",
  "skips": [
   {
    "route": "admin/",
@@ -34,28 +34,6 @@
     "org_admin_b"
    ],
    "reason": "ENV: a file upload sent JSON; DRF refuses the body after the gate"
-  },
-  {
-   "route": "api/v1/admin/scholarship/applications/<int:pk>/generate-profile/",
-   "method": "post",
-   "status": 503,
-   "callers": [
-    "super",
-    "org_admin_a",
-    "admin_a"
-   ],
-   "reason": "ENV: AI switched off in tests (no key; a real call would be billable)"
-  },
-  {
-   "route": "api/v1/admin/scholarship/applications/<int:pk>/suggest-gaps/",
-   "method": "post",
-   "status": 503,
-   "callers": [
-    "super",
-    "org_admin_a",
-    "admin_a"
-   ],
-   "reason": "ENV: AI switched off in tests (no key; a real call would be billable)"
   },
   {
    "route": "api/v1/admin/scholarship/contract-templates/<int:pk>/import-docx/",
@@ -122,9 +100,21 @@
   }
  ],
  "case_stages": {
-  "_about": "POST-AWARD-CUT review (18 Nov). app_a is seeded ACTIVE (past the award), so `entries` prove only that stage. These per-case write pairs turn on the case stage (`staff_lifecycle.case_stage`), so test_access_matrix.py replays each with app_a moved, in a rolled-back transaction, to an OPEN case and to one that ENDED BEFORE THE AWARD. allow = must NOT get 401/403/404; every other caller of the route must be refused (401/403/404). `except` = a pair whose callers differ in that stage, with the reason.",
+  "_about": "POST-AWARD-CUT review (18 Nov, round 2). app_a is seeded ACTIVE (past the award), so `entries` prove only that stage with a scholar file. These per-case write pairs turn on the case stage (`staff_lifecycle.case_stage`), so test_access_matrix.py replays each, in a rolled-back transaction, with app_a moved to every seed of every stage below and asserts first that `case_stage(app_a)` returns that stage's name. A seed before the award also clears the award stamps (`awarded_at`, `active_at`, the wallet). `decision_reopened_at: \"now\"` stamps a reopen. allow = must NOT get 401/403/404; every other caller of the route must be refused (401/403/404). The two writers WITHOUT A READ (`access_world.WRITERS_WITHOUT_A_READ`: the Scholars key alone, `students.approve` alone) are swept too and are allowed nowhere: a caller writes only to a case they can read (review round 2, H1). `except` = a pair whose callers differ in that stage, with the reason. `ai_off` = the pairs whose allowed callers reach the AI, off in tests (503). A seed's `state` = a pair the seed's status refuses for every caller (no fence to prove), with the reason; it is skipped for that seed.",
   "open": {
-   "status": "interviewing",
+   "seeds": [
+    {
+     "status": "interviewing"
+    },
+    {
+     "status": "rejected",
+     "pre_decline_status": "recommended",
+     "decision_reopened_at": "now",
+     "state": {
+      "POST api/v1/admin/scholarship/applications/<int:pk>/close/": "a declined case is not closeable: every caller gets 400 not_closeable before the role gate, so the seed proves no fence there"
+     }
+    }
+   ],
    "allow": [
     "super",
     "org_admin_a",
@@ -142,13 +132,52 @@
    }
   },
   "pre_award_end": {
-   "status": "withdrawn",
+   "seeds": [
+    {
+     "status": "rejected",
+     "pre_decline_status": "interviewing"
+    },
+    {
+     "status": "expired"
+    },
+    {
+     "status": "closed",
+     "closure_reason": "stalled"
+    },
+    {
+     "status": "withdrawn"
+    }
+   ],
    "allow": [
     "super",
     "org_admin_a"
    ],
    "except": {}
   },
+  "past_award": {
+   "seeds": [
+    {
+     "status": "awarded",
+     "active_at": null
+    },
+    {
+     "status": "closed",
+     "closure_reason": "stalled",
+     "active_at": null,
+     "decision_reopened_at": "now"
+    }
+   ],
+   "allow": [
+    "super",
+    "org_admin_a",
+    "admin_a"
+   ],
+   "except": {}
+  },
+  "ai_off": [
+   "POST api/v1/admin/scholarship/applications/<int:pk>/generate-profile/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/suggest-gaps/"
+  ],
   "pairs": [
    "PATCH api/v1/admin/scholarship/applications/<int:pk>/",
    "POST api/v1/admin/scholarship/applications/<int:pk>/anon-profile/publish/",

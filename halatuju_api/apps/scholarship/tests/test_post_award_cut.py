@@ -73,10 +73,18 @@ class TheCaseRule(_World):
                 self.assertEqual(self.patch(self.qc, self.case(stage)).status_code, 403)
 
     def test_a_scholars_holder_writes_after_the_award_in_their_own_organisation(self):
-        for who in (self.admin, self.scholars_only, self.org_admin):
+        for who in (self.admin, self.org_admin):
             for stage in PAST_AWARD:
                 with self.subTest(who=who.role, stage=stage):
                     self.assertEqual(self.patch(who, self.case(stage)).status_code, 200)
+
+    def test_a_scholars_only_holder_writes_only_where_the_scholar_file_lets_them_read(self):
+        # Review round 2 (H1): no Applications read, so only a case with a file (`has_file`).
+        for stage, kw in (('awarded', {'vircle_activated_at': timezone.now()}), ('active', {}),
+                          ('maintenance', {}), ('closed', {})):
+            with self.subTest(stage=stage):
+                self.assertEqual(self.patch(self.scholars_only, self.case(stage, **kw)).status_code, 200)
+        self.assertEqual(self.patch(self.scholars_only, self.case('awarded')).status_code, 403)   # no wallet
 
     def test_a_scholars_only_holder_gains_nothing_on_an_open_case(self):
         self.assertEqual(self.patch(self.scholars_only, self.case('interviewing')).status_code, 403)
@@ -226,8 +234,8 @@ class ACaseThatEndedBeforeTheAward(_World):
                 'withdrawn': withdrawn, 'closed': closed}
 
     def test_only_a_students_approve_holder_or_a_super_writes(self):
-        approver = make_admin('reviewer', owning_org=self.cohort.owning_organisation,
-                              permissions=['review', 'students.approve'])
+        approver = make_admin('reviewer', owning_org=self.cohort.owning_organisation,   # the editor stores
+                              permissions=['review', 'see_all', 'students.approve'])   # `see_all` with it
         for state, app in self.ended().items():
             for who, code in ((self.reviewer, 403), (self.qc, 403), (self.admin, 403),
                               (self.scholars_only, 403), (self.org_admin, 200), (approver, 200),
@@ -246,14 +254,14 @@ class ACaseThatEndedBeforeTheAward(_World):
         self.assertEqual(self.patch(self.scholars_only, funded).status_code, 200)
         self.assertEqual(self.patch(self.reviewer, funded).status_code, 403)
 
-    def test_reads_are_unchanged_by_the_new_write_rule(self):
-        # Reads are not widened (lead brief): `students.approve` brings no B40 read on its own,
-        # so a holder without `see_all` or `qc` writes on such a case only by direct call.
+    def test_a_holder_who_cannot_read_the_case_cannot_write_it(self):
+        # Review round 2 (H1): "a caller writes only to a case they can READ". Reads are not widened:
+        # `students.approve` brings no Applications read, so without one it writes nothing either.
         org = self.cohort.owning_organisation
         app = self.ended()['expired']
-        for keys, read in ((['review', 'students.approve'], 403), (['students.approve'], 403),
+        for keys, code in ((['review', 'students.approve'], 403), (['students.approve'], 403),
                            (['see_all', 'students.approve'], 200)):
             with self.subTest(keys=keys):
                 who = make_admin('admin', owning_org=org, permissions=keys)
-                self.assertEqual(authed_client(who).get(f'{APPS}{app.id}/').status_code, read)
-                self.assertEqual(self.patch(who, app).status_code, 200)
+                self.assertEqual(authed_client(who).get(f'{APPS}{app.id}/').status_code, code)
+                self.assertEqual(self.patch(who, app).status_code, code)

@@ -12,6 +12,7 @@ from ..models import ApplicantDocument, SponsorProfile
 from ..serializers import ApplicantDocumentSerializer
 from ..serializers_admin import AdminApplicationDetailSerializer, SponsorProfileSerializer
 
+from ..staff_lifecycle import PAST_AWARD, case_stage
 from .base import _AdminBase
 
 
@@ -23,7 +24,8 @@ class AdminRunVisionView(_AdminBase):
     PLUS the doc-assist field extraction — i.e. the results-slip **GRADES** read (S2).
     This is an admin action and **FORCES** the (billable) extraction regardless of the
     cost knob / hourly throttle (the admin clicked it deliberately). The verify-&-accept
-    stays the real identity gate. Returns the updated document.
+    stays the real identity gate. Returns the updated document. Past the award it stays open to
+    the case's writers (review round 2, P1): the post-award bank statement is read here too.
     """
     def post(self, request, pk, doc_id):
         # Re-running a (billable) document read is a reviewer-gated WRITE action — it was
@@ -44,10 +46,16 @@ class AdminRunVisionView(_AdminBase):
 
 
 class AdminGenerateProfileView(_AdminBase):
+    """POST .../<pk>/generate-profile/ — the pre-award STEP-3 sponsor-profile draft (billable).
+    Refused past the award (review round 2, P1): no funded-stage flow asks for it (the cockpit
+    never calls it; a fallen-through award is back at an open status, where it works), and a
+    regenerate turns a published profile back into a draft."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
+        if case_stage(app) == PAST_AWARD:
+            return self._case_closed(app)
         # Optional output language ('en'/'ms'); defaults to the applicant's locale.
         # Shared store path (Check 2 STEP 3): same as the auto-trigger, with claim-gating.
         from ..services import generate_ready_profile

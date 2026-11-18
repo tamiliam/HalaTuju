@@ -124,9 +124,8 @@ def case_stage(app, status=None):
                       student has (`maintenance_scope.has_file`), or a decline taken past the award
                       (`pre_decline_status`, the snapshot `cancel_pending_decline` restores);
       PRE_AWARD_END — rejected, withdrawn, expired or closed before the award, not reopened.
-    Owner 18 Nov: the reviewer's link runs from assignment to `awarded` and is severed there. ⚠ A
-    close straight from `awarded` recorded as stalled / withdrawn, with no wallet and no
-    `active_at`, reads as PRE_AWARD_END (`has_file` fails closed on it); both sides need a lead key.
+    Owner 18 Nov: the reviewer's link runs from assignment to `awarded` and is severed there; a
+    terminal status reached past it is PAST_AWARD whatever a reopen says (`_ended_past_the_award`).
     ``status`` judges the case at another status (cancel-decline judges a held decline at the
     status it returns to)."""
     from .closure import POST_AWARD_STATUSES
@@ -141,11 +140,23 @@ def case_stage(app, status=None):
 
 
 def _ended_past_the_award(app):
+    """Did this TERMINAL case end past the award? Review round 2 (M1), on the award's own stamps:
+      * `active_at` — funded once, so always;
+      * a `rejected` case — the status it was declined FROM (`pre_decline_status`, the exact snapshot
+        `cancel_pending_decline` restores); a legacy row without one falls to `awarded_at`;
+      * closed / withdrawn / expired — no field records the status they ended from (`close_application`
+        logs it only), so `awarded_at`: set once on the award (`stamp_first`) and never cleared.
+    ⚠ `awarded_at` OUTLIVES A FALLEN-THROUGH AWARD (`award_revert.revert_to_pool` keeps it; see
+    `closure.ever_awarded_q`). Such a case is OPEN by its status; only once it ENDS without a snapshot
+    does it read past the award: it goes to the lead keys, never back to the reviewer (fails closed).
+    A file (`has_file`) still counts on its own."""
     from .closure import POST_AWARD_STATUSES
     from .maintenance_scope import has_file
-    if app.status == 'rejected':
+    if app.active_at is not None:
+        return True
+    if app.status == 'rejected' and app.pre_decline_status:
         return app.pre_decline_status in POST_AWARD_STATUSES
-    return app.status == 'closed' and has_file(app)
+    return app.awarded_at is not None or (app.status == 'closed' and has_file(app))
 
 
 def open_cases(admin):

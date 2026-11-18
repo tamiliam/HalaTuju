@@ -103,6 +103,22 @@ def may_write_file(admin, app):
     return holds_scholars_key(admin) and org_allows(admin, app)
 
 
+def reads_application(admin, app):
+    """The Applications READ less the org fence (the caller's): what `_AdminBase._scoped_application`
+    lets through — `b40_scope` 'all', or 'assigned' with the case assigned to them."""
+    scope = b40_scope(admin)
+    return scope == 'all' or (scope == 'assigned' and app.assigned_to_id == admin.id)
+
+
+def reads_case(admin, app):
+    """May this admin READ the case at all, by either page? The Applications read (`reads_application`)
+    or the scholar-file read (`_ScholarsBase._file_for`: the `scholars` key and a file). Org fence the
+    caller's; a mentor's read-only scope is left out, as it never writes. Review round 2 (H1): "a
+    caller writes only to a case they can READ" — `may_write_case` asks it; no read is widened."""
+    from ..maintenance_scope import has_file
+    return reads_application(admin, app) or (holds_scholars_key(admin) and has_file(app))
+
+
 def may_write_case(admin, app, status=None):
     """May this admin WRITE (act) on this application? THE ONE RULE (`_can_review_app`, and the
     `can_write` the case detail serves so the cockpit never re-derives it). Three-way on
@@ -115,8 +131,10 @@ def may_write_case(admin, app, status=None):
                       never revives it ("QCs are reviewers as well");
       PRE_AWARD_END — a `students.approve` holder of the own organisation ("Those with 'Reject or
                       close applications' permissions"); a reviewer or QC only if they hold it.
-    super — always. Each door's own extra checks still apply. Reads are untouched: an assigned
-    reviewer still SEES their past students (`_scoped_application`).
+    super — always. Past the open case the caller must also READ it (review round 2): PAST_AWARD by
+    either page (`reads_case`), PRE_AWARD_END by the Applications page (`reads_application`). Each
+    door's own extra checks still apply. Reads are untouched: an assigned reviewer still SEES their
+    past students (`_scoped_application`).
     `status` judges the case at another status — ONLY `may_cancel_held_decline` passes it."""
     from .. import surface_gates
     if admin is None or app is None:
@@ -125,11 +143,11 @@ def may_write_case(admin, app, status=None):
         return True
     stage = case_stage(app, status)
     if stage == PAST_AWARD:
-        return may_write_file(admin, app)
+        return may_write_file(admin, app) and reads_case(admin, app)
     if not org_allows(admin, app):
         return False
     if stage == PRE_AWARD_END:
-        return surface_gates.may_decide(admin)
+        return surface_gates.may_decide(admin) and reads_application(admin, app)
     if b40_scope(admin) == 'none':
         return False
     return admin.has_perm('qc') or app.assigned_to_id == admin.id
@@ -417,12 +435,17 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return None, None, err
-        if review_writes_closed(app):
-            return None, None, Response(
-                {'error': 'This case is closed — there is no review left to record.',
-                 'code': 'case_closed', 'status': app.status},
-                status=status.HTTP_400_BAD_REQUEST)
+        if review_writes_closed(app) or case_stage(app) == PAST_AWARD:
+            return None, None, self._case_closed(app)
         return app, admin, None
+
+    def _case_closed(self, app):
+        """400 `case_closed`. Past the award it answers whatever a reopen says: owner R5, the review
+        track ends at the award (review round 2, P1) — a verdict re-recorded on a funded student
+        would clear her award amount."""
+        return Response({'error': 'This case is closed — there is no review left to record.',
+                         'code': 'case_closed', 'status': app.status},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     def _require_qc(self, request, pk):
         """Auth prologue for the QC gate. Returns (app, admin, None) when the caller may QC this

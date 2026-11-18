@@ -164,7 +164,35 @@ And some of them have finance permissions." The legacy role code is separate cle
   (`case_stages` in the manifest). The cockpit test harness no longer works out the flags: each test states them,
   default false.
 - Left for a TD (found, pre-existing, not changed): `org_allows` passes when neither side has an organisation;
-  `AdminDisbursementActionView` answers 403, not 404, across organisations; some write replies leave out the write flags.
+  `AdminDisbursementActionView` answers 403, not 404, across organisations; some write replies leave out the write flags
+  (round 2 fixed org-reject and reporting-date; TD-XXX-POST-AWARD-WEB lists the rest).
+
+- Review round 2 (18 Nov):
+  - **A writer must read the case (H1).** "A caller writes only to a case they can READ." Past the award, the
+    caller must also read the case on one of the two pages: the Applications read (`reads_application`), or the
+    Scholars key with a scholar file (`reads_case`). For a case that ended before the award, the caller needs the
+    Applications read. Both checks are in `may_write_case`, so the served `can_write` follows them. No read was
+    widened. A Scholars-only holder on an awarded case with no wallet (no file yet) now writes nothing. A
+    `students.approve` holder with no Applications read cannot be made through the presets or the team editor (it
+    saves `see_all` with it), only by a hand-written row. A Scholars-only holder can be made.
+  - **The review track ends at the award (P1, owner R5).** `_require_open_case` (record-verdict, suggest-gaps and
+    the interview doors) and generate-profile answer 400 `case_closed` past the award, even when the decision is
+    reopened. No funded flow calls generate-profile; the web never does, and a fresh profile would turn a published
+    one back into a draft. re-run-vision stays open past the award under the case rule: it serves the post-award
+    bank statement read and re-reads of the file's own documents. `review_writes_closed` and its web mirror are
+    unchanged.
+  - **Past the award is read from the award's own stamps (M1).** A terminal case is past the award when it has
+    `active_at`. A decline is judged by its snapshot (`pre_decline_status`). Otherwise the case is past the award
+    if it has `awarded_at` or a scholar file. `awarded_at` is never cleared, and it survives `revert_to_pool` (an
+    award that fell through), so an open status is judged first: a fallen-through award back at recommended stays
+    OPEN. A fallen-through award that is later closed has no snapshot of where it came from. It fails closed to
+    the lead keys, and the reviewer loses it. A reopen never makes a past-award ending OPEN.
+  - The access matrix replays every per-case write pair on every seed of every stage, and checks `case_stage`
+    first. The seeds are: open, including a reopened pre-award decline; rejected, expired, a stalled close and
+    withdrawn; and awarded with no wallet, and a case closed from awarded then reopened. It also sweeps two
+    writers who cannot read the case: one with the Scholars key alone, one with `students.approve` alone. They
+    are allowed nowhere. generate-profile and suggest-gaps no longer need an AI pin on the funded case.
+  - The org-reject and reporting-date replies now serve the write flags (`_detail_payload`).
 
 **Revisit if:** a post-award step needs the reviewer to act again (R5's own revisit line). Or if the payments model
 splits tranche release from preparing a run.

@@ -62,6 +62,10 @@ JWT_ROLES = (
     'anon',             # no Authorization header at all
 )
 
+#: Review round 2 (H1): staff who hold a WRITE key but no READ of the case (the Scholars key alone, and
+#: `students.approve` alone). Not manifest columns: swept only by the case-stage replay.
+WRITERS_WITHOUT_A_READ = ('scholars_only_a', 'approve_only_a')
+
 #: Callers that authenticate with a shared secret instead of a JWT. They carry no JWT, so on every
 #: other route they ARE the anonymous caller (only the three internal views read these headers —
 #: `cron.py` X-Cron-Secret, `cron.py` X-Vircle-Secret, `intake.py` X-Twilio-Signature).
@@ -309,6 +313,10 @@ def build_world():
     spa.change_permissions(w.admin_granted_a.pk, [*w.admin_granted_a.permissions, *v2.ORG_ADMIN_SET],
                            by=w.org_admin_a, with_v2=True)
     w.admin_granted_a.refresh_from_db()
+    # Review round 2 (H1): two keys that WRITE but give no READ of a case, outside JWT_ROLES like the
+    # granted member. `test_access_matrix` sweeps them in the case-stage replay, where they are allowed nowhere.
+    w.scholars_only_a = make_admin('admin', owning_org=w.org_a, permissions=['scholars'])
+    w.approve_only_a = make_admin('admin', owning_org=w.org_a, permissions=['students.approve'])
     w.qc_a = make_admin('qc', owning_org=w.org_a)
     w.reviewer_a = make_admin('reviewer', owning_org=w.org_a, gifts=[w.gift_a])
     w.reviewer_a2 = make_admin('reviewer', owning_org=w.org_a, gifts=[w.gift_a])
@@ -451,5 +459,6 @@ def build_world():
         w.clients[role] = authed_client(who, APIClient(raise_request_exception=False))
     for role in SECRET_ROLES:
         w.clients[role] = APIClient(raise_request_exception=False)
-    w.clients['admin_granted_a'] = authed_client(w.admin_granted_a, APIClient(raise_request_exception=False))
+    for role in ('admin_granted_a', *WRITERS_WITHOUT_A_READ):
+        w.clients[role] = authed_client(getattr(w, role), APIClient(raise_request_exception=False))
     return w

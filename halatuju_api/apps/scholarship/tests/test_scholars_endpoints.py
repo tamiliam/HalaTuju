@@ -350,6 +350,20 @@ class TestFileControls(_Scholars):
         c = self._controls(self.officer, self.bala)      # not assigned; POST-AWARD-CUT: `scholars` writes
         self.assertEqual((c['can_set_substate'], 'graduated' in c['close_reasons']), (True, True))
 
+    def test_a_reader_who_cannot_write_is_offered_nothing(self):
+        # Review round 2 (L3): past the award every `scholars` holder writes, so the file's reader who
+        # cannot is a mentor; on the cockpit it is an Applications reader without the key.
+        from apps.scholarship import mentoring
+        from apps.scholarship.tests.test_mentoring import make_mentor
+        mentor = make_mentor(self.org)
+        mentoring.assign(self.org_admin, self.bala, mentor, email_student=False)
+        c = self._controls(mentoring._login(mentor), self.bala)
+        self.assertEqual((c['can_set_substate'], c['can_hold'], c['can_review_results'], c['close_reasons']),
+                         (False, False, False, []))
+        reader = make_admin('admin', owning_org=self.org, permissions=['see_all'])
+        body = self._get(reader, f'/api/v1/admin/scholarship/applications/{self.bala.id}/').json()
+        self.assertEqual((body['can_write'], body['can_cancel_decline'], body['can_tranche']), (False, False, False))
+
     def test_a_closed_file_offers_nothing(self):
         c = self._controls(self.org_admin, self.ezra)
         self.assertEqual((c['can_set_substate'], c['close_reasons'], c['close_refusal']),
