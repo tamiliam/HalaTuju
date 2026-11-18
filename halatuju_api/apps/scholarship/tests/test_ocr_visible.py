@@ -31,9 +31,9 @@ def _stream(dict_head, data):
     return dict_head + b' /Length ' + str(len(data)).encode() + b' >>\nstream\n' + data + b'\nendstream'
 
 
-def _pdf(pages, form=None):
+def _pdf(pages, form=None, shared=False):
     """A valid PDF, one page per content stream in ``pages``. ``form`` is the content of a Form XObject
-    /Fm1 every page may call with ``/Fm1 Do``."""
+    /Fm1 every page may call with ``/Fm1 Do``. ``shared``: every page points at page 1's ONE stream."""
     objs = {1: b'<< /Type /Catalog /Pages 2 0 R >>',
             3: b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
             4: (_stream(b'<< /Type /XObject /Subtype /Form /BBox [0 0 300 200] '
@@ -44,8 +44,8 @@ def _pdf(pages, form=None):
         page, body = 5 + 2 * i, 6 + 2 * i
         kids.append(b'%d 0 R' % page)
         objs[page] = (b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Resources << /Font << /F1 3 0 R >>'
-                      + xobj + b' >> /Contents %d 0 R >>' % body)
-        objs[body] = _stream(b'<<', content)
+                      + xobj + b' >> /Contents %d 0 R >>' % (6 if shared else body))
+        objs[body] = _stream(b'<<', content) if not (shared and i) else b'null'
     objs[2] = b'<< /Type /Pages /Kids [' + b' '.join(kids) + b'] /Count %d >>' % len(pages)
     out = b'%PDF-1.4\n'
     offsets = []
@@ -167,11 +167,57 @@ class TheDetectionRule(SimpleTestCase):
         self.assertLess(time.perf_counter() - t0, 2.0)
 
     def test_an_over_budget_later_page_stops_extraction_of_the_whole_pdf(self):
-        with patch('apps.scholarship.pdf_pages._MAX_PAGE_OPS', 1):
-            # page 1 shows one string (within budget), page 2 three: no page of this PDF is extracted
+        with patch('apps.scholarship.pdf_pages._MAX_DOC_OPS', 10):
+            # page 1 is 6 operations (within the document's budget), page 2 another 18: no page is extracted,
+            # and page 1 alone does not make it "drawn" (one answer for the whole file)
             pdf = _pdf([_show(SPM_TEXT), _show('A') + b' ' + _show('B') + b' ' + _show('C')])
             self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
             self.assertEqual(pdf_pages.pdf_page_texts(pdf, 2), ['', ''])
+            self.assertFalse(pdf_pages.first_page_drawn(pdf))
+
+    def _hostile(self, data):
+        """Every reader gives the Vision route, never extracts, and the whole check is fast."""
+        import time
+        from pypdf import PageObject
+        pdf_pages._layer_memo_clear()
+        t0 = time.perf_counter()
+        with patch.object(PageObject, 'extract_text', side_effect=AssertionError('no extraction of a bomb')):
+            self.assertEqual(pdf_pages.pdf_text_layer(data), '')
+            self.assertEqual(''.join(pdf_pages.pdf_page_texts(data, 3)), '')
+            self.assertFalse(pdf_pages.first_page_drawn(data))
+        return time.perf_counter() - t0
+
+    def test_few_form_calls_of_many_plain_operations_are_charged_every_call(self):
+        # 20,000 calls of one form holding 10,000 non-text operations: 200 million walked without the charge
+        data = _pdf_forms(b'/A Do ' * 20_000, {'A': b'0 g ' * 10_000})
+        self.assertLess(self._hostile(data), 3.0)
+
+    def test_many_pages_sharing_one_big_stream_share_one_budget(self):
+        # 20 pages, one stream of 49,000 drawn text shows: each page is within any per-page limit
+        data = _pdf([b'BT /F1 12 Tf ' + b'(AB) Tj ' * 49_000 + b'ET'] * 20, shared=True)
+        self.assertLess(self._hostile(data), 3.0)
+
+    def test_page_1_not_drawn_stops_the_walk_at_once(self):
+        with patch.object(pdf_pages, '_page_visibility', wraps=pdf_pages._page_visibility) as walk:
+            self.assertEqual(pdf_pages.pdf_text_layer(HIDDEN_FIRST), '')
+            self.assertFalse(pdf_pages.first_page_drawn(HIDDEN_FIRST))
+            self.assertEqual(pdf_pages.pdf_page_texts(HIDDEN_FIRST, 1), [''])
+            self.assertEqual(walk.call_count, 1)
+            # the per-page reader (offer reader) still judges a later page on its own, as before
+            pages = pdf_pages.pdf_page_texts(HIDDEN_FIRST, 3)
+        self.assertEqual(pages[0], '')
+        self.assertIn('SIJIL PELAJARAN', pages[1])
+
+    def test_pages_past_the_cap_are_neither_checked_nor_extracted(self):
+        cap = pdf_pages.MAX_LAYER_PAGES
+        data = _pdf([_show(f'PAGE{i:02d} DRAWN WORDS ON THIS PAGE') for i in range(1, cap + 6)])
+        with patch.object(pdf_pages, '_page_visibility', wraps=pdf_pages._page_visibility) as walk:
+            layer = pdf_pages.pdf_text_layer(data)
+            texts = pdf_pages.pdf_page_texts(data, cap + 5)
+        self.assertEqual(walk.call_count, cap)
+        self.assertIn(f'PAGE{cap:02d}', layer)
+        self.assertNotIn(f'PAGE{cap + 1:02d}', layer)
+        self.assertEqual(len(texts), cap)
 
     def test_an_encrypted_hidden_pdf_never_gives_its_hidden_text(self):
         from pypdf import PdfReader, PdfWriter
@@ -360,6 +406,35 @@ class TheOtherLayerReaders(SimpleTestCase):
         with patch.object(spm_cert_parse, '_pdf_words', wraps=real) as spy:
             spm_cert_parse.parse_spm_cert('', None, MIXED)
         spy.assert_called_once()
+
+    def test_one_upload_walks_and_extracts_once(self):
+        from pypdf import PageObject
+        real = PageObject.extract_text
+        with patch.object(pdf_pages, '_page_visibility', wraps=pdf_pages._page_visibility) as walk, \
+                patch.object(PageObject, 'extract_text', autospec=True, side_effect=real) as extract:
+            first = (pdf_pages.first_page_drawn(MIXED), pdf_pages.pdf_text_layer(MIXED),
+                     pdf_pages.pdf_page_texts(MIXED, 3), pdf_pages.pdf_page_texts(MIXED, 1),
+                     offer_exact.pdf_layers(MIXED, 'application/pdf'))
+            again = (pdf_pages.first_page_drawn(MIXED), pdf_pages.pdf_text_layer(MIXED),
+                     pdf_pages.pdf_page_texts(MIXED, 3), pdf_pages.pdf_page_texts(MIXED, 1),
+                     offer_exact.pdf_layers(MIXED, 'application/pdf'))
+        self.assertEqual(first, again)
+        self.assertEqual(walk.call_count, 2)        # MIXED has two pages, each walked once
+        self.assertEqual(extract.call_count, 1)     # only the drawn page 1 is extracted, once
+        self.assertIn('SIJIL PELAJARAN', first[1])
+
+    def test_the_memo_is_a_small_lru_keyed_on_the_bytes(self):
+        pdf_pages._layer_memo_clear()
+        docs = [_pdf([_show(f'{SPM_TEXT} {i}')]) for i in range(pdf_pages._LAYER_MEMO_SIZE + 1)]
+        with patch.object(pdf_pages, '_layer_read', wraps=pdf_pages._layer_read) as read:
+            for d in docs:
+                pdf_pages.pdf_text_layer(d)
+            pdf_pages.pdf_text_layer(docs[-1])          # newest: a hit
+            pdf_pages.pdf_text_layer(bytes(docs[-1]))   # equal bytes, another object: a hit
+            self.assertEqual(read.call_count, len(docs))
+            pdf_pages.pdf_text_layer(docs[0])           # oldest: evicted, read again
+            self.assertEqual(read.call_count, len(docs) + 1)
+        self.assertLessEqual(len(pdf_pages._LAYER_MEMO), pdf_pages._LAYER_MEMO_SIZE)
 
     def test_model_version(self):
         self.assertEqual(MODEL_VERSION, '1.31.0')

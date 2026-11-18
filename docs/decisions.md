@@ -177,8 +177,11 @@ rasterised and read by Cloud Vision, the route a scanned PDF has always taken. A
 keeps its own text layer (free and exact, and what we see). The whole-document layer read (`pdf_text_layer`) takes the
 Vision route when PAGE 1 is hidden (Vision reads page 1); otherwise it keeps the drawn pages and leaves a hidden later
 page out. The per-page read (`pdf_page_texts`) decides page by page. Every reader of page 1's own characters (the SPM
-certificate's pdfium word boxes) needs a drawn page 1. The check has an operation budget (50,000 per page): past it the
-page is hidden and no text is extracted from that file. A check that fails is
+certificate's pdfium word boxes) needs a drawn page 1. The check has ONE operation budget for the whole document (fix round 2: 500,000 operations, every operation
+charged each time it is walked, so a form called many times pays every time; the largest real PDF walks 87,726): past
+it the file is hidden and no text is extracted from it. At most 20 pages are checked and extracted, the check stops as
+soon as page 1 is not drawn, and one upload's readers share one check and one extraction (an in-process memo keyed
+on the file's SHA-256). A check that fails is
 the Vision route, never the hidden text. Why: scanner-app layers miss letterheads and key lines, so genuine documents
 (a USM offer, an STPM certificate with 11 visible lines "missing") failed to go green. Accepted residuals (not new):
 text drawn under an image, and transparent / white / size-0 / off-page text, count as drawn. Follow-up idea: strip

@@ -262,6 +262,8 @@ def ocr_document_full(doc) -> dict:
         if _v._is_pdf(doc.content_type, image):
             text = _usable_text_layer(_v._pdf_text_layer(image))
             if len(text) >= _MIN_PDF_TEXT:
+                # S-visible: this may be a PARTIAL layer (the drawn pages only). A later page whose text is
+                # invisible is left out on purpose and never stored: we keep only what the page shows.
                 ocr_keep.keep(doc, text, source=ocr_keep.PDF_TEXT_LAYER, reader='ocr_document_full')
                 return {'text': text, 'words': None, 'image': image, 'error': None}
         r = _v._vision_words(image, doc.content_type)

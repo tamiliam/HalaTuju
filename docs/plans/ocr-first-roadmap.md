@@ -144,6 +144,7 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Versions:** MODEL_VERSION 1.31.0, offer reader 2.7.0, SPM slip reader 1.2.0.
 - **Corpus:** 303 layered PDFs, 16 invisible (one Vision call each), 287 drawn (no new call).
 - **Review fix round:** page 1 decides the whole-layer read (a later hidden page is left out, drawn pages kept; corpus unchanged, all 16 are hidden on page 1); the SPM certificate's pdfium word boxes need a drawn page 1; a 50,000-operation budget per page stops fan-out files (Vision route, no extraction).
+- **Review fix round 2:** one budget per DOCUMENT, every operation walked charged (500,000; real max 87,726); at most 20 pages checked and extracted; the check stops when page 1 is not drawn; one walk + one extraction per upload (in-process LRU of 8, keyed on SHA-256); corpus results unchanged.
 - **Residuals (accepted, not new):** text under an image; transparent / white / size-0 / off-page text. **Follow-up idea:** strip invisible runs inside a page during extraction (track `Tr` in pypdf's visitor).
 
 ### S5: SPM slips off 2.5 (the AI fallback moves to 3.8)
