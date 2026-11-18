@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: OCR-first roadmap S0 - the free dry-run harness and the Gate 1 rule (2026-11-18)
+
+Branch ocr-s0, not pushed. Migration: none. Services: none. Eval tool only; nothing in the request path. Plan: `docs/plans/ocr-first-roadmap.md` (committed here).
+- **Gate 1:** new pure `scholarship/ocr_first_gate.py` (`lane_gate`): at least 20 held-out documents, core-field exact-or-blank-correct at least 98% (whole-number test, so 97.9 fails and 98.0 passes), zero wrong on name, IC, institution and programme, and a course match that is never wrong. Returns pass or fail plus every reason.
+- **Dry run:** new `eval/ocr_first_dryrun.py`. Cached OCR text only (no network, no model, no OCR). Runs `offer_exact`, `offer_course_match` and `doc_parse` over the local corpus and prints COUNTS only: a lane table (pass / fail / no rules yet, with the reason), the scorer buckets per core field, course match as unique / none / refused, and agreement with the stored AI answer. Judges the held-out split by default. See `eval/README.md`.
+- **First real run (held-out):** matriculation, polytechnic and STPM fail on sample size only (4, 4 and 2 documents; 100% agreement). Every university lane is "no rules yet". Other document types report AI agreement only (no truth set); salary and results slips have no text parser.
+- **Tests:** `test_ocr_first_gate.py` (8, the edges) and `test_ocr_first_dryrun.py` (4, three invented letters, a fake course matcher, no value printed).
+
 ### fix: a red verdict tile names the reason it is red (2026-11-18)
 
 Branch fix-tile-disqualifier-leads. Migration: none. Services: web. Display only; no verdict, band or amount changes.

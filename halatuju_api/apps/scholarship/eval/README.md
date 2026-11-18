@@ -328,6 +328,20 @@ python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> --suffix
 an empty page): the server caps a response at 1,000 rows whatever `limit` says, which silently
 dropped most profiles before 2026-11-01.
 
+## OCR-first dry run (`ocr_first_dryrun.py`)
+Free, counts-only check of which lanes (document type + issuer) the deterministic readers could
+answer without the AI. It reads only the cached OCR text and the hand-checked answers; no network,
+no model, no OCR. Gate 1 is the pure rule in `../ocr_first_gate.py`.
+
+```
+python -I apps/scholarship/eval/ocr_first_dryrun.py                      # held-out split (the judging run)
+python -I apps/scholarship/eval/ocr_first_dryrun.py --split all --catalogue-db <catalogue.sqlite3>
+python -I apps/scholarship/eval/ocr_first_dryrun.py --json               # same counts as JSON
+```
+Without `--catalogue-db` the course-match column reads "not run" (the catalogue is not in the
+corpus; pass a sqlite copy that holds the courses). `dev` and `all` include letters the rules were
+tuned on, so only the held-out run judges. A lane with no parser is "no rules yet", not a failure.
+
 ## Limits (honest)
 - It scores each document **in isolation**. A check that needs a companion document present
   (e.g. a payslip verified against the matching parent IC) sees only the one doc — note such
