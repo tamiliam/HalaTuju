@@ -2,12 +2,15 @@
 
 - the field and its four choices (blank = not given);
 - `PATCH admin/me/` saves, clears and refuses it, and makes the profile row when there is none — only the
-  caller's own row; a source user or a referral partner is never asked and is refused (review round);
+  caller's own row; a super, a source user or a referral partner is never asked and is refused (review
+  rounds 2 and 3);
 - the Team person page serves it beside the job title (`test_t3_person_page.py` pins the key sets);
 - the sponsor Trust page's `volunteers`: no figures below five answers; at five or more a BANDED count
   (never the exact one), the headline and the right shares (largest remainder, summing to 100) — the
   shares withheld when a level holds everyone or exactly one person; other organisations, supers,
-  source users, archived, revoked and suspended-mentor staff never count, paused reviewers do;
+  source users, archived, revoked and suspended (Suspend turns the login off) never count; paused
+  reviewers and active people with a deactivated mentor link (stopped mentoring, "No group", Admin to
+  Finance) do (review round 3);
 - completion counts it for every kind (`test_profile_completion.py`).
 """
 import json
@@ -15,7 +18,7 @@ import json
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.scholarship import volunteer_positions
+from apps.scholarship import mentor_invite, staff_mentor, volunteer_positions
 from apps.scholarship.models import Mentor, Sponsor, SponsorProgrammeMembership, StaffProfile
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_org, make_programme,
@@ -90,6 +93,15 @@ class TestAdminMe(TestCase):
                 # A save without the field still works (the page never sends it for them).
                 self.assertEqual(self._patch(admin, {'job_title': 'Coordinator'}).status_code, 200)
                 self.assertEqual(StaffProfile.objects.get(partner_admin=admin).highest_position, '')
+
+    def test_a_super_is_never_asked_and_is_refused(self):
+        admin = make_admin('super', super_admin=True)
+        self.assertFalse(volunteer_positions.asked(admin))
+        self.assertFalse(authed_client(admin).get(ME).json()['asks_highest_position'])
+        for value in ('head', ''):
+            r = self._patch(admin, {'highest_position': value})
+            self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_highest_position'))
+        self.assertFalse(StaffProfile.objects.filter(partner_admin=admin).exists())
 
     def test_blank_clears_it_and_the_get_serves_blank(self):
         admin = _answered(self.org, 'head', role='admin')
@@ -170,8 +182,11 @@ class TestTheSummary(TestCase):
         _answered(self.org, 'c_level', archived_at=timezone.now(), is_active=False)
         _answered(self.org, 'c_level', is_active=False)
         _answered(self.org, 'c_level', archived_at=timezone.now(), is_active=True)   # archived, still active
-        suspended = _answered(self.org, 'c_level', role='mentor')                        # M2c: suspended
-        Mentor.objects.filter(pk=suspended.mentor_id).update(deactivated_at=timezone.now())
+        lead = make_admin('org_admin', owning_org=self.org)                              # no profile row
+        suspended = _answered(self.org, 'c_level', role='mentor', first_seen_at=timezone.now())
+        self.assertEqual(mentor_invite.deactivate(lead, suspended.mentor, suspended), (True, None))  # Suspend
+        suspended.refresh_from_db()
+        self.assertFalse(suspended.is_active)                       # Suspend turns the login off
         _answered(self.org, '')
         make_admin('admin', owning_org=self.org)          # no profile row at all
         # Counted whatever their group: a mentor login, a "No group" member, an organisation admin.
@@ -181,6 +196,25 @@ class TestTheSummary(TestCase):
         _answered(self.org, 'manager', paused_at=timezone.now())                        # paused still counts
         self.assertEqual(volunteer_positions.counts_for_organisation(self.org.id),
                          {'c_level': 2, 'head': 2, 'manager': 2, 'individual': 3})
+
+    def test_active_people_with_a_deactivated_mentor_link_still_count(self):
+        # Review round 3: each keeps a Mentor row stamped deactivated, and each is still active team.
+        lead = make_admin('org_admin', owning_org=self.org)                              # no profile row
+        now = timezone.now()
+        stopped = _answered(self.org, 'head', role='admin', first_seen_at=now,
+                            mentor=Mentor.objects.create(organisation=self.org))
+        self.assertEqual(staff_mentor.stop(lead, stopped.mentor, stopped), (0, None))  # Stop mentoring
+        no_group = _answered(self.org, 'manager', role='mentor', first_seen_at=now)
+        self.assertEqual(staff_mentor.remove_mentor_login(lead, no_group.mentor, no_group), (0, None))
+        finance = _answered(self.org, 'individual', role='finance',                    # Admin -> Finance
+                            mentor=Mentor.objects.create(organisation=self.org, deactivated_at=now))
+        for person, role in ((stopped, 'admin'), (no_group, 'member'), (finance, 'finance')):
+            with self.subTest(role=role):
+                person.refresh_from_db()
+                self.assertEqual((person.role, person.is_active), (role, True))
+                self.assertIsNotNone(Mentor.objects.get(pk=person.mentor_id).deactivated_at)
+        self.assertEqual(volunteer_positions.counts_for_organisation(self.org.id),
+                         {'c_level': 0, 'head': 1, 'manager': 1, 'individual': 1})
 
     def test_shares_always_sum_to_one_hundred(self):
         for counts in ({'c_level': 1, 'head': 1, 'manager': 1, 'individual': 0},

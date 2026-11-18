@@ -1,5 +1,30 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-18 — Request #69: the sponsor's "Our volunteers" figures stay as built; the small-size risk is accepted (owner)
+
+Branch req69, not pushed. Migration 0214 (additive). Services: both.
+
+**What the reviewer showed (fresh Opus re-check of the review round, 18 Nov).** The figures never name anybody,
+but at small sizes they can still point at one person:
+- the headline can single out one senior volunteer: with 7 answers and one at C-level, it reads 14%, and anyone
+  who knows the team knows who that is;
+- whole-percent bars plus a small band ("5+", "10+") can give the exact counts back, for example 14 / 29 / 29 / 28
+  can only be 1 / 2 / 2 / 2 of 7. Watching the figures change from week to week can also show who joined, left or
+  changed their answer.
+
+**Owner decision (18 Nov 2026).** Keep the figures exactly as built: nothing below 5 answers, the count banded
+(`count_at_least`), the headline (`senior_pct`) always sent at 5 or more, and the bars hidden only when one level
+holds everyone or exactly one person. The owner accepts the risk above. **Do not change the banding, the rounding
+or the headline rule** without a new owner ruling.
+
+**Settled with it (review round 3).**
+- Who counts: `is_active` is the only "switched off" test. Suspend turns a mentor's login off, so a suspended
+  mentor is already out. Never filter on `Mentor.deactivated_at`: active people keep a deactivated mentor link
+  after they stop mentoring, move to "No group" or switch from Admin to Finance, and they still count.
+- Who is asked: a super is not asked (platform level, no organisation), nor is a source user or a referral
+  partner. The allowlist label for `volunteer_positions.asked` stays DISPLAY / account kind (the `source_invite`
+  precedent).
+
 ## 2026-11-16 — Request #73: two-way org admin and reviewer notes (analysis 167)
 
 Branch req73, one commit, not pushed. Migration `0216_two_way_notes` (additive: `reviewer_notes.author_role` with a default, and the new table `staff_notifications`). Services: both. Built to the brief `docs/plans/2026-11-16-req73-two-way-notes-brief.md`. **The bell line was added by the owner at no charge.** The builder's calls, for the architect to confirm:

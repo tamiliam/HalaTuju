@@ -1,16 +1,19 @@
 """Request #69 (2026-11-17): "Our volunteers" on the sponsor's Trust & Transparency page — the share of an
 organisation's team at each highest-position level, and NEVER anything about one person.
 
-WHO IS ASKED (`asked`, the ONE rule; owner 2026-11-17): every team kind, and never a source user or a
-referral partner (`NOT_ASKED`: they are not the organisation's volunteers). The completion item, the
-console's banner question and the My Profile field all follow it; `PATCH admin/me/` refuses the field
-from anybody else (`bad_highest_position`).
+WHO IS ASKED (`asked`, the ONE rule; owner 2026-11-17): every team kind, and never a super (platform
+level, no organisation; review round 3), a source user or a referral partner (`NOT_ASKED`: they are not
+the organisation's volunteers). The completion item, the console's banner question and the My Profile
+field all follow it; `PATCH admin/me/` refuses the field from anybody else (`bad_highest_position`).
 
 WHO COUNTS: the organisation's OWN team (`owning_organisation`), active (`is_active`) and not archived
 (`archived_at` NULL), who have answered `StaffProfile.highest_position`. Every asked kind counts, a
-mentor login and a "No group" member included, and a PAUSED reviewer too (paused is not gone); a
-SUSPENDED mentor (`Mentor.deactivated_at` set, M2c) never does, nor a super (platform-level, no
-organisation) or a `NOT_ASKED` kind.
+mentor login and a "No group" member included, and a PAUSED reviewer too (paused is not gone); a super
+and a `NOT_ASKED` kind never do. `is_active` is the ONLY "switched off" test: a SUSPENDED mentor is out
+because Suspend turns their login off (`mentor_invite._switch_off`). ⚠ NEVER filter on
+`Mentor.deactivated_at` (review round 3): an ACTIVE person keeps a deactivated mentor link after they
+stop mentoring (`staff_mentor.stop`), leave Mentors for "No group" (`staff_mentor.remove_mentor_login`)
+or move from Admin to Finance (`MENTOR_LINK_ROLES`), and they are still the organisation's team.
 
 WHICH ORGANISATION: the one running the gifts the sponsor was ACCEPTED into (approved
 `SponsorProgrammeMembership` rows), through `usage.sole_organisation_id` — exactly one organisation, or
@@ -32,7 +35,7 @@ true value. `senior_pct` (the headline) is worked out from the exact counts the 
 top two levels' largest-remainder shares added together — so when the bars are shown, the headline is
 exactly the sum of the two top bars, and when they are withheld it is the same number.
 """
-from django.db.models import Count, Q
+from django.db.models import Count
 
 from . import usage
 from .models import SponsorProgrammeMembership, StaffProfile
@@ -52,8 +55,8 @@ NOT_TEAM = ('super', *NOT_ASKED)
 
 
 def asked(admin):
-    """True when this person is asked their highest position (see the module docstring)."""
-    return admin is not None and admin.role not in NOT_ASKED
+    """True when this person is asked their highest position (see the module docstring): never a super."""
+    return admin is not None and not admin.is_super and admin.role not in NOT_ASKED
 
 
 def sponsor_organisation_id(sponsor):
@@ -69,7 +72,6 @@ def counts_for_organisation(org_id):
     rows = (StaffProfile.objects
             .filter(partner_admin__owning_organisation_id=org_id, partner_admin__is_active=True,
                     partner_admin__archived_at__isnull=True, highest_position__in=KEYS)
-            .filter(Q(partner_admin__mentor__isnull=True) | Q(partner_admin__mentor__deactivated_at__isnull=True))
             .exclude(partner_admin__role__in=NOT_TEAM)
             .values('highest_position').annotate(n=Count('id')))
     found = {r['highest_position']: r['n'] for r in rows}

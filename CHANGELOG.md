@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #69 review round 3 - active staff with a stopped mentor link count again, supers not asked (2026-11-18)
+
+Branch req69, not pushed. Migration: `0214_reviewerprofile_highest_position` (additive; unchanged). Services: both.
+- **Who counts (fixes round 2):** the `Mentor.deactivated_at` filter is gone; `is_active` is the only "switched off" test. Suspend already turns a mentor's login off (`mentor_invite._switch_off`), so a suspended mentor stays out, now tested through the real Deactivate. The filter had dropped ACTIVE people who keep a deactivated mentor link: a staff member who stopped mentoring, a mentor login moved to "No group" and an Admin switched to Finance. A new test drives the first two through `staff_mentor.stop` / `remove_mentor_login` and pins all three as counted.
+- **Who is asked:** a super is no longer asked (`asks_highest_position` false; a `PATCH` of the field is 400 `bad_highest_position`). New test.
+- **Sponsor figures unchanged** (owner 18 Nov): banding, rounding and the headline stay as built; the small-size risk the reviewer showed is accepted and recorded in `docs/decisions.md`.
+
 ### refactor: request #69 review round - sponsor figures banded, only team members asked (2026-11-18)
 
 Branch req69, not pushed. Migration: `0214_reviewerprofile_highest_position` (additive; unchanged by this round). Services: both.

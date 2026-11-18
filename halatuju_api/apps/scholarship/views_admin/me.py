@@ -146,8 +146,8 @@ class AdminMeView(_AdminBase):
     reviewer profile does. A source user's NAME saves here too (opted in, GET and PATCH). A MENTOR's
     `mentoring_area` too (S7a): `mentoring_area_required`, `mentoring_area_too_long` (120); any other
     role sending it is `not_editable`. Request #69: `highest_position`, one of the four choice keys or
-    '' (not given), from anyone who is asked it (`volunteer_positions.asked`: never a source user or a
-    referral partner); anything else, or from anybody else, is `bad_highest_position` and nothing
+    '' (not given), from anyone who is asked it (`volunteer_positions.asked`: never a super, a source user
+    or a referral partner); anything else, or from anybody else, is `bad_highest_position` and nothing
     changes. Answers with the GET payload."""
     source_partner_methods = ('get', 'patch')
     mentor_methods = member_methods = ('get', 'patch')
