@@ -59,10 +59,10 @@ export function QcPanel({
   qcOverrideReason: string
   setQcOverrideReason: Dispatch<SetStateAction<string>>
 }) {
-  // LL2b: the QC's "Disagree" taps on the facts in doubt, kept for THIS verdict round only (a new
-  // verdict after a reopen starts with no taps). With no fact in doubt no block shows and no
-  // `fact_checks` key is sent — the request is exactly as before LL2b.
-  const round = app.verdict_decided_at ?? ''
+  // LL2b: the QC's "Disagree" taps on the facts in doubt, kept for THIS case and THIS verdict round
+  // only (another application, or a new verdict after a reopen, starts with no taps). With no fact in
+  // doubt no block shows and no `fact_checks` key is sent — the request is exactly as before LL2b.
+  const round = `${app.id}:${app.verdict_decided_at ?? ''}`
   const [taps, setTaps] = useState<{ round: string; facts: string[] }>({ round, facts: [] })
   const tapped = taps.round === round ? taps.facts : []
   const doubt = inDoubtOf(app)

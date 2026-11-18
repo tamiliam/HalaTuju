@@ -193,7 +193,7 @@ export const REVIEWER_FAQ: QA[] = [
         If you Fail a fact the system showed as green, tap one reason for it before you save. If you Approve
         while a fact is on Fail, you see a warning, but you can still go ahead. QC then takes a second look at
         those facts (a Fail on a green fact, or a Fail you still approved) and either agrees with you or taps
-        <strong> Disagree</strong>. The answers count how often the AI was right; leads also see how often QC
+        <strong> Disagree</strong>. The answers count how often QC agreed with you; leads also see how often QC
         disagreed with each reviewer, to support reviewers, not to rank them.</>,
     },
     {

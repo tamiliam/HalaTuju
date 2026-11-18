@@ -19,11 +19,12 @@ export function inDoubtOf(app: AdminScholarshipDetail): SecondLookFact[] {
   return app.second_look?.in_doubt ?? []
 }
 
-/** What the QC decision sends: only the taps, as "disagreed", and only for a fact still shown.
- *  `{}` = the QC agrees with the reviewer on every fact in doubt. */
+/** What the QC decision sends: an answer for EVERY fact the block showed — "disagreed" when tapped,
+ *  "agreed" when untouched. The server keeps only facts it still has in doubt (a fact it added after
+ *  this tab loaded gets no answer), and on a send-back keeps only the "disagreed" ones. */
 export function factChecksFor(items: readonly SecondLookFact[], tapped: readonly string[]) {
-  const out: Record<string, 'disagreed'> = {}
-  for (const i of items) if (tapped.includes(i.fact)) out[i.fact] = 'disagreed'
+  const out: Record<string, 'agreed' | 'disagreed'> = {}
+  for (const i of items) out[i.fact] = tapped.includes(i.fact) ? 'disagreed' : 'agreed'
   return out
 }
 

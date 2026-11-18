@@ -7643,7 +7643,7 @@
         "byReviewer": "Mengikut penyemak",
         "leadsOnly": "Ketua sahaja",
         "reviewerHint": "Dipaparkan kepada ketua sahaja, untuk menyokong penyemak dan bukan untuk menarafkan mereka.",
-        "footer": "Fakta yang belum disemak oleh QC.",
+        "footer": "Hanya fakta yang diragui disemak oleh QC. Angka lain membandingkan AI dengan penyemak.",
         "allProgrammes": "Semua program bersama.",
         "assignedOnly": "Pemohon yang ditugaskan kepada anda sahaja.",
         "versionUnknown": "Versi tidak diketahui",

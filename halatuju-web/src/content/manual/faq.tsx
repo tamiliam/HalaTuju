@@ -115,8 +115,8 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>What is the <strong>Facts in doubt</strong> box?</>,
       a: <>A second look at the facts where the reviewer and the AI did not agree. You agree with the reviewer
         unless you tap <strong>Disagree with the reviewer</strong> on a fact (tap again to undo). Your answer goes
-        with your decision and never holds it up. It only counts how often the AI, or the reviewer, was
-        right; it does not change the case.</>,
+        with your decision and never holds it up. It only counts how often the QC agreed with the reviewer
+        on these facts (&ldquo;checked by the QC&rdquo;); it does not change the case.</>,
     },
     {
       q: <>Why is Accept blocked on this case?</>,

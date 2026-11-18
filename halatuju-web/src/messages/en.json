@@ -7643,7 +7643,7 @@
         "byReviewer": "By reviewer",
         "leadsOnly": "Leads only",
         "reviewerHint": "Shown to leads only, to support reviewers and not to rank them.",
-        "footer": "Facts not yet checked by the QC.",
+        "footer": "Only the facts in doubt are checked by the QC. The other numbers compare the AI with the reviewer.",
         "allProgrammes": "All programmes together.",
         "assignedOnly": "Your assigned applicants only.",
         "versionUnknown": "Unknown version",

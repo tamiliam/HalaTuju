@@ -3,14 +3,17 @@
  *
  * LL2b: "Facts in doubt" — the QC's second look, inside the QC panel. The SERVER decides which facts
  * are in doubt (`second_look.in_doubt`); the panel lists them, remembers the QC's "Disagree" taps,
- * and sends only those taps as `fact_checks` on the decision (`{}` = agrees with the reviewer on
- * every one). With no fact in doubt — or old data with no `second_look` key — no block shows and
- * the request carries no `fact_checks` key at all, exactly as before. Made-up names only.
+ * and sends an answer for EVERY fact shown as `fact_checks` on the decision ("disagreed" tapped,
+ * "agreed" untouched). With no fact in doubt — or old data with no `second_look` key — no block shows
+ * and the request carries no `fact_checks` key at all, exactly as before. Made-up names only.
  */
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import type { SecondLook } from '@/lib/admin-api'
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
+import { buildApplicationDetail } from '@/test/adminApplicationDetail'
+import { QcPanel } from './view/QcPanel'
+import type { T } from './view/shared'
 
 installCockpitConsoleGuard()
 
@@ -103,32 +106,35 @@ describe('LL2b: the block on the QC panel', () => {
   })
 })
 
+// Review round: every shown fact is now sent ("agreed" untouched, "disagreed" tapped), so the server
+// never answers a fact this tab did not show. The four tests below used to expect the taps only.
 describe('LL2b: what the decision sends', () => {
-  it('Accept with no taps sends fact_checks {} (agrees with the reviewer on every fact)', async () => {
+  it('Accept with no taps sends "agreed" for every fact shown', async () => {
     const { api } = asQc(TWO)
     await loaded()
     accept()
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
-    expect(sent(api)).toEqual(expect.objectContaining({ decision: 'accept', fact_checks: {} }))
+    expect(sent(api)).toEqual(expect.objectContaining({ decision: 'accept',
+      fact_checks: { identity: 'agreed', income: 'agreed' } }))
   })
 
-  it('Accept after a tap sends only the tapped fact, as "disagreed"', async () => {
+  it('Accept after a tap sends the tapped fact as "disagreed" and the other as "agreed"', async () => {
     const { api } = asQc(TWO)
     await loaded()
     fireEvent.click(disagree('income'))
     accept()
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
-    expect(sent(api).fact_checks).toEqual({ income: 'disagreed' })
+    expect(sent(api).fact_checks).toEqual({ identity: 'agreed', income: 'disagreed' })
   })
 
-  it('a tap then undo sends nothing for that fact', async () => {
+  it('a tap then undo sends "agreed" for that fact', async () => {
     const { api } = asQc(TWO)
     await loaded()
     fireEvent.click(disagree('identity'))
     fireEvent.click(disagree('identity'))
     accept()
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
-    expect(sent(api).fact_checks).toEqual({})
+    expect(sent(api).fact_checks).toEqual({ identity: 'agreed', income: 'agreed' })
   })
 
   it('Reopen carries the taps too', async () => {
@@ -141,7 +147,8 @@ describe('LL2b: what the decision sends', () => {
       { target: { value: 'The income letter is for the wrong year.' } })
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.reopenConfirm' }))
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
-    expect(sent(api)).toEqual(expect.objectContaining({ decision: 'reopen', fact_checks: { identity: 'disagreed' } }))
+    expect(sent(api)).toEqual(expect.objectContaining({ decision: 'reopen',
+      fact_checks: { identity: 'disagreed', income: 'agreed' } }))
   })
 
   it('Reject carries the taps too', async () => {
@@ -154,7 +161,27 @@ describe('LL2b: what the decision sends', () => {
       { target: { value: 'Not eligible for this programme.' } })
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.rejectConfirm' }))
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
-    expect(sent(api)).toEqual(expect.objectContaining({ decision: 'reject', fact_checks: { income: 'disagreed' } }))
+    expect(sent(api)).toEqual(expect.objectContaining({ decision: 'reject',
+      fact_checks: { identity: 'agreed', income: 'disagreed' } }))
+  })
+
+  it('taps do not carry from one application to the next', () => {
+    const first = buildApplicationDetail('awaiting_qc', { outcome: 'recommend', qc_refusal: null, second_look: TWO })
+    const next = { ...first, id: first.id + 1 }   // same verdict time: only the case differs
+    const doQcDecision = jest.fn()
+    const props = {
+      t: ((k: string) => k) as unknown as T, busy: '', canQc: true, role: null, doQcDecision,
+      qcReopenOpen: false, setQcReopenOpen: jest.fn(), qcComments: '', setQcComments: jest.fn(),
+      qcRejectMode: false, setQcRejectMode: jest.fn(), qcOverrideOpen: false, setQcOverrideOpen: jest.fn(),
+      qcOverrideReason: '', setQcOverrideReason: jest.fn(),
+    }
+    const { rerender } = render(<QcPanel app={first} {...props} />)
+    fireEvent.click(disagree('identity'))
+    expect(disagree('identity').getAttribute('aria-pressed')).toBe('true')
+    rerender(<QcPanel app={next} {...props} />)
+    expect(disagree('identity').getAttribute('aria-pressed')).toBe('false')
+    accept()
+    expect(doQcDecision).toHaveBeenCalledWith('accept', undefined, { identity: 'agreed', income: 'agreed' })
   })
 
   it('no block shown: the request carries no fact_checks key at all', async () => {
