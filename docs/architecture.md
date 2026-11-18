@@ -153,10 +153,12 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
   CASCADE), `org`, `application`, `kind` (`reviewer_note`), `source_id`, `created_at`, `seen_at`; unique
   (recipient, kind, source_id); ids only, never text. ONE writer and reader: `apps/scholarship/staff_notifications.py`
   (rows for the other side only, on write; the email to them after the commit, billed to the case's organisation
-  through `usage_context`, at most one per person per case every 10 minutes; `mark_seen` on the notes GET and after
-  a note is added; `sweep` on every new note and in the assign-emails cron, which drops unseen rows on org admin
-  notes for anyone but the current reviewer; the list's `new_note` EXISTS column and the bell count, fenced to the
-  caller's organisation). RLS on, one `service_role` policy.
+  through `usage_context`, at most one per person per case every 10 minutes while their earlier row is unseen;
+  `mark_seen` on the notes GET and after a note is added; `sweep` on every new note and in the assign-emails cron,
+  which drops unseen rows that no longer show, reading the holder inside its DELETE; at assignment the cron also
+  marks the holder for org admin notes no reviewer has read (`after_assignment`, logged and never blocking the
+  mail); the list's `new_note` EXISTS column and the bell count, fenced to the caller's organisation). RLS on, one
+  `service_role` policy.
 
 ## Scheduled work
 

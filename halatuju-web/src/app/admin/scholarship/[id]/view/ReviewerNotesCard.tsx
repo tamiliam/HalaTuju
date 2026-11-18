@@ -16,11 +16,17 @@
  * ⚠ SERVE, NEVER DERIVE: the side is the server's `viewer`, whether the box shows is its `can_add` (the
  * window AND the side) and the limit is its `max_length`. The notes are their OWN fetch (the detail GET
  * stays at 38 queries), re-read when the case's status or verdict stamp moves, because those close the
- * window. Reading them clears the caller's "New note" mark on the server.
+ * window. Reading them clears the caller's "New note" mark on the server, so a successful GET or POST tells the
+ * bell to ask again (`announceNotesRead`).
+ *
+ * ⚠ ONE CASE PER MOUNT (#73 re-check M1): the page keys this card by the case (`key={app.id}`), because
+ * prev/next (TD-216) keeps the page mounted; a draft, an error or a list must never carry over to the next
+ * student. Belt and braces: a GET or POST answer for a case that is no longer this card's is dropped.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { addReviewerNote, getReviewerNotes, type ReviewerNote, type ReviewerNotes } from '@/lib/admin-api'
 import { formatDateTime } from '@/lib/formatDate'
+import { announceNotesRead } from '@/lib/useNewNoteCount'
 
 import type { T } from './shared'
 
@@ -56,12 +62,18 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const caseNow = useRef<number | null>(appId)
+  useEffect(() => {
+    caseNow.current = appId
+    return () => { caseNow.current = null }
+  }, [appId])
+  const still = (asked: number) => caseNow.current === asked
 
   useEffect(() => {
     if (!token) return
     let live = true
     getReviewerNotes(appId, { token })
-      .then((d) => { if (live) { setData(d); setLoadFailed(false) } })
+      .then((d) => { if (live) { setData(d); setLoadFailed(false); announceNotesRead() } })
       // Review R6: a failed REFRESH is said out loud; the notes already on screen stay, marked stale.
       .catch(() => { if (live) setLoadFailed(true) })
     return () => { live = false }
@@ -76,20 +88,23 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
 
   const submit = async () => {
     if (!token || busy || blank || over) return
+    const asked = appId
     setBusy(true); setError('')
     try {
-      const next = await addReviewerNote(appId, draft, { token })
-      setData(next); setDraft('')
+      const next = await addReviewerNote(asked, draft, { token })
+      if (!still(asked)) return
+      setData(next); setDraft(''); announceNotesRead()
     } catch (e) {
+      if (!still(asked)) return
       const code = (e as { code?: string }).code ?? ''
       setError((CODES as readonly string[]).includes(code)
         ? t(`${P}.error.${code}`, { max: fmt(max) })
         : t(`${P}.error.generic`))
       if (code === 'notes_not_yet' || code === 'notes_closed' || code === 'writer_only') {
-        getReviewerNotes(appId, { token }).then(setData).catch(() => {})
+        getReviewerNotes(asked, { token }).then((d) => { if (still(asked)) setData(d) }).catch(() => {})
       }
     } finally {
-      setBusy(false)
+      if (still(asked)) setBusy(false)
     }
   }
 

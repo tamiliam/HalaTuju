@@ -11,6 +11,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ReviewerNotesCard, looksEmpty, noteLength } from './ReviewerNotesCard'
 import { addReviewerNote, getReviewerNotes, type ReviewerNotes } from '@/lib/admin-api'
+import { NOTES_READ_EVENT } from '@/lib/useNewNoteCount'
 
 jest.mock('@/lib/admin-api', () => ({ getReviewerNotes: jest.fn(), addReviewerNote: jest.fn() }))
 const get = getReviewerNotes as jest.Mock
@@ -261,5 +262,63 @@ describe('R6', () => {
     fireEvent.change(await screen.findByLabelText(`${P}.addLabel`), { target: { value: 'x' } })
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: `${P}.add` })) })
     expect((await screen.findByRole('alert')).textContent).toBe(`${P}.error.bad_body:2,000`)
+  })
+})
+
+/** #73 re-check M1: an answer for a case this card no longer shows never paints on the next one. */
+describe('a late answer for the previous case', () => {
+  const deferred = () => {
+    let resolve: (v: ReviewerNotes) => void = () => {}
+    const promise = new Promise<ReviewerNotes>((r) => { resolve = r })
+    return { promise, resolve }
+  }
+  const B = { ...NOTE, id: 9, body: 'A note on the next student.' }
+  const LATE = { ...NOTE, id: 3, body: 'Posted on the first student.' }
+
+  it.each([
+    ['keyed by the case, as the page mounts it', true],
+    ['even without the key (the guard on its own)', false],
+  ])('a POST answer after moving on is dropped: %s', async (_name, keyed) => {
+    const late = deferred()
+    get.mockImplementation((id: number) => Promise.resolve(payload({ notes: id === 8 ? [B] : [NOTE] })))
+    add.mockReturnValue(late.promise)
+    const card = (id: number) => <ReviewerNotesCard key={keyed ? id : 'one'} appId={id} token="tok" t={t}
+      refreshKey="interviewing" />
+    const { rerender } = render(card(7))
+    fireEvent.change(await screen.findByLabelText(`${P}.addLabel`), { target: { value: 'For the first' } })
+    fireEvent.click(screen.getByRole('button', { name: `${P}.add` }))
+    expect(add).toHaveBeenCalledWith(7, 'For the first', { token: 'tok' })
+
+    rerender(card(8))
+    expect(await screen.findByText(B.body)).toBeTruthy()
+    await act(async () => { late.resolve(payload({ notes: [NOTE, LATE] })) })
+    expect(screen.queryByText(LATE.body)).toBeNull()
+    expect(screen.getByText(B.body)).toBeTruthy()
+  })
+})
+
+/** #73 re-check M2: reading or adding clears the mark on the server, so the card tells the bell at once. */
+describe('the bell is told', () => {
+  it('after the notes are read, and again after a note is added; never after a failed read', async () => {
+    const heard = jest.fn()
+    window.addEventListener(NOTES_READ_EVENT, heard)
+    try {
+      get.mockResolvedValue(payload({ notes: [] }))
+      add.mockResolvedValue(payload())
+      mount()
+      fireEvent.change(await screen.findByLabelText(`${P}.addLabel`), { target: { value: 'Hello' } })
+      expect(heard).toHaveBeenCalledTimes(1)
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: `${P}.add` })) })
+      expect(heard).toHaveBeenCalledTimes(2)
+
+      heard.mockClear()
+      get.mockRejectedValue(new Error('down'))
+      render(<ReviewerNotesCard appId={9} token="tok" t={t} refreshKey="x" />)
+      await waitFor(() => expect(get).toHaveBeenCalledWith(9, { token: 'tok' }))
+      await act(async () => { await Promise.resolve() })
+      expect(heard).not.toHaveBeenCalled()
+    } finally {
+      window.removeEventListener(NOTES_READ_EVENT, heard)
+    }
   })
 })

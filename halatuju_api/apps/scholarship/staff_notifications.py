@@ -16,13 +16,20 @@ staff list, so never gets one.
 ⚠ WHAT SHOWS: only a note from the OTHER side, asked of the case as it is NOW: the reviewer assigned to it sees
 the org admin side's notes; everyone else sees the reviewer's. So an earlier reviewer's leftover rows stop
 showing the moment the case changes hands, and `sweep` then deletes them: the assign-emails cron
-(`assign_notify.send_one`) sweeps after every assignment, and every new note sweeps its case. The sweep asks
-only who holds the case now, never who lost it, so an unassign followed by a fresh assign is swept too.
-The assignment writer itself is not touched: its query budget is pinned.
+(`assign_notify.send_one`, through `after_assignment`) sweeps after every assignment, and every new note
+sweeps its case. The sweep reads who holds the case INSIDE its own DELETE, never who lost it, so an unassign
+followed by a fresh assign is swept too, and a holder assigned a moment ago never loses a row (#73 re-check
+L5). It also drops the holder's own rows for reviewer-side notes: an org admin who now holds the case reads
+it as the reviewer (L6). The assignment writer itself is not touched: its query budget is pinned.
 
-⚠ THE EMAIL is billed to the case's organisation (`usage.usage_context(application=...)`) and cools down: one
-per person per case per `EMAIL_COOL_DOWN`. A person who already has a row on the case from the last ten
-minutes (seen or not) still gets the row and the mark, but no second email.
+⚠ AT ASSIGNMENT (#73 re-check L7) the holder gets a mark for every org admin side note on the case that no
+reviewer has read yet, so a note written while nobody held the case is not lost. No email: the assignment
+email already goes. A note an earlier reviewer read is not marked again.
+
+⚠ THE EMAIL is billed to the case's organisation (`usage.usage_context(application=...)`) and cools down
+over bursts: a person who still has an UNSEEN row on the case from the last `EMAIL_COOL_DOWN` gets the row
+and the mark, but no second email. Someone who read the note and replied is emailed for the next turn
+(#73 re-check L4).
 
 ⚠ THE BELL COUNT is fenced to the caller's own organisation (`org_id`), on top of the recipient.
 
@@ -37,7 +44,7 @@ from django.utils import timezone
 
 from apps.courses import staff_permissions
 from . import surface_gates, usage
-from .models import ReviewerNote, StaffNotification
+from .models import ReviewerNote, ScholarshipApplication, StaffNotification
 from .models.reviewer_notes import ORG_ADMIN, REVIEWER
 from .models.staff_notifications import REVIEWER_NOTE
 
@@ -78,13 +85,13 @@ def notify(application, *, kind, source_id, recipients):
 
 def alert_by_email(application, *, author_role, recipients, source_id):
     """After the commit, email ``recipients`` (the other side, `the_other_side`) that there is a new note on
-    the case. Never the text. Billed to the case's organisation. Cools down: nobody who has another row on
-    this case from the last `EMAIL_COOL_DOWN` is emailed again. Best-effort, never raises."""
+    the case. Never the text. Billed to the case's organisation. Cools down: nobody who still has another
+    UNSEEN row on this case from the last `EMAIL_COOL_DOWN` is emailed again. Best-effort, never raises."""
     ids = [p.id for p in recipients if p.email]
     if not ids:
         return
     recent = set(StaffNotification.objects.filter(
-        application_id=application.id, recipient_id__in=ids, kind=REVIEWER_NOTE,
+        application_id=application.id, recipient_id__in=ids, kind=REVIEWER_NOTE, seen_at__isnull=True,
         created_at__gte=timezone.now() - EMAIL_COOL_DOWN,
     ).exclude(source_id=source_id).values_list('recipient_id', flat=True))
     to = [p.email for p in recipients if p.email and p.id not in recent]
@@ -113,18 +120,46 @@ def mark_seen(recipient, application, kinds=None):
     return rows.update(seen_at=timezone.now())
 
 
-def sweep(application_id, holder_id):
-    """Delete the unseen rows on the case that were meant for A reviewer — rows for an org admin side note —
-    held by anyone who is not ``holder_id``, the reviewer holding it now (None: nobody). Asks only who
-    holds the case NOW, so an unassign and then a fresh assign is swept as surely as a reassign."""
-    org_admin_notes = ReviewerNote.objects.filter(
-        application_id=application_id, author_role=ORG_ADMIN).values('pk')
+def sweep(application_id):
+    """Delete the unseen rows on the case that no longer show: rows for an org admin side note held by anyone
+    but the reviewer holding the case now, and the holder's own rows for a reviewer side note (an org admin
+    who has since become the holder). Who holds the case is read INSIDE the DELETE, so a holder assigned a
+    moment ago is never swept, and an unassign and then a fresh assign is swept as surely as a reassign."""
+    notes = ReviewerNote.objects.filter(application_id=application_id)
+    holds = Exists(ScholarshipApplication.objects.filter(
+        pk=application_id, assigned_to_id=OuterRef('recipient_id')))
     rows = StaffNotification.objects.filter(
         application_id=application_id, kind=REVIEWER_NOTE, seen_at__isnull=True,
-        source_id__in=org_admin_notes)
-    if holder_id:
-        rows = rows.exclude(recipient_id=holder_id)
+    ).filter((~holds & Q(source_id__in=notes.filter(author_role=ORG_ADMIN).values('pk')))
+             | (holds & Q(source_id__in=notes.filter(author_role=REVIEWER).values('pk'))))
     return rows.delete()[0]
+
+
+def mark_unread_for_the_holder(application_id):
+    """At assignment (#73 re-check L7): the reviewer holding the case gets an unseen row for every org admin
+    side note on it that no reviewer has read yet (a note written while nobody held the case reached
+    nobody). Never their own note. No email: the assignment email already goes."""
+    case = ScholarshipApplication.objects.filter(pk=application_id).select_related('assigned_to').first()
+    person = case.assigned_to if case is not None else None
+    if person is None or not person.is_active:
+        return 0
+    read = StaffNotification.objects.filter(kind=REVIEWER_NOTE, source_id=OuterRef('pk'), seen_at__isnull=False)
+    unread = list(ReviewerNote.objects.filter(application_id=application_id, author_role=ORG_ADMIN)
+                  .exclude(author_id=person.id).filter(~Exists(read)).values_list('pk', flat=True))
+    StaffNotification.objects.bulk_create([
+        StaffNotification(recipient=person, org_id=case.owning_organisation_id, application_id=application_id,
+                          kind=REVIEWER_NOTE, source_id=pk)
+        for pk in unread
+    ], ignore_conflicts=True)
+    return len(unread)
+
+
+def after_assignment(application_id):
+    """The assign-emails cron's housekeeping for one case: `sweep`, then `mark_unread_for_the_holder`.
+    In its own savepoint; the caller logs and carries on if it raises (it must never hold up the mail)."""
+    with transaction.atomic():
+        sweep(application_id)
+        mark_unread_for_the_holder(application_id)
 
 
 def _unseen_from_the_other_side(admin):

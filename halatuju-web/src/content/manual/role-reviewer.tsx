@@ -123,7 +123,9 @@ export const roleReviewer: ManualChapter = {
         <strong> Reply</strong> (up to 2,000 characters) and press <strong>Send reply</strong>; a note cannot be
         edited or deleted, so to correct one, add another. When your org admin writes, you get an email (it never
         contains the note) and a <strong>New note</strong> mark by the student&rsquo;s name in your list, plus a
-        line in the bell; both clear when you open the student&rsquo;s page. Once you record your recommendation
+        line in the bell; both clear when you open the student&rsquo;s page. A note written before the student
+        was assigned to you shows as a New note once they are (the assignment email is the only email). Once
+        you record your recommendation
         the notes close and stay on the file, read-only. QC can read them; the student and sponsors never see
         them, and they are never used in the AI-written profile or summary.</>
       ),

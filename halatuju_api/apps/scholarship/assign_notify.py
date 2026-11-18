@@ -135,9 +135,15 @@ def send_one(event_id):
              .get(pk=event_id))
     # #73: whoever does not hold the case now loses its unseen new-note rows — the reviewer who lost it,
     # and one unassigned before this assign too (reads already hide them; the assign sits at its pinned
-    # query budget, so the delete happens here, off the request).
+    # query budget, so this happens here, off the request) — and the holder gets a mark for each org admin
+    # note no reviewer has read yet. ⚠ HOUSEKEEPING NEVER HOLDS UP THE MAIL (#73 re-check M3): a failure is
+    # logged and the emails below still go.
     from . import staff_notifications
-    staff_notifications.sweep(event.application_id, event.application.assigned_to_id)
+    try:
+        staff_notifications.after_assignment(event.application_id)
+    except Exception:
+        logger.warning('new-note housekeeping failed event=%s app=%s', event_id, event.application_id,
+                       exc_info=True)
     if event.application.assigned_to_id != event.to_admin_id:
         # Reassigned or unassigned before the cron ran: this reviewer no longer has the case, so
         # neither "new applicant" to them nor "your interviewer is ..." to the student. Closed as

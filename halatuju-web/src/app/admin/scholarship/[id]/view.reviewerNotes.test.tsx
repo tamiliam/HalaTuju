@@ -5,9 +5,10 @@
  * org admin. Since request #73 (2026-11-16) it is "Org admin and reviewer notes" and the assigned reviewer
  * REPLIES in it (the served `viewer` picks the face).
  */
-import { screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
+import { AdminScholarshipDetailView } from './view'
 
 installCockpitConsoleGuard()
 
@@ -46,4 +47,33 @@ it('QC reads the notes, with no box', async () => {
   expect(await screen.findByText('Please ask about the older brother.')).toBeTruthy()
   expect(screen.getByText(`${P}.introReader`)).toBeTruthy()
   expect(screen.queryByRole('textbox', { name: `${P}.addLabel` })).toBeNull()
+})
+
+/**
+ * #73 re-check M1: prev/next (TD-216) keeps the page mounted, so the notes card is keyed by the case. A draft
+ * typed on one student never rides along to the next, and Add on the next posts to the next only, with its
+ * own text.
+ */
+it('prev/next: a draft on one student is gone on the next, and Add posts to the next only', async () => {
+  const { api, app, rerender } = renderCockpit({ role: 'org_admin', stage: 'interviewing' })
+  const next = { ...app, id: 8, name: 'Test Student 08', declaration_name: 'Test Student 08' }
+  api.getScholarshipApplication.mockImplementation((id: number) => Promise.resolve(id === 8 ? next : app))
+  api.getReviewerNotes.mockImplementation((id: number) => Promise.resolve({
+    ...NOTES, viewer: 'org_admin', can_add: true,
+    notes: [{ ...NOTES.notes[0], body: id === 8 ? 'A note on the next student.' : NOTES.notes[0].body }],
+  }))
+  api.addReviewerNote.mockResolvedValue({ ...NOTES, viewer: 'org_admin', can_add: true, notes: [] })
+  await screen.findByText('Please ask about the older brother.')
+  fireEvent.change(screen.getByLabelText(`${P}.addLabel`), { target: { value: 'Meant for the first student' } })
+
+  rerender(<AdminScholarshipDetailView applicationId={8} />)
+  await screen.findByText('A note on the next student.')
+  const box = screen.getByLabelText(`${P}.addLabel`) as HTMLTextAreaElement
+  expect(box.value).toBe('')
+  expect(screen.queryByText('Please ask about the older brother.')).toBeNull()
+
+  fireEvent.change(box, { target: { value: 'For the next student' } })
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: `${P}.add` })) })
+  expect(api.addReviewerNote).toHaveBeenCalledTimes(1)
+  expect(api.addReviewerNote).toHaveBeenCalledWith(8, 'For the next student', { token: 'test-token' })
 })

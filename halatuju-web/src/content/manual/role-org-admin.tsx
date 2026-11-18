@@ -230,13 +230,15 @@ export const roleOrgAdmin: ManualChapter = {
         explored, and their replies. Type in <strong>Add a note</strong> (up to 2,000 characters; the counter
         shows how many you have used) and press <strong>Add note</strong>. Each note shows who wrote it, their
         side (<em>Org admin</em> or <em>Reviewer</em>, the reviewer&rsquo;s tinted, with <em>(you)</em> on your own)
-        and the date, oldest first. When the reviewer replies you get an email (it never contains the note; at most
-        one per student every ten minutes), a <strong>New note</strong> mark by the student&rsquo;s name on the
+        and the date, oldest first. When the reviewer replies you get an email (it never contains the note; while
+        one is unread, no second one for that student for ten minutes), a <strong>New note</strong> mark by the
+        student&rsquo;s name on the
         applications table and a line in the bell; they clear when you open the student&rsquo;s page. Your fellow
         org admins&rsquo; notes do not mark or email you. Notes can be added from Awaiting review until the
         reviewer records a recommendation; after that they
         stay on the file for good, read-only. Notes cannot be edited or deleted, so to correct one, add another.
-        If the case moves to another reviewer, the new one reads the whole conversation. QC can read the notes
+        A note written before a reviewer is assigned reaches them as a New note once the case is assigned to
+        them. If the case moves to another reviewer, the new one reads the whole conversation. QC can read the notes
         (as can colleagues who may open the file); the student and sponsors never do, and the notes are never
         used in the AI-written profile or summary.</>
       ),

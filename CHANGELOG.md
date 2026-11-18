@@ -27,6 +27,18 @@ Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration 
 - Tamil: தரக் கட்டுப்பாடு, புதிய குறிப்புள்ள, and the two email lines corrected. No email golden moved.
 - Tests: `test_reviewer_notes.py` and `test_staff_notifications.py` (not yet / finished, clear on reply, sweep after unassign, other side only, billing, cool-down, fence, list query count with notes, a reader clearing only their own case); `useNewNoteCount.test.tsx`; `ReviewerNotesCard.test.tsx` ("(you)" only on your own notes, both sides; the not-yet hint and refusal).
 
+### refactor: request #73 re-check - notes card keyed to its case, bell refresh, sweep never blocks mail (2026-11-17)
+
+Branch req73, a third commit on top of e1a6e5e42, not pushed. No new migration (0213 unchanged). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73, re-check round).
+- Prev/next on the applicant's page no longer carries the notes card over: a draft typed on one student is gone on the next, and Add posts only to the student on screen. A late answer for the previous student is dropped.
+- Opening or adding a note updates the bell at once, not up to a minute later. The bell also refreshes when the tab becomes visible again, and an older answer never overwrites a newer one.
+- A failure in the new-note housekeeping no longer holds up the reviewer and student assignment emails; it is logged.
+- The email cool-down counts only notes the person has not opened: someone who read the note and replied is emailed for the next turn.
+- The sweep reads who holds the case inside its delete, so a reviewer assigned a moment ago never loses a mark; an org admin who becomes the holder loses their marks on reviewer notes.
+- A note written before anyone is assigned now shows as **New note** to the reviewer once the case is assigned (no extra email). A note an earlier reviewer already read is not marked again.
+- Guides: Org admin and Reviewer. No new wording keys; no email golden moved.
+- Tests: `test_staff_notifications.py` (a failed sweep still mails, read-and-reply then answer, the holder read inside the sweep, an org admin holder, marks at assignment); `ReviewerNotesCard.test.tsx` (a late answer, the bell told); `view.reviewerNotes.test.tsx` (prev/next); `useNewNoteCount.test.tsx` (instant drop, visibility, order).
+
 ### refactor: request #75 - the profile-complete email no longer promises an interview (2026-11-19)
 
 Owner-approved wording (19 Nov). Students who finish their profile now read "If your application goes forward, we'll invite you to a short interview", and the closing line adds "or news about your application". Malay changes the same way. The email golden was updated by hand for these four strings only; `test_email_branding.py` passes.

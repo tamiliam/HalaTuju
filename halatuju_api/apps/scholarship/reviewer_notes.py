@@ -128,7 +128,7 @@ def add_note(application, body, *, author):
             application=application, body=text, author=author, author_role=side,
             author_email=(getattr(author, 'email', '') or '')[:254])
         people = staff_notifications.the_other_side(application, side=side, writer=author)
-        staff_notifications.sweep(application.id, application.assigned_to_id)
+        staff_notifications.sweep(application.id)
         staff_notifications.notify(application, kind=REVIEWER_NOTE, source_id=note.id, recipients=people)
         staff_notifications.alert_by_email(application, author_role=side, recipients=people,
                                            source_id=note.id)
