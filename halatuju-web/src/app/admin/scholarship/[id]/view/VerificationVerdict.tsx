@@ -93,8 +93,13 @@ export function VerificationVerdict({ app, t, caseSummary }: {
         {/* Legend — the confidence scale the tile colours encode (green→red). */}
         {(app.verdict || []).length > 0 && (
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-[10px] text-ground-400">
-            {(['green', 'blue', 'amber', 'red', 'red'] as const).map((tn, i) => {
-              const key = i === 4 ? 'ruleNotMet' : TONE_BAND_KEY[tn]
+            {([
+              { tone: 'green', key: TONE_BAND_KEY.green },
+              { tone: 'blue', key: TONE_BAND_KEY.blue },
+              { tone: 'amber', key: TONE_BAND_KEY.amber },
+              { tone: 'red', key: TONE_BAND_KEY.red },
+              { tone: 'red', key: 'ruleNotMet' },
+            ] as const).map(({ tone: tn, key }) => {
               return (
                 <span key={key} className="flex items-center gap-1"
                   title={t(`admin.scholarship.verdict.bandHint.${key}`)}>

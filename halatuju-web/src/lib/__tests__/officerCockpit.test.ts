@@ -116,6 +116,21 @@ describe('red tile reason: Rule not met vs Cant verify', () => {
     expect(bandText(f)).toBe('Rule not met')
   })
 
+  it('a review fact with no evidence plus offer_not_official is red and reads Rule not met', () => {
+    const f = withUnresolved('review', 'offer_not_official')
+    expect(factTileTone(f)).toBe('red')
+    expect(bandText(f)).toBe('Rule not met')
+  })
+
+  it('a disqualifier listed second among unresolved items still makes it red, Rule not met', () => {
+    const f: AdminVerdictFact = {
+      ...fact('pathway', 'review', ['nric_match']),
+      unresolved: [{ code: 'pathway_declared', params: {} }, { code: 'pathway_start_year_outside', params: {} }],
+    }
+    expect(factTileTone(f)).toBe('red')
+    expect(bandText(f)).toBe('Rule not met')
+  })
+
   it('a gap fact with pathway_funded_or_abroad is red and reads Rule not met', () => {
     const f = withUnresolved('gap', 'pathway_funded_or_abroad')
     expect(factTileTone(f)).toBe('red')

@@ -137,17 +137,17 @@ export function factDetailItems(fact: AdminVerdictFact): { unresolved: AdminVerd
 
 // The estimative-probability band each tone names (Kent scale, collapsed to four).
 // Used for the tile labels + legend; the i18n key is admin.scholarship.verdict.band.<key>.
-/** The band key a fact's tile shows: red splits into 'ruleNotMet' (broken rule) and 'unverifiable' (no proof). */
-export function factBandKey(fact: AdminVerdictFact): string {
-  const tone = factTileTone(fact)
-  return tone === 'red' && hasRuleNotMet(fact) ? 'ruleNotMet' : TONE_BAND_KEY[tone]
-}
-
 export const TONE_BAND_KEY: Record<FactTileTone, string> = {
   green: 'certain',
   blue: 'probable',
   amber: 'unsure',
   red: 'unverifiable',
+}
+
+/** The band key a fact's tile shows: red splits into 'ruleNotMet' (broken rule) and 'unverifiable' (no proof). */
+export function factBandKey(fact: AdminVerdictFact): string {
+  const tone = factTileTone(fact)
+  return tone === 'red' && hasRuleNotMet(fact) ? 'ruleNotMet' : TONE_BAND_KEY[tone]
 }
 
 // ── Document grouping ────────────────────────────────────────────────────────
