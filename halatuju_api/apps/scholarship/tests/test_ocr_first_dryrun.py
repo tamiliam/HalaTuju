@@ -43,7 +43,7 @@ class DryRunHarnessTests(SimpleTestCase):
         matric_lane = lanes['matriculation']
         self.assertEqual((matric_lane['docs'], matric_lane['locked']), (2, 2))
         self.assertEqual(matric_lane['status'], 'fail')                      # 2 documents: far below 20
-        self.assertIn('only 2 held-out documents', matric_lane['why'])
+        self.assertIn("only 2 held-out documents locked", matric_lane["why"])
         self.assertEqual(matric_lane['fields']['institution']['exact'], 1)
         self.assertEqual(matric_lane['fields']['institution']['wrong'], 1)
         self.assertEqual(matric_lane['wrong'], {'institution': 1})
@@ -53,6 +53,12 @@ class DryRunHarnessTests(SimpleTestCase):
         lane = next(r for r in self.summary()['offers'] if r['lane'] != 'matriculation')
         self.assertEqual(lane['status'], 'no rules yet')
         self.assertEqual(lane['locked'], 0)
+
+    def test_dev_only_lane_is_informational_never_pass(self):
+        with open(self.split, 'w', encoding='utf-8') as f:
+            json.dump({'heldout': []}, f)
+        lane = next(r for r in self.summary('dev')['offers'] if r['lane'] == 'matriculation')
+        self.assertEqual(lane['status'], 'informational (not held-out)')
 
     def test_dev_split_is_empty_when_all_are_heldout(self):
         self.assertEqual(self.summary('dev')['offers'], [])
@@ -66,3 +72,34 @@ class DryRunHarnessTests(SimpleTestCase):
         self.assertIn('no rules yet', text)
         for secret in (NAME, NRIC, COLLEGE):
             self.assertNotIn(secret, text)
+
+
+class GateLaneTests(SimpleTestCase):
+    """`gate_lane` on hand-made lane totals: course not measured, and the split."""
+
+    def lane(self, **over):
+        lane = dr._new_lane('universiti qorvane', True)
+        lane.update({'docs': 30, 'locked': 30, 'core_right': 180, 'core_total': 180})
+        lane['course']['unique'] = 30
+        lane.update(over)
+        return lane
+
+    def test_clean_lane_passes_on_heldout(self):
+        self.assertEqual(dr.gate_lane(self.lane())[0], 'pass')
+
+    def test_course_not_run_fails_a_university_lane(self):
+        lane = self.lane()
+        lane['course']['unique'], lane['course']['not_run'] = 0, 30
+        status, why = dr.gate_lane(lane)
+        self.assertEqual(status, 'fail')
+        self.assertIn('course match not run', why)
+
+    def test_not_heldout_never_passes(self):
+        status, why = dr.gate_lane(self.lane(), heldout=False)
+        self.assertEqual(status, 'informational (not held-out)')
+        self.assertEqual(why, 'would pass Gate 1')
+
+    def test_coverage_floor_counts_locked_not_docs(self):
+        status, why = dr.gate_lane(self.lane(docs=40, locked=19))
+        self.assertEqual(status, 'fail')
+        self.assertIn('only 19', why)

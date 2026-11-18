@@ -6,7 +6,7 @@ from apps.scholarship.ocr_first_gate import GUARDED_FIELDS, MIN_DOCS, lane_gate
 
 class LaneGateTests(SimpleTestCase):
     def gate(self, **over):
-        args = {'docs': 20, 'core_right': 1000, 'core_total': 1000, 'wrong': {}, 'course_match_wrong': 0}
+        args = {'locked': 20, 'core_right': 1000, 'core_total': 1000, 'wrong': {}, 'course_match_wrong': 0}
         args.update(over)
         return lane_gate(**args)
 
@@ -15,11 +15,11 @@ class LaneGateTests(SimpleTestCase):
         self.assertTrue(result.passed)
         self.assertEqual(result.reasons, ())
 
-    def test_twenty_documents_pass_nineteen_fail(self):
-        self.assertTrue(self.gate(docs=MIN_DOCS).passed)
-        result = self.gate(docs=MIN_DOCS - 1)
+    def test_twenty_locked_documents_pass_nineteen_fail(self):
+        self.assertTrue(self.gate(locked=MIN_DOCS).passed)
+        result = self.gate(locked=MIN_DOCS - 1)
         self.assertFalse(result.passed)
-        self.assertIn('only 19 held-out documents', result.reasons[0])
+        self.assertIn('only 19 held-out documents locked', result.reasons[0])
 
     def test_agreement_98_0_passes_97_9_fails(self):
         self.assertTrue(self.gate(core_right=980).passed)
@@ -42,11 +42,17 @@ class LaneGateTests(SimpleTestCase):
         self.assertFalse(result.passed)
         self.assertEqual(result.reasons, ('1 wrong course match',))
 
+    def test_course_match_not_run_fails(self):
+        result = self.gate(course_match_wrong=None)
+        self.assertFalse(result.passed)
+        self.assertEqual(result.reasons, ('course match not run',))
+
     def test_no_core_answered_fails(self):
         result = self.gate(core_right=0, core_total=0)
         self.assertFalse(result.passed)
         self.assertIn('answered no core field', result.reasons[0])
 
     def test_every_reason_is_listed(self):
-        result = self.gate(docs=5, core_right=90, core_total=100, wrong={'name': 1}, course_match_wrong=2)
+        result = self.gate(locked=5, core_right=90, core_total=100, wrong={'name': 1}, course_match_wrong=2)
         self.assertEqual(len(result.reasons), 4)
+        self.assertIn('course match not run', self.gate(course_match_wrong=None).reasons)

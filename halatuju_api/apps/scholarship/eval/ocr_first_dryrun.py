@@ -219,15 +219,19 @@ def aggregate_offers(records):
     return lanes
 
 
-def gate_lane(lane):
-    """``(status, why)``: pass / fail / no rules yet, with the reasons (Gate 1)."""
+def gate_lane(lane, heldout=True):
+    """``(status, why)``: pass / fail / no rules yet, with the reasons (Gate 1). Only the held-out
+    split may give a verdict: any other split reads "informational (not held-out)", never pass."""
     if not lane['rules_exist']:
         return 'no rules yet', 'no deterministic parser for this issuer'
-    gate = lane_gate(docs=lane['docs'], core_right=lane['core_right'], core_total=lane['core_total'],
-                     wrong=lane['wrong'], course_match_wrong=lane['course_wrong'])
+    measured = lane['course']['not_run'] == 0
+    gate = lane_gate(locked=lane['locked'], core_right=lane['core_right'], core_total=lane['core_total'],
+                     wrong=lane['wrong'], course_match_wrong=lane['course_wrong'] if measured else None)
     reasons = list(gate.reasons)
     if lane['control_locked']:
         reasons.append(f"{lane['control_locked']} non-offer letter(s) locked (report only)")
+    if not heldout:
+        return 'informational (not held-out)', ('would pass Gate 1' if gate.passed else '; '.join(reasons))
     return ('pass' if gate.passed else 'fail'), '; '.join(reasons)
 
 
@@ -292,7 +296,7 @@ def dryrun_summary(eval_dir, snap_dir, split, split_file, matcher):
     for name, lane in sorted(lanes.items(), key=lambda kv: (-kv[1]['docs'], kv[0])):
         if not lane['docs']:                    # only controls / unanswered letters: no lane to judge
             continue
-        status, why = gate_lane(lane)
+        status, why = gate_lane(lane, heldout=split == 'heldout')
         offers.append({**lane, 'status': status, 'why': why,
                        'wrong': dict(lane['wrong']), 'course': {c: lane['course'][c] for c in COURSE},
                        'fields': {f: {o: lane['fields'][f][o] for o in orc.OUTCOMES} for f in orc.CORE},
@@ -318,12 +322,13 @@ def print_report(s):
     print(f"OCR-first dry run | split: {s['split']} | cached text only: no network, no model, no OCR")
     print('\n== LANE TABLE (Gate 1: >=20 docs, >=98% core agreement, zero wrong name/IC/institution/'
           'course, course match never wrong)')
-    print(f"  {'lane':<44}{'status':<14}{'docs':>5}{'answered':>10}{'agree':>8}  why")
+    print(f"  {'lane':<44}{'status':<30}{'docs':>5}{'locked':>8}{'coverage':>10}{'agree':>8}  why")
     for lane in s['offers']:
-        print(f"  {'offer_letter/' + lane['lane'][:30]:<44}{lane['status']:<14}{lane['docs']:>5}"
-              f"{lane['locked']:>10}{_pct(lane['core_right'], lane['core_total']):>8}  {lane['why']}")
+        print(f"  {'offer_letter/' + lane['lane'][:30]:<44}{lane['status']:<30}{lane['docs']:>5}"
+              f"{lane['locked']:>8}{_pct(lane['locked'], lane['docs']):>10}"
+              f"{_pct(lane['core_right'], lane['core_total']):>8}  {lane['why']}")
     for row in s['other']:
-        print(f"  {row['doc_type']:<44}{row['status']:<14}{row['texts']:>5}{row['answered']:>10}"
+        print(f"  {row['doc_type']:<44}{row['status']:<30}{row['texts']:>5}{row['answered']:>8}{'':>10}"
               f"{_pct(row['agree_cells'], row['compared_cells']):>8}  {row['why']}")
     print('\n== OFFER LANES (truth = hand-checked answers; "vs AI agree" = agreement only)')
     for lane in s['offers']:

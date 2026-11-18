@@ -50,7 +50,7 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 ### The proposed THRESHOLD rule (two gates; both must pass)
 
 **Gate 1, per lane: is this (doc type, issuer) allowed to use rules alone?** Run on the held-out dry run:
-- **Sample size:** at least 20 documents in the lane. A smaller lane stays on AI until it grows.
+- **Sample size:** at least 20 documents in the lane. A smaller lane stays on AI until it grows. Sample size counts only documents the rules locked.
 - **Core-field agreement:** at least 98% exact or blank-correct against the hand-checked answer.
 - **Zero WRONG** on name, IC, institution and course. (A blank is acceptable, because the document then goes to AI. A wrong value is not acceptable.)
 - **Course match:** never wrong. "A wrong course_id is worse than none" still holds: a course is set only when exactly one course qualifies.
