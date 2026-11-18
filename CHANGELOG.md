@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### test: request #75 on POST-AWARD-CUT - the reject door's access in every case stage (2026-11-19)
+
+Branch req75, rebased onto main 77a8e407f (POST-AWARD-CUT), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged). Services: api (tests only). No code change.
+
+- Main's case rule (`may_write_case`) now lets only the Scholars key write past the award, and the matrix seeds app_a ACTIVE. So on that case `qc_a` is refused 403 by the case rule before #75's qc check, where it used to reach 400 `bad_status`. The door itself acts only at Awaiting review (an open case), where `qc` holders still write, so nothing changes for officers.
+- `access_manifest.json`: the #75 entry now allows super and org_admin_a on the active app_a, and the route joins `case_stages`. Open: super, org_admin_a and qc_a (the assigned reviewer is refused by the qc check). Ended before the award: the stage default. Past the award: super and org_admin_a (the Scholars key alone is refused by the qc check).
+- Rebase merges: the detail payload keeps POST-AWARD-CUT's three write flags, then #75's `pre_interview` last (`test_stpm_marks` pins the last 8 keys). `view.decision.test.tsx` keeps both `writes: true` and #75's `rerender`.
+
 ### refactor: request #75 re-check 5 - reject door in one slot, remount wording corrected (2026-11-19)
 
 Branch req75, on top of e4c21d021 (main d42121307), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged). Services: web. Decisions: `docs/decisions.md` (2026-11-19, Request #75 re-check 5).

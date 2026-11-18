@@ -128,6 +128,14 @@
       "org_admin_a"
      ],
      "why": "TD-352: a pre-award close is an organisation admin's or a super's"
+    },
+    "POST api/v1/admin/scholarship/applications/<int:pk>/reject-before-interview/": {
+     "allow": [
+      "super",
+      "org_admin_a",
+      "qc_a"
+     ],
+     "why": "request #75: the door asks the qc key after the case rule, so the assigned reviewer is refused 403"
     }
    }
   },
@@ -188,6 +196,13 @@
       "admin_a"
      ],
      "why": "STATE: past the award the door answers 400 case_closed to every caller, a reopen notwithstanding (review round 2: the profile generation is billable Gemini work); the write fence still runs first, so these callers reach the 400 and every other caller is still refused"
+    },
+    "POST api/v1/admin/scholarship/applications/<int:pk>/reject-before-interview/": {
+     "allow": [
+      "super",
+      "org_admin_a"
+     ],
+     "why": "request #75: the door asks the qc key after the case rule, so the Scholars key alone (admin_a) is refused 403; the callers let through get 400 bad_status"
     }
    }
   },
@@ -223,7 +238,8 @@
    "POST api/v1/admin/scholarship/applications/<int:pk>/suggest-gaps/",
    "POST api/v1/admin/scholarship/applications/<int:pk>/verify-accept/",
    "POST api/v1/admin/scholarship/disbursements/<int:pk>/<str:action>/",
-   "POST api/v1/admin/scholarship/resolution-items/<int:item_id>/<str:action>/"
+   "POST api/v1/admin/scholarship/resolution-items/<int:item_id>/<str:action>/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/reject-before-interview/"
   ]
  },
  "entries": [
@@ -1495,15 +1511,14 @@
    "method": "post",
    "allow": [
     "super",
-    "org_admin_a",
-    "qc_a"
+    "org_admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a (the qc key; request #75); refused to reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a (app_a is ACTIVE: past the award only the Scholars key writes, and the door then asks the qc key, request #75); refused to qc_a, admin_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b. Every stage: case_stages"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/reject/",
