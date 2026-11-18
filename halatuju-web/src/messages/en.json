@@ -2208,7 +2208,7 @@
         },
         "pathway_undeclared": {
           "title": "Choose your course",
-          "desc": "We see you have an offer for {programme} at {institution}, but we don’t know your exact course yet. Please choose it on your profile page so we can confirm your pathway."
+          "desc": "Your offer letter did not match one course in our list. Please pick your course."
         },
         "pathway_confirm": {
           "title": "Is this where you're going?",
@@ -4877,7 +4877,7 @@
           "offer_name_mismatch": "The offer letter is in a different name or IC. Confirm.",
           "offer_unreadable": "The offer letter could not be read — ask for a clearer copy.",
           "offer_no_identity": "This letter has no student name or IC on it — it looks like a general notice, not the personal offer letter. Ask for the actual offer letter addressed to the student.",
-          "pathway_undeclared": "No pathway chosen yet.",
+          "pathway_undeclared": "The offer letter did not match one course in our list — the student is asked to pick their course.",
           "pathway_confirm": "Offer for {programme} at {institution} differs from the declared pathway — awaiting the student's confirmation of which is final.",
           "pathway_type_switch": "The offer is for a different type of pathway than the student declared — {programme} at {institution}. Awaiting the student's confirmation of which is final.",
           "pathway_confirmed": "Final pathway confirmed by the student: {programme} at {institution}.",

@@ -58,6 +58,75 @@ def _no_declared_pathway(application):
         or real_pick)
 
 
+def _own_pick(application):
+    """The degree the student picked HERSELF — ``chosen_programme`` with a course id or a course name,
+    any source but the offer's autofill (``offer_letter_auto``); else {}."""
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    named = (cp.get('course_id') or '').strip() or (cp.get('course_name') or '').strip()
+    return cp if named and cp.get('source') != 'offer_letter_auto' else {}
+
+
+def _top_choices(application):
+    """The degrees a waiting student named (``top_choices``, up to three), each a dict with a course."""
+    tc = application.top_choices if isinstance(application.top_choices, list) else []
+    return [c for c in tc if isinstance(c, dict)
+            and ((c.get('course_id') or '').strip() or (c.get('course_name') or '').strip())]
+
+
+def _tertiary(application):
+    """She holds STPM / matriculation / asasi / diploma results (``results_route.held_kind``)."""
+    from .results_route import held_kind
+    return bool(held_kind(application))
+
+
+def declared_degree(application):
+    """Owner 2026-11-18 (R8): what a TERTIARY student declared, for the no-offer cockpit line — her own
+    pick as "course — institution", else her named degrees joined by "; ". '' for anyone else."""
+    if not _tertiary(application):
+        return ''
+
+    def label(d):
+        name = (d.get('course_name') or d.get('course_id') or '').strip()
+        inst = (d.get('institution') or '').strip()
+        return f'{name} — {inst}' if name and inst else name or inst
+    pick = _own_pick(application)
+    return label(pick) if pick else '; '.join(filter(None, (label(c) for c in _top_choices(application))))
+
+
+def _same_course(application, clean):
+    """R2 (owner 2026-11-18): her own pick IS the course the letter cleanly names — by course id, or
+    for a name-only pick by the matcher's own name test — so a word clash elsewhere asks nothing."""
+    pick = _own_pick(application)
+    if not pick:
+        return False
+    match = clean()
+    if not match:
+        return False
+    cid = (pick.get('course_id') or '').strip()
+    if cid:
+        return cid == match['course_id']
+    from .pathway_match import _field_status
+    from .services.offer_link import labels_describe
+    return (labels_describe(pick.get('course_name') or '', match['course_name'])
+            and _field_status(pick.get('institution') or '', match.get('institution') or '') != 'clash')
+
+
+def _course_ask(application, chk, prog, inst, offer_type, clean, pismp_extra):
+    """The ask for a student with no pick of her own (owner 2026-11-18): none when the letter is a CLEAN
+    match — ONE catalogue course (R4, R5; the autofill links it); the one-tap confirm for a pre-U letter
+    whose stream parses or a unique-bidang PISMP letter (as before); else pick your course (R6)."""
+    from . import offer_pathway as _op
+    if clean():
+        return None
+    pismp_unique = offer_type == 'pismp' and bool(_op.resolve_pismp_course((chk.get('bidang') or '').strip()))
+    pre_u_parsed = _op.is_pre_u(offer_type) and _op.offer_is_resolvable(prog, inst, chk.get('issuer') or '')
+    extra = pismp_extra() if offer_type == 'pismp' else {}
+    if pre_u_parsed or pismp_unique:
+        return _item('pathway_confirm', programme=prog, institution=inst,
+                     declared_programme='', declared_institution='', **extra)
+    return _item('pathway_undeclared', programme=prog, institution=inst, **extra)
+
+
 def offer_pathway_fact(application, offer):
     """The pathway fact when an offer letter is on file (``offer`` is the latest live one).
     The body that followed the no-offer branch of ``verdict_engine._verdict_pathway``, unchanged."""
@@ -100,8 +169,10 @@ def offer_pathway_fact(application, offer):
     #     never states SK/SJKT/SJKC), inferred from the student's SPM vernacular subject.
     #   Case 3 — SAME family but the institution/stream CLASHES (the #117 within-type case): the
     #     generic "is this where you're going?" confirm. Not re-asked once confirmed (minor drift).
-    #   Case 1 — the student declared NOTHING (#127): resolvable → one-tap confirm; ambiguous (a PISMP
-    #     offer with no aliran) → the profile Aliran/Bidang picker (pathway_undeclared).
+    #   Case 1 — the student declared NOTHING (#127), or is a tertiary student with no pick of her own
+    #     (owner 2026-11-18): a letter naming ONE catalogue course → no ask (the autofill links it); a
+    #     pre-U letter whose stream parses, or a unique-bidang PISMP letter → one-tap confirm; anything
+    #     else (no one course in our list) → pick your course on the profile (pathway_undeclared).
     from . import offer_pathway as _op
     from .pathway_engine import offer_hearing_ok
     if offer_hearing_ok(offer):
@@ -125,6 +196,20 @@ def offer_pathway_fact(application, offer):
                 extra['aliran_hint'] = _op.infer_pismp_aliran(profile)
             return extra
 
+        # The CLEAN match (owner 2026-11-18): the letter names ONE catalogue course. Read once, lazily.
+        _clean = []
+
+        def clean():
+            if not _clean:
+                _clean.append(None if _op.is_pre_u(offer_type) else
+                              _op.resolve_catalogue_course(prog, inst, chk.get('issuer') or ''))
+            return _clean[0]
+
+        # A TERTIARY student with no degree pick of her own (nothing, or only her named top choices)
+        # is never asked "is this where you're going?" against her old pre-U school (R5); a clean
+        # letter settles it, else she picks her course (R4 / R6). Her named degrees ARE a declaration
+        # (R1): she is never told she chose nothing.
+        tertiary_open = _tertiary(application) and not _own_pick(application)
         dfam, ofam = _op.pathway_family(declared_type), _op.pathway_family(offer_type)
         if dfam and ofam and dfam != ofam:
             sw = {'programme': prog, 'institution': inst,
@@ -132,26 +217,15 @@ def offer_pathway_fact(application, offer):
             if offer_type == 'pismp':
                 sw.update(_pismp_extra())
             unresolved.append(_item('pathway_type_switch', **sw))
-        elif chk['pathway'] == 'mismatch' and not confirmed:
+        elif chk['pathway'] == 'mismatch' and not confirmed and not tertiary_open \
+                and not _same_course(application, clean):
             unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
                                     declared_programme=chk['declared_programme'],
                                     declared_institution=chk['declared_institution']))
-        elif not confirmed and (prog or inst) and _no_declared_pathway(application):
-            # A unique-bidang PISMP offer is now RESOLVABLE (one-tap confirm + pin), like a pre-U/tertiary
-            # offer; a multi-aliran bidang still needs the profile picker.
-            pismp_unique = offer_type == 'pismp' and bool(
-                _op.resolve_pismp_course((chk.get('bidang') or '').strip()))
-            if _op.offer_is_resolvable(prog, inst, chk.get('issuer') or '') or pismp_unique:
-                cp = {'programme': prog, 'institution': inst,
-                      'declared_programme': '', 'declared_institution': ''}
-                if offer_type == 'pismp':
-                    cp.update(_pismp_extra())
-                unresolved.append(_item('pathway_confirm', **cp))
-            else:
-                ud = {'programme': prog, 'institution': inst}
-                if offer_type == 'pismp':
-                    ud.update(_pismp_extra())
-                unresolved.append(_item('pathway_undeclared', **ud))
+        elif not confirmed and (prog or inst) and (tertiary_open or _no_declared_pathway(application)):
+            ask = _course_ask(application, chk, prog, inst, offer_type, clean, _pismp_extra)
+            if ask:
+                unresolved.append(ask)
 
     # NB the course-SWITCH note is deliberately NOT a verdict item here (owner 2026-07-10): a PUBLIC
     # switch is acceptable — a student may legitimately move STPM → matriculation → a UA diploma — so

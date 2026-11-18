@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: offer course proof - a tertiary student's degree counts, and a clean letter asks nothing (2026-11-18, TD-???)
+
+Branch offer-course-proof. Migration: none. Services: api, web. Owner rules R1-R8, 2026-11-18 (#804: "No pathway chosen yet" on an STPM student whose letter names US6310001 at USM). No eligibility, band, amount or gift-rule change beyond these asks. `VERDICT_ENGINE_VERSION` 2026-11-15.11 -> 2026-11-18.1; no genuineness `MODEL_VERSION` bump (the matcher is not doc recognition, as with #337).
+- **Declared (R1):** for a tertiary student (STPM / matric / asasi / diploma results), her own degree pick (with or without a course id, any source but the offer autofill) or any named top choice counts as declared. She is never told she chose nothing.
+- **The asks (R2-R6, `verdict_pathway.offer_pathway_fact`):** her pick is the letter's one catalogue course -> no ask (R2); her pick is another course -> the one-tap confirm, as before (R3); nothing of her own and a letter naming ONE catalogue course -> no ask, the autofill links the course (R4, all students; the old one-tap confirm is gone for it); a waiting student's top choices and her old pre-U school never raise "is this where you're going?" (R5); a letter matching no one course -> `pathway_undeclared`, now worded "Your offer letter did not match one course in our list. Please pick your course." (R6, en / ms / ta; ms / ta first drafts for Sol). Pre-U letters whose stream parses and unique-bidang PISMP letters keep their one-tap confirm.
+- **Bracket option lists (R7, `offer_course_match._names`):** "[a / b / c]" in a catalogue name is a list of options: the base name, alone or with one listed option, matches; an unlisted option does not. US6310001 and US6220001 (bracket mid-name) now match. `labels_describe` and the printed-code check use the same test.
+- **No offer yet (R8):** the cockpit's `pathway_declared` line names a tertiary student's own pick ("course - institution") or her top choices. SPM unchanged.
+- **Live asks:** the 6 open `pathway_undeclared` and 3 `pathway_confirm` items close at the next Check 2 sync when the verdict no longer raises them; open items take the new wording at view time. #804's course id is linked by the next autofill or `link_offer_courses --apply`.
+- **Reviewer copy:** the cockpit line for `pathway_undeclared` now reads "The offer letter did not match one course in our list - the student is asked to pick their course."; new reviewer FAQ "When is the student asked to pick her course?" (`faq-reviewer.tsx`, `docs/reviewer-guide-content.md`).
+- **Tests:** new `test_offer_course_proof.py` (29: bracket positive / negative, #804 shape, R2-R8, check2 sync close and raise, autofill, linker, empty-pick fill); 19 of them fail on the base commit. A3.4 golden `facts` section RE-RECORDED for this owner-approved rule change: the harness now fakes `resolve_catalogue_course` from the `resolvable` knob; one answer changed, `p14_undeclared_resolvable` (nothing declared, letter names one course) from the one-tap `pathway_confirm` to verified with no ask (R4); p15/p16/p16b/p16c differ only in the collaborator call log.
+
 ### fix: a red verdict tile names the reason it is red (2026-11-18)
 
 Branch fix-tile-disqualifier-leads. Migration: none. Services: web. Display only; no verdict, band or amount changes.

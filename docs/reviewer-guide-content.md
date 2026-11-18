@@ -141,6 +141,16 @@ It's your suggestion of how much assistance would help, set on the slider. It gu
 Note it and ask them in the interview (or raise a query). They may have updated their plan; the
 conversation settles it. Or, ask them to upload the latest offer letter, and it would replace the old.
 
+**When is the student asked to pick her course?**
+Only when her offer letter does not match one course in our list (owner's ruling, 18 November 2026).
+When the letter names exactly one course, nothing is asked: if she had not chosen a course, the letter's
+course is recorded for her; if she named up to three top choices while waiting for offers and the letter
+is for another course, that is fine too. She is asked "is this your final pathway?" only when she picked
+one course herself and the letter is for a different one. A course name with options in brackets
+("Sains Kemasyarakatan [Ekonomi / Sains Politik / ...]") matches a letter naming the course alone or with
+one of those options. For an STPM or diploma student with no offer letter yet, the Pathway card shows the
+degree she named as context.
+
 **Why was the student asked for a recent confirmation letter?**
 Her confirmation-of-studies letter (not an offer letter) is older than the organisation's window (6 months unless changed in
 Organisation settings) and her course should already have started. It is only a request: it never fails

@@ -104,7 +104,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-15.7 — H3a review FAIL fix: Semester 3+ reads no year even with a reporting date; a Form 6 date range ('Julai 2025 - 26 Februari 2026') is not a session; on the gift's start-year rule a bare session straddling the gift's years is unknown (a person checks), the money keeps S. .6 is the H2 branch's.
 #   2026-11-15.9 — H3a rebuild: the money's start year is main's again (.5/.7's session reading reverted from it); the gift's start-year rule has its own reader (`session_year.gift_reading`, owner ruling 2026-11-16): the letter's reporting date, else one year on the intake line, else a session's first year (its second with Sesi 2 / Semester 2); a later term, a readmission, a confirmation letter without Year 1 or an intake month-year, several years with no date, an exam line with no session and a damaged year read unknown; an exam year is never a start year. .8 and .10 are the H2 branch's.
 #   2026-11-15.10 — help H2, owner option B: a confirmation of studies from every other public institution (matric, IPG, KV, community college, the TVET institutes, the other public universities, an English title) and KPM's English matric offer read suspect at most - a person checks, never genuine by itself, never a course pick; owner 2026-11-16, same version: the polytechnic / UMS / Form-6 confirmations are recognised exactly as before but read suspect too (no confirmation reads genuine). (.9 is help-h3's; the H2 rounds .4 / .6 / .8 never shipped and are replaced.)
-VERDICT_ENGINE_VERSION = '2026-11-15.11'   # 11-15.11 merge train (2026-11-17): help H3's .9 (above) renumbered to sit above help H2's .10, which merges first; no rule change. Versions compare as text in cockpitVerdict.ts, and '.11' sorts after '.10'.
+#   2026-11-18.1 — #804 offer course proof (owner 2026-11-18): a letter naming ONE catalogue course asks nothing of a student with no pick of her own (the one-tap confirm is gone for it; pre-U and unique-bidang PISMP keep theirs); a tertiary student's named degrees count as declared and her old pre-U school never raises "is this where you're going?"; a letter matching no one course asks her to pick her course; the matcher reads a bracketed option list as options; the no-offer line names her degree(s).
+VERDICT_ENGINE_VERSION = '2026-11-18.1'   # 11-15.11 merge train (2026-11-17): help H3's .9 (above) renumbered to sit above help H2's .10, which merges first; no rule change. Versions compare as text in cockpitVerdict.ts, and '.11' sorts after '.10'.
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -484,16 +485,16 @@ def _verdict_pathway(application):
     is read out of this file by the web's ``soft-evidence-drift.test.ts``."""
     offer = _latest_doc(application, 'offer_letter')
     chosen = (application.chosen_pathway or application.intended_pathway or '').strip()
-
+    from .verdict_pathway import declared_degree, offer_pathway_fact   # lazy: it imports our helpers
     if offer is None:
         # The offer letter is compulsory: the programme supports a CONFIRMED place, so
         # without an offer there is nothing to fund (income can be settled at interview,
         # a pathway cannot). Red + submission blocker; the declared pathway rides along
-        # as context when present.
+        # as context when present: for a tertiary student, the degree(s) she named (owner 2026-11-18).
+        chosen = declared_degree(application) or chosen
         decl = [_item('pathway_declared', pathway=chosen)] if chosen else []  # SOFT
         fact = _fact('pathway', 'gap', decl, [_item('offer_letter_missing')])
     else:
-        from .verdict_pathway import offer_pathway_fact   # lazy: it imports our helpers
         fact = offer_pathway_fact(application, offer)
     from .verdict_pathway import funded_or_abroad     # TD-617: ADP / overseas preparation → red
     from .start_year import apply_to_pathway_fact     # H3: the intake's course-start years

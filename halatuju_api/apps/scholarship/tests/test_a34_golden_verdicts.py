@@ -428,6 +428,11 @@ class TestGoldenFacts(_GoldenBase):
             f'{OP}.infer_pismp_aliran': lambda profile: 'SK',
             f'{OP}.offer_is_resolvable': calls.fake('offer_is_resolvable', knobs.get('resolvable', False),
                                                     skip_first=False),
+            # Owner 2026-11-18 (#804): the hearing reads the CLEAN match itself; 'resolvable' = ONE course.
+            f'{OP}.resolve_catalogue_course': calls.fake(
+                'resolve_catalogue_course',
+                {'course_id': 'X1', 'course_name': 'Asasi Sains', 'institution': 'UM'}
+                if knobs.get('resolvable') else None, skip_first=False),
         }
         with ExitStack() as stack:
             _patched(stack, patches)

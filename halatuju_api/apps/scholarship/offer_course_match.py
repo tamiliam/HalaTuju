@@ -35,7 +35,7 @@ from collections import Counter
 from difflib import SequenceMatcher
 
 from .catalogue_levels import (
-    course_levels, names_a_specialisation_the_letter_does_not, private_arm_letter)
+    _NON_SPECIFYING_WORDS, course_levels, names_a_specialisation_the_letter_does_not, private_arm_letter)
 from .offer_pathway import (
     PREU_COURSE_SLUG, _ALIRAN_SUFFIX_RE, _campus_rows, _name_aligns, _names_another_institution,
     _norm_inst_name, detect_pathway_type)
@@ -520,10 +520,35 @@ def _one_edit(a, b):
     return any(long_[:i] + long_[i + 1:] == short for i in range(len(long_)))
 
 
+#: A bracketed OPTION LIST in a catalogue name (owner, 2026-11-18, #804): "Sarjana Muda Sains
+#: Kemasyarakatan dengan Kepujian [Antropologi dan Sosiologi / Ekonomi / Sains Politik / Pengajian
+#: Pembangunan]". The words inside are the options a student may take within ONE course, never a
+#: specialisation the letter failed to state — read as tokens, they made every letter for the course
+#: a "less specific" one (TD-150) and a printed code was refused.
+_OPTION_LIST_RE = re.compile(r'\[([^\]]*/[^\]]*)\]')
+
+
+def _names_option_list_course(pj, base):
+    """The letter names the course WITHOUT its option list (every word of the rest) plus at most the
+    words of ONE listed option. A word in no listed option ("Psikologi") never matches this way."""
+    m = _OPTION_LIST_RE.search(base)
+    if not m:
+        return False
+    core = distinctive_tokens(_OPTION_LIST_RE.sub(' ', base)) - _NON_SPECIFYING_WORDS
+    letter = pj - _NON_SPECIFYING_WORDS
+    if not core or not core <= letter:
+        return False
+    extra = letter - core
+    return not extra or any(extra <= distinctive_tokens(o) for o in m.group(1).split('/'))
+
+
 def _names(pj, course_name):
     """Do the letter's words name this catalogue course? Aligned, and not a specialisation the
-    letter never states (TD-150); the PISMP aliran suffix is not a specialisation."""
+    letter never states (TD-150); the PISMP aliran suffix is not a specialisation, and nor is a
+    bracketed option list (``_names_option_list_course``)."""
     base = catalogue_name(course_name)
+    if _names_option_list_course(pj, base):
+        return True
     return (_name_aligns(pj, distinctive_tokens(base))
             and not names_a_specialisation_the_letter_does_not(
                 pj, distinctive_tokens(_ALIRAN_SUFFIX_RE.sub('', base))))

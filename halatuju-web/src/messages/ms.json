@@ -2208,7 +2208,7 @@
         },
         "pathway_undeclared": {
           "title": "Pilih kursus anda",
-          "desc": "Kami dapati anda ada tawaran untuk {programme} di {institution}, tetapi kami belum tahu kursus tepat anda. Sila pilih di halaman profil anda supaya kami boleh mengesahkan laluan anda."
+          "desc": "Surat tawaran anda tidak sepadan dengan satu kursus dalam senarai kami. Sila pilih kursus anda."
         },
         "pathway_confirm": {
           "title": "Ini tempat anda akan pergi?",
@@ -4877,7 +4877,7 @@
           "offer_name_mismatch": "Surat tawaran atas nama atau KP yang berbeza. Sahkan.",
           "offer_unreadable": "Surat tawaran tidak dapat dibaca — minta salinan yang lebih jelas.",
           "offer_no_identity": "Surat ini tiada nama atau KP pelajar — ia nampak seperti makluman umum, bukan surat tawaran peribadi. Minta surat tawaran sebenar yang dialamatkan kepada pelajar.",
-          "pathway_undeclared": "Belum memilih laluan.",
+          "pathway_undeclared": "Surat tawaran tidak sepadan dengan satu kursus dalam senarai kami — pelajar diminta memilih kursusnya.",
           "pathway_confirm": "Tawaran untuk {programme} di {institution} berbeza daripada laluan yang diisytiharkan — menunggu pengesahan pelajar yang mana satu akhir.",
           "pathway_type_switch": "Tawaran ini untuk jenis laluan yang berbeza daripada yang diisytiharkan pelajar — {programme} di {institution}. Menunggu pengesahan pelajar yang mana satu akhir.",
           "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",

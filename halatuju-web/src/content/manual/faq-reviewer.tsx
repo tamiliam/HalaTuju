@@ -207,6 +207,17 @@ export const REVIEWER_FAQ: QA[] = [
         them to upload the latest offer letter, which replaces the old one.</>,
     },
     {
+      q: <>When is the student asked to pick her course?</>,
+      a: <>Only when her offer letter does not match <strong>one</strong> course in our list (owner&rsquo;s ruling,
+        18 November 2026). When the letter names exactly one course, nothing is asked: if she had not chosen a
+        course, the letter&rsquo;s course is recorded for her; if she named up to three top choices while waiting
+        for offers and the letter is for another course, that is fine too. She is asked &ldquo;is this your final
+        pathway?&rdquo; only when she picked one course herself and the letter is for a different one. A course
+        name with options in brackets (&ldquo;Sains Kemasyarakatan [Ekonomi / Sains Politik / &hellip;]&rdquo;)
+        matches a letter naming the course alone or with one of those options. For an STPM or diploma student
+        with no offer letter yet, the Pathway card shows the degree she named as context.</>,
+    },
+    {
       q: <>The Pathway card is red with <strong>&ldquo;Fully funded or overseas programme&rdquo;</strong>. Why?</>,
       a: <>Her chosen programme is the <strong>American Degree Program</strong> under MARA, which is fully funded,
         or a preparation programme for study abroad (&ldquo;Program Persediaan &hellip; Luar Negara&rdquo;, run by

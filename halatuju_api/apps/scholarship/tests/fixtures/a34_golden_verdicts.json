@@ -871,7 +871,7 @@
      }
     ],
     [
-     "offer_is_resolvable",
+     "resolve_catalogue_course",
      {
       "args": [
        "Asasi Sains",
@@ -893,18 +893,8 @@
      }
     ],
     "fact": "pathway",
-    "status": "review",
-    "unresolved": [
-     {
-      "code": "pathway_confirm",
-      "params": {
-       "declared_institution": "",
-       "declared_programme": "",
-       "institution": "UM",
-       "programme": "Asasi Sains"
-      }
-     }
-    ]
+    "status": "verified",
+    "unresolved": []
    }
   },
   "p15_undeclared_pismp_unique": {
@@ -920,21 +910,21 @@
      }
     ],
     [
-     "resolve_pismp_course",
-     {
-      "args": [
-       "Bahasa Tamil"
-      ],
-      "kwargs": {}
-     }
-    ],
-    [
-     "offer_is_resolvable",
+     "resolve_catalogue_course",
      {
       "args": [
        "PISMP",
        "IPG",
        ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "resolve_pismp_course",
+     {
+      "args": [
+       "Bahasa Tamil"
       ],
       "kwargs": {}
      }
@@ -991,7 +981,7 @@
      }
     ],
     [
-     "offer_is_resolvable",
+     "resolve_catalogue_course",
      {
       "args": [
        "Asasi Sains",
@@ -1038,21 +1028,21 @@
      }
     ],
     [
-     "resolve_pismp_course",
-     {
-      "args": [
-       "Matematik"
-      ],
-      "kwargs": {}
-     }
-    ],
-    [
-     "offer_is_resolvable",
+     "resolve_catalogue_course",
      {
       "args": [
        "Asasi Sains",
        "UM",
        ""
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "resolve_pismp_course",
+     {
+      "args": [
+       "Matematik"
       ],
       "kwargs": {}
      }
@@ -1105,7 +1095,7 @@
      }
     ],
     [
-     "offer_is_resolvable",
+     "resolve_catalogue_course",
      {
       "args": [
        "Asasi Sains",
