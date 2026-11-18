@@ -9344,3 +9344,13 @@ serve a per-type `replaceable` / `open` flag.
 
 **Raised 2026-11-17 at the Batch B rebase. No money effect.** H6 consent-blocker source-walk test reads only blockers.py and consent_blockers.py; a document code raised in another module relies on the runtime safety net only. (`test_document_replace_blocker.py` `_gate_codes` walks `services/blockers.py` and `services/consent_blockers.py`; a gate code added in a third module is not listed by the walk, so the test cannot prove it maps to a slot, and only the safety net in `consent_blocking_slots` (an unmapped code adds `EVERY_SLOT`, opening every slot) keeps the student from being stuck.) Fix: follow calls into any module the gate reaches, or assert the walk covers every module `consent_blockers` imports from.
 *(A - S)*
+
+### [TD-661] Postgraduate level words on an offer letter read as a bachelor's level - medium
+
+**Raised 2026-11-18 by the offer-course-proof final review. Eligibility-adjacent: a Master's or PhD letter can pass as a degree match.** `offer_course_match.letter_level` maps "ijazah" and "degree" to the bachelor level before any postgraduate check, so "IJAZAH SARJANA ..." (the Malay for a Master's), "IJAZAH DOKTOR FALSAFAH ...", "MASTER'S DEGREE IN ...", "MASTER DEGREE ..." and "DOCTOR OF PHILOSOPHY ..." are accepted against a Sarjana Muda course. This affects both the strict pin (`pinned_match`) and the autofill's loose match (`states_another_level` never runs for them). It predates the offer-course-proof branch. Bare "SARJANA", "MASTER OF" and the diploma words are already refused. Fix: test the postgraduate words first inside `letter_level` ("ijazah sarjana" not followed by "muda", "master", "doktor falsafah", "doctor of philosophy", "phd") and return a postgraduate level.
+*(A - S)*
+
+### [TD-662] An education-degree letter does not match an Ijazah Sarjana Muda Pendidikan course level - low
+
+**Raised 2026-11-18 by the offer-course-proof final review. No money effect: the student is asked to pick, never wrongly passed.** A letter reading "IJAZAH SARJANA MUDA PERGURUAN (PISMP)" or "IJAZAH SARJANA MUDA PENDIDIKAN (...)" has level `pismp` or `ijazah sarjana muda`, which never equals the course level `Ijazah Sarjana Muda Pendidikan` (73 courses in `courses.json`). If the autofill wrote such an id, the student is asked to pick. A unique-bidang PISMP letter still gets its one-tap confirm first. Not checked: whether the autofill ever writes these ids. Fix: treat `pismp` and `ijazah sarjana muda` letters as matching the `ijazah sarjana muda pendidikan` course level.
+*(A - S)*
