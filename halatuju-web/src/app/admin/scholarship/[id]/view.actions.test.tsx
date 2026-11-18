@@ -20,6 +20,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit, OTHER_ADMIN_ID } from '@/test/renderCockpit'
 import { buildApplicationDetail, buildDocument } from '@/test/adminApplicationDetail'
+import { AdminScholarshipDetailView } from './view'
 
 installCockpitConsoleGuard()
 
@@ -154,11 +155,28 @@ describe('assigning a reviewer', () => {
     const { api } = renderCockpit({ role: 'org_admin', stage: 'profile_complete' })
     await loaded()
     const loads = api.getScholarshipApplication.mock.calls.length
-    const before = screen.queryAllByText('admin.scholarship.assign.error.not_assignable').length
+    const NA = 'admin.scholarship.assign.error.not_assignable'
+    expect(screen.queryAllByText(NA)).toHaveLength(0)
     api.assignApplication.mockRejectedValue(Object.assign(new Error('not_assignable'), { code: 'not_assignable' }))
     fireEvent.change(assignPicker('assignTitle'), { target: { value: String(OTHER_ADMIN_ID) } })
     await waitFor(() => expect(api.getScholarshipApplication.mock.calls.length).toBe(loads + 1))
-    expect(screen.queryAllByText('admin.scholarship.assign.error.not_assignable').length).toBeGreaterThan(before)
+    // The page's one error slot, drawn under the profile and in the decision card: the words, nothing else.
+    expect(screen.getAllByText(NA).map((el) => [el.tagName, el.textContent])).toEqual([['P', NA], ['P', NA]])
+    expect(screen.queryByText('admin.scholarship.assignError')).toBeNull()
+  })
+
+  it('an assign that lands but whose reload fails never says it could not assign (#75 re-check 2)', async () => {
+    const { api } = renderCockpit({ role: 'org_admin', stage: 'profile_complete' })
+    await loaded()
+    const loads = api.getScholarshipApplication.mock.calls.length
+    api.assignApplication.mockResolvedValue({
+      id: 7, status: 'assigned', assigned_to_id: OTHER_ADMIN_ID,
+      assigned_to_name: 'Test Reviewer 05', assigned_at: '2026-11-07T00:00:00Z',
+    })
+    api.getScholarshipApplication.mockRejectedValue(new Error('network'))
+    fireEvent.change(assignPicker('assignTitle'), { target: { value: String(OTHER_ADMIN_ID) } })
+    expect((await screen.findAllByText('admin.scholarship.assign.reloadAfterAssign')).length).toBeGreaterThan(0)
+    expect(api.getScholarshipApplication.mock.calls.length).toBe(loads + 1)   // reloaded once, not twice
     expect(screen.queryByText('admin.scholarship.assignError')).toBeNull()
   })
 
@@ -223,7 +241,7 @@ describe('raising a query with the student', () => {
 describe('reject before interview, refused because a colleague got there first (#75 re-check)', () => {
   it('a bad_status refusal stays in view after the reload takes the door away', async () => {
     const offer = { hold_hours: 24, reasons: ['not_b40'], note_max: 2000 }
-    const { api } = renderCockpit({
+    const { api, rerender } = renderCockpit({
       role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
     await loaded()
     api.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_status' }))
@@ -240,5 +258,14 @@ describe('reject before interview, refused because a colleague got there first (
     expect(await screen.findByTestId('pre-interview-record')).toBeTruthy()
     expect(screen.queryByTestId('pre-interview')).toBeNull()
     expect(screen.getByTestId('pre-interview-refused').textContent).toBe(`${P}.error.bad_status`)
+    // #75 re-check 2: the door went with the reload, so focus lands on the words that stayed.
+    expect(document.activeElement).toBe(screen.getByTestId('pre-interview-refused'))
+
+    // ⚠ prev/next changes the case WITHOUT a remount (TD-216): the next case never inherits it.
+    api.getScholarshipApplication.mockResolvedValue(buildApplicationDetail('assigned', { id: 8 } as never))
+    rerender(<AdminScholarshipDetailView applicationId={8} />)
+    await waitFor(() => expect(api.getScholarshipApplication).toHaveBeenLastCalledWith(8, { token: 'test-token' }))
+    expect(await screen.findByText('admin.scholarship.assign.assignedTitle')).toBeTruthy()
+    expect(screen.queryByTestId('pre-interview-refused')).toBeNull()
   })
 })

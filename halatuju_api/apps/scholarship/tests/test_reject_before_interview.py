@@ -15,6 +15,8 @@ Pinned here, one test per rule the organisation approved:
     commits second sees the first.
   * #75 re-check: an unassign's interview teardown cancels the Meet event and sends its two emails
     only after commit; a case that has gone is refused; an unassign locks the holder first.
+  * #75 re-check 2: an unassign whose page named the wrong holder runs once more with the real one
+    locked first; one failing call never stops the others; a rolled-back teardown sends nothing.
 """
 from datetime import timedelta
 
@@ -239,7 +241,55 @@ class TheRowLockTest(_Base):
             order.attach_mock(case, 'case')
             assign_reviewer(app, reviewer=None, by_admin=self.org_admin)
         self.assertEqual([c[0] for c in order.mock_calls], ['holder', 'case'])
-        self.assertEqual(holder.call_args.args[0].pk, self.reviewer.pk)
+        self.assertEqual(holder.call_args.args[0], self.reviewer.pk)   # by the row's id: no SELECT first
+
+    def _watch_locks(self, stale, **relock_kw):
+        """Unassign ``stale``, recording each lock in order: ('holder', pk) and ('case', None)."""
+        from apps.scholarship import status_lock
+        from apps.scholarship.services import assignment
+        order = mock.Mock()
+        with mock.patch.object(assignment, '_locked', wraps=assignment._locked) as holder, \
+                mock.patch.object(status_lock, 'relock_application',
+                                  **(relock_kw or {'wraps': status_lock.relock_application})) as case:
+            order.attach_mock(holder, 'holder')
+            order.attach_mock(case, 'case')
+            assign_reviewer(stale, reviewer=None, by_admin=self.org_admin)
+        return [(n, a[0] if n == 'holder' else None) for n, a, _ in order.mock_calls]
+
+    def test_an_unassign_on_a_stale_page_runs_again_with_the_real_holder_locked_first(self):
+        # #75 re-check 2 (M2): the page named one holder, the row holds another. The first attempt
+        # rolls back on seeing it; the second locks the real holder BEFORE the case, and unassigns.
+        from apps.scholarship.models import AssignmentEvent
+        real = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+        app = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        stale = ScholarshipApplication.objects.get(pk=app.pk)
+        ScholarshipApplication.objects.filter(pk=app.pk).update(assigned_to=real)
+        self.assertEqual(self._watch_locks(stale), [('holder', self.reviewer.pk), ('case', None),
+                                                    ('holder', real.pk), ('case', None)])
+        self.assertEqual([(e.from_admin_id, e.to_admin_id)
+                          for e in AssignmentEvent.objects.filter(application=app)], [(real.pk, None)])
+        app.refresh_from_db()
+        self.assertIsNone(app.assigned_to_id)
+
+    def test_a_holder_that_moves_again_is_still_unassigned_on_the_second_try(self):
+        # #75 re-check 2: two tries, never a loop. A holder that moves between them too is unassigned
+        # on the locked case (that case's row decides), and nothing escapes as an error.
+        from apps.scholarship import status_lock
+        from apps.scholarship.models import AssignmentEvent
+        others = [make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
+                  for _ in range(2)]
+        app = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        real_relock = status_lock.relock_application
+
+        def moving(application):
+            ScholarshipApplication.objects.filter(pk=app.pk).update(assigned_to=others.pop(0))
+            return real_relock(application)
+
+        self.assertEqual([n for n, _ in self._watch_locks(app, side_effect=moving)],
+                         ['holder', 'case', 'holder', 'case'])
+        self.assertEqual(AssignmentEvent.objects.filter(application=app, to_admin=None).count(), 1)
+        app.refresh_from_db()
+        self.assertIsNone(app.assigned_to_id)
 
 
 @mock.patch('apps.scholarship.scheduling.emails.send_reviewer_interview_cancelled_email')
@@ -287,6 +337,38 @@ class TheTeardownRunsAfterCommitTest(_Base):
         self.app.refresh_from_db()
         self.assertEqual((self.app.assigned_to_id, self.app.interview_status),
                          (self.reviewer.pk, 'booked'))
+
+    def test_a_failing_email_never_stops_the_other_calls(self, cancel, released, told):
+        # #75 re-check 2: each call is best-effort on its own; the student's email failing is logged.
+        released.side_effect = RuntimeError('the mail provider said no')
+        with self.assertLogs('apps.scholarship.after_commit', 'ERROR'), \
+                self.captureOnCommitCallbacks(execute=True):
+            self._unassign()
+        cancel.assert_called_once_with('evt-75')
+        released.assert_called_once()
+        told.assert_called_once()
+        self.assertEqual(told.call_args.args[0], self.reviewer.email)
+
+    def test_a_teardown_that_fails_after_registering_its_calls_runs_none_of_them(self, cancel,
+                                                                              released, told):
+        # #75 re-check 2: the calls were handed over, then the teardown's savepoint rolled back, so
+        # its database writes never happened and its Google and email calls are dropped with them.
+        from apps.scholarship import after_commit
+        real = after_commit.run_after_commit
+
+        def register_then_fail(application, calls):
+            real(application, calls)
+            raise RuntimeError('the teardown failed after collecting its calls')
+
+        with mock.patch.object(after_commit, 'run_after_commit', side_effect=register_then_fail), \
+                self.assertLogs('apps.scholarship.services', 'ERROR'), \
+                self.captureOnCommitCallbacks(execute=True) as ran:
+            self._unassign()
+        self.assertEqual(ran, [])
+        for sent in (cancel, released, told):
+            sent.assert_not_called()
+        self.app.refresh_from_db()
+        self.assertEqual((self.app.assigned_to_id, self.app.status), (None, 'profile_complete'))
 
     def test_a_database_error_in_the_teardown_still_lets_the_unassign_commit(self, cancel, released,
                                                                            told):

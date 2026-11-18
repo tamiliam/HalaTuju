@@ -72,6 +72,9 @@ import { useRequests } from './view/useRequests'
 import { useVerdict } from './view/useVerdict'
 import type { CockpitCtx } from './view/cockpitCtx'
 
+/** #75 re-check 2: a stale refusal's reload takes its door away, so focus goes to the words that stay. */
+const focusOnArrival = (el: HTMLElement | null) => el?.focus()
+
 /**
  * ⚠ `applicationId` EXISTS SO THE SANDBOX CAN MOUNT THIS PAGE (Layer 1 F7c), and it is the only
  * concession made for it. The route supplies the id in production and always wins; the sandbox
@@ -130,8 +133,11 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // default under the Sponsor profile — the reviewer checks the AI draft first.
   const [showOwnWords, setShowOwnWords] = useState(true)
   // #75 re-check: the reject-before-interview refusal lives HERE, so it survives the reload that a
-  // stale refusal triggers even when that reload takes the door (and its component) away.
-  const [preInterviewErr, setPreInterviewErr] = useState('')
+  // stale refusal triggers even when that reload takes the door (and its component) away. It is
+  // kept WITH its case: prev/next changes `id` without a remount (TD-216), and it never follows.
+  const [preInterviewRefusal, setPreInterviewRefusal] = useState<{ appId: number; text: string } | null>(null)
+  const preInterviewErr = app && preInterviewRefusal?.appId === app.id ? preInterviewRefusal.text : ''
+  const setPreInterviewErr = (text: string) => setPreInterviewRefusal(text && app ? { appId: app.id, text } : null)
 
   const refreshApp = async () => {
     if (!token) return
@@ -159,6 +165,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     interview.setFindings({})
     interview.setRubric({})
     interview.setNote('')
+    setPreInterviewRefusal(null)
     getScholarshipApplication(id, { token })
       .then((d) => {
         setApp(d)
@@ -364,7 +371,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       />
       <PreInterviewRecord app={app} t={t} />
       {preInterviewErr && !app.pre_interview && (
-        <p className="text-sm text-critical-600" role="alert" data-testid="pre-interview-refused">{preInterviewErr}</p>
+        <p className="text-sm text-critical-600" role="alert" data-testid="pre-interview-refused"
+          tabIndex={-1} ref={focusOnArrival}>{preInterviewErr}</p>
       )}
 
 

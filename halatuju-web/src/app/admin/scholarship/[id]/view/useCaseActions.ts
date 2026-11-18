@@ -89,9 +89,10 @@ export function useCaseActions(ctx: CockpitCtx, admins: ReadonlyArray<{ id: numb
   const doAssign = async (adminId: number | null) => {
     if (!token) return
     setBusy('assign'); setError('')
-    // A2.3: the assign reply is slim (who holds it now), so the case is reloaded for the page.
-    try { await assignApplication(id, adminId, { token }); setApp(await getScholarshipApplication(id, { token })) }
+    let refused = false
+    try { await assignApplication(id, adminId, { token }) }
     catch (e) {
+      refused = true
       // M3c: a refusal with a `code` (`self_assign`) is read by it; the older ones put the code in `error`.
       const code = (e as { code?: string }).code || (e instanceof Error ? e.message : '')
       const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee', 'not_assignable',
@@ -100,10 +101,14 @@ export function useCaseActions(ctx: CockpitCtx, admins: ReadonlyArray<{ id: numb
         ? t(`admin.scholarship.assign.error.${code}`, code === 'not_signed_in'
           ? { name: admins.find((a) => a.id === adminId)?.name ?? '' } : undefined)
         : t('admin.scholarship.assignError'))
-      // #75 re-check: a refusal usually means the page is stale (a colleague moved the case), so the
-      // case is reloaded and the picker shows what is true now. The message above stays.
-      try { setApp(await getScholarshipApplication(id, { token })) } catch { /* the message stands */ }
-    } finally { setBusy('') }
+    }
+    // A2.3: the assign reply is slim (who holds it now), so the case is reloaded for the page, once.
+    // #75 re-check: after a refusal too, as the page is usually stale (a colleague moved the case), so
+    // the picker shows what is true now; the refusal's words stay. A failed reload never says the
+    // assign failed when it did not.
+    try { setApp(await getScholarshipApplication(id, { token })) }
+    catch { if (!refused) setError(t('admin.scholarship.assign.reloadAfterAssign')) }
+    finally { setBusy('') }
   }
 
   return {

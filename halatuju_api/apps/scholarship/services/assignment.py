@@ -337,10 +337,11 @@ def _refuse_stage(application, current, reviewer, now):
 
 
 def _locked(reviewer):
-    """``reviewer`` re-read with its row locked (the permissions editor's lock). A row that has
-    vanished keeps the stale object, which `_can_review` then judges as before."""
+    """``reviewer`` (or its pk) re-read with its row locked (the permissions editor's lock). A row that
+    has vanished keeps the stale object (None for a pk), which `_can_review` then judges as before."""
     from apps.courses.models import PartnerAdmin
-    return PartnerAdmin.objects.select_for_update().filter(pk=reviewer.pk).first() or reviewer
+    row = PartnerAdmin.objects.select_for_update().filter(pk=getattr(reviewer, 'pk', reviewer)).first()
+    return row or (None if isinstance(reviewer, int) else reviewer)
 
 
 def _record_assignment(by_admin, application, current, reviewer):
@@ -375,14 +376,15 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     (the assign query budget): its one UPDATE is written only if the row still holds the status and
     the holder the rules judged (`_write_if_unmoved`); if not, the attempt rolls back and runs once
     more on the locked row, so the refusal names what is true now. Lock order: reviewer, then case;
-    an unassign locks the outgoing holder first. Its teardown's Google and email calls run after
-    commit (`after_commit`). A case that has gone is refused as `not_assignable`.
+    an unassign locks the outgoing holder first, and if the locked case names another holder (a
+    stale page) it runs once more with that one locked first. Its teardown's Google and email calls
+    run after commit (`after_commit`). A case that has gone is refused as `not_assignable`.
     """
     now = now or timezone.now()
     try:
         return _assign_once(application, reviewer, by_admin, now, relock=reviewer is None)
     except _Moved:
-        return _assign_once(application, reviewer, by_admin, now, relock=True)
+        return _assign_once(application, reviewer, by_admin, now, relock=True, last=True)
 
 
 class _Moved(Exception):
@@ -400,9 +402,9 @@ def _write_if_unmoved(application, current, fields):
             .update(**{f: getattr(application, f) for f in fields}))
 
 
-def _assign_once(application, reviewer, by_admin, now, *, relock):
+def _assign_once(application, reviewer, by_admin, now, *, relock, last=False):
     """`assign_reviewer`'s body: one attempt, in one transaction. ``relock`` re-reads the case under
-    its row lock first (the unassign, and the second try of an assign whose row moved)."""
+    its row lock first (the unassign, and the second try of an attempt whose row moved)."""
     from ..models import AssignmentEvent
 
     # ⚠ THE TARGET IS RE-READ UNDER ITS ROW LOCK (#39 Sprint 4, the TD-382 class). The editor's
@@ -412,14 +414,20 @@ def _assign_once(application, reviewer, by_admin, now, *, relock):
     # to open it. #75 review: then the CASE, when ``relock`` asks (see `assign_reviewer`).
     from ..status_lock import relock_application
     with transaction.atomic():
+        held, holder = application.assigned_to_id, None
         if reviewer is not None:
             reviewer = _locked(reviewer)
-        elif application.assigned_to_id is not None:
+        elif held is not None:
             # #75 re-check: an UNASSIGN locks the outgoing holder first, the assign's order (reviewer,
             # then case), so it never holds the case while a stale assign of that holder waits on it.
-            _locked(application.assigned_to)
+            holder = _locked(held)
         if relock and relock_application(application) is None:
             raise AssignmentError('not_assignable')    # the case is gone: never judge a stale copy
+        if reviewer is None and application.assigned_to_id is not None:
+            if application.assigned_to_id != held and not last:
+                raise _Moved   # a stale page named another holder: once more, the real one locked first
+            if application.assigned_to_id == held and holder is not None:
+                application.assigned_to = holder    # the locked row, never the stale copy
         if reviewer is not None:
             # #39 S4 review fix 7: the caller-aware rule, re-asked on the LOCKED row — only someone
             # in Reviewers (an org admin: of their own organisation), and that row may have changed

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #75 re-check 2 - refusal kept to its case, unassign retries a moved holder (2026-11-17)
+
+Branch req75, on top of 2c1ee06e4, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-17, Request #75 re-check 2).
+- Cockpit: a reject-before-interview refusal belongs to its case; moving to the next case (prev/next, no remount) no longer carries it. When the reload takes the door away, focus goes to the refusal.
+- Unassign locks the outgoing reviewer by the case's own holder id; if the locked case names someone else (a stale page), it runs once more with that reviewer locked first. No query budget moved.
+- Cockpit: an assign is followed by one reload; a failed reload after a good assign says "Assigned. Reload the page to see the latest." (new key `admin.scholarship.assign.reloadAfterAssign`, en/ms/ta), never "could not assign".
+- Tests: `test_reject_before_interview.py` 40 -> 44 (stale holder retried with the real one locked first; a second move still unassigns; one failing email never stops the others; a rolled-back teardown sends nothing); `view.actions.test.tsx` +1 and two tightened (the refusal stays on its case and takes focus; the `not_assignable` words read exactly).
+
 ### refactor: request #75 re-check - interview teardown after commit, assign refusal shown (2026-11-17)
 
 Branch req75, on top of fc5d474ea, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-17, Request #75 re-check).
