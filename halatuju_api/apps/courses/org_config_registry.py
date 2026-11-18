@@ -523,9 +523,10 @@ SETTINGS = {
         'group': 'check2', 'unit': 'days', 'min': 1, 'max': 2,
         'default': _default_query_reminder_lead_days,
     },
-    # H3b: an offer/confirmation letter issued longer ago than this asks for a recent one (`recent_letter`).
+    # H3b: a confirmation letter issued longer ago than this asks for a recent one (`recent_letter`).
+    # Default 6 (owner, 2026-11-18: "The confirmation letter can be upto 6 months old").
     'recent_letter_window_months': {
-        'group': 'check2', 'unit': 'months', 'min': 1, 'max': 12, 'default': lambda: 3,
+        'group': 'check2', 'unit': 'months', 'min': 1, 'max': 12, 'default': lambda: 6,
     },
     # ── awards ──
     # The award good-news email waits this long after the award (`award_timing`, a per-org SQL

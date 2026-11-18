@@ -1,9 +1,9 @@
-"""H3b (2026-11-16, roadmap H3 Goal B) - an OLD offer or confirmation letter asks for a RECENT one.
+"""H3b (2026-11-16, roadmap H3 Goal B) - an OLD confirmation letter asks for a RECENT one.
 
-When the live offer-slot letter (an offer letter or a confirmation-of-studies letter) was issued more
-than the organisation's ``recent_letter_window_months`` ago (platform default 3), AND her course should
-already have started, Check 2 raises ONE soft document request, ``CODE``: "please upload a recent
-confirmation letter from your institution".
+When the student's newest CONFIRMATION-of-studies letter (``pathway_engine.is_confirmation_letter``; the
+offer slot holds both kinds) was issued more than the organisation's ``recent_letter_window_months`` ago
+(platform default 6; owner, 2026-11-18), AND her course should already have started, Check 2 raises ONE soft document
+request, ``CODE``: "please upload a recent confirmation letter from your institution".
 
 SOFT BY DESIGN (the plan: a request, no block). It is an ordinary Check-2 doc request
 (``check2_queries.DOC_SPECS``): it never blocks submission, never fails a fact, never touches a
@@ -11,7 +11,7 @@ verdict, the pathway or the money, and - unlike every other open student task - 
 reviewer assignment (``services.queries_sla`` leaves ``CODE`` out of the open-task hold, fix round 1).
 
 NOT BEFORE THE COURSE STARTS. A letter read with a reporting date still to come (today or later), or a
-reporting date that cannot be read to a day and might still be to come, means no ask: an offer letter
+reporting date that cannot be read to a day and might still be to come, means no ask: a letter
 is naturally months old before she reports. Only a reporting date in the past (or, read only to its
 year, a year before this one) lets the ask fire. A letter with NO reporting date at all (most
 confirmation letters) keeps the plain rule: the letter is older than the window.
@@ -19,11 +19,16 @@ confirmation letters) keeps the plain rule: the letter is older than the window.
 NO GUESSING. The letter's issue date is ``vision_fields['fields']['offer_date']``; a date this strict
 reader cannot place exactly (no year, two years, an ambiguous order, no day) means NO ask.
 
-NO LOOP. ANY recent letter on file closes it: an offer or a confirmation letter, any institution
-(polytechnic, university, matriculation, Form 6, ...), live or kept out of the live slot by the
-keep-better promotion, dated inside the window and not FAILED (``offer_fails``). A suspect or unscored
-letter still counts - she has done what we asked; a person judges the letter itself. A failing live
-letter is left to its own, stronger ask.
+CONFIRMATION LETTERS ONLY (owner, 2026-11-18: "The recent requirement only applies to confirmation
+letter. Not to offer letters."). An offer letter, of any age, never raises the ask. A confirmation
+letter only stands in for a missing offer letter (owner, same day: "When the student doesn't have an
+offer letter he or she uploads a confirmation letter in its stead. That must be recent."), so ANY
+non-failing offer letter on file, in any version of the slot, means no ask at all.
+
+NO LOOP. A recent CONFIRMATION letter on file closes it: any institution, live or kept out of the live
+slot by the keep-better promotion (so every version of the slot is read), dated inside the window and
+not FAILED (``offer_fails``). A suspect or unscored letter still counts - she has done what we asked; a
+person judges the letter itself. A failing newest letter is left to its own, stronger ask.
 """
 import calendar
 import datetime as _dt
@@ -113,36 +118,47 @@ def window_months(application):
     return courses_public.org_config.value(getattr(application, 'owning_organisation', None), WINDOW_KEY)
 
 
-def _recent_letter_on_file(application, edge):
-    """Any non-failing letter in the offer slot dated on/after ``edge``, in ANY version of the slot:
-    an offer or a confirmation letter, from any institution."""
-    from .pathway_engine import offer_fails
-    # all-versions-read: a recent letter she sent in answer may be KEPT OUT of the live slot by the
-    # keep-better promotion (an official offer outranks it); it still answers this ask, so look at all.
-    for doc in application.documents.filter(doc_type='offer_letter'):
-        when = letter_date(doc)
-        if when is not None and when >= edge and not offer_fails(doc):
-            return True
-    return False
+def _slot_letters(application):
+    """``(confirmation letters, offer letters)`` in ANY version of the offer slot, each newest first
+    (the live one and any kept out of the live slot by the keep-better promotion). Served from the open
+    document snapshot (unfiltered, so superseded rows are there) when one is open; else one query."""
+    from . import document_snapshot as snap
+    from .pathway_engine import is_confirmation_letter
+    rows = snap._rows(application)
+    if rows is None:
+        # all-versions-read: a letter may be KEPT OUT of the live slot (keep-better); every version counts.
+        rows = application.documents.filter(doc_type='offer_letter').order_by(*snap.SNAPSHOT_ORDER)
+    slot = [d for d in rows if d.doc_type == 'offer_letter']
+    confirmations = [d for d in slot if is_confirmation_letter(d)]
+    offers = [d for d in slot if not is_confirmation_letter(d)]
+    return confirmations, offers
 
 
 def wanted(application, today=None) -> bool:
     """Should Check 2 ask this student for a recent confirmation letter? Soft; see the module notes.
-    Yes only when the live letter is readable, not failing, dated before the window's edge, its course
-    should already have started, and no recent letter of any kind is on file."""
-    from .document_snapshot import latest_doc
+    No when any non-failing OFFER letter is on file (owner, 2026-11-18: a confirmation letter is
+    uploaded only "when the student doesn't have an offer letter ... in its stead"). Otherwise yes only
+    when her newest confirmation letter (any version of the slot) is readable, not failing, dated before
+    the window's edge, its course should already have started, and no confirmation letter dated inside
+    the window is on file. An offer letter never raises the ask."""
+    from .document_snapshot import has_live_doc
     from .pathway_engine import offer_fails
-    live = latest_doc(application, 'offer_letter')
-    if live is None or offer_fails(live):
+    if not has_live_doc(application, 'offer_letter'):
         return False
-    when = letter_date(live)
-    if when is None:
+    letters, offers = _slot_letters(application)
+    if not letters or any(not offer_fails(d) for d in offers):
         return False
     today = today or timezone.localdate()
     edge = cutoff(today, window_months(application))
-    if when >= edge or not course_should_have_started(live, today):
+    for doc in letters:
+        when = letter_date(doc)
+        if when is not None and when >= edge and not offer_fails(doc):
+            return False                                  # a recent confirmation letter closes it
+    newest = letters[0]
+    when = letter_date(newest)
+    if when is None or offer_fails(newest):
         return False
-    return not _recent_letter_on_file(application, edge)
+    return when < edge and course_should_have_started(newest, today)
 
 
 def offer_asks(application):
