@@ -93,6 +93,18 @@ MODELS = {
                  (f'{_G}/results_doc.py', '_norm_fold_upper_alnum'),
                  (f'{_G}/results_doc.py', 'misfiled_as')],
     },
+    # LL3 phase 2: the two AI genuineness reads that had no version. Both call Gemini on the
+    # 2.5 Flash cascade, so they carry the AI register and the cascade pin like sample_stamp.
+    'ic': {
+        'constant': (f'{_G}/ic.py', 'MODEL_VERSION'),
+        'files': [f'{_G}/ic.py', _AI_REGISTRY],
+        'pins': [_FLASH_25],
+    },
+    'supporting_doc': {
+        'constant': (f'{_G}/supporting_doc.py', 'MODEL_VERSION'),
+        'files': [f'{_G}/supporting_doc.py', _AI_REGISTRY],
+        'pins': [_FLASH_25],
+    },
     'sample_stamp': {
         'constant': (f'{_G}/sample_stamp.py', 'SAMPLE_CHECK_VERSION'),
         'files': [f'{_G}/sample_stamp.py', _AI_REGISTRY],

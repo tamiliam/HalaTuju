@@ -1,0 +1,7 @@
+{
+  "1.0.0": {
+    "digest": "20bff50fd7e6d9d061fdcdc62e694c0b6f4309ca39579c3a287adcaaa4e5c839",
+    "note": "First version (LL3 phase 2, 2026-11-19): the IC genuineness read already in use, now stamped as model_version on each new result. Older stored results carry no version (no back-fill).",
+    "also_ok": []
+  }
+}

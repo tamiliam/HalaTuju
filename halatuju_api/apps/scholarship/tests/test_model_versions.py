@@ -84,6 +84,14 @@ _KNOWN_GAPS = {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
     },
+    'ic': {
+        f'{_VISION}:_call_gemini_json': _TRANSPORT,
+        f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
+    },
+    'supporting_doc': {
+        f'{_VISION}:_call_gemini_json': _TRANSPORT,
+        f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
+    },
     'sample_stamp': {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
@@ -107,8 +115,9 @@ _NOT_A_MODEL_VERSION = {
     'apps/scholarship/verdict_narrative.py:CASE_SUMMARY_VERSION':
         'The plain-English case summary written FROM a verdict; the verdict engine decides.',
     'apps/scholarship/vision/gemini_read.py:IC_SECOND_OPINION_PROMPT_VERSION':
-        'A hash of the IC second-opinion prompt; IC genuineness is not registered until LL3 '
-        'phase 2 gives ic.py its own MODEL_VERSION.',
+        'A hash of the IC second-opinion READ prompt (NRIC / name / address): it keys the reuse of '
+        'a stored second reading. A field reader, not a scorer; IC genuineness is its own '
+        "registered model ('ic', genuineness/ic.py MODEL_VERSION).",
     'apps/scholarship/vision/field_extraction.py:SLIP_READER_VERSION':
         'The SPM slip field read (OCR to fields). Not on the LL3 model list; a reader, not a '
         'scorer. To register it, add it to MODELS.',
