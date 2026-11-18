@@ -129,11 +129,17 @@ def raster_scale(width_pt: float, height_pt: float) -> Optional[float]:
 # `MAX_LAYER_PAGES` pages, one operation budget for the whole document, stopping as soon as page 1 is
 # not drawn — and extracts the drawn pages ONCE; `first_page_drawn`, `pdf_text_layer` and
 # `pdf_page_texts` all answer from that one result, memoised per upload (`_LAYER_MEMO`).
-#: Text render modes that paint nothing: 3 = invisible, 7 = add to the clipping path only.
-_INVISIBLE_MODES = frozenset((3, 7))
+#
+# MIRRORS pypdf's plain `extract_text` (read in 5.9.0 and 6.21.4, fix round 3): text comes ONLY from the page's
+# /Contents and from every XObject a `Do` names that is not an /Image (resources inherited up /Parent), out of
+# the string operands of Tj, ', " and TJ. Annotations, Type3 CharProcs, ActualText, patterns: never extracted.
+#: Text render modes that paint: 0-2 and 4-6. 3 (invisible), 7 (clip only) and any other value hide the text.
+_DRAWN_MODES = frozenset((0, 1, 2, 4, 5, 6))
 _SHOW_OPS = frozenset((b'Tj', b'TJ', b"'", b'"'))
 #: Form XObjects nest; deeper than this is not a document page (and a cycle must end).
 _MAX_FORM_DEPTH = 8
+#: A /Parent chain longer than this (pypdf inherits /Resources up it) is broken or hostile.
+_MAX_PARENT_DEPTH = 64
 #: Content-stream operations walked per DOCUMENT: EVERY operation, each time it is walked — a page's own
 #: stream once per page (pages may share one stream) and a form's whole stream on every call (a form of
 #: 10,000 operations called 20,000 times is 200 million). Real corpus maximum (533 PDFs, measured
@@ -141,100 +147,181 @@ _MAX_FORM_DEPTH = 8
 #: page's later text extraction costs ~5-10 µs per operation of its stream, so the budget also bounds that.
 #: Past it the PDF has no layer (the Vision route) and none of it is text-extracted.
 _MAX_DOC_OPS = 500_000
+# Fix round 3: the costs below are charged BEFORE a stream is parsed (each stream every time it is walked, as
+# pypdf's extraction re-reads a form on every call), so one huge operation can no longer stall the parse.
+#: Decompressed content-stream bytes per document. Real corpus max (533 PDFs): 3,421,060.
+_MAX_DOC_BYTES = 8_000_000
+#: Token boundaries (whitespace and delimiter bytes) per document: a cheap upper bound on the tokens the
+#: parser will read, so a stream of tiny operations is refused unparsed. Real max: 467,000.
+_MAX_DOC_TOKENS = 700_000
+#: ... and per stream: pypdf parses one stream in worse than linear time past ~400,000. Real max: 234,030.
+_MAX_STREAM_TOKENS = 400_000
+#: Inline images (``BI ... EI``, slow to parse) per document, counted on the bytes. Real corpus: none.
+_MAX_DOC_INLINE_IMAGES = 2_000
+#: Characters handed to text-showing operators per document (pypdf decodes each). Real max: 7,373.
+_MAX_DOC_SHOWN_CHARS = 200_000
+_TOKEN_BOUNDARIES = bytes((0, 9, 10, 12, 13, 32)) + b'()<>[]{}/%'
+_INLINE_IMAGE = re.compile(rb'(?<![^\s\x00)\]>}])BI(?![^\s\x00/])')
+#: One string or ``<...>`` longer than this is refused unparsed: pypdf parses one huge token in worse than
+#: linear time (a 4 MB string: 6-7 s). Real max: 1,893 bytes. A bare token (name, number, operator) is
+#: quadratic in pypdf 5.9 (6.x refuses long ones itself): capped at 1,024 bytes. Real max: 692.
+_MAX_TOKEN_BYTES = 65_536
+_MAX_BARE_TOKEN = 1_024
+_BARE = rb'[^\x00\t\n\x0c\r ()<>\[\]{}/%]'
+_LONG_BARE = re.compile(rb'(?<!' + _BARE + rb')' + _BARE + b'{%d}' % _MAX_BARE_TOKEN)
+_LONG_ANGLED = re.compile(b'<[^<>]{%d}' % _MAX_TOKEN_BYTES)
+_PAREN = re.compile(rb'[()\\]')
 #: Pages checked AND text-extracted per PDF. Callers need far fewer: the offer reader 3 (its MAX_PAGES),
-#: the slip gate and Exact offer read page 1; the largest corpus PDF has 5 pages.
+#: the slip gate and Exact offer read page 1; the largest corpus PDF has 5 pages, and no scorer of the full
+#: layer reads past page 20 (checked fix round 3; a scan has only ever given them page 1).
 MAX_LAYER_PAGES = 20
 
 
 class _OverBudget(Exception):
-    """A PDF asked for more than `_MAX_DOC_OPS` operations: hostile or broken, never read as text."""
+    """A PDF asked for more than one of the document budgets: hostile or broken, never read as text."""
 
 
-def _parsed_ops(content, reader, cache: dict):
-    """A content stream's (a page's or a form's) parsed operations, parsed ONCE per document: a fan-out
-    calls one form many times and pages may share one stream. The cache holds the object too, so its
-    ``id`` cannot be reused while the walk runs."""
+class _Budget:
+    """One PDF's walk budget: operations, bytes, tokens, inline images and shown characters left."""
+
+    def __init__(self):
+        self.left = {'operations': _MAX_DOC_OPS, 'bytes': _MAX_DOC_BYTES, 'tokens': _MAX_DOC_TOKENS,
+                     'inline images': _MAX_DOC_INLINE_IMAGES, 'shown characters': _MAX_DOC_SHOWN_CHARS}
+
+    def spend(self, what: str, n: int) -> None:
+        self.left[what] -= n
+        if self.left[what] < 0:
+            raise _OverBudget(f'past the {what} budget of one PDF')
+
+
+def _parsed_ops(content, reader, cache: dict, budget: _Budget):
+    """A content stream's (a page's or a form's) operations. Every walk is charged: first the stream's
+    decompressed bytes, token boundaries and inline images (BEFORE any parse), then its operations. Parsed
+    ONCE per document (a fan-out calls one form many times; pages may share one stream); the cache holds the
+    object too, so its ``id`` cannot be reused while the walk runs."""
     from pypdf.generic import ContentStream
-    if isinstance(content, ContentStream):
-        return content.operations
     hit = cache.get(id(content))
     if hit is None:
-        hit = cache[id(content)] = (content, ContentStream(content, reader).operations)
-    return hit[1]
-
-
-def _shown_chars(operator: bytes, operands) -> int:
-    """How many non-blank characters one text-showing operator places (raw string units: what matters
-    is whether any text is shown, not how it decodes)."""
-    if not operands:
-        return 0
-    if operator == b'TJ':
-        items = operands[0] if isinstance(operands[0], list) else []
+        stream = content if isinstance(content, ContentStream) else ContentStream(content, reader)
+        data = stream.get_data()          # decompressed (pypdf 6 caps one stream at 75 MB); not yet parsed
+        hit = [content, stream, (len(data), len(data) - len(data.translate(None, _TOKEN_BOUNDARIES))
+                                 + data.count(b'\\'), len(_INLINE_IMAGE.findall(data))), None]
+        _charge(budget, hit[2])           # bounds the scan below: parens and backslashes are tokens
+        if hit[2][1] > _MAX_STREAM_TOKENS:
+            raise _OverBudget('a content stream past the token limit')
+        if _LONG_BARE.search(data) or _LONG_ANGLED.search(data) or _longest_literal(data) > _MAX_TOKEN_BYTES:
+            raise _OverBudget('a token past the size limit of one PDF')
+        hit[3] = stream.operations
+        cache[id(content)] = hit
     else:
-        items = [operands[-1]]          # Tj / ' take (string); " takes (aw, ac, string)
+        _charge(budget, hit[2])
+    budget.spend('operations', len(hit[3]))
+    return hit[3]
+
+
+def _charge(budget: _Budget, cost: tuple) -> None:
+    for what, n in zip(('bytes', 'tokens', 'inline images'), cost):
+        budget.spend(what, n)
+
+
+def _longest_literal(data: bytes) -> int:
+    """An upper bound on the longest ``( ... )`` string (nested parentheses, backslash escapes)."""
+    longest = depth = start = 0
+    skip = -1
+    for m in _PAREN.finditer(data):
+        i = m.start()
+        if i == skip:
+            continue
+        if data[i] == 92:
+            skip = i + 1
+        elif data[i] == 40:
+            start = i if not depth else start
+            depth += 1
+        elif depth:
+            depth -= 1
+            longest = longest if depth else max(longest, i - start)
+    return max(longest, len(data) - start if depth else 0)
+
+
+def _shown_chars(operands) -> int:
+    """EVERY character handed to a text-showing operator: each string operand and each string in an array
+    operand, blanks included. A superset of what pypdf extracts (operands[0] of Tj and ', operands[2] of ",
+    every string of a TJ array; 5.9 also reads a TJ string operand). A font's Encoding / ToUnicode can map ANY
+    byte, a space too, to a letter, so no string is too blank to carry hidden text."""
     n = 0
-    for s in items:
-        if isinstance(s, bytes):
-            n += sum(b not in b' \t\r\n\x00' for b in s)
-        elif isinstance(s, str):
-            n += sum(not c.isspace() for c in s)
+    for o in operands:
+        for s in (o if isinstance(o, list) else (o,)):
+            if isinstance(s, (str, bytes)):
+                n += len(s)
     return n
 
 
-def _walk_text_modes(content, resources, reader, mode: int, counts: list, depth: int,
-                     budget: list, cache: dict) -> None:
-    """Add to ``counts`` [drawn, invisible] the characters each text-showing operator places, by the
-    render mode in force (``Tr``, saved and restored by ``q`` / ``Q``; a Form XObject starts from its
-    caller's mode). ``budget`` [operations left] is the WHOLE DOCUMENT's: every walk of a stream spends
-    all its operations up front, and an empty budget raises `_OverBudget`. Raises on anything it cannot
-    parse — the caller treats that as invisible."""
-    ops = _parsed_ops(content, reader, cache)
-    _spend(budget, len(ops))
+def _resolved(obj, key):
+    v = obj.get(key)
+    return v.get_object() if v is not None else None
+
+
+def _resources(obj):
+    """The /Resources pypdf's extraction uses for a page or an XObject: its own, else inherited up /Parent."""
+    for _ in range(_MAX_PARENT_DEPTH):
+        if '/Resources' in obj:
+            return _resolved(obj, '/Resources')
+        obj = _resolved(obj, '/Parent')
+        if not isinstance(obj, dict):
+            return None
+    raise ValueError('/Parent chain too long')
+
+
+def _walk_text_modes(content, resources, reader, mode, counts: list, depth: int, budget: _Budget,
+                     cache: dict, undrawn: bool = False) -> None:
+    """Add to ``counts`` [drawn, hidden] the characters each text-showing operator places, by the render
+    mode in force (``Tr``, saved and restored by ``q`` / ``Q``; an XObject starts from its caller's mode).
+    ``undrawn``: inside an XObject a viewer never paints (not a /Form), so all its text is hidden. ``budget``
+    is the WHOLE DOCUMENT's (`_Budget`). Raises on anything it cannot parse — the caller treats that as hidden."""
+    from pypdf.generic import StreamObject
+    ops = _parsed_ops(content, reader, cache, budget)
     stack = []
-    xobjects = (resources or {}).get('/XObject') if resources is not None else None
-    xobjects = xobjects.get_object() if xobjects is not None else {}
+    xobjects = _resolved(resources, '/XObject') if isinstance(resources, dict) else None
     for operands, operator in ops:
         if operator == b'q':
             stack.append(mode)
         elif operator == b'Q':
             mode = stack.pop() if stack else mode
         elif operator == b'Tr':
-            mode = int(operands[0])
+            mode = operands[0]                 # a non-integer or out-of-range mode is not in _DRAWN_MODES
         elif operator in _SHOW_OPS:
-            counts[1 if mode in _INVISIBLE_MODES else 0] += _shown_chars(operator, operands)
+            n = _shown_chars(operands)
+            budget.spend('shown characters', n)
+            counts[0 if mode in _DRAWN_MODES and not undrawn else 1] += n
         elif operator == b'Do' and operands:
+            # pypdf reads text from EVERY XObject a Do names that is not an /Image; a non-stream gives it none
             xobj = xobjects.get(operands[0]) if xobjects else None
             xobj = xobj.get_object() if xobj is not None else None
-            if xobj is not None and xobj.get('/Subtype') == '/Form':
-                if depth >= _MAX_FORM_DEPTH:
-                    raise ValueError('form XObjects nested too deep')
-                _walk_text_modes(xobj, xobj.get('/Resources') or resources, reader, mode, counts, depth + 1,
-                                 budget, cache)
-
-
-def _spend(budget: list, n: int) -> None:
-    budget[0] -= n
-    if budget[0] < 0:
-        raise _OverBudget(f'more than {_MAX_DOC_OPS} content-stream operations in one PDF')
+            subtype = _resolved(xobj, '/Subtype') if isinstance(xobj, StreamObject) else '/Image'
+            if subtype == '/Image':
+                continue
+            if depth >= _MAX_FORM_DEPTH:
+                raise ValueError('XObjects nested too deep')
+            _walk_text_modes(xobj, _resources(xobj) or resources, reader, mode, counts, depth + 1, budget,
+                             cache, undrawn or subtype != '/Form')
 
 
 #: What `_page_visibility` finds on one page.
 DRAWN, HIDDEN, OVER_BUDGET = 'drawn', 'hidden', 'over_budget'
 
 
-def _page_visibility(page, reader, budget: list, cache: dict) -> str:
+def _page_visibility(page, reader, budget: _Budget, cache: dict) -> str:
     """`DRAWN` when every character on the page is painted (or there is no text at all); `HIDDEN` when it
-    places ANY invisible text (render mode 3 / 7) or that cannot be decided; `OVER_BUDGET` when the
-    document's operation budget runs out on it (the whole PDF is then never text-extracted)."""
+    places ANY hidden text (render mode not 0-2 / 4-6, or text in a non-Form XObject) or that cannot be
+    decided; `OVER_BUDGET` when one of the document's budgets runs out on it (the whole PDF is then never
+    text-extracted)."""
     try:
         contents = page.get('/Contents')
         contents = contents.get_object() if contents is not None else None
         if _is_null(contents):
             return DRAWN                   # no content stream: no text at all, nothing hidden
-        resources = page.get('/Resources')
-        resources = resources.get_object() if resources is not None else None
         counts = [0, 0]
-        _walk_text_modes(contents, resources, reader, 0, counts, 0, budget, cache)
+        _walk_text_modes(contents, _resources(page), reader, 0, counts, 0, budget, cache)
         return HIDDEN if counts[1] > 0 else DRAWN
     except _OverBudget as e:
         logger.warning('PDF text visibility check stopped: %s', e)
@@ -253,7 +340,7 @@ def page_text_hidden(page, reader) -> bool:
     """True when this one page places ANY invisible text (render mode 3 / 7, an OCR overlay on a picture),
     or when that cannot be decided (an unreadable content stream, or past the operation budget, here a
     budget of its own). False only when every character on the page is drawn."""
-    return _page_visibility(page, reader, [_MAX_DOC_OPS], {}) != DRAWN
+    return _page_visibility(page, reader, _Budget(), {}) != DRAWN
 
 
 def _visibilities(reader, per_page: int = 0) -> tuple:
@@ -262,7 +349,7 @@ def _visibilities(reader, per_page: int = 0) -> tuple:
     `OVER_BUDGET` page (the PDF is then never text-extracted): the tuple ENDS with that page.
     ``per_page`` (1 to `MAX_LAYER_PAGES`): the first that many pages, each judged on its own, with no stop
     at page 1 (`pdf_page_texts` only); still one budget and the same stop past it."""
-    budget, cache, out = [_MAX_DOC_OPS], {}, []
+    budget, cache, out = _Budget(), {}, []
     for p in reader.pages[:per_page or MAX_LAYER_PAGES]:
         out.append(_page_visibility(p, reader, budget, cache))
         if out[-1] == OVER_BUDGET or (out[0] != DRAWN and not per_page):
@@ -312,7 +399,11 @@ def _layer_read(data: bytes, per_page: int = 0) -> _LayerRead:
 #: Every reader of one upload (ocr_document_full, the slip gate's page 1, the SPM certificate reader, the
 #: Exact offer read, the AI offer reader) asks about the same bytes: they share ONE walk and ONE
 #: extraction. Keyed on the SHA-256 of the bytes (and ``per_page``); a small LRU, safe under gunicorn threads.
+#: Content-addressed, so it is never stale; it is CLEARED only under pytest (conftest autouse fixture) — in
+#: production entries leave only by LRU eviction. A read with more than `_MEMO_MAX_TEXT` characters of text
+#: is not kept (8 such reads would pin a lot of memory per worker).
 _LAYER_MEMO_SIZE = 8
+_MEMO_MAX_TEXT = 2_000_000
 _LAYER_MEMO: 'OrderedDict[tuple, _LayerRead]' = OrderedDict()
 _LAYER_MEMO_LOCK = threading.Lock()
 
@@ -325,6 +416,8 @@ def _layer(data: bytes, per_page: int = 0) -> _LayerRead:
             _LAYER_MEMO.move_to_end(key)
             return hit
     read = _layer_read(data, per_page)   # outside the lock: two threads may both read; same answer
+    if sum(map(len, read.texts or ())) > _MEMO_MAX_TEXT:
+        return read
     with _LAYER_MEMO_LOCK:
         _LAYER_MEMO[key] = read
         while len(_LAYER_MEMO) > _LAYER_MEMO_SIZE:

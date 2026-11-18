@@ -125,9 +125,10 @@ class TheDetectionRule(SimpleTestCase):
         pdf = _pdf([b'BT 3 Tr ET ' + b'BT /F1 12 Tf 20 150 Td (' + STPM_TEXT.encode() + b') Tj ET'])
         self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
 
-    def test_blank_hidden_strings_do_not_count(self):
+    def test_blank_hidden_strings_count_too(self):
+        # fix round 3: a font's Encoding / ToUnicode can turn a space into a letter (test_ocr_visible_paths)
         pdf = _pdf([_show('   ', mode=3) + b' ' + _show(SPM_TEXT)])
-        self.assertIn('SIJIL PELAJARAN', pdf_pages.pdf_text_layer(pdf))
+        self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
 
     def test_hidden_text_inside_a_form_xobject_is_found(self):
         pdf = _pdf([b'/Fm1 Do'], form=_show(STPM_TEXT, mode=3))

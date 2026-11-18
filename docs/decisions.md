@@ -187,6 +187,33 @@ the Vision route, never the hidden text. Why: scanner-app layers miss letterhead
 text drawn under an image, and transparent / white / size-0 / off-page text, count as drawn. Follow-up idea: strip
 invisible runs inside a page during extraction (track `Tr` in pypdf's visitor) so mixed pages keep their drawn text.
 
+**Fix round 3 — every way `extract_text` emits a character (pypdf 5.9.0 and 6.21.4 read).** The walk mirrors pypdf's
+plain extraction, or makes the page hidden: (1) the page's /Contents, stream or array — walked; (2) the string operands
+of Tj, ' (operands[0]), " (operands[2]) and TJ (every string in the array; 5.9 also reads a TJ string operand) — ALL
+string operands are counted, blanks too, since Encoding / ToUnicode can map any byte (a space too) to a letter; (3) `Do`
+on any XObject that is not an /Image — walked; one that is not a /Form (or has no /Subtype) is never painted, so any
+text in it is hidden; (4) /Resources inherited up /Parent, for pages and XObjects — mirrored (a chain past 64 or a cycle
+is hidden); (5) a `Tr` that is not 0-2 / 4-6 (3, 7, out of range, not an integer) — hidden; (6) TJ kerning only adds
+spaces; the orientation filter only drops text, so the walk is a superset. Never read by plain `extract_text`:
+annotation appearance streams and AcroForm fields, Type3 CharProcs, marked-content ActualText, patterns, soft masks,
+shadings; layout mode is never called. **Outside the mode-3/7 rule** (accepted, not judged): white, transparent,
+size-0, clipped, off-page or under-an-image text, an empty Type3 glyph, and drawn text in an optional-content layer
+switched off (pypdf extracts it; unsure whether scanner apps use it — none seen in the corpus).
+**Caps, charged BEFORE a stream is parsed, on every walk:** 8 MB decompressed bytes per document (corpus max 3,421,060);
+700,000 tokens per document and 400,000 per stream (corpus 467,000 / 234,030: pypdf parses one stream worse than
+linearly past that); 2,000 inline images (corpus 0); no string or `<...>` over 64 KB and no bare name / number /
+operator over 1 KB (corpus 1,893 / 692: pypdf 5.9 parses long tokens quadratically); then 500,000 operations and
+200,000 shown characters (corpus 87,726 / 7,373). Past any cap: hidden, Vision route, nothing extracted. A read with
+more than 2 million characters of text is not memoised; the memo is cleared only under pytest. Residual: a 5.9-only
+shape (8 MB of 1 KB names) still parses in about 9 s; on 6.21.4 it takes 0.6 s.
+**Pages:** 20 (`MAX_LAYER_PAGES`). No scorer or reader needs more: the corpus max is 5 pages; the offer reader takes 3,
+the slip gate and Exact offer read page 1. A statement over 20 pages would hand the EPF reader (`_last_caruman`, last row
+in text order) an early month instead of the latest — no such document seen. `pdf_pages_png` takes the last page
+through pdfium, unaffected.
+**pypdf 5.9 (local) vs 6.21.4 (production):** same verdicts under this rule, except 21 corpus PDFs whose content
+streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
+between the two (pypdf's own changes). Local counts are not production counts.
+
 ## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)
 
 Owner said yes on 2026-11-18. Branch ocr-keep. Migration 0214 (additive). Services: api. We keep the text each read
