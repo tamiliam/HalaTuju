@@ -254,6 +254,17 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
 - Code: `apps/scholarship/second_look.py`, `views_admin/verdict.py`, `audit.py` (`decider_counts`), `prediction_metrics.py`, `serializers_admin/detail_blocks.py`, `application_detail.py`. Tests: 21 in `test_second_look.py`.
 - Approved wording for the web: title "Facts in doubt"; help "The reviewer and the AI did not agree on these facts. You agree with the reviewer unless you tap Disagree."; labels "AI said", "Reviewer said", "Reason"; button "Disagree with the reviewer"; after the tap "You disagree. Tap to undo."; beside the button "You agree with the reviewer."
 
+**LL2b as built (web, 19 Nov 2026).** Branch `ll2b`. Services: web. No server change.
+- QC panel: `view/FactsInDoubt.tsx`, shown only where the QC decision buttons show (the QC may decide, not refused) and only when `second_look.in_doubt` is non-empty; a missing key shows nothing. The panel has no read-only state after a decision (it goes away), so none was added. Tap state lives in `QcPanel` and resets when `verdict_decided_at` changes.
+- Each fact: "AI said" (the cockpit status pill; "—" when null), "Reviewer said" ("Fail", plus "but the decision is {decision}" for group `failed_but_accepted`), "Reason" (LL2 label; "Not given" when null on a green-then-fail fact; no row when a reason does not apply). Button with `aria-pressed`; the "You agree" line hides after the tap.
+- Send: Accept, Reopen and Reject carry `fact_checks` with the taps as `disagreed` (`{}` when none) only when the block shows; otherwise no key. 400 `bad_fact_checks` shows the panel's normal error. No blocking, no confirm.
+- Difference from the picture: the picture says "but the decision is Recommend" and the brief asked for the cockpit's real word. The cockpit's own key (`recordVerdict.approve`) reads "Recommend" in English (the Guide calls it "Approve"), so the block shows "Recommend". Change that key's wording separately if "Approve" is wanted.
+- AI prediction card: "Facts in doubt, checked by the QC": per fact with something in doubt, "Checked by the QC" (checked of in doubt, Few cases pill under 30), "Agreed with the reviewer", "Disagreed with the reviewer". Counts only. Hidden when the total in doubt is 0 or the key is missing. Lead reviewer table: "Checked by the QC" (`qc_checked`) and "Disagreed with the reviewer" (`qc_overturned`), shown only when served.
+- Fix owed from LL2: the "Why it failed" cell shows the Few cases pill when `few_green` (own commit).
+- New English strings: "Facts in doubt"; the approved help, "AI said", "Reviewer said", "Disagree with the reviewer", "You disagree. Tap to undo.", "You agree with the reviewer."; "but the decision is {decision}"; "Facts in doubt, checked by the QC"; "Checked by the QC"; "Agreed with the reviewer"; "Disagreed with the reviewer". "Reason", "Fail", "Not given" and the status and reason labels are reused keys. All in en/ms/ta.
+- Sandbox: the cockpit fixture serves `second_look` (empty, as for a case with no verdict); the Overview fixture serves `qc_checked` and the reviewer columns. No two-fact QC surface: a new sandbox surface needs mobile-check baselines, which this sprint did not run.
+- Tests: `view.secondLook.test.tsx` (12), `AiPredictionQcChecked.test.tsx` (7), 2 more in `AiPredictionReasons.test.tsx`; `mobileStandard.test.ts` sweeps the new file.
+
 ---
 
 ## Sprint LL3 — Version guard + one version register

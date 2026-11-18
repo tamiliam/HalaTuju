@@ -374,6 +374,15 @@ Branch ll2b (on top of ll2), NOT merged to main, not published. Migration: none.
 - **Tests:** 21 in `test_second_look.py`.
 - **Tests:** 16 new (`view.failReasons.test.tsx`, `AiPredictionReasons.test.tsx`). `view.decisionBar.test.tsx`: one fixture now stores its reasons (a recorded decline with failed green facts is correctly held back without them).
 
+### feat: sprint LL2b (web) - facts in doubt on the QC panel; checked by the QC on the AI prediction card (2026-11-19)
+
+Branch ll2b, NOT merged to main, not published. Migration: none. Services: web. Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL2b as built, web).
+- **QC panel:** a "Facts in doubt" block (`view/FactsInDoubt.tsx`) lists only the served in-doubt facts: AI said, Reviewer said, Reason. Shown only where the QC decision buttons show. Doing nothing agrees with the reviewer; one tap ("Disagree with the reviewer", `aria-pressed`) disagrees, tap again to undo. Accept, Reopen and Reject send `fact_checks` with the taps (`{}` when none) only when the block shows; no key otherwise. A 400 `bad_fact_checks` shows the panel's normal error. Never blocks; no confirm. Taps reset when the verdict round changes.
+- **AI prediction card:** "Facts in doubt, checked by the QC": per fact, checked of in doubt (Few cases pill), agreed, disagreed. Counts only. Hidden when nothing is in doubt or on an old payload. The leads-only reviewer table gains "Checked by the QC" and "Disagreed with the reviewer" when served.
+- **Fix owed from LL2 (own commit):** the "Why it failed" cell shows the Few cases pill when `few_green`.
+- **Guide and FAQ:** QC Guide section "Facts in doubt" and a QC FAQ entry; one line each in the reviewer Guide and FAQ (English only).
+- **Tests:** 19 new (`view.secondLook.test.tsx` 12, `AiPredictionQcChecked.test.tsx` 7) plus 2 in `AiPredictionReasons.test.tsx`. `mobileStandard.test.ts` now sweeps `FactsInDoubt.tsx` (rule 15 and the pill ledger: tightened, not loosened).
+
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
 Branch vcard, display only (engine statuses untouched). Migration: none. Services: web.
