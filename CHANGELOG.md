@@ -349,7 +349,7 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Web build: the first build failed on one flaky jest test (`page.draft.test.tsx:120`, the draft-deletion check; not in this batch, 3 of 3 passes locally). The same trigger was re-run on the same SHA and went green. One deploy, not two.
 - Gates before the push: web 7833 passed. API suite green on the reader branch (Help Me session).
 - Migration none. Services both.
-- Owner phone checks: offer reader PASSED (#822 doc 7409 re-run: reader 2.6.0, one gemini-3.8-flash call, programme / institution / reporting date filled, 0 warnings). Tile fix (#804 red Pathway tile names "Course started in 2024") and invite guard (Send stays grey with no gift): sent to the owner.
+- Owner phone checks: offer reader PASSED (#822 doc 7409 re-run: reader 2.6.0, one gemini-3.8-flash call, programme / institution / reporting date filled, 0 warnings). Tile fix (#804 red Pathway tile names "Course started in 2024") and invite guard (Send stays grey with no gift): PASSED (owner, 18 Nov).
 
 ### release: hotfix - the recent-letter ask only when there is no offer letter (2026-11-18)
 - live d183eac52..2447c9583 (pushed about 14:55 MYT, hotfix lane, owner's yes "Hotfix as soon as it is ready and checked"). api halatuju-api-01310-5lq, web halatuju-web-01131-9f6, both 100% traffic (rollback api-01309-wzn, web-01130-cxj). Both builds green; release-decisions job image 2447c9583; api health 200. Main merge 901400605.
