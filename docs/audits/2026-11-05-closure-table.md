@@ -73,7 +73,7 @@ Built 2026-11-12 from the audit (`docs/audits/2026-11-05-project-audit.md`), `do
 | CO-05 | medium | Sponsor money is still a mock, not tied to the signed agreement (money) | deferred | TD-075, TD-142, TD-140 | Audit status 2026-11-08 (A1.13): waits on the lawyer, the entity and TD-140. Owner and business items. |
 | CO-06 | medium | Phone sign-in is a coming-soon stub | deferred | TD-043 | Owner decision (paid service or Google only). |
 | CO-07 | low | Coming-soon screens (billing card, sponsor portal, trust hub, guide) | deferred | Roadmap section 4.3 (features) | No TD or sprint number named; needs the owner's word to build. |
-| CO-08 | medium | WhatsApp STOP inert until the webhook is set | deferred | TD-318 | Owner action in the messaging console. Cannot be verified from the repo. |
+| CO-08 | medium | WhatsApp STOP inert until the webhook is set | closed 2026-11-17 | TD-318 | Owner screenshot: inbound webhook set; Cloud Run logs show POST 200 calls since 10 Nov. |
 | CO-09 | medium | No way to withdraw an award once out (money) | fixed+tested | 4980b2b7a, 8138854ec, 6e11556e4 (A1.13, A1.13b); `apps/scholarship/tests/test_award_withdrawal.py::test_withdraw_returns_case_to_pool_and_frees_balance`, `test_award_withdrawal_chain.py` | TD-198 marked FIXED. Maker and checker rule per owner ruling. |
 | CO-10 | medium | Document-reading gaps (corpus brief, S7 frozen, TD-114, TD-399) | deferred | 9c3e1b538 (A2.8b) with tests; S7 (paid, owner's word); TD-114, TD-399 | Audit re-checked 2026-11-09: corpus work done; S7, TD-114 and TD-399 stay with the owner. |
 | CO-11 | medium | About 92 plan files, most with no Status line | fixed-untested | d814d9b9f, 521a45eb6 (A0.3) | Docs only. |

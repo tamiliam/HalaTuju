@@ -35,6 +35,30 @@ Scope: roadmap docs/plans/2026-11-15-student-help-fixes-roadmap.md, sprints H1-H
   Main checkout halatuju-web/node_modules is STALE (next 14 / react 18); release lead runs npm ci there after
   21:00. Until then web gates run only in a worktree with its own node_modules (student-help has one now).
 
+## RELEASED - all H1-H9 LIVE (18 Nov 11:00 MYT)
+- Batch A (H1+H2+H3): pushed to main 754633ff8 17 Nov; web live 17 Nov 21:00; api build failed (a subTest label
+  held a datetime.date -> Cloud Build xdist DumpError); release lead test fix fd13d4652; 0212 SQL applied 17 Nov.
+- Batch B (student-help H4-H9): rebased onto Batch A (migration 0213_document_replace_count, TDs renumbered,
+  TD-660 new). Bundle gate failed twice: trim 1 (LazyActionCentre chunk, Action Centre words to Documents slice,
+  /scholarship/application line lowered 218.7 -> 210); trim 2 565b4220a (decline reasons to Documents slice,
+  officer copy in admin slice + pin test). Clean apply 198.288 vs 198.8. Reviews: round-4 Opus PASS, rebase
+  Sonnet PASS, trim-1 + trim-2 Sonnet PASS. Owner phone check H4-H9 OK 18 Nov (screenshots).
+- Live 18 Nov 11:00: 754633ff8..d183eac52 (Batch A api + Batch B + release lead's vcard), api
+  halatuju-api-01309-wzn, web halatuju-web-01130-cxj; 0213 applied ~10:05; release log fddd7e03a.
+- Sol tag "student-help H4-H9" done 18 Nov (4026 entries). TD-636 of H3b (now TD-645) ACCEPTED. TD-318 RESOLVED
+  (webhook set; owner screenshot 17 Nov).
+- LESSONS: (1) subTest labels must be plain str/int - Cloud Build xdist cannot serialise dates. (2) Measure the
+  bundle only in a real npm ci tree: a node_modules JUNCTION reads every route ~0.3-0.4 kB high.
+  (3) mobile-check: 30 s network-idle timeouts on sandbox screens are flaky; a cell is real only if it fails twice.
+
+### Owed after release (lead)
+1. Admin sets start years "2025, 2026" on bpb-deg-dip-2026 (owner/admin action, production data). Then
+   reviewers re-look at #759 and #823; re-check #782.
+2. Read-only H3 Degree dry run + H3b ask dry run (counts only).
+3. H1 paid re-run: 4 #552-pattern docs + 1 known-bad form via cockpit Re-run - needs the owner's word first.
+4. After that: gift label (Stitch first), Twilio delivered/read status (option 1), phone-verify revival planning.
+5. Session end: remove scratch worktrees (scratchpad/trim/wt, scratchpad/rs, any bm-h3), prune, delete scratch.
+
 ## Cursor
 | Sprint | Branch | State | Notes |
 |---|---|---|---|
