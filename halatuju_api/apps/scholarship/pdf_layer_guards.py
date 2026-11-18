@@ -14,7 +14,12 @@
    configuration switches anything off (or might: /BaseState not /ON, a non-empty /OFF or /AS), every
    ``/OC`` marked content and every form with an /OC entry hides its text; otherwise only a plain /OCG
    counts as shown (an /OCMD, or anything unresolvable, is hidden) — `oc_hides`.
+Fix round 5: 4. RAW TOKENS (`raw_state_check`): a Tr operand must be written as a clean 0-7 (pypdf reads
+   ``3-0`` as 0, pdfium as 3) and no resource name may decode to a byte under 0x10 (a bad ``#`` escape);
+   any inline image hides the page (the two read its data to different lengths). An /OCG with a /Usage
+   (or any key but /Type and /Name) is never provably shown (pdfium hides ``/ViewState /OFF``).
 """
+import re
 
 #: Fixed operand counts (ISO 32000 operator summary), for EVERY such operator — not one of the 533 corpus
 #: PDFs breaks one. ``sc``/``scn`` (variable) and inline images are not here.
@@ -41,15 +46,35 @@ class OverBudget(Exception):
     """A PDF asked for more than one of the document budgets: hostile or broken, never read as text."""
 
 
+_BARE = rb'[^\x00\t\n\x0c\r ()<>\[\]{}/%]'
+_TR_OP = re.compile(rb'(?<!' + _BARE + rb')Tr(?!' + _BARE + rb')')
+_CLEAN_TR = re.compile(rb'(?<!' + _BARE + rb')[0-7][\x00\t\n\x0c\r ]+Tr(?!' + _BARE + rb')')
+#: Operators whose name operand picks a resource or a layer. pypdf 6 reads a malformed ``#`` escape in a name
+#: (``#+4``, a lone ``#4``) as one byte under 0x10 where pdfium keeps the ``#``: the two look up different keys.
+_NAMED_OPS = frozenset((b'Do', b'Tf', b'BDC', b'BMC', b'gs'))
+
+
+def raw_state_check(data: bytes, inline_images: int) -> None:
+    """Raise (the page is then hidden) when a content stream's raw bytes hold state pypdf and pdfium may read
+    differently: a ``Tr`` not preceded by a clean single digit 0-7 (also counts ``Tr`` inside strings: safe),
+    or any inline image. Not one of the 533 corpus PDFs has either."""
+    if inline_images:
+        raise ValueError('an inline image')
+    if len(_TR_OP.findall(data)) != len(_CLEAN_TR.findall(data)):
+        raise ValueError('a Tr operand that is not a clean 0-7')
+
+
 def bad_operands(operator: bytes, operands) -> bool:
     """True when the operand count is not the operator's arity, or a text-showing operand is the wrong kind
     (pdfium shows only strings: a name or a bare string in TJ, or a non-string Tj, is not what it draws)."""
     n = _ARITY.get(operator)
     if n is None or len(operands) != n:
         return n is not None
+    from pypdf.generic import NameObject
+    if operator in _NAMED_OPS and any(isinstance(x, NameObject) and min(x) < '\x10' for x in operands):
+        return True                              # a name pypdf and pdfium may decode differently
     if operator not in (b'Tj', b"'", b'"', b'TJ', b'Do'):
         return False
-    from pypdf.generic import NameObject
     if operator in (b'Tj', b"'", b'"'):
         s = operands[-1]
         return not isinstance(s, (str, bytes)) or isinstance(s, NameObject)
@@ -58,6 +83,94 @@ def bad_operands(operator: bytes, operands) -> bool:
         return not isinstance(arr, list) or any(
             isinstance(x, NameObject) or not isinstance(x, (str, bytes, int, float)) for x in arr)
     return operator == b'Do' and not isinstance(operands[0], NameObject)
+
+
+#: Pages a PDF may have for its text layer to be read (fix round 5): a longer one is the Vision route, its
+#: page tree never flattened (99,000 pages took pypdf 3.5 s). Corpus max: 5.
+MAX_PDF_PAGES = 500
+#: Objects packed in object streams (the sum of their /N) a PDF may hold: pypdf 6 parses a WHOLE object stream
+#: the first time any one object in it is read (99,000 page nodes: 2.5 s), 5.9 scans it per object. Checked
+#: before any object is read. Corpus max (533 PDFs): 507 listed in the cross-reference; 792 objects in all.
+MAX_PACKED_OBJECTS = 20_000
+
+
+def _packed_objects_check(reader) -> None:
+    """Raise `OverBudget` when the object streams the cross-reference names declare more than
+    `MAX_PACKED_OBJECTS` objects between them (pypdf reads each stream's /N objects)."""
+    from pypdf.generic import IndirectObject
+    streams = {num for num, _ in reader.xref_objStm.values()}
+    if len(streams) > MAX_PACKED_OBJECTS:
+        raise OverBudget('object streams past the cap')
+    total = 0
+    for num in streams:
+        if num in reader.xref_objStm:
+            raise ValueError('an object stream inside an object stream')
+        n = _get(IndirectObject(num, 0, reader).get_object(), '/N')
+        total += n if isinstance(n, int) and n > 0 else 0
+        if total > MAX_PACKED_OBJECTS:
+            raise OverBudget('objects in object streams past the cap')
+
+
+def page_tree_check(reader) -> None:
+    """Before pypdf flattens the page tree: raise `OverBudget` when the object streams hold too many objects
+    (`_packed_objects_check`), when /Root /Pages /Count is not an integer up to `MAX_PDF_PAGES` or the /Kids
+    tree holds more than twice that many nodes (a /Count may lie), and ValueError on a node met twice. Walks
+    the nodes the way pypdf's ``_flatten`` does (/Type, else /Kids)."""
+    _packed_objects_check(reader)
+    pages = _get(reader.trailer['/Root'].get_object(), '/Pages')
+    count = _get(pages, '/Count')
+    if not isinstance(count, int) or not 0 < count <= MAX_PDF_PAGES:
+        raise OverBudget('a page count past the cap')
+    seen, todo, nodes = set(), [pages], 0
+    while todo:
+        ref = todo.pop()
+        key = (ref.idnum, ref.generation) if hasattr(ref, 'idnum') else id(ref)
+        node = ref.get_object() if ref is not None else None
+        if key in seen:
+            raise ValueError('a page tree that meets one node twice')
+        seen.add(key)
+        nodes += 1
+        if nodes > 2 * MAX_PDF_PAGES:
+            raise OverBudget('a page tree past the node cap')
+        kind = node.get('/Type') if isinstance(node, dict) else None
+        if isinstance(node, dict) and (kind == '/Pages' or (kind is None and '/Kids' in node)):
+            kids = _get(node, '/Kids')
+            todo.extend(kids if isinstance(kids, list) else ())
+
+
+_PAREN = re.compile(rb'[()\\]')
+
+
+def longest_literal(data: bytes) -> int:
+    """An upper bound on the longest ``( ... )`` string (nested parentheses, backslash escapes)."""
+    longest = depth = start = 0
+    skip = -1
+    for m in _PAREN.finditer(data):
+        i = m.start()
+        if i == skip:
+            continue
+        if data[i] == 92:
+            skip = i + 1
+        elif data[i] == 40:
+            start = i if not depth else start
+            depth += 1
+        elif depth:
+            depth -= 1
+            longest = longest if depth else max(longest, i - start)
+    return max(longest, len(data) - start if depth else 0)
+
+
+def shown_chars(operands) -> int:
+    """EVERY character handed to a text-showing operator: each string operand and each string in an array
+    operand, blanks included. A superset of what pypdf extracts (operands[0] of Tj and ', operands[2] of ",
+    every string of a TJ array; 5.9 also reads a TJ string operand). A font's Encoding / ToUnicode can map ANY
+    byte, a space too, to a letter, so no string is too blank to carry hidden text."""
+    n = 0
+    for o in operands:
+        for s in (o if isinstance(o, list) else (o,)):
+            if isinstance(s, (str, bytes)):
+                n += len(s)
+    return n
 
 
 def _get(obj, key):
@@ -198,8 +311,9 @@ def _doc_may_switch_off(reader) -> bool:
 
 def oc_hides(prop, resources, reader, cache: dict) -> bool:
     """True when optional content ``prop`` (a ``/OC`` BDC's property — a name in /Properties or a dict — or
-    a form's /OC entry) may hide what it marks; False only for a plain /OCG in a document that switches
-    nothing off. Anything else, or anything that cannot be resolved, hides."""
+    a form's /OC entry) may hide what it marks; False only for a plain /OCG (no key but /Type and /Name: a
+    /Usage may hide it even with no /OCProperties) in a document that switches nothing off. Anything else,
+    or anything that cannot be resolved, hides."""
     if 'oc doc' not in cache:
         cache['oc doc'] = _doc_may_switch_off(reader)
     if cache['oc doc']:
@@ -208,4 +322,8 @@ def oc_hides(prop, resources, reader, cache: dict) -> bool:
         prop = _get(_get(resources, '/Properties'), prop)
     elif prop is not None:
         prop = prop.get_object()
-    return not (isinstance(prop, dict) and prop.get('/Type') == '/OCG')
+    return not (isinstance(prop, dict) and prop.get('/Type') == '/OCG' and set(prop) <= PLAIN_OCG_KEYS)
+
+
+#: The only keys a provably shown /OCG may carry (pdfium's mark parameters use the same names, unslashed).
+PLAIN_OCG_KEYS = frozenset(('/Type', '/Name'))

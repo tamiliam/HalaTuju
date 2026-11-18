@@ -4,6 +4,7 @@ Each test hides text a way the round-2 walk missed (a string operand it did not 
 follow, resources it did not inherit, a render mode it took for drawn) or feeds a content stream that is
 costly to parse. ``*_premise`` checks show pypdf really extracts the hidden words. Fictional words only.
 """
+import io
 import time
 import zlib
 from unittest.mock import patch
@@ -11,6 +12,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from apps.scholarship import pdf_pages
+from apps.scholarship.pdf_layer_guards import OverBudget, page_tree_check
 from apps.scholarship.tests.test_ocr_visible import DRAWN, SPM_TEXT, _pdf, _raw_layer, _show, _stream
 
 FONT = b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
@@ -289,3 +291,214 @@ class TheLongDocuments(SimpleTestCase):
             with self.subTest(page=i):
                 self.assertEqual('HALAMAN%02dX' % i in text, i <= 10 or i >= 16)
         self.assertEqual([t[:10] for t in pdf_pages.pdf_page_texts(pdf, 3)], ['HALAMAN01X', 'HALAMAN02X', 'HALAMAN03X'])
+
+    def test_a_blank_line_marks_the_pages_left_out(self):
+        text = pdf_pages.pdf_text_layer(_pdf([_show('HALAMAN%02dX' % i) for i in range(1, 26)]))
+        self.assertIn('\n\n', text.split('HALAMAN10X')[1].split('HALAMAN16X')[0])
+        self.assertNotIn('\n\n', text.split('HALAMAN09X')[1].split('HALAMAN10X')[0])
+
+
+# ── Fix round 5: raw tokens, inline images, text before a font, page trees, form calls, pdfium's own view ────
+USAGE_OCG = b'<< /Type /OCG /Name (L) /Usage << /View << /ViewState /OFF >> >> >>'
+
+
+class TheRawTokens(SimpleTestCase):
+    def _hidden(self, content):
+        pdf_pages._layer_memo_clear()
+        pdf = _doc(content + b' ' + _show(SPM_TEXT))
+        self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
+        self.assertFalse(pdf_pages.first_page_drawn(pdf))
+
+    def test_a_tr_not_written_as_one_clean_digit_is_hidden(self):
+        # pypdf reads "3-0" as 0 where pdfium reads 3: only a lone digit 0-7 is trusted
+        for tr in (b'3-0', b'03', b'+0', b'0.0', b'1e0'):
+            with self.subTest(tr=tr):
+                self._hidden(b'BT /F1 12 Tf ' + tr + b' Tr 20 150 Td (' + SECRET + b') Tj ET')
+
+    def test_a_name_that_decodes_to_a_control_byte_is_hidden(self):
+        for op in (b'/F#01 12 Tf', b'/F1 12 Tf /GS#05 gs'):
+            with self.subTest(op=op):
+                self._hidden(b'BT ' + op + b' 20 150 Td (' + SECRET + b') Tj ET')
+
+    def test_control_bytes_inside_a_string_keep_the_layer(self):
+        pdf = _doc(b'BT /F1 12 Tf 20 150 Td (\x01\x02) Tj ET ' + _show(SPM_TEXT))
+        self.assertIn('SIJIL', pdf_pages.pdf_text_layer(pdf))
+
+    def test_one_inline_image_is_hidden(self):
+        self._hidden(b'q 10 0 0 10 0 0 cm BI /W 1 /H 1 /BPC 8 /CS /G ID \x00 EI Q')
+
+    def test_text_shown_before_any_font_is_hidden(self):
+        # pdfium paints nothing before a Tf; a Tf inside q ... Q is gone after the Q
+        for content in (b'BT 20 150 Td (' + SECRET + b') Tj ET',
+                        b'q BT /F1 12 Tf ET Q BT 20 150 Td (' + SECRET + b') Tj ET'):
+            with self.subTest(content=content[:8]):
+                self._hidden(content)
+
+    def test_an_ocg_with_a_usage_is_never_provably_shown(self):
+        pdf = _oc_doc(MARKED, ALL_ON, {6: USAGE_OCG})
+        self.assertIn('DISAHKAN', _raw_layer(pdf))
+        self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
+
+
+def _be(n):
+    return n.to_bytes(4, 'big')
+
+
+def _page_tree(count, mids=990, fan=100):
+    """``mids`` x ``fan`` page leaves (99,000 by default) in ONE object stream, under a two-level tree whose
+    root claims ``count`` pages. The leaves a depth-first walk meets first come first in the stream."""
+    leaf0 = 4 + mids
+    ostm, xstm = leaf0 + mids * fan, leaf0 + mids * fan + 1
+    leaves = range(ostm - 1, leaf0 - 1, -1)
+    head, body, offset = [], [], 0
+    for num in leaves:
+        obj = b'<</Type/Page/Parent %d 0 R/MediaBox[0 0 300 200]>>\n' % (4 + (num - leaf0) // fan)
+        head.append(b'%d %d' % (num, offset))
+        body.append(obj)
+        offset += len(obj)
+    first = b' '.join(head) + b'\n'
+    objs = {1: b'<< /Type /Catalog /Pages 2 0 R >>', 3: FONT,
+            2: b'<< /Type /Pages /Kids [' + b' '.join(b'%d 0 R' % (4 + m) for m in range(mids)) + b'] /Count %d >>' % count,
+            ostm: _stream(b'<< /Type /ObjStm /N %d /First %d /Filter /FlateDecode' % (mids * fan, len(first)),
+                          zlib.compress(first + b''.join(body)))}
+    for m in range(mids):
+        kids = b' '.join(b'%d 0 R' % (leaf0 + m * fan + k) for k in range(fan))
+        objs[4 + m] = b'<< /Type /Pages /Parent 2 0 R /Kids [' + kids + b'] /Count %d >>' % fan
+    out, entries = b'%PDF-1.5\n', {0: b'\x00' * 5 + _be(65535)}
+    for num in sorted(objs):
+        entries[num] = b'\x01' + _be(len(out)) + _be(0)
+        out += b'%d 0 obj\n' % num + objs[num] + b'\nendobj\n'
+    for i, num in enumerate(leaves):
+        entries[num] = b'\x02' + _be(ostm) + _be(i)
+    entries[xstm] = b'\x01' + _be(len(out)) + _be(0)
+    table = zlib.compress(b''.join(entries[k] for k in range(xstm + 1)))
+    xref = len(out)
+    out += b'%d 0 obj\n' % xstm + _stream(b'<< /Type /XRef /Size %d /W [1 4 4] /Root 1 0 R /Filter /FlateDecode'
+                                          % (xstm + 1), table) + b'\nendobj\n'
+    return out + b'startxref\n%d\n%%%%EOF' % xref
+
+
+def _many_objects(n):
+    """One page: ``n`` - 1 painted rectangles (one pdfium path object each) and one line of drawn text."""
+    return _doc(b'0 0 1 1 re f\n' * (n - 1) + _show(SPM_TEXT), filtered=True)
+
+
+class TheHostileShapes(SimpleTestCase):
+    """Each the Vision route (or kept) in under 3 seconds; none flattens or extracts what it must not."""
+    _hostile = TheDocumentBudgets._hostile
+
+    def test_99000_pages_in_one_object_stream_are_refused_before_pypdf_reads_them(self):
+        # pypdf 6 parses a whole object stream on its first read (2.5 s here): refused on its /N, unread
+        from pypdf import PdfReader
+        self.assertEqual(len(PdfReader(io.BytesIO(_page_tree(6, mids=3, fan=2))).pages), 6)   # a valid file
+        for count in (99_000, 1):                     # an honest count past the cap; a /Count that lies
+            with self.subTest(count=count):
+                data = _page_tree(count)
+                with self.assertRaisesRegex(OverBudget, 'object streams'):
+                    page_tree_check(PdfReader(io.BytesIO(data)))
+                with patch.object(PdfReader, '_flatten', side_effect=AssertionError('flattened')):
+                    self._hostile(data)
+
+    def test_a_page_count_past_the_cap_or_a_lie_meets_the_node_cap(self):
+        from pypdf import PdfReader
+        pdf = _pdf([b''] * 1_200)
+        lie = pdf.replace(b'/Count 1200', b'/Count 1')
+        self.assertNotEqual(lie, pdf)
+        for data, why in ((pdf, 'page count'), (lie, 'node cap')):
+            with self.subTest(why=why):
+                with self.assertRaisesRegex(OverBudget, why):
+                    page_tree_check(PdfReader(io.BytesIO(data)))
+                self._hostile(data)
+
+    def test_a_page_tree_with_one_node_twice_is_no_layer(self):
+        pdf = _doc(_show(SPM_TEXT)).replace(b'/Kids [4 0 R] /Count 1', b'/Kids [4 0 R 4 0 R] /Count 2')
+        self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
+
+    def test_350k_empty_form_calls(self):
+        self._hostile(_pdf([b'/Fm1 Do ' * 350_000 + _show(SPM_TEXT)], form=b''))
+
+    def test_each_form_call_costs_20_operations(self):
+        # 24,000 calls: 24,000 operations + 20 x 24,000 = 504,000, past the 500,000 budget, never extracted
+        self._hostile(_pdf([b'/Fm1 Do ' * 24_000 + _show(SPM_TEXT)], form=b''))
+
+    def test_form_calls_at_the_budget_edge(self):
+        # a form with no font (no font-map charge): 23,000 calls stay within the walk's operation budget
+        # (483,000), pypdf extracts the page, and pdfium's object cap then hides it, all fast
+        form = _stream(b'<< /Type /XObject /Subtype /Form /BBox [0 0 300 200] /Resources << /ProcSet [/PDF] >>', b'')
+        data = _doc(b'/Fm1 Do ' * 23_000 + _show(SPM_TEXT), {6: form}, filtered=True,
+                    page_res=b'/Resources << ' + FONT_RES + b' /XObject << /Fm1 6 0 R >> >>')
+        pdf_pages._layer_memo_clear()
+        with patch('apps.scholarship.pdf_pdfium_check.hidden_pages', return_value=set()):
+            self.assertIn('SIJIL', pdf_pages.pdf_text_layer(data))         # the walk and pypdf: within budget
+        pdf_pages._layer_memo_clear()
+        t0 = time.perf_counter()
+        self.assertEqual(pdf_pages.pdf_text_layer(data), '')
+        self.assertEqual(''.join(pdf_pages.pdf_page_texts(data, 3)), '')
+        self.assertLess(time.perf_counter() - t0, 3.0)
+
+    def test_pdfium_objects_at_the_cap_keep_the_layer_and_one_more_hides_it(self):
+        from apps.scholarship.pdf_pdfium_check import MAX_OBJECTS
+        for n, kept in ((MAX_OBJECTS, True), (MAX_OBJECTS + 1, False)):
+            with self.subTest(n=n):
+                pdf_pages._layer_memo_clear()
+                t0 = time.perf_counter()
+                self.assertEqual('SIJIL' in pdf_pages.pdf_text_layer(_many_objects(n)), kept)
+                self.assertLess(time.perf_counter() - t0, 3.0)
+
+    def test_one_call_opens_the_pdf_once(self):
+        with patch('apps.scholarship.pdf_pages._open_pdf', wraps=pdf_pages._open_pdf) as opened:
+            pdf_pages.pdf_page_texts(_pdf([_show(SECRET.decode(), mode=3), _show(SPM_TEXT)]), 3)
+        self.assertEqual(opened.call_count, 1)
+
+
+class PdfiumJudgesEachObject(SimpleTestCase):
+    """pdfium's own page objects judge every page pypdf read, even when the walk is fooled (patched here)."""
+
+    def _leaks_without_pdfium(self, pdf):
+        with patch('apps.scholarship.pdf_pdfium_check.hidden_pages', return_value=set()):
+            pdf_pages._layer_memo_clear()
+            self.assertIn('DISAHKAN', pdf_pages.pdf_text_layer(pdf))      # the premise: the walk was fooled
+        pdf_pages._layer_memo_clear()
+        self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
+        self.assertFalse(pdf_pages.first_page_drawn(pdf))
+
+    def test_an_invisible_mode_the_walk_missed(self):
+        for mode in (3, 7):
+            with self.subTest(mode=mode), patch.object(pdf_pages, '_DRAWN_MODES', frozenset(range(8))):
+                self._leaks_without_pdfium(_doc(_show(SECRET.decode(), mode=mode) + b' ' + _show(SPM_TEXT)))
+
+    def test_an_oc_marked_text_object_the_walk_let_through(self):
+        for objs, default in (({}, b'<< /OFF [6 0 R] >>'), ({6: USAGE_OCG}, ALL_ON)):
+            with self.subTest(default=default), patch.object(pdf_pages, 'oc_hides', return_value=False):
+                self._leaks_without_pdfium(_oc_doc(MARKED, default, objs))
+
+    def test_text_inside_an_oc_marked_form(self):
+        form = _xobj(b'/Subtype /Form', _show(SECRET.decode()))
+        pdf = _oc_doc(b'/OC /MC0 BDC /Fm1 Do EMC', b'<< /OFF [6 0 R] >>', {7: form},
+                      b'/Properties << /MC0 6 0 R >> /XObject << /Fm1 7 0 R >>')
+        with patch.object(pdf_pages, 'oc_hides', return_value=False):
+            self._leaks_without_pdfium(pdf)
+
+    def test_pypdf_text_where_pdfium_places_no_text_object(self):
+        # a non-form XObject pypdf extracts and pdfium never draws; the walk patched to call it drawn
+        pdf = _doc(b'/X1 Do', {6: _xobj(b'/Subtype /PS', _show(SECRET.decode()))},
+                   page_res=b'/Resources << ' + FONT_RES + b' /XObject << /X1 6 0 R >> >>')
+        with patch.object(pdf_pages, '_page_visibility', return_value=pdf_pages.DRAWN):
+            self._leaks_without_pdfium(pdf)
+
+    def test_what_hidden_pages_judges(self):
+        from apps.scholarship.pdf_pdfium_check import hidden_pages
+        from apps.scholarship.tests.test_ocr_visible import SCANNED
+        self.assertEqual(hidden_pages(SCANNED, 1, {0: 'ABC'}, False), {0})       # letters, no text object
+        self.assertEqual(hidden_pages(SCANNED, 1, {0: ' - '}, False), set())     # no letters: nothing placed
+        self.assertEqual(hidden_pages(SCANNED, 1, {0: ' \n'}, False), set())     # blank: not judged
+        self.assertEqual(hidden_pages(DRAWN, 1, {0: 'SIJIL'}, False), set())
+        self.assertEqual(hidden_pages(DRAWN, 1, {0: 'SIJIL'}, True), set())      # no OC mark: nothing to switch
+        self.assertEqual(hidden_pages(DRAWN, 2, {0: 'SIJIL'}, False), {0})       # another page count
+        self.assertEqual(hidden_pages(b'%PDF-1.4 nonsense', 1, {0: 'SIJIL'}, False), {0})   # pdfium cannot open
+        with patch('apps.scholarship.pdf_pdfium_check.MAX_OBJECTS', 0):
+            self.assertEqual(hidden_pages(DRAWN, 1, {0: 'SIJIL'}, False), {0})   # past the object cap
+
+    def test_a_plain_layer_that_is_on_keeps_the_layer_for_pdfium_too(self):
+        pdf_pages._layer_memo_clear()
+        self.assertIn('DISAHKAN', pdf_pages.pdf_text_layer(_oc_doc(MARKED, ALL_ON)))

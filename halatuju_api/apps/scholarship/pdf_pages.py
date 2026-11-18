@@ -19,7 +19,9 @@ import threading
 from collections import OrderedDict
 from typing import NamedTuple, Optional
 
-from .pdf_layer_guards import _MAX_DOC_FONT_COST, OverBudget as _OverBudget, bad_operands, charge_fonts, oc_hides
+from . import pdf_pdfium_check
+from .pdf_layer_guards import (_MAX_DOC_FONT_COST, OverBudget as _OverBudget, _doc_may_switch_off, bad_operands,
+                               charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check, shown_chars)
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +152,9 @@ _MAX_PARENT_DEPTH = 64
 #: page's later text extraction costs ~5-10 µs per operation of its stream, so the budget also bounds that.
 #: Past it the PDF has no layer (the Vision route) and none of it is text-extracted.
 _MAX_DOC_OPS = 500_000
+#: Fix round 5: one call of a form (``Do``) costs the walk and pypdf's extraction far more than one plain
+#: operation, so each is charged this many operations on top of the form's own (measured below).
+_DO_COST = 20
 # Fix round 3: the costs below are charged BEFORE a stream is parsed (each stream every time it is walked, as
 # pypdf's extraction re-reads a form on every call), so one huge operation can no longer stall the parse.
 #: Decompressed content-stream bytes per document. Real corpus max (533 PDFs): 3,421,060.
@@ -159,8 +164,6 @@ _MAX_DOC_BYTES = 8_000_000
 _MAX_DOC_TOKENS = 700_000
 #: ... and per stream: pypdf parses one stream in worse than linear time past ~400,000. Real max: 234,030.
 _MAX_STREAM_TOKENS = 400_000
-#: Inline images (``BI ... EI``, slow to parse) per document, counted on the bytes. Real corpus: none.
-_MAX_DOC_INLINE_IMAGES = 2_000
 #: Characters handed to text-showing operators per document (pypdf decodes each). Real max: 7,373.
 _MAX_DOC_SHOWN_CHARS = 200_000
 _TOKEN_BOUNDARIES = bytes((0, 9, 10, 12, 13, 32)) + b'()<>[]{}/%'
@@ -173,7 +176,6 @@ _MAX_BARE_TOKEN = 1_024
 _BARE = rb'[^\x00\t\n\x0c\r ()<>\[\]{}/%]'
 _LONG_BARE = re.compile(rb'(?<!' + _BARE + rb')' + _BARE + b'{%d}' % _MAX_BARE_TOKEN)
 _LONG_ANGLED = re.compile(b'<[^<>]{%d}' % _MAX_TOKEN_BYTES)
-_PAREN = re.compile(rb'[()\\]')
 #: Pages checked AND text-extracted per PDF. Callers need far fewer: the offer reader 3 (its MAX_PAGES),
 #: the slip gate and Exact offer read page 1; corpus max 5 pages. Kept (fix round 4: uncapped, 2,000 pages took
 #: 3 s); a longer PDF gives its first and LAST `_TAIL_PAGES` (`_layer_pages`): a KWSP statement ends on its latest.
@@ -182,12 +184,11 @@ _TAIL_PAGES = 10
 
 
 class _Budget:
-    """One PDF's walk budget: operations, bytes, tokens, inline images, shown characters, font maps left."""
+    """One PDF's walk budget: operations, bytes, tokens, shown characters, font maps left."""
 
     def __init__(self):
         self.left = {'operations': _MAX_DOC_OPS, 'bytes': _MAX_DOC_BYTES, 'tokens': _MAX_DOC_TOKENS,
-                     'inline images': _MAX_DOC_INLINE_IMAGES, 'shown characters': _MAX_DOC_SHOWN_CHARS,
-                     'font maps': _MAX_DOC_FONT_COST}
+                     'shown characters': _MAX_DOC_SHOWN_CHARS, 'font maps': _MAX_DOC_FONT_COST}
 
     def spend(self, what: str, n: int) -> None:
         self.left[what] -= n
@@ -206,12 +207,13 @@ def _parsed_ops(content, reader, cache: dict, budget: _Budget):
         stream = content if isinstance(content, ContentStream) else ContentStream(content, reader)
         data = stream.get_data()          # decompressed (pypdf 6 caps one stream at 75 MB); not yet parsed
         hit = [content, stream, (len(data), len(data) - len(data.translate(None, _TOKEN_BOUNDARIES))
-                                 + data.count(b'\\'), len(_INLINE_IMAGE.findall(data))), None]
+                                 + data.count(b'\\')), None]
         _charge(budget, hit[2])           # bounds the scan below: parens and backslashes are tokens
         if hit[2][1] > _MAX_STREAM_TOKENS:
             raise _OverBudget('a content stream past the token limit')
-        if _LONG_BARE.search(data) or _LONG_ANGLED.search(data) or _longest_literal(data) > _MAX_TOKEN_BYTES:
+        if _LONG_BARE.search(data) or _LONG_ANGLED.search(data) or longest_literal(data) > _MAX_TOKEN_BYTES:
             raise _OverBudget('a token past the size limit of one PDF')
+        raw_state_check(data, len(_INLINE_IMAGE.findall(data)))      # fix round 5: raises (hidden), unparsed
         hit[3] = stream.operations
         cache[id(content)] = hit
     else:
@@ -221,40 +223,8 @@ def _parsed_ops(content, reader, cache: dict, budget: _Budget):
 
 
 def _charge(budget: _Budget, cost: tuple) -> None:
-    for what, n in zip(('bytes', 'tokens', 'inline images'), cost):
+    for what, n in zip(('bytes', 'tokens'), cost):
         budget.spend(what, n)
-
-
-def _longest_literal(data: bytes) -> int:
-    """An upper bound on the longest ``( ... )`` string (nested parentheses, backslash escapes)."""
-    longest = depth = start = 0
-    skip = -1
-    for m in _PAREN.finditer(data):
-        i = m.start()
-        if i == skip:
-            continue
-        if data[i] == 92:
-            skip = i + 1
-        elif data[i] == 40:
-            start = i if not depth else start
-            depth += 1
-        elif depth:
-            depth -= 1
-            longest = longest if depth else max(longest, i - start)
-    return max(longest, len(data) - start if depth else 0)
-
-
-def _shown_chars(operands) -> int:
-    """EVERY character handed to a text-showing operator: each string operand and each string in an array
-    operand, blanks included. A superset of what pypdf extracts (operands[0] of Tj and ', operands[2] of ",
-    every string of a TJ array; 5.9 also reads a TJ string operand). A font's Encoding / ToUnicode can map ANY
-    byte, a space too, to a letter, so no string is too blank to carry hidden text."""
-    n = 0
-    for o in operands:
-        for s in (o if isinstance(o, list) else (o,)):
-            if isinstance(s, (str, bytes)):
-                n += len(s)
-    return n
 
 
 def _resolved(obj, key):
@@ -274,11 +244,12 @@ def _resources(obj):
 
 
 def _walk_text_modes(content, resources, reader, mode, counts: list, depth: int, budget: _Budget,
-                     cache: dict, undrawn: bool = False) -> None:
+                     cache: dict, undrawn: bool = False, font: bool = False) -> None:
     """Add to ``counts`` [drawn, hidden] the characters each text-showing operator places, by the render
     mode in force (``Tr``, saved and restored by ``q`` / ``Q``; an XObject starts from its caller's mode).
     ``undrawn``: inside an XObject a viewer never paints (not a /Form), or inside optional content that may
-    be switched off (`oc_hides`), so all its text is hidden. ``budget`` is the WHOLE DOCUMENT's (`_Budget`),
+    be switched off (`oc_hides`), so all its text is hidden. ``font``: a ``Tf`` is in force (pdfium paints
+    nothing before one; saved by ``q`` like the mode). ``budget`` is the WHOLE DOCUMENT's (`_Budget`),
     charged too for the font maps pypdf builds on this call (`charge_fonts`). Raises on anything it cannot
     parse or on an operand count the renderer reads differently (`bad_operands`): the caller's hidden."""
     from pypdf.generic import StreamObject
@@ -290,11 +261,15 @@ def _walk_text_modes(content, resources, reader, mode, counts: list, depth: int,
         if bad_operands(operator, operands):
             raise ValueError(f'operands of {operator!r} the renderer reads differently')
         if operator == b'q':
-            stack.append(mode)
+            stack.append((mode, font))
         elif operator == b'Q':
-            mode = stack.pop() if stack else mode
-        elif operator == b'Tr':
-            mode = operands[0]                 # a non-integer or out-of-range mode is not in _DRAWN_MODES
+            mode, font = stack.pop() if stack else (mode, font)
+        elif operator == b'Tr':                # a float (3.0), non-number or out-of-range mode is not drawn
+            mode = operands[0] if isinstance(operands[0], int) else -1     # the raw token: raw_state_check
+        elif operator == b'Tf':
+            font = True
+        elif operator == b'INLINE IMAGE':
+            raise ValueError('an inline image')
         elif operator in (b'BDC', b'BMC'):
             marked.append(operator == b'BDC' and operands[0] == '/OC' and oc_hides(operands[1], resources, reader,
                                                                                   cache))
@@ -302,9 +277,9 @@ def _walk_text_modes(content, resources, reader, mode, counts: list, depth: int,
         elif operator == b'EMC':
             off -= marked.pop() if marked else 0
         elif operator in _SHOW_OPS:
-            n = _shown_chars(operands)
+            n = shown_chars(operands)
             budget.spend('shown characters', n)
-            counts[0 if mode in _DRAWN_MODES and not (undrawn or off) else 1] += n
+            counts[0 if mode in _DRAWN_MODES and font and not (undrawn or off) else 1] += n
         elif operator == b'Do':
             # pypdf reads text from EVERY XObject a Do names that is not an /Image; a non-stream gives it none
             xobj = xobjects.get(operands[0]) if xobjects else None
@@ -314,9 +289,10 @@ def _walk_text_modes(content, resources, reader, mode, counts: list, depth: int,
                 continue
             if depth >= _MAX_FORM_DEPTH:
                 raise ValueError('XObjects nested too deep')
+            budget.spend('operations', _DO_COST)
             _walk_text_modes(xobj, _resources(xobj) or resources, reader, mode, counts, depth + 1, budget, cache,
                              bool(undrawn or off or subtype != '/Form'
-                                  or ('/OC' in xobj and oc_hides(xobj['/OC'], resources, reader, cache))))
+                                  or ('/OC' in xobj and oc_hides(xobj['/OC'], resources, reader, cache))), font)
 
 
 #: What `_page_visibility` finds on one page.
@@ -363,26 +339,28 @@ def _visibilities(reader, per_page: int = 0) -> tuple:
     ``per_page`` (1 to `MAX_LAYER_PAGES`): the first that many pages, each judged on its own, with no stop
     at page 1 (`pdf_page_texts` only); still one budget and the same stop past it."""
     budget, cache, out = _Budget(), {}, []
-    for p in _layer_pages(reader, per_page):
-        out.append(_page_visibility(p, reader, budget, cache))
+    for i in _layer_pages(len(reader.pages), per_page):
+        out.append(_page_visibility(reader.pages[i], reader, budget, cache))
         if out[-1] == OVER_BUDGET or (out[0] != DRAWN and not per_page):
             break
     return tuple(out)
 
 
-def _layer_pages(reader, per_page: int = 0) -> list:
-    """The pages read: the first ``per_page``; else all up to `MAX_LAYER_PAGES`, else the first and last."""
-    if per_page or len(reader.pages) <= MAX_LAYER_PAGES:
-        return list(reader.pages[:per_page or MAX_LAYER_PAGES])
-    return list(reader.pages[:MAX_LAYER_PAGES - _TAIL_PAGES]) + list(reader.pages[-_TAIL_PAGES:])
+def _layer_pages(n: int, per_page: int = 0) -> list:
+    """The page indices read: the first ``per_page``; else all up to `MAX_LAYER_PAGES`, else the first and last."""
+    if per_page or n <= MAX_LAYER_PAGES:
+        return list(range(min(n, per_page or MAX_LAYER_PAGES)))
+    return list(range(MAX_LAYER_PAGES - _TAIL_PAGES)) + list(range(n - _TAIL_PAGES, n))
 
 
 def _open_pdf(data: bytes):
-    """A pypdf reader for ``data`` (an empty password tried on an encrypted file). Raises on failure."""
+    """A pypdf reader for ``data`` (an empty password tried on an encrypted file), its page tree checked
+    (`page_tree_check`) before pypdf flattens it. Raises on failure."""
     from pypdf import PdfReader
     reader = PdfReader(io.BytesIO(data))
     if reader.is_encrypted:
         reader.decrypt('')
+    page_tree_check(reader)
     return reader
 
 
@@ -396,24 +374,41 @@ class _LayerRead(NamedTuple):
     texts: Optional[tuple]
 
 
-def _layer_read(data: bytes, per_page: int = 0) -> _LayerRead:
+def _layer_read(data: bytes, per_page: int = 0, opened: Optional[list] = None) -> _LayerRead:
     """Walk (`_visibilities`) and, only when the PDF is `visible` (or ``per_page`` and within budget),
-    extract its drawn pages — once."""
+    extract its drawn pages — once — and have pdfium judge each drawn page's own objects (`pdf_pdfium_check`):
+    a page it does not paint in full becomes `HIDDEN` (page 1 so: the PDF is not `visible`). ``opened``: a
+    list holding the reader once opened, so one call chain opens and parses the PDF once."""
     try:
-        reader = _open_pdf(data)
+        opened = [] if opened is None else opened
+        if not opened:
+            opened.append(_open_pdf(data))
+        reader = opened[0]
         n, seen = len(reader.pages), _visibilities(reader, per_page)
-    except Exception as e:   # pypdf raises many kinds on a damaged file; unopenable is no layer
+    except Exception as e:   # pypdf raises many kinds on a damaged file; unopenable is no layer (OverBudget too)
         logger.warning('PDF text visibility check failed: %s', e)
         return _LayerRead(0, False, (), None)
     visible = bool(seen) and seen[0] == DRAWN and OVER_BUDGET not in seen
     if OVER_BUDGET in seen or not (visible or per_page):
         return _LayerRead(n, False, seen, ('',) * len(seen))
+    pages = _layer_pages(n, per_page)
     try:
-        texts = tuple((p.extract_text() or '') if v == DRAWN else '' for p, v in zip(_layer_pages(reader, per_page), seen))
+        texts = tuple((reader.pages[i].extract_text() or '') if v == DRAWN else '' for i, v in zip(pages, seen))
     except Exception as e:  # noqa: BLE001 — a corrupt PDF has no text layer; logged, the caller falls back to OCR
         logger.warning('PDF text-layer extraction failed: %s', e)
-        texts = None
-    return _LayerRead(n, visible, seen, texts)
+        return _LayerRead(n, visible, seen, None)
+    try:
+        oc_off = _doc_may_switch_off(reader)
+    except Exception:  # an unreadable optional-content dictionary may switch anything off
+        oc_off = True
+    flipped = pdf_pdfium_check.hidden_pages(data, n, {i: t for i, t, v in zip(pages, texts, seen) if v == DRAWN},
+                                            oc_off)
+    if flipped:
+        logger.warning('PDF text that pdfium does not paint: %d page(s)', len(flipped))
+        seen = tuple(HIDDEN if i in flipped else v for i, v in zip(pages, seen))
+        texts = tuple('' if i in flipped else t for i, t in zip(pages, texts))
+        visible = seen[0] == DRAWN
+    return _LayerRead(n, visible, seen, texts if visible or per_page else ('',) * len(seen))
 
 
 #: Every reader of one upload (ocr_document_full, the slip gate's page 1, the SPM certificate reader, the
@@ -428,14 +423,14 @@ _LAYER_MEMO: 'OrderedDict[tuple, _LayerRead]' = OrderedDict()
 _LAYER_MEMO_LOCK = threading.Lock()
 
 
-def _layer(data: bytes, per_page: int = 0) -> _LayerRead:
+def _layer(data: bytes, per_page: int = 0, opened: Optional[list] = None) -> _LayerRead:
     key = (hashlib.sha256(data).digest(), per_page)
     with _LAYER_MEMO_LOCK:
         hit = _LAYER_MEMO.get(key)
         if hit is not None:
             _LAYER_MEMO.move_to_end(key)
             return hit
-    read = _layer_read(data, per_page)   # outside the lock: two threads may both read; same answer
+    read = _layer_read(data, per_page, opened)   # outside the lock: two threads may both read; same answer
     if sum(map(len, read.texts or ())) > _MEMO_MAX_TEXT:
         return read
     with _LAYER_MEMO_LOCK:
@@ -462,11 +457,15 @@ def pdf_text_layer(data: bytes) -> str:
     joined. '' when page 1's text is invisible or cannot be checked (the Vision route
     reads page 1), when the walk runs past the operation budget, or the PDF is none / encrypted / damaged —
     the caller then falls back to rasterise+OCR (page 1). A later hidden page is left out, never returned.
-    A caller deciding whether to trust it still passes it through `usable_text_layer` (TD-411)."""
+    A caller deciding whether to trust it still passes it through `usable_text_layer` (TD-411). Past
+    `MAX_LAYER_PAGES` a blank line marks the pages left out, so page N-9 never runs on from page 10."""
     read = _layer(data)
     if not read.visible or read.texts is None:
         return ''
-    return '\n'.join(t for t, v in zip(read.texts, read.seen) if v == DRAWN).strip()
+    texts = [t if v == DRAWN else None for t, v in zip(read.texts, read.seen)]
+    if read.pages > MAX_LAYER_PAGES and len(texts) > MAX_LAYER_PAGES - _TAIL_PAGES:
+        texts.insert(MAX_LAYER_PAGES - _TAIL_PAGES, '')      # the gap: '\n' + '' + '\n' is one blank line
+    return '\n'.join(t for t in texts if t is not None).strip()
 
 
 def pdf_first_page_png(data: bytes) -> Optional[bytes]:
@@ -541,10 +540,11 @@ def pdf_page_texts(data: bytes, max_pages: int) -> list:
     shared read stops at a hidden page 1); EVERY page is '' when the walk ran past the operation budget.
     Pass a page through `usable_text_layer` before trusting it. pypdf raises many kinds on a damaged file,
     so any failure is no layer — the safe answer: the images are still shown."""
-    read = _layer(data)
+    opened = []                            # one open and parse of the PDF for both reads below
+    read = _layer(data, 0, opened)
     n = min(read.pages, max(0, max_pages), MAX_LAYER_PAGES - (_TAIL_PAGES if read.pages > MAX_LAYER_PAGES else 0))
     if not read.visible and n > 1 and read.seen[:1] == (HIDDEN,):
-        read = _layer(data, n)             # page 1 hidden: the later pages are still judged one by one
+        read = _layer(data, n, opened)     # page 1 hidden: the later pages are still judged one by one
     if read.texts is None:
         return []
     return [t.strip() for t in read.texts[:n]] + [''] * (n - len(read.texts[:n]))

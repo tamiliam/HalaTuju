@@ -220,6 +220,20 @@ took 13 s and 40 names x 30 calls 122 s on 6.21.4; guarded, under 0.2 s on both 
 default configuration may switch a layer off (/BaseState not /ON, a non-empty /OFF or /AS, or /D unreadable), text in
 `/OC` marked content or in a form with /OC is hidden; otherwise only a plain /OCG is shown (an /OCMD or an unresolved
 name is hidden). Corpus: 6 PDFs carry /AS, none marks page text /OC; 0 results change.
+**Fix round 5 (`pdf_pdfium_check.py`) — pdfium judges, per object.** Four rounds each found one more place where pypdf
+and pdfium parse a PDF differently, so the class is closed by asking pdfium (which paints the page) for its own reading
+of every page whose pypdf text would be used. The page is hidden when a pdfium text object has a non-painting render
+mode, sits (itself or in a form) under an `OC` mark, when pypdf found letters or digits but pdfium no text object, or on
+any pdfium error, a different page count, or more than 20,000 page objects per document (corpus max 9,101; doc 1409:
+4,099). **Rejected: a text-page character count** (pdfium vs pypdf). pdfium's text page drops overlapping duplicate
+characters (a repeated draw, fake bold), so 6 real genuine documents (1489, 1249, 937, 964, 1832, 1409) lost their free
+layer. **Exception to "any OC mark":** a plain /OCG mark (only Type and Name) in a document that switches nothing off
+stays shown, mirroring the walk's `oc_hides`; real doc 4168 draws its text in such a layer. Known limit: pdfium's API does
+not show a form's own /OC entry; the walk judges that. The walk keeps its checks and adds: inline images, unclean `Tr`
+tokens, text before `Tf`, control-byte names, /OCG with /Usage → hidden; 20 operations per form call; at most 500 pages,
+a page-tree node cap (2x the count, no node twice) and at most 20,000 objects in object streams (pypdf 6.21.4 parses a
+whole object stream on first read: a 99,000-page file took 2.5 s; corpus max 792). Corpus: 0 of 533 change on either
+pypdf version.
 **pypdf 5.9 (local) vs 6.21.4 (production):** same verdicts under this rule, except 21 corpus PDFs whose content
 streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
 between the two (pypdf's own changes). Local counts are not production counts.
