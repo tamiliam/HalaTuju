@@ -364,6 +364,14 @@ Branch ll2, NOT merged to main, not published. Migration: none. Services: web. R
 - **Locked view:** the reason is shown beside each failed fact; old rows show nothing extra.
 - **AI prediction card:** a "Why it failed" column with the served counts per fact (plus "Not given"); nothing for a fact with no green-then-fail case; plain counts, never a percent. Old payloads draw the card as before.
 - **Guide and FAQ:** reviewer Guide and FAQ updated (English only; they have no ms/ta copy).
+
+### feat: sprint LL2b (server) - the QC's second look at facts in doubt is stored and counted (2026-11-19)
+
+Branch ll2b (on top of ll2), NOT merged to main, not published. Migration: none. Services: api (the web part follows). Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL2b as built, server).
+- **In doubt:** new `apps/scholarship/second_look.py`: a fact the reviewer failed where the stored snapshot said `verified` (`ai_green_reviewer_fail`) or the reviewer accepted (`failed_but_accepted`); a fact in both is listed once. Also the validator, the keep-or-drop rule and the counts. Served in the admin detail as `second_look: {in_doubt, answers}`.
+- **Record:** `qc-decision/` accepts a top-level `fact_checks` `{fact: "agreed"|"disagreed"}`. A bad shape, fact or value is a 400 `bad_fact_checks` and nothing is saved. On accept every shown fact records `agreed` unless tapped `disagreed`; on reopen or reject only the `disagreed` taps. Facts not shown are dropped. No key: as before. Stored as `officer_verdict.qc_fact_checks` on the locked row, in the decision's transaction. Separation rule and permissions unchanged. No migration. The decision and the engine result never change.
+- **Count:** `verdict-metrics/` and the Overview `ai_prediction` gain `qc_checked` (total and per fact: in doubt, checked, not checked, agreed, disagreed, and for AI-green facts "AI wrong" / "AI right, reviewer wrong", checked by the QC; `few` under 30). `by_reviewer` (leads only) gains `qc_checked` and `qc_overturned`. Same fence and scope as LL1. Old QC decisions count as not checked.
+- **Tests:** 21 in `test_second_look.py`.
 - **Tests:** 16 new (`view.failReasons.test.tsx`, `AiPredictionReasons.test.tsx`). `view.decisionBar.test.tsx`: one fixture now stores its reasons (a recorded decline with failed green facts is correctly held back without them).
 
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
