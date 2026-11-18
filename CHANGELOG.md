@@ -19,6 +19,7 @@ Branch reader-260, not pushed. Migration: none. Services: api. Decisions: `docs/
 - **Stamp:** `offer_reader_inputs` gains `primary_blank`, `retry_for`, `retry_filled`; `calls` parts `retry_*` replace `fallback_*`. `OFFER_READER_VERSION` 2.5.0 -> 2.6.0.
 - **Shape:** `read_offer` is now steps (`_ai_read`, `_second_read`, clean-up) so an OCR-first stage can slot in front later.
 - **Tests:** `test_gemini_phase2a.py` offer block rewritten (15 tests: schema, retry, no retry, fill-blanks-only, setting, inputs per file kind, error path).
+- **Course match (#804):** a catalogue `[a / b / c]` option list is a menu, not a specialisation, when the letter prints that course's own UPU code: `offer_course_match._names(coded=True)` leaves the bracket list out of the TD-150 test, from `_printed_course` only. Name-only letters, the other-institution rule, level and campus rules unchanged. +5 tests in `test_offer_course_match.py` (`PrintedCodeOpensTheMenuTest`).
 
 ### fix: the recent-letter ask applies to confirmation letters only, never to offer letters (2026-11-18)
 

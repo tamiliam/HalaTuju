@@ -1,5 +1,17 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-18 — Course match: a bracket option list is a menu, only under a printed code (#804)
+
+Branch reader-260, not live. No migration. Services: api.
+
+A catalogue name may end in a square-bracketed option list, "Sarjana Muda Sains Kemasyarakatan dengan Kepujian
+[Antropologi dan Sosiologi / Ekonomi / Sains Politik / Pengajian Pembangunan]" (US6310001, USM; 4 of 1,112
+`stpm_courses`). The student picks an option later, so the list is a MENU, not a specialisation. TD-150 read its words
+as one and refused #804's letter, which prints that exact code. **Ruling:** when the letter prints the course's own UPU
+code (`_printed_course`), the bracket list is left out of the TD-150 specialisation test. Alignment still reads the
+whole name, so a letter word outside the course is refused. A name-only letter keeps TD-150 / TD-332 exactly as before,
+and the other-institution, level and campus rules are unchanged.
+
 ## 2026-11-18 — Offer reader 2.6.0: a blank read is a failed read; one second read on a current model, never 2.5
 
 **Approved by the owner on 2026-11-18** as the immediate fix. Branch reader-260, not live. No migration. Services: api.
