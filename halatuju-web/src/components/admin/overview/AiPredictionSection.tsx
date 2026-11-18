@@ -23,7 +23,7 @@ import { LineChart } from '@/components/admin/charts/Charts'
 import type { VerdictMetrics } from '@/lib/admin-api'
 import { monthOf, thinTicks } from '@/lib/programmeOverview'
 import { DoubtTable, FactTable, Figure, FewPill, ReviewerTable, VersionTable, pct } from './AiPredictionTables'
-import type { SectionProps, Translate } from './OverviewSections'
+import type { SectionProps, Translate } from './sectionTypes'
 
 /** ⚠ The i18n guard resolves `${K}.` templates by this LITERAL name. */
 const K = 'admin.programmeOverview.aiPrediction'
@@ -40,7 +40,7 @@ function Headline({ label, value, count, few, t }: {
       <div className="mt-0.5 text-xl font-semibold tabular-nums text-ground-900 max-md:text-lg">
         {few ? <FewPill t={t} /> : value}
       </div>
-      <div className="mt-0.5 text-xs tabular-nums text-ground-500">{count}</div>
+      <div className="mt-0.5 text-xs text-ground-500">{count}</div>
     </div>
   )
 }
@@ -89,7 +89,7 @@ function Trend({ ai, t }: { ai: VerdictMetrics; t: Translate }) {
             <li key={k} className="rounded-lg border border-ground-200 p-2 text-xs text-ground-500">
               <div className="font-semibold text-ground-900">{label(k)}</div>
               {c.few_green ? <FewPill t={t} /> : <div className="text-sm text-ground-900">{pct(c.green_agree_rate)}</div>}
-              <div className="tabular-nums">{t(`${K}.xOfY`, { a: String(c.green_agreed), b: String(c.green) })}</div>
+              <div>{t(`${K}.xOfY`, { a: String(c.green_agreed), b: String(c.green) })}</div>
             </li>
           )
         })}

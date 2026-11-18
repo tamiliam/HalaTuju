@@ -14,7 +14,7 @@ import TableFrame, { TH } from '@/components/admin/TableFrame'
 import type { PredictionCounts, DoubtRow, ReviewerRow } from '@/lib/admin-api'
 import { tOr } from '@/lib/i18n'
 import { PHONE_PILL_SM } from '@/lib/phonePill'
-import type { Translate } from './OverviewSections'
+import type { Translate } from './sectionTypes'
 
 /** ⚠ The i18n guard resolves `${K}.` templates by this LITERAL name. */
 const K = 'admin.programmeOverview.aiPrediction'
