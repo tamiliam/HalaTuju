@@ -327,6 +327,16 @@ Branch ll1, NOT merged to main, not published. Migration: none. Services: both. 
 - **Manual updated (English only):** new FAQ entry "What does the AI prediction block mean?" in `faq.tsx`; a line in `role-org-admin.tsx`; one sentence reworded in `faq-reviewer.tsx` (a Pass or Fail tap records the student's fact; it does not rate the AI).
 - **Follow-ups:** `programme_overview.py` is at its growth cap and needs a split before its next change; no query-budget test yet for the new section.
 
+### feat: sprint LL3 - a version guard and one version register for every AI model (2026-11-19)
+
+Branch ll3 (on top of ll1), NOT merged to main, not published. Migration: none. Services: api. Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL3 as built). Debt: TD-243 updated (fixed in code, open until merged and live).
+- **Register:** `apps/scholarship/model_registry.py` lists each AI model's version constant, its source files and its cross-file pins (the Gemini model cascades in `profile_engine` and some helpers). One JSON log per model in `apps/scholarship/model_versions/` (14 models), append-only: version, digest, note.
+- **Guard:** `tests/test_model_versions.py` fails when a model's source changes and its version does not, when a version moves without a log line, and when a `*VERSION` constant in the app is neither registered nor given a reason. The digest is a hash of cleaned source text (comments, docstrings, blank lines and the version line dropped), so it gives the same answer on Python 3.11 and 3.13. Known gaps are listed with reasons in the test.
+- **ID card and supporting documents:** `genuineness/ic.py` and `genuineness/supporting_doc.py` now carry `MODEL_VERSION = '1.0.0'`, and each new result stores `model_version`. Nothing else in their answers changes; "no signal" (`{}`) stays empty.
+- **Storage fix:** `vision/authenticity.py` `_auth_str` kept every key but the version for the STR holistic fallback; it now keeps `model_version` too. Signature-scored STR results are unchanged.
+- **Old results:** no back-fill. A stored result without `model_version` reads exactly as before (tests prove it for the verdict, the anomaly engine and the serializer, which still serves only status, reason and doc_seen).
+- **Tests:** 8 new; the two stored-key-set pins in `test_genuineness_api.py` now include `model_version`.
+
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
 Branch vcard, display only (engine statuses untouched). Migration: none. Services: web.

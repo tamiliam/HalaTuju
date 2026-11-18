@@ -267,7 +267,7 @@ Do one only when a sprint is already in that file.
 - ~~**TD-345**~~ — No local signed-in smoke path for the student apply flow: the live API's CORS refuses a localhost build and no local api + auth recipe exists. *(D · M · raised 2026-10-05 by the apply-gift-clarity sprint)* **FIXED 2026-11-11 (A4.7): documented local student recipe plus a pinning test (docs/testing.md).**
 - **TD-041** — The Settings page has no account options. *(D · S · partly done · same as TD-076)*
 - **TD-283** — `applications.py` sits exactly at its size limit (the `serializers_admin` half closed by A3.7). *(D · M)*
-- **TD-243** — The AI reliability rate blends engine versions. *(D · M)*
+- **TD-243** — The AI reliability rate blends engine versions. *(D · M)* **Fixed in code in branches `ll1` + `ll3` (2026-11-18/19, not merged, not published): LL1 shows the rates per engine version (`by_version`); LL3's guard makes a verdict-engine logic change without a version bump fail the tests. Open until both are merged and live; known gaps in the detail entry.**
 - **TD-212** — The email-template table is still named partner. *(D · M)*
 - **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module; A2.4 split it to A2.4b, not built)*
 - **TD-124** — Contact-form messages reach staff by email only. *(D · M)*
@@ -4919,6 +4919,18 @@ Medium-sized: the response shape changes and `AiReliabilityCard` needs rewriting
 **Looked at 2026-11-11 (A4.5), not built:** it is a design change the owner deferred ("A now, and B in future"),
 not a bug — a new response shape from `audit.override_metrics`, served by `views_admin/verdict.py` (another lane's
 file), and a rewritten card. It needs the owner's word that the buckets are now comparable.
+
+**Fixed in code 2026-11-18/19 (learning-loop LL1 + LL3), in branches only: not merged, not published.**
+- LL1 (branch `ll1`): the new AI prediction section counts every rate per engine version
+  (`audit.override_metrics` → `by_version`, shown in `AiPredictionSection.tsx`); `AiReliabilityCard`
+  is deleted. The blended `override_rate` is still returned for old callers.
+- LL3 (branch `ll3`): a per-version split only means something if the version moves whenever the
+  engine's logic moves. `apps/scholarship/model_registry.py` lists the verdict engine's files and
+  `tests/test_model_versions.py` fails when they change and `VERDICT_ENGINE_VERSION` does not.
+- Still open, honestly: (1) about 30 helper modules the engine's files import are not in its
+  fingerprint (listed with reasons as known gaps in the guard), so a change there can still ship
+  under the old version; (2) the 88 decisions under `pre-versioning` stay one blended bucket (no
+  back-fill); (3) the entry closes when both branches are merged and live (the owner decides).
 
 ### [TD-244] Nothing watches a student whose wallet never gets switched on — low — **RESOLVED 2026-10-03** (Next-tier batch 3: a REPORT, never an email — `FundingSummaryRowSerializer.wallet_not_live` (vircle_id held, no `vircle_activated_at`) and `totals.wallet_not_live`; the Payments funding summary names those students in an amber line above the table; finance key snapshot extended deliberately; manual finance chapter says what to do)
 

@@ -266,6 +266,16 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
 
 **Complexity.** Medium. About 10 files plus one JSON per model. Opus builds (it touches identity scoring files). Adversarial review before push.
 
+**LL3 as built (19 Nov 2026).**
+- Register: `apps/scholarship/model_registry.py` lists 14 models, each with its version constant, its source files and its cross-file pins. The pins cover the Gemini model cascades in `profile_engine` and some helpers. One append-only JSON log per model in `apps/scholarship/model_versions/` (version, digest, note, `also_ok`). The planned `py` field was dropped, because the digest no longer depends on the Python version.
+- Digest: a sha256 of cleaned source text (comments, docstrings and blank lines removed, except inside multi-line strings; the version line dropped). It is NOT `ast.dump`: this machine runs Python 3.13 and production runs 3.11, and `ast.dump` differs between them. Cleaned text lets the guard run on every Python version.
+- Guard: `tests/test_model_versions.py` fails when a registered source or pin changes without a new version and log line, and when a `*VERSION` constant in the app is neither registered nor given a reason. Changing only a comment passes.
+- Known gap: about 30 helper modules imported by the verdict engine's files are not in its digest. They are listed with reasons in the guard, so a change there can still ship under the old version.
+- The digest has only been run on Python 3.13 so far. A pinned sample in the test (cleaned text and digest) will prove 3.11 when Cloud Build runs it.
+- ID card and supporting documents: `genuineness/ic.py` and `genuineness/supporting_doc.py` registered as `ic` and `supporting_doc` at 1.0.0; each new result carries `model_version`. Storage confirmed: the ID-card result is stored whole in `vision_fields['authenticity']` by `vision/ic.py`; the supporting-document result reaches storage through `vision/authenticity._auth_str` (STR holistic fallback), which dropped the version until a small fix in this sprint. Every Python and web reader reads named keys only, so the new key is harmless.
+- No back-fill of old ID-card results. They stay "no version".
+- Status: built in branch `ll3` (on top of `ll1`). Not merged to `main`. Not published. The owner decides both.
+
 ---
 
 ## Sprint LL4 — Record what fed each decision
