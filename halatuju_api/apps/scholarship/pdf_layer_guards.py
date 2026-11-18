@@ -18,6 +18,10 @@ Fix round 5: 4. RAW TOKENS (`raw_state_check`): a Tr operand must be written as 
    ``3-0`` as 0, pdfium as 3) and no resource name may decode to a byte under 0x10 (a bad ``#`` escape);
    any inline image hides the page (the two read its data to different lengths). An /OCG with a /Usage
    (or any key but /Type and /Name) is never provably shown (pdfium hides ``/ViewState /OFF``).
+Fix round 6: 3 became a WHITELIST (`_doc_may_switch_off`). The layers count as all ON only when /OCProperties
+   holds just the keys the corpus uses (/OCGs, /D: no /Configs, which pdfium may pick for viewing), /D just
+   /ON /OFF /Order /RBGroups /BaseState, /BaseState absent or /ON, /OFF empty, no /AS, and every OCG only
+   /Type and /Name. Anything else makes all OC-marked text and every OC form hidden.
 """
 import re
 
@@ -293,20 +297,35 @@ def charge_fonts(resources, budget, cache: dict) -> None:
         budget.spend('font maps', hit[1])
 
 
+#: Fix round 6 — a WHITELIST. pdfium takes the layer state from /Configs (an entry with /Intent /View) as well as
+#: /D, so a blacklist of /D's switches missed it. Optional content is "provably all ON" only in the exact shape
+#: the corpus uses (11 of 533 PDFs carry /OCProperties, measured 2026-11-19): /OCProperties keys, /D keys (the
+#: corpus has /ON, /OFF — always empty —, /Order, /RBGroups, and /AS only beside a /Usage), /BaseState only
+#: /ON (+), and every listed /OCG plain (`PLAIN_OCG_KEYS`). No /Configs, /AS, /Intent, /Locked: never shown.
+OC_PROPERTIES_KEYS = frozenset(('/OCGs', '/D'))
+OC_DEFAULT_KEYS = frozenset(('/ON', '/OFF', '/Order', '/RBGroups', '/BaseState'))
+_MAX_OCGS = 1_000
+
+
 def _doc_may_switch_off(reader) -> bool:
-    """True when the default optional-content configuration switches (or may switch) a layer off."""
+    """False only when the document has no optional content, or its configuration is provably all ON (the
+    whitelist above); True for anything else (pdfium may then hide a layer pypdf reads)."""
     try:
-        props = _get(reader.trailer['/Root'].get_object(), '/OCProperties')
+        root = reader.trailer['/Root'].get_object()
     except KeyError:
         return False
+    props = _get(root, '/OCProperties')
     if props is None:
         return False
     default = _get(props, '/D')
-    if not isinstance(default, dict):
+    if not (isinstance(props, dict) and set(props) <= OC_PROPERTIES_KEYS and isinstance(default, dict)
+            and set(default) <= OC_DEFAULT_KEYS and _get(default, '/BaseState') in (None, '/ON')):
         return True
-    off, auto = _get(default, '/OFF'), _get(default, '/AS')
-    return (_get(default, '/BaseState') not in (None, '/ON') or not isinstance(off, (list, type(None)))
-            or bool(off) or bool(auto))
+    off, ocgs = _get(default, '/OFF'), _get(props, '/OCGs')
+    if not (off is None or (isinstance(off, list) and not off)) or not isinstance(ocgs, list) or len(ocgs) > _MAX_OCGS:
+        return True
+    return not all(isinstance(o, dict) and o.get('/Type') == '/OCG' and set(o) <= PLAIN_OCG_KEYS
+                   for o in (x.get_object() if x is not None else None for x in ocgs))
 
 
 def oc_hides(prop, resources, reader, cache: dict) -> bool:

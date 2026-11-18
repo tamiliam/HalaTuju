@@ -78,9 +78,8 @@ def parse_spm_cert(text, words=None, pdf=None):
 
 def _pdf_words(data):
     """Page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points)."""
-    import pypdfium2 as pdfium
-    pdf = pdfium.PdfDocument(data)
-    try:
+    from .pdfium_lock import pdfium_document
+    with pdfium_document(data) as pdf:
         page = pdf[0]
         height, tp = page.get_height(), page.get_textpage()
         out, cur = [], []
@@ -100,8 +99,6 @@ def _pdf_words(data):
             cur.append((ch, *tp.get_charbox(i)))
         flush()
         return out
-    finally:
-        pdf.close()
 
 
 def _row_text(row):

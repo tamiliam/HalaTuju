@@ -20,6 +20,7 @@ from collections import OrderedDict
 from typing import NamedTuple, Optional
 
 from . import pdf_pdfium_check
+from .pdfium_lock import pdfium_document
 from .pdf_layer_guards import (_MAX_DOC_FONT_COST, OverBudget as _OverBudget, _doc_may_switch_off, bad_operands,
                                charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check, shown_chars)
 
@@ -168,10 +169,10 @@ _MAX_STREAM_TOKENS = 400_000
 _MAX_DOC_SHOWN_CHARS = 200_000
 _TOKEN_BOUNDARIES = bytes((0, 9, 10, 12, 13, 32)) + b'()<>[]{}/%'
 _INLINE_IMAGE = re.compile(rb'(?<![^\s\x00)\]>}])BI(?![^\s\x00/])')
-#: One string or ``<...>`` longer than this is refused unparsed: pypdf parses one huge token in worse than
-#: linear time (a 4 MB string: 6-7 s). Real max: 1,893 bytes. A bare token (name, number, operator) is
-#: quadratic in pypdf 5.9 (6.x refuses long ones itself): capped at 1,024 bytes. Real max: 692.
-_MAX_TOKEN_BYTES = 65_536
+#: One string or ``<...>`` longer than this (raw, so never under its decoded length) is refused unparsed: pdfium
+#: keeps only a string's first 32,767 bytes (fix round 6), and pypdf parses a huge one in worse than linear time.
+#: Real max: 1,893 bytes. A bare token (name, number, operator) is quadratic in pypdf 5.9: 1,024 bytes. Real: 692.
+_MAX_TOKEN_BYTES = 32_767
 _MAX_BARE_TOKEN = 1_024
 _BARE = rb'[^\x00\t\n\x0c\r ()<>\[\]{}/%]'
 _LONG_BARE = re.compile(rb'(?<!' + _BARE + rb')' + _BARE + b'{%d}' % _MAX_BARE_TOKEN)
@@ -402,7 +403,7 @@ def _layer_read(data: bytes, per_page: int = 0, opened: Optional[list] = None) -
     except Exception:  # an unreadable optional-content dictionary may switch anything off
         oc_off = True
     flipped = pdf_pdfium_check.hidden_pages(data, n, {i: t for i, t, v in zip(pages, texts, seen) if v == DRAWN},
-                                            oc_off)
+                                            oc_off, reader)
     if flipped:
         logger.warning('PDF text that pdfium does not paint: %d page(s)', len(flipped))
         seen = tuple(HIDDEN if i in flipped else v for i, v in zip(pages, seen))
@@ -473,9 +474,7 @@ def pdf_first_page_png(data: bytes) -> Optional[bytes]:
     failure / library missing / an absurd page box. Page 1 only — bounds the Vision cost to 1 unit
     per doc."""
     try:
-        import pypdfium2 as pdfium
-        pdf = pdfium.PdfDocument(data)
-        try:
+        with pdfium_document(data) as pdf:
             if len(pdf) == 0:
                 return None
             page = pdf[0]
@@ -488,8 +487,6 @@ def pdf_first_page_png(data: bytes) -> Optional[bytes]:
             buf = io.BytesIO()
             pil.convert('RGB').save(buf, format='PNG')
             return buf.getvalue()
-        finally:
-            pdf.close()
     except Exception as e:  # noqa: BLE001 — a PDF that will not rasterise is logged; the caller handles None
         logger.warning('PDF rasterise failed: %s', e)
         return None
@@ -501,9 +498,7 @@ def pdf_page_pngs(data: bytes, max_pages: int) -> list:
     S4, 2026-11-01). A page that cannot be rendered ends the list there; [] on any failure."""
     out = []
     try:
-        import pypdfium2 as pdfium
-        pdf = pdfium.PdfDocument(data)
-        try:
+        with pdfium_document(data) as pdf:
             for i in range(min(len(pdf), max(0, max_pages))):
                 page = pdf[i]
                 scale = raster_scale(page.get_width(), page.get_height())
@@ -512,8 +507,6 @@ def pdf_page_pngs(data: bytes, max_pages: int) -> list:
                 buf = io.BytesIO()
                 page.render(scale=scale).to_pil().convert('RGB').save(buf, format='PNG')
                 out.append(buf.getvalue())
-        finally:
-            pdf.close()
     except (ImportError, OSError, ValueError, RuntimeError) as e:   # pdfium's errors are RuntimeErrors
         logger.warning('PDF page render failed: %s', e)
     return out
@@ -522,12 +515,8 @@ def pdf_page_pngs(data: bytes, max_pages: int) -> list:
 def pdf_page_count(data: bytes) -> int:
     """The number of pages in a PDF; 0 when it cannot be opened."""
     try:
-        import pypdfium2 as pdfium
-        pdf = pdfium.PdfDocument(data)
-        try:
+        with pdfium_document(data) as pdf:
             return len(pdf)
-        finally:
-            pdf.close()
     except (ImportError, OSError, ValueError, RuntimeError):
         return 0
 
@@ -584,17 +573,12 @@ def pdf_pages_png(data: bytes) -> Optional[bytes]:
     first two and the last — so a single multimodal read sees the page that carries the approval. None on
     failure / library missing / an absurd page box (the caller then treats the read as not made)."""
     try:
-        import pypdfium2 as pdfium
-        pdf = pdfium.PdfDocument(data)
-        try:
+        with pdfium_document(data) as pdf:
             n = len(pdf)
             if n == 0:
                 return None
             indices = list(range(n)) if n <= MAX_STACKED_PAGES else [0, 1, n - 1]
-            pages = {i: pdf[i] for i in indices}
-            return _stack_pages(indices, pages)
-        finally:
-            pdf.close()
+            return _stack_pages(indices, {i: pdf[i] for i in indices})
     except (ImportError, OSError, ValueError, RuntimeError) as e:   # pdfium's errors are RuntimeErrors
         logger.warning('PDF page stack failed: %s', e)
         return None

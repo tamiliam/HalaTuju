@@ -234,6 +234,30 @@ tokens, text before `Tf`, control-byte names, /OCG with /Usage → hidden; 20 op
 a page-tree node cap (2x the count, no node twice) and at most 20,000 objects in object streams (pypdf 6.21.4 parses a
 whole object stream on first read: a 99,000-page file took 2.5 s; corpus max 792). Corpus: 0 of 533 change on either
 pypdf version.
+**Fix round 6 — whitelists, not blacklists.** Five rounds each found one more shape a blacklist missed, so the checks
+now allow ONLY what the 533 corpus PDFs use (measured 2026-11-19), with small headroom (+); anything else is the
+Vision route. (1) **Optional content** (`pdf_layer_guards._doc_may_switch_off`): layers count as all ON only when
+/OCProperties holds just /OCGs and /D (no /Configs — pdfium takes a /View configuration from there), /D just /ON /OFF
+/Order /RBGroups /BaseState(+), /BaseState absent or /ON, /OFF empty, no /AS, every OCG only /Type and /Name. Corpus:
+7 docs (11 files) carry /OCProperties, all {/D, /OCGs}; 4168 /D {/ON, /OFF empty, /Order}, OCG {/Type, /Name} → stays
+on its free layer; 1234, 951 {/ON, /Order, /RBGroups}; 1705, 1746, 3502, 3997 {/AS, /ON} with /Usage OCGs → hidden,
+as before. (2) **What pdfium loads with a page** (new `pdf_pdfium_load.py`, run before pdfium opens a judged page):
+pdfium parses each Type3 glyph procedure afresh for EVERY character code naming it (120 glyphs x 2.8 MB in a 670 KB
+file: 13.5 s; one 2.8 MB glyph named by 256 codes, 10 KB: 9.7 s). Whitelist: fonts Type1/TrueType/Type0/Type3, CID
+fonts Type0/Type2, programs FontFile2, FontFile3 (Type1C, OpenType, CIDFontType0C+), FontFile+; no embedded CMap;
+Type3 with no /Resources, /Encoding only {/Type, /Differences}, glyphs only numbers and d0 d1 m l c v y h re f f* n q
+Q cm W W* (corpus: d1 m l c h f re; 4,366 glyphs, max 9,040 bytes); colour spaces Gray/RGB/CMYK+/CalRGB/CalGray+/
+ICCBased/Indexed/Pattern (no Separation, DeviceN, Lab); patterns 1, 2; shadings 2, 3+; functions 2, 3 (no sampled or
+PostScript); ExtGState keys as the corpus (+ /D /RI /FL /TK), no /TR /BG /UCR /HT /Font; soft masks {/Type /S /G /BC};
+stream filters only none or /FlateDecode; no inline image in a form, cell or mask. Every font program, glyph use, ICC
+profile, Indexed table, form, cell and mask is charged by bounded inflate: 2.5 MB per document (corpus max 1,158,420,
+doc 871), 1 MB per stream (max 422,708), 4,000 entries (max 1,841, doc 708). Image data is not charged: a 400 MB image
+loads in 0.00 s (decoded only to paint). (3) A string over 32,767 bytes (pdfium keeps only the first 32,767; corpus max
+1,893) hides the page. (4) **One lock** (`pdfium_lock.PDFIUM_LOCK`, via `pdfium_document`) around every request-path
+pdfium use: `pdf_pages` (3 rasterisers, page count), `pdf_pdfium_check`, `spm_cert_parse._pdf_words`; pypdfium2 is not
+thread-safe. Corpus max hold for the check: 0.05 s per document. **Open:** a rasterised page holds the lock for its
+whole render — a 20,000 x 20,000 image took 323 s and a 60 MB tiling cell 21.6 s to render, blocking other threads.
+Corpus: 0 of 533 change on either pypdf version.
 **pypdf 5.9 (local) vs 6.21.4 (production):** same verdicts under this rule, except 21 corpus PDFs whose content
 streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
 between the two (pypdf's own changes). Local counts are not production counts.

@@ -23,6 +23,8 @@ their free layer. Known limit: pdfium's API does not show a form XObject's own /
 import ctypes
 
 from .pdf_layer_guards import PLAIN_OCG_KEYS, OverBudget
+from .pdf_pdfium_load import load_check
+from .pdfium_lock import pdfium_document
 
 #: Page objects pdfium lists on the judged pages of ONE document, forms' contents included (each form call
 #: is its own object tree). Corpus max (533 PDFs, measured 2026-11-19): 9,101 on one document (doc 1409:
@@ -34,32 +36,37 @@ _DRAWN_MODES = frozenset((0, 1, 2, 4, 5, 6))
 _PLAIN_OCG_PARAMS = frozenset(k[1:] for k in PLAIN_OCG_KEYS)
 
 
-def hidden_pages(data: bytes, page_count: int, judged: dict, oc_may_be_off: bool) -> set:
+def hidden_pages(data: bytes, page_count: int, judged: dict, oc_may_be_off: bool, reader=None) -> set:
     """The page indices in ``judged`` ({page index: pypdf's text of it}) that pdfium says do not paint all
-    their text (a-d above). A page whose pypdf text is blank is not judged: nothing of it is used. ALL judged
+    their text (a-d above; e, fix round 6: a page outside `pdf_pdfium_load`'s whitelist). A page whose pypdf text is blank is not judged: nothing of it is used. ALL judged
     pages are hidden when pdfium cannot open the PDF or sees another page count — never the hidden text.
     ``oc_may_be_off``: the document's optional-content configuration may switch a layer off
-    (`pdf_layer_guards._doc_may_switch_off`)."""
+    (`pdf_layer_guards._doc_may_switch_off`). ``reader`` (fix round 6): pypdf's reader of ``data``; each page
+    must first pass `pdf_pdfium_load.load_check` (its resources whitelisted and charged) or it is hidden and
+    pdfium never loads it. pdfium runs under `pdfium_lock.PDFIUM_LOCK`, one document at a time."""
     wanted = {i: any(c.isalnum() for c in t) for i, t in judged.items() if t and not t.isspace()}
+    hidden, state = set(), {}
+    for i in list(wanted) if reader is not None else ():
+        try:
+            load_check(reader.pages[i], reader, state)
+        except Exception:  # outside the whitelist or past the load budget: hidden, never loaded
+            hidden.add(i)
+            del wanted[i]
     if not wanted:
-        return set()
+        return hidden
+    budget = [MAX_OBJECTS]
     try:
-        import pypdfium2 as pdfium
-        pdf = pdfium.PdfDocument(data)
-    except Exception:  # pdfium cannot open what pypdf read: undecidable is hidden
-        return set(wanted)
-    budget, hidden = [MAX_OBJECTS], set()
-    try:
-        if len(pdf) != page_count:
-            return set(wanted)
-        for i, has_alnum in wanted.items():
-            try:
-                if not _paints(pdf, i, has_alnum, oc_may_be_off, budget):
+        with pdfium_document(data) as pdf:
+            if len(pdf) != page_count:
+                return hidden | set(wanted)
+            for i, has_alnum in wanted.items():
+                try:
+                    if not _paints(pdf, i, has_alnum, oc_may_be_off, budget):
+                        hidden.add(i)
+                except Exception:  # a page pdfium cannot judge is hidden (OverBudget included)
                     hidden.add(i)
-            except Exception:  # a page pdfium cannot judge is hidden (OverBudget included)
-                hidden.add(i)
-    finally:
-        pdf.close()
+    except Exception:  # pdfium cannot open what pypdf read: undecidable is hidden
+        return hidden | set(wanted)
     return hidden
 
 
