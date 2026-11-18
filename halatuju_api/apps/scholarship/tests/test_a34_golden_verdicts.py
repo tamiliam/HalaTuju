@@ -430,7 +430,7 @@ class TestGoldenFacts(_GoldenBase):
                                                     skip_first=False),
             # Owner 2026-11-18 (#804): the hearing asks the LINKER whether it writes the letter's one
             # course; 'resolvable' = it does. Not logged (its arguments are a model row).
-            'apps.scholarship.services.offer_link.plan_offer_link': lambda *a: (
+            'apps.scholarship.services.offer_link.plan_offer_link': lambda *a, **k: (
                 ('', {'course_id': 'X1', 'course_name': 'Asasi Sains', 'institution': 'UM'}, 'asasi')
                 if knobs.get('resolvable') else ('unresolved', None, '')),
         }

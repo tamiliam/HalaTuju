@@ -105,13 +105,19 @@ def _letter_course(chk, prog, inst):
 def _autofilled_course(cp, cid, chk, prog, inst):
     """The course the offer autofill already wrote from THIS letter (re-review 2026-11-18): source
     ``offer_letter_auto`` and the stored id equals the autofill's own LOOSE catalogue match
-    (``offer_sync._adopt_unlocked_pathway``), so a linked record is never told to pick its course."""
+    (``offer_sync._adopt_unlocked_pathway``), so a linked record is never told to pick its course.
+    Final review 2026-11-18: the loose match has no level test, so it counts only when the letter states
+    no level or the course's own (``states_another_level``): a DIPLOMA or Master's letter carrying a
+    degree's code is asked."""
     if (cp.get('source') or '') != 'offer_letter_auto':
         return None
     from . import card_display, offer_pathway as _op
+    from .offer_course_match import states_another_level
     g_prog, g_inst, _rep = card_display.sanitise_offer_slots(prog, inst)
     loose = _op.resolve_catalogue_course(g_prog, g_inst, (chk.get('issuer') or '').strip())
-    return loose if loose and loose.get('course_id') == cid else None
+    if not loose or loose.get('course_id') != cid or states_another_level(prog, cid):
+        return None
+    return loose
 
 
 def _linked_course(application, offer, chk, prog, inst, pinned):
@@ -125,8 +131,9 @@ def _linked_course(application, offer, chk, prog, inst, pinned):
       autofill's own loose match (``_autofilled_course``);
     - no pinned course means no link, so ``plan_offer_link`` (its ``querying_locked`` query) is not run
       (A2.4 query budget, detail-with-offer-letter);
-    - a decided record (``decided``, ``querying_locked``) the linker no longer touches still has the
-      letter's ONE course: clean, so the decision never gains a new student query."""
+    - a decided record the linker no longer touches is clean only when the letter WOULD link but for the
+      decision (``ignore_decided``: own letter, genuine for an empty pick, not a confirmation, not pre-U,
+      labels and place agree - final review 2026-11-18); a decided record those checks refuse is asked."""
     from .services import offer_link
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     cid = (cp.get('course_id') or '').strip()
@@ -137,15 +144,10 @@ def _linked_course(application, offer, chk, prog, inst, pinned):
         if match and match['course_id'] == cid:
             return match
         return _autofilled_course(cp, cid, chk, prog, inst)
-    match = pinned()
-    if match is None:
+    if pinned() is None:
         return None
-    reason, new_cp, _ = offer_link.plan_offer_link(application, offer, chk)
-    if not reason:
-        return new_cp
-    if reason in ('decided', 'querying_locked'):
-        return match
-    return None
+    reason, new_cp, _ = offer_link.plan_offer_link(application, offer, chk, ignore_decided=True)
+    return None if reason else new_cp
 
 
 def _same_course(application, clean):

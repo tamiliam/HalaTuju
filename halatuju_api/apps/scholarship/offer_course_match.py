@@ -228,6 +228,22 @@ def letter_level(programme):
     return ''
 
 
+#: Postgraduate words: a level no catalogue course carries. Read only where ``letter_level`` found none,
+#: so a bare "sarjana" here is never "sarjana muda".
+_POSTGRAD_WORDS = ('sarjana', 'master', 'masters', 'doktor falsafah', 'phd')
+
+
+def states_another_level(programme, course_id):
+    """Does the letter STATE a level that is not this course's own? For a course found WITHOUT the
+    strict pin (the autofill's loose match, final review 2026-11-18). A Master's or doctorate word counts;
+    a letter with no level word states none."""
+    level = letter_level(programme)
+    if level:
+        return level != course_level(course_id)
+    text = f' {_plain_words(programme)} '
+    return any(f' {w} ' in text for w in _POSTGRAD_WORDS)
+
+
 def course_level(course_id):
     """The course's OWN level: its ``Course.level`` lower-cased; an STPM degree is "ijazah sarjana muda"."""
     from apps.courses.models import Course, StpmCourse

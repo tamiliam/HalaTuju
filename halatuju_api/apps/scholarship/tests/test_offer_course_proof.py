@@ -26,6 +26,10 @@ SOCSCI = ('Sarjana Muda Sains Kemasyarakatan dengan Kepujian [antropologi dan So
           'Sains Politik / Pengajian Pembangunan]')
 ARTS = ('Sarjana Muda Sastera [pengajian Bahasa Inggeris / Linguistik Bahasa Melayu / Geografi / Sejarah / '
         'Kesusasteraan] dengan Kepujian')
+#: Two more USM courses whose names share words with the option lists (final review 2026-11-18): with them
+#: in the seed an option word that is also another course's own name is not one clean match.
+ECON = 'Sarjana Muda Ekonomi dengan Kepujian #'
+EDU_HIST = 'Sarjana Muda Pendidikan (Sejarah) dengan Kepujian #'
 #: The #804 letter's own programme line (printed code included).
 LETTER_804 = 'SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001'
 NAME, NRIC = 'TEST STUDENT A/P SAMPLE', '080101-01-0101'
@@ -36,7 +40,8 @@ def seed_usm():
         'name_en': 'x', 'name_ms': 'x', 'name_ta': 'x', 'image_slug': 'proof'})
     inst, _ = Institution.objects.get_or_create(institution_id='RA-USM', defaults={
         'institution_name': USM, 'acronym': 'USM', 'type': 'IPTA', 'state': 'Pulau Pinang'})
-    for cid, name in (('US6310001', SOCSCI), ('US6220001', ARTS)):
+    for cid, name in (('US6310001', SOCSCI), ('US6220001', ARTS), ('US6314001', ECON),
+                      ('US6146002', EDU_HIST)):
         sc, _ = StpmCourse.objects.get_or_create(course_id=cid, defaults={
             'course_name': name, 'university': USM, 'institution': inst, 'field_key': ft})
         StpmRequirement.objects.get_or_create(course=sc, defaults={'req_bumiputera': False})
@@ -62,10 +67,18 @@ class BracketOptionListTest(TestCase):
 
     def test_the_base_name_with_one_listed_option_matches(self):
         for suffix in ('', ' - US6310001'):
-            self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI) DENGAN KEPUJIAN' + suffix),
-                             'US6310001')
             self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN (SAINS POLITIK)' + suffix),
                              'US6310001')
+        self.assertEqual(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI) DENGAN KEPUJIAN - US6310001'),
+                         'US6310001')
+
+    def test_an_option_that_is_another_courses_name_is_not_one_clean_match(self):
+        # Final review 2026-11-18: with the fuller seed, EKONOMI is also its own course (US6314001) and
+        # SEJARAH also Pendidikan (Sejarah) (US6146002), so the name alone names no ONE course; the
+        # printed code still picks it.
+        self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN (EKONOMI) DENGAN KEPUJIAN'))
+        self.assertIsNone(_cid('SARJANA MUDA SASTERA (SEJARAH) DENGAN KEPUJIAN'))
+        self.assertEqual(_cid('SARJANA MUDA SASTERA (SEJARAH) DENGAN KEPUJIAN - US6220001'), 'US6220001')
 
     def test_words_from_two_options_are_not_a_clean_match(self):
         for suffix in ('', ' - US6310001'):
@@ -86,12 +99,12 @@ class BracketOptionListTest(TestCase):
         self.assertIsNone(_cid('SARJANA MUDA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6220001'))
 
     def test_a_bracket_mid_name(self):
-        self.assertEqual(_cid('SARJANA MUDA SASTERA (SEJARAH) DENGAN KEPUJIAN'), 'US6220001')
         self.assertEqual(_cid('SARJANA MUDA SASTERA DENGAN KEPUJIAN'), 'US6220001')
         self.assertEqual(_cid('SARJANA MUDA SASTERA DENGAN KEPUJIAN - US6220001'), 'US6220001')
 
     def test_the_core_name_is_still_required(self):
-        self.assertIsNone(_cid('SARJANA MUDA EKONOMI DENGAN KEPUJIAN'))
+        # An option word alone is not the menu course: it is the Ekonomi course itself.
+        self.assertEqual(_cid('SARJANA MUDA EKONOMI DENGAN KEPUJIAN'), 'US6314001')
         self.assertIsNone(_cid('SARJANA MUDA EKONOMI DENGAN KEPUJIAN - US6310001'))
 
     def test_labels_describe_reads_the_option_list(self):
@@ -237,11 +250,32 @@ class HearingTest(_Tertiary):
     def test_an_autofilled_record_with_no_level_word_is_not_asked(self):
         self._autofilled_is_not_asked('SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001')
 
-    def test_an_autofilled_record_with_a_sarjana_letter_is_not_asked(self):
-        self._autofilled_is_not_asked('SARJANA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001')
+    # Final review 2026-11-18: the loose match has no level test, so a letter STATING another level than
+    # the course's own (a DIPLOMA, a Master's) is asked though the autofill wrote the degree's code.
+    def _autofilled_is_asked(self, programme):
+        from apps.scholarship.services.offer_sync import autofill_pathway_from_offer
+        self.app.pre_u_institution = ''
+        self.app.save()
+        self.offer(programme=programme)
+        autofill_pathway_from_offer(self.app)
+        self.app.refresh_from_db()
+        self.assertEqual((self.app.chosen_programme or {}).get('course_id'), 'US6310001')
+        f = self.pathway()
+        self.assertIn('pathway_undeclared', [i['code'] for i in f['unresolved']])
+        self.assertNotEqual(f['status'], 'verified')
 
-    def test_an_autofilled_record_with_a_diploma_letter_is_not_asked(self):
-        self._autofilled_is_not_asked('DIPLOMA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001')
+    def test_an_autofilled_record_with_a_sarjana_letter_is_asked(self):
+        self._autofilled_is_asked('SARJANA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001')
+
+    def test_an_autofilled_record_with_a_diploma_letter_is_asked(self):
+        self._autofilled_is_asked('DIPLOMA SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001')
+
+    def test_states_another_level(self):
+        from apps.scholarship.offer_course_match import states_another_level
+        self.assertFalse(states_another_level('SAINS KEMASYARAKATAN DENGAN KEPUJIAN - US6310001', 'US6310001'))
+        self.assertFalse(states_another_level(LETTER_804, 'US6310001'))
+        self.assertTrue(states_another_level('DIPLOMA SAINS KEMASYARAKATAN - US6310001', 'US6310001'))
+        self.assertTrue(states_another_level('SARJANA SAINS KEMASYARAKATAN - US6310001', 'US6310001'))
 
     def test_a_picker_course_id_is_not_taken_for_the_autofill(self):
         # The loose match counts only for the autofill's own write, never a student's picked id.
@@ -250,7 +284,8 @@ class HearingTest(_Tertiary):
         self.assertIsNone(_autofilled_course(cp, 'US6310001', {'issuer': USM}, LETTER_804, USM))
 
     # Re-review 2026-11-18: a DECIDED record (verdict recorded) the linker no longer touches keeps the
-    # letter's ONE course as clean, so the decision never gains a new student query.
+    # letter's ONE course as clean when the letter WOULD link but for the decision, so the decision never
+    # gains a new student query. Final review: only then - every other linker check still applies.
     def test_a_decided_record_gains_no_pick_ask(self):
         from apps.scholarship.check2_confirms import _sync_pathway_confirm
         self.app.verdict_decided_at = timezone.now()
@@ -267,6 +302,22 @@ class HearingTest(_Tertiary):
         self.app.save()
         self.offer()
         self.assertNotIn('pathway_undeclared', self.codes())
+
+    def _decided_asks_as_undecided(self):
+        before = self.codes()
+        self.app.verdict_decided_at = timezone.now()
+        self.app.save()
+        self.assertIn('pathway_undeclared', before)
+        self.assertEqual(self.codes(), before)
+
+    def test_a_decided_record_whose_labels_name_another_course_is_asked(self):
+        self.pick(course_name=ARTS, institution=USM, source='offer_letter_auto')
+        self.offer()
+        self._decided_asks_as_undecided()
+
+    def test_a_decided_record_with_a_suspect_letter_and_an_empty_pick_is_asked(self):
+        self.offer(status='suspect')
+        self._decided_asks_as_undecided()
 
     def test_an_unscored_letter_still_gets_no_hearing(self):
         self.offer(programme='SARJANA MUDA PSIKOLOGI DENGAN KEPUJIAN', status='')

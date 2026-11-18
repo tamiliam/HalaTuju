@@ -53,8 +53,11 @@ def picker_pathways():
     return set(courses_public.SPM_PATHWAYS) | {'matric', 'stpm'}
 
 
-def plan_offer_link(application, offer, chk):
+def plan_offer_link(application, offer, chk, ignore_decided=False):
     """``(skip_reason, new_chosen_programme, new_pathway)``; ``skip_reason`` '' means link it.
+
+    ``ignore_decided`` skips ONLY the ``decided`` gate (final review 2026-11-18): the pathway hearing asks
+    whether this letter WOULD link, so a decided record is clean only when every other check passes.
 
     Checked in this order (each failure is what ``link_offer_courses`` prints):
 
@@ -93,7 +96,8 @@ def plan_offer_link(application, offer, chk):
     if (cp.get('course_id') or '').strip():
         return 'has_course_id', None, ''
     verdict = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
-    if querying_locked(application) or application.verdict_decided_at or verdict.get('overall'):
+    if not ignore_decided and (querying_locked(application) or application.verdict_decided_at
+                               or verdict.get('overall')):
         return 'decided', None, ''
     if chk.get('name') == 'mismatch' or chk.get('ic') == 'mismatch':
         return 'not_own_letter', None, ''
