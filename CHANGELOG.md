@@ -6,14 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### refactor: request #69 review round 3 - active staff with a stopped mentor link count again, supers not asked (2026-11-18)
 
-Branch req69, not pushed. Migration: `0214_reviewerprofile_highest_position` (additive; unchanged). Services: both.
+Branch req69, not pushed. Migration: `0215_reviewerprofile_highest_position` (additive; unchanged). Services: both.
 - **Who counts (fixes round 2):** the `Mentor.deactivated_at` filter is gone; `is_active` is the only "switched off" test. Suspend already turns a mentor's login off (`mentor_invite._switch_off`), so a suspended mentor stays out, now tested through the real Deactivate. The filter had dropped ACTIVE people who keep a deactivated mentor link: a staff member who stopped mentoring, a mentor login moved to "No group" and an Admin switched to Finance. A new test drives the first two through `staff_mentor.stop` / `remove_mentor_login` and pins all three as counted.
 - **Who is asked:** a super is no longer asked (`asks_highest_position` false; a `PATCH` of the field is 400 `bad_highest_position`). New test.
 - **Sponsor figures unchanged** (owner 18 Nov): banding, rounding and the headline stay as built; the small-size risk the reviewer showed is accepted and recorded in `docs/decisions.md`.
 
 ### refactor: request #69 review round - sponsor figures banded, only team members asked (2026-11-18)
 
-Branch req69, not pushed. Migration: `0214_reviewerprofile_highest_position` (additive; unchanged by this round). Services: both.
+Branch req69, not pushed. Migration: `0215_reviewerprofile_highest_position` (additive; unchanged by this round). Services: both.
 - **Who is asked:** a source user or a referral partner (`source_partner`, `partner`; `volunteer_positions.asked`) gets no completion item (five items, not six), no banner question and no My Profile field. `admin/me/` serves `asks_highest_position`; the page shows the field (and the empty cell under Name) only when it is true. A `PATCH` of `highest_position` from them is 400 `bad_highest_position` and changes nothing. The banner already followed the served item, so it needs no code change.
 - **Sponsor figures:** still nothing below 5 answers. The exact count is never sent: `count_at_least` is the largest of 5, 10, 20, 50, 100, 200 or 500 at or below it. The headline is served as `senior_pct` (the c_level and head largest-remainder shares added, from the exact counts). The four `shares` are sent only when no level holds everyone and no level holds exactly one person; otherwise `shares: null` and the page shows the headline and the footnote, no bars. Footnote: "Based on {n}+ volunteers who have told us." (ms, ta to match).
 - **Who counts:** a suspended mentor (`Mentor.deactivated_at`) no longer counts; a paused reviewer (`PartnerAdmin.paused_at`) still does; an archived row that is still `is_active` never did and is now tested.
@@ -22,7 +22,7 @@ Branch req69, not pushed. Migration: `0214_reviewerprofile_highest_position` (ad
 
 ### feat: highest position held on staff profiles, with a sponsor summary (request #69, 2026-11-17)
 
-Branch req69, not pushed. Migration: `0214_reviewerprofile_highest_position` (additive; `db_default` ''). Services: both. Mock-up: canvas v8 (four boards, approved 17 Nov).
+Branch req69, not pushed. Migration: `0215_reviewerprofile_highest_position` (additive; `db_default` ''). Services: both. Mock-up: canvas v8 (four boards, approved 17 Nov).
 - **Data:** `StaffProfile.highest_position`, one of `c_level`, `head`, `manager`, `individual` ("C-level, founder or business owner"; "Head of department or senior manager"; "Manager"; "Individual contributor (academic, doctor, etc.)"); blank is "not given". `PATCH admin/me/` saves and clears it (anything else is 400 `bad_highest_position`) and makes the caller's own profile row when there is none.
 - **Completion:** an "everyone" item (`profile_completion.py`), linked "Add your highest position" to the You card; never an important item.
 - **My Profile:** a select directly under Job title and above About (an empty cell under Name keeps it there in the two-column grid), "Choose one" clears it, the hint and the note "Individual data is never shared with sponsors."; optional.
