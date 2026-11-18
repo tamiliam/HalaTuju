@@ -19,7 +19,7 @@ import { useT } from '@/lib/i18n'
 import Toggle from '@/components/Toggle'
 import { setReviewerGifts, type AdminReviewerGift, type ReviewerGiftTag } from '@/lib/admin-api'
 import {
-  giftsForReviewer, idsToSave, tickEvery, tickGift, ticksFrom, type GiftTicks,
+  giftsForReviewer, idsToSave, nothingTicked, tickEvery, tickGift, ticksFrom, type GiftTicks,
 } from '@/lib/reviewerGifts'
 
 /** The gifts as chips. `[]` is EVERY GIFT and reads as an answer, never as a blank. */
@@ -41,7 +41,7 @@ export function GiftChips({ gifts, testId }: { gifts: ReviewerGiftTag[]; testId?
 }
 
 /** "Every gift" and one tick per gift. Gifts are greyed (and cannot be ticked) while "Every gift" is on. */
-export function GiftTickList({ ticks, options, onChange, everyLabel, testId, allowNone = false }: {
+export function GiftTickList({ ticks, options, onChange, everyLabel, testId, allowNone = false, requireChoice = false }: {
   ticks: GiftTicks
   /** `is_active: false` = a gift not open yet; it may still be staffed before it opens. */
   options: ReadonlyArray<{ id: number; name: string; is_active?: boolean }>
@@ -50,6 +50,9 @@ export function GiftTickList({ ticks, options, onChange, everyLabel, testId, all
   testId: string
   /** The sponsor invite (I3): clearing the last tick leaves NOTHING ticked, not "Every gift". */
   allowNone?: boolean
+  /** An INVITE form: with nothing ticked (Every gift off, no gift picked) say so, beside the switches.
+   *  The form blocks Send on the same state (`nothingTicked`): `[]` would otherwise mean every gift. */
+  requireChoice?: boolean
 }) {
   const { t } = useT()
   const row = 'flex min-h-11 items-center gap-2.5 rounded-md px-1 text-sm'
@@ -71,6 +74,11 @@ export function GiftTickList({ ticks, options, onChange, everyLabel, testId, all
           )}
         </label>
       ))}
+      {requireChoice && nothingTicked(ticks) && (
+        <p role="alert" className="px-1 py-1 text-xs text-critical-600" data-testid={`${testId}-required`}>
+          {t('admin.invitations.giftChoiceRequired')}
+        </p>
+      )}
     </div>
   )
 }

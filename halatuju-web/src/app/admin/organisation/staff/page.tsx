@@ -126,7 +126,6 @@ export default function OrganisationInvitationsPage() {
   // benefactor would otherwise have landed in the flagship — except with exactly ONE gift, which
   // is pre-ticked because there is nothing to choose. With two or more a choice is required.
   const [sGifts, setSGifts] = useState<GiftTicks>(sponsorStartTicks([]))
-  const [sGiftMissing, setSGiftMissing] = useState(false)
   // A REVIEWER invite names its gifts (TD-501, A1.3). Multi-gift (owner design, 2026-11-06): a tick
   // list with "Every gift" ticked BY DEFAULT — the owner's ruling replaces A1.3's "must be chosen".
   // Always sent as `programme_ids` (`[]` = every gift), so the server never sees a blank.
@@ -168,7 +167,6 @@ export default function OrganisationInvitationsPage() {
   const giftKey = (data?.programmes ?? []).map((p) => p.id).join(',')
   useEffect(() => {
     setSGifts(sponsorStartTicks(giftKey ? giftKey.split(',').map(Number).map((id) => ({ id })) : []))
-    setSGiftMissing(false)
   }, [giftKey])
 
   // `?kind=source` opens that tab. Read once, on mount, from
@@ -192,14 +190,13 @@ export default function OrganisationInvitationsPage() {
     e.preventDefault()
     let ok = false
     if (kind === 'sponsors') {
-      // I3: with two or more gifts a choice is REQUIRED — nothing is sent until one is made. With
-      // one (pre-ticked) or none, nothing ticked sends no gift and the server takes the sole one.
+      // A gift choice is REQUIRED (Every gift, or at least one gift), the same on all three forms:
+      // nothing is sent until one is made — `[]` would mean every gift.
       const choices = data?.programmes ?? []
-      if (nothingTicked(sGifts) && choices.length > 1) { setSGiftMissing(true); return }
+      if (nothingTicked(sGifts)) return
       try {
         await inviteSponsor({
-          email: sEmail, name: sName, note,
-          ...(nothingTicked(sGifts) ? {} : { programme_ids: idsToSave(sGifts) }),
+          email: sEmail, name: sName, note, programme_ids: idsToSave(sGifts),
         }, { token: token! })
         ok = true
       } catch {
@@ -208,6 +205,7 @@ export default function OrganisationInvitationsPage() {
       }
       if (ok) setSGifts(sponsorStartTicks(choices))
     } else {
+      if (subRole === 'reviewer' && nothingTicked(rGifts)) return
       const gift = subRole !== 'reviewer' ? {} : { programme_ids: idsToSave(rGifts) }
       ok = await invite({ email: sEmail, name: sName, role: subRole as StaffRole, ...gift })
     }
@@ -382,17 +380,11 @@ export default function OrganisationInvitationsPage() {
                   <span id="invite-sponsor-gift-label" className={FIELD_LABEL}>
                     {t('admin.invitations.sponsorGiftLabel')}
                   </span>
-                  <div className={`rounded-lg border px-2 py-1 ${
-                    sGiftMissing ? 'border-critical-600' : 'border-ground-300'}`}>
-                    <GiftTickList ticks={sGifts} options={giftChoices} allowNone
-                      onChange={(next) => { setSGifts(next); setSGiftMissing(false) }}
+                  <div className="rounded-lg border border-ground-300 px-2 py-1">
+                    <GiftTickList ticks={sGifts} options={giftChoices} allowNone requireChoice
+                      onChange={setSGifts}
                       everyLabel={t('admin.invitations.reviewerGiftEvery')} testId="invite-sponsor-gift" />
                   </div>
-                  {sGiftMissing && (
-                    <p role="alert" className="mt-1 text-xs text-critical-600">
-                      {t('admin.invitations.sponsorGiftRequired')}
-                    </p>
-                  )}
                 </div>
               )}
               {kind !== 'sponsors' && subRole === 'reviewer' && (
@@ -401,7 +393,7 @@ export default function OrganisationInvitationsPage() {
                     {t('admin.invitations.reviewerGiftLabel')}
                   </span>
                   <div className="rounded-lg border border-ground-300 px-2 py-1">
-                    <GiftTickList ticks={rGifts} options={reviewerGiftChoices} onChange={setRGifts}
+                    <GiftTickList ticks={rGifts} options={reviewerGiftChoices} onChange={setRGifts} requireChoice
                       everyLabel={t('admin.invitations.reviewerGiftEvery')} testId="invite-reviewer-gift" />
                   </div>
                 </div>
@@ -426,6 +418,8 @@ export default function OrganisationInvitationsPage() {
                   where an Admin starts (T2, owner ruling 4: one Admin, at the minimum); Reviewer's is
                   the gift help; Sponsor's (I3) says each gift is its own request. */}
               <InviteFoot busy={busy} label={t('admin.sendInvite')}
+                blocked={kind === 'sponsors' ? nothingTicked(sGifts)
+                  : subRole === 'reviewer' && nothingTicked(rGifts)}
                 note={kind === 'admins' ? t('admin.team.inviteAdminNote')
                   : kind === 'sponsors' ? t('admin.invitations.sponsorGiftHelp')
                   : subRole === 'reviewer' ? t('admin.invitations.reviewerGiftHelp')

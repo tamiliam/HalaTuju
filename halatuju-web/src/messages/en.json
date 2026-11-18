@@ -7640,7 +7640,7 @@
       "reviewerGiftHelp": "Match reviewers to gifts by their strengths and interests.",
       "reviewerGiftEvery": "Every gift",
       "sponsorGiftLabel": "Which gifts is this sponsor invited to support?",
-      "sponsorGiftRequired": "Tick at least one gift, or Every gift.",
+      "giftChoiceRequired": "Choose at least one gift, or turn on Every gift.",
       "sponsorGiftHelp": "Each gift is its own request: when they register they join every gift ticked here as pending, and you approve each one. Every gift means the gifts open on the day they register — a gift started later is not added.",
       "inviteFailed": "The invitation was not sent. Please check the details and try again.",
       "noteLabel": "Personal note",

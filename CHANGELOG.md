@@ -47,6 +47,10 @@ Branch labels, not pushed. No migration. Services: both (api; web test only sinc
   - **Fix (real):** a super could hand a case to a reviewer of ANOTHER organisation (`may_hand_to` has no organisation check for a super; the gift check passes a reviewer with no gift rows); the holder then got a 404 on the case. `assign_reviewer` now refuses a new holder outside the case's organisation (`not_reviewer`). Follow-up TD-634.
   - Tests: `test_labels_key_moves` pins the default Admin invitation (no money widgets until a money key is ticked), a Reviewer label holding only `qc` as a valid holder, pause, and the cross-organisation hand-over; `test_permission_editor` drives the stale-target race through the editor again (an Admin label giving up `review`). Two tests that handed a case across organisations now keep it in one (`test_review_nudges`; `test_assign_gift_mismatch`, plus a case with no organisation is refused for a super). `programme_overview.py` stays inside its size allowance (839).
 
+### fix: invitation forms block an empty gift choice (2026-11-16)
+
+Small change, branch invite-gift-guard, not pushed. No migration. Services: web. The Mentor, Sponsor and Reviewer invite forms (Organisation, Invitations) no longer send when Every gift is off and no gift is picked (`programme_ids: []` would have meant every gift). Send is disabled and a short warning shows beside the switches (one shared message, `admin.invitations.giftChoiceRequired`, in English, Malay and Tamil; it replaces `sponsorGiftRequired`). The Sponsor form's old guard (only with two or more gifts, on press) now behaves the same as the other two. API unchanged. Tests: each form blocked, Every gift allowed, one gift allowed.
+
 ### refactor: F2b stage 2 - scholarship reaches nine more courses modules through the courses public door (2026-11-16)
 
 Branch f2b-stage2, not pushed. No migration. Services: api. Import routing only, no behaviour change. Cross-app import links (code_health xapp) 30 to 21 (staff_permissions_v2 stays direct by rule R6).

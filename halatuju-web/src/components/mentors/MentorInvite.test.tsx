@@ -149,6 +149,27 @@ it('I4: the tick list starts at Every gift, offers the served gifts, and sends t
   await waitFor(() => expect((screen.getByTestId('invite-mentor-gift-every') as HTMLButtonElement).getAttribute('aria-checked')).toBe('true'))
 })
 
+it('with Every gift off and no gift picked, Send is blocked and the warning shows', async () => {
+  mockApi.inviteMentor.mockResolvedValue({ id: 9, mentor: MENTOR, emailed: true, message: '' })
+  render(<MentorInviteForm token="tok" t={t} onDone={jest.fn()} options={GIFTS} />)
+  const form = screen.getByTestId('mentor-invite-form')
+  fill(form)
+  const send = within(form).getByText('admin.sendInvite') as HTMLButtonElement
+  expect(within(form).queryByText('admin.invitations.giftChoiceRequired')).toBeNull()   // Every gift on
+  expect(send.disabled).toBe(false)
+  fireEvent.click(screen.getByTestId('invite-mentor-gift-every'))
+  expect(within(form).getByRole('alert').textContent).toBe('admin.invitations.giftChoiceRequired')
+  expect(send.disabled).toBe(true)
+  fireEvent.submit(form)                                // even a forced submit sends nothing
+  expect(mockApi.inviteMentor).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByTestId('invite-mentor-gift-gift-5'))   // one gift picked
+  expect(within(form).queryByText('admin.invitations.giftChoiceRequired')).toBeNull()
+  expect(send.disabled).toBe(false)
+  fireEvent.submit(form)
+  await waitFor(() => expect(mockApi.inviteMentor).toHaveBeenCalledWith(
+    { name: 'Asha', email: 'a@example.org', programme_ids: [5] }, { token: 'tok' }))
+})
+
 it('I4: with no gifts served it still offers (and sends) Every gift', async () => {
   mockApi.inviteMentor.mockResolvedValue({ id: 9, mentor: MENTOR, emailed: true, message: '' })
   render(<MentorInviteForm token="tok" t={t} onDone={jest.fn()} />)

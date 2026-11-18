@@ -287,7 +287,7 @@ describe('which gift a sponsor is invited into', () => {
       { email: 'donor@example.org', name: 'Donor', note: '', programme_ids: [7] }, { token: 'tok' }))
   })
 
-  it('with one gift UN-ticked, sends no gift and the server takes the sole one', async () => {
+  it('with one gift UN-ticked, Send is blocked and the choice warning shows', async () => {
     mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
     await loaded()
     await pick('sponsors')
@@ -296,9 +296,10 @@ describe('which gift a sponsor is invited into', () => {
     fireEvent.click(giftTick('gift-7'))
     // allowNone: the last tick cleared is NOTHING, not a silent Every gift.
     expect(giftTick('every').getAttribute('aria-checked')).toBe('false')
+    expect((screen.getByText('admin.sendInvite') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByRole('alert').textContent).toBe('admin.invitations.giftChoiceRequired')
     fireEvent.click(screen.getByText('admin.sendInvite'))
-    await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
-      { email: 'donor@example.org', name: 'Donor', note: '' }, { token: 'tok' }))
+    expect(mockApi.inviteSponsor).not.toHaveBeenCalled()
   })
 
   it('names the tick list for a screen reader (role=group, labelled by its heading)', async () => {
@@ -307,7 +308,7 @@ describe('which gift a sponsor is invited into', () => {
     expect(await screen.findByRole('group', { name: 'admin.invitations.sponsorGiftLabel' })).toBeTruthy()
   })
 
-  it('⚠ with two gifts starts with NOTHING ticked and refuses to send until a choice is made', async () => {
+  it('⚠ with two gifts starts with NOTHING ticked, warns, and blocks Send until a choice is made', async () => {
     giftChoices = TWO_GIFTS
     await loaded()
     await pick('sponsors')
@@ -316,12 +317,25 @@ describe('which gift a sponsor is invited into', () => {
     expect(giftTick('every').getAttribute('aria-checked')).toBe('false')
     expect(giftTick('gift-7').getAttribute('aria-checked')).toBe('false')
     expect(giftTick('gift-9').getAttribute('aria-checked')).toBe('false')
+    expect((screen.getByText('admin.sendInvite') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByRole('alert').textContent).toBe('admin.invitations.giftChoiceRequired')
     fireEvent.click(screen.getByText('admin.sendInvite'))
-    expect((await screen.findByRole('alert')).textContent).toBe('admin.invitations.sponsorGiftRequired')
     expect(mockApi.inviteSponsor).not.toHaveBeenCalled()
-    // Ticking a gift clears the warning.
+    // Ticking a gift clears the warning and allows Send.
     fireEvent.click(giftTick('gift-9'))
-    expect(screen.queryByText('admin.invitations.sponsorGiftRequired')).toBeNull()
+    expect(screen.queryByText('admin.invitations.giftChoiceRequired')).toBeNull()
+    expect((screen.getByText('admin.sendInvite') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('Every gift on: Send is allowed and there is no warning', async () => {
+    giftChoices = TWO_GIFTS
+    await loaded()
+    await pick('sponsors')
+    inviteSponsorNamed()
+    await waitFor(() => expect(screen.getByTestId('invite-sponsor-gift-gift-9')).toBeTruthy())
+    fireEvent.click(giftTick('every'))
+    expect(screen.queryByText('admin.invitations.giftChoiceRequired')).toBeNull()
+    expect((screen.getByText('admin.sendInvite') as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('sends several ticked gifts by id', async () => {
@@ -713,6 +727,22 @@ describe('a reviewer invite names its gifts', () => {
     await waitFor(() => expect(mockApi.inviteAdmin).toHaveBeenCalledWith(
       { email: 'asha@example.org', name: 'Asha', role: 'reviewer', programme_ids: [7, 9] },
       expect.anything()))
+  })
+
+  it('with Every gift off and no gift picked, Send is blocked and the warning shows', async () => {
+    await loaded()
+    await pick('reviewers')
+    fill()
+    await waitFor(() => expect(screen.getByTestId('invite-reviewer-gift')).toBeTruthy())
+    expect(screen.queryByText('admin.invitations.giftChoiceRequired')).toBeNull()   // Every gift is on
+    fireEvent.click(tick('every'))
+    expect(screen.getByRole('alert').textContent).toBe('admin.invitations.giftChoiceRequired')
+    expect((screen.getByText('admin.sendInvite') as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    expect(mockApi.inviteAdmin).not.toHaveBeenCalled()
+    fireEvent.click(tick('gift-9'))                       // one gift picked: allowed, no warning
+    expect(screen.queryByText('admin.invitations.giftChoiceRequired')).toBeNull()
+    expect((screen.getByText('admin.sendInvite') as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('sends every gift (an empty list) when nothing is changed', async () => {

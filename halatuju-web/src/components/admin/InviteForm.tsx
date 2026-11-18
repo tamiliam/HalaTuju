@@ -24,16 +24,18 @@ export function InviteField({ label, children }: { label: string; children: Reac
 }
 
 /** The foot of every invite form: the tab's note (if it has one), then Send Invite at the left. */
-export function InviteFoot({ note, busy, label }: {
+export function InviteFoot({ note, busy, label, blocked = false }: {
   note?: React.ReactNode
   busy: boolean
   /** The button's words (`admin.sendInvite`). */
   label: string
+  /** The form cannot be sent yet (e.g. no gift chosen): the button is disabled. */
+  blocked?: boolean
 }) {
   return (
     <div className="space-y-3" data-testid="invite-foot">
       {note && <p className="text-sm text-ground-500" data-testid="invite-note">{note}</p>}
-      <button type="submit" disabled={busy}
+      <button type="submit" disabled={busy || blocked}
         className="rounded-lg bg-brand-fill px-6 py-2.5 font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
         {label}
       </button>

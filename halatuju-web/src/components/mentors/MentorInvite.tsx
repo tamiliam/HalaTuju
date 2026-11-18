@@ -9,7 +9,7 @@ import {
 import InvitationsTable from '@/components/admin/InvitationsTable'
 import { FIELD_LABEL, InviteField, InviteFoot } from '@/components/admin/InviteForm'
 import { GiftTickList } from '@/components/admin/ReviewerGifts'
-import { EVERY_GIFT, idsToSave, type GiftTicks } from '@/lib/reviewerGifts'
+import { EVERY_GIFT, idsToSave, nothingTicked, type GiftTicks } from '@/lib/reviewerGifts'
 import { inputCls, type Banner } from '@/components/admin/StaffAdmin'
 
 /**
@@ -53,7 +53,7 @@ export function MentorInviteForm({ token, t, onDone, options = [] }: {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!token) return
+    if (!token || nothingTicked(gifts)) return   // `[]` would mean EVERY gift
     setBusy(true); setError('')
     try {
       const sent = await inviteMentor(
@@ -82,12 +82,13 @@ export function MentorInviteForm({ token, t, onDone, options = [] }: {
       <div className="text-sm" role="group" aria-labelledby="invite-mentor-gift-label">
         <span id="invite-mentor-gift-label" className={FIELD_LABEL}>{t(`${K}.invite.giftLabel`)}</span>
         <div className="rounded-lg border border-ground-300 px-2 py-1">
-          <GiftTickList ticks={gifts} options={options} onChange={setGifts}
+          <GiftTickList ticks={gifts} options={options} onChange={setGifts} requireChoice
             everyLabel={t('admin.invitations.reviewerGiftEvery')} testId="invite-mentor-gift" />
         </div>
       </div>
       {error && <p className="text-sm text-critical-600" role="alert">{error}</p>}
-      <InviteFoot note={t(`${K}.invite.note`)} busy={busy} label={t('admin.sendInvite')} />
+      <InviteFoot note={t(`${K}.invite.note`)} busy={busy} label={t('admin.sendInvite')}
+        blocked={nothingTicked(gifts)} />
     </form>
   )
 }
