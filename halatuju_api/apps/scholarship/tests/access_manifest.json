@@ -202,7 +202,7 @@
       "super",
       "org_admin_a"
      ],
-     "why": "request #75: the door asks the qc key after the case rule, so the Scholars key alone (admin_a) is refused 403; the callers let through get 400 bad_status"
+     "why": "request #75: the door asks the qc key after the case rule, so admin_a (Scholars, no qc) is refused 403; the callers let through get 400 bad_status"
     }
    }
   },

@@ -10,7 +10,6 @@
  */
 import type { BursaryAgreement } from '@/lib/api'
 import type { IncomeShownMap } from '@/lib/incomeShown'
-
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
 import { DEFAULT_ADMIN_PAGE_SIZE } from './partners'
