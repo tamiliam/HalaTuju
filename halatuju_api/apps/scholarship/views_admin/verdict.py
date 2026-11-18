@@ -18,6 +18,7 @@ from .. import reopen as reopen_service
 from .. import staff_activity
 from .. import surface_gates
 from ..interview_completeness import decision_gate_applies, decision_refusal
+from ..verdict_context import verdict_context_or_empty
 from ..verdict_engine import build_verdict
 from ..models import ScholarshipApplication
 from ..services import AssignmentError, admin_reject, assign_reviewer, may_hand_to
@@ -130,12 +131,14 @@ class AdminRecordVerdictView(_AdminBase):
         from ..verdict_engine import VERDICT_ENGINE_VERSION
         app.ai_verdict_snapshot = build_verdict(app)
         app.ai_verdict_engine_version = VERDICT_ENGINE_VERSION
+        # LL4: what fed that snapshot, same save. Never raises: a failure stores {schema, error}.
+        app.ai_verdict_context = verdict_context_or_empty(app)
         app.officer_verdict = officer_verdict
         app.verdict_reason = (request.data.get('reason') or '').strip()
         app.verdict_decided_by = getattr(admin, 'email', '') or ''
         app.verdict_decided_at = timezone.now()
         verdict_fields = [
-            'ai_verdict_snapshot', 'ai_verdict_engine_version', 'officer_verdict',
+            'ai_verdict_snapshot', 'ai_verdict_engine_version', 'ai_verdict_context', 'officer_verdict',
             'verdict_reason', 'verdict_decided_by', 'verdict_decided_at',
         ]
 

@@ -12,7 +12,8 @@ closes that gap. It holds, for one application at decision time:
 * ``models``: the version every model in the LL3 register (`model_registry.MODELS`) runs at now.
 * ``fingerprint``: one keyed hash (HMAC-SHA256) over the documents (the fields above PLUS the stored
   read itself: `vision_fields` and the OCR columns) and the short fixed list `DECLARED_FIELDS` of
-  what the student declared that the engine reads. VALUES ENTER THE HASH ONLY, never the record.
+  what the student declared that the engine reads, and `PROFILE_FIELDS`, the fields of her profile
+  the engine reads (name, NRIC, results). VALUES ENTER THE HASH ONLY, never the record.
 * ``key_check``: 8 hex characters of the same keyed hash over a fixed constant. Two records with
   different ``key_check`` were hashed under different keys: their fingerprints cannot be compared,
   which is a key rotation, NOT evidence that moved.
@@ -67,6 +68,29 @@ DECLARED_FIELDS = (
     'chosen_programme',
     'pathway_confirmed_at',    # the student confirmed a different offer as final
     'requirements_snapshot',   # which documents this application is asked for (`requirements`)
+)
+
+#: The fields of the student's PROFILE (`courses.StudentProfile`) the verdict engine reads, hashed
+#: into the fingerprint the same way (values only, never the record). Without them a changed NRIC or
+#: changed grades after the decision would replay as "same evidence". Read off the engine's own
+#: profile reads (identity, academic, pathway, income helpers); fields only other surfaces read
+#: (contact details, address, school, interview inputs) are left out on purpose.
+PROFILE_FIELDS = (
+    'name',                      # identity: profile name vs the IC read; the parent-name link
+    'nric',                      # identity: profile NRIC vs the IC read (the hard key)
+    'exam_type',                 # results route: which results she is heading for (`results_held`)
+    'results_exam_type',         # results route: the recorded completion wins
+    'completed_qualifications',  # results route: the highest completed qualification
+    'grades',                    # academic: SPM grades compared with the slip (`spm_grades_for`)
+    'spm_prereq_grades',         # academic: a tertiary holder's SPM block, compared instead
+    'stpm_grades',               # academic: STPM results compared with the higher results
+    'stpm_cgpa',
+    'stpm_koko',
+    'higher_cgpa',               # academic: third-route CGPA compared with the transcript
+    'higher_koko',
+    'higher_institution_type',   # academic: which tertiary results page she holds
+    'stream_subjects',           # pathway: the PISMP aliran hint (`infer_pismp_aliran`)
+    'household_size',            # income: per-capita figures and the household-size check
 )
 
 #: One document row of the query: the columns the record shows and the read the hash takes in.
@@ -195,13 +219,24 @@ def declared_values(application):
     return {name: getattr(application, name) for name in DECLARED_FIELDS}
 
 
-def evidence_fingerprint(rows, declared):
-    """HMAC-SHA256 (hex) over the document rows, sorted by id, and the declared values. Each row is
-    hashed as its record entry plus its stored read (`_HASH_ONLY`), so a re-read under the same id
-    and the same versions still moves the fingerprint. Row order does not count."""
+def profile_values(application):
+    """`{field: value}` of `PROFILE_FIELDS`, for the hash only; `None` when the application has no
+    profile. Reading `application.profile` costs one query unless it is already loaded. A renamed
+    field raises."""
+    profile = application.profile
+    if profile is None:
+        return None
+    return {name: getattr(profile, name) for name in PROFILE_FIELDS}
+
+
+def evidence_fingerprint(rows, declared, profile):
+    """HMAC-SHA256 (hex) over the document rows, sorted by id, the declared values and the profile
+    values. Each row is hashed as its record entry plus its stored read (`_HASH_ONLY`), so a re-read
+    under the same id and the same versions still moves the fingerprint. Row order does not count."""
     documents = [dict(_document_entry(row), read={k: row[k] for k in _HASH_ONLY})
                  for row in sorted(rows, key=lambda r: int(r['id']))]
-    payload = {'schema': RECORD_SCHEMA, 'documents': documents, 'declared': declared}
+    payload = {'schema': RECORD_SCHEMA, 'documents': documents, 'declared': declared,
+               'profile': profile}
     return _keyed_hash(canonical_json(payload))
 
 
@@ -216,13 +251,15 @@ def _live_document_rows(application):
 
 def build_verdict_context(application):
     """The PII-free record of what fed this application's decision (see the module docstring).
-    One query (the documents). MAY RAISE: the decision path calls `verdict_context_or_empty`."""
+    At most two queries: the documents, and the profile when it is not already loaded. MAY RAISE:
+    the decision path calls `verdict_context_or_empty`."""
     rows = _live_document_rows(application)
     return {
         'schema': RECORD_SCHEMA,
         'documents': [_document_entry(row) for row in rows],
         'models': current_model_versions(),
-        'fingerprint': evidence_fingerprint(rows, declared_values(application)),
+        'fingerprint': evidence_fingerprint(rows, declared_values(application),
+                                            profile_values(application)),
         'key_check': key_check(),
     }
 

@@ -1,12 +1,13 @@
 """LL4 phase 1 - the record of what fed a decision (`verdict_context`).
 
-Pins: the record is built from ONE query; its keys at every level are an explicit allow-list and
-every value is a plain int or str; no fixture PII reaches it; the evidence fingerprint is stable
-for the same evidence (twice, in another row order, after a fresh fetch, in another time zone) and
-moves when a document is replaced, removed, added, re-read, or its stored status or version moves,
-and when any declared field moves, but NOT when an unrelated field moves; `key_check` and the
-fingerprint follow the secret key; the safe wrapper returns the failed record and logs no PII.
-All data is made up.
+Pins: the record is built from at most TWO queries (the documents, and the profile when it is not
+already loaded); its keys at every level are an explicit allow-list and every value is a plain int
+or str; no fixture PII reaches it; the evidence fingerprint is stable for the same evidence (twice,
+in another row order, after a fresh fetch, in another time zone) and moves when a document is
+replaced, removed, added, re-read, or its stored status or version moves, and when any declared
+field or any listed profile field moves, but NOT when an unrelated field (of either row) moves;
+`key_check` and the fingerprint follow the secret key; the safe wrapper returns the failed record
+and logs no PII. All data is made up.
 """
 import datetime
 import re
@@ -15,6 +16,7 @@ from unittest import mock
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
+from apps.courses.models import StudentProfile
 from apps.scholarship import verdict_context as vc
 from apps.scholarship.model_registry import MODELS
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
@@ -53,6 +55,33 @@ CHANGED_VALUES = {
     'chosen_programme': {'course': 'other'},
     'pathway_confirmed_at': datetime.datetime(2026, 2, 3, 4, 5, 6, tzinfo=datetime.timezone.utc),
     'requirements_snapshot': {'docs': ['ic']},
+}
+
+#: A new value for each listed profile field (LL4 phase 2). Its keys must be exactly
+#: `PROFILE_FIELDS`, so a field added to the fingerprint needs a test value here.
+CHANGED_PROFILE_VALUES = {
+    'name': 'SOMEONE ELSE',
+    'nric': '991231-01-0001',
+    'exam_type': 'stpm',
+    'results_exam_type': 'stpm',
+    'completed_qualifications': ['spm', 'stpm'],
+    'grades': {'bm': 'A'},
+    'spm_prereq_grades': {'bm': 'B'},
+    'stpm_grades': {'PA': 'A'},
+    'stpm_cgpa': 3.5,
+    'stpm_koko': 8.0,
+    'higher_cgpa': 3.25,
+    'higher_koko': 7.5,
+    'higher_institution_type': 'ipta',
+    'stream_subjects': ['physics'],
+    'household_size': 9,
+}
+#: Profile fields the engine does not read on the verdict path: changing them must not move it.
+UNLISTED_PROFILE_VALUES = {
+    'school': 'SMK LAIN',
+    'address': '99 JALAN LAIN',
+    'postal_code': '99999',
+    'contact_phone': '0100000000',
 }
 
 
@@ -102,14 +131,29 @@ class TestTheRecord(_Base):
         ids = [d['id'] for d in vc.build_verdict_context(self.app)['documents']]
         self.assertEqual(ids, [self.ic.id])
 
-    def test_the_documents_cost_one_query(self):
+    def test_the_documents_and_the_profile_cost_two_queries(self):
+        """A fresh application: one query for the documents, one for its profile. No more."""
         app = ScholarshipApplication.objects.get(pk=self.app.pk)
+        with self.assertNumQueries(2):
+            vc.build_verdict_context(app)
+
+    def test_a_loaded_profile_costs_no_extra_query(self):
+        app = ScholarshipApplication.objects.select_related('profile').get(pk=self.app.pk)
         with self.assertNumQueries(1):
             vc.build_verdict_context(app)
 
     def test_every_declared_field_is_a_column_of_the_application(self):
         columns = {f.name for f in ScholarshipApplication._meta.concrete_fields}
         self.assertEqual(sorted(set(vc.DECLARED_FIELDS) - columns), [])
+
+    def test_every_profile_field_is_a_column_of_the_profile(self):
+        columns = {f.name for f in StudentProfile._meta.concrete_fields}
+        self.assertEqual(sorted(set(vc.PROFILE_FIELDS) - columns), [])
+
+    def test_an_application_without_a_profile_still_builds(self):
+        self.app.profile = None
+        record = vc.build_verdict_context(self.app)
+        self.assertEqual(set(record), TOP_KEYS)
 
 
 class TestTheAllowList(_Base):
@@ -140,6 +184,17 @@ class TestTheAllowList(_Base):
         for secret in (NRIC, FATHER, MOTHER, ADDRESS, str(INCOME), 'org/app', '.pdf'):
             self.assertNotIn(secret, text)
 
+    def test_no_profile_value_reaches_the_record(self):
+        """The profile fields are hashed only: none of their values is written out."""
+        profile = self.app.profile
+        profile.grades = {'bm': 'A+'}
+        profile.stream_subjects = ['made_up_subject_xyz']
+        profile.save()
+        text = vc.canonical_json(vc.build_verdict_context(self.app))
+        for secret in (profile.nric, re.sub(r'\D', '', profile.nric), profile.name,
+                       'made_up_subject_xyz', 'A+'):
+            self.assertNotIn(secret, text)
+
     def test_the_failed_record_has_its_own_pinned_keys(self):
         self.assertEqual(set(vc.failed_record(vc.BUILD_FAILED)), FAILED_KEYS)
 
@@ -158,8 +213,9 @@ class TestTheFingerprintHolds(_Base):
     def test_the_row_order_does_not_count(self):
         rows = vc._live_document_rows(self.app)
         declared = vc.declared_values(self.app)
-        self.assertEqual(vc.evidence_fingerprint(rows, declared),
-                         vc.evidence_fingerprint(list(reversed(rows)), declared))
+        profile = vc.profile_values(self.app)
+        self.assertEqual(vc.evidence_fingerprint(rows, declared, profile),
+                         vc.evidence_fingerprint(list(reversed(rows)), declared, profile))
 
     def test_a_fresh_fetch_gives_the_same_fingerprint(self):
         self.assertEqual(self._fp(), self._fp(ScholarshipApplication.objects.get(pk=self.app.pk)))
@@ -169,8 +225,9 @@ class TestTheFingerprintHolds(_Base):
         myt = utc.astimezone(datetime.timezone(datetime.timedelta(hours=8)))
         rows = vc._live_document_rows(self.app)
         declared = vc.declared_values(self.app)
-        a = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=utc))
-        b = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=myt))
+        profile = vc.profile_values(self.app)
+        a = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=utc), profile)
+        b = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=myt), profile)
         self.assertEqual(a, b)
 
     def test_an_unrelated_field_does_not_move_it(self):
@@ -178,6 +235,14 @@ class TestTheFingerprintHolds(_Base):
         self.app.verdict_reason = 'a reason'
         self.app.officer_verdict = {'identity': 'pass'}
         self.app.ai_verdict_snapshot = [{'fact': 'identity'}]
+        self.app.ai_verdict_context = {'schema': 1, 'error': 'build_failed'}
+        self.assertEqual(self._fp(), before)
+
+    def test_an_unlisted_profile_field_does_not_move_it(self):
+        self.assertFalse(set(UNLISTED_PROFILE_VALUES) & set(vc.PROFILE_FIELDS))
+        before = self._fp()
+        for name, value in UNLISTED_PROFILE_VALUES.items():
+            setattr(self.app.profile, name, value)
         self.assertEqual(self._fp(), before)
 
     @override_settings(SECRET_KEY='made-up-key-for-the-pinned-fingerprint-0000000000')
@@ -189,12 +254,15 @@ class TestTheFingerprintHolds(_Base):
                    uploaded_at=datetime.datetime(2026, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
                    vision_fields_run_at=None, vision_run_at=None)
         declared = {name: None for name in vc.DECLARED_FIELDS}
+        profile = {name: None for name in vc.PROFILE_FIELDS}
         self.assertEqual(vc.key_check(), PINNED_KEY_CHECK)
-        self.assertEqual(vc.evidence_fingerprint([row], declared), PINNED_FINGERPRINT)
+        self.assertEqual(vc.evidence_fingerprint([row], declared, profile), PINNED_FINGERPRINT)
 
 
 PINNED_KEY_CHECK = 'cad1960c'
-PINNED_FINGERPRINT = 'e60d6d280f1bf8c9787f8b04975fa161e1b21f2b80c4d45f0447dc2457c30518'
+#: Re-pinned in LL4 phase 2 when the profile values joined the payload (the pin is new in branch
+#: ll4, so no stored fingerprint was ever computed under the old form).
+PINNED_FINGERPRINT = '0f742f8b910def3013c9848425d44ec81b1ba42f483a97c4ef459685cb048ed3'
 
 
 class TestTheFingerprintMoves(_Base):
@@ -247,6 +315,18 @@ class TestTheFingerprintMoves(_Base):
                 setattr(self.app, name, value)
                 self.assertNotEqual(self._fp(), before)
                 setattr(self.app, name, old)
+
+    def test_every_listed_profile_field(self):
+        self.assertEqual(set(CHANGED_PROFILE_VALUES), set(vc.PROFILE_FIELDS))
+        profile = self.app.profile
+        for name, value in CHANGED_PROFILE_VALUES.items():
+            with self.subTest(field=name):
+                before = self._fp()
+                old = getattr(profile, name)
+                self.assertNotEqual(old, value)
+                setattr(profile, name, value)
+                self.assertNotEqual(self._fp(), before)
+                setattr(profile, name, old)
 
 
 class TestTheKey(_Base):
