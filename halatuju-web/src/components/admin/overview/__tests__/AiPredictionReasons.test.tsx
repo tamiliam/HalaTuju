@@ -47,10 +47,30 @@ describe('reason counts on the card', () => {
     expect(screen.getByTestId('ai-reasons-income').textContent).toBe('Other 1 · Not given 1')
   })
 
-  it('a few-cases fact still shows plain counts (never a percent)', () => {
+  // LL2b fix: this asserted the bare 'A programme rule 4' while the cell ignored the served
+  // `few_green` flag. The cell now carries the same "Few cases" pill as the rest of the card.
+  it('a few-cases fact shows plain counts (never a percent) and the "Few cases" pill', () => {
     render(<AiPredictionBlock ai={withReasons()} t={t} />)
-    expect(screen.getByTestId('ai-reasons-pathway').textContent).toBe('A programme rule 4')
-    expect(screen.getByTestId('ai-reasons-pathway').textContent).not.toMatch(/%/)
+    const cell = screen.getByTestId('ai-reasons-pathway')
+    expect(cell.textContent).toBe('A programme rule 4 Few cases')
+    expect(cell.querySelector('[data-testid="few-pill"]')).not.toBeNull()
+    expect(cell.textContent).not.toMatch(/%/)
+  })
+
+  it('a fact with enough cases carries no "Few cases" pill in its reasons', () => {
+    render(<AiPredictionBlock ai={withReasons()} t={t} />)
+    expect(screen.getByTestId('ai-reasons-academic').querySelector('[data-testid="few-pill"]')).toBeNull()
+  })
+
+  it('a few-cases fact with no green -> fail case shows no pill in the reasons cell', () => {
+    render(<AiPredictionBlock ai={metrics({
+      fact_counts: {
+        identity: counts({ green: 5, green_failed: 0, green_agreed: 5, few_green: true }),
+        academic: counts({ green: 30, green_failed: 3, green_agreed: 27 }),
+      },
+      fail_reasons: { identity: zero, academic: { ...zero, other: 3 } },
+      fail_reasons_not_given: { identity: 0, academic: 0 } })} t={t} />)
+    expect(screen.getByTestId('ai-reasons-identity').textContent).toBe('')
   })
 
   it('a fact with no green -> fail case shows nothing', () => {

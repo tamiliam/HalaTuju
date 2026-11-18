@@ -108,6 +108,12 @@ function reasonLine(
   return parts.join(' · ')
 }
 
+/** The reasons count the facts the AI was sure of, so the served `few_green` flag marks them with the
+ *  same pill as the "AI sure" cell beside them (LL2 review fix). Counts only, never a percent. */
+function ReasonCell({ t, line, few }: { t: Translate; line: string; few: boolean }) {
+  return <>{line}{line && few && <> <FewPill t={t} /></>}</>
+}
+
 export function FactTable({ t, counts, reasons, notGiven }: {
   t: Translate; counts: Record<string, PredictionCounts>
   reasons?: Record<string, Record<string, number>>; notGiven?: Record<string, number>
@@ -131,7 +137,8 @@ export function FactTable({ t, counts, reasons, notGiven }: {
               <CountCells t={t} c={counts[f]} />
               {showReasons && (
                 <td className={TD} data-label={t(`${K}.col.reasons`)} data-testid={`ai-reasons-${f}`}>
-                  {reasonLine(t, f, counts, reasons, notGiven)}
+                  <ReasonCell t={t} line={reasonLine(t, f, counts, reasons, notGiven)} few={counts[f].few_green} />
+
                 </td>
               )}
             </tr>
