@@ -20,7 +20,7 @@ or the headline rule** without a new owner ruling.
 **Settled with it (review round 3).**
 - Who counts: `is_active` is the only "switched off" test. Suspend turns a mentor's login off, so a suspended
   mentor is already out. Never filter on `Mentor.deactivated_at`: active people keep a deactivated mentor link
-  after they stop mentoring, move to "No group" or switch from Admin to Finance, and they still count.
+  after they stop mentoring, move to "No group" or hold a legacy Finance row (Admin -> Finance before that label was retired), and they still count. A restored (re-invited) person counts with the answer they kept, even before they sign in again: the same person in the same organisation (re-check 4, low).
 - Who is asked: a super is not asked (platform level, no organisation), nor is a source user or a referral
   partner. The allowlist label for `volunteer_positions.asked` stays DISPLAY / account kind (the `source_invite`
   precedent).

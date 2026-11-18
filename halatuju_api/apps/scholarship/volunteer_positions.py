@@ -13,7 +13,8 @@ and a `NOT_ASKED` kind never do. `is_active` is the ONLY "switched off" test: a 
 because Suspend turns their login off (`mentor_invite._switch_off`). ⚠ NEVER filter on
 `Mentor.deactivated_at` (review round 3): an ACTIVE person keeps a deactivated mentor link after they
 stop mentoring (`staff_mentor.stop`), leave Mentors for "No group" (`staff_mentor.remove_mentor_login`)
-or move from Admin to Finance (`MENTOR_LINK_ROLES`), and they are still the organisation's team.
+or hold a legacy Finance row (Admin -> Finance before that label was retired), and they are still the
+organisation's team. A RESTORED (re-invited) person counts with the answer they kept, before signing in again.
 
 WHICH ORGANISATION: the one running the gifts the sponsor was ACCEPTED into (approved
 `SponsorProgrammeMembership` rows), through `usage.sole_organisation_id` — exactly one organisation, or
