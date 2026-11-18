@@ -143,6 +143,8 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Rule:** a PDF page whose text is invisible (scanner-app OCR overlay, render mode 3 / 7) has no text layer; the read goes to Cloud Vision (page 1) like a scanned PDF. Drawn text keeps its free layer. Detection failure goes to Vision. Central in `pdf_pages.pdf_text_layer` / `pdf_page_texts`, so every reader follows it.
 - **Versions:** MODEL_VERSION 1.31.0, offer reader 2.7.0, SPM slip reader 1.2.0.
 - **Corpus:** 303 layered PDFs, 16 invisible (one Vision call each), 287 drawn (no new call).
+- **Review fix round:** page 1 decides the whole-layer read (a later hidden page is left out, drawn pages kept; corpus unchanged, all 16 are hidden on page 1); the SPM certificate's pdfium word boxes need a drawn page 1; a 50,000-operation budget per page stops fan-out files (Vision route, no extraction).
+- **Residuals (accepted, not new):** text under an image; transparent / white / size-0 / off-page text. **Follow-up idea:** strip invisible runs inside a page during extraction (track `Tr` in pypdf's visitor).
 
 ### S5: SPM slips off 2.5 (the AI fallback moves to 3.8)
 - **Problem:** `vision/gemini_read.py:86` `PINNED_25_DOC_TYPES={'results_slip'}` keeps slips on 2.5, because 3.8 returned malformed grades on **26 of 98** slips ("Aplus", stray JSON, tab or CJK characters).

@@ -126,6 +126,25 @@ _INVISIBLE_MODES = frozenset((3, 7))
 _SHOW_OPS = frozenset((b'Tj', b'TJ', b"'", b'"'))
 #: Form XObjects nest; deeper than this is not a document page (and a cycle must end).
 _MAX_FORM_DEPTH = 8
+#: Text-show + form-invoke operations walked per PAGE, shared across the form recursion. The depth cap
+#: bounds nesting, not fan-out: a 2 KB file with 40 form calls per level, 4 levels deep, is 2.5 million
+#: invocations. Past this budget the page reads as hidden (the Vision route) and pypdf's own
+#: ``extract_text`` (which walks the same forms) is never run on that PDF. A real page is far below it.
+_MAX_PAGE_OPS = 50_000
+
+
+class _OverBudget(Exception):
+    """A page asked for more than `_MAX_PAGE_OPS` operations: hostile or broken, never read as text."""
+
+
+def _form_ops(xobj, reader, cache: dict):
+    """A form XObject's parsed operations, parsed ONCE per walk (a fan-out calls one form many times).
+    The cache holds the object too, so its ``id`` cannot be reused while the walk runs."""
+    hit = cache.get(id(xobj))
+    if hit is None:
+        from pypdf.generic import ContentStream
+        hit = cache[id(xobj)] = (xobj, ContentStream(xobj, reader).operations)
+    return hit[1]
 
 
 def _shown_chars(operator: bytes, operands) -> int:
@@ -146,12 +165,22 @@ def _shown_chars(operator: bytes, operands) -> int:
     return n
 
 
-def _walk_text_modes(content, resources, reader, mode: int, counts: list, depth: int) -> None:
+def _walk_text_modes(content, resources, reader, mode: int, counts: list, depth: int,
+                     budget: Optional[list] = None, cache: Optional[dict] = None) -> None:
     """Add to ``counts`` [drawn, invisible] the characters each text-showing operator places, by the
     render mode in force (``Tr``, saved and restored by ``q`` / ``Q``; a Form XObject starts from its
-    caller's mode). Raises on anything it cannot parse — the caller treats that as invisible."""
+    caller's mode). ``budget`` [operations left] is shared by the whole page's recursion: each text show
+    and each form call spends one, and an empty budget raises `_OverBudget`. Raises on anything it
+    cannot parse — the caller treats that as invisible."""
     from pypdf.generic import ContentStream
-    ops = content.operations if isinstance(content, ContentStream) else ContentStream(content, reader).operations
+    budget = [_MAX_PAGE_OPS] if budget is None else budget
+    cache = {} if cache is None else cache
+    if isinstance(content, ContentStream):
+        ops = content.operations
+    elif depth:
+        ops = _form_ops(content, reader, cache)
+    else:
+        ops = ContentStream(content, reader).operations
     stack = []
     xobjects = (resources or {}).get('/XObject') if resources is not None else None
     xobjects = xobjects.get_object() if xobjects is not None else {}
@@ -163,32 +192,79 @@ def _walk_text_modes(content, resources, reader, mode: int, counts: list, depth:
         elif operator == b'Tr':
             mode = int(operands[0])
         elif operator in _SHOW_OPS:
+            _spend(budget)
             counts[1 if mode in _INVISIBLE_MODES else 0] += _shown_chars(operator, operands)
         elif operator == b'Do' and operands:
             xobj = xobjects.get(operands[0]) if xobjects else None
             xobj = xobj.get_object() if xobj is not None else None
             if xobj is not None and xobj.get('/Subtype') == '/Form':
+                _spend(budget)
                 if depth >= _MAX_FORM_DEPTH:
                     raise ValueError('form XObjects nested too deep')
-                _walk_text_modes(xobj, xobj.get('/Resources') or resources, reader, mode, counts, depth + 1)
+                _walk_text_modes(xobj, xobj.get('/Resources') or resources, reader, mode, counts, depth + 1,
+                                 budget, cache)
 
 
-def page_text_hidden(page, reader) -> bool:
-    """True when this page places ANY invisible text (render mode 3 / 7, an OCR overlay on a picture),
-    or when that cannot be decided (an unreadable content stream). False only when every character on
-    the page is drawn — the one case where its text layer is what the page shows."""
+def _spend(budget: list) -> None:
+    budget[0] -= 1
+    if budget[0] < 0:
+        raise _OverBudget(f'more than {_MAX_PAGE_OPS} text / form operations on one page')
+
+
+#: What `_page_visibility` finds on one page.
+DRAWN, HIDDEN, OVER_BUDGET = 'drawn', 'hidden', 'over_budget'
+
+
+def _page_visibility(page, reader) -> str:
+    """`DRAWN` when every character on the page is painted (or there is no text at all); `HIDDEN` when it
+    places ANY invisible text (render mode 3 / 7) or that cannot be decided; `OVER_BUDGET` when deciding
+    would take more than `_MAX_PAGE_OPS` operations (the whole PDF is then never text-extracted)."""
     try:
         contents = page.get_contents()
         if contents is None:
-            return False                   # no content stream: no text at all, nothing hidden
+            return DRAWN                   # no content stream: no text at all, nothing hidden
         resources = page.get('/Resources')
         resources = resources.get_object() if resources is not None else None
         counts = [0, 0]
         _walk_text_modes(contents, resources, reader, 0, counts, 0)
-        return counts[1] > 0
+        return HIDDEN if counts[1] > 0 else DRAWN
+    except _OverBudget as e:
+        logger.warning('PDF text visibility check stopped: %s', e)
+        return OVER_BUDGET
     except Exception as e:  # noqa: BLE001 — undecidable is the Vision route (owner rule 2026-11-18), never the hidden text
         logger.warning('PDF text visibility check failed: %s', e)
-        return True
+        return HIDDEN
+
+
+def page_text_hidden(page, reader) -> bool:
+    """True when this page places ANY invisible text (render mode 3 / 7, an OCR overlay on a picture),
+    or when that cannot be decided (an unreadable content stream, or past the operation budget). False
+    only when every character on the page is drawn — the one case where its text layer is what the page
+    shows."""
+    return _page_visibility(page, reader) != DRAWN
+
+
+def _visibilities(reader, max_pages: Optional[int] = None) -> list:
+    """`_page_visibility` of each page (the first ``max_pages``), stopping at the first `OVER_BUDGET`
+    page: the list then ENDS with it, and the caller extracts no text from this PDF at all."""
+    out = []
+    pages = reader.pages if max_pages is None else reader.pages[:max(0, max_pages)]
+    for p in pages:
+        out.append(_page_visibility(p, reader))
+        if out[-1] == OVER_BUDGET:
+            break
+    return out
+
+
+def first_page_drawn(data: bytes) -> bool:
+    """True only when a PDF's page 1 is DRAWN (no invisible text, check passed): the one case where a
+    reader of page 1's own characters (`spm_cert_parse._pdf_words`) sees what the page shows."""
+    try:
+        reader = _open_pdf(data)
+        return bool(len(reader.pages)) and _visibilities(reader, 1) == [DRAWN]
+    except Exception as e:   # pypdf raises many kinds on a damaged file; unopenable is not drawn (no layer read)
+        logger.warning('PDF page-1 visibility check failed: %s', e)
+        return False
 
 
 def _open_pdf(data: bytes):
@@ -201,17 +277,19 @@ def _open_pdf(data: bytes):
 
 
 def pdf_text_layer(data: bytes) -> str:
-    """The concatenated VISIBLE text layer of a PDF (all pages). '' if none / encrypted /
-    library missing — caller then falls back to rasterise+OCR — and '' when ANY page's text is
-    invisible or cannot be checked (S-visible, owner decision 2026-11-18): this layer is read as a
-    whole, so one hidden page sends the whole read to the Vision route. A caller deciding whether to
-    trust it still passes it through `usable_text_layer` (TD-411)."""
+    """The concatenated VISIBLE text layer of a PDF: the text of its DRAWN pages only, joined. '' if
+    none / encrypted / library missing — caller then falls back to rasterise+OCR (page 1). S-visible
+    (owner decision 2026-11-18, fix round): '' when PAGE 1's text is invisible or cannot be checked, as
+    the Vision route reads page 1; otherwise a later hidden page is simply left out (its text is never
+    returned) and the drawn pages are kept. '' too when any page is past the operation budget (no text
+    is extracted from such a file). A caller deciding whether to trust it still passes it through
+    `usable_text_layer` (TD-411)."""
     try:
         reader = _open_pdf(data)
-        pages = list(reader.pages)
-        if any(page_text_hidden(p, reader) for p in pages):
-            return ''                      # a picture with an OCR overlay: read what is seen (Vision)
-        return '\n'.join((p.extract_text() or '') for p in pages).strip()
+        seen = _visibilities(reader)
+        if not seen or seen[0] != DRAWN or OVER_BUDGET in seen:
+            return ''                      # page 1 a picture with an OCR overlay: read what is seen (Vision)
+        return '\n'.join((p.extract_text() or '') for p, v in zip(reader.pages, seen) if v == DRAWN).strip()
     except Exception as e:  # noqa: BLE001 — a corrupt PDF has no text layer; logged, the caller falls back to OCR
         logger.warning('PDF text-layer extraction failed: %s', e)
         return ''
@@ -284,13 +362,17 @@ def pdf_page_count(data: bytes) -> int:
 def pdf_page_texts(data: bytes, max_pages: int) -> list:
     """The VISIBLE text layer of each of the first ``max_pages`` pages, one string per page ([] if none /
     encrypted / unreadable): a page whose text is invisible or cannot be checked is '' — decided PER
-    PAGE (S-visible, 2026-11-18), so it reads as a scanned page. Pass a page through `usable_text_layer`
+    PAGE (S-visible, 2026-11-18), so it reads as a scanned page; every page is '' when one is past the
+    operation budget. Pass a page through `usable_text_layer`
     before trusting it. pypdf raises many kinds on a damaged file (its own, struct / zlib / recursion
     errors…), so any failure is no layer — the safe answer: the images are still shown."""
     try:
         reader = _open_pdf(data)
-        return [('' if page_text_hidden(p, reader) else (p.extract_text() or '').strip())
-                for p in reader.pages[:max(0, max_pages)]]
+        pages = reader.pages[:max(0, max_pages)]
+        seen = _visibilities(reader, max_pages)
+        if OVER_BUDGET in seen:            # a hostile file: no page of it is text-extracted
+            return [''] * len(pages)
+        return [((p.extract_text() or '').strip() if v == DRAWN else '') for p, v in zip(pages, seen)]
     except Exception as e:   # a damaged PDF's layer is simply absent (review L2)
         logger.warning('PDF page text extraction failed: %s', e)
         return []

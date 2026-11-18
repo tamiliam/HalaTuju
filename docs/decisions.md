@@ -175,9 +175,14 @@ Owner decision 2026-11-18: "What we see is what we can defend." A PDF page whose
 app's OCR overlay on a photo: text render mode 3 or 7) is treated as a picture: it has no text layer, so it is
 rasterised and read by Cloud Vision, the route a scanned PDF has always taken. A PDF whose text is drawn on the page
 keeps its own text layer (free and exact, and what we see). The whole-document layer read (`pdf_text_layer`) takes the
-Vision route when ANY page is hidden; the per-page read (`pdf_page_texts`) decides page by page. A check that fails is
+Vision route when PAGE 1 is hidden (Vision reads page 1); otherwise it keeps the drawn pages and leaves a hidden later
+page out. The per-page read (`pdf_page_texts`) decides page by page. Every reader of page 1's own characters (the SPM
+certificate's pdfium word boxes) needs a drawn page 1. The check has an operation budget (50,000 per page): past it the
+page is hidden and no text is extracted from that file. A check that fails is
 the Vision route, never the hidden text. Why: scanner-app layers miss letterheads and key lines, so genuine documents
-(a USM offer, an STPM certificate with 11 visible lines "missing") failed to go green.
+(a USM offer, an STPM certificate with 11 visible lines "missing") failed to go green. Accepted residuals (not new):
+text drawn under an image, and transparent / white / size-0 / off-page text, count as drawn. Follow-up idea: strip
+invisible runs inside a page during extraction (track `Tr` in pypdf's visitor) so mixed pages keep their drawn text.
 
 ## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)
 

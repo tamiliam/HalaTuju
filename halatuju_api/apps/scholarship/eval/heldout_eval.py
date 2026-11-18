@@ -90,9 +90,17 @@ def _png_of_pdf(data):
 
 
 def ocr_text(data, content_type):
-    """Cloud Vision DOCUMENT_TEXT_DETECTION via gcloud ADC (free tier). PDFs rasterised first."""
+    """Production's route: a PDF's VISIBLE text layer when usable (`pdf_pages.pdf_text_layer`: drawn
+    pages only, never a scanner app's invisible OCR layer — S-visible 2026-11-18), else Cloud Vision
+    DOCUMENT_TEXT_DETECTION via gcloud ADC (free tier) on page 1 rasterised."""
+    is_pdf = (content_type or '').lower().endswith('pdf')
+    if is_pdf:
+        from apps.scholarship.pdf_pages import MIN_TEXT_LAYER_CHARS, pdf_text_layer, usable_text_layer
+        layer = usable_text_layer(pdf_text_layer(data))
+        if len(layer) >= MIN_TEXT_LAYER_CHARS:
+            return layer
     from google.cloud import vision
-    img = _png_of_pdf(data) if (content_type or '').lower().endswith('pdf') else data
+    img = _png_of_pdf(data) if is_pdf else data
     client = vision.ImageAnnotatorClient()
     resp = client.document_text_detection(image=vision.Image(content=img))
     return (resp.full_text_annotation.text or '') if resp.full_text_annotation else ''

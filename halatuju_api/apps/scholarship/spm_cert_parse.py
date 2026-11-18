@@ -8,7 +8,8 @@ WRONG grades. This reader pairs each subject with the grade on its OWN visual ro
 
 * a scan or photo is read from the Vision word boxes (`academic_engine._group_rows`, the SPM slip's
   and the STPM reader's row builder, which also de-rotates a sideways photo);
-* a digital PDF is read from its text layer's own character boxes (page 1, `_pdf_words`);
+* a digital PDF is read from its text layer's own character boxes (page 1, `_pdf_words`) — only
+  when page 1's text is drawn, never a scanner app's invisible layer (S-visible, 2026-11-18);
 * text with no positions → None (the caller falls back to the Gemini read, as before).
 
 CONSERVATIVE — a wrong Exact value is far worse than an AI read. Every hit has passed:
@@ -60,10 +61,16 @@ _NAME_CHARS = re.compile(r"[A-Z][A-Z@/'.\- ]*")
 def parse_spm_cert(text, words=None, pdf=None):
     """SPM certificate → fields, or None (→ Gemini). ``words``: Vision word boxes
     ``{text, cx, cy, h, angle?}`` (page 1); ``pdf``: the upload's bytes, used for a digital PDF's
-    text layer when no words were computed. ``text`` alone (no positions) → None."""
+    text layer when no words were computed. ``text`` alone (no positions) → None.
+
+    S-visible (owner decision 2026-11-18): pdfium's text page holds INVISIBLE text too (a scanner app's
+    OCR overlay, render mode 3 / 7), so page 1's own characters are read only when page 1 is DRAWN
+    (`pdf_pages.first_page_drawn`). A hidden page 1 (e.g. its Vision read failed, so no words came in)
+    gives no words → None → the Gemini read of the image, never the hidden text."""
     try:
         if words is None and isinstance(pdf, (bytes, bytearray)) and bytes(pdf[:5]) == b'%PDF-':
-            words = _pdf_words(bytes(pdf))
+            from .pdf_pages import first_page_drawn
+            words = _pdf_words(bytes(pdf)) if first_page_drawn(bytes(pdf)) else None
         return _read(words, (text or '').upper()) if words else None
     except Exception:          # a reader failure is a fallback to Gemini, never an error
         return None

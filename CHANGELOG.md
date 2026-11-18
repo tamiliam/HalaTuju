@@ -197,10 +197,12 @@ Branch offer-private, not pushed. Migration: none. Services: api, web. Owner rul
 
 Branch ocr-visible, not pushed. Migration: none. Services: api. Owner decision 2026-11-18: "what we see is what we can defend".
 - A PDF page whose text is INVISIBLE (a phone scanner app's OCR overlay on a photo: text render mode 3 or 7, also inside a form XObject) now has no text layer, so the read takes the scanned-PDF route: page 1 rasterised, one Cloud Vision read. Every scorer, reader and name match sees the visible page. Drawn text (a bank e-statement, an official downloaded PDF) keeps its free layer. A page that cannot be checked takes the Vision route.
-- One central place, `pdf_pages.pdf_text_layer` (any hidden page: no layer, as that layer is read whole) and `pdf_pages.pdf_page_texts` (per page), so `ocr_document_full`, `ocr_document`, `extract_text`, the SPM slip gate's page-1 check, the Exact offer read and the AI offer reader's page texts all follow it.
+- One central place, `pdf_pages.pdf_text_layer` (a hidden page 1: no layer; otherwise the drawn pages only, a later hidden page left out) and `pdf_pages.pdf_page_texts` (per page), so `ocr_document_full`, `ocr_document`, `extract_text`, the SPM slip gate's page-1 check, the Exact offer read and the AI offer reader's page texts all follow it.
 - Versions: genuineness MODEL_VERSION 1.31.0, offer reader 2.7.0, SPM slip reader 1.2.0.
 - Corpus (counts only): 303 PDFs carry a usable layer; 287 drawn, 16 invisible (now one Vision read each).
 - Tests: `test_ocr_visible.py` (synthetic PDFs, mocked Vision).
+- Review fix round: (1) the SPM certificate reader reads page 1's own characters (pdfium, which includes invisible text) only when page 1 is drawn (`pdf_pages.first_page_drawn`); (2) the visibility walk has an operation budget (50,000 text shows + form calls per page, forms parsed once): past it the page reads as hidden and no text is extracted from that PDF, so a tiny fan-out file cannot stall a read; (3) a drawn page 1 keeps the drawn pages' text when a later page is hidden (was: whole layer dropped). Corpus: no change (all 16 invisible PDFs are hidden on page 1). Eval tools `heldout_eval` / `calibrate_signatures` read through `pdf_text_layer`.
+- Accepted residuals (not new): text drawn under an image, and transparent / white / size-0 / off-page text, still count as drawn. Follow-up idea (not in this change): strip invisible runs inside a page during extraction (track `Tr` in pypdf's visitor) so mixed born-digital pages keep their drawn text.
 
 ### feat: red tile names its reason: Rule not met vs Can't verify (2026-11-18)
 
