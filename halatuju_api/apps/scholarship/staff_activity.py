@@ -224,6 +224,8 @@ META_KEYS = {
     'role': CODE,
     # lists of enum codes
     'fields': CODES, 'added': CODES, 'removed': CODES,
+    # LL2b: the QC's second look on a `qc_decision` row (fact names only; see `second_look.activity_meta`)
+    'qc_agreed': CODES, 'qc_disagreed': CODES, 'doubt_ai_green': CODES, 'doubt_failed_accepted': CODES,
 }
 _CODE = re.compile(r'^[a-z0-9][a-z0-9_]{0,39}$')
 #: The longest list a CODES value may hold (the permission catalogue has 8 keys).

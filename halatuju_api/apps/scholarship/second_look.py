@@ -15,6 +15,8 @@ The answers live INSIDE `officer_verdict` under ``qc_fact_checks`` ({fact: 'agre
 they judge THAT reviewer verdict and THAT snapshot, which only `record-verdict` writes - and it writes
 the whole dict afresh, so a re-recorded verdict drops answers that judged the old one. A later QC
 decision that sends the key replaces the earlier answers whole (the latest QC decision stands).
+A copy (fact names and fixed group codes only) also goes on the QC decision's own activity row
+(`activity_meta`), so a second look from a send-back survives the reviewer's re-record.
 
 The second look never changes a decision or an engine result. It is a record and a number only.
 """
@@ -40,16 +42,19 @@ def in_doubt(ai_verdict_snapshot, officer_verdict) -> list:
     """The facts in doubt for one recorded verdict, in the fixed fact order:
     ``[{fact, ai_status, ai_green, reviewer, reason, groups}]``. Empty when none."""
     ov = officer_verdict if isinstance(officer_verdict, dict) else {}
-    statuses = audit._snapshot_status_map(ai_verdict_snapshot)
+    # a stored snapshot or status of any other shape reads as "no AI status", never an error
+    snapshot = ai_verdict_snapshot if isinstance(ai_verdict_snapshot, list) else []
+    statuses = audit._snapshot_status_map(snapshot)
     accept = ov.get('overall') == 'accept'
     out = []
     for fact in audit.FACTS:
         if ov.get(fact) != 'fail':
             continue
-        green = audit.ai_fact_pass(statuses.get(fact))
+        status = statuses.get(fact) if isinstance(statuses.get(fact), str) else ''
+        green = audit.ai_fact_pass(status)
         groups = [g for g, on in ((AI_GREEN_REVIEWER_FAIL, green), (FAILED_BUT_ACCEPTED, accept)) if on]
         if groups:
-            out.append({'fact': fact, 'ai_status': statuses.get(fact, ''), 'ai_green': green,
+            out.append({'fact': fact, 'ai_status': status, 'ai_green': green,
                         'reviewer': 'fail', 'reason': fail_reasons.given(ov, fact) or None,
                         'groups': groups})
     return out
@@ -87,24 +92,41 @@ def validate(raw):
     return dict(raw)
 
 
-def answers(decision: str, taps: dict, doubt: list) -> dict:
-    """What to store. Only facts the block showed (``doubt``) ever get an answer; others are dropped.
-    ``accept``: every shown fact is 'agreed' unless tapped 'disagreed'. A send-back (reopen / reject)
-    is not a silent yes: only the explicit 'disagreed' taps."""
+def answers(decision: str, sent: dict, doubt: list) -> dict:
+    """What to store. The web sends an answer for EVERY fact its block showed ('agreed' untouched,
+    'disagreed' tapped). Only facts in BOTH ``sent`` and the server's current in-doubt set (``doubt``)
+    get an answer: an in-doubt fact missing from ``sent`` was not seen by the QC (a stale tab) and gets
+    none; a sent fact not in doubt is dropped. ``accept`` keeps both answers. A send-back (reopen /
+    reject) is not a silent yes: only the explicit 'disagreed' answers."""
     shown = [d['fact'] for d in doubt]
     if decision == 'accept':
-        return {f: DISAGREED if taps.get(f) == DISAGREED else AGREED for f in shown}
-    return {f: DISAGREED for f in shown if taps.get(f) == DISAGREED}
+        return {f: sent[f] for f in shown if f in sent}
+    return {f: DISAGREED for f in shown if sent.get(f) == DISAGREED}
 
 
-def record_answers(app, decision: str, taps) -> None:
+def activity_meta(given: dict, doubt: list) -> dict:
+    """The second look for the QC decision's activity row: lists of fact names only (closed
+    `staff_activity.META_KEYS` codes). It outlives a re-recorded verdict: the source to count from."""
+    return {'qc_agreed': [f for f, a in given.items() if a == AGREED],
+            'qc_disagreed': [f for f, a in given.items() if a == DISAGREED],
+            'doubt_ai_green': [d['fact'] for d in doubt if AI_GREEN_REVIEWER_FAIL in d['groups']],
+            'doubt_failed_accepted': [d['fact'] for d in doubt if FAILED_BUT_ACCEPTED in d['groups']]}
+
+
+def record_answers(app, decision: str, taps) -> dict:
     """Store the QC's answers on ``app`` (call it on the LOCKED, re-read row, inside the decision's
-    own transaction). ``taps`` None (no key in the request) writes nothing."""
+    own transaction) and return `activity_meta` for the QC decision row. ``taps`` None (no key in the
+    request) writes nothing and returns {}. A stored verdict that is not a dict (nor None) is left
+    untouched: nothing is in doubt on it, and the QC decision never fails over it."""
     if taps is None:
-        return
-    app.officer_verdict = {**(app.officer_verdict or {}),
-                           KEY: answers(decision, taps, for_application(app))}
-    app.save(update_fields=['officer_verdict'])
+        return {}
+    doubt = for_application(app)
+    given = answers(decision, taps, doubt)
+    ov = app.officer_verdict
+    if ov is None or isinstance(ov, dict):
+        app.officer_verdict = {**(ov or {}), KEY: given}
+        app.save(update_fields=['officer_verdict'])
+    return activity_meta(given, doubt)
 
 
 # ── the numbers ("checked by the QC") ───────────────────────────────────────────────────────────

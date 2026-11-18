@@ -70,11 +70,12 @@ def _save_verdict(app, admin, verdict_fields, sp_to_save):
             'finalised': getattr(sp_to_save, 'finalise_state', '') == profile_finalise.PENDING})
 
 
-def _record_qc(admin, app, decision, outcome):
+def _record_qc(admin, app, decision, outcome, look=None):
     """Common profile S3: the QC's click is ONE `qc_decision` row on the QC's own activity list —
-    the services it runs underneath (`reopen_decision`, `admin_reject`) are told not to add theirs."""
+    the services it runs underneath (`reopen_decision`, `admin_reject`) are told not to add theirs.
+    ``look``: LL2b `second_look.record_answers` (fact names only); it survives a re-recorded verdict."""
     staff_activity.record(admin, staff_activity.QC_DECISION, app,
-                          meta={'decision': decision, 'outcome': outcome})
+                          meta={'decision': decision, 'outcome': outcome, **(look or {})})
 
 
 class AdminRecordVerdictView(_AdminBase):
@@ -353,8 +354,8 @@ class AdminQcDecisionView(_AdminBase):
             # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).
             # Idempotent + PII-backstopped; a no-op if there's nothing ready to publish.
             pool.publish_profile_to_pool(app, blurb=blurb)
-            second_look.record_answers(app, 'accept', taps)   # LL2b: on the locked row, same unit
-            _record_qc(admin, app, 'accept', 'recommended')
+            look = second_look.record_answers(app, 'accept', taps)   # LL2b: on the locked row, same unit
+            _record_qc(admin, app, 'accept', 'recommended', look)
         logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
         return Response(_detail_payload(app, admin))
 
@@ -372,8 +373,8 @@ class AdminQcDecisionView(_AdminBase):
                 if _overall(app) != 'decline':   # the verdict was re-recorded meanwhile
                     return _not_awaiting_qc()
                 admin_reject(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True)
-                second_look.record_answers(app, 'accept', taps)
-                _record_qc(admin, app, 'accept', 'declined')
+                look = second_look.record_answers(app, 'accept', taps)
+                _record_qc(admin, app, 'accept', 'declined', look)
         except StatusRefused:
             return _not_awaiting_qc()
         except ValueError:
@@ -416,8 +417,8 @@ class AdminQcDecisionView(_AdminBase):
                 with transaction.atomic():
                     lock_application_for(app, ('interviewed',))
                     reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
-                    second_look.record_answers(app, 'reopen', taps)   # a send-back keeps only the 'disagreed' taps
-                    _record_qc(admin, app, 'reopen', 'reopened')
+                    look = second_look.record_answers(app, 'reopen', taps)   # a send-back: 'disagreed' only
+                    _record_qc(admin, app, 'reopen', 'reopened', look)
             except StatusRefused:
                 return _not_awaiting_qc()
             except reopen_service.ReopenError as e:
@@ -450,8 +451,8 @@ class AdminQcDecisionView(_AdminBase):
                     reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
                     reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
                     admin_reject(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True)
-                    second_look.record_answers(app, 'reject', taps)
-                    _record_qc(admin, app, 'reject', 'declined')
+                    look = second_look.record_answers(app, 'reject', taps)
+                    _record_qc(admin, app, 'reject', 'declined', look)
             except StatusRefused:
                 return _not_awaiting_qc()
             except reopen_service.ReopenError as e:

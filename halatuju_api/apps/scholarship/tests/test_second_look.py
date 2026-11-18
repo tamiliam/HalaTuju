@@ -66,14 +66,43 @@ class TestInDoubt(SimpleTestCase):
                 sl.validate(bad)
 
     def test_answers_accept_send_back_and_drop(self):
+        # Review round: an accept keeps only facts in BOTH the payload and the in-doubt set
+        # (was: every in-doubt fact 'agreed' unless tapped, which let a stale tab answer unseen facts).
         doubt = [{'fact': 'income'}, {'fact': 'academic'}]
         taps = {'income': 'disagreed', 'identity': 'disagreed', 'academic': 'agreed'}
-        self.assertEqual(sl.answers('accept', {}, doubt), {'income': 'agreed', 'academic': 'agreed'})
+        self.assertEqual(sl.answers('accept', {}, doubt), {})
+        self.assertEqual(sl.answers('accept', {'income': 'agreed'}, doubt), {'income': 'agreed'})
         self.assertEqual(sl.answers('accept', taps, doubt), {'income': 'disagreed', 'academic': 'agreed'})
         for send_back in ('reopen', 'reject'):
             self.assertEqual(sl.answers(send_back, taps, doubt), {'income': 'disagreed'})
             self.assertEqual(sl.answers(send_back, {}, doubt), {})
         self.assertEqual(sl.answers('accept', taps, []), {})
+
+    def test_odd_stored_shapes_never_raise(self):
+        for snapshot in ({'income': 'verified'}, 3, 'x', [{'fact': 'income', 'status': ['verified']}]):
+            with self.subTest(snapshot=snapshot):
+                got = sl.in_doubt(snapshot, officer('decline', income='fail'))
+                self.assertEqual(got, [])   # no readable AI status: not green, and a decline has no group 2
+        for ov in (['income'], 'fail', 3):
+            with self.subTest(ov=ov):
+                self.assertEqual(sl.in_doubt(snap(), ov), [])
+
+    def test_a_stored_verdict_that_is_not_a_dict_never_fails_the_qc_decision(self):
+        app = mock.Mock(officer_verdict=['income', 'fail'], ai_verdict_snapshot=snap(),
+                        verdict_decided_at=datetime.datetime(2026, 5, 10, tzinfo=UTC))
+        for decision in ('accept', 'reopen', 'reject'):
+            with self.subTest(decision=decision):
+                look = sl.record_answers(app, decision, {'income': 'disagreed'})
+                self.assertEqual(look, {'qc_agreed': [], 'qc_disagreed': [], 'doubt_ai_green': [],
+                                        'doubt_failed_accepted': []})
+                self.assertEqual(app.officer_verdict, ['income', 'fail'])   # left untouched
+        app.save.assert_not_called()
+
+    def test_the_activity_meta_is_fact_names_and_group_codes(self):
+        doubt = sl.in_doubt(snap({'academic': 'review'}), officer(income='fail', academic='fail'))
+        self.assertEqual(sl.activity_meta({'income': 'disagreed', 'academic': 'agreed'}, doubt),
+                         {'qc_agreed': ['academic'], 'qc_disagreed': ['income'],
+                          'doubt_ai_green': ['income'], 'doubt_failed_accepted': ['academic', 'income']})
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -113,18 +142,56 @@ class TestQcDecisionRecordsTheSecondLook(TestCase):
         self.assertIsNone(body['second_look']['answers'])
 
     def test_a_silent_accept_records_agreed_for_the_shown_facts_only(self):
-        r = self._qc({'decision': 'accept', 'fact_checks': {}})
-        self.assertEqual(r.status_code, 200, r.content)
+        # Review round: the web now sends 'agreed' for each untouched fact it showed (was `{}`).
         want = {'academic': 'agreed', 'income': 'agreed'}
+        r = self._qc({'decision': 'accept', 'fact_checks': want})
+        self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(self._stored()[sl.KEY], want)
         self.assertEqual(r.json()['second_look']['answers'], want)
         self.assertEqual(r.json()['officer_verdict'][sl.KEY], want)
         self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).status, 'recommended')
 
+    def test_an_accept_with_an_empty_object_records_nothing(self):
+        r = self._qc({'decision': 'accept', 'fact_checks': {}})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._stored()[sl.KEY], {})
+        self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).status, 'recommended')
+
+    def test_an_accept_that_misses_an_in_doubt_fact_records_no_answer_for_it(self):
+        # a stale tab showed only income; academic became in doubt after it loaded
+        r = self._qc({'decision': 'accept', 'fact_checks': {'income': 'agreed'}})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._stored()[sl.KEY], {'income': 'agreed'})
+
     def test_a_tap_records_disagreed_and_a_fact_outside_the_set_is_dropped(self):
-        r = self._qc({'decision': 'accept', 'fact_checks': {'income': 'disagreed', 'identity': 'disagreed'}})
+        # Review round: academic is now sent as 'agreed' (was left out and filled in by the server).
+        r = self._qc({'decision': 'accept', 'fact_checks': {'income': 'disagreed', 'identity': 'disagreed',
+                                                            'academic': 'agreed'}})
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(self._stored()[sl.KEY], {'academic': 'agreed', 'income': 'disagreed'})
+
+    def test_the_qc_activity_row_keeps_the_second_look_after_a_re_record(self):
+        self._qc({'decision': 'reopen', 'comments': 'Made up.',
+                  'fact_checks': {'income': 'disagreed', 'academic': 'agreed'}})
+        row = lambda: StaffActivity.objects.get(verb='qc_decision', subject_id=self.app.pk)   # noqa: E731
+        want = {'decision': 'reopen', 'outcome': 'reopened', 'qc_agreed': [], 'qc_disagreed': ['income'],
+                'doubt_ai_green': ['income'], 'doubt_failed_accepted': ['academic', 'income']}
+        self.assertEqual(row().meta, want)
+        body = {'officer_verdict': {**officer('hold'), 'income': 'pass'}, 'reason': 'Made up.'}
+        with mock.patch(VIEW_ENGINE, return_value=snap()):
+            r = authed_client(self.reviewer).post(
+                f'/api/v1/admin/scholarship/applications/{self.app.pk}/record-verdict/', body, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertNotIn(sl.KEY, self._stored())   # the verdict's copy goes, as before
+        self.assertEqual(row().meta, want)           # the activity row's copy stays
+        # the QC's own activity list serves the same keys (it re-filters to the closed key list)
+        items = authed_client(self.qc).get('/api/v1/admin/me/activity/').json()['results']
+        self.assertEqual([i['meta'] for i in items if i['verb'] == 'qc_decision'], [want])
+
+    def test_no_key_adds_nothing_to_the_activity_row(self):
+        self._qc({'decision': 'accept'})
+        meta = StaffActivity.objects.get(verb='qc_decision', subject_id=self.app.pk).meta
+        self.assertEqual(meta, {'decision': 'accept', 'outcome': 'recommended'})
 
     def test_a_send_back_records_only_the_taps(self):
         r = self._qc({'decision': 'reopen', 'comments': 'Made up.',
@@ -138,7 +205,8 @@ class TestQcDecisionRecordsTheSecondLook(TestCase):
 
     def test_a_qc_confirm_of_a_decline_records_the_group_one_fact(self):
         app = self._case(officer('decline', income='fail', academic='fail'), outcome='decline')
-        r = self._qc({'decision': 'accept', 'fact_checks': {}}, app=app)
+        # Review round: the web sends 'agreed' for the shown fact (was `{}`)
+        r = self._qc({'decision': 'accept', 'fact_checks': {'income': 'agreed'}}, app=app)
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(self._stored(app)[sl.KEY], {'income': 'agreed'})   # academic was not green
 
@@ -189,7 +257,8 @@ class TestQcDecisionRecordsTheSecondLook(TestCase):
         self.assertEqual(self._stored()[sl.KEY], {'income': 'disagreed'})
         # back at QC on the SAME reviewer verdict (status only, as a resubmission would leave it)
         ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='interviewed', decision_reopened_at=None)
-        r = self._qc({'decision': 'accept', 'fact_checks': {}})
+        # Review round: the web sends 'agreed' for each untouched shown fact (was `{}`)
+        r = self._qc({'decision': 'accept', 'fact_checks': {'academic': 'agreed', 'income': 'agreed'}})
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(self._stored()[sl.KEY], {'academic': 'agreed', 'income': 'agreed'})
 
