@@ -161,6 +161,7 @@ const ALLOWED: Entry[] = [
   ['app/admin/organisation/staff/page.tsx', "subRole !== 'reviewer' ? {}", 1, 'TARGET', 'the role being invited decides the gift fields'],
   ['app/admin/organisation/staff/page.tsx', "subRole === 'reviewer' && (", 1, 'TARGET', 'the role being invited decides the gift fields'],
   ['app/admin/organisation/staff/page.tsx', "subRole === 'reviewer' ? t(", 1, 'TARGET', 'the role being invited decides the gift fields'],
+  ['app/admin/organisation/staff/page.tsx', "subRole === 'reviewer' && nothingTicked(rGifts)", 2, 'TARGET', 'a reviewer being invited needs at least one gift ticked (form check and button state)'],
   ['app/admin/organisation/staff/page.tsx', "r === 'super' || !row.role", 1, 'TARGET', 'canCancel: which invitations may be cancelled (a rule about the invited role)'],
   ['components/admin/StaffAdmin.tsx', "a.role === 'super' || a.manageable === false", 1, 'TARGET', 'a super row is not acted on by the team'],
   ['components/admin/StaffAdmin.tsx', "orgAdmin={a.role === 'org_admin'}", 1, 'TARGET', 'an organisation admin row is labelled as one'],
