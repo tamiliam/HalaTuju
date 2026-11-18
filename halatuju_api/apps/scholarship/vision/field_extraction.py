@@ -72,13 +72,16 @@ def slip_not_spm_kind(text, title=None) -> str:
     use ('trial' / 'not_a_result') — read in the TITLE ZONE only (``title``; default the first
     ``_TITLE_LINES`` lines of ``text``), as `wrong_slip` reads it in the exam title alone, so a
     footer, a portal menu or a scanner's "trial version" stamp never refuses a real slip (S4 review
-    2). Then a higher kind (`results_kind.kinds_seen`: STPM, Matriculation, Asasi, Diploma, the
+    2). Except the Malay trial word PERCUBAAN, read on the WHOLE page: a trial slip stamped
+    "percubaan" only below its grades must never lock with trial grades (S4 review 3). Then a higher kind (`results_kind.kinds_seen`: STPM, Matriculation, Asasi, Diploma, the
     vocabulary `wrong_slip.HIGHER_KINDS` routes); then the titles in ``_NOT_SPM_TITLES``, whole
     words (no letter or digit either side). These two still read the whole page: on the cached
     corpus no real SPM slip names one anywhere (0 of 82 locked slips, 0 of 12 SPM pages refused)."""
     from ..results_kind import kinds_seen
     from ..wrong_slip import _NOT_A_RESULT
     up = (text or '').upper()
+    if re.search(r'(?<![A-Z0-9])PERCUBAAN(?![A-Z0-9])', up):
+        return 'trial'
     m = _NOT_A_RESULT.search((title if title is not None else _title_lines(text)).upper())
     if m:
         return 'trial' if m.group(0) in ('PERCUBAAN', 'TRIAL') else 'not_a_result'

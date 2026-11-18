@@ -158,7 +158,19 @@ class TestTheTrialAndOfferWordsAreReadInTheTitleZoneOnly(SimpleTestCase):
     exam title alone — so a footer, a portal menu or a scanner's "trial version" stamp never refuses a
     real SPM slip, while a slip whose TITLE is a trial or an offer still is."""
     FOOTERS = ('PORTAL PENDAFTARAN PELAJAR', 'SEMAK TAWARAN UPU', 'OFFER LETTER DOWNLOAD',
-               'TRIAL VERSION SCANNER APP', 'REGISTRATION', 'LAPOR DIRI', 'PERCUBAAN')
+               'TRIAL VERSION SCANNER APP', 'REGISTRATION', 'LAPOR DIRI')
+
+    def test_percubaan_below_the_graded_rows_is_still_refused(self):
+        # S4 review 3: the Malay trial word reads the WHOLE page — a trial slip stamped only in its
+        # footer must never lock with trial grades.
+        body = '\n'.join(f'{s} {g} {b}' for s, g, b in SPM_ROWS)
+        for footer in ('PERCUBAAN', 'PEPERIKSAAN PERCUBAAN SPM 2024'):
+            words = _slip_words(_header('SIJIL PELAJARAN MALAYSIA') + [(footer, 900)], SPM_ROWS)
+            with self.subTest(footer=footer):
+                ex, diag = _gate(NON_SPM_PROFILES['stpm'], words)
+                self.assertIsNone(ex)
+                self.assertEqual((diag['reason'], diag['exam_type']), ('not_spm_exam', 'trial'))
+                self.assertEqual(slip_not_spm_kind(f'SIJIL PELAJARAN MALAYSIA\n{body}\n{footer}'), 'trial')
 
     def test_a_footer_word_never_refuses_a_real_slip(self):
         for footer in self.FOOTERS:
