@@ -109,6 +109,7 @@ def override_metrics(decided_records) -> dict:
     by_version: dict = {}
     by_month: dict = {}
     doubt: dict = {}
+    reasons = {f: _reason_block() for f in FACTS}
     for record in decided_records:
         ai_snapshot, officer_verdict = record[0], record[1]
         version = (record[2] if len(record) > 2 else '') or ''
@@ -131,6 +132,8 @@ def override_metrics(decided_records) -> dict:
                 blocks.append(by_month.setdefault(month, _counts()))
             for block in blocks:
                 _tally(block, row['ai_pass'], row['officer'])
+            if row['ai_pass'] and row['officer'] == 'fail':   # LL2: why a green fact was failed
+                _tally_reason(reasons[row['fact']], officer_verdict, row['fact'])
             if not row['ai_pass']:
                 for code in unresolved.get(row['fact'], ()):
                     entry = doubt.setdefault((row['fact'], code), {'passed': 0, 'failed': 0})
@@ -143,7 +146,20 @@ def override_metrics(decided_records) -> dict:
             'fact_counts': {f: _finish(b) for f, b in fact_counts.items()},
             'by_version': {v: _finish(b) for v, b in by_version.items()},
             'by_month': {m: _finish(by_month[m]) for m in sorted(by_month)},
-            'doubt_codes': _doubt_rows(doubt)}
+            'doubt_codes': _doubt_rows(doubt),
+            'fail_reasons': {f: {c: b[c] for c in b if c != 'not_given'} for f, b in reasons.items()},
+            'fail_reasons_not_given': {f: b['not_given'] for f, b in reasons.items()}}
+
+
+def _reason_block() -> dict:
+    from .fail_reasons import CODES   # in the function: fail_reasons imports this module
+    return {**{c: 0 for c in CODES}, 'not_given': 0}
+
+
+def _tally_reason(block: dict, officer_verdict, fact: str) -> None:
+    """One green -> fail decision: its stored reason code, or 'not_given' (old rows, a dropped tap)."""
+    from .fail_reasons import given
+    block[given(officer_verdict, fact) or 'not_given'] += 1
 
 
 # ── green / unsure counts (the AI prediction scoreboard) ─────────────────────────────────────────

@@ -12,6 +12,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
 from .. import birth_state
+from .. import fail_reasons as fail_reasons_rule
 from .. import pool
 from .. import profile_finalise
 from .. import reopen as reopen_service
@@ -104,6 +105,11 @@ class AdminRecordVerdictView(_AdminBase):
             return Response({'error': 'bad overall', 'code': 'bad_verdict'},
                             status=status.HTTP_400_BAD_REQUEST)
         officer_verdict['overall'] = overall
+        try:   # LL2: a malformed reason is a 400 and nothing is saved; a MISSING one never blocks
+            fail_reasons = fail_reasons_rule.validate(request.data.get('fail_reasons'))
+        except fail_reasons_rule.BadFailReasons:
+            return Response({'error': 'bad fail_reasons', 'code': 'bad_fail_reasons'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         # Guard: a RECORDED verdict must assess all four facts (Pass/Fail). The cockpit's
         # "Save verdict & generate final profile" path used to stamp verdict_decided_at with
@@ -133,6 +139,10 @@ class AdminRecordVerdictView(_AdminBase):
         app.ai_verdict_engine_version = VERDICT_ENGINE_VERSION
         # LL4: what fed that snapshot, same save. Never raises: a failure stores {schema, error}.
         app.ai_verdict_context = verdict_context_or_empty(app)
+        # LL2: kept only for a fact the human failed that THIS snapshot calls verified. Always written
+        # ({} when none), as every other officer_verdict key is; old rows simply have no key.
+        officer_verdict[fail_reasons_rule.KEY] = fail_reasons_rule.keep(
+            fail_reasons, officer_verdict, app.ai_verdict_snapshot)
         app.officer_verdict = officer_verdict
         app.verdict_reason = (request.data.get('reason') or '').strip()
         app.verdict_decided_by = getattr(admin, 'email', '') or ''
