@@ -9,6 +9,7 @@ The profile is recorded as a hint (``profile_held``), never a veto.
 Synthetic words only (fictional names, no real slip). No Vision or model call: ``words`` is passed.
 """
 from types import SimpleNamespace
+from unittest import mock
 
 from django.test import SimpleTestCase
 
@@ -118,6 +119,96 @@ class TestANonSpmPageIsStillRefused(SimpleTestCase):
         # A subject or a name that merely CONTAINS the letters is not a title.
         self.assertEqual(slip_not_spm_kind('SIJIL PELAJARAN MALAYSIA PENDIDIKAN ISLAM STAMPED'), '')
         self.assertEqual(slip_not_spm_kind('SIJIL PELAJARAN MALAYSIA SVMX'), '')
+
+
+class TestSchoolLevelAndTrialSlipsAreRefused(SimpleTestCase):
+    """S4 fix round (adversarial review, MEDIUM): the same board's school-level slips and a trial
+    paper carry the parser's own marker and SPM-shaped band rows, so the parser alone LOCKS them and
+    maps their bands to SPM grades. Each is refused by its title, through the real gate."""
+    PAGES = {
+        'pt3': [('LEMBAGA PEPERIKSAAN', 150), ('PENTAKSIRAN TINGKATAN 3', 200)],
+        'pt3 code': [('LEMBAGA PEPERIKSAAN', 150), ('KEPUTUSAN PT3', 200)],
+        'pmr': [('LEMBAGA PEPERIKSAAN', 150), ('PENILAIAN MENENGAH RENDAH', 200)],
+        'upsr': [('LEMBAGA PEPERIKSAAN', 150), ('UJIAN PENCAPAIAN SEKOLAH RENDAH', 200)],
+        'trial': [('PEPERIKSAAN PERCUBAAN SIJIL PELAJARAN MALAYSIA', 200)],
+        'trial english': [('SIJIL PELAJARAN MALAYSIA TRIAL EXAMINATION', 200)],
+    }
+    KIND = {'pt3': 'pt3', 'pt3 code': 'pt3', 'pmr': 'pmr', 'upsr': 'upsr', 'trial': 'trial',
+            'trial english': 'trial'}
+
+    def test_each_is_refused_though_the_parser_alone_would_lock_it(self):
+        from apps.scholarship.academic_engine import parse_spm_slip
+        for page, header in self.PAGES.items():
+            words = _slip_words(header + [('CALON CONTOH BINTI REKAAN', 250)], SPM_ROWS)
+            with self.subTest(page=page):
+                self.assertIsNotNone(parse_spm_slip(words))     # the hazard is real
+                ex, diag = _gate(dict(exam_type='spm', grades={'bm': 'A'}), words)
+                self.assertIsNone(ex)
+                self.assertEqual((diag['reason'], diag['exam_type'], diag['by']),
+                                 ('not_spm_exam', self.KIND[page], 'document'))
+
+    def test_the_trial_list_is_the_one_wrong_slip_uses(self):
+        from apps.scholarship.wrong_slip import _NOT_A_RESULT
+        self.assertTrue(_NOT_A_RESULT.search('PEPERIKSAAN PERCUBAAN SPM'))
+        self.assertEqual(slip_not_spm_kind('SURAT TAWARAN SIJIL PELAJARAN MALAYSIA'), 'not_a_result')
+
+
+class TestTitleEdges(SimpleTestCase):
+    """S4 fix round (LOW): the vocational title in brackets, and whole-word short codes."""
+
+    def test_the_bracketed_vocational_titles_are_refused(self):
+        for text in ('SIJIL PELAJARAN MALAYSIA (VOKASIONAL) TAHUN 2024', 'SIJIL PELAJARAN MALAYSIA ( VOKASIONAL )',
+                     'KEPUTUSAN SPM(V) 2024', 'KEPUTUSAN SPM (V) 2024', 'KEPUTUSAN SPMV'):
+            with self.subTest(text=text):
+                self.assertEqual(slip_not_spm_kind(text), 'spmv')
+
+    def test_the_bracketed_vocational_page_is_refused_through_the_gate(self):
+        words = _slip_words(_header('SIJIL PELAJARAN MALAYSIA (VOKASIONAL)'), SPM_ROWS)
+        ex, diag = _gate(dict(exam_type='spm', grades={'bm': 'A'}), words)
+        self.assertIsNone(ex)
+        self.assertEqual(diag['exam_type'], 'spmv')
+
+    def test_a_code_glued_to_a_letter_or_digit_is_not_a_title(self):
+        for text in ('SIJIL PELAJARAN MALAYSIA UEC1234', 'SIJIL PELAJARAN MALAYSIA STAM2',
+                     'SIJIL PELAJARAN MALAYSIA 2PMR', 'SMK DIPLOMAT', 'SIJIL PELAJARAN MALAYSIA STAMPED',
+                     'SIJIL PELAJARAN MALAYSIA SVMX'):
+            with self.subTest(text=text):
+                self.assertEqual(slip_not_spm_kind(text), '')
+
+    def test_a_standalone_code_is_still_a_title(self):
+        for text, kind in (('UEC 2023', 'uec'), ('STAM 2024', 'stam'), ('SVM', 'svm'), ('PMR 2010', 'pmr'),
+                           ('UPSR', 'upsr'), ('PT3', 'pt3')):
+            with self.subTest(text=text):
+                self.assertEqual(slip_not_spm_kind(text), kind)
+
+
+class TestTheTextIsCheckedBeforeWordBoxesAreBought(SimpleTestCase):
+    """S4 fix round (LOW): the OCR text the caller holds is checked first, so a misfiled non-SPM page
+    costs no Vision words call."""
+
+    def _doc(self):
+        profile = StudentProfile(supabase_user_id='s4-gate', **NON_SPM_PROFILES['stpm'])
+        return SimpleNamespace(application=SimpleNamespace(profile=profile), content_type='image/jpeg')
+
+    def test_a_non_spm_text_is_refused_without_a_vision_call(self):
+        with mock.patch('apps.scholarship.vision._vision_words',
+                        side_effect=AssertionError('no Vision call for a refused page')) as vw:
+            ex, diag = vision._extract_slip_deterministic(
+                self._doc(), b'img', text='SIJIL TINGGI PERSEKOLAHAN MALAYSIA KEPUTUSAN')
+        vw.assert_not_called()
+        self.assertIsNone(ex)
+        self.assertEqual(diag, {'reason': 'not_spm_exam', 'exam_type': 'stpm', 'by': 'document',
+                                'source': 'ocr_text', 'profile_held': 'stpm', 'reader': SLIP_READER_VERSION})
+
+    def test_an_spm_text_buys_the_word_boxes_and_locks(self):
+        words = _slip_words(_header('SIJIL PELAJARAN MALAYSIA'), SPM_ROWS)
+        with mock.patch('apps.scholarship.vision._vision_words',
+                        return_value={'words': words, 'error': None}) as vw:
+            ex, diag = vision._extract_slip_deterministic(self._doc(), b'img',
+                                                          text='SIJIL PELAJARAN MALAYSIA TAHUN 2024')
+        vw.assert_called_once()
+        self.assertEqual(diag['reason'], 'ok')
+        self.assertEqual(_grades(ex), EXPECTED)
 
 
 class TestTheFallbacksCarryTheReaderStamp(SimpleTestCase):

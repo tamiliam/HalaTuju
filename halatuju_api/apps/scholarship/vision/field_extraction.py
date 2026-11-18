@@ -27,30 +27,43 @@ SLIP_READER_VERSION = 'spm_slip 1.1.0'
 #: Results that are NOT SPM, by the title the page prints, beside the higher kinds `results_kind`
 #: already recognises (STPM / Matriculation / Asasi / Diploma). Whole words only. A vocational
 #: certificate (SVM / SPMV) is issued by the same Lembaga Peperiksaan, so the parser's own marker
-#: would pass it: it is refused here by its title.
+#: would pass it: it is refused here by its title. So are the school-level slips the same board
+#: issues (PT3 / PMR / UPSR: S4 fix round, their bands would map to SPM grades).
 _NOT_SPM_TITLES = (
-    ('spmv', r'SIJIL\s+PELAJARAN\s+MALAYSIA\s+VOKASIONAL|SIJIL\s+PELAJARAN\s+VOKASIONAL\s+MALAYSIA|SPMV|SPVM'),
+    ('spmv', r'SIJIL\s+PELAJARAN\s+MALAYSIA\s*\(?\s*VOKASIONAL\s*\)?|SIJIL\s+PELAJARAN\s+VOKASIONAL\s+MALAYSIA'
+             r'|SPM\s*\(\s*V\s*\)|SPMV|SPVM'),
     ('svm', r'SIJIL\s+VOKASIONAL\s+MALAYSIA|SVM'),
     ('igcse', r'IGCSE'),
     ('o_level', r'GCE\s+O\s*-?\s*LEVEL|O\s*-\s*LEVEL|ORDINARY\s+LEVEL'),
     ('stam', r'SIJIL\s+TINGGI\s+AGAMA\s+MALAYSIA|STAM'),
     ('uec', r'UNIFIED\s+EXAMINATION\s+CERTIFICATE|UEC'),
+    ('pt3', r'PENTAKSIRAN\s+TINGKATAN|PT3'),
+    ('pmr', r'PENILAIAN\s+MENENGAH\s+RENDAH|PMR'),
+    ('upsr', r'UJIAN\s+PENCAPAIAN\s+SEKOLAH\s+RENDAH|UPSR'),
 )
 
 
 def slip_not_spm_kind(text) -> str:
     """The kind of NON-SPM results ``text`` (a page's words, in row order) names, or '' when it names
-    none. A higher kind first (`results_kind.kinds_seen`: STPM, Matriculation, Asasi, Diploma, the
-    vocabulary `wrong_slip.HIGHER_KINDS` routes), then the titles in ``_NOT_SPM_TITLES``."""
+    none. First a page that is not a final result at all — a trial ("percubaan") examination, an
+    offer or registration letter: `wrong_slip._NOT_A_RESULT`, the list both results cards already
+    use ('trial' / 'not_a_result'); then a higher kind (`results_kind.kinds_seen`: STPM,
+    Matriculation, Asasi, Diploma, the vocabulary `wrong_slip.HIGHER_KINDS` routes); then the titles
+    in ``_NOT_SPM_TITLES``, whole words (no letter or digit either side)."""
     from ..results_kind import kinds_seen
+    from ..wrong_slip import _NOT_A_RESULT
     up = (text or '').upper()
+    m = _NOT_A_RESULT.search(up)
+    if m:
+        return 'trial' if m.group(0) in ('PERCUBAAN', 'TRIAL') else 'not_a_result'
     higher = [k for k in kinds_seen(up) if k != 'spm']
     if higher:
         return higher[0]
-    return next((kind for kind, p in _NOT_SPM_TITLES if re.search(rf'(?<![A-Z])(?:{p})(?![A-Z])', up)), '')
+    return next((kind for kind, p in _NOT_SPM_TITLES
+                 if re.search(rf'(?<![A-Z0-9])(?:{p})(?![A-Z0-9])', up)), '')
 
 
-def _extract_slip_deterministic(doc, image, words=None):
+def _extract_slip_deterministic(doc, image, words=None, text=None):
     """``(result|None, diag)``. Positional OCR parse of an SPM results slip →
     ``{fields, warnings, error, parser_version}``, or None to fall back to Gemini (no image, a page
     that is not SPM results, or no parse). ``diag`` says WHY (incl. a sample of what Vision read), so
@@ -62,12 +75,19 @@ def _extract_slip_deterministic(doc, image, words=None):
     non-SPM results (`slip_not_spm_kind`) is refused as ``not_spm_exam``; every other page goes to
     the parser, whose own SPM markers decide. The profile's `results_held` is a HINT recorded in the
     diag, never a veto (it was, TD-324: 115 of 158 AI-read slips skipped the parser, mostly an STPM
-    or diploma student's own SPM slip). The parser only READS: no profile grade is written."""
+    or diploma student's own SPM slip). The parser only READS: no profile grade is written.
+    ``text`` (the page's OCR text the caller already holds) is checked FIRST when no ``words`` were
+    passed, so a misfiled non-SPM page is refused without buying word boxes (S4 fix round)."""
     if image is None:
         return None, {'reason': 'no_image'}
     from apps.courses import public as courses_public
     held = courses_public.results_held(getattr(doc.application, 'profile', None)).lower()
-    wd = {'words': words, 'error': None} if words is not None else _v._vision_words(image, doc.content_type)
+    if words is None and text:
+        kind = slip_not_spm_kind(text)
+        if kind:
+            return None, {'reason': 'not_spm_exam', 'exam_type': kind, 'by': 'document',
+                          'source': 'ocr_text', 'profile_held': held, 'reader': SLIP_READER_VERSION}
+    wd ={'words': words, 'error': None} if words is not None else _v._vision_words(image, doc.content_type)
     if wd.get('error'):
         return None, {'reason': 'vision_error', 'error': wd['error'], 'reader': SLIP_READER_VERSION}
     if not wd.get('words'):
@@ -137,7 +157,7 @@ def _read_results_slip(doc, ocr, _o, image_fn, pre_words):
     if cert is not None:
         ex = {'fields': cert, 'warnings': [], 'error': '', 'capture': 'deterministic'}
     else:
-        ex, diag = _v._extract_slip_deterministic(doc, image, words=pre_words)  # OCR-first (SPM slip); None → Gemini
+        ex, diag = _v._extract_slip_deterministic(doc, image, words=pre_words, text=_text)  # OCR-first; None → Gemini
         if ex is None:
             if image is not None:
                 ex = _v.extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)

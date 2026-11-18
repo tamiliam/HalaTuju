@@ -9,7 +9,7 @@ for a second read; no new OCR or model call fills it. It is private (no serializ
 
 ## 2026-11-18 — SPM slip gate reads the document, not the profile (OCR-first S4)
 
-The SPM slip parser is refused only when the page itself names non-SPM results (STPM, Matriculation, Asasi, Diploma, SPMV / SVM, IGCSE, O-level, STAM, UEC); the profile's `results_held` is a hint, never a veto (the owner-approved OCR-first roadmap supersedes TD-324 for the slip reader only; the parser only reads, so no profile or STPM data is written).
+The SPM slip parser is refused only when the page itself names non-SPM results (STPM, Matriculation, Asasi, Diploma, SPMV / SVM, IGCSE, O-level, STAM, UEC, PT3, PMR, UPSR) or is not a final result (a trial paper, an offer or registration letter: `wrong_slip._NOT_A_RESULT`); the profile's `results_held` is a hint, never a veto (the owner-approved OCR-first roadmap supersedes TD-324 for the slip reader only; the parser only reads, so no profile or STPM data is written).
 
 ## 2026-11-18 — Course match: a bracket option list is a menu, only under a printed code (#804)
 
@@ -5471,6 +5471,8 @@ flat schedule (`payments._schedule_row` → `MONTHLY_RATE`); before this change 
 students were paid on the organisation's (the flagship's) template.
 
 ## TD-324: the shortlist gate, the sponsor band and the slip parser read the results held; "held" means the HIGHEST — owner ruling, 2026-10-02
+
+> **Superseded for the slip parser only (2026-11-18):** see "SPM slip gate reads the document, not the profile (OCR-first S4)" at the top of this file. The shortlist gate and the sponsor band still read the results held.
 
 **Decided by:** the owner, 2026-10-02: *"switch all three"* — on the lead's read-only production
 counts the same day. This supersedes point 2's third bullet of the entry below ("HELD on

@@ -198,7 +198,9 @@ class TestResultsSlipBranch(_Base):
             r = self.run_impl(self.doc('results_slip'),
                               ocr={'text': 'T', 'words': words, 'image': b'OCRIMG', 'error': None})
         self.assertEqual(slip.call_args.args[1], b'OCRIMG')           # the ocr dict's bytes, not a refetch
-        self.assertEqual(slip.call_args.kwargs, {'words': words})
+        # Dated 2026-11-18 (OCR-first S4 fix round): the page's OCR text is passed too, so a misfiled
+        # non-SPM page is refused before word boxes are bought. Was {'words': words}.
+        self.assertEqual(slip.call_args.kwargs, {'words': words, 'text': 'T'})
         self.assertEqual(r['capture'], 'deterministic')
 
     def test_no_lock_falls_back_to_gemini_on_the_image_with_the_diag_and_the_year(self):
