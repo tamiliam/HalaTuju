@@ -313,6 +313,34 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
 
 **Complexity.** Medium. About 10 files. Opus builds. Adversarial review before push.
 
+**LL4 as built (19 Nov 2026).**
+- Status: built in branch `ll4` (on top of `ll3`). Not merged to `main`. Not published. The owner decides both.
+- Where: `apps/scholarship/verdict_context.py` builds the record. `AdminRecordVerdictView.post` stores it in `ScholarshipApplication.ai_verdict_context`, in the same save as `ai_verdict_snapshot`. Re-recording a verdict replaces it.
+- Shape: `{schema: 1, documents: [...], models: {...}, fingerprint, key_check}`.
+  - Each live document: `id`, `doc_type`, `member`, `results_kind`, `uploaded_at` (UTC text), `verification`, `read_state`, `genuineness`, `model_version`, `parser_version`, `offer_reader_version`, `sample_check_version`. A value that is not a plain code or version is written as `?`.
+  - `models`: the running version of every model in the LL3 register.
+  - The keys at every level are a fixed allow-list, pinned by a test.
+- Fingerprint: HMAC-SHA256 over three things.
+  - The state of each live document, including its stored read.
+  - The declared application fields (`DECLARED_FIELDS`: income route, earners and declared amounts, other family members, parents' names and jobs, pathway, chosen programme, requirements).
+  - The profile fields the verdict engine reads (`PROFILE_FIELDS`: name, NRIC, exam types, completed qualifications, SPM/STPM/higher grades and CGPAs, institution type, stream subjects, household size).
+  - Those values are only hashed. They never appear in the record. A field the engine does not read (school, address, contact details) does not move the fingerprint.
+  - At most two queries: the documents, and the profile when it is not already loaded.
+- Key: derived from `SECRET_KEY` with a fixed salt. No new environment variable.
+  - `key_check` (8 hex characters) changes only when the key changes. It tells a key rotation apart from evidence that moved.
+  - A `SECRET_KEY` rotation makes every older fingerprint impossible to compare. So the replay (LL5) must run where the production key is.
+- Failure: a record that cannot be built never blocks or changes the decision. It stores `{schema: 1, error: "build_failed"}` and logs the application id and the error class only. Nothing partial is kept.
+- Migration: `0215_application_verdict_context`, additive: one JSON column, NOT NULL, database default `{}`.
+  - THE OWNER APPLIES IT BEFORE THE PUBLISH, by hand. The SQL, pre-check and rollback are in the migration's docstring.
+  - Deploying first breaks every application load, not only the verdict write, because the new image reads the column on every load.
+  - The SQL is hand-written, as in `0212`, so the SQLite test database does not rebuild the table and drop the columns `0211` retired.
+- Old rows keep an empty record (`{}`): "evidence state unknown". No back-fill.
+- Not exposed: no serializer lists the column. Checked: student read and create, admin list and detail; no `__all__`, no model dump, no Django admin. Tests check that the record-verdict response, the admin detail response and the student's own list do not carry it.
+- Schema documentation: there is no separate schema document for this table. The column is described in the model's `help_text` and in the migration's docstring.
+- Known gaps:
+  - Some engine helpers read documents from the student's OTHER applications (`wrong_slip.stpm_results_on_file`, `identity.latest_live_ic`). The fingerprint covers only this application's documents.
+  - Settings that switch model behaviour (LL3's known gaps) are not in the fingerprint.
+
 ---
 
 ## Sprint LL5 — Replay: score each version against human answers

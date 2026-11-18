@@ -337,6 +337,16 @@ Branch ll3 (on top of ll1), NOT merged to main, not published. Migration: none. 
 - **Old results:** no back-fill. A stored result without `model_version` reads exactly as before (tests prove it for the verdict, the anomaly engine and the serializer, which still serves only status, reason and doc_seen).
 - **Tests:** 8 new; the two stored-key-set pins in `test_genuineness_api.py` now include `model_version`.
 
+### feat: sprint LL4 - each recorded verdict stores the record of what fed it (2026-11-19)
+
+Branch ll4 (on top of ll3), NOT merged to main, not published. Migration: `0215_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: api. Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL4 as built).
+- **Record:** new `apps/scholarship/verdict_context.py`. `record-verdict` stores `ScholarshipApplication.ai_verdict_context` in the same save as `ai_verdict_snapshot`: `{schema, documents, models, fingerprint, key_check}`. Each document is ids, codes, versions and instants only; `models` is the running version of every model in the LL3 register.
+- **Fingerprint:** a keyed hash (HMAC-SHA256, key from `SECRET_KEY` with a fixed salt) over each live document's state including its stored read, the declared application fields (`DECLARED_FIELDS`) and the profile fields the verdict engine reads (`PROFILE_FIELDS`). Those values are hashed only, never written into the record. `key_check` tells a key rotation apart from moved evidence. At most two queries.
+- **Never blocks a decision:** a record that cannot be built stores `{schema, error}` and logs the application id and the error class only.
+- **Not exposed:** no serializer lists the column (student read and create, admin list and detail checked; no `__all__`, no model dumps).
+- **Old rows:** keep an empty record (`{}`, evidence state unknown). No back-fill.
+- **Tests:** 36 in `test_verdict_context.py`, 6 in `test_verdict_context_recorded.py`.
+
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
 Branch vcard, display only (engine statuses untouched). Migration: none. Services: web.
