@@ -287,6 +287,13 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Tests: `test_td613_departed_holder.py` (both paths end to end, the refusals), `test_decision_reopen.py` updated, `AssignAndWitness.td613.test.tsx`, `cockpitCardStages.test.ts`, `AssignListPicker.test.tsx`.
 - Review round: a suspension alone strands nothing outside `ASSIGNABLE_STATUSES` unless the case was reopened (F1, owner approved 2026-11-15; an award revert stores no marker, so its suspended holder waits for a Restore or a super reopen); detail and list serve `may_unassign` (`services.unassign_refusal`, mixin `serializers_admin/handover.py`), which the cockpit card and list picker read; `rejected_by_unassigned` compares with the holder at the decline (`AssignmentEvent`), not the current one.
 
+### release: hotfix - the recent-letter ask only when there is no offer letter (2026-11-18)
+- live d183eac52..2447c9583 (pushed about 14:55 MYT, hotfix lane, owner's yes "Hotfix as soon as it is ready and checked"). api halatuju-api-01310-5lq, web halatuju-web-01131-9f6, both 100% traffic (rollback api-01309-wzn, web-01130-cxj). Both builds green; release-decisions job image 2447c9583; api health 200. Main merge 901400605.
+- Gates before the push: api 22893 passed, 3 skipped; web 7826 passed, i18n 8336 keys; first-load JS median 157.14 kB (budget 157.5).
+- Migration none. Services both. Owner phone check: case 666 shows no recent-letter ask.
+- Deploy count: Batch A (H3b) 3rd deploy, one over the cap of 2; owner-approved hotfix.
+- Live after the push: 3 open recent_letter_needed asks (804, 822, 750), all raised by the old code before 07:28 UTC, all on offer letters only. The new code resolves them at the next Check 2 sync (case open, student page or the query-email job).
+
 ### release: 18 Nov 11:00 MYT window - Batch A completed, Batch B (student-help H4-H9) and the verdict card fix published (2026-11-18)
 - live 754633ff8..d183eac52 (pushed 11:00 MYT). api halatuju-api-01309-wzn, web halatuju-web-01130-cxj, both 100% traffic (rollback api-01308-4z9, web-01129-574). Both builds green (api 22886 passed; web median 157.111 kB); release-decisions job image d183eac52; api health 200.
 - Migration 0213_document_replace_count (additive, new table document_slot_replaces) applied by hand at about 10:05 with the owner's yes: 0 rows, RLS on, 1 service_role policy, ledger last 0213, advisor 0 errors.
