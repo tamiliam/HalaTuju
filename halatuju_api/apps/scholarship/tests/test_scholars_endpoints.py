@@ -346,9 +346,9 @@ class TestFileControls(_Scholars):
         c = self._controls(reader, self.aisyah)                          # assigned to them
         self.assertEqual((c['can_set_substate'], c['can_hold']), (True, False))
 
-    def test_a_reader_who_cannot_write_is_offered_nothing(self):
-        c = self._controls(self.officer, self.bala)                      # see_all, not assigned
-        self.assertEqual((c['can_set_substate'], c['close_reasons']), (False, []))
+    def test_an_unassigned_scholars_holder_is_offered_the_controls(self):
+        c = self._controls(self.officer, self.bala)      # not assigned; POST-AWARD-CUT: `scholars` writes
+        self.assertEqual((c['can_set_substate'], 'graduated' in c['close_reasons']), (True, True))
 
     def test_a_closed_file_offers_nothing(self):
         c = self._controls(self.org_admin, self.ezra)

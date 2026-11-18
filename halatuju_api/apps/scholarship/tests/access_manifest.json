@@ -1,5 +1,5 @@
 {
- "_about": "Expected access per (route, method). allow = must NOT get 401/403/404; hide = must be refused, 404 accepted; every other caller must get 401/403. object = the seeded world object the URL id names when the cross-tenant / cross-owner refusal is asserted, else null. Generated from observed behaviour on 2026-11-13; edit by hand from now on. See test_access_matrix.py. pinned = an allowed caller whose exact status is fixed (BUG: a real app fault the test fails on once fixed; ENV: a test-environment limit such as AI or storage switched off). Flags: HOLE (a real gap), INTENT-UNCLEAR (current behaviour recorded, intent unconfirmed), UNCOVERED (nobody can be allowed in this world, so no fence is proved), STATE (the owner is refused for a state reason, so the 403 is not a fence). NOT COVERED by this matrix: maker-checker inside payment runs and credits (the second-person approval rule) is M4 own test work.",
+ "_about": "Expected access per (route, method). allow = must NOT get 401/403/404; hide = must be refused, 404 accepted; every other caller must get 401/403. object = the seeded world object the URL id names when the cross-tenant / cross-owner refusal is asserted, else null. Generated from observed behaviour on 2026-11-13; edit by hand from now on. See test_access_matrix.py. pinned = an allowed caller whose exact status is fixed (BUG: a real app fault the test fails on once fixed; ENV: a test-environment limit such as AI or storage switched off). Flags: HOLE (a real gap), INTENT-UNCLEAR (current behaviour recorded, intent unconfirmed), UNCOVERED (nobody can be allowed in this world, so no fence is proved), STATE (the owner is refused for a state reason, so the 403 is not a fence). NOT COVERED by this matrix: maker-checker inside payment runs and credits (the second-person approval rule) is M4 own test work. POST-AWARD-CUT (2026-11-17): app_a is ACTIVE, so its 28 per-case write pairs moved by hand (`views_admin.base.may_write_case`): the assigned reviewer_a and qc_a are refused (a closed case is not theirs to write), and admin_a (the `scholars` key) now reaches them.",
  "skips": [
   {
    "route": "admin/",
@@ -42,8 +42,7 @@
    "callers": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "reason": "ENV: AI switched off in tests (no key; a real call would be billable)"
   },
@@ -54,8 +53,7 @@
    "callers": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "reason": "ENV: AI switched off in tests (no key; a real call would be billable)"
   },
@@ -928,15 +926,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/anon-profile/publish/",
@@ -944,15 +941,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/assign/",
@@ -1007,15 +1003,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/cancel-reopen/",
@@ -1034,15 +1029,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/disbursements/",
@@ -1050,15 +1044,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/documents/<int:doc_id>/re-run-vision/",
@@ -1066,15 +1059,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/finalise-profile/",
@@ -1082,15 +1074,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/generate-profile/",
@@ -1098,15 +1089,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/guardian-call/",
@@ -1142,15 +1132,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview-slots/",
@@ -1175,15 +1164,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/",
@@ -1208,15 +1196,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/reopen/",
@@ -1224,15 +1211,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/interview/submit/",
@@ -1240,15 +1226,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/maintenance/",
@@ -1256,15 +1241,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/nudge/",
@@ -1300,15 +1284,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/publish/",
@@ -1316,15 +1299,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/qc-decision/",
@@ -1347,15 +1329,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/referees/",
@@ -1380,15 +1361,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/",
@@ -1396,15 +1376,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/reject/",
@@ -1412,15 +1391,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/release-nric-lock/",
@@ -1450,15 +1428,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/request-info/",
@@ -1466,15 +1443,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/resolution-items/",
@@ -1482,15 +1458,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/reviewer-notes/",
@@ -1529,15 +1504,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/suggest-gaps/",
@@ -1545,15 +1519,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/verdict-summary/",
@@ -1578,15 +1551,14 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/withdrawal-request/",
@@ -2378,13 +2350,12 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [],
    "object": "tranche_a",
    "flags": [],
-   "note": "object tranche_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object tranche_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/intake-years/<int:pk>/",
@@ -3328,13 +3299,12 @@
    "allow": [
     "super",
     "org_admin_a",
-    "qc_a",
-    "reviewer_a"
+    "admin_a"
    ],
    "hide": [],
    "object": "resolution_a",
    "flags": [],
-   "note": "object resolution_a: reached by super, org_admin_a, qc_a, reviewer_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object resolution_a: reached by super, org_admin_a, admin_a; refused to qc_a, reviewer_a, reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/scholars/",

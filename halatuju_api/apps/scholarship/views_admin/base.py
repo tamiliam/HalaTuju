@@ -26,6 +26,7 @@ from apps.courses import public as courses_public
 from .. import qc_separation
 from ..models import ScholarshipApplication
 from ..services import review_writes_closed
+from ..staff_lifecycle import is_open_case
 
 
 def b40_scope(admin):
@@ -35,8 +36,9 @@ def b40_scope(admin):
       'assigned' — `review` without `see_all` (reviewer): only the applicants assigned to them
       'none'     — neither (partner, finance): B40 is not their page
     'all' is org-fenced downstream by _org_scoped/_org_allows (super global; the rest
-    see only their own org). `qc` holders are org-wide WRITERS via _can_review_app
-    (review-all within their org); a plain `see_all` stays assigned-only for writes.
+    see only their own org). WHILE A CASE IS OPEN `qc` holders are org-wide WRITERS via
+    `may_write_case` (review-all within their org); a plain `see_all` stays assigned-only for
+    writes. After the award neither `qc` nor the assignment writes (POST-AWARD-CUT, 2026-11-17).
 
     The `finance` PRESET is 'none' BY DECISION (role matrix 2026-07-23): it never sees an
     applicant file, document, income figure or verdict; its only student data is the
@@ -66,14 +68,73 @@ def scholars_scope(admin):
       'none'   — everyone else: `review`, `qc` and `see_all` alone open nothing here (403).
     Across organisations the answer is 404, downstream (`_org_allows`). ⚠ NO ROLE LABEL IS READ
     (`test_role_is_display_only.py`): the key, then the mentor record."""
+    if holds_scholars_key(admin):
+        return 'all'
     if admin is None:
         return 'none'
-    if admin.has_perm('scholars'):
-        return 'all'
     from ..mentor_desk import mentor_of      # in the function: mentor_desk imports the scholar rules
     if mentor_of(admin) is not None:
         return 'mentor'
     return 'none'
+
+
+def holds_scholars_key(admin):
+    """`scholars_scope(admin) == 'all'` without the mentor lookup (a mentor is never 'all'), so a
+    write test asked on every case detail costs no query."""
+    return admin is not None and admin.has_perm('scholars')
+
+
+def org_allows(admin, app):
+    """Row-level org fence: True if this admin's organisation owns ``app``. Super is global;
+    everyone else must match owning_organisation. A cross-org answer must surface as 404 (never
+    403) so existence isn't leaked. `_AdminBase._org_allows` is this."""
+    if admin is None or app is None:
+        return False
+    if admin.is_super:
+        return True
+    return app.owning_organisation_id == admin.owning_organisation_id
+
+
+def may_write_file(admin, app):
+    """The scholar-file WRITE (S1-d): a `scholars` holder (a super passes every key) on a file of
+    their own organisation. THE ONE DEFINITION — the scholar-file views ask it through
+    `_may_write_file`, and `may_write_case` asks it for every case past the open stage."""
+    return holds_scholars_key(admin) and org_allows(admin, app)
+
+
+def may_write_case(admin, app, status=None):
+    """May this admin WRITE (act) on this application? THE ONE RULE (`_can_review_app`, and the
+    `can_write` the case detail serves so the cockpit never re-derives it).
+
+    super — always. While the case is OPEN (`staff_lifecycle.is_open_case`: before the award, or a
+    REOPENED decision at any status) the rule is unchanged: a B40 scope, the own organisation, then
+    `qc` org-wide or the case ASSIGNED to them. Once it is NOT open, neither the assignment nor `qc`
+    writes (owner R5 2026-11-12, 16 and 17 Nov: the reviewer's relationship ends at awarded; QCs are
+    reviewers with additional permission); the writer is a `scholars` holder of the own organisation
+    (`may_write_file`) — who may hold no B40 scope at all, so that branch is asked first. Reads are
+    untouched: an assigned reviewer still SEES their past students (`_scoped_application`).
+    `status` judges the case at another status — ONLY `may_cancel_held_decline` passes it."""
+    if admin is None or app is None:
+        return False
+    if admin.is_super:
+        return True
+    if not is_open_case(status or app.status, app.decision_reopened_at):
+        return may_write_file(admin, app)
+    if b40_scope(admin) == 'none' or not org_allows(admin, app):
+        return False
+    return admin.has_perm('qc') or app.assigned_to_id == admin.id
+
+
+def may_cancel_held_decline(admin, app):
+    """cancel-decline's own door (owner, 17 Nov: "Reviewer + QC"). A decline still EMBARGOED (the
+    student not told) that was taken BEFORE the award is judged as the open case the cancel returns
+    it to, so the assignee and `qc` keep the door; every other case asks the one rule unchanged.
+    For this door only: no other write on a rejected case reopens."""
+    from ..services.decline import held_decline_restore_target   # no query: the facts are on the row
+    back_to = held_decline_restore_target(app) if app is not None else None
+    if back_to and is_open_case(back_to, None):
+        return may_write_case(admin, app, status=back_to)
+    return may_write_case(admin, app)
 
 
 class _AdminBase(courses_public.PartnerAdminMixin, APIView):
@@ -244,11 +305,7 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
         """Row-level org fence: True if this admin's organisation owns ``app``.
         Super is global; everyone else must match owning_organisation. A cross-org
         answer must surface as 404 (never 403) so existence isn't leaked."""
-        if admin is None or app is None:
-            return False
-        if self.has_role(admin, 'super'):
-            return True
-        return app.owning_organisation_id == admin.owning_organisation_id
+        return org_allows(admin, app)
 
     def _scoped_application(self, request, pk):
         """The application IFF this admin may access it (reviewer assignment-scoped;
@@ -270,33 +327,23 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
         return app, None
 
     def _can_review_app(self, admin, app):
-        """True if this admin may WRITE (review-act) on this application:
-          super              — acts on any application;
-          `qc` holders       — act on ANY application in their OWN org (org_admin = the
-                               organisation superadmin; qc = the hybrid review-all role);
-          anyone else in scope — act ONLY on applications ASSIGNED to them (#39 S3: by permission);
-          partner            — never.
-        (Assignment-based review permission, 2026-07 — a plain 'admin' has full READ scope
-        via _b40_scope='all' but assigned-only WRITE, so a view-all admin can be given a
-        selective review remit. org_admin/qc write across the org is safe because the QC
-        separation guard in _require_qc (`qc_separation.refusal`, widened in T5b) stops anyone QC-ing
-        a case they were assigned (ever), interviewed, verify-accepted or recorded the verdict on.
-        `finance` never reaches here: its _b40_scope is 'none', so the first test refuses it.)"""
-        if admin is None or app is None:
-            return False
-        if self._b40_scope(admin) == 'none':          # partner / non-B40
-            return False
-        if self.has_role(admin, 'super'):
-            return True
-        if not self._org_allows(admin, app):          # cross-org (Sprint 3a)
-            return False
-        if admin.has_perm('qc'):                      # org-wide write (same-org guaranteed above)
-            return True
-        return app.assigned_to_id == admin.id
+        """True if this admin may WRITE (review-act) on this application — `may_write_case`, the one
+        rule. While the case is open: super; `qc` holders on ANY case of their OWN org; anyone else
+        in scope ONLY on cases ASSIGNED to them; partner/finance never (no B40 scope). Past the open
+        stage (awarded onwards, and terminal cases not reopened): super, or a `scholars` holder of
+        the own org — the assignment and `qc` no longer write (POST-AWARD-CUT, 2026-11-17).
+        (org_admin/qc writing across the org is safe because the QC separation guard in _require_qc
+        (`qc_separation.refusal`) stops anyone QC-ing a case they were assigned (ever), interviewed,
+        verify-accepted or recorded the verdict on.)"""
+        return may_write_case(admin, app)
 
-    def _require_app_write(self, request, pk):
+    def _may_write_file(self, admin, app):
+        """The scholar-file write — `may_write_file` (lifted here from `_ScholarsBase`, 2026-11-17)."""
+        return may_write_file(admin, app)
+
+    def _require_app_write(self, request, pk, judge=None):
         """Auth prologue for a per-application WRITE. Returns (app, admin, None) when the caller
-        may act on this application (super, or the assigned admin/reviewer), else
+        may act on this application (`_can_review_app`, or a door's own `judge`), else
         (None, None, error_response). Replaced the old role-only reviewer prologue + _scoped_application
         pair for per-application mutations (that prologue is gone: its last caller, the graduation
         thank-you review, asks the `review` key since sprint THANKS)."""
@@ -310,7 +357,7 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
             # Cross-org: 404 (don't leak existence). Distinct from the 403 below, which
             # is a SAME-org app the caller simply isn't assigned to.
             return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not self._can_review_app(admin, app):
+        if not (judge or self._can_review_app)(admin, app):
             return None, None, self._deny_role()
         return app, admin, None
 
@@ -325,9 +372,10 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
         `suggest-gaps` would have spent a Gemini call on it.
 
         ⚠ ADD A NEW REVIEW-TRACK WRITE HERE, NOT TO `_require_app_write`. The two are separate
-        because the majority of per-application writes are legitimate on a closed case
-        (cancelling a decline, correcting a reporting date, re-running a document read); making
-        the status gate universal would break them. See `services.review_writes_closed` for why
+        because some per-application writes are legitimate on a closed case (cancelling a decline,
+        correcting a reporting date, re-running a document read); making the status gate universal
+        would break them. Since POST-AWARD-CUT (2026-11-17) those are done by a `scholars` holder or a
+        super, not the assignee — `may_write_case`. See `services.review_writes_closed` for why
         a REOPENED case is open however terminal its status reads.
         """
         app, admin, err = self._require_app_write(request, pk)

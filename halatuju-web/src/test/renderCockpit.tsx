@@ -106,6 +106,26 @@ function authFor({ role, adminId, token = 'test-token', permissions }: CockpitAu
   }
 }
 
+/** The statuses the server counts as an OPEN case (`staff_lifecycle.OPEN_CASE_STATUSES`). */
+const OPEN_STATUSES = ['submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'recommended']
+
+/**
+ * POST-AWARD-CUT: the `can_write` and `can_cancel_decline` the server would serve THIS test officer
+ * (`views_admin.base.may_write_case` / `may_cancel_held_decline`), for a fixture that carries none.
+ * An open case: a B40 key and (`qc` or the assignee). Past it: the `scholars` key. A super: always.
+ * A held decline (rejected, `decline_due_at` set) is judged as the open case it would return to.
+ */
+function servedWriteFlags(app: AdminScholarshipDetail, role: ReturnType<typeof authFor>['role']) {
+  const keys = role.permissions
+  const judge = (open: boolean) => role.is_super_admin || (open
+    ? ['see_all', 'qc', 'review'].some((k) => keys.includes(k))
+      && (keys.includes('qc') || app.assigned_to_id === role.admin_id)
+    : keys.includes('scholars'))
+  const open = OPEN_STATUSES.includes(app.status) || !!app.decision_reopened_at
+  const held = app.status === 'rejected' && !!app.decline_due_at
+  return { can_write: judge(open), can_cancel_decline: judge(open || held) }
+}
+
 /**
  * Every admin-api call the cockpit makes ON MOUNT, primed with a sane empty answer.
  *
@@ -168,9 +188,11 @@ export function renderCockpit(options: CockpitOptions): MountedCockpit {
       + '"./view" in the test file — the mocks are hoisted into this module, and the page '
       + 'captures the real functions if it loads first.')
   }
-  const app = options.app
+  const given = options.app
     ?? buildApplicationDetail(options.stage ?? 'interviewing', options.build ?? {})
-  authModule.__cockpitAuth = authFor(options)
+  const auth = authFor(options)
+  const app = given.can_write === undefined ? { ...given, ...servedWriteFlags(given, auth.role) } : given
+  authModule.__cockpitAuth = auth
   primeCockpitApi(app)
   if (options.loadFails) {
     const gone = new Error('Not found') as Error & { status?: number; code?: string }

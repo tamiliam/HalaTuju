@@ -33,7 +33,10 @@ class TestHoldAward(TestCase):
     def setUp(self):
         self.cohort = make_cohort()
         self.reviewer = make_admin('reviewer', owning_org=self.cohort.owning_organisation)
-        self.client = authed_client(self.reviewer)
+        # POST-AWARD-CUT (owner, 17 Nov): an awarded case is past the open case, so the assigned
+        # reviewer no longer writes on it (test_post_award_cut.py). The org admin writes on both
+        # sides: past the award by `scholars`, and on the `recommended` case a hold returns to.
+        self.client = authed_client(make_admin('org_admin', owning_org=self.cohort.owning_organisation))
 
     def _hold(self, app, client=None):
         return (client or self.client).post(f'{API}applications/{app.id}/hold-award/', {},

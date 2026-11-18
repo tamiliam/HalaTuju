@@ -27,7 +27,7 @@ const ROLE = {
   is_admin: true, is_super_admin: false, role: 'org_admin', admin_id: 1,
   org_name: 'Yayasan Contoh', owning_org_id: 1, owning_org_name: 'Yayasan Contoh',
   admin_name: 'Pentadbir Contoh', reviewer_profile_complete: true,
-  // The cockpit writes on the 'qc' key (`canWrite`), so the decision and ledger controls draw as they would for her.
+  // The cockpit's controls draw on the served `can_write` (the fixture says true), as they would for her.
   permissions: ['review', 'qc', 'see_all'],
   page_keys: ORG_ADMIN_PAGE_KEYS,   // TD-623: what the server serves; the keys decide
 }

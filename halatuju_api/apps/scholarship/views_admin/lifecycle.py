@@ -15,7 +15,23 @@ from .. import surface_gates
 from ..models import Disbursement, Programme, ScholarshipApplication
 from ..serializers_admin import AdminApplicationDetailSerializer
 
+from ..staff_lifecycle import is_open_case
+from .applications import _detail_payload
 from .base import _AdminBase
+
+
+def _tranche_refusal(admin, app):
+    """POST-AWARD-CUT (owner, 17 Nov: "Scholars + payments"). Past the open case the case rule has
+    already asked for the Scholars file-writer; a tranche write (schedule, release, withhold,
+    return, mark_due) ALSO needs `payments.may_prepare` — the key `on_hold` reads: `payments_prepare`
+    or the lead tier (a super passes every key). Not `payments_approve`: that is a run's final
+    signature, and no preset holds it with `scholars`, so it would leave a tranche to a super
+    alone. While the case is open, today's rule stands (tranches are for funded cases anyway)."""
+    from .. import payments
+    if is_open_case(app.status, app.decision_reopened_at) or payments.may_prepare(admin):
+        return None
+    return Response({'error': 'tranche_needs_payments', 'code': 'tranche_needs_payments'},
+                    status=status.HTTP_403_FORBIDDEN)
 
 from .sources import _SourcesBase
 
@@ -88,12 +104,16 @@ class AdminApplicationWitnessView(_SourcesBase):
 
 class AdminDisbursementScheduleView(_AdminBase):
     """Post-award S4: POST .../applications/<pk>/disbursements/ {amount, sequence?, label?,
-    scheduled_for?} — schedule one tranche against a funded application. Reviewer-gated.
-    Returns the refreshed application detail (the cockpit re-renders its disbursement panel)."""
+    scheduled_for?} — schedule one tranche against a funded application. The case rule, then
+    `_tranche_refusal`. Returns the refreshed application detail (the cockpit re-renders its
+    disbursement panel)."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
+        refusal = _tranche_refusal(admin, app)
+        if refusal:
+            return refusal
         seq = request.data.get('sequence')
         try:
             seq = int(seq) if seq not in (None, '') else None
@@ -114,9 +134,9 @@ class AdminDisbursementScheduleView(_AdminBase):
 
 class AdminDisbursementActionView(_AdminBase):
     """Post-award S4: POST .../disbursements/<pk>/<action>/ where action ∈
-    release | withhold | return | mark_due. Reviewer-gated + access-scoped via the
-    tranche's application. A 'release' (the first one) flips the app active → maintenance.
-    Returns the refreshed application detail."""
+    release | withhold | return | mark_due. The case rule on the tranche's application, then
+    `_tranche_refusal` (the same key for all four). A 'release' (the first one) flips the app
+    active → maintenance. Returns the refreshed application detail."""
     def post(self, request, pk, action):
         admin = self.get_admin(request)
         if not admin:
@@ -129,9 +149,12 @@ class AdminDisbursementActionView(_AdminBase):
                 .filter(pk=pk).first())
         if disb is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        # Assignment-based write: super, or the admin/reviewer assigned to the tranche's application.
+        # The case rule (`_can_review_app`), then the payments key past the open case.
         if not self._can_review_app(admin, disb.application):
             return self._deny_role()
+        refusal = _tranche_refusal(admin, disb.application)
+        if refusal:
+            return refusal
         try:
             writer(disb, by_email=admin.email,
                    note=request.data.get('note', ''), actor=admin)
@@ -166,7 +189,7 @@ class AdminCloseApplicationView(_AdminBase):
             if e.code == 'forbidden':
                 return self._deny_role()
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))   # serves the new `can_write` (POST-AWARD-CUT)
 
 
 class AdminMaintenanceSubstateView(_AdminBase):

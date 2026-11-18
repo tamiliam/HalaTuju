@@ -32,7 +32,7 @@ const higherDoc = (exam_year: string, exam_year_status: string) => ({
 
 const draw = (doc: unknown) => render(
   <DocumentsDrawer app={{ documents: [doc], verdict: [] } as unknown as AdminScholarshipDetail}
-    t={t as never} busy="" setViewerDoc={() => {}} doReRunVision={() => {}} />)
+    t={t as never} busy="" setViewerDoc={() => {}} doReRunVision={() => {}} canWrite={false} />)
 
 describe('the STPM year chip', () => {
   it('an off-route year is amber', () => {

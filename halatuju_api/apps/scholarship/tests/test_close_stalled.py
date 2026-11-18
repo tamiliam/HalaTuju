@@ -391,10 +391,10 @@ class TestTheEndpoint(TestCase):
                 app.refresh_from_db()
                 self.assertEqual(app.status, 'recommended')
 
-    def test_the_assigned_reviewer_may_still_close_a_funded_case(self, _send):
-        app = make_application('active', cohort=self.cohort, reviewer=self.reviewer)
-        r = self._close(app, 'graduated', client=authed_client(self.reviewer))
-        self.assertEqual(r.status_code, 200, r.content)
+    def test_a_funded_case_is_closed_by_a_scholars_holder_not_the_assigned_reviewer(self, _send):
+        app = make_application('active', cohort=self.cohort, reviewer=self.reviewer)   # POST-AWARD-CUT
+        self.assertEqual(self._close(app, 'graduated', client=authed_client(self.reviewer)).status_code, 403)
+        self.assertEqual(self._close(app, 'graduated').status_code, 200)   # the org admin holds `scholars`
 
     def test_another_organisations_org_admin_gets_404(self, _send):
         stranger = make_admin('org_admin', owning_org=make_cohort().owning_organisation)
@@ -444,7 +444,7 @@ class TestAStalledCloseShutsTheReviewTrack(TestCase):
     def setUp(self):
         self.cohort = make_cohort()
         self.reviewer = make_admin('reviewer', owning_org=self.cohort.owning_organisation)
-        self.client = authed_client(self.reviewer)
+        self.client = authed_client(make_admin('org_admin', owning_org=self.cohort.owning_organisation))
 
     def _closed(self, stage='submitted'):
         app = make_application(stage, cohort=self.cohort, reviewer=self.reviewer)

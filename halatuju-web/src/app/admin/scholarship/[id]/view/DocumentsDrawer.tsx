@@ -24,10 +24,12 @@ import type { ViewerDoc } from '@/components/DocViewer'
 
 import { missingHigherKind, type T } from './shared'
 
-export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
+export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunVision }: {
   app: AdminScholarshipDetail
   t: T
   busy: string
+  /** The served `can_write` (POST-AWARD-CUT): Re-run is a write, so it shows only to who may write. */
+  canWrite: boolean
   setViewerDoc: (doc: ViewerDoc | null) => void
   doReRunVision: (docId: number) => void
 }) {
@@ -278,12 +280,14 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                     <p className="text-xs md:text-[11px] text-caution-700 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                   )}
                 </div>
-                <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
-                  <button onClick={() => doReRunVision(d.id)} disabled={busy === 'vision'}
-                    className="text-xs md:text-[11px] text-ground-500 hover:text-ground-700 hover:underline disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
-                    {busy === 'vision' ? t('common.loading') : t('admin.scholarship.docsDrawer.rerun')}
-                  </button>
-                </div>
+                {canWrite && (
+                  <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
+                    <button onClick={() => doReRunVision(d.id)} disabled={busy === 'vision'}
+                      className="text-xs md:text-[11px] text-ground-500 hover:text-ground-700 hover:underline disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
+                      {busy === 'vision' ? t('common.loading') : t('admin.scholarship.docsDrawer.rerun')}
+                    </button>
+                  </div>
+                )}
               </li>
             )
           }

@@ -153,15 +153,25 @@ describe('has money gone out — WithdrawAwardCard.hasPaidTranche vs award_withd
   })
 })
 
-describe('who may write on a case — view.tsx canWrite vs views_admin/base._can_review_app', () => {
-  it('a qc holder writes on any case in scope; anyone else only on a case assigned to them', () => {
+describe('who may write on a case — view.tsx canWrite is SERVED by views_admin/base.may_write_case', () => {
+  it('the server answers `can_write` from the one rule; the cockpit reads it and derives nothing', () => {
     const py = readApi('apps/scholarship/views_admin/base.py')
-    const fn = py.slice(py.indexOf('def _can_review_app('), py.indexOf('def _require_app_write('))
-    expect(fn).toContain("admin.has_perm('qc')")
-    expect(fn).toContain('return app.assigned_to_id == admin.id')
+    const fn = py.slice(py.indexOf('def _can_review_app('), py.indexOf('def _may_write_file('))
+    expect(fn).toContain('return may_write_case(admin, app)')
+    const rule = py.slice(py.indexOf('def may_write_case('), py.indexOf('class _AdminBase('))
+    expect(rule).toContain('if not is_open_case(status or app.status, app.decision_reopened_at):')
+    expect(rule).toContain('return may_write_file(admin, app)')
+    // The cancel-decline door (owner 17 Nov) is served too, as `can_cancel_decline`.
+    expect(rule).toContain('return may_write_case(admin, app, status=back_to)')
+    const payload = readApi('apps/scholarship/views_admin/applications.py')
+    expect(payload).toContain("data['can_write'] = may_write_case(admin, app)")
+    expect(payload).toContain("data['can_cancel_decline'] = may_cancel_held_decline(admin, app)")
     const view = web('src/app/admin/scholarship/[id]/view.tsx')
-    expect(view).toContain("const canWrite = hasPerm(role, 'qc')")
-    expect(view).toContain('app.assigned_to_id === (role?.admin_id ?? null)')
+    expect(view).toContain("served.current = { write: app.can_write, cancelDecline: app.can_cancel_decline === true }")
+    expect(view).toContain('const canWrite = served.current.write')
+    // POST-AWARD-CUT: the old browser copy of the rule is gone, and must not come back.
+    expect(view).not.toContain("const canWrite = hasPerm(role, 'qc')")
+    expect(view).not.toContain('app.assigned_to_id === (role?.admin_id ?? null)')
   })
 })
 

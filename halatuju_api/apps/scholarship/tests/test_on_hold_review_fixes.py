@@ -1,7 +1,9 @@
 """Student maintenance Sprint 1 — the adversarial review's fixes (M1, L1, L2, L3).
 
-  * M1: a move to/from `on_hold` is a money act — reviewer refused (403 `hold_needs_payments`), a
-    `payments_prepare` holder allowed; a refused approval leaves the run signed and unpaid;
+  * M1: a move to/from `on_hold` is a money act — a Scholars holder without a payments key refused
+    (403 `hold_needs_payments`), a `payments_prepare` holder allowed; a refused approval leaves the
+    run signed and unpaid. (POST-AWARD-CUT, 17 Nov: past the award the assigned reviewer no longer
+    writes at all, so the case-writer here is a `scholars` holder.);
   * L1: an award that falls through resets a stored hold to on_track, stamped and logged;
   * L2: `set_substate` judges the STORED sub-state, not a stale in-memory copy;
   * L3: the run item says `on_hold`, and the refusal says how many.
@@ -42,6 +44,7 @@ class _Org(TestCase):
         org = self.cohort.owning_organisation
         self.reviewer = make_admin('reviewer', owning_org=org)
         self.maker = make_admin('admin', owning_org=org, name='Maker One')
+        self.scholars_only = make_admin('admin', owning_org=org, permissions=['scholars'])
         self.approver = make_admin('org_admin', owning_org=org, name='Approver One')
         self.app = make_application(
             'awarded', cohort=self.cohort, reviewer=self.reviewer,
@@ -55,17 +58,20 @@ class _Org(TestCase):
 
 
 class TestHoldIsAMoneyAct(_Org):
-    def test_a_reviewer_cannot_place_or_lift_a_hold(self):
-        r = self._substate(self.reviewer, 'on_hold')
+    def test_a_scholars_holder_without_payments_cannot_place_or_lift_a_hold(self):
+        r = self._substate(self.scholars_only, 'on_hold')
         self.assertEqual((r.status_code, r.json()['code']), (403, 'hold_needs_payments'))
         self.app.refresh_from_db()
         self.assertEqual(self.app.maintenance_substate, 'on_track')
         maintenance.set_substate(self.app, 'on_hold', by_email='x@example.test')
-        r = self._substate(self.reviewer, 'on_track')
+        r = self._substate(self.scholars_only, 'on_track')
         self.assertEqual((r.status_code, r.json()['code']), (403, 'hold_needs_payments'))
 
-    def test_a_reviewer_keeps_the_other_substates(self):
-        self.assertEqual(self._substate(self.reviewer, 'probation').status_code, 200)
+    def test_a_scholars_holder_without_payments_keeps_the_other_substates(self):
+        self.assertEqual(self._substate(self.scholars_only, 'probation').status_code, 200)
+
+    def test_the_assigned_reviewer_no_longer_moves_the_substate(self):
+        self.assertEqual(self._substate(self.reviewer, 'probation').status_code, 403)
 
     def test_a_payments_prepare_holder_may_hold(self):
         held = make_application('awarded', cohort=self.cohort, reviewer=self.maker,

@@ -67,6 +67,55 @@ re-ask went to `gemini-2.5-flash`, which has a retirement date, so a 2.5 fall-th
 **Cost.** Nothing extra on a full read. A blank read or a read with no reporting date costs one more 3.8 call: text
 only for a text-layer PDF, or the page-1 image at the default resolution (about 258 tokens).
 
+## 2026-11-17 — POST-AWARD-CUT: once a case is no longer open, the reviewer and QC stop writing; Scholars holders write
+
+Branch post-award-cut, not pushed. No migration. Services: api, web. Builds on R5 (2026-11-12) and THANKS-SCHOLARS (below).
+
+**Rulings quoted.**
+- R5 ("2026-11-12 - Members tab and the lifecycle rules"): "An open case ends at awarded"; `assigned_to` is kept after
+  award, "so the reviewer still sees their past students".
+- 2026-11-13: leaving Reviewers ends even that sight (unchanged here).
+- Owner, 16 Nov: "the reviewer's relationship ends at awarded, and what they see is archived work. Applicant becomes a
+  scholar and scholars are maintained by admin. Thank you notes fall under maintenance, and anyone with edit permission
+  in scholars should be able to review/approve the thank you notes."
+- Owner, 17 Nov: "yes" to (1) cutting an assigned reviewer's WRITES once a case is no longer open, and (2) cutting QC
+  holders' org-wide writes after award too.
+- Owner, 17 Nov: "QCs are reviewers as well, just that they have additional permission". So after award `qc` grants no
+  write, the same as a plain reviewer. No QC exception.
+- Owner, 17 Nov (a) "Scholars + payments": after award, scheduling a tranche and the tranche actions (release / withhold
+  / return / mark_due) need the Scholars file-writer AND a payments key. Before award, today's rule.
+- Owner, 17 Nov (b) "Reviewer + QC": cancel-decline on a pre-award decline still in its embargo stays with the assignee
+  and QC. An embargoed decline counts as open for that one door only.
+
+**The rule (one home: `views_admin/base.may_write_case`, asked by `_can_review_app` and served as `can_write`).**
+- A super: always.
+- An OPEN case (`staff_lifecycle.is_open_case`: submitted to recommended, or a reopened decision at any status): unchanged.
+  A B40 scope, the own organisation, then `qc` org-wide or the assignee.
+- Not open: only `may_write_file`, a `scholars` holder of the own organisation. It is the same function the scholar file
+  and the thank-you decision (`may_decide_thanks`) use. That branch is asked before the B40 scope, so a Scholars-only
+  holder is not refused early. The open-case rule does not widen for them.
+- Reads are unchanged (`_scoped_application`, the detail GET): the assigned reviewer still sees past students.
+
+**Decisions made in the build.**
+- Every write that goes through `_require_app_write`, `_require_open_case` or `_can_review_app` now follows the rule.
+  Writes gated by their own key were left as they are: reviewer notes (`students.edit`), the award amount (super),
+  award withdrawal (its own seats), verdict reopen (super), and assign (`may_assign`).
+- Tranches (a): `_tranche_refusal` in `views_admin/lifecycle.py` asks `payments.may_prepare` (`payments_prepare` or the
+  lead tier), the key `on_hold` already reads, for all five tranche writes. Refusal: 403 `tranche_needs_payments`. Not
+  `payments_approve`: that is a payment run's final signature, finance holds it, and no preset holds it together with
+  `scholars`. Requiring it would leave tranche releases to a super alone.
+- Cancel-decline (b): `may_cancel_held_decline` judges a held decline by the status the cancel would restore
+  (`held_decline_restore_target`). If that status is open, the open-case rule applies. A contractual decline of a
+  funded student restores to active or maintenance, so it stays with Scholars holders. The cockpit draws the button on
+  a served `can_cancel_decline`.
+- The cockpit no longer works out `canWrite` itself. It reads the served `can_write` and keeps the last value it was
+  served (some write replies leave the flag out). Cancel-decline, hold-award and the document Re-run are hidden without it.
+- The admin preset gains org-wide writes on funded cases, through `scholars`. This includes tranches, because it also
+  holds `payments_prepare`.
+
+**Revisit if:** a post-award step needs the reviewer to act again (R5's own revisit line). Or if the payments model
+splits tranche release from preparing a run.
+
 ## 2026-11-16 — THANKS-SCHOLARS: a graduation thank-you is scholar maintenance, decided on the scholar file
 
 Branch thanks-scholars, not pushed. No migration. Services: both. Supersedes the THANKS entry below (the `review` key

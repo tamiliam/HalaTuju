@@ -15,7 +15,8 @@ WRITES on a scholar file (accepting or querying a result, letters, activity note
 are for `scholars` holders across their own organisation, no longer only the assignee, and no longer
 `qc`; a closed file is read-only (409 `file_closed`). Placing a hold stays on the cockpit door
 (`AdminMaintenanceSubstateView`, payments rights), as do the sub-state and Close (`_can_review_app`,
-shared with Applications). Nothing here is ever served to a student.
+shared with Applications — past the award it asks this same `scholars` test, POST-AWARD-CUT 2026-11-17;
+`_may_write_file` now lives on `_AdminBase`). Nothing here is ever served to a student.
 """
 from django.db.models import Q
 from rest_framework import status
@@ -92,12 +93,6 @@ class _ScholarsBase(_AdminBase):
         if app is None or not has_file(app) or not self._org_allows(admin, app):
             return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         return app, admin, None
-
-    def _may_write_file(self, admin, app):
-        """The scholar-file WRITE (S1-d): accept / query a result, issue a letter, add an activity note.
-        A `scholars` holder (a super passes every key) on a file of their own organisation — no longer
-        only the assignee, and no longer `qc`. `_can_review_app` is the Applications rule and stays there."""
-        return scholars_scope(admin) == 'all' and self._org_allows(admin, app)
 
 
 class AdminScholarListView(_ScholarsBase):

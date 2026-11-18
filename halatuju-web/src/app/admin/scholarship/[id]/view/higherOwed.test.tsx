@@ -43,7 +43,7 @@ describe('#388: the missing higher-results slot is read off the served Academic 
     const app = { documents: [], verdict: [academic('higher_results_not_on_file', { held: 'STPM', kind: 'stpm' })] }
     const t = lookup(en)
     render(<DocumentsDrawer app={app as unknown as AdminScholarshipDetail} t={t as never} busy=""
-      setViewerDoc={() => {}} doReRunVision={() => {}} />)
+      setViewerDoc={() => {}} doReRunVision={() => {}} canWrite={false} />)
     const row = screen.getByTestId('higher-missing')
     expect(row.textContent).toContain('STPM results')
     expect(row.textContent).toContain(en.admin.scholarship.docsDrawer.pill.missing)
@@ -51,7 +51,7 @@ describe('#388: the missing higher-results slot is read off the served Academic 
   it('and no Missing row when the verdict says nothing is owed', () => {
     const app = { documents: [], verdict: [academic('grades_verified')] }
     render(<DocumentsDrawer app={app as unknown as AdminScholarshipDetail} t={lookup(en) as never} busy=""
-      setViewerDoc={() => {}} doReRunVision={() => {}} />)
+      setViewerDoc={() => {}} doReRunVision={() => {}} canWrite={false} />)
     expect(screen.queryByTestId('higher-missing')).toBeNull()
   })
 })
@@ -98,7 +98,7 @@ describe('2026-11-07: declared SPM only, bound for a degree (apps 158 / 168 / 24
     expect(missingHigherKind({ verdict: [academic('higher_results_not_declared', { kind: '' })] })).toBe('')
     const app = { documents: [], verdict: [academic('higher_results_not_declared', { kind: '' })] }
     render(<DocumentsDrawer app={app as unknown as AdminScholarshipDetail} t={lookup(en) as never} busy=""
-      setViewerDoc={() => {}} doReRunVision={() => {}} />)
+      setViewerDoc={() => {}} doReRunVision={() => {}} canWrite={false} />)
     expect(screen.getByTestId('higher-missing').textContent)
       .toContain('STPM / Matriculation / Asasi / Diploma results')
   })

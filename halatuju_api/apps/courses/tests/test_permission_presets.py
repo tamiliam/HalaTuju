@@ -428,7 +428,7 @@ class GoldenTable(TestCase):
 
     def _case(self, **kw):
         base = dict(owning_organisation_id=self.org.id, assigned_to_id=None, status='interviewed',
-                    verdict_decided_by='')
+                    verdict_decided_by='', decision_reopened_at=None)   # an OPEN case (POST-AWARD-CUT)
         base.update(kw)
         return SimpleNamespace(**base)
 

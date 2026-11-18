@@ -117,6 +117,9 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
   help_scholarship: 'Someone to check my UPU choices.',
   anything_else: '',
   status: 'interviewed',
+  // POST-AWARD-CUT: served per viewer (`may_write_case`); the sandbox officer may act on this case.
+  can_write: true,
+  can_cancel_decline: true,
   bucket: 'shortlisted',
   shortlist_reason: 'Strong results, income well inside B40.',
   rejection_category: '',

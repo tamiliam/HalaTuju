@@ -58,17 +58,22 @@ def fund_through_the_product(cohort, *, reviewer, cooloff_days=0):
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class _FundedCase(TestCase):
-    """One funded (`active`) student, the reviewer assigned to them, and a client for each role."""
+    """One funded (`active`) student, the reviewer assigned to them, and a client for each role.
+
+    The acting client is a Scholars + payments holder (the `admin` preset: `scholars` and
+    `payments_prepare`). POST-AWARD-CUT (owner, 17 Nov): past the award the assigned reviewer no
+    longer writes, and a tranche write needs `payments.may_prepare` too (test_post_award_cut.py)."""
 
     def setUp(self):
         self.cohort = make_cohort()
         org = self.cohort.owning_organisation
         self.reviewer = make_admin('reviewer', owning_org=org)
         self.org_admin = make_admin('org_admin', owning_org=org)
+        self.writer = make_admin('admin', owning_org=org)
         self.app, self.sponsor, self.sp = fund_through_the_product(
             self.cohort, reviewer=self.reviewer)
         self.assertEqual(self.app.status, 'active', 'the product path did not fund the case')
-        self.client = authed_client(self.reviewer)
+        self.client = authed_client(self.writer)
 
     def _schedule(self, amount='500', **extra):
         return self.client.post(f'{API}applications/{self.app.id}/disbursements/',
@@ -87,7 +92,7 @@ class _FundedCase(TestCase):
 class TestScheduleTranche(_FundedCase):
     """POST applications/<pk>/disbursements/ — the schedule every payment is made against."""
 
-    def test_the_assigned_reviewer_schedules_a_tranche_linked_to_the_live_sponsorship(self):
+    def test_a_scholars_and_payments_holder_schedules_a_tranche_linked_to_the_live_sponsorship(self):
         r = self._schedule('750.5', label='Semester 1', scheduled_for='2026-11-01')
         self.assertEqual(r.status_code, 200, r.content)
         row = Disbursement.objects.get(application=self.app)
@@ -106,8 +111,9 @@ class TestScheduleTranche(_FundedCase):
 
     def test_a_case_that_is_not_funded_is_refused_and_nothing_is_written(self):
         unfunded = make_application('recommended', cohort=self.cohort, reviewer=self.reviewer)
-        r = self.client.post(f'{API}applications/{unfunded.id}/disbursements/',
-                             {'amount': '500'}, format='json')
+        # Pre-award, today's rule: the assigned reviewer writes, so the refusal is the service's.
+        r = authed_client(self.reviewer).post(f'{API}applications/{unfunded.id}/disbursements/',
+                                              {'amount': '500'}, format='json')
         self.assertEqual((r.status_code, r.json()['error']), (400, 'not_in_programme'))
         self.assertFalse(Disbursement.objects.filter(application=unfunded).exists())
 
@@ -137,7 +143,7 @@ class TestTrancheActions(_FundedCase):
         self.assertEqual(r.status_code, 200, r.content)
         tranche.refresh_from_db()
         self.assertEqual((tranche.status, tranche.actioned_by, tranche.reference, tranche.note),
-                         ('released', self.reviewer.email, 'mock', 'Paid to eWallet'))
+                         ('released', self.writer.email, 'mock', 'Paid to eWallet'))
         self.assertIsNotNone(tranche.released_at)
         # The FIRST release is what moves a student into the funded loop.
         self.app.refresh_from_db()
@@ -161,7 +167,7 @@ class TestTrancheActions(_FundedCase):
         r = self._act(tranche, 'withhold', note='Results outstanding')
         self.assertEqual(r.status_code, 200, r.content)
         tranche.refresh_from_db()
-        self.assertEqual((tranche.status, tranche.actioned_by), ('withheld', self.reviewer.email))
+        self.assertEqual((tranche.status, tranche.actioned_by), ('withheld', self.writer.email))
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'active')
 
@@ -254,7 +260,7 @@ class TestMaintenanceBrake(_FundedCase):
         self.assertEqual(r.status_code, 200, r.content)
         self.app.refresh_from_db()
         self.assertEqual((self.app.maintenance_substate, self.app.maintenance_substate_changed_by),
-                         ('probation', self.reviewer.email))
+                         ('probation', self.writer.email))
 
     def test_an_unknown_substate_is_refused(self):
         self._into_maintenance()

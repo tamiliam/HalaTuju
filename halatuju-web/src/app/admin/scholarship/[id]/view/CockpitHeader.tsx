@@ -25,13 +25,15 @@ import { useListSteps } from '@/lib/useListSteps'
 import type { T, Vtip } from './shared'
 
 export function CockpitHeader({
-  app, t, vtip, busy, canWrite, doCancelDecline, doHoldAward,
+  app, t, vtip, busy, canWrite, canCancelDecline, doCancelDecline, doHoldAward,
 }: {
   app: AdminScholarshipDetail
   t: T
   vtip: Vtip
   busy: string
   canWrite: boolean
+  /** Served `can_cancel_decline`: the cancel-decline door's own rule (owner 17 Nov). */
+  canCancelDecline: boolean
   doCancelDecline: () => void
   doHoldAward: () => void
 }) {
@@ -167,7 +169,9 @@ export function CockpitHeader({
         </div>
       )}
       {/* Cool-off (#13/#14): a decision recorded but held silently — the student sees nothing
-          until the reveal date, so it can be cancelled/held in the window. Admin-only. */}
+          until the reveal date, so it can be cancelled/held in the window. Each button only for its served
+          flag (POST-AWARD-CUT): a held pre-award decline stays the assignee's and QC's; an awarded case is
+          the Scholars key holder's, not the reviewer's. */}
       {app.decline_due_at && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-caution-200 bg-caution-50 px-4 py-3">
           <p className="text-sm text-caution-800">
@@ -175,10 +179,12 @@ export function CockpitHeader({
             <strong>{formatDate(app.decline_due_at)}</strong>.{' '}
             {t('admin.scholarship.cooloff.silentNote')}
           </p>
-          <button onClick={doCancelDecline} disabled={busy === 'cooloff'}
-            className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
-            {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.cancelDecline')}
-          </button>
+          {canCancelDecline && (
+            <button onClick={doCancelDecline} disabled={busy === 'cooloff'}
+              className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
+              {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.cancelDecline')}
+            </button>
+          )}
         </div>
       )}
       {app.award_due_at && (
@@ -188,10 +194,12 @@ export function CockpitHeader({
             <strong>{formatDate(app.award_due_at)}</strong>.{' '}
             {t('admin.scholarship.cooloff.silentNote')}
           </p>
-          <button onClick={doHoldAward} disabled={busy === 'cooloff'}
-            className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
-            {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.holdAward')}
-          </button>
+          {canWrite && (
+            <button onClick={doHoldAward} disabled={busy === 'cooloff'}
+              className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
+              {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.holdAward')}
+            </button>
+          )}
         </div>
       )}
 
