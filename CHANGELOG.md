@@ -347,6 +347,14 @@ Branch ll4 (on top of ll3), NOT merged to main, not published. Migration: `0215_
 - **Old rows:** keep an empty record (`{}`, evidence state unknown). No back-fill.
 - **Tests:** 36 in `test_verdict_context.py`, 6 in `test_verdict_context_recorded.py`.
 
+### feat: sprint LL2 (server) - the reason for failing a green fact is stored and counted (2026-11-19)
+
+Branch ll2 (on top of ll4), NOT merged to main, not published. Migration: none. Services: api (the web part follows). Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL2 as built, server).
+- **Codes:** new `apps/scholarship/fail_reasons.py`: the fixed list (`engine_wrong`, `read_wrong`, `new_information`, `programme_rule`, `other`), the validator and the keep-or-drop filter.
+- **Record:** `record-verdict` accepts a top-level `fail_reasons` `{fact: code}`. A bad shape, fact or code is a 400 `bad_fail_reasons` and nothing is saved. A reason is kept only where the reviewer failed the fact AND this request's fresh snapshot says `verified`; the rest are dropped. A missing reason still saves. Stored as `officer_verdict.fail_reasons` (always written, `{}` when none, like the other keys). No migration.
+- **Count:** `audit.override_metrics` gains `fail_reasons` (per fact, per code, zero-filled) and `fail_reasons_not_given` (per fact), over green to fail decisions only. Same scope and fence as LL1; served by `verdict-metrics/` and the Overview `ai_prediction` section unchanged.
+- **Tests:** 13 in `test_fail_reasons.py`.
+
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
 Branch vcard, display only (engine statuses untouched). Migration: none. Services: web.

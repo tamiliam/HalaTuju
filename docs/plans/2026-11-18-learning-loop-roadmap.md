@@ -179,6 +179,13 @@ The opposite case ("too careful") needs no tap. The doubt table in LL1 already e
 
 **Complexity.** Low. About 14 files. Sonnet builds. Fresh reviewer.
 
+**LL2 as built (server, 19 Nov 2026).** Branch `ll2`. No migration. Web part still to do.
+- Request: `POST .../applications/<pk>/record-verdict/` gains top-level `"fail_reasons": {"income": "new_information"}` (fact names `identity`, `academic`, `pathway`, `income`; codes `engine_wrong`, `read_wrong`, `new_information`, `programme_rule`, `other`). Absent or `null` is fine.
+- Bad shape, unknown fact or unknown code: HTTP 400 `{"error": "bad fail_reasons", "code": "bad_fail_reasons"}`; nothing saved.
+- Kept only for a fact the reviewer failed AND the server's fresh snapshot calls `verified`; others dropped silently. A missing reason still saves.
+- Stored and returned at `officer_verdict.fail_reasons` (record-verdict response and admin detail). Always written, `{}` when none; rows from before LL2 have no key (read as "not given").
+- Metrics (`verdict-metrics/` and Overview `ai_prediction`): `fail_reasons: {fact: {engine_wrong, read_wrong, new_information, programme_rule, other}}` (all five codes, zero-filled) and `fail_reasons_not_given: {fact: n}`; counted over green to fail decisions only, so a fact's codes plus `not_given` equal `fact_counts[fact].green_failed`. The `few` flag to use is that fact's `fact_counts[fact].few_green`. Code in `apps/scholarship/fail_reasons.py` and `audit.py`.
+
 ---
 
 ## Sprint LL2b — Human check (a second look)
