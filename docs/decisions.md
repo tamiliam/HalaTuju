@@ -165,7 +165,7 @@ And some of them have finance permissions." The legacy role code is separate cle
   default false.
 - Left for a TD (found, pre-existing, not changed): `org_allows` passes when neither side has an organisation;
   `AdminDisbursementActionView` answers 403, not 404, across organisations; some write replies leave out the write flags
-  (round 2 fixed org-reject and reporting-date; TD-XXX-POST-AWARD-WEB lists the rest).
+  (round 2 fixed org-reject and reporting-date; TD-664 lists the rest).
 
 - Review round 2 (18 Nov):
   - **A writer must read the case (H1).** "A caller writes only to a case they can READ." Past the award, the

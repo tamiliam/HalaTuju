@@ -9355,19 +9355,20 @@ serve a per-type `replaceable` / `open` flag.
 **Raised 2026-11-18 by the offer-course-proof final review. No money effect: the student is asked to pick, never wrongly passed.** A letter reading "IJAZAH SARJANA MUDA PERGURUAN (PISMP)" or "IJAZAH SARJANA MUDA PENDIDIKAN (...)" has level `pismp` or `ijazah sarjana muda`, which never equals the course level `Ijazah Sarjana Muda Pendidikan` (73 courses in `courses.json`). If the autofill wrote such an id, the student is asked to pick. A unique-bidang PISMP letter still gets its one-tap confirm first. Not checked: whether the autofill ever writes these ids. Fix: treat `pismp` and `ijazah sarjana muda` letters as matching the `ijazah sarjana muda pendidikan` course level.
 *(A - S)*
 
-### [TD-XXX-LEGACY-ROLES] The code still names the legacy `finance` and view-only `admin` roles - low
+### [TD-663] The code still names the legacy `finance` and view-only `admin` roles - low
 
 **Raised 2026-11-18 by the POST-AWARD-CUT review round, on the owner's word. No money effect today.** Owner, 18 Nov: "Finance and view only admin are legacy roles … Today, there are only admins. And some of them have finance permissions." The code still reads both labels: a grep (tests and migrations left out) finds about 36 lines in 18 files. API, 21 lines in 10 files: `courses/staff_permissions.py` (`TEAM_ROLES` and the presets keyed by role label), `courses/models_staff.py` (the role choices), `courses/staff_tables.py`, `scholarship/staff_lifecycle.py` (`RETIRED_LABELS`, the role-change steps), `scholarship/staff_tables_admin.py`, `scholarship/invitations.py`, `scholarship/credit_steps.py` (the wallet-credit maker is still `role == 'admin'`), `scholarship/sponsorship/credits.py`, `scholarship/payments.py` (the `admin_signed_*` / `finance_signed_*` slots) and `scholarship/emails/reviewer_mail.py`. Web, 15 lines in 8 files: `lib/staffPermissions.ts`, `lib/staffRole.ts`, `lib/adminStaff.ts`, `lib/roleBadge.ts`, `lib/profileCards.ts`, `content/manual/faq.tsx`, `content/manual/index.ts` and `app/admin/payments/[id]/page.tsx`. TD-475 already moved the wallet-credit checker onto a key (`payments_approve`). Nothing fixed here. Fix: retire both labels so access reads keys only (an admin with the Payments switches, not a finance role); any data step (existing staff rows, signature columns) needs the owner's yes.
 *(A - M)*
 
-### [TD-XXX-POST-AWARD-WEB] The web still works out some write controls itself after POST-AWARD-CUT - low
+### [TD-664] Leftovers after POST-AWARD-CUT: the web works out some write controls itself, and the finalise cron does not re-check the stage - low
 
-**Raised 2026-11-18 by the POST-AWARD-CUT review round 2. No money effect: the server refuses each of these writes; only what the screen offers is wrong.**
+**Raised 2026-11-18 by the POST-AWARD-CUT review rounds 2 and 3. (a)-(e) have no money effect: the server refuses each of these writes; only what the screen offers is wrong. (f) is a small paid-call leak.**
 - (a) The QC controls are drawn from the role: `canQc = hasPerm(role, 'qc')` in `app/admin/scholarship/[id]/view.tsx` (about line 108) and `view/QcPanel.tsx` (about line 33).
 - (b) `PostAwardPanels` draws its decide controls from `holdsDoor(role, 'decide')`.
 - (c) On a reopened past-award case, `decisionBarShows` still shows Save, but the server answers 400 `case_closed`. Only a super can reopen, so only a super sees this.
 - (d) The PATCH's `vircle_id` correction still checks a role label (`admin.role == 'org_admin'`, `views_admin/applications.py` about line 272), not a key.
 - (e) These write replies still answer with the bare serializer and leave out the write flags: PATCH, verify-accept, nudge, the disbursement schedule and actions, resolution items, sponsorship override, NRIC lock release, and profile publish. None of them moves the case to another stage, so the flags the cockpit keeps are still right.
+- (f) Server, paid work, found in review round 3: the finalise cron (`profile_finalise.run_finalise` / `claimable`) does not re-check the case's stage. A profile queued before the award can still be refined, which is a paid Gemini call, after the award. Every admin door now refuses to queue past the award.
 
-Fix: serve a flag for each control from the server's own door (as `can_write` is), and have every write reply serve `_detail_payload`, or none of them.
+Fix: serve a flag for each control from the server's own door (as `can_write` is), and have every write reply serve `_detail_payload`, or none of them. For (f), have `claimable` skip a case whose `case_stage` is past the award.
 *(A - S)*
