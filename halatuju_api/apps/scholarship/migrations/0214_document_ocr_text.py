@@ -26,9 +26,12 @@ Pre-check (read-only; expect bigint, then NULL, then 1 and 0):
     SELECT count(*) FROM django_migrations WHERE app = 'scholarship' AND name = '0213_document_replace_count';
     SELECT count(*) FROM django_migrations WHERE app = 'scholarship' AND name = '0214_document_ocr_text';
 
-Then:
+Then (the foreign key takes a lock on the busy `applicant_documents`; `lock_timeout` makes the step give up
+after 5 seconds rather than queue every upload behind it. If it times out, nothing was changed: run it again
+at a quiet time):
 
     BEGIN;
+    SET LOCAL lock_timeout = '5s';
     CREATE TABLE "applicant_document_ocr_text" ("document_id" bigint NOT NULL PRIMARY KEY, "text" text NOT NULL, "source" varchar(20) NOT NULL, "reader" varchar(40) NOT NULL, "stored_at" timestamp with time zone NOT NULL);
     ALTER TABLE "applicant_document_ocr_text" ADD CONSTRAINT "applicant_document_o_document_id_50bd0620_fk_applicant" FOREIGN KEY ("document_id") REFERENCES "applicant_documents" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
     ALTER TABLE public.applicant_document_ocr_text ENABLE ROW LEVEL SECURITY;
@@ -47,9 +50,13 @@ its document deletes working, so the migration is safe first. Deploying BEFORE m
 deletes: the new image's ORM cascade would query the missing table and Remove would 500 (a read itself only
 logs the failed write and carries on). Migrate first (no code guards this). API only; the web is unchanged.
 
-ROLLBACK (the old image ignores the table; the kept text is lost, which is the behaviour before this ship):
+ROLLBACK (the old image ignores the table; the kept text is lost, which is the behaviour before this ship).
+ORDER MATTERS: roll the IMAGE back FIRST, then drop the table. Dropping it while the new image serves would
+make every document delete (Remove) fail, because the new image's cascade queries the table. Same lock
+note as above: if it times out, nothing changed; run it again at a quiet time.
 
     BEGIN;
+    SET LOCAL lock_timeout = '5s';
     DROP TABLE "applicant_document_ocr_text";
     DELETE FROM django_migrations WHERE app = 'scholarship' AND name = '0214_document_ocr_text';
     COMMIT;

@@ -1,9 +1,13 @@
 """OCR-first S0b: the text a read saw on a document is kept (``ApplicantDocumentOcrText``), privately,
 and deleted with the document. Every OCR and model seam is mocked; the text is made up.
 
-Pins: a read stores it (both choke points, both sources, and the upload read end to end); a blank read
-stores nothing and does not fail; a storage error never fails or changes the read; deleting the document
-(or its application) deletes the text; no serializer carries it, and only the listed modules may name it.
+Pins: a read stores it (both choke points, both sources, and the upload read end to end); the write runs
+only after the caller commits; a long text is cut with a marker; a blank read stores nothing and does not
+fail; a storage error never fails or changes the read; deleting the document (or its application) deletes
+the text; no serializer carries it, and only the listed modules may name it.
+
+The write is handed to ``transaction.on_commit``, and a TestCase never commits, so each read runs inside
+``self.committed()`` (``captureOnCommitCallbacks(execute=True)``), which runs the write as a commit would.
 """
 import os
 import re
@@ -40,11 +44,14 @@ class _Base(TestCase):
     def kept(self, doc):
         return ApplicantDocumentOcrText.objects.filter(document_id=doc.pk).first()
 
+    def committed(self):
+        return self.captureOnCommitCallbacks(execute=True)
+
 
 class TestStoredOnARead(_Base):
     def test_a_vision_read_is_kept(self):
         doc = self.doc()
-        with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'), _vision():
+        with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'), _vision(), self.committed():
             r = vision.ocr_document_full(doc)
         self.assertEqual(r['text'], VISION_TEXT)
         row = self.kept(doc)
@@ -54,7 +61,7 @@ class TestStoredOnARead(_Base):
     def test_a_digital_pdf_layer_is_kept_with_no_vision_call(self):
         doc = self.doc(content_type='application/pdf')
         with mock.patch(V + '_fetch_image_bytes', return_value=b'%PDF-1.7'), \
-                mock.patch(V + '_pdf_text_layer', return_value=LAYER_TEXT), _vision() as words:
+                mock.patch(V + '_pdf_text_layer', return_value=LAYER_TEXT), _vision() as words, self.committed():
             r = vision.ocr_document_full(doc)
         words.assert_not_called()
         self.assertEqual(r, {'text': LAYER_TEXT, 'words': None, 'image': b'%PDF-1.7', 'error': None})
@@ -63,27 +70,18 @@ class TestStoredOnARead(_Base):
     def test_ocr_document_keeps_vision_text(self):
         doc = self.doc()
         with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'), \
-                mock.patch(V + '_vision_document_text', return_value={'text': VISION_TEXT, 'error': None}):
+                mock.patch(V + '_vision_document_text', return_value={'text': VISION_TEXT, 'error': None}), \
+                self.committed():
             r = vision.ocr_document(doc)
         self.assertEqual(r, {'text': VISION_TEXT, 'error': None})
         self.assertEqual((self.kept(doc).source, self.kept(doc).reader), ('vision_ocr', 'ocr_document'))
 
-    def test_ocr_document_names_a_pdf_layer_as_its_source(self):
-        doc = self.doc(content_type='application/pdf')
-        with mock.patch(V + '_fetch_image_bytes', return_value=b'%PDF-1.7'), \
-                mock.patch(V + '_pdf_text_layer', return_value=LAYER_TEXT), \
-                mock.patch(V + '_vision_document_text') as seam:
-            r = vision.ocr_document(doc)
-        seam.assert_not_called()
-        self.assertEqual(r, {'text': LAYER_TEXT, 'error': None})
-        self.assertEqual(self.kept(doc).source, 'pdf_text_layer')
-
     def test_a_newer_read_replaces_the_text(self):
         doc = self.doc()
         with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'):
-            with _vision('FIRST MADE UP READ'):
+            with _vision('FIRST MADE UP READ'), self.committed():
                 vision.ocr_document_full(doc)
-            with _vision('SECOND MADE UP READ'):
+            with _vision('SECOND MADE UP READ'), self.committed():
                 vision.ocr_document_full(doc)
         self.assertEqual(ApplicantDocumentOcrText.objects.filter(document_id=doc.pk).count(), 1)
         self.assertEqual(self.kept(doc).text, 'SECOND MADE UP READ')
@@ -92,7 +90,8 @@ class TestStoredOnARead(_Base):
         """The queued upload read (``_read_copy``) of a supporting document, model and OCR mocked."""
         doc = self.doc('epf')
         with ExitStack() as s:
-            p = lambda target, **kw: s.enter_context(mock.patch(target, **kw))  # noqa: E731 — short local helper in a test
+            def p(target, **kw):
+                return s.enter_context(mock.patch(target, **kw))
             p('apps.scholarship.imaging.convert_heic_to_jpeg', return_value=None)
             p(V + '_fetch_image_bytes', return_value=b'IMG')
             s.enter_context(_vision())
@@ -100,32 +99,101 @@ class TestStoredOnARead(_Base):
             p(V + 'run_vision_match_for_document', return_value=None)
             p('apps.scholarship.views.DocumentListCreateView._maybe_extract_fields', return_value=None)
             p('apps.scholarship.genuineness.sample_stamp.check_enabled', return_value=False)
-            upload_read._read_copy(self.app, doc)
+            with self.committed():
+                upload_read._read_copy(self.app, doc)
         self.assertEqual(self.kept(doc).text, VISION_TEXT)
         doc.refresh_from_db()
         self.assertNotIn(VISION_TEXT, str(doc.vision_fields or ''))   # never copied into vision_fields
 
 
+class TestOcrDocumentReadsAPdfLayerOnce(_Base):
+    """Fix round: ``ocr_document`` reads a PDF's text layer once, and answers exactly as before."""
+
+    def _read(self, layer, png=b'PNG', vision_text=VISION_TEXT):
+        doc = self.doc(content_type='application/pdf')
+        with mock.patch(V + '_fetch_image_bytes', return_value=b'%PDF-1.7'), \
+                mock.patch(V + '_pdf_text_layer', return_value=layer) as lay, \
+                mock.patch(V + '_pdf_first_page_png', return_value=png), \
+                mock.patch(V + '_vision_document_text',
+                           return_value={'text': vision_text, 'error': None}) as seam, self.committed():
+            r = vision.ocr_document(doc)
+        lay.assert_called_once()
+        return doc, r, seam
+
+    def test_a_digital_pdf(self):
+        doc, r, seam = self._read(LAYER_TEXT)
+        seam.assert_not_called()
+        self.assertEqual(r, {'text': LAYER_TEXT, 'error': None})
+        self.assertEqual(self.kept(doc).source, 'pdf_text_layer')
+
+    def test_a_scanned_pdf_sends_page_one_to_vision(self):
+        doc, r, seam = self._read('CamScanner')
+        seam.assert_called_once_with(b'PNG')
+        self.assertEqual(r, {'text': VISION_TEXT, 'error': None})
+        self.assertEqual(self.kept(doc).source, 'vision_ocr')
+
+    def test_a_pdf_that_will_not_rasterise(self):
+        doc, r, seam = self._read('', png=None)
+        seam.assert_not_called()
+        self.assertEqual(r, {'text': '', 'error': 'Bad image data.'})
+        self.assertIsNone(self.kept(doc))
+
+
+class TestTheCap(_Base):
+    def test_a_long_text_keeps_its_head_and_a_marker(self):
+        doc = self.doc()
+        long_text = 'A' * ocr_keep.MAX_CHARS + 'TAIL'
+        with self.committed():
+            self.assertTrue(ocr_keep.keep(doc, long_text, source='other'))
+        text = self.kept(doc).text
+        self.assertTrue(text.startswith('A' * ocr_keep.MAX_CHARS))
+        self.assertNotIn('TAIL', text)
+        self.assertTrue(text.endswith(f'cut at {ocr_keep.MAX_CHARS} of {len(long_text)} characters]'))
+
+    def test_a_text_that_fits_is_unchanged(self):
+        self.assertEqual(ocr_keep.capped('B' * ocr_keep.MAX_CHARS), 'B' * ocr_keep.MAX_CHARS)
+
+
+class TestAfterTheCallersCommit(_Base):
+    """Fix round: the key is DEFERRABLE INITIALLY DEFERRED, so the write waits for the caller's commit."""
+
+    def test_nothing_is_written_inside_the_callers_transaction(self):
+        doc = self.doc()
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            self.assertTrue(ocr_keep.keep(doc, 'MADE UP TEXT', source='other'))
+            self.assertIsNone(self.kept(doc))
+        self.assertEqual(len(callbacks), 1)
+        self.assertIsNone(self.kept(doc))   # a read that rolled back keeps nothing
+
+    def test_a_document_deleted_before_the_commit_stores_nothing(self):
+        doc = self.doc()
+        with self.committed():
+            self.assertTrue(ocr_keep.keep(doc, 'MADE UP TEXT', source='other'))
+            ApplicantDocument.objects.filter(pk=doc.pk).delete()
+        self.assertFalse(ApplicantDocumentOcrText.objects.exists())
+
+
 class TestNothingToKeep(_Base):
     def test_a_blank_read_stores_nothing_and_does_not_fail(self):
         doc = self.doc()
-        with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'), _vision('', error='Bad image data.'):
+        with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'), \
+                _vision('', error='Bad image data.'), self.committed():
             r = vision.ocr_document_full(doc)
         self.assertEqual(r['error'], 'Bad image data.')
         self.assertIsNone(self.kept(doc))
 
     def test_a_failed_fetch_stores_nothing(self):
         doc = self.doc()
-        with mock.patch(V + '_fetch_image_bytes', return_value=None):
+        with mock.patch(V + '_fetch_image_bytes', return_value=None), self.committed():
             self.assertEqual(vision.ocr_document(doc), {'text': '', 'error': 'could not fetch image'})
         self.assertIsNone(self.kept(doc))
 
     def test_a_blank_re_read_keeps_the_earlier_text(self):
         doc = self.doc()
         with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'):
-            with _vision():
+            with _vision(), self.committed():
                 vision.ocr_document_full(doc)
-            with _vision('   ', error='timeout'):
+            with _vision('   ', error='timeout'), self.committed():
                 vision.ocr_document_full(doc)
         self.assertEqual(self.kept(doc).text, VISION_TEXT)
 
@@ -140,22 +208,23 @@ class TestAStorageErrorNeverBreaksTheRead(_Base):
         boom = mock.patch.object(ApplicantDocumentOcrText.objects, 'update_or_create',
                                  side_effect=DatabaseError('made up failure'))
         with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'), _vision(), boom, \
-                self.assertLogs('apps.scholarship.ocr_keep', level='WARNING') as logs:
+                self.assertLogs('apps.scholarship.ocr_keep', level='WARNING') as logs, self.committed():
             r = vision.ocr_document_full(doc)
         self.assertEqual(r, {'text': VISION_TEXT, 'words': [], 'image': b'IMG', 'error': None})
         self.assertIsNone(self.kept(doc))
         self.assertNotIn('MADE UP', ' '.join(logs.output))   # the log never carries the text
         doc.refresh_from_db()                                  # the read's transaction is still usable
 
-    def test_a_failing_source_callable_is_swallowed(self):
-        def bad():
-            raise ValueError('made up')
-        self.assertFalse(ocr_keep.keep(self.doc(), 'TEXT', source=bad))
+    def test_a_failure_handing_on_the_write_is_swallowed(self):
+        with mock.patch('apps.scholarship.ocr_keep.transaction.on_commit', side_effect=RuntimeError('made up')):
+            self.assertFalse(ocr_keep.keep(self.doc(), 'TEXT', source='other'))
 
 
 class TestDeletedWithTheDocument(_Base):
     def _keep(self, doc):
-        self.assertTrue(ocr_keep.keep(doc, 'MADE UP TEXT', source='other', reader='test'))
+        with self.committed():
+            self.assertTrue(ocr_keep.keep(doc, 'MADE UP TEXT', source='other', reader='test'))
+        self.assertIsNotNone(self.kept(doc))
 
     def test_deleting_the_document_deletes_the_text(self):
         doc = self.doc()
@@ -181,7 +250,8 @@ class TestDeletedWithTheDocument(_Base):
 class TestPrivate(_Base):
     def test_the_document_serializer_never_carries_it(self):
         doc = self.doc()
-        self.assertTrue(ocr_keep.keep(doc, 'MADE UP SECRET TEXT', source='other'))
+        with self.committed():
+            self.assertTrue(ocr_keep.keep(doc, 'MADE UP SECRET TEXT', source='other'))
         data = ApplicantDocumentSerializer(doc).data
         self.assertNotIn(FIELD, data)
         self.assertNotIn('ocr', ' '.join(data).lower())

@@ -234,7 +234,10 @@ class ApplicantDocumentOcrText(models.Model):
     Deleted WITH the document (CASCADE: Remove, an application delete, any erasure).
 
     One joined text, exactly as the reader saw it: a digital PDF's text layer is every page joined
-    by newlines; a Cloud Vision read is the image, or page 1 of a scanned PDF."""
+    by newlines; a Cloud Vision read is the image, or page 1 of a scanned PDF. At most
+    `ocr_keep.MAX_CHARS` characters (the head, with a marker when cut)."""
+    # ⚠ The DATABASE's `ON DELETE CASCADE` on this key exists ONLY in 0214's hand-run SQL (Django never
+    # writes one). A future migration that alters or re-creates this field must re-add it by hand.
     document = models.OneToOneField(
         ApplicantDocument, on_delete=models.CASCADE, primary_key=True, related_name='+',
     )
