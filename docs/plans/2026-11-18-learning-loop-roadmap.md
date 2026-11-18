@@ -186,6 +186,14 @@ The opposite case ("too careful") needs no tap. The doubt table in LL1 already e
 - Stored and returned at `officer_verdict.fail_reasons` (record-verdict response and admin detail). Always written, `{}` when none; rows from before LL2 have no key (read as "not given").
 - Metrics (`verdict-metrics/` and Overview `ai_prediction`): `fail_reasons: {fact: {engine_wrong, read_wrong, new_information, programme_rule, other}}` (all five codes, zero-filled) and `fail_reasons_not_given: {fact: n}`; counted over green to fail decisions only, so a fact's codes plus `not_given` equal `fact_counts[fact].green_failed`. The `few` flag to use is that fact's `fact_counts[fact].few_green`. Code in `apps/scholarship/fail_reasons.py` and `audit.py`.
 
+**LL2 as built (web, 19 Nov 2026).** Branch `ll2`. Words in en, ms and ta.
+- Cockpit: `RateAndEstimate` (title, help, chips), `useVerdict` (`failReasons` state, load, send), `deriveCockpit` (`reasonMissing` holds `canSave`), `DecisionCard` (hint and soft warning), new `view/failReasons.ts`. The UI word for accept is "Approve".
+- Locked view shows the reason beside a failed fact. The AI prediction card gets a "Why it failed" column from the served counts.
+- Guide and FAQ (`content/manual`) updated in English only; they have no ms/ta copy.
+- Approved strings: "Check the four facts"; "Pass = this fact is true for the student. Fail = it is not true, or not proven."; "One fact failed. Do you want to accept?"; "Why is this fact not true?"; the five answers.
+- Extra strings (short, plain): "Reason" (locked view label); "Pick a reason for the failed fact." (Save hint); "Why it failed" (card column); "Not given" (card); and "Submit your findings, check the four facts and add your conclusion." (reworded from "rate the AI").
+- Known effect: a recorded decline from before LL2 with a failed green fact cannot be re-saved until a reason is picked.
+
 ---
 
 ## Sprint LL2b — Human check (a second look)

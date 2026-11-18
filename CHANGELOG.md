@@ -355,6 +355,17 @@ Branch ll2 (on top of ll4), NOT merged to main, not published. Migration: none. 
 - **Count:** `audit.override_metrics` gains `fail_reasons` (per fact, per code, zero-filled) and `fail_reasons_not_given` (per fact), over green to fail decisions only. Same scope and fence as LL1; served by `verdict-metrics/` and the Overview `ai_prediction` section unchanged.
 - **Tests:** 13 in `test_fail_reasons.py`.
 
+### feat: sprint LL2 (web) - check the four facts: clear words, a reason tap on a failed green fact, a soft warning (2026-11-19)
+
+Branch ll2, NOT merged to main, not published. Migration: none. Services: web. Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL2 as built, web).
+- **Words:** the rating box is titled "Check the four facts" with a one-line help ("Pass = ... Fail = ..."). en/ms/ta.
+- **Reason tap:** failing a fact the engine showed green asks "Why is this fact not true?" with five chips. Undoing Fail clears the reason. The reason is sent as `fail_reasons`; stored reasons load back. Save is held back (`canSave` plus a hint line, the existing cockpit pattern) until it is picked; a server 400 `bad_fail_reasons` shows the normal error.
+- **Soft warning:** Approve with any failed fact shows "One fact failed. Do you want to accept?". It never blocks Save.
+- **Locked view:** the reason is shown beside each failed fact; old rows show nothing extra.
+- **AI prediction card:** a "Why it failed" column with the served counts per fact (plus "Not given"); nothing for a fact with no green-then-fail case; plain counts, never a percent. Old payloads draw the card as before.
+- **Guide and FAQ:** reviewer Guide and FAQ updated (English only; they have no ms/ta copy).
+- **Tests:** 16 new (`view.failReasons.test.tsx`, `AiPredictionReasons.test.tsx`). `view.decisionBar.test.tsx`: one fixture now stores its reasons (a recorded decline with failed green facts is correctly held back without them).
+
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
 Branch vcard, display only (engine statuses untouched). Migration: none. Services: web.
