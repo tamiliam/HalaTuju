@@ -20,6 +20,7 @@ import unicodedata
 
 from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401 — re-exported for callers
 from .epf_app_doc import epf_app_scores, screen_at_most_suspect
+from .offer_issuers import PRIVATE_ARM_OPENING
 from .stpm_doc import STPM_LISTS
 # The five offer-letter families + the 20 UA names moved verbatim to `offer_signatures` (offer
 # exact-read S6 split); re-exported here, so every existing import keeps working.
@@ -448,7 +449,7 @@ def baseline_genuineness(ocr_text: str, r: dict, doc_type: str = None) -> dict:
     if doc_type == 'offer_letter' and _private_arm_offer(ocr_text):
         return {'status': 'not_offer_letter', 'probability': r['probability'], 'type': r['type'],
                 'present': r['present'], 'missing': r['missing'],
-                'reason': ('private / continuing-education arm (SPACE / Pendidikan Berterusan / '
+                'reason': (f'{PRIVATE_ARM_OPENING} (SPACE / Pendidikan Berterusan / '
                            'Saluran Terbuka (SATU) / Sdn Bhd) — an IPTS option, not a supported '
                            'public offer')[:300],
                 'model_version': MODEL_VERSION}

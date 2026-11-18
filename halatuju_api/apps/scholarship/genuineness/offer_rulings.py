@@ -44,7 +44,8 @@ from .offer_confirmations import (_APPROVAL, _CONFIRM_TITLES_EN, _CONFIRM_TITLES
                                   _NOT_THE_OFFER_LINE, _WING_HEAD, MATRIC_OFFER_EN)
 # The title-block reading and the CAP (split out for the 600-line limit; lead, 16 Nov 2026).
 from .offer_confirm_checks import _campus_dropped, cap_confirmation, generic_titled, non_study_subject, page_titled
-from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
+from .offer_issuers import (PRIVATE_COLLEGE_OPENING, PRIVATE_OFFER_TAG, TVET_ISSUERS, _has_offer_words,
+                            private_college_reason, unfingerprinted_offer)
 
 # The page-reading helpers and word lists live in `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
 from .offer_reading import *    # every name re-exported (`offer_reading.__all__`): tests and callers import them here
@@ -480,7 +481,7 @@ def _block(r, lines, model_version):
     proof = private_proof(lines)
     if not proof:
         return None
-    return _ruled_status('not_offer_letter', r, r['type'], 'private_offer', f'private college / university (IPTS): '
+    return _ruled_status('not_offer_letter', r, r['type'], PRIVATE_OFFER_TAG, f'{PRIVATE_COLLEGE_OPENING}: '
                          f'{proof} on the letterhead - not a supported public offer (owner rulings 2 + 7)',
                          model_version)
 

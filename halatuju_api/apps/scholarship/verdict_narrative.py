@@ -88,6 +88,9 @@ _CODE_GLOSS = {
                                    'in {years} — recommend reject unless the interview shows a later start'),
     'pathway_start_year_unknown': ('the start year could not be read from the offer letter; this gift is for '
                                    'students who started in {years}, so check the year on the letter'),
+    # pathway: an IPTS offer (owner 2026-11-18, `offer_private`)
+    'pathway_offer_private': ('the offer letter is from a private college or university (IPTS): {institution}; '
+                              'HalaTuju supports public courses only — recommend reject unless the letter is public'),
     # utility (soft signals)
     'utility_hardship': 'the utility bills carry meaningful arrears (unpaid balance) — supports financial need',
     'utility_percapita_b40': 'utility proxy ~RM{amount}/capita/month — consistent with a low-income household (soft signal)',

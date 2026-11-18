@@ -222,7 +222,7 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>Read the word under the card name. <strong>Can&rsquo;t verify</strong> means proof is missing or
         unreadable: ask for it or read the document yourself. <strong>Rule not met</strong> means a gift rule is
         broken (income above the B40 line, a fully funded or overseas programme, a course starting outside the
-        allowed years, or an offer that is not official). A card with a broken rule is always red, even when its
+        allowed years, an offer from a private college or university (IPTS), or an offer that is not official). A card with a broken rule is always red, even when its
         status is Review. The legend under the cards explains both.</>,
     },
     {
@@ -234,6 +234,18 @@ export const REVIEWER_FAQ: QA[] = [
         and the amount is unchanged. Confirm at interview &mdash; if she is in fact on a different programme,
         say so in your conclusion. The &ldquo;American Degree Transfer Program&rdquo; and an ordinary
         &ldquo;Degree Programme&rdquo; are not affected.</>,
+    },
+    {
+      q: <>The Pathway card is red with <strong>&ldquo;Offer from a private college or university (IPTS)&rdquo;</strong>. Why?</>,
+      a: <>HalaTuju supports public courses only, so an offer letter from a private college or university (an
+        IPTS) breaks the rule for every gift (owner&rsquo;s ruling, 18 November 2026). That includes a public
+        university&rsquo;s private wing, such as UTM SPACE, a Pendidikan Berterusan centre, UM&rsquo;s Saluran
+        Terbuka (SATU), UMS PPPL or a Sdn Bhd operator, and named private bodies such as KPTM, UniKL and GMI. We
+        flag it when the letter names one of these, or when our document check called the letter an IPTS offer
+        and the institution on it is not a public one we know. It works like the other broken rules: the case is
+        flagged and the usual recommendation is to decline, but it is not declined for you, the amount is
+        unchanged, and the student is not told or asked anything new. If the letter is in fact from a public
+        institution, say so in your conclusion: a wrong flag helps us improve the check.</>,
     },
     {
       q: <>The Pathway card is red with <strong>&ldquo;Course started in &hellip;&rdquo;</strong>. Why?</>,

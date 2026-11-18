@@ -106,7 +106,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-15.10 — help H2, owner option B: a confirmation of studies from every other public institution (matric, IPG, KV, community college, the TVET institutes, the other public universities, an English title) and KPM's English matric offer read suspect at most - a person checks, never genuine by itself, never a course pick; owner 2026-11-16, same version: the polytechnic / UMS / Form-6 confirmations are recognised exactly as before but read suspect too (no confirmation reads genuine). (.9 is help-h3's; the H2 rounds .4 / .6 / .8 never shipped and are replaced.)
 #   2026-11-15.11 — merge train (2026-11-17): help H3's .9 renumbered to sit above help H2's .10, which merges first; no rule change ('.11' sorts after '.10' as text).
 #   2026-11-18.1 — #804 offer course proof (owner 2026-11-18): a letter whose ONE catalogue course the linker writes (plan_offer_link: one campus, its own level, a genuine letter for an empty pick) asks nothing of a student with no pick of her own (the one-tap confirm is gone for it; pre-U and unique-bidang PISMP keep theirs); a tertiary student's named degrees count as declared and her old pre-U school never raises "is this where you're going?"; a letter matching no one course asks her to pick her course; the matcher reads a bracketed option list as options; the no-offer line names her degree(s).
-VERDICT_ENGINE_VERSION = '2026-11-18.1'   # #804 offer course proof (above); a new date, so it sorts after 11-15.11 as text in cockpitVerdict.ts.
+#   2026-11-18.2 — IPTS offers (owner 2026-11-18): an offer letter from a private college / university or a public university's private wing turns Pathway red (pathway_offer_private, a confident disqualifier): flag only, reviewers only; it blocks nothing and the amount does not move.
+VERDICT_ENGINE_VERSION = '2026-11-18.2'   # IPTS offers (above); '.2' sorts after '.1' as text in cockpitVerdict.ts.
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -498,8 +499,9 @@ def _verdict_pathway(application):
     else:
         fact = offer_pathway_fact(application, offer)
     from .verdict_pathway import funded_or_abroad     # TD-617: ADP / overseas preparation → red
+    from .offer_private import flag_private_offer     # 2026-11-18: an IPTS / private-wing offer → red
     from .start_year import apply_to_pathway_fact     # H3: the intake's course-start years
-    return apply_to_pathway_fact(application, funded_or_abroad(application, fact))
+    return apply_to_pathway_fact(application, flag_private_offer(funded_or_abroad(application, fact), offer))
 
 
 # ── Aggregator ───────────────────────────────────────────────────────────────

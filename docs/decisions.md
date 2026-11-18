@@ -1,5 +1,26 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-18 — An IPTS offer breaks the rule for every gift: flag only, reviewers only
+
+Owner ruling, 2026-11-18: "HalaTuju only caters to public courses. We cannot process IPTS courses today." An offer
+letter from an IPTS (a private university or college, or a public university's private wing such as UTM SPACE)
+breaks the rule for ALL gifts, platform-wide. Services: api, web. Migration: none. `VERDICT_ENGINE_VERSION`
+2026-11-18.2; no `MODEL_VERSION` change (no reader or scorer change).
+- **Shown as a confident disqualifier.** The Pathway fact turns red with `pathway_offer_private`
+  (`apps/scholarship/offer_private.py`), which is on `award.CONFIDENT_DISQUALIFIERS`, so the card reads "Rule not met".
+- **Q1 = A, flag only.** It never blocks submission (`consent_blockers` unchanged) and never moves the amount. The
+  reviewer decides.
+- **Q2 = A, reviewers only.** No student-facing line, no student ticket (`resolution.CODE_TO_TICKET`), no e-mail title.
+- **Two signals, both on a letter that has been read.** (1) The read programme, institution or issuer names a private
+  wing or a named private body; no public-name veto, so UTM SPACE flags. (2) The saved genuineness reason opens with
+  one of the three IPTS openings, and the read institution or issuer is not a public name we know (genuineness public
+  lists, public-university names and short forms, the course catalogue's institutions). False flags are accepted as
+  learning input, but a public institution is never flagged because of a gap in our own lists, and a letter we cannot
+  classify keeps today's behaviour.
+- **Unchanged:** the shortlist's `upu_status == 'ipts'` gate, `_offer_blocks`, `query_item_titles`.
+- Follow-ups: TD-665 (a reader-level public / private field), TD-666 (extend the named-IPTS list), TD-667 (offers
+  scored before 1.8.0 or never scored).
+
 ## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)
 
 Owner said yes on 2026-11-18. Branch ocr-keep. Migration 0214 (additive). Services: api. We keep the text each read

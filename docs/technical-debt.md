@@ -9372,3 +9372,18 @@ serve a per-type `replaceable` / `open` flag.
 
 Fix: serve a flag for each control from the server's own door (as `can_write` is), and have every write reply serve `_detail_payload`, or none of them. For (f), have `claimable` skip a case whose `case_stage` is past the award.
 *(A - S)*
+
+### [TD-665] The offer reader has no public / private field, so the IPTS rule infers it from names and saved reasons - medium
+
+**Raised 2026-11-18 by the IPTS-offer sprint. Eligibility: an IPTS offer breaks the rule for every gift.** `offer_private` decides "this offer is from an IPTS" from two indirect signals: a private wing or named private body in the read programme, institution or issuer, or a saved genuineness reason that opens with an IPTS opening on a letter whose institution is not a public name we know. Neither is a reading of the letter's own answer to "is this institution public or private?". Fix: add a reader-level field (public / private / unknown) to the offer read, then let `offer_private` read it first and keep the two signals as the fallback. This is a reader change and needs a `MODEL_VERSION` bump and a re-read plan (never re-extract locally).
+*(A - M)*
+
+### [TD-666] The named-IPTS list is short, so most private colleges are caught only by their saved reason - low
+
+**Raised 2026-11-18 by the IPTS-offer sprint. Eligibility: a missed IPTS offer is not flagged.** The name signal (`offer_reading._PRIVATE_BODIES`, `results_doc._PRIVATE_ARM_PHRASES`) names the private wings and the MARA-owned private bodies (KPTM / KUPTM / UPTM, UniKL, GMI, UMS PPPL, SATU, Sdn Bhd) and no other private college or university. Any other IPTS is flagged only when its saved genuineness reason opens with an IPTS opening. Fix: extend the named list from the reviewers' overrides and the lead's count query (names only), each addition with an invented test letter; never add a public institution's name.
+*(A - S)*
+
+### [TD-667] Offers scored before MODEL_VERSION 1.8.0, or never scored, are missed by the IPTS rule's reason signal - low
+
+**Raised 2026-11-18 by the IPTS-offer sprint. Eligibility: an old IPTS offer is not flagged.** The private-college reason first appeared in MODEL_VERSION 1.8.0 (the private-arm reason in 1.6.0, the S6 `private_offer` tag in 1.25.0). An offer letter scored earlier, or never scored, has no such opening, so `offer_private` flags it only when the read fields name a private wing or a named private body. Fix: once the lead's count query shows how many live cases this touches, the owner decides between re-scoring those letters on the server (never a local re-extraction) and accepting the gap until the old intakes close.
+*(A - S)*

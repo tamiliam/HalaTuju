@@ -67,6 +67,13 @@ class TestRenderItem(SimpleTestCase):
             'the start year could not be read from the offer letter; this gift is for students who '
             'started in 2025, 2026, so check the year on the letter')
 
+    def test_ipts_offer_line_is_glossed(self):
+        # IPTS offers (2026-11-18): a plain sentence naming the place; the extra `signal` param is ignored.
+        self.assertEqual(
+            vn._render_item(_item('pathway_offer_private', institution='UTM SPACE', signal='name')),
+            'the offer letter is from a private college or university (IPTS): UTM SPACE; HalaTuju supports '
+            'public courses only — recommend reject unless the letter is public')
+
 
 @override_settings(VERDICT_CASE_SUMMARY_ENABLED=True)
 class TestVerdictCaseSummary(SimpleTestCase):

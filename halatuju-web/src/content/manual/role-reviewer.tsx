@@ -225,7 +225,9 @@ export const roleReviewer: ManualChapter = {
         (for example, income is verified but sits above the B40 line, or the Pathway card is red with
         &ldquo;Fully funded or overseas programme&rdquo;: the American Degree Program under MARA, or a preparation
         programme for study abroad run by MARA, JPA or another sponsor, or &ldquo;Course started in &hellip;&rdquo;:
-        a start year the gift does not accept).
+        a start year the gift does not accept, or &ldquo;Offer from a private college or university (IPTS)&rdquo;:
+        HalaTuju supports public courses only, so a private college, university or private wing such as UTM
+        SPACE breaks the rule for every gift).
           <span className="mt-2 block rounded-lg border border-caution-200 bg-caution-50 p-3"><strong>Save is a
           one-way step from your side.</strong> It records the decision and sends the case on for QC; only a
           super-admin can reopen it afterwards. Check the facts before you save.</span></>

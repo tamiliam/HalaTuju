@@ -21,8 +21,12 @@ function pathway(status: AdminVerdictFact['status'], evidence: string[], unresol
 describe('CONFIDENT_DISQUALIFIERS mirror', () => {
   test('the FE set equals the backend tuple', () => {
     const be = backendDisqualifiers()
-    expect(be.length).toBeGreaterThanOrEqual(4)
+    expect(be.length).toBeGreaterThanOrEqual(5)
     expect([...CONFIDENT_DISQUALIFIERS].sort()).toEqual([...be].sort())
+  })
+  test('IPTS offers (2026-11-18): an IPTS / private-wing offer is a confident disqualifier on both sides', () => {
+    expect(CONFIDENT_DISQUALIFIERS.has('pathway_offer_private')).toBe(true)
+    expect(backendDisqualifiers()).toContain('pathway_offer_private')
   })
 })
 
@@ -37,6 +41,10 @@ describe('tile subtitle - a confident disqualifier leads', () => {
   test('the first disqualifier leads when there are two', () => {
     const f = pathway('gap', [], ['pathway_undeclared', 'pathway_funded_or_abroad', 'pathway_start_year_outside'])
     expect(factSubtitleItem(f)?.code).toBe('pathway_funded_or_abroad')
+  })
+  test('IPTS offers: the IPTS line leads an earlier undeclared line', () => {
+    const f = pathway('gap', ['offer_programme'], ['pathway_undeclared', 'pathway_offer_private'])
+    expect(factSubtitleItem(f)?.code).toBe('pathway_offer_private')
   })
   test('no disqualifier: the first unresolved line leads as before', () => {
     const f = pathway('review', ['offer_programme'], ['pathway_undeclared', 'offer_issuer_not_checked'])

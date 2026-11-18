@@ -36,6 +36,12 @@ import re
 
 from .bands import NOT_CHECKED, GENUINE_MIN, SUSPECT_MAX
 
+#: The set OPENINGS of the IPTS reasons (offer-private rule, 18 Nov 2026): `offer_private` reads a saved reason
+#: back by them, so the reason text is built from them. Changing one changes saved output (MODEL_VERSION).
+PRIVATE_COLLEGE_OPENING = 'private college / university (IPTS)'
+PRIVATE_ARM_OPENING = 'private / continuing-education arm'     # the 1.6.0 private-arm veto (`results_doc`)
+PRIVATE_OFFER_TAG = 'private_offer'                             # the S6 BLOCK's ruling tag (`offer_rulings`)
+
 #: The fingerprinted families' own issuer lines — the weight-3 identity signature of each family in
 #: `results_doc` (label as stored in `authenticity.present`). ONE home: `pathway_engine` reads it for
 #: the reporting-date bonus's public-issuer gate.
@@ -174,7 +180,7 @@ def private_college_reason(ocr_text: str, r: dict, public_words=None) -> str:
     MARA-owned institution (ruling C) always gets it. Read off the letterhead for the same reason
     as `tvet_issuer`; any public-university name or short name anywhere on the page rules it out."""
     page, head = _fold(ocr_text), _letterhead(ocr_text)
-    text = (f"private college / university (IPTS) - not a supported public issuer (nearest pattern "
+    text = (f"{PRIVATE_COLLEGE_OPENING} - not a supported public issuer (nearest pattern "
             f"{r['type'].replace('_', ' ')}, p={r['probability']:.2f})")[:300]
     if any(p in page for p in _PRIVATE_MARA):
         return text

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: an offer from a private college or university (IPTS) shows "Rule not met" on Pathway (2026-11-18)
+
+Branch offer-private, not pushed. Migration: none. Services: api, web. Owner ruling 2026-11-18 (`docs/decisions.md`): HalaTuju supports public courses only; an IPTS or private-wing offer breaks the rule for every gift. `VERDICT_ENGINE_VERSION` 2026-11-18.1 -> 2026-11-18.2; no genuineness `MODEL_VERSION` change.
+- **Rule (`scholarship/offer_private.py`):** on a read offer letter, the Pathway fact turns red with `pathway_offer_private` (institution + which signal fired) when the read programme / institution / issuer names a private wing or named private body (no public veto: UTM SPACE flags), or when the saved genuineness reason opens with an IPTS opening and the read institution / issuer names no known public body. No letter, an unread letter, or a letter with no institution or issuer: no line. Hooked into `_verdict_pathway` after `funded_or_abroad`, before the start-year rule and the ladder.
+- **Flag only, reviewers only:** added to `award.CONFIDENT_DISQUALIFIERS` and the web mirror (`cockpitVerdict.ts`), so the card reads "Rule not met" and the line leads its subtitle. Submission, the amount, student tickets, e-mail titles and the shortlist's IPTS gate are unchanged.
+- **Reason openings as constants:** `offer_issuers.PRIVATE_COLLEGE_OPENING`, `PRIVATE_ARM_OPENING`, `PRIVATE_OFFER_TAG`; the three saved reasons are built from them, byte for byte as before (pinned).
+- **Copy:** reviewer line in en / ms / ta (ms / ta drafts), a verdict-narrative phrase, a Guide line (Your decision) and a new FAQ entry; the "Rule not met" FAQ lists the IPTS case.
+- **Tests:** new `test_offer_private_rule.py` (each signal, the public-name veto incl. a catalogue row, UTM SPACE, unread / no letter, suspect -> gap, disqualifier leads, amount and consent blockers unchanged, reason pins, version floor); narrative and web drift tests extended.
+- **Debt:** TD-665, TD-666, TD-667.
+
 ### feat: red tile names its reason: Rule not met vs Can't verify (2026-11-18)
 
 Branch rule-not-met, not pushed. Migration: none. Services: web. Display only; no API or engine change, the disqualifier list is untouched.

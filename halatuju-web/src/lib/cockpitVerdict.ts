@@ -106,6 +106,7 @@ export const CONFIDENT_DISQUALIFIERS = new Set<string>([
   'income_above_b40_line',
   'pathway_funded_or_abroad',
   'pathway_start_year_outside',
+  'pathway_offer_private',
 ])
 
 /**

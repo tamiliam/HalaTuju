@@ -91,8 +91,10 @@ def course_start_unknown(application):
 # fully funded; overseas study is not supported) is one too. The flag only; the amount is unchanged.
 # H3 (#597, owner 2026-11-15): `pathway_start_year_outside` (the course started in a year the intake
 # does not accept, `start_year`) is one too, on the same terms: the flag only, the amount unchanged.
+# IPTS offers (owner 2026-11-18): `pathway_offer_private` (an offer from a private college / university
+# or a private wing, `offer_private`) is one too: the flag only, the amount unchanged, no submit block.
 CONFIDENT_DISQUALIFIERS = ('offer_not_official', 'income_above_b40_line', 'pathway_funded_or_abroad',
-                           'pathway_start_year_outside')
+                           'pathway_start_year_outside', 'pathway_offer_private')
 
 
 def verdict_disqualifier(verdict):
