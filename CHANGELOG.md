@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: a red verdict tile names the reason it is red (2026-11-18)
+
+Branch fix-tile-disqualifier-leads. Migration: none. Services: web. Display only; no verdict, band or amount changes.
+- **The bug (#804, owner 2026-11-18):** the Pathway tile was red ("Can't verify") because the course started in a year the gift does not accept, but its one-line subtitle read "No pathway chosen yet": the subtitle took the first unresolved line, and the start-year line came second.
+- **The fix:** `factSubtitleItem` (`cockpitVerdict.ts`) lets a confident disqualifier (`CONFIDENT_DISQUALIFIERS`: not an official offer, income over the limit, funded or overseas programme, start year outside) lead the subtitle. The other lines show in the detail list below the tiles, as before.
+- **Tests:** new `disqualifier-drift.test.ts` pins the web list to `award.CONFIDENT_DISQUALIFIERS` in both directions and covers the #804 order.
+
 ### fix: the recent-letter ask applies to confirmation letters only, never to offer letters (2026-11-18)
 
 Branch fix-recent-letter-confirm. Migration: none. Services: both. Owner, 2026-11-18: "The recent requirement only applies to confirmation letter. Not to offer letters." Decisions: `docs/decisions.md` (H3b ruling).

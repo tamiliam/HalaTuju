@@ -90,12 +90,27 @@ export function factTileTone(fact: AdminVerdictFact): FactTileTone {
   }
 }
 
+// The confident "outside this gift's criteria" codes: usually the reason a tile is red (a fake
+// offer with a validated reporting date can sit at 'review' and still carries
+// `offer_not_official`; it leads there too, as the flag stands). PINNED to the
+// backend `award.CONFIDENT_DISQUALIFIERS` by `__tests__/disqualifier-drift.test.ts`.
+export const CONFIDENT_DISQUALIFIERS = new Set<string>([
+  'offer_not_official',
+  'income_above_b40_line',
+  'pathway_funded_or_abroad',
+  'pathway_start_year_outside',
+])
+
 /**
- * The tile's one-line subtitle item. A real unresolved problem leads. Otherwise, on a tile
+ * The tile's one-line subtitle item. A confident disqualifier leads, so the tile names the
+ * reason it is red (#804, owner 2026-11-18: a red Pathway tile read "No pathway chosen yet"
+ * while the start year was the reason). Next, the first unresolved problem. Otherwise, on a tile
  * that is not green, the "genuineness NOT checked yet" note leads the positive lines, so a
  * blue tile never reads as though the results were proved. Null = fall back to the status.
  */
 export function factSubtitleItem(fact: AdminVerdictFact): AdminVerdictItem | null {
+  const decisive = fact.unresolved.find((it) => CONFIDENT_DISQUALIFIERS.has(it.code))
+  if (decisive) return decisive
   if (fact.unresolved.length > 0) return fact.unresolved[0]
   if (factTileTone(fact) !== 'green') {
     const nc = fact.evidence.find((e) => e.code === HIGHER_RESULTS_NOT_CHECKED)
