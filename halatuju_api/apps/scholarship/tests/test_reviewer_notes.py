@@ -380,3 +380,47 @@ class ReviewFixesTest(_Base):
         self.assertEqual(len(lines), 1)
         self.assertIn(f'admin_id={self.reviewer.id} app_id={self.app.pk}', lines[0])
         self.assertNotIn(MARK, ' '.join(logs.output))
+
+
+class TheReviewerWritesOnlyAnOpenCaseTest(_Base):
+    """#73 re-check 4 (M1): the assigned reviewer's write asks the case stage, not only the notes window, so
+    POST-AWARD-CUT's cut at the award holds even if `NOTE_STATUSES` is ever widened."""
+
+    def _assigned(self, status, **kw):
+        app = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        type(app).objects.filter(pk=app.pk).update(status=status, **kw)
+        app.refresh_from_db()
+        return app
+
+    def test_past_the_award_or_after_an_ending_the_reviewer_gets_the_severed_403(self):
+        from apps.scholarship.staff_lifecycle import PAST_AWARD, PRE_AWARD_END, case_stage
+        cases = [
+            (self._assigned('awarded', awarded_at=timezone.now()), PAST_AWARD),
+            (self._assigned('active', awarded_at=timezone.now(), active_at=timezone.now()), PAST_AWARD),
+            (self._assigned('rejected', pre_decline_status='interviewing'), PRE_AWARD_END),
+            (self._assigned('expired'), PRE_AWARD_END),
+            (self._assigned('withdrawn'), PRE_AWARD_END),
+        ]
+        for app, stage in cases:
+            with self.subTest(app.status):
+                self.assertEqual(case_stage(app), stage)
+                r = self._post(self.reviewer, app=app)
+                self.assertEqual(r.status_code, 403, r.content)   # not the window's 400
+                self.assertEqual(r.data['code'], 'notes_closed')
+        self.assertFalse(ReviewerNote.objects.exists())
+
+    def test_the_stage_is_asked_before_the_window(self):
+        """Widen the window to every status: the reviewer is still refused past the award, the org admin is not."""
+        from unittest import mock
+        app = self._assigned('awarded', awarded_at=timezone.now())
+        with mock.patch.object(reviewer_notes, 'NOTE_STATUSES', ('awarded',)), \
+                mock.patch.object(reviewer_notes, 'window_open', return_value=True):
+            r = self._post(self.reviewer, app=app)
+            self.assertEqual(r.status_code, 403, r.content)
+            self.assertEqual(self._post(self.org_admin, app=app).status_code, 201)
+        self.assertEqual(list(ReviewerNote.objects.values_list('author_id', flat=True)), [self.org_admin.id])
+
+    def test_the_open_case_still_takes_the_reviewer_s_note(self):
+        r = self._post(self.reviewer)
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(ReviewerNote.objects.get().author, self.reviewer)

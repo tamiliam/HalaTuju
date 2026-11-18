@@ -136,6 +136,14 @@
       "qc_a"
      ],
      "why": "request #75: the door asks the qc key after the case rule, so the assigned reviewer is refused 403"
+    },
+    "POST api/v1/admin/scholarship/applications/<int:pk>/reviewer-notes/": {
+     "allow": [
+      "super",
+      "org_admin_a",
+      "reviewer_a"
+     ],
+     "why": "request #73: notes keep their own key (students.edit) plus the ASSIGNED reviewer, so qc_a (neither) is refused 403 writer_only; the callers let through get 400 (an empty body, or the window shut at the reopened decline)"
     }
    }
   },
@@ -203,6 +211,13 @@
       "org_admin_a"
      ],
      "why": "request #75: the door asks the qc key after the case rule, so admin_a (Scholars, no qc) is refused 403; the callers let through get 400 bad_status"
+    },
+    "POST api/v1/admin/scholarship/applications/<int:pk>/reviewer-notes/": {
+     "allow": [
+      "super",
+      "org_admin_a"
+     ],
+     "why": "request #73 re-check 4: the assigned reviewer's note write is severed past the award (403), and admin_a (Scholars, no students.edit) never writes a note (403 writer_only); org_admin_a and super reach the window's 400 notes_closed"
     }
    }
   },
@@ -234,6 +249,7 @@
    "POST api/v1/admin/scholarship/applications/<int:pk>/reporting-date/",
    "POST api/v1/admin/scholarship/applications/<int:pk>/request-info/",
    "POST api/v1/admin/scholarship/applications/<int:pk>/resolution-items/",
+   "POST api/v1/admin/scholarship/applications/<int:pk>/reviewer-notes/",
    "POST api/v1/admin/scholarship/applications/<int:pk>/submit-decline/",
    "POST api/v1/admin/scholarship/applications/<int:pk>/suggest-gaps/",
    "POST api/v1/admin/scholarship/applications/<int:pk>/verify-accept/",
@@ -1624,15 +1640,14 @@
    "method": "post",
    "allow": [
     "super",
-    "org_admin_a",
-    "reviewer_a"
+    "org_admin_a"
    ],
    "hide": [
     "org_admin_b"
    ],
    "object": "app_a",
    "flags": [],
-   "note": "object app_a: reached by super, org_admin_a, reviewer_a (the assigned reviewer replies, request #73); refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+   "note": "object app_a: reached by super, org_admin_a; refused to reviewer_a (app_a is ACTIVE: the assigned reviewer writes a note only while the case is OPEN, POST-AWARD-CUT, request #73 re-check 4; the open case's reply is proved in case_stages), reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
    "route": "api/v1/admin/scholarship/applications/<int:pk>/submit-decline/",

@@ -9,6 +9,8 @@ WRITE (#73): org admins and a platform super (students.edit), plus the reviewer 
 everyone else read only. A caller who is neither is refused before the fence (as #55 did), so a stranger
 learns nothing about the case; the side is then decided again on the locked row in
 `reviewer_notes.add_note`, with the window and the body rules. Append-only: there is no PATCH and no DELETE.
+The reviewer writes only while the case is OPEN (`staff_lifecycle.case_stage`, POST-AWARD-CUT): past it they
+get main's severed-writer 403, whatever the window says (#73 re-check 4).
 
 SEEN (#73): the GET is what draws the notes on the student page, so it clears the caller's "New note" mark
 for this case (`staff_notifications.mark_seen`), and so does a successful POST (the replier has just read
@@ -29,6 +31,7 @@ from rest_framework.response import Response
 from .. import reviewer_notes, staff_notifications, surface_gates
 from ..models import ScholarshipApplication
 from ..models.reviewer_notes import NOTE_MAX
+from ..staff_lifecycle import OPEN, case_stage
 from .base import _AdminBase
 
 logger = logging.getLogger('apps.scholarship.views_admin')
@@ -44,11 +47,19 @@ _MESSAGES = {
 
 
 def _may_write(admin, pk):
-    """Before the fence: students.edit (M3b G5; a super holds every key), else the case's assigned reviewer."""
+    """Before the fence: None when the caller may write, else the refusal ('writer_only' or 'severed').
+    students.edit (M3b G5; a super holds every key) writes at any stage, its window permitting. Else only the
+    case's ASSIGNED reviewer, and only while the case is OPEN: POST-AWARD-CUT severs the reviewer's link at
+    the award, and a case ended before it is not theirs either (`may_write_case`), so this holds even if the
+    notes window is ever widened. Still one query (the row, where an EXISTS was); the window is judged
+    again on the locked row in `add_note`."""
     if surface_gates.may_work_students(admin):
-        return True
-    # org-fence: a yes/no on the caller's OWN assignment only; the fence (`_scoped_application`) runs next.
-    return ScholarshipApplication.objects.filter(pk=pk, assigned_to_id=admin.id).exists()
+        return None
+    # org-fence: the caller's OWN assignment only; the fence (`_scoped_application`) runs next.
+    app = ScholarshipApplication.objects.filter(pk=pk, assigned_to_id=admin.id).first()
+    if app is None:
+        return 'writer_only'
+    return None if case_stage(app) == OPEN else 'severed'
 
 
 class AdminReviewerNotesView(_AdminBase):
@@ -82,8 +93,13 @@ class AdminReviewerNotesView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not _may_write(admin, pk):
+        refused = _may_write(admin, pk)
+        if refused == 'writer_only':
             return Response({'error': _MESSAGES['writer_only'], 'code': 'writer_only'},
+                            status=status.HTTP_403_FORBIDDEN)
+        if refused:
+            # Main's severed-writer 403 (`_deny_role`), plus the code the card words and reloads on.
+            return Response({'error': 'Your admin role cannot perform this action.', 'code': 'notes_closed'},
                             status=status.HTTP_403_FORBIDDEN)
         app, err = self._scoped_application(request, pk)
         if err:
