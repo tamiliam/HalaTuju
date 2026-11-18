@@ -17,8 +17,7 @@ from __future__ import annotations
 
 from django.db.models.functions import Lower
 
-from apps.courses import staff_permissions as sp
-from apps.courses.models import PartnerAdmin
+from apps.courses import public as courses_public
 
 from . import audit
 from .models import StaffActivity
@@ -28,8 +27,10 @@ UNNAMED = 'unnamed_reviewer'       # label key: a staff row with no name
 
 
 def may_see_reviewers(admin) -> bool:
-    """The lead tier: a super (platform) or an organisation admin."""
-    return bool(admin is not None and (admin.is_super or sp.is_lead_tier(admin)))
+    """The lead tier: a super (platform) or an organisation admin. Asked by KEY, not by label:
+    `manage_team` is lead-tier-only (held by role, never storable for a team member), so a super and
+    an organisation admin hold it and nobody else does."""
+    return bool(admin is not None and courses_public.staff_permissions.holds(admin, 'manage_team'))
 
 
 def _staff_by_email(emails, admin):
@@ -37,7 +38,7 @@ def _staff_by_email(emails, admin):
     fenced to the caller's organisation (a super reads every organisation)."""
     if not emails:
         return {}
-    staff = PartnerAdmin.objects.all()
+    staff = courses_public.PartnerAdmin.objects.all()
     if not admin.is_super:
         if admin.owning_organisation_id is None:
             return {}   # no organisation, no staff to name (never `IS NULL`, which would match supers)

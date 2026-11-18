@@ -97,6 +97,7 @@ CENSUS = {
     S + 'serializers_admin/names.py::_admin_name_by_email': (1, 'KEEPS', 'a name on a record'),
     S + 'services/assignment.py::_locked': (1, 'OWN_ROW', 'a reviewer already picked'),
     S + 'source_invite.py::_reactivate': (1, 'NOT_STAFF', 'source partner'),
+    S + 'prediction_metrics.py::_staff_by_email': (1, 'KEEPS', 'names a past decision recorder; archived keeps its name'),
     S + 'source_invite.py::has_joined': (1, 'NOT_STAFF', 'source partner'),
     S + 'source_invite.py::has_person': (1, 'NOT_STAFF', 'source partner'),
     S + 'source_invite.py::invite': (1, 'NOT_STAFF', 'an archived staff address is already_staff'),
