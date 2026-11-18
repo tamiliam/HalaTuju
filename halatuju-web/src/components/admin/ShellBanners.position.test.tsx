@@ -5,7 +5,8 @@
  * top-banner slot. It shows only when nothing important is missing (or the important banner was hidden
  * by its X), never to someone who has answered, never on My Profile, never beside another banner; the X
  * hides it for 7 days (the profile banner's own store); one tap saves through `PATCH admin/me/`,
- * thanks the reader and then goes away by itself.
+ * thanks the reader and then goes away by itself. Review round: never asked of someone the server leaves
+ * the item out for (a source user or a referral partner).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import ShellBanners, { THANKS_MS } from './ShellBanners'
@@ -130,4 +131,11 @@ it('a failed save says so and keeps the buttons', async () => {
   expect(screen.getByRole('alert').textContent).toBe('admin.nudge.positionFailed')
   expect((screen.getByRole('button', { name: 'admin.position.manager' }) as HTMLButtonElement).disabled).toBe(false)
   expect(screen.queryByTestId('top-banner-position-thanks')).toBeNull()
+})
+
+it('not asked when the served items leave the highest position out (a source user or a referral partner)', () => {
+  const items = KEYS.filter((k) => k !== 'highest_position').map((key) => ({ key, done: true }))
+  render(<ShellBanners {...props({ completion: { items, done: 5, total: 5, percent: 100, important_missing: [] } })} />)
+  expect(screen.queryByTestId('top-banner-position')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'admin.position.head' })).toBeNull()
 })

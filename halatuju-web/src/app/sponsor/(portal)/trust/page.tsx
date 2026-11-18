@@ -170,26 +170,27 @@ function FigureBars({ figures, total, tone }: {
   )
 }
 
-/** Request #69, board 3: the headline adds the top two shares as served; four bars; the count. No
- *  names or people: the server sends the count and the four shares only. */
+/** Request #69, board 3: the headline, four bars, the banded count. No names or people: the server sends
+ *  the headline (`senior_pct`), a band (`count_at_least`, never the exact count) and the four shares —
+ *  which it withholds (null) when a level holds everyone or exactly one person; then no bars. */
 function VolunteersSection({ v, t }: { v: SponsorVolunteers; t: (k: string, p?: Record<string, string>) => string }) {
   const V = 'sponsorPortal.trust.volunteers'
-  const pct = String(v.shares.c_level + v.shares.head)
+  const shares = v.shares
   return (
     <section className={`${PHONE_SECTION_NO_GAP} space-y-3.5 md:mt-4`} data-testid="trust-volunteers">
       <h2 className="font-semibold text-ground-900">{t(`${V}.title`)}</h2>
-      <p className="text-xl font-bold leading-snug text-ground-900">{t(`${V}.headline`, { pct })}</p>
-      <div className="grid gap-x-8 gap-y-3.5 text-sm md:grid-cols-2">
+      <p className="text-xl font-bold leading-snug text-ground-900">{t(`${V}.headline`, { pct: String(v.senior_pct) })}</p>
+      {shares && <div className="grid gap-x-8 gap-y-3.5 text-sm md:grid-cols-2">
         {VOLUNTEER_LEVELS.map((k) => (
           <div key={k} data-testid={`trust-volunteers-${k}`}>
-            <div className="flex justify-between gap-3"><span>{t(`${V}.level.${k}`)}</span><b>{v.shares[k]}%</b></div>
+            <div className="flex justify-between gap-3"><span>{t(`${V}.level.${k}`)}</span><b>{shares[k]}%</b></div>
             <div className="mt-1.5 h-2 rounded-full bg-info-100">
-              <div className="h-2 rounded-full bg-info-600" style={{ width: `${v.shares[k]}%` }} />
+              <div className="h-2 rounded-full bg-info-600" style={{ width: `${shares[k]}%` }} />
             </div>
           </div>
         ))}
-      </div>
-      <p className="text-sm text-ground-500">{t(`${V}.basedOn`, { n: String(v.count) })}</p>
+      </div>}
+      <p className="text-sm text-ground-500">{t(`${V}.basedOn`, { n: String(v.count_at_least) })}</p>
     </section>
   )
 }

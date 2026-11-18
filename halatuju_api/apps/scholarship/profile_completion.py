@@ -10,8 +10,8 @@ mentor, partner, source_partner. **Never a super** (`completion(...)` answers No
 WHAT COUNTS, equal weight, only what the person's profile asks of them (the Profile page's card
 rules, `lib/profileCards.ts` `cardsFor`, whose server twins live in `staff_contact.py`):
 
-- everyone — `photo`, `name`, `job_title`, `highest_position` (request #69, 2026-11-17), `about`,
-  `phone`;
+- everyone — `photo`, `name`, `job_title`, `highest_position` (request #69, 2026-11-17; never for a
+  source user or a referral partner: `volunteer_positions.asked`, owner 2026-11-17), `about`, `phone`;
 - somebody who works with students (`staff_contact.works_with_students`: a `review` holder or a
   mentor) — also `qualifications` (the Reviewer-hold set as ONE item: qualification, university,
   graduation year, field of study — `reviewer_onboarding`), `language` (English, BM or Tamil at
@@ -29,6 +29,7 @@ page's order, `percent` rounded DOWN so 100 means every item is done.
 """
 from .reviewer_onboarding import LANG_FIELDS, REQUIRED_TEXT_FIELDS, SPEAKS
 from .staff_contact import works_with_students
+from .volunteer_positions import asked
 
 #: The banner's fields, in the order its sentence names them.
 IMPORTANT = ('photo', 'phone', 'mentoring_area')
@@ -55,7 +56,7 @@ def item_keys(admin):
     """The keys this person's profile asks of them, in page order; () for a super or nobody."""
     if admin is None or admin.is_super:
         return ()
-    keys = ['photo', 'name', 'job_title', 'highest_position', 'about', 'phone']
+    keys = ['photo', 'name', 'job_title', *(['highest_position'] if asked(admin) else []), 'about', 'phone']
     if works_with_students(admin):
         keys += ['qualifications', 'language', 'address']
     if admin.is_mentor or admin.mentors_now:

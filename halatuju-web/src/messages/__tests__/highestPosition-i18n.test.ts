@@ -30,7 +30,16 @@ it.each([['en', en], ['ms', ms], ['ta', ta]])('%s holds every key, as words', (_
     expect((v as string).trim()).not.toBe('')
   }
   expect(at(tree, 'sponsorPortal.trust.volunteers.headline')).toContain('{pct}')
-  expect(at(tree, 'sponsorPortal.trust.volunteers.basedOn')).toContain('{n}')
+  expect(at(tree, 'sponsorPortal.trust.volunteers.basedOn')).toContain('{n}+')   // a band, never exact
+})
+
+it('the review round\'s words: the banded footnote and the Malay top level', () => {
+  expect(at(en, 'sponsorPortal.trust.volunteers.basedOn')).toBe('Based on {n}+ volunteers who have told us.')
+  expect(at(ms, 'sponsorPortal.trust.volunteers.basedOn')).toBe('Berdasarkan {n}+ sukarelawan yang telah memberitahu kami.')
+  expect(at(ta, 'sponsorPortal.trust.volunteers.basedOn')).toBe('எங்களிடம் தெரிவித்த {n}+ தன்னார்வலர்களின் அடிப்படையில்.')
+  for (const key of ['admin.position.c_level', 'sponsorPortal.trust.volunteers.level.c_level']) {
+    expect(at(ms, key)).toBe('Pengurusan tertinggi (C-level), pengasas atau pemilik perniagaan')
+  }
 })
 
 it('the four English choices are the organisation\'s own words, on both surfaces', () => {

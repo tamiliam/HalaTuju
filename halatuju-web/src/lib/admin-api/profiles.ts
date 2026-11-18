@@ -64,6 +64,9 @@ export interface AdminMe {
   job_title: string
   /** Request #69: the highest position ever held — a `HIGHEST_POSITIONS` key, '' = not given. */
   highest_position: HighestPosition | ''
+  /** Request #69 review round: whether the person is asked it at all (false for a source user or a
+   *  referral partner — no field, no banner, no completion item). Served, never derived. */
+  asks_highest_position?: boolean
   about: string
   phone: string
   share_phone_with_team: boolean

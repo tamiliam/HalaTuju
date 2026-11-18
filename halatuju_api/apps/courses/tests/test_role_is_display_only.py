@@ -204,6 +204,8 @@ ALLOWLIST = {
         'money: fallback approvers are org admins by label (payments fallback rule)'),
     'scholarship/reviewer_onboarding.py::reviewer_profile_complete': ('DISPLAY', 'account kind',
         'first-login landing: the label says which kind of account this is, not what it may do'),
+    'scholarship/volunteer_positions.py::asked': ('DISPLAY', 'account kind',
+        'request #69: a source user or referral partner is not team, so is not asked a profile question'),
     'scholarship/scheduling.py::propose_slots': ('OVERRIDE', 'owner override',
         'super bypass of the assigned-reviewer rule (getattr role == super): a super holds every key'),
     'scholarship/source_invite.py::_reactivate': ('DISPLAY', 'account kind',

@@ -3,7 +3,8 @@
 `apps/scholarship/profile_completion.py`. Decisions 1-3 of `docs/plans/2026-11-08-staff-nudges.md`:
 per-role items (equal weight), done/total/percent, the banner's "important missing" list, and never a
 super. Request #69 (2026-11-17): `highest_position` joins the everyone items after `job_title`, for
-every kind of account, and is never an important item.
+every TEAM kind (never a source user or a referral partner: owner 2026-11-17), and is never an
+important item.
 """
 from django.test import TestCase, override_settings
 
@@ -14,6 +15,8 @@ from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, mak
 ME = '/api/v1/admin/me/'
 BASE = ['photo', 'name', 'job_title', 'highest_position', 'about', 'phone']
 STUDENTS = BASE + ['qualifications', 'language', 'address']
+#: A source user or a referral partner is never asked the highest position (request #69 review round).
+NOT_ASKED_BASE = [k for k in BASE if k != 'highest_position']
 FULL_CARD = {'photo_path': 'staff-photos/1/a.webp', 'job_title': 'Officer', 'highest_position': 'manager',
              'about': 'Hello', 'phone': '123456789'}
 FULL_REVIEWER = {'highest_qualification': 'Degree', 'university': 'UM', 'graduation_year': 2010,
@@ -32,9 +35,14 @@ class TestItemSets(TestCase):
         cls.org = make_org()
 
     def test_staff_without_review_get_the_six_everyone_items(self):
-        for role in ('org_admin', 'admin', 'finance', 'qc', 'partner', 'source_partner'):
+        for role in ('org_admin', 'admin', 'finance', 'qc', 'member'):
             with self.subTest(role=role):
                 self.assertEqual(_keys(make_admin(role, owning_org=self.org)), BASE)
+
+    def test_a_source_user_or_referral_partner_gets_five_without_the_highest_position(self):
+        for role in ('partner', 'source_partner'):
+            with self.subTest(role=role):
+                self.assertEqual(_keys(make_admin(role, owning_org=self.org)), NOT_ASKED_BASE)
 
     def test_a_review_holder_also_gets_qualifications_language_and_address(self):
         self.assertEqual(_keys(make_admin('reviewer', owning_org=self.org)), STUDENTS)
@@ -85,8 +93,7 @@ class TestScoring(TestCase):
         for admin in (make_admin('org_admin', owning_org=self.org), make_admin('admin', owning_org=self.org),
                       make_admin('reviewer', owning_org=self.org), make_admin('finance', owning_org=self.org),
                       make_admin('qc', owning_org=self.org, mentor=mentor), make_admin('mentor', owning_org=self.org),
-                      make_admin('member', owning_org=self.org),
-                      make_admin('source_partner', owning_org=self.org)):
+                      make_admin('member', owning_org=self.org)):
             with self.subTest(role=admin.role):
                 blank = profile_completion.completion(admin, None)
                 self.assertFalse({i['key']: i['done'] for i in blank['items']}['highest_position'])
@@ -168,9 +175,9 @@ class TestServedOnAdminMe(TestCase):
         c = authed_client(mentor).get(ME).json()['completion']
         self.assertTrue({i['key']: i['done'] for i in c['items']}['mentoring_area'])
 
-    def test_a_source_user_is_served_it(self):
+    def test_a_source_user_is_served_it_without_the_highest_position(self):
         c = authed_client(make_admin('source_partner', owning_org=self.org)).get(ME).json()['completion']
-        self.assertEqual([i['key'] for i in c['items']], BASE)
+        self.assertEqual([i['key'] for i in c['items']], NOT_ASKED_BASE)
 
     def test_the_photo_delete_answers_the_completion(self):
         admin = make_admin('admin', owning_org=self.org)

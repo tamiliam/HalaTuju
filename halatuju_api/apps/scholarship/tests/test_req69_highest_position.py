@@ -2,11 +2,12 @@
 
 - the field and its four choices (blank = not given);
 - `PATCH admin/me/` saves, clears and refuses it, and makes the profile row when there is none — only the
-  caller's own row;
+  caller's own row; a source user or a referral partner is never asked and is refused (review round);
 - the Team person page serves it beside the job title (`test_t3_person_page.py` pins the key sets);
-- the sponsor Trust page's `volunteers`: no figures below five answers; at five or more the right
-  shares (largest remainder, summing to 100); other organisations, supers, source users, archived and
-  revoked staff never count; the payload holds the count and the four shares only;
+- the sponsor Trust page's `volunteers`: no figures below five answers; at five or more a BANDED count
+  (never the exact one), the headline and the right shares (largest remainder, summing to 100) — the
+  shares withheld when a level holds everyone or exactly one person; other organisations, supers,
+  source users, archived, revoked and suspended-mentor staff never count, paused reviewers do;
 - completion counts it for every kind (`test_profile_completion.py`).
 """
 import json
@@ -15,7 +16,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.scholarship import volunteer_positions
-from apps.scholarship.models import Sponsor, SponsorProgrammeMembership, StaffProfile
+from apps.scholarship.models import Mentor, Sponsor, SponsorProgrammeMembership, StaffProfile
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_org, make_programme,
 )
@@ -68,12 +69,27 @@ class TestAdminMe(TestCase):
         done = {i['key']: i['done'] for i in r.json()['completion']['items']}
         self.assertTrue(done['highest_position'])
 
-    def test_every_kind_may_answer_it(self):
-        for role in ('org_admin', 'admin', 'reviewer', 'qc', 'finance', 'mentor', 'member', 'source_partner'):
+    def test_every_team_kind_may_answer_it(self):
+        for role in ('org_admin', 'admin', 'reviewer', 'qc', 'finance', 'mentor', 'member'):
             with self.subTest(role=role):
-                r = self._patch(make_admin(role, owning_org=self.org), {'highest_position': 'individual'})
+                admin = make_admin(role, owning_org=self.org)
+                self.assertTrue(authed_client(admin).get(ME).json()['asks_highest_position'])
+                r = self._patch(admin, {'highest_position': 'individual'})
                 self.assertEqual(r.status_code, 200, r.content)
                 self.assertEqual(r.json()['highest_position'], 'individual')
+
+    def test_a_source_user_or_referral_partner_is_never_asked_and_is_refused(self):
+        for role in ('source_partner', 'partner'):
+            with self.subTest(role=role):
+                admin = make_admin(role, owning_org=self.org)
+                self.assertFalse(authed_client(admin).get(ME).json()['asks_highest_position'])
+                for value in ('head', ''):
+                    r = self._patch(admin, {'highest_position': value})
+                    self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_highest_position'))
+                self.assertFalse(StaffProfile.objects.filter(partner_admin=admin).exists())
+                # A save without the field still works (the page never sends it for them).
+                self.assertEqual(self._patch(admin, {'job_title': 'Coordinator'}).status_code, 200)
+                self.assertEqual(StaffProfile.objects.get(partner_admin=admin).highest_position, '')
 
     def test_blank_clears_it_and_the_get_serves_blank(self):
         admin = _answered(self.org, 'head', role='admin')
@@ -108,16 +124,38 @@ class TestTheSummary(TestCase):
             _answered(self.org, pos)
         self.assertIsNone(volunteer_positions.summary_for_organisation(self.org.id))
         _answered(self.org, 'manager')
-        self.assertEqual(volunteer_positions.summary_for_organisation(self.org.id)['count'], 5)
+        self.assertEqual(volunteer_positions.summary_for_organisation(self.org.id)['count_at_least'], 5)
+
+    def test_the_count_is_banded_never_exact(self):
+        for total, want in ((4, None), (5, 5), (9, 5), (10, 10), (19, 10), (20, 20), (49, 20), (50, 50),
+                            (199, 100), (200, 200), (499, 200), (500, 500), (1234, 500)):
+            with self.subTest(total=total):
+                self.assertEqual(volunteer_positions.band(total), want)
 
     def test_shares_at_five_and_more(self):
-        for pos in ('c_level', 'head', 'head', 'manager', 'individual', 'individual', 'individual'):
+        for pos in ['c_level'] * 2 + ['head'] * 4 + ['manager'] * 3 + ['individual'] * 5:
             _answered(self.org, pos)
         s = volunteer_positions.summary_for_organisation(self.org.id)
-        # 1/7 = 14.29, 2/7 = 28.57, 1/7 = 14.29, 3/7 = 42.86 -> floors 14+28+14+42 = 98; the two
-        # largest remainders (head .57, individual .86) get the two points left.
-        self.assertEqual(s, {'count': 7, 'shares': {'c_level': 14, 'head': 29, 'manager': 14, 'individual': 43}})
+        # 2/14 = 14.29, 4/14 = 28.57, 3/14 = 21.43, 5/14 = 35.71 -> floors 14+28+21+35 = 98; the two
+        # largest remainders (individual .71, head .57) get the two points left. 14 answers -> "10+".
+        self.assertEqual(s, {'count_at_least': 10, 'senior_pct': 43,
+                             'shares': {'c_level': 14, 'head': 29, 'manager': 21, 'individual': 36}})
         self.assertEqual(sum(s['shares'].values()), 100)
+        self.assertNotIn('count', s)   # the exact count is never served
+
+    def test_one_person_at_a_level_withholds_the_bars_but_not_the_headline(self):
+        for pos in ('c_level', 'head', 'head', 'manager', 'manager', 'individual', 'individual'):
+            _answered(self.org, pos)
+        # 1/7 = 14.29, 2/7 = 28.57 x3 -> floors 14+28+28+28 = 98; head and manager (.57, the higher
+        # levels first on the tie with individual) get the points: 14, 29, 29, 28 -> headline 43.
+        self.assertEqual(volunteer_positions.summary_for_organisation(self.org.id),
+                         {'count_at_least': 5, 'senior_pct': 43, 'shares': None})
+
+    def test_everyone_at_one_level_withholds_the_bars(self):
+        for _ in range(6):
+            _answered(self.org, 'manager')
+        self.assertEqual(volunteer_positions.summary_for_organisation(self.org.id),
+                         {'count_at_least': 5, 'senior_pct': 0, 'shares': None})
 
     def test_who_counts(self):
         for pos in ('head', 'head', 'manager', 'individual', 'c_level'):
@@ -131,14 +169,18 @@ class TestTheSummary(TestCase):
         _answered(self.org, 'c_level', role='partner')
         _answered(self.org, 'c_level', archived_at=timezone.now(), is_active=False)
         _answered(self.org, 'c_level', is_active=False)
+        _answered(self.org, 'c_level', archived_at=timezone.now(), is_active=True)   # archived, still active
+        suspended = _answered(self.org, 'c_level', role='mentor')                        # M2c: suspended
+        Mentor.objects.filter(pk=suspended.mentor_id).update(deactivated_at=timezone.now())
         _answered(self.org, '')
         make_admin('admin', owning_org=self.org)          # no profile row at all
         # Counted whatever their group: a mentor login, a "No group" member, an organisation admin.
         _answered(self.org, 'individual', role='mentor')
         _answered(self.org, 'individual', role='member')
         _answered(self.org, 'c_level', role='org_admin')
+        _answered(self.org, 'manager', paused_at=timezone.now())                        # paused still counts
         self.assertEqual(volunteer_positions.counts_for_organisation(self.org.id),
-                         {'c_level': 2, 'head': 2, 'manager': 1, 'individual': 3})
+                         {'c_level': 2, 'head': 2, 'manager': 2, 'individual': 3})
 
     def test_shares_always_sum_to_one_hundred(self):
         for counts in ({'c_level': 1, 'head': 1, 'manager': 1, 'individual': 0},
@@ -163,7 +205,7 @@ class TestTheTrustPage(TestCase):
         cls.org = make_org()
         cls.other = make_org()
         cls.names = []
-        for i, pos in enumerate(('c_level', 'head', 'head', 'manager', 'individual')):
+        for i, pos in enumerate(('c_level', 'c_level', 'head', 'head', 'head', 'manager', 'manager')):
             cls.names.append(_answered(cls.org, pos, name=f'Volunteer Sample {i}').name)
         for i in range(6):
             _answered(cls.other, 'individual', name=f'Elsewhere Sample {i}')
@@ -184,18 +226,29 @@ class TestTheTrustPage(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         return r.json()['volunteers']
 
-    def test_the_sponsors_own_organisation_and_totals_only(self):
+    def test_the_sponsors_own_organisation_banded_and_totals_only(self):
         v = self._volunteers(self.sponsor)
-        self.assertEqual(v, {'count': 5, 'shares': {'c_level': 20, 'head': 40, 'manager': 20, 'individual': 20}})
+        # 7 answers: 2/7 = 28.57, 3/7 = 42.86, 2/7 = 28.57, 0 -> floors 28+42+28+0 = 98; head (.86) and
+        # then c_level (.57, the higher level on the tie with manager) get the points. 7 -> "5+".
+        self.assertEqual(v, {'count_at_least': 5, 'senior_pct': 72,
+                             'shares': {'c_level': 29, 'head': 43, 'manager': 28, 'individual': 0}})
         blob = json.dumps(v)
         for name in self.names:
             self.assertNotIn(name, blob)
-        self.assertEqual(set(v), {'count', 'shares'})
+        self.assertEqual(set(v), {'count_at_least', 'senior_pct', 'shares'})
         self.assertEqual(set(v['shares']), set(KEYS))
+        self.assertNotIn(7, [v['count_at_least'], v['senior_pct'], *v['shares'].values()])   # never exact
+
+    def test_one_person_at_a_level_sends_no_bars(self):
+        StaffProfile.objects.filter(pk=StaffProfile.objects.filter(
+            partner_admin__owning_organisation=self.org, highest_position='head').first().pk,
+        ).update(highest_position='individual')
+        # 2/7, 2/7, 2/7, 1/7 -> 29, 29, 28, 14 (c_level and head take the tie) -> headline 58.
+        self.assertEqual(self._volunteers(self.sponsor), {'count_at_least': 5, 'senior_pct': 58, 'shares': None})
 
     def test_below_five_the_api_sends_no_figures(self):
         StaffProfile.objects.filter(partner_admin__owning_organisation=self.org,
-                                    highest_position='manager').update(highest_position='')
+                                    highest_position__in=('manager', 'c_level')).update(highest_position='')
         self.assertIsNone(self._volunteers(self.sponsor))
 
     def test_no_single_organisation_no_figures(self):

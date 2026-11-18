@@ -375,9 +375,9 @@
       "volunteers": {
         "title": "Sukarelawan kami",
         "headline": "{pct}% sukarelawan kami pernah memegang jawatan pengurus kanan atau lebih tinggi",
-        "basedOn": "Berdasarkan {n} sukarelawan yang telah memberitahu kami.",
+        "basedOn": "Berdasarkan {n}+ sukarelawan yang telah memberitahu kami.",
         "level": {
-          "c_level": "Peringkat C, pengasas atau pemilik perniagaan",
+          "c_level": "Pengurusan tertinggi (C-level), pengasas atau pemilik perniagaan",
           "head": "Ketua jabatan atau pengurus kanan",
           "manager": "Pengurus",
           "individual": "Penyumbang individu (ahli akademik, doktor, dll.)"
@@ -8796,7 +8796,7 @@
       "loadFailed": "Kami tidak dapat memuatkan halaman ini. Sila cuba lagi."
     },
     "position": {
-      "c_level": "Peringkat C, pengasas atau pemilik perniagaan",
+      "c_level": "Pengurusan tertinggi (C-level), pengasas atau pemilik perniagaan",
       "head": "Ketua jabatan atau pengurus kanan",
       "manager": "Pengurus",
       "individual": "Penyumbang individu (ahli akademik, doktor, dll.)"

@@ -26,11 +26,12 @@ function photoRefusal(err: { code?: string; status?: number }): string {
  * "You" — everyone: the photo (a 96 px circle; Add / Change / Remove, each its own action straight
  * to `admin/me/photo/`, not part of Save), the name (required), job title, the highest position held
  * (request #69: optional, one of four, "Choose one" clears it; under Job title on every width, so an
- * empty cell sits under Name on a wide screen), About (600 characters, with a counter) and the
+ * empty cell sits under Name on a wide screen; only when the server says `asks_highest_position` — a
+ * source user or a referral partner is never asked, so neither the cell nor the field shows), About (600 characters, with a counter) and the
  * sign-in email, shown, never edited. Common profile S2.
  */
 export default function YouCard({ state }: CardProps) {
-  const { t, draft, set, setCard, email, token, photoUrl, onPhoto, staffMentor } = state
+  const { t, me, draft, set, setCard, email, token, photoUrl, onPhoto, staffMentor } = state
   const file = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
@@ -99,6 +100,7 @@ export default function YouCard({ state }: CardProps) {
             placeholder={t(`${P}.jobTitleHint`)}
             onChange={(e) => setCard({ job_title: e.target.value })} className={inputCls} />
         </div>
+        {me?.asks_highest_position && <>
         <div aria-hidden className="hidden sm:block" />
         <div>
           <label htmlFor="profile-highest-position" className={labelCls}>{t(`${P}.highestPosition`)}</label>
@@ -111,6 +113,7 @@ export default function YouCard({ state }: CardProps) {
           <p id="profile-highest-position-hint" className="mt-1 text-xs text-ground-500">{t(`${P}.highestPositionHint`)}</p>
           <p id="profile-highest-position-note" className="mt-1 text-xs text-ground-500">{t(`${P}.highestPositionNote`)}</p>
         </div>
+        </>}
         <div className="sm:col-span-2">
           <label htmlFor="profile-about" className={labelCls}>{t(`${P}.about`)}</label>
           <textarea id="profile-about" rows={3} maxLength={ABOUT_MAX} value={draft.card.about}

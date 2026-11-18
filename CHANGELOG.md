@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #69 review round - sponsor figures banded, only team members asked (2026-11-18)
+
+Branch req69, not pushed. Migration: `0214_reviewerprofile_highest_position` (additive; unchanged by this round). Services: both.
+- **Who is asked:** a source user or a referral partner (`source_partner`, `partner`; `volunteer_positions.asked`) gets no completion item (five items, not six), no banner question and no My Profile field. `admin/me/` serves `asks_highest_position`; the page shows the field (and the empty cell under Name) only when it is true. A `PATCH` of `highest_position` from them is 400 `bad_highest_position` and changes nothing. The banner already followed the served item, so it needs no code change.
+- **Sponsor figures:** still nothing below 5 answers. The exact count is never sent: `count_at_least` is the largest of 5, 10, 20, 50, 100, 200 or 500 at or below it. The headline is served as `senior_pct` (the c_level and head largest-remainder shares added, from the exact counts). The four `shares` are sent only when no level holds everyone and no level holds exactly one person; otherwise `shares: null` and the page shows the headline and the footnote, no bars. Footnote: "Based on {n}+ volunteers who have told us." (ms, ta to match).
+- **Who counts:** a suspended mentor (`Mentor.deactivated_at`) no longer counts; a paused reviewer (`PartnerAdmin.paused_at`) still does; an archived row that is still `is_active` never did and is now tested.
+- **Words:** ms `admin.position.c_level` and `sponsorPortal.trust.volunteers.level.c_level` now read "Pengurusan tertinggi (C-level), pengasas atau pemilik perniagaan"; en, ms and ta `basedOn` carry "{n}+".
+- **Tests:** API: `test_req69_highest_position.py` (not asked and refused; band edges; bars withheld for one person and for everyone at one level; the exact count never in the payload; archived but active, suspended mentor, paused reviewer), `test_profile_completion.py`, `test_admin_me.py`; `test_role_is_display_only.py` lists `volunteer_positions.asked` as a DISPLAY (account kind) read. Web: `trust/volunteers.test.tsx` (headline, no bars), `profile/position.test.tsx` (not asked), `ShellBanners.position.test.tsx` (no item, no banner), `highestPosition-i18n.test.ts`; the trust sandbox fixture takes the new shape.
+
 ### feat: highest position held on staff profiles, with a sponsor summary (request #69, 2026-11-17)
 
 Branch req69, not pushed. Migration: `0214_reviewerprofile_highest_position` (additive; `db_default` ''). Services: both. Mock-up: canvas v8 (four boards, approved 17 Nov).

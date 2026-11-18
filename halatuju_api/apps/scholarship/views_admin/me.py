@@ -22,7 +22,8 @@ programme list is the same one its scope switcher already serves (`AdminScopeLis
 `POST admin/me/password/` — the signed-in person changes their OWN password (see `AdminMePasswordView`).
 
 Common profile S2 (2026-10-31): the GET also serves the person's card — `job_title`,
-`highest_position` (request #69, 2026-11-17: a choice key, '' = not given), `about`, `phone`,
+`highest_position` (request #69, 2026-11-17: a choice key, '' = not given; `asks_highest_position`
+says whether the page shows it), `about`, `phone`,
 `share_phone_with_team`, `share_phone_with_students`, `photo_url` (signed, ~1 h, only when a photo
 exists; NEVER on `admin/role/`, which every page load reads) — and `PATCH admin/me/` writes the card
 (`AdminMeView.patch`); `POST / DELETE admin/me/photo/` change the photo (`AdminMePhotoView`). Staff
@@ -43,7 +44,7 @@ from apps.courses import public as courses_public
 from halatuju.middleware.supabase_auth import auth_sub
 from halatuju.throttling import UploadRateThrottle
 
-from .. import profile_completion, staff_activity, staff_activity_read, staff_photo
+from .. import profile_completion, staff_activity, staff_activity_read, staff_photo, volunteer_positions
 from ..staff_contact import new_profile_defaults, phone_refusal, works_with_students
 from ..models import Mentor, StaffProfile
 from .base import _AdminBase
@@ -145,8 +146,9 @@ class AdminMeView(_AdminBase):
     reviewer profile does. A source user's NAME saves here too (opted in, GET and PATCH). A MENTOR's
     `mentoring_area` too (S7a): `mentoring_area_required`, `mentoring_area_too_long` (120); any other
     role sending it is `not_editable`. Request #69: `highest_position`, one of the four choice keys or
-    '' (not given), anyone may send it; anything else is `bad_highest_position`. Answers with the GET
-    payload."""
+    '' (not given), from anyone who is asked it (`volunteer_positions.asked`: never a source user or a
+    referral partner); anything else, or from anybody else, is `bad_highest_position` and nothing
+    changes. Answers with the GET payload."""
     source_partner_methods = ('get', 'patch')
     mentor_methods = member_methods = ('get', 'patch')
 
@@ -183,7 +185,8 @@ class AdminMeView(_AdminBase):
                 clean[key] = data[key]
         if 'highest_position' in data:
             value = data['highest_position']
-            if not isinstance(value, str) or (value and value not in HIGHEST_POSITION_KEYS):
+            if (not volunteer_positions.asked(admin) or not isinstance(value, str)
+                    or (value and value not in HIGHEST_POSITION_KEYS)):
                 return _me_refusal('bad_highest_position')
             clean['highest_position'] = value
         if 'name' in clean and not clean['name']:
@@ -239,6 +242,8 @@ class AdminMeView(_AdminBase):
             'first_seen_at': admin.first_seen_at,
             'last_seen_at': admin.last_seen_at,
             **_card(profile, admin),
+            # Request #69: whether the My Profile page shows the highest-position field (the ONE rule).
+            'asks_highest_position': volunteer_positions.asked(admin),
             # S7a: a mentor's own area of mentoring — for a mentor only (fresh read: a PATCH just
             # wrote it with an UPDATE). S7d: a staff member who mentors now too.
             **({'mentoring_area': area} if _mentors(admin) else {}),

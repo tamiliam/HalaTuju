@@ -375,7 +375,7 @@
       "volunteers": {
         "title": "Our volunteers",
         "headline": "{pct}% of our volunteers have held a senior manager role or above",
-        "basedOn": "Based on the {n} volunteers who have told us.",
+        "basedOn": "Based on {n}+ volunteers who have told us.",
         "level": {
           "c_level": "C-level, founder or business owner",
           "head": "Head of department or senior manager",
