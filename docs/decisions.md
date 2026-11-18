@@ -42,6 +42,7 @@ Branch req73, one commit, not pushed. Migration `0216_two_way_notes` (additive: 
 **Re-check 4 (POST-AWARD-CUT, no schema change, 0216 unchanged).**
 
 26. **The assigned reviewer writes a note only while the case is OPEN** (`staff_lifecycle.case_stage`), and only inside the notes window, so POST-AWARD-CUT's cut at the award holds even if `NOTE_STATUSES` is ever widened. Past the award, or after a case ended before it, the reviewer gets main's severed-writer 403 (`_deny_role`'s message) with the code `notes_closed`, before the window's 400. The `students.edit` route is left as it is (notes keep their own key, as main's 2026-11-17 entry says).
+    *Re-check 5:* the stage is asked twice, at the view and again on the LOCKED row in `add_note` (keyed on the reviewer SIDE, so an award that commits between the two, or a `students.edit` holder who is also the assignee, is refused `notes_closed`, 400). The view's severed 403 is built from `_deny_role()` and answers only after the fence, so a caller who may not read the case learns nothing of its stage.
 
 ## 2026-11-19 — Request #75: the profile-complete email no longer promises an interview (owner)
 

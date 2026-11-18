@@ -27,6 +27,10 @@ Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration 
 - Tamil: தரக் கட்டுப்பாடு, புதிய குறிப்புள்ள, and the two email lines corrected. No email golden moved.
 - Tests: `test_reviewer_notes.py` and `test_staff_notifications.py` (not yet / finished, clear on reply, sweep after unassign, other side only, billing, cool-down, fence, list query count with notes, a reader clearing only their own case); `useNewNoteCount.test.tsx`; `ReviewerNotesCard.test.tsx` ("(you)" only on your own notes, both sides; the not-yet hint and refusal).
 
+### refactor: request #73 re-check 5 - the reviewer's stage asked again under the lock (2026-11-19)
+
+- `add_note` asks the reviewer side's case stage again on the locked row: an award that commits after the view's check, or an org admin who is also the assignee, is refused `notes_closed` even if the notes window is widened. The view's severed 403 now comes from `_deny_role()` (plus the code) and only after the fence, so an assignee who cannot read the case gets the fence's answer. No extra query. Decisions item 26. No migration (0216 unchanged).
+
 ### refactor: request #73 re-check 4 - the reviewer's note write asks the case stage (2026-11-19)
 
 - The assigned reviewer adds a note only while the case is OPEN (`staff_lifecycle.case_stage`): past the award, or after a case ended before it, the POST answers main's severed-writer 403 (code `notes_closed`) before the window's 400, so POST-AWARD-CUT's cut holds even if the notes window is widened. Org admins and supers (`students.edit`) are unchanged. Still one query before the fence. `access_manifest.json`: the reviewer is refused on the active app_a, and the notes POST joins `case_stages.pairs`. Decisions item 26. No migration (0216 unchanged).

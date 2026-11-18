@@ -38,6 +38,7 @@ from .interview_completeness import decision_gate_applies
 from .models import ReviewerNote
 from .models.reviewer_notes import NOTE_MAX, ORG_ADMIN, REVIEWER
 from .models.staff_notifications import REVIEWER_NOTE
+from .staff_lifecycle import OPEN, case_stage
 from .status_lock import StatusRefused, lock_application_for
 
 #: The statuses a note may be added at: Awaiting review, Interviewing.
@@ -112,7 +113,8 @@ def add_note(application, body, *, author):
     ⚠ THE WINDOW IS RE-READ UNDER A ROW LOCK (review R3). A reviewer recording her decision at the
     same moment must not leave a note written after it: the application row is locked
     (`status_lock.lock_application_for`, which also refreshes ``application``), the window is asked
-    again on the locked row, and only then is the note inserted, in the same transaction."""
+    again on the locked row, and only then is the note inserted, in the same transaction. The reviewer's
+    side is also asked the case stage again here (OPEN only, POST-AWARD-CUT; #73 re-check 5)."""
     text = clean_body(body)
     with transaction.atomic():
         try:
@@ -122,6 +124,10 @@ def add_note(application, body, *, author):
         side = side_of(application, author)   # asked of the locked row: a reassignment cannot race it
         if side == 'reader':
             raise ReviewerNoteError('writer_only')
+        if side == REVIEWER and case_stage(application) != OPEN:
+            # POST-AWARD-CUT, asked again of the locked row (#73 re-check 5): an award (or an ending) that
+            # committed after the view's check still cuts the reviewer, whatever NOTE_STATUSES says.
+            raise ReviewerNoteError('notes_closed')
         if not window_open(application):
             raise _closed_error(application)
         note = ReviewerNote.objects.create(

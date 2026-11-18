@@ -424,3 +424,56 @@ class TheReviewerWritesOnlyAnOpenCaseTest(_Base):
         r = self._post(self.reviewer)
         self.assertEqual(r.status_code, 201, r.content)
         self.assertEqual(ReviewerNote.objects.get().author, self.reviewer)
+
+
+class TheStageIsAskedAgainUnderTheLockTest(_Base):
+    """#73 re-check 5: `add_note` asks the reviewer side's case stage again on the LOCKED row (M1, L1), and the
+    severed 403 answers only after the fence (L2). The window is widened to `awarded` throughout, as a future
+    change might, so only the stage stands between the reviewer and an awarded case."""
+
+    def setUp(self):
+        super().setUp()
+        from unittest import mock
+        self.awarded = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        type(self.awarded).objects.filter(pk=self.awarded.pk).update(status='awarded', awarded_at=timezone.now())
+        for patch in (mock.patch.object(reviewer_notes, 'NOTE_STATUSES', ('interviewing', 'awarded')),
+                      mock.patch.object(reviewer_notes, 'window_open', return_value=True)):
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def test_an_award_that_commits_after_the_view_s_check_still_cuts_the_reviewer(self):
+        """M1: the view saw the case OPEN (interviewing); the award committed before the lock."""
+        from unittest import mock
+        from apps.scholarship.staff_lifecycle import OPEN
+        from apps.scholarship.views_admin import reviewer_notes as view
+        with mock.patch.object(view, 'case_stage', return_value=OPEN):
+            r = self._post(self.reviewer, app=self.awarded)
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertEqual(r.data['code'], 'notes_closed')
+        self.assertFalse(ReviewerNote.objects.exists())
+
+    def test_an_org_admin_who_is_the_assignee_is_cut_on_the_reviewer_side_too(self):
+        """L1: students.edit skips the view's stage check, but the note would be the REVIEWER's: refused."""
+        type(self.awarded).objects.filter(pk=self.awarded.pk).update(assigned_to=self.org_admin)
+        r = self._post(self.org_admin, app=self.awarded)
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertEqual(r.data['code'], 'notes_closed')
+        self.assertFalse(ReviewerNote.objects.exists())
+
+    def test_the_fence_answers_before_the_severed_403(self):
+        """L2: an assignee who may not read the case (another organisation's reviewer) gets the fence's 404,
+        not a 403 that says the case has ended."""
+        stranger = make_admin('reviewer', owning_org=make_org())
+        type(self.awarded).objects.filter(pk=self.awarded.pk).update(assigned_to=stranger)
+        r = self._post(stranger, app=self.awarded)
+        self.assertEqual(r.status_code, 404, r.content)
+        self.assertNotIn('code', r.data)
+        self.assertFalse(ReviewerNote.objects.exists())
+
+    def test_the_severed_403_is_main_s_deny_role_with_a_code(self):
+        """L3: built from `_deny_role`, so its message cannot drift from main's."""
+        from apps.scholarship.views_admin.base import _AdminBase
+        r = self._post(self.reviewer, app=self.awarded)
+        self.assertEqual(r.status_code, 403, r.content)
+        self.assertEqual(r.data, dict(_AdminBase()._deny_role().data, code='notes_closed'))
+        self.assertFalse(ReviewerNote.objects.exists())
