@@ -93,20 +93,47 @@ export function doubtName(t: Translate, code: string): string {
   return own && !own.includes('{') ? own : code.replace(/_/g, ' ')
 }
 
-export function FactTable({ t, counts }: { t: Translate; counts: Record<string, PredictionCounts> }) {
+const REASON_CODES = ['engine_wrong', 'read_wrong', 'new_information', 'programme_rule', 'other'] as const
+
+/** LL2: "New information 3 · Document read wrong 1 · Not given 2" for one fact; '' when the fact has no
+ *  green -> fail case or the payload predates the reasons (old cached data). Counts only, no percent. */
+function reasonLine(
+  t: Translate, f: string, counts: Record<string, PredictionCounts>,
+  reasons?: Record<string, Record<string, number>>, notGiven?: Record<string, number>,
+): string {
+  if (!counts[f]?.green_failed || !reasons?.[f]) return ''
+  const parts: string[] = REASON_CODES.filter((c) => reasons[f][c]).map(
+    (c) => `${t(`admin.scholarship.recordVerdict.failReason.${c}`)} ${reasons[f][c]}`)
+  if (notGiven?.[f]) parts.push(`${t(`${K}.notGiven`)} ${notGiven[f]}`)
+  return parts.join(' · ')
+}
+
+export function FactTable({ t, counts, reasons, notGiven }: {
+  t: Translate; counts: Record<string, PredictionCounts>
+  reasons?: Record<string, Record<string, number>>; notGiven?: Record<string, number>
+}) {
   const rows = FACT_CODES.filter((f) => counts[f])
   if (rows.length === 0) return null
+  const showReasons = rows.some((f) => reasonLine(t, f, counts, reasons, notGiven))
   return (
     <TableFrame phoneRows minWidth={520} label={t(`${K}.byFact`)}>
       <table className="w-full">
         <thead className={HEAD}>
-          <tr><th className={TH}>{t(`${K}.col.fact`)}</th><CountHeads t={t} /></tr>
+          <tr>
+            <th className={TH}>{t(`${K}.col.fact`)}</th><CountHeads t={t} />
+            {showReasons && <th className={TH}>{t(`${K}.col.reasons`)}</th>}
+          </tr>
         </thead>
         <tbody>
           {rows.map((f) => (
             <tr key={f} className={ROW} data-testid={`ai-fact-${f}`}>
               <td className={NAME}>{factName(t, f)}</td>
               <CountCells t={t} c={counts[f]} />
+              {showReasons && (
+                <td className={TD} data-label={t(`${K}.col.reasons`)} data-testid={`ai-reasons-${f}`}>
+                  {reasonLine(t, f, counts, reasons, notGiven)}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

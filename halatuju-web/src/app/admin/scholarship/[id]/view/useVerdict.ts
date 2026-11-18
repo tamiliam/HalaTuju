@@ -14,12 +14,16 @@ import { isClearAccept, verdictSaveOutcome, verdictSaveErrorText } from '@/lib/o
 import { interviewRefusalText } from '@/lib/interviewCompleteness'
 import { qcRefusalText } from './QcPanel'
 import type { CockpitCtx } from './cockpitCtx'
+import { reasonsToSend } from './failReasons'
 
 export function useVerdict(ctx: CockpitCtx, genLang: string) {
   const { id, token, t, app, setApp, setProfile, setBusy, setError } = ctx
   // Sprint 5 — Officer cockpit
   const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
   const [verdictReason, setVerdictReason] = useState('')
+  // LL2: {fact: reason code} for a fact the engine showed green and the reviewer failed.
+  const [failReasons, setFailReasons] = useState<Record<string, string>>({})
+  const setFailReason = (fact: string, code: string) => setFailReasons((r) => ({ ...r, [fact]: code }))
   const [verdictMsg, setVerdictMsg] = useState('')
   const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
   // Decision reopen (reverse a recorded decision). The reopened STATE is server-driven
@@ -47,6 +51,7 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
       overall: v.overall ?? '',
     })
     setVerdictReason(d.verdict_reason ?? '')
+    setFailReasons({ ...(v.fail_reasons ?? {}) })   // rows from before LL2 have no key
   }
 
   // TD-227 (A1.11a): the decline needs a reason (stored on the case; the server answers 400
@@ -96,6 +101,7 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
     try {
       const result = await recordVerdict(id, {
         officer_verdict: officerVerdict,
+        fail_reasons: reasonsToSend(app?.verdict, officerVerdict, failReasons),
         reason: verdictReason || undefined,
         finalise,
         language: genLang,
@@ -251,7 +257,7 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
   }
 
   return {
-    officerVerdict, setOfficerVerdict, verdictReason, setVerdictReason, verdictMsg, verdictMsgTone,
+    officerVerdict, setOfficerVerdict, failReasons, setFailReason, verdictReason, setVerdictReason, verdictMsg, verdictMsgTone,
     reopenOpen, setReopenOpen, reopenReason, setReopenReason,
     qcReopenOpen, setQcReopenOpen, qcComments, setQcComments, qcRejectMode, setQcRejectMode,
     qcOverrideOpen, setQcOverrideOpen, qcOverrideReason, setQcOverrideReason,

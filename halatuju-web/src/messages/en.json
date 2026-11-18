@@ -5157,7 +5157,7 @@
         "chooseOutcome": "Choose Recommend or Decline.",
         "savedNotSubmitted": "Your verdict was saved on {date}, but this case has not moved to QC yet. Press Approve again to submit it.",
         "savedNotSubmittedDecline": "Your decline was saved on {date}, but this case has not been sent to QC yet. Press Decline again to send it.",
-        "saveNeedsReady": "Submit your findings, rate the AI and add your conclusion.",
+        "saveNeedsReady": "Submit your findings, check the four facts and add your conclusion.",
         "findingsIncomplete": "Answer every interview question before deciding ({count} left).",
         "reasonPlaceholder": "Make your case: why this student deserves to be sponsored — or does NOT meet the {programmeName} requirements.",
         "save": "Save & generate final profile",
@@ -5189,7 +5189,19 @@
         "finaliseEngineError": "The final profile could not be written. Please press again.",
         "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
         "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
-        "rateTitle": "Rate AI Prediction"
+        "rateTitle": "Check the four facts",
+        "rateHelp": "Pass = this fact is true for the student. Fail = it is not true, or not proven.",
+        "failedAcceptWarn": "One fact failed. Do you want to accept?",
+        "failWhy": "Why is this fact not true?",
+        "failReasonLabel": "Reason",
+        "pickReason": "Pick a reason for the failed fact.",
+        "failReason": {
+          "engine_wrong": "The rule is wrong",
+          "read_wrong": "The document was read wrong",
+          "new_information": "New information (interview, call)",
+          "programme_rule": "A programme rule",
+          "other": "Other"
+        }
       },
       "qcDecision": {
         "title": "Quality control",
@@ -7626,8 +7638,10 @@
         "assignedOnly": "Your assigned applicants only.",
         "versionUnknown": "Unknown version",
         "unmatchedReviewer": "Reviewer not matched to an account",
+        "notGiven": "Not given",
         "unnamedReviewer": "Reviewer not named",
         "col": {
+          "reasons": "Why it failed",
           "sure": "AI sure, reviewer agreed",
           "doubt": "AI in doubt, reviewer passed",
           "fact": "Fact",

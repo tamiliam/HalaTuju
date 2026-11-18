@@ -24,6 +24,9 @@ export interface VerdictMetrics {
    *  browser only prints them. Absent from a payload means "this reader may not see it". */
   overall?: PredictionCounts
   fact_counts?: Record<string, PredictionCounts>
+  /** LL2: why reviewers failed a fact the AI was sure of, by fact (zero-filled), plus those not given. */
+  fail_reasons?: Record<string, Record<string, number>>
+  fail_reasons_not_given?: Record<string, number>
   by_version?: Record<string, PredictionCounts>
   by_month?: Record<string, PredictionCounts>
   doubt_codes?: DoubtRow[]
@@ -212,6 +215,8 @@ export interface RecordVerdictPayload {
     pathway?: string
     overall?: string
   }
+  /** LL2: {fact: code} for a fact the engine showed green and the reviewer failed. */
+  fail_reasons?: Record<string, string>
   reason?: string
   finalise?: boolean
   language?: string

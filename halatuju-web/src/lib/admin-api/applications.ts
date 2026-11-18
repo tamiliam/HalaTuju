@@ -395,6 +395,8 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields {
     income?: string
     pathway?: string
     overall?: string
+    /** LL2: absent on rows from before the reason tap. */
+    fail_reasons?: Record<string, string>
   }
   verdict_reason: string
   verdict_decided_by: string

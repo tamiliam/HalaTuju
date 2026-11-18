@@ -154,7 +154,7 @@ export function AiPredictionBlock({ ai, t, note }: { ai: VerdictMetrics; t: Tran
           {ai.fact_counts && (
             <div data-testid="ai-by-fact">
               <h3 className={`${H3} mb-2`}>{t(`${K}.byFact`)}</h3>
-              <FactTable t={t} counts={ai.fact_counts} />
+              <FactTable t={t} counts={ai.fact_counts} reasons={ai.fail_reasons} notGiven={ai.fail_reasons_not_given} />
             </div>
           )}
 

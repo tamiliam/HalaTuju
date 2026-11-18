@@ -234,7 +234,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   // Re-check 4: nothing is drawn against a record that is not this case's (the key makes it so).
   if (!app || app.id !== id) return <RecordState loading={!error} />
 
-  const d = deriveCockpit(app, t, findings, officerVerdict, verdict.verdictReason)
+  const d = deriveCockpit(app, t, findings, officerVerdict, verdict.verdictReason, verdict.failReasons)
   const { vtip, decisionReopened, decisionLocked, decisionRecorded } = d
   // Household income + size (request #54: the declared figures, ticked on a document match).
   const household = householdFigures(app, t)
@@ -377,6 +377,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         decisionReopened={decisionReopened} decisionRecorded={decisionRecorded}
         decisionLocked={decisionLocked}
         officerVerdict={officerVerdict} setOfficerVerdict={setOfficerVerdict}
+        failReasons={verdict.failReasons} setFailReason={verdict.setFailReason}
         reportingDateInput={reportingDateInput} setReportingDateInput={setReportingDateInput}
         reportingDateMsg={reportingDateMsg} doSetReportingDate={doSetReportingDate}
       />
@@ -392,7 +393,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         recordedOutcome={recordedOutcome} doReject={doReject} stuckAfterVerdict={stuckAfterVerdict}
         officerVerdict={officerVerdict} selectApprove={selectApprove} selectDecline={selectDecline}
         approveReady={approveReady} decisionReady={decisionReady} interviewSubmitted={interviewSubmitted}
-        interviewMissing={interviewMissing} hasAssistance={hasAssistance} doSave={doSave} canSave={canSave}
+        interviewMissing={interviewMissing} hasAssistance={hasAssistance} doSave={doSave} canSave={canSave} reasonMissing={d.reasonMissing}
         verdictMsg={verdictMsg} verdictMsgTone={verdictMsgTone}
       />
 

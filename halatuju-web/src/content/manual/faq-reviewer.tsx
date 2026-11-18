@@ -189,7 +189,9 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>The <strong>Pass/Fail</strong> on each fact records whether <em>that fact is right for the student</em>.
         <strong> Approve / Decline</strong> is your actual recommendation. They&rsquo;re separate: you can Pass all
         four facts and still <strong>Decline</strong> — for instance, income verified but above the B40 line.
-        A Pass or Fail tap records the student&rsquo;s fact; it does not rate the AI.</>,
+        A Pass or Fail tap records the student&rsquo;s fact; it does not rate the AI.
+        If you Fail a fact the system showed as green, tap one reason for it before you save. If you Approve
+        while a fact is on Fail, you see a warning, but you can still go ahead.</>,
     },
     {
       q: <>Can I undo a decision after I Save?</>,

@@ -5157,7 +5157,7 @@
         "chooseOutcome": "Pilih Syorkan atau Tolak.",
         "savedNotSubmitted": "Keputusan anda telah disimpan pada {date}, tetapi kes ini belum berpindah ke QC. Tekan Luluskan sekali lagi untuk menghantarnya.",
         "savedNotSubmittedDecline": "Penolakan anda telah disimpan pada {date}, tetapi kes ini belum dihantar ke QC. Tekan Tolak sekali lagi untuk menghantarnya.",
-        "saveNeedsReady": "Hantar penemuan anda, nilai AI dan tambah kesimpulan anda.",
+        "saveNeedsReady": "Hantar penemuan anda, semak empat fakta dan tambah kesimpulan anda.",
         "findingsIncomplete": "Jawab setiap soalan temu duga sebelum membuat keputusan ({count} lagi).",
         "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau TIDAK memenuhi syarat {programmeName}.",
         "save": "Simpan & jana profil akhir",
@@ -5189,7 +5189,19 @@
         "finaliseEngineError": "Profil akhir tidak dapat ditulis. Sila tekan sekali lagi.",
         "mayAlreadyBeSaved": "Keputusan anda mungkin sudah disimpan. Muat semula halaman dan semak sebelum menekan sekali lagi.",
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
-        "rateTitle": "Nilaikan Ramalan AI"
+        "rateTitle": "Semak empat fakta",
+        "rateHelp": "Lulus = fakta ini benar bagi pelajar. Gagal = ia tidak benar, atau tidak dibuktikan.",
+        "failedAcceptWarn": "Satu fakta gagal. Adakah anda mahu menerima?",
+        "failWhy": "Mengapa fakta ini tidak benar?",
+        "failReasonLabel": "Sebab",
+        "pickReason": "Pilih satu sebab untuk fakta yang gagal.",
+        "failReason": {
+          "engine_wrong": "Peraturan itu salah",
+          "read_wrong": "Dokumen dibaca dengan salah",
+          "new_information": "Maklumat baharu (temu duga, panggilan)",
+          "programme_rule": "Peraturan program",
+          "other": "Lain-lain"
+        }
       },
       "qcDecision": {
         "title": "Kawalan mutu",
@@ -7626,8 +7638,10 @@
         "assignedOnly": "Pemohon yang ditugaskan kepada anda sahaja.",
         "versionUnknown": "Versi tidak diketahui",
         "unmatchedReviewer": "Penyemak tidak dipadankan dengan akaun",
+        "notGiven": "Tidak diberi",
         "unnamedReviewer": "Penyemak tanpa nama",
         "col": {
+          "reasons": "Sebab gagal",
           "sure": "AI yakin, penyemak setuju",
           "doubt": "AI ragu, penyemak meluluskan",
           "fact": "Fakta",

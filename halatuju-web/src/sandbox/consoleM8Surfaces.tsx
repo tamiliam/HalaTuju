@@ -78,6 +78,13 @@ const AI_METRICS = {
   applications: 50, fact_decisions: 200, overrides: 20, override_rate: 0.1, per_fact: {},
   overall: aiCounts(100, 90),
   fact_counts: { identity: aiCounts(50, 49), academic: aiCounts(30, 27), pathway: aiCounts(10, 6), income: aiCounts(10, 8) },
+  fail_reasons: {
+    identity: { engine_wrong: 0, read_wrong: 1, new_information: 0, programme_rule: 0, other: 0 },
+    academic: { engine_wrong: 0, read_wrong: 1, new_information: 1, programme_rule: 0, other: 0 },
+    pathway: { engine_wrong: 1, read_wrong: 0, new_information: 2, programme_rule: 1, other: 0 },
+    income: { engine_wrong: 0, read_wrong: 0, new_information: 1, programme_rule: 0, other: 0 },
+  },
+  fail_reasons_not_given: { identity: 0, academic: 1, pathway: 0, income: 1 },
   by_version: { 'v5.1': aiCounts(60, 57), '': aiCounts(40, 33) },
   by_month: { '2026-08': aiCounts(20, 17), '2026-09': aiCounts(3, 3, { few_green: true }), '2026-10': aiCounts(40, 38) },
   doubt_codes: [
