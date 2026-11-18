@@ -41,7 +41,7 @@ class GateResult:
 
 
 def lane_gate(*, locked: int, core_right: int, core_total: int,
-              wrong: Mapping[str, int] | None = None, course_match_wrong: int | None = 0) -> GateResult:
+              wrong: Mapping[str, int] | None = None, course_match_wrong: int | None) -> GateResult:
     """Gate 1 for one lane, from the held-out counts.
 
     locked              held-out documents in the lane the rules locked and answered

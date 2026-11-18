@@ -56,3 +56,7 @@ class LaneGateTests(SimpleTestCase):
         result = self.gate(locked=5, core_right=90, core_total=100, wrong={'name': 1}, course_match_wrong=2)
         self.assertEqual(len(result.reasons), 4)
         self.assertIn('course match not run', self.gate(course_match_wrong=None).reasons)
+
+    def test_course_check_cannot_be_skipped(self):
+        with self.assertRaises(TypeError):
+            lane_gate(locked=20, core_right=100, core_total=100)
