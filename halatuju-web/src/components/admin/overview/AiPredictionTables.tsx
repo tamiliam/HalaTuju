@@ -27,7 +27,7 @@ export const pct = (rate: number): string => `${Math.round(rate * 100)}%`
 export function FewPill({ t }: { t: Translate }) {
   return (
     <span data-testid="few-pill"
-      className={`inline-block whitespace-nowrap rounded-full border border-ground-200 bg-ground-100 px-2 text-xs text-ground-600 ${PHONE_PILL_SM}`}>
+      className={`inline-block md:whitespace-nowrap rounded-full border border-ground-200 bg-ground-100 px-2 text-xs text-ground-600 ${PHONE_PILL_SM}`}>
       {t(`${K}.fewCases`)}
     </span>
   )
