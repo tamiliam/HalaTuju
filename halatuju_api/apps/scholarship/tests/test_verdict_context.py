@@ -1,0 +1,291 @@
+"""LL4 phase 1 - the record of what fed a decision (`verdict_context`).
+
+Pins: the record is built from ONE query; its keys at every level are an explicit allow-list and
+every value is a plain int or str; no fixture PII reaches it; the evidence fingerprint is stable
+for the same evidence (twice, in another row order, after a fresh fetch, in another time zone) and
+moves when a document is replaced, removed, added, re-read, or its stored status or version moves,
+and when any declared field moves, but NOT when an unrelated field moves; `key_check` and the
+fingerprint follow the secret key; the safe wrapper returns the failed record and logs no PII.
+All data is made up.
+"""
+import datetime
+import re
+from unittest import mock
+
+from django.test import TestCase, override_settings
+from django.utils import timezone
+
+from apps.scholarship import verdict_context as vc
+from apps.scholarship.model_registry import MODELS
+from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
+from apps.scholarship.tests.factories import fake_nric, make_application
+
+#: Made-up PII planted in the fixture. None of it may reach the record or the log.
+NRIC = fake_nric()
+FATHER = 'ARUMUGAM A/L KANDASAMY'
+MOTHER = 'MEENA A/P RAJU'
+ADDRESS = '12 JALAN CONTOH 3, TAMAN UJIAN'
+INCOME = 1234.56
+
+#: THE ALLOW-LIST, written out here on purpose (not read from the module): a key added to the
+#: record fails these until it is added here too, by someone who has checked it holds no PII.
+TOP_KEYS = {'schema', 'documents', 'models', 'fingerprint', 'key_check'}
+DOC_KEYS = {'id', 'doc_type', 'member', 'results_kind', 'uploaded_at', 'verification',
+            'read_state', 'genuineness', 'model_version', 'parser_version',
+            'offer_reader_version', 'sample_check_version'}
+FAILED_KEYS = {'schema', 'error'}
+
+#: A new value for each declared field. Its keys must be exactly `DECLARED_FIELDS`, so a field
+#: added to the fingerprint needs a test value here.
+CHANGED_VALUES = {
+    'income_route': 'salary',
+    'income_earner': 'mother',
+    'income_working_members': ['father', 'mother'],
+    'income_declared': {'father': 999},
+    'income_nonearning': {'mother': 'homemaker'},
+    'other_family_members': [{'relation': 'brother', 'occupation': 'gov'}],
+    'father_name': 'SOMEONE ELSE',
+    'mother_name': 'SOMEONE ELSE',
+    'father_occupation': 'private',
+    'mother_occupation': 'private',
+    'chosen_pathway': 'stpm',
+    'intended_pathway': 'stpm',
+    'chosen_programme': {'course': 'other'},
+    'pathway_confirmed_at': datetime.datetime(2026, 2, 3, 4, 5, 6, tzinfo=datetime.timezone.utc),
+    'requirements_snapshot': {'docs': ['ic']},
+}
+
+
+def _vision(status='genuine', model_version='1.2.0', parser_version='spm_slip 1.1.0', name=FATHER):
+    return {'fields': {'name': name, 'nric': NRIC, 'address': ADDRESS, 'income': INCOME},
+            'authenticity': {'status': status, 'model_version': model_version},
+            'parser_version': parser_version}
+
+
+class _Base(TestCase):
+    def setUp(self):
+        self.app = make_application(
+            'submitted', income_route='str', income_earner='father', father_name=FATHER,
+            mother_name=MOTHER, income_declared={'father': INCOME}, father_occupation='gov',
+            mother_occupation='homemaker', chosen_pathway='diploma')
+        self.ic = self._doc('ic', vision_nric=NRIC, vision_name=FATHER, vision_address=ADDRESS,
+                            vision_fields=_vision())
+        self.slip = self._doc('salary_slip', household_member='father', vision_fields=_vision())
+
+    def _doc(self, doc_type, **kw):
+        kw.setdefault('storage_path', f'org/app/{doc_type}/{NRIC}.pdf')
+        kw.setdefault('original_filename', f'{FATHER}.pdf')
+        return ApplicantDocument.objects.create(application=self.app, doc_type=doc_type, **kw)
+
+    def _fp(self, app=None):
+        return vc.build_verdict_context(app or self.app)['fingerprint']
+
+
+class TestTheRecord(_Base):
+    def test_the_record_is_built(self):
+        record = vc.build_verdict_context(self.app)
+        self.assertEqual(record['schema'], 1)
+        self.assertEqual([d['id'] for d in record['documents']], sorted([self.ic.id, self.slip.id]))
+        slip = next(d for d in record['documents'] if d['id'] == self.slip.id)
+        self.assertEqual((slip['doc_type'], slip['member'], slip['genuineness']),
+                         ('salary_slip', 'father', 'genuine'))
+        self.assertEqual((slip['model_version'], slip['parser_version']), ('1.2.0', 'spm_slip 1.1.0'))
+        self.assertEqual(set(record['models']), set(MODELS))
+        self.assertTrue(all(record['models'].values()), record['models'])
+        self.assertNotIn(vc.NOT_A_CODE, record['models'].values())
+        self.assertRegex(record['fingerprint'], r'^[0-9a-f]{64}$')
+        self.assertRegex(record['key_check'], r'^[0-9a-f]{8}$')
+
+    def test_the_record_holds_every_live_document_and_no_superseded_one(self):
+        self.slip.superseded_at = timezone.now()
+        self.slip.save()
+        ids = [d['id'] for d in vc.build_verdict_context(self.app)['documents']]
+        self.assertEqual(ids, [self.ic.id])
+
+    def test_the_documents_cost_one_query(self):
+        app = ScholarshipApplication.objects.get(pk=self.app.pk)
+        with self.assertNumQueries(1):
+            vc.build_verdict_context(app)
+
+    def test_every_declared_field_is_a_column_of_the_application(self):
+        columns = {f.name for f in ScholarshipApplication._meta.concrete_fields}
+        self.assertEqual(sorted(set(vc.DECLARED_FIELDS) - columns), [])
+
+
+class TestTheAllowList(_Base):
+    def _leaves(self, value, path='record'):
+        if isinstance(value, dict):
+            for k, v in value.items():
+                self.assertIsInstance(k, str, path)
+                yield from self._leaves(v, f'{path}.{k}')
+        elif isinstance(value, list):
+            for i, v in enumerate(value):
+                yield from self._leaves(v, f'{path}[{i}]')
+        else:
+            yield path, value
+
+    def test_the_keys_at_every_level_are_the_pinned_set(self):
+        record = vc.build_verdict_context(self.app)
+        self.assertEqual(set(record), TOP_KEYS)
+        self.assertEqual(set(record['models']), set(MODELS))
+        for doc in record['documents']:
+            self.assertEqual(set(doc), DOC_KEYS)
+
+    def test_every_value_is_a_plain_int_or_str(self):
+        for path, value in self._leaves(vc.build_verdict_context(self.app)):
+            self.assertTrue(type(value) in (int, str), f'{path} is {type(value).__name__}')
+
+    def test_no_fixture_pii_reaches_the_record(self):
+        text = vc.canonical_json(vc.build_verdict_context(self.app))
+        for secret in (NRIC, FATHER, MOTHER, ADDRESS, str(INCOME), 'org/app', '.pdf'):
+            self.assertNotIn(secret, text)
+
+    def test_the_failed_record_has_its_own_pinned_keys(self):
+        self.assertEqual(set(vc.failed_record(vc.BUILD_FAILED)), FAILED_KEYS)
+
+    def test_a_status_or_version_that_is_not_a_code_is_masked(self):
+        self.ic.vision_fields = _vision(status=FATHER, model_version=FATHER, parser_version=MOTHER)
+        self.ic.save()
+        doc = next(d for d in vc.build_verdict_context(self.app)['documents'] if d['id'] == self.ic.id)
+        self.assertEqual((doc['genuineness'], doc['model_version'], doc['parser_version']),
+                         (vc.NOT_A_CODE,) * 3)
+
+
+class TestTheFingerprintHolds(_Base):
+    def test_same_evidence_same_fingerprint(self):
+        self.assertEqual(self._fp(), self._fp())
+
+    def test_the_row_order_does_not_count(self):
+        rows = vc._live_document_rows(self.app)
+        declared = vc.declared_values(self.app)
+        self.assertEqual(vc.evidence_fingerprint(rows, declared),
+                         vc.evidence_fingerprint(list(reversed(rows)), declared))
+
+    def test_a_fresh_fetch_gives_the_same_fingerprint(self):
+        self.assertEqual(self._fp(), self._fp(ScholarshipApplication.objects.get(pk=self.app.pk)))
+
+    def test_the_time_zone_of_an_instant_does_not_count(self):
+        utc = datetime.datetime(2026, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)
+        myt = utc.astimezone(datetime.timezone(datetime.timedelta(hours=8)))
+        rows = vc._live_document_rows(self.app)
+        declared = vc.declared_values(self.app)
+        a = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=utc))
+        b = vc.evidence_fingerprint(rows, dict(declared, pathway_confirmed_at=myt))
+        self.assertEqual(a, b)
+
+    def test_an_unrelated_field_does_not_move_it(self):
+        before = self._fp()
+        self.app.verdict_reason = 'a reason'
+        self.app.officer_verdict = {'identity': 'pass'}
+        self.app.ai_verdict_snapshot = [{'fact': 'identity'}]
+        self.assertEqual(self._fp(), before)
+
+    @override_settings(SECRET_KEY='made-up-key-for-the-pinned-fingerprint-0000000000')
+    def test_the_canonical_form_is_pinned(self):
+        """A fixed input under a fixed key gives a fixed answer: any change to the canonical form
+        (key names, ordering, instant format) shows here, before it splits old and new records."""
+        row = {c: '' for c in vc._DOC_COLUMNS}
+        row.update(id=7, doc_type='ic', vision_fields={'authenticity': {'status': 'genuine'}},
+                   uploaded_at=datetime.datetime(2026, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                   vision_fields_run_at=None, vision_run_at=None)
+        declared = {name: None for name in vc.DECLARED_FIELDS}
+        self.assertEqual(vc.key_check(), PINNED_KEY_CHECK)
+        self.assertEqual(vc.evidence_fingerprint([row], declared), PINNED_FINGERPRINT)
+
+
+PINNED_KEY_CHECK = 'cad1960c'
+PINNED_FINGERPRINT = 'e60d6d280f1bf8c9787f8b04975fa161e1b21f2b80c4d45f0447dc2457c30518'
+
+
+class TestTheFingerprintMoves(_Base):
+    def _moved(self, change):
+        before = self._fp()
+        change()
+        self.assertNotEqual(self._fp(), before)
+
+    def test_a_replaced_document(self):
+        """The same slot, the same stored read and versions: only the document (its id and upload
+        time) is new, and that alone moves the fingerprint."""
+        def replace():
+            self.slip.superseded_at = timezone.now()
+            self.slip.save()
+            self._doc('salary_slip', household_member='father', vision_fields=_vision())
+        self._moved(replace)
+
+    def test_a_removed_document(self):
+        self._moved(self.slip.delete)
+
+    def test_an_added_document(self):
+        self._moved(lambda: self._doc('offer_letter', vision_fields=_vision()))
+
+    def _set(self, doc, **kw):
+        for k, v in kw.items():
+            setattr(doc, k, v)
+        doc.save()
+
+    def test_a_stored_status(self):
+        self._moved(lambda: self._set(self.slip, vision_fields=_vision(status='suspect')))
+
+    def test_a_stored_model_version(self):
+        self._moved(lambda: self._set(self.slip, vision_fields=_vision(model_version='1.3.0')))
+
+    def test_a_stored_parser_version(self):
+        self._moved(lambda: self._set(self.slip, vision_fields=_vision(parser_version='spm_slip 1.2.0')))
+
+    def test_a_re_read_under_the_same_versions(self):
+        self._moved(lambda: self._set(self.slip, vision_fields=_vision(name=MOTHER)))
+
+    def test_an_officer_verification(self):
+        self._moved(lambda: self._set(self.ic, verification_status='verified'))
+
+    def test_every_declared_field(self):
+        self.assertEqual(set(CHANGED_VALUES), set(vc.DECLARED_FIELDS))
+        for name, value in CHANGED_VALUES.items():
+            with self.subTest(field=name):
+                before = self._fp()
+                old = getattr(self.app, name)
+                setattr(self.app, name, value)
+                self.assertNotEqual(self._fp(), before)
+                setattr(self.app, name, old)
+
+
+class TestTheKey(_Base):
+    def test_the_key_check_and_the_fingerprint_follow_the_secret_key(self):
+        with override_settings(SECRET_KEY='made-up-key-one-000000000000000000000000000000'):
+            a = vc.build_verdict_context(self.app)
+        with override_settings(SECRET_KEY='made-up-key-two-000000000000000000000000000000'):
+            b = vc.build_verdict_context(self.app)
+        self.assertNotEqual(a['key_check'], b['key_check'])
+        self.assertNotEqual(a['fingerprint'], b['fingerprint'])
+
+    def test_the_same_key_gives_the_same_key_check(self):
+        self.assertEqual(vc.key_check(), vc.key_check())
+
+
+class TestTheSafeWrapper(_Base):
+    def test_a_failure_returns_the_failed_record_and_logs_no_pii(self):
+        boom = ValueError(f'could not read {NRIC} for {FATHER}')
+        with mock.patch.object(vc, '_live_document_rows', side_effect=boom):
+            with self.assertLogs('apps.scholarship.verdict_context', level='WARNING') as logs:
+                record = vc.verdict_context_or_empty(self.app)
+        self.assertEqual(record, {'schema': 1, 'error': vc.BUILD_FAILED})
+        text = '\n'.join(logs.output)
+        self.assertEqual(len(logs.output), 1)
+        self.assertIn('ValueError', text)
+        self.assertIn(str(self.app.pk), text)
+        for secret in (NRIC, FATHER, re.sub(r'\D', '', NRIC)):
+            self.assertNotIn(secret, text)
+
+    def test_a_value_with_no_canonical_form_fails_safely(self):
+        self.app.income_declared = {'father': object()}
+        with self.assertLogs('apps.scholarship.verdict_context', level='WARNING') as logs:
+            record = vc.verdict_context_or_empty(self.app)
+        self.assertEqual(record['error'], vc.BUILD_FAILED)
+        self.assertIn('TypeError', logs.output[0])
+
+    def test_an_unsaved_application_returns_the_failed_record(self):
+        self.assertEqual(vc.verdict_context_or_empty(ScholarshipApplication()),
+                         {'schema': 1, 'error': vc.NO_APPLICATION})
+
+    def test_a_good_build_passes_through(self):
+        self.assertEqual(vc.verdict_context_or_empty(self.app), vc.build_verdict_context(self.app))
