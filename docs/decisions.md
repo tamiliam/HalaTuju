@@ -9,7 +9,7 @@ for a second read; no new OCR or model call fills it. It is private (no serializ
 
 ## 2026-11-18 — SPM slip gate reads the document, not the profile (OCR-first S4)
 
-The SPM slip parser is refused only when the page itself names non-SPM results (STPM, Matriculation, Asasi, Diploma, SPMV / SVM, IGCSE, O-level, STAM, UEC, PT3, PMR, UPSR) or is not a final result (a trial paper, an offer or registration letter: `wrong_slip._NOT_A_RESULT`); the profile's `results_held` is a hint, never a veto (the owner-approved OCR-first roadmap supersedes TD-324 for the slip reader only; the parser only reads, so no profile or STPM data is written).
+The SPM slip parser is refused only when the page itself names non-SPM results (STPM, Matriculation, Asasi, Diploma, SPMV / SVM, IGCSE, O-level, STAM, UEC, PT3, PMR, UPSR) or is not a final result (a trial paper, an offer or registration letter: `wrong_slip._NOT_A_RESULT`, read in the title zone only, so a footer or a "trial version" stamp never refuses a real slip); the profile's `results_held` is a hint, never a veto (the owner-approved OCR-first roadmap supersedes TD-324 for the slip reader only; the parser only reads, so no profile or STPM data is written).
 
 ## 2026-11-18 — Course match: a bracket option list is a menu, only under a printed code (#804)
 

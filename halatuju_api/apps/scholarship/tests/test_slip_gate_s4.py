@@ -153,6 +153,97 @@ class TestSchoolLevelAndTrialSlipsAreRefused(SimpleTestCase):
         self.assertEqual(slip_not_spm_kind('SURAT TAWARAN SIJIL PELAJARAN MALAYSIA'), 'not_a_result')
 
 
+class TestTheTrialAndOfferWordsAreReadInTheTitleZoneOnly(SimpleTestCase):
+    """S4 review 2 (LOW): `_NOT_A_RESULT` reads the title zone only — as `wrong_slip` reads it in the
+    exam title alone — so a footer, a portal menu or a scanner's "trial version" stamp never refuses a
+    real SPM slip, while a slip whose TITLE is a trial or an offer still is."""
+    FOOTERS = ('PORTAL PENDAFTARAN PELAJAR', 'SEMAK TAWARAN UPU', 'OFFER LETTER DOWNLOAD',
+               'TRIAL VERSION SCANNER APP', 'REGISTRATION', 'LAPOR DIRI', 'PERCUBAAN')
+
+    def test_a_footer_word_never_refuses_a_real_slip(self):
+        for footer in self.FOOTERS:
+            words = _slip_words(_header('SIJIL PELAJARAN MALAYSIA') + [(footer, 900)], SPM_ROWS)
+            with self.subTest(footer=footer):
+                ex, diag = _gate(NON_SPM_PROFILES['stpm'], words)
+                self.assertEqual(diag['reason'], 'ok')
+                self.assertEqual(_grades(ex), EXPECTED)
+
+    def test_a_footer_word_in_the_ocr_text_never_refuses_it_before_the_word_boxes(self):
+        body = '\n'.join(f'{s} {g} {b}' for s, g, b in SPM_ROWS)
+        words = _slip_words(_header('SIJIL PELAJARAN MALAYSIA'), SPM_ROWS)
+        for footer in self.FOOTERS:
+            text = f'LEMBAGA PEPERIKSAAN\nSIJIL PELAJARAN MALAYSIA\nCALON CONTOH\n{body}\n{footer}'
+            with self.subTest(footer=footer):
+                self.assertEqual(slip_not_spm_kind(text), '')
+                doc = SimpleNamespace(application=SimpleNamespace(
+                    profile=StudentProfile(supabase_user_id='s4-gate', **NON_SPM_PROFILES['stpm'])),
+                    content_type='image/jpeg')
+                with mock.patch('apps.scholarship.vision._vision_words',
+                                return_value={'words': words, 'error': None}):
+                    ex, diag = vision._extract_slip_deterministic(doc, b'img', text=text)
+                self.assertEqual(diag['reason'], 'ok')
+                self.assertEqual(_grades(ex), EXPECTED)
+
+    def test_a_trial_or_offer_title_is_still_refused(self):
+        for header, kind in (([('PEPERIKSAAN PERCUBAAN', 150), ('SIJIL PELAJARAN MALAYSIA', 200)], 'trial'),
+                             ([('SURAT TAWARAN', 150), ('SIJIL PELAJARAN MALAYSIA', 200)], 'not_a_result'),
+                             ([('SIJIL PELAJARAN MALAYSIA', 150), ('TRIAL EXAMINATION 2024', 200)], 'trial')):
+            words = _slip_words(header + [('CALON CONTOH BINTI REKAAN', 250)], SPM_ROWS)
+            with self.subTest(kind=kind, title=header[0][0]):
+                ex, diag = _gate(dict(exam_type='spm', grades={'bm': 'A'}), words)
+                self.assertIsNone(ex)
+                self.assertEqual((diag['reason'], diag['exam_type']), ('not_spm_exam', kind))
+
+    def test_the_text_title_zone_stops_at_the_first_subject(self):
+        self.assertEqual(slip_not_spm_kind('SIJIL PELAJARAN MALAYSIA BAHASA MELAYU A- TRIAL VERSION'), '')
+        self.assertEqual(slip_not_spm_kind('PEPERIKSAAN PERCUBAAN SPM BAHASA MELAYU A-'), 'trial')
+        nine = '\n'.join(['SIJIL PELAJARAN MALAYSIA'] + ['CALON CONTOH'] * 8 + ['TAWARAN'])
+        self.assertEqual(slip_not_spm_kind(nine), '')                      # past the first 8 lines
+
+
+class TestTheTextCheckReadsPageOneOfADigitalPdf(SimpleTestCase):
+    """S4 review 2 (LOW): a digital PDF's OCR text is its WHOLE text layer, but the word boxes read
+    page 1 only — so the text check reads page 1's layer too."""
+    PAGE1 = 'SIJIL PELAJARAN MALAYSIA\nCALON CONTOH'
+    PAGE2 = 'SIJIL TINGGI PERSEKOLAHAN MALAYSIA\nPEPERIKSAAN PERCUBAAN'
+    WORDS = _slip_words(_header('SIJIL PELAJARAN MALAYSIA'), SPM_ROWS)
+
+    def _run(self, text, layers):
+        doc = SimpleNamespace(application=SimpleNamespace(
+            profile=StudentProfile(supabase_user_id='s4-gate', **NON_SPM_PROFILES['stpm'])),
+            content_type='application/pdf')
+        with mock.patch('apps.scholarship.offer_exact.pdf_layers', return_value=layers), \
+                mock.patch('apps.scholarship.vision._vision_words',
+                           return_value={'words': self.WORDS, 'error': None}) as vw:
+            ex, diag = vision._extract_slip_deterministic(doc, b'%PDF-1.4', text=text)
+        return ex, diag, vw
+
+    def test_page_two_of_the_layer_never_refuses_page_one(self):
+        layer = f'{self.PAGE1}\n{self.PAGE2}'
+        ex, diag, vw = self._run(layer, (layer, self.PAGE1))
+        vw.assert_called_once()
+        self.assertEqual(diag['reason'], 'ok')
+        self.assertEqual(_grades(ex), EXPECTED)
+
+    def test_page_one_of_the_layer_is_still_checked(self):
+        layer = f'{self.PAGE2}\n{self.PAGE1}'
+        ex, diag, vw = self._run(layer, (layer, self.PAGE2))
+        vw.assert_not_called()
+        self.assertIsNone(ex)
+        self.assertEqual((diag['reason'], diag['exam_type'], diag['source']), ('not_spm_exam', 'trial', 'ocr_text'))
+
+    def test_a_scanned_page_one_leaves_it_to_the_word_boxes(self):
+        layer = self.PAGE2
+        ex, diag, vw = self._run(layer, (layer, ''))
+        vw.assert_called_once()
+        self.assertEqual(diag['reason'], 'ok')
+
+    def test_text_that_is_not_the_layer_is_vision_page_one_and_kept(self):
+        ex, diag, vw = self._run(self.PAGE2, ('SOME OTHER LAYER', 'SOME OTHER LAYER'))
+        vw.assert_not_called()
+        self.assertEqual(diag['exam_type'], 'trial')
+
+
 class TestTitleEdges(SimpleTestCase):
     """S4 fix round (LOW): the vocational title in brackets, and whole-word short codes."""
 

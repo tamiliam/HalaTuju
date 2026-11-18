@@ -43,17 +43,43 @@ _NOT_SPM_TITLES = (
 )
 
 
-def slip_not_spm_kind(text) -> str:
+#: The title zone of OCR TEXT with no word boxes: its first lines (Vision and a text layer both emit
+#: the page's top block first), stopping at the first core SPM subject — every slip's table opens
+#: with one. With boxes the zone is the rows above the first graded subject row (`_title_rows`).
+_TITLE_LINES = 8
+_CORE_SUBJECT = re.compile(r'\b(?:BAHASA\s+(?:MELAYU|MALAYSIA|INGGERIS)|SEJARAH|MATEMATIK)\b')
+
+
+def _title_lines(text) -> str:
+    top = ' '.join([ln for ln in (text or '').upper().splitlines() if ln.strip()][:_TITLE_LINES])
+    m = _CORE_SUBJECT.search(top)
+    return top[:m.start()] if m else top
+
+
+def _title_rows(rows) -> str:
+    """The title zone of a page's grouped rows: every row above the first graded SPM subject row (the
+    title prints above the table), or the first ``_TITLE_LINES`` rows when no subject row is read."""
+    from ..academic_engine import _parse_grade_row
+    first = next((i for i, row in enumerate(rows) if _parse_grade_row(row)), None)
+    zone = rows[:first] if first is not None else rows[:_TITLE_LINES]
+    return ' '.join(w['text'] for row in zone for w in row)
+
+
+def slip_not_spm_kind(text, title=None) -> str:
     """The kind of NON-SPM results ``text`` (a page's words, in row order) names, or '' when it names
     none. First a page that is not a final result at all — a trial ("percubaan") examination, an
     offer or registration letter: `wrong_slip._NOT_A_RESULT`, the list both results cards already
-    use ('trial' / 'not_a_result'); then a higher kind (`results_kind.kinds_seen`: STPM,
-    Matriculation, Asasi, Diploma, the vocabulary `wrong_slip.HIGHER_KINDS` routes); then the titles
-    in ``_NOT_SPM_TITLES``, whole words (no letter or digit either side)."""
+    use ('trial' / 'not_a_result') — read in the TITLE ZONE only (``title``; default the first
+    ``_TITLE_LINES`` lines of ``text``), as `wrong_slip` reads it in the exam title alone, so a
+    footer, a portal menu or a scanner's "trial version" stamp never refuses a real slip (S4 review
+    2). Then a higher kind (`results_kind.kinds_seen`: STPM, Matriculation, Asasi, Diploma, the
+    vocabulary `wrong_slip.HIGHER_KINDS` routes); then the titles in ``_NOT_SPM_TITLES``, whole
+    words (no letter or digit either side). These two still read the whole page: on the cached
+    corpus no real SPM slip names one anywhere (0 of 82 locked slips, 0 of 12 SPM pages refused)."""
     from ..results_kind import kinds_seen
     from ..wrong_slip import _NOT_A_RESULT
     up = (text or '').upper()
-    m = _NOT_A_RESULT.search(up)
+    m = _NOT_A_RESULT.search((title if title is not None else _title_lines(text)).upper())
     if m:
         return 'trial' if m.group(0) in ('PERCUBAAN', 'TRIAL') else 'not_a_result'
     higher = [k for k in kinds_seen(up) if k != 'spm']
@@ -61,6 +87,16 @@ def slip_not_spm_kind(text) -> str:
         return higher[0]
     return next((kind for kind, p in _NOT_SPM_TITLES
                  if re.search(rf'(?<![A-Z0-9])(?:{p})(?![A-Z0-9])', up)), '')
+
+
+def _page1_text(text, image, content_type) -> str:
+    """Page 1 of ``text``, the scope of the word boxes (`_vision_words` reads page 1 only). A digital
+    PDF's OCR text IS its whole text layer (`ocr_document_full`), so it is cut to page 1's layer —
+    '' when page 1 has none (a scan in front of digital pages: the word boxes decide). Any other text
+    (a photo, a scan) is Vision's page-1 read already (S4 review 2)."""
+    from ..offer_exact import pdf_layers
+    layer, page1 = pdf_layers(image, content_type)
+    return page1 if layer.strip() and layer.strip() == (text or '').strip() else text
 
 
 def _extract_slip_deterministic(doc, image, words=None, text=None):
@@ -77,23 +113,27 @@ def _extract_slip_deterministic(doc, image, words=None, text=None):
     diag, never a veto (it was, TD-324: 115 of 158 AI-read slips skipped the parser, mostly an STPM
     or diploma student's own SPM slip). The parser only READS: no profile grade is written.
     ``text`` (the page's OCR text the caller already holds) is checked FIRST when no ``words`` were
-    passed, so a misfiled non-SPM page is refused without buying word boxes (S4 fix round)."""
+    passed, so a misfiled non-SPM page is refused without buying word boxes (S4 fix round) — page 1
+    only, the word boxes' page (`_page1_text`)."""
     if image is None:
         return None, {'reason': 'no_image'}
     from apps.courses import public as courses_public
     held = courses_public.results_held(getattr(doc.application, 'profile', None)).lower()
     if words is None and text:
+        text = _page1_text(text, image, doc.content_type)
+    if words is None and text:
         kind = slip_not_spm_kind(text)
         if kind:
             return None, {'reason': 'not_spm_exam', 'exam_type': kind, 'by': 'document',
                           'source': 'ocr_text', 'profile_held': held, 'reader': SLIP_READER_VERSION}
-    wd ={'words': words, 'error': None} if words is not None else _v._vision_words(image, doc.content_type)
+    wd = {'words': words, 'error': None} if words is not None else _v._vision_words(image, doc.content_type)
     if wd.get('error'):
         return None, {'reason': 'vision_error', 'error': wd['error'], 'reader': SLIP_READER_VERSION}
     if not wd.get('words'):
         return None, {'reason': 'no_words', 'reader': SLIP_READER_VERSION}
     from ..academic_engine import _group_rows, parse_spm_slip
-    kind = slip_not_spm_kind(' '.join(w['text'] for row in _group_rows(wd['words']) for w in row))
+    rows = _group_rows(wd['words'])
+    kind = slip_not_spm_kind(' '.join(w['text'] for row in rows for w in row), title=_title_rows(rows))
     if kind:
         return None, {'reason': 'not_spm_exam', 'exam_type': kind, 'by': 'document',
                       'profile_held': held, 'reader': SLIP_READER_VERSION}
