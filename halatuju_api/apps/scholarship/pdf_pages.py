@@ -19,6 +19,8 @@ import threading
 from collections import OrderedDict
 from typing import NamedTuple, Optional
 
+from .pdf_layer_guards import _MAX_DOC_FONT_COST, OverBudget as _OverBudget, bad_operands, charge_fonts, oc_hides
+
 logger = logging.getLogger(__name__)
 
 #: A PDF's text layer is trusted (read for free, no Vision call) only when at least this many
@@ -133,6 +135,7 @@ def raster_scale(width_pt: float, height_pt: float) -> Optional[float]:
 # MIRRORS pypdf's plain `extract_text` (read in 5.9.0 and 6.21.4, fix round 3): text comes ONLY from the page's
 # /Contents and from every XObject a `Do` names that is not an /Image (resources inherited up /Parent), out of
 # the string operands of Tj, ', " and TJ. Annotations, Type3 CharProcs, ActualText, patterns: never extracted.
+# Fix round 4 (`pdf_layer_guards`): exact operand counts, every font's maps charged, optional content judged.
 #: Text render modes that paint: 0-2 and 4-6. 3 (invisible), 7 (clip only) and any other value hide the text.
 _DRAWN_MODES = frozenset((0, 1, 2, 4, 5, 6))
 _SHOW_OPS = frozenset((b'Tj', b'TJ', b"'", b'"'))
@@ -172,21 +175,19 @@ _LONG_BARE = re.compile(rb'(?<!' + _BARE + rb')' + _BARE + b'{%d}' % _MAX_BARE_T
 _LONG_ANGLED = re.compile(b'<[^<>]{%d}' % _MAX_TOKEN_BYTES)
 _PAREN = re.compile(rb'[()\\]')
 #: Pages checked AND text-extracted per PDF. Callers need far fewer: the offer reader 3 (its MAX_PAGES),
-#: the slip gate and Exact offer read page 1; the largest corpus PDF has 5 pages, and no scorer of the full
-#: layer reads past page 20 (checked fix round 3; a scan has only ever given them page 1).
+#: the slip gate and Exact offer read page 1; corpus max 5 pages. Kept (fix round 4: uncapped, 2,000 pages took
+#: 3 s); a longer PDF gives its first and LAST `_TAIL_PAGES` (`_layer_pages`): a KWSP statement ends on its latest.
 MAX_LAYER_PAGES = 20
-
-
-class _OverBudget(Exception):
-    """A PDF asked for more than one of the document budgets: hostile or broken, never read as text."""
+_TAIL_PAGES = 10
 
 
 class _Budget:
-    """One PDF's walk budget: operations, bytes, tokens, inline images and shown characters left."""
+    """One PDF's walk budget: operations, bytes, tokens, inline images, shown characters, font maps left."""
 
     def __init__(self):
         self.left = {'operations': _MAX_DOC_OPS, 'bytes': _MAX_DOC_BYTES, 'tokens': _MAX_DOC_TOKENS,
-                     'inline images': _MAX_DOC_INLINE_IMAGES, 'shown characters': _MAX_DOC_SHOWN_CHARS}
+                     'inline images': _MAX_DOC_INLINE_IMAGES, 'shown characters': _MAX_DOC_SHOWN_CHARS,
+                     'font maps': _MAX_DOC_FONT_COST}
 
     def spend(self, what: str, n: int) -> None:
         self.left[what] -= n
@@ -276,24 +277,35 @@ def _walk_text_modes(content, resources, reader, mode, counts: list, depth: int,
                      cache: dict, undrawn: bool = False) -> None:
     """Add to ``counts`` [drawn, hidden] the characters each text-showing operator places, by the render
     mode in force (``Tr``, saved and restored by ``q`` / ``Q``; an XObject starts from its caller's mode).
-    ``undrawn``: inside an XObject a viewer never paints (not a /Form), so all its text is hidden. ``budget``
-    is the WHOLE DOCUMENT's (`_Budget`). Raises on anything it cannot parse — the caller treats that as hidden."""
+    ``undrawn``: inside an XObject a viewer never paints (not a /Form), or inside optional content that may
+    be switched off (`oc_hides`), so all its text is hidden. ``budget`` is the WHOLE DOCUMENT's (`_Budget`),
+    charged too for the font maps pypdf builds on this call (`charge_fonts`). Raises on anything it cannot
+    parse or on an operand count the renderer reads differently (`bad_operands`): the caller's hidden."""
     from pypdf.generic import StreamObject
     ops = _parsed_ops(content, reader, cache, budget)
-    stack = []
+    charge_fonts(resources, budget, cache)
+    stack, marked, off = [], [], 0          # off: open marked-content levels whose layer may be switched off
     xobjects = _resolved(resources, '/XObject') if isinstance(resources, dict) else None
     for operands, operator in ops:
+        if bad_operands(operator, operands):
+            raise ValueError(f'operands of {operator!r} the renderer reads differently')
         if operator == b'q':
             stack.append(mode)
         elif operator == b'Q':
             mode = stack.pop() if stack else mode
         elif operator == b'Tr':
             mode = operands[0]                 # a non-integer or out-of-range mode is not in _DRAWN_MODES
+        elif operator in (b'BDC', b'BMC'):
+            marked.append(operator == b'BDC' and operands[0] == '/OC' and oc_hides(operands[1], resources, reader,
+                                                                                  cache))
+            off += marked[-1]
+        elif operator == b'EMC':
+            off -= marked.pop() if marked else 0
         elif operator in _SHOW_OPS:
             n = _shown_chars(operands)
             budget.spend('shown characters', n)
-            counts[0 if mode in _DRAWN_MODES and not undrawn else 1] += n
-        elif operator == b'Do' and operands:
+            counts[0 if mode in _DRAWN_MODES and not (undrawn or off) else 1] += n
+        elif operator == b'Do':
             # pypdf reads text from EVERY XObject a Do names that is not an /Image; a non-stream gives it none
             xobj = xobjects.get(operands[0]) if xobjects else None
             xobj = xobj.get_object() if xobj is not None else None
@@ -302,8 +314,9 @@ def _walk_text_modes(content, resources, reader, mode, counts: list, depth: int,
                 continue
             if depth >= _MAX_FORM_DEPTH:
                 raise ValueError('XObjects nested too deep')
-            _walk_text_modes(xobj, _resources(xobj) or resources, reader, mode, counts, depth + 1, budget,
-                             cache, undrawn or subtype != '/Form')
+            _walk_text_modes(xobj, _resources(xobj) or resources, reader, mode, counts, depth + 1, budget, cache,
+                             bool(undrawn or off or subtype != '/Form'
+                                  or ('/OC' in xobj and oc_hides(xobj['/OC'], resources, reader, cache))))
 
 
 #: What `_page_visibility` finds on one page.
@@ -344,17 +357,24 @@ def page_text_hidden(page, reader) -> bool:
 
 
 def _visibilities(reader, per_page: int = 0) -> tuple:
-    """`_page_visibility` of the first `MAX_LAYER_PAGES` pages under ONE budget and one parse cache. It
+    """`_page_visibility` of the `_layer_pages` under ONE budget and one parse cache. It
     stops at once when page 1 is not `DRAWN` (the PDF then has no layer at all) and at the first
     `OVER_BUDGET` page (the PDF is then never text-extracted): the tuple ENDS with that page.
     ``per_page`` (1 to `MAX_LAYER_PAGES`): the first that many pages, each judged on its own, with no stop
     at page 1 (`pdf_page_texts` only); still one budget and the same stop past it."""
     budget, cache, out = _Budget(), {}, []
-    for p in reader.pages[:per_page or MAX_LAYER_PAGES]:
+    for p in _layer_pages(reader, per_page):
         out.append(_page_visibility(p, reader, budget, cache))
         if out[-1] == OVER_BUDGET or (out[0] != DRAWN and not per_page):
             break
     return tuple(out)
+
+
+def _layer_pages(reader, per_page: int = 0) -> list:
+    """The pages read: the first ``per_page``; else all up to `MAX_LAYER_PAGES`, else the first and last."""
+    if per_page or len(reader.pages) <= MAX_LAYER_PAGES:
+        return list(reader.pages[:per_page or MAX_LAYER_PAGES])
+    return list(reader.pages[:MAX_LAYER_PAGES - _TAIL_PAGES]) + list(reader.pages[-_TAIL_PAGES:])
 
 
 def _open_pdf(data: bytes):
@@ -389,7 +409,7 @@ def _layer_read(data: bytes, per_page: int = 0) -> _LayerRead:
     if OVER_BUDGET in seen or not (visible or per_page):
         return _LayerRead(n, False, seen, ('',) * len(seen))
     try:
-        texts = tuple((p.extract_text() or '') if v == DRAWN else '' for p, v in zip(reader.pages, seen))
+        texts = tuple((p.extract_text() or '') if v == DRAWN else '' for p, v in zip(_layer_pages(reader, per_page), seen))
     except Exception as e:  # noqa: BLE001 — a corrupt PDF has no text layer; logged, the caller falls back to OCR
         logger.warning('PDF text-layer extraction failed: %s', e)
         texts = None
@@ -438,8 +458,8 @@ def first_page_drawn(data: bytes) -> bool:
 
 
 def pdf_text_layer(data: bytes) -> str:
-    """The concatenated VISIBLE text layer of a PDF: the text of its DRAWN pages (of the first
-    `MAX_LAYER_PAGES`) joined. '' when page 1's text is invisible or cannot be checked (the Vision route
+    """The concatenated VISIBLE text layer of a PDF: the text of its DRAWN pages (of `_layer_pages`)
+    joined. '' when page 1's text is invisible or cannot be checked (the Vision route
     reads page 1), when the walk runs past the operation budget, or the PDF is none / encrypted / damaged —
     the caller then falls back to rasterise+OCR (page 1). A later hidden page is left out, never returned.
     A caller deciding whether to trust it still passes it through `usable_text_layer` (TD-411)."""
@@ -514,7 +534,7 @@ def pdf_page_count(data: bytes) -> int:
 
 
 def pdf_page_texts(data: bytes, max_pages: int) -> list:
-    """The VISIBLE text layer of each of the first ``max_pages`` pages (at most `MAX_LAYER_PAGES`), one
+    """The VISIBLE text layer of each of the first ``max_pages`` pages (`_layer_pages`' first run), one
     string per page ([] if none / encrypted / unreadable): a page whose text is invisible or cannot be
     checked is '' — decided PER PAGE (S-visible, 2026-11-18), so it reads as a scanned page, and a drawn
     page after a hidden page 1 keeps its text (only then are those pages walked again, one by one: the
@@ -522,7 +542,7 @@ def pdf_page_texts(data: bytes, max_pages: int) -> list:
     Pass a page through `usable_text_layer` before trusting it. pypdf raises many kinds on a damaged file,
     so any failure is no layer — the safe answer: the images are still shown."""
     read = _layer(data)
-    n = min(read.pages, max(0, max_pages), MAX_LAYER_PAGES)
+    n = min(read.pages, max(0, max_pages), MAX_LAYER_PAGES - (_TAIL_PAGES if read.pages > MAX_LAYER_PAGES else 0))
     if not read.visible and n > 1 and read.seen[:1] == (HIDDEN,):
         read = _layer(data, n)             # page 1 hidden: the later pages are still judged one by one
     if read.texts is None:

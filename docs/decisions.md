@@ -196,9 +196,8 @@ text in it is hidden; (4) /Resources inherited up /Parent, for pages and XObject
 is hidden); (5) a `Tr` that is not 0-2 / 4-6 (3, 7, out of range, not an integer) — hidden; (6) TJ kerning only adds
 spaces; the orientation filter only drops text, so the walk is a superset. Never read by plain `extract_text`:
 annotation appearance streams and AcroForm fields, Type3 CharProcs, marked-content ActualText, patterns, soft masks,
-shadings; layout mode is never called. **Outside the mode-3/7 rule** (accepted, not judged): white, transparent,
-size-0, clipped, off-page or under-an-image text, an empty Type3 glyph, and drawn text in an optional-content layer
-switched off (pypdf extracts it; unsure whether scanner apps use it — none seen in the corpus).
+shadings; layout mode is never called. **Outside the rule** (accepted, not judged): white, transparent, size-0,
+0 `Tz` (zero horizontal scale), clipped, off-page or under-an-image text, and an empty Type3 glyph.
 **Caps, charged BEFORE a stream is parsed, on every walk:** 8 MB decompressed bytes per document (corpus max 3,421,060);
 700,000 tokens per document and 400,000 per stream (corpus 467,000 / 234,030: pypdf parses one stream worse than
 linearly past that); 2,000 inline images (corpus 0); no string or `<...>` over 64 KB and no bare name / number /
@@ -207,9 +206,20 @@ operator over 1 KB (corpus 1,893 / 692: pypdf 5.9 parses long tokens quadratical
 more than 2 million characters of text is not memoised; the memo is cleared only under pytest. Residual: a 5.9-only
 shape (8 MB of 1 KB names) still parses in about 9 s; on 6.21.4 it takes 0.6 s.
 **Pages:** 20 (`MAX_LAYER_PAGES`). No scorer or reader needs more: the corpus max is 5 pages; the offer reader takes 3,
-the slip gate and Exact offer read page 1. A statement over 20 pages would hand the EPF reader (`_last_caruman`, last row
-in text order) an early month instead of the latest — no such document seen. `pdf_pages_png` takes the last page
-through pdfium, unaffected.
+the slip gate and Exact offer read page 1. Fix round 4 kept the cap (uncapped, 2,000 one-line pages took 3 s to read on
+6.21.4 and 20,000 empty pages 5.5 s) and made a longer PDF give its first 10 and its LAST 10 pages, so the EPF reader
+(`_last_caruman`, last row in text order) sees the latest month. `pdf_pages_png` takes the last page through pdfium.
+**Fix round 4 (`pdf_layer_guards.py`).** (1) Operand counts: pdfium takes an operator's LAST operands, pypdf and the walk
+the FIRST, so any fixed-arity operator (the whole ISO 32000 table) with the wrong count is hidden (`0 3 Tr`,
+`(x) ( ) Tj`, `/Fm1 /Fm2 Do`), and so is a Tj / ' / " operand that is not a string or a TJ array with a name or a
+non-array (corpus: 0 affected). (2) Font maps: pypdf rebuilds every listed font's maps (ToUnicode, Encoding
+/Differences, Widths over FirstChar..LastChar, CID /W, a Type1 font file) on each page and each form call, so each
+font NAME is charged its font's cost per call, before extraction: 1,200,000 units per document (corpus max 792,972),
+200,000 per font (66,175), 800 KB per font stream (4,639 bytes), 10,000 CID /W entries (198). Unguarded, a 150-call form
+took 13 s and 40 names x 30 calls 122 s on 6.21.4; guarded, under 0.2 s on both versions. (3) Optional content: if the
+default configuration may switch a layer off (/BaseState not /ON, a non-empty /OFF or /AS, or /D unreadable), text in
+`/OC` marked content or in a form with /OC is hidden; otherwise only a plain /OCG is shown (an /OCMD or an unresolved
+name is hidden). Corpus: 6 PDFs carry /AS, none marks page text /OC; 0 results change.
 **pypdf 5.9 (local) vs 6.21.4 (production):** same verdicts under this rule, except 21 corpus PDFs whose content
 streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
 between the two (pypdf's own changes). Local counts are not production counts.

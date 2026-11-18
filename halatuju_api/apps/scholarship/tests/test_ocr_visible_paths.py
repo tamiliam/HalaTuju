@@ -164,3 +164,128 @@ class TheDocumentBudgets(SimpleTestCase):
             self.assertEqual(len(pdf_pages._LAYER_MEMO), 0)
         self.assertIn('SIJIL', pdf_pages.pdf_text_layer(DRAWN))
         self.assertEqual(len(pdf_pages._LAYER_MEMO), 1)
+
+
+# ── Fix round 4 (`pdf_layer_guards`): operand counts, font maps, optional content, long documents ────────
+def _res(fonts=b'/F1 3 0 R', extra=b''):
+    return b'/Resources << /Font << ' + fonts + b' >> ' + extra + b' >>'
+
+
+class TheOperandCounts(SimpleTestCase):
+    """pdfium takes an operator's LAST operands, pypdf the FIRST: a wrong count is hidden, even in mode 0."""
+
+    def test_a_wrong_operand_count_or_kind_is_hidden(self):
+        s = b'(' + SECRET + b')'
+        for show in (b'0 3 Tr ' + s + b' Tj', b'0 7 Tr ' + s + b' Tj', s + b' ( ) Tj', b'0 0 ' + s + b' ( ) "',
+                     b'[' + s + b'] [( )] TJ', s + b' TJ', b'[/DISAHKAN] TJ', b'/F1 9 12 Tf ' + s + b' Tj'):
+            with self.subTest(show=show[:12]):
+                pdf = _doc(b'BT /F1 12 Tf 20 150 Td ' + show + b' ET ' + _show(SPM_TEXT))
+                self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
+                self.assertFalse(pdf_pages.first_page_drawn(pdf))
+
+    def test_two_forms_named_by_one_do_is_hidden(self):
+        # pypdf extracts /Fm1 (the first operand); a viewer paints /Fm2 (the last)
+        pdf = _doc(_show(SPM_TEXT) + b' /Fm1 /Fm2 Do', {6: _xobj(b'/Subtype /Form', _show(SECRET.decode())),
+                                                        7: _xobj(b'/Subtype /Form', b'')},
+                   page_res=_res(extra=b'/XObject << /Fm1 6 0 R /Fm2 7 0 R >>'))
+        self.assertIn('DISAHKAN', _raw_layer(pdf))
+        self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
+
+    def test_well_formed_operators_keep_the_layer(self):
+        pdf = _doc(b"BT /F1 12 Tf 20 150 Td [(SIJIL) -20 ( PELAJARAN)] TJ (MALAYSIA) ' 1 2 (SPM) \" <4142> Tj ET")
+        self.assertIn('SIJIL', pdf_pages.pdf_text_layer(pdf))
+
+
+def _to_unicode(lo, hi):
+    return _stream(b'<<', b'/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n1 begincodespacerange\n<'
+                   + lo + b'> <' + hi + b'>\nendcodespacerange\n1 beginbfrange\n<' + lo + b'> <' + hi
+                   + b'> <0041>\nendbfrange\nendcmap\nend\nend')
+
+
+BIG_FONT = b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /ToUnicode 6 0 R >>'
+NAMES_40 = b' '.join(b'/F%d 3 0 R' % i for i in range(1, 41))
+
+
+class TheFontMaps(SimpleTestCase):
+    """pypdf rebuilds every listed font's maps on each extraction call: charged per name, per call."""
+    _hostile = TheDocumentBudgets._hostile
+
+    def _form_fan_out(self, calls, fonts):
+        form = _stream(b'<< /Type /XObject /Subtype /Form /BBox [0 0 300 200] ' + _res(fonts),
+                       b'BT /F1 12 Tf 20 150 Td (A) Tj ET')
+        return _doc(b'/Fm1 Do ' * calls + _show(SPM_TEXT), {6: _to_unicode(b'0000', b'FFFF'), 7: form, 8: FONT},
+                    font=BIG_FONT, page_res=_res(b'/F1 8 0 R', b'/XObject << /Fm1 7 0 R >>'))
+
+    def test_one_tiny_form_called_150_times(self):
+        self._hostile(self._form_fan_out(150, b'/F1 3 0 R'))
+
+    def test_40_font_names_for_one_font(self):
+        self._hostile(_doc(_show(SPM_TEXT), {6: _to_unicode(b'0000', b'FFFF')}, font=BIG_FONT, page_res=_res(NAMES_40)))
+
+    def test_40_font_names_in_a_form_called_150_times(self):
+        self._hostile(self._form_fan_out(150, NAMES_40))
+
+    def test_one_font_past_its_own_limit(self):
+        huge_range = {6: _to_unicode(b'00000000', b'FFFFFFFF')}            # pypdf 5.9 would map 4 billion codes
+        wide = (b'<< /Type /Font /Subtype /Type0 /BaseFont /X /Encoding /Identity-H /DescendantFonts [<< /Type /Font '
+                b'/Subtype /CIDFontType2 /BaseFont /X /W [' + b'1 2 3 ' * 7_000 + b'] >>] >>')
+        long_range = b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /FirstChar 0 /LastChar 900000000 >>'
+        for objs, font in ((huge_range, BIG_FONT), ({}, wide), ({}, long_range)):
+            with self.subTest(font=font[-30:]):
+                self._hostile(_doc(_show(SPM_TEXT), objs, font=font))
+
+    def test_a_real_sized_map_called_a_few_times_keeps_the_layer(self):
+        pdf = self._form_fan_out(3, b'/F1 3 0 R')
+        self.assertTrue(pdf_pages.first_page_drawn(pdf))
+        self.assertIn('SIJIL', pdf_pages.pdf_text_layer(pdf))
+
+
+def _oc_doc(content, default, objs=None, extra=b'/Properties << /MC0 6 0 R >>'):
+    catalog = b'<< /Type /Catalog /Pages 2 0 R /OCProperties << /OCGs [6 0 R] /D ' + default + b' >> >>'
+    return _doc(content + b' ' + _show(SPM_TEXT), {1: catalog, 6: b'<< /Type /OCG /Name (L) >>', **(objs or {})},
+                page_res=_res(extra=extra))
+
+
+ALL_ON = b'<< /ON [6 0 R] >>'
+MARKED = b'/OC /MC0 BDC ' + _show(SECRET.decode()) + b' EMC'
+
+
+class TheOptionalContent(SimpleTestCase):
+    def test_text_in_a_layer_the_document_may_switch_off_is_hidden(self):
+        for default in (b'<< /OFF [6 0 R] >>', b'<< /BaseState /OFF >>', b'<< /BaseState /Unchanged >>',
+                        b'<< /AS [<< /Event /View /Category [/View] /OCGs [6 0 R] >>] >>', b'null'):
+            with self.subTest(default=default):
+                pdf = _oc_doc(MARKED, default)
+                self.assertIn('DISAHKAN', _raw_layer(pdf))
+                self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
+
+    def test_a_form_with_an_oc_entry_in_a_document_that_switches_it_off(self):
+        form = _xobj(b'/Subtype /Form /OC 6 0 R', _show(SECRET.decode()))
+        pdf = _oc_doc(b'/Fm1 Do', b'<< /OFF [6 0 R] >>', {7: form}, b'/XObject << /Fm1 7 0 R >>')
+        self.assertIn('DISAHKAN', _raw_layer(pdf))
+        self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
+
+    def test_a_membership_dictionary_or_an_unknown_name_is_hidden(self):
+        for objs, content in (({7: b'<< /Type /OCMD /OCGs [6 0 R] >>'}, MARKED.replace(b'/MC0', b'/MC1')),
+                              ({}, MARKED.replace(b'/MC0', b'/MC9'))):
+            with self.subTest(content=content[:9]):
+                pdf = _oc_doc(content, ALL_ON, objs, b'/Properties << /MC0 6 0 R /MC1 7 0 R >>')
+                self.assertEqual(pdf_pages.pdf_text_layer(pdf), '')
+
+    def test_a_plain_layer_that_is_on_or_other_marked_content_keeps_the_layer(self):
+        span = b'/Span << /ActualText (X) >> BDC ' + _show('MAJLIS') + b' EMC'
+        for content, default in ((MARKED, ALL_ON), (span, b'<< /OFF [6 0 R] >>')):
+            with self.subTest(default=default):
+                pdf_pages._layer_memo_clear()
+                self.assertIn('SIJIL', pdf_pages.pdf_text_layer(_oc_doc(content, default)))
+
+
+class TheLongDocuments(SimpleTestCase):
+    def test_past_the_page_cap_the_first_and_the_last_pages_are_read(self):
+        # a KWSP statement's latest contribution is on its LAST page
+        pdf = _pdf([_show('HALAMAN%02dX' % i) for i in range(1, 26)])
+        text = pdf_pages.pdf_text_layer(pdf)
+        for i in range(1, 26):
+            with self.subTest(page=i):
+                self.assertEqual('HALAMAN%02dX' % i in text, i <= 10 or i >= 16)
+        self.assertEqual([t[:10] for t in pdf_pages.pdf_page_texts(pdf, 3)], ['HALAMAN01X', 'HALAMAN02X', 'HALAMAN03X'])

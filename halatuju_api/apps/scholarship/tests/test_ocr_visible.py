@@ -210,15 +210,17 @@ class TheDetectionRule(SimpleTestCase):
         self.assertIn('SIJIL PELAJARAN', pages[1])
 
     def test_pages_past_the_cap_are_neither_checked_nor_extracted(self):
-        cap = pdf_pages.MAX_LAYER_PAGES
+        # fix round 4: past the cap, the first pages and the LAST `_TAIL_PAGES` (a statement's latest row)
+        cap, tail = pdf_pages.MAX_LAYER_PAGES, pdf_pages._TAIL_PAGES
         data = _pdf([_show(f'PAGE{i:02d} DRAWN WORDS ON THIS PAGE') for i in range(1, cap + 6)])
         with patch.object(pdf_pages, '_page_visibility', wraps=pdf_pages._page_visibility) as walk:
             layer = pdf_pages.pdf_text_layer(data)
             texts = pdf_pages.pdf_page_texts(data, cap + 5)
         self.assertEqual(walk.call_count, cap)
-        self.assertIn(f'PAGE{cap:02d}', layer)
-        self.assertNotIn(f'PAGE{cap + 1:02d}', layer)
-        self.assertEqual(len(texts), cap)
+        self.assertIn(f'PAGE{cap - tail:02d}', layer)
+        self.assertNotIn(f'PAGE{cap - tail + 1:02d}', layer)
+        self.assertIn(f'PAGE{cap + 5:02d}', layer)
+        self.assertEqual([t[:6] for t in texts], [f'PAGE{i:02d}' for i in range(1, cap - tail + 1)])
 
     def test_an_encrypted_hidden_pdf_never_gives_its_hidden_text(self):
         from pypdf import PdfReader, PdfWriter
