@@ -218,13 +218,13 @@ class APrivateNameHoldingAPublicOneStillFlags(_Base):
         self.assertIsNone(self._item(app))
 
 
-class ACompanyOrTieUpWordLiftsTheTypeVeto(_Base):
-    """Review fix 2026-11-19 (SHOULD): on a line that also carries a company or tie-up word, a bare public
-    type or an English university name does not veto the reason signal; a plain public line still does."""
+class ACompanyOwnedLineLiftsOnlyTheTypeVeto(_Base):
+    """Review fixes 2026-11-19: on a company-owned line (a company / Swasta word and no partner word) a bare
+    public TYPE does not veto the reason signal. A public NAME, English or Malay, always vetoes, and a
+    partner word keeps the type veto: a miss is safer than a false flag."""
 
-    def test_a_type_word_beside_a_company_or_swasta_word_flags(self):
-        for k, inst in enumerate(('Kolej Komuniti Swasta Contoh', 'IPG Academy Berhad',
-                                  'Contoh College, partner of University of Science Malaysia')):
+    def test_a_type_word_on_a_company_owned_line_flags(self):
+        for k, inst in enumerate(('Kolej Komuniti Swasta Contoh', 'IPG Academy Berhad')):
             with self.subTest(inst):
                 app = self._app(f'co{k}')
                 self._offer(app, institution=inst, reason=COLLEGE_REASON)
@@ -232,6 +232,18 @@ class ACompanyOrTieUpWordLiftsTheTypeVeto(_Base):
         app = self._app('co-sdn')                  # "Sdn Bhd" is already a private-arm phrase: the name signal
         self._offer(app, institution='IPG Academy Sdn Bhd', reason=COLLEGE_REASON)
         self.assertEqual(self._item(app)['params'], {'institution': 'IPG Academy Sdn Bhd', 'signal': 'name'})
+
+    def test_a_public_name_or_a_partner_line_never_flags(self):
+        for k, inst in enumerate(('University of Malaya in collaboration with Petronas Berhad',
+                                  'Faculty of Engineering, University of Malaya, industry partner Petronas',
+                                  'National University of Malaysia, collaboration',
+                                  'Kolej Komuniti Selayang, rakan industri: Proton Berhad',
+                                  'Kolej Vokasional KL kerjasama Bina Berhad',
+                                  'Contoh College, partner of University of Science Malaysia')):   # accepted miss
+            with self.subTest(inst):
+                app = self._app(f'pp{k}')
+                self._offer(app, institution=inst, reason=COLLEGE_REASON)
+                self.assertIsNone(self._item(app))
 
     def test_a_plain_public_type_still_vetoes(self):
         app = self._app('puo')

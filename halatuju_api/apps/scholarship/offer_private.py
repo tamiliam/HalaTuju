@@ -21,8 +21,8 @@ an unread one gives no line, as `start_year`):
      (`IPTS_REASON_OPENINGS`). It counts ONLY when the read institution / issuer names NO known public
      body (the genuineness public lists, the public-university names, short forms, English names and
      catalogue aliases, the wingless public types such as Kolej Komuniti or IPG, and the course
-     catalogue's institutions by `CampusReader`; a bare type or English name does not veto on a line
-     that also carries a company or tie-up word), and when there IS a read institution or issuer: a
+     catalogue's institutions by `CampusReader`; only a bare type stops vetoing, and only on a
+     company-owned line with no partner word), and when there IS a read institution or issuer: a
      public place is never flagged for a gap in our own lists, and a letter we cannot classify keeps
      today's behaviour.
 
@@ -104,25 +104,24 @@ def _english_folded(text):
     return text.replace(' UNIVERSITY OF ', ' UNIVERSITI ').replace(' UNIVERSITY ', ' UNIVERSITI ')
 
 
-def _private_worded(text):
-    """A company or explicit tie-up word on the line ("Sdn Bhd", "Swasta", "partner of"): the genuineness
-    `_PRIVATE_SIGNS` and `_TIE_UP`. Not the wider `_PARTNER` (MEMBER / ASSOCIATION / ACCREDITED can sit on
-    a real public letterhead)."""
+def _company_owned(text):
+    """The line is a company's own ("IPG Academy Berhad", "Kolej Komuniti Swasta X"): a genuineness
+    `_PRIVATE_SIGNS` word and NO tie-up word (`_TIE_UP`). "Kolej Komuniti Selayang, rakan industri: Proton
+    Berhad" names its company only as a partner, so it is not company-owned."""
     from .genuineness.offer_reading import _PRIVATE_SIGNS, _TIE_UP
-    return any(w in text for w in _PRIVATE_SIGNS + _TIE_UP)
+    return any(w in text for w in _PRIVATE_SIGNS) and not any(w in text for w in _TIE_UP)
 
 
 def names_public_body(institution, issuer):
     """True when the read institution or issuer names a known public body (signal 2's veto). Read line by
-    line; on a line that also carries a company or tie-up word (`_private_worded`) a bare public TYPE or
-    an English university name does not veto ("Kolej Komuniti Swasta X", "IPG Academy Sdn Bhd", "Contoh
-    College, partner of University of Science Malaysia"); a public NAME still does."""
+    line. Only a bare public TYPE (`_PUBLIC_TYPES`) is dropped, and only on a company-owned line
+    (`_company_owned`); every public NAME, English ones and the University -> Universiti fold included,
+    always vetoes, whatever company or partner word sits beside it (final review 2026-11-19: a miss is
+    safer than a false flag, so "Contoh College, partner of University of Science Malaysia" is spared)."""
     for line in (institution, issuer):
         text = _folded(line)
-        if _private_worded(text):
-            hit = any(m in text for m in _public_markers() if m not in _PUBLIC_TYPES + _ENGLISH_UA)
-        else:
-            hit = any(m in t for t in (text, _english_folded(text)) for m in _public_markers())
+        skip = _PUBLIC_TYPES if _company_owned(text) else ()
+        hit = any(m in t for t in (text, _english_folded(text)) for m in _public_markers() if m not in skip)
         if hit:
             return True
     from .offer_course_match import CampusReader, catalogue_index
