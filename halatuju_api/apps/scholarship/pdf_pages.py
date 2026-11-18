@@ -113,19 +113,105 @@ def raster_scale(width_pt: float, height_pt: float) -> Optional[float]:
     return min(RASTER_DPI / 72.0, MAX_RASTER_SIDE_PX / longer)
 
 
-def pdf_text_layer(data: bytes) -> str:
-    """The concatenated text layer of a PDF (all pages). '' if none / encrypted /
-    library missing — caller then falls back to rasterise+OCR. The RAW layer: a caller deciding
-    whether to trust it passes it through `usable_text_layer` first (TD-411)."""
+# ── S-visible (owner decision 2026-11-18, "what we see is what we can defend") ───────────────────────
+# A phone scanner app's PDF is a PHOTO of the page plus an INVISIBLE text layer from the app's own OCR
+# (PDF text render mode 3: the glyphs are placed but never painted). That layer often misses the
+# letterhead and key lines, so it is not what the page shows. A page whose text is invisible is treated
+# as a picture: it has NO text layer here, so every reader rasterises it and Cloud Vision reads it —
+# the route a scanned PDF with no layer has always taken. Text that is drawn (a bank e-statement, an
+# official downloaded PDF) is what we see and keeps being read for free. Detection that fails counts as
+# invisible (the Vision route: safe, one call), never as the hidden text.
+#: Text render modes that paint nothing: 3 = invisible, 7 = add to the clipping path only.
+_INVISIBLE_MODES = frozenset((3, 7))
+_SHOW_OPS = frozenset((b'Tj', b'TJ', b"'", b'"'))
+#: Form XObjects nest; deeper than this is not a document page (and a cycle must end).
+_MAX_FORM_DEPTH = 8
+
+
+def _shown_chars(operator: bytes, operands) -> int:
+    """How many non-blank characters one text-showing operator places (raw string units: what matters
+    is whether any text is shown, not how it decodes)."""
+    if not operands:
+        return 0
+    if operator == b'TJ':
+        items = operands[0] if isinstance(operands[0], list) else []
+    else:
+        items = [operands[-1]]          # Tj / ' take (string); " takes (aw, ac, string)
+    n = 0
+    for s in items:
+        if isinstance(s, bytes):
+            n += sum(b not in b' \t\r\n\x00' for b in s)
+        elif isinstance(s, str):
+            n += sum(not c.isspace() for c in s)
+    return n
+
+
+def _walk_text_modes(content, resources, reader, mode: int, counts: list, depth: int) -> None:
+    """Add to ``counts`` [drawn, invisible] the characters each text-showing operator places, by the
+    render mode in force (``Tr``, saved and restored by ``q`` / ``Q``; a Form XObject starts from its
+    caller's mode). Raises on anything it cannot parse — the caller treats that as invisible."""
+    from pypdf.generic import ContentStream
+    ops = content.operations if isinstance(content, ContentStream) else ContentStream(content, reader).operations
+    stack = []
+    xobjects = (resources or {}).get('/XObject') if resources is not None else None
+    xobjects = xobjects.get_object() if xobjects is not None else {}
+    for operands, operator in ops:
+        if operator == b'q':
+            stack.append(mode)
+        elif operator == b'Q':
+            mode = stack.pop() if stack else mode
+        elif operator == b'Tr':
+            mode = int(operands[0])
+        elif operator in _SHOW_OPS:
+            counts[1 if mode in _INVISIBLE_MODES else 0] += _shown_chars(operator, operands)
+        elif operator == b'Do' and operands:
+            xobj = xobjects.get(operands[0]) if xobjects else None
+            xobj = xobj.get_object() if xobj is not None else None
+            if xobj is not None and xobj.get('/Subtype') == '/Form':
+                if depth >= _MAX_FORM_DEPTH:
+                    raise ValueError('form XObjects nested too deep')
+                _walk_text_modes(xobj, xobj.get('/Resources') or resources, reader, mode, counts, depth + 1)
+
+
+def page_text_hidden(page, reader) -> bool:
+    """True when this page places ANY invisible text (render mode 3 / 7, an OCR overlay on a picture),
+    or when that cannot be decided (an unreadable content stream). False only when every character on
+    the page is drawn — the one case where its text layer is what the page shows."""
     try:
-        from pypdf import PdfReader
-        reader = PdfReader(io.BytesIO(data))
-        if reader.is_encrypted:
-            try:
-                reader.decrypt('')
-            except Exception:  # noqa: BLE001 — a PDF that will not decrypt has no text layer; the caller falls back to OCR
-                return ''
-        return '\n'.join((p.extract_text() or '') for p in reader.pages).strip()
+        contents = page.get_contents()
+        if contents is None:
+            return False                   # no content stream: no text at all, nothing hidden
+        resources = page.get('/Resources')
+        resources = resources.get_object() if resources is not None else None
+        counts = [0, 0]
+        _walk_text_modes(contents, resources, reader, 0, counts, 0)
+        return counts[1] > 0
+    except Exception as e:  # noqa: BLE001 — undecidable is the Vision route (owner rule 2026-11-18), never the hidden text
+        logger.warning('PDF text visibility check failed: %s', e)
+        return True
+
+
+def _open_pdf(data: bytes):
+    """A pypdf reader for ``data`` (an empty password tried on an encrypted file). Raises on failure."""
+    from pypdf import PdfReader
+    reader = PdfReader(io.BytesIO(data))
+    if reader.is_encrypted:
+        reader.decrypt('')
+    return reader
+
+
+def pdf_text_layer(data: bytes) -> str:
+    """The concatenated VISIBLE text layer of a PDF (all pages). '' if none / encrypted /
+    library missing — caller then falls back to rasterise+OCR — and '' when ANY page's text is
+    invisible or cannot be checked (S-visible, owner decision 2026-11-18): this layer is read as a
+    whole, so one hidden page sends the whole read to the Vision route. A caller deciding whether to
+    trust it still passes it through `usable_text_layer` (TD-411)."""
+    try:
+        reader = _open_pdf(data)
+        pages = list(reader.pages)
+        if any(page_text_hidden(p, reader) for p in pages):
+            return ''                      # a picture with an OCR overlay: read what is seen (Vision)
+        return '\n'.join((p.extract_text() or '') for p in pages).strip()
     except Exception as e:  # noqa: BLE001 — a corrupt PDF has no text layer; logged, the caller falls back to OCR
         logger.warning('PDF text-layer extraction failed: %s', e)
         return ''
@@ -196,16 +282,15 @@ def pdf_page_count(data: bytes) -> int:
 
 
 def pdf_page_texts(data: bytes, max_pages: int) -> list:
-    """The RAW text layer of each of the first ``max_pages`` pages, one string per page ([] if none /
-    encrypted / unreadable). Pass a page through `usable_text_layer` before trusting it. pypdf raises
-    many kinds on a damaged file (its own, struct / zlib / recursion errors…), so any failure is no
-    layer — the safe answer: the images are still shown."""
+    """The VISIBLE text layer of each of the first ``max_pages`` pages, one string per page ([] if none /
+    encrypted / unreadable): a page whose text is invisible or cannot be checked is '' — decided PER
+    PAGE (S-visible, 2026-11-18), so it reads as a scanned page. Pass a page through `usable_text_layer`
+    before trusting it. pypdf raises many kinds on a damaged file (its own, struct / zlib / recursion
+    errors…), so any failure is no layer — the safe answer: the images are still shown."""
     try:
-        from pypdf import PdfReader
-        reader = PdfReader(io.BytesIO(data))
-        if reader.is_encrypted:
-            reader.decrypt('')
-        return [(p.extract_text() or '').strip() for p in reader.pages[:max(0, max_pages)]]
+        reader = _open_pdf(data)
+        return [('' if page_text_hidden(p, reader) else (p.extract_text() or '').strip())
+                for p in reader.pages[:max(0, max_pages)]]
     except Exception as e:   # a damaged PDF's layer is simply absent (review L2)
         logger.warning('PDF page text extraction failed: %s', e)
         return []

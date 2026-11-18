@@ -169,6 +169,15 @@ breaks the rule for ALL gifts, platform-wide. Services: api, web. Migration: non
 - **Unchanged:** the shortlist's `upu_status == 'ipts'` gate, `_offer_blocks`, `query_item_titles`.
 - Follow-ups: TD-665 (a reader-level public / private field), TD-666 (extend the named-IPTS list), TD-667 (offers
   scored before 1.8.0 or never scored).
+## 2026-11-18 — The visible page judges, for every document type (OCR-first S-visible)
+
+Owner decision 2026-11-18: "What we see is what we can defend." A PDF page whose text is invisible (a phone scanner
+app's OCR overlay on a photo: text render mode 3 or 7) is treated as a picture: it has no text layer, so it is
+rasterised and read by Cloud Vision, the route a scanned PDF has always taken. A PDF whose text is drawn on the page
+keeps its own text layer (free and exact, and what we see). The whole-document layer read (`pdf_text_layer`) takes the
+Vision route when ANY page is hidden; the per-page read (`pdf_page_texts`) decides page by page. A check that fails is
+the Vision route, never the hidden text. Why: scanner-app layers miss letterheads and key lines, so genuine documents
+(a USM offer, an STPM certificate with 11 visible lines "missing") failed to go green.
 
 ## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)
 

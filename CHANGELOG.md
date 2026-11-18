@@ -193,6 +193,14 @@ Branch offer-private, not pushed. Migration: none. Services: api, web. Owner rul
 - **Review fix 2 (2026-11-19):** private names that hold a public one (IUMW: "University of Malaya-Wales", "Universiti Malaya-Wales", "IUMW") are now a NAME signal, so the public veto never spares them; the veto is read line by line, and on a line that also carries a company or tie-up word (`_PRIVATE_SIGNS`, `_TIE_UP`: Sdn Bhd, Berhad, Swasta, partner, rakan, kerjasama) a bare public type or English university name no longer vetoes ("Kolej Komuniti Swasta X", "Contoh College, partner of University of Science Malaysia" flag; "Politeknik Ungku Omar" and a public name beside a company word still do not). Tests for each.
 - **Review fix 3 (2026-11-19):** narrowed fix 2 so a real public letter can never flag: every public name (English, Malay, the University -> Universiti fold) always vetoes, and only a bare public type stops vetoing, only on a company-owned line (`_PRIVATE_SIGNS` and no partner word). "University of Malaya in collaboration with Petronas Berhad", "Kolej Komuniti Selayang, rakan industri: Proton Berhad" and the like are spared; "Kolej Komuniti Swasta X" and "IPG Academy Berhad" still flag. Accepted miss (safer than a false flag): "Contoh College, partner of University of Science Malaysia" is no longer flagged.
 - **Debt:** TD-665, TD-666, TD-667.
+### fix: OCR-first S-visible - the visible page judges, for every document type (2026-11-18)
+
+Branch ocr-visible, not pushed. Migration: none. Services: api. Owner decision 2026-11-18: "what we see is what we can defend".
+- A PDF page whose text is INVISIBLE (a phone scanner app's OCR overlay on a photo: text render mode 3 or 7, also inside a form XObject) now has no text layer, so the read takes the scanned-PDF route: page 1 rasterised, one Cloud Vision read. Every scorer, reader and name match sees the visible page. Drawn text (a bank e-statement, an official downloaded PDF) keeps its free layer. A page that cannot be checked takes the Vision route.
+- One central place, `pdf_pages.pdf_text_layer` (any hidden page: no layer, as that layer is read whole) and `pdf_pages.pdf_page_texts` (per page), so `ocr_document_full`, `ocr_document`, `extract_text`, the SPM slip gate's page-1 check, the Exact offer read and the AI offer reader's page texts all follow it.
+- Versions: genuineness MODEL_VERSION 1.31.0, offer reader 2.7.0, SPM slip reader 1.2.0.
+- Corpus (counts only): 303 PDFs carry a usable layer; 287 drawn, 16 invisible (now one Vision read each).
+- Tests: `test_ocr_visible.py` (synthetic PDFs, mocked Vision).
 
 ### feat: red tile names its reason: Rule not met vs Can't verify (2026-11-18)
 
