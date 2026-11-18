@@ -200,6 +200,51 @@ class ThePublicVetoKnowsMoreNames(_Base):
         self.assertEqual(self._item(app)['params']['signal'], 'reason')
 
 
+class APrivateNameHoldingAPublicOneStillFlags(_Base):
+    """Review fix 2026-11-19 (MUST): IUMW folds to "... UNIVERSITI MALAYA WALES", which holds UM's name.
+    It is read as a NAME signal, so the public veto never spares it."""
+
+    def test_iumw_flags_in_english_malay_and_short_form(self):
+        for k, inst in enumerate(('International University of Malaya-Wales', 'Universiti Malaya-Wales',
+                                  'IUMW Kuala Lumpur')):
+            with self.subTest(inst):
+                app = self._app(f'iumw{k}')
+                self._offer(app, institution=inst, reason=COLLEGE_REASON)
+                self.assertEqual(self._item(app)['params'], {'institution': inst, 'signal': 'name'})
+
+    def test_the_university_of_malaya_itself_is_still_spared(self):
+        app = self._app('um')
+        self._offer(app, institution='University of Malaya', reason=ARM_REASON)
+        self.assertIsNone(self._item(app))
+
+
+class ACompanyOrTieUpWordLiftsTheTypeVeto(_Base):
+    """Review fix 2026-11-19 (SHOULD): on a line that also carries a company or tie-up word, a bare public
+    type or an English university name does not veto the reason signal; a plain public line still does."""
+
+    def test_a_type_word_beside_a_company_or_swasta_word_flags(self):
+        for k, inst in enumerate(('Kolej Komuniti Swasta Contoh', 'IPG Academy Berhad',
+                                  'Contoh College, partner of University of Science Malaysia')):
+            with self.subTest(inst):
+                app = self._app(f'co{k}')
+                self._offer(app, institution=inst, reason=COLLEGE_REASON)
+                self.assertEqual(self._item(app)['params'], {'institution': inst, 'signal': 'reason'})
+        app = self._app('co-sdn')                  # "Sdn Bhd" is already a private-arm phrase: the name signal
+        self._offer(app, institution='IPG Academy Sdn Bhd', reason=COLLEGE_REASON)
+        self.assertEqual(self._item(app)['params'], {'institution': 'IPG Academy Sdn Bhd', 'signal': 'name'})
+
+    def test_a_plain_public_type_still_vetoes(self):
+        app = self._app('puo')
+        self._offer(app, institution='Politeknik Ungku Omar', reason=COLLEGE_REASON)
+        self.assertIsNone(self._item(app))
+
+    def test_a_public_name_beside_a_company_word_still_vetoes(self):
+        app = self._app('utm-co')
+        self._offer(app, institution='Universiti Teknologi Malaysia', issuer='Contoh Holdings Berhad',
+                    reason=S6_REASON)
+        self.assertIsNone(self._item(app))
+
+
 class SpaceOnlyOnThePlace(_Base):
     def test_a_space_programme_at_a_public_university_is_not_flagged(self):
         app = self._app('space-prog')

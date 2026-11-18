@@ -14,14 +14,15 @@ Two signals, both read off a letter that has been READ (`read_deferred`, the TD-
 an unread one gives no line, as `start_year`):
 
   1. NAME — the read programme, institution or issuer names a private wing or a named private body
-     (`results_doc._PRIVATE_ARM_PHRASES`, `offer_reading._PRIVATE_BODIES`; the bare word SPACE on the
-     institution / issuer only). No public-name veto: "UTM SPACE" names a public university AND its
-     private wing, and it is the wing that teaches.
+     (`results_doc._PRIVATE_ARM_PHRASES`, `offer_reading._PRIVATE_BODIES`, the private names that hold a
+     public one such as IUMW; the bare word SPACE on the institution / issuer only). No public-name veto:
+     "UTM SPACE" names a public university AND its private wing, and it is the wing that teaches.
   2. SAVED REASON — the letter's stored genuineness reason opens with one of the three IPTS openings
      (`IPTS_REASON_OPENINGS`). It counts ONLY when the read institution / issuer names NO known public
      body (the genuineness public lists, the public-university names, short forms, English names and
      catalogue aliases, the wingless public types such as Kolej Komuniti or IPG, and the course
-     catalogue's institutions by `CampusReader`), and when there IS a read institution or issuer: a
+     catalogue's institutions by `CampusReader`; a bare type or English name does not veto on a line
+     that also carries a company or tie-up word), and when there IS a read institution or issuer: a
      public place is never flagged for a gap in our own lists, and a letter we cannot classify keeps
      today's behaviour.
 
@@ -59,14 +60,21 @@ def _letter_lines(offer):
     return programme_line(programme, code), letter_institution(institution, campus), issuer
 
 
+#: Private universities whose name CONTAINS a public one (review 2026-11-19): "International University
+#: of Malaya-Wales" (IUMW) folds to "... UNIVERSITI MALAYA WALES", which holds " UNIVERSITI MALAYA ", so the
+#: reason's public veto would spare it. Read as a NAME signal, which no veto reaches.
+_PRIVATE_NAMED_LIKE_PUBLIC = (' UNIVERSITY OF MALAYA WALES ', ' UNIVERSITI MALAYA WALES ', ' IUMW ')
+
+
 def names_private_body(programme, institution, issuer):
     """Signal 1: the letter's own lines name a private wing or a named private body. The phrases of
-    `results_doc._PRIVATE_ARM_PHRASES` and `_PRIVATE_BODIES` are read on every line, but the bare word
-    SPACE only on the institution / issuer: a programme such as "Space Science" names no wing."""
+    `results_doc._PRIVATE_ARM_PHRASES`, `_PRIVATE_BODIES` and `_PRIVATE_NAMED_LIKE_PUBLIC` are read on
+    every line, but the bare word SPACE only on the institution / issuer: a programme such as "Space
+    Science" names no wing."""
     from .genuineness.results_doc import _PRIVATE_ARM_PHRASES
     every = _folded(f'{programme} ; {institution} ; {issuer}')
     return (any(p in every for p in _PRIVATE_ARM_PHRASES) or ' SPACE ' in _folded(f'{institution} ; {issuer}')
-            or any(b in every for b in _PRIVATE_BODIES))
+            or any(b in every for b in _PRIVATE_BODIES + _PRIVATE_NAMED_LIKE_PUBLIC))
 
 
 #: Public TYPES with no private wing, read even when no catalogue campus matches (a public place is
@@ -96,11 +104,27 @@ def _english_folded(text):
     return text.replace(' UNIVERSITY OF ', ' UNIVERSITI ').replace(' UNIVERSITY ', ' UNIVERSITI ')
 
 
+def _private_worded(text):
+    """A company or explicit tie-up word on the line ("Sdn Bhd", "Swasta", "partner of"): the genuineness
+    `_PRIVATE_SIGNS` and `_TIE_UP`. Not the wider `_PARTNER` (MEMBER / ASSOCIATION / ACCREDITED can sit on
+    a real public letterhead)."""
+    from .genuineness.offer_reading import _PRIVATE_SIGNS, _TIE_UP
+    return any(w in text for w in _PRIVATE_SIGNS + _TIE_UP)
+
+
 def names_public_body(institution, issuer):
-    """True when the read institution or issuer names a known public body (signal 2's veto)."""
-    text = _folded(f'{institution} ; {issuer}')
-    if any(m in t for t in (text, _english_folded(text)) for m in _public_markers()):
-        return True
+    """True when the read institution or issuer names a known public body (signal 2's veto). Read line by
+    line; on a line that also carries a company or tie-up word (`_private_worded`) a bare public TYPE or
+    an English university name does not veto ("Kolej Komuniti Swasta X", "IPG Academy Sdn Bhd", "Contoh
+    College, partner of University of Science Malaysia"); a public NAME still does."""
+    for line in (institution, issuer):
+        text = _folded(line)
+        if _private_worded(text):
+            hit = any(m in text for m in _public_markers() if m not in _PUBLIC_TYPES + _ENGLISH_UA)
+        else:
+            hit = any(m in t for t in (text, _english_folded(text)) for m in _public_markers())
+        if hit:
+            return True
     from .offer_course_match import CampusReader, catalogue_index
     index = catalogue_index()                     # one read of the table, only when it is needed
     for line in (institution, issuer):
