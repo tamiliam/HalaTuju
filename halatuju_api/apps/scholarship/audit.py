@@ -235,15 +235,21 @@ def _doubt_rows(doubt: dict) -> list:
 def decider_counts(decided_records) -> dict:
     """The four counts per recorder, keyed by the record's 5th element (``verdict_decided_by``).
     Records without one are skipped. Pure; the caller turns the key into a person (and never ships
-    the key itself): ``{key: {applications, green, green_failed, unsure, unsure_passed, …rates…}}``."""
+    the key itself): ``{key: {applications, green, green_failed, unsure, unsure_passed, …rates…}}``.
+    LL2b: plus ``qc_checked`` (that recorder's in-doubt facts the QC checked) and ``qc_overturned``
+    (of those, the ones the QC disagreed with), from `second_look`."""
+    from .second_look import reviewer_counts   # in the function: second_look imports this module
     out: dict = {}
     for record in decided_records:
         key = record[4] if len(record) > 4 else None
         if not key:
             continue
-        block = out.setdefault(key, {'applications': 0, **_counts()})
+        block = out.setdefault(key, {'applications': 0, **_counts(), 'qc_checked': 0, 'qc_overturned': 0})
         block['applications'] += 1
         for row in compute_overrides(record[0], record[1])['facts']:
             if row['decided']:
                 _tally(block, row['ai_pass'], row['officer'])
+        checked, overturned = reviewer_counts(record[0], record[1])
+        block['qc_checked'] += checked
+        block['qc_overturned'] += overturned
     return {k: _finish(b) for k, b in out.items()}

@@ -16,6 +16,7 @@ from .. import fail_reasons as fail_reasons_rule
 from .. import pool
 from .. import profile_finalise
 from .. import reopen as reopen_service
+from .. import second_look
 from .. import staff_activity
 from .. import surface_gates
 from ..interview_completeness import decision_gate_applies, decision_refusal
@@ -291,7 +292,8 @@ def _accept_refusal(request, app):
 
 
 class AdminQcDecisionView(_AdminBase):
-    """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen'|'reject', comments?, override_reason?} —
+    """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen'|'reject', comments?, override_reason?,
+    fact_checks?} (LL2b: the QC's second look at the facts in doubt; see `second_look`) —
     the QC gate on an AWAITING-QC ('interviewed') case. QC = a `qc`-role admin or super (never
     the reviewer).
       accept → 'interviewed' → 'recommended' (the case becomes pool-eligible). SOFT FLOOR
@@ -308,7 +310,7 @@ class AdminQcDecisionView(_AdminBase):
                DecisionReopen row carrying the reason, closed as a correction) then declines as
                'interview' with the org's QC hold; the reviewer gets the "rejected by QC" email
                (distinct from the "returned for revision" one)."""
-    def _accept_recommend(self, request, app, admin, pk, seen_overall):
+    def _accept_recommend(self, request, app, admin, pk, seen_overall, taps):
         """QC accept of a RECOMMEND verdict: interviewed -> recommended, then publish."""
         # Fix round 3: refuse on the pre-lock copy first, so a refused accept spends no Gemini
         # call. These checks only refuse; they run again on the locked row below.
@@ -351,11 +353,12 @@ class AdminQcDecisionView(_AdminBase):
             # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).
             # Idempotent + PII-backstopped; a no-op if there's nothing ready to publish.
             pool.publish_profile_to_pool(app, blurb=blurb)
+            second_look.record_answers(app, 'accept', taps)   # LL2b: on the locked row, same unit
             _record_qc(admin, app, 'accept', 'recommended')
         logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
         return Response(_detail_payload(app, admin))
 
-    def _accept_decline(self, app, admin, pk):
+    def _accept_decline(self, app, admin, pk, taps):
         """QC accept of a DECLINE verdict: interviewed -> rejected ('interview', the QC hold)."""
         from datetime import timedelta
         from apps.courses import org_config
@@ -369,6 +372,7 @@ class AdminQcDecisionView(_AdminBase):
                 if _overall(app) != 'decline':   # the verdict was re-recorded meanwhile
                     return _not_awaiting_qc()
                 admin_reject(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True)
+                second_look.record_answers(app, 'accept', taps)
                 _record_qc(admin, app, 'accept', 'declined')
         except StatusRefused:
             return _not_awaiting_qc()
@@ -386,6 +390,11 @@ class AdminQcDecisionView(_AdminBase):
         app, admin, err = self._require_qc(request, pk)
         if err:
             return err
+        try:   # LL2b: the QC's taps on the facts in doubt. Malformed = 400, nothing saved; absent = as before
+            taps = second_look.validate(request.data.get(second_look.FIELD))
+        except second_look.BadFactChecks:
+            return Response({'error': 'bad fact_checks', 'code': 'bad_fact_checks'},
+                            status=status.HTTP_400_BAD_REQUEST)
         decision = (request.data.get('decision') or '').strip()
         if decision == 'accept':
             # The QC ACCEPT decision means "uphold the reviewer's recorded verdict". For a DECLINE
@@ -394,8 +403,8 @@ class AdminQcDecisionView(_AdminBase):
             # have red facts) and the shorter `qc_decline_hold_hours` hold (platform 24h, org-timing
             # Sprint 1 — already two-person-vetted). Bucket 'interview'; the email fires, embargoed.
             if _overall(app) == 'decline':
-                return self._accept_decline(app, admin, pk)
-            return self._accept_recommend(request, app, admin, pk, _overall(app))
+                return self._accept_decline(app, admin, pk, taps)
+            return self._accept_recommend(request, app, admin, pk, _overall(app), taps)
         if decision == 'reopen':
             comments = _text(request.data.get('comments'))
             if not comments:
@@ -407,6 +416,7 @@ class AdminQcDecisionView(_AdminBase):
                 with transaction.atomic():
                     lock_application_for(app, ('interviewed',))
                     reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
+                    second_look.record_answers(app, 'reopen', taps)   # a send-back keeps only the 'disagreed' taps
                     _record_qc(admin, app, 'reopen', 'reopened')
             except StatusRefused:
                 return _not_awaiting_qc()
@@ -440,6 +450,7 @@ class AdminQcDecisionView(_AdminBase):
                     reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
                     reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
                     admin_reject(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True)
+                    second_look.record_answers(app, 'reject', taps)
                     _record_qc(admin, app, 'reject', 'declined')
             except StatusRefused:
                 return _not_awaiting_qc()
