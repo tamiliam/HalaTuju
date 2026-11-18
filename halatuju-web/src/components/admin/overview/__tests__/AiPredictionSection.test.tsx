@@ -74,6 +74,18 @@ describe('the picture\'s figures', () => {
     render(<AiPredictionBlock ai={metrics()} t={t} note="All programmes together." />)
     expect(screen.getByText('All programmes together.')).toBeTruthy()
   })
+
+  it('shows the assigned-only note instead of the extra note when the server says "assigned"', () => {
+    render(<AiPredictionBlock ai={{ ...metrics(), counted_scope: 'assigned' }} t={t} note="All programmes together." />)
+    expect(screen.getByText('Your assigned applicants only.')).toBeTruthy()
+    expect(screen.queryByText('All programmes together.')).toBeNull()
+  })
+
+  it.each([['all' as const], [undefined]])('keeps the extra note and no assigned note when the scope is %s', (scope) => {
+    render(<AiPredictionBlock ai={{ ...metrics(), counted_scope: scope }} t={t} note="All programmes together." />)
+    expect(screen.getByText('All programmes together.')).toBeTruthy()
+    expect(screen.queryByText('Your assigned applicants only.')).toBeNull()
+  })
 })
 
 describe('few cases', () => {

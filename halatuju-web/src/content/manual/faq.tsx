@@ -62,6 +62,16 @@ export const FAQ: Record<Audience, QA[]> = {
         decides.</strong> Always check its reading against the documents.</>,
     },
     {
+      q: <>What does the <strong>AI prediction</strong> block mean?</>,
+      a: <>It shows how often the AI&rsquo;s check and the reviewer&rsquo;s Pass or Fail agreed. The first big
+        number is how often the reviewer confirmed a fact the AI was sure of. The second is how often the
+        reviewer passed a fact the AI doubted. &ldquo;Few cases&rdquo; means fewer than 30 cases; the page then
+        shows the count and no percentage. A Pass or Fail tap records the student&rsquo;s fact. It does not
+        rate the AI. Only organisation admins see the <strong>By reviewer</strong> table. A reviewer sees
+        numbers for their own assigned applicants only. <strong>Decision</strong> is the funder&rsquo;s choice
+        and is counted apart from the facts.</>,
+    },
+    {
       q: <>I&rsquo;m stuck, or something looks wrong — whom do I contact?</>,
       a: <>Email the HalaTuju team at <strong>help@halatuju.xyz</strong> and we&rsquo;ll help.</>,
     },

@@ -124,12 +124,14 @@ export function AiPredictionBlock({ ai, t, note }: { ai: VerdictMetrics; t: Tran
   const empty = overall.green === 0 && overall.unsure === 0
   const doubts = ai.doubt_codes ?? []
   const versions = ai.by_version ?? {}
+  // The server says whose cases it counted; an assigned-only reader sees that note, never "all together".
+  const shownNote = ai.counted_scope === 'assigned' ? t(`${K}.assignedOnly`) : note
   return (
     <section className="space-y-5 rounded-xl border border-ground-200 bg-ground-0 p-4" data-testid="overview-ai-prediction">
       <div>
         <h2 className="text-sm font-semibold text-ground-900">
           {t(`${K}.title`)}
-          {note && <span className="ml-2 text-xs font-normal text-ground-500">{note}</span>}
+          {shownNote && <span className="ml-2 text-xs font-normal text-ground-500">{shownNote}</span>}
         </h2>
         <p className="mt-1 max-w-prose text-xs text-ground-500">{t(`${K}.sub`)}</p>
       </div>

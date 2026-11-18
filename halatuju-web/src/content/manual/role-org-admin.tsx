@@ -383,7 +383,9 @@ export const roleOrgAdmin: ManualChapter = {
         gift, and your other gifts are not affected. A gift with no layout of its own shows the
         <em> organisation layout</em>, which you set from Customise with no gift chosen; <strong>Use the
         organisation layout</strong> sends a gift back to it. A reviewer&rsquo;s own cases and a QC&rsquo;s
-        queue are not panels and cannot be switched off. Platform-only tools —
+        queue are not panels and cannot be switched off. An <strong>AI prediction</strong> block, showing how
+        often reviewers agreed with the AI, is on this page and at the foot of the Programmes page (all your
+        gifts together); its <strong>By reviewer</strong> table is for organisation admins. Platform-only tools —
         adding organisations or referral partners — never appear for you; those stay with the HalaTuju
         platform team.</>
       ),

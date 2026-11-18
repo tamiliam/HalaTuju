@@ -7623,6 +7623,7 @@
         "reviewerHint": "Shown to leads only, to support reviewers and not to rank them.",
         "footer": "Facts not yet checked by the QC.",
         "allProgrammes": "All programmes together.",
+        "assignedOnly": "Your assigned applicants only.",
         "versionUnknown": "Unknown version",
         "unmatchedReviewer": "Reviewer not matched to an account",
         "unnamedReviewer": "Reviewer not named",

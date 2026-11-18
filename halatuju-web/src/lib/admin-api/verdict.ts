@@ -30,6 +30,8 @@ export interface VerdictMetrics {
   qc_agreement?: QcAgreement
   /** Leads only: ABSENT (not empty) for everyone else. */
   by_reviewer?: ReviewerRow[]
+  /** Whose cases the server counted: "assigned" = the reader's own assigned applicants only. */
+  counted_scope?: 'all' | 'assigned'
 }
 
 /** One block of the scoreboard. "Green" = the AI was sure; "unsure" = the AI was in doubt.

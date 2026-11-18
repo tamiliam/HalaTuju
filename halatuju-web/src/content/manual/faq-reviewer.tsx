@@ -186,9 +186,10 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>What&rsquo;s the difference between rating Pass/Fail and approving?</>,
-      a: <>The <strong>Pass/Fail</strong> on each fact says whether the <em>AI read that fact correctly</em>.
+      a: <>The <strong>Pass/Fail</strong> on each fact records whether <em>that fact is right for the student</em>.
         <strong> Approve / Decline</strong> is your actual recommendation. They&rsquo;re separate: you can Pass all
-        four facts and still <strong>Decline</strong> — for instance, income verified but above the B40 line.</>,
+        four facts and still <strong>Decline</strong> — for instance, income verified but above the B40 line.
+        A Pass or Fail tap records the student&rsquo;s fact; it does not rate the AI.</>,
     },
     {
       q: <>Can I undo a decision after I Save?</>,
