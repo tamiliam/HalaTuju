@@ -142,12 +142,14 @@ Note it and ask them in the interview (or raise a query). They may have updated 
 conversation settles it. Or, ask them to upload the latest offer letter, and it would replace the old.
 
 **Why was the student asked for a recent confirmation letter?**
-Her offer or confirmation letter is older than the organisation's window (3 months unless changed in
+Her confirmation-of-studies letter (not an offer letter) is older than the organisation's window (6 months unless changed in
 Organisation settings) and her course should already have started. It is only a request: it never fails
 a check, never changes the verdict or amount, and the case can be assigned to a reviewer while it is open.
 It is not asked when the letter's date cannot be read, while the letter's reporting date is still to come
-(or cannot be read and may still be to come), or when any recent letter (offer or confirmation, any
-institution) is already on file.
+(or cannot be read and may still be to come), or when a recent confirmation letter (any
+institution) is already on file. It is never asked when she has an offer letter on file: a
+confirmation letter only stands in for a missing offer letter. The ask is for her offer letter or a recent
+confirmation letter; either one closes it.
 To close it for good without a letter, use Waive, not Resolve: Resolve lets the next sync re-open it and email
 the student again.
 

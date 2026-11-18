@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: the recent-letter ask applies to confirmation letters only, never to offer letters (2026-11-18)
+
+Branch fix-recent-letter-confirm. Migration: none. Services: both. Owner, 2026-11-18: "The recent requirement only applies to confirmation letter. Not to offer letters." Decisions: `docs/decisions.md` (H3b ruling).
+- **API:** `recent_letter.wanted` keeps only confirmation letters (`pathway_engine.is_confirmation_letter`) across every version of the offer slot, read once (open snapshot rows, else one query). An old offer letter never raises the ask. Any non-failing offer letter on file (any version of the slot) means no ask at all (owner, same day: "Confirmation letter is ONLY required/requested when the student DOES NOT HAVE an offer letter."). Date reader, window edge and course-started guard unchanged. Open asks on offer-only students close at the next Check 2 sync.
+- **Window:** the platform default for `recent_letter_window_months` is now 6 months, not 3 (owner, 2026-11-18: "The confirmation letter can be upto 6 months old"). No organisation had set its own value.
+- **The ask's words:** the student task and the email title now read "Upload your offer letter or a recent confirmation letter" (en / ms / ta; ms / ta first drafts for Sol). Either upload closes it (owner, 2026-11-18: "If old, asks for the offer letter or confirmation letter that is more recent").
+- **Words:** module docstring, Reviewer Guide / FAQ, and the en / ms / ta student and settings strings no longer say offer letter for this ask (ms / ta first drafts for Sol).
+- **Tests:** `test_recent_letter.py` reworked for confirmation-only.
+
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
 Branch vcard, display only (engine statuses untouched). Migration: none. Services: web.

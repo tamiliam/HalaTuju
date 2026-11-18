@@ -149,8 +149,8 @@ export const roleReviewer: ManualChapter = {
         STPM, Matriculation, Asasi or Diploma results; her upload lands in that card and closes the request only
         when it is that kind of results. The system never asks for an SPM slip by itself. It does ask for
         the STPM, Matriculation, Asasi or Diploma results of a degree-bound student who submitted before those
-        could be uploaded and has none on file; her upload closes that request. When her offer or confirmation
-        letter is older than your organisation&rsquo;s window (3 months unless changed) and her course should
+        could be uploaded and has none on file; her upload closes that request. When she has no offer letter on file and her confirmation
+        letter is older than your organisation&rsquo;s window (6 months unless changed) and her course should
         already have started, it asks her for a recent confirmation letter; this never fails a check, never
         changes the verdict and never holds the case back from a reviewer.</>
       ),

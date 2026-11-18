@@ -252,16 +252,15 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>Why was the student asked for a <strong>recent confirmation letter</strong>?</>,
-      a: <>Her offer or confirmation letter is older than your organisation&rsquo;s window (3 months unless
+      a: <>Her confirmation-of-studies letter (not an offer letter) is older than your organisation&rsquo;s window (6 months unless
         your organisation admin changed it under Organisation settings) and her course should already have
-        started, so the system asked her for a recent confirmation-of-studies letter to show she is still on
-        her course. It is only a request: it never blocks the case, never fails a check, never changes the
+        started, so the system asked her for her offer letter or a recent confirmation-of-studies letter. It is only a request: it never blocks the case, never fails a check, never changes the
         verdict or the amount, and the case does not wait for it &mdash; it can be assigned to a reviewer while
         this request is still open (other open requests still hold the case until her answer window ends).
         It is not asked when the letter&rsquo;s date cannot be read, while the reporting date on the letter is
-        still to come (or cannot be read and may still be to come), or when any recent letter is already on
-        file (an offer or a confirmation letter, from any institution). Her upload of a recent letter closes
-        it; an old letter sent again leaves it open.
+        still to come (or cannot be read and may still be to come), or when a recent confirmation letter is already
+        on file (from any institution). It is never asked when she has an offer letter on file: a confirmation letter only stands in for a missing offer letter.
+        Her upload of an offer letter or a recent confirmation letter closes it; an old confirmation letter sent again leaves it open.
         To close it for good without a letter, use Waive, not Resolve: Resolve lets the next sync re-open it
         and email the student again.</>,
     },

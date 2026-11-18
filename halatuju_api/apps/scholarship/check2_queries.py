@@ -112,7 +112,7 @@ DOC_SPECS = {
     'mother_pension_proof_missing': {'member': 'mother', 'doc_type': 'salary_slip'},
     # S2 — every salary slip on file is older than ~3 months → ask for a current one.
     'income_doc_stale': {'doc_type': 'salary_slip'},
-    recent_letter.CODE: {'doc_type': 'offer_letter', 'fact': 'pathway'},   # H3b: an old letter → a recent one
+    recent_letter.CODE: {'doc_type': 'offer_letter', 'fact': 'pathway'},   # H3b: an old confirmation letter → a recent one
     # Phase 2A (P5b/D1) — a working member declared an informal wage, but the household has no
     # valid STR and no supporting doc yet → ask for ONE flexible proof (an income_support_doc:
     # employer/wage letter, bank statements, or a community/penghulu letter). Household-level,
@@ -259,7 +259,7 @@ GOVERNED_BY = {
     'father_pension_proof_missing': _INCOME,
     'mother_pension_proof_missing': _INCOME,
     'income_doc_stale': _INCOME,
-    recent_letter.CODE: None,                    # offer / confirmation letter — core, per-student
+    recent_letter.CODE: None,                    # confirmation letter — core, per-student
     'declared_income_evidence_missing': _INCOME,
     'father_epf_missing': _INCOME,
     'mother_epf_missing': _INCOME,
@@ -379,7 +379,7 @@ def _gap_sets(application):
         proof_wanted.add(_MEMBER_PROOF_CODE[str_salary_earner])
     if stale_income_proof(application):
         proof_wanted.add('income_doc_stale')
-    if letter_old:                                       # H3b: letter older than the window, course started
+    if letter_old:                                       # H3b: confirmation letter older than the window, course started
         proof_wanted.add(recent_letter.CODE)
     if declared_income_gaps(application):                # declared informal income, no STR + no doc
         proof_wanted.add('declared_income_evidence_missing')

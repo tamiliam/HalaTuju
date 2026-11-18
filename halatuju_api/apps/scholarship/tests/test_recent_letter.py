@@ -1,8 +1,9 @@
-"""H3b - an OLD offer / confirmation letter asks for a RECENT confirmation letter (soft).
+"""H3b - an OLD confirmation letter asks for a RECENT confirmation letter (soft). Owner, 2026-11-18: offer
+letters never raise or close it.
 
 Pins: the window edge (exactly N months ago is still recent; one day more is old), an unreadable date
-(no ask - never guess), ANY recent letter already on file (no ask: offer or confirmation, any
-institution, live or kept out of the live slot), no ask before the course should have started, the
+(no ask - never guess), a recent CONFIRMATION letter already on file (no ask: any institution, live
+or kept out of the live slot; an offer letter never counts either way), no ask before the course should have started, the
 organisation tunable, a failing letter (left to its own ask), the upload resolution (a recent letter
 closes it, an old letter re-sent leaves it open), the one document read for both letter asks, and that
 the ask NEVER blocks: no submission blocker, no verdict change, no status change, no assignment hold.
@@ -21,6 +22,9 @@ from apps.scholarship.tests.test_org_config import _configure
 
 TODAY = datetime.date(2026, 6, 30)
 CODE = recent_letter.CODE
+#: The rule tests below run under a 3-month organisation window (their dates are built for it). The
+#: platform default (6, owner 2026-11-18) is pinned by ``TestTunable``.
+WINDOW = 3
 
 
 def _iso(d):
@@ -28,14 +32,20 @@ def _iso(d):
 
 
 class _Base(TestCase):
-    def _app(self, suffix='1', **kw):
-        """A Completed-stage application (Check 2 may ask). ``suffix`` only labels the call site."""
+    def _app(self, suffix='1', *, window=WINDOW, **kw):
+        """A Completed-stage application (Check 2 may ask). ``suffix`` only labels the call site.
+        ``window`` sets her organisation's window in months; None leaves the platform default."""
         defaults = dict(chosen_pathway='diploma', father_occupation='gov',
                         mother_occupation='homemaker', siblings_in_tertiary=0)
         defaults.update(kw)
-        return make_application('profile_complete', **defaults)
+        app = make_application('profile_complete', **defaults)
+        if window is not None:
+            _configure(app.owning_organisation, recent_letter.WINDOW_KEY, window)
+            app.refresh_from_db()
+        return app
 
-    def _letter(self, app, offer_date, *, seen='ua_offer', status='genuine', **kw):
+    def _letter(self, app, offer_date, *, seen='confirmation_polytechnic', status='genuine', **kw):
+        """A confirmation letter by default; pass seen='ua_offer' for an OFFER letter."""
         fields = {'candidate_name': app.profile.name, 'programme': 'DIPLOMA KEJURUTERAAN AWAM',
                   'institution': 'POLITEKNIK UNGKU OMAR'}
         if offer_date is not None:
@@ -120,49 +130,94 @@ class TestWanted(_Base):
         out of the slot (superseded). She did what was asked: no loop."""
         app = self._app('kept')
         self._letter(app, '1 Jun 2026', seen='confirmation_polytechnic', superseded_at=timezone.now())
-        self._letter(app, '1 Januari 2025')
+        self._letter(app, '1 Januari 2025', seen='ua_offer')
         self.assertFalse(recent_letter.wanted(app, today=TODAY))
 
     def test_recent_confirmation_on_file_live_answers(self):
         app = self._app('live-conf')
         self._letter(app, '1 Januari 2025')
-        self._letter(app, '20 Jun 2026', seen='confirmation_polytechnic')   # its own slot, both live
+        self._letter(app, '20 Jun 2026')                                    # its own slot, both live
         self.assertFalse(recent_letter.wanted(app, today=TODAY))
 
     def test_old_or_failing_or_undated_confirmation_does_not_answer(self):
         app = self._app('bad-conf')
-        self._letter(app, '1 Januari 2025')
-        self._letter(app, '1 Januari 2026', seen='confirmation_polytechnic', superseded_at=timezone.now())
-        self._letter(app, '1 Jun 2026', seen='confirmation_polytechnic', status='not_offer_letter',
-                     superseded_at=timezone.now())
-        self._letter(app, 'Jun 2026', seen='confirmation_polytechnic', superseded_at=timezone.now())
+        self._letter(app, '1 Jun 2026', status='not_offer_letter', superseded_at=timezone.now())
+        self._letter(app, 'Jun 2026', superseded_at=timezone.now())
+        self._letter(app, '1 Januari 2026', superseded_at=timezone.now())
+        self._letter(app, '1 Januari 2025')                          # newest: old, live
         self.assertTrue(recent_letter.wanted(app, today=TODAY))
 
     def test_a_university_confirmation_scored_suspect_answers(self):
-        """Fix round 1: ANY recent letter closes it, whatever institution - a university's "Surat
+        """ANY recent confirmation letter closes it, whatever institution - a university's "Surat
         Pengesahan Pelajar" scored suspect, live or kept out of the slot."""
         for i, kept_out in enumerate((False, True)):
             app = self._app(f'ua-conf{i}')
             if kept_out:
-                self._letter(app, '20 Jun 2026', seen='ua_offer', status='suspect', superseded_at=timezone.now())
+                self._letter(app, '20 Jun 2026', seen='confirmation_ua', status='suspect',
+                             superseded_at=timezone.now())
                 self._letter(app, '1 Januari 2025')
             else:
                 self._letter(app, '1 Januari 2025', superseded_at=timezone.now())
-                self._letter(app, '20 Jun 2026', seen='ua_offer', status='suspect')
+                self._letter(app, '20 Jun 2026', seen='confirmation_ua', status='suspect')
             self.assertFalse(recent_letter.wanted(app, today=TODAY), kept_out)
 
     def test_a_matriculation_confirmation_answers(self):
         app = self._app('matric-conf')
-        self._letter(app, '20 Jun 2026', seen='matriculation', status='suspect', superseded_at=timezone.now())
-        self._letter(app, '1 Januari 2025', seen='matriculation')
+        self._letter(app, '20 Jun 2026', seen='confirmation_matriculation', status='suspect',
+                     superseded_at=timezone.now())
+        self._letter(app, '1 Januari 2025', seen='confirmation_matriculation')
         self.assertFalse(recent_letter.wanted(app, today=TODAY))
 
-    def test_a_recent_offer_kept_out_of_the_slot_answers(self):
-        """The old TD-643: a recent official OFFER kept out of the live slot now answers too."""
-        app = self._app('kept-offer')
-        self._letter(app, '20 Jun 2026', status='unknown', superseded_at=timezone.now())
-        self._letter(app, '1 Januari 2025')
+
+class TestOfferLettersNeverCount(_Base):
+    """Owner, 2026-11-18: "The recent requirement only applies to confirmation letter. Not to offer
+    letters." An offer letter, of any age, never raises the ask and never closes it."""
+
+    def test_an_old_offer_letter_alone_gives_no_ask(self):
+        app = self._app('offer-old')
+        self._letter(app, '1 Januari 2025', seen='ua_offer')
         self.assertFalse(recent_letter.wanted(app, today=TODAY))
+
+    def test_an_old_offer_letter_with_the_course_started_gives_no_ask(self):
+        app = self._app('offer-old-started')
+        doc = self._letter(app, '1 Januari 2026', seen='ua_offer')
+        doc.vision_fields['fields']['reporting_date'] = '10 Februari 2026'      # long past
+        doc.save(update_fields=['vision_fields'])
+        self.assertFalse(recent_letter.wanted(app, today=TODAY))
+
+    def test_an_old_confirmation_letter_gives_the_ask(self):
+        app = self._app('conf-old2')
+        self._letter(app, '1 Januari 2026')
+        self.assertTrue(recent_letter.wanted(app, today=TODAY))
+
+    def test_a_recent_confirmation_letter_closes_it(self):
+        app = self._app('conf-recent')
+        self._letter(app, '1 Januari 2026', superseded_at=timezone.now())
+        self._letter(app, '20 Jun 2026')
+        self.assertFalse(recent_letter.wanted(app, today=TODAY))
+
+    def test_any_offer_letter_on_file_means_no_ask(self):
+        """Owner, 2026-11-18: a confirmation letter is uploaded "when the student doesn't have an offer
+        letter ... in its stead. That must be recent." So an offer letter on file (any age, live or
+        kept out of the slot) means no ask, even beside an old confirmation letter."""
+        for i, (offer_date, kept_out) in enumerate((('20 Jun 2026', False), ('20 Jun 2026', True),
+                                                     ('1 Januari 2025', False), ('1 Januari 2025', True))):
+            app = self._app(f'offer-on-file{i}')
+            if kept_out:
+                self._letter(app, offer_date, seen='ua_offer', superseded_at=timezone.now())
+                self._letter(app, '1 Januari 2026')
+            else:
+                self._letter(app, '1 Januari 2026', superseded_at=timezone.now())
+                self._letter(app, offer_date, seen='ua_offer')
+            self.assertFalse(recent_letter.wanted(app, today=TODAY), (offer_date, kept_out))
+
+    def test_a_failing_offer_letter_does_not_stand_in(self):
+        """A failing offer letter is not an offer letter on file: her old confirmation is still asked."""
+        app = self._app('offer-failing')
+        self._letter(app, '20 Jun 2026', seen='ua_offer', status='not_offer_letter',
+                     superseded_at=timezone.now())
+        self._letter(app, '1 Januari 2026')
+        self.assertTrue(recent_letter.wanted(app, today=TODAY))
 
 
 class TestCourseStart(_Base):
@@ -199,8 +254,17 @@ class TestTunable(_Base):
     def test_registry_spec_and_default(self):
         spec = REGISTRY[recent_letter.WINDOW_KEY]
         self.assertEqual((spec['group'], spec['unit'], spec['min'], spec['max']), ('check2', 'months', 1, 12))
-        self.assertEqual(org_config.default(recent_letter.WINDOW_KEY), 3)
-        self.assertEqual(recent_letter.window_months(self._app('unchanged')), 3)
+        self.assertEqual(org_config.default(recent_letter.WINDOW_KEY), 6)
+        self.assertEqual(recent_letter.window_months(self._app('unchanged', window=None)), 6)
+
+    def test_the_default_allows_six_months(self):
+        """Owner, 2026-11-18: "The confirmation letter can be upto 6 months old"."""
+        app = self._app('six', window=None)
+        self._letter(app, _iso(datetime.date(2025, 12, 30)))        # exactly six months: still recent
+        self.assertFalse(recent_letter.wanted(app, today=TODAY))
+        old = self._app('six-and-a-day', window=None)
+        self._letter(old, _iso(datetime.date(2025, 12, 29)))        # six months and a day: old
+        self.assertTrue(recent_letter.wanted(old, today=TODAY))
 
     def test_the_organisation_window_moves_the_edge(self):
         app = self._app('org')
@@ -212,8 +276,7 @@ class TestTunable(_Base):
         app.refresh_from_db()
         self.assertEqual(recent_letter.window_months(app), 6)
         self.assertFalse(recent_letter.wanted(app, today=TODAY))
-        _configure(org, recent_letter.WINDOW_KEY, 1)
-        other = self._app('org2', cohort=app.cohort)
+        other = self._app('org2', window=1, cohort=app.cohort)
         self._letter(other, _iso(datetime.date(2026, 5, 29)))      # one month and a day
         self.assertTrue(recent_letter.wanted(other, today=TODAY))
 
@@ -258,6 +321,17 @@ class TestCheck2(_Base):
         sync_check2_queries(app)
         self.assertNotIn(CODE, self._codes(app))
 
+    def test_resolves_when_an_offer_letter_arrives(self):
+        """Owner, 2026-11-18: the ask is for "the offer letter or confirmation letter that is more
+        recent" - an offer letter of any date answers it."""
+        app = self._app('sync-offer')
+        self._letter(app, self._old())
+        sync_check2_queries(app)
+        self.assertIn(CODE, self._codes(app))
+        self._letter(app, '1 Januari 2025', seen='ua_offer')
+        sync_check2_queries(app)
+        self.assertNotIn(CODE, self._codes(app))
+
     def test_an_old_letter_re_sent_leaves_the_ask_open(self):
         from apps.scholarship.resolution import doc_match_verdict, resolve_doc_items_for_upload
         app = self._app('upload')
@@ -286,7 +360,7 @@ class TestCheck2(_Base):
         self._letter(app, self._old())
         sync_check2_queries(app)
         self.assertIn(CODE, self._codes(app))
-        new = self._letter(app, _iso(timezone.localdate()), seen='ua_offer', status='suspect',
+        new = self._letter(app, _iso(timezone.localdate()), seen='confirmation_ua', status='suspect',
                            superseded_at=timezone.now())        # kept out: the genuine offer outranks it
         self.assertEqual(resolve_doc_items_for_upload(app, new), 'mismatch')
         self.assertIn(CODE, self._codes(app))

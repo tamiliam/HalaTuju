@@ -198,10 +198,10 @@ TITLES = {
         'Upload a recent salary slip',
         'Muat naik slip gaji terkini',
         'சமீபத்திய சம்பளச் சீட்டை பதிவேற்றவும்'),
-    'recent_letter_needed': (   # H3b: an old offer / confirmation letter
-        'Upload a recent confirmation letter',
-        'Muat naik surat pengesahan terkini',
-        'சமீபத்திய உறுதிப்படுத்தல் கடிதத்தைப் பதிவேற்றுங்கள்'),
+    'recent_letter_needed': (   # H3b: an old confirmation letter
+        'Upload your offer letter or a recent confirmation letter',
+        'Muat naik surat tawaran atau surat pengesahan terkini',
+        'சேர்க்கைக் கடிதத்தை அல்லது சமீபத்திய உறுதிப்படுத்தல் கடிதத்தைப் பதிவேற்றுங்கள்'),
     'sibling_tertiary_funding': (
         'Tell us about your sibling in further study',
         'Ceritakan tentang adik-beradik anda dalam pengajian lanjutan',
