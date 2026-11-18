@@ -1,0 +1,252 @@
+# HalaTuju learning loop — roadmap for steps 1 to 3
+
+Status: APPROVED by the owner on 2026-11-18. Nothing is built yet. The owner sets the start date of each sprint.
+
+## Context
+
+The owner asked for an audit of the HalaTuju prediction chain (2026-11-18).
+The chain decides four facts for each student: identity, academic, pathway, income.
+The design intent was a model that learns from each human decision.
+
+The audit found that the system **stores** the lesson but does not **use** it.
+
+| Finding (live counts, 2026-11-18) | Number |
+|---|---|
+| Decided applications (engine answer + human answer both stored) | 173 |
+| Fact decisions | 692 |
+| Engine said green, human said fail ("wrong green") | 21 of 541 (3.9%) |
+| Engine was not sure, human said pass ("too careful") | 133 of 151 (88%) |
+| Scoreboard card | Built, but hidden since 2026-06-13 |
+| Structured reason when a human fails a green fact | None (free text only) |
+| Inputs of a decided case | Not frozen. Documents change after the decision. |
+| Version bump when logic changes | Habit only. No check. One admitted miss. |
+| Stored ID-card results with no version | 1,053 |
+
+So today we cannot say: "version X is better than version Y".
+We also cannot trace an error to the version that made it, in every case.
+
+**Outcome wanted:** each model version gets a score against real human answers.
+A logic change cannot ship without a version change. Reviewers do almost no extra work.
+
+The owner approved a plan for steps 1 to 3 of the audit list:
+1. Turn the scoreboard on.
+2. One-tap reason when a human disagrees.
+3. Freeze the inputs. Replay each new version. Force the version change.
+
+## Roadmap in one view
+
+Five small sprints. Code name **LL** (learning loop).
+
+| Sprint | Deliverable | Audit step | Size | Reviewer sees a change? | DB migration |
+|---|---|---|---|---|---|
+| LL1 | Scoreboard on, with two honest numbers | 1 | Low | No (owner view only) | None |
+| LL2 | One-tap reason on "green → fail" | 2 | Low | Yes (one tap, rare) | None |
+| LL3 | Version guard + one version register | 3 (force) | Medium | No | None |
+| LL4 | Record what fed each decision | 3 (freeze) | Medium | No | One additive |
+| LL5 | Replay: score each version against human answers | 3 (replay) | Medium | No | None |
+
+**Why five:** each sprint is one deliverable that the owner can check alone.
+Each sprint touches fewer than 20 files. LL1, LL2 and LL3 do not depend on each other.
+LL4 needs LL3. LL5 needs LL4 and the A5 replay harness.
+
+```
+LL1 ──────────────┐
+LL2 ──────────────┤
+LL3 ──► LL4 ──► LL5 ◄── A5 replay harness (sprints R1, R2 — already designed)
+```
+
+---
+
+## Sprint LL1 — Scoreboard on
+
+**Goal.** The owner sees, for each fact, how often the engine is wrong and how often it is too careful.
+
+**Why first.** The data exists. No reviewer work. No database change.
+
+**Scope.**
+- [audit.py](../../halatuju_api/apps/scholarship/audit.py) — extend `override_metrics`. Keep every existing key. Add:
+  - per fact: `green`, `green_failed` (wrong green), `unsure`, `unsure_passed` (too careful);
+  - `by_version`: the same four counts for each engine version;
+  - `doubt_codes`: for each `unresolved` code in the stored snapshot, how many times the human passed and failed that fact.
+- [views_admin/verdict.py:472](../../halatuju_api/apps/scholarship/views_admin/verdict.py#L472) `AdminVerdictMetricsView` — no logic change. It already returns `override_metrics(rows)`.
+- [admin-api/verdict.ts:14](../../halatuju-web/src/lib/admin-api/verdict.ts#L14) `VerdictMetrics` type — add the new keys.
+- [cockpitVerdict.ts:239](../../halatuju-web/src/lib/cockpitVerdict.ts#L239) `verdictReliability` — map the new keys.
+- [AiReliabilityCard.tsx](../../halatuju-web/src/components/AiReliabilityCard.tsx) — show two numbers for each fact, the doubt table, and the count behind each number.
+- [admin/scholarship/page.tsx:31](../../halatuju-web/src/app/admin/scholarship/page.tsx#L31) and `:338` — un-hide the card, **for super admin only**.
+- `src/messages/{en,ms,ta}.json` — keys under `admin.scholarship.reliability`.
+- Stitch screen first (HalaTuju Stitch project `10844973747787673276`). Owner approves the picture before template code.
+
+**Design rules.**
+- Always show the count, not only the percent ("6 of 84").
+- Under 30 decisions for a row: show the label "few cases". No colour.
+- Super admin only. Reason: a reviewer who sees "the engine is right 96%" can stop checking.
+- The doubt table answers "which doubts do humans always pass?" with zero reviewer effort.
+  Example from live data: `str_not_current` → 30 pass, 3 fail. `academic_missing_subjects` → 9 pass, 0 fail.
+
+**Acceptance.**
+- New pytest cases in [test_verdict_audit.py](../../halatuju_api/apps/scholarship/tests/test_verdict_audit.py): the four counts, `by_version`, `doubt_codes`, old 2-tuple callers still work.
+- New jest cases in `src/lib/__tests__/officerCockpit.test.ts`, plus the first render test for the card.
+- Role tests unchanged and green (`test_oversight_list_role_gates.py`, `test_org_fence.py`).
+- On the live site the card totals equal a read-only count query (692 fact decisions on 2026-11-18, more later).
+- Trailers: `Services: both`. No migration.
+
+**Complexity.** Low. About 10 files. Sonnet builds. Fresh Sonnet reviewer.
+
+---
+
+## Sprint LL2 — One-tap reason on "green → fail"
+
+**Goal.** When a human fails a fact that the engine called green, the human gives the cause with one tap.
+
+**Why only this case.** It is about 4 in 100 fact decisions. It is the dangerous error.
+The opposite case ("too careful") needs no tap. The doubt table in LL1 already explains it.
+
+**Scope.**
+- Reason codes (one per failed green fact):
+  `engine_wrong` (the rule is wrong) · `read_wrong` (the document was read wrong) ·
+  `new_information` (interview, call, outside the documents) · `programme_rule` · `other`.
+- Storage: a new key `fail_reasons` inside the existing `officer_verdict` JSON, for example `{"income": "new_information"}`. No migration.
+  Checked: every reader of `officer_verdict` (9 Python files, 4 web files) reads named keys only. A new key breaks nothing.
+- [views_admin/verdict.py:84](../../halatuju_api/apps/scholarship/views_admin/verdict.py#L84) `AdminRecordVerdictView.post`:
+  - accept top-level `fail_reasons` in the payload; unknown code → 400;
+  - keep a reason only where the human said fail **and** the server's own fresh `build_verdict` says `verified`; drop the rest;
+  - a missing reason still saves. The **web** makes the tap compulsory, the server does not.
+    Reason: an old browser tab, or a document that changed after page load, must never block a decision.
+- Web: [RateAndEstimate.tsx](../../halatuju-web/src/app/admin/scholarship/%5Bid%5D/view/RateAndEstimate.tsx) (five chips under the fail toggle), `view/useVerdict.ts` (`failReasons` state; clear it when the fail is undone; load it in `loadVerdictState`), `RecordVerdictPayload` in [admin-api/verdict.ts:147](../../halatuju-web/src/lib/admin-api/verdict.ts#L147), the detail type in `admin-api/applications.ts`, and the locked view (show the chosen reason).
+  Reuse the key → i18n label convention of `REQUEST_CATEGORIES` in `view/shared.tsx:47`.
+- `audit.py` + card: count the reasons for each fact.
+- i18n en/ms/ta, about 8 keys. Reviewer Guide + FAQ updated in the same change (standing rule).
+
+**Acceptance.**
+- pytest: valid code saved; bad code → 400; payload with no `fail_reasons` still saves; reasons appear in the metrics.
+- jest: chips show only when engine = green and human = fail.
+- Owner phone check before publish (the reviewer flow changes).
+- Trailers: `Phone-check:`, `Services: both`. No migration.
+
+**Complexity.** Low. About 12 files. Sonnet builds. Fresh reviewer.
+
+---
+
+## Sprint LL3 — Version guard + one version register
+
+**Goal.** A logic change without a version change fails the tests. One file lists every model and its version.
+
+**Scope.**
+- New module `apps/scholarship/model_registry.py`: one entry per model — name, where the version constant lives, the source files that can change its answers.
+  Models: verdict engine; genuineness families (`results_doc`, `salary_doc`, `electricity_doc`, `water_doc`, `school_leaving_doc`, `sample_stamp`); `offer_reader`; parsers (`offer_parse`, `stpm_parse`, `matric_parse`, `poly_diploma_parse`).
+- New tracked folder `apps/scholarship/model_versions/`: **one JSON file per model**, append-only:
+  `{version: {digest, note, also_ok: [], py: "3.11"}}`. This folder is also the one version register and change log.
+- Fingerprint (`digest`) = sha256 of `ast.dump` of each listed file, after the test drops docstrings and the line that sets the version constant.
+  So comments, blank lines and the bump itself do not count.
+  `ast.dump` differs between Python versions. Docker and Cloud Build both pin 3.11. On another version the test skips with a message.
+- Verdict engine file list (explicit): `verdict_engine.py`, `verdict_identity.py`, `verdict_academic.py`, `verdict_income_salary.py`, `verdict_income_str.py`, `verdict_pathway.py`, `verdict_caps.py`, `verdict_ladder.py`, `start_year.py`, `higher_results.py`, `requirements.py`, `document_snapshot.py`, `genuineness/bands.py`, `income_engine/*.py`.
+- AI-backed scorers also list `halatuju/ai_registry.py`. A switch of the Gemini model then forces a version change (the admitted miss of 2026-11-16 was this case).
+- New guard test `apps/scholarship/tests/test_model_versions.py`, built like `TestTheRegistryCannotGoStale` in [test_ai_registry.py](../../halatuju_api/apps/scholarship/tests/test_ai_registry.py):
+  - the current version of each model has an entry, and its digest (or one `also_ok` digest) equals today's source;
+  - completeness: an `ast.walk` over `verdict_engine.py` finds every lazy `from .x import`; each module must be in the list or in a reasoned `_NOT_LOGIC` set;
+  - "guard the guard": the walk must find `verdict_ladder` and `income_engine`;
+  - paths start from the test file's own folder (a worktree copy under `.worktrees/` must not be read by mistake).
+  - A change with no behaviour change adds an `also_ok` digest with a written note.
+- Merges: two branches that bump the same model collide in one file. That is loud, and that is correct. Two branches that change logic with no bump merge clean, then the test fails. That is also correct.
+- Models with no version today:
+  - `genuineness/stpm_doc.py` joins the file list of `results_doc.MODEL_VERSION` (it already shares that version). No new constant.
+  - `genuineness/ic.py` and `genuineness/supporting_doc.py` get `MODEL_VERSION = '1.0.0'` under the same guard, and add `model_version` to the result they return. The result is stored whole in `vision_fields['authenticity']` (confirm in `vision/ic.py` at sprint start).
+- A new test under `apps/scholarship/tests/` runs in Cloud Build with no extra wiring.
+- `docs/technical-debt.md` — close or update TD-243.
+
+**Not in scope.** No back-fill of the 1,053 old ID-card results. They stay "no version". Never re-run document reads to add a stamp.
+
+**Acceptance.**
+- Change one logic line in a registered file with no version change → the guard test fails with a plain message that says what to do.
+- Change only a comment → the guard test passes.
+- New ID-card and supporting-document results carry `model_version`.
+- Trailers: `Services: api`. No migration.
+
+**Complexity.** Medium. About 10 files plus one JSON per model. Opus builds (it touches identity scoring files). Adversarial review before push.
+
+---
+
+## Sprint LL4 — Record what fed each decision
+
+**Goal.** At decision time, store a PII-free record of the inputs. Later we can tell "same evidence" from "evidence moved".
+
+**Scope.**
+- At save time in `AdminRecordVerdictView.post` (near [verdict.py:127](../../halatuju_api/apps/scholarship/views_admin/verdict.py#L127)), next to `ai_verdict_snapshot`, store:
+  - for **every live document** of the application (one query): document id, `doc_type`, family member, upload time, stored genuineness status, `model_version`, reader/parser version.
+    All documents, not only "documents used": some engine helpers run their own queries, so a "used" list would miss some.
+  - the version of every model in the LL3 register;
+  - one **evidence fingerprint**: a keyed hash (HMAC) over the sorted documents and a short fixed list of the declared fields that the engine reads.
+- No names. No NRIC. No income figures. Ids, types, statuses, versions and a hash only.
+- Storage: one new JSON column `ai_verdict_context` on `ScholarshipApplication` in [models/applications.py](../../halatuju_api/apps/scholarship/models/applications.py), beside `ai_verdict_engine_version`.
+  Not inside `ai_verdict_snapshot`: the web shows each list element as a fact tile, so a fifth element makes a ghost tile.
+  One additive migration (next number after `0213`). The owner applies it **before** the publish (a write to a missing column fails).
+- New pure helper `apps/scholarship/verdict_context.py` builds the record.
+- If the record cannot be built, the decision still saves. The error goes to the log with no PII.
+- Not now: the confidence band (Certain / Probable / Unsure). The web computes it. The snapshot already holds every input, so it can be computed later.
+- Schema documentation updated.
+
+**Acceptance.**
+- pytest: the record is built; it holds no PII field (an explicit allow-list test); the fingerprint is stable for the same evidence; it changes when a document is replaced.
+- Old decided rows stay valid with an empty record.
+- Trailers: `Migration: <name> (additive)`, `Services: api`.
+
+**Complexity.** Medium. About 10 files. Opus builds. Adversarial review before push.
+
+---
+
+## Sprint LL5 — Replay: score each version against human answers
+
+**Goal.** One PII-free report: for each engine version, "wrong green" and "too careful" on the same set of past cases.
+
+**Scope.**
+- Do **not** build a second harness. Add one lens to the A5 replay harness
+  ([2026-11-13-a5-replay-design.md](2026-11-13-a5-replay-design.md); code at `halatuju_api/apps/scholarship/eval/replay/`).
+- The lens runs today's engine over decided cases whose evidence fingerprint (LL4) did not change, and compares the result with `officer_verdict`.
+- Same five read-only safety layers as A5 (read-only role, `BEGIN READ ONLY`, always roll back, statement filter, no keys). Session pooler port 5432, never 6543.
+- Output: counts and hashes only.
+- When it runs: after a release that changes a model version, and once a week. Not before every publish.
+  Reason: production data cannot be copied to a home machine, and the candidate code is not on a server before `live` moves.
+- A short workflow note says how to read the report and when a result blocks the next release.
+
+**Depends on.** A5 sprints R1 and R2 (on the advisor queue) and LL4.
+Cases decided before LL4 have no fingerprint. They enter the report as "evidence state unknown".
+
+**Acceptance.**
+- A dry run on a local test database gives the expected counts.
+- The owner runs the job once. The report shows a score for each version.
+- No PII in the output (test).
+
+**Complexity.** Medium. About 10 files. Opus builds.
+
+---
+
+## Owner steps (the only work for the owner)
+
+1. Approve this roadmap.
+2. LL1: approve the Stitch picture. Say yes to the publish.
+3. LL2: phone check. Say yes to the publish.
+4. LL3: say yes to the publish.
+5. LL4: apply one migration by hand. Say yes to the publish.
+6. LL5: run the replay job. Read one report.
+
+## Not in this plan
+
+- Audit step 4 (weekly list of new document shapes) and step 5 (proven green facts skip the human tick).
+- Any change to a rule that decides eligibility or money.
+- Any paid AI call. Any re-read of stored documents.
+- Back-fill of old rows.
+
+## Verification (end to end)
+
+- While building: targeted tests only (`pytest apps/scholarship/tests/test_verdict_audit.py`, the new guard test, the jest file).
+- Once before each push, through the queue:
+  `python Settings/_tools/test_queue.py -- <full pytest command>` and `python Settings/_tools/test_queue.py -- npm run gates`.
+- After each publish: read the Cloud Build status. Then compare the card with one read-only count query (counts only, no names).
+- LL3: prove the guard by hand once (edit a logic line, see the test fail, undo).
+- LL5: compare the replay counts with the LL1 card for the same versions.
+
+## After approval
+
+- Copy this roadmap to `Production/HalaTuju/docs/plans/2026-11-18-learning-loop-roadmap.md`.
+- Add LL1–LL5 to the HalaTuju queue. The owner sets the dates.
+- Start LL1 with `Settings/_workflows/sprint-start.md`.
