@@ -27,6 +27,10 @@ Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration 
 - Tamil: தரக் கட்டுப்பாடு, புதிய குறிப்புள்ள, and the two email lines corrected. No email golden moved.
 - Tests: `test_reviewer_notes.py` and `test_staff_notifications.py` (not yet / finished, clear on reply, sweep after unassign, other side only, billing, cool-down, fence, list query count with notes, a reader clearing only their own case); `useNewNoteCount.test.tsx`; `ReviewerNotesCard.test.tsx` ("(you)" only on your own notes, both sides; the not-yet hint and refusal).
 
+### refactor: request #73 - staff notifications reach courses through the facade (2026-11-18)
+
+- `staff_notifications.py` reaches `staff_permissions` through `apps.courses.public` (re-exported there, re-export only) instead of a direct import, so the F2b courses-import guard stays at its frozen list after the rebase onto main. No behaviour change; migration `0216_two_way_notes` unchanged.
+
 ### test: request #73 re-check 3 - the email window, the savepoint and the second sweep pinned (2026-11-18)
 
 - Tests only (`test_staff_notifications.py`): the 10-minute email window in both directions, the assignment housekeeping's savepoint, and its second sweep. Two accepted gaps are recorded in `docs/decisions.md` item 24. No production code change.

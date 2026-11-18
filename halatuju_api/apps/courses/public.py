@@ -67,7 +67,7 @@ from .staff_gift import _not_found as gift_not_found
 from .staff_gift import resolve_gifts
 from . import (
     org_config, password_change_flag, staff_activity_hook, staff_archive, staff_gift,
-    staff_reinvite, staff_tables, supabase_admin, theme_tokens, theme_versions,
+    staff_permissions, staff_reinvite, staff_tables, supabase_admin, theme_tokens, theme_versions,
 )
 from .tvet_families import family_of
 from .tvet_institutions import HELD
@@ -96,7 +96,7 @@ __all__ = [
     'contrast',
     # Module doors (F2b stage 2): the object IS the home module, so patches on it keep working.
     'password_change_flag', 'staff_activity_hook', 'staff_archive', 'staff_gift',
-    'staff_reinvite', 'staff_tables', 'supabase_admin',
+    'staff_permissions', 'staff_reinvite', 'staff_tables', 'supabase_admin',
     'theme_tokens', 'theme_versions',
     # H3b: the organisation tunables door, for new scholarship callers (older ones still import it
     # directly, listed in test_cross_app_private_imports).

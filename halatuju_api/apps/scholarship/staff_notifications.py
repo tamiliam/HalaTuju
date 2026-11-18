@@ -44,7 +44,7 @@ from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q, Subquery
 from django.utils import timezone
 
-from apps.courses import staff_permissions
+from apps.courses import public as courses_public
 from . import surface_gates, usage
 from .models import ReviewerNote, ScholarshipApplication, StaffNotification
 from .models.reviewer_notes import ORG_ADMIN, REVIEWER
@@ -60,7 +60,7 @@ def org_admin_side(application):
     """The organisation's people on the org admin side: its active staff who may work students."""
     if not application.owning_organisation_id:
         return []
-    staff = staff_permissions.org_staff(application.owning_organisation_id)
+    staff = courses_public.staff_permissions.org_staff(application.owning_organisation_id)
     return [a for a in staff if surface_gates.may_work_students(a)]
 
 
