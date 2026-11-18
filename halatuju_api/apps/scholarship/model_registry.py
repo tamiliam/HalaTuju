@@ -309,18 +309,50 @@ VERSION_NAME = re.compile(r'(^|_)VERSION$')
 _DEFS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
 
 
+def _block_bound(tree):
+    """Names bound at import time by a statement `_defined_names` does not see: inside a top-level
+    if / try / with / for block (`try: LIMIT = 0.7`), or a top-level for / with target. Top-level
+    imports are left out: a pin's module imports are walked as its dependencies instead."""
+    top, bound = {id(node) for node in tree.body}, set()
+    for node in _module_level(tree):
+        targets = []
+        if isinstance(node, _DEFS):
+            bound.add(node.name)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)) and id(node) not in top:
+            bound.update((a.asname or a.name).split('.')[0] for a in node.names)
+        elif isinstance(node, ast.Assign):
+            targets = node.targets
+        elif isinstance(node, (ast.AnnAssign, ast.AugAssign, ast.For, ast.AsyncFor)):
+            targets = [node.target]
+        elif isinstance(node, (ast.With, ast.AsyncWith)):
+            targets = [item.optional_vars for item in node.items if item.optional_vars is not None]
+        for target in targets:            # C = / C, D = / for C in: binds; C[k] = does not
+            bound.update(n.id for n in ast.walk(target)
+                         if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store))
+    return bound
+
+
 def _pin_closure(tree, rel, name):
     """(names, nodes): `name` plus every same-module top-level name its definition uses,
-    transitively, and the top-level statements that define them."""
+    transitively, and the top-level statements that define them. A used name bound only inside
+    a top-level block is refused (ValueError): the pin would not read it, so changing it would
+    not move the digest."""
     homes = {}
     for node in tree.body:
         for defined in _defined_names(node):
             homes.setdefault(defined, []).append(node)
     if name not in homes:
         raise KeyError(f'{rel} defines no top-level {name!r}')
+    block_only = _block_bound(tree) - set(homes)
     wanted, todo, nodes = set(), [name], []
     while todo:
         current = todo.pop()
+        if current in block_only:
+            raise ValueError(
+                f'{rel}: the pin on {name!r} uses {current!r}, which is set only inside an if / '
+                'try / with / for block. A pin reads only top-level definitions, so a change to it '
+                'would not move the digest. Define it at the top level, or list the file in the '
+                "model's files instead of pinning.")
         if current in wanted or current not in homes:
             continue
         wanted.add(current)
@@ -387,7 +419,9 @@ def _refuse_later_changes(tree, rel, names, nodes):
     """A pin covers a definition, not what the module does to it afterwards: `C += [...]`,
     `C.insert(...)`, `C[k] = ...` or a `C = ...` inside an if / try block would change the answer
     and leave the digest alone. So any such statement on a pinned name raises ValueError. (A
-    second plain top-level `C = ...` is a definition: the pin already reads it.)"""
+    second plain top-level `C = ...` is a definition: the pin already reads it.) Import-time,
+    module-level statements ONLY: a change inside a function that is then called, a `global`
+    rebind, an alias (`A = C; A.append(...)`) or globals()/setattr is not seen (a recorded gap)."""
     own = {id(node) for node in nodes}
     for node in _module_level(tree):
         if id(node) in own:

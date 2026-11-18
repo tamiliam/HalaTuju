@@ -7,14 +7,13 @@ bumping its version and it goes red, with a message saying what to do.
 
 Built like `test_ai_registry.TestTheRegistryCannotGoStale`: the load-bearing tests are not that
 the register is right today, but that it cannot quietly go stale. A new dependency, a new version
-constant or a moved file each fails here until somebody accounts for it, with a reason.
+constant or a moved file each fails here until somebody accounts for it, with a reason. The
+digest itself (what it reads, ignores and refuses) is tested in `test_model_digest.py`.
 """
 import ast
-import hashlib
 import json
 import pathlib
 import re
-import tempfile
 from unittest import mock
 
 from django.test import SimpleTestCase
@@ -80,8 +79,10 @@ _MISFILED_AS_UNREACHED = [
     f'{_G}/epf_app_doc.py:screen_at_most_suspect', f'{_G}/offer_issuers.py:unfingerprinted_offer',
     f'{_G}/offer_rulings.py:apply_rulings', f'{_G}/offer_signatures.py:english_ua_lists'] + [
     f'{_G}/offer_signatures.py:{kind}_OFFER_SIGNATURES' for kind in ('MATRIC', 'PISMP', 'POLY', 'STPM', 'UA')]
+_MISFILED_AS_PIN = f'pin:{_G}/results_doc.py:misfiled_as'
 
-#: Per model: dependencies that are logic but are not (yet) in the model's files.
+#: Per model: dependencies that are logic but are not (yet) in the model's files. A key
+#: `<dependency> via <importer>` excuses it only when that one file or pin imports it.
 _KNOWN_GAPS = {
     'verdict_engine': {
         **dict.fromkeys(_VERDICT_SECOND_LEVEL, _SECOND_LEVEL),
@@ -95,7 +96,8 @@ _KNOWN_GAPS = {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
     },
-    'school_leaving_doc': dict.fromkeys(_MISFILED_AS_UNREACHED, _NOT_REACHED_FROM_MISFILED_AS),
+    'school_leaving_doc': {f'{dep} via {_MISFILED_AS_PIN}': _NOT_REACHED_FROM_MISFILED_AS
+                           for dep in _MISFILED_AS_UNREACHED},
     'ic': {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
@@ -171,10 +173,17 @@ _KNOWN_GAPS_OUTSIDE_THE_WALK = {
     'guard:income_engine glob':
         'The glob income_engine/*.py also reads untracked local files, so a scratch file there '
         'turns the guard red on that machine only.',
+    'guard:pinned name changed later':
+        'A pin refuses a later change to a pinned name only in import-time, module-level '
+        'statements. It does NOT see a change made inside a function that is then called '
+        "(def _init(): CASCADE.append('b')), a global rebind inside a function, an alias "
+        '(ALIAS = CASCADE; ALIAS.append(...)), or globals()[...] / setattr(...).',
     'guard:python 3.11':
-        'Built and run on Python 3.13 only. Before merge this file must run once on 3.11 (Cloud '
-        'Build). The 72 registered and pinned files were scanned on 2026-11-19: no multi-line '
-        'f-string, BOM or form feed, so the digests should match.',
+        'The guard has run on Python 3.13 only. Cloud Build runs after a push to main, so it is '
+        'not a before-merge check: its first run on 3.11 is the proof, and it fails closed (the '
+        'build goes red, nothing wrong ships). A hand run on a 3.11 interpreter before merge is '
+        'better if one is available. The 72 registered and pinned files were scanned on '
+        '2026-11-19: no multi-line f-string, BOM or form feed, so the digests should match.',
 }
 
 _VERSION_NAME = registry.VERSION_NAME
@@ -229,8 +238,8 @@ def _unmet_dependencies(key):
     for rel, target, name in _model_dependencies(key):
         if target in files or _pinned_by(spec, target, name):
             continue
-        used = next((k for k in (f'{target}:{name}', f'{target}:*')
-                     if k in _NOT_LOGIC or k in gaps), None)
+        used = next((k for dep in (f'{target}:{name}', f'{target}:*')
+                     for k in (f'{dep} via {rel}', dep) if k in _NOT_LOGIC or k in gaps), None)
         out.append((f'{target}:{name}', rel, used))
     return out
 
@@ -367,6 +376,18 @@ class TestTheRegisterCannotGoStale(SimpleTestCase):
         self.assertIn((f'pin:{_G}/results_doc.py:misfiled_as', f'{_G}/offer_rulings.py:apply_rulings'),
                       deps['school_leaving_doc'])
 
+    def test_a_pin_exemption_does_not_excuse_the_model_file(self):
+        """Review round 2: the misfiled_as reasons excuse only that pin's closure. If
+        school_leaving_doc.py itself imported band_for, the reason would be false, so it is bare."""
+        real, model_file, dep = registry.model_imports, f'{_G}/school_leaving_doc.py', f'{_G}/bands.py'
+        def walk(root, rel):
+            return real(root, rel) + ([(dep, 'band_for')] if rel == model_file else [])
+        with mock.patch.object(registry, 'model_imports', walk):
+            unmet = _unmet_dependencies('school_leaving_doc')
+        self.assertIn((f'{dep}:band_for', model_file, None), unmet)
+        self.assertIn((f'{dep}:band_for', _MISFILED_AS_PIN, f'{dep}:band_for via {_MISFILED_AS_PIN}'),
+                      unmet)
+
     def test_every_gap_outside_the_walk_still_names_real_code(self):
         for key in _KNOWN_GAPS_OUTSIDE_THE_WALK:
             if not key.startswith('guard:'):
@@ -400,187 +421,3 @@ class TestTheRegisterCannotGoStale(SimpleTestCase):
             '_NOT_A_MODEL_VERSION WITH A REASON:\n  ' + '\n  '.join(unknown)))
         self.assertEqual(sorted(set(_NOT_A_MODEL_VERSION) - found), [],
                          'these _NOT_A_MODEL_VERSION entries name nothing now; delete them')
-
-
-# --- the digest itself -------------------------------------------------------------------------
-
-#: A pinned sample: BOM, CRLF endings, comments, docstrings, a '#' inside an f-string, the version
-#: line, and multi-line strings (one an f-string) holding a blank line and trailing spaces.
-_SAMPLE = (
-    '﻿"""Module docstring."""\r\n'
-    "MODEL_VERSION = '9.9.9'  # bump me\r\n"
-    'PROMPT = (\r\n'
-    "    'Read the slip. '  # why\r\n"
-    "    'Answer in JSON.')\r\n"
-    'TEMPLATE = """first line\r\n'
-    '\r\n'
-    '  keep my trailing spaces   \r\n'
-    'last"""\r\n'
-    '\r\n'
-    '\r\n'
-    'def score(x):\r\n'
-    '    """Docstring goes."""\r\n'
-    "    label = f'{x} # not a comment'   \r\n"
-    '    note = f"""{x}\r\n'
-    '   \r\n'
-    'done"""\r\n'
-    '    return label  # a comment\r\n')
-
-_SAMPLE_CLEAN = (
-    'PROMPT = (\n'
-    "    'Read the slip. '\n"
-    "    'Answer in JSON.')\n"
-    'TEMPLATE = """first line\n'
-    '\n'
-    '  keep my trailing spaces   \n'
-    'last"""\n'
-    'def score(x):\n'
-    "    label = f'{x} # not a comment'\n"
-    '    note = f"""{x}\n'
-    '   \n'
-    'done"""\n'
-    '    return label')
-
-#: sha256 of the sample as a one-file model. Hard-coded on purpose: if this moves, every seeded
-#: digest in model_versions/ moves with it, and every model would demand a bump at once.
-_SAMPLE_DIGEST = '20570bd6957328d0b8d28ce0826c43e5e8db92bd60351dbadfefa188ecc7efed'
-
-
-def _sample_digest(source=_SAMPLE, extra=None, pins=()):
-    """The digest of a throwaway one-file model `m.py` (plus `extra` files) in a temporary tree."""
-    files = {'m.py': source.encode('utf-8'), **(extra or {})}
-    with tempfile.TemporaryDirectory() as tmp:
-        for rel, data in files.items():
-            (pathlib.Path(tmp) / rel).write_bytes(data)
-        spec = {'constant': ('m.py', 'MODEL_VERSION'), 'files': ['m.py'], 'pins': list(pins)}
-        with mock.patch.dict(registry.MODELS, {'fake': spec}):
-            return registry.model_digest(tmp, 'fake')
-
-
-class TestTheDigestIsStable(SimpleTestCase):
-    def test_the_cleaned_text_is_pinned(self):
-        """The cleaning is the contract. It must not depend on the Python version (production
-        runs 3.11), the line endings git happened to check out, or a BOM."""
-        text = _SAMPLE.lstrip('﻿').replace('\r\n', '\n')
-        self.assertEqual(registry.clean_model_source(text, drop_names=('MODEL_VERSION',)),
-                         _SAMPLE_CLEAN)
-
-    def test_the_digest_is_pinned(self):
-        self.assertEqual(_sample_digest(), _SAMPLE_DIGEST)
-        self.assertEqual(_sample_digest(), hashlib.sha256(
-            b'4:m.py' + f'{len(_SAMPLE_CLEAN.encode())}:'.encode() + _SAMPLE_CLEAN.encode()).hexdigest())
-
-    def test_line_endings_and_the_version_value_do_not_move_it(self):
-        base = _sample_digest()
-        self.assertEqual(_sample_digest(_SAMPLE.replace('\r\n', '\n')), base)
-        self.assertEqual(_sample_digest(_SAMPLE.replace("'9.9.9'", "'10.0.0'")), base)
-
-    def test_comments_docstrings_and_blank_lines_do_not_move_it(self):
-        base = _sample_digest()
-        for edited in (_SAMPLE.replace('# a comment', '# another comment'),
-                       _SAMPLE.replace('Docstring goes.', 'Docstring says more now.'),
-                       _SAMPLE.replace('def score', '\r\n\r\ndef score'),
-                       _SAMPLE.replace('    return label', '    # new note\r\n    return label')):
-            with self.subTest(edited=edited):
-                self.assertEqual(_sample_digest(edited), base)
-
-    def test_a_logic_change_moves_it(self):
-        base = _sample_digest()
-        for edited in (_SAMPLE.replace('return label', 'return label.upper()'),
-                       _SAMPLE.replace('Answer in JSON.', 'Answer in YAML.'),
-                       _SAMPLE.replace('# not a comment', '# still not a comment')):
-            with self.subTest(edited=edited):
-                self.assertNotEqual(_sample_digest(edited), base)
-
-    def test_a_blank_line_or_trailing_space_inside_a_prompt_moves_it(self):
-        """Inside a multi-line string the blank lines and spaces are part of what the model is
-        sent, so stripping them there would hide a real prompt change."""
-        base = _sample_digest()
-        for edited in (_SAMPLE.replace('first line\r\n', 'first line\r\n\r\n'),
-                       _SAMPLE.replace('spaces   \r\n', 'spaces\r\n'),
-                       _SAMPLE.replace('   \r\ndone', '\r\ndone')):
-            with self.subTest(edited=edited):
-                self.assertNotEqual(_sample_digest(edited), base)
-
-    def test_a_pinned_cascade_change_moves_it(self):
-        """The model switch case: the cascade lives in another file, and the pin carries it (and
-        the list it is built from) into the model's digest."""
-        engine = ("BASE = ['model-a', 'model-b']\nCASCADE = ['model-z', *BASE]\n"
-                  "OTHER = ['unrelated']\n")
-        pins = [('engine.py', 'CASCADE')]
-        base = _sample_digest(extra={'engine.py': engine.encode()}, pins=pins)
-        for edited, moves in ((engine.replace('model-b', 'model-c'), True),
-                              (engine.replace('model-z', 'model-y'), True),
-                              (engine.replace('unrelated', 'changed'), False)):
-            with self.subTest(edited=edited):
-                digest = _sample_digest(extra={'engine.py': edited.encode()}, pins=pins)
-                self.assertEqual(digest != base, moves)
-
-
-def _pin_text(engine, name='CASCADE'):
-    with tempfile.TemporaryDirectory() as tmp:
-        (pathlib.Path(tmp) / 'engine.py').write_bytes(engine.encode())
-        return registry.pinned_model_text(tmp, 'engine.py', name)
-
-
-class TestTheDigestHidesNothing(SimpleTestCase):
-    """LL3 review round: each case below gave the SAME digest for different logic before."""
-
-    def test_the_version_line_must_stand_alone(self):
-        """Dropping the version line must drop nothing else, and there must be one value only."""
-        for source in ("MODEL_VERSION = '1.0.0'; THRESHOLD = 0.70\n",
-                       "MODEL_VERSION = '1.0.0'\nX = 1\nMODEL_VERSION = '2.0.0'\n",
-                       "THRESHOLD = MODEL_VERSION = '1.0.0'\n",
-                       "MODEL_VERSION = '1.0.0' if True else '0'\n",
-                       "MODEL_VERSION = '1.0.0'\nMODEL_VERSION += 'x'\n",
-                       'X = 1\n'):
-            with self.subTest(source=source):
-                with self.assertRaises(ValueError):
-                    registry.clean_model_source(source, drop_names=('MODEL_VERSION',))
-                with self.assertRaises(ValueError):
-                    _sample_digest(source)
-        self.assertEqual(registry.clean_model_source(
-            "MODEL_VERSION = (\n    '1.0.0')  # note\nX = 1\n", drop_names=('MODEL_VERSION',)), 'X = 1')
-
-    def test_a_pin_leaves_out_its_modules_own_version(self):
-        """school_leaving_doc pins results_doc.misfiled_as, which returns results_doc's version: a
-        results_doc bump must not turn school_leaving_doc red. Its logic still counts."""
-        engine = "MODEL_VERSION = '1.29.0'\nCASCADE = ['m', MODEL_VERSION]\n"
-        base = _pin_text(engine)
-        self.assertNotIn('1.29.0', base)
-        self.assertEqual(_pin_text(engine.replace('1.29.0', '1.30.0')), base)
-        self.assertNotEqual(_pin_text(engine.replace("'m'", "'n'")), base)
-        with self.assertRaises(ValueError):
-            _pin_text(engine.replace("'1.29.0'\n", "'1.29.0'; X = 2\n"))
-
-    def test_a_pinned_name_changed_later_is_refused(self):
-        engine = "CASCADE = ['a']\nBASE = {}\n"
-        self.assertEqual(_pin_text(engine), "CASCADE = ['a']")
-        for later in ("CASCADE += ['b']", "CASCADE.insert(0, 'b')", "CASCADE[0] = 'b'",
-                      "CASCADE.extend(['b'])", "if True:\n    CASCADE.append('b')",
-                      "del CASCADE[0]", "for CASCADE in [[]]:\n    pass"):
-            with self.subTest(later=later):
-                with self.assertRaises(ValueError):
-                    _pin_text(engine + later + '\n')
-        for harmless in ("BASE.update(x=1)", "OTHER = list(CASCADE)", "BASE[CASCADE[0]] = 1"):
-            with self.subTest(harmless=harmless):
-                self.assertEqual(_pin_text(engine + harmless + '\n'), "CASCADE = ['a']")
-
-    def test_a_pins_lazy_and_module_imports_are_its_dependencies(self):
-        tree = {'apps/__init__.py': '', 'apps/x/__init__.py': '', 'apps/x/other.py': 'T = 1\nU = 2\n',
-                'apps/x/engine.py': ('from apps.x.other import U\n'
-                                     'def helper():\n    from .other import T\n    return T\n'
-                                     'def unrelated():\n    return U\n')}
-        with tempfile.TemporaryDirectory() as tmp:
-            for rel, text in tree.items():
-                (pathlib.Path(tmp) / rel).parent.mkdir(parents=True, exist_ok=True)
-                (pathlib.Path(tmp) / rel).write_text(text)
-            self.assertEqual(registry.pin_imports(tmp, 'apps/x/engine.py', 'helper'),
-                             [('apps/x/other.py', 'T')])
-            self.assertEqual(registry.pin_imports(tmp, 'apps/x/engine.py', 'unrelated'),
-                             [('apps/x/other.py', 'U')])
-
-    def test_the_supporting_doc_note_names_its_one_live_path(self):
-        note = registry.load_version_log(API_ROOT, 'supporting_doc')['1.0.0']['note']
-        self.assertIn('STR fallback', note)
-        self.assertNotIn('(str / birth_certificate / epf)', note)
