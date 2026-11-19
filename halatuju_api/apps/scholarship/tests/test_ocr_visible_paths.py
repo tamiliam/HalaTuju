@@ -455,7 +455,8 @@ class TheHostileShapes(SimpleTestCase):
                 pdf_pages._layer_memo_clear()
                 t0 = time.perf_counter()
                 self.assertEqual('SIJIL' in pdf_pages.pdf_text_layer(_many_objects(n)), kept)
-                self.assertLess(time.perf_counter() - t0, 3.0)
+                # about 1.8 s alone (a pdfium child); 6.4 s in a loaded full -n auto run (19 Nov), as round 9's 8 s limits.
+                self.assertLess(time.perf_counter() - t0, 8.0)
 
     def test_one_call_opens_the_pdf_once(self):
         with patch('apps.scholarship.pdf_pages._open_pdf', wraps=pdf_pages._open_pdf) as opened:

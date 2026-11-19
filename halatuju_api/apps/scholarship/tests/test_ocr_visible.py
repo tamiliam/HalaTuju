@@ -196,7 +196,8 @@ class TheDetectionRule(SimpleTestCase):
     def test_many_pages_sharing_one_big_stream_share_one_budget(self):
         # 20 pages, one stream of 49,000 drawn text shows: each page is within any per-page limit
         data = _pdf([b'BT /F1 12 Tf ' + b'(AB) Tj ' * 49_000 + b'ET'] * 20, shared=True)
-        self.assertLess(self._hostile(data), 3.0)
+        # 0.9 s alone; 4.1 s in a loaded full -n auto run (19 Nov). 8 s still catches a lost budget (multi-second per page).
+        self.assertLess(self._hostile(data), 8.0)
 
     def test_page_1_not_drawn_stops_the_walk_at_once(self):
         with patch.object(pdf_pages, '_page_visibility', wraps=pdf_pages._page_visibility) as walk:
