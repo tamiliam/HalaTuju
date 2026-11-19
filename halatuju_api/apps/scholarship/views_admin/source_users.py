@@ -16,6 +16,7 @@ Roadmap: `docs/plans/2026-10-30-source-sign-in-roadmap.md`. The rules are in
 
 ⚠ WHO: a super (any organisation's source) or an organisation admin (its OWN organisation's
 sources). Admin, finance, reviewer, QC: 403. Another organisation's source or source user: 404.
+A NEW source also needs Sources "View and change" (`sources.edit`, owner 2026-11-19), as Add on Sources does.
 """
 import logging
 
@@ -62,7 +63,7 @@ def invite_source(request, admin):
 
     201 `{id, admin_id, emailed, google, already_registered, reactivated, message, source}` —
     `source` is the Sources row (with `sign_in` / `user_count`). Refusals: 403 not super /
-    org_admin; 400 `bad_email`, `name_required`, `source_inactive`, `code_and_name_required`,
+    org_admin, or a NEW source without Sources "View and change" (`sources.edit`, 2026-11-19); 400 `bad_email`, `name_required`, `source_inactive`, `code_and_name_required`,
     `code_reserved`, `code_taken`, `organisation_required`; 404 `not_found` (a source outside the
     caller's organisation); 409 `already_staff`, `source_has_person` (the source already has an
     ACTIVE person, joined or waiting — one person per source, 2026-11-08); 500 `not_configured`; 502 `create_failed`.
@@ -98,6 +99,11 @@ def invite_source(request, admin):
             return _error('source_inactive', status.HTTP_400_BAD_REQUEST,
                           'This source is switched off. Switch it on in Sources first.')
     else:
+        # Creating a source needs the Sources power too (owner 2026-11-19: "who may" is the
+        # permission): `sources.edit`, exactly as Add source on Sources asks. Inviting for an
+        # EXISTING source stays `invitations.edit` alone. Named, so no subclass can replace it.
+        if not _SourcesBase.may_open(admin):
+            return sources._deny_role()
         owner, err = sources._new_source_owner(request, admin)
         if err:
             return err

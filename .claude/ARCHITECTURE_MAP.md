@@ -396,7 +396,7 @@ partner-email templates, is the one seam still crossing organisations.
 decisions.md 2026-10-30 "Sources sign in"). A source's person is INVITED, and the invite can also ADD a source:
 `POST admin/invitations/` `{audience:'source_partner', name, email, source_id}` or `{…, source_name, source_code,
 contact_person?, contact_email?, phone?, show_in_apply?}` (`views_admin/source_users.invite_source`; super or org_admin;
-a new source under the shared Add source rules, `sources.new_source_refusal`, owner by `?org=` as before). Rules in
+a new source under the shared Add source rules AND only with `sources.edit` too (2026-11-19), `sources.new_source_refusal`, owner by `?org=` as before). Rules in
 `apps/scholarship/source_invite.py`: the account comes from the staff invite's OWN branches
 (`staff_reinvite.provision_for_invite` — Google / temp password / already registered) with `role='source_partner'`,
 `source`, `owning_organisation = source.organisation`; ANY existing `PartnerAdmin` row at the address is 409

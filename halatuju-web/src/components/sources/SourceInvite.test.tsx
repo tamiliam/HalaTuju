@@ -62,7 +62,7 @@ const type = (label: string, value: string) =>
 
 describe('the Source invite form', () => {
   it('invites a person for a source already on the list, showing each source\'s sign-in state', async () => {
-    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource />)
     expect(screen.getByText('admin.invitations.source.option|Hindu Sevai Sangam,hss,admin.sources.signIn.none')).toBeTruthy()
     fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
     type('admin.invitations.source.personName', ' Kavi Amutha ')
@@ -76,7 +76,7 @@ describe('the Source invite form', () => {
   // ⚠ CHANGED ON PURPOSE (I2, owner ruling 2026-11-08 + open point A): was "a joined source stays
   // on offer" (2026-10-30, several people per source).
   it('I2: one person per source — a joined source is not offered, a waiting one is greyed', () => {
-    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource />)
     const select = screen.getByLabelText('admin.invitations.source.which') as HTMLSelectElement
     const options = Array.from(select.options)
     expect(options.map((o) => o.value)).toEqual(['', '1', '2'])
@@ -90,14 +90,14 @@ describe('the Source invite form', () => {
 
   it('I2: opens on "new source" when every source has someone who joined', () => {
     const data = { ...PAYLOAD, sources: PAYLOAD.sources!.filter((s) => s.sign_in === 'joined') }
-    render(<SourceInviteForm data={data} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={data} token="tok" t={t} onDone={onDone} canAddSource />)
     expect(screen.getByLabelText('admin.invitations.source.newName')).toBeTruthy()
     expect(screen.queryByText('admin.invitations.source.pickExisting')).toBeNull()
   })
 
   it('M4: an account made but a letter that failed says so, with the way out — never "sent"', async () => {
     mockApi.inviteSource.mockResolvedValue({ id: 1, admin_id: 2, emailed: false, message: 'x' })
-    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource />)
     fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
     type('admin.invitations.source.personName', 'Kavi')
     type('admin.emailLabel', 'kavi@example.org')
@@ -107,7 +107,7 @@ describe('the Source invite form', () => {
   })
 
   it('asks for a source before sending, rather than sending none', async () => {
-    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource />)
     type('admin.invitations.source.personName', 'Kavi')
     type('admin.emailLabel', 'kavi@example.org')
     fireEvent.click(screen.getByText('admin.sendInvite'))
@@ -116,7 +116,7 @@ describe('the Source invite form', () => {
   })
 
   it('adds a NEW source through the switch: name + short code (slugged) + optional contact', async () => {
-    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource />)
     fireEvent.click(screen.getByText('admin.invitations.source.addNew'))
     type('admin.invitations.source.newName', 'Learn Hub')
     type('admin.invitations.source.newCode', 'Learn Hub!')
@@ -134,9 +134,32 @@ describe('the Source invite form', () => {
   })
 
   it('opens on "new source" when the organisation has none to pick', () => {
-    render(<SourceInviteForm data={{ ...PAYLOAD, sources: [] }} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={{ ...PAYLOAD, sources: [] }} token="tok" t={t} onDone={onDone} canAddSource />)
     expect(screen.getByLabelText('admin.invitations.source.newName')).toBeTruthy()
     expect(screen.queryByText('admin.invitations.source.pickExisting')).toBeNull()
+  })
+
+  // Owner 2026-11-19: creating a source needs Sources "View and change" too (the server refuses 403).
+  describe('without Sources "View and change" (canAddSource false)', () => {
+    it('offers only the existing-source picker, never "add a new one"', async () => {
+      render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource={false} />)
+      expect(screen.getByLabelText('admin.invitations.source.which')).toBeTruthy()
+      expect(screen.queryByText('admin.invitations.source.addNew')).toBeNull()
+      fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
+      type('admin.invitations.source.personName', 'Kavi')
+      type('admin.emailLabel', 'kavi@example.org')
+      fireEvent.click(screen.getByText('admin.sendInvite'))
+      await waitFor(() => expect(mockApi.inviteSource).toHaveBeenCalledWith(
+        { name: 'Kavi', email: 'kavi@example.org', source_id: 1 }, { token: 'tok' }))
+    })
+
+    it('stays on the picker even when there is no source to pick', () => {
+      render(<SourceInviteForm data={{ ...PAYLOAD, sources: [] }} token="tok" t={t} onDone={onDone}
+        canAddSource={false} />)
+      expect(screen.queryByLabelText('admin.invitations.source.newName')).toBeNull()
+      expect(screen.getByLabelText('admin.invitations.source.which')).toBeTruthy()
+      expect(screen.queryByText('admin.invitations.source.addNew')).toBeNull()
+    })
   })
 
   it.each([
@@ -144,7 +167,7 @@ describe('the Source invite form', () => {
     'bad_email', 'name_required', 'not_found', 'organisation_required', 'not_configured', 'create_failed',
   ])('shows the %s refusal in its own words', async (code) => {
     mockApi.inviteSource.mockRejectedValueOnce(Object.assign(new Error(code), { code }))
-    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource />)
     fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
     type('admin.invitations.source.personName', 'Kavi')
     type('admin.emailLabel', 'kavi@example.org')
@@ -155,7 +178,7 @@ describe('the Source invite form', () => {
   })
 
   it('I1: the form wears the one layout — the note under the fields, Send Invite at the left', () => {
-    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource />)
     const foot = screen.getByTestId('invite-foot')
     expect(within(foot).getByTestId('invite-note').textContent).toBe('admin.invitations.source.note')
     expect(within(foot).getByText('admin.sendInvite').parentElement).toBe(foot)
@@ -164,7 +187,7 @@ describe('the Source invite form', () => {
 
   it('falls back to generic words for a refusal it does not know', async () => {
     mockApi.inviteSource.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'surprise' }))
-    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource />)
     fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
     type('admin.invitations.source.personName', 'Kavi')
     type('admin.emailLabel', 'kavi@example.org')

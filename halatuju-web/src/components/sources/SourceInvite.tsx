@@ -23,7 +23,8 @@ export { MentorInviteForm, MentorRoster } from '@/components/mentors/MentorInvit
  * ⚠ ONE OF TWO DOORS THAT ADD A SOURCE. You either pick a source already on the list or add a new one
  * here (name + short code), and name the person who will sign in for it. The Sources page's own Add
  * form is back too (owner 2026-11-19, Sources "View and change"); both doors share ONE set of rules
- * on the server (`sources.new_source_refusal` + `create_new_source`).
+ * on the server (`sources.new_source_refusal` + `create_new_source`), and BOTH ask Sources "View and
+ * change" to create a source — so "add a new one" shows only with `canAddSource`.
  * ⚠ SUPER AND ORG_ADMIN ONLY (owner ruling: Admin does not invite sources). The page passes
  * `canManage`; the server refuses everyone else 403 regardless.
  * ⚠ Every refusal arrives as a code and is shown in plain words — `already_staff` deliberately says
@@ -45,17 +46,21 @@ const refusal = (t: T, err: unknown) => {
 }
 const slugify = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, '')
 
-export function SourceInviteForm({ data, token, t, onDone }: {
+export function SourceInviteForm({ data, token, t, onDone, canAddSource }: {
   data: InvitationsPayload | null
   token: string | null
   t: T
   /** The banner to show, then reload the tab. */
   onDone: (message: Banner) => void
+  /** Owner 2026-11-19: creating a source needs Sources "View and change" (`holdsDoor(role, 'sources')`)
+   *  as well as the invite power; without it only the existing-source picker shows (the server
+   *  refuses a new source 403 regardless). */
+  canAddSource: boolean
 }) {
   // I2: a joined source is not offered at all; a waiting one is, greyed (see the docblock).
   const sources = (data?.sources ?? []).filter((s) => s.sign_in !== 'joined')
   const [mode, setMode] = useState<'existing' | 'new'>('existing')
-  const adding = mode === 'new' || (data !== null && sources.length === 0)
+  const adding = canAddSource && (mode === 'new' || (data !== null && sources.length === 0))
   const [sourceId, setSourceId] = useState('')
   const [newSource, setNewSource] = useState({ name: '', code: '', contact_person: '', phone: '' })
   const [person, setPerson] = useState({ name: '', email: '' })
@@ -137,9 +142,14 @@ export function SourceInviteForm({ data, token, t, onDone }: {
                 ))}
               </select>
               <span className="mt-1 block text-xs text-ground-500">
-                {t(`${K}.help`)}{' '}
-                <button type="button" onClick={() => setMode('new')}
-                  className="font-medium text-primary-600 hover:underline">{t(`${K}.addNew`)}</button>
+                {t(`${K}.help`)}
+                {canAddSource && (
+                  <>
+                    {' '}
+                    <button type="button" onClick={() => setMode('new')}
+                      className="font-medium text-primary-600 hover:underline">{t(`${K}.addNew`)}</button>
+                  </>
+                )}
               </span>
             </div>
             <div className="hidden sm:block" />

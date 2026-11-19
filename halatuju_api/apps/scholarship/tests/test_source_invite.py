@@ -174,6 +174,35 @@ class TestInviteForANewSource(_Base):
         r = self.invite(source_name='Far', source_code='far')
         self.assertEqual(r.status_code, 201, r.content)
 
+    def _lead_without_sources_edit(self):
+        """An organisation admin with `invitations.edit` but Sources unticked to view-only."""
+        from apps.courses import staff_tables
+        lead = make_admin('org_admin', owning_org=self.org, email='lead2@x.org')
+        lead.permissions = [k for k in (lead.permissions or []) if k != 'sources.edit']
+        lead.save(update_fields=['permissions'])
+        lead = PartnerAdmin.objects.get(pk=lead.pk)
+        self.assertTrue(staff_tables.opens_door(lead, 'invitations'))
+        self.assertFalse(staff_tables.opens_door(lead, 'sources'))
+        return lead
+
+    def test_a_new_source_needs_the_sources_power_too(self):
+        """Owner 2026-11-19: creating a source asks Sources "View and change" at BOTH doors."""
+        r = self.new(self._lead_without_sources_edit())
+        self.assertEqual(r.status_code, 403, r.content)
+        self.assertFalse(ReferralSource.objects.filter(code='kovil').exists())
+        self.assertFalse(PartnerAdmin.objects.filter(role='source_partner').exists())
+
+    def test_inviting_for_an_existing_source_needs_only_the_invitations_power(self):
+        r = self.invite(self._lead_without_sources_edit())
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(self.user().source_id, self.source.pk)
+
+    def test_both_powers_create_the_source(self):
+        from apps.courses import staff_tables
+        self.assertTrue(staff_tables.opens_door(self.lead, 'invitations'))
+        self.assertTrue(staff_tables.opens_door(self.lead, 'sources'))
+        self.assertEqual(self.new().status_code, 201)
+
     def test_a_refused_invite_leaves_no_source_behind(self):
         make_admin('reviewer', owning_org=self.org, email='devi@smc.example.org')
         self.assertEqual(self.new().status_code, 409)
