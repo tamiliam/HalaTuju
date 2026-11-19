@@ -70,7 +70,7 @@ export function SourceInviteForm({ data, token, t, onDone, canAddSource }: {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!token) return
-    if (!adding && !sourceId) { setError(t(`${K}.chooseFirst`)); return }
+    if (!adding && !sourceId) { setError(t(`${K}.${canAddSource ? 'chooseFirst' : 'chooseFirstNoAdd'}`)); return }
     setBusy(true); setError('')
     try {
       const sent = await inviteSource({
@@ -127,6 +127,11 @@ export function SourceInviteForm({ data, token, t, onDone, canAddSource }: {
           </>
         ) : (
           <>
+            {!canAddSource && data !== null && sources.length === 0 ? (
+              <p className="text-sm text-ground-500 sm:col-span-2" data-testid="source-invite-none">
+                {t(`${K}.noSourcesNoAdd`)}
+              </p>
+            ) : (
             <div className="text-sm">
               <label htmlFor="source-invite-which" className={LABEL}>{t(`${K}.which`)}</label>
               <select id="source-invite-which" className={inputCls} value={sourceId}
@@ -152,6 +157,7 @@ export function SourceInviteForm({ data, token, t, onDone, canAddSource }: {
                 )}
               </span>
             </div>
+            )}
             <div className="hidden sm:block" />
           </>
         )}

@@ -7699,8 +7699,8 @@
         "which": "Sumber yang mana?",
         "choose": "Pilih sumber…",
         "option": "{name} ({code}) — {state}",
-        "help": "Seorang bagi setiap sumber, jadi sumber yang telah disertai seseorang tidak disenaraikan. Atau",
-        "addNew": "tambah sumber baharu (nama dan kod ringkas)",
+        "help": "Seorang bagi setiap sumber, jadi sumber yang telah disertai seseorang tidak disenaraikan.",
+        "addNew": "Atau tambah sumber baharu (nama dan kod ringkas)",
         "pickExisting": "Pilih sumber yang sudah ada dalam senarai",
         "newName": "Nama sumber",
         "newCode": "Kod ringkas",
@@ -7709,6 +7709,8 @@
         "personName": "Nama orang itu",
         "note": "Mereka hanya melihat pelajar mereka sendiri, baca sahaja, dan boleh menjadi saksi kontrak.",
         "chooseFirst": "Pilih sumber, atau tambah yang baharu.",
+        "chooseFirstNoAdd": "Pilih sumber.",
+        "noSourcesNoAdd": "Belum ada sumber. Seseorang yang mempunyai \"Lihat dan ubah\" untuk Sumber boleh menambahnya.",
         "sent": "Jemputan dihantar.",
         "col": {
           "source": "Sumber"

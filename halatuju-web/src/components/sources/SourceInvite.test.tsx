@@ -153,12 +153,38 @@ describe('the Source invite form', () => {
         { name: 'Kavi', email: 'kavi@example.org', source_id: 1 }, { token: 'tok' }))
     })
 
-    it('stays on the picker even when there is no source to pick', () => {
+    it('with no source to pick, says so instead of an empty dropdown, and never offers new fields', () => {
       render(<SourceInviteForm data={{ ...PAYLOAD, sources: [] }} token="tok" t={t} onDone={onDone}
         canAddSource={false} />)
       expect(screen.queryByLabelText('admin.invitations.source.newName')).toBeNull()
-      expect(screen.getByLabelText('admin.invitations.source.which')).toBeTruthy()
+      expect(screen.queryByLabelText('admin.invitations.source.which')).toBeNull()
+      expect(screen.getByText('admin.invitations.source.noSourcesNoAdd')).toBeTruthy()
       expect(screen.queryByText('admin.invitations.source.addNew')).toBeNull()
+    })
+
+    it('with no source to pick and the power, shows the new-source fields, not the note', () => {
+      render(<SourceInviteForm data={{ ...PAYLOAD, sources: [] }} token="tok" t={t} onDone={onDone} canAddSource />)
+      expect(screen.queryByText('admin.invitations.source.noSourcesNoAdd')).toBeNull()
+    })
+
+    it('shows the help sentence whole (the "Or add a new" link is its own text), with or without the power', () => {
+      const { unmount } = render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone}
+        canAddSource={false} />)
+      expect(screen.getByText('admin.invitations.source.help')).toBeTruthy()
+      expect(screen.queryByText('admin.invitations.source.addNew')).toBeNull()
+      unmount()
+      render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource />)
+      expect(screen.getByText('admin.invitations.source.addNew')).toBeTruthy()
+    })
+
+    it('asks "Choose a source." (no "add a new one") when nothing is chosen', async () => {
+      render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} canAddSource={false} />)
+      type('admin.invitations.source.personName', 'Kavi')
+      type('admin.emailLabel', 'kavi@example.org')
+      fireEvent.click(screen.getByText('admin.sendInvite'))
+      await waitFor(() => expect(screen.getByRole('alert').textContent)
+        .toBe('admin.invitations.source.chooseFirstNoAdd'))
+      expect(mockApi.inviteSource).not.toHaveBeenCalled()
     })
   })
 
