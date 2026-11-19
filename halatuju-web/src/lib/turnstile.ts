@@ -21,19 +21,26 @@
  * token, and the visitor saw Supabase's raw "captcha protection: request disallowed". Now:
  *   - `getTurnstileResult()` returns a TYPED outcome — `ok` (with the token), `off` (no site key:
  *     local dev), `blocked` (the Cloudflare script never loaded: ad blocker, firewall, network)
- *     or `failed` (the script loaded but the challenge errored or ran out of time, after a retry).
+ *     or `failed` (the script loaded but the challenge errored or ran out of time).
  *     The auth callers (`lib/captchaAuth.ts`) turn `blocked`/`failed` into a known error code and
  *     NEVER call Supabase without a token.
- *   - The silent budget is 15 s per attempt (was 8 s), and a failed attempt is retried once with
- *     reset + execute. Why 15 s: a Managed pass is ~1 s on a good line, but the challenge makes
- *     several round trips to challenges.cloudflare.com, and on a congested mobile connection
- *     (the students' and many sponsors' normal network) those trips alone ran past 8 s, which cut
- *     off real visitors. 15 s covers that without leaving a person staring at a frozen button for
- *     long. Worst-case waits for one password door (`lib/captchaAuth.ts`), Supabase's own time
- *     aside: SILENT 55 s = script 10 s + 2 x 15 s, plus 15 s for the single-attempt retry after a
- *     Supabase captcha refusal. VISIBLE 145 s = 10 s + 15 s + 120 s for the challenge, and 265 s
- *     only if Supabase then refuses that token AND Cloudflare asks the person to click again
- *     (120 s more) — a person mid-challenge is never cut off.
+ *   - The silent budget is 15 s per attempt (was 8 s), and a failed SILENT attempt is retried once
+ *     with reset + execute. A visible challenge is never retried: it is one attempt, and when it
+ *     ends without a token (ran out of time or errored) the result is `failed`. Why 15 s: a Managed
+ *     pass is ~1 s on a good line, but the challenge makes several round trips to
+ *     challenges.cloudflare.com, and on a congested mobile connection (the students' and many
+ *     sponsors' normal network) those trips alone ran past 8 s, which cut off real visitors. 15 s
+ *     covers that without leaving a person staring at a frozen button for long.
+ *   - Worst-case waits for one fetch, Supabase's own time aside (one attempt = up to 15 s silent,
+ *     and if Cloudflare then shows a challenge, up to 120 s more from that moment):
+ *       SILENT  40 s = script 10 s + 2 x 15 s.
+ *       VISIBLE 160 s = script 10 s + 15 s (first attempt fails silently) + 15 s (second attempt,
+ *               until the challenge appears) + 120 s for the challenge.
+ *     A password door (`lib/captchaAuth.ts`) adds ONE attempt after a Supabase captcha refusal:
+ *     15 s more if it stays silent (55 s in all), or 135 s more (15 s + 120 s) if Cloudflare shows
+ *     a challenge again (295 s in all, the rare worst case). A person mid-challenge is never cut off.
+ *     The contact form (`getTurnstileToken`) uses the same budgets: up to 40 s before it posts on
+ *     the silent path (was 8 s), 160 s with a visible challenge.
  *   - When the last attempt fails, the widget is reset (and kept hidden) before `failed` is
  *     returned, and a challenge that starts with no attempt in flight is cancelled, so no box
  *     can appear after the error is on screen.
@@ -60,7 +67,7 @@ export const SCRIPT_LOAD_TIMEOUT_MS = 10000
 export const SILENT_TIMEOUT_MS = 15000
 /** Once Cloudflare shows a VISIBLE challenge, a human needs time to notice and click. */
 export const INTERACTIVE_TIMEOUT_MS = 120000
-/** One try plus one retry (reset + execute). */
+/** One try plus one retry (reset + execute) — silent attempts only; a visible challenge is never retried. */
 export const MAX_ATTEMPTS = 2
 
 export type TurnstileResult =
@@ -125,9 +132,12 @@ function loadScript(): Promise<void> {
 // (passed OR failed) never lingers on screen over the app.
 let container: HTMLDivElement | null = null
 let widgetId: string | null = null
-type AttemptOutcome = { token: string; humanTimedOut?: undefined } | { token?: undefined; humanTimedOut: boolean }
+// `visible`: Cloudflare showed this attempt a VISIBLE challenge (a person was asked to act).
+type AttemptOutcome = { token: string; visible?: undefined } | { token?: undefined; visible: boolean }
 let currentResolve: ((outcome: AttemptOutcome) => void) | null = null
 let timer: ReturnType<typeof setTimeout> | null = null
+// Set by before-interactive-callback for the attempt in flight; cleared when an attempt starts.
+let attemptVisible = false
 // Serialise: Turnstile reuses one widget, so concurrent fetches would clobber
 // each other's token. Chain them instead.
 let queue: Promise<unknown> = Promise.resolve()
@@ -146,6 +156,9 @@ function settle(outcome: AttemptOutcome): void {
   r?.(outcome)
 }
 
+// The attempt ended without a token. Whether a visible challenge was shown decides the retry.
+function fail(): void { settle({ visible: attemptVisible }) }
+
 function ensureWidget(api: TurnstileAPI): void {
   if (widgetId && container) return
   container = document.createElement('div')
@@ -160,11 +173,12 @@ function ensureWidget(api: TurnstileAPI): void {
     sitekey: SITE_KEY,
     execution: 'execute', // run only when execute() is called
     appearance: 'interaction-only', // show nothing on a silent pass; only appear if interaction is required
-    retry: 'never', // WE retry (reset + execute, MAX_ATTEMPTS), so the budget stays ours
+    retry: 'never', // WE retry silent attempts (reset + execute, MAX_ATTEMPTS), so the budget stays ours
     'refresh-expired': 'manual', // an expired token is never silently re-fetched behind our back
     callback: (token: string) => settle({ token }),
-    'error-callback': () => settle({ humanTimedOut: false }),
-    'timeout-callback': () => settle({ humanTimedOut: true }),
+    'error-callback': () => fail(),
+    // Cloudflare's own timeout concerns an interactive challenge only: always a visible one.
+    'timeout-callback': () => { attemptVisible = true; fail() },
     // A token that lapsed unused (~300 s) is cleared so it can never be handed out.
     'expired-callback': () => {
       try { if (widgetId) api.reset(widgetId) } catch { /* the next fetch resets anyway */ }
@@ -178,9 +192,10 @@ function ensureWidget(api: TurnstileAPI): void {
         try { if (widgetId) api.reset(widgetId) } catch { /* nothing more to stop */ }
         return
       }
+      attemptVisible = true
       show()
       if (timer) { clearTimeout(timer); timer = null }
-      timer = setTimeout(() => settle({ humanTimedOut: true }), INTERACTIVE_TIMEOUT_MS)
+      timer = setTimeout(fail, INTERACTIVE_TIMEOUT_MS)
     },
   })
 }
@@ -188,14 +203,15 @@ function ensureWidget(api: TurnstileAPI): void {
 function attempt(api: TurnstileAPI, action?: string): Promise<AttemptOutcome> {
   return new Promise<AttemptOutcome>((resolve) => {
     currentResolve = resolve
+    attemptVisible = false
     // Silent-path budget. If an interaction challenge appears,
     // before-interactive-callback REPLACES this with the longer human budget.
-    timer = setTimeout(() => settle({ humanTimedOut: false }), SILENT_TIMEOUT_MS)
+    timer = setTimeout(fail, SILENT_TIMEOUT_MS)
     try {
       api.reset(widgetId!) // clear any prior single-use or expired token
       api.execute(container!, action ? { action } : undefined)
     } catch {
-      settle({ humanTimedOut: false })
+      fail()
     }
   })
 }
@@ -224,9 +240,10 @@ async function fetchResult(action?: string, opts?: TurnstileFetchOptions): Promi
   for (let i = 0; i < attempts; i++) {
     const outcome = await attempt(api, action)
     if (outcome.token) return { status: 'ok', token: outcome.token }
-    // A person who was shown a visible challenge and let it run out has had their chance;
-    // a second two-minute wait would only look like a frozen page.
-    if (outcome.humanTimedOut) break
+    // A visible challenge is never retried, however it ended (ran out of time OR errored): the
+    // person has had their attempt, and a second challenge would only look like a frozen page.
+    // Only a silent attempt is tried again.
+    if (outcome.visible) break
   }
   // Out of attempts. Stop whatever challenge Cloudflare may still be running, so a late
   // challenge box cannot appear AFTER the visitor has been shown the error.

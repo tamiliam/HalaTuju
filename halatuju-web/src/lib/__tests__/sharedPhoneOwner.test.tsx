@@ -158,6 +158,25 @@ describe('AuthProvider', () => {
     expect(sessionStorage.getItem('halatuju_apply_return')).toBe('1')
   })
 
+  it('a retryable refresh error on load wipes nothing, but a later SIGNED_OUT does wipe', async () => {
+    // Review round 2: the load-time guard must not make the listener's SIGNED_OUT a no-op. Once
+    // Supabase gives the session up for good, another account's data is dropped as before.
+    holdGradesOf('user-a')
+    sessionStorage.setItem('halatuju_apply_return', '1')
+    mockSession = null
+    mockSessionError = { name: 'AuthRetryableFetchError', message: 'Failed to fetch', status: 0 }
+    render(<AuthProvider><div>app</div></AuthProvider>)
+    await waitFor(() => expect(listener).not.toBeNull())
+    await act(async () => { await Promise.resolve() })
+    expect(localStorage.getItem(KEY_GRADES)).not.toBeNull()   // the guard held on load
+    await act(async () => { listener!('SIGNED_OUT', null) })
+    expect(localStorage.getItem(KEY_GRADES)).toBeNull()
+    expect(localStorage.getItem(KEY_PROFILE)).toBeNull()
+    expect(localStorage.getItem(KEY_OWNER)).toBeNull()
+    expect(sessionStorage.getItem('halatuju_apply_return')).toBeNull()
+    expect(localStorage.getItem(KEY_LOCALE)).toBe('ta')
+  })
+
   it("a page load with no session keeps a signed-out visitor's own UNTAGGED grades", async () => {
     holdGradesOf(null)
     mockSession = null

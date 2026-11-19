@@ -344,6 +344,56 @@ describe('getTurnstileResult', () => {
     expect(w.calls.execute).toBe(1)
   })
 
+  it('a visible challenge that ends in error-callback is NOT retried (review round 2)', async () => {
+    jest.useFakeTimers()
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
+    const w = widget((o) => {
+      ;(o['before-interactive-callback'] as () => void)()
+      ;(o['error-callback'] as () => void)()          // the challenge was shown, then errored
+    })
+    const mod = loadFresh()
+    await expect(mod.getTurnstileResult()).resolves.toEqual({ status: 'failed' })
+    expect(w.calls.execute).toBe(1)                    // one attempt only
+    expect(w.el.style.display).toBe('none')
+    await jest.advanceTimersByTimeAsync(mod.INTERACTIVE_TIMEOUT_MS + mod.SILENT_TIMEOUT_MS)
+    expect(w.calls.execute).toBe(1)                    // and nothing starts later
+  })
+
+  it("Cloudflare's own timeout-callback on a visible challenge is NOT retried", async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
+    const w = widget((o) => {
+      ;(o['before-interactive-callback'] as () => void)()
+      ;(o['timeout-callback'] as () => void)()
+    })
+    const mod = loadFresh()
+    await expect(mod.getTurnstileResult()).resolves.toEqual({ status: 'failed' })
+    expect(w.calls.execute).toBe(1)
+  })
+
+  it('a silent error, then a visible challenge that errors: two attempts, no third', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
+    const w = widget((o, n) => {
+      if (n === 2) (o['before-interactive-callback'] as () => void)()
+      ;(o['error-callback'] as () => void)()
+    })
+    const mod = loadFresh()
+    await expect(mod.getTurnstileResult()).resolves.toEqual({ status: 'failed' })
+    expect(w.calls.execute).toBe(2)
+  })
+
+  it('a visible challenge on the first attempt does not mark the next fetch as visible', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
+    const w = widget((o, n) => {
+      if (n === 1) (o['before-interactive-callback'] as () => void)()
+      if (n === 3) (o.callback as (t: string) => void)('tok-3')
+      else (o['error-callback'] as () => void)()
+    })
+    const mod = loadFresh()
+    await expect(mod.getTurnstileResult()).resolves.toEqual({ status: 'failed' })   // attempt 1, visible
+    await expect(mod.getTurnstileResult()).resolves.toEqual({ status: 'ok', token: 'tok-3' }) // 2 silent fails, 3 ok
+    expect(w.calls.execute).toBe(3)
+  })
+
   it('expiry: tokens are never auto-refreshed, and an expired one resets the widget', async () => {
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
     let n = 0

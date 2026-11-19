@@ -72,7 +72,7 @@ export async function withCaptcha<R extends { error: unknown }>(
   onCaptchaError: Omit<R, 'error'>,
 ): Promise<R | (Omit<R, 'error'> & { error: CaptchaError })> {
   for (let round = 0; round < 2; round++) {
-    // The retry after a refusal gets ONE silent attempt, not a second full round (review fix):
+    // The retry after a refusal gets ONE attempt, not a second full round (review fix):
     // worst-case waits are written in lib/turnstile.ts and turnstile-rollout.md.
     const t = await getTurnstileResult(action, round === 0 ? undefined : { maxAttempts: 1 })
     if (t.status === 'blocked') return { ...onCaptchaError, error: captchaError('captcha_blocked') }

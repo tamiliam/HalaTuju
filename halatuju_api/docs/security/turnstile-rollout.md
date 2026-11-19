@@ -73,19 +73,23 @@ that failed for any reason (script blocked, slow network, 8 s timeout) resolved 
 - **Typed outcome** (`halatuju-web/src/lib/turnstile.ts`, `getTurnstileResult`):
   `ok` (token), `off` (no site key), `blocked` (the script never loaded within 10 s, or
   was refused: ad blocker, firewall, network), `failed` (the challenge errored or timed
-  out after one retry). `getTurnstileToken()` stays for the contact form.
+  out). `getTurnstileToken()` stays for the contact form.
 - **Budgets:** script load 10 s; silent challenge 15 s per attempt (was 8 s; a Managed
   pass makes several round trips to Cloudflare, and on congested mobile data those alone
-  ran past 8 s); 2 attempts (reset + execute); a visible challenge gets 120 s and is not
-  retried if nobody solves it. The retry after a Supabase captcha refusal gets ONE attempt,
-  not a second full round. When the last attempt fails the widget is reset and kept
+  ran past 8 s); 2 attempts (reset + execute) for the silent path. A visible challenge gets
+  120 s and is never retried: it is one attempt, and when it ends without a token (ran out of
+  time or errored) the fetch fails. The retry after a Supabase captcha refusal gets ONE
+  attempt, not a second full round. When the last attempt fails the widget is reset and kept
   hidden, so no challenge box can appear after the error is shown.
-- **Worst-case waits** for one sign-in, sign-up or reset, Supabase's own time aside:
-  - silent (no box ever shown): **55 s** = script 10 s + 2 x 15 s, plus 15 s for the
-    one-attempt retry after a Supabase refusal (40 s when Supabase does not refuse);
-  - visible (Cloudflare asks the person to click): **145 s** = 10 s + 15 s + 120 s; and
-    **265 s** only in the rare case that Supabase then refuses that token AND Cloudflare
-    asks for a click again on the retry (120 s more). A person mid-challenge is never cut off.
+- **Worst-case waits** for one sign-in, sign-up or reset, Supabase's own time aside (one
+  attempt = up to 15 s silent, then up to 120 s more if Cloudflare shows a challenge):
+  - silent (no box ever shown): **40 s** = script 10 s + 2 x 15 s; **55 s** if Supabase
+    refuses the token and the one-attempt retry also runs out (15 s more);
+  - visible (Cloudflare asks the person to click): **160 s** = script 10 s + 15 s (the first
+    attempt fails silently) + 15 s (the second attempt, until the challenge appears) + 120 s;
+    and **295 s** only in the rare case that Supabase then refuses that token AND Cloudflare
+    shows a challenge again on the retry (15 s + 120 s more). A visible challenge is never
+    retried, and a person mid-challenge is never cut off.
 - **Missing site key:** if Supabase refuses a door while the build has no site key (the
   switch is on but `NEXT_PUBLIC_TURNSTILE_SITE_KEY` was left out of the deploy), the
   browser console logs a `[captcha]` warning; the visitor sees the plain "did not finish"
@@ -120,7 +124,11 @@ that failed for any reason (script blocked, slow network, 8 s timeout) resolved 
   is online. A token refresh that failed on the network or with 502/503/504 also reads as
   "no session" (Supabase keeps the session and retries later), and must never wipe a
   student's grades, profile, quiz signals or half-filled apply form.
-- **Unchanged:** Google sign-in (OAuth carries no captcha) and the contact form /
-  `contact-submit` Edge Function.
+- **Unchanged:** Google sign-in (OAuth carries no captcha) and the `contact-submit` Edge
+  Function. The contact form code is unchanged too, **but its wait is not**: it calls
+  `getTurnstileToken()`, which now uses the same budgets. Before it posts, the form can wait
+  up to **40 s** on the silent path (10 s script load + 2 silent tries of 15 s), against 8 s
+  before this repair; with a visible challenge, up to 160 s (was 128 s). With no token it
+  still posts, and the Edge Function decides, as before.
 - **What a support reply can say:** the words on screen already tell the visitor to turn
   off the ad blocker, try another browser or mobile data, or use Google where offered.
