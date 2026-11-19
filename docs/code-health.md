@@ -159,7 +159,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `159  halatuju_api/apps/courses/views_staff.py:207 post`
 
 ### Function names with 3+ homes in one app
-- _gemini_generate x3 (scholarship): apply_copy_draft.py, __init__.py, sponsor_terms.py
+- none
 
 ### Cross-app imports
 - courses -> scholarship: 1 edges (16 import statements)

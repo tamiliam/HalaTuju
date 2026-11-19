@@ -130,8 +130,8 @@ def generate_with_fallback(seam, prompt, model, *, fatal, **kwargs):
 
     Gemini Phase 1 (owner, 2026-11-10): every former Pro job may fall back to the Flash cascade,
     contracts included — superseding the contract module's "Owner decision 4: no downgrade".
-    ``seam`` is the caller's own ``_gemini_generate``, looked up by the caller at call time, so
-    every ``patch('apps.scholarship.<module>._gemini_generate')`` still lands.
+    ``seam`` is ``contracts._gemini_generate`` (the one home since 19 Nov 2026), looked up by the
+    caller at call time, so every ``patch('apps.scholarship.contracts._gemini_generate')`` still lands.
 
     The next model is tried on what the prose cascade (``profile_engine._call_gemini_text``) moves
     on from: any error from the call, or an empty or missing answer. ``fatal`` is the caller's own
