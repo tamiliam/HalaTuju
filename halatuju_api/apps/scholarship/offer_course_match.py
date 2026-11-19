@@ -116,6 +116,22 @@ def catalogue_name(name: str) -> str:
     return ' '.join(_CAMPUS_PAREN_RE.sub(' ', name or '').split())
 
 
+#: UMS venues naming no institution (S1b, 2026-11-19), which old stored reads put in the institution
+#: field: "Kolej Kediaman, Wisma Zainal Abidin Said,(UMSKAL)", "Lobi Wisma Zainal Abidin Said (ZAS)".
+#: Lines printing "UMS" itself ("Dewan Kafeteria, UMS Kampus Sandakan") are named by the acronym.
+_UMS_VENUE_RE = re.compile(r'umskal\b|\bwisma\s+zainal\s+abidin\s+said\b', re.I)
+
+
+def venue_university(line: str) -> str:
+    """The university a reporting-venue line belongs to (``_UMS_VENUE_RE``), or ''."""
+    return 'Universiti Malaysia Sabah' if _UMS_VENUE_RE.search(line or '') else ''
+
+
+def _names_nothing(hint, index) -> bool:
+    """Does ``hint`` name no catalogue institution at all, by either ``CampusReader`` tier?"""
+    return not (hint or '').strip() or not any(_institutions(hint, index))
+
+
 def letter_place(course_id: str, institution: str, issuer: str = '', rows=None, index=None) -> str:
     """WHERE the letter says the student is going, for ``course_id`` — the institution line, or the
     ISSUER standing in for it. THE one definition: `institution_agreement`,
@@ -126,9 +142,13 @@ def letter_place(course_id: str, institution: str, issuer: str = '', rows=None, 
     Cempaka") and the university in the letterhead. The issuer stands in only when (a) the
     institution line names NO campus of the course, (b) that line does not EXACTLY name another
     catalogue institution — so a polytechnic or a private college against a public course stays a
-    clash (#11, #64, #86, #93, #113) — and (c) the issuer itself names a campus of the course."""
+    clash (#11, #64, #86, #93, #113) — and (c) the issuer itself names a campus of the course.
+
+    S1b: when the issuer names no institution ("BAHAGIAN PERKHIDMATAN AKADEMIK", or blank), a UMS
+    venue line (``venue_university``) stands in as UMS under the same (a)-(c) rules."""
     inst, iss = (institution or '').strip(), (issuer or '').strip()
-    if not iss or not (course_id or '').strip():
+    venue = venue_university(inst)
+    if not (iss or venue) or not (course_id or '').strip():
         return inst
     rows = _campus_rows(course_id) if rows is None else rows   # a caller's own read, reused
     if not rows:
@@ -137,8 +157,11 @@ def letter_place(course_id: str, institution: str, issuer: str = '', rows=None, 
     line = CampusReader(inst, index) if inst else None
     if inst and (any(line.names(n, a) for n, a in rows) or _names_another_institution('', '', inst)):
         return inst
-    reader = CampusReader(iss, index)
-    return iss if any(reader.names(n, a) for n, a in rows) else inst
+    if iss and any(CampusReader(iss, index).names(n, a) for n, a in rows):
+        return iss
+    if venue and _names_nothing(iss, index) and any(CampusReader(venue, index).names(n, a) for n, a in rows):
+        return venue
+    return inst
 
 
 def is_bumiputera_only(course_id: str) -> bool:
@@ -162,7 +185,8 @@ def match_offer_course(programme: str, institution: str, issuer: str = ''):
     line names none so and exactly names no other catalogue institution); the line's by words; the
     issuer's by words. So an explicit letterhead outranks a centre or hostel line whose words merely
     sit inside a university's ("Pusat Persediaan Sains dan Teknologi" is not USM or UTM — round-2
-    review 2026-10-31, #349 / #322). ``institution`` is the catalogue's own spelling."""
+    review 2026-10-31, #349 / #322). A UMS venue line stands in for an issuer that names nothing
+    (``venue_university``, S1b). ``institution`` is the catalogue's own spelling."""
     if private_arm_letter(programme, f'{institution or ""} {issuer or ""}'):
         return None                                 # the issuer may be the only line naming SATU
     index = catalogue_index()                     # ONE read of the table for this whole call
@@ -175,8 +199,10 @@ def match_offer_course(programme: str, institution: str, issuer: str = ''):
         return None
     ltype = detect_pathway_type(name, '') or detect_pathway_type(name, institution)
     line = _institutions(institution, index)
-    borrow = bool((issuer or '').strip()) and not line[0] and not _names_another_institution('', '', institution)
-    issued = _institutions(issuer, index) if borrow else ([], [])
+    borrow = not line[0] and not _names_another_institution('', '', institution)
+    issued = _institutions(issuer, index) if borrow and (issuer or '').strip() else ([], [])
+    if borrow and not (issued[0] or issued[1]) and venue_university(institution):
+        issued = _institutions(venue_university(institution), index)    # S1b: a UMS venue line
     for insts in (line[0], issued[0], line[1], issued[1]):
         hits = _named_courses(pj, ltype, insts)
         if hits:

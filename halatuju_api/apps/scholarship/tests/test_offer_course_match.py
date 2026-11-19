@@ -15,7 +15,7 @@ from apps.courses.models import (
     StpmRequirement)
 from apps.scholarship import offer_pathway as op
 from apps.scholarship.offer_course_match import (
-    is_bumiputera_only, letter_place, letter_programme, match_offer_course)
+    is_bumiputera_only, letter_place, letter_programme, match_offer_course, venue_university)
 
 UM, UITM, UNIMAS, UPM = 'Universiti Malaya', 'Universiti Teknologi MARA', 'Universiti Malaysia Sarawak', 'Universiti Putra Malaysia'
 UMS, UTHM, UIAM, PUO = 'Universiti Malaysia Sabah', 'Universiti Tun Hussein Onn Malaysia', 'Universiti Islam Antarabangsa Malaysia', 'Politeknik Ungku Omar'
@@ -430,3 +430,133 @@ class PrintedCodeOpensTheMenuTest(TestCase):
     def test_a_real_specialisation_the_letter_does_not_name_is_still_refused(self):
         self.assertIsNone(_cid('SARJANA MUDA SAINS KOMPUTER DENGAN KEPUJIAN - US6481002', self.USM))
         self.assertIsNone(_cid('SARJANA MUDA SAINS KOMPUTER DENGAN KEPUJIAN', self.USM))
+
+
+class UmsVenueLinesTest(TestCase):
+    """OCR-first S1b (2026-11-19): an older stored read put UMS's reporting venue in the institution
+    line. The four venue shapes the UMS letters print (synthetic hostel names below) still resolve to
+    UMS when the issuer is blank or names nothing; no other place ever does."""
+
+    KK = 'Kolej Kediaman Tun Contoh, UMS Kota Kinabalu, Sabah'
+    UMSKAL = 'Kolej Kediaman, Wisma Zainal Abidin Said,(UMSKAL)'
+    UMSKAL_OFFICE = 'Pejabat Bahagian Kolej Kediaman, Wisma Zainal Abidin Said, (UMSKAL)'
+    ZAS = 'Lobi Wisma Zainal Abidin Said (ZAS)'
+    ZAS_CAMPUS = 'Lobi Wisma Zainal Abidin Said (ZAS), UMS Kampus Antarabangsa Labuan'
+    CAFE = 'Dewan Kafeteria, UMS Kampus Sandakan'
+    NAMES_NOTHING = ('', 'BAHAGIAN PERKHIDMATAN AKADEMIK')
+    DIPLOMA = 'DIPLOMA KEJURUTERAAN KIMIA (MINYAK DAN GAS)'
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_realign_catalogue()
+
+    def test_every_venue_shape_agrees_with_a_ums_course(self):
+        for line in (self.KK, self.UMSKAL, self.UMSKAL_OFFICE, self.ZAS, self.ZAS_CAMPUS, self.CAFE):
+            for issuer in self.NAMES_NOTHING:
+                with self.subTest(line=line, issuer=issuer):
+                    self.assertIn(letter_place('UH4520001', line, issuer), (line, UMS))
+                    self.assertEqual(op.institution_agreement('UH4520001', '', line, issuer), 'match')
+                    self.assertFalse(op.offer_contradicts_course_institution('UH4520001', line, issuer))
+
+    def test_a_venue_that_prints_no_ums_stands_in_as_the_issuer(self):
+        for line in (self.UMSKAL, self.UMSKAL_OFFICE, self.ZAS):
+            for issuer in self.NAMES_NOTHING:
+                with self.subTest(line=line, issuer=issuer):
+                    self.assertEqual(letter_place('UH4520001', line, issuer), UMS)
+                    self.assertEqual(_cid(self.DIPLOMA, line, issuer), 'UH4520001')
+
+    def test_a_venue_that_prints_ums_is_named_by_the_acronym(self):
+        for line in (self.KK, self.ZAS_CAMPUS, self.CAFE):
+            with self.subTest(line=line):
+                self.assertEqual(letter_place('UH4520001', line, ''), line)
+                self.assertEqual(_cid(self.DIPLOMA, line), 'UH4520001')
+
+    def test_venue_university_reads_only_the_ums_venues(self):
+        for line in (self.UMSKAL, self.UMSKAL_OFFICE, self.ZAS, 'KOLEJ KEDIAMAN, WISMA ZAINAL ABIDIN SAID(UMSKAL)'):
+            with self.subTest(line=line):
+                self.assertEqual(venue_university(line), UMS)
+        for line in ('Kolej Kediaman Tun Contoh', 'Dewan Kafeteria', 'KOLEJ KEDIAMAN SABAH', 'Wisma Zainal',
+                     'Wisma Contoh', 'Kolej Kediaman Pertama, Universiti Putra Malaysia', PUO, ''):
+            with self.subTest(line=line):
+                self.assertEqual(venue_university(line), '')
+
+    def test_no_non_ums_place_resolves_to_ums(self):
+        for line in ('Kolej Kediaman Tun Contoh', 'Dewan Kafeteria', 'KOLEJ KEDIAMAN SABAH'):
+            for issuer in self.NAMES_NOTHING:
+                with self.subTest(line=line, issuer=issuer):
+                    self.assertEqual(letter_place('UH4520001', line, issuer), line)
+                    self.assertNotEqual(op.institution_agreement('UH4520001', '', line, issuer), 'match')
+                    self.assertIsNone(_cid(self.DIPLOMA, line, issuer))
+        # A polytechnic line against the UMS course stays a clash, venue or no venue.
+        self.assertEqual(letter_place('UH4520001', PUO, ''), PUO)
+        self.assertEqual(op.institution_agreement('UH4520001', '', PUO, ''), 'clash')
+
+    def test_a_ums_venue_never_moves_another_universitys_course(self):
+        # A UPM course: UMS is not its campus, so the venue line is left as it is.
+        self.assertEqual(letter_place('UP4310001', self.UMSKAL, ''), self.UMSKAL)
+        self.assertNotEqual(op.institution_agreement('UP4310001', '', self.UMSKAL, ''), 'match')
+        # An issuer that names another university is not overruled by the venue.
+        self.assertEqual(letter_place('UH4520001', self.UMSKAL, UPM), self.UMSKAL)
+        self.assertIsNone(_cid(self.DIPLOMA, self.UMSKAL, UPM))
+
+
+def _seed_menu_rows(rows):
+    ft = FieldTaxonomy.objects.get(key='realign')
+    ums = Institution.objects.get(institution_id='RA-UMS')
+    for cid, name in rows:
+        sc = StpmCourse.objects.create(course_id=cid, course_name=name, university=UMS, institution=ums,
+                                       field_key=ft)
+        StpmRequirement.objects.create(course=sc, req_bumiputera=False)
+
+
+#: Synthetic catalogue rows (S1b): an option MENU, and a plain twin of one of its options.
+MENU = 'Sarjana Muda Teknologi Gunaan dengan Kepujian [Optik / Akustik / Robotik Marin]'
+TWIN = 'Sarjana Muda Teknologi Gunaan dengan Kepujian (Optik)'
+
+
+class CatalogueMenuUniquenessTest(TestCase):
+    """S1b (2026-11-19): Gate 2 needs exactly ONE catalogue course. A square-bracket option MENU on a
+    synthetic catalogue row: the letter's base name, or the base plus exactly one option (in round
+    brackets, as the letters print it), is a match; two options, or a word in no option, is none."""
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_realign_catalogue()
+        _seed_menu_rows((('RA-UMS-MENU', MENU),))
+
+    def test_the_base_name_alone_is_a_match(self):
+        self.assertEqual(_cid('IJAZAH SARJANA MUDA TEKNOLOGI GUNAAN DENGAN KEPUJIAN', UMS), 'RA-UMS-MENU')
+
+    def test_exactly_one_option_in_round_brackets_is_a_match(self):
+        self.assertEqual(_cid('Sarjana Muda Teknologi Gunaan Dengan Kepujian (Akustik)', UMS), 'RA-UMS-MENU')
+        self.assertEqual(_cid('Sarjana Muda Teknologi Gunaan (Robotik Marin) Dengan Kepujian', UMS),
+                         'RA-UMS-MENU')
+        self.assertEqual(_cid('Sarjana Muda Teknologi Gunaan Dengan Kepujian (Akustik)',
+                              'Kolej Kediaman, Wisma Zainal Abidin Said,(UMSKAL)'), 'RA-UMS-MENU')
+
+    def test_two_options_are_no_match(self):
+        self.assertIsNone(_cid('Sarjana Muda Teknologi Gunaan Dengan Kepujian (Optik Dan Akustik)', UMS))
+        self.assertIsNone(_cid('Sarjana Muda Teknologi Gunaan Dengan Kepujian (Akustik / Robotik Marin)', UMS))
+
+    def test_a_word_in_no_option_is_no_match(self):
+        self.assertIsNone(_cid('Sarjana Muda Teknologi Gunaan Dengan Kepujian (Geomatik)', UMS))
+
+
+class CatalogueMenuAndTwinTest(TestCase):
+    """S1b: a second row the letter fits as well makes it no match (a wrong course is worse than none);
+    a row with a specialisation the letter does not state never takes the base name (TD-150)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_realign_catalogue()
+        _seed_menu_rows((('RA-UMS-MENU', MENU), ('RA-UMS-TWIN', TWIN)))
+
+    def test_the_base_name_alone_is_still_the_menu_course(self):
+        self.assertEqual(_cid('IJAZAH SARJANA MUDA TEKNOLOGI GUNAAN DENGAN KEPUJIAN', UMS), 'RA-UMS-MENU')
+
+    def test_an_option_only_the_menu_lists_is_the_menu_course(self):
+        self.assertEqual(_cid('Sarjana Muda Teknologi Gunaan Dengan Kepujian (Akustik)', UMS), 'RA-UMS-MENU')
+
+    def test_a_letter_two_rows_fit_is_no_match(self):
+        # "(Optik)" fits the menu's option AND the twin's own specialisation: two courses, none chosen.
+        self.assertIsNone(_cid('Sarjana Muda Teknologi Gunaan Dengan Kepujian (Optik)', UMS))
