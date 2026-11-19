@@ -13,7 +13,9 @@ went to Gemini. This reader takes the photo layout, but ONLY when the page prove
     pair cannot pass);
   * the holder is a parentage-connector name line right after the invoice number, the address
     block below it ends on its postcode line or a peninsular state, with no stray number in it;
-  * the Tarikh Bil is a clean "dd <month> 20yy" date.
+  * the Tarikh Bil is a clean "dd <month> 20yy" date that falls 0-31 days after the Tempoh Bil
+    ends (review round 1: no period, no lock — `income_engine.utilities` dates a bill by it);
+  * the current charge is not negative, and no bill label sits inside the address block.
 Anything else → None, and the bill goes to Gemini exactly as before.
 
 A LANE SWITCH (``OCR_FIRST_TNB_PHOTO_ENABLED``, off by default): Gate 1 of the OCR-first roadmap
@@ -23,6 +25,7 @@ this reader. A leaf: it imports only `doc_parse_text` at module level.
 """
 from __future__ import annotations
 
+import datetime
 import os
 import re
 from typing import Optional
@@ -45,18 +48,29 @@ _MONTHS = (r'jan(?:uari)?|feb(?:ruari)?|mac|apr(?:il)?|mei|jun|jul(?:ai)?|ogos|s
            r'|okt(?:ober)?|nov(?:ember)?|dis(?:ember)?')
 _BILL_DATE_RE = re.compile(r'^(0?[1-9]|[12]\d|3[01])\s+(' + _MONTHS + r')\s+(20[2-3]\d)$', re.IGNORECASE)
 _PERIOD_RE = re.compile(r'(\d{2}\.\d{2}\.20\d{2})\s*-?\s*(\d{2}\.\d{2}\.20\d{2})')
+#: Month number by the first three letters of the Malay name (``_MONTHS``).
+_MONTH_NO = {m: k for k, m in enumerate(('jan', 'feb', 'mac', 'apr', 'mei', 'jun', 'jul', 'ogo',
+                                          'sep', 'okt', 'nov', 'dis'), start=1)}
+#: A bill label printed on its own line (review round 1): never part of an address.
+_LABEL_LINE_RE = re.compile(r'^(?:no\.?\s*(?:akaun|invois|kontrak)|tarikh\b|tempoh\b|jumlah\b|tunggakan'
+                            r'|caj\b|penggenapan|bil\s+elektrik|sila\b|tarif\b|amaun\b)', re.IGNORECASE)
+
+
+def _switch_text_on(value) -> bool:
+    return isinstance(value, str) and value.strip().lower() in ('1', 'true', 'yes')
 
 
 def lane_on(name: str = PHOTO_SWITCH) -> bool:
     """Is the OCR-first lane ``name`` switched on? A Django setting of that name when one exists
-    (tests override it), else the env var of that name ('1' / 'true' / 'yes'). Not added to
+    (tests override it), else the env var of that name. ON only for a real ``True`` or the text
+    '1' / 'true' / 'yes' (review round 1: the text '0' / 'False' is OFF). Not added to
     settings/base.py: that file sits at its code-standards size ceiling. False on any error."""
     try:
         from django.conf import settings
         value = getattr(settings, name, None)
         if value is None:
-            value = os.environ.get(name, '').strip().lower() in ('1', 'true', 'yes')
-        return bool(value)
+            value = os.environ.get(name, '')
+        return value is True or _switch_text_on(value)
     except Exception:
         return False
 
@@ -111,7 +125,8 @@ def _holder(lines: list) -> Optional[tuple]:
     if len(names) != 1 or names[0] == 0 or not _NAME_BEFORE_RE.match(block[names[0] - 1]):
         return None
     address = block[names[0] + 1:]
-    if not 2 <= len(address) <= 6 or any(re.search(r'\d{8,}|^:', ln) for ln in address):
+    if not 2 <= len(address) <= 6 or any(re.search(r'\d{8,}|^:', ln) or _LABEL_LINE_RE.match(ln)
+                                         for ln in address):
         return None
     post = [k for k, ln in enumerate(address) if _POSTCODE_RE.match(ln)]
     if len(post) != 1 or post[0] < len(address) - 2:
@@ -121,10 +136,21 @@ def _holder(lines: list) -> Optional[tuple]:
     return block[names[0]], ', '.join(ln.rstrip(',') for ln in address)
 
 
-def _bill_date(lines: list) -> str:
+def _bill_date(lines: list, period: str) -> str:
+    """The Tarikh Bil, only when it is a real date 0-31 days after the billing period ENDS
+    (review round 1: a misread year or month would flip a bill current / stale). '' otherwise,
+    and '' when there is no period to check it against."""
     k = _label_at(lines, r'tarikh\s+bil')
     nxt = next((ln for ln in lines[k + 1:k + 3] if ln), '') if k >= 0 else ''
-    return nxt if _BILL_DATE_RE.match(nxt) else ''
+    m = _BILL_DATE_RE.match(nxt)
+    if not m or not period:
+        return ''
+    try:
+        issued = datetime.date(int(m.group(3)), _MONTH_NO[m.group(2)[:3].lower()], int(m.group(1)))
+        ends = datetime.datetime.strptime(period.split()[1], '%d.%m.%Y').date()
+    except (ValueError, KeyError, IndexError):
+        return ''
+    return nxt if 0 <= (issued - ends).days <= 31 else ''
 
 
 def _billing_period(lines: list) -> str:
@@ -142,11 +168,13 @@ def parse_tnb_photo(text: str) -> Optional[dict]:
         return None
     lines = [ln for ln in _lines(text) if ln]
     summary = _summary(lines)
-    if summary is None or not _itemised_charge_agrees(lines, summary[2], summary[1]):
+    if summary is None or summary[1].startswith('-'):    # review round 1: never a negative charge
         return None
-    holder, bill_date = _holder(lines), _bill_date(lines)
+    if not _itemised_charge_agrees(lines, summary[2], summary[1]):
+        return None
+    period = _billing_period(lines)
+    holder, bill_date = _holder(lines), _bill_date(lines, period)
     if holder is None or not bill_date:
         return None
     return {'name': holder[0], 'address': holder[1], 'amount': f'RM{summary[1]}',
-            'unpaid_balance': f'RM{summary[0]}', 'billing_period': _billing_period(lines),
-            'bill_date': bill_date}
+            'unpaid_balance': f'RM{summary[0]}', 'billing_period': period, 'bill_date': bill_date}

@@ -8,6 +8,7 @@ Branch ocr-s6, not pushed. No migration. Services: api.
 - **Refuse rather than guess.** A photo bill locks only when the arithmetic proves itself: the summary reconciles to the sen, and the itemised charge matches, so a swapped arrears/charge pair fails. A relaxed EPF row locks only when its shares make its total. Anything short of that returns None ('unknown' for EPF), which is today's AI path.
 - **The lane stamp.** No `rules_lane` field exists. The existing deterministic-capture field `parser_version` (already kept on the stored read, as for STPM) now holds `<reader> <lane> <version>`. No new field and no migration.
 - **No verdict rule moved.** `electricity_doc.MODEL_VERSION` goes to 1.1.0 to mark the reader change. The genuineness cascade, thresholds, need signals and eligibility rules are untouched.
+- **Review round 1.** The bill date must sit 0-31 days after the billing period ends, because the bill's age (current or stale) is taken from it; a bill with no readable period is refused. The relaxed EPF read never answers 'zero' (all-zero rows prove nothing by arithmetic), so 'zero' still comes only from the strict read or "Tiada Transaksi". An employer share smaller than the member share is read as swapped columns and refused in both reads; no read in the cached corpus changes. Only `capture='deterministic'` reads carry the lane stamp.
 
 ## 2026-11-18 — Request #69: the sponsor's "Our volunteers" figures stay as built; the small-size risk is accepted (owner)
 

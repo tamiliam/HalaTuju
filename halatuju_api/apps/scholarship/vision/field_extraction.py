@@ -278,7 +278,7 @@ def _read_labelled_doc(doc, ocr, image_fn):
     if parsed is not None:
         ex = deterministic_or_epf_fallback(doc.doc_type, parsed, r['text'], _v.extract_document_fields)
         version = rules_parser_version(doc.doc_type, r['text'])   # OCR-first S6: the rules lane
-        if version:
+        if version and ex.get('capture') == 'deterministic':   # never on a Gemini-filled 'mixed' read
             ex['parser_version'] = version
     else:
         ex = _v.extract_document_fields(r['text'], doc.doc_type)

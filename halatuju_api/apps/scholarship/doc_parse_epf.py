@@ -74,7 +74,7 @@ def _strict_rows(text: str) -> list:
             er, ee = ((float(g.replace(',', '')) for g in s.groups()[:2]) if s else (None, None))
             inline.append((er, ee, float(m.group(1).replace(',', ''))))
     if inline:
-        return inline
+        return inline if not _swapped(inline) else []
     start = next((k for k, ln in enumerate(lines) if re.search(r'caruman\s+semasa', ln, re.I)), -1)
     if start < 0:
         return []
@@ -99,7 +99,13 @@ def _strict_rows(text: str) -> list:
         return []
     if loose and abs(loose[0] - sum(t for _e, _m, t in rows)) > 0.005:
         return []
-    return rows
+    return rows if not _swapped(rows) else []
+
+
+def _swapped(rows: list) -> bool:
+    """A row whose employer share is SMALLER than its member share: the columns came out swapped
+    (review round 1). Rows that print only their total are not judged."""
+    return any(er is not None and ee is not None and er < ee for er, ee, _t in rows)
 
 
 # ── OCR-first S6 (2026-11-19): the RELAXED cell read, behind its lane switch ──────────────────
@@ -127,6 +133,10 @@ def _relaxed_rows(text: str) -> list:
       * the month labels number exactly the rows, and the dates run oldest to newest (so the last
         row IS the latest month);
       * at most one figure is left over, and it equals the rows' sum to the sen (the grand total).
+    Review round 1 also refuses: any unreadable token holding a digit after the first date (a
+    skipped "25O.00" would slide the grand total into the last row), a row whose employer share is
+    smaller than its member share (columns swapped), and a table with no positive total (0 + 0 = 0
+    proves nothing; 'zero' still comes from the strict read or "Tiada Transaksi" as before).
     """
     lines = _lines(text)
     start = next((k for k, ln in enumerate(lines) if _SECTION_START_RE.search(ln)), -1)
@@ -148,12 +158,17 @@ def _relaxed_rows(text: str) -> list:
                 continue
             figs.append(_money_cell(tok))
             if len(figs) == 3:
-                if abs(figs[0] + figs[1] - figs[2]) > 0.005:
-                    return []                         # the shares do not make the total
+                if abs(figs[0] + figs[1] - figs[2]) > 0.005 or figs[0] < figs[1]:
+                    return []                         # the shares do not make the total / swapped
                 rows.append(tuple(figs))
                 dates.append(pending)
                 pending = None
+        elif dates or pending is not None:
+            if re.search(r'\d', tok):
+                return []                             # an unreadable figure: never skip it
     if pending is not None or not rows or months != len(rows) or len(loose) > 1:
+        return []
+    if not any(t > 0 for _e, _m, t in rows):
         return []
     if loose and abs(loose[0] - sum(t for _e, _m, t in rows)) > 0.005:
         return []
