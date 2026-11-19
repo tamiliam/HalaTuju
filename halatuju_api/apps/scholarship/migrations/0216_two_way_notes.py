@@ -13,7 +13,7 @@ NEW TABLE: RLS ON with ONE service_role policy, in the same step (house rule for
 `halatuju_api/docs/incident-001-rls-disabled.md`). Nothing back-filled: a note written before #73 makes no
 notice, so nobody sees a "New note" mark for the old notes.
 
-MIGRATE-FIRST, BY HAND, before the push (scholarship ledger 0212 -> 0213). `sqlmigrate` renders for the LOCAL
+MIGRATE-FIRST, BY HAND, before the push (scholarship ledger 0215 -> 0216). `sqlmigrate` renders for the LOCAL
 backend (SQLite), so this is the Postgres DDL to run, verbatim — rendered offline with Django's postgresql schema
 editor from this migration — with RLS and the ledger row in the SAME transaction:
 
@@ -31,7 +31,7 @@ editor from this migration — with RLS and the ledger row in the SAME transacti
     CREATE INDEX "staff_notif_unseen" ON "staff_notifications" ("recipient_id", "application_id") WHERE "seen_at" IS NULL;
     ALTER TABLE public.staff_notifications ENABLE ROW LEVEL SECURITY;
     CREATE POLICY staff_notifications_service_role ON public.staff_notifications FOR ALL TO service_role USING (true) WITH CHECK (true);
-    INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0213_two_way_notes', now());
+    INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0216_two_way_notes', now());
     COMMIT;
 
 Then run the Supabase Security Advisor (0 errors before the deploy).
