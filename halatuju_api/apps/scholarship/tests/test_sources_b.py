@@ -39,9 +39,8 @@ PARTNER_LIST = '/api/v1/admin/students/'
 
 
 def add_source(client, code, name, query='', **extra):
-    """ADD a source by inviting its first person (`POST admin/invitations/`,
-    `audience='source_partner'`) — one of the two doors that create a source; Sources' own POST is
-    the other (back 2026-11-19, `test_add_source.py`), under the same rules. The new source is
+    """ADD a source the one way there is since source sign-in S2: by inviting its first person
+    (`POST admin/invitations/`, `audience='source_partner'`). Sources' POST is 410. The new source is
     `resp.json()['source']`; the account side is stubbed (no Supabase in tests)."""
     n = next(_ADDED)
     body = {'audience': 'source_partner', 'name': 'First Person', 'email': f'first{n}@add.test',
@@ -135,8 +134,8 @@ class TestTheSourcesFence(_TwoOrganisations):
         for code in ('brightpath', 'sb-a', 'sb-b', 'cumig'):
             self.assertNotIn(code, codes)
 
-    # ⚠ The four "add" tests below go through the source invite (`add_source`); Sources' own Add
-    # (back 2026-11-19) runs the same fence and rules and is covered in `test_add_source.py`.
+    # ⚠ The four "add" tests below moved onto the source invite on purpose (source sign-in S2): Add
+    # source is retired into it, and the SAME fence and rules must hold there (`add_source`).
     def test_a_new_source_belongs_to_the_callers_organisation(self):
         resp = add_source(authed_client(self.oa_a), 'fresh', 'Fresh')
         self.assertEqual(resp.status_code, 201, resp.content)
@@ -161,7 +160,7 @@ class TestTheSourcesFence(_TwoOrganisations):
     def test_an_organisation_less_admin_sees_none_and_cannot_add(self):
         loose = make_admin('admin')
         self.assertEqual(self._codes(authed_client(loose)), [])
-        # The invite is the Invitations door, which an admin does not hold: 403.
+        # Since source sign-in S2 only a super or an org_admin may add (= invite); an admin is 403.
         self.assertEqual(add_source(authed_client(loose), 'x', 'X').status_code, 403)
         loose_lead = make_admin('org_admin')
         resp = add_source(authed_client(loose_lead), 'x', 'X')

@@ -3723,15 +3723,7 @@
         "label": "Saksi"
       },
       "tabTerms": "Terma",
-      "add": "Tambah sumber",
-      "addTitle": "Tambah sumber",
-      "code": "Kod",
-      "create": "Cipta",
-      "created": "Sumber ditambah.",
-      "codeTaken": "Kod itu telah digunakan.",
-      "codeAndNameRequired": "Kod dan nama diperlukan.",
-      "codeReserved": "Kod itu dikhaskan. Pilih yang lain.",
-      "organisationRequired": "Pilih organisasi dahulu, kemudian tambah sumber.",
+      "addHint": "Untuk menambah sumber, jemput individu berkaitan di Jemputan.",
       "colSignIn": "Log masuk",
       "signIn": {
         "none": "Belum dijemput",
@@ -7699,8 +7691,8 @@
         "which": "Sumber yang mana?",
         "choose": "Pilih sumber…",
         "option": "{name} ({code}) — {state}",
-        "help": "Seorang bagi setiap sumber, jadi sumber yang telah disertai seseorang tidak disenaraikan.",
-        "addNew": "Atau tambah sumber baharu (nama dan kod ringkas)",
+        "help": "Seorang bagi setiap sumber, jadi sumber yang telah disertai seseorang tidak disenaraikan. Atau",
+        "addNew": "tambah sumber baharu (nama dan kod ringkas)",
         "pickExisting": "Pilih sumber yang sudah ada dalam senarai",
         "newName": "Nama sumber",
         "newCode": "Kod ringkas",
@@ -7709,8 +7701,6 @@
         "personName": "Nama orang itu",
         "note": "Mereka hanya melihat pelajar mereka sendiri, baca sahaja, dan boleh menjadi saksi kontrak.",
         "chooseFirst": "Pilih sumber, atau tambah yang baharu.",
-        "chooseFirstNoAdd": "Pilih sumber.",
-        "noSourcesNoAdd": "Belum ada sumber. Seseorang yang mempunyai \"Lihat dan ubah\" untuk Sumber boleh menambahnya.",
         "sent": "Jemputan dihantar.",
         "col": {
           "source": "Sumber"

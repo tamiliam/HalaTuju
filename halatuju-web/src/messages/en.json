@@ -3723,15 +3723,7 @@
         "label": "Witness"
       },
       "tabTerms": "Terms",
-      "add": "Add source",
-      "addTitle": "Add a source",
-      "code": "Code",
-      "create": "Create",
-      "created": "Source added.",
-      "codeTaken": "That code is already in use.",
-      "codeAndNameRequired": "Code and name are required.",
-      "codeReserved": "That code is reserved. Choose another.",
-      "organisationRequired": "Choose an organisation first, then add the source.",
+      "addHint": "To add a source, invite its person on Invitations.",
       "colSignIn": "Sign-in",
       "signIn": {
         "none": "Not invited",
@@ -7699,8 +7691,8 @@
         "which": "Which source?",
         "choose": "Choose a source…",
         "option": "{name} ({code}) — {state}",
-        "help": "One person per source, so a source someone has joined is not listed.",
-        "addNew": "Or add a new source (name and short code)",
+        "help": "One person per source, so a source someone has joined is not listed. Or",
+        "addNew": "add a new source (name and short code)",
         "pickExisting": "Choose a source already on your list instead",
         "newName": "Source name",
         "newCode": "Short code",
@@ -7709,8 +7701,6 @@
         "personName": "Person’s name",
         "note": "They will see only their own students, read only, and can witness contracts.",
         "chooseFirst": "Choose a source, or add a new one.",
-        "chooseFirstNoAdd": "Choose a source.",
-        "noSourcesNoAdd": "There are no sources yet. Someone with Sources \"View and change\" can add one.",
         "sent": "Invitation sent.",
         "col": {
           "source": "Source"

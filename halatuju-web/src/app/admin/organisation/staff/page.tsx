@@ -343,8 +343,7 @@ export default function OrganisationInvitationsPage() {
 
           {kind === 'source' ? (
             // Source sign-in S2: inviting a source's person IS how a source is added now.
-            mayInvite && <SourceInviteForm data={sourceData} token={token} t={t} onDone={sourceDone}
-              canAddSource={holdsDoor(role, 'sources')} />
+            mayInvite && <SourceInviteForm data={sourceData} token={token} t={t} onDone={sourceDone} />
           ) : kind === 'mentor' ? (
             mayInvite && <MentorInviteForm token={token} t={t} onDone={sourceDone}
               options={mentorData?.mentor_programmes ?? []} />

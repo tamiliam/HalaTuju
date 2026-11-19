@@ -393,10 +393,10 @@ created by that invite is marked), and an `org_admin` never onto one nor onto a 
 partner-email templates, is the one seam still crossing organisations.
 
 ⚠ **SOURCES SIGN IN** (source sign-in S2, 2026-10-30; roadmap `docs/plans/archive/2026-10-30-source-sign-in-roadmap.md`,
-decisions.md 2026-10-30 "Sources sign in"). A source's person is INVITED, and the invite can also ADD a source:
+decisions.md 2026-10-30 "Sources sign in"). A source's person is INVITED, and that is how a source is now ADDED:
 `POST admin/invitations/` `{audience:'source_partner', name, email, source_id}` or `{…, source_name, source_code,
 contact_person?, contact_email?, phone?, show_in_apply?}` (`views_admin/source_users.invite_source`; super or org_admin;
-a new source under the shared Add source rules AND only with `sources.edit` too (2026-11-19), `sources.new_source_refusal`, owner by `?org=` as before). Rules in
+a new source under the old Add source's rules, `sources.new_source_refusal`, owner by `?org=` as before). Rules in
 `apps/scholarship/source_invite.py`: the account comes from the staff invite's OWN branches
 (`staff_reinvite.provision_for_invite` — Google / temp password / already registered) with `role='source_partner'`,
 `source`, `owning_organisation = source.organisation`; ANY existing `PartnerAdmin` row at the address is 409
@@ -409,11 +409,8 @@ a blank `contact_email` is filled with the invitee's. `Invitation` gains `referr
 `emails.send_source_invitation_email` (the staff welcome refuses a source role). `GET admin/invitations/?kind=source`
 adds `source_users` (roster, `manageable`) and `sources` (form choices); rows carry `source_id/name/code`. Resend /
 Revoke: `POST admin/source-users/<id>/resend|revoke/` (`source_invite.manageable`: super, or org_admin of the user's
-organisation; else 404); Cancel is `admin/invitations/<id>/cancel/` for both audiences. Sources API: POST ADDS a
-source again (owner 2026-11-19, reversing S2's 410 `use_source_invitation`): gated by Sources "View and change"
-(`_sources_admin`, `sources.edit`), owner `_new_source_owner`, the SAME rules and write as the invite's new source
-(`new_source_fields` / `new_source_refusal` / `create_new_source`); a new source joins no gift, `show_in_apply`
-False by default, no person (`sign_in` 'none'); tests `tests/test_add_source.py`. PATCH refuses a CHANGE to name / contact person / contact email / phone with 409
+organisation; else 404); Cancel is `admin/invitations/<id>/cancel/` for both audiences. Sources API: POST is 410
+`use_source_invitation`; PATCH refuses a CHANGE to name / contact person / contact email / phone with 409
 `managed_by_source` once an active user has signed in (`source_invite.has_joined`; `show_in_apply` and `is_active`
 stay the organisation's); rows serve `sign_in` (`none`/`invited`/`joined`) and `user_count`. Tests:
 `tests/test_source_invite.py`.

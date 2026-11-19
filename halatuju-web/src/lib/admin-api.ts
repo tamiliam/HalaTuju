@@ -98,9 +98,7 @@ export { getMyStudent, getMyStudents, logMyMeeting } from './admin-api/mentorDes
 export type { MyMeeting, MyStudent, MyStudentCard, MyStudentResult, MyStudents } from './admin-api/mentorDesk'
 
 // The referral organisations a student arrives through, and witness assignment.
-export {
-  getOrgs, getSources, getSourceNames, createSource, updateSource, assignWitness,
-} from './admin-api/sources'
+export { getOrgs, getSources, getSourceNames, updateSource, assignWitness } from './admin-api/sources'
 export type { OrgItem, SourceItem, SourcePerson } from './admin-api/sources'
 
 // The partner, reviewer, invitation and sponsor e-mail templates an officer authors.

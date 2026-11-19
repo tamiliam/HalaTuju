@@ -9,7 +9,7 @@ through the real endpoints:
   set-password opted in, the temp-password expiry job still sweeping a source user;
 - CHANGE ROLE: a staff invite of a source user's address never turns it into staff;
 - LOSE ACCESS: cancel, revoke, the source switched off;
-- the Sources API: Add back beside the invite (2026-11-19), Edit locked once joined (409), `sign_in` / `user_count` /
+- the Sources API: Add retired (410), Edit locked once joined (409), `sign_in` / `user_count` /
   `person` (Invitations I2);
 - one person per source (I2, 2026-11-08): a second invite while one is active is 409
   `source_has_person`;
@@ -173,35 +173,6 @@ class TestInviteForANewSource(_Base):
     def test_another_organisations_code_is_not_a_clash(self):
         r = self.invite(source_name='Far', source_code='far')
         self.assertEqual(r.status_code, 201, r.content)
-
-    def _lead_without_sources_edit(self):
-        """An organisation admin with `invitations.edit` but Sources unticked to view-only."""
-        from apps.courses import staff_tables
-        lead = make_admin('org_admin', owning_org=self.org, email='lead2@x.org')
-        lead.permissions = [k for k in (lead.permissions or []) if k != 'sources.edit']
-        lead.save(update_fields=['permissions'])
-        lead = PartnerAdmin.objects.get(pk=lead.pk)
-        self.assertTrue(staff_tables.opens_door(lead, 'invitations'))
-        self.assertFalse(staff_tables.opens_door(lead, 'sources'))
-        return lead
-
-    def test_a_new_source_needs_the_sources_power_too(self):
-        """Owner 2026-11-19: creating a source asks Sources "View and change" at BOTH doors."""
-        r = self.new(self._lead_without_sources_edit())
-        self.assertEqual(r.status_code, 403, r.content)
-        self.assertFalse(ReferralSource.objects.filter(code='kovil').exists())
-        self.assertFalse(PartnerAdmin.objects.filter(role='source_partner').exists())
-
-    def test_inviting_for_an_existing_source_needs_only_the_invitations_power(self):
-        r = self.invite(self._lead_without_sources_edit())
-        self.assertEqual(r.status_code, 201, r.content)
-        self.assertEqual(self.user().source_id, self.source.pk)
-
-    def test_both_powers_create_the_source(self):
-        from apps.courses import staff_tables
-        self.assertTrue(staff_tables.opens_door(self.lead, 'invitations'))
-        self.assertTrue(staff_tables.opens_door(self.lead, 'sources'))
-        self.assertEqual(self.new().status_code, 201)
 
     def test_a_refused_invite_leaves_no_source_behind(self):
         make_admin('reviewer', owning_org=self.org, email='devi@smc.example.org')
@@ -514,24 +485,12 @@ class TestSourceSwitchedOff(_Base):
 
 
 class TestTheSourcesApi(_Base):
-    def test_add_source_is_back_and_its_source_can_then_be_invited_for(self):
-        """Owner 2026-11-19: Add source is back beside the invite. The new source has no person,
-        so its details stay editable, and it can be picked for an invite — once (one person per
-        source still holds)."""
+    def test_add_source_is_retired_into_the_invite(self):
         r = authed_client(self.lead).post(SOURCES, {'code': 'new', 'name': 'New'}, format='json')
-        self.assertEqual(r.status_code, 201, r.content)
-        made = ReferralSource.objects.get(organisation=self.org, code='new')
-        self.assertEqual((r.json()['sign_in'], r.json()['person']), ('none', None))
-        r = authed_client(self.lead).patch(f'{SOURCES}{made.pk}/', {'name': 'New Centre'},
-                                           format='json')
-        self.assertEqual(r.status_code, 200, r.content)     # no person → no edit lock
-        r = self.invite(source_id=made.pk, email='first@new.example.org')
-        self.assertEqual(r.status_code, 201, r.content)
-        self.assertEqual(self.user('first@new.example.org').source_id, made.pk)
-        r = self.invite(source_id=made.pk, email='second@new.example.org')
-        self.assertEqual((r.status_code, r.json()['code']), (409, 'source_has_person'))
+        self.assertEqual((r.status_code, r.json()['code']), (410, 'use_source_invitation'))
+        self.assertFalse(ReferralSource.objects.filter(code='new').exists())
         r = authed_client(make_admin('reviewer', owning_org=self.org)).post(
-            SOURCES, {'code': 'new2', 'name': 'New'}, format='json')
+            SOURCES, {'code': 'new', 'name': 'New'}, format='json')
         self.assertEqual(r.status_code, 403)
 
     def test_the_list_says_who_signs_in(self):

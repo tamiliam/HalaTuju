@@ -187,30 +187,13 @@ describe('what each kind can do', () => {
   })
 
   // ⚠ CHANGED ON PURPOSE (source sign-in S2, 2026-10-30): Source is no longer "coming soon". An
-  // org_admin (or a super) invites a source's person here (and, with Sources "View and change", may add one).
+  // org_admin (or a super) invites a source's person here — which is also how a source is added.
   it('Source offers the invite form to an org_admin, and the "coming soon" note is gone', async () => {
     await loaded()
     await pick('source')
     await waitFor(() => expect(screen.getByTestId('source-invite-form')).toBeTruthy())
     expect(screen.getByTestId('source-roster')).toBeTruthy()
     expect(screen.queryByText('admin.invitations.sourceComingSoon')).toBeNull()
-  })
-
-  // Owner 2026-11-19: creating a source needs Sources "View and change" as well as the invite power.
-  it('offers "add a new source" only to a holder of Sources "View and change"', async () => {
-    await loaded()
-    await pick('source')
-    await waitFor(() => expect(screen.getByTestId('source-invite-form')).toBeTruthy())
-    expect(screen.queryByText('admin.invitations.source.addNew')).toBeNull()
-    expect(screen.queryByLabelText('admin.invitations.source.newName')).toBeNull()
-  })
-
-  it('…and a holder of both powers gets it (no source to pick here, so it opens on the new one)', async () => {
-    viewerRole = { ...ORG_ADMIN, page_keys: [...(ORG_ADMIN.page_keys ?? []), 'sources.view', 'sources.edit'] }
-    await loaded()
-    await pick('source')
-    await waitFor(() => expect(screen.getByTestId('source-invite-form')).toBeTruthy())
-    expect(screen.getByLabelText('admin.invitations.source.newName')).toBeTruthy()
   })
 
   // Invitations I2 (owner ruling 2026-11-08): the Source tab lists the WAITING only, like every

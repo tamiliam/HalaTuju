@@ -1,23 +1,5 @@
 # Architectural Decisions — HalaTuju
 
-## 2026-11-19 — Add source is back beside the invite, gated by the Sources permission
-
-Owner decision, 2026-11-19. Reverses ONE part of source sign-in S2 (2026-10-30, "Sources sign in"): "Add source moves
-into the invite" (e88810acd backend, bd22bfd7d web). The rest of S2 stands. Services: api, web. Migration: none.
-- **Two doors add a source:** the Sources page's Add (`POST admin/scholarship/sources/`) and Invitations → Source with a
-  new source (`source_name` + `source_code`). The invite form is kept exactly as it is.
-- **Who may add is the permission alone, at BOTH doors:** creating a source needs Sources "View and change"
-  (`sources.edit`, `_SourcesBase.may_open`). No role-name gate. The invite's new-source branch asks it as well as
-  `invitations.edit` (403 otherwise); inviting a person for an EXISTING source needs only `invitations.edit`. The web
-  offers "add a new one" on Invitations → Source only to holders of the `sources` door.
-- **One set of rules, no second copy:** both doors use `new_source_fields`, `new_source_refusal`, `_new_source_owner`
-  and the shared write `create_new_source`. This answers the reason S2 rejected alternative (A), "two doors": the
-  doors are two, the rules are one.
-- **A new source** joins no gift, has `show_in_apply` False by default and has no person (`sign_in` 'none'); its
-  person can be invited later (one person per source).
-- Follow-up: TD-668 (no organisation picker for a super on Add; code length / characters and `show_in_apply` text
-  not checked, both doors; pre-existing).
-
 ## 2026-11-18 — An IPTS offer breaks the rule for every gift: flag only, reviewers only
 
 Owner ruling, 2026-11-18: "HalaTuju only caters to public courses. We cannot process IPTS courses today." An offer

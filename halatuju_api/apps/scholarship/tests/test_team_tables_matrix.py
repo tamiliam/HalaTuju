@@ -264,16 +264,6 @@ def m1a_added_cells(row):
     return {M1A_STAFF_LIST: row[M1A_SAME_AS]}
 
 
-#: Add source is back (owner 2026-11-19): the Sources POST was 410 `use_source_invitation` AFTER the same
-#: write gate (`_sources_admin`, `sources.edit`) it asks now, so exactly the shapes that got 410 now reach the
-#: rules and the empty body is refused 400 (`code_and_name_required`). Nobody else moves; nobody gains the gate.
-ADDSRC_POST = 'POST api/v1/admin/scholarship/sources/'
-
-
-def addsrc_moved_cells(before):
-    return {ADDSRC_POST: 400} if before[ADDSRC_POST] == 410 else {}
-
-
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -461,8 +451,7 @@ def _expected_row(shape):
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
            **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
-           **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before), **thanks_cells(shape, before),
-           **addsrc_moved_cells(before)}
+           **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before), **thanks_cells(shape, before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     row.update(nudges_added_cells(row))
