@@ -8,7 +8,7 @@
  * page). MOVES ONLY: every line below is the line it was; `view.tsx` hands it the same names it used.
  */
 import type { Dispatch, SetStateAction } from 'react'
-import { isQcAccepted, rejectionTrail, showsDecisionCards } from '@/lib/officerCockpit'
+import { isQcAccepted, rejectionTrail, showsRecommendationCard } from '@/lib/officerCockpit'
 import { stageStatus } from '@/lib/closeOffer'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
@@ -71,7 +71,7 @@ export function DecisionCard({
           Hidden on a CLOSED case with no verdict — there is no decision left to record, and the
           justification box invited writing one. WITH a verdict it stays: that is the frozen
           decision trail (21 rejected records on 2026-08-18), which must not disappear. */}
-      {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
+      {showsRecommendationCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, decisionRecorded }) && (
       <div id="decision-section" className="scroll-mt-16 border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.decision.title')}</h2>

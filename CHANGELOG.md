@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: admin case page - the pre-submission cleanup also covers Submitted (owner, 2026-11-19)
+
+Branch cleanup-submitted. At 'submitted' the page now hides Rate AI Prediction, Interview Stage, Recommendation, the funding projection, the generated profile, the "Assign a reviewer" card and the "Org admin and reviewer notes" card (no note can exist before Awaiting review). Check 2 - Outstanding is also hidden at submitted and shortlisted unless it holds items. At Awaiting review with no reviewer assigned (and no reopen) Interview Stage, Estimated need, Recommendation (and decision bar) and the notes card are hidden until a reviewer is assigned (`isWaitingForReviewer`). Kept: header, applicant cards, AI Prediction, Documents, Blockers, Close the file. `isPreSubmissionStage` now answers for both statuses; TD-613 needs_new_holder behaviour unchanged. Migration: none. Services: web.
+
 ### docs: learning loop stack brought up to main and closed (2026-11-19)
 
 Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (entries below). Migration: `0218_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: both.

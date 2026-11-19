@@ -160,8 +160,8 @@ describe('assigning a reviewer', () => {
     api.assignApplication.mockRejectedValue(Object.assign(new Error('not_assignable'), { code: 'not_assignable' }))
     fireEvent.change(assignPicker('assignTitle'), { target: { value: String(OTHER_ADMIN_ID) } })
     await waitFor(() => expect(api.getScholarshipApplication.mock.calls.length).toBe(loads + 1))
-    // The page's one error slot, drawn under the profile and in the decision card: the words, nothing else.
-    expect(screen.getAllByText(NA).map((el) => [el.tagName, el.textContent])).toEqual([['P', NA], ['P', NA]])
+    // The page's one error slot, drawn under the profile (the decision card is hidden while no reviewer is assigned, 2026-11-19): the words, nothing else.
+    expect(screen.getAllByText(NA).map((el) => [el.tagName, el.textContent])).toEqual([['P', NA]])
     expect(screen.queryByText('admin.scholarship.assignError')).toBeNull()
   })
 
@@ -197,7 +197,7 @@ describe('assigning a reviewer', () => {
 
 describe('raising a query with the student', () => {
   it('sends what was written, and the question then appears in Outstanding', async () => {
-    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'shortlisted' })
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'profile_complete' })
     await loaded()
     const send = () => screen.getByRole('button',
       { name: 'admin.scholarship.raiseQuerySend' }) as HTMLButtonElement
@@ -207,7 +207,7 @@ describe('raising a query with the student', () => {
                      { target: { value: 'Whose name is on the electricity bill?' } })
     expect(send().disabled).toBe(false)
 
-    api.raiseResolutionItem.mockResolvedValue(buildApplicationDetail('shortlisted', {
+    api.raiseResolutionItem.mockResolvedValue(buildApplicationDetail('profile_complete', {
       resolution_items: [{
         id: 901, fact: 'identity', code: 'officer_explanation', params: {},
         prompt: 'Whose name is on the electricity bill?', kind: 'explanation', doc_type: '',
