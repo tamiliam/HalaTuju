@@ -141,10 +141,11 @@ MODELS = {
     },
     'offer_parse': {
         'constant': (f'{_APP}/offer_parse.py', 'PARSER_VERSION'),
-        'files': [f'{_APP}/offer_parse.py', f'{_APP}/offer_parse_families.py'],
+        'files': [f'{_APP}/offer_parse.py', f'{_APP}/offer_parse_families.py', f'{_APP}/offer_parse_university.py'],
         'pins': [(f'{_APP}/vision/sanitize.py', '_normalise_reporting_date'),
                  (f'{_APP}/card_display.py', 'looks_like_date'),
-                 (f'{_APP}/card_display.py', 'looks_like_clause_number')],
+                 (f'{_APP}/card_display.py', 'looks_like_clause_number'),
+                 (f'{_APP}/pathway_engine.py', 'parse_reporting_date')],
     },
     'stpm_parse': {
         'constant': (f'{_APP}/stpm_parse.py', 'PARSER_VERSION'),

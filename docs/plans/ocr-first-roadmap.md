@@ -138,13 +138,13 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 - **Stays AI:** UMS letters that fail Gate 2, and every other university.
 - **Complexity:** high (it feeds the pathway and eligibility).
 
-### S1b: fix the S1 review round 3 notes before the UMS lane is switched on (owner option A, 19 Nov)
+### S1c: fix the S1 review round 3 notes before the UMS lane is switched on (owner option A, 19 Nov)
 - **Why:** S1 ships with the `ua:UMS` lane off (with the lane off, no layout child and no `read_ums` run). Review round 3 left notes that must be fixed first (TD-688 in the CHANGELOG).
 - **Goal:** fix every TD-688 item: a reporting range wrapped across lines ('28 -' / '29 September 2031') locks the last day; missed withdrawal words (DITOLAK, ditarik semula, spaced letters; TERBATAL needs care); 'Nama Program :' / 'Program Baharu :' lines unchecked; the '@' name connector and 'NAME, KG ...' lines; `read_ums` time on 200k hostile characters.
 - **Gate:** re-run Gate 1 and the layout tests under pypdf **6.21.4** (the production pin; S1 measured under local 5.9.0).
 - **Build and review:** its own Opus build and an adversarial review (3-round cap).
-- **Version:** `OFFER_READER_VERSION` 2.8.0 → **2.9.0** and `PARSER_VERSION` 2.1.0 → **2.2.0** (minor bumps). S2 and S3 below still say 2.9.0 and 2.10.0; they move up one when S1b ships.
-- **Switch:** the `ua:UMS` lane is not switched on before S1b ships and the owner says yes.
+- **Version:** `OFFER_READER_VERSION` 2.8.0 → **2.9.0** and `PARSER_VERSION` 2.1.0 → **2.2.0** (minor bumps). S2 and S3 below still say 2.9.0 and 2.10.0; they move up one when S1c ships.
+- **Switch:** the `ua:UMS` lane is not switched on before S1c ships and the owner says yes.
 
 ### OCR-13 (was S2): the next four universities (UPSI, UUM, UiTM, UM)
 - **Size:** about 28, 28, 22 and 22 AI-read letters respectively.
