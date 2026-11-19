@@ -14,7 +14,7 @@
  * `sticky`, not `fixed`: it rests in the flow at the page's end, so it never covers the post-award panels for
  * good. `data-page-bar` (rule 6), so a tab bar would give way to it. Phones only (`md:hidden`).
  */
-import { isQcAccepted, showsDecisionCards } from '@/lib/officerCockpit'
+import { isQcAccepted, showsRecommendationCard } from '@/lib/officerCockpit'
 import { stageStatus } from '@/lib/closeOffer'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
@@ -37,8 +37,8 @@ export function decisionBarShows({ app, decisionReopened, decisionRecorded, deci
   caseOpen: boolean
 }): boolean {
   if (!caseOpen) return false
-  if (!showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded })) return false
-  if (decisionLocked) return false
+  if (!showsRecommendationCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, decisionRecorded })) return false
+  if (decisionLocked) return false
   if (isQcAccepted(stageStatus(app, 'recommended_at')) && !decisionReopened) return false
   if (!(decisionReopened || ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status))) return false
   return canWrite

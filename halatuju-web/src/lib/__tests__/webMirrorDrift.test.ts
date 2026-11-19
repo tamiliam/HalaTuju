@@ -127,14 +127,16 @@ describe('isPreSubmissionStage vs the Assignment card\'s own guard in view.tsx',
     // The floor that stops this reading one file again: the screen plus fourteen panel modules.
     expect(fs.readdirSync(COCKPIT_DIR).filter((f) => /\.tsx?$/.test(f)).length)
       .toBeGreaterThanOrEqual(14)
-    expect(cockpit).toMatch(/isPreSubmissionStage|showsPostSubmissionCards/)
+    expect(cockpit).toMatch(/isPreSubmissionStage|showsPostSubmissionCards|showsEstimateCard|showsNotesCard/)
     expect(cockpit).not.toMatch(/status\s*!==\s*'shortlisted'/)
     expect(cockpit).not.toMatch(/status\s*===\s*'shortlisted'/)
   })
 
-  test('the helper answers only at shortlisted, and the two halves are complements', () => {
+  test('the helper answers only at submitted and shortlisted, and the two halves are complements', () => {
     expect(isPreSubmissionStage('shortlisted')).toBe(true)
-    for (const status of ['submitted', 'interviewing', 'awarded', '', null, undefined]) {
+    expect(isPreSubmissionStage('submitted')).toBe(true)
+    expect(showsPostSubmissionCards('submitted')).toBe(false)
+    for (const status of ['profile_complete', 'interviewing', 'awarded', '', null, undefined]) {
       expect(isPreSubmissionStage(status)).toBe(false)
       expect(showsPostSubmissionCards(status)).toBe(true)
     }

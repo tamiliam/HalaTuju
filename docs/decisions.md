@@ -20943,3 +20943,9 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 **Decision:** the list of 21 wrong-green + 5 failed-but-accepted + 7 QC-disagreed cases (2026-11-18 counts) is not built. The QC checks new cases only.
 **Why:** the owner chose to start clean; a list would be extra work for the QC.
 **Revisit if:** the owner asks for it; it then needs a picture first.
+
+## 2026-11-19 - The pre-submission cleanup also covers Submitted (owner, 2026-11-19)
+
+**Decision:** at 'submitted' (the first status) the admin case page hides the same cards as at 'shortlisted' (Rate AI Prediction, Interview Stage, Recommendation, funding projection, generated profile), plus the "Assign a reviewer" card and the "Org admin and reviewer notes" card. The "Check 2 - Outstanding" box is hidden at submitted and shortlisted too, unless the case holds resolution items (no query is ever hidden). At Awaiting review with NO reviewer assigned (and no reopen) the Interview Stage, Estimated need, Recommendation (and the phone decision bar) and the notes card are hidden too (one rule, `isWaitingForReviewer`); they appear when a reviewer is assigned. Header, applicant cards, AI Prediction, Documents, Blockers and Close the file stay.
+**Why:** at Submitted those cards were dead (greyed or empty). `isPreSubmissionStage` now answers for both statuses; the notes card is simply not passed before Awaiting review, when no note can exist.
+**Revisit if:** a reopen can land a case back at Submitted with notes already written.

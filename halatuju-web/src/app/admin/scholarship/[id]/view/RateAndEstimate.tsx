@@ -13,7 +13,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import {
   aiSuggestionFor,
   showsDecisionCards,
-  showsPostSubmissionCards,
+  showsEstimateCard,
   showsReportingDateBox,
 } from '@/lib/officerCockpit'
 import { formatDate } from '@/lib/formatDate'
@@ -156,7 +156,7 @@ export function RateAndEstimate({
         const showBursary = app.award_amount != null || app.proposed_award_amount != null
         // Hidden at shortlisted (pre-submission): a projection with no decision attached —
         // the bursary figure is set at the verdict.
-        if (!showsPostSubmissionCards(app.status)) return null
+        if (!showsEstimateCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened })) return null
         if (!fe && !showBursary) return null
         return (
           <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">

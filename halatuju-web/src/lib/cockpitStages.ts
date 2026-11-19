@@ -211,8 +211,11 @@ export function isApproveReady(decisionReady: boolean, hasAssistance: boolean): 
   return decisionReady && hasAssistance
 }
 
+/** The statuses before Step 2 is submitted: 'submitted' (the first status, before shortlisting) and 'shortlisted'. */
+const PRE_SUBMISSION_STATUSES = ['submitted', 'shortlisted']
+
 /**
- * A `shortlisted` application is PRE-SUBMISSION by definition — submitting Step 2 is exactly
+ * A `submitted` or `shortlisted` application is PRE-SUBMISSION by definition — submitting Step 2 is exactly
  * what moves it out of 'shortlisted' — so it can never have a submitted interview, and
  * `isDecisionReady` above can never be true there.
  *
@@ -224,19 +227,64 @@ export function isApproveReady(decisionReady: boolean, hasAssistance: boolean): 
  * which is now this same function: the cockpit holds no second copy of the test, and the drift
  * test asserts that none comes back.
  * drift-test: halatuju-web/src/lib/__tests__/webMirrorDrift.test.ts
- * Owner decision 2026-07-22.
+ * Owner decision 2026-07-22; widened to 'submitted' (the first status) 2026-11-19. The Assignment
+ * card (`showsReviewerAssignedCard`) and the Org admin and reviewer notes card (not passed by the
+ * cockpit before Awaiting review, when no note can exist) are hidden at both as well.
  *
- * What DOES stay at shortlisted: Blockers, Check 2 (chasing the student), Documents,
- * AI Prediction (the verification read as documents arrive) and Reject-this-student
+ * Also (owner 2026-11-19) the Interview Stage, funding projection, Recommendation and notes cards stay
+ * hidden at Awaiting review while NO reviewer is assigned (`isWaitingForReviewer`).
+ *
+ * What DOES stay at submitted and shortlisted: Blockers, Documents, Check 2 only when it holds
+ * resolution items (`showsCheck2Box`; empty it does no work here), AI Prediction (the verification read as documents arrive), Close the file and Reject-this-student
  * (`ORG_REJECT_FROM = ('shortlisted',)` — it exists only there).
  */
 export function isPreSubmissionStage(status: string | null | undefined): boolean {
-  return (status || '') === 'shortlisted'
+  return PRE_SUBMISSION_STATUSES.includes(status || '')
 }
 
 /** Show the verdict-flow / funding-projection / generated-profile cards? Hidden pre-submission. */
 export function showsPostSubmissionCards(status: string | null | undefined): boolean {
   return !isPreSubmissionStage(status)
+}
+
+/**
+ * ONE rule for "the case is waiting for a reviewer" (owner 2026-11-19): Awaiting review
+ * (`profile_complete`) with nobody assigned and no reopened decision. Until a reviewer holds the
+ * case the Interview Stage, the funding projection, the Recommendation card and the Org admin and
+ * reviewer notes card have nothing to do, so they stay hidden; assigning shows them, a reopen
+ * shows them. `assignedToId` must be the served `null` to count as unassigned: absent (undefined)
+ * means "not told", and reads as not waiting. The "Reject before interview" door is unaffected.
+ */
+export function isWaitingForReviewer(
+  opts: { status: string | null | undefined; assignedToId?: number | null; decisionReopened?: boolean | null },
+): boolean {
+  return opts.status === 'profile_complete' && opts.assignedToId === null && !opts.decisionReopened
+}
+
+/** Recommendation card (and the phone's decision bar): the decision cards, but not while waiting for a reviewer. */
+export function showsRecommendationCard(
+  opts: {
+    status: string | null | undefined
+    assignedToId?: number | null
+    decisionReopened?: boolean | null
+    decisionRecorded?: boolean | null
+  },
+): boolean {
+  return showsDecisionCards(opts) && !isWaitingForReviewer(opts)
+}
+
+/** Estimated need & proposed bursary: hidden pre-submission and while waiting for a reviewer. */
+export function showsEstimateCard(
+  opts: { status: string | null | undefined; assignedToId?: number | null; decisionReopened?: boolean | null },
+): boolean {
+  return showsPostSubmissionCards(opts.status) && !isWaitingForReviewer(opts)
+}
+
+/** Org admin and reviewer notes: not before Awaiting review, and not while waiting for a reviewer. */
+export function showsNotesCard(
+  opts: { status: string | null | undefined; assignedToId?: number | null; decisionReopened?: boolean | null },
+): boolean {
+  return showsPostSubmissionCards(opts.status) && !isWaitingForReviewer(opts)
 }
 
 // ── The other end of the lifecycle: a CLOSED case (2026-08-18) ───────────────
@@ -289,9 +337,11 @@ export function showsInterviewStage(
     status: string | null | undefined
     decisionReopened?: boolean | null
     hasInterviewSession?: boolean | null
+    assignedToId?: number | null
   },
 ): boolean {
   if (!showsPostSubmissionCards(opts.status)) return false
+  if (isWaitingForReviewer(opts)) return false
   if (!isCaseClosed(opts)) return true
   return !!opts.hasInterviewSession
 }
@@ -351,6 +401,8 @@ export function showsGeneratedProfileCard(
  * single resolution item raised against them — nothing was outstanding because nothing was ever
  * asked, and one of them was rejected over the college named on their offer letter. Same rule as
  * the cards above: with items it is the record of what was asked and stays (22 records).
+ * Also hidden when empty at submitted / shortlisted (owner 2026-11-19): `officer_requests` is
+ * 'documents_step' there, so the box offers no raise controls and does no work.
  */
 export function showsCheck2Box(
   opts: {
@@ -359,6 +411,7 @@ export function showsCheck2Box(
     hasItems?: boolean | null
   },
 ): boolean {
-  if (!isCaseClosed(opts)) return true
-  return !!opts.hasItems
+  if (opts.hasItems) return true           // a real query is never hidden
+  if (isPreSubmissionStage(opts.status)) return false  // owner 2026-11-19: no raise controls here
+  return !isCaseClosed(opts)
 }

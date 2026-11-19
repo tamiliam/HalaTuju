@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: admin case page - the pre-submission cleanup also covers Submitted (owner, 2026-11-19)
+
+Branch cleanup-submitted. At 'submitted' the page now hides Rate AI Prediction, Interview Stage, Recommendation, the funding projection, the generated profile, the "Assign a reviewer" card and the "Org admin and reviewer notes" card (no note can exist before Awaiting review). Check 2 - Outstanding is also hidden at submitted and shortlisted unless it holds items. At Awaiting review with no reviewer assigned (and no reopen) Interview Stage, Estimated need, Recommendation (and decision bar) and the notes card are hidden until a reviewer is assigned (`isWaitingForReviewer`). Kept: header, applicant cards, AI Prediction, Documents, Blockers, Close the file. `isPreSubmissionStage` now answers for both statuses; TD-613 needs_new_holder behaviour unchanged. Migration: none. Services: web.
+
 ### fix: sprint S1 case and team leftovers (2026-11-19)
 
 Branch access-s1-leftovers, not pushed. Migration: none. Services: both. Programme ACCESS-BY-SWITCHES, sprint S1 (brief `docs/plans/2026-11-19-s1-leftovers-brief.md`). Debt: TD-664 (all but d), TD-627, TD-634, TD-616, TD-630, TD-618.
@@ -22,7 +26,7 @@ Branch access-s1-leftovers, not pushed. Migration: none. Services: both. Program
 
 Services: web. No migration.
 - Reject before interview now reads "Why are you rejecting?" over the reason list, then "Additional details" (still required) over the box; the hint is "Confidential. Not shared with the student." and the empty-box refusal is reworded. The "Main reason" label is gone.
-- The case page's reviewer drop-down now uses the same function as the case list (`listAssignees`): the holder, plus active reviewers of this case's gift. Paused and other-gift reviewers are not offered (no greying); the holder is always kept. `assignOptions` and "Does not cover" are removed; the list now reads `paused` from the served rows, so the case list also stops offering paused reviewers. Gap: the case page knows only the case's own gift (`programme_id`), while the list and the server also count the cohort's gift; a moved case can differ (TD-NEW-case-page-gift-ids: serve `gift_ids` on the detail payload).
+- The case page's reviewer drop-down now uses the same function as the case list (`listAssignees`): the holder, plus active reviewers of this case's gift. Paused and other-gift reviewers are not offered (no greying); the holder is always kept. `assignOptions` and "Does not cover" are removed; the list now reads `paused` from the served rows, so the case list also stops offering paused reviewers. Gap: the case page knows only the case's own gift (`programme_id`), while the list and the server also count the cohort's gift; a moved case can differ (TD-687: serve `gift_ids` on the detail payload).
 - Reject form: the details box is marked required for screen readers (`aria-required`); its counter is no longer a live region (the notes card's still is).
 - The notes card drops its intro line and the "Notes can't be edited or deleted" line (the server stays append-only). Guide and FAQ lines updated.
 - One character-count placement (`CharCount`: right-aligned, under the box) for the notes card and the reject form.

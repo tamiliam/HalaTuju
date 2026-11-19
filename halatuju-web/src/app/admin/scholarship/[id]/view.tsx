@@ -41,6 +41,7 @@ import {
   type AdminSponsorProfile,
 } from '@/lib/admin-api'
 import { nudgeButton } from '@/lib/blockers'
+import { showsNotesCard } from '@/lib/cockpitStages'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 
 import { GroupLabel } from './view/shared'
@@ -434,7 +435,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         witnessBusy={witnessBusy} witnessMsg={witnessMsg} setWitnessMsg={setWitnessMsg}
         witnessEditing={witnessEditing} setWitnessEditing={setWitnessEditing}
         doAssignWitness={doAssignWitness}
-        notesCard={<ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
+        notesCard={!showsNotesCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened }) ? undefined : <ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
         preInterview={<PreInterviewOption key={app.id} app={app} t={t} token={token} busy={busy} canAssign={canAssign}
           err={preInterviewErr} setErr={setPreInterviewErr} onDone={onPreInterviewDone} onStale={() => reload(true)} />}

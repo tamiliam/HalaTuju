@@ -109,6 +109,7 @@ export function InterviewStage({
           billable call — Save draft, Submit findings) would write into a file nobody can act on. */}
       {showsInterviewStage({
         status: app.status, decisionReopened, hasInterviewSession: !!app.interview_session,
+        assignedToId: app.assigned_to_id,
       }) && (
       <div id="interview-section" tabIndex={-1} className="focus:outline-none border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">

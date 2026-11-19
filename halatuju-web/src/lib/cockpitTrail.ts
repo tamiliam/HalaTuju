@@ -116,7 +116,7 @@ const REVIEWER_CARD_HIDDEN_FROM = new Set<string>([
  * is still named in the Recommendation box.
  */
 export function showsReviewerAssignedCard(status: string | null | undefined): boolean {
-  if (isPreSubmissionStage(status)) return false     // shortlisted — the Reject card takes this slot
+  if (isPreSubmissionStage(status)) return false     // submitted / shortlisted — nothing to assign yet (shortlisted: the Reject card takes the slot)
   return !REVIEWER_CARD_HIDDEN_FROM.has(status || '')
 }
 

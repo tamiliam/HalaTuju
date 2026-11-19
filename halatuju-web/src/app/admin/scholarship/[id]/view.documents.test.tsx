@@ -83,9 +83,9 @@ describe('a document request carries the fact its type belongs to', () => {
   }
 
   const mounted = async () => {
-    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'shortlisted' })
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'profile_complete' })
     await loaded()
-    api.raiseResolutionItem.mockResolvedValue(buildApplicationDetail('shortlisted', {}))
+    api.raiseResolutionItem.mockResolvedValue(buildApplicationDetail('profile_complete', {}))
     return api
   }
 

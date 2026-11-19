@@ -1681,8 +1681,9 @@ describe('headerTimeline — the cockpit header lifecycle chips', () => {
 })
 
 describe('pre-submission stage gate (shortlisted card hiding)', () => {
-  it('only shortlisted counts as pre-submission', () => {
+  it('only submitted and shortlisted count as pre-submission', () => {
     expect(isPreSubmissionStage('shortlisted')).toBe(true)
+    expect(isPreSubmissionStage('submitted')).toBe(true)
     for (const s of ['profile_complete', 'interviewing', 'interviewed', 'recommended',
       'awarded', 'active', 'maintenance', 'closed', 'rejected', '']) {
       expect(isPreSubmissionStage(s)).toBe(false)
@@ -1693,6 +1694,7 @@ describe('pre-submission stage gate (shortlisted card hiding)', () => {
 
   it('hides the verdict-flow / projection / profile cards at shortlisted only', () => {
     expect(showsPostSubmissionCards('shortlisted')).toBe(false)
+    expect(showsPostSubmissionCards('submitted')).toBe(false)
     expect(showsPostSubmissionCards('profile_complete')).toBe(true)
     expect(showsPostSubmissionCards('interviewed')).toBe(true)
     expect(showsPostSubmissionCards('active')).toBe(true)
