@@ -3,5 +3,10 @@
     "digest": "196cffe3cbf7cad10f278d1fd86c0a8812bb2ef1aab976706b4d962df5ca0f7e",
     "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day. Digest re-seeded 2026-11-19 (LL3 review round, before any merge): the pins now follow their imports (vision/names.py, vision/judge.py, name_order.py).",
     "also_ok": []
+  },
+  "2.7.0": {
+    "digest": "196cffe3cbf7cad10f278d1fd86c0a8812bb2ef1aab976706b4d962df5ca0f7e",
+    "note": "2026-11-19: main's OCR-first S-visible work (owner decision 2026-11-18): the visible page judges, so a PDF page with an invisible text layer is read like a scanned page. The change sits in pdf_pages.py and the new pdf modules, which this register does not list (see the technical debt row); the digest of the listed files is the same as under 2.6.0.",
+    "also_ok": []
   }
 }
