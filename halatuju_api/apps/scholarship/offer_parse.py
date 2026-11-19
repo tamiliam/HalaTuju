@@ -319,7 +319,10 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # 2.1.0 (OCR-first S1, 2026-11-19) — a fourth family, the UMS university offer
 # (`offer_parse_university`), read from page 1's LAYOUT text on a digital PDF; its lock carries
 # ``rules_lane`` 'ua:UMS'. The three government families read exactly as before.
-PARSER_VERSION = '2.1.0'
+# 2.2.0 (OCR-first S1c, 2026-11-19) — the UMS read refuses more (TD-688): a reporting range wrapped
+# across lines, more withdrawal words (spaced letters too), any programme label line, an '@' or
+# "NAME, KG ..." line under the name, and text longer than a page 1. Government families unchanged.
+PARSER_VERSION = '2.2.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)
@@ -381,6 +384,15 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str) -> d
     return out
 
 
+def family_of(text: str) -> str:
+    """The family `diagnose` reads ``text`` as: a government family ('stpm', 'matriculation', 'polytechnic'),
+    else 'ums' for the UMS offer title, else ''. ONE helper for `diagnose` and `offer_exact._ums_family`
+    (S1c), so the lane switch and the parser never disagree on which letter is a UMS letter."""
+    from .offer_parse_university import is_ums
+    up = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or '')).upper()
+    return _detect(up) or ('ums' if is_ums(up) else '')
+
+
 def diagnose(text: str, page1_text: str = None, page1_layout: str = '') -> dict:
     """The parser's whole walk, for `parse_govt_offer` and the eval (`offer_replay`): ``{family,
     titled, portal, fields (the read before the exit checks, or None), empty_required, guard, locked}``
@@ -394,10 +406,7 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '') -> dict:
     text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or ''))   # no-break spaces as spaces; no zero-width
     page1_text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_text or ''))
     up = text.upper()
-    fam = _detect(up)
-    if not fam:
-        from .offer_parse_university import is_ums
-        fam = 'ums' if is_ums(up) else ''
+    fam = family_of(text)
     out = {'family': fam, 'titled': False, 'portal': bool(_PORTAL_TELL.search(text)), 'fields': None,
            'empty_required': [], 'guard': None, 'locked': None}
     if fam == 'ums':

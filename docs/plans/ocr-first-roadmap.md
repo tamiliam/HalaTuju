@@ -138,12 +138,13 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 - **Stays AI:** UMS letters that fail Gate 2, and every other university.
 - **Complexity:** high (it feeds the pathway and eligibility).
 
-### S1c: fix the S1 review round 3 notes before the UMS lane is switched on (owner option A, 19 Nov)
+### S1c: fix the S1 review round 3 notes before the UMS lane is switched on (owner option A, 19 Nov) - BUILT 19 Nov (branch ocr-s1c, awaiting review)
 - **Why:** S1 ships with the `ua:UMS` lane off (with the lane off, no layout child and no `read_ums` run). Review round 3 left notes that must be fixed first (TD-688 in the CHANGELOG).
 - **Goal:** fix every TD-688 item: a reporting range wrapped across lines ('28 -' / '29 September 2031') locks the last day; missed withdrawal words (DITOLAK, ditarik semula, spaced letters; TERBATAL needs care); 'Nama Program :' / 'Program Baharu :' lines unchecked; the '@' name connector and 'NAME, KG ...' lines; `read_ums` time on 200k hostile characters.
 - **Gate:** re-run Gate 1 and the layout tests under pypdf **6.21.4** (the production pin; S1 measured under local 5.9.0).
 - **Build and review:** its own Opus build and an adversarial review (3-round cap).
-- **Version:** `OFFER_READER_VERSION` 2.8.0 → **2.9.0** and `PARSER_VERSION` 2.1.0 → **2.2.0** (minor bumps). S2 and S3 below still say 2.9.0 and 2.10.0; they move up one when S1c ships.
+- **Version:** `OFFER_READER_VERSION` 2.8.0 → **2.9.0** and `PARSER_VERSION` 2.1.0 → **2.2.0** (minor bumps). S2 and S3 below moved up one (2.10.0, 2.11.0).
+- **Built:** every TD-688 item fixed by refusing more; Gate 1 unchanged under pypdf 5.9.0 and 6.21.4 (see the S1c CHANGELOG entry).
 - **Switch:** the `ua:UMS` lane is not switched on before S1c ships and the owner says yes.
 
 ### OCR-13 (was S2): the next four universities (UPSI, UUM, UiTM, UM)
@@ -152,14 +153,14 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
   - A layout reader for each university in `offer_parse_university.py`.
   - UiTM's own local course code is already handled in `offer_course_match`, and is extra evidence only.
   - Each lane is switched on only if it passes Gate 1 with at least 20 held-out letters. A lane short of 20 stays AI and is listed.
-- **Version:** 2.9.0.
+- **Version:** 2.10.0.
 - **Tests and gate:** as for S1, for each lane.
 - **Stays AI:** lanes under the threshold, private universities and the PISMP letters (deferred).
 - **Complexity:** medium.
 
 ### OCR-14 (was S3): the remaining public universities (UKM, UTHM, UTeM, UNIMAS, UMK and the rest of the 20)
 - **Scope:** the same pattern. Most of these lanes have **fewer than 20 letters**, so the likely result is "built, measured, stays AI until enough letters arrive". The sprint ships the readers with their switches off, plus a monthly line in the dry-run report showing when each lane reaches 20.
-- **Version:** 2.10.0.
+- **Version:** 2.11.0.
 - **Complexity:** medium. **Option:** drop or postpone this sprint if S2 shows small lanes are not worth it.
 
 ### OCR-3 (was S4): the SPM slip gate fix (free, rules)

@@ -102,6 +102,11 @@ is the page-1 image, as for a scanned PDF. Drawn text is shown as before. Prompt
 the lane switch (env `OCR_FIRST_LANES`) is off, or the catalogue match is not unique. Prompt and
 schema unchanged.
 
+2.9.0 - OCR-FIRST S1c (2026-11-19). The UMS rules read refuses more (TD-688), so more UMS letters may
+reach this reader: a reporting range wrapped across lines, more withdrawal words, any programme label
+line, an '@' or "NAME, KG ..." line under the name, text longer than a page 1. Prompt and schema
+unchanged; the lane stays off by default.
+
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in
 `vision_fields['offer_reader_inputs']`. Bump it on ANY change to the prompt, the schema, the inputs or
@@ -117,7 +122,7 @@ import re
 logger = logging.getLogger(__name__)
 
 #: Semantic version of the AI offer reader — see the module docstring.
-OFFER_READER_VERSION = '2.8.0'
+OFFER_READER_VERSION = '2.9.0'
 #: Pages of a PDF shown to Gemini: an e-registration slip can sit in front of the offer and the
 #: reporting date can be on page 2 (owner notes, S1); later pages are mostly reply forms.
 MAX_PAGES = 3

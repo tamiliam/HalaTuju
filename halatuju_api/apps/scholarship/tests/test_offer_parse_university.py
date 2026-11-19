@@ -481,18 +481,103 @@ class TestReviewRoundThree(SimpleTestCase):
         self.assertEqual(ex['rules_lane'], LANE)
         self.assertEqual(why, {})
 
-    @override_settings(OCR_FIRST_LANES=())
-    def test_lane_off_leaves_a_government_letter_alone(self):
-        """A letter of a government family is read as before, even with the UMS title in it, and no layout."""
+    def test_either_lane_setting_leaves_a_government_letter_alone(self):
+        """S1c (gating note): a DIGITAL government letter that also prints the UMS title still locks as a
+        government read, with the lane off AND on, and neither the layout child nor `read_ums` runs."""
         from apps.scholarship.offer_exact import _ums_family
         from apps.scholarship.tests.test_offer_exact import matric
-        self.assertFalse(_ums_family(matric() + 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH\n'))
+        text = matric() + 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH SESI I-2031/2032\n'
+        self.assertFalse(_ums_family(text))
         self.assertTrue(_ums_family(ums().replace(' ', ' ')))
-        with mock.patch(LAYOUT) as layout, mock.patch(READ_UMS) as rules:
-            from apps.scholarship.offer_exact import exact_offer_read
-            self.assertIsNotNone(exact_offer_read(matric()))
-        layout.assert_not_called()
-        rules.assert_not_called()
+        for lanes in ((), (LANE,)):
+            with self.subTest(lanes=lanes), override_settings(OCR_FIRST_LANES=lanes):
+                ex, why, layout, rules = self._read(text)
+                self.assertIsNotNone(ex)
+                self.assertEqual(ex['capture'], 'deterministic')
+                self.assertEqual(ex['rules_lane'], '')
+                self.assertEqual(why, {})
+                layout.assert_not_called()
+                rules.assert_not_called()
+
+
+class TestS1c(SimpleTestCase):
+    """S1c (TD-688, 2026-11-19): the review's medium and low findings. Synthetic letters only."""
+
+    def test_a_range_wrapped_across_lines_reads_no_date(self):
+        """MED-1: the last day of a wrapped range must never lock (the venue line between label and value
+        or not)."""
+        for report in ('28 -\n29 September 2031', '28 hingga\n29 September 2031',
+                       '28 September -\n1 Oktober 2031', '28\n- 29 September 2031', '28 &\n29 September 2031',
+                       '27 dan\n28 September 2031', '28 -\n29 September 2031 (Isnin)',
+                       ':\n28 -\n29 September 2031', '28 -\nDewan Canselor\n29 September 2031'):
+            with self.subTest(report=report):
+                f, reason = read_ums(ums(report=report))
+                self.assertEqual(f['reporting_date'], '')
+                self.assertIn('reporting_date', reason)
+
+    def test_one_date_under_its_label_still_reads(self):
+        for report in (':\n28 September 2031', '\nDewan Canselor\n28 September 2031', '28-29 September 2031'):
+            with self.subTest(report=report):
+                f, reason = read_ums(ums(report=report))
+                self.assertEqual((reason, f['reporting_date']), ('', '28 Sep 2031'))
+
+    def test_withdrawal_words_refuse(self):
+        for tail in ('Permohonan ini DITOLAK.', 'Tawaran ini telah ditarik semula.', 'Tawaran ini tidak lagi sah.',
+                     'Tawaran ini D I B A T A L K A N.', 'Tawaran ini DI BATALKAN.'):
+            with self.subTest(tail=tail):
+                self.assertEqual(read_ums(ums() + tail + '\n')[1], 'not_an_offer')
+        for top in ('SURAT TIDAK BERJAYA\n', 'TAWARAN TERBATAL\n', 'S U R A T  T I D A K  B E R J A Y A\n'):
+            with self.subTest(top=top):
+                self.assertEqual(read_ums(ums(top=top))[1], 'not_an_offer')
+
+    def test_terbatal_in_the_body_is_a_condition_not_a_withdrawal(self):
+        """Measured: most genuine UMS letters print TERBATAL in a conditional clause below the title."""
+        text = ums() + 'Tawaran ini akan TERBATAL sekiranya saudara tidak mendaftar.\nKor Batalion\n'
+        self.assertEqual(read_ums(text)[1], '')
+
+    def test_every_programme_label_wording_must_agree(self):
+        for label in ('Nama Program', 'Program Pengajian', 'PROGRAM YANG DITAWARKAN'):
+            with self.subTest(label=label):
+                f, reason = read_ums(ums() + f'{label} :      Diploma Sains Marin\n')
+                self.assertEqual(f['programme'], '')
+                self.assertIn('programme', reason)
+                self.assertEqual(read_ums(ums() + f'{label} :      {PROG}\n')[1], '')
+
+    def test_a_cut_name_with_an_alias_or_a_village_line_refuses(self):
+        for nxt in ('@ HAKIM', 'HAKIM, KG ZANTHARION', 'HAKIM KG ZANTHARION', 'HAKIM KAMPUNG ZANTHARION',
+                    'HAKIM, JALAN ZANTHARION 7'):
+            with self.subTest(nxt=nxt):
+                f, reason = read_ums(ums(name=f'{NAME}\n{nxt}'))
+                self.assertEqual(f['candidate_name'], '')
+                self.assertIn('candidate_name', reason)
+
+    def test_a_place_line_with_a_comma_still_locks(self):
+        """Measured: a town or estate before a comma, with no street word after it, is an address line."""
+        for nxt in ('KOTA KINABALU, SABAH', 'TAMAN SERI ZANTHARION, 88000 KOTA KINABALU', 'KG ZANTHARION, 89000'):
+            with self.subTest(nxt=nxt):
+                f, reason = read_ums(ums(name=f'{NAME}\n{nxt}'))
+                self.assertEqual((reason, f['candidate_name']), ('', NAME))
+
+    def test_text_longer_than_a_page_one_is_refused_at_once(self):
+        import time
+        from apps.scholarship.offer_parse_university import MAX_CHARS, MAX_LINES
+        self.assertEqual(read_ums(ums() + 'x' * MAX_CHARS)[1], 'too_long')
+        self.assertEqual(read_ums(ums() + '.\n' * MAX_LINES)[1], 'too_long')
+        hostile = ums() + ('untuk mendapat x' + ' ' * 79) * 2500
+        start = time.perf_counter()
+        self.assertEqual(read_ums(hostile), (None, 'too_long'))
+        self.assertIsNone(diagnose(hostile)['locked'])
+        self.assertLess(time.perf_counter() - start, 1.0)
+
+    def test_diagnose_and_the_exact_read_share_one_family_helper(self):
+        from apps.scholarship.offer_exact import _ums_family
+        from apps.scholarship.offer_parse import family_of
+        from apps.scholarship.tests.test_offer_exact import matric
+        for text in (ums(), ums().lower(), ums().replace(' ', ' '), matric(),
+                     matric() + 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH SESI I-2031/2032\n', 'SURAT BIASA\n', ''):
+            with self.subTest(text=text[:30]):
+                self.assertEqual(_ums_family(text), family_of(text) == 'ums')
+                self.assertEqual(diagnose(text)['family'] == 'ums', family_of(text) == 'ums')
 
 
 class TestTheMemoCountsText(SimpleTestCase):

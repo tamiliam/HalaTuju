@@ -129,8 +129,11 @@ def page1_of(eval_dir, key, route):
 
 
 def page1_layout_of(eval_dir, key, route):
-    """Page 1's LAYOUT text (`pdf_pages.pdf_page1_layout`) exactly as `offer_exact.exact_offer_read`
-    derives it — only for a text-layer letter the UMS family would read; '' otherwise (OCR-first S1)."""
+    """Page 1's LAYOUT text (`pdf_pages.pdf_page1_layout`) for a text-layer letter whose page-1 layer carries
+    the UMS title (`is_ums`); '' otherwise (OCR-first S1). This matches `offer_exact.exact_offer_read` only
+    as if the ua:UMS lane were ON: production derives the layout only with the lane on, and only when the
+    whole text is the UMS family (`offer_parse.family_of`; S1c). `diagnose` reads the layout only for that
+    family, so a government letter carrying the UMS title is still read as before here."""
     if route != 'text_layer':
         return ''
     path = os.path.join(eval_dir, 'fixtures', 'offer_letter', key + '.pdf')

@@ -8,5 +8,10 @@
     "digest": "b6609f19edb5c1db59847f7c77cdd6e9028739ff720031b54c88cda7cc98c21e",
     "note": "2026-11-19: OCR-first S1: a fourth family, the UMS university offer (offer_parse_university.py, now in the file list; pathway_engine.parse_reporting_date pinned). The three government families read as before. The digest changed because the file list and the code changed.",
     "also_ok": []
+  },
+  "2.2.0": {
+    "digest": "dea856cb38a3ff2307959b3714385250eb5f78923a15166d71b9ebce0175e38f",
+    "note": "2026-11-19: OCR-first S1c (TD-688): the UMS rules read refuses more: a reporting range wrapped across lines, more withdrawal words (TERBATAL and SURAT TIDAK BERJAYA only above the title; spaced letters read squeezed), a programme label of any wording that disagrees, a cut name under an alias or a village line, and text longer than a page 1. One family helper (family_of) shared with the Exact read. The three government families read as before.",
+    "also_ok": []
   }
 }

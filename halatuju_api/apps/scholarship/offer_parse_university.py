@@ -15,8 +15,11 @@ CONSERVATIVE (owner rule: "the visible page always judges"; a wrong fact is wors
 every field has ONE source, and any doubt returns no lock, so the letter goes to the AI as before.
 
 * title — "TAWARAN KEMASUKAN ..." at a LINE START; a cancellation, deferral, rejection, withdrawal,
-  appeal or reply word (PEMBATALAN, PENANGGUHAN, PENOLAKAN, TARIK BALIK, RAYUAN, MAKLUMBALAS) at or
-  above the title refuses (``not_an_offer``), and so does DIBATALKAN / BATAL / DITARIK BALIK anywhere.
+  appeal or reply word (PEMBATALAN, PENANGGUHAN, PENOLAKAN, TARIK BALIK, RAYUAN, MAKLUMBALAS, TERBATAL,
+  TIDAK BERJAYA) at or above the title refuses (``not_an_offer``), and so does DIBATALKAN / BATAL /
+  DITARIK BALIK / DITARIK SEMULA / DITOLAK / TIDAK LAGI SAH / SURAT TIDAK BERJAYA anywhere, spaced
+  letters ("D I B A T A L K A N") included. TERBATAL counts only in the head: genuine letters print it
+  in a conditional clause.
 * institution — the title only, never a hostel line; the hostel / venue goes to ``reporting_venue``.
 * intake — "SESI ..." from the title.
 * IC — ONLY from the "No. Kad Pengenalan" label (same line, or the next lines that hold nothing but
@@ -24,23 +27,25 @@ every field has ONE source, and any doubt returns no lock, so the letter goes to
 * name — the line straight after the ONE offer-date line ("Tarikh : 15 Ogos 2026"; two such lines
   above the title — a stamp's date — read no name), by the strict shared name rules; a certifier's or
   officer's line (PENDAFTAR, CANSELOR, NAIB, TIMBALAN, PEJABAT ...) is never a name, and a next line
-  that may be a wrapped name (a name connector, a name-like column beside another, or name-like with no
-  street word) reads no name.
+  that may be a wrapped name (a name connector or '@', a name-like column beside another, name-like with
+  no street word, or name-like words before a comma or KG / KAMPUNG) reads no name.
 * programme — from the label block between the title and the sentence: the "Program : ..." line (or,
   in a scan, the degree line after a bare "Program" label; a value may wrap onto ONE next line). It
   must AGREE, letter for letter, with the sentence "... untuk mendapat <programme> dan sebanyak ...";
-  any value there or on any other "Program : X" line that disagrees, or no label at all, reads no
-  programme. It starts "Sarjana Muda" /
+  any value there or on any other programme label line ("Program : X", "Program Baharu : X", "Nama
+  Program : X") that disagrees, or no label at all, reads no programme. It starts "Sarjana Muda" /
   "Ijazah Sarjana Muda" / "Diploma". The UPU code ("UH0000001") is extra evidence only, read with a
   glued-safe pattern bounded on the left (``offer_course_match.COURSE_CODE_RE`` misses a glued code).
 * reporting date — the first date after "Tarikh Lapor Diri"; a range ("28 - 29 September", "28
   September - 1 Oktober 2031", "... hingga ...") gives its FIRST day, with its own month or the end's,
   the year borrowed from the end; a range that cannot be placed, or a date with a day number before
-  it (any other joiner, a list), reads no date. Sane against the intake and the offer date.
+  it (any other joiner, a list), or a range wrapped across lines (a day number or a joiner on a line
+  above the date), reads no date. Sane against the intake and the offer date.
 * campus — only from the "Kampus" label (same line, or the line after a bare label) below the title,
   and only a value in the closed list of UMS campuses.
 
-Status letters ("SURAT PENGESAHAN PELAJAR") never lock. Pure; never raises on text input.
+Status letters ("SURAT PENGESAHAN PELAJAR") and text longer than a page 1 (``MAX_CHARS`` / ``MAX_LINES``)
+never lock. Pure; never raises on text input.
 """
 from __future__ import annotations
 
@@ -56,6 +61,11 @@ INSTITUTION = 'Universiti Malaysia Sabah'
 ISSUER = INSTITUTION                      # the letterhead's university (the answers' own convention)
 #: The campuses a UMS letter prints ("Kampus : Kota Kinabalu"). A value outside this list is not read.
 CAMPUSES = ('Kota Kinabalu', 'Antarabangsa Labuan', 'Labuan', 'Sandakan')
+#: The most text a UMS page 1 holds (S1c): the 58 cached letters' largest page-1 text is under 5,000
+#: characters and 100 lines, so these caps leave a wide margin. Longer text is refused before any rule
+#: runs (200,000 hostile characters: about 2.5 s before, under 0.001 s now).
+MAX_CHARS = 20_000
+MAX_LINES = 250
 
 _TITLE_WORDS = r'TAWARAN\s{1,3}KEMASUKAN\s{1,3}KE\s{1,3}UNIVERSITI\s{1,3}MALAYSIA\s{1,3}SABAH'
 _DETECT = re.compile(_TITLE_WORDS, re.IGNORECASE)
@@ -65,8 +75,10 @@ _TITLE = re.compile(r'^' + _TITLE_WORDS + r'\s{0,3},?\s{0,3}(SESI\s{1,3}[0-9IV]{
 _STATUS = re.compile(r'SURAT\s{1,3}PENGESAHAN', re.IGNORECASE)
 #: A letter that withdraws, defers, refuses or answers an offer (review round 1): any of these words above
 #: the body (the head and the title line) means it is not the offer itself, so it never locks.
-_NOT_AN_OFFER = re.compile(r'\b(?:PEMBATALAN|PENANGGUHAN|PENOLAKAN|TARIK\s{1,3}BALIK|RAYUAN|MAKLUM\s{0,3}BALAS)\b',
-                           re.IGNORECASE)
+#: TERBATAL and TIDAK BERJAYA (S1c) count only here: 36 of the 58 cached UMS letters print TERBATAL in a
+#: conditional clause ("tawaran ini akan TERBATAL sekiranya ..."), so neither is a word to refuse in the body.
+_NOT_AN_OFFER = re.compile(r'\b(?:PEMBATALAN|PENANGGUHAN|PENOLAKAN|TARIK\s{1,3}BALIK|RAYUAN|MAKLUM\s{0,3}BALAS|'
+                           r'TERBATAL|TIDAK\s{1,3}BERJAYA)\b', re.IGNORECASE)
 _DATE = r'\d{1,2}\s{1,3}' + _MALAY_MONTH + r'\s{1,3}20\d{2}'
 #: The offer-date line ("Tarikh : 15 Ogos 2026"; Vision reads "Tankh"), or the label alone with the
 #: date on the next line (":08 September 2025").
@@ -87,6 +99,8 @@ _SENTENCE = re.compile(r'untuk\s{1,80}mendapat\s{1,80}(\S.{4,400}?)\s{1,80}dan\s
 _DEGREE = re.compile(r'^(?:IJAZAH\s)?SARJANA\sMUDA\s.+\sDENGAN\sKEPUJIAN(?:\s\(.+\))?$|^DIPLOMA\s', re.IGNORECASE)
 #: The programme's own label line ("Program : X"; a scanned letter prints "Program" alone, the value elsewhere).
 _PROGRAM_LINE = re.compile(r'^Program\s{0,3}(?::\s{0,3}(.*))?$', re.IGNORECASE)
+#: ANY programme label line ("Program :", "Program Baharu :", "Nama Program :" — S1c): its value must agree.
+_ANY_PROGRAM = re.compile(r'^(?:Nama\s{1,3})?Program\b[^:]{0,60}:\s{0,3}(.*)$', re.IGNORECASE)
 #: A line that starts a programme name (a scanned letter's programme value line).
 _DEGREE_START = re.compile(r'^(?:IJAZAH\s)?SARJANA\sMUDA\b|^DIPLOMA\b', re.IGNORECASE)
 #: A range separator between two date parts: a dash or "(se)hingga" with a digit after it.
@@ -106,12 +120,26 @@ _SESI_YEARS = re.compile(r'(20\d{2})\s{0,2}/\s{0,2}(20\d{2})')
 _STREET_WORD = re.compile(r'\b(?:KG|KAMPUNG|JALAN|JLN|LORONG|LRG|TAMAN|TMN|LOT|PETI|RUMAH|BLOK|'
                           r'PERUMAHAN|LADANG|ESTET)\b', re.IGNORECASE)
 #: A name connector: a line holding one is (part of) a name, whatever else it holds (review round 2).
-_CONNECTOR = re.compile(r'\b(?:BIN|BINTI|ANAK|A\s{0,2}/\s{0,2}[LP]|[SD]\s{0,2}/\s{0,2}O)\b', re.IGNORECASE)
+#: '@' (an alias: "MUHAMMAD AMIRUL" / "@ HAKIM") joins a name too (S1c).
+_CONNECTOR = re.compile(r'\b(?:BIN|BINTI|ANAK|A\s{0,2}/\s{0,2}[LP]|[SD]\s{0,2}/\s{0,2}O)\b|@', re.IGNORECASE)
+#: A village word: name-like words before it, or before a comma, may be the name's tail ("HAKIM, KG ...").
+_VILLAGE = re.compile(r'\b(?:KG|KAMPUNG)\b', re.IGNORECASE)
 #: A withdrawal said in the body ("Tawaran ini adalah DIBATALKAN", "telah DITARIK BALIK"), word-bounded
 #: (review round 2): never an offer to lock. No UMS letter in the corpus prints any of these words.
-_WITHDRAWN = re.compile(r'\b(?:DIBATALKAN|BATAL|PEMBATALAN|DI\s{0,3}TARIK\s{1,3}BALIK)\b', re.IGNORECASE)
+#: S1c adds DITOLAK, DITARIK SEMULA, TIDAK LAGI SAH, the SURAT TIDAK BERJAYA heading and BATALKAN split from
+#: its DI (no cached UMS letter prints any); spaced letters ("D I B A T A L K A N") are read squeezed.
+_WITHDRAWN = re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}TARIK\s{1,3}(?:BALIK|SEMULA)|'
+                        r'DI\s{0,3}TOLAK|TIDAK\s{1,3}LAGI\s{1,3}SAH|SURAT\s{1,3}TIDAK\s{1,3}BERJAYA)\b', re.IGNORECASE)
+#: The ONE space between two single letters ("D I B A T A L K A N" -> "DIBATALKAN"; "D I BATALKAN" -> "DI
+#: BATALKAN"); a wider gap is the gap between two spaced words ("S U R A T  T I D A K" -> "SURAT  TIDAK").
+_LETTER_GAP = re.compile(r'(?<![A-Za-z])([A-Za-z])[^\S\n](?=[A-Za-z](?![A-Za-z]))')
 #: A day number standing alone ("27", "28/" — not inside "2031").
 _DAY_NUMBER = re.compile(r'(?<!\d)\d{1,2}(?!\d)')
+#: A word or mark that joins two days into a range or a list (S1c, MED-1): on a line ABOVE the date in the
+#: reporting-date window ("28 -" / "29 September 2031"), or starting the date's own line ("- 29 September").
+_JOIN = r'(?:[-–—,&]|\b(?:SE)?HINGGA\b|\bSAMPAI\b|\bDAN\b|\bKE\b|\bS\s{0,2}/\s{0,2}D\b)'
+_JOINER = re.compile(_JOIN, re.IGNORECASE)
+_JOINER_START = re.compile(r'^\s{0,3}' + _JOIN, re.IGNORECASE)
 #: Two columns on one layout line (the name must stand alone).
 _GAP = re.compile(r'\S\s{3,}\S')
 _COLUMNS = re.compile(r'\s{3,}')
@@ -134,6 +162,11 @@ def _one_space(s: str) -> str:
     return ' '.join((s or '').split())
 
 
+def _squeeze(s: str) -> str:
+    """Spaced letters joined ("D I B A T A L K A N" -> "DIBATALKAN"), for the withdrawal words (S1c)."""
+    return _LETTER_GAP.sub(r'\1', s or '')
+
+
 def _alnum_key(s: str) -> str:
     return re.sub(r'[^A-Z0-9()]', '', (s or '').upper())
 
@@ -153,11 +186,23 @@ def _may_wrap(raw: str) -> bool:
     connector (BIN, BINTI, A/L, A/P, ANAK, S/O, D/O) anywhere, or its FIRST column (a layout line splits at a
     column gap) is name-like with no street word of its own — a street word in a second column never
     clears it ("HAKIM ABDULLAH      JALAN ..."). A label line (the IC), a first column with a digit, or a
-    street line ("KG ZANTHARION", "PETI ...") is what follows a whole name."""
+    street line ("KG ZANTHARION", "PETI ...") is what follows a whole name. S1c: '@' is a connector, and a
+    street line that STARTS with name-like words and then a street word, after a comma or not ("HAKIM, KG
+    ZANTHARION", "HAKIM KG ZANTHARION", "HAKIM, JALAN ..."), may hold the name's tail too. A place name
+    before a comma with no street word after it ("TAMAN SERI, ...", a town) is an address line (measured:
+    the wider rule cost two genuine locks)."""
     if _CONNECTOR.search(raw or ''):
         return True
     first = _one_space(_COLUMNS.split((raw or '').strip())[0])
-    return _name_ok(first) and not _STREET_WORD.search(first)
+    if _name_ok(first) and not _STREET_WORD.search(first):
+        return True
+    village = _VILLAGE.search(first)
+    for cut in (first.find(','), village.start() if village else -1):
+        head = first[:cut].strip() if cut > 0 else ''
+        rest = first[cut:].lstrip(', ') if cut > 0 else ''
+        if head and _name_ok(head) and not _STREET_WORD.search(head) and _STREET_WORD.match(rest):
+            return True
+    return False
 
 
 def _offer_date_and_name(lines, title_at):
@@ -243,8 +288,8 @@ def _ums_programme(lines, title_at):
         if not hit:
             return ''                            # a Program value that is not the sentence's programme
         values.add(_tidy(hit))
-    for i, ln in enumerate(lines):               # every other "Program : X" line in the letter
-        lab = None if title_at < i < stop else _PROGRAM_LINE.match(_one_space(ln))
+    for i, ln in enumerate(lines):               # every programme label line in the letter (S1c: any wording)
+        lab = _ANY_PROGRAM.match(_one_space(ln))
         value = _one_space(lab.group(1) or '') if lab else ''
         if value and not _agreeing(value, lines[i + 1] if i + 1 < len(lines) else '', want):
             return ''
@@ -278,16 +323,22 @@ def _reporting_date(lines):
     "hingga" between two dates is a range: its first day (`_range_start`), or no date at all. The date
     read must start at the line's FIRST day number (review round 2): a day before it means a range or a
     list joined some other way ("28 September — 1 Oktober", "sampai", "s/d", "27, 28 dan 29 September",
-    "28 & 29", "28/29") whose first day this rule cannot place, so no date."""
+    "28 & 29", "28/29") whose first day this rule cannot place, so no date. A range WRAPPED across lines
+    ("28 -" / "29 September 2031", the venue line between them or not) would read its LAST day, so a day
+    number or a joiner on any part above the date, or a joiner starting the date's line, reads no date (S1c)."""
     at = [i for i, ln in enumerate(lines) if _REPORT_LABEL.search(ln)]
     if len(at) != 1:
         return ''
     i = at[0]
     tail = _REPORT_LABEL.split(lines[i], maxsplit=1)[1]
+    held = False                                 # an earlier part held a day number or a joiner (S1c, MED-1)
     for part in [tail] + lines[i + 1:i + 7]:
         got = first_date(part)
         if not got:
+            held = held or bool(_DAY_NUMBER.search(part) or _JOINER.search(part))
             continue
+        if held or _JOINER_START.match(part):
+            return ''                            # a range or list wrapped across lines: its first day is above
         if _RANGE_SEP.search(part):
             m = _DAY_RANGE.search(part)
             got, start = _range_start(m), (m.start() if m else -1)
@@ -335,13 +386,17 @@ def read_ums(source: str):
     """``(fields, reason)`` for one UMS letter's text: ``fields`` is the read (None before the title
     holds), ``reason`` '' when every required field is read and sane, else why it must not lock."""
     from .offer_parse import house_date
+    if len(source or '') > MAX_CHARS or (source or '').count('\n') > MAX_LINES:
+        return None, 'too_long'                  # more than a page 1 holds: no rule runs (S1c)
     if _STATUS.search(source or ''):
         return None, 'status_letter'
     lines = _text_lines(source)
     title_at, intake = _title(lines)
     if title_at < 0:
         return None, 'no_title'
-    if any(_NOT_AN_OFFER.search(ln) for ln in lines[:title_at + 1]) or _WITHDRAWN.search(source):
+    head = lines[:title_at + 1]
+    if (any(_NOT_AN_OFFER.search(ln) or _NOT_AN_OFFER.search(_squeeze(ln)) for ln in head)
+            or _WITHDRAWN.search(source) or _WITHDRAWN.search(_squeeze(source))):
         return None, 'not_an_offer'
     offer_date, name = _offer_date_and_name(lines, title_at)
     nric = _ic(lines, title_at)
