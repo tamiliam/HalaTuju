@@ -167,6 +167,7 @@ The message: the AI prediction matters.
 - Scope: a `reviewer` (scope `assigned`) sees numbers for their own assigned applicants only, on both surfaces. The rule is in `prediction_metrics.metrics()`; the served key `counted_scope` is `"all"` or `"assigned"`, and the web shows "Your assigned applicants only." from it.
 - The staff-name lookup for "By reviewer" is fenced to the caller's own organisation (a super is unfiltered); an unmatched recorder is a neutral row; no email is served. The staff Guide and FAQ are updated (English only).
 - Two follow-ups (numbers taken at the push to main): `programme_overview.py` is at its growth cap and needs a split before its next change; there is no dedicated query-budget test for the `ai_prediction` section.
+- Mobile sandbox: it now shows the assigned-only note (Organisation Overview surface only; the Programmes landing shares one payload and keeps the all-programmes note), a few-cases reviewer row and a long doubt label (commit `test: LL1 sprint - mobile sandbox shows ...`).
 - Status: built in branch `ll1`. Not merged to `main`. Not published. The owner decides both.
 
 ---
@@ -423,6 +424,7 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
   - Settings that switch model behaviour (LL3's known gaps), and `SGD_TO_MYR_RATE`, are not in the fingerprint.
   - The clock is not in the fingerprint. Salary-slip age (`income_engine/freshness.py:48`) and the date checks in `income_engine/occupation.py:66` and `income_engine/utilities.py:241` depend on today, so the same evidence can score differently on a later day.
   - When an application has no `requirements_snapshot`, the engine reads the live programme catalogue (`requirements.py:126-140`). That catalogue is not in the fingerprint.
+  - The IPTS rule in `offer_private` reads the live course catalogue, which the LL4 evidence fingerprint does not cover.
   - The stage facts move at QC accept or reject (in review -> decided). LL5 must hash under the stage as at the decision (`evidence_fingerprint` takes the stage as an argument), or report those cases apart.
   - The `_CODE` mask lets a single word of up to 40 characters through. The real protection is that every code slot is backed by a fixed choice list or written by the engine; the mask is only a backstop.
   - Before the merge to `main`: commit `36418b60c` carries a `Phone-check: none needed; ...` trailer (the release tool would list it as a phone check) and docs commit `7278edee9` carries `Services: api` though it builds nothing. Both trailers must be corrected when the branch is prepared for `main`.
