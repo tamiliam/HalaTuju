@@ -34,7 +34,8 @@ from .results_doc import _any_token, _norm_fold_upper_alnum
 # Version of the electricity-bill signature model. History:
 #   1.0.0 (2026-07-10) — initial issuer-identity + bill-grammar cascade; tnb/sesb/sesco/unrecognised.
 #   1.1.0 (2026-11-19) — OCR-first S6: the field READER changed (TNB photo lane, behind a switch);
-#                        this cascade did not. Bumped so re-scoring can tell the two apart.
+#                        this cascade did not, and no score changes. It marks the release only;
+#                        `parser_version` on the stored read tells an AI read from a rules read.
 MODEL_VERSION = '1.1.0'
 
 # ── Marker groups (normalised substring probes; matched via _norm_fold_upper_alnum) ──────────

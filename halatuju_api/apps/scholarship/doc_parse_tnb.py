@@ -14,7 +14,8 @@ went to Gemini. This reader takes the photo layout, but ONLY when the page prove
   * the holder is a parentage-connector name line right after the invoice number, the address
     block below it ends on its postcode line or a peninsular state, with no stray number in it;
   * the Tarikh Bil is a clean "dd <month> 20yy" date that falls 0-31 days after the Tempoh Bil
-    ends (review round 1: no period, no lock — `income_engine.utilities` dates a bill by it);
+    ends (review round 1: no period, no lock — `income_engine.utilities` dates a bill by it), and
+    the Tempoh Bil itself starts before it ends and spans 20-62 days (review round 2);
   * the current charge is not negative, and no bill label sits inside the address block.
 Anything else → None, and the bill goes to Gemini exactly as before.
 
@@ -54,6 +55,9 @@ _MONTH_NO = {m: k for k, m in enumerate(('jan', 'feb', 'mac', 'apr', 'mei', 'jun
 #: A bill label printed on its own line (review round 1): never part of an address.
 _LABEL_LINE_RE = re.compile(r'^(?:no\.?\s*(?:akaun|invois|kontrak)|tarikh\b|tempoh\b|jumlah\b|tunggakan'
                             r'|caj\b|penggenapan|bil\s+elektrik|sila\b|tarif\b|amaun\b)', re.IGNORECASE)
+#: Bill words that never sit in an address, ANYWHERE on the line (review round 2, L1: "Jenis
+#: Premis Kediaman", "Kod Tarif A" were taken as address lines).
+_LABEL_WORD_RE = re.compile(r'\b(?:premis|tarif|meter|kod|jenis|kediaman|akaun|invois)\b', re.IGNORECASE)
 
 
 def _switch_text_on(value) -> bool:
@@ -64,15 +68,18 @@ def lane_on(name: str = PHOTO_SWITCH) -> bool:
     """Is the OCR-first lane ``name`` switched on? A Django setting of that name when one exists
     (tests override it), else the env var of that name. ON only for a real ``True`` or the text
     '1' / 'true' / 'yes' (review round 1: the text '0' / 'False' is OFF). Not added to
-    settings/base.py: that file sits at its code-standards size ceiling. False on any error."""
+    settings/base.py: that file sits at its code-standards size ceiling. Review round 2 (L4): when
+    Django settings are not configured (a hand-run script), the env var still decides."""
+    value = None
     try:
         from django.conf import settings
-        value = getattr(settings, name, None)
-        if value is None:
-            value = os.environ.get(name, '')
-        return value is True or _switch_text_on(value)
+        if settings.configured:
+            value = getattr(settings, name, None)
     except Exception:
-        return False
+        value = None
+    if value is None:
+        value = os.environ.get(name, '')
+    return value is True or _switch_text_on(value)
 
 
 def _label_at(lines: list, pattern: str, start: int = 0) -> int:
@@ -126,7 +133,7 @@ def _holder(lines: list) -> Optional[tuple]:
         return None
     address = block[names[0] + 1:]
     if not 2 <= len(address) <= 6 or any(re.search(r'\d{8,}|^:', ln) or _LABEL_LINE_RE.match(ln)
-                                         for ln in address):
+                                         or _LABEL_WORD_RE.search(ln) for ln in address):
         return None
     post = [k for k, ln in enumerate(address) if _POSTCODE_RE.match(ln)]
     if len(post) != 1 or post[0] < len(address) - 2:
@@ -153,12 +160,24 @@ def _bill_date(lines: list, period: str) -> str:
     return nxt if 0 <= (issued - ends).days <= 31 else ''
 
 
+#: A TNB billing period runs about a month (review round 2: 20-62 days, start before end).
+_PERIOD_DAYS = (20, 62)
+
+
 def _billing_period(lines: list) -> str:
+    """The Tempoh Bil as ``'<start> <end>'``, only when both are real dates, the start comes first
+    and the span is `_PERIOD_DAYS` (review round 2, M3: `freshness._income_doc_recency` picks among
+    duplicate bills by the START month, so a misread start must not lock). '' otherwise."""
     k = next((i for i, ln in enumerate(lines) if re.search(r'tempoh\s+bil', ln, re.I)), -1)
     for ln in lines[k:k + 5] if k >= 0 else []:
         m = _PERIOD_RE.search(ln)
         if m:
-            return f'{m.group(1)} {m.group(2)}'
+            try:
+                start, end = (datetime.datetime.strptime(g, '%d.%m.%Y').date() for g in m.groups())
+            except ValueError:
+                return ''
+            span = (end - start).days
+            return f'{m.group(1)} {m.group(2)}' if _PERIOD_DAYS[0] <= span <= _PERIOD_DAYS[1] else ''
     return ''
 
 

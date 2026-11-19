@@ -347,6 +347,7 @@ JUMLAH (RM) 150,000.50
 CARUMAN SEMASA
 Jan-26 Caruman - IWS 16/01/2026 221.00 187.00 408.00
 Feb-26 Caruman - IWS 20/02/2026 250.00 210.00 460.00
+PENGELUARAN
 """
 
 # A Borang EC (income statement) mis-slotted into the EPF slot — none of the KWSP labels.
@@ -418,24 +419,28 @@ class TestEpfParser(SimpleTestCase):
         self.assertEqual(r['employee_contribution_total'], 'RM397.00')
         self.assertEqual(r['months_counted'], '2')                 # the n they are divided by
 
-    def test_rows_with_only_a_total_keep_the_old_fields_only(self):
+    def test_rows_with_only_a_total_are_refused(self):
+        # S6 review round 2 (M1): a lone figure could be a SHARE, not the total, so a row that
+        # does not print its three figures refuses the table → 'unknown' (the AI read decides).
         totals_only = _KWSP.replace('221.00 187.00 408.00', '408.00').replace(
             '250.00 210.00 460.00', '460.00')
         r = parse_by_labels('epf', totals_only)
         self.assertNotIn('employer_contribution_total', r)
         self.assertNotIn('employee_contribution_total', r)
-        self.assertEqual((r['avg_monthly_contribution'], r['monthly_contribution'],
-                          r['months_counted']), ('RM434.00', 'RM460.00', '2'))
+        self.assertEqual((r['contribution_status'], r['monthly_contribution'], r['months_counted']),
+                         ('unknown', '', ''))
 
     def test_ONE_row_without_a_split_drops_both_totals(self):
         """All or nothing: the totals are divided by `months_counted`, which counts every row."""
         r = parse_by_labels('epf', _KWSP.replace('250.00 210.00 460.00', '460.00'))
         self.assertNotIn('employer_contribution_total', r)
+        self.assertEqual(r['contribution_status'], 'unknown')
 
     def test_shares_that_do_not_add_up_are_a_misread_not_a_total(self):
         r = parse_by_labels('epf', _KWSP.replace('221.00 187.00 408.00', '221.00 178.00 408.00'))
         self.assertNotIn('employer_contribution_total', r)
         self.assertNotIn('employee_contribution_total', r)
+        self.assertEqual(r['contribution_status'], 'unknown')       # S6 review round 2 (M1)
 
     def test_a_zero_statement_carries_no_totals(self):
         zero = _KWSP.replace('Jan-26 Caruman - IWS 16/01/2026 221.00 187.00 408.00\n'

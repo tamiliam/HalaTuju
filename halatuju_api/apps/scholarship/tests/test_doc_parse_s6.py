@@ -269,9 +269,38 @@ class TestEpfRelaxedRows(SimpleTestCase):
                       "20/02/2026 25O.00 210.00 460.00\n670.00\nPENGELUARAN\n")
         self._refuses(_EPF_TABLE.replace('868.00', '868.0O'))
 
-    def test_swapped_shares_refuse(self):
-        # Review round 1 (LOW-3): the employer share is never smaller than the member share.
-        self._refuses(_EPF_TABLE.replace('221.00 187.00', '187.00 221.00'))
+    @_EPF_ON
+    def test_a_smaller_employer_share_keeps_the_rows_and_drops_only_the_split(self):
+        # Review round 2 (H1): employer < member is NOT proof of swapped columns (an elected
+        # higher member rate), so the rows stand for status / months / total; no split.
+        r = parse_by_labels('epf', _EPF_HEAD + _EPF_TABLE.replace('221.00 187.00', '187.00 221.00'))
+        self.assertEqual((r['contribution_status'], r['monthly_contribution'], r['months_counted']),
+                         ('has', 'RM460.00', '2'))
+        self.assertNotIn('employer_contribution_total', r)
+        self.assertNotIn('employee_contribution_total', r)
+
+    def test_a_partial_table_with_no_end_marker_or_total_refuses(self):
+        # Review round 2 (M2): nothing proves the page was not cut mid-table.
+        self._refuses(_EPF_TABLE.replace('868.00\nPENGELUARAN\n', ''))
+
+    def test_a_table_closed_by_its_end_marker_needs_no_grand_total(self):
+        with _EPF_ON:
+            self.assertEqual(len(doc_parse_epf._caruman_rows(_EPF_HEAD + _EPF_TABLE.replace('868.00\n', ''))), 2)
+
+    def test_a_reconciling_grand_total_proves_the_table_without_an_end_marker(self):
+        with _EPF_ON:
+            self.assertEqual(len(doc_parse_epf._caruman_rows(_EPF_HEAD + _EPF_TABLE.replace('PENGELUARAN\n', ''))), 2)
+
+    def test_an_unreadable_figure_before_the_first_date_refuses(self):
+        # Review round 2 (L2): "4O8.00" anywhere in the section, never skipped.
+        self._refuses(_EPF_TABLE.replace('Caruman IWS', 'Caruman IWS 4O8.00'))
+        self._refuses(_EPF_TABLE.replace('Jan-26 Feb-26', 'Jan-26 Feb-26 4O8.00'))
+
+    @_EPF_ON
+    def test_the_header_year_line_is_not_an_unreadable_figure(self):
+        r = parse_by_labels('epf', _EPF_HEAD + _EPF_TABLE.replace(
+            'CARUMAN SEMASA\n', 'CARUMAN SEMASA\n*Caruman semasa bagi\ntahun 2026 sahaja.\n'))
+        self.assertEqual(r['contribution_status'], 'has')
 
     def test_an_all_zero_table_refuses_in_the_relaxed_read(self):
         # Review round 1 (LOW-6): 0 + 0 = 0 proves nothing, so the relaxed read never makes 'zero'.
@@ -280,18 +309,126 @@ class TestEpfRelaxedRows(SimpleTestCase):
         self._refuses(table)
         self.assertEqual(parse_by_labels('epf', _EPF_HEAD + table)['contribution_status'], 'unknown')
 
-    def test_the_strict_cell_read_still_answers_zero_and_refuses_a_swap(self):
+    def test_the_strict_cell_read_still_answers_zero_and_keeps_a_smaller_employer_share(self):
         zero = "CARUMAN SEMASA\nJan-26\n16/01/2026\n0.00\n0.00\n0.00\nPENGELUARAN\n"
         self.assertEqual(parse_by_labels('epf', _EPF_HEAD + zero)['contribution_status'], 'zero')
         good = "CARUMAN SEMASA\nJan-26\n16/01/2026\n221.00\n187.00\n408.00\nPENGELUARAN\n"
         self.assertEqual(parse_by_labels('epf', _EPF_HEAD + good)['contribution_status'], 'has')
-        swapped = good.replace('221.00\n187.00', '187.00\n221.00')
-        self.assertEqual(doc_parse_epf._strict_rows(_EPF_HEAD + swapped), [])
-        inline = "CARUMAN SEMASA\nJan-26 16/01/2026 187.00 221.00 408.00\nPENGELUARAN\n"
-        self.assertEqual(doc_parse_epf._strict_rows(_EPF_HEAD + inline), [])
+        # Review round 2 (H1): the row stays; only the split is dropped.
+        for table in (good.replace('221.00\n187.00', '187.00\n221.00'),
+                      "CARUMAN SEMASA\nJan-26 16/01/2026 187.00 221.00 408.00\nPENGELUARAN\n"):
+            with self.subTest(table=table):
+                self.assertEqual(doc_parse_epf._strict_rows(_EPF_HEAD + table), [(187.0, 221.0, 408.0)])
+                r = parse_by_labels('epf', _EPF_HEAD + table)
+                self.assertEqual((r['contribution_status'], r['monthly_contribution']), ('has', 'RM408.00'))
+                self.assertNotIn('employer_contribution_total', r)
 
     @_EPF_ON
     def test_a_strict_read_is_never_replaced(self):
         from apps.scholarship.tests.test_doc_parse import _KWSP
         self.assertEqual(doc_parse_epf._caruman_rows(_KWSP), doc_parse_epf._strict_rows(_KWSP))
         self.assertEqual(rules_parser_version('epf', _KWSP), 'epf_parse kwsp_penyata 1.1.0')
+
+
+# Review round 2: an EMPTY withdrawals section, printed as real statements print it.
+_PENGELUARAN_TIADA = "PENGELUARAN\nTiada Transaksi\n"
+
+
+class TestEpfStrictRoundTwo(SimpleTestCase):
+    """Switches OFF: the live strict read. Every case here refused nothing it should lock wrongly."""
+
+    def _status(self, table):
+        return parse_by_labels('epf', _EPF_HEAD + table)['contribution_status']
+
+    def test_h1_the_exact_trigger_is_has_not_zero(self):
+        # 0.00 / 500.00 / 500.00 (a member contributing with no employer share) on a statement
+        # whose PENGELUARAN prints "Tiada Transaksi": main answered 'has'; it must stay 'has'.
+        for table in ("CARUMAN SEMASA\nJan-26\n16/01/2026\n0.00\n500.00\n500.00\n" + _PENGELUARAN_TIADA,
+                      "CARUMAN SEMASA\nJan-26 Caruman 16/01/2026 0.00 500.00 500.00\n" + _PENGELUARAN_TIADA):
+            with self.subTest(table=table):
+                r = parse_by_labels('epf', _EPF_HEAD + table)
+                self.assertEqual((r['contribution_status'], r['monthly_contribution'], r['months_counted']),
+                                 ('has', 'RM500.00', '1'))
+                self.assertNotIn('employer_contribution_total', r)
+
+    def test_h1_tiada_under_pengeluaran_only_never_makes_zero(self):
+        # An unreadable contributions table + "Tiada Transaksi" under PENGELUARAN → 'unknown' (AI).
+        for table in ("CARUMAN SEMASA\nJan-26\n16/01/2026\n2I0.00\n187.00\n397.00\n" + _PENGELUARAN_TIADA,
+                      "CARUMAN SEMASA\n" + _PENGELUARAN_TIADA,
+                      "CARUMAN SEMASA\nJan-26\n" + _PENGELUARAN_TIADA,
+                      "PENGELUARAN\nTiada Transaksi\n",
+                      "CARUMAN SEMASA\n16/01/2026 Tiada Transaksi\n" + _PENGELUARAN_TIADA,
+                      "CARUMAN SEMASA\nTiada Transaksi\n"):               # no end marker read
+            with self.subTest(table=table):
+                self.assertEqual(self._status(table), 'unknown')
+
+    def test_h1_tiada_inside_the_section_is_still_zero(self):
+        for end in ("PENGELUARAN\n", "PELARASAN\n", _PENGELUARAN_TIADA):
+            with self.subTest(end=end):
+                self.assertEqual(self._status("CARUMAN SEMASA\n*Caruman semasa bagi\ntahun 2026 sahaja.\n"
+                                              "- Tiada Transaksi\n" + end), 'zero')
+
+    def test_m1_an_inline_label_whose_figures_moved_refuses(self):
+        # Main locked 'has' with monthly 250.00 (the EMPLOYER share; the real total is 460.00).
+        table = ("CARUMAN SEMASA\nJan-26 Caruman 16/01/2026\nFeb-26 Caruman 20/02/2026 250.00\n"
+                 "210.00 460.00\nPENGELUARAN\n")
+        self.assertEqual(doc_parse_epf._strict_rows(_EPF_HEAD + table), [])
+        self.assertEqual(self._status(table), 'unknown')
+
+    def test_m1_a_single_inline_row_with_a_share_as_its_last_figure_refuses(self):
+        table = "CARUMAN SEMASA\nJan-26 Caruman 16/01/2026 250.00\n210.00 460.00\nPENGELUARAN\n"
+        self.assertEqual(self._status(table), 'unknown')
+
+    def test_m1_inline_needs_its_end_marker_or_a_reconciling_total(self):
+        rows = ("CARUMAN SEMASA\nJan-26 Caruman 16/01/2026 221.00 187.00 408.00\n"
+                "Feb-26 Caruman 20/02/2026 250.00 210.00 460.00\n")
+        self.assertEqual(self._status(rows), 'unknown')                       # cut: nothing proves it whole
+        self.assertEqual(self._status(rows + 'JUMLAH (RM) 868.00\n'), 'has')
+        self.assertEqual(self._status(rows + 'JUMLAH (RM) 869.00\nPENGELUARAN\n'), 'unknown')
+        self.assertEqual(self._status(rows + 'PENGELUARAN\n'), 'has')
+
+    def test_m1_inline_rows_outside_the_section_are_not_contributions(self):
+        table = ("CARUMAN SEMASA\nJan-26 Caruman 16/01/2026 221.00 187.00 408.00\nPENGELUARAN\n"
+                 "Mac-26 Pengeluaran 05/03/2026 100.00 50.00 150.00\n")
+        r = parse_by_labels('epf', _EPF_HEAD + table)
+        self.assertEqual((r['months_counted'], r['monthly_contribution']), ('1', 'RM408.00'))
+
+    def test_m2_the_cell_layout_cut_mid_table_refuses(self):
+        table = "CARUMAN SEMASA\nJan-26\n16/01/2026\n221.00\n187.00\n408.00\n"
+        self.assertEqual(self._status(table), 'unknown')
+        self.assertEqual(self._status(table + '408.00\n'), 'has')               # reconciling total
+        self.assertEqual(self._status(table + 'PENGELUARAN\n'), 'has')          # end marker
+
+    def test_the_cell_layout_refuses_shares_that_do_not_make_the_total(self):
+        table = "CARUMAN SEMASA\nJan-26\n16/01/2026\n221.00\n178.00\n408.00\nPENGELUARAN\n"
+        self.assertEqual(self._status(table), 'unknown')
+
+
+class TestTnbRoundTwo(SimpleTestCase):
+    def _refuses(self, text):
+        self.assertIsNone(parse_tnb_photo(text))
+
+    def test_m3_a_period_that_runs_backwards_or_too_long_refuses(self):
+        self._refuses(_PHOTO.replace('04.04.2026 - 03.05.2026', '04.04.2024 - 03.05.2026'))
+        self._refuses(_PHOTO.replace('04.04.2026 - 03.05.2026', '04.09.2026 - 03.05.2026'))
+        self._refuses(_PHOTO.replace('04.04.2026 - 03.05.2026', '25.04.2026 - 03.05.2026'))  # 8 days
+        self._refuses(_PHOTO.replace('04.04.2026 - 03.05.2026', '31.02.2026 - 03.05.2026'))  # no such day
+
+    def test_m3_the_span_bounds(self):
+        self._refuses(_PHOTO.replace('04.04.2026 - 03.05.2026', '14.04.2026 - 03.05.2026'))  # 19 days
+        got = parse_tnb_photo(_PHOTO.replace('04.04.2026 - 03.05.2026', '04.03.2026 - 03.05.2026'))
+        self.assertEqual(got['billing_period'], '04.03.2026 03.05.2026')                      # 60 days
+
+    def test_l1_premises_and_tariff_lines_are_not_an_address(self):
+        for line in ('Jenis Premis Kediaman', 'Kod Tarif A', 'No. Meter 12345', 'Tarif Domestik'):
+            with self.subTest(line=line):
+                self._refuses(_PHOTO.replace('TAMAN TEST', f'{line}\nTAMAN TEST'))
+
+    def test_l4_the_env_var_decides_when_django_settings_are_not_configured(self):
+        from apps.scholarship.doc_parse_tnb import PHOTO_SWITCH, lane_on
+        unconfigured = SimpleNamespace(configured=False)
+        with mock.patch('django.conf.settings', unconfigured):
+            with mock.patch.dict('os.environ', {PHOTO_SWITCH: '1'}):
+                self.assertTrue(lane_on(PHOTO_SWITCH))
+            with mock.patch.dict('os.environ', {PHOTO_SWITCH: ''}):
+                self.assertFalse(lane_on(PHOTO_SWITCH))
