@@ -107,7 +107,7 @@ describe('LL2b: the block on the QC panel', () => {
 })
 
 // Review round: every shown fact is now sent ("agreed" untouched, "disagreed" tapped), so the server
-// never answers a fact this tab did not show. The four tests below used to expect the taps only.
+// never answers a fact this tab did not show. The five tests below used to expect the taps only.
 describe('LL2b: what the decision sends', () => {
   it('Accept with no taps sends "agreed" for every fact shown', async () => {
     const { api } = asQc(TWO)
