@@ -191,10 +191,21 @@ def _memo_bytes() -> int:
     return sum(_result_bytes(v[0]) for v in _MEMO.values())
 
 
+#: A word box's own cost in the memo beside its text (four floats and a dict), for `_result_bytes`.
+_WORD_BOX_BYTES = 64
+
+
 def _result_bytes(result) -> int:
+    """What one answer holds against `_MEMO_MAX_BYTES`: its PNGs, and (review round 2) the layout ``text``
+    and the ``words`` boxes (each word's text plus `_WORD_BOX_BYTES`), so a huge text answer is evicted too."""
     if not isinstance(result, dict):
         return 0
-    return sum(len(p) for p in result.get('pngs') or ()) + len(result.get('png') or b'')
+    text = result.get('text')
+    words = result.get('words')
+    return (sum(len(p) for p in result.get('pngs') or ()) + len(result.get('png') or b'')
+            + (len(text) if isinstance(text, str) else 0)
+            + (sum(len(str(w.get('text') or '')) + _WORD_BOX_BYTES for w in words if isinstance(w, dict))
+               if isinstance(words, list) else 0))
 
 
 def _charge(digest: bytes, waited: float) -> None:

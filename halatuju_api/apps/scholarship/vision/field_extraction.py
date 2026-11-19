@@ -226,16 +226,18 @@ def _read_offer_letter(doc, ocr, _o, image_fn):
     the prior read; None unless it locks. Every other letter goes to the Gemini IMAGE read —
     `offer_reader` (S4). A UNIVERSITY rules read (OCR-first S1: UMS) stands only when its lane is
     switched on and the catalogue pins one course (`offer_exact.rules_lane_verdict`); else the AI reads it,
-    and its read records the lane and why (``offer_reader_inputs['rules_fallback']``, review round 1)."""
+    and its read records the lane and why (``offer_reader_inputs['rules_fallback']``, review round 1) —
+    also when the UMS rules read itself refused ('read_<reason>', review round 2)."""
     from ..offer_exact import exact_offer_read, rules_lane_verdict
     image = image_fn()
     _r = ocr if (ocr is not None) else _v.ocr_document(doc)
     _otext = (_o.get('text') if _o.get('text') is not None else (_r or {}).get('text', '')) or ''
     _ctx = _offer_context(doc, _otext)
+    refused = {}
     ex = exact_offer_read(_otext, prior=getattr(doc, 'vision_fields', None), image=image,
-                          content_type=doc.content_type, **_ctx)
+                          content_type=doc.content_type, why=refused, **_ctx)
     why = rules_lane_verdict(ex) if ex is not None else ''
-    fallback = {'lane': ex.get('rules_lane'), 'reason': why} if why else None
+    fallback = {'lane': ex.get('rules_lane'), 'reason': why} if why else (refused if ex is None and refused else None)
     if fallback:
         ex = None
     if ex is None:

@@ -16,25 +16,27 @@ every field has ONE source, and any doubt returns no lock, so the letter goes to
 
 * title — "TAWARAN KEMASUKAN ..." at a LINE START; a cancellation, deferral, rejection, withdrawal,
   appeal or reply word (PEMBATALAN, PENANGGUHAN, PENOLAKAN, TARIK BALIK, RAYUAN, MAKLUMBALAS) at or
-  above the title refuses (``not_an_offer``).
+  above the title refuses (``not_an_offer``), and so does DIBATALKAN / BATAL / DITARIK BALIK anywhere.
 * institution — the title only, never a hostel line; the hostel / venue goes to ``reporting_venue``.
 * intake — "SESI ..." from the title.
 * IC — ONLY from the "No. Kad Pengenalan" label (same line, or the next lines that hold nothing but
   the student number / a colon); never the first IC anywhere; any other IC on the page refuses.
 * name — the line straight after the ONE offer-date line ("Tarikh : 15 Ogos 2026"; two such lines
   above the title — a stamp's date — read no name), by the strict shared name rules; a certifier's or
-  officer's line (PENDAFTAR, CANSELOR, NAIB, TIMBALAN, PEJABAT ...) is never a name, and a name-like
-  next line that is not an address line (no address word) may be a wrapped name: no name.
+  officer's line (PENDAFTAR, CANSELOR, NAIB, TIMBALAN, PEJABAT ...) is never a name, and a next line
+  that may be a wrapped name (a name connector, a name-like column beside another, or name-like with no
+  street word) reads no name.
 * programme — from the label block between the title and the sentence: the "Program : ..." line (or,
   in a scan, the degree line after a bare "Program" label; a value may wrap onto ONE next line). It
   must AGREE, letter for letter, with the sentence "... untuk mendapat <programme> dan sebanyak ...";
-  any value there that disagrees, or no label at all, reads no programme. It starts "Sarjana Muda" /
+  any value there or on any other "Program : X" line that disagrees, or no label at all, reads no
+  programme. It starts "Sarjana Muda" /
   "Ijazah Sarjana Muda" / "Diploma". The UPU code ("UH0000001") is extra evidence only, read with a
   glued-safe pattern bounded on the left (``offer_course_match.COURSE_CODE_RE`` misses a glued code).
 * reporting date — the first date after "Tarikh Lapor Diri"; a range ("28 - 29 September", "28
   September - 1 Oktober 2031", "... hingga ...") gives its FIRST day, with its own month or the end's,
-  the year borrowed from the end; a range that cannot be placed reads no date. Sane against the
-  intake and the offer date.
+  the year borrowed from the end; a range that cannot be placed, or a date with a day number before
+  it (any other joiner, a list), reads no date. Sane against the intake and the offer date.
 * campus — only from the "Kampus" label (same line, or the line after a bare label) below the title,
   and only a value in the closed list of UMS campuses.
 
@@ -44,7 +46,8 @@ from __future__ import annotations
 
 import re
 
-from .offer_parse import _IC, _IC_END, _MALAY_MONTH, _decimal_digits, _name_ok, _norm_nric, first_date
+from .offer_parse import (_DMY_RE, _IC, _IC_END, _MALAY_MONTH, _NUM_DATE_RE, _decimal_digits, _name_ok, _norm_nric,
+                          first_date)
 from .offer_parse_families import _ENDS_MARKER, _blocked
 
 #: Recorded on a rules read (`rules_lane`) — the lane switch (`offer_exact.ocr_first_lanes`) names it.
@@ -97,13 +100,21 @@ _VENUE = re.compile(r'^Tempat(?:\s{0,3}/\s{0,3}Kolej|\s{1,3}Lapor\s{1,3}Diri)?\s
 _CAMPUS = re.compile(r'^Kampus\s{0,3}:\s{0,3}(\S.*)$', re.IGNORECASE)
 _CAMPUS_LABEL = re.compile(r'^Kampus\s{0,3}:?$', re.IGNORECASE)
 _SESI_YEARS = re.compile(r'(20\d{2})\s{0,2}/\s{0,2}(20\d{2})')
-#: An address word: a line holding one is the address under the name, never the name's wrapped tail.
-_ADDRESS_WORD = re.compile(r'\b(?:KG|KAMPUNG|JALAN|JLN|LORONG|LRG|TAMAN|TMN|LOT|BATU|KOTA|BANDAR|PEKAN|RUMAH|BLOK|'
-                           r'PETI|SURAT|PERUMAHAN|LADANG|ESTET|SABAH|SARAWAK|LABUAN|JOHOR|KEDAH|KELANTAN|MELAKA|'
-                           r'PAHANG|PERAK|PERLIS|PULAU|PINANG|SELANGOR|TERENGGANU|SEMBILAN|KUALA|LUMPUR|PUTRAJAYA)\b',
-                           re.IGNORECASE)
+#: A STREET word (review round 2): a name-like line holding one is the address under the name, never the
+#: name's wrapped tail. Town, state and region words (KOTA, BANDAR, SABAH, LABUAN, PULAU ...) are not here:
+#: they are names too ("HAKIM BIN BANDAR"). A line with a digit (house number, postcode) is never name-like.
+_STREET_WORD = re.compile(r'\b(?:KG|KAMPUNG|JALAN|JLN|LORONG|LRG|TAMAN|TMN|LOT|PETI|RUMAH|BLOK|'
+                          r'PERUMAHAN|LADANG|ESTET)\b', re.IGNORECASE)
+#: A name connector: a line holding one is (part of) a name, whatever else it holds (review round 2).
+_CONNECTOR = re.compile(r'\b(?:BIN|BINTI|ANAK|A\s{0,2}/\s{0,2}[LP]|[SD]\s{0,2}/\s{0,2}O)\b', re.IGNORECASE)
+#: A withdrawal said in the body ("Tawaran ini adalah DIBATALKAN", "telah DITARIK BALIK"), word-bounded
+#: (review round 2): never an offer to lock. No UMS letter in the corpus prints any of these words.
+_WITHDRAWN = re.compile(r'\b(?:DIBATALKAN|BATAL|PEMBATALAN|DI\s{0,3}TARIK\s{1,3}BALIK)\b', re.IGNORECASE)
+#: A day number standing alone ("27", "28/" — not inside "2031").
+_DAY_NUMBER = re.compile(r'(?<!\d)\d{1,2}(?!\d)')
 #: Two columns on one layout line (the name must stand alone).
 _GAP = re.compile(r'\S\s{3,}\S')
+_COLUMNS = re.compile(r'\s{3,}')
 #: A certifier's stamp ("SALINAN DISAHKAN BENAR", with its OCR misreads) or an officer's title / office
 #: ("PENDAFTAR", "TIMBALAN NAIB CANSELOR", "PEJABAT ...") — never a name.
 _STAMP = re.compile(r'\b(?:SALINAN|DISAHKAN|DISALKAN|BENAR|BEHAR|SEBENAR|COP|PEGAWAI|PENGETUA|SAH|PENDAFTAR|'
@@ -137,10 +148,22 @@ def _title(lines):
     return i, re.sub(r'\s{0,2}-\s{0,2}', '-', re.sub(r'\s{0,2}/\s{0,2}', '/', intake))
 
 
+def _may_wrap(raw: str) -> bool:
+    """True when the line under the name may hold the rest of it (review rounds 1 and 2): it holds a name
+    connector (BIN, BINTI, A/L, A/P, ANAK, S/O, D/O) anywhere, or its FIRST column (a layout line splits at a
+    column gap) is name-like with no street word of its own — a street word in a second column never
+    clears it ("HAKIM ABDULLAH      JALAN ..."). A label line (the IC), a first column with a digit, or a
+    street line ("KG ZANTHARION", "PETI ...") is what follows a whole name."""
+    if _CONNECTOR.search(raw or ''):
+        return True
+    first = _one_space(_COLUMNS.split((raw or '').strip())[0])
+    return _name_ok(first) and not _STREET_WORD.search(first)
+
+
 def _offer_date_and_name(lines, title_at):
     """(offer date, name) from the head above the title: the name is the line right after the date. Both
     '' when the head prints more than one "Tarikh" line (a stamp's own date: which one is the offer's?).
-    The name is '' when the line after it is name-like too (a wrapped name) and not the IC label."""
+    The name is '' when the line after it may be its wrapped tail (`_may_wrap`)."""
     dated = [ln for ln in lines[:title_at] if _OFFER_DATE.match(_one_space(ln)) or _OFFER_LABEL.match(_one_space(ln))]
     if len(dated) > 1:
         return '', ''
@@ -155,9 +178,9 @@ def _offer_date_and_name(lines, title_at):
             continue
         raw = lines[at] if at < title_at else ''
         name = _one_space(raw)
-        after = _one_space(lines[at + 1]) if at + 1 < title_at else ''
+        after = lines[at + 1] if at + 1 < title_at else ''
         if (_GAP.search(raw) or _blocked(name) or _STAMP.search(name) or not _name_ok(name)
-                or _ENDS_MARKER.search(name) or (_name_ok(after) and not _ADDRESS_WORD.search(after))):
+                or _ENDS_MARKER.search(name) or _may_wrap(after)):
             name = ''
         return _one_space(m.group(1)), name
     return '', ''
@@ -199,7 +222,8 @@ def _ums_programme(lines, title_at):
     next line), or, in a scanned letter whose "Program" label stands alone, the line(s) that start a
     programme name ("Sarjana Muda ...", "Diploma ...") between the title and the sentence. It must AGREE,
     letter for letter, with the "untuk mendapat <programme> dan sebanyak" sentence, whose own lines are
-    never a source. '' when there is no Program label, no value, or ANY value line that disagrees."""
+    never a source. '' when there is no Program label, no value, or ANY value line that disagrees — and
+    any "Program : X" line ANYWHERE else in the letter must agree too (review round 2)."""
     joined = '\n'.join(lines)
     found = list(_SENTENCE.finditer(joined))
     said = {_alnum_key(m.group(1)) for m in found}
@@ -215,22 +239,31 @@ def _ums_programme(lines, title_at):
         value = _one_space(lab.group(1) or '') if lab else (one if _DEGREE_START.match(one) else '')
         if not value:
             continue
-        nxt = _one_space(lines[i + 1]) if i + 1 < stop else ''
-        hit = [c for c in (value, f'{value} {nxt}' if nxt else '') if c and _alnum_key(c) == want]
+        hit = _agreeing(value, lines[i + 1] if i + 1 < stop else '', want)
         if not hit:
             return ''                            # a Program value that is not the sentence's programme
-        values.add(_tidy(hit[0]))
+        values.add(_tidy(hit))
+    for i, ln in enumerate(lines):               # every other "Program : X" line in the letter
+        lab = None if title_at < i < stop else _PROGRAM_LINE.match(_one_space(ln))
+        value = _one_space(lab.group(1) or '') if lab else ''
+        if value and not _agreeing(value, lines[i + 1] if i + 1 < len(lines) else '', want):
+            return ''
     values = {v for v in values if _DEGREE.match(v)}
     return next(iter(values)) if labelled and len(values) == 1 else ''
 
 
-def _range_start(part: str) -> str:
-    """A date range's FIRST day ("28-29 September 2024", "28 September - 1 Oktober 2031" -> 28 September
-    2031): its own month, or the end's when it prints only a day; the end's year when it prints none.
-    '' unless that first day reads and is not after the end (a borrowed month or year that does not fit)."""
+def _agreeing(value: str, nxt: str, want: str) -> str:
+    """``value`` (or ``value`` + its wrapped next line) when it names the sentence's programme ``want``; ''."""
+    nxt = _one_space(nxt)
+    return next((c for c in (value, f'{value} {nxt}' if nxt else '') if c and _alnum_key(c) == want), '')
+
+
+def _range_start(m) -> str:
+    """A date range's FIRST day (``m`` a `_DAY_RANGE` match: "28-29 September 2024", "28 September - 1
+    Oktober 2031" -> 28 September 2031): its own month, or the end's when it prints only a day; the end's
+    year when it prints none. '' unless that first day reads and is not after the end."""
     from .offer_parse import house_date
     from .pathway_engine import parse_reporting_date
-    m = _DAY_RANGE.search(part)
     if not m or (m.group(3) and not m.group(2)):
         return ''
     first = f'{m.group(1)} {m.group(2) or m.group(5)} {m.group(3) or m.group(6)}'
@@ -242,7 +275,10 @@ def _range_start(part: str) -> str:
 def _reporting_date(lines):
     """The first date in the six lines after the "Tarikh Lapor Diri" label (label, colon and venue lines
     sit between them in a scanned letter); '' when the label is absent or printed twice. A dash or
-    "hingga" between two dates is a range: its first day (`_range_start`), or no date at all."""
+    "hingga" between two dates is a range: its first day (`_range_start`), or no date at all. The date
+    read must start at the line's FIRST day number (review round 2): a day before it means a range or a
+    list joined some other way ("28 September — 1 Oktober", "sampai", "s/d", "27, 28 dan 29 September",
+    "28 & 29", "28/29") whose first day this rule cannot place, so no date."""
     at = [i for i, ln in enumerate(lines) if _REPORT_LABEL.search(ln)]
     if len(at) != 1:
         return ''
@@ -252,7 +288,14 @@ def _reporting_date(lines):
         got = first_date(part)
         if not got:
             continue
-        return _range_start(part) if _RANGE_SEP.search(part) else got
+        if _RANGE_SEP.search(part):
+            m = _DAY_RANGE.search(part)
+            got, start = _range_start(m), (m.start() if m else -1)
+        else:
+            m = _DMY_RE.search(part) or _NUM_DATE_RE.search(part)
+            start = m.start(1) if m else -1
+        day = _DAY_NUMBER.search(part)
+        return got if day and day.start() == start else ''
     return ''
 
 
@@ -298,7 +341,7 @@ def read_ums(source: str):
     title_at, intake = _title(lines)
     if title_at < 0:
         return None, 'no_title'
-    if any(_NOT_AN_OFFER.search(ln) for ln in lines[:title_at + 1]):
+    if any(_NOT_AN_OFFER.search(ln) for ln in lines[:title_at + 1]) or _WITHDRAWN.search(source):
         return None, 'not_an_offer'
     offer_date, name = _offer_date_and_name(lines, title_at)
     nric = _ic(lines, title_at)

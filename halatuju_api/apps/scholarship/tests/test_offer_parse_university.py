@@ -182,14 +182,14 @@ class TestGateTwo(SimpleTestCase):
 
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=False)
 class TestTheVisionOfferBranch(TestCase):
-    def _run(self, ai):
+    def _run(self, ai, text=None):
         app = make_application('submitted')
         app.profile.nric = NRIC.replace('-', '')
         app.profile.save(update_fields=['nric'])
         doc = ApplicantDocument.objects.create(
             application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x', content_type='image/png',
             vision_fields={'fields': {}}, vision_run_at=timezone.now())
-        vision._run_field_extraction_impl(doc, names=[app.profile.name], ocr={'text': ums(), 'error': '', 'image': png()})
+        vision._run_field_extraction_impl(doc, names=[app.profile.name], ocr={'text': text or ums(), 'error': '', 'image': png()})
         doc.refresh_from_db()
         return doc
 
@@ -222,6 +222,16 @@ class TestTheVisionOfferBranch(TestCase):
         self.assertEqual(doc.vision_fields['capture'], 'deterministic')
         self.assertEqual(doc.vision_fields['offer_reader_inputs']['rules_lane'], LANE)
         self.assertEqual(doc.vision_fields['fields']['institution'], 'Universiti Malaysia Sabah')
+
+    @override_settings(OCR_FIRST_LANES=(LANE,))
+    def test_a_ums_letter_the_rules_refuse_says_why_on_the_ai_read(self):
+        """Review round 2 LOW-3: the rules read's own refusal is recorded like the lane and match reasons."""
+        with mock.patch('apps.scholarship.vision.extract_document_fields',
+                        return_value={'fields': {}, 'warnings': [], 'error': ''}) as ai:
+            doc = self._run(ai, text=ums(top='SURAT PENGESAHAN PELAJAR\n'))
+        ai.assert_called_once()
+        self.assertEqual(doc.vision_fields['offer_reader_inputs']['rules_fallback'],
+                         {'lane': LANE, 'reason': 'read_status_letter'})
 
 
 class TestReviewRoundOne(SimpleTestCase):
@@ -330,3 +340,110 @@ class TestTheLayoutRunsInTheChild(SimpleTestCase):
         with mock.patch('apps.scholarship.pdfium_run.ask', side_effect=ask):
             self.assertEqual(pdf_pages.pdf_page1_layout(_pdf([_show('Nama   ZORBEX QUENTARO')])), '')
         self.assertIn([{'op': 'layout'}], asked)
+
+
+class TestReviewRoundTwo(SimpleTestCase):
+    """The S1 review's round-2 findings (2026-11-19): each trigger refuses; the forms already placed still read."""
+
+    def test_a_reporting_date_after_another_day_number_is_no_date(self):
+        """MED-1: any joiner or list the range rule does not place would give the LAST day: refuse it."""
+        for report in ('28 \u2014 29 September 2031', '28 -- 29 September 2031', '28 29 September 2031',
+                       '28 sampai 29 September 2031', '28 s/d 29 September 2031', '28 ke 29 September 2031',
+                       '27, 28 dan 29 September 2031', '28 & 29 September 2031', '28/29 September 2031'):
+            with self.subTest(report=report):
+                f, reason = read_ums(ums(report=report))
+                self.assertEqual(f['reporting_date'], '')
+                self.assertIn('reporting_date', reason)
+
+    def test_the_ranges_already_placed_still_read_their_first_day(self):
+        for report in ('28 \u2013 29 September 2031', '28 September 2031 (Ahad) - 29 September 2031',
+                       '28 September 2031'):
+            with self.subTest(report=report):
+                f, reason = read_ums(ums(report=report))
+                self.assertEqual((reason, f['reporting_date']), ('', '28 Sep 2031'))
+
+    def test_a_cut_name_refuses_when_the_next_line_may_be_its_tail(self):
+        """MED-2: a name connector, or a name-like first column (state and town words no longer clear it)."""
+        for nxt in ('HAKIM BIN BANDAR', 'SABAH BINTI ABDULLAH', 'HAKIM BIN ABDULLAH        KOTA KINABALU',
+                    'HAKIM ABDULLAH      JALAN ZANTHARION', 'QUELLAN A/P ZORB'):
+            with self.subTest(nxt=nxt):
+                f, reason = read_ums(ums(name=f'{NAME}\n{nxt}'))
+                self.assertEqual(f['candidate_name'], '')
+                self.assertIn('candidate_name', reason)
+
+    def test_an_address_line_under_the_name_still_locks(self):
+        for nxt in ('JALAN ZANTHARION 7', 'LOT 9 KAMPUNG ZANTHARION', 'TAMAN ZANTHARION',
+                    'PETI SURAT 99      88000 KOTA KINABALU', '88000 KOTA KINABALU'):
+            with self.subTest(nxt=nxt):
+                f, reason = read_ums(ums(name=f'{NAME}\n{nxt}'))
+                self.assertEqual((reason, f['candidate_name']), ('', NAME))
+
+    def test_a_withdrawal_said_only_in_the_body_never_locks(self):
+        """LOW-1."""
+        for tail in ('Tawaran ini DIBATALKAN.', 'Tawaran ini telah ditarik balik.', 'Tawaran BATAL.'):
+            with self.subTest(tail=tail):
+                self.assertEqual(read_ums(ums() + tail + '\n')[1], 'not_an_offer')
+        self.assertEqual(read_ums(ums() + 'Kor Batalion\n')[1], '')
+
+    def test_every_program_line_must_agree(self):
+        """LOW-2: a Program line anywhere in the letter that disagrees refuses; one that agrees does not."""
+        f, reason = read_ums(ums() + 'Program :      Diploma Sains Marin\n')
+        self.assertEqual(f['programme'], '')
+        self.assertIn('programme', reason)
+        self.assertEqual(read_ums(ums() + f'Program :      {PROG}\n')[0]['programme'], PROG)
+
+    def test_a_ums_refusal_is_recorded_with_its_lane(self):
+        """LOW-3: the same shape as `rules_lane_verdict`'s reasons; a non-UMS letter records nothing."""
+        cases = ((dict(text=ums(top='SURAT PENGESAHAN PELAJAR\n')), 'read_status_letter'),
+                 (dict(text=ums(), from_text_layer=True, page1_layer=ums()), 'read_no_layout'),
+                 (dict(text=ums(), from_text_layer=True, page1_layer=''), 'read_no_page1_layer'),
+                 (dict(text=ums(name='')), 'read_empty:candidate_name'))
+        for kw, want in cases:
+            with self.subTest(want=want):
+                why = {}
+                self.assertIsNone(exact_read(why=why, **kw))
+                self.assertEqual(why, {'lane': LANE, 'reason': want})
+        why = {}
+        self.assertIsNone(exact_read('SURAT BIASA\nTiada apa-apa\n', why=why))
+        self.assertEqual(why, {})
+        why = {}
+        self.assertIsNotNone(exact_read(ums(), why=why))
+        self.assertEqual(why, {})
+
+    def test_a_blanked_ic_and_a_pdf_without_bytes_are_recorded(self):
+        from apps.scholarship.offer_exact import exact_offer_read
+
+        def blank(govt, **_kw):
+            govt['candidate_nric'] = ''
+            return {}
+        why = {}
+        with mock.patch('apps.scholarship.offer_ic.guard_nric', side_effect=blank):
+            self.assertIsNone(exact_read(ums(), why=why))
+        self.assertEqual(why, {'lane': LANE, 'reason': 'read_nric_guard'})
+        why = {}
+        self.assertIsNone(exact_offer_read(ums(), image=None, content_type='application/pdf', why=why))
+        self.assertEqual(why, {'lane': LANE, 'reason': 'read_no_pdf_bytes'})
+
+
+class TestTheMemoCountsText(SimpleTestCase):
+    """Review round 2 LOW-4: the layout text and word boxes count against the memo's byte cap."""
+
+    def setUp(self):
+        from apps.scholarship import pdfium_run
+        pdfium_run.memo_clear()
+        self.addCleanup(pdfium_run.memo_clear)
+
+    def test_text_and_words_are_counted(self):
+        from apps.scholarship.pdfium_run import _WORD_BOX_BYTES, _result_bytes
+        self.assertEqual(_result_bytes({'text': 'x' * 100}), 100)
+        self.assertEqual(_result_bytes({'words': [{'text': 'ab'}, {'text': ''}, 'junk']}), 2 + 2 * _WORD_BOX_BYTES)
+        self.assertEqual(_result_bytes({'png': b'12', 'pngs': [b'345'], 'text': 'xy'}), 7)
+        self.assertEqual(_result_bytes(None), 0)
+
+    def test_a_big_text_answer_is_evicted(self):
+        from apps.scholarship import pdfium_run
+        with mock.patch.object(pdfium_run, '_MEMO_MAX_BYTES', 1500), \
+                mock.patch.object(pdfium_run, '_spawn', return_value=[{'text': 'x' * 1000}]):
+            pdfium_run.ask(b'first', [{'op': 'layout'}])
+            pdfium_run.ask(b'second', [{'op': 'layout'}])
+            self.assertEqual(len(pdfium_run._MEMO), 1)
