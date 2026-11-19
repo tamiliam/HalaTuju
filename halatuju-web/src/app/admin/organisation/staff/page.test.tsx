@@ -11,6 +11,9 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import OrganisationInvitationsPage from './page'
 import * as api from '@/lib/admin-api'
 import { TH } from '@/components/admin/TableFrame'
+import enMessages from '@/messages/en.json'
+import msMessages from '@/messages/ms.json'
+import taMessages from '@/messages/ta.json'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 type Viewer = { role: string; is_super_admin?: boolean; permissions?: string[]; page_keys?: string[] }
@@ -589,6 +592,28 @@ describe('cancelling an invitation sent by mistake (TD-214)', () => {
     await loaded()
     fireEvent.click(screen.getByText('admin.invitations.cancel'))
     await waitFor(() => expect(screen.getByText('admin.invitations.cancelFailed')).toBeTruthy())
+  })
+
+  it('S1b: says in plain words that their cases must be handed on when the server answers has_unfinished_work', async () => {
+    jest.spyOn(window, 'confirm').mockReturnValue(true)
+    mockApi.cancelInvitation.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 409, code: 'has_unfinished_work' }))
+    await loaded()
+    fireEvent.click(screen.getByText('admin.invitations.cancel'))
+    await waitFor(() => expect(screen.getByText('admin.invitations.cancelHasWork')).toBeTruthy())
+    expect(screen.queryByText('admin.invitations.cancelFailed')).toBeNull()
+  })
+
+  it('S1b: the confirm and the refusal say what happens, in every language', () => {
+    const en = enMessages.admin.invitations
+    expect(en.cancelConfirm).toMatch(/removed from it/)
+    expect(en.cancelConfirm).toMatch(/invite the same address again/)
+    expect(en.cancelHasWork).toMatch(/such as cases or scholars/)
+    for (const own of [msMessages.admin.invitations, taMessages.admin.invitations]) {
+      expect(own.cancelConfirm).toContain('{email}')
+      expect(own.cancelConfirm).not.toEqual(en.cancelConfirm)
+      expect(own.cancelHasWork).toBeTruthy()
+    }
   })
 
   it('⚠ never offers an org_admin Cancel on an organisation-admin invitation; a super gets it', async () => {

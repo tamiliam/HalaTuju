@@ -139,7 +139,8 @@ export async function inviteSponsor(
 
 
 /** TD-214: withdraw an invitation nobody has answered. The row is kept and reads `revoked`; a
- *  staff invitation's never-used account is switched off with it. 400 `not_open` once answered. */
+ *  staff invitation's never-used account is archived with it (S1b: off its group, the address free to
+ *  invite again). 400 `not_open` once answered; 409 `has_unfinished_work` while cases wait on them. */
 export async function cancelInvitation(id: number, options?: ApiOptions) {
   return adminMutate<{ id: number; status: 'revoked' }>(
     `/api/v1/admin/invitations/${id}/cancel/`, 'POST', {}, options)

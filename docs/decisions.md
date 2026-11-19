@@ -1,5 +1,21 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-19 — Cancel invitation archives the never-signed-in invitee (TD-615, sprint S1b)
+
+Owner ruling, 19 Nov 2026, in the owner's words: "a person invited into a group who never accepts and never signs in
+is removed by Cancel invitation alone; the system removes them from the group and cancels the invitation; they need
+not be deleted from Members, because they are not listed there." Programme ACCESS-BY-SWITCHES, sprint S1b. Services:
+both. Migration: none.
+- **Cancel archives in one step:** a STAFF invitation's Cancel (`POST admin/invitations/<id>/cancel/`) archives the
+  never-signed-in account with the archive Delete uses (`staff_archive.archive_locked`): off the group tables and
+  pickers, the login retired (`staff_lifecycle.retire_login`), the address free to be invited again (the re-invite
+  restores the same row). The invitation itself still only gets `revoked_at` (a status, never a delete).
+- **Refused while they hold open cases:** 409 `has_unfinished_work`, the archive's own rule (`staff_work.unfinished`), so
+  scholars they mentor also count; nothing is changed. Someone who has signed in keeps today's refusal (400 `not_open`; they are revoked on People).
+- **TD-615's original fix (Delete needs no group) is not needed** and the item closes when S1b is live.
+- **Not archived:** a source invitation (an archived source row has no way back, so its address would stay taken; it
+  is switched off as before) and a sponsor invitation (no account). A mentor invitation stays the Mentors page's.
+
 ## 2026-11-18 — Request #69: the sponsor's "Our volunteers" figures stay as built; the small-size risk is accepted (owner)
 
 Branch req69, not pushed. Migration 0214 (additive). Services: both.

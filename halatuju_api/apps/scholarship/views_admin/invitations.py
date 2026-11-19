@@ -267,17 +267,21 @@ class AdminInvitationCancelView(_ReviewersBase):
     ⚠ **THE LINK STOPS WORKING.** A SPONSOR invitation carries no credential: once withdrawn it no
     longer closes on their registration (`views_sponsor._close_admin_invitation`) nor files them
     into its gifts (`sponsor_signup.signup_programmes_for`) — both skip withdrawn ones. A STAFF
-    invitation provisioned an account with a temporary password up front, so withdrawing it also
-    switches that never-used account off (`is_active=False`, exactly People → Revoke): otherwise
-    the password in the letter would still open the console. Refused if they have signed in.
-    Since 2026-10-09 the emailed password is also rotated dead at Supabase
-    (`staff_lifecycle.kill_for_cancel`), and the address can be invited again (TD-335).
+    invitation provisioned an account with a temporary password up front. Since sprint S1b (owner,
+    2026-11-19, TD-615) withdrawing it ARCHIVES that never-used account in the same step
+    (`staff_archive.archive_locked`, the archive Delete uses): off every group table and picker, its
+    login retired after the commit (`staff_lifecycle.retire_login`), and the address free to be invited
+    again (the re-invite restores the same row). Decided under the row lock: refused `400 not_open` if
+    they have signed in by then, and `409 has_unfinished_work` (the archive's own rule,
+    `staff_work.unfinished`) while anything still waits on them; either way nothing is written.
 
     Fenced like the list: an invitation of another organisation is 404, never 403. Only a super or
     an org_admin acts, and an org_admin only on what this page could have sent
     (`KIND_INVITABLE_ROLES`) — never an organisation-admin invitation, which a super appoints.
-    A SOURCE invitation (source sign-in S2) is cancelled the same way — its never-used account
-    switched off, its password killed — by a super or its own organisation's admin.
+    A SOURCE invitation (source sign-in S2) is cancelled as before S1b — its never-used account
+    switched off (`is_active=False`), its emailed password rotated dead (`kill_for_cancel`) — by a
+    super or its own organisation's admin. It is NOT archived: an archived source row has no way back
+    (`staff_fence.manageable_if_restored` refuses source logins), so its address would stay taken.
     Audited: the AUDIT line names who cancelled what.
     """
 
@@ -327,30 +331,45 @@ class AdminInvitationCancelView(_ReviewersBase):
         # ⚠ CONDITIONAL WRITES, NOT A READ THEN A WRITE (review fix 2026-10-05): an acceptance or a
         # first sign-in landing between the read above and this block must win. Each UPDATE carries
         # its own "still open" condition; if either touches no row, nothing is written at all.
-        now = timezone.now()
+        archive = account is not None and inv.audience == 'staff'   # S1b: a source row is not archived
+        now, done = timezone.now(), None
         with transaction.atomic():
+            if account is not None:
+                # S1b: the lock order every staff door takes (Mentor, then the login row), then the
+                # never-signed-in check UNDER the lock: a first sign-in that landed first wins.
+                courses_public.staff_archive.lock_mentor_of(account.pk)
+                row = type(account).objects.select_for_update().filter(pk=account.pk).first()
+                if row is None or row.first_seen_at is not None or row.archived_at is not None:
+                    return not_open
             closed = Invitation.objects.filter(
                 pk=inv.pk, accepted_at__isnull=True, revoked_at__isnull=True,
             ).update(revoked_at=now, updated_at=now)
             if not closed:
                 return not_open
-            if account is not None and not type(account).objects.filter(
-                    pk=account.pk, first_seen_at__isnull=True).update(is_active=False):
-                transaction.set_rollback(True)
-                return not_open
-            if account is not None:
+            if archive:
+                # S1b (owner, 2026-11-19): the archive Delete uses, refusals and all. It also cancels
+                # their other open invitations, leaves mentoring and clears the login link.
+                done = courses_public.staff_archive.archive_locked(admin, row)
+                if done.error:
+                    transaction.set_rollback(True)
+                    return courses_public.staff_archive.refusal(row.name, done)
+            elif account is not None:
+                type(account).objects.filter(pk=account.pk).update(is_active=False)
                 # S7d: a switched-off staff member who was also added as a mentor stops mentoring —
                 # decided on the row re-read under a lock (`leave`), never on this copy (review fix 2).
                 from .. import staff_mentor
                 staff_mentor.leave(account, by=admin.email or '')
         inv.revoked_at = now
         # ⚠ AND THE PASSWORD IN THE LETTER STOPS WORKING AT SUPABASE TOO (staff lifecycle,
-        # 2026-10-09). Switching the account off closed the console, but the emailed temporary
-        # password still opened a Supabase session. AFTER the commit, so a cancel that loses the
-        # race above never touches the login of somebody who is signing in right now.
+        # 2026-10-09). AFTER the commit, so a cancel that loses the race above never touches the login
+        # of somebody who is signing in right now. An archived staff invitee's login is retired exactly
+        # as an archive retires it (S1b); a source invitee's password is rotated dead as before.
         from .. import staff_lifecycle
-        login = staff_lifecycle.kill_for_cancel(account, inv) if account is not None else '-'
-        logger.info('AUDIT invitation_cancelled id=%s audience=%s role=%s account=%s login=%s by=%s',
+        if archive:
+            login = staff_lifecycle.retire_login(done.uid, done.plan, done.account)
+        else:
+            login = staff_lifecycle.kill_for_cancel(account, inv) if account is not None else '-'
+        logger.info('AUDIT invitation_cancelled id=%s audience=%s role=%s account=%s archived=%s login=%s by=%s',
                     inv.id, inv.audience, inv.role or '-', account.id if account else '-',
-                    login, admin.email or '')
+                    'yes' if archive else 'no', login, admin.email or '')
         return Response({'id': inv.id, 'status': inv_service.status_of(inv)})

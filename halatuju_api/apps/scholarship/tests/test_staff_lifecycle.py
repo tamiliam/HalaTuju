@@ -233,27 +233,30 @@ class TestCancelKillsThePassword(TestCase):
     def _cancel(self, inv):
         return authed_client(self.org_admin).post(f'/api/v1/admin/invitations/{inv.pk}/cancel/')
 
-    def test_the_emailed_password_is_rotated_dead(self):
+    def test_the_unused_login_is_retired_with_the_archive(self):
+        # S1b (owner, 2026-11-19): Cancel archives the never-signed-in invitee, and their login is retired
+        # exactly as an archive retires it (`retire_login`): ours and unused, so it is removed outright —
+        # the emailed password dies with it — and a re-invite makes a fresh one.
         inv, account = self._staff_inv()
-        with patch(f'{REQ}.get', return_value=_resp(
-                body=_auth_user(account.supabase_user_id, account.email))), \
-                patch(f'{REQ}.put', return_value=_resp()) as put, \
+        uid = account.supabase_user_id
+        with patch(f'{REQ}.get', return_value=_resp(body=_auth_user(uid, account.email))), \
+                patch(f'{REQ}.delete', return_value=_resp()) as gone, patch(f'{REQ}.put') as put, \
                 self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
             r = self._cancel(inv)
         self.assertEqual(r.status_code, 200, r.content[:300])
-        self.assertTrue(put.call_args[0][0].endswith(f'/auth/v1/admin/users/{account.supabase_user_id}'))
-        body = put.call_args[1]['json']
-        self.assertGreater(len(body['password']), 30)                 # long, random, never sent
-        self.assertTrue(body['app_metadata']['temp_password_expired'])
-        self.assertIsNone(body['app_metadata']['temp_password_issued_at'])
-        self.assertIn('login=killed', ' '.join(logs.output))
+        self.assertTrue(gone.call_args[0][0].endswith(f'/auth/v1/admin/users/{uid}'))
+        put.assert_not_called()
+        self.assertIn('login=deleted', ' '.join(logs.output))
+        account.refresh_from_db()
+        self.assertIsNotNone(account.archived_at)
+        self.assertIsNone(account.supabase_user_id)
         self.assertEqual(len(mail.outbox), 0)
 
     def test_a_password_they_chose_is_never_touched(self):
         inv, account = self._staff_inv()
         with patch(f'{REQ}.get', return_value=_resp(body=_auth_user(
                 account.supabase_user_id, account.email, owes=False))), \
-                patch(f'{REQ}.put') as put:
+                patch(f'{REQ}.put') as put, patch(f'{REQ}.delete', return_value=_resp()):
             self.assertEqual(self._cancel(inv).status_code, 200)
         put.assert_not_called()
 
@@ -265,14 +268,21 @@ class TestCancelKillsThePassword(TestCase):
         get.assert_not_called()
         put.assert_not_called()
 
-    def test_a_supabase_failure_does_not_undo_the_cancel(self):
+    def test_a_supabase_failure_refuses_the_cancel_and_changes_nothing(self):
+        # S1b: the archive must know what to do with the login before it clears the link, so a failed read
+        # refuses (502 `login_cleanup_failed`, the archive's own answer) and nothing is written: try again.
         inv, account = self._staff_inv()
-        with patch(f'{REQ}.get', return_value=_resp(500)), patch(f'{REQ}.put') as put:
+        with patch(f'{REQ}.get', return_value=_resp(500)), patch(f'{REQ}.put') as put, \
+                patch(f'{REQ}.delete') as gone:
             r = self._cancel(inv)
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual((r.status_code, r.json()['code']), (502, 'login_cleanup_failed'))
         put.assert_not_called()
+        gone.assert_not_called()
         account.refresh_from_db()
-        self.assertFalse(account.is_active)
+        inv.refresh_from_db()
+        self.assertTrue(account.is_active)
+        self.assertIsNone(account.archived_at)
+        self.assertIsNone(inv.revoked_at)
 
     def test_a_revoked_login_with_a_stale_temp_password_is_now_swept(self):
         # The daily job used to read active accounts only.

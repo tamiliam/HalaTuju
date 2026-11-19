@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint S1b Cancel invitation archives the invitee (2026-11-19)
+
+Branch access-s1b-cancel-archives, not pushed. Migration: none. Services: both. Programme ACCESS-BY-SWITCHES, owner ruling 19 Nov (`docs/decisions.md`); closes TD-615 when live.
+- **Cancel invitation archives the never-signed-in staff invitee** (`AdminInvitationCancelView` → `staff_archive.archive_locked`, login retired with `staff_lifecycle.retire_login`): off the group tables and pickers, the address free to be invited again; 409 `has_unfinished_work` while they hold unfinished work (open cases or scholars mentored, the one `staff_work` rule); a signed-in invitee keeps the 400 `not_open`. Source invitations are switched off as before, not archived. The Invitations page's Cancel confirm and the 409 say so in plain words (en / ms / ta).
+- **Also:** new TD placeholder `TD-NEW-reverify-card`; the cockpit test fixture serves `pre_award_end` for a pre-award close (S1 review nit). Tests: api `test_s1b_cancel_archives.py`; web `organisation/staff/page.test.tsx`.
+
 ### fix: sprint S1 case and team leftovers (2026-11-19)
 
 Branch access-s1-leftovers, not pushed. Migration: none. Services: both. Programme ACCESS-BY-SWITCHES, sprint S1 (brief `docs/plans/2026-11-19-s1-leftovers-brief.md`). Debt: TD-664 (all but d), TD-627, TD-634, TD-616, TD-630, TD-618.

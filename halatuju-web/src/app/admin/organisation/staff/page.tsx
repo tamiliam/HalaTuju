@@ -213,16 +213,18 @@ export default function OrganisationInvitationsPage() {
     void load()
   }
 
-  /** TD-214: withdraw an invitation sent by mistake. Asks first — for a staff invitation it also
-   *  switches the never-used account off — and reloads, so the row leaves the waiting list. */
+  /** TD-214: withdraw an invitation sent by mistake. Asks first — for a staff invitation the server
+   *  also archives the never-used account (S1b: off its group, the address free again) — and reloads,
+   *  so the row leaves the waiting list. The server's 409 `has_unfinished_work` is said in plain words. */
   const cancel = async (row: InvitationRow) => {
     if (!token || !window.confirm(t('admin.invitations.cancelConfirm', { email: row.email }))) return
     setResendingId(row.id)
     try {
       await cancelInvitation(row.id, { token })
       setMessage({ type: 'success', text: t('admin.invitations.cancelled') })
-    } catch {
-      setMessage({ type: 'warning', text: t('admin.invitations.cancelFailed') })
+    } catch (e) {
+      const hasWork = (e as { code?: string } | null)?.code === 'has_unfinished_work'
+      setMessage({ type: 'warning', text: t(hasWork ? 'admin.invitations.cancelHasWork' : 'admin.invitations.cancelFailed') })
     } finally {
       setResendingId(null)
       void load()

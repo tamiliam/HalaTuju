@@ -127,7 +127,9 @@ def in_a_group_refusal(name, groups):
                      'code': IN_A_GROUP, 'groups': groups}, status=409)
 
 
-def _refused(name, done):
+def refusal(name, done):
+    """The answer to an `archive_locked` refusal (``done.error`` set): the Delete door's and, since S1b, the
+    Invitations Cancel's (409 `in_a_group` / `has_unfinished_work` with the counts, 502 `login_cleanup_failed`)."""
     if done.error == IN_A_GROUP:
         return in_a_group_refusal(name, done.work)
     if done.error == 'has_unfinished_work':
@@ -162,7 +164,7 @@ def before_delete(caller, admin_id, data):
             return None
         done = archive_locked(caller, target)
         if done.error:
-            return _refused(target.name, done)
+            return refusal(target.name, done)
     login = staff_lifecycle.retire_login(done.uid, done.plan, done.account)
     if login == 'failed':
         return Response({'message': f'{target.name} archived, but their sign-in could not be removed — tell '
