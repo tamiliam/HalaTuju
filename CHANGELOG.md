@@ -177,8 +177,6 @@ Branch req75, not pushed. Migration `0215_pre_interview_reject` (additive). Serv
 - Docs: Org admin guide § *Rejecting before interview* and the Assigning section; FAQ (org admin); `docs/scholarship/role-matrix.md`.
 - Tests: `test_reject_before_interview.py` (26), `PreInterviewReject.test.tsx`, `PreInterviewCounts.test.tsx`, `applicationStatus.test.ts` (`displayStatus`), `applicationStatusDrift.test.ts` (the category), `page.phone.test.tsx` (plain text at Awaiting review), `teamTablesMatrix.test.ts` (the new Guide section), `test_org_fence.py` (classified).
 
-### feat: Add source is back (2026-11-19)
-
 ### revert: Add source is back - withdrawn before it went live (2026-11-19)
 
 Owner, 19 Nov: the invite form already has "add a new source (name and short code)" (live since 30 Oct, bd22bfd7d), so the Add button on Sources is not needed. The three commits d6814f2ce, 79d00fee7 and dbbf1de88 are reverted; every file they touched is back to its live state. Nothing changes for users. TD-668 now names only the short-code check at the invite door. Migration: none.
