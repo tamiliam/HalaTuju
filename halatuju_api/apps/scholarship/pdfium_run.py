@@ -14,11 +14,17 @@ charged; a child's own limit is the budget left (at most `TIMEOUT_S`); once a do
 further question about it gets the safe answer at once. So a file tuned to finish just under the limit costs the
 budget once, not once per step, and a hostile upload holds a slot for at most `DOC_BUDGET_S` in all.
 
-Timeout, crash, non-zero exit, output past its size cap or that does not parse, no slot within the wait budget:
-`ask` returns None and the caller takes its safe answer — the visibility check: hidden (the Vision route); a render:
-None / [] (the "cannot read" path); the page count: 0; the SPM word boxes: none (the Gemini read). Never the hidden
-text. Only a failure that the same bytes would repeat is remembered: a spawn error is retried once and, like a slot
-wait that ran out or a child killed by a signal it was not sent by us, never remembered.
+Fix round 10: a child's limit is RESERVED from the budget before it starts and the unused part refunded after, so
+concurrent questions about the same bytes cannot each spend `TIMEOUT_S` (a question that finds the budget held by
+a running child waits for it, charged to the wait budget). Only a child killed at the FULL `TIMEOUT_S` marks the
+document for good (`_SPENT`); one killed at a limit the budget had shrunk only spends the budget, which restarts.
+
+Timeout, crash, non-zero exit, out of memory, output past its size cap or that does not parse, no slot within the
+wait budget: `ask` returns None and the caller takes its safe answer — the visibility check: hidden (the Vision
+route); a render: None / [] (the "cannot read" path); the page count: 0; the SPM word boxes: none (the Gemini read).
+Never the hidden text. Only a failure that the same bytes would repeat is remembered: a spawn error is retried once
+and, like a slot wait that ran out, a failure after the child started that is not the child's (a thread that would
+not start), or a child killed by a signal we did not send (checked FIRST, whatever it wrote), never remembered.
 """
 import hashlib
 import json
@@ -31,6 +37,8 @@ import threading
 import time
 from collections import OrderedDict
 from typing import Optional
+
+from . import pdfium_worker
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +57,16 @@ DOC_BUDGET_S = 20.0
 #: uploads runs a genuine one out of it (then the safe answer: "cannot read").
 DOC_WAIT_S = 45.0
 #: A document's budgets restart this long after its first child, so a genuine document read again much later (its
-#: answers long gone from the memo) is never refused for its history. A child that ran out of time marks the
-#: document for good (`_SPENT`, bounded).
+#: answers long gone from the memo) is never refused for its history. Only a child killed at the full `TIMEOUT_S`
+#: marks the document for good (`_SPENT`, bounded); a kill at a limit the budget had shrunk spends the budget only.
 BUDGET_WINDOW_S = 600.0
 _BUDGET_SIZE = 256
 #: Bytes a child may add to its address space after loading Python, pypdfium2 and Pillow (Linux only). Largest real
 #: child peak 176 MB in all (median 66 MB; the loaded child itself 26 MB resident on Windows, allowed 45 MB here, so
-#: at most about 150 MB of growth): 256 MiB is about 1.7x that. Instance 2 GiB: 2 web processes (estimated 350 MiB each) + 2 workers x 2 children x
+#: at most about 150 MB of growth): 256 MiB is about 1.7x that. Measured on Linux with the cap on (round 10, WSL,
+#: Python 3.12, the production pins; 533 PDFs, 2,150 children): address space when the cap is set 37.7-44.9 MiB,
+#: largest growth past it 136.8 MiB (VmPeak 181.4 MiB, resident peak 163.3 MiB), no MemoryError, every answer the
+#: same as with no cap. Instance 2 GiB: 2 web processes (estimated 350 MiB each) + 2 workers x 2 children x
 #: (45 + 256 MiB) = about 1.9 GiB (round 8's 640 MiB cap summed to 3.2 GiB).
 MEMORY_LIMIT_BYTES = 256 * 1024 * 1024
 #: Seconds of CPU past the child's own time limit before the kernel kills it (Linux `RLIMIT_CPU`): an orphan whose
@@ -77,9 +88,12 @@ _MEMO_SIZE = 16
 _MEMO_MAX_BYTES = 48_000_000
 _MEMO: 'OrderedDict[tuple, tuple]' = OrderedDict()
 _MEMO_LOCK = threading.Lock()
-#: digest -> [child seconds spent, seconds waited for a slot, monotonic time of the first charge] (round 9).
+#: Signalled (under `_MEMO_LOCK`) whenever a child's reserved time is settled (round 10).
+_SETTLED = threading.Condition(_MEMO_LOCK)
+#: digest -> [child seconds spent or reserved, seconds waited, monotonic time of the first charge, children running]
+#: (round 9; reservations and the running count round 10).
 _BUDGET: 'OrderedDict[bytes, list]' = OrderedDict()
-#: Documents whose child ran past its time limit: every later question gets the safe answer at once, for good.
+#: Documents whose child ran past the full `TIMEOUT_S`: every later question gets the safe answer at once, for good.
 _SPENT: 'OrderedDict[bytes, None]' = OrderedDict()
 _SPENT_SIZE = 64
 
@@ -108,7 +122,7 @@ def _account(digest: bytes) -> list:
     now = time.monotonic()
     row = _BUDGET.get(digest)
     if row is None or now - row[2] > BUDGET_WINDOW_S:
-        row = [0.0, 0.0, now]
+        row = [0.0, 0.0, now, 0]
         _BUDGET[digest] = row
     _BUDGET.move_to_end(digest)
     while len(_BUDGET) > _BUDGET_SIZE:
@@ -123,29 +137,48 @@ def ask(data: bytes, ops: list) -> Optional[list]:
     digest = hashlib.sha256(data).digest()
     keys = [_key(digest, op) for op in ops]
     with _MEMO_LOCK:
-        if digest in _SPENT:
-            return None
-        hits = [_MEMO.get(k) for k in keys]
-        for k, hit in zip(keys, hits):
-            if hit is not None:
-                _MEMO.move_to_end(k)
-        if all(h is not None for h in hits):
-            return None if any(h[0] is None for h in hits) else [h[0] for h in hits]
-        row = _account(digest)
-        time_left, wait_left = DOC_BUDGET_S - row[0], DOC_WAIT_S - row[1]
+        while True:
+            if digest in _SPENT:
+                return None
+            hits = [_MEMO.get(k) for k in keys]
+            for k, hit in zip(keys, hits):
+                if hit is not None:
+                    _MEMO.move_to_end(k)
+            if all(h is not None for h in hits):
+                return None if any(h[0] is None for h in hits) else [h[0] for h in hits]
+            row = _account(digest)
+            time_left, wait_left = DOC_BUDGET_S - row[0], DOC_WAIT_S - row[1]
+            if time_left > 0 or not row[3] or wait_left <= 0:
+                break
+            t0 = time.monotonic()           # the budget is reserved by this document's running child: wait for it
+            _SETTLED.wait(wait_left)
+            row[1] += time.monotonic() - t0
+        held = row[3]
+        if time_left > 0:
+            limit = min(TIMEOUT_S, time_left)
+            row[0] += limit                 # reserved now, the unused part refunded when the child is done
+            row[3] += 1
     if time_left <= 0:
-        logger.warning('pdfium budget spent: %.0f s of child time for this document', DOC_BUDGET_S)
+        logger.warning('pdfium budget %s: %.0f s of child time for this document',
+                       'held by a running child past the wait budget' if held else 'spent', DOC_BUDGET_S)
         return None
+    used = [0.0]
     try:
-        results = _spawn(data, ops, digest, min(TIMEOUT_S, time_left), wait_left)
+        results = _spawn(data, ops, digest, limit, wait_left, used)
     except _TimedOut:
-        with _MEMO_LOCK:
-            _SPENT[digest] = None
-            while len(_SPENT) > _SPENT_SIZE:
-                _SPENT.popitem(last=False)
+        if limit >= TIMEOUT_S:              # killed at the full limit: the bytes, not the budget, are to blame
+            with _MEMO_LOCK:
+                _SPENT[digest] = None
+                while len(_SPENT) > _SPENT_SIZE:
+                    _SPENT.popitem(last=False)
         return None
     except _Transient:
         return None
+    finally:
+        with _MEMO_LOCK:
+            row[0] -= limit - used[0]
+            row[3] -= 1
+            _SETTLED.notify_all()
     with _MEMO_LOCK:
         for i, k in enumerate(keys):
             _MEMO[k] = (None if results is None else results[i],)
@@ -164,11 +197,11 @@ def _result_bytes(result) -> int:
     return sum(len(p) for p in result.get('pngs') or ()) + len(result.get('png') or b'')
 
 
-def _charge(digest: bytes, spent: float = 0.0, waited: float = 0.0) -> None:
+def _charge(digest: bytes, waited: float) -> None:
+    """Seconds waited for a slot, charged to the document's wait budget (child time is reserved and settled by
+    `ask`, round 10)."""
     with _MEMO_LOCK:
-        row = _account(digest)
-        row[0] += spent
-        row[1] += waited
+        _account(digest)[1] += waited
 
 
 def max_png_bytes(max_side_px: int) -> int:
@@ -189,10 +222,12 @@ def max_output_bytes(ops: list) -> int:
 
 
 def _spawn(data: bytes, ops: list, digest: bytes = b'', timeout: float = TIMEOUT_S,
-           wait: float = DOC_WAIT_S) -> Optional[list]:
+           wait: float = DOC_WAIT_S, used: Optional[list] = None) -> Optional[list]:
     """One child for ``ops``. Waits at most ``wait`` s for a slot (charged to the document) and runs at most
-    ``timeout`` s (charged to its budget). None for a failure the same bytes would repeat; raises `_TimedOut` past
-    the limit and `_Transient` for a failure that is not the document's."""
+    ``timeout`` s (its wall time put in ``used[0]``; `ask` settles it against the time it reserved). None for a
+    failure the same bytes would repeat; raises `_TimedOut` past the limit and `_Transient` for a failure that is
+    not the document's."""
+    used = [0.0] if used is None else used
     t0 = time.monotonic()
     got = _SLOTS.acquire(timeout=max(0.0, wait))
     _charge(digest, waited=time.monotonic() - t0)
@@ -206,7 +241,7 @@ def _spawn(data: bytes, ops: list, digest: bytes = b'', timeout: float = TIMEOUT
         payload = json.dumps(request).encode() + b'\n' + data
         for attempt in (1, 2):              # a spawn error (no memory, too many processes) is retried once
             try:
-                return _run_child(payload, timeout, len(ops), max_output_bytes(ops), digest)
+                return _run_child(payload, timeout, len(ops), max_output_bytes(ops), used)
             except OSError as e:
                 logger.warning('pdfium child could not start (try %d): %s', attempt, type(e).__name__)
         raise _Transient
@@ -214,10 +249,39 @@ def _spawn(data: bytes, ops: list, digest: bytes = b'', timeout: float = TIMEOUT
         _SLOTS.release()
 
 
-def _run_child(payload: bytes, timeout: float, n_ops: int, max_blobs: int, digest: bytes) -> Optional[list]:
+class _Ended(ValueError):
+    """The child's output stopped short: it closed stdout (it exited or something killed it), so there is nothing
+    to stop, and how it exited says why."""
+
+
+def _run_child(payload: bytes, timeout: float, n_ops: int, max_blobs: int, used: list) -> Optional[list]:
     t0 = time.monotonic()
     proc = subprocess.Popen([sys.executable, '-I', _WORKER], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                             stderr=subprocess.DEVNULL)
+    try:
+        return _watch(proc, payload, timeout, n_ops, max_blobs)
+    except (_TimedOut, _Transient):
+        raise
+    except BaseException as e:      # round 10: anything else once the child exists (a thread that will not start)
+        _stop(proc)
+        if not isinstance(e, Exception):
+            raise
+        logger.warning('pdfium child abandoned: %s', type(e).__name__)
+        raise _Transient from None
+    finally:
+        used[0] = time.monotonic() - t0
+
+
+def _stop(proc) -> None:
+    """Kill the child, reap it and close its pipes; never raises."""
+    for step in (proc.kill, lambda: proc.wait(5), proc.stdin.close, proc.stdout.close):
+        try:
+            step()
+        except Exception:
+            pass
+
+
+def _watch(proc, payload: bytes, timeout: float, n_ops: int, max_blobs: int) -> Optional[list]:
     box = {}
 
     def feed():
@@ -234,8 +298,11 @@ def _run_child(payload: bytes, timeout: float, n_ops: int, max_blobs: int, diges
     def drain():
         try:
             box['out'] = _read_output(proc.stdout, n_ops, max_blobs)
+        except _Ended as e:         # the child closed its output: judged by how it exited, nothing to kill
+            box['err'] = e
         except Exception as e:      # output that does not parse or is past its cap: the child is stopped
             box['err'] = e
+            box['killed'] = True    # by us: its signal says nothing about the instance
             proc.kill()
 
     threads = [threading.Thread(target=feed, daemon=True), threading.Thread(target=drain, daemon=True)]
@@ -249,16 +316,21 @@ def _run_child(payload: bytes, timeout: float, n_ops: int, max_blobs: int, diges
         logger.warning('pdfium child killed after %.1f s', timeout)
         raise _TimedOut from None
     finally:
-        _charge(digest, spent=time.monotonic() - t0)
         for t in threads:
             t.join(5)
         proc.stdout.close()
+    if proc.returncode < 0 and not box.get('killed'):
+        # Round 10: checked FIRST. A signal we did not send (the instance's OOM killer) says nothing about the
+        # bytes, whatever the child wrote before it (usually nothing: its output then does not parse).
+        logger.warning('pdfium child killed by signal %s', -proc.returncode)
+        raise _Transient
+    if proc.returncode == pdfium_worker.OUT_OF_MEMORY:
+        logger.warning('pdfium child out of memory (address space capped at its size + %d MiB)',
+                       MEMORY_LIMIT_BYTES >> 20)
+        return None
     if 'err' in box:
         logger.warning('pdfium child output unreadable: %s', type(box['err']).__name__)
         return None
-    if proc.returncode < 0:         # killed by a signal we did not send (the instance's OOM killer): not the bytes'
-        logger.warning('pdfium child killed by signal %s', -proc.returncode)
-        raise _Transient
     if proc.returncode != 0:
         logger.warning('pdfium child failed: exit %s', proc.returncode)
         return None
@@ -270,10 +342,13 @@ def _run_child(payload: bytes, timeout: float, n_ops: int, max_blobs: int, diges
 
 def _read_output(stream, n_ops: int, max_blobs: int) -> list:
     """The child's answers read straight off its stdout, each PNG read once into its own bytes. Raises on any
-    mismatch, a header past `MAX_HEADER_BYTES`, PNGs past ``max_blobs`` or bytes after the last PNG."""
+    mismatch, a header past `MAX_HEADER_BYTES`, PNGs past ``max_blobs`` or bytes after the last PNG; `_Ended` when
+    the output stops short (no header line, a short PNG)."""
     head = stream.readline(MAX_HEADER_BYTES + 1)
     if not head.endswith(b'\n'):
-        raise ValueError('no header' if len(head) <= MAX_HEADER_BYTES else 'a header past its cap')
+        if len(head) <= MAX_HEADER_BYTES:
+            raise _Ended('no header')
+        raise ValueError('a header past its cap')
     header = json.loads(head)
     del head
     sizes, results = header['blobs'], header['results']
@@ -286,7 +361,7 @@ def _read_output(stream, n_ops: int, max_blobs: int) -> list:
     for s in sizes:
         blob = stream.read(s)
         if len(blob) != s:
-            raise ValueError('a header that does not match the output')
+            raise _Ended('a short PNG')
         blobs.append(blob)
     if stream.read(1):
         raise ValueError('a header that does not match the output')

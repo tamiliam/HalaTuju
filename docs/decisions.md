@@ -311,6 +311,21 @@ PNG, side = the 4,000 px raster cap) plus an 8 MiB header, and read once (no ext
 gets `RLIMIT_CPU` (its limit + 5 s), dies with its parent (`PR_SET_PDEATHSIG`) and exits if already orphaned. Only a
 failure the same bytes would repeat is remembered: a spawn error is retried once, and a spawn failure, a slot wait
 that ran out, or a child killed by a signal we did not send are never remembered.
+**Fix round 10 — make "never remembered" true, and reserve before spending.** Round 9 read the child's output before
+its exit status, so a child killed from outside (the kernel's OOM killer, an operator) after writing part of a header
+was remembered as a bad file. Now a negative return code that we did not cause is checked first, whatever the child
+wrote, and is transient. Only a child killed at the FULL `TIMEOUT_S` adds the document to `_SPENT` (for good); a kill
+at a limit the budget had shrunk spends the budget only, and it restarts after `BUDGET_WINDOW_S`. Each child's limit,
+min(`TIMEOUT_S`, budget left), is reserved under the lock BEFORE it starts and the unused part refunded after, so
+concurrent questions about the same bytes cannot each spend 20 s; a question that finds the budget held by a running
+child waits for it (charged to `DOC_WAIT_S`), then reads its memoised answer or the refunded budget. A watcher thread
+that will not start kills and reaps the child and is transient. A MemoryError in the child (the Linux address-space
+cap) exits with code 86 and logs "out of memory" (remembered: the same bytes repeat it). **The cap measured on Linux** (WSL, Python 3.12, the production pins): all
+533 PDFs give the same answers with the 256 MiB cap on and off, no MemoryError; the child holds 37.7-44.9 MiB when
+the cap is set (45 MiB assumed) and grows at most 136.8 MiB past it (VmPeak 181.4 MiB), so 2 web + 2 x 2 x (45 + 256)
+MiB = about 1.9 GiB stands. Against Windows, verdicts, text and page counts match; 138 PDFs render different pixels
+and 148 give different SPM word boxes, every one with a font not embedded (pdfium draws it with the platform's
+fonts). Production's own container fonts will differ again: renders are not portable, verdicts are.
 **pypdf 5.9 (local) vs 6.21.4 (production):** same verdicts under this rule, except 21 corpus PDFs whose content
 streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
 between the two (pypdf's own changes). Local counts are not production counts.

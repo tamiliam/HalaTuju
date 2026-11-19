@@ -10,6 +10,8 @@ import os
 import sys
 import tempfile
 import time
+import signal
+from unittest import skipUnless
 from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
@@ -214,10 +216,10 @@ TEXT_PDF = _pdf([_show('HALAMAN DUA')])
 
 
 def _fake_child(spent_s, calls):
-    """A stand-in for `_run_child` that charges ``spent_s`` of child time and answers every op with a count."""
-    def run(payload, timeout, n_ops, max_blobs, digest):
+    """A stand-in for `_run_child` that reports ``spent_s`` of child time and answers every op with a count."""
+    def run(payload, timeout, n_ops, max_blobs, used):
         calls.append(timeout)
-        pdfium_run._charge(digest, spent=spent_s)
+        used[0] = spent_s
         return [{'count': 1} for _ in range(n_ops)]
     return run
 
@@ -306,10 +308,12 @@ class TheOutputCap(SimpleTestCase):
             path = _script(tmp, 'sys.stdin.buffer.read()\n'
                                 'print(\'{"results": [{"count": 1}], "blobs": [999999999]}\', flush=True)\n'
                                 'time.sleep(30)')
-            with patch.object(pdfium_run, '_WORKER', path):
+            with patch.object(pdfium_run, '_WORKER', path),                     patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
                 t0 = time.perf_counter()
                 self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
                 self.assertLess(time.perf_counter() - t0, 5.0)  # stopped on the header, not at the time limit
+                self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))   # killed by us: the bytes' failure
+            self.assertEqual(spawned.call_count, 1)
 
 
 class TheSpawnRetry(SimpleTestCase):
@@ -346,7 +350,7 @@ class TheLinuxLimits(SimpleTestCase):
     def test_the_parent_asks_for_the_memory_cpu_and_parent_limits(self):
         seen = []
 
-        def run(payload, timeout, n_ops, max_blobs, digest):
+        def run(payload, timeout, n_ops, max_blobs, used):
             seen.append(json.loads(payload.partition(b'\n')[0]))
             return [{'count': 1}]
         with patch.object(pdfium_run, '_run_child', run), patch.object(pdfium_run.sys, 'platform', 'linux'):
@@ -374,3 +378,206 @@ class TheLinuxLimits(SimpleTestCase):
         loaded, web = 45 * mib, 350 * mib                       # a loaded child; a gunicorn worker (estimates)
         self.assertLessEqual(2 * pdfium_run.MAX_CHILDREN * (loaded + pdfium_run.MEMORY_LIMIT_BYTES) + 2 * web,
                              2048 * mib)
+
+
+# ── Fix round 10: outside signals checked first, budget-shrunk kills, thread start errors, reservations ──
+
+class _Spawns:
+    """`subprocess.Popen` counting real children; ``returncode`` forced after a real exit when given (Windows has
+    no signals, so a child's death by SIGKILL is stood in for by its exit code; the child itself is real)."""
+
+    def __init__(self, returncode=None):
+        self.procs, self.returncode, real = [], returncode, pdfium_run.subprocess.Popen
+        outer = self
+
+        class Popen(real):
+            def __init__(self, *a, **k):
+                super().__init__(*a, **k)
+                outer.procs.append(self)
+
+            def wait(self, timeout=None):
+                code = super().wait(timeout)
+                if outer.returncode is not None:
+                    self.returncode = code = outer.returncode
+                return code
+        self.Popen = Popen
+
+
+class AnOutsideSignal(SimpleTestCase):
+    def setUp(self):
+        _fresh()
+        self.addCleanup(_fresh)
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+
+    def _twice(self, body, returncode=None):
+        spawns = _Spawns(returncode)
+        with patch.object(pdfium_run, '_WORKER', _script(self.dir.name, body)), \
+                patch.object(pdfium_run.subprocess, 'Popen', spawns.Popen), \
+                self.assertLogs('apps.scholarship.pdfium_run', 'WARNING') as logs:
+            first = pdfium_run.ask(DRAWN, [{'op': 'count'}])
+            second = pdfium_run.ask(DRAWN, [{'op': 'count'}])
+        return first, second, len(spawns.procs), '\n'.join(logs.output)
+
+    def test_a_child_killed_with_no_output_is_not_remembered(self):
+        # The OOM killer's SIGKILL: the child wrote nothing, so its output does not parse; the signal comes first.
+        first, second, spawned, logs = self._twice('sys.stdin.buffer.read()', returncode=-9)
+        self.assertIsNone(first)
+        self.assertIsNone(second)
+        self.assertEqual(spawned, 2)                    # the next ask spawned again
+        self.assertIn('killed by signal 9', logs)
+        self.assertNotIn('unreadable', logs)
+        self.assertEqual(len(pdfium_run._MEMO), 0)
+
+    def test_a_child_killed_after_part_of_its_output_is_not_remembered(self):
+        first, _second, spawned, _logs = self._twice(
+            'sys.stdin.buffer.read(); sys.stdout.write(\'{"results": [{"cou\')',      # cut mid-header
+            returncode=-9)
+        self.assertIsNone(first)
+        self.assertEqual(spawned, 2)
+
+    @skipUnless(hasattr(signal, 'SIGKILL'), 'a real signal needs POSIX')
+    def test_a_real_sigkill_is_not_remembered(self):
+        first, _second, spawned, logs = self._twice('import os, signal\nsys.stdin.buffer.read()\n'
+                                                    'os.kill(os.getpid(), signal.SIGKILL)')
+        self.assertIsNone(first)
+        self.assertEqual(spawned, 2)
+        self.assertIn('killed by signal 9', logs)
+
+    def test_running_out_of_memory_has_its_own_reason_and_is_remembered(self):
+        # The real worker's main(), its count operation raising MemoryError as it would under the Linux cap.
+        body = ('import importlib.util\n'
+                'spec = importlib.util.spec_from_file_location("w", %r)\n'
+                'w = importlib.util.module_from_spec(spec); spec.loader.exec_module(w)\n'
+                'def oom(*a):\n    raise MemoryError\n'
+                'w._OPS["count"] = oom\n'
+                'sys.exit(w.main())' % os.path.abspath(pdfium_worker.__file__))
+        first, _second, spawned, logs = self._twice(body)
+        self.assertIsNone(first)
+        self.assertEqual(spawned, 1)
+        self.assertIn('out of memory', logs)
+        self.assertNotIn('failed: exit', logs)
+
+    def test_paints_stops_the_whole_child_on_memory_error(self):
+        with patch.object(pdfium_worker, '_paints', side_effect=MemoryError), self.assertRaises(MemoryError):
+            pdfium_worker._op_paints([0], {'pages': [[0, True]], 'count': 1, 'max_objects': 10, 'plain': [],
+                                           'oc_off': False}, [])
+
+
+class ABudgetShrunkKill(SimpleTestCase):
+    def setUp(self):
+        _fresh()
+        self.addCleanup(_fresh)
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+        self.hang = _script(self.dir.name, 'time.sleep(60)')
+        self.digest = pdfium_run.hashlib.sha256(DRAWN).digest()
+
+    def _window_over(self):
+        pdfium_run._BUDGET[self.digest][2] -= pdfium_run.BUDGET_WINDOW_S + 1
+
+    def test_a_kill_at_a_shrunk_limit_spends_the_budget_only(self):
+        with patch.object(pdfium_run, '_WORKER', self.hang), patch.object(pdfium_run, 'TIMEOUT_S', 20.0), \
+                patch.object(pdfium_run, 'DOC_BUDGET_S', 0.6):
+            self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))   # killed at 0.6 s, not at 20 s
+            self.assertNotIn(self.digest, pdfium_run._SPENT)
+            with patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
+                self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'words'}]))   # the budget is spent: no child
+                self.assertEqual(spawned.call_count, 0)
+        self._window_over()
+        with patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
+            self.assertEqual(pdfium_run.ask(DRAWN, [{'op': 'count'}]), [{'count': 1}])   # a genuine read later
+        self.assertEqual(spawned.call_count, 1)
+
+    def test_a_kill_at_the_full_limit_marks_the_document_for_good(self):
+        with patch.object(pdfium_run, '_WORKER', self.hang), patch.object(pdfium_run, 'TIMEOUT_S', 0.6), \
+                patch.object(pdfium_run, 'DOC_BUDGET_S', 20.0):
+            self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
+        self.assertIn(self.digest, pdfium_run._SPENT)
+        self._window_over()
+        with patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
+            self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
+        self.assertEqual(spawned.call_count, 0)
+
+
+class AThreadThatWillNotStart(SimpleTestCase):
+    def setUp(self):
+        _fresh()
+        self.addCleanup(_fresh)
+
+    def test_the_child_is_killed_and_the_failure_not_remembered(self):
+        real, starts = pdfium_run.threading.Thread, []
+
+        class Thread(real):
+            def start(self):
+                starts.append(1)
+                if len(starts) == 2:            # the second thread (the output reader) will not start
+                    raise RuntimeError("can't start new thread")
+                super().start()
+        spawns = _Spawns()
+        with patch.object(pdfium_run.threading, 'Thread', Thread), \
+                patch.object(pdfium_run.subprocess, 'Popen', spawns.Popen):
+            self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
+        self.assertEqual(len(spawns.procs), 1)
+        self.assertIsNotNone(spawns.procs[0].poll())    # killed and reaped, not left running
+        self.assertTrue(spawns.procs[0].stdout.closed)
+        self.assertEqual(len(pdfium_run._MEMO), 0)
+        self.assertEqual(pdfium_run.ask(DRAWN, [{'op': 'count'}]), [{'count': 1}])   # the next ask spawns again
+        self.assertEqual(pdfium_run._BUDGET[pdfium_run.hashlib.sha256(DRAWN).digest()][3], 0)
+
+
+class ConcurrentQuestionsAboutTheSameBytes(SimpleTestCase):
+    def setUp(self):
+        _fresh()
+        self.addCleanup(_fresh)
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+
+    def _at_once(self, n):
+        import threading
+        out, threads = {}, []
+        for i in range(n):
+            threads.append(threading.Thread(
+                target=lambda i=i: out.__setitem__(i, pdfium_run.ask(DRAWN, [{'op': 'count', 'step': i}]))))
+        t0 = time.perf_counter()
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(30)
+        return out, time.perf_counter() - t0
+
+    def test_a_hostile_upload_asked_three_times_at_once_spends_its_limit_once(self):
+        spawns = _Spawns()
+        with patch.object(pdfium_run, '_WORKER', _script(self.dir.name, 'time.sleep(60)')), \
+                patch.object(pdfium_run, 'TIMEOUT_S', 1.0), patch.object(pdfium_run, 'DOC_BUDGET_S', 1.0), \
+                patch.object(pdfium_run.subprocess, 'Popen', spawns.Popen):
+            out, took = self._at_once(3)
+        self.assertEqual(out, {0: None, 1: None, 2: None})
+        self.assertEqual(len(spawns.procs), 1)          # one child: the other two waited, then found it spent
+        self.assertLess(took, 2 * 1.0)
+        self.assertIn(pdfium_run.hashlib.sha256(DRAWN).digest(), pdfium_run._SPENT)
+
+    def test_a_genuine_upload_asked_three_times_at_once_answers_all(self):
+        path = _script(self.dir.name, 'req = json.loads(sys.stdin.buffer.readline())\ntime.sleep(0.3)\n'
+                                      'print(json.dumps({"results": [{"count": 1}] * len(req["ops"]), "blobs": []}))')
+        with patch.object(pdfium_run, '_WORKER', path), patch.object(pdfium_run, 'TIMEOUT_S', 5.0), \
+                patch.object(pdfium_run, 'DOC_BUDGET_S', 5.0):
+            out, _took = self._at_once(3)
+        self.assertEqual(out, {i: [{'count': 1}] for i in range(3)})
+        row = pdfium_run._BUDGET[pdfium_run.hashlib.sha256(DRAWN).digest()]
+        self.assertEqual(row[3], 0)                     # nothing still reserved
+        self.assertLess(row[0], 5.0)                    # the unused part of each reservation came back
+
+    def test_the_reservation_is_taken_before_the_child_and_refunded_after(self):
+        seen = []
+
+        def run(payload, timeout, n_ops, max_blobs, used):
+            row = pdfium_run._BUDGET[pdfium_run.hashlib.sha256(DRAWN).digest()]
+            seen.append((timeout, row[0], row[3]))
+            used[0] = 0.25
+            return [{'count': 1}]
+        with patch.object(pdfium_run, '_run_child', run), patch.object(pdfium_run, 'DOC_BUDGET_S', 20.0):
+            pdfium_run.ask(DRAWN, [{'op': 'count'}])
+        self.assertEqual(seen, [(20.0, 20.0, 1)])        # the whole limit held while the child runs
+        row = pdfium_run._BUDGET[pdfium_run.hashlib.sha256(DRAWN).digest()]
+        self.assertEqual((row[0], row[3]), (0.25, 0))

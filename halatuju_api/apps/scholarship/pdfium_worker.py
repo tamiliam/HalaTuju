@@ -20,6 +20,9 @@ import sys
 
 #: Text render modes that paint (as ``pdf_pages._DRAWN_MODES``).
 DRAWN_MODES = frozenset((0, 1, 2, 4, 5, 6))
+#: The exit code of a child that ran out of memory (Python's MemoryError under the Linux address-space cap; fix
+#: round 10): nothing is written, and the parent logs it as its own reason.
+OUT_OF_MEMORY = 86
 
 
 def raster_scale(width_pt: float, height_pt: float, dpi: float, max_side_px: float, max_page_pt: float):
@@ -106,6 +109,8 @@ def _op_paints(pdf, req, blobs):
         try:
             if not _paints(pdf, i, has_alnum, bool(req['oc_off']), budget, plain):
                 hidden.append(i)
+        except MemoryError:  # the whole child stops (`OUT_OF_MEMORY`): every judged page is then hidden
+            raise
         except Exception:   # a page pdfium cannot judge is hidden (the object cap included)
             hidden.append(i)
     return {'hidden': hidden}
@@ -236,6 +241,14 @@ def _die_with_parent(parent: int) -> None:
 
 
 def main() -> int:
+    try:
+        return _main()
+    except MemoryError:                    # past the address-space cap: say so by the exit code, write nothing
+        import os
+        os._exit(OUT_OF_MEMORY)
+
+
+def _main() -> int:
     raw_in = sys.stdin.buffer.read()
     head, _, data = raw_in.partition(b'\n')
     request = json.loads(head)
