@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### docs: learning loop stack brought up to main and closed (2026-11-19)
+
+Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (entries below). Migration: `0215_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: both.
+- **Merge pass:** the stack was brought up to `main` with one test conflict. The model register was brought up to main's own verdict-engine bump. Two digests were re-seeded with dated notes, because main moved the IPTS reason texts into constants with the same text. No answer changed.
+- **LL2 cockpit tests** now pass main's served `writes` flag (no assertion changed).
+- **Mobile sandbox** shows three hard states for the AI prediction section (assigned-only note, a few-cases reviewer row, a long doubt label).
+- **Commit trailers** were cleaned (made-up and missing `Migration:`, `Phone-check:` and `Services:` lines).
+- **Review:** a fresh adversarial review of the rebase said "ship with notes". The notes are fixed.
+- **Docs:** retrospective, decisions and lessons written; roadmap shortened to "Done" blocks for the five built sprints. LL5 (the learning report) is not built; it waits for LL4 to be live.
+
 ### chore: request #69 migration follows request #73's 0216_two_way_notes (2026-11-19)
 
 Branch req69 on #75 and #73, not pushed. Migration: `0217_reviewerprofile_highest_position` (additive; renumbered from 0215, now depends on `0216_two_way_notes`; the column and its database default are unchanged). Services: api.
