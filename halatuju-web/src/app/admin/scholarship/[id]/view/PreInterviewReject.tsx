@@ -131,7 +131,7 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
         <label htmlFor="pre-interview-why" className="block text-sm font-medium text-ground-700">
           {t(`${P}.detailsLabel`)}
         </label>
-        <textarea id="pre-interview-why" rows={4} value={note} maxLength={max}
+        <textarea id="pre-interview-why" rows={4} value={note} maxLength={max} aria-required="true"
           aria-describedby="pre-interview-why-hint pre-interview-why-count"
           onChange={(e) => setNote(e.target.value)}
           className="w-full rounded-lg border px-3 py-2 text-sm" />

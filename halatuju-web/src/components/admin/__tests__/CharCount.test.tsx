@@ -13,4 +13,10 @@ it('sits on its own line, right-aligned, and keeps the caller\'s tint and id', (
   expect(el.className).toContain('text-right')
   expect(el.className).toContain('text-critical-600')
   expect(el.textContent).toBe('3 / 10')
+  expect(el.hasAttribute('aria-live')).toBe(false)
+})
+
+it('is a polite live region only when asked', () => {
+  render(<CharCount id="c" testId="c-t" live>3 / 10</CharCount>)
+  expect(screen.getByTestId('c-t').getAttribute('aria-live')).toBe('polite')
 })

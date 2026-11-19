@@ -123,6 +123,13 @@ describe('focus and labels (#75 review)', () => {
       `${P}.whyHint`, `${P}.counter|{"count":"0","max":"20"}`])
   })
 
+  it('the details box is marked required, and its counter is not read out on every keystroke', () => {
+    draw(caseOf())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    expect(screen.getByLabelText(`${P}.detailsLabel`).getAttribute('aria-required')).toBe('true')
+    expect(screen.getByTestId('pre-interview-counter').hasAttribute('aria-live')).toBe(false)
+  })
+
   it('"Are you sure?" is an alert dialog named by its heading, which takes focus; Go back returns it to Reject', () => {
     draw(caseOf())
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))

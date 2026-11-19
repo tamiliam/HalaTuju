@@ -547,8 +547,8 @@ function StaffScholarshipList() {
                             : undefined}
                         className="border rounded-lg px-2 py-1 text-sm bg-ground-0 max-w-[220px] disabled:bg-ground-100 disabled:text-ground-placeholder disabled:cursor-not-allowed"
                       >
-                        {/* The holder always; else the served `assignable` (T1: the Reviewers table)
-                            who covers this case's gift (`listAssignees`). */}
+                        {/* The holder always; else the served `assignable` (T1: the Reviewers table),
+                            not paused, who covers this case's gift (`listAssignees`). */}
                         <AssigneeOptions reviewers={reviewers} row={a} isSuper={isSuper} />
                       </select>
                       {assignNote[a.id] && <p className="text-xs text-critical-600 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}

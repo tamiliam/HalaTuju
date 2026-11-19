@@ -153,7 +153,7 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
             placeholder={t(`${P}.${replying ? 'replyPlaceholder' : 'placeholder'}`)}
             aria-describedby={`reviewer-note-${appId}-count`}
             className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm leading-relaxed focus:border-info-500 focus:ring-2 focus:ring-info-500" />
-          <CharCount id={`reviewer-note-${appId}-count`} className={over ? 'font-semibold text-critical-600' : 'text-ground-600'}>
+          <CharCount id={`reviewer-note-${appId}-count`} live className={over ? 'font-semibold text-critical-600' : 'text-ground-600'}>
             {t(`${P}.counter`, { count: fmt(length), max: fmt(max) })}
           </CharCount>
           <button type="button" onClick={submit} disabled={busy || blank || over}
