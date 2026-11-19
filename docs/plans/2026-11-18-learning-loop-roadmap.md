@@ -75,6 +75,33 @@ LL2 ──► LL2b ─────────────┤
 LL3 ──► LL4 ──► LL5 ◄── A5 replay harness (sprints R1, R2 — already designed)
 ```
 
+### Status and plan forward (2026-11-19)
+
+**Built.** LL1, LL2, LL2b, LL3 and LL4 are built and reviewed in local branches
+(stack `ll1 -> ll3 -> ll4 -> ll2 -> ll2b`). The full gates are green on the head of the stack.
+Nothing is merged. Nothing is published. **Left.** LL5 only.
+
+**Who owns what (owner ruling 2026-11-19).**
+- The **HalaTuju lead session** owns the A5 replay: branch `a5` (R1 + R2, built 13-14 Nov) and the R3 run.
+- The **learning-loop session** owns this stack and LL5. It does not touch `a5`.
+
+**Order of work.**
+1. Owner says "merge": the stack is brought up to date with `main`, the gates run again, then it goes to `main`.
+2. Owner applies the migration 0215 SQL by hand, does the three phone checks, then says "publish".
+   The publish goes in a release slot **outside** the A5 replay window (rule: no deploy during the replay).
+   The learning-loop session sends the commit list to the HalaTuju lead before the publish.
+3. The HalaTuju lead (its plan, 2026-11-19): bring `a5` up to date with `main` and land R1 + R2 on `main` **before** the run;
+   then a new step **R2b** (add the engine changes made after 14 Nov to the ruling catalogue; check the 25 adapters
+   that were tested on made-up data only; confirm the readers accept the new 0215 column); then R3 with the owner.
+   **The R3 date is not set.** The owner picks it after `a5` is on `main`. Until the HalaTuju lead sends the date, there is no no-deploy window.
+   Steps 1-2 and step 3 do not depend on each other; only the publish and the replay run must not overlap.
+   Whoever lands on `main` second brings their branch up to date. The overlap should be docs only (`CHANGELOG.md`, `docs/technical-debt.md`).
+4. LL5 starts when the replay code (R1 + R2) is on `main` (the HalaTuju lead sends word) and LL4 is live.
+   It adds one lens; it builds no second harness.
+
+**For the replay.** This stack changes no scoring logic and no engine answer, so it should add no old-vs-new difference.
+After migration 0215 the application table has one new column (`ai_verdict_context`).
+
 ---
 
 ## Sprint LL1 — Scoreboard on
@@ -411,7 +438,8 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
   Reason: production data cannot be copied to a home machine, and the candidate code is not on a server before `live` moves.
 - A short workflow note says how to read the report and when a result blocks the next release.
 
-**Depends on.** A5 sprints R1 and R2 (on the advisor queue) and LL4.
+**Depends on.** A5 sprints R1 and R2 and LL4. R1 and R2 are built on branch `a5` (13-14 Nov), not on `main`.
+The HalaTuju lead session owns `a5` and the R3 run (owner ruling 2026-11-19). LL5 starts when that code is on `main`.
 Cases decided before LL4 have no fingerprint. They enter the report as "evidence state unknown".
 The replay runs with "today" set to `verdict_decided_at` and the stage as at the decision (LL4 known gaps: the clock and the stage), or reports the clock-dependent cases apart.
 
