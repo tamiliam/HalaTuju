@@ -72,7 +72,10 @@ export function DecisionCard({
   // Same, for a ready decision that still has no bursary amount (Recommend only).
   const [amountKey, setAmountKey] = useState(0)
   const showAlert = () => { if (missing.length > 0) setAlertKey((n) => n + 1) }
-  useEffect(() => { if (missing.length === 0) setAlertKey(0) }, [missing.length])
+  // Once the reviewer fixes an item, the list goes back to plain: a live region that kept role="alert" would be
+  // announced again on every fix. The next press makes it an alert again.
+  const missingSig = JSON.stringify(missing)
+  useEffect(() => { setAlertKey(0) }, [missingSig])
   useEffect(() => { if (approveReady) setAmountKey(0) }, [approveReady])
   useEffect(() => {
     document.addEventListener(DECISION_ALERT_EVENT, showAlert)

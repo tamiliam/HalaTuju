@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: gift names are checked the same way on create as on rename (review of #71, 2026-11-19)
+
+Services: both. No migration.
+- Creating a gift with a name over 200 characters failed with a database error (a 500); it is now refused with `name_too_long`, and the create box stops at 200.
+- A name sent as a number (not text) failed with a 500 on create and rename; it is now refused with `bad_name`.
+- One helper (`_clean_name`) serves both calls.
+
+### refactor: request #70 review round 2 - tests pass the write right, plainer wording, one announcement (2026-11-19)
+
+Services: web. No migration.
+- The #70 tests now render with the write right; since POST-AWARD-CUT a reviewer without it sees no decision buttons, so 8 tests failed on main. A new test pins that a viewer without the right sees no list, buttons or phone bar.
+- "Answer N interview questions in your findings" replaces "Reopen your findings and answer…": on a reopened decision there is no Reopen button (en/ms/ta).
+- After a press on a greyed button, the list is an alert only until the reviewer fixes something; it then goes back to a plain list, so screen readers do not announce it again on every fix.
+
 ### feat: change a gift programme's name (request #71, 2026-11-16)
 
 Services: both. No migration.

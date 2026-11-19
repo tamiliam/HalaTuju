@@ -36,7 +36,7 @@ const readyCase = () => ({
 
 describe('the "Still to do" list', () => {
   it('names each missing item, in the page order, and each takes you to its place', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: nothingDone() })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: nothingDone() })
     await loaded()
     const list = document.getElementById('decision-missing') as HTMLElement
     expect(list.getAttribute('role')).toBeNull()   // plain until a press
@@ -53,15 +53,23 @@ describe('the "Still to do" list', () => {
   })
 
   it('is gone once everything is done', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: readyCase() })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: readyCase() })
     await loaded()
     expect(document.getElementById('decision-missing')).toBeNull()
+  })
+
+  it('is not drawn for a viewer with no write right (nor are the buttons or the phone bar)', async () => {
+    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: nothingDone() })
+    await loaded()
+    expect(document.getElementById('decision-missing')).toBeNull()
+    expect(screen.queryByRole('button', { name: `admin.scholarship.recordVerdict.approve` })).toBeNull()
+    expect(screen.queryByRole('button', { name: /admin\.scholarship\.decisionBar\.go/ })).toBeNull()
   })
 })
 
 describe('a press on a greyed Recommend or Decline', () => {
   it.each(['recordVerdict.approve', 'recordVerdict.decline'])('%s: shows the list as a focused alert and does not act', async (key) => {
-    const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: nothingDone() })
+    const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: nothingDone() })
     await loaded()
     const b = btn(key)
     expect(b.disabled).toBe(false)                          // focusable and clickable
@@ -75,7 +83,7 @@ describe('a press on a greyed Recommend or Decline', () => {
   })
 
   it('a second press focuses the alert again', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: nothingDone() })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: nothingDone() })
     await loaded()
     fireEvent.click(btn('recordVerdict.approve'))
     const first = screen.getByRole('alert')
@@ -86,8 +94,21 @@ describe('a press on a greyed Recommend or Decline', () => {
     expect(document.activeElement).toBe(screen.getByRole('alert'))
   })
 
+  it('goes back to a plain list once an item is fixed, so it is not announced again on every fix', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: nothingDone() })
+    await loaded()
+    fireEvent.click(btn('recordVerdict.approve'))
+    expect(screen.getByRole('alert')).toBeTruthy()
+    fireEvent.change(document.getElementById('verdict-reason') as HTMLTextAreaElement,
+      { target: { value: 'The evidence supports it.' } })
+    expect(screen.queryByRole('alert')).toBeNull()
+    const list = document.getElementById('decision-missing') as HTMLElement
+    expect(list).not.toBeNull()
+    expect(list.textContent).not.toContain(K + 'missing.conclusion')
+  })
+
   it('a ready decision with no bursary amount: Recommend shows the reason as a focused alert and does not act', async () => {
-    const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing',
+    const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing',
       build: { ...readyCase(), award_amount: null, proposed_award_amount: null } })
     await loaded()
     expect(btn('recordVerdict.approve').getAttribute('aria-disabled')).toBe('true')
@@ -104,7 +125,7 @@ describe('a press on a greyed Recommend or Decline', () => {
   })
 
   it('a ready case still chooses the outcome on a press', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: readyCase() })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: readyCase() })
     await loaded()
     expect(btn('recordVerdict.approve').getAttribute('aria-disabled')).toBeNull()
     fireEvent.click(btn('recordVerdict.decline'))
@@ -115,7 +136,7 @@ describe('a press on a greyed Recommend or Decline', () => {
 
 describe('the phone decision bar', () => {
   it('a press while something is missing shows the same list as an alert', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: nothingDone() })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: nothingDone() })
     await loaded()
     expect(screen.queryByRole('alert')).toBeNull()
     await act(async () => {
@@ -125,7 +146,7 @@ describe('the phone decision bar', () => {
   })
 
   it('a press when ready only jumps', async () => {
-    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: readyCase() })
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: readyCase() })
     await loaded()
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /admin\.scholarship\.decisionBar\.go/ }))
