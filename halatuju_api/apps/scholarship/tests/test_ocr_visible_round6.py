@@ -1,5 +1,5 @@
 """S-visible fix round 6: whitelists, not blacklists — optional content, what pdfium loads with a page, string
-length, and one lock around pdfium.
+length, and one lock around pdfium (fix round 8: the lock gave way to a pdfium child process, `pdfium_run`).
 
 Each hostile shape is the Vision route in under 3 seconds; each real-corpus shape keeps its free text layer.
 Fictional words only.
@@ -139,13 +139,13 @@ CLOSED = {   # each pdfium would parse on load (or might); none of the 533 real 
 class WhatPdfiumLoadsWithAPage(SimpleTestCase):
     def _hostile(self, pdf):
         """pypdf extracts the page (it never runs a glyph); the load check hides it before pdfium loads it."""
-        with patch('pypdfium2.PdfDocument') as opened:
+        with patch('apps.scholarship.pdfium_run.ask') as opened:
             t0 = time.perf_counter()
             self.assertFalse(_reads(pdf))
             self.assertEqual(''.join(pdf_pages.pdf_page_texts(pdf, 3)), '')
             self.assertFalse(pdf_pages.first_page_drawn(pdf))
             self.assertLess(time.perf_counter() - t0, 3.0)
-        self.assertEqual(opened.call_count, 0)                   # pdfium never loaded it
+        self.assertEqual(opened.call_count, 0)                   # no pdfium child loaded it
 
     def test_the_type3_glyph_bomb(self):
         # 120 glyph procedures of 2.8 MB each in a 670 KB file: pdfium took 13.5 s to load the page
@@ -212,44 +212,32 @@ class TheStringLength(SimpleTestCase):
                 self.assertTrue(_reads(_doc(b'BT /F1 12 Tf 20 150 Td ' + show + b' ET ' + TEXT, filtered=True)))
 
 
-class OneLockAroundPdfium(SimpleTestCase):
-    def test_two_threads_never_use_pdfium_at_once(self):
-        import pypdfium2
-        real, active, peak = pypdfium2.PdfDocument, [0], [0]
-        guard = threading.Lock()
+class PdfiumOnlyInTheChild(SimpleTestCase):
+    """Fix round 8: the web process never opens a PDF with pdfium; only `pdfium_worker` (a child) does."""
 
-        def slow_open(data):
-            with guard:
-                active[0] += 1
-                peak[0] = max(peak[0], active[0])
-            time.sleep(0.05)
-            doc = real(data)
-            close = doc.close
-
-            def closing():
-                with guard:
-                    active[0] -= 1
-                close()
-            doc.close = closing
-            return doc
-
-        calls = (lambda: pdf_pages.pdf_page_count(DRAWN), lambda: pdf_pages.pdf_first_page_png(DRAWN),
-                 lambda: pdf_pages.pdf_page_pngs(DRAWN, 1), lambda: pdf_pages.pdf_pages_png(DRAWN),
-                 lambda: pdf_pages.pdf_text_layer(DRAWN) and pdf_pages._layer_memo_clear(),
-                 lambda: spm_cert_parse._pdf_words(DRAWN))
-        with patch.object(pypdfium2, 'PdfDocument', side_effect=slow_open):
-            threads = [threading.Thread(target=calls[i % len(calls)]) for i in range(10)]
-            for t in threads:
-                t.start()
-            for t in threads:
-                t.join()
-        self.assertEqual(peak[0], 1)
-        self.assertEqual(active[0], 0)
-
-    def test_no_pdfium_document_is_opened_outside_the_lock(self):
+    def test_no_request_path_module_opens_or_imports_pdfium(self):
         from pathlib import Path
         root = Path(pdf_pages.__file__).resolve().parents[1]           # apps/
         offenders = [str(p.relative_to(root)) for p in root.rglob('*.py')
-                     if 'PdfDocument(' in p.read_text(encoding='utf-8', errors='replace')
-                     and p.name not in ('pdfium_lock.py', 'capture_ocr.py') and 'tests' not in p.parts]
+                     if any(k in p.read_text(encoding='utf-8', errors='replace')
+                            for k in ('PdfDocument(', 'import pypdfium2', 'from pypdfium2'))
+                     and p.name not in ('pdfium_worker.py', 'capture_ocr.py') and 'tests' not in p.parts]
         self.assertEqual(offenders, [])
+
+    def test_threads_reading_at_once_get_the_same_answers(self):
+        from apps.scholarship import pdfium_run
+        calls = {'count': lambda: pdf_pages.pdf_page_count(DRAWN), 'r1': lambda: pdf_pages.pdf_first_page_png(DRAWN),
+                 'words': lambda: spm_cert_parse._pdf_words(DRAWN)}
+        alone = {}
+        for k, f in calls.items():
+            pdfium_run.memo_clear()
+            alone[k] = f()
+        pdfium_run.memo_clear()
+        got, threads = [], [threading.Thread(target=lambda k=k: got.append((k, calls[k]()))) for k in list(calls) * 2]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(len(got), 6)
+        for k, v in got:
+            self.assertEqual(v, alone[k], k)

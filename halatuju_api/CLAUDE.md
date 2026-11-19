@@ -69,6 +69,7 @@ GCP project `gen-lang-client-0871147736`, account `tamiliam@gmail.com`; Cloud Ru
 - Env vars: ⚠ the Gemini key must belong to the HalaTuju GCP project (prepaid; credit out = outage); ⚠ rotating the Brevo key also means Supabase Auth's SMTP setting; `SPONSOR_MOCK_DONATIONS_ENABLED` is **NEVER in production**; ⛔ `BURSARY_AGREEMENT_ENABLED` needs TD-347 fixed first; `UPDATE_EMAIL_GOLDEN` is local-only and ⛔ never set.
 - **Which flags are ON in production:** the table in `docs/deployment.md` ("Live flag values"), read off the running service. Never read a flag from a settings default.
 - The api image installs `requirements.lock` (refresh it deliberately); `.dockerignore` is the file that counts for the image.
+- pdfium (pypdfium2) never runs in the web process: each use on an upload is a short `python -I apps/scholarship/pdfium_worker.py` child (`pdfium_run`: 20 s limit, +640 MiB address-space cap on Linux, max 2 per gunicorn worker). Raising workers/threads or lowering instance memory means re-sizing `MEMORY_LIMIT_BYTES` / `MAX_CHILDREN`.
 - New documents go where the doc says: retrospectives `docs/retrospectives/`, release notes `docs/releases/`, history `docs/sprint-history.md`, domain rules `docs/domain-rules.md`.
 
 ## Security and access (full review: `docs/security-posture.md`)

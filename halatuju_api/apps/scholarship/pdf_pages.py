@@ -19,8 +19,7 @@ import threading
 from collections import OrderedDict
 from typing import NamedTuple, Optional
 
-from . import pdf_pdfium_check, pdf_render_check
-from .pdfium_lock import pdfium_document
+from . import pdf_pdfium_check, pdf_render_check, pdfium_run, pdfium_worker
 from .pdf_layer_guards import (_MAX_DOC_FONT_COST, OverBudget as _OverBudget, _doc_may_switch_off, bad_operands,
                                charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check, shown_chars)
 
@@ -115,10 +114,12 @@ MAX_PAGE_SIDE_PT = 20000
 def raster_scale(width_pt: float, height_pt: float) -> Optional[float]:
     """The render scale for a page of this size: 200 DPI, shrunk so the longer side stays within
     ``MAX_RASTER_SIDE_PX``. None for a page box that is empty or absurd — the caller refuses it."""
-    longer = max(width_pt, height_pt)
-    if not (width_pt > 0 and height_pt > 0) or longer > MAX_PAGE_SIDE_PT:
-        return None
-    return min(RASTER_DPI / 72.0, MAX_RASTER_SIDE_PX / longer)
+    return pdfium_worker.raster_scale(width_pt, height_pt, *_scale_args())
+
+
+def _scale_args() -> list:
+    """The raster bounds the pdfium child renders with (`pdfium_worker.raster_scale`)."""
+    return [RASTER_DPI, MAX_RASTER_SIDE_PX, MAX_PAGE_SIDE_PT]
 
 
 # ── S-visible (owner decision 2026-11-18, "what we see is what we can defend") ───────────────────────
@@ -444,6 +445,7 @@ def _layer(data: bytes, per_page: int = 0, opened: Optional[list] = None) -> _La
 def _layer_memo_clear() -> None:
     with _LAYER_MEMO_LOCK:
         _LAYER_MEMO.clear()
+    pdfium_run.memo_clear()
 
 
 def first_page_drawn(data: bytes) -> bool:
@@ -470,66 +472,51 @@ def pdf_text_layer(data: bytes) -> str:
 
 
 def _checked(data: bytes, pick) -> int:
-    """pypdf's page count when every page ``pick(count)`` names passes `pdf_render_check` (fix round 7: the
-    render runs under the one pdfium lock, so its cost is bounded first); -1 (logged) when one does not."""
+    """pypdf's page count when every page ``pick(count)`` names passes `pdf_render_check` (fix round 7; since round 8
+    a cheap pre-filter, the child's timeout is the safety line); -1 (logged) when one does not."""
     n, why = pdf_render_check.render_refusal(data, pick)
     if why:
         logger.warning('PDF render refused: %s', why)
     return -1 if why else n
 
 
+def _render(data: bytes, pages: list, n: int) -> tuple:
+    """(PNGs, pdfium's page count or None) of ``pages`` rendered in ONE pdfium child, stopping at the first
+    page that fails or whose box is out of bounds (logged); ([], None) when the child fails."""
+    answer = pdfium_run.ask(data, [{'op': 'render', 'pages': pages, 'count': n, 'scale': _scale_args()},
+                                   {'op': 'count'}])
+    if answer is None:
+        return [], None
+    if answer[0]['stop']:
+        logger.warning('PDF rasterise stopped: %s', answer[0]['stop'])
+    return answer[0]['pngs'], answer[1]['count']
+
+
 def pdf_first_page_png(data: bytes) -> Optional[bytes]:
     """Rasterise page 1 of a PDF to PNG bytes (~200 DPI, within the pixel budget above). None on
-    failure / library missing / an absurd page box / a page `pdf_render_check` refuses (the caller's
-    "cannot read" path). Page 1 only — bounds the Vision cost to 1 unit per doc."""
-    try:
-        n = _checked(data, lambda n: [0])
-        with pdfium_document(data) as pdf:
-            if len(pdf) == 0 or len(pdf) != n:
-                return None
-            page = pdf[0]
-            width, height = page.get_width(), page.get_height()
-            scale = raster_scale(width, height)
-            if scale is None:
-                logger.warning('PDF rasterise refused: page box %.0f x %.0f pt', width, height)
-                return None
-            pil = page.render(scale=scale).to_pil()
-            buf = io.BytesIO()
-            pil.convert('RGB').save(buf, format='PNG')
-            return buf.getvalue()
-    except Exception as e:  # noqa: BLE001 — a PDF that will not rasterise is logged; the caller handles None
-        logger.warning('PDF rasterise failed: %s', e)
+    failure / an absurd page box / a page `pdf_render_check` refuses / a pdfium child that fails or runs
+    past its time limit (the caller's "cannot read" path). Page 1 only — bounds the Vision cost to 1 unit per doc."""
+    n = _checked(data, lambda n: [0])
+    if n <= 0:
         return None
+    pngs, _count = _render(data, [0], n)
+    return pngs[0] if pngs else None
 
 
 def pdf_page_pngs(data: bytes, max_pages: int) -> list:
     """The first ``max_pages`` pages of a PDF, each its OWN PNG (within the pixel budget) — the offer
     reader shows Gemini one image per page, so no page is shrunk to share one raster (offer exact-read
-    S4, 2026-11-01). A page that cannot be rendered ends the list there; [] on any failure or a refused page."""
-    out, pick = [], (lambda n: range(min(n, max(0, max_pages))))
-    try:
-        n = _checked(data, pick)
-        with pdfium_document(data) as pdf:
-            for i in pick(len(pdf)) if len(pdf) == n else ():
-                page = pdf[i]
-                scale = raster_scale(page.get_width(), page.get_height())
-                if scale is None:
-                    break
-                buf = io.BytesIO()
-                page.render(scale=scale).to_pil().convert('RGB').save(buf, format='PNG')
-                out.append(buf.getvalue())
-    except (ImportError, OSError, ValueError, RuntimeError) as e:   # pdfium's errors are RuntimeErrors
-        logger.warning('PDF page render failed: %s', e)
-    return out
+    S4, 2026-11-01). A page that cannot be rendered ends the list there; [] on any failure or a refused page.
+    The page count comes back from the same pdfium child (`pdf_page_count` then spawns nothing)."""
+    n = _checked(data, lambda n: range(min(n, max(0, max_pages))))
+    pages = list(range(min(n, max(0, max_pages))))
+    return _render(data, pages, n)[0] if pages else []
 
 
 def pdf_page_count(data: bytes) -> int:
-    """The number of pages in a PDF; 0 when it cannot be opened."""
-    try:
-        with pdfium_document(data) as pdf:
-            return len(pdf)
-    except (ImportError, OSError, ValueError, RuntimeError):
-        return 0
+    """The number of pages in a PDF (pdfium's count); 0 when it cannot be opened or its child fails."""
+    answer = pdfium_run.ask(data, [{'op': 'count'}])
+    return answer[0]['count'] if answer else 0
 
 
 def pdf_page_texts(data: bytes, max_pages: int) -> list:
@@ -560,37 +547,14 @@ def pdf_page_text(data: bytes, max_pages: int) -> str:
 MAX_STACKED_PAGES = 3
 
 
-def _stack_pages(indices, pages):
-    """Render page indices to one vertical PNG whose longer side stays within the pixel budget."""
-    from PIL import Image
-    boxes = [(pages[i].get_width(), pages[i].get_height()) for i in indices]
-    if any(raster_scale(w, h) is None for w, h in boxes):
-        return None
-    total_h = sum(h for _w, h in boxes)
-    scale = min(RASTER_DPI / 72.0, MAX_RASTER_SIDE_PX / max(total_h, max(w for w, _h in boxes)))
-    images = [pages[i].render(scale=scale).to_pil().convert('RGB') for i in indices]
-    sheet = Image.new('RGB', (max(im.width for im in images), sum(im.height for im in images)), 'white')
-    y = 0
-    for im in images:
-        sheet.paste(im, (0, y))
-        y += im.height
-    buf = io.BytesIO()
-    sheet.save(buf, format='PNG')
-    return buf.getvalue()
-
-
 def pdf_pages_png(data: bytes) -> Optional[bytes]:
     """ONE PNG of a PDF's pages stacked top to bottom — all of them up to `MAX_STACKED_PAGES`, else the
     first two and the last — so a single multimodal read sees the page that carries the approval. None on
-    failure / library missing / an absurd page box (the caller then treats the read as not made)."""
+    failure / an absurd page box / a pdfium child that fails or runs past its time limit (the caller then
+    treats the read as not made)."""
     pick = (lambda n: list(range(n)) if n <= MAX_STACKED_PAGES else [0, 1, n - 1])
-    try:
-        n = _checked(data, pick)
-        with pdfium_document(data) as pdf:
-            if len(pdf) == 0 or len(pdf) != n:
-                return None
-            indices = pick(n)
-            return _stack_pages(indices, {i: pdf[i] for i in indices})
-    except (ImportError, OSError, ValueError, RuntimeError) as e:   # pdfium's errors are RuntimeErrors
-        logger.warning('PDF page stack failed: %s', e)
+    n = _checked(data, pick)
+    if n <= 0:
         return None
+    answer = pdfium_run.ask(data, [{'op': 'stack', 'pages': pick(n), 'count': n, 'scale': _scale_args()}])
+    return answer[0]['png'] if answer else None

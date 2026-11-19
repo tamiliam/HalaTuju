@@ -1,7 +1,8 @@
 """S-visible fix round 7 (2026-11-19): what a pdfium RENDER of a page costs, judged BEFORE pdfium renders it.
 
-Every pdfium use holds `pdfium_lock.PDFIUM_LOCK` (pypdfium2 is not thread-safe), so a slow render stalls every
-upload in that gunicorn worker, not one thread: a page drawing a 20,000 x 20,000 image took 323 s, a 60 MB tiling
+Since fix round 8 every pdfium use runs in a child process with a hard time limit (`pdfium_run`), so this is a
+cheap PRE-FILTER, not the safety line (a refusal here spawns nothing). Before that, pdfium ran under one process-wide
+lock and a slow render stalled every upload in that gunicorn worker: a page drawing a 20,000 x 20,000 image took 323 s, a 60 MB tiling
 cell 21.6 s, 20,000 full-page fills 32 s, 2,000 full-page draws of a small image 16 s. Before any page is rendered
 (`pdf_pages`: the Vision route's page 1, the offer reader's pages, the stacked declaration pages) its content is
 walked here WITHOUT pdfium and charged; a page outside the whitelist or past a cap is refused (the renderer

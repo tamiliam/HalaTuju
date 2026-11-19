@@ -77,28 +77,11 @@ def parse_spm_cert(text, words=None, pdf=None):
 
 
 def _pdf_words(data):
-    """Page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points)."""
-    from .pdfium_lock import pdfium_document
-    with pdfium_document(data) as pdf:
-        page = pdf[0]
-        height, tp = page.get_height(), page.get_textpage()
-        out, cur = [], []
-
-        def flush():
-            if cur:
-                le, bo = min(c[1] for c in cur), min(c[2] for c in cur)
-                ri, to = max(c[3] for c in cur), max(c[4] for c in cur)
-                out.append({'text': ''.join(c[0] for c in cur), 'cx': (le + ri) / 2,
-                            'cy': height - (bo + to) / 2, 'h': to - bo, 'angle': 0.0})
-                cur.clear()
-        for i in range(tp.count_chars()):
-            ch = tp.get_text_range(i, 1)
-            if not ch or ch.isspace():
-                flush()
-                continue
-            cur.append((ch, *tp.get_charbox(i)))
-        flush()
-        return out
+    """Page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points); None when the
+    pdfium child fails or runs past its time limit (S-visible fix round 8: pdfium runs in `pdfium_worker`)."""
+    from . import pdfium_run
+    answer = pdfium_run.ask(data, [{'op': 'words'}])
+    return answer[0]['words'] if answer else None
 
 
 def _row_text(row):

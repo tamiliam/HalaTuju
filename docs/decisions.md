@@ -273,6 +273,25 @@ under a non-Normal blend mode 8 (max 0: pdfium's cost grows with the square, 16 
 Whitelists: image filters DCT, Flate, CCITTFax, RunLength, ASCII85 (no JBIG2, JPX, LZW); shadings axial with an
 exponential or stitched-exponential function; no inline images. The render scale was already bounded (200 DPI, longer
 side at most 4,000 px). Worst crafted render under the caps on 6.21.4: 1.8 s (8 blended full-page fills after 36,666 small ones); slowest real page 1: 1.3 s (d1380; slowest 3-page offer 1.2 s).
+**Fix round 8 — pdfium in a child process with a hard time limit; cost modelling is now only a pre-filter.** Rounds
+5-7 modelled what pdfium costs and ran it under one process-wide lock (pypdfium2 4.30 is not thread-safe), and the
+round 7 review still found four small crafted PDFs that kept pdfium busy 10-38 s, freezing every upload in that
+gunicorn worker (2 workers x 4 threads, `--timeout 120`): an annotation's appearance stream (pdfium draws /Annots;
+the walk never read them), 3000 pt text at -2166 Tc, 10,500 clip paths, and Type3 glyphs behind text pypdf reads
+as blank (so the load check skipped the page). Each fix found the next gap, so the safety line moved: every pdfium
+use on an upload now runs in `pdfium_worker`, a fresh `python -I` child (`subprocess.run`, stdlib only; one child
+per document per step: the text check's pages in one call, a render and its page count in one; answers kept per
+upload so repeated readers spawn nothing). No shared pdfium state, so no lock. Limits: `TIMEOUT_S` = 20 s wall clock
+(slowest real child call 1.53 s on the dev machine; killed past it); `RLIMIT_AS` = the child's size after
+loading Python, pypdfium2 and Pillow + 640 MiB, Linux only (instance 2 GiB, 2 workers; largest real child peak 176
+MB, median 66 MB); at most 2 children per web process (2 x 2 x 640 MiB plus the workers stays inside the instance); an upload that
+timed out once gets the safe answer for every later question without a new child. Any timeout, crash, non-zero exit
+or unparseable output is the safe answer: the text check says hidden (Vision route), a render gives None (the
+"cannot read" path); never the hidden text. The round 5-7 whitelists and caps stay as a cheap pre-filter (a refusal
+spawns nothing). The load check now runs on EVERY page pdfium would load, blank pypdf text or not. Cost: about 4 children per
+real document, about 0.15 s each idle on the dev machine (Windows start-up plus importing pypdfium2), so about 0.6 s
+per document; the Vision route's text check plus page-1 render took 0.5 s median, 3.3 s worst. Expect less on Linux.
+Corpus: 0 of 533 change on either pypdf version (text layer, page texts, page-1 drawn, every render byte-identical).
 **pypdf 5.9 (local) vs 6.21.4 (production):** same verdicts under this rule, except 21 corpus PDFs whose content
 streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
 between the two (pypdf's own changes). Local counts are not production counts.
