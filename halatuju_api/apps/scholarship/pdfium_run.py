@@ -113,7 +113,7 @@ def memo_clear() -> None:
         _SPENT.clear()
 
 
-def _key(digest: bytes, op: dict) -> tuple:
+def _memo_key(digest: bytes, op: dict) -> tuple:
     return digest, json.dumps(op, sort_keys=True)
 
 
@@ -135,7 +135,7 @@ def ask(data: bytes, ops: list) -> Optional[list]:
     child timed out, crashed, exited non-zero or wrote anything that does not parse, or the document has spent its
     budget, or no slot came free within its wait budget."""
     digest = hashlib.sha256(data).digest()
-    keys = [_key(digest, op) for op in ops]
+    keys = [_memo_key(digest, op) for op in ops]
     with _MEMO_LOCK:
         while True:
             if digest in _SPENT:

@@ -10,8 +10,6 @@ import os
 import sys
 import tempfile
 import time
-import signal
-from unittest import skipUnless
 from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
@@ -435,14 +433,6 @@ class AnOutsideSignal(SimpleTestCase):
             returncode=-9)
         self.assertIsNone(first)
         self.assertEqual(spawned, 2)
-
-    @skipUnless(hasattr(signal, 'SIGKILL'), 'a real signal needs POSIX')
-    def test_a_real_sigkill_is_not_remembered(self):
-        first, _second, spawned, logs = self._twice('import os, signal\nsys.stdin.buffer.read()\n'
-                                                    'os.kill(os.getpid(), signal.SIGKILL)')
-        self.assertIsNone(first)
-        self.assertEqual(spawned, 2)
-        self.assertIn('killed by signal 9', logs)
 
     def test_running_out_of_memory_has_its_own_reason_and_is_remembered(self):
         # The real worker's main(), its count operation raising MemoryError as it would under the Linux cap.

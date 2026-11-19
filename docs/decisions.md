@@ -169,6 +169,7 @@ breaks the rule for ALL gifts, platform-wide. Services: api, web. Migration: non
 - **Unchanged:** the shortlist's `upu_status == 'ipts'` gate, `_offer_blocks`, `query_item_titles`.
 - Follow-ups: TD-665 (a reader-level public / private field), TD-666 (extend the named-IPTS list), TD-667 (offers
   scored before 1.8.0 or never scored).
+
 ## 2026-11-18 — The visible page judges, for every document type (OCR-first S-visible)
 
 Owner decision 2026-11-18: "What we see is what we can defend." A PDF page whose text is invisible (a phone scanner
