@@ -350,12 +350,12 @@ class TestCheckedByTheQcNumbers(TestCase):
             self.assertEqual(body['qc_checked']['total']['ai_right_reviewer_wrong_checked'], 1)
 
     def test_old_rows_and_bad_stored_values_count_as_not_checked(self):
-        m = sl.counts([(snap(), officer(income='fail')),
+        m = sl.qc_checked_counts([(snap(), officer(income='fail')),
                        (snap(), officer(income='fail', qc_fact_checks='garbage')),
                        (snap(), officer(income='fail', qc_fact_checks={'income': 'bogus'}))])
         self.assertEqual((m['total']['in_doubt'], m['total']['not_checked'], m['total']['checked']), (3, 3, 0))
-        self.assertEqual(sl.counts([])['total']['checked'], 0)
+        self.assertEqual(sl.qc_checked_counts([])['total']['checked'], 0)
         # an answer for a fact that is not in doubt on its own row is never counted
-        m = sl.counts([(snap(), officer(qc_fact_checks={'income': 'disagreed'}))])
+        m = sl.qc_checked_counts([(snap(), officer(qc_fact_checks={'income': 'disagreed'}))])
         self.assertEqual(m['total']['in_doubt'], 0)
         self.assertEqual(m['total']['checked'], 0)

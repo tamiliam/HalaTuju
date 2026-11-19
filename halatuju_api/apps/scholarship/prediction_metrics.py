@@ -121,7 +121,7 @@ def metrics(applications, admin) -> dict:
         'verdict_decided_at', 'verdict_decided_by'))
     out = audit.override_metrics(records)
     out['qc_agreement'] = qc_agreement(decided)
-    out['qc_checked'] = second_look.counts(records)   # LL2b: the facts in doubt, checked by the QC
+    out['qc_checked'] = second_look.qc_checked_counts(records)   # LL2b: the facts in doubt, checked by the QC
     out['counted_scope'] = counted
     if may_see_reviewers(admin):
         out['by_reviewer'] = _reviewer_rows(records, admin)

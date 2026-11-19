@@ -148,7 +148,7 @@ def walk(ai_verdict_snapshot, officer_verdict):
         yield d['fact'], d['groups'], given.get(d['fact'])
 
 
-def counts(decided_records) -> dict:
+def qc_checked_counts(decided_records) -> dict:
     """The "checked by the QC" counts over ``(snapshot, officer_verdict, ...)`` records:
     ``{total: block, facts: {fact: block}}``. An in-doubt fact with no stored answer (no QC decision
     yet, a send-back without a tap, or a QC decision from before LL2b) is ``not_checked``.
