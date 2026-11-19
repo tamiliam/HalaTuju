@@ -267,6 +267,7 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
 - Sandbox: the cockpit fixture serves `second_look` (empty, as for a case with no verdict); the Overview fixture serves `qc_checked` and the reviewer columns. No two-fact QC surface: a new sandbox surface needs mobile-check baselines, which this sprint did not run.
 - Tests: `view.secondLook.test.tsx` (12), `AiPredictionQcChecked.test.tsx` (7), 2 more in `AiPredictionReasons.test.tsx`; `mobileStandard.test.ts` sweeps the new file.
 - Review round (19 Nov 2026): Send now carries every shown fact (`agreed` untapped, `disagreed` tapped) on Accept, Reopen and Reject; the server decides what to keep (see the server note). Tap state resets per case too (keyed on the application id and `verdict_decided_at`). AI prediction card footer is now "Only the facts in doubt are checked by the QC. The other numbers compare the AI with the reviewer." (en/ms/ta). Guide: the FAQ and the reviewer FAQ say "how often the QC agreed with the reviewer", never "right"; the QC chapter states the Accept vs Reopen/Reject recording rule. Block strings unchanged. Tests: `view.secondLook.test.tsx` (13).
+- Gate round (19 Nov 2026): 7 stale pins updated, no behaviour change (QC lock pin with `taps` plus a new pin that each path's `fact_checks` write follows its lock; `second_look` in the A3.7 serializer pin; `qc-facts-in-doubt` in the access matrix, `qc` power only). `audit._snapshot_status_map` skips a non-string `fact`. Tests: 29 in `test_second_look.py`.
 
 ---
 
