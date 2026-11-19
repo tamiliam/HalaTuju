@@ -51,4 +51,4 @@ Recorded in `docs/decisions.md` (2026-11-19 entries):
 - 5 sprints; 47 commits on top of `origin/main` (`0dea7e809`).
 - Last full gate run on the stack, before the rebase: api 23,207 passed, 0 failed, 3 skipped; web jest 7,903 passed; i18n 8,399 keys per locale (8,410 after the rebase); phone check 836 cells; first-load bundle median 157.162 kB of the 157.5 kB line.
 - The final full run happens after the last rebase. Its numbers go in `CHANGELOG.md`, not here.
-- Debt drafted at close: see the lead's TD step (14 new rows, one existing row, TD-243, to update).
+- Debt at close: 15 new rows, TD-671 to TD-685, and TD-243 updated (still open until LL1 and LL3 are live).

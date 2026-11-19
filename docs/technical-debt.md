@@ -267,7 +267,7 @@ Do one only when a sprint is already in that file.
 - ~~**TD-345**~~ — No local signed-in smoke path for the student apply flow: the live API's CORS refuses a localhost build and no local api + auth recipe exists. *(D · M · raised 2026-10-05 by the apply-gift-clarity sprint)* **FIXED 2026-11-11 (A4.7): documented local student recipe plus a pinning test (docs/testing.md).**
 - **TD-041** — The Settings page has no account options. *(D · S · partly done · same as TD-076)*
 - **TD-283** — `applications.py` sits exactly at its size limit (the `serializers_admin` half closed by A3.7). *(D · M)*
-- **TD-243** — The AI reliability rate blends engine versions. *(D · M)* **Fixed in code in branches `ll1` + `ll3` (2026-11-18/19, not merged, not published): LL1 shows the rates per engine version (`by_version`); LL3's guard makes a verdict-engine logic change without a version bump fail the tests. Open until both are merged and live; known gaps in the detail entry.**
+- **TD-243** — The AI reliability rate blends engine versions. *(D · M)* **Fixed in code, saved to `main` 2026-11-19 (LL1 + LL3), not published: LL1 shows the rates per engine version (`by_version`); LL3's guard makes a verdict-engine logic change without a version bump fail the tests. Open until both are live; known gaps in the detail entry.**
 - **TD-212** — The email-template table is still named partner. *(D · M)*
 - **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module; A2.4 split it to A2.4b, not built)*
 - **TD-124** — Contact-form messages reach staff by email only. *(D · M)*
@@ -4920,17 +4920,18 @@ Medium-sized: the response shape changes and `AiReliabilityCard` needs rewriting
 not a bug — a new response shape from `audit.override_metrics`, served by `views_admin/verdict.py` (another lane's
 file), and a rewritten card. It needs the owner's word that the buckets are now comparable.
 
-**Fixed in code 2026-11-18/19 (learning-loop LL1 + LL3), in branches only: not merged, not published.**
-- LL1 (branch `ll1`): the new AI prediction section counts every rate per engine version
+**Fixed in code 2026-11-18/19 (learning-loop LL1 + LL3), saved to `main` 2026-11-19, not published.**
+- LL1: the new AI prediction section counts every rate per engine version
   (`audit.override_metrics` → `by_version`, shown in `AiPredictionSection.tsx`); `AiReliabilityCard`
   is deleted. The blended `override_rate` is still returned for old callers.
-- LL3 (branch `ll3`): a per-version split only means something if the version moves whenever the
+- LL3: a per-version split only means something if the version moves whenever the
   engine's logic moves. `apps/scholarship/model_registry.py` lists the verdict engine's files and
   `tests/test_model_versions.py` fails when they change and `VERDICT_ENGINE_VERSION` does not.
 - Still open, honestly: (1) about 30 helper modules the engine's files import are not in its
   fingerprint (listed with reasons as known gaps in the guard), so a change there can still ship
   under the old version; (2) the 88 decisions under `pre-versioning` stay one blended bucket (no
-  back-fill); (3) the entry closes when both branches are merged and live (the owner decides).
+  back-fill); (3) the entry closes when LL1 and LL3 are live (the owner decides).
+- LL3's other guard gaps are TD-684; the IPTS names the engine reads through `offer_private` are TD-677; the PDF text-layer modules that no model pins are TD-685.
 
 ### [TD-244] Nothing watches a student whose wallet never gets switched on — low — **RESOLVED 2026-10-03** (Next-tier batch 3: a REPORT, never an email — `FundingSummaryRowSerializer.wallet_not_live` (vircle_id held, no `vircle_activated_at`) and `totals.wallet_not_live`; the Payments funding summary names those students in an amber line above the table; finance key snapshot extended deliberately; manual finance chapter says what to do)
 
@@ -9412,4 +9413,79 @@ Fix: serve a flag for each control from the server's own door (as `can_write` is
 ### [TD-670] pdfium child: its own crash signals are never remembered, and a refund before the memo write can start a second child - low
 
 **Raised 2026-11-19 by the S-visible round 10 review (PASS on safety; every answer stays safe and cost stays bounded).** (1) A child that dies by its OWN signal (SIGSEGV, SIGABRT, a pdfium abort under the 256 MiB cap) is treated like an outside kill: transient, never memoised, so the same bytes spawn again on the next question, each time charged to the document's 20 s budget until it is spent. (2) `pdfium_run.ask` refunds the unused reservation and wakes waiters before it writes the memo, so a waiter can start a duplicate child for the same question. Smaller: a budget window that restarts while a child runs; `_SPENT` set only on the first child's full-time kill; the `killed` flag tested only on POSIX; the unbounded `proc.wait` after a kill (pre-existing). Fix: tell our own kill from the child's own signal (remember SIGSEGV / SIGABRT, never SIGKILL from outside); write the memo before the refund under the same lock; add a Linux test for each.
+*(A - S)*
+
+### [TD-671] A stale QC tab can save "agreed" after the reviewer re-recorded a verdict with the same facts in doubt - low
+
+**Raised 2026-11-19 by the LL2b sprint (adversarial review, accepted). Decision flow, no money effect.** The QC accept keeps an answer only for facts in BOTH the tab's payload and the server's current in-doubt set. If the reviewer re-records the verdict and the SAME facts are in doubt again, a QC tab loaded before that re-record still passes the check and saves "agreed" for a verdict the QC did not see. Fix: the QC tab sends `verdict_decided_at`; `AdminQcDecisionView` refuses the answers (409) when it no longer matches the stored value. Add a test that drives a stale tab.
+*(A - S)*
+
+### [TD-672] A verdict record that is not a dict is skipped by the second-look code with no log line - low
+
+**Raised 2026-11-19 by the LL2b sprint. Silent failure, no money effect.** `second_look.py` treats an `officer_verdict` that is not a dict (and an odd snapshot or status) as "nothing to do", so the QC decision still saves, by design. But nothing is logged, so a damaged record would be invisible. Fix: one log line with the application id and the type found (no content, no names) at each skip, and a test that the line is written.
+*(A - S)*
+
+### [TD-673] Not confirmed: does `reopen_decision` keep or clear `verdict_decided_at` the way the second look expects? - low
+
+**Raised 2026-11-19 by the LL2b sprint. Unproven assumption.** The second look and the QC panel's tap reset key on `verdict_decided_at`. `reopen.reopen_decision` refuses when it is empty (`not_decided`) and the LL2b notes say "a reopen keeps the answers", but no test pins what happens to `verdict_decided_at` across Reopen then re-record. Fix: read `reopen.py` end to end, then add a test that runs Reopen, re-record, second QC round and checks both the date and the stored answers. If the behaviour differs from the roadmap note, correct the note, not the code.
+*(A - S)*
+
+### [TD-674] The AI prediction metrics have no query-budget test - low
+
+**Raised 2026-11-18 by the LL1 sprint (repeated in LL2 and LL2b, which added counts to the same payload).** `prediction_metrics.metrics()` serves the Programme Overview section and `verdict-metrics/`. Its reads grew with LL2 (reasons) and LL2b (`qc_checked`, activity rows) and no test pins how many queries it makes, so a loop added later would pass every gate. Fix: a budget test with a made-up cohort (same style as the applicant-detail 38-query pin), at the figure measured today.
+*(A - S)*
+
+### [TD-675] `programme_overview.py` sits at its growth cap (839 lines); the next change must split it - low
+
+**Raised 2026-11-18 by the LL1 sprint. Code standards, build gate.** The ledgered file may not grow, and LL1 filled the room. The next feature that touches the Overview sections must run the split first, in its own commit, moves only (owner rule 2026-09-19). Suggested cut: one module per group of sections (money, people, AI prediction) behind the existing `SECTION_KEYS` / `sections_for` seam. Never raise the ledger.
+*(A - M)*
+
+### [TD-676] Two files sit at the 600-line cap: `model_registry.py` (599) and `admin-api/applications.ts` (600) - low
+
+**Raised 2026-11-19 by the LL sprint close. Code standards, build gate.** `apps/scholarship/model_registry.py` holds 14 models and their pins (LL3); `halatuju-web/src/lib/admin-api/applications.ts` took the `second_look` and metrics types (LL2b) and is exactly at 600. The next model, pin or detail type fails the 600-line guard. Fix: split before the next change, moves only. Registry: one module per family of models (verdict, genuineness, readers and parsers). `applications.ts`: move the detail types into `applications-detail.ts` (see the older note on `AdminScholarshipDetail`). Do this before TD-685 adds the pdf modules to the register.
+*(A - S)*
+
+### [TD-677] The version guard does not pin the IPTS names the verdict engine reads through `offer_private` - medium
+
+**Raised 2026-11-19 by the LL3 sprint (known gap, noted honestly at the merge). Eligibility: an IPTS offer breaks the rule for every gift.** `offer_private` is in the verdict engine's file list, but the name lists it reads (`offer_reading._PRIVATE_BODIES`, `results_doc._PRIVATE_ARM_PHRASES`, and the `genuineness/offer_is...` helpers) are in files other models own, and are not pinned. Adding a private college name can change a verdict under the old engine version. Fix: pin those names in the verdict engine's `pins` (with their closure) and bump the version when the list changes. Related: TD-665, TD-666 (the lists themselves). Same-text moves of the reasons into constants were re-seeded on 2026-11-19 with dated notes; that must not become a habit.
+*(A - S)*
+
+### [TD-678] The LL4 evidence fingerprint does not cover the course catalogue or the programme catalogue - low
+
+**Raised 2026-11-19 by the LL4 sprint (known gaps). Replay accuracy.** When an application has no `requirements_snapshot`, the engine reads the live programme catalogue (`requirements.py`). The IPTS rule in `offer_private` reads the live course catalogue. Neither is in the fingerprint, so "same evidence" can hide a catalogue change and LL5 may call a catalogue-driven difference an engine difference. Fix: add a cheap catalogue stamp (row count and latest change time, or a hash of the rows the engine reads) to the fingerprint inputs; this changes every future fingerprint, so do it before LL4 is live, or bump `schema`.
+*(A - M)*
+
+### [TD-679] Other LL4 fingerprint gaps: other applications' documents, the clock, the stage at decision, two settings - low
+
+**Raised 2026-11-19 by the LL4 sprint (known gaps). Replay accuracy.** (a) `wrong_slip.stpm_results_on_file` and `identity.latest_live_ic` read the student's OTHER applications; the fingerprint covers this application only. (b) The clock is not hashed (salary-slip age, occupation and utility date checks depend on today). (c) The stage facts move at QC accept or reject, so LL5 must hash under the stage at the decision. (d) `SGD_TO_MYR_RATE` and the model-switching settings are not hashed. (b) and (c) are handled in LL5 by design (today set to `verdict_decided_at`; stage passed in); (a) and (d) need a decision. Fix: LL5 reports these cases apart, or adds the inputs.
+*(A - M)*
+
+### [TD-680] The first-load bundle budget has about 0.3 kB of headroom after the LL sprints - low
+
+**Raised 2026-11-19 by the LL sprint close. Build gate.** The median first-load size is 157.162 kB against the 157.5 kB line. The next string or component on a budgeted route fails `bundle-budget --gate`. Same shape as TD-344 / TD-427 (closed). Fix: find the largest shared string or chunk to remove, or put the new section behind a dynamic import; never raise the line without the owner's word (dated re-baseline, as W1).
+*(A - S)*
+
+### [TD-681] The QC panel does not show the stored second-look answers after the decision, and on Reopen or Reject silence records nothing - low
+
+**Raised 2026-11-19 by the LL2b sprint (as built, known limits). Reporting.** The "Facts in doubt" block goes away once the decision is made, so the QC cannot see what was recorded. On Reopen or Reject only a tap ("Disagree") is stored, so silence records nothing. When the reviewer re-records, `qc_fact_checks` is dropped, so a sent-back case's tap survives only in the `qc_decision` activity meta (`qc_disagreed`, `doubt_*`) and the on-screen numbers undercount overturned facts. Fix: a read-only line on the decided case listing the stored answers; LL5 counts overturns from the activity meta.
+*(A - S)*
+
+### [TD-682] The warning "One fact failed" uses the same words for two or more failed facts - low
+
+**Raised 2026-11-19 by the LL2 sprint (words approved by the owner as one line). Wording.** With Approve and two or three failed facts the soft warning still says "One fact failed. Do you want to accept?". It warns and never blocks, so no wrong save, but it is untrue. Fix: a count-aware string (one / many) in en, ms and ta, owner to approve the words; sync with Sol for ms and ta.
+*(A - S)*
+
+### [TD-683] A recorded decline from before LL2 with a failed green fact cannot be re-saved until a reason is picked - low
+
+**Raised 2026-11-19 by the LL2 sprint (known effect).** The web holds Save until a reason is chosen for each green-then-failed fact. Old rows have no reasons, so a reviewer who re-opens an old decline must pick a reason for a decision made before the question existed. The server never refuses (a missing reason saves). Fix: let the web treat an unchanged old failure as "not given" without forcing a tap, or accept the friction and say so in the Guide.
+*(A - S)*
+
+### [TD-684] LL3 guard gaps beyond the helper modules: settings, two decision files, append-only logs, the census, a scratch-file glob, late changes to pinned names - medium
+
+**Raised 2026-11-19 by the LL3 sprint (known gaps, listed with reasons in `_KNOWN_GAPS_OUTSIDE_THE_WALK`). Eligibility and scoring: a change here can ship under the old version.** (1) Settings that switch behaviour outside any digest: `OFFER_RETRY_MODEL`, `SGD_TO_MYR_RATE`, `SAMPLE_CHECK_ENABLED`. (2) `genuineness/__init__.assess` and `vision/authenticity.py` decide which scorer runs and how old results map, and no model registers them. (3) The logs are append-only by convention plus two checks; an in-place edit of the current digest, a deleted old entry or a backwards version is caught by review only. (4) The `*VERSION` census sees only names inside `apps/scholarship`. (5) `income_engine/*.py` also reads untracked local files, so a scratch file turns the guard red on that machine only. (6) A pinned name changed inside a called function, by `global`, an alias or `setattr` is not seen. (7) The guard has run on Python 3.13 only; its first run on 3.11 is Cloud Build after the push (fails closed). Fix: register (2) as models, add the settings to pins, and tighten (3) by pinning the log's earlier digests in a second file. Related: TD-243 (the helper modules).
+*(A - L)*
+
+### [TD-685] The PDF text-layer modules from OCR-first S-visible are in no model's version fingerprint, so a change there can ship under the old version - medium
+
+**Raised 2026-11-19 by the LL sprint close (found when the register was brought up to main).** `pdf_pages.py` and the new `pdf_layer_guards.py`, `pdf_pdfium_check.py`, `pdf_pdfium_load.py`, `pdf_render_check.py`, `pdfium_run.py` and `pdfium_worker.py` decide which PDF text each scorer is shown (an invisible text layer is no layer). `results_doc` (1.31.0) and `offer_reader` (2.7.0) both depend on them, and so does every other document scorer, but none of those files is in a model's file list, so the guard cannot see a change there (for example a changed render check or page rule). The register was not widened at the close: `model_registry.py` is at 599 of 600 lines (TD-676) and a shared helper would have to be added to about ten models. Fix: after the registry is split, give the document scorers one shared file list for the PDF reading layer, and seed the digests with a dated note. Related: TD-243, TD-684.
 *(A - S)*

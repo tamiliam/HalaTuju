@@ -77,16 +77,17 @@ LL3 ──► LL4 ──► LL5 ◄── A5 replay harness (sprints R1, R2 — 
 
 ### Status and plan forward (2026-11-19)
 
-**Built.** LL1, LL2, LL2b, LL3 and LL4 are built and reviewed in local branches
-(stack `ll1 -> ll3 -> ll4 -> ll2 -> ll2b`). The full gates are green on the head of the stack.
-Nothing is merged. Nothing is published. **Left.** LL5 only.
+**Built.** LL1, LL2, LL2b, LL3 and LL4 are built and reviewed. They were saved to `main` on 2026-11-19
+(landing order: the Requests work, then the OCR-first work, then this stack). Nothing is published.
+Before a publish the owner applies migration `0218_application_verdict_context` by hand and does the phone checks.
+**Left.** LL5 only; it starts when LL4 is live.
 
 **Who owns what (owner ruling 2026-11-19).**
 - The **HalaTuju lead session** owns the A5 replay: branch `a5` (R1 + R2, built 13-14 Nov) and the R3 run.
 - The **learning-loop session** owns this stack and LL5. It does not touch `a5`.
 
 **Order of work.**
-1. Owner says "merge": the stack is brought up to date with `main`, the gates run again, then it goes to `main`.
+1. DONE 2026-11-19: the stack was brought up to date with `main` and saved to `main` (not published).
 2. Owner applies the migration 0218 SQL by hand, does the three phone checks, then says "publish".
    The publish goes in a release slot **outside** the A5 replay window (rule: no deploy during the replay).
    The learning-loop session sends the commit list to the HalaTuju lead before the publish.
@@ -118,8 +119,8 @@ Built: an "AI prediction" section on the Programme Overview and the Organisation
 Open known gaps:
 - Two differences from the approved picture: the trend chart has no 80% axis start and no grey points (the shared `LineChart` has neither); a "few cases" month shows a pill under the chart.
 - The Programmes landing shares one payload and keeps the all-programmes note, so the assigned-only note shows on the Organisation Overview surface only.
-- `programme_overview.py` is at its growth cap (839 lines); it needs a split before its next change. Not tracked elsewhere until the TD step: drafted.
-- No dedicated query-budget test for the `ai_prediction` section. Drafted for the TD register.
+- `programme_overview.py` is at its growth cap (839 lines); it needs a split before its next change. Tracked as TD-675.
+- No dedicated query-budget test for the `ai_prediction` section. Tracked as TD-674.
 - Guide and FAQ are English only (they have no ms/ta copy).
 
 ---
@@ -129,8 +130,8 @@ Open known gaps:
 Built: the rating box reads "Check the four facts" with a one-line help (the tap is about the student, owner ruling A). Failing a fact the engine showed green asks "Why is this fact not true?" with five reasons (`engine_wrong`, `read_wrong`, `new_information`, `programme_rule`, `other`), stored in `officer_verdict.fail_reasons`; a soft warning shows when a fact failed and the decision is accept. The reason counts show on the AI prediction card. No migration. The server never refuses a missing reason; the web holds Save. Detail: `CHANGELOG.md` (LL2 server and web entries), `apps/scholarship/fail_reasons.py`, the Guide and FAQ. The approved strings are in the message files.
 
 Open known gaps:
-- A recorded decline from before LL2 with a failed green fact cannot be re-saved until a reason is picked (web only). Drafted for the TD register.
-- The warning says "One fact failed" for two or more failed facts. Drafted for the TD register.
+- A recorded decline from before LL2 with a failed green fact cannot be re-saved until a reason is picked (web only). Tracked as TD-683.
+- The warning says "One fact failed" for two or more failed facts. Tracked as TD-682.
 - Guide and FAQ are English only.
 
 ---
@@ -140,10 +141,10 @@ Open known gaps:
 Built: the QC (also the funder) checks the facts in doubt inside the QC step. A "Facts in doubt" block shows on the QC panel only when a fact is in doubt (AI green and reviewer fail, or a failed fact with an accept); doing nothing agrees with the reviewer, one tap disagrees (`officer_verdict.qc_fact_checks`, and the `qc_decision` activity meta). The AI prediction card shows the "checked by the QC" counts, and leads see them by reviewer. The second look never changes a decision. No migration. Detail: `CHANGELOG.md` (LL2b entries), `apps/scholarship/second_look.py`, the QC Guide section "Facts in doubt", `docs/decisions.md` (2026-11-19).
 
 Open known gaps:
-- A QC tab loaded before the reviewer re-recorded the same facts in doubt can still save "agreed" (fix: send `verdict_decided_at`). Drafted for the TD register.
-- A verdict record that is not a dict is skipped with no log line. Drafted.
-- Not confirmed: what `reopen_decision` does to `verdict_decided_at` for the second look. Drafted.
-- The QC panel does not show the stored answers after the decision; on Reopen or Reject silence records nothing; a reviewer re-record drops the answers, so sent-back cases are undercounted on screen (LL5 counts them from the activity meta). Drafted.
+- A QC tab loaded before the reviewer re-recorded the same facts in doubt can still save "agreed" (fix: send `verdict_decided_at`). Tracked as TD-671.
+- A verdict record that is not a dict is skipped with no log line. Tracked as TD-672.
+- Not confirmed: what `reopen_decision` does to `verdict_decided_at` for the second look. Tracked as TD-673.
+- The QC panel does not show the stored answers after the decision; on Reopen or Reject silence records nothing; a reviewer re-record drops the answers, so sent-back cases are undercounted on screen (LL5 counts them from the activity meta). Tracked as TD-681.
 - The first batch of old cases (21 + 5 + 7) was left out by the owner on 2026-11-19. Build it only if the owner asks; it then needs a picture first. No sample of cases that never reach the QC.
 - The block shows "Recommend" where the Guide says "Approve" (the cockpit's own key). Change that key separately if "Approve" is wanted.
 - No two-fact QC surface in the mobile sandbox: a new surface needs mobile-check baselines.
@@ -156,11 +157,11 @@ Open known gaps:
 Built: `apps/scholarship/model_registry.py` lists 14 models (version constant, source files, cross-file pins); `apps/scholarship/model_versions/<model>.json` is one append-only log per model; `tests/test_model_versions.py` and `tests/test_model_digest.py` fail when a registered file or pin changes without a new version and log line, or when a `*VERSION` constant is neither registered nor excused. The digest is a hash of cleaned source text (not `ast.dump`, which differs between Python 3.11 and 3.13). `genuineness/ic.py` and `supporting_doc.py` now carry `MODEL_VERSION = '1.0.0'` and each new result stores it; no back-fill. Brought up to main's verdict-engine bump before the first merge; two digests were re-seeded with dated notes (main moved the IPTS reason texts into constants, same text). Detail: `CHANGELOG.md` (LL3 entry), `docs/decisions.md`, `docs/technical-debt.md` (TD-243, still open until live).
 
 Open known gaps:
-- About 30 helper modules the verdict engine's files import are not in its digest (listed with reasons in the guard). Held by TD-243.
-- The IPTS names the verdict engine reads through `offer_private` are a known gap, not pinned. Drafted for the TD register.
-- Outside the guard's walk (`_KNOWN_GAPS_OUTSIDE_THE_WALK`): the settings `OFFER_RETRY_MODEL`, `SGD_TO_MYR_RATE`, `SAMPLE_CHECK_ENABLED`; `genuineness/__init__.assess` and `vision/authenticity.py`; the logs are append-only by convention plus two checks; the `*VERSION` census sees only `apps/scholarship`; the glob `income_engine/*.py` also reads untracked local files; a pinned name changed inside a called function, by `global`, an alias or `setattr`. Drafted as one row.
+- About 30 helper modules the verdict engine's files import are not in its digest (listed with reasons in the guard). Held by TD-243. The PDF text-layer modules added by main (OCR S-visible) are unpinned too: TD-685.
+- The IPTS names the verdict engine reads through `offer_private` are a known gap, not pinned. Tracked as TD-677.
+- Outside the guard's walk (`_KNOWN_GAPS_OUTSIDE_THE_WALK`): the settings `OFFER_RETRY_MODEL`, `SGD_TO_MYR_RATE`, `SAMPLE_CHECK_ENABLED`; `genuineness/__init__.assess` and `vision/authenticity.py`; the logs are append-only by convention plus two checks; the `*VERSION` census sees only `apps/scholarship`; the glob `income_engine/*.py` also reads untracked local files; a pinned name changed inside a called function, by `global`, an alias or `setattr`. Tracked as one row, TD-684.
 - The guard has run on Python 3.13 only. Its first run on 3.11 is Cloud Build after the push; it fails closed.
-- `model_registry.py` is at 599 of 600 lines: split before the next model. Drafted.
+- `model_registry.py` is at 599 of 600 lines: split before the next model. Tracked as TD-676 (with `applications.ts`, now exactly 600).
 
 ---
 
@@ -169,10 +170,10 @@ Open known gaps:
 Built: `apps/scholarship/verdict_context.py` builds a PII-free record `{schema, documents, models, fingerprint, key_check}`, stored in `ScholarshipApplication.ai_verdict_context` in the same save as `ai_verdict_snapshot`. The fingerprint is an HMAC over the live documents, the declared fields, the profile fields, the intake rules and the stage facts the engine reads (key derived from `SECRET_KEY`, no new env var). A record that cannot be built never blocks a decision (`{schema, error}`). No serializer lists the column. Old rows keep `{}` (no back-fill). Migration `0218_application_verdict_context` (additive, hand-written SQL in its docstring): THE OWNER APPLIES IT BEFORE THE PUBLISH, otherwise every application load fails. Detail: `CHANGELOG.md` (LL4 entry), the model's `help_text` and the migration docstring (there is no separate schema document).
 
 Open known gaps:
-- The fingerprint covers this application's documents only; some helpers read the student's OTHER applications. Drafted.
-- The clock is not in the fingerprint (salary-slip age and date checks). LL5 sets today to `verdict_decided_at`. Drafted.
-- The live programme catalogue (when no `requirements_snapshot`) and the course catalogue (the IPTS rule) are not in the fingerprint. Drafted.
-- Settings that switch model behaviour (LL3's gaps) and `SGD_TO_MYR_RATE` are not in the fingerprint. Drafted.
+- The fingerprint covers this application's documents only; some helpers read the student's OTHER applications. Tracked as TD-679.
+- The clock is not in the fingerprint (salary-slip age and date checks). LL5 sets today to `verdict_decided_at`. Tracked as TD-679.
+- The live programme catalogue (when no `requirements_snapshot`) and the course catalogue (the IPTS rule) are not in the fingerprint. Tracked as TD-678.
+- Settings that switch model behaviour (LL3's gaps) and `SGD_TO_MYR_RATE` are not in the fingerprint. Tracked as TD-678 and TD-679.
 - The stage facts move at QC accept or reject (in review to decided). LL5 must hash under the stage as at the decision (`evidence_fingerprint` takes the stage), or report those cases apart.
 - A `SECRET_KEY` rotation makes older fingerprints impossible to compare (`key_check` tells it apart). LL5 must run where the production key is.
 - The `_CODE` mask lets a single word of up to 40 characters through; the real protection is the fixed choice lists. Backstop only.
