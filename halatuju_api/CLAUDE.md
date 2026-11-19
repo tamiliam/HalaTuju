@@ -176,7 +176,7 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 
 ### Learning loop (LL), 2026-11-19: LL1, LL2, LL2b, LL3 and LL4 are saved to main, NOT published
 
-- Before the LL publish: the owner applies the LL4 migration (`0218_application_verdict_context`) by hand, then does the phone checks for LL1, LL2, LL2b and LL4. LL5 (the learning report) starts when LL4 is live. Plan: `docs/plans/2026-11-18-learning-loop-roadmap.md`.
+- Before the LL publish: the owner applies the LL4 migration (`0218_application_verdict_context`) by hand, then does the phone checks for LL1, LL2, LL2b and LL4, and one for the withdraw card on the case page (it now loads only when a case has a withdraw request). LL5 (the learning report) starts when LL4 is live. Plan: `docs/plans/2026-11-18-learning-loop-roadmap.md`.
 - **From now on, any change to a model's files needs a version bump** in `apps/scholarship/model_versions/<model>.json` (and its version constant), or the guard tests `test_model_versions.py` and `test_model_digest.py` fail. Never re-seed a digest without a bump.
 
 ### STATE AT 2026-11-05 — T5c P5b + P5c LIVE (main 3c39489b, api-01255-zsm, web-01084-l6b; no migration)

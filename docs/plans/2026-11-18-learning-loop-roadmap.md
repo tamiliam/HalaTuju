@@ -88,7 +88,7 @@ Before a publish the owner applies migration `0218_application_verdict_context` 
 
 **Order of work.**
 1. DONE 2026-11-19: the stack was brought up to date with `main` and saved to `main` (not published).
-2. Owner applies the migration 0218 SQL by hand, does the three phone checks, then says "publish".
+2. Owner applies the migration 0218 SQL by hand, does the five phone checks (LL1, LL2, LL2b, LL4, and the withdraw card on the case page), then says "publish".
    The publish goes in a release slot **outside** the A5 replay window (rule: no deploy during the replay).
    The learning-loop session sends the commit list to the HalaTuju lead before the publish.
 3. The HalaTuju lead (its plan, 2026-11-19): bring `a5` up to date with `main` and land R1 + R2 on `main` **before** the run;

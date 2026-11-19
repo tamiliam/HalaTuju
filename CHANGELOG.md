@@ -12,7 +12,8 @@ Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (e
 - **Mobile sandbox** shows three hard states for the AI prediction section (assigned-only note, a few-cases reviewer row, a long doubt label).
 - **Commit trailers** were cleaned (made-up and missing `Migration:`, `Phone-check:` and `Services:` lines).
 - **Review:** a fresh adversarial review of the rebase said "ship with notes". The notes are fixed.
-- **Bundle trim:** the withdraw-award card now loads as its own chunk, and only for a case that has a withdraw request (the case page route was 250.595 kB against the 250 kB ceiling; now 248.648 kB; the median is 157.245 kB against 157.5). No budget was raised.
+- **Bundle trim:** the withdraw-award card now loads as its own chunk, and only for a case that has a withdraw request (the case page route was 250.595 kB against the 250 kB ceiling; now 248.648 kB; the median is 157.245 kB against 157.5). No budget was raised. The Opus review of the trim said "ship with notes"; its three notes are TD-686.
+- **Gates before the push (2026-11-19):** api 23,810 passed, 3 skipped, 0 failed. Web on the final commit: typecheck clean, lint 0 errors, i18n 8,479 keys in each of en, ms and ta, jest 539 suites and 8,016 tests passed. Bundle budget passes: the case page route is 248.689 kB (ceiling 250), first-load JS median 157.277 kB (budget 157.5). Phone check: 836 of 836 cells (10 timed out on a network-quiet wait in the full run and passed alone); the three `sandbox:cockpit-case` cells passed again after the trim. Mobile ledger: 101 routes, 69 measured, 69 green.
 - **Docs:** retrospective, decisions and lessons written; roadmap shortened to "Done" blocks for the five built sprints. LL5 (the learning report) is not built; it waits for LL4 to be live.
 
 ### chore: request #69 migration follows request #73's 0216_two_way_notes (2026-11-19)
