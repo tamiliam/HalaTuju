@@ -102,6 +102,13 @@ Nothing is merged. Nothing is published. **Left.** LL5 only.
 **For the replay.** This stack changes no scoring logic and no engine answer, so it should add no old-vs-new difference.
 After migration 0215 the application table has one new column (`ai_verdict_context`).
 
+**Aligned with the OCR session (2026-11-19, on the owner's word).** The OCR session leads `docs/plans/ocr-first-roadmap.md`. Its open branch is `ocr-visible`: a PDF with an invisible text layer is read from the visible page (Cloud Vision), not from its hidden text.
+- **Objectives fit.** The OCR work makes the reader better. This stack measures it: LL3 and LL4 record which model version each verdict saw; the LL2 reason `read_wrong` and the LL2b QC disagreement are the **one** human feed for "the reader was wrong". The OCR session builds no feedback store of its own. LL5 will report the feed per model version.
+- **Overlap, measured with git.** Only `CHANGELOG.md` is changed by both. No shared code file. No migration clash (`ocr-visible` has none; 0215 stays here).
+- **The one real link is the LL3 guard.** `ocr-visible` moves genuineness `MODEL_VERSION` 1.29.0 to 1.31.0 and `OFFER_READER_VERSION` 2.6.0 to 2.7.0, and edits helper files that other models' digests may follow (`pdf_pages.py`, `spm_cert_parse.py`, `vision/ocr.py`, `vision/field_extraction.py`). Whoever lands on `main` second runs `test_model_versions.py` and `test_model_digest.py`, and for each model the guard names, bumps the version and its `model_versions/<model>.json` entry. Never re-seed a digest without a version bump.
+- **Answers do change on their side, for a narrow set** (new reads of invisible-layer PDFs; no automatic backfill). LL4 needs no change: the version bump is the marker. The OCR session tells the HalaTuju lead for the replay catalogue.
+- **Order.** `ocr-visible` aims for `main` around 20 Nov. Whoever lands second brings their branch up to date. This session tells the OCR session when LL3 is on `main`.
+
 ---
 
 ## Sprint LL1 — Scoreboard on
