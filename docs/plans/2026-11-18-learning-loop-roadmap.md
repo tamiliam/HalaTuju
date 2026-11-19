@@ -225,7 +225,7 @@ So the design rule is: **cost him almost nothing.** No new page. No new list to 
 - `audit.py` + the Overview section gain "checked" numbers:
   - AI against the QC (label it "checked by the QC", not "true");
   - each reviewer against the QC (leads only).
-- First batch: the 21 + 5 cases that exist on 2026-11-18, plus the 7 cases where the QC did not agree with the decision. A lead can open each one from a list link. No bulk screen.
+- First batch: the 21 + 5 cases that exist on 2026-11-18, plus the 7 cases where the QC did not agree with the decision. A lead can open each one from a list link. No bulk screen. **Owner decision 2026-11-19: left out for now. The QC checks new cases only. Build it only if the owner asks; it then needs a picture first.**
 - More than one organisation: the QC and the numbers are for each organisation. One funder's choice never trains another funder's score.
 - Reviewer Guide + FAQ updated in the same change.
 
