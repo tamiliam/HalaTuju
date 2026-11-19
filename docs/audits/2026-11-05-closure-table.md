@@ -114,7 +114,7 @@ Built 2026-11-12 from the audit (`docs/audits/2026-11-05-project-audit.md`), `do
 | CH-04 | medium | vision.py hotspot | fixed-untested | 8fad7da46 (A3.1); Closing reading hot#1 32.4 to 18 | Number target met by the split. Top 5 under 15 NOT met (18, 13, 12.2) and has no sprint named. |
 | CH-05 | low | 13 files over 1000 lines | fixed+tested | A3.1 to A3.9; Closing reading big 13 to 1; `apps/scholarship/tests/test_code_standards.py`, `halatuju-web/src/lib/__tests__/codeStandards.test.ts` |  |
 | CH-06 | medium | 15 functions over 150 lines | fixed+tested | A3.1 to A3.10; Closing reading long 15 to 1; 6c74f4332 scanner self-test in `apps/scholarship/tests/test_code_standards.py` |  |
-| CH-07 | low | Duplicated function names in three homes | deferred | Gemini duplicate sprint, by Fri 4 Dec | Closing: dup 4 to 1 (_gemini_generate), target 0 NOT met. |
+| CH-07 | low | Duplicated function names in three homes | fixed+tested | Gemini duplicate sprint (branch gemdup), 2026-11-19 | dup 4 to 0. `_gemini_generate` has one home, `contracts._gemini_generate`; `apply_copy_draft` and `sponsor_terms` call it. Target 0 met, ahead of Fri 4 Dec. |
 | CH-08 | medium | 3 web mirrors with no drift test | fixed+tested | a316a, 44fcff3c1; `incomeWizardDrift.test.ts`, `appMirrorDrift.test.ts` | Mirror reading 0. |
 | CH-09 | low | Cross-app coupling grew | deferred | F2 (by 11 Dec); xapp 85 to 107 | NOT accepted. Courses-to-scholarship 21 against target 8. |
 | CH-10 | low | Suppressions 92 | fixed+tested | 9e132c949 (A3.14), 00a83e400 (A3.15); budgets lowered in the code-standards tests; supp 92 to 20 | Target (30) met. |

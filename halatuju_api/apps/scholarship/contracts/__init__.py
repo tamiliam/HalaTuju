@@ -83,10 +83,11 @@ def _gemini_generate(prompt, model, images=None, timeout_ms=None):
     Note the part ORDER: images first, then the prompt, matching ``vision._call_gemini_json`` —
     the model attends better to instructions that follow the evidence.
 
-    ⚠ THE SEAM STAYS HERE, THREE LINES LONG. Code health H7 moved the body to ``gemini`` (one copy
-    instead of three) and kept this name, because this is the boundary tenancy rule 6 names BY
-    NAME and the string nineteen ``patch()`` calls in the suite point at. Do not "simplify" it
-    into a direct call.
+    ⚠ THIS IS THE ONE HOME of the seam (CH-07, 2026-11-19), three lines long. Code health H7 moved
+    the body to ``gemini``; CH-07 then removed the two other copies, so ``sponsor_terms`` and
+    ``apply_copy_draft`` call THIS one and map its ``quiz_ai_*`` refusals to their own error
+    class. It is the boundary tenancy rule 6 names BY NAME and the string every ``patch()`` in the
+    suite points at. Do not "simplify" it into a direct call.
     """
     return gemini.generate_text(prompt, model, images=images, exc=ContractsError,
                                 unconfigured='quiz_ai_unconfigured',

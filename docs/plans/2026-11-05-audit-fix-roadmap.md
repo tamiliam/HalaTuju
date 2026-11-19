@@ -1352,5 +1352,6 @@ _Added 2026-11-12 by the Consolidation Review (`docs/consolidation-log.md`, 2026
 
 #### Gemini duplicate (`_gemini_generate`)
 
+- **DONE 2026-11-19 (branch gemdup, CH-07):** one home, `contracts._gemini_generate`; `dup` 0.
 - **Goal:** `dup` 0. The last duplicate name lives in the Gemini lane (`apply_copy_draft.py`, `__init__.py`, `sponsor_terms.py`); tenancy rule 6 and the `patch()` targets depend on the name, so the fix is designed with that lane after Gemini Phase 2 is live.
 - **Deadline (owner, 2026-11-12):** by Fri 4 Dec.

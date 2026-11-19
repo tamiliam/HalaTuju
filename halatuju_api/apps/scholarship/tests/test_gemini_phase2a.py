@@ -554,7 +554,7 @@ class TheApplyCopyDraftFallsBack(SimpleTestCase):
             return good
         programme = SimpleNamespace(pk=1, apply_copy={'en': {'title': 'T', 'intro': 'I', 'criteria': ['a']}})
         with override_settings(APPLY_COPY_DRAFT_MODEL='gemini-3.8-flash'), \
-                patch.object(acd, '_gemini_generate', side_effect=seam):
+                patch('apps.scholarship.contracts._gemini_generate', side_effect=seam):
             block = acd.draft(programme, 'ms')
         self.assertEqual(asked, ['gemini-3.8-flash', 'gemini-2.5-flash'])
         self.assertEqual(block['criteria'], ['a'])

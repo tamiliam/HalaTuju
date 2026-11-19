@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: one home for the single-model Gemini seam, dup 1 to 0 (2026-11-19)
+
+Migration: none. Services: api. Closes audit item CH-07 (A3.11 "One Gemini helper"); no behaviour change.
+- **One seam:** `contracts._gemini_generate` is the only `_gemini_generate`. `apply_copy_draft` and `sponsor_terms` lost their own copies and call it through `gemini.generate_with_fallback`, mapping its two config refusals back to their own error class and codes (`ai_unconfigured` / `ai_unavailable` stay `DraftError`; `quiz_ai_*` stay `SponsorTermsError`). Same models, timeouts, images handling and metering (`usage_context` unchanged).
+- **Tests:** every `patch()` of a removed copy now targets `apps.scholarship.contracts._gemini_generate`; the three-seam characterisation test is one seam.
+- **Ratchet:** `budget.duplicated_names` is empty (`code-standards.json`); code_health `dup` reads 0. Docs: `docs/code-health.md`, closure table CH-07, roadmap A3.11, tenancy conventions.
+
 ### chore: sprint OCR-9 (was S-visible 2) rebased onto main, offer_parse 2.3.0 (2026-11-21)
 
 - The ink check and the Asasi rule (branch ocr-svis2) rebased onto main after OCR-6, OCR-7 and OCR-8 (branch `ocr-9-ink`). The old commits are kept; the branch's own 2.2.0 digest commit is dropped (main recorded 2.2.0 first).

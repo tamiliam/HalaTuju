@@ -349,7 +349,7 @@ class TestQuizGeneration(TestCase):
                    'correct': ta_correct, 'why': 'w'},
         })
 
-    @patch('apps.scholarship.sponsor_terms._gemini_generate')
+    @patch('apps.scholarship.contracts._gemini_generate')
     def test_a_generated_checkpoint_is_stored_with_its_provenance(self, gen):
         gen.return_value = self._payload()
         sponsor_terms.generate_quiz(self.section)
@@ -357,7 +357,7 @@ class TestQuizGeneration(TestCase):
         self.assertEqual(self.section.quiz_en['correct'], 1)
         self.assertTrue(self.section.quiz_generated_model)
 
-    @patch('apps.scholarship.sponsor_terms._gemini_generate')
+    @patch('apps.scholarship.contracts._gemini_generate')
     def test_a_translation_marking_a_different_answer_is_DROPPED_not_stored(self, gen):
         gen.return_value = self._payload(ta_correct=2)
         sponsor_terms.generate_quiz(self.section)
@@ -365,21 +365,21 @@ class TestQuizGeneration(TestCase):
         self.assertEqual(self.section.quiz_ta, {})     # refused at the door, so Q4 never fires
         self.assertTrue(self.section.quiz_ms)
 
-    @patch('apps.scholarship.sponsor_terms._gemini_generate')
+    @patch('apps.scholarship.contracts._gemini_generate')
     def test_a_fenced_json_response_is_tolerated(self, gen):
         gen.return_value = '```json\n' + self._payload() + '\n```'
         sponsor_terms.generate_quiz(self.section)
         self.section.refresh_from_db()
         self.assertTrue(self.section.quiz_en)
 
-    @patch('apps.scholarship.sponsor_terms._gemini_generate')
+    @patch('apps.scholarship.contracts._gemini_generate')
     def test_unparseable_output_raises_rather_than_storing_rubbish(self, gen):
         gen.return_value = 'I am terribly sorry, I cannot help with that.'
         with self.assertRaises(sponsor_terms.SponsorTermsError) as cm:
             sponsor_terms.generate_quiz(self.section)
         self.assertEqual(cm.exception.code, 'quiz_bad_json')
 
-    @patch('apps.scholarship.sponsor_terms._gemini_generate')
+    @patch('apps.scholarship.contracts._gemini_generate')
     def test_missing_english_raises(self, gen):
         gen.return_value = json.dumps({'ms': {'options': ['a', 'b', 'c'], 'correct': 0}})
         with self.assertRaises(sponsor_terms.SponsorTermsError) as cm:

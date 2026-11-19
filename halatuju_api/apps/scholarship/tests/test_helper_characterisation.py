@@ -897,7 +897,7 @@ class TestScoreMarkersAreThreeDifferentContracts(SimpleTestCase):
                          'three contracts wearing one name — if they ever agree, revisit H7')
 
 
-# ── `_gemini_generate` ×3 ────────────────────────────────────────────────────────────────────
+# ── `_gemini_generate` ×1 ────────────────────────────────────────────────────────────────────
 
 class _Response:
     text = 'the model said this'
@@ -920,14 +920,11 @@ class _Client:
 
 
 class TestGeminiSeams(SimpleTestCase):
-    """Three copies of one skeleton: key check → import → single call → meter → `.text`. What is
-    NOT shared is the refusal each one raises, and `contracts`' optional `images`. H7 keeps all
-    three names (every test in the suite patches them by name) and every refusal exactly."""
+    """ONE seam, `contracts._gemini_generate` (CH-07, 2026-11-19: `apply_copy_draft` and
+    `sponsor_terms` no longer keep a copy and call it, mapping its two config refusals back to
+    their own error class). Key check → import → single call → meter → `.text`."""
 
     SEAMS = (
-        (apply_copy_draft, apply_copy_draft.DraftError, 'ai_unconfigured', 'ai_unavailable'),
-        (sponsor_terms, sponsor_terms.SponsorTermsError, 'quiz_ai_unconfigured',
-         'quiz_ai_unavailable'),
         (contracts, contracts.ContractsError, 'quiz_ai_unconfigured', 'quiz_ai_unavailable'),
     )
 
@@ -957,20 +954,15 @@ class TestGeminiSeams(SimpleTestCase):
                 self.assertEqual(meter.call_args.kwargs['model'], 'gemini-3.8-flash')
 
     @override_settings(GEMINI_API_KEY='k')
-    def test_only_contracts_takes_images_and_puts_them_before_the_prompt(self):
+    def test_images_go_before_the_prompt(self):
         from apps.scholarship import usage
         sink = {}
-        with patch('google.genai.Client', return_value=_Client(sink)), \
-                patch.object(usage, 'record_usage'):
+        with patch('google.genai.Client', return_value=_Client(sink)),                 patch.object(usage, 'record_usage'):
             contracts._gemini_generate('the instructions', 'gemini-3.8-flash',
                                        images=[(b'\x89PNG', 'image/png')])
         self.assertEqual(len(sink['contents']), 2)
         self.assertEqual(sink['contents'][-1], 'the instructions',
                          'the prompt follows the evidence — vision._call_gemini_json order')
-        for module, _exc, _u, _a in self.SEAMS[:2]:
-            with self.subTest(module=module.__name__):
-                with self.assertRaises(TypeError):
-                    module._gemini_generate('p', 'm', images=[(b'x', 'image/png')])
 
 
 # ── The one asymmetry H7 reported and TD-261 closed ──────────────────────────────────────────

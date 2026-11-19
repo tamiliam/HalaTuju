@@ -32,9 +32,9 @@ _NOT_A_JOB = {
     # (`vision.py` and `profile_engine.py` ARE jobs as well, so they are not excluded.)
     #
     # Transport, not work. Code health H7 lifted the single-model Gemini call out of
-    # `apply_copy_draft`, `sponsor_terms` and `contracts`, where it was written three times. All
-    # three of those files still hold their own `_gemini_generate` seam and all three are
-    # registered jobs; this file is the shared body they call and starts nothing of its own. It
+    # `apply_copy_draft`, `sponsor_terms` and `contracts`, where it was written three times, and
+    # CH-07 (2026-11-19) gave the seam one home, `contracts._gemini_generate`. All three features
+    # are registered jobs; this file is the shared body it calls and starts nothing of its own. It
     # meters every call, exactly as each copy did, so nothing escapes attribution by being here.
     # Its `generate_with_fallback` (Gemini Phase 1) only calls those seams again, once per model.
     'apps/scholarship/gemini.py',

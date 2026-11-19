@@ -18,6 +18,7 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 
 from apps.scholarship import apply_copy_draft as acd
+from apps.scholarship import contracts
 from apps.scholarship.tests.test_sabah_programme_screens import _Case
 
 PROGRAMMES = '/api/v1/admin/scholarship/programmes/'
@@ -138,14 +139,14 @@ class TestTheDraftEndpoint(_Case):
         self.prog_a.apply_copy = dict(ENGLISH)
         self.prog_a.save(update_fields=['apply_copy'])
 
-    @patch.object(acd, '_gemini_generate', return_value=MALAY_REPLY)
+    @patch.object(contracts, '_gemini_generate', return_value=MALAY_REPLY)
     def test_an_org_admin_drafts_malay_for_its_own_gift(self, _m):
         r = self._post(self.admin_a, _draft_url(self.prog_a), {'locale': 'ms'})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()['locale'], 'ms')
         self.assertEqual(r.json()['block']['title'], 'Mohon Biasiswa Sabah')
 
-    @patch.object(acd, '_gemini_generate', return_value=MALAY_REPLY)
+    @patch.object(contracts, '_gemini_generate', return_value=MALAY_REPLY)
     def test_a_draft_NEVER_writes_to_the_gift(self, _m):
         """⚠⚠ THE RULE THIS WHOLE FEATURE RESTS ON. A machine must not be the last hand on the
         wording a public page advertises; the person presses Save."""
@@ -154,26 +155,26 @@ class TestTheDraftEndpoint(_Case):
         self.assertNotIn('ms', self.prog_a.apply_copy)
         self.assertEqual(self.prog_a.apply_copy['en']['title'], ENGLISH['en']['title'])
 
-    @patch.object(acd, '_gemini_generate', return_value=MALAY_REPLY)
+    @patch.object(contracts, '_gemini_generate', return_value=MALAY_REPLY)
     def test_another_tenants_gift_is_404_and_no_call_is_made(self, m):
         r = self._post(self.admin_a, _draft_url(self.prog_b), {'locale': 'ms'})
         self.assertEqual(r.status_code, 404)
         m.assert_not_called()
 
-    @patch.object(acd, '_gemini_generate', return_value=MALAY_REPLY)
+    @patch.object(contracts, '_gemini_generate', return_value=MALAY_REPLY)
     def test_a_reviewer_may_not_spend_a_token(self, m):
         r = self._post(self.reviewer_a, _draft_url(self.prog_a), {'locale': 'ms'})
         self.assertIn(r.status_code, (403, 404))
         m.assert_not_called()
 
-    @patch.object(acd, '_gemini_generate', return_value=MALAY_REPLY)
+    @patch.object(contracts, '_gemini_generate', return_value=MALAY_REPLY)
     def test_english_is_not_a_target_because_it_is_the_source(self, m):
         r = self._post(self.admin_a, _draft_url(self.prog_a), {'locale': 'en'})
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'bad_locale')
         m.assert_not_called()
 
-    @patch.object(acd, '_gemini_generate', return_value=MALAY_REPLY)
+    @patch.object(contracts, '_gemini_generate', return_value=MALAY_REPLY)
     def test_a_gift_with_no_english_is_refused_BEFORE_a_call_is_made(self, m):
         """⚠ Drafting from the PLATFORM default would translate another gift's criteria into this
         gift's Malay — a right-language falsehood, which `applyCopy.ts` exists to prevent."""
@@ -184,7 +185,7 @@ class TestTheDraftEndpoint(_Case):
         self.assertEqual(r.json()['code'], 'english_required')
         m.assert_not_called()
 
-    @patch.object(acd, '_gemini_generate', side_effect=RuntimeError('upstream on fire'))
+    @patch.object(contracts, '_gemini_generate', side_effect=RuntimeError('upstream on fire'))
     def test_a_model_outage_is_one_readable_refusal_not_a_500(self, _m):
         r = self._post(self.admin_a, _draft_url(self.prog_a), {'locale': 'ms'})
         self.assertEqual(r.status_code, 400)
