@@ -120,8 +120,7 @@ export const roleReviewer: ManualChapter = {
         answer them. The conversation sits on the student&rsquo;s page in <strong>Org admin and reviewer
         notes</strong>, directly under <strong>Reviewer assigned</strong>, oldest first. Each note shows who wrote
         it, their side (<em>Org admin</em>, or <em>Reviewer (you)</em> for yours, tinted) and the date. Type in
-        <strong> Reply</strong> (up to 2,000 characters) and press <strong>Send reply</strong>; a note cannot be
-        edited or deleted, so to correct one, add another. When your org admin writes, you get an email (it never
+        <strong> Reply</strong> (up to 2,000 characters) and press <strong>Send reply</strong>. When your org admin writes, you get an email (it never
         contains the note) and a <strong>New note</strong> mark by the student&rsquo;s name in your list, plus a
         line in the bell; both clear when you open the student&rsquo;s page. A note written before the student
         was assigned to you shows as a New note once they are (the assignment email is the only email). Once

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: #75 and #73 phone-check follow-ups - reject form wording, one reviewer drop-down rule, plainer notes card (2026-11-20)
+
+Services: web. No migration.
+- Reject before interview now reads "Why are you rejecting?" over the reason list, then "Additional details" (still required) over the box; the hint is "Confidential. Not shared with the student." and the empty-box refusal is reworded. The "Main reason" label is gone.
+- The case page's reviewer drop-down now follows the case list's rule (`listAssignees`): the holder, plus active reviewers of this case's gift. Paused and other-gift reviewers are not offered (no greying); the holder is always kept. `assignOptions` and "Does not cover" are removed; the list now reads `paused` from the served rows.
+- The notes card drops its intro line and the "Notes can't be edited or deleted" line (the server stays append-only). Guide and FAQ lines updated.
+- One character-count placement (`CharCount`: right-aligned, under the box) for the notes card and the reject form.
+
 ### fix: gift names are checked the same way on create as on rename (review of #71, 2026-11-19)
 
 Services: both. No migration.

@@ -6,7 +6,7 @@
  *   • **Reject-this-student** (`ORG_REJECT_FROM` / `canOrgReject`) — immediate and irreversible,
  *     no cool-off, no cancel window. A card rendered outside the server's set is not a cosmetic
  *     bug; it is a button that looks live and answers 400.
- *   • **The assignment picker** (`assignOptions`) — offering a name the assign endpoint refuses
+ *   • **The assignment picker** (`listAssignees`) — offering a name the assign endpoint refuses
  *     as `bad_assignee` puts a dead option in front of somebody delegating a case.
  *
  * Characterised first (the H8 rule): each web answer was put beside the api's on the same inputs
@@ -27,7 +27,8 @@
  * keys. This file reads that rule, the list's query and the api's `PRESETS`, and derives the roles from
  * them, so a preset or a key moved on either side still fails here.
  */
-import { ORG_REJECT_FROM, canOrgReject, assignOptions } from '@/lib/officerCockpit'
+import { ORG_REJECT_FROM, canOrgReject } from '@/lib/officerCockpit'
+import { listAssignees, type Reviewer } from '@/lib/assignOptions'
 import { APPLICATION_STATUSES } from '@/lib/applicationStatus'
 import { ROLE_NAMES } from '@/lib/navigation'
 import { pyDictOfSeqs, pySeq, readApi } from '@/test/apiSource'
@@ -198,12 +199,12 @@ describe('the assignment picker vs the api\'s bad_assignee rule', () => {
     const served = [
       { id: 1, name: 'Fin + Review', role: 'finance', assignable: true },
       { id: 2, name: 'Reviewer without review', role: 'reviewer', assignable: false },
-    ]
+    ].map((r) => ({ ...r, languages: [] as string[] }))
     for (const isSuper of [false, true]) {
-      expect(assignOptions(served, { isSuper, currentAssigneeId: null }).map((o) => o.id)).toEqual([1])
+      expect(listAssignees(served, { assigned_to_id: null }, isSuper).map((o) => o.id)).toEqual([1])
     }
     // …and the current assignee is still unioned in (bug #66), whatever the flag says.
-    expect(assignOptions(served, { isSuper: false, currentAssigneeId: 2 }).map((o) => o.id))
+    expect(listAssignees(served, { assigned_to_id: 2 }, false).map((o) => o.id))
       .toEqual([1, 2])
   })
 
@@ -213,7 +214,7 @@ describe('the assignment picker vs the api\'s bad_assignee rule', () => {
    * must get right is the ROLE narrowing, because the list is deliberately wider than the write:
    * it returns every REVIEW_ROLE so a super can pick any of them.
    */
-  const staff = reviewRoles.map((role, i) => ({ id: i + 1, name: `Staff ${role}`, role }))
+  const staff: Reviewer[] = reviewRoles.map((role, i) => ({ id: i + 1, name: `Staff ${role}`, role, languages: [] }))
 
   test('the list endpoint is wider than the write — which is why the picker must narrow', () => {
     expect(reviewRoles.length).toBeGreaterThan(1)
@@ -221,12 +222,12 @@ describe('the assignment picker vs the api\'s bad_assignee rule', () => {
   })
 
   test('a non-super is offered only reviewers', () => {
-    const offered = assignOptions(staff, { isSuper: false, currentAssigneeId: null })
+    const offered = listAssignees(staff, { assigned_to_id: null }, false)
     expect(offered.map((o) => o.role)).toEqual(['reviewer'])
   })
 
   test('a super is offered every review-capable role, and no more', () => {
-    const offered = assignOptions(staff, { isSuper: true, currentAssigneeId: null })
+    const offered = listAssignees(staff, { assigned_to_id: null }, true)
     expect([...offered.map((o) => o.role)].sort()).toEqual([...reviewRoles].sort())
   })
 
@@ -240,41 +241,29 @@ describe('the assignment picker vs the api\'s bad_assignee rule', () => {
   test('the current assignee is offered even where the write endpoint would refuse them', () => {
     const nonReviewer = staff.find((s) => s.role !== 'reviewer')
     expect(nonReviewer).toBeDefined()
-    const offered = assignOptions(staff, {
-      isSuper: false, currentAssigneeId: nonReviewer!.id,
-    })
+    const offered = listAssignees(staff, { assigned_to_id: nonReviewer!.id }, false)
     expect(offered.map((o) => o.id)).toContain(nonReviewer!.id)
-    // …and they are never disabled: a select whose current value is disabled cannot show its state.
-    expect(offered.find((o) => o.id === nonReviewer!.id)!.disabled).toBe(false)
   })
 
-  test('a paused reviewer is greyed, never removed — the same #66 reason', () => {
-    const withPaused = [
-      { id: 90, name: 'Active', role: 'reviewer', paused: false },
-      { id: 91, name: 'Paused', role: 'reviewer', paused: true },
+  test('a paused reviewer is not offered, but a paused holder stays — the same #66 reason', () => {
+    const withPaused: Reviewer[] = [
+      { id: 90, name: 'Active', role: 'reviewer', languages: [], paused: false },
+      { id: 91, name: 'Paused', role: 'reviewer', languages: [], paused: true },
     ]
-    const offered = assignOptions(withPaused, { isSuper: false, currentAssigneeId: null })
-    expect(offered.map((o) => o.id)).toEqual([90, 91])
-    expect(offered.map((o) => o.disabled)).toEqual([false, true])
-    expect(offered[1].reason).toBe('paused')
+    expect(listAssignees(withPaused, { assigned_to_id: null }, false).map((o) => o.id)).toEqual([90])
+    expect(listAssignees(withPaused, { assigned_to_id: 91 }, false).map((o) => o.id)).toEqual([90, 91])
   })
 
-  test('an empty gift list or an unknown case gift greys nobody — the live roster’s default', () => {
-    const roster = [
-      { id: 80, name: 'Every gift', role: 'reviewer', gifts: [] },
-      { id: 81, name: 'Gift 7', role: 'reviewer', gifts: [{ id: 7 }] },
+  test('an empty gift list or an unknown case gift hides nobody by gift — the live roster’s default', () => {
+    const roster: Reviewer[] = [
+      { id: 80, name: 'Every gift', role: 'reviewer', languages: [], gifts: [] },
+      { id: 81, name: 'Gift 7', role: 'reviewer', languages: [], gifts: [{ id: 7 }] },
     ]
-    for (const applicationProgrammeId of [null, undefined]) {
-      const offered = assignOptions(roster, {
-        isSuper: false, currentAssigneeId: null, applicationProgrammeId,
-      })
-      expect(offered.map((o) => o.disabled)).toEqual([false, false])
+    for (const gift_ids of [[], undefined]) {
+      const offered = listAssignees(roster, { assigned_to_id: null, gift_ids }, false)
+      expect(offered.map((o) => o.id)).toEqual([80, 81])
     }
-    // Only a KNOWN mismatch on both sides greys, and even then it greys, never removes.
-    const scoped = assignOptions(roster, {
-      isSuper: false, currentAssigneeId: null, applicationProgrammeId: 9,
-    })
-    expect(scoped.map((o) => o.disabled)).toEqual([false, true])
-    expect(scoped[1].reason).toBe('otherGift')
+    // Only a KNOWN mismatch on both sides hides.
+    expect(listAssignees(roster, { assigned_to_id: null, gift_ids: [9] }, false).map((o) => o.id)).toEqual([80])
   })
 })

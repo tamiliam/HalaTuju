@@ -90,34 +90,34 @@ describe('a fresh mount of the application page, with no prior choice', () => {
 })
 
 /**
- * The assign picker and MULTI-GIFT reviewers (owner design, 2026-11-06). A reviewer who covers
- * none of this case's gift is GREYED, "Does not cover <gift>" — never removed. One who covers
- * every gift (`[]`), or several gifts including this one, stays open.
+ * The assign picker and MULTI-GIFT reviewers (owner design, 2026-11-06; one rule with the list, 2026-11-20).
+ * A reviewer who covers none of this case's gift is NOT OFFERED, nor is a paused one; the holder stays.
+ * One who covers every gift (`[]`), or several gifts including this one, is offered.
  */
-describe('the assign picker greys a reviewer who does not cover the case’s gift', () => {
+describe('the assign picker offers only the holder and the active reviewers of the case’s gift', () => {
   const FLAGSHIP = { id: 1, code: 'brightpath-flagship', name: 'Flagship Bursary' }
-  const row = (id: number, name: string, gifts: typeof FLAGSHIP[]) => ({
+  const row = (id: number, name: string, gifts: typeof FLAGSHIP[], paused = false) => ({
     id, name, role: 'reviewer', email: `r${id}@example.test`, languages: ['en'], corrections: 0,
-    paused: false, gifts,
+    paused, gifts,
   })
 
-  it('greys only the reviewer whose gifts leave this case out', async () => {
+  it('hides the reviewer whose gifts leave this case out, and the paused one', async () => {
     const getAdmins = adminApi.getAssignableAdmins as jest.Mock
     // Queued BEFORE the mount: a once-value wins over the default `primeCockpitApi` sets.
     getAdmins.mockResolvedValueOnce({ admins: [
       row(60, 'Flagship Only', [FLAGSHIP]),
       row(61, 'Every Gift', []),
       row(62, 'Both Gifts', [FLAGSHIP, SABAH]),
+      row(63, 'Paused Every Gift', [], true),
     ] })
     renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { programme_id: SABAH.id, programme: SABAH } })
     await mounted()
     const card = screen.getByText('admin.scholarship.assignTitle').closest('div') as HTMLElement
     const picker = within(card).getByRole('combobox')
-    const opt = (name: RegExp) => within(picker).getByRole('option', { name }) as HTMLOptionElement
-    await waitFor(() => expect(opt(/Flagship Only/).disabled).toBe(true))
-    expect(opt(/Flagship Only/).textContent).toContain('admin.scholarship.assign.doesNotCover')
-    expect(opt(/Every Gift/).disabled).toBe(false)
-    expect(opt(/Both Gifts/).disabled).toBe(false)
-    expect(opt(/Both Gifts/).textContent).not.toContain('doesNotCover')
+    await waitFor(() => expect(within(picker).queryByRole('option', { name: /Every Gift/ })).not.toBeNull())
+    const names = within(picker).getAllByRole('option').map((o) => o.textContent ?? '')
+    expect(names.some((n) => /Both Gifts/.test(n))).toBe(true)
+    expect(names.some((n) => /Flagship Only/.test(n))).toBe(false)
+    expect(names.some((n) => /Paused/.test(n))).toBe(false)
   })
 })

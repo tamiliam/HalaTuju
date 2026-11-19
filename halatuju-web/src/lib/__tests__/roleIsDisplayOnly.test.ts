@@ -176,12 +176,10 @@ const ALLOWED: Entry[] = [
   ['lib/adminStaff.ts', '(PROGRAMME_STAFF_ROLES as readonly string[]).includes(role)', 1, 'TARGET', 'which listed people are programme staff'],
   ['lib/adminStaff.ts', "a.role === 'partner'", 1, 'TARGET', 'the partner list'],
   ['lib/adminStaff.ts', "a.role === 'org_admin' && !a.is_super_admin", 1, 'TARGET', 'the organisation-admin list'],
-  ['lib/cockpitTrail.ts', "isSuper || a.role === 'reviewer'", 1, 'TARGET', 'who may be handed a case when the server serves no assignable flag'],
   ['lib/assignOptions.ts', "isSuper || rv.role === 'reviewer'", 1, 'TARGET', 'who may be handed a case when the server serves no assignable flag'],
   // ── SIDE ─────────────────────────────────────────────────────────────────────────────────────────────────
   ['lib/requestStatus.ts', "if (role === 'org_admin') {", 1, 'SIDE', 'the requesting organisation\'s actions, as against the owner\'s'],
   ['app/admin/scholarship/[id]/view/ReviewerNotesCard.tsx', "const replying = viewer === 'reviewer'", 1, 'SIDE', 'the served notes side (#73): the reviewer\'s wording; the box is can_add'],
-  ['app/admin/scholarship/[id]/view/ReviewerNotesCard.tsx', "viewer === 'org_admin' ? 'introOrgAdmin'", 1, 'SIDE', 'the served notes side (#73) picks the intro line'],
   // ── DISPLAY ──────────────────────────────────────────────────────────────────────────────────────────────
   ['app/admin/requests/[id]/page.tsx', "req.approved_by_role === 'super'", 1, 'DISPLAY', 'names who approved'],
   ['components/ActionCentre.tsx', "attributionFor(item) === 'reviewer'", 1, 'DISPLAY', 'names who an item came from'],

@@ -25,6 +25,7 @@ import { rejectBeforeInterview } from '@/lib/admin-api'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { PRE_INTERVIEW_CATEGORY } from '@/lib/applicationStatus'
 import { formatDate } from '@/lib/formatDate'
+import { CharCount } from '@/components/admin/CharCount'
 
 import type { T } from './shared'
 
@@ -120,7 +121,7 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
       {step === 'form' && (<>
         <h3 className="text-sm font-semibold text-ground-900">{t(`${P}.title`)}</h3>
         <label htmlFor="pre-interview-reason" className="block text-sm font-medium text-ground-700">
-          {t(`${P}.reasonLabel`)}
+          {t(`${P}.whyLabel`)}
         </label>
         <select id="pre-interview-reason" ref={selectRef} value={reason} onChange={(e) => setReason(e.target.value)}
           className={`w-full rounded-lg border px-3 py-2 text-sm ${BTN}`}>
@@ -128,18 +129,16 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
           {offer.reasons.map((r) => <option key={r} value={r}>{t(`${P}.reasons.${r}`)}</option>)}
         </select>
         <label htmlFor="pre-interview-why" className="block text-sm font-medium text-ground-700">
-          {t(`${P}.whyLabel`)}
+          {t(`${P}.detailsLabel`)}
         </label>
         <textarea id="pre-interview-why" rows={4} value={note} maxLength={max}
           aria-describedby="pre-interview-why-hint pre-interview-why-count"
           onChange={(e) => setNote(e.target.value)}
           className="w-full rounded-lg border px-3 py-2 text-sm" />
-        <div className="flex justify-between gap-2 text-xs text-ground-500">
-          <span id="pre-interview-why-hint">{t(`${P}.whyHint`)}</span>
-          <span id="pre-interview-why-count" className="shrink-0" data-testid="pre-interview-counter">
-            {t(`${P}.counter`, { count: String(note.length), max: String(max) })}
-          </span>
-        </div>
+        <CharCount id="pre-interview-why-count" testId="pre-interview-counter" className="text-ground-500">
+          {t(`${P}.counter`, { count: String(note.length), max: String(max) })}
+        </CharCount>
+        <p id="pre-interview-why-hint" className="text-xs text-ground-500">{t(`${P}.whyHint`)}</p>
         <div className="flex gap-2">
           <button type="button" onClick={close}
             className={`flex-1 rounded-lg border px-3 py-2 text-sm text-ground-600 hover:bg-ground-50 ${BTN}`}>

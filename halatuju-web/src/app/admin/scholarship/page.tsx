@@ -184,7 +184,7 @@ function StaffScholarshipList() {
     if (!token || !canFilterByAssignee) return
     getAssignableAdmins({ token })
       .then((r) => {
-        setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, role: a.role, languages: a.languages || [], assignable: a.assignable, gifts: a.gifts })))
+        setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, role: a.role, languages: a.languages || [], assignable: a.assignable, paused: a.paused, gifts: a.gifts })))
         setPastAssignees(r.past_assignees ?? [])
       })
       .catch(() => {})

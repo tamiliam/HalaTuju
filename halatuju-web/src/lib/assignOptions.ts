@@ -17,28 +17,34 @@ export const bucketBadge = (b: string) =>
 export const SPECIFIC_CALL_LANGS = new Set(['en', 'ms', 'ta'])
 export type Reviewer = {
   id: number; name: string; role: string; languages: string[]; assignable?: boolean
+  /** Stepped back from NEW work (served per row). Never offered a case; a holder is kept. */
+  paused?: boolean
   /** The gifts they cover; `[]` (or absent) = EVERY gift. */
   gifts?: ReadonlyArray<{ id: number }>
 }
+/** What the case page's drop-down needs of a reviewer (no languages: it does not show the language match). */
+export type AssignCandidate = Omit<Reviewer, 'languages'>
 /** What the list's dropdown needs to know about the case (a row of the applications list). */
 export type AssignRow = { assigned_to_id: number | null; gift_ids?: number[] }
 
-/** Who the case list's dropdown offers for ONE case (T1-e, owner D7 2026-11-09): the current holder
- *  always (a case is never confiscated by a screen, and a `<select>` must show its own value), plus
- *  everyone the server serves as `assignable` for this caller (the Reviewers table, fenced to an org
- *  admin's own organisation: `may_assign_to`) who COVERS THIS CASE'S GIFT. The list HIDES another
- *  gift's reviewer, where the case page greys them (`officerCockpit.assignOptions`): a row of the
- *  list has no room for a reason. A payload without `assignable` falls back to the old rule (a super
- *  any, an org admin reviewers only), as the case page does.
+/** Who the reviewer drop-down offers for ONE case, on the case list AND the case page (one rule, #75/#73
+ *  follow-up, owner phone check 2026-11-20): the current holder always (a case is never confiscated by a
+ *  screen, and a `<select>` must show its own value, even paused or of another gift), plus everyone the
+ *  server serves as `assignable` for this caller (the Reviewers table, fenced to an org admin's own
+ *  organisation: `may_assign_to`) who is NOT PAUSED and COVERS THIS CASE'S GIFT. Everyone else is not
+ *  offered: no greying, no reason suffix. A payload without `assignable` falls back to the old rule (a
+ *  super any, an org admin reviewers only).
  *
  *  ⚠ An EMPTY gift list on either side narrows nothing: a reviewer with `gifts` [] covers every
- *  gift, and a case whose gifts are unknown (`gift_ids` [] or absent) hides nobody — the server is
- *  the authority (`gift_mismatch`), and a narrowing we cannot evaluate falls open. */
-export function listAssignees(reviewers: Reviewer[], row: AssignRow, isSuper: boolean): Reviewer[] {
+ *  gift, and a case whose gifts are unknown (`gift_ids` [] or absent) hides nobody by gift — the server is
+ *  the authority (`gift_mismatch`), and a narrowing we cannot evaluate falls open. A paused reviewer is
+ *  hidden whatever the gift. */
+export function listAssignees<R extends AssignCandidate>(reviewers: R[], row: AssignRow, isSuper: boolean): R[] {
   const caseGifts = row.gift_ids ?? []
   return reviewers.filter((rv) => {
     if (rv.id === row.assigned_to_id) return true
     if (!(rv.assignable ?? (isSuper || rv.role === 'reviewer'))) return false
+    if (rv.paused) return false
     const gifts = rv.gifts ?? []
     return gifts.length === 0 || caseGifts.length === 0 || gifts.some((g) => caseGifts.includes(g.id))
   })
