@@ -554,14 +554,17 @@ def pdf_page1_layout(data: bytes) -> str:
     columns kept apart) — read by the UMS offer reader only (OCR-first S1, 2026-11-19), whose plain layer
     glues the name into the address. '' unless page 1 passes the same visibility check as its plain layer
     (`pdf_page_texts`) AND the layout holds exactly the same characters as that checked layer (spacing
-    aside), so the layout can never show text the visible-page check did not see. Any failure is ''."""
+    aside), so the layout can never show text the visible-page check did not see. Any failure is ''.
+    Layout mode pads each line by x-position, so it runs in the pdfium CHILD (op ``layout``, review round 1)
+    under its time limit, memory cap and the document's budget: no answer, no layout, no lock."""
     texts = pdf_page_texts(data, 1)
     plain = texts[0] if texts else ''
     if not plain:
         return ''
-    try:
-        layout = _open_pdf(data).pages[0].extract_text(extraction_mode='layout') or ''
-    except Exception:  # pypdf raises many kinds on a damaged file; no layout is the safe answer
+    from . import pdfium_run
+    got = pdfium_run.ask(data, [{'op': 'layout'}])
+    layout = (got[0] or {}).get('text') if got else ''
+    if not isinstance(layout, str) or not layout:
         return ''
     same = Counter(re.sub(r'\s', '', layout)) == Counter(re.sub(r'\s', '', plain))
     return layout if same else ''

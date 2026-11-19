@@ -4,7 +4,8 @@ Run as ``python -I <this file>`` by `pdfium_run` — never imported with pdfium 
 request from stdin (a JSON line, then the PDF's bytes), opens the PDF ONCE, runs each requested operation in order
 and writes the answers to stdout (a JSON line, then the PNG bytes it names). Operations: ``count`` (pages),
 ``paints`` (pdf_pdfium_check's per-object painted-text check), ``render`` (each page its own PNG), ``stack`` (pages
-stacked into one PNG), ``words`` (page 1's word boxes for the SPM certificate reader).
+stacked into one PNG), ``words`` (page 1's word boxes for the SPM certificate reader), ``layout`` (page 1's pypdf
+layout text for the UMS offer reader).
 
 Why a child: rounds 5-7 modelled what pdfium costs (load whitelists, render caps) and ran it under one process-wide
 lock, and every review still found a tiny crafted PDF that kept pdfium busy for 10-40 s — freezing every upload in
@@ -276,8 +277,21 @@ def _op_words(pdf, req, blobs):
     return {'words': out}
 
 
+def _op_layout(pdf, req, blobs):
+    """{text}: page 1's pypdf LAYOUT text (`pdf_pages.pdf_page1_layout`, OCR-first S1 review round 1) — here, not
+    in the web process, because layout mode pads every line by x-position: a crafted page is bounded by this
+    child's time limit and memory cap. pypdf reads the same bytes pdfium opened (``_DATA``)."""
+    from pypdf import PdfReader
+    reader = PdfReader(io.BytesIO(_DATA[0]))
+    if reader.is_encrypted:
+        reader.decrypt('')
+    return {'text': reader.pages[0].extract_text(extraction_mode='layout') or ''}
+
+
 _OPS = {'count': lambda pdf, req, blobs: {'count': len(pdf)}, 'paints': _op_paints, 'render': _op_render,
-        'stack': _op_stack, 'words': _op_words}
+        'stack': _op_stack, 'words': _op_words, 'layout': _op_layout}
+#: The request's PDF bytes, for an operation that reads them with pypdf (``layout``).
+_DATA = [b'']
 
 
 def _limit_memory(budget: int) -> None:
@@ -342,6 +356,9 @@ def _main() -> int:
     from PIL import Image
     Image.preinit()                        # Pillow's PNG writer loaded before the memory cap is set
     import pypdfium2 as pdfium
+    if any(op.get('op') == 'layout' for op in request['ops']):
+        import pypdf  # noqa: F401  (loaded before the memory cap, like Pillow)
+        _DATA[0] = data
     _limit_memory(int(request.get('memory') or 0))
     blobs, results = [], []
     pdf = pdfium.PdfDocument(data)

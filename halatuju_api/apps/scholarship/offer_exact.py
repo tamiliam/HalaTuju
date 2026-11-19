@@ -23,6 +23,10 @@ would derive. Each returns the stored-read dict, or None (→ the AI reader, `of
 """
 from __future__ import annotations
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 #: The keys the parser owns — written whole on a lock, blank or not. The last five are AI-only fields the
 #: parser never reads (review L2): blank under an Exact read; every reader takes them with `or ''`.
 OWNED = ('candidate_name', 'candidate_nric', 'candidate_nric_source', 'programme', 'programme_code',
@@ -110,21 +114,31 @@ def ocr_first_lanes() -> tuple:
     return tuple(v.strip() for v in got if v and v.strip())
 
 
-def rules_lane_open(ex) -> bool:
-    """Gate 2's last checks for a UNIVERSITY rules read (OCR-first S1): its lane is switched on
-    (`ocr_first_lanes`, default none) AND the catalogue names exactly ONE course for the letter
-    (`offer_course_match.match_offer_course`, which reads the UPU code as extra evidence only). A
-    government-family read (no ``rules_lane``) is unaffected. False sends the letter to the AI reader."""
+def rules_lane_verdict(ex) -> str:
+    """Gate 2's last checks for a UNIVERSITY rules read (OCR-first S1): '' when its lane is switched on
+    (`ocr_first_lanes`, default none) AND the catalogue pins exactly ONE course, at the letter's own level
+    and at one campus (`offer_course_match.pinned_match`; the UPU code is extra evidence only). Else WHY
+    the AI reads the letter instead: 'lane_off', 'match_<pinned_match reason>', or 'match_error' when the
+    match raised (logged; review round 1). A government-family read (no ``rules_lane``) is unaffected."""
     lane = (ex or {}).get('rules_lane') or ''
     if not lane:
-        return True
+        return ''
     if lane not in ocr_first_lanes():
-        return False
-    from .offer_course_match import letter_institution, match_offer_course, programme_line
-    f = ex.get('fields') or {}
-    return match_offer_course(programme_line(f.get('programme'), f.get('programme_code')),
-                              letter_institution(f.get('institution'), f.get('campus')),
-                              f.get('issuer') or '') is not None
+        return 'lane_off'
+    try:
+        from .offer_course_match import letter_institution, pinned_match, programme_line
+        f = ex.get('fields') or {}
+        reason, _match = pinned_match(programme_line(f.get('programme'), f.get('programme_code')),
+                                      letter_institution(f.get('institution'), f.get('campus')), f.get('issuer') or '')
+    except Exception:  # any fault in the match: the AI reads the letter, as it always could
+        logger.exception('rules lane %s: the catalogue match failed; the AI reads the letter', lane)
+        return 'match_error'
+    return f'match_{reason}' if reason else ''
+
+
+def rules_lane_open(ex) -> bool:
+    """True when a rules read may stand (`rules_lane_verdict` is ''); False sends the letter to the AI."""
+    return rules_lane_verdict(ex) == ''
 
 
 def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_nric='',
