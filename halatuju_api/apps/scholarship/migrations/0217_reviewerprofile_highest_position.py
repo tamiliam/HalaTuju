@@ -11,7 +11,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('scholarship', '0214_document_ocr_text'),
+        ('scholarship', '0216_two_way_notes'),
     ]
 
     operations = [

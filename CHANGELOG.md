@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: request #69 migration follows request #73's 0216_two_way_notes (2026-11-19)
+
+Branch req69 on #75 and #73, not pushed. Migration: `0217_reviewerprofile_highest_position` (additive; renumbered from 0215, now depends on `0216_two_way_notes`; the column and its database default are unchanged). Services: api.
+- Push order is #75 (`0215_pre_interview_reject`), #73 (`0216_two_way_notes`), then #69, so the three migrations form one chain.
+
 ### refactor: request #69 review round 3 - active staff with a stopped mentor link count again, supers not asked (2026-11-18)
 
 Branch req69, not pushed. Migration: `0215_reviewerprofile_highest_position` (additive; unchanged). Services: both.
