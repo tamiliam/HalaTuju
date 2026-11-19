@@ -365,6 +365,7 @@ Branch ll2, NOT merged to main, not published. Migration: none. Services: web. R
 - **Locked view:** the reason is shown beside each failed fact; old rows show nothing extra.
 - **AI prediction card:** a "Why it failed" column with the served counts per fact (plus "Not given"); nothing for a fact with no green-then-fail case; plain counts, never a percent. Old payloads draw the card as before.
 - **Guide and FAQ:** reviewer Guide and FAQ updated (English only; they have no ms/ta copy).
+- **Brought up to main 0dea7e809:** main now shows the verdict controls only when the server serves `can_write`, so the fail-reason cockpit tests pass `writes: true` on the open interviewing case (as the decision-bar test does). No assertion changed.
 
 ### feat: sprint LL2b (server) - the QC's second look at facts in doubt is stored and counted (2026-11-19)
 

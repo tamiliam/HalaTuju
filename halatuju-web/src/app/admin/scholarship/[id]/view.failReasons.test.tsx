@@ -31,14 +31,14 @@ const decided = (over: Record<string, string> = {}, extra = {}) => ({
 
 describe('the reason question and chips', () => {
   it('shows nothing until a fact is failed', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     noQuestion()
     expect(screen.queryByRole('button', { name: `${K}failReason.other` })).toBeNull()
   })
 
   it('a green fact that is failed asks why, with the five answers in order', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     fireEvent.click(failButtons()[0])
     expect(screen.getByText(`${K}failWhy`)).toBeTruthy()
@@ -49,14 +49,14 @@ describe('the reason question and chips', () => {
   })
 
   it('a fact the engine did NOT show green takes no reason when failed', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing', build: { verdict: buildVerdict({ identity: 'gap' }) } })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: { verdict: buildVerdict({ identity: 'gap' }) } })
     await loaded()
     fireEvent.click(failButtons()[0])
     noQuestion()
   })
 
   it('undoing Fail removes the question and the chosen reason', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing' })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
     await loaded()
     fireEvent.click(failButtons()[0])
     fireEvent.click(chip('read_wrong'))
@@ -70,7 +70,7 @@ describe('the reason question and chips', () => {
 
 describe('Save is held back without a reason, and the payload carries it', () => {
   it('holds Save back, says why, then sends the code once picked', async () => {
-    const m = renderCockpit({ role: 'super', stage: 'interviewing', build: decided({ income: 'fail' }) })
+    const m = renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: decided({ income: 'fail' }) })
     await loaded()
     const save = () => screen.getByRole('button', { name: `${K}saveDecline` }) as HTMLButtonElement
     expect(save().disabled).toBe(true)
@@ -88,7 +88,7 @@ describe('Save is held back without a reason, and the payload carries it', () =>
   })
 
   it('sends no reasons when nothing green was failed', async () => {
-    const m = renderCockpit({ role: 'super', stage: 'interviewing',
+    const m = renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
       build: decided({ income: 'fail' }, { verdict: buildVerdict({ income: 'gap' }) }) })
     await loaded()
     m.api.recordVerdict.mockResolvedValue({ ...m.app, finalise_result: null } as never)
@@ -101,7 +101,7 @@ describe('Save is held back without a reason, and the payload carries it', () =>
 
 describe('stored reasons', () => {
   it('load into the chips (a missing key reads as empty)', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing',
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
       build: decided({ income: 'fail' }, { officer_verdict: {
         identity: 'pass', academic: 'pass', income: 'fail', pathway: 'pass', overall: 'decline',
         fail_reasons: { income: 'programme_rule' } } }) })
@@ -131,7 +131,7 @@ describe('the soft warning', () => {
     { verdict: buildVerdict({ academic: 'gap' }) })
 
   it('shows on Approve with a failed fact, and Save stays pressable', async () => {
-    renderCockpit({ role: 'super', stage: 'interviewing', build: approved({ academic: 'fail' }) })
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: approved({ academic: 'fail' }) })
     await loaded()
     expect(screen.getByText(`${K}failedAcceptWarn`)).toBeTruthy()
     const save = screen.getByRole('button', { name: `${K}save` }) as HTMLButtonElement
@@ -139,11 +139,11 @@ describe('the soft warning', () => {
   })
 
   it('does not show when nothing failed, or when the outcome is Decline', async () => {
-    const a = renderCockpit({ role: 'super', stage: 'interviewing', build: approved({}) })
+    const a = renderCockpit({ role: 'super', writes: true, stage: 'interviewing', build: approved({}) })
     await loaded()
     expect(screen.queryByText(`${K}failedAcceptWarn`)).toBeNull()
     a.unmount()
-    renderCockpit({ role: 'super', stage: 'interviewing',
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
       build: { ...approved({ academic: 'fail' }), officer_verdict: {
         identity: 'pass', academic: 'fail', income: 'pass', pathway: 'pass', overall: 'decline' } } })
     await loaded()
