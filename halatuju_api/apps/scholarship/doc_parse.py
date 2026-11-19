@@ -24,6 +24,7 @@ from typing import Callable, Optional
 
 # ── text + label helpers — moved to the leaf `doc_parse_text` (review F3) ───────
 from .doc_parse_text import _NRIC_RE, _first_rm_figure, _lines, find_value, first_nric, has
+from .doc_parse_tnb import PHOTO_SWITCH, lane_on, parse_tnb_photo
 
 
 # Tolerate an intervening ``)``/space — Malaysian bills print the amount as a column under
@@ -64,6 +65,21 @@ def parse_by_labels(doc_type: str, text: str) -> Optional[dict]:
         return None
     # A parser must return the full field dict or None — never a partial/garbage value.
     return result if isinstance(result, dict) and result else None
+
+
+def rules_parser_version(doc_type: str, text: str) -> str:
+    """The ``parser_version`` stamp of a rules read (OCR-first S6): the reader, its LANE, its
+    version — e.g. ``'electricity_parse tnb_a_photo 1.1.0'``. '' for a type with no lane stamp."""
+    try:
+        if doc_type == 'electricity_bill':
+            lane = _electricity_with_lane(text)[1]
+            return f'electricity_parse {lane} {ELECTRICITY_PARSER_VERSION}' if lane else ''
+        if doc_type == 'epf':
+            from .doc_parse_epf import EPF_PARSER_VERSION, epf_lane
+            return f'epf_parse {epf_lane(text)} {EPF_PARSER_VERSION}'
+    except Exception:
+        return ''
+    return ''
 
 
 # ── P1: STR / MySTR (Sumbangan Tunai Rahmah) ──────────────────────────────────
@@ -194,8 +210,33 @@ def _parse_str(text: str) -> Optional[dict]:
 
 @register('electricity_bill')
 def _parse_electricity(text: str) -> Optional[dict]:
+    return _electricity_with_lane(text)[0]
+
+
+#: The electricity reader's version, stored as ``parser_version`` beside a rules read (OCR-first S6).
+ELECTRICITY_PARSER_VERSION = '1.1.0'
+
+
+def _electricity_with_lane(text: str) -> tuple:
+    """``(fields | None, lane)``: format A (``tnb_a``), B (``tnb_b``), or, when its switch is on,
+    the photo layout of the full bill (``tnb_a_photo``, `doc_parse_tnb`)."""
+    fields = _parse_electricity_ab(text)
+    if fields is not None:
+        return fields, ('tnb_a' if _is_format_a(text) else 'tnb_b')
+    if lane_on(PHOTO_SWITCH):
+        photo = parse_tnb_photo(text)
+        if photo is not None:
+            return photo, 'tnb_a_photo'
+    return None, ''
+
+
+def _is_format_a(text: str) -> bool:
+    return has(text, r'bil\s+elektrik') and has(text, r'tenaga\s+nasional', r'alamat\s+pos', r'no\.?\s*akaun')
+
+
+def _parse_electricity_ab(text: str) -> Optional[dict]:
     # Format A — the full TNB "Bil Elektrik Anda" bill (name + itemised charges).
-    if has(text, r'bil\s+elektrik') and has(text, r'tenaga\s+nasional', r'alamat\s+pos', r'no\.?\s*akaun'):
+    if _is_format_a(text):
         lines = _lines(text)
         name, address_lines = '', []
         # The ALAMAT POS block: first line is the account holder, the rest the address, to TARIKH BIL.

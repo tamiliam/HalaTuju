@@ -1,5 +1,14 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-19 — OCR-first S6: new rules lanes ship switched off; `parser_version` records the lane
+
+Branch ocr-s6, not pushed. No migration. Services: api.
+
+- **The lanes stay off.** The TNB photo lane and the relaxed EPF read sit behind `OCR_FIRST_TNB_PHOTO_ENABLED` and `OCR_FIRST_EPF_RELAXED_ENABLED`. Each is read as a Django setting when one exists, else as an env var. They are not in `settings/base.py` because that file is at its code-standards size ceiling. Both default to off. Gate 1 needs 20 held-out documents locked with zero wrong fields against a hand-checked truth set. Bills and EPF have no truth set, and the held-out half of the cached corpus locks 0 photo bills and has no split-row EPF statements. Until the owner turns a lane on, every such document goes to AI exactly as before.
+- **Refuse rather than guess.** A photo bill locks only when the arithmetic proves itself: the summary reconciles to the sen, and the itemised charge matches, so a swapped arrears/charge pair fails. A relaxed EPF row locks only when its shares make its total. Anything short of that returns None ('unknown' for EPF), which is today's AI path.
+- **The lane stamp.** No `rules_lane` field exists. The existing deterministic-capture field `parser_version` (already kept on the stored read, as for STPM) now holds `<reader> <lane> <version>`. No new field and no migration.
+- **No verdict rule moved.** `electricity_doc.MODEL_VERSION` goes to 1.1.0 to mark the reader change. The genuineness cascade, thresholds, need signals and eligibility rules are untouched.
+
 ## 2026-11-18 — Request #69: the sponsor's "Our volunteers" figures stay as built; the small-size risk is accepted (owner)
 
 Branch req69, not pushed. Migration 0214 (additive). Services: both.

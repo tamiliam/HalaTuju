@@ -132,7 +132,7 @@ def _auth_income_doc(doc, ocr):
 
 
 def _auth_electricity_bill(doc, ocr):
-    # POSITIVE signature scorer (electricity_doc.py, MODEL_VERSION 1.0.0) over the OCR text —
+    # POSITIVE signature scorer (electricity_doc.py, MODEL_VERSION 1.1.0) over the OCR text —
     # issuer identity (TNB/SESB/SESCO) + Malay bill-field grammar → genuine {tnb/…} / suspect
     # {thin or cropped-no-issuer} / not_electricity_bill {MyKad or a WATER bill in the slot, or
     # nothing bill-shaped}. An issuer marker guarantees the doc is never rejected (calibrated on

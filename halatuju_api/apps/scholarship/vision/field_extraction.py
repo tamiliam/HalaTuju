@@ -267,7 +267,7 @@ def _read_birth_certificate(doc, ocr, image_fn, pre_words):
 
 def _read_labelled_doc(doc, ocr, image_fn):
     """Every other type: the OCR text, read by its labels first, else by Gemini on the text."""
-    from ..doc_parse import parse_by_labels      # deterministic-first for standardised docs
+    from ..doc_parse import parse_by_labels, rules_parser_version   # deterministic-first
     r = ocr if ocr is not None else _v.ocr_document(doc)
     if r['error'] or not (r['text'] or '').strip():   # Vision OCR down → OUR outage (TD-392a), not the file
         return {'fields': {}, 'warnings': [], 'error': (f"{OCR_SERVICE_FAILED}: {r['error']}"
@@ -277,6 +277,9 @@ def _read_labelled_doc(doc, ocr, image_fn):
     parsed = parse_by_labels(doc.doc_type, r['text'])
     if parsed is not None:
         ex = deterministic_or_epf_fallback(doc.doc_type, parsed, r['text'], _v.extract_document_fields)
+        version = rules_parser_version(doc.doc_type, r['text'])   # OCR-first S6: the rules lane
+        if version:
+            ex['parser_version'] = version
     else:
         ex = _v.extract_document_fields(r['text'], doc.doc_type)
         ex['capture'] = 'ai'

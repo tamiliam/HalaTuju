@@ -52,6 +52,12 @@ _SECTION_END_RE = re.compile(r'^(?:PENGELUARAN|PELARASAN)', re.IGNORECASE)
 
 
 def _caruman_rows(text: str) -> list:
+    """The CARUMAN SEMASA rows (`_strict_rows`); when those are ``[]`` and the S6 lane switch is
+    on, the reconciled token read (`_relaxed_rows`). ``[]`` when neither reads the table whole."""
+    return _strict_rows(text) or (_relaxed_rows(text) if _relaxed_on() else [])
+
+
+def _strict_rows(text: str) -> list:
     """The CARUMAN SEMASA rows as ``(employer, member, total)`` floats — employer/member None
     where the row prints only its total. The inline layout (one row per line) when present, else
     the one-cell-per-line layout. ``[]`` when the table cannot be read WHOLE.
@@ -94,6 +100,72 @@ def _caruman_rows(text: str) -> list:
     if loose and abs(loose[0] - sum(t for _e, _m, t in rows)) > 0.005:
         return []
     return rows
+
+
+# ── OCR-first S6 (2026-11-19): the RELAXED cell read, behind its lane switch ──────────────────
+#: The reader's version, stored as ``parser_version`` beside a rules read.
+EPF_PARSER_VERSION = '1.1.0'
+#: The settings switch (env ``OCR_FIRST_EPF_RELAXED_ENABLED=1``); off until Gate 1 passes.
+RELAXED_SWITCH = 'OCR_FIRST_EPF_RELAXED_ENABLED'
+_SECTION_START_RE = re.compile(r'caruman\s*semasa', re.IGNORECASE)
+_MONTH_TOKEN_RE = re.compile(r'^(?:jan|feb|mac|apr|mei|jun|jul|ogos|ogo|ogs|sep|okt|nov|dis)-\d{2}$',
+                             re.IGNORECASE)
+
+
+def _relaxed_on() -> bool:
+    from .doc_parse_tnb import lane_on            # the shared switch reader (a leaf)
+    return lane_on(RELAXED_SWITCH)
+
+
+def _relaxed_rows(text: str) -> list:
+    """The CARUMAN SEMASA cells read as TOKENS, so a row whose figures OCR split over lines or
+    joined onto one line (the date and its figures together, two month labels on one line) still
+    reads. ``[]`` (refuse) unless EVERY part reconciles:
+
+      * each date is followed by exactly three figures before the next date, and Majikan + Ahli =
+        Jumlah to the sen (the strict read never checks this inside a row);
+      * the month labels number exactly the rows, and the dates run oldest to newest (so the last
+        row IS the latest month);
+      * at most one figure is left over, and it equals the rows' sum to the sen (the grand total).
+    """
+    lines = _lines(text)
+    start = next((k for k, ln in enumerate(lines) if _SECTION_START_RE.search(ln)), -1)
+    if start < 0:
+        return []
+    end = next((k for k in range(start + 1, len(lines)) if _SECTION_END_RE.match(lines[k])), len(lines))
+    tokens = [tok for ln in lines[start + 1:end] for tok in ln.split()]
+    rows, dates, loose, months, pending = [], [], [], 0, None
+    for tok in tokens:
+        if _MONTH_TOKEN_RE.match(tok):
+            months += 1
+        elif _DATE_CELL_RE.match(tok):
+            if pending is not None:
+                return []                             # a date with fewer than three figures
+            pending, figs = tok, []
+        elif _MONEY_CELL_RE.match(tok):
+            if pending is None:
+                loose.append(_money_cell(tok))
+                continue
+            figs.append(_money_cell(tok))
+            if len(figs) == 3:
+                if abs(figs[0] + figs[1] - figs[2]) > 0.005:
+                    return []                         # the shares do not make the total
+                rows.append(tuple(figs))
+                dates.append(pending)
+                pending = None
+    if pending is not None or not rows or months != len(rows) or len(loose) > 1:
+        return []
+    if loose and abs(loose[0] - sum(t for _e, _m, t in rows)) > 0.005:
+        return []
+    order = [(d[6:], d[3:5], d[:2]) for d in dates]
+    return rows if order == sorted(order) else []
+
+
+def epf_lane(text: str) -> str:
+    """The rules lane of an EPF read: ``kwsp_penyata_relaxed`` when only the relaxed cell read
+    gives the table, else ``kwsp_penyata``."""
+    return 'kwsp_penyata_relaxed' if (_relaxed_on() and not _strict_rows(text)
+                                      and _relaxed_rows(text)) else 'kwsp_penyata'
 
 
 def _last_caruman(text: str) -> str:
