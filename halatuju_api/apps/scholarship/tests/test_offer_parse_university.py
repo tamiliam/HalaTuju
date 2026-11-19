@@ -26,6 +26,8 @@ MATCH = 'apps.scholarship.offer_course_match.match_offer_course'
 PINNED = 'apps.scholarship.offer_course_match.pinned_match'
 LEVEL = 'apps.scholarship.offer_course_match.course_level'
 ONE = ('', {'course_id': 'uh6481001', 'institution': 'Universiti Malaysia Sabah'})
+READ_UMS = 'apps.scholarship.offer_parse_university.read_ums'
+LAYOUT = 'apps.scholarship.pdf_pages.pdf_page1_layout'
 
 
 def ums(name=NAME, nric=NRIC, prog_line=PROG, said=PROG, report='28-29 September 2031', extra_head='',
@@ -233,6 +235,29 @@ class TestTheVisionOfferBranch(TestCase):
         self.assertEqual(doc.vision_fields['offer_reader_inputs']['rules_fallback'],
                          {'lane': LANE, 'reason': 'read_status_letter'})
 
+    @override_settings(OCR_FIRST_LANES=())
+    def test_lane_off_never_runs_the_rules_read_and_stores_the_ai_read(self):
+        """Review round 3 (option A): with the lane off, no `read_ums` (not even on a letter it would refuse)
+        and no layout child; the stored read is the AI's own."""
+        ai_read = {'fields': {'candidate_name': 'QUELLAN ZORB', 'programme': 'Diploma X'}, 'warnings': [], 'error': ''}
+        for text in (ums(), ums(top='SURAT PENGESAHAN PELAJAR\n')):
+            with self.subTest(text=text[:20]), mock.patch(READ_UMS) as rules, mock.patch(LAYOUT) as layout, \
+                    mock.patch('apps.scholarship.vision.extract_document_fields', return_value=dict(ai_read)) as ai:
+                doc = self._run(ai, text=text)
+            rules.assert_not_called()
+            layout.assert_not_called()
+            ai.assert_called_once()
+            self.assertEqual(doc.vision_fields['capture'], 'ai')
+            self.assertEqual(doc.vision_fields['fields'], ai_read['fields'])
+            self.assertEqual(doc.vision_fields['offer_reader_inputs']['rules_fallback'], {'lane': LANE, 'reason': 'lane_off'})
+
+    @override_settings(OCR_FIRST_LANES=(LANE,))
+    def test_lane_on_runs_the_rules_read(self):
+        with mock.patch(READ_UMS, wraps=read_ums) as rules, mock.patch(PINNED, return_value=ONE):
+            doc = self._run(None)
+        rules.assert_called_once()
+        self.assertEqual(doc.vision_fields['capture'], 'deterministic')
+
 
 class TestReviewRoundOne(SimpleTestCase):
     """The S1 review's findings (2026-11-19): each rule refuses rather than guess."""
@@ -423,6 +448,51 @@ class TestReviewRoundTwo(SimpleTestCase):
         why = {}
         self.assertIsNone(exact_offer_read(ums(), image=None, content_type='application/pdf', why=why))
         self.assertEqual(why, {'lane': LANE, 'reason': 'read_no_pdf_bytes'})
+
+
+class TestReviewRoundThree(SimpleTestCase):
+    """Review round 3 (owner option A, 2026-11-19): the page-1 layout child and `read_ums` run only when the
+    ua:UMS lane is on. A digital UMS PDF (its text layer is the text, page 1 has a layer)."""
+
+    def _read(self, text=None, layout_text=None):
+        from apps.scholarship.offer_exact import exact_offer_read
+        text, why = text or ums(), {}
+        with mock.patch('apps.scholarship.offer_exact.pdf_layers', return_value=(text, text)), \
+                mock.patch(LAYOUT, return_value=layout_text or ums()) as layout, \
+                mock.patch(READ_UMS, wraps=read_ums) as rules:
+            ex = exact_offer_read(text, image=b'%PDF-1.4 x', content_type='application/pdf', why=why)
+        return ex, why, layout, rules
+
+    @override_settings(OCR_FIRST_LANES=())
+    def test_lane_off_runs_neither_the_layout_child_nor_the_rules_read(self):
+        for text in (ums(), ums(top='SURAT PENGESAHAN PELAJAR\n')):
+            with self.subTest(text=text[:20]):
+                ex, why, layout, rules = self._read(text)
+                self.assertIsNone(ex)
+                layout.assert_not_called()
+                rules.assert_not_called()
+                self.assertEqual(why, {'lane': LANE, 'reason': 'lane_off'})
+
+    @override_settings(OCR_FIRST_LANES=(LANE,))
+    def test_lane_on_runs_both_as_before(self):
+        ex, why, layout, rules = self._read()
+        layout.assert_called_once()
+        rules.assert_called_once()
+        self.assertEqual(ex['rules_lane'], LANE)
+        self.assertEqual(why, {})
+
+    @override_settings(OCR_FIRST_LANES=())
+    def test_lane_off_leaves_a_government_letter_alone(self):
+        """A letter of a government family is read as before, even with the UMS title in it, and no layout."""
+        from apps.scholarship.offer_exact import _ums_family
+        from apps.scholarship.tests.test_offer_exact import matric
+        self.assertFalse(_ums_family(matric() + 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH\n'))
+        self.assertTrue(_ums_family(ums().replace(' ', ' ')))
+        with mock.patch(LAYOUT) as layout, mock.patch(READ_UMS) as rules:
+            from apps.scholarship.offer_exact import exact_offer_read
+            self.assertIsNotNone(exact_offer_read(matric()))
+        layout.assert_not_called()
+        rules.assert_not_called()
 
 
 class TestTheMemoCountsText(SimpleTestCase):

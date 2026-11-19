@@ -160,6 +160,16 @@ def rules_lane_verdict(ex) -> str:
     return f'match_{reason}' if reason else ''
 
 
+def _ums_family(text) -> bool:
+    """True when `offer_parse.diagnose` would read ``text`` as a UMS letter: no government family, and the
+    UMS title. With the lane off such a letter goes straight to the AI (S1 review round 3, owner option A,
+    2026-11-19), recording 'lane_off' as before, without the page-1 layout child or `read_ums`."""
+    from .offer_parse import _SPACES, _ZERO_WIDTH, _detect
+    from .offer_parse_university import is_ums
+    up = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or '')).upper()
+    return not _detect(up) and is_ums(up)
+
+
 def rules_lane_open(ex) -> bool:
     """True when a rules read may stand (`rules_lane_verdict` is ''); False sends the letter to the AI."""
     return rules_lane_verdict(ex) == ''
@@ -176,9 +186,14 @@ def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_n
         return None                              # a PDF whose bytes are not here: no page 1 to read (H2)
     layer, page1 = pdf_layers(image, content_type)
     from_layer = bool(layer.strip()) and layer.strip() == (text or '').strip()
-    from .offer_parse_university import is_ums
+    from .offer_parse_university import LANE, is_ums
+    lane_on = LANE in ocr_first_lanes()
+    if not lane_on and _ums_family(text):        # review round 3 (option A): no layout child, no read_ums
+        if isinstance(why, dict):
+            why.update(lane=LANE, reason='lane_off')
+        return None
     layout = ''
-    if from_layer and page1.strip() and is_ums((text or '').upper()):
+    if lane_on and from_layer and page1.strip() and is_ums((text or '').upper()):
         from .pdf_pages import pdf_page1_layout
         layout = pdf_page1_layout(image)
     return exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric,
