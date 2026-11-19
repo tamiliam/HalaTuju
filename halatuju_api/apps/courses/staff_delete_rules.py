@@ -11,15 +11,14 @@ never offers a button the server refuses:
   * `revocable`    - the Revoke / Restore toggle may be drawn (N3): the caller manages them, they are not a
                      super, not the caller, and not the sole active org admin (Revoke refuses that too).
 
-The sole-org-admin guard (`is_sole_org_admin`) is the one `AdminRevokeView` and `AdminDeleteView` both
+The sole-org-admin guard (`is_sole_org_admin`: the only active org admin, or the last one holding
+Organisation admin powers, S2 / M4a review) is the one `AdminRevokeView`, `AdminDeleteView` and Archive
 enforce, with the organisation's org admins locked first (`lock_org_admins_of`). Only a super can
 reach an org admin at all (`_staff_target_manageable`), so a table read by anybody else never pays
 its query.
 
 Lives in its own module because `views_admin.py` is on the oversize ledger with no room to grow.
 """
-from django.db.models import Count
-
 from .models import PartnerAdmin
 
 
@@ -49,30 +48,57 @@ def lock_org_admins_of(admin_id):
              .values_list('id', flat=True))
 
 
+def powers_holder_ids(organisation_id, lock=False):
+    """S2 / M4a review: THE ONE COUNTING RULE for Organisation admin powers' last holder, as a set of
+    ids: the organisation's active org admins for whom `staff_permissions.holds_org_admin_powers` is
+    true. The editor's untick (`staff_permissions_admin._refuse_last_powers`), Archive, Revoke and Delete
+    (`is_sole_org_admin`) and the tables (`sole_org_admin_ids`) all count through it. ``lock=True``
+    (inside a transaction) counts with the rows locked, in id order."""
+    from .staff_permissions import holds_org_admin_powers
+    rows = _org_admins(owning_organisation_id=organisation_id)
+    if lock:
+        rows = rows.select_for_update().order_by('id')
+    return {a.id for a in rows if holds_org_admin_powers(a)}
+
+
+def _last_holder(target, holders):
+    """Whether ``target`` holds the powers and nobody else in ``holders`` does (zero left, never a cap)."""
+    return target.id in holders and not holders - {target.id}
+
+
 def is_sole_org_admin(target, lock=False):
-    """Whether ``target`` is the ONLY active org admin of their organisation (one query). Revoking or
-    deleting them would strand the organisation with no administrator (matrix 2026-07-15; N4).
-    ``lock=True`` (inside a transaction: the Revoke and Delete doors) counts with the rows locked."""
+    """Whether removing ``target`` would leave their organisation with no administrator: they are its
+    ONLY active org admin (matrix 2026-07-15; N4), or the last active one holding Organisation admin
+    powers (S2 / M4a review: an org admin whose powers a super unticked does not count). Archive, Revoke
+    and Delete all refuse it. ``lock=True`` (inside a transaction: those doors) counts with the rows
+    locked."""
     if not _live_org_admin(target):
         return False
     others = _org_admins(owning_organisation_id=target.owning_organisation_id).exclude(id=target.id)
     if lock:
-        return not list(others.select_for_update().order_by('id').values_list('id', flat=True))
-    return not others.exists()
+        if not list(others.select_for_update().order_by('id').values_list('id', flat=True)):
+            return True
+    elif not others.exists():
+        return True
+    return _last_holder(target, powers_holder_ids(target.owning_organisation_id, lock=lock))
 
 
 def sole_org_admin_ids(caller, targets):
-    """The ids among ``targets`` that are their organisation's sole active org admin: ONE grouped query
-    for a whole table, and none at all unless the caller is a super with an active org admin listed."""
+    """The ids among ``targets`` that `is_sole_org_admin` would refuse: ONE query for a whole table (the
+    organisations' active org admins, counted and then read for the powers), and none at all unless the
+    caller is a super with an active org admin listed."""
+    from .staff_permissions import holds_org_admin_powers
     live = [t for t in targets if _live_org_admin(t)]
     if caller is None or not caller.is_super or not live:
         return set()
-    counts = (PartnerAdmin.objects
-              .filter(role='org_admin', is_active=True,
-                      owning_organisation_id__in={t.owning_organisation_id for t in live})
-              .values('owning_organisation_id').annotate(n=Count('id')).order_by())
-    alone = {r['owning_organisation_id'] for r in counts if r['n'] == 1}
-    return {t.id for t in live if t.owning_organisation_id in alone}
+    rows, holders = {}, set()
+    for a in _org_admins(owning_organisation_id__in={t.owning_organisation_id for t in live}):
+        rows.setdefault(a.owning_organisation_id, set()).add(a.id)
+        if holds_org_admin_powers(a):
+            holders.add(a.id)
+    return {t.id for t in live
+            if rows.get(t.owning_organisation_id, set()) <= {t.id}
+            or _last_holder(t, holders & rows.get(t.owning_organisation_id, set()))}
 
 
 def delete_fields(caller, target, work=None, sole=None):

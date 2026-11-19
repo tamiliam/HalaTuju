@@ -9396,3 +9396,20 @@ Fix: serve a flag for each control from the server's own door (as `can_write` is
 ### [TD-669] The deploy migrate step sets no lock_timeout, so an ALTER queues behind a long reader - medium
 
 **Raised 2026-11-13 by the A5 replay second re-check (branch a5).** Deploy migrate step should set lock_timeout (~5-10s) so an ALTER fails fast instead of queueing app reads behind a long reader. Today a migration's `ALTER TABLE` waits for its ACCESS EXCLUSIVE lock behind any open read transaction (the A5 replay job, a long report, a stuck session), and every app query on that table then queues behind the waiting ALTER, so one long reader plus one deploy can stall the live site. **Fix:** the migrate step runs with `lock_timeout` of about 5-10 seconds (for example `SET lock_timeout` in the migrate connection's options, or per migration), so the ALTER fails and the deploy stops instead of blocking reads; retry the deploy once the reader is gone. Until then the A5 owner steps carry a hard rule: no deploy, no migration, no ALTER while the replay job runs. *(A · S)*
+
+### [TD-NEW-run-lock-gaps] Editing a run's item and cancelling a run do not lock the actor's row first - low
+
+**Raised 2026-11-19 by the sprint M4a review (nit; laptop session, number placeholder until the desk numbers it).**
+TD-605's `payments_chain.lock_actor` (lock the actor's row, re-read the key, then the run) runs in
+`payments.create_run` (payments.py ~391) and in `sign`, but not in `payments.set_item` or `payments_chain.cancel`. A key
+taken from someone while their edit or cancel is in flight is not seen by that request. Low: an edit reverts the run to
+draft and clears its signatures, and a cancel only withdraws. **Fix:** call `lock_actor` first in both, as `create_run`
+does, with a test like `test_m4a_maker_checker.TD605TheActorsRowFirst`. *(A - S)*
+
+### [TD-NEW-editor-approves] A person who edits a signed run and did not build it can approve it - low
+
+**Raised 2026-11-19 by the sprint M4a review (nit, pre-existing; laptop session, number placeholder).** `set_item`
+calls `_revert_to_draft`, which clears the signatures. Someone holding Prepare and Approve who did not create the run
+can edit an item, wait for the maker (and checker) to sign again, then approve: `_barred_from_approving` bars the
+signers and the creator only, not the last editor. **Fix (later):** record the last editor on the run and bar them
+from approving too (the fallback rule stays the owner's Q2), with a test. *(A - S)*

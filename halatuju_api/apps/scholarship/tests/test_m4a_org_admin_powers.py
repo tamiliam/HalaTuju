@@ -14,16 +14,21 @@ a super only, read through ONE helper (`staff_permissions.holds_org_admin_powers
 """
 import ast
 import os
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.courses import staff_permissions as sp
 from apps.courses import staff_permissions_v2 as v2
 from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
+from apps.courses.staff_delete_rules import sole_org_admin_ids
+from apps.courses.tests.test_m1a_archive_restore import ARCHIVE, DELETE, READ, SUPABASE
 from apps.scholarship import payments, payments_chain, surface_gates
+from apps.scholarship.models import StaffActivity
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, make_admin, make_org,
+    TEST_JWT_SECRET, authed_client, make_admin, make_application, make_org,
 )
 
 API = dict(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -113,12 +118,15 @@ class EachPowerTurnsOffWithTheKey(TestCase):
 
 
 #: The callers of the helper that are not gates: the editor's own rules (who holds it, who may give what,
-#: the card's switch, the last holder, a tab that predates S2) and the payment chain's one-line wrapper.
+#: the card's switch, a tab that predates S2), the payment chain's one-line wrapper, and the ONE count of
+#: the last holder (`powers_holder_ids`, read by the untick, Archive, Revoke and Delete; S2 / M4a review)
+#: with the Team table's batch of it.
 NOT_GATES = {
     'scholarship/staff_permissions_admin.py::held_set',
     'scholarship/staff_permissions_admin.py::not_held',
     'scholarship/staff_permissions_admin.py::v2_editor',
-    'scholarship/staff_permissions_admin.py::_refuse_last_powers',
+    'courses/staff_delete_rules.py::powers_holder_ids',
+    'courses/staff_delete_rules.py::sole_org_admin_ids',
     'scholarship/staff_permissions_admin.py::change_permissions',
     'scholarship/payments_chain.py::_org_admin_powers',
 }
@@ -246,3 +254,81 @@ class TheEditor(TestCase):
         held = authed_client(self.lead).get(_url(self.member)).json()['keys_not_held']
         self.assertIn('payments_check', held)
         self.assertFalse({'payments_prepare', 'payments_approve'} & set(held))
+
+
+def _unused(uid):
+    """A sign-in that was never used (as `test_m1a_archive_restore`'s): Delete may retire it."""
+    login = PartnerAdmin.objects.filter(supabase_user_id=uid).first()
+    return {'id': uid, 'email': login.email if login else '', 'last_sign_in_at': None,
+            'identities': [{'provider': 'email'}], 'app_metadata': {'must_change_password': True}}
+
+
+def _reviewed(target):
+    """Work on record (a recorded verdict), so Delete with `{"archive": true}` archives."""
+    StaffActivity.objects.create(actor=target, verb='verdict_recorded', subject_type='application',
+                                 subject_id=make_application('submitted').pk)
+
+
+@override_settings(**SUPABASE)
+class TheLastHolderIsKept(TestCase):
+    """S2 / M4a review (Opus, should-fix 1): Archive, Revoke and Delete counted active org admin ROWS, so
+    with X holding the powers and Y's unticked by a super, removing X left nobody holding them. Each door
+    now also refuses the last active holder (`staff_delete_rules.powers_holder_ids`, the ONE count the
+    untick reads too), and the Team table marks that row the same way."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = make_org()
+        cls.x = make_admin('org_admin', owning_org=cls.org, first_seen_at=timezone.now())   # listed on Team
+        cls.y = make_admin('org_admin', owning_org=cls.org, first_seen_at=timezone.now())
+        cls.boss = make_admin('super', super_admin=True)
+
+    def setUp(self):
+        took = _patch(self.boss, self.y, [k for k in _stored(self.y) if k != KEY])
+        self.assertEqual(took.status_code, 200, took.content[:300])
+        self.assertFalse(sp.holds_org_admin_powers(_fresh(self.y)))
+        self.assertTrue(sp.holds_org_admin_powers(_fresh(self.x)))
+
+    def _delete(self, target, body=None):
+        with patch(READ, side_effect=_unused), patch(DELETE, return_value='deleted'):
+            return authed_client(self.boss).delete(f'/api/v1/admin/admins/{target.pk}/', body, format='json')
+
+    def _refused(self, r):
+        self.assertEqual((r.status_code, r.json().get('code')), (400, 'last_org_admin'), r.content[:300])
+        x = _fresh(self.x)
+        self.assertTrue(x.is_active)
+        self.assertIsNone(x.archived_at)
+
+    def test_archive_refuses_the_last_holder(self):
+        _reviewed(self.x)                      # records on file: Delete would archive
+        self._refused(self._delete(self.x, ARCHIVE))
+
+    def test_revoke_refuses_the_last_holder(self):
+        self._refused(authed_client(self.boss).patch(f'/api/v1/admin/admins/{self.x.pk}/revoke/',
+                                                     {'action': 'revoke'}, format='json'))
+
+    def test_delete_refuses_the_last_holder(self):
+        self._refused(self._delete(self.x))
+        self.assertTrue(PartnerAdmin.objects.filter(pk=self.x.pk).exists())
+
+    def test_the_untick_counts_through_the_same_rule(self):
+        from apps.courses import public, staff_delete_rules
+        with patch.object(public, 'powers_holder_ids', wraps=staff_delete_rules.powers_holder_ids) as count:
+            r = _patch(self.boss, self.x, [k for k in _stored(self.x) if k != KEY])
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'last_org_admin_powers'))
+        count.assert_called_once_with(self.org.pk)
+        self.assertIn(KEY, _stored(self.x))
+
+    def test_the_team_table_marks_the_last_holder_only(self):
+        r = authed_client(self.boss).get('/api/v1/admin/staff/')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        rows = {row['id']: row for row in r.json()['staff']}
+        self.assertEqual((rows[self.x.pk]['delete_never'], rows[self.x.pk]['revocable']), ('sole_org_admin', False))
+        self.assertTrue(rows[self.y.pk]['revocable'])
+        self.assertEqual(sole_org_admin_ids(self.boss, [_fresh(self.x), _fresh(self.y)]), {self.x.pk})
+
+    def test_the_one_without_the_powers_may_still_go(self):
+        r = authed_client(self.boss).patch(f'/api/v1/admin/admins/{self.y.pk}/revoke/', {'action': 'revoke'},
+                                           format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertFalse(_fresh(self.y).is_active)

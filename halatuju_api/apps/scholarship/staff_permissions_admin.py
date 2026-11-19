@@ -426,15 +426,15 @@ def _lead_after(after):
 
 
 def _refuse_last_powers(target, before, after):
-    """S2 / M4a: never take Organisation admin powers from the organisation's last active holder (as
-    the sole-org-admin guard, `staff_delete_rules`: zero holders only, never a limit on how many).
-    `change_permissions` locks the organisation's org admins first (`lock_org_admins_of`)."""
-    from apps.courses import staff_permissions as sp
+    """S2 / M4a: never take Organisation admin powers from the organisation's last active holder (zero
+    holders only, never a limit on how many). The count is `powers_holder_ids`, the ONE rule Archive,
+    Revoke and Delete also refuse by (`staff_delete_rules.is_sole_org_admin`). `change_permissions` locks
+    the organisation's org admins first (`lock_org_admins_of`)."""
+    from apps.courses.public import powers_holder_ids
     key = _v2().ORG_ADMIN_KEY
     if key not in before or key in after or target.owning_organisation_id is None:
         return
-    if not any(a.pk != target.pk and sp.holds_org_admin_powers(a)
-               for a in sp.org_staff(target.owning_organisation_id)):
+    if not powers_holder_ids(target.owning_organisation_id) - {target.pk}:
         raise PermissionChangeRefused(
             'last_org_admin_powers', 409, f'{target.name} is the last person in the organisation with '
             'Organisation admin powers. Give them to another organisation admin first.')

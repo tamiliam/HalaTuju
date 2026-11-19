@@ -49,7 +49,6 @@ CENSUS = {
     C + 'staff_archive.py::lock_mentor_of': (1, 'OWN_ROW', "a lock peek by id; the door's fence refuses archived"),
     C + 'staff_archive.py::restore': (2, 'ARCHIVE', 'the restore; the address check'),
     C + 'staff_delete_rules.py::_org_admins': (1, 'ACTIVE', 'active org admins'),
-    C + 'staff_delete_rules.py::sole_org_admin_ids': (1, 'ACTIVE', 'active org admins'),
     C + 'staff_gift.py::unchosen_rows': (1, 'FILTERED', 'the gift report'),
     C + 'staff_permissions.py::org_staff': (1, 'ACTIVE', 'active staff'),
     C + 'staff_permissions.py::team_holding': (1, 'OWN_ROW', 'a Q builder; each caller is classified'),

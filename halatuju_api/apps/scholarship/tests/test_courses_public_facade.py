@@ -39,6 +39,7 @@ _CATALOGUE_HOMES = {
     'delete_fields': ('staff_delete_rules', 'delete_fields'),
     'sole_org_admin_ids': ('staff_delete_rules', 'sole_org_admin_ids'),
     'lock_org_admins_of': ('staff_delete_rules', 'lock_org_admins_of'),   # S2 / M4a
+    'powers_holder_ids': ('staff_delete_rules', 'powers_holder_ids'),   # S2 / M4a review
     'archive_asked': ('staff_archive', 'archive_asked'),
     'in_a_group_refusal': ('staff_archive', 'in_a_group_refusal'),
     'gift_as_id': ('staff_gift', '_as_id'),
@@ -80,7 +81,7 @@ class TestStageOneNames(SimpleTestCase):
     def test_every_stage_one_name_is_listed_and_is_the_home_object(self):
         from importlib import import_module
         stage_one = list(_CATALOGUE_HOMES)[list(_CATALOGUE_HOMES).index('PartnerAdminMixin'):]
-        self.assertEqual(len(stage_one), 18)       # S2 / M4a: + lock_org_admins_of
+        self.assertEqual(len(stage_one), 19)       # S2 / M4a: + lock_org_admins_of, + powers_holder_ids
         for name in stage_one:
             module, home_name = _CATALOGUE_HOMES[name]
             with self.subTest(name=name):

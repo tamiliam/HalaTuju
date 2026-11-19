@@ -34,14 +34,17 @@ SQL, MIGRATE-FIRST, by hand, with the owner's yes. Run the PRE-CHECK, then the D
 ledger row in the same transaction); after the new image carries all the traffic, run the DATA block once
 more and the POST-DEPLOY CHECK.
 
-PRE-CHECK (read-only): the organisation admin rows by shape and whether they hold the key, and the ledger.
+PRE-CHECK (read-only): the organisation admin rows by shape and whether they hold the key, the ledger, and
+the team rows that store `payments.view` (the new image reads it as Payments View, `stored_v2`).
     BEGIN READ ONLY;
     SELECT jsonb_typeof(permissions) AS shape, permissions ? 'organisation.admin' AS has_key, count(*)
       FROM partner_admins WHERE role = 'org_admin' GROUP BY 1, 2 ORDER BY 1, 2;
     SELECT name FROM django_migrations
      WHERE app = 'courses' AND name IN ('0099_grant_scholars_approve', '0100_store_org_admin_powers');
+    SELECT count(*) FROM partner_admins
+     WHERE role <> 'org_admin' AND jsonb_typeof(permissions) = 'array' AND permissions ? 'payments.view';
     COMMIT;
-Expect 0099 listed and 0100 not.
+Expect 0099 listed and 0100 not, and the last count 0 (a team row storing it would gain the Payments page).
 
 DATA block (one transaction, the ledger row included; safe to re-run: a row that holds the key is not
 written and gets no audit row, and the ledger row is written once):

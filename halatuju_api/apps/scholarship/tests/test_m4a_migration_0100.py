@@ -87,6 +87,9 @@ class HandSql(TestCase):
         pre = self.flat.split('PRE-CHECK(read-only)', 1)[1].split('DATAblock', 1)[0]
         self.assertIn('BEGINREADONLY;', pre)
         self.assertIn("'0099_grant_scholars_approve','0100_store_org_admin_powers'", pre)
+        # S2 / M4a review: a team row's stored `payments.view` is read by the new image (`stored_v2`).
+        self.assertIn("WHERErole<>'org_admin'ANDjsonb_typeof(permissions)='array'ANDpermissions?'payments.view';",
+                      pre)
         self.assertNotIn('UPDATE', pre)
         self.assertNotIn('INSERT', pre)
 

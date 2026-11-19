@@ -148,8 +148,6 @@ ALLOWLIST = {
     'courses/staff_delete_rules.py::_org_admins': ('GATE-LEFT', 'target rule',
         'T2 review N4: the active org admins of an organisation, counted (and locked) by the sole-org-admin '
         'guard; a TARGET read, list K, M3b'),
-    'courses/staff_delete_rules.py::sole_org_admin_ids': ('GATE-LEFT', 'target rule',
-        'T2 review N4: the same guard for a whole table in one query; a TARGET read, list K, M3b'),
     'courses/staff_gift.py::for_invite': ('DISPLAY', 'account kind',
         'TD-501 A1.3: the invited kind says which fields the invite asks for (a reviewer names a gift); '
         'it grants or refuses no action'),
@@ -509,7 +507,6 @@ def test_every_lead_tier_read_is_allowlisted_with_its_exact_count():
 GATE_LEFT_PINNED = {
     'courses/staff_delete_rules.py::_live_org_admin': 'target rule',
     'courses/staff_delete_rules.py::_org_admins': 'target rule',
-    'courses/staff_delete_rules.py::sole_org_admin_ids': 'target rule',
     'courses/staff_fence.py::_deletable_now': 'target rule',
     'courses/staff_fence.py::manageable_if_restored': 'target rule',
     'courses/staff_fence.py::staff_target_readable': 'target rule',

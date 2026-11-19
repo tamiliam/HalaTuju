@@ -192,6 +192,30 @@ class ASuperActsOnce(_Chain):
         self.assertIsNone(payments.next_step_for(run, boss))
         self.assertEqual(self.refused(run, boss), 'same_signer')
 
+    def test_a_super_who_built_it_approves_only_when_nobody_else_can(self):
+        # S2 / M4a review (pinned, not changed): before S2 the fallback was the lead tier's, which a super is
+        # not; under Q2 anyone holding Approve who did not sign it as maker may, the builder included, and a
+        # super holds every key. The seat that widens on ship day (CHANGELOG).
+        boss = make_admin('super', super_admin=True)
+        run = self.run_for(creator=boss)                               # self.maker signed it
+        self.assertEqual(payments.eligible_approvers(run), [self.builder])
+        self.assertIsNone(payments.next_step_for(run, boss))
+        self.assertEqual(self.refused(run, boss), 'same_signer')       # someone else can: not the builder
+        PartnerAdmin.objects.filter(pk=self.builder.pk).update(is_active=False)
+        self.assertTrue(payments.approver_fallback(run))
+        self.assertEqual(payments.next_step_for(run, boss), 'approve')
+        signed = payments.sign(run, boss, boss.name)
+        self.assertEqual((signed.status, signed.org_admin_signed_email), ('completed', boss.email))
+
+    def test_a_super_who_signed_as_maker_never_approves_even_under_the_fallback(self):
+        boss = make_admin('super', super_admin=True)
+        run = self.run_for(maker=boss)
+        PartnerAdmin.objects.filter(pk__in=[self.builder.pk, self.maker.pk]).update(is_active=False)
+        self.assertTrue(payments.approver_fallback(run))
+        self.assertIsNone(payments.next_step_for(run, boss))
+        self.assertEqual(self.refused(run, boss), 'same_signer')
+        self.assertEqual(PaymentRun.objects.get(pk=run.pk).status, 'admin_signed')
+
 
 class TD605TheActorsRowFirst(_Chain):
     def test_sign_locks_the_actor_before_the_run(self):
