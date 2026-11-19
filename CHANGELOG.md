@@ -391,6 +391,12 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - Tests: `test_td613_departed_holder.py` (both paths end to end, the refusals), `test_decision_reopen.py` updated, `AssignAndWitness.td613.test.tsx`, `cockpitCardStages.test.ts`, `AssignListPicker.test.tsx`.
 - Review round: a suspension alone strands nothing outside `ASSIGNABLE_STATUSES` unless the case was reopened (F1, owner approved 2026-11-15; an award revert stores no marker, so its suspended holder waits for a Restore or a super reopen); detail and list serve `may_unassign` (`services.unassign_refusal`, mixin `serializers_admin/handover.py`), which the cockpit card and list picker read; `rejected_by_unassigned` compares with the holder at the decline (`AssignmentEvent`), not the current one.
 
+### release: 19 Nov 11:00 MYT window - pathway sprint, S0b OCR text table, OCR-first S4, Rule not met label (2026-11-19)
+- live 9be194f1a..d42121307 (pushed 11:00 MYT; owner's yes "Make all of main live - yeS", 18 Nov, given when main was d42121307). api halatuju-api-01312-k8l, web halatuju-web-01133-gj8, both 100% traffic (rollback api-01311-xkx, web-01132-vw4). Both builds green first time; release-decisions job image d42121307; api health 200.
+- Migration 0214 (applicant_document_ocr_text) applied by hand before the push (Help Me session; post-checks clean: RLS on, FK cascade, 1 policy, ledger row). Rollback order: old image first, then the 0214 DROP TABLE block. Services both.
+- Not in this release (on main, not approved for live): POST-AWARD-CUT (77a8e407f) and the IPTS rule (a2b846282).
+- Owner phone checks: pending (#804 Pathway card + course linked; /scholarship/apply waiting branch; Rule not met vs Can't verify; S4 SPM slip on a non-SPM profile fills grades, a PERCUBAAN slip does not).
+
 ### release: 18 Nov 21:00 MYT window - red tile names its reason, invite empty-gift guard, offer reader 2.6.0 (2026-11-18)
 - live 2447c9583..9be194f1a (pushed 21:00 MYT; owner's yes "option 1" for the tile fix ead73c7e9 and the invite check 4a6ef3fe0, and "a1" for offer reader 2.6.0 to join the batch). api halatuju-api-01311-xkx, web halatuju-web-01132-vw4, both 100% traffic (rollback api-01310-5lq, web-01131-9f6). release-decisions job image 9be194f1a; api health 200.
 - Web build: the first build failed on one flaky jest test (`page.draft.test.tsx:120`, the draft-deletion check; not in this batch, 3 of 3 passes locally). The same trigger was re-run on the same SHA and went green. One deploy, not two.
