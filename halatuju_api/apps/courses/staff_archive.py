@@ -10,7 +10,9 @@ refused while anything is still waiting on them in ANY group (`staff_work.unfini
 409 `has_unfinished_work` with the counts.
 
 **Archive (lead)**, in ONE transaction, under the row lock and `lock_org_admins_of`
-(`archive_locked`): the sole-org-admin refusal stays; the mentoring is left (`staff_mentor_leaves`, and a
+(`archive_locked`): the sole-org-admin refusal stays (⚠ it lives in Delete's `before_delete`, not in
+`archive_locked`, so Invitations → Cancel, S1b, does not check it; the old Cancel switch-off left the same
+state); the mentoring is left (`staff_mentor_leaves`, and a
 mentor login's own mentor stamped deactivated); `is_active=False`, `archived_at`, `archived_by_email`;
 waiting staff and mentor invitations cancelled; the login retired exactly as a delete retires it
 (`plan_login_retirement` inside, `retire_login` after the commit) and `supabase_user_id` cleared. The

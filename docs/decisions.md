@@ -15,6 +15,9 @@ both. Migration: none.
 - **TD-615's original fix (Delete needs no group) is not needed** and the item closes when S1b is live.
 - **Not archived:** a source invitation (an archived source row has no way back, so its address would stay taken; it
   is switched off as before) and a sponsor invitation (no account). A mentor invitation stays the Mentors page's.
+- **Known effect, awaiting the owner's view (review round):** a cancelled staff invitation leaves the Invitations list, even
+  with `all=1`, because archived people's invitations are hidden (`views_admin/invitations.py`, M1a); the row and the AUDIT
+  line keep the history, and a re-invite brings the old revoked invitation back into view. Behaviour left as built.
 
 ## 2026-11-18 — Request #69: the sponsor's "Our volunteers" figures stay as built; the small-size risk is accepted (owner)
 

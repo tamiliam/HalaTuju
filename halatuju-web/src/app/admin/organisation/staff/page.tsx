@@ -220,8 +220,10 @@ export default function OrganisationInvitationsPage() {
     if (!token || !window.confirm(t('admin.invitations.cancelConfirm', { email: row.email }))) return
     setResendingId(row.id)
     try {
-      await cancelInvitation(row.id, { token })
-      setMessage({ type: 'success', text: t('admin.invitations.cancelled') })
+      const done = await cancelInvitation(row.id, { token })
+      setMessage(done?.login === 'failed'
+        ? { type: 'warning', text: t('admin.invitations.cancelledLoginFailed') }
+        : { type: 'success', text: t('admin.invitations.cancelled') })
     } catch (e) {
       const hasWork = (e as { code?: string } | null)?.code === 'has_unfinished_work'
       setMessage({ type: 'warning', text: t(hasWork ? 'admin.invitations.cancelHasWork' : 'admin.invitations.cancelFailed') })

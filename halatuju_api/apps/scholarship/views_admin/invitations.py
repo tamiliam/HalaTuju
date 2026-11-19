@@ -372,4 +372,10 @@ class AdminInvitationCancelView(_ReviewersBase):
         logger.info('AUDIT invitation_cancelled id=%s audience=%s role=%s account=%s archived=%s login=%s by=%s',
                     inv.id, inv.audience, inv.role or '-', account.id if account else '-',
                     'yes' if archive else 'no', login, admin.email or '')
-        return Response({'id': inv.id, 'status': inv_service.status_of(inv)})
+        # S1b review round: like Delete (`staff_archive`), a reply about an account carries `login`, so a
+        # failed removal after the commit ('failed': archived, but a temporary password may still work)
+        # reaches the page. A sponsor invitation (no account) answers as before.
+        body = {'id': inv.id, 'status': inv_service.status_of(inv)}
+        if account is not None:
+            body['login'] = login
+        return Response(body)

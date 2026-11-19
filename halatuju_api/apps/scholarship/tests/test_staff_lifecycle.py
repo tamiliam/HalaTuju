@@ -253,12 +253,39 @@ class TestCancelKillsThePassword(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
     def test_a_password_they_chose_is_never_touched(self):
+        # S1b review round: the honest case. The invited address already had its own login (the letter said
+        # "sign in as you always do"): signed in elsewhere, no temporary password owed, but never in the
+        # console, so Cancel still archives them. Their login is theirs: `plan_login_retirement` says 'kept'.
         inv, account = self._staff_inv()
         with patch(f'{REQ}.get', return_value=_resp(body=_auth_user(
-                account.supabase_user_id, account.email, owes=False))), \
-                patch(f'{REQ}.put') as put, patch(f'{REQ}.delete', return_value=_resp()):
-            self.assertEqual(self._cancel(inv).status_code, 200)
+                account.supabase_user_id, account.email, owes=False, signed_in=True))), \
+                patch(f'{REQ}.put') as put, patch(f'{REQ}.delete') as gone, \
+                self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
+            r = self._cancel(inv)
+        self.assertEqual(r.status_code, 200, r.content[:300])
         put.assert_not_called()
+        gone.assert_not_called()
+        self.assertEqual(r.json()['login'], 'kept')
+        self.assertIn('login=kept', ' '.join(logs.output))
+        account.refresh_from_db()
+        self.assertIsNotNone(account.archived_at)
+
+    def test_a_failed_login_removal_after_the_cancel_is_reported(self):
+        # S1b review round (mirrors Delete, `staff_archive` ~170): the read worked, so the archive committed,
+        # but the Supabase delete failed. The row stays archived; the reply says `login: 'failed'` so the
+        # page can tell the admin to contact support (the temporary password may still work).
+        inv, account = self._staff_inv()
+        with patch(f'{REQ}.get', return_value=_resp(body=_auth_user(account.supabase_user_id, account.email))), \
+                patch(f'{REQ}.delete', return_value=_resp(500)), patch(f'{REQ}.put'), \
+                self.assertLogs('apps.scholarship', level='INFO') as logs:
+            r = self._cancel(inv)
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertEqual(r.json()['login'], 'failed')
+        self.assertIn('STAFF_LOGIN_ORPHANED', ' '.join(logs.output))
+        account.refresh_from_db()
+        inv.refresh_from_db()
+        self.assertIsNotNone(account.archived_at)
+        self.assertIsNotNone(inv.revoked_at)
 
     def test_a_login_that_is_also_a_student_is_left_alone(self):
         inv, account = self._staff_inv()

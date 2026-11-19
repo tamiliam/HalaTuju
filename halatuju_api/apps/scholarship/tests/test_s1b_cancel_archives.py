@@ -76,7 +76,7 @@ class TestCancelArchivesTheInvitee(_Base):
         with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
             r = self.cancel(self.lead, inv)
         self.assertEqual(r.status_code, 200, r.content[:300])
-        self.assertEqual(r.json(), {'id': inv.pk, 'status': 'revoked'})
+        self.assertEqual(r.json(), {'id': inv.pk, 'status': 'revoked', 'login': 'deleted'})
         inv.refresh_from_db()
         account.refresh_from_db()
         self.assertIsNotNone(inv.revoked_at)                       # a status, never a delete

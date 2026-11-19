@@ -604,6 +604,15 @@ describe('cancelling an invitation sent by mistake (TD-214)', () => {
     expect(screen.queryByText('admin.invitations.cancelFailed')).toBeNull()
   })
 
+  it('S1b review: warns, not succeeds, when the invitation is cancelled but their sign-in could not be removed', async () => {
+    jest.spyOn(window, 'confirm').mockReturnValue(true)
+    mockApi.cancelInvitation.mockResolvedValue({ id: 1, status: 'revoked', login: 'failed' })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.invitations.cancel'))
+    await waitFor(() => expect(screen.getByText('admin.invitations.cancelledLoginFailed')).toBeTruthy())
+    expect(screen.queryByText('admin.invitations.cancelled')).toBeNull()
+  })
+
   it('S1b: the confirm and the refusal say what happens, in every language', () => {
     const en = enMessages.admin.invitations
     expect(en.cancelConfirm).toMatch(/removed from it/)
@@ -613,7 +622,9 @@ describe('cancelling an invitation sent by mistake (TD-214)', () => {
       expect(own.cancelConfirm).toContain('{email}')
       expect(own.cancelConfirm).not.toEqual(en.cancelConfirm)
       expect(own.cancelHasWork).toBeTruthy()
+      expect(own.cancelledLoginFailed).not.toEqual(en.cancelledLoginFailed)
     }
+    expect(en.cancelledLoginFailed).toBe('Cancelled, but their sign-in could not be removed. Tell support.')
   })
 
   it('⚠ never offers an org_admin Cancel on an organisation-admin invitation; a super gets it', async () => {

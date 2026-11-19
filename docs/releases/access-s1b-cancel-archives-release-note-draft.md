@@ -15,6 +15,13 @@ Programme ACCESS-BY-SWITCHES. Owner ruling 19 Nov (`docs/decisions.md`). Debt: c
   page says: "They still have work waiting on them, such as cases or scholars, so the invitation was not
   cancelled. Hand that work to someone else first."
 - Someone who has already signed in is still removed on the People page, as before.
+- **If their sign-in cannot be removed** after the cancel (a Supabase fault), the invitation is still cancelled
+  and they still leave the group, but the page warns: "Cancelled, but their sign-in could not be removed. Tell
+  support." Support removes the login by hand (the log line `STAFF_LOGIN_ORPHANED` names it).
+- **Known effect, awaiting the owner's view:** a cancelled staff invitation no longer shows on the Invitations
+  page, not even under "show all", because the person is archived and archived people's invitations are hidden.
+  The row in the database and the AUDIT line keep the history, and a re-invite of the address brings the old
+  cancelled invitation back into view.
 
 ## Not changed
 
@@ -33,4 +40,5 @@ the same address can be invited again.
 
 ## For a native reader
 
-The Malay and Tamil words for the new Cancel question and the "cases waiting on them" message need a native read.
+The Malay and Tamil words for the new Cancel question, the "cases waiting on them" message and the "sign-in could
+not be removed" warning (`admin.invitations.cancelledLoginFailed`) need a native read.

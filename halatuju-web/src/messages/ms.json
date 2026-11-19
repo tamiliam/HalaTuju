@@ -7767,6 +7767,7 @@
       "cancelled": "Jemputan dibatalkan.",
       "cancelFailed": "Kami tidak dapat membatalkannya. Muat semula halaman dan cuba lagi.",
       "cancelHasWork": "Masih ada kerja yang menunggu mereka, seperti kes atau penerima biasiswa, jadi jemputan tidak dibatalkan. Serahkan kerja itu kepada orang lain dahulu.",
+      "cancelledLoginFailed": "Dibatalkan, tetapi log masuk mereka tidak dapat dibuang. Beritahu pasukan sokongan.",
       "waitingHeading": "Menunggu jawapan",
       "allAccepted": "Tiada sesiapa menunggu — semua yang dijemput telah menerima.",
       "seePeople": "Lihat siapa yang ada",

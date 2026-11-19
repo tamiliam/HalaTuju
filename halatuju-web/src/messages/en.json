@@ -7767,6 +7767,7 @@
       "cancelled": "Invitation cancelled.",
       "cancelFailed": "We could not cancel it. Reload the page and try again.",
       "cancelHasWork": "They still have work waiting on them, such as cases or scholars, so the invitation was not cancelled. Hand that work to someone else first.",
+      "cancelledLoginFailed": "Cancelled, but their sign-in could not be removed. Tell support.",
       "waitingHeading": "Waiting to reply",
       "allAccepted": "Nobody is waiting — everyone invited has accepted.",
       "seePeople": "See who is in",
