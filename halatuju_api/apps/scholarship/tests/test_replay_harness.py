@@ -488,7 +488,7 @@ class OwnerFilesTest(SimpleTestCase):
         for needle in ('No deploy and no migration', 'SET LOCAL lock_timeout',
                        'SET LOCAL idle_in_transaction_session_timeout',
                        'HARD RULE: no deploy, no migration, no ALTER while the replay job runs', 'quiet window',
-                       'stop the job first', 'gcloud run jobs executions cancel', 'TD-620'):
+                       'stop the job first', 'gcloud run jobs executions cancel', 'TD-669'):
             self.assertIn(needle, text)
 
     def test_the_drop_file_removes_the_role(self):

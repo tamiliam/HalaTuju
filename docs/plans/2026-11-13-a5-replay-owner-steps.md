@@ -98,7 +98,7 @@ job's own timeouts do not prevent this: `SET LOCAL lock_timeout` (5s) only stops
 lock, and `SET LOCAL idle_in_transaction_session_timeout` (12 minutes for the parent, 2 minutes for each
 child) only ends a transaction left idle. The parent reads no table while it waits for the children to
 join, counts the cases only after they have joined, then ends its transaction at once. The deploy-side
-fix (the migrate step sets its own `lock_timeout`, so an `ALTER` fails fast) is TD-620.
+fix (the migrate step sets its own `lock_timeout`, so an `ALTER` fails fast) is TD-669.
 
 The `^@^` prefix tells gcloud to split the arguments on `@`, because the months contain a comma.
 `<INSTANT>` is the snapshot time with a timezone, for example `2026-11-20T18:00:00+08:00`.

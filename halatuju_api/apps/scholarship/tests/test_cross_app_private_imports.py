@@ -457,6 +457,9 @@ def scan_scholarship_courses_tree():
         if 'migrations' in path.parts or 'tests' in path.parts or path.name.startswith('test_'):
             continue
         rel = path.relative_to(APPS_DIR).as_posix()
+        if rel.startswith('scholarship/eval/replay/'):
+            # A5 replay: an offline tool that must pin the exact old and live engine modules, never the facade.
+            continue
         found |= scan_scholarship_courses(rel, path.read_text(encoding='utf-8'))
     return found
 
