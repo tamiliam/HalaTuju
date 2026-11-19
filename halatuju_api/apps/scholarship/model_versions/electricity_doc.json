@@ -3,5 +3,10 @@
     "digest": "4d68184535f791e52e08991cc9c7785f8f7c507cac010fab938da04d92274ce3",
     "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day.",
     "also_ok": []
+  },
+  "1.1.0": {
+    "digest": "4d68184535f791e52e08991cc9c7785f8f7c507cac010fab938da04d92274ce3",
+    "note": "2026-11-19: OCR-first S6: the reader changed (a TNB photo lane, switched off), the cascade did not; the file's digest is unchanged because only the version line and comments moved.",
+    "also_ok": []
   }
 }

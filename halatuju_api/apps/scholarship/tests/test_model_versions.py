@@ -135,6 +135,14 @@ _NOT_A_MODEL_VERSION = {
     'apps/scholarship/vision/field_extraction.py:SLIP_READER_VERSION':
         'The SPM slip field read (OCR to fields). Not on the LL3 model list; a reader, not a '
         'scorer. To register it, add it to MODELS.',
+    'apps/scholarship/doc_parse.py:ELECTRICITY_PARSER_VERSION':
+        'The OCR-first TNB bill field read (OCR to fields), stamped on the stored read. A reader, '
+        'not a scorer, and switched off for the photo lane; the genuineness cascade is its own '
+        "registered model ('electricity_doc'). To register it, add it to MODELS.",
+    'apps/scholarship/doc_parse_epf.py:EPF_PARSER_VERSION':
+        'The OCR-first EPF statement field read (OCR to fields), stamped on the stored read. A '
+        'reader, not a scorer; the income engine decides from its figures. To register it, add '
+        'it to MODELS.',
     'apps/scholarship/services/consent.py:CONSENT_VERSION':
         'The version of the consent wording a student agreed to. Legal text, not a model.',
     'apps/scholarship/views_sponsor.py:SPONSOR_CONSENT_VERSION':
