@@ -20891,3 +20891,33 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 **Decision:** HalaTuju uses the `Toggle` switch (`components/Toggle.tsx`) for every on/off choice and every pick-several list. Tick boxes stay only where a person agrees to or confirms a statement: scholarship award agreements, sponsor consent (register and details form), source witness confirmation, post-award "installed", and the scholarship next-steps checklist. A jest scan (`noTickBoxes.test.ts`) holds exactly those six files and counts.
 **Why:** the owner, 2026-11-16: one control language across the app; a tick box is kept where ticking reads as "I agree".
 **Revisit if:** a new agreement screen needs a tick box (add it to the scan with a reason).
+
+## 2026-11-19 - The Pass / Fail tap records the student's fact, not a rating of the AI (owner ruling A, 2026-11-18; built in LL1/LL2)
+
+**Decision:** The tap means "is this fact true for the student?". The AI is scored by the system (green and then failed = wrong green). When a reviewer fails a fact the AI called green, the cause is asked separately, with one tap: engine wrong, read wrong, new information, programme rule, other. The stored value did not change, so the 173 older answers stay valid.
+**Why:** the old box read "Rate AI Prediction", and the data could not tell a reviewer who judged the student from one who judged the AI. Alternative considered: make the tap a rating of the AI. Rejected: it would change the meaning of the old answers.
+**Revisit if:** the 133 "too careful" answers (AI unsure, human pass) need a reason too; today the doubt table explains them with no reviewer work.
+
+## 2026-11-19 - The second person for the human check is the QC, inside the QC step; silence means agreement (owner, 2026-11-18; built in LL2b)
+
+**Decision:** The QC (also the funder) is the second look. A "Facts in doubt" block shows on the QC panel only when a fact is in doubt (AI green and reviewer fail, or a failed fact with an accept). Doing nothing records "agreed" for the shown facts; one tap records "disagreed". A fact that was not shown gets no answer. The numbers say "checked by the QC", never "true". The second look never changes a decision.
+**Why:** one person made all 70 QC decisions and backs each with money, so the design had to cost him almost nothing. Alternatives considered: a new review page or a sampled list. Rejected: more work for the same person.
+**Revisit if:** more than one QC per organisation exists, or silence turns out to hide disagreement (compare with the taps).
+
+## 2026-11-19 - One human feed for "the reader was wrong" (LL2 reasons and LL2b QC answers); no second store
+
+**Decision:** The LL2 reason `read_wrong` and the LL2b QC disagreement are the ONE feed. The OCR-first work reads it; it builds no feedback store of its own. LL5 will report the feed per model version.
+**Why:** two stores would disagree and double the work. Agreed with the OCR session on 2026-11-19, on the owner's word.
+**Revisit if:** the OCR work needs a signal these two cannot give.
+
+## 2026-11-19 - A model's version is registered with a digest of its source, and a digest is never re-seeded without a version bump (LL3)
+
+**Decision:** `apps/scholarship/model_registry.py` lists each model's files; `model_versions/<model>.json` keeps one append-only entry per version with the digest of the cleaned source (comments, docstrings, blank lines and the version line dropped). A change to a registered file without a new version fails `test_model_versions.py` / `test_model_digest.py`. Once the register is on `main`, a digest is not re-seeded without a bump. Before the first merge two digests were re-seeded in place, with dated notes, because main moved the IPTS reason texts into constants with the same text.
+**Alternatives considered:** `ast.dump` digest (rejected: it differs between Python 3.11 in production and 3.13 here); a habit and a review note (the admitted miss of 2026-11-16).
+**Revisit if:** the guard blocks harmless moves too often (add an `also_ok` digest with a note), or a model keeps its logic outside the listed files (TD register: guard gaps).
+
+## 2026-11-19 - The first batch of old cases for the QC was left out (owner, 2026-11-19)
+
+**Decision:** the list of 21 wrong-green + 5 failed-but-accepted + 7 QC-disagreed cases (2026-11-18 counts) is not built. The QC checks new cases only.
+**Why:** the owner chose to start clean; a list would be extra work for the QC.
+**Revisit if:** the owner asks for it; it then needs a picture first.
