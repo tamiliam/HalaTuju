@@ -207,3 +207,71 @@ class TestVerdictCaps(_Base):
         self._doc('epf', {'status': 'likely_genuine'})
         income = next(f for f in build_verdict(self.app) if f['fact'] == 'income')
         self.assertNotIn('document_not_genuine', [i['code'] for i in income['unresolved']])
+
+
+class TestModelVersionStamp(_Base):
+    """LL3 phase 2: the IC and supporting-document scorers stamp `model_version` on a new result.
+    The answer is otherwise unchanged, no signal stays `{}`, and a result stored before the stamp
+    (no `model_version`, the ~1,053 old IC results that are never back-filled) reads exactly as one
+    stored with it."""
+
+    def test_ic_result_carries_the_model_version(self):
+        from apps.scholarship.genuineness import ic
+        self.assertEqual(ic.MODEL_VERSION, '1.0.0')
+        with patch('apps.scholarship.vision._call_gemini_json',
+                   return_value={'verdict': 'suspect', 'has_chip': False, 'reason': 'typed'}):
+            r = vision.ic_genuineness(b'img', 'image/png')
+        self.assertEqual(r['model_version'], ic.MODEL_VERSION)
+        self.assertEqual((r['status'], r['reason']), ('suspect', 'typed'))
+        self.assertFalse(r['markers']['has_chip'])
+
+    def test_supporting_doc_result_carries_the_model_version(self):
+        from apps.scholarship.genuineness import supporting_doc
+        self.assertEqual(supporting_doc.MODEL_VERSION, '1.0.0')
+        with patch('apps.scholarship.vision._call_gemini_json',
+                   return_value={'verdict': 'wrong_type', 'is_official': False,
+                                 'is_expected_type': False, 'doc_seen': 'MyKad', 'reason': 'r'}):
+            r = vision.doc_genuineness(b'img', 'image/png', 'str')
+        self.assertEqual(r, {'status': 'not_str', 'doc_seen': 'MyKad', 'reason': 'r',
+                             'model_version': supporting_doc.MODEL_VERSION})
+
+    def test_no_signal_stays_empty_and_unversioned(self):
+        # `{}` is "no signal"; a version on it would make it truthy and store it as a score.
+        with patch('apps.scholarship.vision._call_gemini_json', return_value={'_error': 'down'}):
+            self.assertEqual(vision.ic_genuineness(b'img', 'image/png'), {})
+            self.assertEqual(vision.doc_genuineness(b'img', 'image/png', 'str'), {})
+        self.assertEqual(vision.doc_genuineness(b'img', 'image/png', 'photo'), {})
+
+    def _readings(self, doc):
+        doc.refresh_from_db()
+        facts = {f['fact']: (f['status'], sorted(i['code'] for i in f['unresolved']))
+                 for f in build_verdict(self.app)}
+        return (facts, sorted(a['code'] for a in detect_anomalies(self.app)),
+                ApplicantDocumentSerializer().get_authenticity(doc))
+
+    def _same_with_and_without_version(self, doc_type, auth):
+        doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type=doc_type, storage_path=f'{self.app.id}/{doc_type}/x',
+            vision_nric=self.profile.nric, vision_name=self.profile.name,
+            vision_run_at=timezone.now(), vision_fields={'authenticity': dict(auth)})
+        old = self._readings(doc)
+        doc.vision_fields = {'authenticity': {**auth, 'model_version': '1.0.0'}}
+        doc.save(update_fields=['vision_fields'])
+        self.assertEqual(self._readings(doc), old)
+        return old
+
+    def test_an_old_ic_result_without_a_version_reads_the_same(self):
+        facts, flags, shown = self._same_with_and_without_version(
+            'ic', {'status': 'suspect', 'markers': {'has_chip': False}, 'reason': 'typed'})
+        self.assertEqual(facts['identity'][0], 'review')                 # the soft cap still fires
+        self.assertIn('ic_low_confidence', flags)
+        self.assertEqual(shown, {'status': 'suspect', 'reason': 'typed', 'doc_seen': ''})   # no new key shown
+
+    def test_an_old_supporting_doc_result_without_a_version_reads_the_same(self):
+        self.app.income_route, self.app.income_earner = 'str', 'father'
+        self.app.save(update_fields=['income_route', 'income_earner'])
+        facts, flags, shown = self._same_with_and_without_version(
+            'str', {'status': 'not_str', 'doc_seen': 'an identity card', 'reason': 'r'})
+        self.assertIn('document_not_genuine', facts['income'][1])
+        self.assertIn('document_not_genuine', flags)
+        self.assertEqual(shown, {'status': 'not_str', 'reason': 'r', 'doc_seen': 'an identity card'})

@@ -307,7 +307,22 @@ class TestEveryMoneyWriterUsesTheHelper(TestCase):
          r".*with transaction\.atomic\(\):.*publish_profile_to_pool\(app, blurb=blurb\)"),
         # ...and post() routes a decline verdict to the locked confirm, never straight to admin_reject.
         ('views_admin.verdict', 'AdminQcDecisionView',
-         r"(?s)if _overall\(app\) == 'decline':\s+return self\._accept_decline\(app, admin, pk\)"),
+         r"(?s)if _overall\(app\) == 'decline':\s+return self\._accept_decline\(app, admin, pk, taps\)"),
+        # LL2b: on all FOUR paths the QC's fact_checks write (`record_answers`, a save of
+        # officer_verdict) comes AFTER that path's lock, on the line before its `_record_qc`.
+        ('views_admin.verdict', 'AdminQcDecisionView',
+         r"(?s)def _accept_recommend.*lock_application_for\(app, \('interviewed',\)\)"
+         r".*look = second_look\.record_answers\(app, 'accept', taps\)[^\n]*\n\s+"
+         r"_record_qc\(admin, app, 'accept', 'recommended', look\)"
+         r".*def _accept_decline.*lock_application_for\(app, \('interviewed',\)\)"
+         r".*look = second_look\.record_answers\(app, 'accept', taps\)\n\s+"
+         r"_record_qc\(admin, app, 'accept', 'declined', look\)"
+         r".*decision == 'reopen'.*lock_application_for\(app, \('interviewed',\)\)"
+         r".*look = second_look\.record_answers\(app, 'reopen', taps\)[^\n]*\n\s+"
+         r"_record_qc\(admin, app, 'reopen', 'reopened', look\)"
+         r".*decision == 'reject'.*lock_application_for\(app, \('interviewed',\)\)"
+         r".*look = second_look\.record_answers\(app, 'reject', taps\)\n\s+"
+         r"_record_qc\(admin, app, 'reject', 'declined', look\)"),
     )
 
     def test_each_writer_locks_through_status_lock(self):

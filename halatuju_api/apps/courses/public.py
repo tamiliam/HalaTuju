@@ -50,7 +50,7 @@ from .exam_questions import (
 from .course_pathway import course_pathway_type
 from .csv_safe import csv_cell
 from .engine import calculate_merit_score, prepare_merit_inputs
-from .models import FieldTaxonomy, StudentProfile
+from .models import FieldTaxonomy, PartnerAdmin, StudentProfile
 from .pismp_taxonomy import aliran_of
 from .search import _digits_expr as digits_expr
 from .search import apply_people_search, people_search_term
@@ -82,7 +82,7 @@ __all__ = [
     'diploma_is_public', 'has_stpm_results', 'heading_for', 'held_summary', 'is_tertiary',
     'merit_100', 'overall_cgpa', 'overall_from', 'results_held', 'spm_grades_for',
     'spm_grades_none_label', 'spm_slip_comparable', 'third_route_overall',
-    'FieldTaxonomy', 'StudentProfile',
+    'FieldTaxonomy', 'PartnerAdmin', 'StudentProfile',
     'course_pathway_type', 'csv_cell', 'calculate_merit_score', 'prepare_merit_inputs',
     'aliran_of', 'digits_expr', 'apply_people_search', 'people_search_term',
     'STPM_CGPA_POINTS', 'calculate_stpm_cgpa', 'pngk_from_grades', 'stpm_cgpa_of',

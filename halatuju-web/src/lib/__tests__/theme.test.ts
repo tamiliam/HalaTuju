@@ -816,7 +816,7 @@ export const F2B_FILES = [
   'src/components/AppHeader.tsx', 'src/components/AppFooter.tsx',
   'src/components/SponsorLanding.tsx', 'src/components/SponsorDetailsForm.tsx',
   'src/components/CourseCard.tsx', 'src/components/PathwayPicker.tsx',
-  'src/components/CourseDetailShared.tsx', 'src/components/AiReliabilityCard.tsx',
+  'src/components/CourseDetailShared.tsx',
   'src/components/SponsorNotifyPrefs.tsx', 'src/components/ProgrammePicker.tsx',
   'src/components/SchoolSelect.tsx', 'src/components/InstitutionPicker.tsx',
   'src/components/CourseHeader.tsx', 'src/components/PathwaySelect.tsx',

@@ -598,9 +598,11 @@ class TestEpfMonthlySalary(SimpleTestCase):
         from apps.scholarship.doc_parse import parse_by_labels
         from apps.scholarship.tests.test_doc_parse import _KWSP
         self.assertEqual(_epf_monthly_salary(parse_by_labels('epf', _KWSP)), 1811.54)
+        # OCR-first S6 review round 2 (M1): total-only rows no longer lock (a lone figure could be a
+        # share), so the rules read gives no estimate and the AI read decides.
         totals_only = _KWSP.replace('221.00 187.00 408.00', '408.00').replace(
             '250.00 210.00 460.00', '460.00')
-        self.assertEqual(_epf_monthly_salary(parse_by_labels('epf', totals_only)), 1808.33)
+        self.assertIsNone(_epf_monthly_salary(parse_by_labels('epf', totals_only)))
 
     def test_epf_estimate_uses_max_formula(self):
         app = _app([_bill('epf', {'employer_contribution_total': 'RM1105', 'months_counted': '5',

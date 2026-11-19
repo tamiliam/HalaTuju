@@ -127,6 +127,7 @@ def page_texts(eval_dir, key):
     if route == 'text_layer':
         import glob
         hits = sorted(glob.glob(os.path.join(eval_dir, 'fixtures', 'offer_letter', key + '.*')))
+        # A RAW-layer diagnostic on purpose: it reads every page's text, invisible text included (S-visible).
         from pypdf import PdfReader
         from pypdf.errors import PyPdfError
         try:

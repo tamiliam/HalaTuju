@@ -8,7 +8,8 @@ WRONG grades. This reader pairs each subject with the grade on its OWN visual ro
 
 * a scan or photo is read from the Vision word boxes (`academic_engine._group_rows`, the SPM slip's
   and the STPM reader's row builder, which also de-rotates a sideways photo);
-* a digital PDF is read from its text layer's own character boxes (page 1, `_pdf_words`);
+* a digital PDF is read from its text layer's own character boxes (page 1, `_pdf_words`) — only
+  when page 1's text is drawn, never a scanner app's invisible layer (S-visible, 2026-11-18);
 * text with no positions → None (the caller falls back to the Gemini read, as before).
 
 CONSERVATIVE — a wrong Exact value is far worse than an AI read. Every hit has passed:
@@ -60,41 +61,27 @@ _NAME_CHARS = re.compile(r"[A-Z][A-Z@/'.\- ]*")
 def parse_spm_cert(text, words=None, pdf=None):
     """SPM certificate → fields, or None (→ Gemini). ``words``: Vision word boxes
     ``{text, cx, cy, h, angle?}`` (page 1); ``pdf``: the upload's bytes, used for a digital PDF's
-    text layer when no words were computed. ``text`` alone (no positions) → None."""
+    text layer when no words were computed. ``text`` alone (no positions) → None.
+
+    S-visible (owner decision 2026-11-18): pdfium's text page holds INVISIBLE text too (a scanner app's
+    OCR overlay, render mode 3 / 7), so page 1's own characters are read only when page 1 is DRAWN
+    (`pdf_pages.first_page_drawn`). A hidden page 1 (e.g. its Vision read failed, so no words came in)
+    gives no words → None → the Gemini read of the image, never the hidden text."""
     try:
         if words is None and isinstance(pdf, (bytes, bytearray)) and bytes(pdf[:5]) == b'%PDF-':
-            words = _pdf_words(bytes(pdf))
+            from .pdf_pages import first_page_drawn
+            words = _pdf_words(bytes(pdf)) if first_page_drawn(bytes(pdf)) else None
         return _read(words, (text or '').upper()) if words else None
     except Exception:          # a reader failure is a fallback to Gemini, never an error
         return None
 
 
 def _pdf_words(data):
-    """Page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points)."""
-    import pypdfium2 as pdfium
-    pdf = pdfium.PdfDocument(data)
-    try:
-        page = pdf[0]
-        height, tp = page.get_height(), page.get_textpage()
-        out, cur = [], []
-
-        def flush():
-            if cur:
-                le, bo = min(c[1] for c in cur), min(c[2] for c in cur)
-                ri, to = max(c[3] for c in cur), max(c[4] for c in cur)
-                out.append({'text': ''.join(c[0] for c in cur), 'cx': (le + ri) / 2,
-                            'cy': height - (bo + to) / 2, 'h': to - bo, 'angle': 0.0})
-                cur.clear()
-        for i in range(tp.count_chars()):
-            ch = tp.get_text_range(i, 1)
-            if not ch or ch.isspace():
-                flush()
-                continue
-            cur.append((ch, *tp.get_charbox(i)))
-        flush()
-        return out
-    finally:
-        pdf.close()
+    """Page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points); None when the
+    pdfium child fails or runs past its time limit (S-visible fix round 8: pdfium runs in `pdfium_worker`)."""
+    from . import pdfium_run
+    answer = pdfium_run.ask(data, [{'op': 'words'}])
+    return answer[0]['words'] if answer else None
 
 
 def _row_text(row):

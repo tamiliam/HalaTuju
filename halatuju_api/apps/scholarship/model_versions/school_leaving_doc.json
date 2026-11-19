@@ -1,0 +1,7 @@
+{
+  "1.0.0": {
+    "digest": "921f786b642d155d5d40a5db2dff6718367710b618c05cc49389279e43d87d93",
+    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day. Digest re-seeded 2026-11-19 (LL3 review round, before any merge): the misfiled_as pin now drops results_doc's own version line and also pins GENUINE_MIN and STPM_LISTS. Re-seeded again 2026-11-19: register brought up to main 0dea7e809 before its first merge (IPTS rule 10e1b432f put the private-arm reason opening in an offer_issuers constant with the same text, inside the misfiled_as closure; PRIVATE_ARM_OPENING is now pinned; no version bump by main).",
+    "also_ok": []
+  }
+}

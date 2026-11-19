@@ -1,0 +1,7 @@
+{
+  "1.2.0": {
+    "digest": "273309b19100892eb316999bb80cb54a1eb1fe3326541cd541dcef9a2536b379",
+    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day. Digest re-seeded 2026-11-19 (LL3 review round, before any merge): pins academic_engine._group_rows, which the pinned stpm_parse._rows_of imports lazily.",
+    "also_ok": []
+  }
+}

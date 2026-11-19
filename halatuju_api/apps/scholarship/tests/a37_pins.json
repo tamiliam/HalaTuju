@@ -690,6 +690,7 @@
     "verdict_decided_by",
     "verdict_decided_at",
     "verdict_decided_by_name",
+    "second_look",
     "decision_reopened_at",
     "decision_reopen_reason",
     "last_decision_reopen",

@@ -262,3 +262,30 @@ class TestStrUsesSignatureScorer(_Base):
             auth = vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
         self.assertEqual(auth['status'], 'genuine')
         self.assertEqual(auth['doc_seen'], 'MySTR screenshot')
+
+    def test_holistic_fallback_stores_its_model_version(self):
+        """LL3 phase 2: the holistic read's `model_version` reaches the stored block (the signature
+        result's version rides beside its probability; the holistic one has no probability)."""
+        doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type='str', storage_path=f'{self.app.id}/str/v')
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'img'), \
+             patch('apps.scholarship.vision.ocr_document', return_value={'text': STR_SALINAN, 'error': None}), \
+             patch('apps.scholarship.vision.extract_document_fields',
+                   return_value={'fields': {}, 'warnings': [], 'error': ''}), \
+             patch('apps.scholarship.genuineness.doc_genuineness',
+                   return_value={'status': 'genuine', 'doc_seen': 'MySTR screenshot', 'reason': 'real',
+                                 'model_version': '1.0.0'}):
+            auth = vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
+        self.assertEqual(auth, {'status': 'genuine', 'reason': 'real', 'doc_seen': 'MySTR screenshot',
+                                'model_version': '1.0.0'})
+
+    def test_signature_scored_str_keeps_the_results_doc_version(self):
+        from apps.scholarship.genuineness.results_doc import MODEL_VERSION
+        doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type='str', storage_path=f'{self.app.id}/str/w')
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=None), \
+             patch('apps.scholarship.vision.ocr_document', return_value={'text': GENUINE_STR_DASHBOARD, 'error': None}), \
+             patch('apps.scholarship.vision.extract_document_fields',
+                   return_value={'fields': {}, 'warnings': [], 'error': ''}):
+            auth = vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
+        self.assertEqual(auth['model_version'], MODEL_VERSION)

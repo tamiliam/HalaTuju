@@ -383,7 +383,9 @@ export const roleOrgAdmin: ManualChapter = {
         gift, and your other gifts are not affected. A gift with no layout of its own shows the
         <em> organisation layout</em>, which you set from Customise with no gift chosen; <strong>Use the
         organisation layout</strong> sends a gift back to it. A reviewer&rsquo;s own cases and a QC&rsquo;s
-        queue are not panels and cannot be switched off. Platform-only tools —
+        queue are not panels and cannot be switched off. An <strong>AI prediction</strong> block, showing how
+        often reviewers agreed with the AI, is on this page and at the foot of the <strong>Programmes</strong> page (all your
+        gifts together); its <strong>By reviewer</strong> table is for organisation admins. Platform-only tools —
         adding organisations or referral partners — never appear for you; those stay with the HalaTuju
         platform team.</>
       ),
@@ -439,7 +441,13 @@ export const roleOrgAdmin: ManualChapter = {
         <strong> ⋮</strong> then <strong>Change the short code</strong>, which shows you the current link
         beside the box. <strong>The old code keeps working.</strong> Anything already printed or sent still
         reaches this gift, so a rename never strands an applicant part-way. A code another gift uses, or used
-        to use, is refused.</>
+        to use, is refused.
+        <br /><br />
+        To change what a gift is <em>called</em>, press <strong>⋮</strong> then <strong>Change the name</strong>.
+        The English name is required; the Malay and Tamil names are optional, and where one is left blank the
+        English name is shown instead. Changing the name does not change the short code or the apply link.
+        (The name students see for one intake year is separate and is changed under <strong>Settings</strong>,
+        <strong> Intake year</strong>, <strong>Edit</strong>.)</>
       ),
     },
     {

@@ -73,6 +73,7 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
     anomalies = serializers.SerializerMethodField()
     interview_agenda = serializers.SerializerMethodField()   # V3 (#9): folded Check-3 agenda
     verdict = serializers.SerializerMethodField()
+    second_look = serializers.SerializerMethodField()   # LL2b: the QC's facts in doubt + answers
     submission_review = serializers.SerializerMethodField()
     query_sla = serializers.SerializerMethodField()
     funding_estimate = serializers.SerializerMethodField()
@@ -264,6 +265,7 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
             # S5 verdict audit / override capture (read-only; written via record-verdict).
             'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
             'verdict_decided_by', 'verdict_decided_at', 'verdict_decided_by_name',
+            'second_look',   # LL2b: {in_doubt: [...], answers: {fact: answer} | null}
             # Decision-reopen (reverse a recorded decision) state + assigned-reviewer corrections.
             'decision_reopened_at', 'decision_reopen_reason', 'last_decision_reopen',
             'assigned_to_corrections', 'bursary_agreement_enabled', 'bursary_agreement',

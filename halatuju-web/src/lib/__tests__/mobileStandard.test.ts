@@ -349,6 +349,7 @@ const RULE15_SWEPT_PARTS = [
   'src/app/admin/scholarship/[id]/view/OrgRejectPanel.tsx',
   'src/app/admin/scholarship/[id]/view/OutstandingPanel.tsx',
   'src/app/admin/scholarship/[id]/view/PostAwardPanels.tsx', 'src/app/admin/scholarship/[id]/view/QcPanel.tsx',
+  'src/app/admin/scholarship/[id]/view/FactsInDoubt.tsx',   // LL2b: the QC panel's "Facts in doubt" block
   'src/app/admin/scholarship/[id]/view/RateAndEstimate.tsx',
   'src/app/admin/scholarship/[id]/view/VerificationVerdict.tsx',
   'src/app/admin/scholarship/[id]/view/shared.tsx',
@@ -966,7 +967,9 @@ describe('the cockpit on a phone', () => {
     expect(code).toMatch(/import type \{ AdminScholarshipDetail \} from '@\/lib\/admin-api'/)
     expect(code).not.toMatch(/\bdo[A-Z]\w*\b|\bfetch\(|setOfficerVerdict|recordVerdict\(/)
     expect((code.match(/onClick=/g) ?? []).length).toBe(1)
-    expect(code).toMatch(/onClick=\{\(\) => document\.getElementById\('decision-section'\)\?\.scrollIntoView\(/)
+    // Request #70: it still only jumps; a press while something is missing also asks the card to show its alert list.
+    expect(code).toMatch(/onClick=\{\(\) => \{\s*document\.getElementById\('decision-section'\)\?\.scrollIntoView\(/)
+    expect(code).toContain('document.dispatchEvent(new Event(DECISION_ALERT_EVENT))')
     const view = readWeb('src/app/admin/scholarship/[id]/view.tsx', 'the cockpit view')
     // "Ready" only when nothing is in flight (M6b review).
     expect(view).toMatch(/decisionBarShows\(\{ app, decisionReopened, decisionRecorded, decisionLocked, canWrite, caseOpen: served\.current\.caseOpen \}\) && \(\s*<DecisionBar t=\{t\} outcome=\{officerVerdict\.overall\} canSave=\{canSave && !busy\} \/>/)
@@ -1344,6 +1347,7 @@ const PILL_SITES: Record<string, number> = {
   'src/app/admin/organisation/team/page.tsx': 1, 'src/app/sponsor/(portal)/page.tsx': 2,
   'src/app/sponsor/(portal)/my-students/[id]/page.tsx': 2, 'src/app/sponsor/(portal)/students/page.tsx': 2,
   'src/components/admin/ScholarActivity.tsx': 1,   // sprint P1: the Activity tab's All · Notes · System filter
+  'src/app/admin/scholarship/[id]/view/FactsInDoubt.tsx': 1,   // LL2b: the "AI said" / "Reviewer said" pills
 }
 describe('rule 17 — pills on a phone use the shared pill style', () => {
   const lib = readWeb('src/lib/phonePill.ts', 'the one home of rule 17')
