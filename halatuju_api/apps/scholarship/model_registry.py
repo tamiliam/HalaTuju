@@ -141,7 +141,7 @@ MODELS = {
     },
     'offer_parse': {
         'constant': (f'{_APP}/offer_parse.py', 'PARSER_VERSION'),
-        'files': [f'{_APP}/offer_parse.py', f'{_APP}/offer_parse_families.py', f'{_APP}/offer_parse_university.py'],
+        'files': [f'{_APP}/offer_{m}.py' for m in ('parse', 'parse_families', 'parse_university', 'ums_refusal', 'owner_words')],
         'pins': [(f'{_APP}/vision/sanitize.py', '_normalise_reporting_date'),
                  (f'{_APP}/card_display.py', 'looks_like_date'),
                  (f'{_APP}/card_display.py', 'looks_like_clause_number'),

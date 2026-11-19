@@ -1,5 +1,14 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-20 — OCR-first S1c: a UMS letter locks only on the owner's words (owner method change)
+
+Branch ocr-s1c, not pushed. The `ua:UMS` lane stays off.
+
+- **An allow-list, not a deny-list.** As for SPM, NRIC and EPF, the owner gave the exact phrases every genuine UMS offer letter prints (11). A UMS letter may lock by rules only when its visible text shows all 11; otherwise it goes to the AI read. The withdrawal and status checks stay as an extra layer (refusing more is safe).
+- **Matching is strict by decision:** case-insensitive and flexible whitespace between words only. No punctuation, OCR or glue loosening. Measured cost: no digital PDF in the cache shows all 11 (phrase 1 is not in their text layer; phrases 5 and 11 differ by spaces around punctuation), so wiring the check as given loses every digital UMS lock. Any loosening is the owner's call.
+- **Generic per issuer:** the phrases live as data in `offer_owner_words.OWNER_WORDS`, keyed by rules lane, so later universities add a row, not code. A refusal records phrase numbers only, never text.
+- **Confirmation letters are untouched:** the two cached UMS confirmation letters are not in the UMS family and never enter the lane (they show 3 of 11 phrases); their confirmation reading (recognised, SUSPECT) is unchanged.
+
 ## 2026-11-19 — OCR-first S6: new rules lanes ship switched off; `parser_version` records the lane
 
 Branch ocr-s6, not pushed. No migration. Services: api.

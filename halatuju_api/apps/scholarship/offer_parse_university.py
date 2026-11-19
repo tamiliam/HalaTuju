@@ -54,6 +54,8 @@ import re
 from .offer_parse import (_DMY_RE, _IC, _IC_END, _MALAY_MONTH, _NUM_DATE_RE, _decimal_digits, _name_ok, _norm_nric,
                           first_date)
 from .offer_parse_families import _ENDS_MARKER, _blocked
+#: The refusal checks live in `offer_ums_refusal` since the owner-words split (2026-11-20).
+from .offer_ums_refusal import _STATUS, _squeeze, _withdrawn
 
 #: Recorded on a rules read (`rules_lane`) — the lane switch (`offer_exact.ocr_first_lanes`) names it.
 LANE = 'ua:UMS'
@@ -73,11 +75,6 @@ _DETECT = re.compile(_TITLE_WORDS, re.IGNORECASE)
 #: The title STARTS its line (whitespace normalised): "PEMBATALAN TAWARAN KEMASUKAN ..." is not an offer.
 _TITLE = re.compile(r'^' + _TITLE_WORDS + r'\s{0,3},?\s{0,3}(SESI\s{1,3}[0-9IV]{1,3}\s{0,2}-\s{0,2}20\d{2}\s{0,2}/\s{0,2}20\d{2})'
                     r'\s*$', re.IGNORECASE)
-_STATUS = re.compile(r'SURAT\s{1,3}PENGESAHAN', re.IGNORECASE)
-#: A letter that withdraws, defers, refuses or answers an offer (review round 1): any of these words in the head
-#: or the title line means it is not the offer itself. TERBATAL / TIDAK BERJAYA (S1c): see `_CANCEL_WORD`.
-_NOT_AN_OFFER = re.compile(r'\b(?:PEMBATALAN|PENANGGUHAN|PENOLAKAN|TARIK\s{1,3}BALIK|RAYUAN|MAKLUM\s{0,3}BALAS|'
-                           r'TERBATAL|TIDAK\s{1,3}BERJAYA)\b', re.IGNORECASE)
 _DATE = r'\d{1,2}\s{1,3}' + _MALAY_MONTH + r'\s{1,3}20\d{2}'
 #: The offer-date line ("Tarikh : 15 Ogos 2026"; Vision reads "Tankh"), or the label alone with the
 #: date on the next line (":08 September 2025").
@@ -122,7 +119,7 @@ _REPORT_LABEL = re.compile(r'Tarikh\s{1,3}Lapor\s{1,3}Diri', re.IGNORECASE)
 #: S1c round 2: a reporting date not yet fixed ("Akan dimaklumkan", "TBA") gives no date, and another label line
 #: ("Tarikh Akhir Bayaran : ...") ends the window (a lone ':' value line and the venue line are not labels).
 _NO_DATE = re.compile(r'\b(?:AKAN\s{1,3}(?:DI)?(?:MAKLUM(?:KAN)?|UMUM(?:KAN)?|TETAPKAN|BERITAHU|HUBUNGI)|'
-                      r'DIMAKLUMKAN\s{1,3}KEMUDIAN|BELUM\s{1,3}(?:DI)?TETAP(?:KAN)?|TBA|TBC|'
+                      r'DIMAKLUMKAN\s{1,3}KEMUDIAN|BELUM\s{1,3}(?:DI)?TETAP(?:KAN)?|TBA|TBC|TBD|DITENTUKAN|'
                       r'TO\s{1,3}BE\s{1,3}(?:ANNOUNCED|CONFIRMED|ADVISED))\b', re.IGNORECASE)
 _FIELD_LABEL = re.compile(r'^[A-Za-z][A-Za-z/().\'& ]{0,60}?\s{0,40}[:：]')
 #: A second date `first_date` misses (S1c round 2): "29 September", "29hb", "29.09.2031", "29-9-31".
@@ -151,45 +148,6 @@ _ADDRESS_START = re.compile(r'(?:NO|NOMBOR|LOT|BATU|BT|BLOK|BLOCK|SIMPANG|SIMP|P
                             r'DESA|ROAD|RD|STREET|ST|LANE|PERSIARAN|LEBUH|LEBUHRAYA|JABATAN|SEKOLAH|SK|SMK)\.?$', re.IGNORECASE)
 #: A postcode, whole or split. "WORD 1234 JLN 12" stays an address: one genuine scanned letter's has that shape.
 _POSTCODE = re.compile(r'(?<!\d)\d{2}\s?\d{3}(?!\d)')
-#: A withdrawal said in the body ("Tawaran ini adalah DIBATALKAN", "telah DITARIK BALIK"), word-bounded: never
-#: an offer to lock. Added by S1c (DITOLAK, DITARIK SEMULA, TIDAK LAGI SAH, SURAT TIDAK BERJAYA), its round 1
-#: (TIDAK SAH, DIGUGURKAN, DIMANSUHKAN, LUPUT, GAGAL) and round 2 (DITAMATKAN ... DITARIK). Measured: no cached
-#: UMS letter prints any of them on ANY page (their conditional clause says "Kegagalan", "terbatal").
-_WITHDRAWN = re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}TARIK\s{1,3}(?:BALIK|SEMULA)|'
-                        r'DI\s{0,3}TOLAK|TIDAK\s{1,3}LAGI\s{1,3}SAH|SURAT\s{1,3}TIDAK\s{1,3}BERJAYA|TIDAK\s{1,3}SAH|'
-                        r'DIGUGURKAN|DIMANSUHKAN|LUPUT|GAGAL|'
-                        r'DITAMATKAN|PENAMATAN|TIDAK\s{1,3}(?:LAGI\s{1,3})?BERKUAT\s{0,3}KUASA|WITHDRAWN|CANCELL?ED|'
-                        r'REVOKED|TIDAK\s{1,3}AKTIF|TIDAK\s{1,3}TERPAKAI|DITARIK)\b', re.IGNORECASE)
-#: The same words with spaces, dots and dashes taken out ("D I B A T A L K A N", "TIDAK  .  BERJAYA"; S1c
-#: round 1). Measured: none is in the squeezed text of ANY page of the 58 cached UMS letters. A bare DITARIK is
-#: never a stem: squeezed, "DI TARIKH" holds it.
-_WITHDRAWN_STEMS = ('DIBATALKAN', 'PEMBATALAN', 'TIDAKBERJAYA', 'DITARIKBALIK', 'DITARIKSEMULA', 'PENARIKANBALIK',
-                    'TIDAKLAGISAH', 'DITAMATKAN', 'TIDAKBERKUATKUASA', 'TIDAKLAGIBERKUATKUASA', 'WITHDRAWN',
-                    'CANCELLED', 'CANCELED', 'REVOKED', 'TIDAKAKTIF', 'TIDAKTERPAKAI')
-_SQUEEZE_OUT = re.compile(r'[\s.\-–—]')
-#: TERBATAL or TARIK BALIK SAID of this letter ("Status : TERBATAL", "adalah TERBATAL dan ..."; S1c rounds 1-2).
-#: A clause ends at a line break, ';', ':' or '.'; the word escapes only when SEKIRANYA / JIKA / JIKALAU / APABILA
-#: comes BEFORE it in its clause, or in "akan terbatal" / "terbatal dengan sendirinya" (the wording of all 36
-#: cached letters that print TERBATAL). AKAN, BOLEH and BERHAK no longer excuse it.
-_CANCEL_WORD = re.compile(r'\bTERBATAL\b|\b(?:MENARIK|DITARIK|TARIK)\s{0,3}BALIK\b', re.IGNORECASE)
-_CONDITION = re.compile(r'\b(?:SEKIRANYA|JIKA|JIKALAU|APABILA)\b', re.IGNORECASE)
-_CONDITIONAL_CANCEL = re.compile(r'\bAKAN\s{1,3}TERBATAL\b|\bTERBATAL\s{1,3}DENGAN\s{1,3}SENDIRINYA\b', re.IGNORECASE)
-_CLAUSE_END = re.compile(r'[\n;:.]')
-
-
-def _cancel_said(text: str) -> bool:
-    """True when TERBATAL or TARIK BALIK is said of the letter, not as a condition (`_CANCEL_WORD`)."""
-    excused = [m.span() for m in _CONDITIONAL_CANCEL.finditer(text)]
-    for m in _CANCEL_WORD.finditer(text):
-        if any(a <= m.start() and m.end() <= b for a, b in excused):
-            continue
-        clause = _CLAUSE_END.split(text[max(0, m.start() - 300):m.start()])[-1]
-        if not _CONDITION.search(clause):
-            return True
-    return False
-#: The ONE space between two single letters ("D I B A T A L K A N" -> "DIBATALKAN"; "D I BATALKAN" -> "DI
-#: BATALKAN"); a wider gap is the gap between two spaced words ("S U R A T  T I D A K" -> "SURAT  TIDAK").
-_LETTER_GAP = re.compile(r'(?<![A-Za-z])([A-Za-z])[^\S\n](?=[A-Za-z](?![A-Za-z]))')
 #: A day number standing alone ("27", "28/" — not inside "2031").
 _DAY_NUMBER = re.compile(r'(?<!\d)\d{1,2}(?!\d)')
 #: A word or mark that joins two days into a range or a list (S1c, MED-1): on a line ABOVE the date in the
@@ -221,39 +179,8 @@ def _one_space(s: str) -> str:
     return ' '.join((s or '').split())
 
 
-def _squeeze(s: str) -> str:
-    """Spaced letters joined ("D I B A T A L K A N" -> "DIBATALKAN"), for the withdrawal words (S1c)."""
-    return _LETTER_GAP.sub(r'\1', s or '')
-
-
 def _alnum_key(s: str) -> str:
     return re.sub(r'[^A-Z0-9()]', '', (s or '').upper())
-
-
-def _withdrawn(source: str, head) -> bool:
-    """True when the letter withdraws, defers, refuses or answers an offer rather than making one: a head word
-    at or above the title, a withdrawal word anywhere (also with its letters spaced, or squeezed of spaces, dots
-    and dashes), or TERBATAL / TARIK BALIK said with no condition (`_cancel_said`)."""
-    key = _SQUEEZE_OUT.sub('', source.upper())
-    squeezed = _squeeze(source)
-    return bool(any(_NOT_AN_OFFER.search(ln) or _NOT_AN_OFFER.search(_squeeze(ln)) for ln in head)
-                or _WITHDRAWN.search(source) or _WITHDRAWN.search(squeezed)
-                or any(stem in key for stem in _WITHDRAWN_STEMS)
-                or _cancel_said(source) or _cancel_said(squeezed))
-
-
-def letter_refusal(text: str) -> str:
-    """Why a digital letter's FULL text (every page) refuses its page-1 layout read's lock (S1c round 2):
-    'status_letter' ("SURAT PENGESAHAN" anywhere), 'not_an_offer' (`_withdrawn` on any page; head words only
-    above the title line), 'too_long' (past ``MAX_LETTER_CHARS``); '' when none."""
-    text = text or ''
-    if len(text) > MAX_LETTER_CHARS:
-        return 'too_long'
-    if _STATUS.search(text):
-        return 'status_letter'
-    lines = _text_lines(text)
-    title_at = next((i for i, ln in enumerate(lines) if _TITLE.search(_one_space(ln))), -1)
-    return 'not_an_offer' if _withdrawn(text, lines[:title_at + 1] if title_at >= 0 else []) else ''
 
 
 def _title(lines):
@@ -508,7 +435,9 @@ def _reporting_date(lines):
         return ''
     i = at[0]
     tail = _REPORT_LABEL.split(lines[i], maxsplit=1)[1]
-    held = False                                 # an earlier part held a day number or a joiner (S1c, MED-1)
+    if tail.strip(' \t:：') and not first_date(tail):
+        return ''                                # the label's own value is not a date ("TBD"; round 3 blocker 2)
+    held = False                                # an earlier part held a day number or a joiner (S1c, MED-1)
     window = [tail] + lines[i + 1:i + 7]
     for k, part in enumerate(window):
         if _NO_DATE.search(part):

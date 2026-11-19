@@ -6,8 +6,8 @@ Synthetic twins only — invented names, ICs and places (`test_no_gitignored_cor
 from django.test import SimpleTestCase
 
 from apps.scholarship.offer_parse import diagnose
-from apps.scholarship.offer_parse_university import (MAX_LETTER_CHARS, MAX_LINES, letter_refusal, name_in_plain,
-                                                      read_ums)
+from apps.scholarship.offer_parse_university import MAX_LETTER_CHARS, MAX_LINES, name_in_plain, read_ums
+from apps.scholarship.offer_ums_refusal import letter_refusal
 from apps.scholarship.tests.test_offer_parse_university import NAME, PROG, ums
 
 OTHER = 'Diploma Sains Marin'

@@ -371,7 +371,8 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str) -> d
     and the layout's name must stand as its own words there (`name_in_plain`; guard ``name_not_plain``).
     S1c review round 2: the status and withdrawal checks also read the FULL letter text, every page
     (`letter_refusal`), so a page-2 cancellation or status letter refuses too."""
-    from .offer_parse_university import LANE, letter_refusal, name_in_plain, read_ums
+    from .offer_parse_university import LANE, name_in_plain, read_ums
+    from .offer_ums_refusal import letter_refusal
     if out['portal']:
         return out
     if page1_text.strip() and not page1_layout.strip():
