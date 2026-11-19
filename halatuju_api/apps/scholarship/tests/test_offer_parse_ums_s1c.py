@@ -6,7 +6,8 @@ Synthetic twins only — invented names, ICs and places (`test_no_gitignored_cor
 from django.test import SimpleTestCase
 
 from apps.scholarship.offer_parse import diagnose
-from apps.scholarship.offer_parse_university import MAX_LINES, name_in_plain, read_ums
+from apps.scholarship.offer_parse_university import (MAX_LETTER_CHARS, MAX_LINES, letter_refusal, name_in_plain,
+                                                      read_ums)
 from apps.scholarship.tests.test_offer_parse_university import NAME, PROG, ums
 
 OTHER = 'Diploma Sains Marin'
@@ -110,7 +111,7 @@ class TestMedCWithdrawal(SimpleTestCase):
         """Measured: all 36 cached letters that print TERBATAL say it as a condition."""
         for tail in ('Sekiranya saudara tidak mendaftar, tawaran ini adalah terbatal dengan sendirinya.',
                      'Tawaran ini akan TERBATAL sekiranya saudara tidak mendaftar.',
-                     'Universiti berhak menarik balik tawaran ini jika maklumat saudara palsu.'):
+                     'Jika maklumat saudara palsu, Universiti berhak menarik balik tawaran ini.'):
             with self.subTest(tail=tail):
                 self.assertEqual(read_ums(ums() + tail + '\n')[1], '')
 
@@ -167,3 +168,116 @@ class TestFLineCap(SimpleTestCase):
     def test_carriage_returns_count_as_lines(self):
         self.assertEqual(read_ums(ums() + '.\r' * MAX_LINES)[1], 'too_long')
         self.assertEqual(read_ums(ums() + '.\r\n' * MAX_LINES)[1], 'too_long')
+
+
+class TestReviewRoundTwo(SimpleTestCase):
+    """S1c review round 2 (2026-11-20). Measured on the cached corpus under pypdf 5.9.0 and 6.21.4: every
+    outcome unchanged, 0 locks lost; no new withdrawal word or stem is on any page of the 58 UMS letters."""
+
+    # Finding 1: a clause ends at a line break, ';', ':' or '.'; only a condition word BEFORE the word in
+    # its clause (or "akan terbatal" / "terbatal dengan sendirinya") excuses it.
+    def test_withdrawal_sentences_that_escaped_through_condition_words_refuse(self):
+        for tail in ('Oleh itu, tawaran kemasukan saudara adalah TERBATAL dan tempat akan ditawarkan kepada calon lain.',
+                     'Tawaran ini telah terbatal; universiti berhak mengisi tempat ini.',
+                     'Universiti menarik balik tawaran ini dan saudara tidak boleh mendaftar.',
+                     'TAWARAN TERBATAL\nSekiranya ada pertanyaan, sila hubungi kami.',
+                     'Sekiranya ada pertanyaan sila hubungi kami.\nTawaran ini TERBATAL.',
+                     'Status :      TERBATAL\nSila hubungi kami jika perlu',
+                     'Jika perlu: tawaran ini TERBATAL', 'Tawaran ini T E R B A T A L.',
+                     'Universiti berhak menarik balik tawaran ini jika maklumat saudara palsu.'):
+            with self.subTest(tail=tail):
+                self.assertEqual(read_ums(ums() + tail + '\n')[1], 'not_an_offer')
+
+    def test_the_genuine_conditional_wordings_still_lock(self):
+        for tail in ('Sekiranya saudara tidak mendaftar,\ntawaran ini adalah terbatal dengan sendirinya.',
+                     'Tawaran ini akan\nterbatal sekiranya saudara tidak mendaftar.',
+                     'Apabila saudara tidak hadir, tawaran ini terbatal.'):
+            with self.subTest(tail=tail):
+                self.assertEqual(read_ums(ums() + tail + '\n')[1], '')
+
+    # Finding 2: more withdrawal words.
+    def test_the_round_two_withdrawal_words_refuse(self):
+        for tail in ('Tawaran kemasukan saudara telah DITAMATKAN.', 'PENAMATAN TAWARAN',
+                     'Tawaran ini tidak lagi berkuat kuasa.', 'Tawaran ini TIDAK BERKUATKUASA.',
+                     'This offer is hereby withdrawn.', 'This offer has been cancelled.', 'This offer is revoked.',
+                     'Status Tawaran :      TIDAK AKTIF', 'Status Tawaran :      DITARIK', 'Tawaran ini tidak terpakai.',
+                     'C A N C E L L E D', 'D I T A M A T K A N'):
+            with self.subTest(tail=tail):
+                self.assertEqual(read_ums(ums() + tail + '\n')[1], 'not_an_offer')
+
+    def test_tarikh_is_not_ditarik(self):
+        self.assertEqual(read_ums(ums() + 'Sila hadir di tarikh tersebut\n')[1], '')
+
+    # Finding 3: a digital letter's FULL text (every page) is read for status and withdrawal words.
+    def test_a_page_two_withdrawal_or_status_letter_refuses_a_layout_read(self):
+        for page2, guard in (('PEMBATALAN TAWARAN KEMASUKAN', 'not_an_offer'),
+                             ('Tawaran ini telah DIBATALKAN.', 'not_an_offer'),
+                             ('SURAT PENGESAHAN PELAJAR', 'status_letter'),
+                             ('Tawaran ini TERBATAL', 'not_an_offer')):
+            with self.subTest(page2=page2):
+                d = diagnose(ums() + '\n' + page2 + '\n', page1_text=ums(), page1_layout=ums())
+                self.assertEqual(d['guard'], guard)
+                self.assertIsNone(d['locked'])
+
+    def test_a_clean_page_two_or_a_conditional_clause_still_locks(self):
+        for page2 in ('Sila bawa dokumen asal semasa pendaftaran.',
+                      'Sekiranya saudara tidak mendaftar, tawaran ini adalah\nterbatal dengan sendirinya.'):
+            with self.subTest(page2=page2):
+                d = diagnose(ums() + '\n' + page2 + '\n', page1_text=ums(), page1_layout=ums())
+                self.assertEqual(d['locked']['candidate_name'], NAME)
+
+    def test_letter_refusal_caps_the_whole_letter(self):
+        self.assertEqual(letter_refusal('x\n' * MAX_LETTER_CHARS), 'too_long')
+        self.assertEqual(letter_refusal(ums()), '')
+
+    # Finding 4: another field's label ends the reporting window; a "not yet fixed" value reads no date.
+    def test_another_labels_date_is_never_the_reporting_date(self):
+        for report in ('Akan dimaklumkan kemudian\nTarikh Pendaftaran Kursus :      5 Oktober 2031',
+                       'Sila rujuk lampiran\nTarikh Akhir Bayaran :      1 September 2031',
+                       '\nTarikh Akhir Bayaran :      1 September 2031', 'TBA\n28 September 2031',
+                       'Akan dimaklumkan\n28 September 2031'):
+            with self.subTest(report=report):
+                _refused(self, ums(report=report), 'reporting_date')
+
+    def test_the_venue_line_and_a_lone_colon_do_not_end_the_window(self):
+        for report in ('\n:\n28 September 2031', '\nTempat / Kolej :      Dewan Zantharion\n28 September 2031'):
+            with self.subTest(report=report):
+                f, reason = read_ums(ums(report=report))
+                self.assertEqual(f['reporting_date'], '28 Sep 2031')
+
+    # Finding 5 and LOW: a name cut at an address that holds a number, a slash or a bracket.
+    def test_a_name_tail_before_a_numbered_address_refuses(self):
+        for nxt in ('HAKIM SIMPANG 3', 'HAKIM PEKAN 3', 'HAKIM FELDA SAHABAT 16', 'HAKIM P.O. BOX 12',
+                    'HAKIM KUARTERS 12', 'HAKIM 88 000 KOTA KINABALU', 'HAKIM BLOCK A3', 'HAKIM SRI 12 JALAN 5',
+                    'HAKIM Kad Pengenalan :      010203-14-5678', 'HAKIM/ KG ZANTHARION', 'HAKIM (KG ZANTHARION)'):
+            with self.subTest(nxt=nxt):
+                _refused(self, ums(name=f'MUHAMMAD AMIRUL\n{nxt}'), 'candidate_name')
+
+    def test_an_address_line_or_a_house_number_after_one_word_still_locks(self):
+        """Kept gap: "WORD 12 JALAN 5" (a word, a house number, a street word) is the shape of one genuine
+        scanned letter's address line, so a name tail in that shape still locks."""
+        for nxt in ('SIMPANG 3, 89000 KUDAT', 'FELDA SAHABAT 16', 'P.O. BOX 12', 'KUARTERS 12 JALAN X',
+                    'HAKIM 12 JALAN 5'):
+            with self.subTest(nxt=nxt):
+                f, reason = read_ums(ums(name=f'{NAME}\n{nxt}'))
+                self.assertEqual((reason, f['candidate_name']), ('', NAME))
+
+    # LOW: programme label forms.
+    def test_more_programme_label_forms_are_checked(self):
+        for label in ('Program Baharu      {v}', 'Program Ditawarkan      {v}', 'Program ;      {v}',
+                      'Program -      {v}', 'Program ：      {v}', 'Course :      {v}', 'Jurusan :      {v}',
+                      'Bidang :      {v}', 'Program Baru\n:      {v}', 'P r o g r a m :      {v}'):
+            with self.subTest(label=label):
+                _refused(self, ums() + label.format(v=OTHER) + '\n', 'programme')
+                f, reason = read_ums(ums() + label.format(v=PROG) + '\n')
+                self.assertEqual((reason, f['programme']), ('', PROG))
+
+    def test_a_table_heading_is_not_a_label(self):
+        text = ums() + 'Nama Program Pengajian      Kod      Tempoh Pengajian\n'
+        self.assertEqual(read_ums(text)[1], '')
+
+    # LOW: second-date forms.
+    def test_a_second_date_in_other_forms_is_a_list(self):
+        for second in ('29 September', '29hb September 2031', '29hb', '29.09.2031', '29-9-2031'):
+            with self.subTest(second=second):
+                _refused(self, ums(report=f'28 September 2031 (Kumpulan A)\n{second} (Kumpulan B)'), 'reporting_date')

@@ -66,6 +66,7 @@ CAMPUSES = ('Kota Kinabalu', 'Antarabangsa Labuan', 'Labuan', 'Sandakan')
 #: runs (200,000 hostile characters: about 2.5 s before, under 0.001 s now).
 MAX_CHARS = 20_000
 MAX_LINES = 250
+MAX_LETTER_CHARS = 10 * MAX_CHARS          # the whole letter, every page (S1c round 2: `letter_refusal`)
 
 _TITLE_WORDS = r'TAWARAN\s{1,3}KEMASUKAN\s{1,3}KE\s{1,3}UNIVERSITI\s{1,3}MALAYSIA\s{1,3}SABAH'
 _DETECT = re.compile(_TITLE_WORDS, re.IGNORECASE)
@@ -73,10 +74,8 @@ _DETECT = re.compile(_TITLE_WORDS, re.IGNORECASE)
 _TITLE = re.compile(r'^' + _TITLE_WORDS + r'\s{0,3},?\s{0,3}(SESI\s{1,3}[0-9IV]{1,3}\s{0,2}-\s{0,2}20\d{2}\s{0,2}/\s{0,2}20\d{2})'
                     r'\s*$', re.IGNORECASE)
 _STATUS = re.compile(r'SURAT\s{1,3}PENGESAHAN', re.IGNORECASE)
-#: A letter that withdraws, defers, refuses or answers an offer (review round 1): any of these words above
-#: the body (the head and the title line) means it is not the offer itself, so it never locks.
-#: TERBATAL and TIDAK BERJAYA (S1c) count only here: 36 of the 58 cached UMS letters print TERBATAL in a
-#: conditional clause ("tawaran ini akan TERBATAL sekiranya ..."), so neither is a word to refuse in the body.
+#: A letter that withdraws, defers, refuses or answers an offer (review round 1): any of these words in the head
+#: or the title line means it is not the offer itself. TERBATAL / TIDAK BERJAYA (S1c): see `_CANCEL_WORD`.
 _NOT_AN_OFFER = re.compile(r'\b(?:PEMBATALAN|PENANGGUHAN|PENOLAKAN|TARIK\s{1,3}BALIK|RAYUAN|MAKLUM\s{0,3}BALAS|'
                            r'TERBATAL|TIDAK\s{1,3}BERJAYA)\b', re.IGNORECASE)
 _DATE = r'\d{1,2}\s{1,3}' + _MALAY_MONTH + r'\s{1,3}20\d{2}'
@@ -99,12 +98,15 @@ _SENTENCE = re.compile(r'untuk\s{1,80}mendapat\s{1,80}(\S.{4,400}?)\s{1,80}dan\s
 _DEGREE = re.compile(r'^(?:IJAZAH\s)?SARJANA\sMUDA\s.+\sDENGAN\sKEPUJIAN(?:\s\(.+\))?$|^DIPLOMA\s', re.IGNORECASE)
 #: The programme's own label line ("Program : X"; a scanned letter prints "Program" alone, the value elsewhere).
 _PROGRAM_LINE = re.compile(r'^Program\s{0,3}(?::\s{0,3}(.*))?$', re.IGNORECASE)
-#: ANY programme label ("Program :", "Program Baharu :", "Nama Program :" — S1c; review round 1: "1. Program :",
-#: "Programme :", "Kursus :", "Bidang Pengajian :", "Butiran Program :", "NamaProgram :", a bare "Program" or
-#: "Program Baru"): group 1 is its value (None or '' when the value is on the next line). Never "Kod Program".
+#: ANY programme label ("Program :", "Nama Program :", "1. Program :", "Kursus :", "Course :", a bare "Program"
+#: or "Program Baru"; S1c rounds 1-2): group 1 is its value (None or '' when on the next line). Never "Kod Program".
 _ANY_PROGRAM = re.compile(r'^(?:\(?\d{1,2}[.)]?\s{0,3}|\(?[A-Za-z][.)]\s{0,3})?(?:(?:NAMA|BUTIRAN)\s{0,3})?'
-                          r'(?:PROGRAM(?:ME)?|KURSUS|BIDANG\s{1,3}PENGAJIAN)(?![A-Za-z])'
-                          r'(?:[^:]{0,60}:\s{0,3}(.*)|\s{0,3}(?:BAHARU|BARU)?)$', re.IGNORECASE)
+                          r'(?:PROGRAM(?:ME)?|KURSUS|BIDANG(?:\s{1,3}PENGAJIAN)?|COURSE|JURUSAN)(?![A-Za-z])'
+                          r'(?:[^:]{0,60}:\s{0,3}(.*)|\s{0,3}(' + r'BAHARU|BARU|DITAWARKAN' + r')?)$',
+                          re.IGNORECASE)
+#: S1c round 2: ';', a full-width colon or a spaced dash after the label words is its colon ("Program - X").
+_LABEL_SEP = re.compile(r'^([^:;\-–]{1,60}?)\s{0,3}(?:[;：]|\s[-–](?=\s|$))')
+_SEPS = (':', '：', ';', '-', '–')
 #: A line that starts a programme name (a scanned letter's programme value line).
 _DEGREE_START = re.compile(r'^(?:IJAZAH\s)?SARJANA\sMUDA\b|^DIPLOMA\b', re.IGNORECASE)
 #: A range separator between two date parts: a dash or "(se)hingga" with a digit after it.
@@ -117,6 +119,15 @@ _DAY_RANGE = re.compile(r'(?<!\d)(\d{1,2})(?:\s{1,3}(' + _MALAY_MONTH + r'))?(?:
 #: second date in the reporting window (S1c review round 1, LOW-E).
 _RANGE_END = re.compile(r'^\s{0,3}(?:\([^)\n]{0,20}\)\s{0,3})?(?:[-–]|(?:SE)?HINGGA)\s{0,3}' + _DATE, re.IGNORECASE)
 _REPORT_LABEL = re.compile(r'Tarikh\s{1,3}Lapor\s{1,3}Diri', re.IGNORECASE)
+#: S1c round 2: a reporting date not yet fixed ("Akan dimaklumkan", "TBA") gives no date, and another label line
+#: ("Tarikh Akhir Bayaran : ...") ends the window (a lone ':' value line and the venue line are not labels).
+_NO_DATE = re.compile(r'\b(?:AKAN\s{1,3}(?:DI)?(?:MAKLUM(?:KAN)?|UMUM(?:KAN)?|TETAPKAN|BERITAHU|HUBUNGI)|'
+                      r'DIMAKLUMKAN\s{1,3}KEMUDIAN|BELUM\s{1,3}(?:DI)?TETAP(?:KAN)?|TBA|TBC|'
+                      r'TO\s{1,3}BE\s{1,3}(?:ANNOUNCED|CONFIRMED|ADVISED))\b', re.IGNORECASE)
+_FIELD_LABEL = re.compile(r'^[A-Za-z][A-Za-z/().\'& ]{0,60}?\s{0,40}[:：]')
+#: A second date `first_date` misses (S1c round 2): "29 September", "29hb", "29.09.2031", "29-9-31".
+_LOOSE_DATE = re.compile(r'(?<!\d)\d{1,2}\s{0,3}(?:HB\.?\s{0,3})?' + _MALAY_MONTH + r'\b|(?<!\d)\d{1,2}\s{0,3}HB\b|'
+                         r'(?<![\d.])\d{1,2}[./-]\d{1,2}[./-]\d{2,4}(?![\d.])', re.IGNORECASE)
 _VENUE = re.compile(r'^Tempat(?:\s{0,3}/\s{0,3}Kolej|\s{1,3}Lapor\s{1,3}Diri)?\s{0,3}:\s{0,3}(\S.*)$', re.IGNORECASE)
 _CAMPUS = re.compile(r'^Kampus\s{0,3}:\s{0,3}(\S.*)$', re.IGNORECASE)
 _CAMPUS_LABEL = re.compile(r'^Kampus\s{0,3}:?$', re.IGNORECASE)
@@ -129,39 +140,51 @@ _STREET_WORD = re.compile(r'\b(?:KG|KAMPUNG|JALAN|JLN|LORONG|LRG|TAMAN|TMN|LOT|P
 #: A name connector: a line holding one is (part of) a name, whatever else it holds (review round 2).
 #: '@' (an alias: "MUHAMMAD AMIRUL" / "@ HAKIM") joins a name too (S1c).
 _CONNECTOR = re.compile(r'\b(?:BIN|BINTI|ANAK|A\s{0,2}/\s{0,2}[LP]|[SD]\s{0,2}/\s{0,2}O)\b|@', re.IGNORECASE)
-#: Where a line under the name may cut a name's tail from its address (S1c review round 1, MED-B): a comma,
-#: a ';' or a dash ("HAKIM, KG ...", "HAKIM; JALAN ...", "HAKIM - KG ...").
-_CUT = re.compile(r'[,;\-–—]')
-#: A withdrawal said in the body ("Tawaran ini adalah DIBATALKAN", "telah DITARIK BALIK"), word-bounded
-#: (review round 2): never an offer to lock. No UMS letter in the corpus prints any of these words.
-#: S1c adds DITOLAK, DITARIK SEMULA, TIDAK LAGI SAH, the SURAT TIDAK BERJAYA heading and BATALKAN split from
-#: its DI (no cached UMS letter prints any); spaced letters ("D I B A T A L K A N") are read squeezed.
-#: S1c review round 1 (MED-C) adds the words TIDAK SAH, DIGUGURKAN, DIMANSUHKAN, LUPUT and GAGAL (measured: no
-#: cached UMS letter prints any of them on ANY page; their conditional clause says "Kegagalan", "terbatal").
+#: Where a line under the name may cut a name's tail from its address (S1c rounds 1-2): "HAKIM, KG ...".
+_CUT = re.compile(r'[,;\-–—/(]')
+#: S1c round 2: a line under the name whose FIRST word is name-like and that later holds a digit or a label colon
+#: ("HAKIM SIMPANG 3", "HAKIM 88 000 KOTA") may be the name's tail; it is an address only when that word is here.
+_ADDRESS_START = re.compile(r'(?:NO|NOMBOR|LOT|BATU|BT|BLOK|BLOCK|SIMPANG|SIMP|PEKAN|FELDA|FELCRA|KUARTERS|QUARTERS|KUARTER|'
+                            r'P\.?\s?O\.?|PO|PETI|KG|KPG|KAMPUNG|KAMPONG|JALAN|JLN|LORONG|LRG|TAMAN|TMN|UNIT|ARAS|TINGKAT|'
+                            r'TKT|KM|RUMAH|PERUMAHAN|LADANG|ESTET|MUKIM|BANDAR|KOTA|PUSAT|WISMA|MENARA|PANGSAPURI|APARTMENT|'
+                            r'APT|FLAT|PPR|KONDO|KONDOMINIUM|BANGUNAN|BLK|BOX|BAG|LOCKED|BEG|MILE|MILES|SEKSYEN|SEK|SECTION|'
+                            r'DESA|ROAD|RD|STREET|ST|LANE|PERSIARAN|LEBUH|LEBUHRAYA|JABATAN|SEKOLAH|SK|SMK)\.?$', re.IGNORECASE)
+#: A postcode, whole or split. "WORD 1234 JLN 12" stays an address: one genuine scanned letter's has that shape.
+_POSTCODE = re.compile(r'(?<!\d)\d{2}\s?\d{3}(?!\d)')
+#: A withdrawal said in the body ("Tawaran ini adalah DIBATALKAN", "telah DITARIK BALIK"), word-bounded: never
+#: an offer to lock. Added by S1c (DITOLAK, DITARIK SEMULA, TIDAK LAGI SAH, SURAT TIDAK BERJAYA), its round 1
+#: (TIDAK SAH, DIGUGURKAN, DIMANSUHKAN, LUPUT, GAGAL) and round 2 (DITAMATKAN ... DITARIK). Measured: no cached
+#: UMS letter prints any of them on ANY page (their conditional clause says "Kegagalan", "terbatal").
 _WITHDRAWN = re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}TARIK\s{1,3}(?:BALIK|SEMULA)|'
                         r'DI\s{0,3}TOLAK|TIDAK\s{1,3}LAGI\s{1,3}SAH|SURAT\s{1,3}TIDAK\s{1,3}BERJAYA|TIDAK\s{1,3}SAH|'
-                        r'DIGUGURKAN|DIMANSUHKAN|LUPUT|GAGAL)\b', re.IGNORECASE)
-#: The same words searched with spaces, dots and dashes taken out ("D I B A T A L K A N", "DI-BATAL-KAN",
-#: "TIDAK  .  BERJAYA"; S1c review round 1, MED-C). Measured: none is in the squeezed text of ANY page of the
-#: 58 cached UMS letters, so a word boundary crossed by the squeeze has not cost a genuine letter.
+                        r'DIGUGURKAN|DIMANSUHKAN|LUPUT|GAGAL|'
+                        r'DITAMATKAN|PENAMATAN|TIDAK\s{1,3}(?:LAGI\s{1,3})?BERKUAT\s{0,3}KUASA|WITHDRAWN|CANCELL?ED|'
+                        r'REVOKED|TIDAK\s{1,3}AKTIF|TIDAK\s{1,3}TERPAKAI|DITARIK)\b', re.IGNORECASE)
+#: The same words with spaces, dots and dashes taken out ("D I B A T A L K A N", "TIDAK  .  BERJAYA"; S1c
+#: round 1). Measured: none is in the squeezed text of ANY page of the 58 cached UMS letters. A bare DITARIK is
+#: never a stem: squeezed, "DI TARIKH" holds it.
 _WITHDRAWN_STEMS = ('DIBATALKAN', 'PEMBATALAN', 'TIDAKBERJAYA', 'DITARIKBALIK', 'DITARIKSEMULA', 'PENARIKANBALIK',
-                    'TIDAKLAGISAH')
+                    'TIDAKLAGISAH', 'DITAMATKAN', 'TIDAKBERKUATKUASA', 'TIDAKLAGIBERKUATKUASA', 'WITHDRAWN',
+                    'CANCELLED', 'CANCELED', 'REVOKED', 'TIDAKAKTIF', 'TIDAKTERPAKAI')
 _SQUEEZE_OUT = re.compile(r'[\s.\-–—]')
-#: TERBATAL or (MENARIK / DITARIK) TARIK BALIK SAID of this letter (S1c review round 1): the word with no
-#: condition in its sentence ("Tawaran ini telah TERBATAL", "Dengan ini tawaran saudara TERBATAL", "Status :
-#: TERBATAL", "TAWARAN TERBATAL", "adalah terbatal dengan serta-merta"). A genuine offer says it only as a
-#: condition: all 36 cached letters that print TERBATAL say "sekiranya ... tawaran ini adalah terbatal dengan
-#: sendirinya" (page 2). The sentence is cut at a full stop, and at most 200 characters before and 80 after.
+#: TERBATAL or TARIK BALIK SAID of this letter ("Status : TERBATAL", "adalah TERBATAL dan ..."; S1c rounds 1-2).
+#: A clause ends at a line break, ';', ':' or '.'; the word escapes only when SEKIRANYA / JIKA / JIKALAU / APABILA
+#: comes BEFORE it in its clause, or in "akan terbatal" / "terbatal dengan sendirinya" (the wording of all 36
+#: cached letters that print TERBATAL). AKAN, BOLEH and BERHAK no longer excuse it.
 _CANCEL_WORD = re.compile(r'\bTERBATAL\b|\b(?:MENARIK|DITARIK|TARIK)\s{0,3}BALIK\b', re.IGNORECASE)
-_CONDITION = re.compile(r'\b(?:SEKIRANYA|SEKIRA|JIKA|JIKALAU|APABILA|AKAN|BOLEH|BERHAK|IF)\b', re.IGNORECASE)
+_CONDITION = re.compile(r'\b(?:SEKIRANYA|JIKA|JIKALAU|APABILA)\b', re.IGNORECASE)
+_CONDITIONAL_CANCEL = re.compile(r'\bAKAN\s{1,3}TERBATAL\b|\bTERBATAL\s{1,3}DENGAN\s{1,3}SENDIRINYA\b', re.IGNORECASE)
+_CLAUSE_END = re.compile(r'[\n;:.]')
 
 
 def _cancel_said(text: str) -> bool:
-    """True when TERBATAL or TARIK BALIK stands in a sentence with no condition (`_CANCEL_WORD`)."""
+    """True when TERBATAL or TARIK BALIK is said of the letter, not as a condition (`_CANCEL_WORD`)."""
+    excused = [m.span() for m in _CONDITIONAL_CANCEL.finditer(text)]
     for m in _CANCEL_WORD.finditer(text):
-        before = text[max(0, m.start() - 200):m.start()].rsplit('.', 1)[-1]
-        after = text[m.end():m.end() + 80].split('.', 1)[0]
-        if not _CONDITION.search(before + ' ' + after):
+        if any(a <= m.start() and m.end() <= b for a, b in excused):
+            continue
+        clause = _CLAUSE_END.split(text[max(0, m.start() - 300):m.start()])[-1]
+        if not _CONDITION.search(clause):
             return True
     return False
 #: The ONE space between two single letters ("D I B A T A L K A N" -> "DIBATALKAN"; "D I BATALKAN" -> "DI
@@ -212,10 +235,25 @@ def _withdrawn(source: str, head) -> bool:
     at or above the title, a withdrawal word anywhere (also with its letters spaced, or squeezed of spaces, dots
     and dashes), or TERBATAL / TARIK BALIK said with no condition (`_cancel_said`)."""
     key = _SQUEEZE_OUT.sub('', source.upper())
+    squeezed = _squeeze(source)
     return bool(any(_NOT_AN_OFFER.search(ln) or _NOT_AN_OFFER.search(_squeeze(ln)) for ln in head)
-                or _WITHDRAWN.search(source) or _WITHDRAWN.search(_squeeze(source))
+                or _WITHDRAWN.search(source) or _WITHDRAWN.search(squeezed)
                 or any(stem in key for stem in _WITHDRAWN_STEMS)
-                or _cancel_said(_one_space(source)))
+                or _cancel_said(source) or _cancel_said(squeezed))
+
+
+def letter_refusal(text: str) -> str:
+    """Why a digital letter's FULL text (every page) refuses its page-1 layout read's lock (S1c round 2):
+    'status_letter' ("SURAT PENGESAHAN" anywhere), 'not_an_offer' (`_withdrawn` on any page; head words only
+    above the title line), 'too_long' (past ``MAX_LETTER_CHARS``); '' when none."""
+    text = text or ''
+    if len(text) > MAX_LETTER_CHARS:
+        return 'too_long'
+    if _STATUS.search(text):
+        return 'status_letter'
+    lines = _text_lines(text)
+    title_at = next((i for i, ln in enumerate(lines) if _TITLE.search(_one_space(ln))), -1)
+    return 'not_an_offer' if _withdrawn(text, lines[:title_at + 1] if title_at >= 0 else []) else ''
 
 
 def _title(lines):
@@ -252,11 +290,17 @@ def _may_wrap(raw: str) -> bool:
     first = _one_space(_COLUMNS.split((raw or '').strip())[0])
     if _name_ok(first) and not _STREET_WORD.search(first):
         return True
+    word, whole = re.match(r"([A-Za-z][A-Za-z'.]*)(?=[\s/(,;]|$)", first), _one_space(raw)
+    if word and len(word.group(1).strip('.')) >= 2 and not _ADDRESS_START.match(word.group(1)):
+        second = whole[word.end():].lstrip(' /(,;')
+        if (re.search(r'[:：]', whole) or _POSTCODE.search(whole)
+                or (second[:1].isalpha() and re.search(r'\d', second))):
+            return True                          # "HAKIM SIMPANG 3", "HAKIM 88 000 ...", "HAKIM No. Kad ... :"
     street, digit = _STREET_WORD.search(first), re.search(r'(?<!\d)\d{5}(?!\d)', first)
     cuts = [m.start() for m in _CUT.finditer(first)] + [m.start() for m in (street, digit) if m]
     for cut in cuts:
-        head = _HOUSE_WORD.sub('', first[:cut].strip(' ,;-–—')) if cut > 0 else ''
-        rest = first[cut:].lstrip(' ,;-–—') if cut > 0 else ''
+        head = _HOUSE_WORD.sub('', first[:cut].strip(' ,;-–—/(')) if cut > 0 else ''
+        rest = first[cut:].lstrip(' ,;-–—/(') if cut > 0 else ''
         if (head and _name_ok(head) and not _STREET_WORD.search(head)
                 and (_STREET_WORD.match(rest) or rest[:1].isdigit())):
             return True
@@ -399,12 +443,16 @@ def _every_label_agrees(lines, want: str) -> bool:
     for i, ln in enumerate(lines):
         cols = _COLUMNS.split(ln.strip())
         for k, col in enumerate(cols):
-            lab = _ANY_PROGRAM.match(_one_space(col))
+            lab = (_ANY_PROGRAM.match(_LABEL_SEP.sub(r'\1 :', _one_space(col), count=1))
+                   or _ANY_PROGRAM.match(_LABEL_SEP.sub(r'\1 :', _squeeze(_one_space(col)), count=1)))
             if not lab:
                 continue
-            if lab.group(1) is None and not (k + 1 < len(cols) and cols[k + 1].startswith(':')):
+            nxt_sep = k + 1 == len(cols) and lines[i + 1].lstrip().startswith(_SEPS) if i + 1 < len(lines) else False
+            if lab.group(1) is None and not (k + 1 < len(cols) and (cols[k + 1].startswith(_SEPS) or lab.group(2))
+                                             or (lab.group(2) and nxt_sep)):
                 continue                         # no colon: a prose word, or a scanned block's bare label (above)
-            after = [_one_space(c).lstrip(': ') for c in cols[k + 1:] if _one_space(c) != ':']
+            after = [_one_space(c).lstrip(''.join(_SEPS) + ' ') for c in cols[k + 1:]
+                     if _one_space(c) not in _SEPS]
             nxt_line = lines[i + 1] if i + 1 < len(lines) else ''
             if _one_space(lab.group(1) or ''):
                 if not _agreeing(_one_space(lab.group(1)), nxt_line, want):
@@ -463,6 +511,10 @@ def _reporting_date(lines):
     held = False                                 # an earlier part held a day number or a joiner (S1c, MED-1)
     window = [tail] + lines[i + 1:i + 7]
     for k, part in enumerate(window):
+        if _NO_DATE.search(part):
+            return ''                            # "Akan dimaklumkan kemudian": no date yet (review round 2)
+        if k and _FIELD_LABEL.match(part) and not _VENUE.match(_one_space(part)):
+            return ''                            # another field's label: its date is not this one (review round 2)
         got = first_date(part)
         if not got:
             held = held or bool(_DAY_NUMBER.search(part) or _JOINER.search(part))
@@ -477,7 +529,7 @@ def _reporting_date(lines):
             start = m.start(1) if m else -1
         day = _DAY_NUMBER.search(part)
         rest = _RANGE_END.sub('', part[m.end():], count=1) if m else part
-        if any(first_date(later) for later in [rest] + window[k + 1:]):
+        if any(first_date(later) or _LOOSE_DATE.search(later) for later in [rest] + window[k + 1:]):
             return ''                            # a second date in the window: a list (S1c review round 1, LOW-E)
         return got if day and day.start() == start else ''
     return ''

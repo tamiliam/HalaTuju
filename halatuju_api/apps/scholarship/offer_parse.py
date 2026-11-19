@@ -368,8 +368,10 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str) -> d
     text — its plain layer glues the name into the address — so a text layer without one never locks
     (guard ``no_layout``). Every refusal is a guard; the letter then goes to the AI as before.
     S1c review round 1 (MED-A): a layout read needs its plain page-1 layer too (guard ``no_plain_layer``),
-    and the layout's name must stand as its own words there (`name_in_plain`; guard ``name_not_plain``)."""
-    from .offer_parse_university import LANE, name_in_plain, read_ums
+    and the layout's name must stand as its own words there (`name_in_plain`; guard ``name_not_plain``).
+    S1c review round 2: the status and withdrawal checks also read the FULL letter text, every page
+    (`letter_refusal`), so a page-2 cancellation or status letter refuses too."""
+    from .offer_parse_university import LANE, letter_refusal, name_in_plain, read_ums
     if out['portal']:
         return out
     if page1_text.strip() and not page1_layout.strip():
@@ -380,6 +382,8 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str) -> d
         return out
     fields, reason = read_ums(page1_layout if page1_layout.strip() else text)
     out['fields'], out['titled'] = fields, fields is not None
+    if not reason and page1_layout.strip():
+        reason = letter_refusal(text)            # every page: a status letter or a withdrawal (review round 2)
     if not reason and page1_layout.strip() and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
         reason = 'name_not_plain'
     if reason.startswith('empty:'):
