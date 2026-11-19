@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: gift names are checked the same way on create as on rename (review of #71, 2026-11-19)
+
+Services: both. No migration.
+- Creating a gift with a name over 200 characters failed with a database error (a 500); it is now refused with `name_too_long`, and the create box stops at 200.
+- A name sent as a number (not text) failed with a 500 on create and rename; it is now refused with `bad_name`.
+- One helper (`_clean_name`) serves both calls.
+
+### refactor: request #70 review round 2 - tests pass the write right, plainer wording, one announcement (2026-11-19)
+
+Services: web. No migration.
+- The #70 tests now render with the write right; since POST-AWARD-CUT a reviewer without it sees no decision buttons, so 8 tests failed on main. A new test pins that a viewer without the right sees no list, buttons or phone bar.
+- "Answer N interview questions in your findings" replaces "Reopen your findings and answer…": on a reopened decision there is no Reopen button (en/ms/ta).
+- After a press on a greyed button, the list is an alert only until the reviewer fixes something; it then goes back to a plain list, so screen readers do not announce it again on every fix.
+
+### feat: change a gift programme's name (request #71, 2026-11-16)
+
+Services: both. No migration.
+- Why: nothing let an organisation rename a gift programme; the name had to be changed by an engineer.
+- A "Change the name" item in the gift card's menu, next to "Change the short code", opens a box with the English name (required) and the Malay and Tamil names (optional; blank means the English name is used). It uses the same PATCH and the same `programmes.edit` gate as the code change; the short code and apply link do not change. en, ms and ta.
+- The PATCH now refuses a name over 200 characters (the model's cap) with `name_too_long`.
+- The Organisation admin guide explains the new menu item.
+
+### refactor: request #70 review round - amount reason, one computation, per-language fact list (2026-11-16)
+
+Branch req70, not pushed. No migration. Services: web.
+- A ready decision with no bursary amount: Recommend now shows the existing amount reason as a focused `role="alert"` instead of doing nothing.
+- `decisionMissing` is computed once in `deriveCockpit`; `decisionReady` is `missing.length === 0` and the card receives `missing` (no recompute).
+- The fact list is joined per language (`Intl.ListFormat`): "Academic and Income". The alert is focused first, then centred, so it clears the phone bar.
+- Wording: the answer item reads "Reopen your findings and answer N interview questions" (it shows only on a locked interview); Tamil and Malay lines reworded.
+- Tests: dead `findingsIncomplete`-absent checks now assert `#decision-missing` is absent; second press refocuses the alert; real-message fact-list test in en, ms, ta.
+
+### feat: say what is still missing before Recommend or Decline (request #70, 2026-11-16)
+
+Branch req70, not pushed. No migration, no API change. Services: web.
+- One rule: `decisionMissing` (`src/lib/cockpitStages.ts`) returns the ordered missing items (findings not submitted or N unanswered, unrated facts, empty conclusion); `isDecisionReady` is now `decisionMissing(...).length === 0`, so the list and the gate cannot disagree.
+- The Decision card shows "Still to do:" under the buttons, each item a button that scrolls to and focuses its place (interview stage, first unrated fact, conclusion box). Recommend and Decline are `aria-disabled` while not ready (busy stays `disabled`): a press shows the list as a focused `role="alert"` and acts on nothing. The phone decision bar asks the card for the same alert.
+- Words in en, ms, ta (`recordVerdict.missing.*`); `saveNeedsReady` retired (`findingsIncomplete` stays: the server-refusal text reads it). Reviewer Guide and FAQ explain the list.
 ### docs: learning loop stack brought up to main and closed (2026-11-19)
 
 Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (entries below). Migration: `0218_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: both.

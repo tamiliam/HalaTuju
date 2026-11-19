@@ -172,13 +172,38 @@ export function queryingLockReason(
   return interviewStatus === 'submitted' ? 'interview' : 'closed'
 }
 
-/** Approve/Decline activate only once the interview is submitted AND every agenda item answered
- *  (TD-253 — the word "submitted" alone let an empty interview through, app #32; see
- *  `interviewCompleteness`), all four facts are pass/fail, and a reason is written. */
+/**
+ * One item the reviewer still owes before Recommend or Decline can act (request #70).
+ * `facts_unrated` carries the fact keys (`identity` | `academic` | `pathway` | `income`) in the card's own order.
+ */
+export type DecisionMissingItem =
+  | { kind: 'findings_not_submitted' }
+  | { kind: 'findings_unanswered'; count: number }
+  | { kind: 'facts_unrated'; facts: string[] }
+  | { kind: 'conclusion_empty' }
+
+/**
+ * WHAT is still missing before Recommend / Decline can act, in the page's order (interview, AI rating, conclusion).
+ * ONE home for the rule: `isDecisionReady` below is `decisionMissing(...).length === 0`, so the list on screen and the
+ * gate can never disagree. Interview findings must be SUBMITTED, and (TD-253 — the word "submitted" alone let an
+ * empty interview through, app #32; see `interviewCompleteness`) every agenda item answered, read from the SAVED
+ * session. A draft interview reports only "not submitted": its saved count would mislead about what she has typed.
+ */
+export function decisionMissing(
+  interviewStatus: string | undefined, officerVerdict: OfficerVerdict, reason: string, unansweredCount: number,
+): DecisionMissingItem[] {
+  const out: DecisionMissingItem[] = []
+  if (interviewStatus !== 'submitted') out.push({ kind: 'findings_not_submitted' })
+  else if (unansweredCount > 0) out.push({ kind: 'findings_unanswered', count: unansweredCount })
+  const unrated = DECISION_FACTS.filter((f) => officerVerdict[f] !== 'pass' && officerVerdict[f] !== 'fail')
+  if (unrated.length > 0) out.push({ kind: 'facts_unrated', facts: [...unrated] })
+  if ((reason || '').trim().length === 0) out.push({ kind: 'conclusion_empty' })
+  return out
+}
+
+/** Approve/Decline activate only once nothing is missing (see `decisionMissing`). */
 export function isDecisionReady(interviewStatus: string | undefined, officerVerdict: OfficerVerdict, reason: string, interviewComplete: boolean): boolean {
-  return interviewStatus === 'submitted' && interviewComplete
-    && DECISION_FACTS.every((f) => officerVerdict[f] === 'pass' || officerVerdict[f] === 'fail')
-    && (reason || '').trim().length > 0
+  return decisionMissing(interviewStatus, officerVerdict, reason, interviewComplete ? 0 : 1).length === 0
 }
 
 /** Approve additionally requires a recommended assistance amount (the slider or an already-saved one). */

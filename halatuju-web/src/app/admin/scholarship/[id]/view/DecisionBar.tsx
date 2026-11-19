@@ -19,6 +19,7 @@ import { stageStatus } from '@/lib/closeOffer'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import type { T } from './shared'
+import { DECISION_ALERT_EVENT } from './DecisionMissing'
 
 /**
  * True exactly when the decision card shows its Recommend / Decline / Save controls: the card shows, it is not
@@ -64,7 +65,12 @@ export function DecisionBar({ t, outcome, canSave }: {
           </p>
         </div>
         <button type="button"
-          onClick={() => document.getElementById('decision-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onClick={() => {
+            document.getElementById('decision-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            // Request #70: ONE rule with the card — while something is missing the card answers with its alert list
+            // (it knows what; the bar only reads `canSave`). A ready card ignores it, so this still only jumps.
+            document.dispatchEvent(new Event(DECISION_ALERT_EVENT))
+          }}
           className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-lg bg-brand-fill px-4 text-sm font-semibold text-brand-fill-ink">
           {t('admin.scholarship.decisionBar.go')} ↓
         </button>

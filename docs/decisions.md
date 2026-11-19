@@ -11,6 +11,17 @@ Branch ocr-s6, not pushed. No migration. Services: api.
 - **Review round 1.** The bill date must sit 0-31 days after the billing period ends, because the bill's age (current or stale) is taken from it; a bill with no readable period is refused. The relaxed EPF read never answers 'zero' (all-zero rows prove nothing by arithmetic), so 'zero' still comes only from the strict read or "Tiada Transaksi". An employer share smaller than the member share is read as swapped columns and refused in both reads; no read in the cached corpus changes. Only `capture='deterministic'` reads carry the lane stamp.
 - **Review round 2 (supersedes the swap rule above).** An employer share smaller than the member share is NOT proof of swapped columns (a member can elect a higher rate), so the row is kept for status, months and total and only the employer/member split is dropped. Refusing it was worse: the table then read as unread, and a "Tiada Transaksi" printed under an empty PENGELUARAN made it 'zero', a deterministic capture that never reaches AI. So "Tiada Transaksi" now counts only inside the CARUMAN SEMASA section, closed by its end marker, with no date or figure in it. Completeness: a table locks only with its end marker or a grand total equal to the rows' sum, and an inline row only with its three figures adding up and month labels matching the rows. This makes the live (switch-off) EPF read refuse more; the cached corpus loses no read. The `electricity_doc` 1.1.0 bump marks the release only; `parser_version` is what tells an AI read from a rules read.
 
+## 2026-11-16 — Request #71: change a gift programme's name (analysis 165)
+
+Branch req71, local only. No migration. Services: both.
+
+1. **The saving already existed.** `PATCH programmes/<id>/` already took `name_en`, `name_ms` and `name_ta` (trimmed, English required). The only gap was the length: the model caps each at 200 characters, so a longer name would have failed in the database. It is now refused with `name_too_long` plus words in en, ms and ta. No migration.
+2. **Same gate as the short code, by construction.** The new menu item sits beside "Change the short code" with no extra front test (the card list is already fenced), and the back end is the one `_gate` (`programmes.edit`). A test compares the name change with the code change for every role.
+3. **Blank Malay or Tamil is stored blank**, as the model already falls back to English. The dialog prefills the current values and the Save button sleeps until something changes, and on a blank English name.
+4. **No re-select after a rename.** The code does not move, so the chosen gift stays chosen; the shell list is reloaded so the new name shows in the chooser and the crumb.
+5. **Guide:** the Organisation admin guide is `src/content/manual/role-org-admin.tsx` (English only); a paragraph was added under "The link applicants follow".
+6. **Create now takes the same checks (review, 19 Nov).** The Opus review found the create call (`POST`) had no 200-character check, and that a name sent as a number made either call fail with a 500. One helper, `_clean_name`, now serves both calls: `name_too_long` over 200, `bad_name` for a value that is not text. The create box also stops at 200.
+
 ## 2026-11-18 — Request #69: the sponsor's "Our volunteers" figures stay as built; the small-size risk is accepted (owner)
 
 Branch req69, not pushed. Migration 0214 (additive). Services: both.

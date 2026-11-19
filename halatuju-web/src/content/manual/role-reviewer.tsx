@@ -212,7 +212,8 @@ export const roleReviewer: ManualChapter = {
         can submit: tap <strong>Resolved</strong>, jot <strong>one line</strong> on what you found (a short note
         such as &ldquo;See conclusion&rdquo; is fine), or <strong>Delete</strong> a point that does not apply —
         then <strong>Submit interview findings</strong>. Approve and Decline stay greyed out until every point
-        is answered. If a point mentions income above the line,
+        is answered; press either one and a <strong>Still to do</strong> list shows exactly what is missing, and
+        each item takes you to the place to fix it. If a point mentions income above the line,
         that&rsquo;s for your judgement — explore the family&rsquo;s real situation, don&rsquo;t quote a figure.</>
       ),
       img: '/reviewer-guide/step7-interview.png',
