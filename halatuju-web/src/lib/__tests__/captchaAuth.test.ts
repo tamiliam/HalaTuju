@@ -15,11 +15,11 @@
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
-import type { TurnstileResult } from '@/lib/turnstile'
+import type { TurnstileFetchOptions, TurnstileResult } from '@/lib/turnstile'
 
-const getTurnstileResult = jest.fn<Promise<TurnstileResult>, [string?]>()
+const getTurnstileResult = jest.fn<Promise<TurnstileResult>, [string?, TurnstileFetchOptions?]>()
 jest.mock('@/lib/turnstile', () => ({
-  getTurnstileResult: (a?: string) => getTurnstileResult(a),
+  getTurnstileResult: (a?: string, o?: TurnstileFetchOptions) => getTurnstileResult(a, o),
   getTurnstileToken: jest.fn(),
 }))
 
@@ -100,6 +100,30 @@ describe.each(DOORS)('$name', ({ run, sb, tokenOf }) => {
     expect(error).toBeNull()
     expect(sb).toHaveBeenCalledTimes(2)
     expect(tokenOf(sb.mock.calls[1])).toBe('tok-2')
+  })
+
+  it('the retry is capped: the first fetch is a full round, the retry ONE attempt', async () => {
+    getTurnstileResult.mockResolvedValue({ status: 'ok', token: 'tok' })
+    sb.mockResolvedValue(refusal)
+    await run()
+    expect(getTurnstileResult).toHaveBeenCalledTimes(2)
+    expect(getTurnstileResult.mock.calls[0][1]).toBeUndefined()
+    expect(getTurnstileResult.mock.calls[1][1]).toEqual({ maxAttempts: 1 })
+  })
+
+  it('no site key but Supabase refuses (switch on, key missing): a console warning, plain words, one call', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      getTurnstileResult.mockResolvedValue({ status: 'off' })
+      sb.mockResolvedValue(refusal)
+      const { error } = await run()
+      expect((error as { code: string }).code).toBe('captcha_failed')
+      expect(sb).toHaveBeenCalledTimes(1)
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(String(warn.mock.calls[0][0])).toMatch(/site key/)
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   it('refused twice: captcha_failed, never the raw Supabase words', async () => {

@@ -29,7 +29,14 @@
  *     several round trips to challenges.cloudflare.com, and on a congested mobile connection
  *     (the students' and many sponsors' normal network) those trips alone ran past 8 s, which cut
  *     off real visitors. 15 s covers that without leaving a person staring at a frozen button for
- *     long; two attempts cap the silent wait at about 30 s plus the script load.
+ *     long. Worst-case waits for one password door (`lib/captchaAuth.ts`), Supabase's own time
+ *     aside: SILENT 55 s = script 10 s + 2 x 15 s, plus 15 s for the single-attempt retry after a
+ *     Supabase captcha refusal. VISIBLE 145 s = 10 s + 15 s + 120 s for the challenge, and 265 s
+ *     only if Supabase then refuses that token AND Cloudflare asks the person to click again
+ *     (120 s more) — a person mid-challenge is never cut off.
+ *   - When the last attempt fails, the widget is reset (and kept hidden) before `failed` is
+ *     returned, and a challenge that starts with no attempt in flight is cancelled, so no box
+ *     can appear after the error is on screen.
  *   - The script load has its own 10 s budget. A firewall that silently DROPS the request (rather
  *     than refusing it) never fires `onerror`; without this the visitor would wait forever and we
  *     could not tell "blocked" apart from "failed".
@@ -165,6 +172,12 @@ function ensureWidget(api: TurnstileAPI): void {
     // Cloudflare is about to show a VISIBLE challenge that needs a human. Reveal the
     // widget and swap the silent budget for a generous human one.
     'before-interactive-callback': () => {
+      // No attempt in flight (it already failed and the visitor has the error): a late challenge
+      // must never pop up over the page. Cancel it and stay hidden.
+      if (!currentResolve) {
+        try { if (widgetId) api.reset(widgetId) } catch { /* nothing more to stop */ }
+        return
+      }
       show()
       if (timer) { clearTimeout(timer); timer = null }
       timer = setTimeout(() => settle({ humanTimedOut: true }), INTERACTIVE_TIMEOUT_MS)
@@ -187,7 +200,11 @@ function attempt(api: TurnstileAPI, action?: string): Promise<AttemptOutcome> {
   })
 }
 
-async function fetchResult(action?: string): Promise<TurnstileResult> {
+/** Options for one fetch. `maxAttempts` caps the attempts below `MAX_ATTEMPTS` (never above):
+ *  the retry after a Supabase captcha refusal asks for 1, so it adds one attempt, not a round. */
+export interface TurnstileFetchOptions { maxAttempts?: number }
+
+async function fetchResult(action?: string, opts?: TurnstileFetchOptions): Promise<TurnstileResult> {
   if (!SITE_KEY) return { status: 'off' }
   if (typeof window === 'undefined') return { status: 'failed' }
   try {
@@ -203,13 +220,18 @@ async function fetchResult(action?: string): Promise<TurnstileResult> {
     return { status: 'failed' }
   }
   if (!widgetId || !container) return { status: 'failed' }
-  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+  const attempts = Math.max(1, Math.min(MAX_ATTEMPTS, opts?.maxAttempts ?? MAX_ATTEMPTS))
+  for (let i = 0; i < attempts; i++) {
     const outcome = await attempt(api, action)
     if (outcome.token) return { status: 'ok', token: outcome.token }
     // A person who was shown a visible challenge and let it run out has had their chance;
     // a second two-minute wait would only look like a frozen page.
     if (outcome.humanTimedOut) break
   }
+  // Out of attempts. Stop whatever challenge Cloudflare may still be running, so a late
+  // challenge box cannot appear AFTER the visitor has been shown the error.
+  try { api.reset(widgetId) } catch { /* nothing more to stop */ }
+  hide()
   return { status: 'failed' }
 }
 
@@ -217,9 +239,9 @@ async function fetchResult(action?: string): Promise<TurnstileResult> {
  * Fetch a fresh, single-use Turnstile token, with a typed outcome (see `TurnstileResult`).
  * Never rejects. `action` is an optional label for analytics.
  */
-export function getTurnstileResult(action?: string): Promise<TurnstileResult> {
+export function getTurnstileResult(action?: string, opts?: TurnstileFetchOptions): Promise<TurnstileResult> {
   // Serialise against the shared singleton widget.
-  const next = queue.then(() => fetchResult(action)).catch((): TurnstileResult => ({ status: 'failed' }))
+  const next = queue.then(() => fetchResult(action, opts)).catch((): TurnstileResult => ({ status: 'failed' }))
   queue = next
   return next
 }

@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isPrivilegedConsole) { setIsLoading(false); return }
     const claim = (s: Session | null) => { if (claimStudentData(realUserId(s))) setEpoch(n => n + 1) }
     getSession()
-      .then(async ({ session }) => {
+      .then(async ({ session, error }) => {
         // ⚠ CAPTCHA REPAIR (2026-11-19): NO ANONYMOUS SESSION IS MINTED ANY MORE. This used to call
         // Supabase's anonymous sign-in on every page load with no session — a Turnstile challenge plus a
         // Supabase auth row per visitor, and with the captcha switch on a visible failure for anyone
@@ -109,8 +109,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // another account's — this browser is signed out — so it is dropped, as the anonymous
         // mint's claim used to do. Except offline: the mint could not run offline, so it never
         // wiped there, and that is kept (`sharedPhoneOwner.test.tsx`).
+        // ⚠ AND NOT ON AN ERROR. `getSession()` also returns NO session when a token refresh failed
+        // on the network or with a 502/503/504 — auth-js keeps the session in storage on those
+        // retryable errors and refreshes it later. Wiping then would cost a student on weak data
+        // their grades, profile, quiz signals and a half-filled apply form, and TOKEN_REFRESHED does
+        // not re-fetch them (storage.ts: a refresh failure must not wipe). So: no session AND no
+        // error AND online, or nothing is dropped.
         if (session) claim(session)
-        else if (typeof navigator === 'undefined' || navigator.onLine !== false) claim(null)
+        else if (!error && (typeof navigator === 'undefined' || navigator.onLine !== false)) claim(null)
         setSession(session ?? null)
 
         // Check identity (NRIC) for non-anonymous users

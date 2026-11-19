@@ -77,7 +77,19 @@ that failed for any reason (script blocked, slow network, 8 s timeout) resolved 
 - **Budgets:** script load 10 s; silent challenge 15 s per attempt (was 8 s; a Managed
   pass makes several round trips to Cloudflare, and on congested mobile data those alone
   ran past 8 s); 2 attempts (reset + execute); a visible challenge gets 120 s and is not
-  retried if nobody solves it.
+  retried if nobody solves it. The retry after a Supabase captcha refusal gets ONE attempt,
+  not a second full round. When the last attempt fails the widget is reset and kept
+  hidden, so no challenge box can appear after the error is shown.
+- **Worst-case waits** for one sign-in, sign-up or reset, Supabase's own time aside:
+  - silent (no box ever shown): **55 s** = script 10 s + 2 x 15 s, plus 15 s for the
+    one-attempt retry after a Supabase refusal (40 s when Supabase does not refuse);
+  - visible (Cloudflare asks the person to click): **145 s** = 10 s + 15 s + 120 s; and
+    **265 s** only in the rare case that Supabase then refuses that token AND Cloudflare
+    asks for a click again on the retry (120 s more). A person mid-challenge is never cut off.
+- **Missing site key:** if Supabase refuses a door while the build has no site key (the
+  switch is on but `NEXT_PUBLIC_TURNSTILE_SITE_KEY` was left out of the deploy), the
+  browser console logs a `[captcha]` warning; the visitor sees the plain "did not finish"
+  words.
 - **Expiry:** `refresh-expired: 'manual'` plus an `expired-callback` that resets the
   widget; a token is never kept between calls. If Supabase still refuses a token
   (lapsed in flight, or duplicate), the door asks for one fresh token and tries once more.
@@ -87,10 +99,27 @@ that failed for any reason (script blocked, slow network, 8 s timeout) resolved 
   The screens show plain words from `messages/*.json` (`errors.captchaBlocked`,
   `errors.captchaFailed`, plus `errors.captchaGoogle` where the door offers Google).
 - **Guest session removed:** `AuthProvider` no longer calls Supabase's anonymous sign-in
-  on page load (it cost one Turnstile challenge and one auth row per visitor). The API
-  ignores anonymous tokens, so nothing changes for visitors; tokenless API calls fall
-  under the per-IP anonymous throttle. Browsers that already hold an anonymous session
-  keep it.
+  on page load (it cost one Turnstile challenge and one auth row per visitor). Browsers that
+  already hold an anonymous session keep it. The API ignores an anonymous token for data
+  (profile, NRIC gate, quiz signals), but **one thing does change for visitors: throttling.**
+  An anonymous token used to identify the visitor (`request.user_id` is set for it), so the
+  per-IP throttle skipped them. A visitor with no session now calls the API **without a
+  token**, so they fall under the per-IP throttle (`halatuju.throttling.ClientAnonRateThrottle`,
+  `anon` = 1000 requests a minute per IP, IPv6 cut to /64).
+  - **Classroom risk:** a school lab or library behind one shared address shares ONE
+    1000-a-minute bucket. A full class clicking through course pages together could reach
+    it and see refusals (HTTP 429) for the rest of that minute.
+  - **Why this is a small change in practice:** with the captcha switch on, most anonymous
+    sign-ins were already being refused before this repair (no token, a blocked script, a
+    timed-out challenge), so most visitors were already calling without a token and already
+    on the per-IP throttle. If a classroom report comes in, the rate is in
+    `halatuju_api/halatuju/settings/base.py` (`DEFAULT_THROTTLE_RATES['anon']`); the API is
+    not changed here.
+- **Shared-phone wipe (TD-458):** with no session, browser `halatuju_*` student data tagged
+  to another account is dropped only when `getSession()` returned no error AND the browser
+  is online. A token refresh that failed on the network or with 502/503/504 also reads as
+  "no session" (Supabase keeps the session and retries later), and must never wipe a
+  student's grades, profile, quiz signals or half-filled apply form.
 - **Unchanged:** Google sign-in (OAuth carries no captcha) and the contact form /
   `contact-submit` Edge Function.
 - **What a support reply can say:** the words on screen already tell the visitor to turn

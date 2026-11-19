@@ -141,7 +141,8 @@ export default function AdminLoginPage() {
 
     const { error } = await adminResetPassword(email)
     if (error) {
-      setError(captchaErrorText(error, t, { offersGoogle: true }) ?? error.message)
+      // The reset step has no Google button on screen, so no "continue with Google" line.
+      setError(captchaErrorText(error, t, { offersGoogle: false }) ?? error.message)
       setLoading(false)
       return
     }

@@ -130,6 +130,7 @@ describe('getTurnstileResult', () => {
   function widget(onExecute: (opts: Record<string, unknown>, n: number) => void) {
     const calls = { execute: 0, reset: [] as unknown[] }
     let opts: Record<string, unknown> = {}
+    const el = { style: {} as Record<string, string> }
     g.window = {
       turnstile: {
         render: (_e: unknown, o: Record<string, unknown>) => { opts = o; return 'wid-1' },
@@ -139,11 +140,11 @@ describe('getTurnstileResult', () => {
       },
     }
     g.document = {
-      createElement: () => ({ style: {} }),
+      createElement: () => el,
       head: { appendChild: () => {} },
       body: { appendChild: () => {}, removeChild: () => {} },
     }
-    return { calls, opts: () => opts }
+    return { calls, opts: () => opts, el }
   }
 
   type FakeScript = { onload?: () => void; onerror?: () => void; remove: () => void }
@@ -244,8 +245,51 @@ describe('getTurnstileResult', () => {
     expect(w.calls.execute).toBe(2)
     await jest.advanceTimersByTimeAsync(mod.SILENT_TIMEOUT_MS)
     expect(result).toEqual({ status: 'failed' })
-    expect(w.calls.reset).toEqual(['wid-1', 'wid-1'])
+    // reset before each attempt, and once more after the last one fails (review fix)
+    expect(w.calls.reset).toEqual(['wid-1', 'wid-1', 'wid-1'])
     expect(mod.MAX_ATTEMPTS).toBe(2)
+  })
+
+  it('after the last attempt fails the widget is reset and hidden, and a late challenge never shows', async () => {
+    jest.useFakeTimers()
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
+    const w = widget(() => { /* Cloudflare never answers in time */ })
+    const mod = loadFresh()
+    const p = mod.getTurnstileResult()
+    await jest.advanceTimersByTimeAsync(mod.SILENT_TIMEOUT_MS * 2)
+    await expect(p).resolves.toEqual({ status: 'failed' })
+    const resetsAfterFail = w.calls.reset.length
+    expect(resetsAfterFail).toBe(w.calls.execute + 1)   // the extra reset stops the last challenge
+    expect(w.el.style.display).toBe('none')
+    // Cloudflare's challenge turns up late, with the error already on screen:
+    ;(w.opts()['before-interactive-callback'] as () => void)()
+    expect(w.el.style.display).toBe('none')               // never revealed
+    expect(w.calls.reset.length).toBe(resetsAfterFail + 1) // and cancelled
+    await jest.advanceTimersByTimeAsync(mod.INTERACTIVE_TIMEOUT_MS)
+    expect(w.el.style.display).toBe('none')
+  })
+
+  it('maxAttempts 1 (the retry after a Supabase refusal): one attempt, no second silent wait', async () => {
+    jest.useFakeTimers()
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
+    const w = widget(() => { /* never answers */ })
+    const mod = loadFresh()
+    let result: unknown = null
+    void mod.getTurnstileResult('admin_signin', { maxAttempts: 1 }).then((r) => { result = r })
+    await jest.advanceTimersByTimeAsync(mod.SILENT_TIMEOUT_MS)
+    expect(result).toEqual({ status: 'failed' })
+    expect(w.calls.execute).toBe(1)
+  })
+
+  it('maxAttempts never raises the cap above MAX_ATTEMPTS', async () => {
+    jest.useFakeTimers()
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
+    const w = widget(() => { /* never answers */ })
+    const mod = loadFresh()
+    const p = mod.getTurnstileResult(undefined, { maxAttempts: 9 })
+    await jest.advanceTimersByTimeAsync(mod.SILENT_TIMEOUT_MS * 9)
+    await expect(p).resolves.toEqual({ status: 'failed' })
+    expect(w.calls.execute).toBe(mod.MAX_ATTEMPTS)
   })
 
   it('retry then success: an error on the first attempt, a token on the second', async () => {

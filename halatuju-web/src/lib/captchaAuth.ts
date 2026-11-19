@@ -10,8 +10,10 @@
  *      a token, as before.
  *   2. Call Supabase with the token.
  *   3. If Supabase still refuses the captcha (the token lapsed in flight, or was already used),
- *      fetch ONE fresh token and call once more. A second refusal returns `captcha_failed`, so
- *      the raw Supabase words never reach the screen.
+ *      fetch ONE fresh token — a single attempt (`maxAttempts: 1`), not a second full round — and
+ *      call once more. A second refusal returns `captcha_failed`, so the raw Supabase words never
+ *      reach the screen. A refusal with NO site key (switch on, key missing from the build) logs a
+ *      console warning, so the deploy mistake is visible.
  *
  * The screens turn the codes into plain words with `captchaErrorKeys()` (en/ms/ta in
  * `messages/*.json`, `errors.captcha*`). Google sign-in does not pass through here: OAuth
@@ -70,13 +72,21 @@ export async function withCaptcha<R extends { error: unknown }>(
   onCaptchaError: Omit<R, 'error'>,
 ): Promise<R | (Omit<R, 'error'> & { error: CaptchaError })> {
   for (let round = 0; round < 2; round++) {
-    const t = await getTurnstileResult(action)
+    // The retry after a refusal gets ONE silent attempt, not a second full round (review fix):
+    // worst-case waits are written in lib/turnstile.ts and turnstile-rollout.md.
+    const t = await getTurnstileResult(action, round === 0 ? undefined : { maxAttempts: 1 })
     if (t.status === 'blocked') return { ...onCaptchaError, error: captchaError('captcha_blocked') }
     if (t.status === 'failed') return { ...onCaptchaError, error: captchaError('captcha_failed') }
     const result = await call(t.status === 'ok' ? t.token : undefined)
     if (!isSupabaseCaptchaRefusal(result.error)) return result
-    // Refused without a token (site key missing while the switch is on) — a retry cannot help.
-    if (t.status === 'off') break
+    // Refused without a token: the site key is missing from this build while Supabase's captcha
+    // switch is on — a deploy mistake, and a retry cannot help. Say so in the console (no secrets)
+    // so it is visible; the visitor still gets the plain "did not finish" words.
+    if (t.status === 'off') {
+      console.warn('[captcha] Supabase refused a request for want of a captcha token, but no Turnstile '
+        + 'site key is set in this build (NEXT_PUBLIC_TURNSTILE_SITE_KEY). Set it and redeploy the web app.')
+      break
+    }
   }
   return { ...onCaptchaError, error: captchaError('captcha_failed') }
 }

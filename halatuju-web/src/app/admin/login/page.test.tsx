@@ -22,10 +22,11 @@ jest.mock('@/lib/sessionPolicy', () => ({
 }))
 const signIn = jest.fn()
 const signOut = jest.fn().mockResolvedValue(undefined)
+const resetPw = jest.fn()
 jest.mock('@/lib/admin-supabase', () => ({
   adminSignInWithPassword: (...a: unknown[]) => signIn(...a),
   adminSignInWithGoogle: jest.fn(),
-  adminResetPassword: jest.fn(),
+  adminResetPassword: (...a: unknown[]) => resetPw(...a),
   adminSignOut: () => signOut(),
 }))
 
@@ -129,5 +130,16 @@ describe('a failed security check shows plain words, never Supabase raw captcha 
     await submit()
     await waitFor(() => expect(screen.getByText('errors.captchaFailed errors.captchaGoogle')).toBeTruthy())
     expect(screen.queryByText(/captcha protection/)).toBeNull()
+  })
+
+  it('the reset step has no Google button, so its words carry no Google line', async () => {
+    resetPw.mockResolvedValue({ data: {}, error: { code: 'captcha_blocked', message: 'x', name: 'CaptchaError', status: 0 } })
+    render(<AdminLoginPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'admin.forgotPassword' }))
+    expect(screen.queryByRole('button', { name: /admin.signInGoogle/ })).toBeNull()
+    fireEvent.change(screen.getByPlaceholderText('admin@organisation.com'), { target: { value: 'a@example.org' } })
+    fireEvent.click(screen.getByRole('button', { name: 'admin.sendResetLink' }))
+    await waitFor(() => expect(screen.getByText('errors.captchaBlocked')).toBeTruthy())
+    expect(screen.queryByText(/errors\.captchaGoogle/)).toBeNull()
   })
 })

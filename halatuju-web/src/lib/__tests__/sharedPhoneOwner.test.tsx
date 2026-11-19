@@ -23,11 +23,12 @@ import {
 type Listener = (event: string, session: unknown) => void
 let listener: Listener | null = null
 let mockSession: unknown = null
+let mockSessionError: unknown = null
 
 jest.mock('next/navigation', () => ({ usePathname: () => '/dashboard' }))
 jest.mock('@/lib/api', () => ({ getProfile: jest.fn(() => Promise.resolve({})) }))
 jest.mock('@/lib/supabase', () => ({
-  getSession: () => Promise.resolve({ session: mockSession }),
+  getSession: () => Promise.resolve({ session: mockSession, error: mockSessionError }),
   getSupabase: () => ({
     auth: {
       onAuthStateChange: (cb: Listener) => {
@@ -54,6 +55,7 @@ beforeEach(() => {
   sessionStorage.clear()
   listener = null
   mockSession = null
+  mockSessionError = null
 })
 
 describe('claimStudentData', () => {
@@ -135,6 +137,25 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(localStorage.getItem(KEY_GRADES)).toBeNull())
     expect(localStorage.getItem(KEY_OWNER)).toBeNull()
     expect(localStorage.getItem(KEY_LOCALE)).toBe('ta')
+  })
+
+  it.each([
+    ['a network failure', { name: 'AuthRetryableFetchError', message: 'Failed to fetch', status: 0 }],
+    ['a 503', { name: 'AuthRetryableFetchError', message: 'Service Unavailable', status: 503 }],
+  ])('a page load with no session but a retryable refresh error (%s), online, wipes nothing', async (_l, err) => {
+    // Review fix (2026-11-19): auth-js returns no session when a refresh fails on the network or
+    // with a 502/503/504, but keeps the session in storage and refreshes later. The student's data stays.
+    holdGradesOf('user-a')
+    sessionStorage.setItem('halatuju_apply_return', '1')
+    mockSession = null
+    mockSessionError = err
+    render(<AuthProvider><div>app</div></AuthProvider>)
+    await waitFor(() => expect(listener).not.toBeNull())
+    await act(async () => { await Promise.resolve() })
+    expect(localStorage.getItem(KEY_GRADES)).not.toBeNull()
+    expect(localStorage.getItem(KEY_PROFILE)).not.toBeNull()
+    expect(localStorage.getItem(KEY_OWNER)).toBe('user-a')
+    expect(sessionStorage.getItem('halatuju_apply_return')).toBe('1')
   })
 
   it("a page load with no session keeps a signed-out visitor's own UNTAGGED grades", async () => {
