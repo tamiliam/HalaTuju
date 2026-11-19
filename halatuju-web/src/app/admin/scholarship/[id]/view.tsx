@@ -60,7 +60,7 @@ import { AssignAndWitness } from './view/AssignAndWitness'
 import { PreInterviewOption, PreInterviewRecord } from './view/PreInterviewReject'   // request #75
 import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
-import { WithdrawAwardCard } from './view/WithdrawAwardCard'
+import { LazyWithdrawAwardCard } from './view/LazyWithdrawAwardCard'
 import { DecisionCard } from './view/DecisionCard'
 import { DecisionBar, decisionBarShows } from './view/DecisionBar'
 import { ConfirmSheet } from './view/ConfirmSheet'
@@ -457,7 +457,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         closeReason={closeReason} setCloseReason={setCloseReason}
         closeMsg={closeMsg} doClose={doClose}
       />
-      <WithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />
+      {(app.withdrawal_request?.status || app.withdrawal_request?.your_step) && <LazyWithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />}
 
       {/* Mobile M6b: a phone's way back to the decision. It jumps; it never saves (see DecisionBar). */}
       {decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }) && (

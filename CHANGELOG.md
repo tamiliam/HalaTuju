@@ -12,6 +12,7 @@ Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (e
 - **Mobile sandbox** shows three hard states for the AI prediction section (assigned-only note, a few-cases reviewer row, a long doubt label).
 - **Commit trailers** were cleaned (made-up and missing `Migration:`, `Phone-check:` and `Services:` lines).
 - **Review:** a fresh adversarial review of the rebase said "ship with notes". The notes are fixed.
+- **Bundle trim:** the withdraw-award card now loads as its own chunk, and only for a case that has a withdraw request (the case page route was 250.595 kB against the 250 kB ceiling; now 248.648 kB; the median is 157.245 kB against 157.5). No budget was raised.
 - **Docs:** retrospective, decisions and lessons written; roadmap shortened to "Done" blocks for the five built sprints. LL5 (the learning report) is not built; it waits for LL4 to be live.
 
 ### chore: request #69 migration follows request #73's 0216_two_way_notes (2026-11-19)
