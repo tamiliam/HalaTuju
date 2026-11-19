@@ -4219,7 +4219,6 @@
       "assign": {
         "assignedTitle": "Reviewer assigned",
         "lockedHint": "Locked — a decision has been recorded. Reopen the decision to change the reviewer.",
-        "doesNotCover": "Does not cover {gift}",
         "notReadyHint": "Assignment opens once the applicant's queries are answered, or their time to answer has passed.",
         "needsNewHolderHint": "The reviewer on this case can no longer review it. Give it to someone in Reviewers.",
         "reloadAfterAssign": "Assigned. Reload the page to see the latest.",
@@ -4283,14 +4282,10 @@
       },
       "reviewerNotes": {
         "title": "Org admin and reviewer notes",
-        "introOrgAdmin": "Between you and the assigned reviewer. Quality control can read them. Never seen by the student or sponsors.",
-        "introReviewer": "Between you and your org admin. Quality control can read them. Never seen by the student or sponsors.",
-        "introReader": "Between the org admin and the assigned reviewer. Read-only.",
         "empty": "No notes yet.",
         "addLabel": "Add a note",
         "placeholder": "What should the reviewer look into?",
         "counter": "{count} / {max}",
-        "appendOnly": "Notes can't be edited or deleted. To correct one, add another.",
         "add": "Add note",
         "adding": "Adding…",
         "replyLabel": "Reply",
@@ -5514,7 +5509,6 @@
         "help": "For a student whose documents already show they don't qualify. No interview is held.",
         "unassignFirst": "To reject before interview, set the reviewer back to Unassigned first.",
         "unassignAsk": "To reject before interview, ask someone who assigns reviewers to set the reviewer back to Unassigned first.",
-        "reasonLabel": "Main reason",
         "reasonPlaceholder": "Choose the main reason",
         "reasons": {
           "not_b40": "Not B40",
@@ -5525,7 +5519,8 @@
           "other": "Other"
         },
         "whyLabel": "Why are you rejecting?",
-        "whyHint": "Kept on the student's file for your team. Never sent to the student.",
+        "detailsLabel": "Additional details",
+        "whyHint": "Confidential. Not shared with the student.",
         "counter": "{count} / {max} characters",
         "submit": "Reject student",
         "cancel": "Cancel",
@@ -5543,7 +5538,7 @@
           "bad_status": "Only a student at Awaiting review can be rejected before interview.",
           "has_reviewer": "This student has a reviewer now, so they cannot be rejected before interview.",
           "reason_required": "Choose the main reason.",
-          "comments_required": "Say why you are rejecting. The note stays on the file for your team.",
+          "comments_required": "Add the details before you reject.",
           "comments_too_long": "The note can be 2,000 characters at most.",
           "generic": "Couldn't reject this student. Please try again."
         },

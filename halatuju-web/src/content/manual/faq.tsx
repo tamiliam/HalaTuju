@@ -142,8 +142,8 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>Can I reject a student <strong>before an interview</strong>?</>,
       a: <>Yes, while the student is at <strong>Awaiting review</strong> and has no reviewer. On the
-        applicant&rsquo;s page, press <strong>Reject before interview</strong>, choose the main reason and say why
-        (the note stays with your team and never reaches the student), then confirm. It is recorded as
+        applicant&rsquo;s page, press <strong>Reject before interview</strong>, choose the reason under <em>Why are you
+        rejecting?</em> and add the details (confidential, not shared with the student), then confirm. It is recorded as
         <strong> Rejected before interview</strong> and never counts against a reviewer. The decline email waits
         for the quality control hold, and until it goes you can press <strong>Cancel decline</strong> to put the
         student back at Awaiting review. See <em>Rejecting before interview</em> in your chapter of the Guide.</>,
@@ -300,8 +300,7 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>Use <strong>Org admin and reviewer notes</strong> on the applicant&rsquo;s page, under Reviewer
         assigned. The assigned reviewer can reply there, and each side is told by email (never the note itself),
         a <strong>New note</strong> mark by the name and a line in the bell. Notes can be added from Awaiting
-        review until the reviewer records a recommendation, up to 2,000 characters each. A note cannot be edited
-        or deleted; to correct one, add another. They stay on the file afterwards, and only staff who may open the file can read them.</>,
+        review until the reviewer records a recommendation, up to 2,000 characters each. They stay on the file afterwards, and only staff who may open the file can read them.</>,
     },
     {
       q: <>Can one person be an admin and a reviewer?</>,

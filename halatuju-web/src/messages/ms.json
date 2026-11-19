@@ -4219,7 +4219,6 @@
       "assign": {
         "assignedTitle": "Penyemak ditugaskan",
         "lockedHint": "Dikunci — keputusan telah direkodkan. Buka semula keputusan untuk menukar penyemak.",
-        "doesNotCover": "Tidak meliputi {gift}",
         "notReadyHint": "Tugasan dibuka apabila pertanyaan pemohon dijawab, atau masa untuk menjawab telah tamat.",
         "needsNewHolderHint": "Penyemak kes ini tidak lagi boleh menyemaknya. Berikan kes ini kepada seseorang dalam Penilai.",
         "reloadAfterAssign": "Telah ditugaskan. Muat semula halaman untuk melihat yang terkini.",
@@ -4283,14 +4282,10 @@
       },
       "reviewerNotes": {
         "title": "Nota pentadbir organisasi dan penyemak",
-        "introOrgAdmin": "Antara anda dan penyemak yang ditugaskan. Kawalan mutu boleh membacanya. Tidak sekali-kali dilihat oleh pelajar atau penaja.",
-        "introReviewer": "Antara anda dan pentadbir organisasi anda. Kawalan mutu boleh membacanya. Tidak sekali-kali dilihat oleh pelajar atau penaja.",
-        "introReader": "Antara pentadbir organisasi dan penyemak yang ditugaskan. Baca sahaja.",
         "empty": "Belum ada nota.",
         "addLabel": "Tambah nota",
         "placeholder": "Apakah yang patut diteliti oleh penyemak?",
         "counter": "{count} / {max}",
-        "appendOnly": "Nota tidak boleh diubah atau dipadam. Untuk membetulkannya, tambah nota lain.",
         "add": "Tambah nota",
         "adding": "Menambah…",
         "replyLabel": "Balas",
@@ -5514,7 +5509,6 @@
         "help": "Untuk pelajar yang dokumennya sudah menunjukkan mereka tidak layak. Tiada temu duga diadakan.",
         "unassignFirst": "Untuk menolak sebelum temu duga, tetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
         "unassignAsk": "Untuk menolak sebelum temu duga, minta seseorang yang menugaskan penyemak untuk menetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
-        "reasonLabel": "Sebab utama",
         "reasonPlaceholder": "Pilih sebab utama",
         "reasons": {
           "not_b40": "Bukan B40",
@@ -5525,7 +5519,8 @@
           "other": "Lain-lain"
         },
         "whyLabel": "Mengapa anda menolak?",
-        "whyHint": "Disimpan dalam fail pelajar untuk pasukan anda. Tidak sekali-kali dihantar kepada pelajar.",
+        "detailsLabel": "Butiran tambahan",
+        "whyHint": "Sulit. Tidak dikongsi dengan pelajar.",
         "counter": "{count} / {max} aksara",
         "submit": "Tolak pelajar",
         "cancel": "Batal",
@@ -5543,7 +5538,7 @@
           "bad_status": "Hanya pelajar di peringkat Menunggu semakan boleh ditolak sebelum temu duga.",
           "has_reviewer": "Pelajar ini kini mempunyai penyemak, jadi tidak boleh ditolak sebelum temu duga.",
           "reason_required": "Pilih sebab utama.",
-          "comments_required": "Nyatakan mengapa anda menolak. Nota ini kekal dalam fail untuk pasukan anda.",
+          "comments_required": "Tambahkan butiran sebelum anda menolak.",
           "comments_too_long": "Nota ini boleh mengandungi paling banyak 2,000 aksara.",
           "generic": "Tidak dapat menolak pelajar ini. Sila cuba lagi."
         },

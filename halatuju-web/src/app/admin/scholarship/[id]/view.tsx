@@ -22,6 +22,7 @@
  * below. Do not lift it out without that design.
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import type { AssignCandidate } from '@/lib/assignOptions'
 import { useLatest } from '@/lib/useLatest'
 import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
@@ -156,7 +157,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const [viewerDoc, setViewerDoc] = useState<ViewerDoc | null>(null)   // in-cockpit doc viewer
-  const [admins, setAdmins] = useState<Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>>([])
+  const [admins, setAdmins] = useState<AssignCandidate[]>([])
   // #75 re-check: the reject-before-interview refusal lives HERE, so it survives the reload that a
   // stale refusal triggers even when that reload takes the door (and its component) away. It is
   // kept WITH its case, so it never follows to another one even where `id` changes in place (the prop
