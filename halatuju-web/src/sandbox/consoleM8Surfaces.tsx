@@ -71,8 +71,9 @@ const aiCounts = (green: number, agreed: number, over: Record<string, unknown> =
   green_fail_rate: (green - agreed) / green, unsure: 40, unsure_passed: 30, unsure_pass_rate: 0.75,
   few_green: false, few_unsure: false, few: false, ...over,
 })
-const aiReviewer = (id: number | null, name: string, label_key: string | null, applications: number) => ({
-  ...aiCounts(100, 90), id, name, label_key, applications, qc_checked: 4, qc_overturned: 1,
+const aiReviewer = (id: number | null, name: string, label_key: string | null, applications: number,
+  over: Record<string, unknown> = {}) => ({
+  ...aiCounts(100, 90), id, name, label_key, applications, qc_checked: 4, qc_overturned: 1, ...over,
 })
 // LL2b: "checked by the QC" counts for one fact (in doubt, checked, disagreed).
 const qcB = (in_doubt: number, checked: number, disagreed: number) => ({
@@ -80,6 +81,7 @@ const qcB = (in_doubt: number, checked: number, disagreed: number) => ({
   ai_green_checked: checked, ai_wrong_checked: checked - disagreed, ai_right_reviewer_wrong_checked: disagreed,
   few: checked < 30, few_ai_green: checked < 30,
 })
+const LONG_DOUBT_CODE = 'document_photo_is_blurred_and_cropped_so_the_total_household_income_cannot_be_read_reliably'
 const AI_METRICS = {
   applications: 50, fact_decisions: 200, overrides: 20, override_rate: 0.1, per_fact: {},
   overall: aiCounts(100, 90),
@@ -96,10 +98,14 @@ const AI_METRICS = {
   doubt_codes: [
     { fact: 'income', code: 'income_unclear', passed: 18, failed: 2, total: 20, fail_rate: 0.1, pass_rate: 0.9, few: false },
     { fact: 'academic', code: 'grade_blurred', passed: 3, failed: 1, total: 4, fail_rate: 0.25, pass_rate: 0.75, few: true },
+    // A long doubt label (no own sentence, so the code shows as words): it must wrap on a phone.
+    { fact: 'income', code: LONG_DOUBT_CODE, passed: 25, failed: 5, total: 30, fail_rate: 0.17, pass_rate: 0.83, few: false },
   ],
   qc_agreement: { accept: 17, reopen: 2, reject: 1, total: 20, accept_rate: 0.85, few: false, by_month: {} },
   qc_checked: { total: qcB(40, 34, 5), facts: { identity: qcB(0, 0, 0), academic: qcB(6, 5, 1), pathway: qcB(4, 4, 2), income: qcB(30, 25, 2) } },
   by_reviewer: [aiReviewer(7, LONG_TAMIL, null, 12), aiReviewer(null, 'x', 'unmatched_reviewer', 3),
+    // A reviewer row with the few-cases flag: the pill shows instead of the percent.
+    aiReviewer(8, 'Devi Penyemak', null, 2, { ...aiCounts(4, 3, { few_green: true, few_unsure: true }) }),
     aiReviewer(null, 'y', 'unnamed_reviewer', 2)],
 }
 
@@ -283,7 +289,7 @@ const overview = (sections: string[], extra: Record<string, unknown> = {}) => ({
 })
 const OVERVIEW_REVIEWER = overview(['mine', 'funnel', 'applications_series'])
 const OVERVIEW_ORG_ADMIN = overview(['attention', 'money', 'funnel', 'applications_series', 'money_series', 'qc', 'ai_prediction'], {
-  ai_prediction: AI_METRICS,   // LL1: the AI prediction section (tables, trend chart, reviewer table)
+  ai_prediction: { ...AI_METRICS, counted_scope: 'assigned' },   // LL1: counted_scope shows the assigned-only note; the AI prediction section (tables, trend chart, reviewer table)
   money: { students: 42, committed: '504000.00', paid: '201600.00', remaining: '302400.00', spent: '180250.50' },
   attention: { unassigned: 4, with_reviewer: 12, due_soon: 3, overdue: 1, awaiting_qc: 2 },
   money_series: MONEY_SERIES, qc: QC,
