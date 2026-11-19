@@ -121,8 +121,8 @@ class TheRenderModes(SimpleTestCase):
 
 
 class TheDocumentBudgets(SimpleTestCase):
-    def _hostile(self, data):
-        """Every reader gives the Vision route, never extracts, and the whole check is fast (< 3 s)."""
+    def _hostile(self, data, limit=3.0):
+        """Every reader gives the Vision route, never extracts, and the whole check is fast (< ``limit`` s)."""
         from pypdf import PageObject
         pdf_pages._layer_memo_clear()
         t0 = time.perf_counter()
@@ -130,7 +130,7 @@ class TheDocumentBudgets(SimpleTestCase):
             self.assertEqual(pdf_pages.pdf_text_layer(data), '')
             self.assertEqual(''.join(pdf_pages.pdf_page_texts(data, 3)), '')
             self.assertFalse(pdf_pages.first_page_drawn(data))
-        self.assertLess(time.perf_counter() - t0, 3.0)
+        self.assertLess(time.perf_counter() - t0, limit)
 
     def test_decompressed_bytes_past_the_cap_are_refused_unparsed(self):
         data = _doc(b' ' * 9_000_000, filtered=True)
@@ -157,8 +157,14 @@ class TheDocumentBudgets(SimpleTestCase):
         self._hostile(_doc(b'0 g ' * 1_500_000, filtered=True))
 
     def test_streams_each_just_under_the_stream_token_cap(self):
-        # 3 pages of 190,000 operations (380,000 tokens each): page 2 is past the document's tokens, unparsed
-        self._hostile(_pdf([b'0 g ' * 190_000 + _show(SPM_TEXT)] * 3))
+        # 3 pages of 190,000 operations (380,000 tokens each): page 2 is past the document's tokens, unparsed.
+        # Page 1 is parsed by design (about 3 s of pypdf on the dev machine, so a wall-clock limit of 3 s was
+        # flaky): the guard is pinned by what pypdf parses, ONE stream; the time limit only catches all three.
+        from pypdf.generic import ContentStream
+        parse = ContentStream._parse_content_stream
+        with patch.object(ContentStream, '_parse_content_stream', autospec=True, side_effect=parse) as parsed:
+            self._hostile(_pdf([b'0 g ' * 190_000 + _show(SPM_TEXT)] * 3), limit=8.0)
+        self.assertEqual(parsed.call_count, 1)
 
     def test_a_read_with_more_text_than_the_memo_limit_is_not_kept(self):
         with patch('apps.scholarship.pdf_pages._MEMO_MAX_TEXT', 10):
@@ -431,10 +437,16 @@ class TheHostileShapes(SimpleTestCase):
         with patch('apps.scholarship.pdf_pdfium_check.hidden_pages', return_value=set()):
             self.assertIn('SIJIL', pdf_pages.pdf_text_layer(data))         # the walk and pypdf: within budget
         pdf_pages._layer_memo_clear()
+        # The time is pypdf's extraction of the 23,000 calls, by design (2-4 s with pypdf 6.21.4 on a busy dev
+        # machine, so a 3 s limit was flaky, round 9): pdfium is pinned to ONE child for both readers; the time
+        # limit only catches a gross regression.
+        from apps.scholarship import pdfium_run
         t0 = time.perf_counter()
-        self.assertEqual(pdf_pages.pdf_text_layer(data), '')
-        self.assertEqual(''.join(pdf_pages.pdf_page_texts(data, 3)), '')
-        self.assertLess(time.perf_counter() - t0, 3.0)
+        with patch.object(pdfium_run, '_spawn', side_effect=pdfium_run._spawn) as spawned:
+            self.assertEqual(pdf_pages.pdf_text_layer(data), '')
+            self.assertEqual(''.join(pdf_pages.pdf_page_texts(data, 3)), '')
+        self.assertLess(time.perf_counter() - t0, 8.0)
+        self.assertEqual(spawned.call_count, 1)
 
     def test_pdfium_objects_at_the_cap_keep_the_layer_and_one_more_hides_it(self):
         from apps.scholarship.pdf_pdfium_check import MAX_OBJECTS

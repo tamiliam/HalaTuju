@@ -16,7 +16,8 @@ c. pypdf extracted letters or digits from the page but pdfium finds NO text obje
 d. pdfium cannot open the PDF, sees another page count, fails on the page, or the document's pages hold
    more than `MAX_OBJECTS` page objects between them.
 
-Fix round 8: the pdfium part runs in `pdfium_worker` (a child process, killed at `pdfium_run.TIMEOUT_S`).
+Fix round 8: the pdfium part runs in `pdfium_worker` (a child process, killed at its time limit: `pdfium_run.TIMEOUT_S`
+and, round 9, the document's `pdfium_run.DOC_BUDGET_S` left).
 
 Per OBJECT, not per character: a text-page character count was tried first and REJECTED — pdfium's text
 page drops overlapping duplicate characters (a repeated draw, fake bold), so 6 real genuine documents lost
@@ -40,7 +41,8 @@ def hidden_pages(data: bytes, page_count: int, judged: dict, oc_may_be_off: bool
     whitelisted and charged) or it is hidden and pdfium never loads it — fix round 8: a page whose pypdf text is
     blank too, since a later reader (the SPM word boxes) may still load it. Only a page with text is then given to
     pdfium (a blank page has nothing to use). ALL of those are hidden when pdfium cannot open the PDF, sees another
-    page count, or its child process fails or runs past `pdfium_run.TIMEOUT_S` — never the hidden text.
+    page count, or its child process fails or runs past its time limit, or the document has spent its pdfium budget
+    (`pdfium_run`) — never the hidden text.
     ``oc_may_be_off``: the document's optional-content configuration may switch a layer off
     (`pdf_layer_guards._doc_may_switch_off`). pdfium runs in ONE child process for the whole document."""
     from . import pdfium_run

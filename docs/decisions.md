@@ -292,6 +292,25 @@ spawns nothing). The load check now runs on EVERY page pdfium would load, blank 
 real document, about 0.15 s each idle on the dev machine (Windows start-up plus importing pypdfium2), so about 0.6 s
 per document; the Vision route's text check plus page-1 render took 0.5 s median, 3.3 s worst. Expect less on Linux.
 Corpus: 0 of 533 change on either pypdf version (text layer, page texts, page-1 drawn, every render byte-identical).
+**Fix round 9 — a per-document budget, a bounded slot wait, capped child output and memory.** Round 8's limit was
+per child, so a file tuned to finish just under 20 s cost 20 s at every step (and every reader), and a thread waited
+for a slot without end. Now each document (SHA-256 of its bytes, shared by all steps and readers in the process,
+LRU of 256) has `DOC_BUDGET_S` = 20 s of child wall time and `DOC_WAIT_S` = 45 s of slot waiting; every child's time is
+charged, a child's own limit is min(20 s, budget left), and a spent document gets the safe answer at once with no
+child (budgets restart after 10 minutes; a child that ran out of time marks the document for good). Budget measured on
+the corpus running EVERY reader's step (more than one upload's path): slowest document 4.0 s in all on a quiet dev
+machine; with the machine saturated (two corpus runs at once plus other work) 16.1 s, p95 6.7 s, median 1.9 s; no
+real document reached 20 s. Wait bound: at most 3 other uploads per worker, each holding slots for at most 20 s, 2
+slots: 1.5 x 20 s + margin. Measured worst wall time per request (pypdf 6.21.4, dev machine): one hostile upload alone
+20.0 s (then "cannot read"); 4 hostile uploads + 1 genuine (the slowest corpus document, 3.9 s alone) in one 4-thread
+worker: the genuine one done 44.0 s after submit, the hostile ones 20.7, 20.7, 40.1, 40.1 s. Memory:
+`MEMORY_LIMIT_BYTES` 640 -> 256 MiB (largest real child peak 176 MB; loaded child 26 MB resident on Windows, 45 MB
+allowed): 2 web processes x about 350 MiB + 2 x 2 x (45 + 256) MiB = about 1.9 GiB of the 2 GiB instance (640 MiB
+summed to 3.2 GiB). The child's output is capped at what the asked renders could make (side² x 3 + side + 1 MiB per
+PNG, side = the 4,000 px raster cap) plus an 8 MiB header, and read once (no extra copies). On Linux the child also
+gets `RLIMIT_CPU` (its limit + 5 s), dies with its parent (`PR_SET_PDEATHSIG`) and exits if already orphaned. Only a
+failure the same bytes would repeat is remembered: a spawn error is retried once, and a spawn failure, a slot wait
+that ran out, or a child killed by a signal we did not send are never remembered.
 **pypdf 5.9 (local) vs 6.21.4 (production):** same verdicts under this rule, except 21 corpus PDFs whose content
 streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
 between the two (pypdf's own changes). Local counts are not production counts.

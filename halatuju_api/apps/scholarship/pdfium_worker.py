@@ -8,8 +8,9 @@ stacked into one PNG), ``words`` (page 1's word boxes for the SPM certificate re
 
 Why a child: rounds 5-7 modelled what pdfium costs (load whitelists, render caps) and ran it under one process-wide
 lock, and every review still found a tiny crafted PDF that kept pdfium busy for 10-40 s — freezing every upload in
-the gunicorn worker. Here a slow or crashing pdfium is killed at `pdfium_run.TIMEOUT_S` and its memory is capped
-(Linux), so the worst case is one upload getting the safe answer. The module's top level imports only the standard
+the gunicorn worker. Here a slow or crashing pdfium is killed at its time limit (`pdfium_run`: at most `TIMEOUT_S`
+and the document's budget left) and its memory and CPU time are capped (Linux), so the worst case is one upload
+getting the safe answer. The module's top level imports only the standard
 library: the web process imports it for `raster_scale` alone.
 """
 import ctypes
@@ -207,11 +208,40 @@ def _limit_memory(budget: int) -> None:
         pass
 
 
+def _limit_cpu(seconds: int) -> None:
+    """Linux (fix round 9): the kernel kills this process after ``seconds`` of CPU (the parent passes a little more
+    than the child's time limit), so an orphan dies even if the web process that would have killed it is gone."""
+    if not seconds or not sys.platform.startswith('linux'):
+        return
+    import resource
+    try:
+        resource.setrlimit(resource.RLIMIT_CPU, (seconds, seconds + 1))
+    except (OSError, ValueError):
+        pass
+
+
+def _die_with_parent(parent: int) -> None:
+    """Linux (fix round 9): SIGKILL this process when the web process that spawned it dies (``prctl``
+    PR_SET_PDEATHSIG), and exit at once when it is already gone. Elsewhere the parent closing stdin is enough:
+    the request is read to its end before any pdfium work, and a cut request does not parse."""
+    import os
+    if not parent or not sys.platform.startswith('linux'):
+        return
+    try:
+        ctypes.CDLL(None, use_errno=True).prctl(1, 9)      # PR_SET_PDEATHSIG, SIGKILL
+    except (OSError, AttributeError):
+        pass
+    if os.getppid() != parent:
+        sys.exit(2)
+
+
 def main() -> int:
     raw_in = sys.stdin.buffer.read()
     head, _, data = raw_in.partition(b'\n')
     request = json.loads(head)
     del raw_in
+    _die_with_parent(int(request.get('parent') or 0))
+    _limit_cpu(int(request.get('cpu') or 0))
     sys.modules['numpy'] = None            # pypdfium2 imports numpy only for to_numpy (never used): ~90 ms saved
     from PIL import Image
     Image.preinit()                        # Pillow's PNG writer loaded before the memory cap is set
