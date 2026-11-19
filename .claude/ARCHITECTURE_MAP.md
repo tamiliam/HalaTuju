@@ -213,6 +213,10 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 ├── staff_list.py                  # M1a: the Staff list's rows (groups, kind, manageable, work, delete_never / delete_outcome, revocable) in a fixed query count
 ├── staff_work.py                  # M1a: 'waiting on them' per group (Admins registry per key, open cases, scholars now): Remove and Delete refusals (O5, O7)
 ├── mentor_archive.py              # M1a: a mentor login's Delete-as-archive and its restore on re-invite
+├── model_registry.py              # Learning loop LL3: ONE register of every AI model (version constant, source files, pins); append-only logs in `model_versions/<model>.json`; guards `test_model_versions.py` / `test_model_digest.py`
+├── verdict_context.py             # LL4: builds the PII-free record of what fed a verdict (documents, model versions, HMAC evidence fingerprint); stored in `ai_verdict_context` (migration 0218)
+├── fail_reasons.py                # LL2: fixed reason codes for failing a green fact, validator and keep-or-drop filter (stored in `officer_verdict.fail_reasons`)
+├── second_look.py                 # LL2b: facts in doubt for the QC, `fact_checks` validator and keep rule (stored in `officer_verdict.qc_fact_checks`)
 ├── sql/rls_policies.sql           # Deny-by-default RLS for the 2 new tables (apply before deploy)
 ├── migrations/0001_initial.py     # ScholarshipCohort + ScholarshipApplication
 └── tests/                         # test_models.py (4), test_api.py (13)

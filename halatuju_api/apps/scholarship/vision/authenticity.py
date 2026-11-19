@@ -107,7 +107,12 @@ def _auth_str(doc, ocr, image_fn):
     gimg = image_fn()   # str field-extraction is text-based; bytes for the holistic fallback
     auth = assess('str', image=gimg, content_type=doc.content_type, ocr_text=text)
     if auth and auth.get('status'):
-        return _assessed_auth(auth, auth['status'])
+        stored = _assessed_auth(auth, auth['status'])
+        if 'probability' not in auth and auth.get('model_version'):
+            # LL3: the holistic fallback (`supporting_doc`, no probability) keeps its version too;
+            # `_assessed_auth` carries the version only beside the signature scorer's probability.
+            stored['model_version'] = auth['model_version']
+        return stored
     return None
 
 

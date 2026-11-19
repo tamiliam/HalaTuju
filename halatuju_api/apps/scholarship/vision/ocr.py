@@ -23,6 +23,10 @@ logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name 
 # image data."), so we handle PDFs ourselves:
 #   - DIGITAL PDF → read the embedded text layer (pypdf) — free, perfect fidelity.
 #   - SCANNED PDF → rasterise page 1 (pypdfium2 + Pillow) → feed the image to Vision.
+#   - S-visible (owner decision 2026-11-18): a PDF whose PAGE 1 text is INVISIBLE (a scanner app's
+#     OCR overlay on a photo, render mode 3) has no layer here (`pdf_pages.pdf_text_layer` returns '')
+#     and so takes the SCANNED route: what we see is what we can defend. A later hidden page is left
+#     out of the layer; the drawn pages are kept.
 # Both libs are OPTIONAL: if absent (or the PDF is corrupt/encrypted), a PDF
 # degrades to "unreadable" — today's behaviour — rather than crashing.
 _PDF_MAGIC = b'%PDF-'
@@ -258,6 +262,8 @@ def ocr_document_full(doc) -> dict:
         if _v._is_pdf(doc.content_type, image):
             text = _usable_text_layer(_v._pdf_text_layer(image))
             if len(text) >= _MIN_PDF_TEXT:
+                # S-visible: this may be a PARTIAL layer (the drawn pages only). A later page whose text is
+                # invisible is left out on purpose and never stored: we keep only what the page shows.
                 ocr_keep.keep(doc, text, source=ocr_keep.PDF_TEXT_LAYER, reader='ocr_document_full')
                 return {'text': text, 'words': None, 'image': image, 'error': None}
         r = _v._vision_words(image, doc.content_type)

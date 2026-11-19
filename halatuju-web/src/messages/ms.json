@@ -4815,13 +4815,6 @@
         "hide": "Sembunyikan kata-kata pelajar sendiri"
       },
       "studentNote": "Nota pelajar",
-      "reliability": {
-        "title": "Kebolehharapan AI",
-        "subtitle": "Berapa kerap cadangan AI sepadan dengan keputusan penyemak — merentas {n} permohonan yang telah disemak.",
-        "overall": "Keseluruhan",
-        "empty": "Belum ada permohonan yang disemak — kebolehharapan AI akan dipaparkan di sini setelah penyemak merekod keputusan mereka.",
-        "mixedEngines": "Angka ini ialah purata bagi {n} versi enjin pemeriksaan ({versions}). Enjin telah berubah selepas sebahagian daripada keputusan ini direkodkan, jadi tafsirkan aliran ini dengan berhati-hati."
-      },
       "verdict": {
         "title": "Ramalan AI",
         "intro": "AI telah cuba menyemak butiran ini, tetapi kami memerlukan anda untuk membuat pertimbangan akhir.",
@@ -5169,7 +5162,7 @@
           "submit": "Hantar penemuan temu duga anda",
           "answerOne": "Jawab 1 soalan temu duga dalam penemuan anda",
           "answerMany": "Jawab {count} soalan temu duga dalam penemuan anda",
-          "rate": "Nilaikan Ramalan AI: {facts}",
+          "rate": "Semak fakta: {facts}",
           "conclusion": "Tulis kesimpulan anda"
         },
         "findingsIncomplete": "Jawab setiap soalan temu duga sebelum membuat keputusan ({count} lagi).",
@@ -5203,7 +5196,19 @@
         "finaliseEngineError": "Profil akhir tidak dapat ditulis. Sila tekan sekali lagi.",
         "mayAlreadyBeSaved": "Keputusan anda mungkin sudah disimpan. Muat semula halaman dan semak sebelum menekan sekali lagi.",
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
-        "rateTitle": "Nilaikan Ramalan AI"
+        "rateTitle": "Semak empat fakta",
+        "rateHelp": "Lulus = fakta ini benar bagi pelajar. Gagal = ia tidak benar, atau tidak dibuktikan.",
+        "failedAcceptWarn": "Satu fakta gagal. Adakah anda mahu menerima?",
+        "failWhy": "Mengapa fakta ini tidak benar?",
+        "failReasonLabel": "Sebab",
+        "pickReason": "Pilih satu sebab untuk fakta yang gagal.",
+        "failReason": {
+          "engine_wrong": "Peraturan itu salah",
+          "read_wrong": "Dokumen dibaca dengan salah",
+          "new_information": "Maklumat baharu (temu duga, panggilan)",
+          "programme_rule": "Peraturan program",
+          "other": "Lain-lain"
+        }
       },
       "qcDecision": {
         "title": "Kawalan mutu",
@@ -5239,7 +5244,17 @@
         "overrideConfirm": "Rekod sebab & terima",
         "reverifyTitle": "Kunci IC telah dibuka",
         "reverifyHint": "Pengambilan ini mempunyai syarat \"Tempat lahir\" dan IC pelajar tidak lagi dikunci, jadi Terima ditolak. Sahkan semula IC di sini: ia mengunci IC sekali lagi dan menyemak bahawa tiada akaun lain yang memegangnya sebagai disahkan. Kes ini kekal menunggu QC dan penyemak tidak dimaklumkan. Melainkan anda super admin, orang lain akan membuat QC selepas itu.",
-        "reverifyButton": "Sahkan semula IC"
+        "reverifyButton": "Sahkan semula IC",
+        "secondLook": {
+          "title": "Fakta yang diragui",
+          "help": "Penyemak dan AI tidak sependapat tentang fakta ini. Anda bersetuju dengan penyemak melainkan anda menekan Tidak setuju.",
+          "aiSaid": "Kata AI",
+          "reviewerSaid": "Kata penyemak",
+          "disagree": "Tidak setuju dengan penyemak",
+          "undo": "Anda tidak setuju. Tekan untuk batal.",
+          "agree": "Anda bersetuju dengan penyemak.",
+          "butDecision": "tetapi keputusannya {decision}"
+        }
       },
       "caveats": {
         "studentAnswer": "Jawapan pelajar",
@@ -7611,6 +7626,52 @@
         "completed": "Semakan disiapkan",
         "turnaround": "Pelajar menunggu median {days} hari dari keputusan penilai sehingga semakan anda.",
         "none": "Tiada apa-apa menunggu semakan dalam pemberian ini."
+      },
+      "aiPrediction": {
+        "title": "Ramalan AI",
+        "sub": "Kekerapan penyemak bersetuju dengan ramalan AI. AI menyemak empat fakta bagi setiap permohonan; penyemak kemudian membuat keputusan akhir.",
+        "empty": "Belum ada permohonan yang disemak. Angka akan muncul selepas penyemak merekodkan keputusan mereka.",
+        "sureTile": "Apabila AI yakin, penyemak bersetuju",
+        "doubtTile": "Apabila AI ragu, penyemak meluluskan fakta itu",
+        "factsOf": "{a} daripada {b} fakta",
+        "xOfY": "{a} daripada {b}",
+        "fewCases": "Kes sedikit",
+        "trend": "Apabila AI yakin, mengikut bulan",
+        "trendChart": "Kadar fakta yang dipersetujui penyemak apabila AI yakin, mengikut bulan",
+        "trendHint": "Setiap angka ialah kadar fakta yang AI yakin dan penyemak bersetuju. Bulan yang kesnya sedikit hanya menunjukkan bilangan.",
+        "byFact": "Mengikut fakta",
+        "doubts": "Keraguan yang paling kerap diluluskan penyemak",
+        "doubtsHint": "Keraguan yang kerap diluluskan penyemak mungkin terlalu berhati-hati bagi AI.",
+        "decision": "Keputusan",
+        "decisionNote": "Keputusan semakan kualiti",
+        "qcAgreed": "diterima pada semakan kualiti",
+        "qcOther": "Dikembalikan: {reopen}. Ditolak: {reject}.",
+        "byVersion": "Mengikut versi enjin",
+        "byReviewer": "Mengikut penyemak",
+        "leadsOnly": "Ketua sahaja",
+        "reviewerHint": "Dipaparkan kepada ketua sahaja, untuk menyokong penyemak dan bukan untuk menarafkan mereka.",
+        "footer": "Hanya fakta yang diragui disemak oleh QC. Angka lain membandingkan AI dengan penyemak.",
+        "allProgrammes": "Semua program bersama.",
+        "assignedOnly": "Pemohon yang ditugaskan kepada anda sahaja.",
+        "versionUnknown": "Versi tidak diketahui",
+        "unmatchedReviewer": "Penyemak tidak dipadankan dengan akaun",
+        "notGiven": "Tidak diberi",
+        "unnamedReviewer": "Penyemak tanpa nama",
+        "qcChecked": "Fakta yang diragui, disemak oleh QC",
+        "col": {
+          "qcChecked": "Disemak oleh QC",
+          "qcAgreed": "Setuju dengan penyemak",
+          "qcDisagreed": "Tidak setuju dengan penyemak",
+          "reasons": "Sebab gagal",
+          "sure": "AI yakin, penyemak setuju",
+          "doubt": "AI ragu, penyemak meluluskan",
+          "fact": "Fakta",
+          "doubtCode": "Keraguan",
+          "passed": "Diluluskan penyemak",
+          "version": "Versi",
+          "reviewer": "Penyemak",
+          "applications": "Permohonan"
+        }
       }
     },
     "programme": {

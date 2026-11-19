@@ -15,7 +15,8 @@ import type { ApiOptions } from './client'
 import { DEFAULT_ADMIN_PAGE_SIZE } from './partners'
 import type { InterviewSchedule } from './interviews'
 import type {
-  AdminAgendaEntry, AdminAnomaly, AdminFundingEstimate, AdminQuerySla, AdminSubmissionReview, AdminVerdictFact,
+  AdminAgendaEntry, AdminAnomaly, AdminFundingEstimate, AdminQuerySla, AdminSubmissionReview,
+  AdminVerdictFact, SecondLook,
 } from './verdict'
 import type { NewNoteListFields } from './reviewerNotes'
 import type { AdminApplicantDocument, AdminReferee } from './documents'
@@ -390,12 +391,11 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields {
   // Sprint 5 — Verification verdict cockpit fields
   ai_verdict_snapshot: AdminVerdictFact[]
   officer_verdict: {
-    identity?: string
-    academic?: string
-    income?: string
-    pathway?: string
-    overall?: string
+    identity?: string; academic?: string; income?: string; pathway?: string; overall?: string
+    /** LL2: absent on rows from before the reason tap. */
+    fail_reasons?: Record<string, string>
   }
+  second_look?: SecondLook   // LL2b: the QC's second look; absent on old cached data (no block)
   verdict_reason: string
   verdict_decided_by: string
   verdict_decided_at: string | null

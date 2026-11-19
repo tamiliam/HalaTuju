@@ -18,6 +18,14 @@ status 'wrong_type'. Soft throughout; the reviewer is the authority.
 The Gemini seam is reached via ``vision._call_gemini_json`` (imported lazily inside the function
 so the module-level import isn't circular and the test patch target stays valid).
 """
+# Version of the supporting-document (holistic) genuineness model, stored on every result as
+# ``model_version``. History:
+#   1.0.0 (2026-11-19, LL3) — first stamped version; the behaviour already in use (str /
+#                        birth_certificate / epf, 2.5 Flash first). Older results carry no version.
+# Guarded by `tests/test_model_versions.py`: a logic change here needs a bump + a
+# `model_versions/supporting_doc.json` entry.
+MODEL_VERSION = '1.0.0'
+
 _GENUINENESS_DOCS = {
     'str': {'screenshot_ok': True,
             'desc': 'a Malaysian STR (Sumbangan Tunai Rahmah) cash-aid document — a MySTR app '
@@ -43,7 +51,7 @@ _DOC_GENUINENESS_STATUS = {'genuine': 'genuine', 'suspect': 'suspect', 'wrong_ty
 
 def doc_genuineness(data: bytes, content_type: str, doc_type: str) -> dict:
     """Soft genuineness fingerprint for a standardised supporting document →
-    ``{status, doc_seen, reason}`` or ``{}``. ``status`` ∈ canonical ``genuine`` /
+    ``{status, doc_seen, reason, model_version}`` or ``{}``. ``status`` ∈ canonical ``genuine`` /
     ``suspect`` / ``not_<doc_type>``. NEVER raises; an AI outage / unsupported type
     returns ``{}`` (no signal). The reviewer is the authority."""
     from apps.scholarship import vision   # lazy: avoids a circular import; keeps the patch seam
@@ -77,4 +85,5 @@ def doc_genuineness(data: bytes, content_type: str, doc_type: str) -> dict:
         'status': status,
         'doc_seen': (r.get('doc_seen') or '')[:80],
         'reason': (r.get('reason') or '')[:300],
+        'model_version': MODEL_VERSION,
     }

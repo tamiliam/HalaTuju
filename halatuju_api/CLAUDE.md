@@ -69,6 +69,8 @@ GCP project `gen-lang-client-0871147736`, account `tamiliam@gmail.com`; Cloud Ru
 - Env vars: ⚠ the Gemini key must belong to the HalaTuju GCP project (prepaid; credit out = outage); ⚠ rotating the Brevo key also means Supabase Auth's SMTP setting; `SPONSOR_MOCK_DONATIONS_ENABLED` is **NEVER in production**; ⛔ `BURSARY_AGREEMENT_ENABLED` needs TD-347 fixed first; `UPDATE_EMAIL_GOLDEN` is local-only and ⛔ never set.
 - **Which flags are ON in production:** the table in `docs/deployment.md` ("Live flag values"), read off the running service. Never read a flag from a settings default.
 - The api image installs `requirements.lock` (refresh it deliberately); `.dockerignore` is the file that counts for the image.
+- pdfium (pypdfium2) never runs in the web process: each use on an upload is a short `python -I apps/scholarship/pdfium_worker.py` child (`pdfium_run`: 20 s per child and 20 s per document in all, 45 s slot wait per document, +256 MiB address-space cap and a CPU limit on Linux, max 2 per gunicorn worker). Raising workers/threads or lowering instance memory means re-sizing `MEMORY_LIMIT_BYTES` / `MAX_CHILDREN` (the sum is in `docs/decisions.md`, S-visible round 9).
+- ⚠ After any api deploy: render one known PDF upload (e.g. re-read a known certificate) and check the Cloud Run logs show no `pdfium child` / `pdfium budget` warnings — a broken child fails safe (every document to Vision / "cannot read") and would otherwise go unnoticed.
 - New documents go where the doc says: retrospectives `docs/retrospectives/`, release notes `docs/releases/`, history `docs/sprint-history.md`, domain rules `docs/domain-rules.md`.
 
 ## Security and access (full review: `docs/security-posture.md`)
@@ -171,6 +173,11 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 ## Next Sprint
 
 Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `docs/sprint-history.md` ("Moved from halatuju_api/CLAUDE.md Next Sprint, 2026-11-03").
+
+### Learning loop (LL), 2026-11-19: LL1, LL2, LL2b, LL3 and LL4 are saved to main, NOT published
+
+- Before the LL publish: the owner applies the LL4 migration (`0218_application_verdict_context`) by hand, then does the phone checks for LL1, LL2, LL2b and LL4, and one for the withdraw card on the case page (it now loads only when a case has a withdraw request). LL5 (the learning report) starts when LL4 is live. Plan: `docs/plans/2026-11-18-learning-loop-roadmap.md`.
+- **From now on, any change to a model's files needs a version bump** in `apps/scholarship/model_versions/<model>.json` (and its version constant), or the guard tests `test_model_versions.py` and `test_model_digest.py` fail. Never re-seed a digest without a bump.
 
 ### STATE AT 2026-11-05 — T5c P5b + P5c LIVE (main 3c39489b, api-01255-zsm, web-01084-l6b; no migration)
 

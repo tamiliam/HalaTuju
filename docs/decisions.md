@@ -181,6 +181,167 @@ breaks the rule for ALL gifts, platform-wide. Services: api, web. Migration: non
 - Follow-ups: TD-665 (a reader-level public / private field), TD-666 (extend the named-IPTS list), TD-667 (offers
   scored before 1.8.0 or never scored).
 
+## 2026-11-18 — The visible page judges, for every document type (OCR-first S-visible)
+
+Owner decision 2026-11-18: "What we see is what we can defend." A PDF page whose text is invisible (a phone scanner
+app's OCR overlay on a photo: text render mode 3 or 7) is treated as a picture: it has no text layer, so it is
+rasterised and read by Cloud Vision, the route a scanned PDF has always taken. A PDF whose text is drawn on the page
+keeps its own text layer (free and exact, and what we see). The whole-document layer read (`pdf_text_layer`) takes the
+Vision route when PAGE 1 is hidden (Vision reads page 1); otherwise it keeps the drawn pages and leaves a hidden later
+page out. The per-page read (`pdf_page_texts`) decides page by page. Every reader of page 1's own characters (the SPM
+certificate's pdfium word boxes) needs a drawn page 1. The check has ONE operation budget for the whole document (fix round 2: 500,000 operations, every operation
+charged each time it is walked, so a form called many times pays every time; the largest real PDF walks 87,726): past
+it the file is hidden and no text is extracted from it. At most 20 pages are checked and extracted, the check stops as
+soon as page 1 is not drawn, and one upload's readers share one check and one extraction (an in-process memo keyed
+on the file's SHA-256). A check that fails is
+the Vision route, never the hidden text. Why: scanner-app layers miss letterheads and key lines, so genuine documents
+(a USM offer, an STPM certificate with 11 visible lines "missing") failed to go green. Accepted residuals (not new):
+text drawn under an image, and transparent / white / size-0 / off-page text, count as drawn. Follow-up idea: strip
+invisible runs inside a page during extraction (track `Tr` in pypdf's visitor) so mixed pages keep their drawn text.
+
+**Fix round 3 — every way `extract_text` emits a character (pypdf 5.9.0 and 6.21.4 read).** The walk mirrors pypdf's
+plain extraction, or makes the page hidden: (1) the page's /Contents, stream or array — walked; (2) the string operands
+of Tj, ' (operands[0]), " (operands[2]) and TJ (every string in the array; 5.9 also reads a TJ string operand) — ALL
+string operands are counted, blanks too, since Encoding / ToUnicode can map any byte (a space too) to a letter; (3) `Do`
+on any XObject that is not an /Image — walked; one that is not a /Form (or has no /Subtype) is never painted, so any
+text in it is hidden; (4) /Resources inherited up /Parent, for pages and XObjects — mirrored (a chain past 64 or a cycle
+is hidden); (5) a `Tr` that is not 0-2 / 4-6 (3, 7, out of range, not an integer) — hidden; (6) TJ kerning only adds
+spaces; the orientation filter only drops text, so the walk is a superset. Never read by plain `extract_text`:
+annotation appearance streams and AcroForm fields, Type3 CharProcs, marked-content ActualText, patterns, soft masks,
+shadings; layout mode is never called. **Outside the rule** (accepted, not judged): white, transparent, size-0,
+0 `Tz` (zero horizontal scale), clipped, off-page or under-an-image text, and an empty Type3 glyph.
+**Caps, charged BEFORE a stream is parsed, on every walk:** 8 MB decompressed bytes per document (corpus max 3,421,060);
+700,000 tokens per document and 400,000 per stream (corpus 467,000 / 234,030: pypdf parses one stream worse than
+linearly past that); 2,000 inline images (corpus 0); no string or `<...>` over 64 KB and no bare name / number /
+operator over 1 KB (corpus 1,893 / 692: pypdf 5.9 parses long tokens quadratically); then 500,000 operations and
+200,000 shown characters (corpus 87,726 / 7,373). Past any cap: hidden, Vision route, nothing extracted. A read with
+more than 2 million characters of text is not memoised; the memo is cleared only under pytest. Residual: a 5.9-only
+shape (8 MB of 1 KB names) still parses in about 9 s; on 6.21.4 it takes 0.6 s.
+**Pages:** 20 (`MAX_LAYER_PAGES`). No scorer or reader needs more: the corpus max is 5 pages; the offer reader takes 3,
+the slip gate and Exact offer read page 1. Fix round 4 kept the cap (uncapped, 2,000 one-line pages took 3 s to read on
+6.21.4 and 20,000 empty pages 5.5 s) and made a longer PDF give its first 10 and its LAST 10 pages, so the EPF reader
+(`_last_caruman`, last row in text order) sees the latest month. `pdf_pages_png` takes the last page through pdfium.
+**Fix round 4 (`pdf_layer_guards.py`).** (1) Operand counts: pdfium takes an operator's LAST operands, pypdf and the walk
+the FIRST, so any fixed-arity operator (the whole ISO 32000 table) with the wrong count is hidden (`0 3 Tr`,
+`(x) ( ) Tj`, `/Fm1 /Fm2 Do`), and so is a Tj / ' / " operand that is not a string or a TJ array with a name or a
+non-array (corpus: 0 affected). (2) Font maps: pypdf rebuilds every listed font's maps (ToUnicode, Encoding
+/Differences, Widths over FirstChar..LastChar, CID /W, a Type1 font file) on each page and each form call, so each
+font NAME is charged its font's cost per call, before extraction: 1,200,000 units per document (corpus max 792,972),
+200,000 per font (66,175), 800 KB per font stream (4,639 bytes), 10,000 CID /W entries (198). Unguarded, a 150-call form
+took 13 s and 40 names x 30 calls 122 s on 6.21.4; guarded, under 0.2 s on both versions. (3) Optional content: if the
+default configuration may switch a layer off (/BaseState not /ON, a non-empty /OFF or /AS, or /D unreadable), text in
+`/OC` marked content or in a form with /OC is hidden; otherwise only a plain /OCG is shown (an /OCMD or an unresolved
+name is hidden). Corpus: 6 PDFs carry /AS, none marks page text /OC; 0 results change.
+**Fix round 5 (`pdf_pdfium_check.py`) — pdfium judges, per object.** Four rounds each found one more place where pypdf
+and pdfium parse a PDF differently, so the class is closed by asking pdfium (which paints the page) for its own reading
+of every page whose pypdf text would be used. The page is hidden when a pdfium text object has a non-painting render
+mode, sits (itself or in a form) under an `OC` mark, when pypdf found letters or digits but pdfium no text object, or on
+any pdfium error, a different page count, or more than 20,000 page objects per document (corpus max 9,101; doc 1409:
+4,099). **Rejected: a text-page character count** (pdfium vs pypdf). pdfium's text page drops overlapping duplicate
+characters (a repeated draw, fake bold), so 6 real genuine documents (1489, 1249, 937, 964, 1832, 1409) lost their free
+layer. **Exception to "any OC mark":** a plain /OCG mark (only Type and Name) in a document that switches nothing off
+stays shown, mirroring the walk's `oc_hides`; real doc 4168 draws its text in such a layer. Known limit: pdfium's API does
+not show a form's own /OC entry; the walk judges that. The walk keeps its checks and adds: inline images, unclean `Tr`
+tokens, text before `Tf`, control-byte names, /OCG with /Usage → hidden; 20 operations per form call; at most 500 pages,
+a page-tree node cap (2x the count, no node twice) and at most 20,000 objects in object streams (pypdf 6.21.4 parses a
+whole object stream on first read: a 99,000-page file took 2.5 s; corpus max 792). Corpus: 0 of 533 change on either
+pypdf version.
+**Fix round 6 — whitelists, not blacklists.** Five rounds each found one more shape a blacklist missed, so the checks
+now allow ONLY what the 533 corpus PDFs use (measured 2026-11-19), with small headroom (+); anything else is the
+Vision route. (1) **Optional content** (`pdf_layer_guards._doc_may_switch_off`): layers count as all ON only when
+/OCProperties holds just /OCGs and /D (no /Configs — pdfium takes a /View configuration from there), /D just /ON /OFF
+/Order /RBGroups /BaseState(+), /BaseState absent or /ON, /OFF empty, no /AS, every OCG only /Type and /Name. Corpus:
+7 docs (11 files) carry /OCProperties, all {/D, /OCGs}; 4168 /D {/ON, /OFF empty, /Order}, OCG {/Type, /Name} → stays
+on its free layer; 1234, 951 {/ON, /Order, /RBGroups}; 1705, 1746, 3502, 3997 {/AS, /ON} with /Usage OCGs → hidden,
+as before. (2) **What pdfium loads with a page** (new `pdf_pdfium_load.py`, run before pdfium opens a judged page):
+pdfium parses each Type3 glyph procedure afresh for EVERY character code naming it (120 glyphs x 2.8 MB in a 670 KB
+file: 13.5 s; one 2.8 MB glyph named by 256 codes, 10 KB: 9.7 s). Whitelist: fonts Type1/TrueType/Type0/Type3, CID
+fonts Type0/Type2, programs FontFile2, FontFile3 (Type1C, OpenType, CIDFontType0C+), FontFile+; no embedded CMap;
+Type3 with no /Resources, /Encoding only {/Type, /Differences}, glyphs only numbers and d0 d1 m l c v y h re f f* n q
+Q cm W W* (corpus: d1 m l c h f re; 4,366 glyphs, max 9,040 bytes); colour spaces Gray/RGB/CMYK+/CalRGB/CalGray+/
+ICCBased/Indexed/Pattern (no Separation, DeviceN, Lab); patterns 1, 2; shadings 2, 3+; functions 2, 3 (no sampled or
+PostScript); ExtGState keys as the corpus (+ /D /RI /FL /TK), no /TR /BG /UCR /HT /Font; soft masks {/Type /S /G /BC};
+stream filters only none or /FlateDecode; no inline image in a form, cell or mask. Every font program, glyph use, ICC
+profile, Indexed table, form, cell and mask is charged by bounded inflate: 2.5 MB per document (corpus max 1,158,420,
+doc 871), 1 MB per stream (max 422,708), 4,000 entries (max 1,841, doc 708). Image data is not charged: a 400 MB image
+loads in 0.00 s (decoded only to paint). (3) A string over 32,767 bytes (pdfium keeps only the first 32,767; corpus max
+1,893) hides the page. (4) **One lock** (`pdfium_lock.PDFIUM_LOCK`, via `pdfium_document`) around every request-path
+pdfium use: `pdf_pages` (3 rasterisers, page count), `pdf_pdfium_check`, `spm_cert_parse._pdf_words`; pypdfium2 is not
+thread-safe. Corpus max hold for the check: 0.05 s per document. **Open:** a rasterised page holds the lock for its
+whole render — a 20,000 x 20,000 image took 323 s and a 60 MB tiling cell 21.6 s to render, blocking other threads.
+Corpus: 0 of 533 change on either pypdf version. (Closed by round 7.)
+**Fix round 7 — a render whitelist, so the lock is held for a bounded render.** Before any rasteriser renders a page
+(`pdf_pages`: Vision page 1, the offer reader's pages, the stacked declaration pages), new `pdf_render_check` walks
+its content WITHOUT pdfium (its own tokenizer: pypdf 5.9 cannot parse 43 real pages) after round 6's load check, now
+on the render path too. A refused page makes the rasteriser return None — the existing "cannot read" outcome
+(`Bad image data.` -> `ic_unreadable`; `no image`; no offer images); it is never scored from hidden text. Caps are
+about 2x the corpus maximum over pages 1-3 + last (778 pages, same on both pypdf versions): one image decoded
+215 MB (max 107.3 MB, a phone photo, doc 1380) and 72 M pixels (max 35.8 M) — summed over a page's draws the same;
+painted device pixels 135 M (max 66.7 M; each fill, stroke, image, shading and group by its clipped box at the
+render scale, a soft mask repaid on every paint under it); operations 110,000 (max 52,913); tokens 520,000 (max
+257,493); tiling cell 8 M px (max 3.87 M), tiles 1,000 (max 1); Type 3 glyph work (glyphs shown x the font's
+largest glyph) 400,000 (max 198,009), at most 256 glyphs of 20,000 bytes (max 68, 9,040), paths only; paints
+under a non-Normal blend mode 8 (max 0: pdfium's cost grows with the square, 16 fills 4.7 s, 32 fills 20 s).
+Whitelists: image filters DCT, Flate, CCITTFax, RunLength, ASCII85 (no JBIG2, JPX, LZW); shadings axial with an
+exponential or stitched-exponential function; no inline images. The render scale was already bounded (200 DPI, longer
+side at most 4,000 px). Worst crafted render under the caps on 6.21.4: 1.8 s (8 blended full-page fills after 36,666 small ones); slowest real page 1: 1.3 s (d1380; slowest 3-page offer 1.2 s).
+**Fix round 8 — pdfium in a child process with a hard time limit; cost modelling is now only a pre-filter.** Rounds
+5-7 modelled what pdfium costs and ran it under one process-wide lock (pypdfium2 4.30 is not thread-safe), and the
+round 7 review still found four small crafted PDFs that kept pdfium busy 10-38 s, freezing every upload in that
+gunicorn worker (2 workers x 4 threads, `--timeout 120`): an annotation's appearance stream (pdfium draws /Annots;
+the walk never read them), 3000 pt text at -2166 Tc, 10,500 clip paths, and Type3 glyphs behind text pypdf reads
+as blank (so the load check skipped the page). Each fix found the next gap, so the safety line moved: every pdfium
+use on an upload now runs in `pdfium_worker`, a fresh `python -I` child (`subprocess.run`, stdlib only; one child
+per document per step: the text check's pages in one call, a render and its page count in one; answers kept per
+upload so repeated readers spawn nothing). No shared pdfium state, so no lock. Limits: `TIMEOUT_S` = 20 s wall clock
+(slowest real child call 1.53 s on the dev machine; killed past it); `RLIMIT_AS` = the child's size after
+loading Python, pypdfium2 and Pillow + 640 MiB, Linux only (instance 2 GiB, 2 workers; largest real child peak 176
+MB, median 66 MB); at most 2 children per web process (2 x 2 x 640 MiB plus the workers stays inside the instance); an upload that
+timed out once gets the safe answer for every later question without a new child. Any timeout, crash, non-zero exit
+or unparseable output is the safe answer: the text check says hidden (Vision route), a render gives None (the
+"cannot read" path); never the hidden text. The round 5-7 whitelists and caps stay as a cheap pre-filter (a refusal
+spawns nothing). The load check now runs on EVERY page pdfium would load, blank pypdf text or not. Cost: about 4 children per
+real document, about 0.15 s each idle on the dev machine (Windows start-up plus importing pypdfium2), so about 0.6 s
+per document; the Vision route's text check plus page-1 render took 0.5 s median, 3.3 s worst. Expect less on Linux.
+Corpus: 0 of 533 change on either pypdf version (text layer, page texts, page-1 drawn, every render byte-identical).
+**Fix round 9 — a per-document budget, a bounded slot wait, capped child output and memory.** Round 8's limit was
+per child, so a file tuned to finish just under 20 s cost 20 s at every step (and every reader), and a thread waited
+for a slot without end. Now each document (SHA-256 of its bytes, shared by all steps and readers in the process,
+LRU of 256) has `DOC_BUDGET_S` = 20 s of child wall time and `DOC_WAIT_S` = 45 s of slot waiting; every child's time is
+charged, a child's own limit is min(20 s, budget left), and a spent document gets the safe answer at once with no
+child (budgets restart after 10 minutes; a child that ran out of time marks the document for good). Budget measured on
+the corpus running EVERY reader's step (more than one upload's path): slowest document 4.0 s in all on a quiet dev
+machine; with the machine saturated (two corpus runs at once plus other work) 16.1 s, p95 6.7 s, median 1.9 s; no
+real document reached 20 s. Wait bound: at most 3 other uploads per worker, each holding slots for at most 20 s, 2
+slots: 1.5 x 20 s + margin. Measured worst wall time per request (pypdf 6.21.4, dev machine): one hostile upload alone
+20.0 s (then "cannot read"); 4 hostile uploads + 1 genuine (the slowest corpus document, 3.9 s alone) in one 4-thread
+worker: the genuine one done 44.0 s after submit, the hostile ones 20.7, 20.7, 40.1, 40.1 s. Memory:
+`MEMORY_LIMIT_BYTES` 640 -> 256 MiB (largest real child peak 176 MB; loaded child 26 MB resident on Windows, 45 MB
+allowed): 2 web processes x about 350 MiB + 2 x 2 x (45 + 256) MiB = about 1.9 GiB of the 2 GiB instance (640 MiB
+summed to 3.2 GiB). The child's output is capped at what the asked renders could make (side² x 3 + side + 1 MiB per
+PNG, side = the 4,000 px raster cap) plus an 8 MiB header, and read once (no extra copies). On Linux the child also
+gets `RLIMIT_CPU` (its limit + 5 s), dies with its parent (`PR_SET_PDEATHSIG`) and exits if already orphaned. Only a
+failure the same bytes would repeat is remembered: a spawn error is retried once, and a spawn failure, a slot wait
+that ran out, or a child killed by a signal we did not send are never remembered.
+**Fix round 10 — make "never remembered" true, and reserve before spending.** Round 9 read the child's output before
+its exit status, so a child killed from outside (the kernel's OOM killer, an operator) after writing part of a header
+was remembered as a bad file. Now a negative return code that we did not cause is checked first, whatever the child
+wrote, and is transient. Only a child killed at the FULL `TIMEOUT_S` adds the document to `_SPENT` (for good); a kill
+at a limit the budget had shrunk spends the budget only, and it restarts after `BUDGET_WINDOW_S`. Each child's limit,
+min(`TIMEOUT_S`, budget left), is reserved under the lock BEFORE it starts and the unused part refunded after, so
+concurrent questions about the same bytes cannot each spend 20 s; a question that finds the budget held by a running
+child waits for it (charged to `DOC_WAIT_S`), then reads its memoised answer or the refunded budget. A watcher thread
+that will not start kills and reaps the child and is transient. A MemoryError in the child (the Linux address-space
+cap) exits with code 86 and logs "out of memory" (remembered: the same bytes repeat it). **The cap measured on Linux** (WSL, Python 3.12, the production pins): all
+533 PDFs give the same answers with the 256 MiB cap on and off, no MemoryError; the child holds 37.7-44.9 MiB when
+the cap is set (45 MiB assumed) and grows at most 136.8 MiB past it (VmPeak 181.4 MiB), so 2 web + 2 x 2 x (45 + 256)
+MiB = about 1.9 GiB stands. Against Windows, verdicts, text and page counts match; 138 PDFs render different pixels
+and 148 give different SPM word boxes, every one with a font not embedded (pdfium draws it with the platform's
+fonts). Production's own container fonts will differ again: renders are not portable, verdicts are.
+**pypdf 5.9 (local) vs 6.21.4 (production):** same verdicts under this rule, except 21 corpus PDFs whose content
+streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
+between the two (pypdf's own changes). Local counts are not production counts.
+
 ## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)
 
 Owner said yes on 2026-11-18. Branch ocr-keep. Migration 0214 (additive). Services: api. We keep the text each read
@@ -20741,3 +20902,33 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 **Decision:** HalaTuju uses the `Toggle` switch (`components/Toggle.tsx`) for every on/off choice and every pick-several list. Tick boxes stay only where a person agrees to or confirms a statement: scholarship award agreements, sponsor consent (register and details form), source witness confirmation, post-award "installed", and the scholarship next-steps checklist. A jest scan (`noTickBoxes.test.ts`) holds exactly those six files and counts.
 **Why:** the owner, 2026-11-16: one control language across the app; a tick box is kept where ticking reads as "I agree".
 **Revisit if:** a new agreement screen needs a tick box (add it to the scan with a reason).
+
+## 2026-11-19 - The Pass / Fail tap records the student's fact, not a rating of the AI (owner ruling A, 2026-11-18; built in LL1/LL2)
+
+**Decision:** The tap means "is this fact true for the student?". The AI is scored by the system (green and then failed = wrong green). When a reviewer fails a fact the AI called green, the cause is asked separately, with one tap: engine wrong, read wrong, new information, programme rule, other. The stored value did not change, so the 173 older answers stay valid.
+**Why:** the old box read "Rate AI Prediction", and the data could not tell a reviewer who judged the student from one who judged the AI. Alternative considered: make the tap a rating of the AI. Rejected: it would change the meaning of the old answers.
+**Revisit if:** the 133 "too careful" answers (AI unsure, human pass) need a reason too; today the doubt table explains them with no reviewer work.
+
+## 2026-11-19 - The second person for the human check is the QC, inside the QC step; silence means agreement (owner, 2026-11-18; built in LL2b)
+
+**Decision:** The QC (also the funder) is the second look. A "Facts in doubt" block shows on the QC panel only when a fact is in doubt (AI green and reviewer fail, or a failed fact with an accept). Doing nothing records "agreed" for the shown facts; one tap records "disagreed". A fact that was not shown gets no answer. The numbers say "checked by the QC", never "true". The second look never changes a decision.
+**Why:** one person made all 70 QC decisions and backs each with money, so the design had to cost him almost nothing. Alternatives considered: a new review page or a sampled list. Rejected: more work for the same person.
+**Revisit if:** more than one QC per organisation exists, or silence turns out to hide disagreement (compare with the taps).
+
+## 2026-11-19 - One human feed for "the reader was wrong" (LL2 reasons and LL2b QC answers); no second store
+
+**Decision:** The LL2 reason `read_wrong` and the LL2b QC disagreement are the ONE feed. The OCR-first work reads it; it builds no feedback store of its own. LL5 will report the feed per model version.
+**Why:** two stores would disagree and double the work. Agreed with the OCR session on 2026-11-19, on the owner's word.
+**Revisit if:** the OCR work needs a signal these two cannot give.
+
+## 2026-11-19 - A model's version is registered with a digest of its source, and a digest is never re-seeded without a version bump (LL3)
+
+**Decision:** `apps/scholarship/model_registry.py` lists each model's files; `model_versions/<model>.json` keeps one append-only entry per version with the digest of the cleaned source (comments, docstrings, blank lines and the version line dropped). A change to a registered file without a new version fails `test_model_versions.py` / `test_model_digest.py`. Once the register is on `main`, a digest is not re-seeded without a bump. Before the first merge two digests were re-seeded in place, with dated notes, because main moved the IPTS reason texts into constants with the same text.
+**Alternatives considered:** `ast.dump` digest (rejected: it differs between Python 3.11 in production and 3.13 here); a habit and a review note (the admitted miss of 2026-11-16).
+**Revisit if:** the guard blocks harmless moves too often (add an `also_ok` digest with a note), or a model keeps its logic outside the listed files (TD register: guard gaps).
+
+## 2026-11-19 - The first batch of old cases for the QC was left out (owner, 2026-11-19)
+
+**Decision:** the list of 21 wrong-green + 5 failed-but-accepted + 7 QC-disagreed cases (2026-11-18 counts) is not built. The QC checks new cases only.
+**Why:** the owner chose to start clean; a list would be extra work for the QC.
+**Revisit if:** the owner asks for it; it then needs a picture first.

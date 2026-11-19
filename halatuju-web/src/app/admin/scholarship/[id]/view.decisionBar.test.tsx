@@ -104,7 +104,10 @@ describe('the phone decision bar (Mobile M6b)', () => {
   })
 
   it('"Ready to save" only while nothing is in flight (the page passes canSave && !busy)', async () => {
-    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'verdict_recorded', build: { outcome: 'decline' } })
+    // LL2: the recorded decline has failed green facts, so the reason for each is stored with it.
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'verdict_recorded', build: { outcome: 'decline',
+      officer_verdict: { identity: 'pass', academic: 'fail', pathway: 'pass', income: 'fail', overall: 'decline',
+        fail_reasons: { academic: 'other', income: 'other' } } } })
     await loaded()
     const ready = () => document.querySelector('[data-decision-bar]')!.textContent ?? ''
     const save = screen.getByRole('button', { name: 'admin.scholarship.recordVerdict.saveDecline' }) as HTMLButtonElement

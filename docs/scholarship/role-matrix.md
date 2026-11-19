@@ -233,6 +233,17 @@ menu already withholds those pages from. A role missing from that map receives n
 | `qc` | `qc` |
 | `reviewer` | `mine` |
 
+**AI prediction section (sprint LL1, 2026-11-18; in branch `ll1`, not merged).** `ai_prediction` is a
+fixed section: it is not in `overview_layout.CUSTOMISABLE`, so an organisation cannot switch it off.
+The scope decides what is counted. `org_admin`, QC and the other `all`-scope roles get the whole
+organisation. A `reviewer` (scope `assigned`) gets numbers for their own assigned applicants only;
+the served key `counted_scope` says `"all"` or `"assigned"`, and the rule lives in one place,
+`prediction_metrics.metrics()`. Finance, partner, source partner and mentor get neither the key nor
+the data. The same object comes from `verdict-metrics/`. Its `by_reviewer` table is for leads only
+(`org_admin` and super); for everyone else the key is absent. The staff-name lookup for that table
+is fenced to the caller's own organisation (a super is unfiltered), and an unmatched recorder shows
+as a neutral row. It never carries an email.
+
 (The `intake` block that was on every row from 15 to 18 September is gone — owner: "doesn't add
 much value". Every payload now carries `intake` / `intakes` instead: the chosen round and the
 picker's options — code, name, year, state — a date, not a person or a sum.)

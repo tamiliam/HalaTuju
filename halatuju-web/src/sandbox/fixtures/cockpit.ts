@@ -307,6 +307,8 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
     { fact: 'pathway', status: 'gap', evidence: [], unresolved: [] },
   ],
   officer_verdict: {},
+  // LL2b: as the server serves it while no verdict is recorded (nothing in doubt, never checked by the QC).
+  second_look: { in_doubt: [], answers: null },
   verdict_reason: '',
   verdict_decided_by: '',
   verdict_decided_at: null,

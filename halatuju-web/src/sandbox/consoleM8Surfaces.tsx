@@ -64,6 +64,51 @@ const SCOPES: Record<string, () => unknown> = {
   }),
 }
 
+// ── LL1: the AI prediction scoreboard (what `verdict-metrics/` serves; every figure is made up) ──
+
+const aiCounts = (green: number, agreed: number, over: Record<string, unknown> = {}) => ({
+  green, green_failed: green - agreed, green_agreed: agreed, green_agree_rate: agreed / green,
+  green_fail_rate: (green - agreed) / green, unsure: 40, unsure_passed: 30, unsure_pass_rate: 0.75,
+  few_green: false, few_unsure: false, few: false, ...over,
+})
+const aiReviewer = (id: number | null, name: string, label_key: string | null, applications: number,
+  over: Record<string, unknown> = {}) => ({
+  ...aiCounts(100, 90), id, name, label_key, applications, qc_checked: 4, qc_overturned: 1, ...over,
+})
+// LL2b: "checked by the QC" counts for one fact (in doubt, checked, disagreed).
+const qcB = (in_doubt: number, checked: number, disagreed: number) => ({
+  in_doubt, checked, not_checked: in_doubt - checked, agreed: checked - disagreed, disagreed,
+  ai_green_checked: checked, ai_wrong_checked: checked - disagreed, ai_right_reviewer_wrong_checked: disagreed,
+  few: checked < 30, few_ai_green: checked < 30,
+})
+const LONG_DOUBT_CODE = 'document_photo_is_blurred_and_cropped_so_the_total_household_income_cannot_be_read_reliably'
+const AI_METRICS = {
+  applications: 50, fact_decisions: 200, overrides: 20, override_rate: 0.1, per_fact: {},
+  overall: aiCounts(100, 90),
+  fact_counts: { identity: aiCounts(50, 49), academic: aiCounts(30, 27), pathway: aiCounts(10, 6), income: aiCounts(10, 8) },
+  fail_reasons: {
+    identity: { engine_wrong: 0, read_wrong: 1, new_information: 0, programme_rule: 0, other: 0 },
+    academic: { engine_wrong: 0, read_wrong: 1, new_information: 1, programme_rule: 0, other: 0 },
+    pathway: { engine_wrong: 1, read_wrong: 0, new_information: 2, programme_rule: 1, other: 0 },
+    income: { engine_wrong: 0, read_wrong: 0, new_information: 1, programme_rule: 0, other: 0 },
+  },
+  fail_reasons_not_given: { identity: 0, academic: 1, pathway: 0, income: 1 },
+  by_version: { 'v5.1': aiCounts(60, 57), '': aiCounts(40, 33) },
+  by_month: { '2026-08': aiCounts(20, 17), '2026-09': aiCounts(3, 3, { few_green: true }), '2026-10': aiCounts(40, 38) },
+  doubt_codes: [
+    { fact: 'income', code: 'income_unclear', passed: 18, failed: 2, total: 20, fail_rate: 0.1, pass_rate: 0.9, few: false },
+    { fact: 'academic', code: 'grade_blurred', passed: 3, failed: 1, total: 4, fail_rate: 0.25, pass_rate: 0.75, few: true },
+    // A long doubt label (no own sentence, so the code shows as words): it must wrap on a phone.
+    { fact: 'income', code: LONG_DOUBT_CODE, passed: 25, failed: 5, total: 30, fail_rate: 0.17, pass_rate: 0.83, few: false },
+  ],
+  qc_agreement: { accept: 17, reopen: 2, reject: 1, total: 20, accept_rate: 0.85, few: false, by_month: {} },
+  qc_checked: { total: qcB(40, 34, 5), facts: { identity: qcB(0, 0, 0), academic: qcB(6, 5, 1), pathway: qcB(4, 4, 2), income: qcB(30, 25, 2) } },
+  by_reviewer: [aiReviewer(7, LONG_TAMIL, null, 12), aiReviewer(null, 'x', 'unmatched_reviewer', 3),
+    // A reviewer row with the few-cases flag: the pill shows instead of the percent.
+    aiReviewer(8, 'Devi Penyemak', null, 2, { ...aiCounts(4, 3, { few_green: true, few_unsure: true }) }),
+    aiReviewer(null, 'y', 'unnamed_reviewer', 2)],
+}
+
 function Console({ path, role, params, completion, children }: {
   path: string; role: Record<string, unknown>; params?: Record<string, string>; completion?: unknown; children: ReactNode
 }) {
@@ -120,6 +165,8 @@ const gift = (id: number, code: string, name: string, lifecycle: string, extra: 
 })
 const ORG_ROUTES: Record<string, () => unknown> = {
   ...SCOPES,
+  // LL1: the Programmes landing's all-programmes AI prediction block.
+  '/api/v1/admin/scholarship/verdict-metrics/': () => AI_METRICS,
   '/api/v1/admin/admins/': () => ({ admins: [staff(1, 'Pentadbir Contoh', 'org_admin'), staff(7, LONG_TAMIL, 'reviewer'),
     staff(8, 'Devi Penyemak', 'reviewer'), staff(9, 'Balan Kewangan', 'finance')] }),
   '/api/v1/admin/sponsors/pending-count/': () => ({ count: 2 }),
@@ -241,11 +288,12 @@ const overview = (sections: string[], extra: Record<string, unknown> = {}) => ({
   applications_series: APPLICATIONS_SERIES, ...extra,
 })
 const OVERVIEW_REVIEWER = overview(['mine', 'funnel', 'applications_series'])
-const OVERVIEW_ORG_ADMIN = overview(['attention', 'money', 'funnel', 'applications_series', 'money_series', 'qc'], {
+const OVERVIEW_ORG_ADMIN = overview(['attention', 'money', 'funnel', 'applications_series', 'money_series', 'qc', 'ai_prediction'], {
+  ai_prediction: { ...AI_METRICS, counted_scope: 'assigned' },   // LL1: counted_scope shows the assigned-only note; the AI prediction section (tables, trend chart, reviewer table)
   money: { students: 42, committed: '504000.00', paid: '201600.00', remaining: '302400.00', spent: '180250.50' },
   attention: { unassigned: 4, with_reviewer: 12, due_soon: 3, overdue: 1, awaiting_qc: 2 },
   money_series: MONEY_SERIES, qc: QC,
-  layout: ['funnel', 'money', 'attention', 'applications_series', 'money_series'].map((key) => ({ key, on: true })),
+  layout: ['funnel', 'money', 'attention', 'applications_series', 'money_series', 'ai_prediction'].map((key) => ({ key, on: true })),
   layout_source: 'organisation',
 })
 

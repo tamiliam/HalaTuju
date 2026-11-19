@@ -20,10 +20,11 @@ import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import type { T } from './shared'
+import { FAIL_REASON_CODES, greenFailFacts } from './failReasons'
 
 export function RateAndEstimate({
   app, t, busy, canWrite, decisionReopened, decisionRecorded, decisionLocked,
-  officerVerdict, setOfficerVerdict,
+  officerVerdict, setOfficerVerdict, failReasons, setFailReason,
   reportingDateInput, setReportingDateInput, reportingDateMsg, doSetReportingDate,
 }: {
   app: AdminScholarshipDetail
@@ -35,6 +36,8 @@ export function RateAndEstimate({
   decisionLocked: boolean
   officerVerdict: Record<string, string>
   setOfficerVerdict: Dispatch<SetStateAction<Record<string, string>>>
+  failReasons: Record<string, string>
+  setFailReason: (fact: string, code: string) => void
   reportingDateInput: string
   setReportingDateInput: Dispatch<SetStateAction<string>>
   reportingDateMsg: string
@@ -50,10 +53,11 @@ export function RateAndEstimate({
       {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
       <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
         <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.recordVerdict.rateTitle')}</h2>
+        <p className="text-xs md:text-[11px] text-ground-500">{t('admin.scholarship.recordVerdict.rateHelp')}</p>
         <div className="space-y-2">
           {(['identity', 'academic', 'pathway', 'income'] as const).map((fact) => (
             decisionLocked ? (
-              <div key={fact} className="flex items-center justify-between gap-2 py-2.5 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:p-2.5">
+              <div key={fact} className="flex flex-wrap items-center justify-between gap-2 py-2.5 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:p-2.5">
                 <span className="text-sm font-medium text-ground-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                   officerVerdict[fact] === 'pass' ? 'bg-positive-100 text-positive-700'
@@ -61,14 +65,19 @@ export function RateAndEstimate({
                   {officerVerdict[fact] === 'pass' ? t('admin.scholarship.recordVerdict.factPass')
                     : officerVerdict[fact] === 'fail' ? t('admin.scholarship.recordVerdict.factFail') : '—'}
                 </span>
+                {officerVerdict[fact] === 'fail' && failReasons[fact] && (
+                  <span className="basis-full text-xs text-ground-500">
+                    {t('admin.scholarship.recordVerdict.failReasonLabel')}: {t(`admin.scholarship.recordVerdict.failReason.${failReasons[fact]}`)}
+                  </span>
+                )}
               </div>
             ) : (
-              <div key={fact} className="flex items-center justify-between gap-2 py-2.5 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:p-2.5">
+              <div key={fact} className="flex flex-wrap items-center justify-between gap-2 py-2.5 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:p-2.5">
                 <span className="text-sm font-medium text-ground-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
                 <div className="flex gap-1.5">
                   <button
                     id={`rate-fact-${fact}-pass`}
-                    onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'pass' ? '' : 'pass' }))}
+                    onClick={() => { setFailReason(fact, ''); setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'pass' ? '' : 'pass' })) }}
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'pass'
@@ -79,7 +88,7 @@ export function RateAndEstimate({
                     {t('admin.scholarship.recordVerdict.factPass')}
                   </button>
                   <button
-                    onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'fail' ? '' : 'fail' }))}
+                    onClick={() => { setFailReason(fact, ''); setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'fail' ? '' : 'fail' })) }}
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'fail'
@@ -90,6 +99,26 @@ export function RateAndEstimate({
                     {t('admin.scholarship.recordVerdict.factFail')}
                   </button>
                 </div>
+                {/* LL2: only a fact the engine showed green and the reviewer failed asks why. */}
+                {greenFailFacts(app.verdict, officerVerdict).includes(fact) && (
+                  <div className="basis-full space-y-1.5" role="group" aria-label={t('admin.scholarship.recordVerdict.failWhy')}>
+                    <p className="text-xs text-ground-600">{t('admin.scholarship.recordVerdict.failWhy')}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FAIL_REASON_CODES.map((code) => (
+                        <button key={code} type="button" aria-pressed={failReasons[fact] === code}
+                          onClick={() => setFailReason(fact, failReasons[fact] === code ? '' : code)}
+                          disabled={!canWrite}
+                          className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                            failReasons[fact] === code
+                              ? 'border-brand-fill bg-brand-fill text-brand-fill-ink'
+                              : 'border-ground-300 text-ground-600 hover:border-ground-500'
+                          } disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center`}>
+                          {t(`admin.scholarship.recordVerdict.failReason.${code}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           ))}

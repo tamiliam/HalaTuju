@@ -224,9 +224,15 @@ export const roleReviewer: ManualChapter = {
       perm: 'review',
       title: 'Your decision',
       body: (
-        <>In the <strong>Decision</strong> card you rate the AI&rsquo;s verification (<strong>Pass</strong> or
-        <strong> Fail</strong> per fact — this only says whether the AI <em>read</em> each fact correctly, and is
-        separate from your recommendation), set a <strong>recommended assistance amount</strong>, write a short
+        <>In the <strong>Check the four facts</strong> box you tap <strong>Pass</strong> or
+        <strong> Fail</strong> for each fact. <strong>Pass</strong> means the fact is true for the student;
+        <strong> Fail</strong> means it is not true, or not proven. It is separate from your recommendation.
+        If you Fail a fact the system showed as green, it asks <strong>Why is this fact not true?</strong>:
+        tap one reason (the rule is wrong, the document was read wrong, new information, a programme rule, or
+        other). You cannot save until you pick one. If you choose <strong>Approve</strong> while a fact is on
+        Fail, a warning asks if you really want to accept; it does not stop you. QC sees these facts again
+        under <strong>Facts in doubt</strong> and says whether they agree with you. In the <strong>Decision</strong>
+        card you then set a <strong>recommended assistance amount</strong>, write a short
         <strong> conclusion</strong>, select <strong>Approve</strong> or <strong>Decline</strong>, and click
         <strong> Save verdict &amp; generate final profile</strong>. You can Pass all four facts and still Decline
         (for example, income is verified but sits above the B40 line, or the Pathway card is red with

@@ -4815,13 +4815,6 @@
         "hide": "Hide the student's own words"
       },
       "studentNote": "Student's note",
-      "reliability": {
-        "title": "AI reliability",
-        "subtitle": "How often the AI's suggestion matched the reviewer's decision — across {n} reviewed application(s).",
-        "overall": "Overall",
-        "empty": "No reviewed applications yet — the AI's reliability will appear here once reviewers record their verdicts.",
-        "mixedEngines": "This figure averages {n} versions of the checking engine ({versions}). The engine has changed since some of these decisions were recorded, so read the trend with care."
-      },
       "verdict": {
         "title": "AI Prediction",
         "intro": "AI has attempted to check these details, but we need you to make the final judgement.",
@@ -5169,7 +5162,7 @@
           "submit": "Submit your interview findings",
           "answerOne": "Answer 1 interview question in your findings",
           "answerMany": "Answer {count} interview questions in your findings",
-          "rate": "Rate the AI on {facts}",
+          "rate": "Check {facts}",
           "conclusion": "Write your conclusion"
         },
         "findingsIncomplete": "Answer every interview question before deciding ({count} left).",
@@ -5203,7 +5196,19 @@
         "finaliseEngineError": "The final profile could not be written. Please press again.",
         "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
         "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
-        "rateTitle": "Rate AI Prediction"
+        "rateTitle": "Check the four facts",
+        "rateHelp": "Pass = this fact is true for the student. Fail = it is not true, or not proven.",
+        "failedAcceptWarn": "One fact failed. Do you want to accept?",
+        "failWhy": "Why is this fact not true?",
+        "failReasonLabel": "Reason",
+        "pickReason": "Pick a reason for the failed fact.",
+        "failReason": {
+          "engine_wrong": "The rule is wrong",
+          "read_wrong": "The document was read wrong",
+          "new_information": "New information (interview, call)",
+          "programme_rule": "A programme rule",
+          "other": "Other"
+        }
       },
       "qcDecision": {
         "title": "Quality control",
@@ -5239,7 +5244,17 @@
         "overrideConfirm": "Record reason & accept",
         "reverifyTitle": "The IC lock was released",
         "reverifyHint": "This intake has a \"Born in\" rule and the student's IC is no longer locked, so Accept is refused. Re-verify the IC here: it locks the IC again and checks that no other account holds it verified. The case stays awaiting QC and the reviewer is not told. Unless you are a super admin, someone else then does the QC.",
-        "reverifyButton": "Re-verify IC"
+        "reverifyButton": "Re-verify IC",
+        "secondLook": {
+          "title": "Facts in doubt",
+          "help": "The reviewer and the AI did not agree on these facts. You agree with the reviewer unless you tap Disagree.",
+          "aiSaid": "AI said",
+          "reviewerSaid": "Reviewer said",
+          "disagree": "Disagree with the reviewer",
+          "undo": "You disagree. Tap to undo.",
+          "agree": "You agree with the reviewer.",
+          "butDecision": "but the decision is {decision}"
+        }
       },
       "caveats": {
         "studentAnswer": "Student's answer",
@@ -7611,6 +7626,52 @@
         "completed": "Checks completed",
         "turnaround": "Students waited a median of {days} days from the reviewer's verdict to your check.",
         "none": "Nothing is waiting to be checked in this gift."
+      },
+      "aiPrediction": {
+        "title": "AI prediction",
+        "sub": "How often reviewers agreed with what the AI predicted. The AI checks four facts on each application; a reviewer then makes the final call.",
+        "empty": "No reviewed applications yet. Figures will appear once reviewers record their verdicts.",
+        "sureTile": "When the AI was sure, reviewers agreed",
+        "doubtTile": "When the AI was in doubt, reviewers passed the fact",
+        "factsOf": "{a} of {b} facts",
+        "xOfY": "{a} of {b}",
+        "fewCases": "Few cases",
+        "trend": "When the AI was sure, by month",
+        "trendChart": "Share of facts the reviewer agreed with when the AI was sure, by month",
+        "trendHint": "Each figure is the share of facts the AI was sure about that a reviewer agreed with. Months with few cases show the count only.",
+        "byFact": "By fact",
+        "doubts": "Doubts that reviewers pass most often",
+        "doubtsHint": "A doubt that reviewers often pass may be one the AI is too cautious about.",
+        "decision": "Decision",
+        "decisionNote": "What the quality check decided",
+        "qcAgreed": "accepted at the quality check",
+        "qcOther": "Sent back: {reopen}. Rejected: {reject}.",
+        "byVersion": "By engine version",
+        "byReviewer": "By reviewer",
+        "leadsOnly": "Leads only",
+        "reviewerHint": "Shown to leads only, to support reviewers and not to rank them.",
+        "footer": "Only the facts in doubt are checked by the QC. The other numbers compare the AI with the reviewer.",
+        "allProgrammes": "All programmes together.",
+        "assignedOnly": "Your assigned applicants only.",
+        "versionUnknown": "Unknown version",
+        "unmatchedReviewer": "Reviewer not matched to an account",
+        "notGiven": "Not given",
+        "unnamedReviewer": "Reviewer not named",
+        "qcChecked": "Facts in doubt, checked by the QC",
+        "col": {
+          "qcChecked": "Checked by the QC",
+          "qcAgreed": "Agreed with the reviewer",
+          "qcDisagreed": "Disagreed with the reviewer",
+          "reasons": "Why it failed",
+          "sure": "AI sure, reviewer agreed",
+          "doubt": "AI in doubt, reviewer passed",
+          "fact": "Fact",
+          "doubtCode": "Doubt",
+          "passed": "Reviewer passed",
+          "version": "Version",
+          "reviewer": "Reviewer",
+          "applications": "Applications"
+        }
       }
     },
     "programme": {

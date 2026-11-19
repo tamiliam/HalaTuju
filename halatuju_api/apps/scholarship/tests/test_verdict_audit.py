@@ -218,7 +218,7 @@ class TestVerdictMetricsEndpoint(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        PartnerAdmin.objects.create(supabase_user_id=REVIEWER, role='reviewer', is_active=True, name='Rev', email='r@x.com')
+        rev = PartnerAdmin.objects.create(supabase_user_id=REVIEWER, role='reviewer', is_active=True, name='Rev', email='r@x.com')
         # Two decided apps (one override each) + one undecided (must be excluded).
         for i, (snap, ov) in enumerate([
             (_snapshot(identity='verified'), {'identity': 'fail', 'academic': '', 'income': '', 'pathway': ''}),
@@ -226,10 +226,10 @@ class TestVerdictMetricsEndpoint(TestCase):
         ]):
             p = StudentProfile.objects.create(supabase_user_id=f'm{i}', nric=f'03010{i}-14-1234', name=f'A{i}')
             ScholarshipApplication.objects.create(
-                cohort=cls.cohort, profile=p, status='interviewed',
+                cohort=cls.cohort, profile=p, status='interviewed', assigned_to=rev,   # LL1: a reviewer counts their own
                 ai_verdict_snapshot=snap, officer_verdict=ov, verdict_decided_at=timezone.now())
         pu = StudentProfile.objects.create(supabase_user_id='undecided', nric='030199-14-1234', name='U')
-        ScholarshipApplication.objects.create(cohort=cls.cohort, profile=pu, status='interviewed')
+        ScholarshipApplication.objects.create(cohort=cls.cohort, profile=pu, status='interviewed', assigned_to=rev)   # assigned, so only "undecided" excludes it
 
     def setUp(self):
         self.client = APIClient()

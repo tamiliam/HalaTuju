@@ -5,7 +5,7 @@
  *
  * ⚠ THE RULE LIVES IN `decisionMissing` (`@/lib/cockpitStages`), NOT HERE. This file only words and links the items it
  * returns, so the list can never disagree with the gate. Each item is a button that scrolls to and focuses the place
- * the reviewer fixes it: the interview stage, the first unrated fact in Rate AI Prediction, the conclusion box.
+ * the reviewer fixes it: the interview stage, the first unrated fact in "Check the four facts", the conclusion box.
  *
  * The same list serves the card (under the buttons) and, through `DECISION_ALERT_EVENT`, the phone's decision bar.
  * Shown as an alert (`role="alert"`, focused) after a press on a greyed Recommend / Decline; plain otherwise.

@@ -75,215 +75,108 @@ LL2 ──► LL2b ─────────────┤
 LL3 ──► LL4 ──► LL5 ◄── A5 replay harness (sprints R1, R2 — already designed)
 ```
 
----
+### Status and plan forward (2026-11-19)
 
-## Sprint LL1 — Scoreboard on
+**Built.** LL1, LL2, LL2b, LL3 and LL4 are built and reviewed. They were saved to `main` on 2026-11-19
+(landing order: the Requests work, then the OCR-first work, then this stack). Nothing is published.
+Before a publish the owner applies migration `0218_application_verdict_context` by hand and does the phone checks.
+**Left.** LL5 only; it starts when LL4 is live.
 
-**Goal.** Staff see, on the Organisation Overview and the Programme Overview, how well the AI predicts, and how that moves with time.
-The message: the AI prediction matters.
+**Who owns what (owner ruling 2026-11-19).**
+- The **HalaTuju lead session** owns the A5 replay: branch `a5` (R1 + R2, built 13-14 Nov) and the R3 run.
+- The **learning-loop session** owns this stack and LL5. It does not touch `a5`.
 
-**Why first.** The data exists. No reviewer work. No database change.
+**Order of work.**
+1. DONE 2026-11-19: the stack was brought up to date with `main` and saved to `main` (not published).
+2. Owner applies the migration 0218 SQL by hand, does the five phone checks (LL1, LL2, LL2b, LL4, and the withdraw card on the case page), then says "publish".
+   The publish goes in a release slot **outside** the A5 replay window (rule: no deploy during the replay).
+   The learning-loop session sends the commit list to the HalaTuju lead before the publish.
+3. The HalaTuju lead (its plan, 2026-11-19): bring `a5` up to date with `main` and land R1 + R2 on `main` **before** the run;
+   then a new step **R2b** (add the engine changes made after 14 Nov to the ruling catalogue; check the 25 adapters
+   that were tested on made-up data only; confirm the readers accept the new 0218 column); then R3 with the owner.
+   **The R3 date is not set.** The owner picks it after `a5` is on `main`. Until the HalaTuju lead sends the date, there is no no-deploy window.
+   Steps 1-2 and step 3 do not depend on each other; only the publish and the replay run must not overlap.
+   Whoever lands on `main` second brings their branch up to date. The overlap should be docs only (`CHANGELOG.md`, `docs/technical-debt.md`).
+4. LL5 starts when the replay code (R1 + R2) is on `main` (the HalaTuju lead sends word) and LL4 is live.
+   It adds one lens; it builds no second harness.
 
-**Scope.**
-- [audit.py](../../halatuju_api/apps/scholarship/audit.py) — extend `override_metrics`. Keep every existing key. Add:
-  - per fact: `green`, `green_failed` (wrong green), `unsure`, `unsure_passed` (too careful);
-  - `by_version`: the same four counts for each engine version;
-  - `by_month`: the same four counts for each month of decision (this is the trend line);
-  - `by_reviewer`: the same four counts for each reviewer. The endpoint returns this key to leads only (super admin, org admin; confirm the permission key at sprint start);
-  - `doubt_codes`: for each `unresolved` code in the stored snapshot, how many times the human passed and failed that fact.
-  - `qc_agreement` (owner note 3): how often the QC accepted the reviewer's decision, and how often he sent it back or rejected it. Total and for each month.
-    Source: `StaffActivity` rows with verb `qc_decision` (`meta.decision` = accept / reopen / reject). The data exists today. Confirm the organisation scope at sprint start.
-- [views_admin/verdict.py:472](../../halatuju_api/apps/scholarship/views_admin/verdict.py#L472) `AdminVerdictMetricsView` — no logic change. It already returns `override_metrics(rows)`.
-- [admin-api/verdict.ts:14](../../halatuju-web/src/lib/admin-api/verdict.ts#L14) `VerdictMetrics` type — add the new keys.
-- [cockpitVerdict.ts:239](../../halatuju-web/src/lib/cockpitVerdict.ts#L239) `verdictReliability` — map the new keys.
-- [AiReliabilityCard.tsx](../../halatuju-web/src/components/AiReliabilityCard.tsx) — show two numbers for each fact, the doubt table, and the count behind each number.
-- Placement (owner, 2026-11-18): a new "AI prediction" section on **both** Overview pages:
-  - Programme Overview: [admin/programme/overview/page.tsx](../../halatuju-web/src/app/admin/programme/overview/page.tsx), as a new entry in `SECTION_RENDERERS` (`src/components/admin/overview/OverviewSections.tsx`), so it also works with `CustomiseLayout`. It reads `verdict-metrics/?cohort=`.
-  - Organisation Overview: [admin/organisation/page.tsx](../../halatuju-web/src/app/admin/organisation/page.tsx). It reads the same endpoint with no cohort.
-  - The old hidden mount at [admin/scholarship/page.tsx:31](../../halatuju-web/src/app/admin/scholarship/page.tsx#L31) and `:338` is deleted.
-- Check at sprint start: the roles that can open each Overview page against the roles that the endpoint permits. Partner and finance stay refused.
-- `src/messages/{en,ms,ta}.json` — keys under `admin.scholarship.reliability`.
-- Stitch screen first (HalaTuju Stitch project `10844973747787673276`). Owner approves the picture before template code.
+**For the replay.** This stack changes no scoring logic and no engine answer, so it should add no old-vs-new difference.
+After migration 0218 the application table has one new column (`ai_verdict_context`).
 
-**Design rules.**
-- Always show the count, not only the percent ("6 of 84").
-- Under 30 decisions for a row: show the label "few cases". No colour.
-- The trend line shows one point for each month, with its count. Some months are small (September 2026 had 2 decisions).
-- Everyone who can open the Overview sees the AI trend. The numbers for each reviewer are for leads only.
-- Until LL2b is live, the section carries one line: "Facts not yet checked by the QC."
-- The section shows one more line from day one: "The QC agreed with the reviewer's decision in 63 of 70 cases." This is the number that the funder cares about.
-- Keep the two layers apart on the page: "facts" (AI against the human) and "decision" (reviewer against the QC). Do not mix them into one percent.
-- Risk to watch: a reviewer who sees "the AI is right 96%" can stop checking. LL2b measures this (reviewer against the second look).
-- The doubt table answers "which doubts do humans always pass?" with zero reviewer effort.
-  Example from live data: `str_not_current` → 30 pass, 3 fail. `academic_missing_subjects` → 9 pass, 0 fail.
-
-**Acceptance.**
-- New pytest cases in [test_verdict_audit.py](../../halatuju_api/apps/scholarship/tests/test_verdict_audit.py): the four counts, `by_version`, `doubt_codes`, old 2-tuple callers still work.
-- New jest cases in `src/lib/__tests__/officerCockpit.test.ts`, plus the first render test for the card.
-- Role tests unchanged and green (`test_oversight_list_role_gates.py`, `test_org_fence.py`).
-- On the live site the card totals equal a read-only count query (692 fact decisions on 2026-11-18, more later).
-- Trailers: `Services: both`. No migration.
-
-**Complexity.** Medium. About 14 files. Sonnet builds. Fresh Sonnet reviewer.
+**Aligned with the OCR session (2026-11-19, on the owner's word).** The OCR session leads `docs/plans/ocr-first-roadmap.md`. Its open branch is `ocr-visible`: a PDF with an invisible text layer is read from the visible page (Cloud Vision), not from its hidden text.
+- **Objectives fit.** The OCR work makes the reader better. This stack measures it: LL3 and LL4 record which model version each verdict saw; the LL2 reason `read_wrong` and the LL2b QC disagreement are the **one** human feed for "the reader was wrong". The OCR session builds no feedback store of its own. LL5 will report the feed per model version.
+- **Overlap, measured with git.** Only `CHANGELOG.md` is changed by both. No shared code file. No migration clash (`ocr-visible` has none; the LL migration stays here, renumbered 0218 after the requests work landed on main).
+- **The one real link is the LL3 guard.** `ocr-visible` moves genuineness `MODEL_VERSION` 1.29.0 to 1.31.0 and `OFFER_READER_VERSION` 2.6.0 to 2.7.0, and edits helper files that other models' digests may follow (`pdf_pages.py`, `spm_cert_parse.py`, `vision/ocr.py`, `vision/field_extraction.py`). Whoever lands on `main` second runs `test_model_versions.py` and `test_model_digest.py`, and for each model the guard names, bumps the version and its `model_versions/<model>.json` entry. Never re-seed a digest without a version bump.
+- **Answers do change on their side, for a narrow set** (new reads of invisible-layer PDFs; no automatic backfill). LL4 needs no change: the version bump is the marker. The OCR session tells the HalaTuju lead for the replay catalogue.
+- **Order.** `ocr-visible` aims for `main` around 20 Nov. Whoever lands second brings their branch up to date. This session tells the OCR session when LL3 is on `main`.
 
 ---
 
-## Sprint LL2 — One clear question + one-tap reason on "green → fail"
+## Sprint LL1 — Scoreboard on — DONE (2026-11-18; saved to `main` 2026-11-19, not published)
 
-**Goal.** Every reviewer reads the tap the same way. When a human fails a fact that the engine called green, the human gives the cause with one tap.
+Built: an "AI prediction" section on the Programme Overview and the Organisation Overview (`/admin/organisation/programmes`): green and too-careful counts per fact, by engine version, by month (trend), the doubt table, how often the QC agreed with the reviewer, and by reviewer (leads only). Counts always shown; under 30 cases reads "few cases". A reviewer sees assigned applicants only. The old hidden card is deleted. No migration. Detail: `CHANGELOG.md` (LL1 entry), the Guide and FAQ ("What does the AI prediction block mean?"), `halatuju_api/apps/scholarship/prediction_metrics.py` and `audit.py`.
 
-**Owner ruling (2026-11-18, option A).** The tap is about the **student**: "Is this fact true?"
-It is not a rating of the AI. The system works out if the AI was right.
-The stored value does not change, so the 173 old answers stay valid.
-
-**The clear question (new).**
-- Change the box title `admin.scholarship.recordVerdict.rateTitle` (today "Rate AI Prediction") to words about the student. Draft: "Check the four facts".
-- Add one help line under the title. Draft: "Pass = this fact is true for the student. Fail = it is not true, or not proven."
-- The owner approves the final words in en, ms and ta before the build.
-- A soft warning when a fact is Fail and the decision is Accept: "One fact failed. Do you want to accept?" It warns. It does not block.
-- Files: [RateAndEstimate.tsx:52](../../halatuju-web/src/app/admin/scholarship/%5Bid%5D/view/RateAndEstimate.tsx#L52), `view/DecisionCard.tsx`, `src/messages/{en,ms,ta}.json`.
-
-**Why only this case.** It is about 4 in 100 fact decisions. It is the dangerous error.
-The opposite case ("too careful") needs no tap. The doubt table in LL1 already explains it.
-
-**Scope.**
-- Reason codes (one per failed green fact):
-  `engine_wrong` (the rule is wrong) · `read_wrong` (the document was read wrong) ·
-  `new_information` (interview, call, outside the documents) · `programme_rule` · `other`.
-- Storage: a new key `fail_reasons` inside the existing `officer_verdict` JSON, for example `{"income": "new_information"}`. No migration.
-  Checked: every reader of `officer_verdict` (9 Python files, 4 web files) reads named keys only. A new key breaks nothing.
-- [views_admin/verdict.py:84](../../halatuju_api/apps/scholarship/views_admin/verdict.py#L84) `AdminRecordVerdictView.post`:
-  - accept top-level `fail_reasons` in the payload; unknown code → 400;
-  - keep a reason only where the human said fail **and** the server's own fresh `build_verdict` says `verified`; drop the rest;
-  - a missing reason still saves. The **web** makes the tap compulsory, the server does not.
-    Reason: an old browser tab, or a document that changed after page load, must never block a decision.
-- Web: [RateAndEstimate.tsx](../../halatuju-web/src/app/admin/scholarship/%5Bid%5D/view/RateAndEstimate.tsx) (five chips under the fail toggle), `view/useVerdict.ts` (`failReasons` state; clear it when the fail is undone; load it in `loadVerdictState`), `RecordVerdictPayload` in [admin-api/verdict.ts:147](../../halatuju-web/src/lib/admin-api/verdict.ts#L147), the detail type in `admin-api/applications.ts`, and the locked view (show the chosen reason).
-  Reuse the key → i18n label convention of `REQUEST_CATEGORIES` in `view/shared.tsx:47`.
-- `audit.py` + card: count the reasons for each fact.
-- i18n en/ms/ta, about 8 keys. Reviewer Guide + FAQ updated in the same change (standing rule).
-
-**Acceptance.**
-- pytest: valid code saved; bad code → 400; payload with no `fail_reasons` still saves; reasons appear in the metrics.
-- jest: chips show only when engine = green and human = fail.
-- Owner phone check before publish (the reviewer flow changes).
-- Trailers: `Phone-check:`, `Services: both`. No migration.
-
-**Complexity.** Low. About 14 files. Sonnet builds. Fresh reviewer.
+Open known gaps:
+- Two differences from the approved picture: the trend chart has no 80% axis start and no grey points (the shared `LineChart` has neither); a "few cases" month shows a pill under the chart.
+- The Programmes landing shares one payload and keeps the all-programmes note, so the assigned-only note shows on the Organisation Overview surface only.
+- `programme_overview.py` is at its growth cap (839 lines); it needs a split before its next change. Tracked as TD-675.
+- No dedicated query-budget test for the `ai_prediction` section. Tracked as TD-674.
+- Guide and FAQ are English only (they have no ms/ta copy).
 
 ---
 
-## Sprint LL2b — Human check (a second look)
+## Sprint LL2 — One clear question + one-tap reason on "green → fail" — DONE (2026-11-19; saved to `main` 2026-11-19, not published)
 
-**Goal.** The QC checks the facts that are in doubt, inside the QC step that he already does. We then know when the first human was wrong, and when the AI was wrong.
+Built: the rating box reads "Check the four facts" with a one-line help (the tap is about the student, owner ruling A). Failing a fact the engine showed green asks "Why is this fact not true?" with five reasons (`engine_wrong`, `read_wrong`, `new_information`, `programme_rule`, `other`), stored in `officer_verdict.fail_reasons`; a soft warning shows when a fact failed and the decision is accept. The reason counts show on the AI prediction card. No migration. The server never refuses a missing reason; the web holds Save. Detail: `CHANGELOG.md` (LL2 server and web entries), `apps/scholarship/fail_reasons.py`, the Guide and FAQ. The approved strings are in the message files.
 
-**Why.** 6 of 23 reviewers made all 21 "wrong green" taps. One reviewer made 10. Only a second look can say who was right.
-
-**Who (owner, 2026-11-18).** The second person is the QC. Today the QC is also the principal funder and the organisation admin.
-He backs each decision with money. One person made all 70 QC decisions so far.
-So the design rule is: **cost him almost nothing.** No new page. No new list to work through.
-
-**Two layers (keep them apart).**
-- **Decision** (accept, decline, send back): the funder's choice. His QC decision is the true answer for this layer. The data exists today (LL1 shows it).
-- **Facts** (identity, academic, pathway, income): the documents decide. The QC's view is the best check that we have. It is still a check against the documents, not a matter of taste.
-  Reason: the need signal must stay on evidence that an auditor can read.
-
-**Scope.**
-- On the QC panel (`view/QcPanel.tsx`), show a short "facts in doubt" block. It shows only:
-  1. each fact where the engine said green and the reviewer said fail;
-  2. each failed fact when the reviewer's decision is "accept".
-  Most cases have no such fact. Then the block does not show.
-- Default = agree. When the QC accepts the case and does not touch the block, the system records "QC agreed" for each fact that the block showed.
-  The panel says so in one line, so the meaning is honest. One tap on a fact records "I do not agree".
-- A fact that the block did not show gets no QC answer. The system does not claim that he checked it.
-- A case that never reaches QC gets no second look. Decide at sprint start if a small sample of those cases is needed.
-- Server: `AdminQcDecisionView` (route `admin/scholarship/applications/<pk>/qc-decision/`) accepts the fact answers with the QC decision.
-- Storage: prefer a key in existing JSON (no migration). Decide at sprint start from the reader check.
-- `audit.py` + the Overview section gain "checked" numbers:
-  - AI against the QC (label it "checked by the QC", not "true");
-  - each reviewer against the QC (leads only).
-- First batch: the 21 + 5 cases that exist on 2026-11-18, plus the 7 cases where the QC did not agree with the decision. A lead can open each one from a list link. No bulk screen.
-- More than one organisation: the QC and the numbers are for each organisation. One funder's choice never trains another funder's score.
-- Reviewer Guide + FAQ updated in the same change.
-
-**Known limit (accepted).** Nobody checks the QC on the facts. He carries the money, so his answer stands. The page says "checked by the QC", so no reader takes it for more.
-
-**Not in scope.** The second look does not change a student's decision. A wrong decision goes through the normal re-open route, by a person.
-The engine does not learn "what the funder likes". It learns facts. The funder's choice is a number on the page, not a rule in the engine.
-
-**Acceptance.**
-- pytest: the block holds the two groups; a silent QC accept records "agreed" only for the shown facts; a tap records "not agreed"; the "checked" numbers use it; the existing QC separation rule still refuses a person's own case.
-- Role tests: only QC and leads can record a second look.
-- Owner phone check before publish.
-- Trailers: `Phone-check:`, `Services: both`.
-
-**Complexity.** Medium. About 15 files. Opus builds (it touches the decision flow). Adversarial review before push.
+Open known gaps:
+- A recorded decline from before LL2 with a failed green fact cannot be re-saved until a reason is picked (web only). Tracked as TD-683.
+- The warning says "One fact failed" for two or more failed facts. Tracked as TD-682.
+- Guide and FAQ are English only.
 
 ---
 
-## Sprint LL3 — Version guard + one version register
+## Sprint LL2b — Human check (a second look) — DONE (2026-11-19; saved to `main` 2026-11-19, not published)
 
-**Goal.** A logic change without a version change fails the tests. One file lists every model and its version.
+Built: the QC (also the funder) checks the facts in doubt inside the QC step. A "Facts in doubt" block shows on the QC panel only when a fact is in doubt (AI green and reviewer fail, or a failed fact with an accept); doing nothing agrees with the reviewer, one tap disagrees (`officer_verdict.qc_fact_checks`, and the `qc_decision` activity meta). The AI prediction card shows the "checked by the QC" counts, and leads see them by reviewer. The second look never changes a decision. No migration. Detail: `CHANGELOG.md` (LL2b entries), `apps/scholarship/second_look.py`, the QC Guide section "Facts in doubt", `docs/decisions.md` (2026-11-19).
 
-**Scope.**
-- New module `apps/scholarship/model_registry.py`: one entry per model — name, where the version constant lives, the source files that can change its answers.
-  Models: verdict engine; genuineness families (`results_doc`, `salary_doc`, `electricity_doc`, `water_doc`, `school_leaving_doc`, `sample_stamp`); `offer_reader`; parsers (`offer_parse`, `stpm_parse`, `matric_parse`, `poly_diploma_parse`).
-- New tracked folder `apps/scholarship/model_versions/`: **one JSON file per model**, append-only:
-  `{version: {digest, note, also_ok: [], py: "3.11"}}`. This folder is also the one version register and change log.
-- Fingerprint (`digest`) = sha256 of `ast.dump` of each listed file, after the test drops docstrings and the line that sets the version constant.
-  So comments, blank lines and the bump itself do not count.
-  `ast.dump` differs between Python versions. Docker and Cloud Build both pin 3.11. On another version the test skips with a message.
-- Verdict engine file list (explicit): `verdict_engine.py`, `verdict_identity.py`, `verdict_academic.py`, `verdict_income_salary.py`, `verdict_income_str.py`, `verdict_pathway.py`, `verdict_caps.py`, `verdict_ladder.py`, `start_year.py`, `higher_results.py`, `requirements.py`, `document_snapshot.py`, `genuineness/bands.py`, `income_engine/*.py`.
-- AI-backed scorers also list `halatuju/ai_registry.py`. A switch of the Gemini model then forces a version change (the admitted miss of 2026-11-16 was this case).
-- New guard test `apps/scholarship/tests/test_model_versions.py`, built like `TestTheRegistryCannotGoStale` in [test_ai_registry.py](../../halatuju_api/apps/scholarship/tests/test_ai_registry.py):
-  - the current version of each model has an entry, and its digest (or one `also_ok` digest) equals today's source;
-  - completeness: an `ast.walk` over `verdict_engine.py` finds every lazy `from .x import`; each module must be in the list or in a reasoned `_NOT_LOGIC` set;
-  - "guard the guard": the walk must find `verdict_ladder` and `income_engine`;
-  - paths start from the test file's own folder (a worktree copy under `.worktrees/` must not be read by mistake).
-  - A change with no behaviour change adds an `also_ok` digest with a written note.
-- Merges: two branches that bump the same model collide in one file. That is loud, and that is correct. Two branches that change logic with no bump merge clean, then the test fails. That is also correct.
-- Models with no version today:
-  - `genuineness/stpm_doc.py` joins the file list of `results_doc.MODEL_VERSION` (it already shares that version). No new constant.
-  - `genuineness/ic.py` and `genuineness/supporting_doc.py` get `MODEL_VERSION = '1.0.0'` under the same guard, and add `model_version` to the result they return. The result is stored whole in `vision_fields['authenticity']` (confirm in `vision/ic.py` at sprint start).
-- A new test under `apps/scholarship/tests/` runs in Cloud Build with no extra wiring.
-- `docs/technical-debt.md` — close or update TD-243.
-
-**Not in scope.** No back-fill of the 1,053 old ID-card results. They stay "no version". Never re-run document reads to add a stamp.
-
-**Acceptance.**
-- Change one logic line in a registered file with no version change → the guard test fails with a plain message that says what to do.
-- Change only a comment → the guard test passes.
-- New ID-card and supporting-document results carry `model_version`.
-- Trailers: `Services: api`. No migration.
-
-**Complexity.** Medium. About 10 files plus one JSON per model. Opus builds (it touches identity scoring files). Adversarial review before push.
+Open known gaps:
+- A QC tab loaded before the reviewer re-recorded the same facts in doubt can still save "agreed" (fix: send `verdict_decided_at`). Tracked as TD-671.
+- A verdict record that is not a dict is skipped with no log line. Tracked as TD-672.
+- Not confirmed: what `reopen_decision` does to `verdict_decided_at` for the second look. Tracked as TD-673.
+- The QC panel does not show the stored answers after the decision; on Reopen or Reject silence records nothing; a reviewer re-record drops the answers, so sent-back cases are undercounted on screen (LL5 counts them from the activity meta). Tracked as TD-681.
+- The first batch of old cases (21 + 5 + 7) was left out by the owner on 2026-11-19. Build it only if the owner asks; it then needs a picture first. No sample of cases that never reach the QC.
+- The block shows "Recommend" where the Guide says "Approve" (the cockpit's own key). Change that key separately if "Approve" is wanted.
+- No two-fact QC surface in the mobile sandbox: a new surface needs mobile-check baselines.
+- A super's numbers are platform-wide (as LL1). Nobody checks the QC on the facts (accepted; the page says "checked by the QC").
 
 ---
 
-## Sprint LL4 — Record what fed each decision
+## Sprint LL3 — Version guard + one version register — DONE (2026-11-19; saved to `main` 2026-11-19, not published)
 
-**Goal.** At decision time, store a PII-free record of the inputs. Later we can tell "same evidence" from "evidence moved".
+Built: `apps/scholarship/model_registry.py` lists 14 models (version constant, source files, cross-file pins); `apps/scholarship/model_versions/<model>.json` is one append-only log per model; `tests/test_model_versions.py` and `tests/test_model_digest.py` fail when a registered file or pin changes without a new version and log line, or when a `*VERSION` constant is neither registered nor excused. The digest is a hash of cleaned source text (not `ast.dump`, which differs between Python 3.11 and 3.13). `genuineness/ic.py` and `supporting_doc.py` now carry `MODEL_VERSION = '1.0.0'` and each new result stores it; no back-fill. Brought up to main's verdict-engine bump before the first merge; two digests were re-seeded with dated notes (main moved the IPTS reason texts into constants, same text). Detail: `CHANGELOG.md` (LL3 entry), `docs/decisions.md`, `docs/technical-debt.md` (TD-243, still open until live).
 
-**Scope.**
-- At save time in `AdminRecordVerdictView.post` (near [verdict.py:127](../../halatuju_api/apps/scholarship/views_admin/verdict.py#L127)), next to `ai_verdict_snapshot`, store:
-  - for **every live document** of the application (one query): document id, `doc_type`, family member, upload time, stored genuineness status, `model_version`, reader/parser version.
-    All documents, not only "documents used": some engine helpers run their own queries, so a "used" list would miss some.
-  - the version of every model in the LL3 register;
-  - one **evidence fingerprint**: a keyed hash (HMAC) over the sorted documents and a short fixed list of the declared fields that the engine reads.
-- No names. No NRIC. No income figures. Ids, types, statuses, versions and a hash only.
-- Storage: one new JSON column `ai_verdict_context` on `ScholarshipApplication` in [models/applications.py](../../halatuju_api/apps/scholarship/models/applications.py), beside `ai_verdict_engine_version`.
-  Not inside `ai_verdict_snapshot`: the web shows each list element as a fact tile, so a fifth element makes a ghost tile.
-  One additive migration (next number after `0213`). The owner applies it **before** the publish (a write to a missing column fails).
-- New pure helper `apps/scholarship/verdict_context.py` builds the record.
-- If the record cannot be built, the decision still saves. The error goes to the log with no PII.
-- Not now: the confidence band (Certain / Probable / Unsure). The web computes it. The snapshot already holds every input, so it can be computed later.
-- Schema documentation updated.
+Open known gaps:
+- About 30 helper modules the verdict engine's files import are not in its digest (listed with reasons in the guard). Held by TD-243. The PDF text-layer modules added by main (OCR S-visible) are unpinned too: TD-685.
+- The IPTS names the verdict engine reads through `offer_private` are a known gap, not pinned. Tracked as TD-677.
+- Outside the guard's walk (`_KNOWN_GAPS_OUTSIDE_THE_WALK`): the settings `OFFER_RETRY_MODEL`, `SGD_TO_MYR_RATE`, `SAMPLE_CHECK_ENABLED`; `genuineness/__init__.assess` and `vision/authenticity.py`; the logs are append-only by convention plus two checks; the `*VERSION` census sees only `apps/scholarship`; the glob `income_engine/*.py` also reads untracked local files; a pinned name changed inside a called function, by `global`, an alias or `setattr`. Tracked as one row, TD-684.
+- The guard has run on Python 3.13 only. Its first run on 3.11 is Cloud Build after the push; it fails closed.
+- `model_registry.py` is at 599 of 600 lines: split before the next model. Tracked as TD-676 (with `applications.ts`, now exactly 600).
 
-**Acceptance.**
-- pytest: the record is built; it holds no PII field (an explicit allow-list test); the fingerprint is stable for the same evidence; it changes when a document is replaced.
-- Old decided rows stay valid with an empty record.
-- Trailers: `Migration: <name> (additive)`, `Services: api`.
+---
 
-**Complexity.** Medium. About 10 files. Opus builds. Adversarial review before push.
+## Sprint LL4 — Record what fed each decision — DONE (2026-11-19; saved to `main` 2026-11-19, not published)
+
+Built: `apps/scholarship/verdict_context.py` builds a PII-free record `{schema, documents, models, fingerprint, key_check}`, stored in `ScholarshipApplication.ai_verdict_context` in the same save as `ai_verdict_snapshot`. The fingerprint is an HMAC over the live documents, the declared fields, the profile fields, the intake rules and the stage facts the engine reads (key derived from `SECRET_KEY`, no new env var). A record that cannot be built never blocks a decision (`{schema, error}`). No serializer lists the column. Old rows keep `{}` (no back-fill). Migration `0218_application_verdict_context` (additive, hand-written SQL in its docstring): THE OWNER APPLIES IT BEFORE THE PUBLISH, otherwise every application load fails. Detail: `CHANGELOG.md` (LL4 entry), the model's `help_text` and the migration docstring (there is no separate schema document).
+
+Open known gaps:
+- The fingerprint covers this application's documents only; some helpers read the student's OTHER applications. Tracked as TD-679.
+- The clock is not in the fingerprint (salary-slip age and date checks). LL5 sets today to `verdict_decided_at`. Tracked as TD-679.
+- The live programme catalogue (when no `requirements_snapshot`) and the course catalogue (the IPTS rule) are not in the fingerprint. Tracked as TD-678.
+- Settings that switch model behaviour (LL3's gaps) and `SGD_TO_MYR_RATE` are not in the fingerprint. Tracked as TD-678 and TD-679.
+- The stage facts move at QC accept or reject (in review to decided). LL5 must hash under the stage as at the decision (`evidence_fingerprint` takes the stage), or report those cases apart.
+- A `SECRET_KEY` rotation makes older fingerprints impossible to compare (`key_check` tells it apart). LL5 must run where the production key is.
+- The `_CODE` mask lets a single word of up to 40 characters through; the real protection is the fixed choice lists. Backstop only.
 
 ---
 
@@ -297,13 +190,16 @@ The engine does not learn "what the funder likes". It learns facts. The funder's
 - The lens runs today's engine over decided cases whose evidence fingerprint (LL4) did not change, and compares the result with `officer_verdict`.
 - Same five read-only safety layers as A5 (read-only role, `BEGIN READ ONLY`, always roll back, statement filter, no keys). Session pooler port 5432, never 6543.
 - Where a second look by the QC exists (LL2b), the report uses it as the checked answer. The report shows both scores.
+- LL2b's numbers undercount overturned facts on sent-back cases (a reviewer re-record drops the answers); count those from the `qc_decision` activity meta (`qc_disagreed`, `doubt_*`), which survives.
 - Output: counts and hashes only.
 - When it runs: after a release that changes a model version, and once a week. Not before every publish.
   Reason: production data cannot be copied to a home machine, and the candidate code is not on a server before `live` moves.
 - A short workflow note says how to read the report and when a result blocks the next release.
 
-**Depends on.** A5 sprints R1 and R2 (on the advisor queue) and LL4.
+**Depends on.** A5 sprints R1 and R2 and LL4. R1 and R2 are built on branch `a5` (13-14 Nov), not on `main`.
+The HalaTuju lead session owns `a5` and the R3 run (owner ruling 2026-11-19). LL5 starts when that code is on `main`.
 Cases decided before LL4 have no fingerprint. They enter the report as "evidence state unknown".
+The replay runs with "today" set to `verdict_decided_at` and the stage as at the decision (LL4 known gaps: the clock and the stage), or reports the clock-dependent cases apart.
 
 **Acceptance.**
 - A dry run on a local test database gives the expected counts.

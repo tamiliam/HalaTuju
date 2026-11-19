@@ -1,0 +1,12 @@
+{
+  "2026-11-18.1": {
+    "digest": "cf404c50da82ce96801838534978b1f3ce0a01b3c6e3749334a2f05b3fc7cce0",
+    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day.",
+    "also_ok": []
+  },
+  "2026-11-18.2": {
+    "digest": "50f89ba648c788646c099e11e0477b48ac76de819bd30962ca612ce700726a9f",
+    "note": "Main's own bump (IPTS offers, 10e1b432f, owner 2026-11-18): an offer from a private college / university or a public university's private wing turns Pathway red (pathway_offer_private). Logged 2026-11-19 when the register was brought up to main 0dea7e809 before its first merge: offer_private.py joins the files. The genuineness names it reads (PRIVATE_ARM_OPENING, PRIVATE_COLLEGE_OPENING, PRIVATE_OFFER_TAG and _UA_SHORT from genuineness/offer_issuers.py) are NOT pinned: they are a recorded known gap (offer_issuers.py:* in _VERDICT_SECOND_LEVEL), so a change to an IPTS opening moves the results_doc version but not the verdict engine version.",
+    "also_ok": []
+  }
+}

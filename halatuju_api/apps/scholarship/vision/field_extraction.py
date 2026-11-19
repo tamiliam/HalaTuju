@@ -22,7 +22,9 @@ logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name 
 #: The SPM slip reader's version, stored as ``parser_version`` beside a deterministic read (and as
 #: ``reader`` in the fallback's diag). 1.1.0 (OCR-first S4, 2026-11-18): the gate reads the DOCUMENT;
 #: the profile's `results_held` is a hint only (1.0.0, unstamped: it vetoed every non-SPM profile).
-SLIP_READER_VERSION = 'spm_slip 1.1.0'
+#: 1.2.0 (S-visible, 2026-11-18): a PDF whose text is invisible has no layer, so the gate's page-1 text
+#: is the Vision read of the visible page (`_page1_text`), never the hidden layer.
+SLIP_READER_VERSION = 'spm_slip 1.2.0'
 
 #: Results that are NOT SPM, by the title the page prints, beside the higher kinds `results_kind`
 #: already recognises (STPM / Matriculation / Asasi / Diploma). Whole words only. A vocational

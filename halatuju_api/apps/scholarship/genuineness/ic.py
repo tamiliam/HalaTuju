@@ -8,6 +8,12 @@ someone typed and failed every physical one → 'suspect').
 The Gemini seam is reached via ``vision._call_gemini_json`` (imported lazily inside the function
 so the module-level import isn't circular and the test patch target stays valid).
 """
+# Version of the IC genuineness model, stored on every result as ``model_version``. History:
+#   1.0.0 (2026-11-19, LL3) — first stamped version; the behaviour in use since 2026-06-12 (8 markers,
+#                        2.5 Flash first). Results stored before this carry no version (no back-fill).
+# Guarded by `tests/test_model_versions.py`: a logic change here needs a bump + a `model_versions/ic.json` entry.
+MODEL_VERSION = '1.0.0'
+
 _IC_GENUINENESS_MARKERS = ('has_kad_pengenalan', 'has_malaysia', 'has_identity_card',
                            'has_mykad', 'has_warganegara', 'has_face_photo', 'has_chip',
                            'looks_like_physical_card')
@@ -32,7 +38,8 @@ _GENUINENESS_STATUS = {'genuine': 'genuine', 'suspect': 'suspect', 'not_an_ic': 
 
 
 def ic_genuineness(data: bytes, content_type: str = '') -> dict:
-    """Soft genuineness fingerprint for an IC image → ``{status, markers, reason}`` or ``{}``.
+    """Soft genuineness fingerprint for an IC image → ``{status, markers, reason, model_version}``
+    or ``{}``.
     ``status`` ∈ canonical ``genuine`` / ``suspect`` / ``not_ic`` (or '' if unclassified).
     NEVER raises; an AI outage / unreadable image returns ``{}`` — NO signal, because we must not
     penalise a student for OUR failure. This only informs the Identity prediction + a pre-interview
@@ -52,4 +59,5 @@ def ic_genuineness(data: bytes, content_type: str = '') -> dict:
         'status': _GENUINENESS_STATUS.get((r.get('verdict') or '').strip().lower(), ''),
         'markers': {m: bool(r.get(m)) for m in _IC_GENUINENESS_MARKERS},
         'reason': (r.get('reason') or '')[:300],
+        'model_version': MODEL_VERSION,
     }

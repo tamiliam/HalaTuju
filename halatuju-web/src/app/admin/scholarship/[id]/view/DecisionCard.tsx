@@ -21,7 +21,7 @@ import { decisionBarShows } from './DecisionBar'
 import { AlertLine, DECISION_ALERT_EVENT, DecisionMissingList } from './DecisionMissing'
 
 export function DecisionCard({
-  app, t, busy, canWrite, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, missing, hasAssistance, doSave, canSave, verdictMsg, verdictMsgTone,
+  app, t, busy, canWrite, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, missing, hasAssistance, doSave, canSave, reasonMissing, verdictMsg, verdictMsgTone,
 }: {
   app: AdminScholarshipDetail
   t: T
@@ -59,6 +59,7 @@ export function DecisionCard({
   hasAssistance: boolean
   doSave: () => void
   canSave: boolean
+  reasonMissing: boolean
   verdictMsg: string
   verdictMsgTone: 'ok' | 'warn'
 }) {
@@ -311,7 +312,13 @@ export function DecisionCard({
                 <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
               ) : officerVerdict.overall === 'accept' && !hasAssistance ? (
                 <p className="text-xs md:text-[11px] text-caution-700">{t(amountReasonKey)}</p>
+              ) : reasonMissing ? (
+                <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.pickReason')}</p>
               ) : null}
+              {/* LL2: a soft warning only (never blocks): Approve chosen while a fact is marked Fail. */}
+              {officerVerdict.overall === 'accept' && ['identity', 'academic', 'pathway', 'income'].some((f) => officerVerdict[f] === 'fail') && (
+                <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.failedAcceptWarn')}</p>
+              )}
               {/* Save is the final commit of the chosen outcome. */}
               <button onClick={doSave} disabled={!!busy || !canSave}
                 className="w-full px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">

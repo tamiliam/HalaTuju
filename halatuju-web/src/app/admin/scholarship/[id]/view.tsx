@@ -60,7 +60,7 @@ import { AssignAndWitness } from './view/AssignAndWitness'
 import { PreInterviewOption, PreInterviewRecord } from './view/PreInterviewReject'   // request #75
 import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
-import { WithdrawAwardCard } from './view/WithdrawAwardCard'
+import { LazyWithdrawAwardCard } from './view/LazyWithdrawAwardCard'
 import { DecisionCard } from './view/DecisionCard'
 import { DecisionBar, decisionBarShows } from './view/DecisionBar'
 import { ConfirmSheet } from './view/ConfirmSheet'
@@ -234,7 +234,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   // Re-check 4: nothing is drawn against a record that is not this case's (the key makes it so).
   if (!app || app.id !== id) return <RecordState loading={!error} />
 
-  const d = deriveCockpit(app, t, findings, officerVerdict, verdict.verdictReason)
+  const d = deriveCockpit(app, t, findings, officerVerdict, verdict.verdictReason, verdict.failReasons)
   const { vtip, decisionReopened, decisionLocked, decisionRecorded } = d
   // Household income + size (request #54: the declared figures, ticked on a document match).
   const household = householdFigures(app, t)
@@ -377,6 +377,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         decisionReopened={decisionReopened} decisionRecorded={decisionRecorded}
         decisionLocked={decisionLocked}
         officerVerdict={officerVerdict} setOfficerVerdict={setOfficerVerdict}
+        failReasons={verdict.failReasons} setFailReason={verdict.setFailReason}
         reportingDateInput={reportingDateInput} setReportingDateInput={setReportingDateInput}
         reportingDateMsg={reportingDateMsg} doSetReportingDate={doSetReportingDate}
       />
@@ -392,7 +393,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         recordedOutcome={recordedOutcome} doReject={doReject} stuckAfterVerdict={stuckAfterVerdict}
         officerVerdict={officerVerdict} selectApprove={selectApprove} selectDecline={selectDecline}
         approveReady={approveReady} decisionReady={decisionReady}
-        missing={decisionMissingItems} hasAssistance={hasAssistance} doSave={doSave} canSave={canSave}
+        missing={decisionMissingItems} hasAssistance={hasAssistance} doSave={doSave} canSave={canSave} reasonMissing={d.reasonMissing}
         verdictMsg={verdictMsg} verdictMsgTone={verdictMsgTone}
       />
 
@@ -456,7 +457,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         closeReason={closeReason} setCloseReason={setCloseReason}
         closeMsg={closeMsg} doClose={doClose}
       />
-      <WithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />
+      {(app.withdrawal_request?.status || app.withdrawal_request?.your_step) && <LazyWithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />}
 
       {/* Mobile M6b: a phone's way back to the decision. It jumps; it never saves (see DecisionBar). */}
       {decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }) && (

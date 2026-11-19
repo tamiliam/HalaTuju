@@ -100,7 +100,7 @@ class EndpointTests(_Base):
         self.assertIn('by=ov-oa@ov.test', line)
         # …and the Overview itself now reads it.
         self.assertEqual(self._body('ov-oa')['sections'],
-                         ['money_series', 'money', 'funnel', 'applications_series'])
+                         ['money_series', 'money', 'funnel', 'applications_series', 'ai_prediction'])
 
     def test_a_no_change_save_writes_no_audit_line(self):
         self._put('ov-oa', rows())

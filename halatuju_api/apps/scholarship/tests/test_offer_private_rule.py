@@ -52,7 +52,8 @@ class TheReasonOpeningsAreUnchanged(SimpleTestCase):
             self.assertTrue(reason.startswith(offer_private.IPTS_REASON_OPENINGS), reason)
 
     def test_no_model_version_bump(self):
-        self.assertEqual(MODEL_VERSION, '1.29.0')
+        # The IPTS change kept 1.29.0; OCR-first S-visible then took 1.31.0 for its own change (an invisible layer).
+        self.assertEqual(MODEL_VERSION, '1.31.0')
 
     def test_engine_version_floor(self):
         self.assertGreaterEqual(VERDICT_ENGINE_VERSION, '2026-11-18.2')

@@ -34,8 +34,10 @@ def ocr_text_for(path, key):
     if os.path.exists(cached):
         return open(cached, encoding='utf-8').read(), 'vision'
     if path.lower().endswith('.pdf'):                 # PDF text-layer fallback (slips)
-        import fitz
-        t = fitz.open(path)[0].get_text()
+        # production's own reader: drawn pages only, never a scanner app's invisible layer (S-visible)
+        from apps.scholarship.pdf_pages import pdf_text_layer, usable_text_layer
+        with open(path, 'rb') as fh:
+            t = usable_text_layer(pdf_text_layer(fh.read()))
         if len(t.strip()) > 40:
             return t, 'pdf-text'
     return '', 'NONE'

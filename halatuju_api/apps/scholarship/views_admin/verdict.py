@@ -12,12 +12,15 @@ from rest_framework import status
 from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
 from .. import birth_state
+from .. import fail_reasons as fail_reasons_rule
 from .. import pool
 from .. import profile_finalise
 from .. import reopen as reopen_service
+from .. import second_look
 from .. import staff_activity
 from .. import surface_gates
 from ..interview_completeness import decision_gate_applies, decision_refusal
+from ..verdict_context import verdict_context_or_empty
 from ..verdict_engine import build_verdict
 from ..models import ScholarshipApplication
 from ..services import AssignmentError, admin_reject, assign_reviewer, may_hand_to
@@ -67,11 +70,12 @@ def _save_verdict(app, admin, verdict_fields, sp_to_save):
             'finalised': getattr(sp_to_save, 'finalise_state', '') == profile_finalise.PENDING})
 
 
-def _record_qc(admin, app, decision, outcome):
+def _record_qc(admin, app, decision, outcome, look=None):
     """Common profile S3: the QC's click is ONE `qc_decision` row on the QC's own activity list —
-    the services it runs underneath (`reopen_decision`, `admin_reject`) are told not to add theirs."""
+    the services it runs underneath (`reopen_decision`, `admin_reject`) are told not to add theirs.
+    ``look``: LL2b `second_look.record_answers` (fact names only); it survives a re-recorded verdict."""
     staff_activity.record(admin, staff_activity.QC_DECISION, app,
-                          meta={'decision': decision, 'outcome': outcome})
+                          meta={'decision': decision, 'outcome': outcome, **(look or {})})
 
 
 class AdminRecordVerdictView(_AdminBase):
@@ -103,6 +107,11 @@ class AdminRecordVerdictView(_AdminBase):
             return Response({'error': 'bad overall', 'code': 'bad_verdict'},
                             status=status.HTTP_400_BAD_REQUEST)
         officer_verdict['overall'] = overall
+        try:   # LL2: a malformed reason is a 400 and nothing is saved; a MISSING one never blocks
+            fail_reasons = fail_reasons_rule.validate(request.data.get('fail_reasons'))
+        except fail_reasons_rule.BadFailReasons:
+            return Response({'error': 'bad fail_reasons', 'code': 'bad_fail_reasons'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         # Guard: a RECORDED verdict must assess all four facts (Pass/Fail). The cockpit's
         # "Save verdict & generate final profile" path used to stamp verdict_decided_at with
@@ -130,12 +139,18 @@ class AdminRecordVerdictView(_AdminBase):
         from ..verdict_engine import VERDICT_ENGINE_VERSION
         app.ai_verdict_snapshot = build_verdict(app)
         app.ai_verdict_engine_version = VERDICT_ENGINE_VERSION
+        # LL4: what fed that snapshot, same save. Never raises: a failure stores {schema, error}.
+        app.ai_verdict_context = verdict_context_or_empty(app)
+        # LL2: kept only for a fact the human failed that THIS snapshot calls verified. Always written
+        # ({} when none), as every other officer_verdict key is; old rows simply have no key.
+        officer_verdict[fail_reasons_rule.KEY] = fail_reasons_rule.keep(
+            fail_reasons, officer_verdict, app.ai_verdict_snapshot)
         app.officer_verdict = officer_verdict
         app.verdict_reason = (request.data.get('reason') or '').strip()
         app.verdict_decided_by = getattr(admin, 'email', '') or ''
         app.verdict_decided_at = timezone.now()
         verdict_fields = [
-            'ai_verdict_snapshot', 'ai_verdict_engine_version', 'officer_verdict',
+            'ai_verdict_snapshot', 'ai_verdict_engine_version', 'ai_verdict_context', 'officer_verdict',
             'verdict_reason', 'verdict_decided_by', 'verdict_decided_at',
         ]
 
@@ -278,7 +293,8 @@ def _accept_refusal(request, app):
 
 
 class AdminQcDecisionView(_AdminBase):
-    """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen'|'reject', comments?, override_reason?} —
+    """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen'|'reject', comments?, override_reason?,
+    fact_checks?} (LL2b: the QC's second look at the facts in doubt; see `second_look`) —
     the QC gate on an AWAITING-QC ('interviewed') case. QC = a `qc`-role admin or super (never
     the reviewer).
       accept → 'interviewed' → 'recommended' (the case becomes pool-eligible). SOFT FLOOR
@@ -295,7 +311,7 @@ class AdminQcDecisionView(_AdminBase):
                DecisionReopen row carrying the reason, closed as a correction) then declines as
                'interview' with the org's QC hold; the reviewer gets the "rejected by QC" email
                (distinct from the "returned for revision" one)."""
-    def _accept_recommend(self, request, app, admin, pk, seen_overall):
+    def _accept_recommend(self, request, app, admin, pk, seen_overall, taps):
         """QC accept of a RECOMMEND verdict: interviewed -> recommended, then publish."""
         # Fix round 3: refuse on the pre-lock copy first, so a refused accept spends no Gemini
         # call. These checks only refuse; they run again on the locked row below.
@@ -338,11 +354,12 @@ class AdminQcDecisionView(_AdminBase):
             # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).
             # Idempotent + PII-backstopped; a no-op if there's nothing ready to publish.
             pool.publish_profile_to_pool(app, blurb=blurb)
-            _record_qc(admin, app, 'accept', 'recommended')
+            look = second_look.record_answers(app, 'accept', taps)   # LL2b: on the locked row, same unit
+            _record_qc(admin, app, 'accept', 'recommended', look)
         logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
         return Response(_detail_payload(app, admin))
 
-    def _accept_decline(self, app, admin, pk):
+    def _accept_decline(self, app, admin, pk, taps):
         """QC accept of a DECLINE verdict: interviewed -> rejected ('interview', the QC hold)."""
         from datetime import timedelta
         from apps.courses import org_config
@@ -356,7 +373,8 @@ class AdminQcDecisionView(_AdminBase):
                 if _overall(app) != 'decline':   # the verdict was re-recorded meanwhile
                     return _not_awaiting_qc()
                 admin_reject(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True)
-                _record_qc(admin, app, 'accept', 'declined')
+                look = second_look.record_answers(app, 'accept', taps)
+                _record_qc(admin, app, 'accept', 'declined', look)
         except StatusRefused:
             return _not_awaiting_qc()
         except ValueError:
@@ -373,6 +391,11 @@ class AdminQcDecisionView(_AdminBase):
         app, admin, err = self._require_qc(request, pk)
         if err:
             return err
+        try:   # LL2b: the QC's taps on the facts in doubt. Malformed = 400, nothing saved; absent = as before
+            taps = second_look.validate(request.data.get(second_look.FIELD))
+        except second_look.BadFactChecks:
+            return Response({'error': 'bad fact_checks', 'code': 'bad_fact_checks'},
+                            status=status.HTTP_400_BAD_REQUEST)
         decision = (request.data.get('decision') or '').strip()
         if decision == 'accept':
             # The QC ACCEPT decision means "uphold the reviewer's recorded verdict". For a DECLINE
@@ -381,8 +404,8 @@ class AdminQcDecisionView(_AdminBase):
             # have red facts) and the shorter `qc_decline_hold_hours` hold (platform 24h, org-timing
             # Sprint 1 — already two-person-vetted). Bucket 'interview'; the email fires, embargoed.
             if _overall(app) == 'decline':
-                return self._accept_decline(app, admin, pk)
-            return self._accept_recommend(request, app, admin, pk, _overall(app))
+                return self._accept_decline(app, admin, pk, taps)
+            return self._accept_recommend(request, app, admin, pk, _overall(app), taps)
         if decision == 'reopen':
             comments = _text(request.data.get('comments'))
             if not comments:
@@ -394,7 +417,8 @@ class AdminQcDecisionView(_AdminBase):
                 with transaction.atomic():
                     lock_application_for(app, ('interviewed',))
                     reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
-                    _record_qc(admin, app, 'reopen', 'reopened')
+                    look = second_look.record_answers(app, 'reopen', taps)   # a send-back: 'disagreed' only
+                    _record_qc(admin, app, 'reopen', 'reopened', look)
             except StatusRefused:
                 return _not_awaiting_qc()
             except reopen_service.ReopenError as e:
@@ -427,7 +451,8 @@ class AdminQcDecisionView(_AdminBase):
                     reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
                     reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
                     admin_reject(app, admin, 'interview', cooloff=hold, activity=False, defer_email=True)
-                    _record_qc(admin, app, 'reject', 'declined')
+                    look = second_look.record_answers(app, 'reject', taps)
+                    _record_qc(admin, app, 'reject', 'declined', look)
             except StatusRefused:
                 return _not_awaiting_qc()
             except reopen_service.ReopenError as e:
@@ -485,20 +510,15 @@ class AdminVerdictMetricsView(_AdminBase):
             return self._deny()
         if self._b40_scope(admin) == 'none':   # #39 S3 `see_all` or `review`; T5b: or `qc`
             return self._deny_role()
-        from ..audit import override_metrics
+        from ..prediction_metrics import metrics
         # org-fence: _org_scoped applied below (fences the metrics roll-up).
-        qs = (ScholarshipApplication.objects
-              .filter(verdict_decided_at__isnull=False)
-              .only('ai_verdict_snapshot', 'ai_verdict_engine_version',
-                    'officer_verdict', 'cohort_id'))
-        qs = self._org_scoped(qs, admin)   # super global
+        qs = self._org_scoped(ScholarshipApplication.objects.all(), admin)   # super global
         cohort = request.query_params.get('cohort')
         if cohort:
-            qs = qs.filter(cohort_id=cohort)
-        # ⚠ TRIPLES, NOT PAIRS — the engine version rides with the prediction it produced, so the
-        # roll-up can say which generations it is averaging (`engine_versions` in the response).
-        rows = ((a.ai_verdict_snapshot, a.officer_verdict, a.ai_verdict_engine_version) for a in qs)
-        return Response(override_metrics(rows))
+            qs = qs.filter(cohort_id=cohort if cohort.isdecimal() and len(cohort) <= 9 else 0)   # not a number / too big = id 0
+        # LL1: the counting and the QC / reviewer reads live in `prediction_metrics` (the Overview's
+        # `ai_prediction` section calls the same function); `by_reviewer` is the lead tier's only.
+        return Response(metrics(qs, admin))
 
 
 class AdminAssignReviewerView(_AdminBase):
