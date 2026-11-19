@@ -57,6 +57,28 @@ CODE_RE = re.compile(r'^[a-z0-9][a-z0-9-]{1,49}$')
 
 # `Programme.name_en` / `name_ms` / `name_ta` are CharField(max_length=200).
 NAME_MAX = 200
+NAME_FIELDS = ('name_en', 'name_ms', 'name_ta')
+
+
+def _clean_name(raw):
+    """One name field from a request: `(text, None)` or `(None, error code)`.
+
+    The model's own cap is refused with words (`name_too_long`) rather than left to a database
+    error, and a value that is not text (e.g. a number) is refused (`bad_name`) instead of a 500.
+    Shared by create (POST) and rename (PATCH), so the two cannot drift.
+    """
+    if raw is None:
+        return '', None
+    if not isinstance(raw, str):
+        return None, 'bad_name'
+    v = raw.strip()
+    if len(v) > NAME_MAX:
+        return None, 'name_too_long'
+    return v, None
+
+
+def _bad(code):
+    return Response({'error': code, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminProgrammeListView(_ProgrammeScopedBase):
@@ -81,10 +103,14 @@ class AdminProgrammeListView(_ProgrammeScopedBase):
 
         from ..models import Programme, code_is_free
         code = (request.data.get('code') or '').strip().lower()
-        name_en = (request.data.get('name_en') or '').strip()
         if not CODE_RE.match(code):
             return Response({'error': 'bad_code', 'code': 'bad_code'}, status=status.HTTP_400_BAD_REQUEST)
-        if not name_en:
+        names = {}
+        for f in NAME_FIELDS:
+            names[f], bad = _clean_name(request.data.get(f))
+            if bad:
+                return _bad(bad)
+        if not names['name_en']:
             return Response({'error': 'name_required', 'code': 'name_required'},
                             status=status.HTTP_400_BAD_REQUEST)
         # `Programme.code` is unique PLATFORM-WIDE, not per organisation, because it is what an
@@ -102,9 +128,7 @@ class AdminProgrammeListView(_ProgrammeScopedBase):
         # configuration screen starts asking which programme. Switching it on is a separate,
         # deliberate press once its first intake year is set up.
         p = Programme.objects.create(
-            organisation=org, code=code, name_en=name_en,
-            name_ms=(request.data.get('name_ms') or '').strip(),
-            name_ta=(request.data.get('name_ta') or '').strip(),
+            organisation=org, code=code, **names,
             is_active=False,
         )
         logger.info('AUDIT programme_created code=%s org=%s by=%s', p.code, org.id, admin.email or '')
@@ -134,16 +158,13 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         # The names are checked BEFORE the code block: a code change saves at once (with its
         # alias), so a refusal on the names must come first or a refused PATCH would still move it.
         names = {}
-        for f in ('name_en', 'name_ms', 'name_ta'):
+        for f in NAME_FIELDS:
             if f in request.data:
-                v = (request.data.get(f) or '').strip()
+                v, bad = _clean_name(request.data.get(f))
+                if bad:
+                    return _bad(bad)
                 if f == 'name_en' and not v:
-                    return Response({'error': 'name_required', 'code': 'name_required'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-                # The model's own cap, refused with words rather than left to a database error.
-                if len(v) > NAME_MAX:
-                    return Response({'error': 'name_too_long', 'code': 'name_too_long'},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                    return _bad('name_required')
                 names[f] = v
 
         if 'code' in request.data:

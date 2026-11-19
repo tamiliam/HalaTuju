@@ -208,7 +208,7 @@ function CreateDialog({ busy, error, onClose, onConfirm }: Extract<GiftProgramme
         <label htmlFor="p-name" className="block text-sm font-medium text-ground-700">
           {t('admin.programmes.field.name')}
         </label>
-        <input id="p-name" value={nameEn} onChange={(e) => setNameEn(e.target.value)}
+        <input id="p-name" value={nameEn} maxLength={200} onChange={(e) => setNameEn(e.target.value)}
           className={`mt-1 ${inputCls}`} />
 
         <label htmlFor="p-code" className="mt-4 block text-sm font-medium text-ground-700">

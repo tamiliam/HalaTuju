@@ -75,6 +75,32 @@ class TestChangeTheName(TestCase):
         r = self._patch(self.admin, {'name_en': 'x' * 200})
         self.assertEqual(r.status_code, 200)
 
+    def test_a_name_that_is_not_text_is_refused_not_a_500(self):
+        for f in ('name_en', 'name_ms', 'name_ta'):
+            r = self._patch(self.admin, {'name_en': 'Fine', f: 123})
+            self.assertEqual(r.status_code, 400)
+            self.assertEqual(r.data['code'], 'bad_name')
+        self.prog.refresh_from_db()
+        self.assertEqual(self.prog.name_en, 'Old Name')
+
+    def test_creating_a_gift_takes_the_same_name_checks(self):
+        # Review of #71: create had no cap (a 201-character name was a database error, a 500).
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Bearer {_make_token(self.admin.supabase_user_id)}')
+        for f in ('name_en', 'name_ms', 'name_ta'):
+            r = self.client.post(PROGRAMMES, {'code': 'r71-new', 'name_en': 'Fine', f: 'x' * 201},
+                                 format='json')
+            self.assertEqual((r.status_code, r.data['code']), (400, 'name_too_long'))
+        r = self.client.post(PROGRAMMES, {'code': 'r71-new', 'name_en': 7}, format='json')
+        self.assertEqual((r.status_code, r.data['code']), (400, 'bad_name'))
+        self.assertFalse(Programme.objects.filter(code='r71-new').exists())
+        r = self.client.post(PROGRAMMES, {'code': 'r71-new', 'name_en': ' New Gift ',
+                                          'name_ms': 'x' * 200}, format='json')
+        self.assertEqual(r.status_code, 201)
+        made = Programme.objects.get(code='r71-new')
+        self.assertEqual((made.name_en, len(made.name_ms), made.name_ta, made.is_active),
+                         ('New Gift', 200, '', False))
+
     def test_a_refused_name_leaves_a_code_change_in_the_same_patch_unsaved(self):
         # The code saves at once with its alias, so the names must be checked first.
         r = self._patch(self.admin, {'code': 'r71-moved', 'name_en': 'x' * 201})
