@@ -1,7 +1,7 @@
 {
   "1.29.0": {
-    "digest": "5d77a426e328a159b19abeab1323d48bb0eee415db978dd21c8b87d0acab02a4",
-    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day.",
+    "digest": "b9ead7705ce78294aa8fb32887ff9debced6d098c6cfd28e3f595e8eceace2be",
+    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day. Digest re-seeded 2026-11-19: register brought up to main 0dea7e809 before its first merge (IPTS rule 10e1b432f moved the private-college, private-arm and private_offer reason openings into offer_issuers constants with the same text; no version bump by main).",
     "also_ok": []
   }
 }

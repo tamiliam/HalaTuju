@@ -57,9 +57,14 @@ MODELS = {
         'files': [f'{_APP}/{name}.py' for name in (
             'verdict_engine', 'verdict_identity', 'verdict_academic', 'verdict_income_salary',
             'verdict_income_str', 'verdict_pathway', 'verdict_caps', 'verdict_ladder',
-            'start_year', 'higher_results', 'requirements', 'document_snapshot')]
+            'start_year', 'higher_results', 'requirements', 'document_snapshot', 'offer_private')]
         + [f'{_G}/bands.py', f'{_APP}/income_engine/*.py'],
-        'pins': [],
+        # what offer_private (main's IPTS rule, 2026-11-18) reads in the genuineness modules
+        'pins': [(f'{_G}/{mod}.py', n) for mod, names in (
+            ('offer_reading', ('_PRIVATE_BODIES', '_PRIVATE_SIGNS', '_TAG', '_TIE_UP', '_public_names')),
+            ('offer_signatures', ('_IIUM_EN', '_UA_NAMES')), ('offer_confirmations', ('_NO_PRIVATE_WING',
+             '_POLY_DEPARTMENTS')), ('results_doc', ('_PRIVATE_ARM_PHRASES', '_norm_fold_upper_alnum')))
+            for n in names],
     },
     'results_doc': {
         'constant': (f'{_G}/results_doc.py', 'MODEL_VERSION'),
@@ -98,7 +103,7 @@ MODELS = {
                  (f'{_G}/results_doc.py', 'misfiled_as'),
                  # what misfiled_as reaches in other files (LL3 review: pins follow their imports)
                  (f'{_G}/bands.py', 'GENUINE_MIN'),
-                 (f'{_G}/stpm_doc.py', 'STPM_LISTS')],
+                 (f'{_G}/stpm_doc.py', 'STPM_LISTS'), (f'{_G}/offer_issuers.py', 'PRIVATE_ARM_OPENING')],
     },
     # LL3 phase 2: the two AI genuineness reads that had no version. Both call Gemini on the
     # 2.5 Flash cascade, so they carry the AI register and the cascade pin like sample_stamp.
