@@ -99,8 +99,12 @@ _SENTENCE = re.compile(r'untuk\s{1,80}mendapat\s{1,80}(\S.{4,400}?)\s{1,80}dan\s
 _DEGREE = re.compile(r'^(?:IJAZAH\s)?SARJANA\sMUDA\s.+\sDENGAN\sKEPUJIAN(?:\s\(.+\))?$|^DIPLOMA\s', re.IGNORECASE)
 #: The programme's own label line ("Program : X"; a scanned letter prints "Program" alone, the value elsewhere).
 _PROGRAM_LINE = re.compile(r'^Program\s{0,3}(?::\s{0,3}(.*))?$', re.IGNORECASE)
-#: ANY programme label line ("Program :", "Program Baharu :", "Nama Program :" — S1c): its value must agree.
-_ANY_PROGRAM = re.compile(r'^(?:Nama\s{1,3})?Program\b[^:]{0,60}:\s{0,3}(.*)$', re.IGNORECASE)
+#: ANY programme label ("Program :", "Program Baharu :", "Nama Program :" — S1c; review round 1: "1. Program :",
+#: "Programme :", "Kursus :", "Bidang Pengajian :", "Butiran Program :", "NamaProgram :", a bare "Program" or
+#: "Program Baru"): group 1 is its value (None or '' when the value is on the next line). Never "Kod Program".
+_ANY_PROGRAM = re.compile(r'^(?:\(?\d{1,2}[.)]?\s{0,3}|\(?[A-Za-z][.)]\s{0,3})?(?:(?:NAMA|BUTIRAN)\s{0,3})?'
+                          r'(?:PROGRAM(?:ME)?|KURSUS|BIDANG\s{1,3}PENGAJIAN)(?![A-Za-z])'
+                          r'(?:[^:]{0,60}:\s{0,3}(.*)|\s{0,3}(?:BAHARU|BARU)?)$', re.IGNORECASE)
 #: A line that starts a programme name (a scanned letter's programme value line).
 _DEGREE_START = re.compile(r'^(?:IJAZAH\s)?SARJANA\sMUDA\b|^DIPLOMA\b', re.IGNORECASE)
 #: A range separator between two date parts: a dash or "(se)hingga" with a digit after it.
@@ -109,6 +113,9 @@ _RANGE_SEP = re.compile(r'[0-9A-Za-z]\s{0,3}(?:[-–]|\b(?:SE)?HINGGA\b)\s{0,3}\
 _DAY_RANGE = re.compile(r'(?<!\d)(\d{1,2})(?:\s{1,3}(' + _MALAY_MONTH + r'))?(?:\s{1,3}(20\d{2}))?\s{0,3}'
                         r'(?:[-–]|(?:SE)?HINGGA)\s{0,3}(\d{1,2})\s{1,3}(' + _MALAY_MONTH + r')\s{1,3}(20\d{2})',
                         re.IGNORECASE)
+#: The END of a range whose start is a whole date ("28 September 2031 (Ahad) - 29 September 2031"): not a
+#: second date in the reporting window (S1c review round 1, LOW-E).
+_RANGE_END = re.compile(r'^\s{0,3}(?:\([^)\n]{0,20}\)\s{0,3})?(?:[-–]|(?:SE)?HINGGA)\s{0,3}' + _DATE, re.IGNORECASE)
 _REPORT_LABEL = re.compile(r'Tarikh\s{1,3}Lapor\s{1,3}Diri', re.IGNORECASE)
 _VENUE = re.compile(r'^Tempat(?:\s{0,3}/\s{0,3}Kolej|\s{1,3}Lapor\s{1,3}Diri)?\s{0,3}:\s{0,3}(\S.*)$', re.IGNORECASE)
 _CAMPUS = re.compile(r'^Kampus\s{0,3}:\s{0,3}(\S.*)$', re.IGNORECASE)
@@ -122,14 +129,41 @@ _STREET_WORD = re.compile(r'\b(?:KG|KAMPUNG|JALAN|JLN|LORONG|LRG|TAMAN|TMN|LOT|P
 #: A name connector: a line holding one is (part of) a name, whatever else it holds (review round 2).
 #: '@' (an alias: "MUHAMMAD AMIRUL" / "@ HAKIM") joins a name too (S1c).
 _CONNECTOR = re.compile(r'\b(?:BIN|BINTI|ANAK|A\s{0,2}/\s{0,2}[LP]|[SD]\s{0,2}/\s{0,2}O)\b|@', re.IGNORECASE)
-#: A village word: name-like words before it, or before a comma, may be the name's tail ("HAKIM, KG ...").
-_VILLAGE = re.compile(r'\b(?:KG|KAMPUNG)\b', re.IGNORECASE)
+#: Where a line under the name may cut a name's tail from its address (S1c review round 1, MED-B): a comma,
+#: a ';' or a dash ("HAKIM, KG ...", "HAKIM; JALAN ...", "HAKIM - KG ...").
+_CUT = re.compile(r'[,;\-–—]')
 #: A withdrawal said in the body ("Tawaran ini adalah DIBATALKAN", "telah DITARIK BALIK"), word-bounded
 #: (review round 2): never an offer to lock. No UMS letter in the corpus prints any of these words.
 #: S1c adds DITOLAK, DITARIK SEMULA, TIDAK LAGI SAH, the SURAT TIDAK BERJAYA heading and BATALKAN split from
 #: its DI (no cached UMS letter prints any); spaced letters ("D I B A T A L K A N") are read squeezed.
+#: S1c review round 1 (MED-C) adds the words TIDAK SAH, DIGUGURKAN, DIMANSUHKAN, LUPUT and GAGAL (measured: no
+#: cached UMS letter prints any of them on ANY page; their conditional clause says "Kegagalan", "terbatal").
 _WITHDRAWN = re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}TARIK\s{1,3}(?:BALIK|SEMULA)|'
-                        r'DI\s{0,3}TOLAK|TIDAK\s{1,3}LAGI\s{1,3}SAH|SURAT\s{1,3}TIDAK\s{1,3}BERJAYA)\b', re.IGNORECASE)
+                        r'DI\s{0,3}TOLAK|TIDAK\s{1,3}LAGI\s{1,3}SAH|SURAT\s{1,3}TIDAK\s{1,3}BERJAYA|TIDAK\s{1,3}SAH|'
+                        r'DIGUGURKAN|DIMANSUHKAN|LUPUT|GAGAL)\b', re.IGNORECASE)
+#: The same words searched with spaces, dots and dashes taken out ("D I B A T A L K A N", "DI-BATAL-KAN",
+#: "TIDAK  .  BERJAYA"; S1c review round 1, MED-C). Measured: none is in the squeezed text of ANY page of the
+#: 58 cached UMS letters, so a word boundary crossed by the squeeze has not cost a genuine letter.
+_WITHDRAWN_STEMS = ('DIBATALKAN', 'PEMBATALAN', 'TIDAKBERJAYA', 'DITARIKBALIK', 'DITARIKSEMULA', 'PENARIKANBALIK',
+                    'TIDAKLAGISAH')
+_SQUEEZE_OUT = re.compile(r'[\s.\-–—]')
+#: TERBATAL or (MENARIK / DITARIK) TARIK BALIK SAID of this letter (S1c review round 1): the word with no
+#: condition in its sentence ("Tawaran ini telah TERBATAL", "Dengan ini tawaran saudara TERBATAL", "Status :
+#: TERBATAL", "TAWARAN TERBATAL", "adalah terbatal dengan serta-merta"). A genuine offer says it only as a
+#: condition: all 36 cached letters that print TERBATAL say "sekiranya ... tawaran ini adalah terbatal dengan
+#: sendirinya" (page 2). The sentence is cut at a full stop, and at most 200 characters before and 80 after.
+_CANCEL_WORD = re.compile(r'\bTERBATAL\b|\b(?:MENARIK|DITARIK|TARIK)\s{0,3}BALIK\b', re.IGNORECASE)
+_CONDITION = re.compile(r'\b(?:SEKIRANYA|SEKIRA|JIKA|JIKALAU|APABILA|AKAN|BOLEH|BERHAK|IF)\b', re.IGNORECASE)
+
+
+def _cancel_said(text: str) -> bool:
+    """True when TERBATAL or TARIK BALIK stands in a sentence with no condition (`_CANCEL_WORD`)."""
+    for m in _CANCEL_WORD.finditer(text):
+        before = text[max(0, m.start() - 200):m.start()].rsplit('.', 1)[-1]
+        after = text[m.end():m.end() + 80].split('.', 1)[0]
+        if not _CONDITION.search(before + ' ' + after):
+            return True
+    return False
 #: The ONE space between two single letters ("D I B A T A L K A N" -> "DIBATALKAN"; "D I BATALKAN" -> "DI
 #: BATALKAN"); a wider gap is the gap between two spaced words ("S U R A T  T I D A K" -> "SURAT  TIDAK").
 _LETTER_GAP = re.compile(r'(?<![A-Za-z])([A-Za-z])[^\S\n](?=[A-Za-z](?![A-Za-z]))')
@@ -137,9 +171,11 @@ _LETTER_GAP = re.compile(r'(?<![A-Za-z])([A-Za-z])[^\S\n](?=[A-Za-z](?![A-Za-z])
 _DAY_NUMBER = re.compile(r'(?<!\d)\d{1,2}(?!\d)')
 #: A word or mark that joins two days into a range or a list (S1c, MED-1): on a line ABOVE the date in the
 #: reporting-date window ("28 -" / "29 September 2031"), or starting the date's own line ("- 29 September").
-_JOIN = r'(?:[-–—,&]|\b(?:SE)?HINGGA\b|\bSAMPAI\b|\bDAN\b|\bKE\b|\bS\s{0,2}/\s{0,2}D\b)'
+_JOIN = r'(?:[-‐‑‒–—―,&]|\b(?:SE)?HINGGA\b|\bSAMPAI\b|\bDAN\b|\bKE\b|\bS\s{0,2}/\s{0,2}D\b)'
 _JOINER = re.compile(_JOIN, re.IGNORECASE)
-_JOINER_START = re.compile(r'^\s{0,3}' + _JOIN, re.IGNORECASE)
+#: Starting the date's line, a few more marks join too ("~ 29 ...", "/ 29 ...", "atau 29 ...", "to 29 ...";
+#: S1c review round 1) — not counted above the date, where a venue line may hold them.
+_JOINER_START = re.compile(r'^\s{0,3}(?:' + _JOIN + r'|[~/]|\b(?:ATAU|TO|OR)\b)', re.IGNORECASE)
 #: Two columns on one layout line (the name must stand alone).
 _GAP = re.compile(r'\S\s{3,}\S')
 _COLUMNS = re.compile(r'\s{3,}')
@@ -171,6 +207,17 @@ def _alnum_key(s: str) -> str:
     return re.sub(r'[^A-Z0-9()]', '', (s or '').upper())
 
 
+def _withdrawn(source: str, head) -> bool:
+    """True when the letter withdraws, defers, refuses or answers an offer rather than making one: a head word
+    at or above the title, a withdrawal word anywhere (also with its letters spaced, or squeezed of spaces, dots
+    and dashes), or TERBATAL / TARIK BALIK said with no condition (`_cancel_said`)."""
+    key = _SQUEEZE_OUT.sub('', source.upper())
+    return bool(any(_NOT_AN_OFFER.search(ln) or _NOT_AN_OFFER.search(_squeeze(ln)) for ln in head)
+                or _WITHDRAWN.search(source) or _WITHDRAWN.search(_squeeze(source))
+                or any(stem in key for stem in _WITHDRAWN_STEMS)
+                or _cancel_said(_one_space(source)))
+
+
 def _title(lines):
     """(index, intake) of the one title line; (-1, '') when absent or printed twice differently."""
     hits = [(i, _one_space(m.group(1)).upper()) for i, ln in enumerate(lines) for m in [_TITLE.search(_one_space(ln))] if m]
@@ -179,6 +226,11 @@ def _title(lines):
         return -1, ''
     i, intake = hits[0]
     return i, re.sub(r'\s{0,2}-\s{0,2}', '-', re.sub(r'\s{0,2}/\s{0,2}', '/', intake))
+
+
+#: A house word (and its number) ending the words before a cut ("HAKIM NO 12 | JALAN", "UNIT 3"): the
+#: address's, not the name's — taken off before the words are judged name-like.
+_HOUSE_WORD = re.compile(r'\s*\b(?:NO|NOMBOR|UNIT|ARAS|TINGKAT|TKT|BATU|BT|KM)\.?(?:\s{0,3}\d+[A-Z]?)?$', re.IGNORECASE)
 
 
 def _may_wrap(raw: str) -> bool:
@@ -190,17 +242,23 @@ def _may_wrap(raw: str) -> bool:
     street line that STARTS with name-like words and then a street word, after a comma or not ("HAKIM, KG
     ZANTHARION", "HAKIM KG ZANTHARION", "HAKIM, JALAN ..."), may hold the name's tail too. A place name
     before a comma with no street word after it ("TAMAN SERI, ...", a town) is an address line (measured:
-    the wider rule cost two genuine locks)."""
+    the wider rule cost two genuine locks). S1c review round 1 (MED-B): the cut is made at a comma, ';' or
+    a dash, at ANY street word (JALAN, LORONG, TAMAN, LOT, PETI ...), or at a postcode (five digits):
+    name-like words before a street word or a postcode may be the name's tail (a house word ending them,
+    "NO", "UNIT", is the address's own). A cut at ANY digit (a house number: "HAKIM 12 JALAN 5") was
+    measured and dropped: one genuine scanned letter's address line starts with a word and a house number."""
     if _CONNECTOR.search(raw or ''):
         return True
     first = _one_space(_COLUMNS.split((raw or '').strip())[0])
     if _name_ok(first) and not _STREET_WORD.search(first):
         return True
-    village = _VILLAGE.search(first)
-    for cut in (first.find(','), village.start() if village else -1):
-        head = first[:cut].strip() if cut > 0 else ''
-        rest = first[cut:].lstrip(', ') if cut > 0 else ''
-        if head and _name_ok(head) and not _STREET_WORD.search(head) and _STREET_WORD.match(rest):
+    street, digit = _STREET_WORD.search(first), re.search(r'(?<!\d)\d{5}(?!\d)', first)
+    cuts = [m.start() for m in _CUT.finditer(first)] + [m.start() for m in (street, digit) if m]
+    for cut in cuts:
+        head = _HOUSE_WORD.sub('', first[:cut].strip(' ,;-–—')) if cut > 0 else ''
+        rest = first[cut:].lstrip(' ,;-–—') if cut > 0 else ''
+        if (head and _name_ok(head) and not _STREET_WORD.search(head)
+                and (_STREET_WORD.match(rest) or rest[:1].isdigit())):
             return True
     return False
 
@@ -229,6 +287,34 @@ def _offer_date_and_name(lines, title_at):
             name = ''
         return _one_space(m.group(1)), name
     return '', ''
+
+
+def _squash(s: str) -> str:
+    return re.sub(r'\s', '', s or '')
+
+
+def name_in_plain(name: str, plain: str, layout: str) -> bool:
+    """True when the layout's name stands as its OWN words in the page's PLAIN text layer (S1c review round 1,
+    MED-A). pypdf 6's layout joins two text objects drawn under ~2pt apart with no space, so a right-hand word
+    can glue onto the name ("ZORBEX A/L QUENTAROSULIT"); the plain layer keeps them apart. The name, spaces
+    removed, must sit inside exactly ONE plain line, spaces removed; there each of its words must stand whole
+    (a plain "QUENTARO SULIT" is not the name "QUENTAROSULIT"), with no letter glued before it and none
+    glued after it — unless what follows is the start of ANOTHER layout line (pypdf 5's plain layer runs the
+    name into the address line under it: the layout shows the two apart). No plain layer: False."""
+    want, lines = _squash(name), [ln for ln in (plain or '').splitlines() if ln.strip()]
+    hits = [_one_space(ln) for ln in lines if want and want in _squash(ln)]
+    if len(hits) != 1:
+        return False
+    starts = {s[:8] for ln in _text_lines(layout) for s in [_squash(_COLUMNS.split(ln.strip())[0])]
+              if len(s) >= 2 and _squash(name) not in s}
+    pattern = re.compile(r'\s{0,3}'.join(re.escape(w) for w in name.split()))   # no space inside a word
+    for m in pattern.finditer(hits[0]):
+        before, after = hits[0][max(0, m.start() - 1):m.start()], _squash(hits[0][m.end():])
+        glued_after = hits[0][m.end():m.end() + 1].isalpha()
+        if before.isalpha() or (glued_after and not any(after.startswith(s) for s in starts)):
+            continue
+        return True
+    return False
 
 
 def _ic(lines, title_at):
@@ -288,13 +374,53 @@ def _ums_programme(lines, title_at):
         if not hit:
             return ''                            # a Program value that is not the sentence's programme
         values.add(_tidy(hit))
-    for i, ln in enumerate(lines):               # every programme label line in the letter (S1c: any wording)
-        lab = _ANY_PROGRAM.match(_one_space(ln))
-        value = _one_space(lab.group(1) or '') if lab else ''
-        if value and not _agreeing(value, lines[i + 1] if i + 1 < len(lines) else '', want):
-            return ''
+    if not _every_label_agrees(lines, want):
+        return ''
     values = {v for v in values if _DEGREE.match(v)}
     return next(iter(values)) if labelled and len(values) == 1 else ''
+
+
+#: Another label of the scanned label block, printed between a bare "Program" label and its value ("Program" /
+#: "Kod Program" / ":" / value): skipped, never compared (S1c review round 1).
+_OTHER_LABEL = re.compile(r'^(?:KOD|FAKULTI|TEMPOH|SESI|MOD|TARAF|KAMPUS|PUSAT)\b[A-Za-z ]{0,30}:?$', re.IGNORECASE)
+
+
+def _every_label_agrees(lines, want: str) -> bool:
+    """True when every programme label in the letter names the sentence's programme ``want`` (S1c; review round
+    1, LOW/MED-D): each COLUMN of each line is checked ("Fakulti : X      Program : Y"; a label column's value
+    may be the next column, the layout's padding splitting "Program :      X"), the label may carry a
+    number ("1. Program :") or a lead word ("Nama", "Butiran"; "NamaProgram" glued), and Program, Programme,
+    Kursus and Bidang Pengajian all count; a label is a label only when a colon follows it (a colon-less
+    "Program" is a prose word, or a scanned block's bare label, whose value lines `_ums_programme` already
+    checks). A value split over columns may be the first column or all of them. A label whose value is not
+    on its line ("Program Baru :") is compared with the next line (a lone ':' line and another label such
+    as "Kod Program" skipped; the value may wrap onto one more line); a value that cannot be compared
+    there refuses."""
+    for i, ln in enumerate(lines):
+        cols = _COLUMNS.split(ln.strip())
+        for k, col in enumerate(cols):
+            lab = _ANY_PROGRAM.match(_one_space(col))
+            if not lab:
+                continue
+            if lab.group(1) is None and not (k + 1 < len(cols) and cols[k + 1].startswith(':')):
+                continue                         # no colon: a prose word, or a scanned block's bare label (above)
+            after = [_one_space(c).lstrip(': ') for c in cols[k + 1:] if _one_space(c) != ':']
+            nxt_line = lines[i + 1] if i + 1 < len(lines) else ''
+            if _one_space(lab.group(1) or ''):
+                if not _agreeing(_one_space(lab.group(1)), nxt_line, want):
+                    return False
+                continue
+            if after:
+                if not (_agreeing(after[0], nxt_line, want) or _agreeing(' '.join(after), nxt_line, want)):
+                    return False
+                continue
+            rest = [ln2 for ln2 in lines[i + 1:i + 5]
+                    if _one_space(ln2) != ':' and not _OTHER_LABEL.match(_one_space(ln2))][:2] + ['', '']
+            nxt = _one_space(rest[0]).lstrip(': ')
+            if not (_agreeing(nxt, rest[1], want) or _agreeing(_COLUMNS.split(rest[0].strip())[0].lstrip(': '),
+                                                                rest[1], want)):
+                return False
+    return True
 
 
 def _agreeing(value: str, nxt: str, want: str) -> str:
@@ -325,19 +451,23 @@ def _reporting_date(lines):
     list joined some other way ("28 September — 1 Oktober", "sampai", "s/d", "27, 28 dan 29 September",
     "28 & 29", "28/29") whose first day this rule cannot place, so no date. A range WRAPPED across lines
     ("28 -" / "29 September 2031", the venue line between them or not) would read its LAST day, so a day
-    number or a joiner on any part above the date, or a joiner starting the date's line, reads no date (S1c)."""
+    number or a joiner on any part above the date, or a joiner starting the date's line, reads no date (S1c).
+    A SECOND whole date anywhere in the window after the one read (a range's own end apart) is a list
+    ("Kumpulan A ... / Kumpulan B ...", two dates on one line, a separate date for international students),
+    and reads no date (S1c review round 1)."""
     at = [i for i, ln in enumerate(lines) if _REPORT_LABEL.search(ln)]
     if len(at) != 1:
         return ''
     i = at[0]
     tail = _REPORT_LABEL.split(lines[i], maxsplit=1)[1]
     held = False                                 # an earlier part held a day number or a joiner (S1c, MED-1)
-    for part in [tail] + lines[i + 1:i + 7]:
+    window = [tail] + lines[i + 1:i + 7]
+    for k, part in enumerate(window):
         got = first_date(part)
         if not got:
             held = held or bool(_DAY_NUMBER.search(part) or _JOINER.search(part))
             continue
-        if held or _JOINER_START.match(part):
+        if held or _JOINER_START.match(part.lstrip(' \t:')):
             return ''                            # a range or list wrapped across lines: its first day is above
         if _RANGE_SEP.search(part):
             m = _DAY_RANGE.search(part)
@@ -346,6 +476,9 @@ def _reporting_date(lines):
             m = _DMY_RE.search(part) or _NUM_DATE_RE.search(part)
             start = m.start(1) if m else -1
         day = _DAY_NUMBER.search(part)
+        rest = _RANGE_END.sub('', part[m.end():], count=1) if m else part
+        if any(first_date(later) for later in [rest] + window[k + 1:]):
+            return ''                            # a second date in the window: a list (S1c review round 1, LOW-E)
         return got if day and day.start() == start else ''
     return ''
 
@@ -386,17 +519,15 @@ def read_ums(source: str):
     """``(fields, reason)`` for one UMS letter's text: ``fields`` is the read (None before the title
     holds), ``reason`` '' when every required field is read and sane, else why it must not lock."""
     from .offer_parse import house_date
-    if len(source or '') > MAX_CHARS or (source or '').count('\n') > MAX_LINES:
-        return None, 'too_long'                  # more than a page 1 holds: no rule runs (S1c)
+    if len(source or '') > MAX_CHARS or len((source or '').splitlines()) > MAX_LINES:
+        return None, 'too_long'                  # more than a page 1 holds: no rule runs (S1c; every line break)
     if _STATUS.search(source or ''):
         return None, 'status_letter'
     lines = _text_lines(source)
     title_at, intake = _title(lines)
     if title_at < 0:
         return None, 'no_title'
-    head = lines[:title_at + 1]
-    if (any(_NOT_AN_OFFER.search(ln) or _NOT_AN_OFFER.search(_squeeze(ln)) for ln in head)
-            or _WITHDRAWN.search(source) or _WITHDRAWN.search(_squeeze(source))):
+    if _withdrawn(source, lines[:title_at + 1]):
         return None, 'not_an_offer'
     offer_date, name = _offer_date_and_name(lines, title_at)
     nric = _ic(lines, title_at)

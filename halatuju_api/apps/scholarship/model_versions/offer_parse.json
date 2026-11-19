@@ -10,8 +10,8 @@
     "also_ok": []
   },
   "2.2.0": {
-    "digest": "dea856cb38a3ff2307959b3714385250eb5f78923a15166d71b9ebce0175e38f",
-    "note": "2026-11-19: OCR-first S1c (TD-688): the UMS rules read refuses more: a reporting range wrapped across lines, more withdrawal words (TERBATAL and SURAT TIDAK BERJAYA only above the title; spaced letters read squeezed), a programme label of any wording that disagrees, a cut name under an alias or a village line, and text longer than a page 1. One family helper (family_of) shared with the Exact read. The three government families read as before.",
+    "digest": "842fd88330e5fc40230c1ab454004bd2ec07aa7e47d66eb0d6b7aa98973d8a03",
+    "note": "2026-11-19: OCR-first S1c (TD-688): the UMS rules read refuses more: a reporting range wrapped across lines, more withdrawal words (TERBATAL and SURAT TIDAK BERJAYA only above the title; spaced letters read squeezed), a programme label that disagrees, a cut name under an alias or a village line, and text longer than a page 1. One family helper (family_of) shared with the Exact read. The three government families read as before. 2026-11-20 (unshipped, digest updated in place): S1c review round 1 refuses more: a layout name not standing whole in the plain page-1 layer (pypdf 6 glue) or no plain layer, a name tail before a street word, separator or postcode, more withdrawal words and TERBATAL / TARIK BALIK said without a condition anywhere, more programme label words, a second date in the reporting window, carriage returns counted as lines. Cached corpus outcomes unchanged under pypdf 5.9.0 and 6.21.4.",
     "also_ok": []
   }
 }

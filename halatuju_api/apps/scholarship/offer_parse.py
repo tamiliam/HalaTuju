@@ -366,15 +366,22 @@ def parse_govt_offer(text: str, page1_text: str = None, page1_layout: str = ''):
 def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str) -> dict:
     """The UMS branch of `diagnose` (OCR-first S1). A digital PDF is read ONLY from its page-1 layout
     text — its plain layer glues the name into the address — so a text layer without one never locks
-    (guard ``no_layout``). Every refusal is a guard; the letter then goes to the AI as before."""
-    from .offer_parse_university import LANE, read_ums
+    (guard ``no_layout``). Every refusal is a guard; the letter then goes to the AI as before.
+    S1c review round 1 (MED-A): a layout read needs its plain page-1 layer too (guard ``no_plain_layer``),
+    and the layout's name must stand as its own words there (`name_in_plain`; guard ``name_not_plain``)."""
+    from .offer_parse_university import LANE, name_in_plain, read_ums
     if out['portal']:
         return out
     if page1_text.strip() and not page1_layout.strip():
         out['guard'] = 'no_layout'
         return out
+    if page1_layout.strip() and not page1_text.strip():
+        out['guard'] = 'no_plain_layer'
+        return out
     fields, reason = read_ums(page1_layout if page1_layout.strip() else text)
     out['fields'], out['titled'] = fields, fields is not None
+    if not reason and page1_layout.strip() and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
+        reason = 'name_not_plain'
     if reason.startswith('empty:'):
         out['empty_required'] = reason[len('empty:'):].split(',')
     elif reason:
