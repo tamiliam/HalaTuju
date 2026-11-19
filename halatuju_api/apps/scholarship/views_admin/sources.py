@@ -125,7 +125,7 @@ HOUSE_ORG_CODE = 'brightpath'
 
 
 #: The text fields a source's details are made of, with the column width each is cut to. ONE table
-#: for Add (now the source invite) and Edit, so the two cannot cut a value differently.
+#: for Add (Sources and the source invite) and Edit, so the two cannot cut a value differently.
 DETAIL_FIELDS = (('name', 200), ('contact_person', 200), ('contact_email', 254), ('phone', 30))
 
 
@@ -156,7 +156,7 @@ def detail_values(data):
 
 def new_source_fields(data, *, code_key='code', name_key='name'):
     """`(fields, error)` — the cleaned columns of a NEW source from a request body (``error`` is the
-    `text_of` 400 for a value that is not text). The keys default to the old Add source's; the
+    `text_of` 400 for a value that is not text). The keys default to Add source's (Sources); the
     source invite (source sign-in S2) names them `source_code` / `source_name`, since its own `name`
     is the person's."""
     code, bad = text_of(data.get(code_key))
@@ -173,9 +173,10 @@ def new_source_fields(data, *, code_key='code', name_key='name'):
 
 
 def new_source_refusal(owner, fields):
-    """None, or the 400 code a NEW source of ``owner`` is refused with. THE rules Add source
-    applied (sources Sprint B); since source sign-in S2 the source invite applies them, because a
-    source is now created by inviting its person (`views_admin/source_users.py`)."""
+    """None, or the 400 code a NEW source of ``owner`` is refused with. THE rules for a new source,
+    applied by BOTH doors that create one (owner 2026-11-19): Add source on the Sources page
+    (`AdminSourcesView.post`) and the source invite with a new source (`views_admin/source_users.py`).
+    One copy, so the two doors cannot drift."""
     from .. import gift_sources
     from ..models import ReferralSource
     if not fields['code'] or not fields['name']:
@@ -191,6 +192,16 @@ def new_source_refusal(owner, fields):
     if ReferralSource.objects.filter(organisation=owner, code=fields['code']).exists():
         return 'code_taken'
     return None
+
+
+def create_new_source(owner, fields):
+    """THE write of a new source (``fields`` from `new_source_fields`, already passed by
+    `new_source_refusal`), for both doors. ⚠ A new source joins NO gift (owner, 2026-10-08) — each
+    gift switches it on itself — and has no person (sign-in 'none') until someone is invited for it.
+    The unique (organisation, code) index may still raise IntegrityError on a race; the caller
+    answers that as `code_taken`."""
+    from ..models import ReferralSource
+    return ReferralSource.objects.create(organisation=owner, **fields)
 
 
 def _source_application_counts():
@@ -285,7 +296,9 @@ class AdminSourcesView(_SourcesBase):
     """GET  .../admin/scholarship/sources/ — the caller's organisation's sources + student counts
          and, since source sign-in S2, each one's `sign_in` and `user_count`; since Invitations
          I2 (2026-11-08) its active `person` (`_person_dict`, or None).
-    POST — RETIRED (410 `use_source_invitation`): a source is added by inviting its person."""
+    POST .../admin/scholarship/sources/ {code, name, contact_person?, contact_email?, phone?,
+         show_in_apply?} — ADD a source (back since 2026-11-19, owner), owned by the caller's
+         organisation (`_new_source_owner`; a super names one with `?org=`)."""
     def get(self, request):
         admin, err = self._sources_admin(request)
         if err:
@@ -313,16 +326,36 @@ class AdminSourcesView(_SourcesBase):
         })
 
     def post(self, request):
-        """⚠ RETIRED (source sign-in S2, 2026-10-30, roadmap conflict C6): a source is now ADDED by
-        inviting its person — `POST admin/invitations/` with `audience='source_partner'` and a new
-        `source_name` + `source_code`, under exactly the rules this POST applied
-        (`new_source_refusal`). 410 with a code rather than removing the method: a 405 would read
-        as a bug to an old client, and says nothing about where the door went."""
+        """Add a source WITHOUT inviting anybody (owner 2026-11-19, reversing the S2 "Add moves
+        into the invite" part). 201 with the Sources row (`sign_in` 'none', `person` None).
+
+        ⚠ WHO MAY ADD IS THE PERMISSION, NOTHING ELSE ("We follow the permission"): a write, so
+        `_sources_admin` asks `sources.edit` (Team tables → Sources "View and change"). No role name.
+        ⚠ THE SAME RULES AS THE INVITE'S NEW SOURCE: `new_source_fields` / `new_source_refusal` /
+        `_new_source_owner` / `create_new_source` — one copy for both doors.
+        Refusals: 403 (no `sources.edit`); 400 `bad_request`, `code_and_name_required`,
+        `code_reserved`, `code_taken`, `organisation_required`; 404 an unknown `?org=`."""
         admin, err = self._sources_admin(request)
         if err:
             return err
-        return Response({'error': 'Sources are added by inviting them, on Invitations → Source.',
-                         'code': 'use_source_invitation'}, status=status.HTTP_410_GONE)
+        owner, err = self._new_source_owner(request, admin)
+        if err:
+            return err
+        fields, bad = new_source_fields(request.data)
+        if bad:
+            return bad
+        refusal = new_source_refusal(owner, fields)
+        if refusal:
+            return Response({'error': refusal, 'code': refusal}, status=status.HTTP_400_BAD_REQUEST)
+        from django.db import IntegrityError, transaction
+        try:
+            with transaction.atomic():
+                org = create_new_source(owner, fields)
+        except IntegrityError:
+            # Its code was taken between the check and the write (unique per organisation).
+            return Response({'error': 'code_taken', 'code': 'code_taken'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(_one_source_dict(admin, org), status=status.HTTP_201_CREATED)
 
 
 class AdminSourceNamesView(_AdminBase):

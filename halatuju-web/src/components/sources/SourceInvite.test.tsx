@@ -1,10 +1,11 @@
 /**
  * @jest-environment jsdom
  *
- * Invitations → Source (source sign-in S2, 2026-10-30): inviting IS how a source is added now.
+ * Invitations → Source (source sign-in S2, 2026-10-30): one of the two doors that add a source
+ * (the Sources page's Add is the other, back 2026-11-19; both share one set of server rules).
  *
  * Pinned: both shapes of the POST — an existing source (`source_id`) and a new one (`source_name` +
- * `source_code`, the old Add source's rules) — exactly as `source_users.invite_source` reads them;
+ * `source_code`, the shared Add source rules) — exactly as `source_users.invite_source` reads them;
  * every refusal code in plain words (and an unknown one in generic words); the roster's Resend /
  * Cancel, each only where the server says this caller may (`manageable`).
  *

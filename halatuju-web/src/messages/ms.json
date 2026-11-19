@@ -3723,7 +3723,15 @@
         "label": "Saksi"
       },
       "tabTerms": "Terma",
-      "addHint": "Untuk menambah sumber, jemput individu berkaitan di Jemputan.",
+      "add": "Tambah sumber",
+      "addTitle": "Tambah sumber",
+      "code": "Kod",
+      "create": "Cipta",
+      "created": "Sumber ditambah.",
+      "codeTaken": "Kod itu telah digunakan.",
+      "codeAndNameRequired": "Kod dan nama diperlukan.",
+      "codeReserved": "Kod itu dikhaskan. Pilih yang lain.",
+      "organisationRequired": "Pilih organisasi dahulu, kemudian tambah sumber.",
       "colSignIn": "Log masuk",
       "signIn": {
         "none": "Belum dijemput",

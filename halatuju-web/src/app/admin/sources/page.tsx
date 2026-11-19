@@ -3,7 +3,9 @@
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 import { useState, useEffect, useCallback } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { getSources, revokeSourceUser, updateSource, type SourceItem } from '@/lib/admin-api'
+import {
+  createSource, getSources, revokeSourceUser, updateSource, type SourceItem,
+} from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 import { useLatest } from '@/lib/useLatest'
 import TableFrame from '@/components/admin/TableFrame'
@@ -14,12 +16,14 @@ import PartnerEmailsCard from '@/components/sources/PartnerEmailsCard'
 import { SignInBadge, Toggle } from '@/components/sources/shared'
 
 // Sources (referral organisations) registry — a card in Administration → ORGANISATION
-// (super/org_admin/admin). List + inline edit.
+// (super/org_admin/admin). List + inline edit + add.
 //
-// ⚠ NO ADD HERE SINCE SOURCE SIGN-IN S2 (2026-10-30): a source is created by INVITING ITS PERSON
-// (Invitations → Source; the old POST answers 410 `use_source_invitation`), so the button is a link
-// there. M2d E7: the "Invite a source" link is gone; a one-line hint (`addHint`) tells super and
-// org_admin, who may invite (owner: Admin does not), where a source is added.
+// ⚠ ADD SOURCE IS BACK (owner, 2026-11-19 — it had moved into the invite at source sign-in S2): the
+// "+ Add source" form creates a source with no person, beside Invitations → Source (which still
+// creates one with its person). WHO MAY ADD IS THE PERMISSION ALONE: Sources "View and change"
+// (the server's `sources` door, `sources.edit`, read from the served keys — never a role list). Both
+// doors run the same server rules (code_and_name_required / code_reserved / code_taken /
+// organisation_required). A new source joins no gift and is off the apply form unless ticked.
 // ⚠ EDIT LOCKS ONCE THE SOURCE HAS SIGNED IN (owner ruling 2026-10-30): its name and contact
 // details are then its own (its console's Profile) and a change is refused 409 `managed_by_source`.
 // The Active toggle stays the organisation's.
@@ -46,6 +50,8 @@ const inputBad = 'w-full px-3 py-2 border border-critical-400 rounded-lg focus:r
 // Phone is optional; when present it must be a valid Malaysian number. Display + input both
 // run through the platform's shared formatPhone/isValidPhone (same helpers the apply form uses).
 const phoneInvalid = (v: string) => v.trim() !== '' && !isValidPhone(v)
+const slugify = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, '')
+const EMPTY_ADD = { code: '', name: '', contact_person: '', contact_email: '', phone: '', show_in_apply: false }
 
 type EditForm = { name: string; contact_person: string; contact_email: string; phone: string }
 
@@ -72,10 +78,15 @@ export default function SourcesPage() {
   // Inviting (and so adding) a source: the server's `invitations` door (`source_invite.may_invite`,
   // `invitations.edit`) since T5c. TD-623: the served keys only, no role list.
   const canInvite = holdsDoor(role, 'invitations')
+  // Adding a source (owner 2026-11-19): Sources "View and change" — the server's `sources` door
+  // (`sources.edit`), from the served keys only. No role list.
+  const canAdd = holdsDoor(role, 'sources')
 
   const [sources, setSources] = useState<SourceItem[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [busy, setBusy] = useState<number | null>(null)
+  const [busy, setBusy] = useState<number | 'new' | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [addForm, setAddForm] = useState(EMPTY_ADD)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ name: '', contact_person: '', contact_email: '', phone: '' })
   const [panel, setPanel] = useState<Panel>('orgs')
@@ -92,7 +103,28 @@ export default function SourcesPage() {
     const code = (err as { code?: string })?.code
     // The source signed in between this page loading and the Save: its details are its own now.
     if (code === 'managed_by_source') return t('admin.sources.managedRefused')
+    // Add source's refusals (the same rules as the source invite), in plain words.
+    if (code === 'code_and_name_required') return t('admin.sources.codeAndNameRequired')
+    if (code === 'code_reserved') return t('admin.sources.codeReserved')
+    if (code === 'code_taken') return t('admin.sources.codeTaken')
+    if (code === 'organisation_required') return t('admin.sources.organisationRequired')
     return err instanceof Error ? err.message : t('admin.actionFailed')
+  }
+
+  const submitAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (phoneInvalid(addForm.phone)) { setMessage({ type: 'error', text: t('profile.invalidPhone') }); return }
+    setBusy('new'); setMessage(null)
+    try {
+      await createSource(addForm, { token: token! })
+      setAdding(false)
+      setAddForm(EMPTY_ADD)
+      // Created switched on, it still joins no gift — say so, as a switch-on does.
+      setMessage({ type: 'success', text: addForm.show_in_apply
+        ? `${t('admin.sources.created')} ${t('admin.sources.nowPerGift')}` : t('admin.sources.created') })
+      load()
+    } catch (err) { setMessage({ type: 'error', text: errText(err) }) }
+    setBusy(null)
   }
 
   // ⚠ SWITCHING A SOURCE ON PUTS IT ON NO FORM (owner, 2026-10-08): each gift chooses its own
@@ -189,10 +221,14 @@ export default function SourcesPage() {
         <div>
           <h1 className="text-2xl font-bold text-ground-900">{t('admin.sources.title')}</h1>
           <p className="text-sm text-ground-500 mt-1">{t('admin.sources.subtitle')}</p>
-          {panel === 'orgs' && canInvite && (
-            <p className="text-sm text-ground-500 mt-1" data-testid="sources-add-hint">{t('admin.sources.addHint')}</p>
-          )}
         </div>
+        {/* Adding belongs to the registry — on the emails panel the button would do nothing visible. */}
+        {panel === 'orgs' && canAdd && (
+          <button type="button" onClick={() => setAdding((v) => !v)}
+            className="shrink-0 px-4 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover">
+            + {t('admin.sources.add')}
+          </button>
+        )}
       </div>
 
       <PanelTabs ariaLabelKey="admin.sources.tabsAria" active={panel} onSelect={setPanel}
@@ -204,6 +240,48 @@ export default function SourcesPage() {
         <div className={`rounded-lg p-4 mb-6 ${
           message.type === 'success' ? 'bg-positive-50 border border-positive-200 text-positive-700'
           : 'bg-critical-50 border border-critical-200 text-critical-600'}`}>{message.text}</div>
+      )}
+
+      {panel === 'orgs' && canAdd && adding && (
+        <form onSubmit={submitAdd} className="bg-ground-0 rounded-xl border shadow-sm p-6 space-y-4 mb-6">
+          <h2 className="font-semibold text-ground-900">{t('admin.sources.addTitle')}</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.code')}</span>
+              <input className={inputCls} value={addForm.code}
+                onChange={(e) => setAddForm({ ...addForm, code: slugify(e.target.value) })} required />
+              <span className="block text-xs text-ground-400 mt-1">{t('admin.sources.codeHelp')}</span>
+            </label>
+            <label className="block">
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.name')}</span>
+              <input className={inputCls} value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} required />
+            </label>
+            <label className="block">
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.contactPerson')}</span>
+              <input className={inputCls} value={addForm.contact_person} onChange={(e) => setAddForm({ ...addForm, contact_person: e.target.value })} />
+            </label>
+            <label className="block">
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.email')}</span>
+              <input className={inputCls} type="email" value={addForm.contact_email} onChange={(e) => setAddForm({ ...addForm, contact_email: e.target.value })} />
+            </label>
+            <label className="block">
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.phone')}</span>
+              <input className={phoneInvalid(addForm.phone) ? inputBad : inputCls} inputMode="tel"
+                value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: formatPhone(e.target.value) })} />
+              {phoneInvalid(addForm.phone) && <span className="block text-xs text-critical-600 mt-1">{t('profile.invalidPhone')}</span>}
+            </label>
+            <div className="flex items-center gap-3 pt-6">
+              <Toggle on={addForm.show_in_apply} onClick={() => setAddForm({ ...addForm, show_in_apply: !addForm.show_in_apply })} label={t('admin.sources.activeInApply')} />
+              <span className="text-sm text-ground-700">{t('admin.sources.activeInApply')}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={busy === 'new'} className="px-6 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover disabled:opacity-50">
+              {busy === 'new' ? t('admin.sources.saving') : t('admin.sources.create')}
+            </button>
+            <button type="button" onClick={() => setAdding(false)} className="text-sm text-ground-500 hover:text-ground-700">{t('admin.sources.cancel')}</button>
+          </div>
+        </form>
       )}
 
       {/* The emails card is mounted only while its badge is selected, so each reveal re-reads the

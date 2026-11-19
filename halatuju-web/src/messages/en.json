@@ -3723,7 +3723,15 @@
         "label": "Witness"
       },
       "tabTerms": "Terms",
-      "addHint": "To add a source, invite its person on Invitations.",
+      "add": "Add source",
+      "addTitle": "Add a source",
+      "code": "Code",
+      "create": "Create",
+      "created": "Source added.",
+      "codeTaken": "That code is already in use.",
+      "codeAndNameRequired": "Code and name are required.",
+      "codeReserved": "That code is reserved. Choose another.",
+      "organisationRequired": "Choose an organisation first, then add the source.",
       "colSignIn": "Sign-in",
       "signIn": {
         "none": "Not invited",

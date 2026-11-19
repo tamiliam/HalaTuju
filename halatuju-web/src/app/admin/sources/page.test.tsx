@@ -17,7 +17,7 @@ jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, vars?: Record<string, string>) =>
     vars ? `${k}|${Object.values(vars).join(',')}` : k }),
 }))
-let mockRole: { role: string; is_super_admin: boolean } = { role: 'org_admin', is_super_admin: false }
+let mockRole: { role: string; is_super_admin: boolean; page_keys?: string[] } = { role: 'org_admin', is_super_admin: false }
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets').withServedPageKeys(mockRole) }),
 }))
@@ -87,16 +87,16 @@ describe('Sources page panels', () => {
     expect(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }).getAttribute('aria-selected')).toBe('true')
   })
 
-  it('hides the add-a-source hint on the emails panel — there is nothing there to add', async () => {
+  it('hides the Add source button on the emails panel — there is nothing there to add', async () => {
     render(<SourcesPage />)
     // getAllBy: each source renders TWICE — a phone card and a desktop table row. Which one
     // you SEE is a CSS breakpoint, and jsdom applies none.
     await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
-    expect(screen.queryByTestId('sources-add-hint')).toBeTruthy()
+    expect(screen.queryByText('+ admin.sources.add')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }))
     await waitFor(() => expect(screen.getByText('admin.sources.emails.title')).toBeTruthy())
-    expect(screen.queryByTestId('sources-add-hint')).toBeNull()
+    expect(screen.queryByText('+ admin.sources.add')).toBeNull()
   })
 
   it('keeps a half-finished edit across a trip to the emails panel and back', async () => {
@@ -205,13 +205,76 @@ describe('how many gift forms list each source', () => {
 })
 
 /**
- * Source sign-in S2 (2026-10-30). A source is ADDED by inviting its person on Invitations → Source
- * (the old POST answers 410), so the page has no Add form — only a link there, for the two roles
- * that may invite (owner: Admin does not). Once somebody has signed in for a source, its details
- * are its own: Edit gives way to "Managed by the source", and a Save that races the sign-in is
- * refused 409 `managed_by_source` with words that say why. The Active toggle stays.
+ * Add source is back (owner, 2026-11-19). The button and form follow the permission ALONE — Sources
+ * "View and change" (the `sources` door, `sources.edit`, from the served keys) — never a role name.
+ * The server's refusals (the same rules as the source invite) read in plain words.
  */
-describe('inviting a source, and the edit lock once it has joined', () => {
+describe('adding a source', () => {
+  const openForm = async () => {
+    render(<SourcesPage />)
+    await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
+    fireEvent.click(screen.getByText('+ admin.sources.add'))
+    expect(screen.getByText('admin.sources.addTitle')).toBeTruthy()
+  }
+  const fill = (code: string, name: string) => {
+    const form = screen.getByText('admin.sources.addTitle').closest('form') as HTMLFormElement
+    const [codeBox, nameBox] = Array.from(form.querySelectorAll('input'))
+    fireEvent.change(codeBox, { target: { value: code } })
+    fireEvent.change(nameBox, { target: { value: name } })
+    return form
+  }
+
+  it.each(['org_admin', 'admin'])('offers %s (who holds Sources "View and change") the Add form', async (role) => {
+    mockRole = { role, is_super_admin: false }
+    await openForm()
+  })
+
+  it('follows the permission, not the role: a role given sources.edit may add', async () => {
+    mockRole = { role: 'reviewer', is_super_admin: false, page_keys: ['sources.view', 'sources.edit'] }
+    await openForm()
+  })
+
+  it('offers no Add to a viewer without Sources "View and change"', async () => {
+    mockRole = { role: 'org_admin', is_super_admin: false, page_keys: ['sources.view'] }
+    render(<SourcesPage />)
+    await waitFor(() => expect(mockApi.getSources).toHaveBeenCalled())
+    expect(screen.queryByText('+ admin.sources.add')).toBeNull()
+    expect(screen.queryByText('admin.sources.addTitle')).toBeNull()
+  })
+
+  it('creates the source with a lower-case code, says so, and reads the list again', async () => {
+    mockApi.createSource.mockResolvedValueOnce({ ...SOURCES[0], id: 9, code: 'tara' })
+    await openForm()
+    const form = fill('Tara!', 'Tara Foundation')
+    fireEvent.submit(form)
+    await waitFor(() => expect(mockApi.createSource).toHaveBeenCalledWith(
+      { code: 'tara', name: 'Tara Foundation', contact_person: '', contact_email: '', phone: '',
+        show_in_apply: false }, { token: 'tok' }))
+    expect(await screen.findByText('admin.sources.created')).toBeTruthy()
+    await waitFor(() => expect(mockApi.getSources).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText('admin.sources.addTitle')).toBeNull()
+  })
+
+  it.each([
+    ['code_and_name_required', 'admin.sources.codeAndNameRequired'],
+    ['code_reserved', 'admin.sources.codeReserved'],
+    ['code_taken', 'admin.sources.codeTaken'],
+    ['organisation_required', 'admin.sources.organisationRequired'],
+  ])('a refusal %s reads in plain words and keeps the form open', async (code, words) => {
+    mockApi.createSource.mockRejectedValueOnce(Object.assign(new Error(code), { status: 400, code }))
+    await openForm()
+    fireEvent.submit(fill('smc', 'Again'))
+    expect(await screen.findByText(words)).toBeTruthy()
+    expect(screen.getByText('admin.sources.addTitle')).toBeTruthy()
+  })
+})
+
+/**
+ * Source sign-in S2 (2026-10-30). Once somebody has signed in for a source, its details are its
+ * own: Edit gives way to "Managed by the source", and a Save that races the sign-in is refused 409
+ * `managed_by_source` with words that say why. The Active toggle stays.
+ */
+describe('the edit lock once a source has joined', () => {
   const three = [
     { ...SOURCES[0], sign_in: 'none', user_count: 0 },
     { ...SOURCES[0], id: 2, code: 'learnifi', name: 'LearnifAI', sign_in: 'invited', user_count: 1 },
@@ -221,23 +284,17 @@ describe('inviting a source, and the edit lock once it has joined', () => {
 
   beforeEach(() => { mockApi.getSources.mockResolvedValue({ sources: three }) })
 
-  it('offers no Add form and no invite link — a hint says a source is added on Invitations', async () => {
+  it('offers no invite link here — inviting stays on Invitations', async () => {
     render(<SourcesPage />)
     await waitFor(() => expect(screen.getByTestId('sign-in-muet')).toBeTruthy())
-    expect(screen.getByTestId('sources-add-hint').textContent).toBe('admin.sources.addHint')
     expect(screen.queryByText(/admin\.sources\.invite/)).toBeNull()
     expect(document.querySelector('a[href*="kind=source"]')).toBeNull()
-    expect(screen.queryByText(/admin\.sources\.add(?!Hint)/)).toBeNull()
-    expect(screen.queryByLabelText(/admin\.sources\.code/)).toBeNull()
   })
 
-  it('shows Admin no invite link at all — Admin does not invite sources', async () => {
+  it('keeps Admin the list, Edit and the switches', async () => {
     mockRole = { role: 'admin', is_super_admin: false }
     render(<SourcesPage />)
     await waitFor(() => expect(screen.getByTestId('sign-in-muet')).toBeTruthy())
-    expect(screen.queryByText(/admin\.sources\.invite/)).toBeNull()
-    expect(screen.queryByTestId('sources-add-hint')).toBeNull()
-    // …but keeps the list, Edit and the switches.
     expect(screen.getAllByText('admin.sources.edit').length).toBe(2)
   })
 

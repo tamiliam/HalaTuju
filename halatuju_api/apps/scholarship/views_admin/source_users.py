@@ -26,7 +26,8 @@ from apps.courses.models import PartnerAdmin
 
 from .base import _AdminBase
 from .sources import (
-    _SourcesBase, _one_source_dict, new_source_fields, new_source_refusal, text_of,
+    _SourcesBase, _one_source_dict, create_new_source, new_source_fields, new_source_refusal,
+    text_of,
 )
 
 # ⚠ THE PACKAGE'S name, never `__name__` — an audit line must stay on the scrape metric (H11).
@@ -108,9 +109,8 @@ def invite_source(request, admin):
             return _error(refusal, status.HTTP_400_BAD_REQUEST)
 
         def make_source():
-            from ..models import ReferralSource
-            # A new source joins NO gift (owner, 2026-10-08) — each gift switches it on itself.
-            return ReferralSource.objects.create(organisation=owner, **fields)
+            # The one write both doors share (Add source on Sources is the other, 2026-11-19).
+            return create_new_source(owner, fields)
 
     # As the staff invite: nothing is written while the login side cannot be reached.
     from apps.courses import public as courses_public

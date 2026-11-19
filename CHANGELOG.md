@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: Add source is back (2026-11-19)
+
+Branch add-source, not pushed. Migration: none. Services: api, web. Owner decision 2026-11-19 (`docs/decisions.md`): reverses the source sign-in S2 part "Add source moves into the invite" (e88810acd, bd22bfd7d).
+- **API:** `POST admin/scholarship/sources/` creates a source again (was 410 `use_source_invitation`). Who may add is the permission alone: Sources "View and change" (`sources.edit`, via `_sources_admin`); view-only, no access, reviewer, QC and source users get 403. Owner by `_new_source_owner` (own organisation; a super may name one with `?org=`; else 400 `organisation_required`).
+- **One set of rules, two doors:** the Sources POST and Invitations → Source share `new_source_fields`, `new_source_refusal` and the new `create_new_source` write; refusals `code_and_name_required`, `code_reserved`, `code_taken` (per organisation).
+- **A new source** joins no gift, has `show_in_apply` off unless asked, and has no person (`sign_in` 'none'); it can then be invited for (one person per source).
+- **Web:** the Sources page shows "+ Add source" and the old form only to holders of `sources.edit`; the "add a source via Invitations" hint is gone; the four refusal codes show in plain words (en / ms / ta). `createSource` is back in the admin-api client. Invitations → Source is unchanged.
+- **Tests:** new `test_add_source.py` (who may add, the organisation fence, the rules, the new source and its readers: source names, gift config, apply list, partner counts, edit); the 410 tests in `test_source_invite.py` and `test_contract_golive_t1.py` replaced; the access matrix declares the move (the six shapes that got 410 behind the same gate now get 400 for an empty body, `addsrc_moved_cells`); Sources page and admin-api client tests.
+
 ### feat: an offer from a private college or university (IPTS) shows "Rule not met" on Pathway (2026-11-18)
 
 Branch offer-private, not pushed. Migration: none. Services: api, web. Owner ruling 2026-11-18 (`docs/decisions.md`): HalaTuju supports public courses only; an IPTS or private-wing offer breaks the rule for every gift. `VERDICT_ENGINE_VERSION` 2026-11-18.1 -> 2026-11-18.2; no genuineness `MODEL_VERSION` change.

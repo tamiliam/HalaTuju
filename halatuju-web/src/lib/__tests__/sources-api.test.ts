@@ -4,7 +4,7 @@
  * server error `code` — the endpoints are super/org_admin-fenced on the backend.
  */
 import {
-  getSources, updateSource, assignWitness, inviteSource, resendSourceUser, revokeSourceUser,
+  getSources, createSource, updateSource, assignWitness, inviteSource, resendSourceUser, revokeSourceUser,
   getSourceApplications, getSourceAgreement, witnessAsSource, getSourceOverview, updateSourceProfile,
 } from '@/lib/admin-api'
 
@@ -32,7 +32,18 @@ describe('Sources admin-api', () => {
     expect(init.headers?.Authorization).toBe('Bearer t')
   })
 
-  // Source sign-in S2: a source is ADDED by inviting its person (the Sources POST is 410).
+  // Add source is back (owner 2026-11-19): the Sources POST creates a source with no person.
+  test('createSource POSTs the sources endpoint and surfaces its refusal code', async () => {
+    mockFetch(400, { error: 'code_reserved', code: 'code_reserved' })
+    await expect(createSource({ code: 'other', name: 'Other' }, { token: 't' }))
+      .rejects.toMatchObject({ code: 'code_reserved', status: 400 })
+    const [url, init] = call()
+    expect(url).toMatch(/\/api\/v1\/admin\/scholarship\/sources\/$/)
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body!)).toEqual({ code: 'other', name: 'Other' })
+  })
+
+  // A source is also added by inviting its person, with a new source (Invitations → Source).
   test('inviteSource POSTs a source_partner invitation for an existing source', async () => {
     mockFetch(201, { id: 9, admin_id: 4, emailed: true, message: 'ok' })
     await inviteSource({ name: 'Kavi', email: 'k@example.org', source_id: 3 }, { token: 't' })

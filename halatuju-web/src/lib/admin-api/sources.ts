@@ -60,8 +60,8 @@ export interface SourceItem {
   is_active: boolean
   student_count: number | null
   /** Source sign-in S2: has anybody signed in for this source? Once `joined`, its details are its
-   *  own — a PATCH that changes them is refused 409 `managed_by_source`. A source is no longer
-   *  ADDED here (POST is 410): it is created by inviting its person on Invitations → Source. */
+   *  own — a PATCH that changes them is refused 409 `managed_by_source`. A source ADDED here
+   *  (`createSource`, back 2026-11-19) starts with nobody: `none`. */
   sign_in?: SourceSignIn
   user_count?: number
   /** Invitations I2: who signs in for it (or is invited and waiting); null when nobody. Remove on
@@ -85,6 +85,19 @@ export async function getSourceNames(filters: { programme?: string } = {}, optio
   const q = filters.programme ? `?programme=${encodeURIComponent(filters.programme)}` : ''
   return adminFetch<{ sources: { code: string; name: string }[] }>(
     `/api/v1/admin/scholarship/source-names/${q}`, options)
+}
+
+/** Add a source with no person (owner 2026-11-19). The server asks Sources "View and change" and
+ *  refuses with `code_and_name_required` / `code_reserved` / `code_taken` / `organisation_required`
+ *  — the same rules as the source invite's new source. */
+export async function createSource(
+  data: {
+    code: string; name: string; contact_person?: string; contact_email?: string
+    phone?: string; show_in_apply?: boolean
+  },
+  options?: ApiOptions,
+) {
+  return adminMutate<SourceItem>('/api/v1/admin/scholarship/sources/', 'POST', data, options)
 }
 
 export async function updateSource(

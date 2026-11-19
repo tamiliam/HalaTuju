@@ -9,7 +9,7 @@ through the real endpoints:
   set-password opted in, the temp-password expiry job still sweeping a source user;
 - CHANGE ROLE: a staff invite of a source user's address never turns it into staff;
 - LOSE ACCESS: cancel, revoke, the source switched off;
-- the Sources API: Add retired (410), Edit locked once joined (409), `sign_in` / `user_count` /
+- the Sources API: Add back beside the invite (2026-11-19), Edit locked once joined (409), `sign_in` / `user_count` /
   `person` (Invitations I2);
 - one person per source (I2, 2026-11-08): a second invite while one is active is 409
   `source_has_person`;
@@ -485,12 +485,24 @@ class TestSourceSwitchedOff(_Base):
 
 
 class TestTheSourcesApi(_Base):
-    def test_add_source_is_retired_into_the_invite(self):
+    def test_add_source_is_back_and_its_source_can_then_be_invited_for(self):
+        """Owner 2026-11-19: Add source is back beside the invite. The new source has no person,
+        so its details stay editable, and it can be picked for an invite — once (one person per
+        source still holds)."""
         r = authed_client(self.lead).post(SOURCES, {'code': 'new', 'name': 'New'}, format='json')
-        self.assertEqual((r.status_code, r.json()['code']), (410, 'use_source_invitation'))
-        self.assertFalse(ReferralSource.objects.filter(code='new').exists())
+        self.assertEqual(r.status_code, 201, r.content)
+        made = ReferralSource.objects.get(organisation=self.org, code='new')
+        self.assertEqual((r.json()['sign_in'], r.json()['person']), ('none', None))
+        r = authed_client(self.lead).patch(f'{SOURCES}{made.pk}/', {'name': 'New Centre'},
+                                           format='json')
+        self.assertEqual(r.status_code, 200, r.content)     # no person → no edit lock
+        r = self.invite(source_id=made.pk, email='first@new.example.org')
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(self.user('first@new.example.org').source_id, made.pk)
+        r = self.invite(source_id=made.pk, email='second@new.example.org')
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'source_has_person'))
         r = authed_client(make_admin('reviewer', owning_org=self.org)).post(
-            SOURCES, {'code': 'new', 'name': 'New'}, format='json')
+            SOURCES, {'code': 'new2', 'name': 'New'}, format='json')
         self.assertEqual(r.status_code, 403)
 
     def test_the_list_says_who_signs_in(self):

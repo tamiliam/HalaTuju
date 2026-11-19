@@ -489,18 +489,19 @@ class TestSourcesAdminAPI(TestCase):
         self.assertEqual(rows['src-a']['student_count'], 1)       # unchanged by the drift
         self.assertEqual(set(rows), {'src-a'})                    # no partner, no house row
 
-    def test_add_source_moved_into_the_invite_which_an_admin_may_not_send(self):
-        # ⚠ FLIPPED ON PURPOSE (source sign-in S2, 2026-10-30): the Sources POST is retired (410) —
-        # a source is added by inviting its person, which only a super or an org_admin may do. The
-        # Admin role keeps the list and Edit (owner 2026-07-19), not Add.
+    def test_admin_with_sources_change_adds_a_source_but_may_not_invite(self):
+        # ⚠ FLIPPED AGAIN ON PURPOSE (owner 2026-11-19): Add source is back on Sources and follows
+        # the permission alone — the Admin role holds Sources "View and change", so it may add.
+        # Inviting a source's person stays the Invitations door, which Admin does not hold.
         from apps.scholarship.models import ReferralSource
         from apps.scholarship.tests.test_sources_b import add_source
         self._auth('gl-adm')
         r = self.client.post(self.SOURCES, {'code': 'admincreated', 'name': 'By Admin'}, format='json')
-        self.assertEqual((r.status_code, r.json()['code']), (410, 'use_source_invitation'))
-        self.assertEqual(add_source(self.client, 'admincreated', 'By Admin').status_code, 403)
-        self.assertFalse(ReferralSource.objects.filter(code='admincreated').exists())
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertTrue(ReferralSource.objects.filter(code='admincreated').exists())
         self.assertFalse(PartnerOrganisation.objects.filter(code='admincreated').exists())
+        self.assertEqual(add_source(self.client, 'admininvite', 'By Admin').status_code, 403)
+        self.assertFalse(ReferralSource.objects.filter(code='admininvite').exists())
 
     def test_reviewer_and_qc_forbidden(self):
         for uid in ('gl-rev', 'gl-qc'):

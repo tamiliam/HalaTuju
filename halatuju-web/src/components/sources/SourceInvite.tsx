@@ -20,9 +20,10 @@ export { MentorInviteForm, MentorRoster } from '@/components/mentors/MentorInvit
  * Invitations → **Source** (source sign-in S2, 2026-10-30). Design of record: the owner-approved
  * mock-up of that tab ("Looks good. Proceed", 2026-10-30).
  *
- * ⚠ INVITING IS HOW A SOURCE IS ADDED NOW. The Sources page's own Add form is gone (its POST answers
- * 410): you either pick a source already on the list or add a new one here (name + short code, the
- * old Add source's rules, checked by the server), and name the person who will sign in for it.
+ * ⚠ ONE OF TWO DOORS THAT ADD A SOURCE. You either pick a source already on the list or add a new one
+ * here (name + short code), and name the person who will sign in for it. The Sources page's own Add
+ * form is back too (owner 2026-11-19, Sources "View and change"); both doors share ONE set of rules
+ * on the server (`sources.new_source_refusal` + `create_new_source`).
  * ⚠ SUPER AND ORG_ADMIN ONLY (owner ruling: Admin does not invite sources). The page passes
  * `canManage`; the server refuses everyone else 403 regardless.
  * ⚠ Every refusal arrives as a code and is shown in plain words — `already_staff` deliberately says
