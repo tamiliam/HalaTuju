@@ -79,10 +79,11 @@ def team_table_fields(caller, admins):
     return staff_tables_admin.row_fields(caller, admins, runs=staff_work.runs_counts(admins))
 
 
-def staff_list_rows(caller, admins):
-    """Sprint M1a: the Staff list's rows (`staff_list.list_rows`) — here for the ONE courses door, as `team_cards`."""
+def staff_list_rows(caller, admins, archived_of=None):
+    """Sprint M1a: the Staff list's rows (`staff_list.list_rows`) — here for the ONE courses door, as `team_cards`.
+    TD-630: ``archived_of`` (an organisation id or 'every') returns `(rows, open cases held by archived people)`."""
     from . import staff_list
-    return staff_list.list_rows(caller, admins)
+    return staff_list.list_rows(caller, admins, archived_of)
 
 
 def has_signed_in(admin):

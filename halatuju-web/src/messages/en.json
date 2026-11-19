@@ -4232,7 +4232,8 @@
           "reviewer_paused": "They have paused themselves, so no new cases can be given to them. They can start again from their own profile, or you can bring them back on the Reviewers page.",
           "gift_mismatch": "This reviewer covers a different gift, so this case cannot be given to them. Choose a reviewer for this gift, or one who covers every gift.",
           "not_signed_in": "{name} hasn't signed in yet. Cases can go to them once they have.",
-          "self_assign": "You cannot give a case to yourself."
+          "self_assign": "You cannot give a case to yourself.",
+          "wrong_organisation": "This reviewer is in another organisation. Choose someone from this case's organisation."
         }
       },
       "graduationThanks": {
@@ -10025,8 +10026,8 @@
       "filterAll": "Everyone",
       "noMatch": "Nobody matches that.",
       "suspendedCases": {
-        "one": "1 open case is held by a suspended member. Restore them or reassign the case.",
-        "many": "{n} open cases are held by suspended members. Restore them or reassign the cases."
+        "one": "1 open case is held by a suspended or deleted member. Reassign the case, or restore a suspended member.",
+        "many": "{n} open cases are held by suspended or deleted members. Reassign the cases, or restore the suspended members."
       },
       "showSuspended": "Show suspended members"
     }

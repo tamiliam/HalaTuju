@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint S1 case and team leftovers (2026-11-19)
+
+Branch access-s1-leftovers, not pushed. Migration: none. Services: both. Programme ACCESS-BY-SWITCHES, sprint S1 (brief `docs/plans/2026-11-19-s1-leftovers-brief.md`). Debt: TD-664 (all but d), TD-627, TD-634, TD-616, TD-630, TD-618.
+- **Serve, never derive (TD-664 a-c):** the case GET and every write reply serve `can_qc`, `can_close_pre_award` and `case_stage` beside `can_write` (`views_admin.base.served_write_flags`, the functions the doors ask) and `qc_refusal`. The cockpit draws the QC panel, Re-verify IC, the self-QC note and the pre-award Close card from them, never from the role; Save and the phone's decision bar hide when the case is not open (a reopened past-award case answered `case_closed`).
+- **Every write reply serves the flags (TD-664 e):** the twelve replies that answered with the bare serializer (PATCH, verify-accept, nudge, tranche schedule and actions, maintenance, NRIC lock release, award amount, suggest gaps, request info, resolution items and their actions) go through `_detail_payload`; a source scan refuses a new bare reply.
+- **No paid call for a case that is not open (TD-664 f):** `profile_finalise.run_finalise` and the first-assign draft (`assign_draft.run_draft`) drop the job (`case_closed`) with no Gemini call once the case is past the award or ended before it; a reopened pre-award decline is open again.
+- **Scholar file activity box:** served `controls.can_write_activity` (the activity door's own answer); the box is read-only without it.
+- **TD-627:** a caller of no organisation can no longer hand a case to someone of no organisation.
+- **TD-634:** handing a case to another organisation's reviewer answers `wrong_organisation` with its own words (en / ms / ta); the picker takes `?application=` and greys that reviewer for the case (still listed).
+- **TD-616:** every `deletable` answer (Admins table, person page, Reviewers table and page, Staff list, Mentors row) says no while the person is in a group, as the Delete doors do. Invitees keep the narrow Delete (TD-615, owner 19 Nov: S1b).
+- **TD-630:** the Staff list's banner also counts open cases held by deleted (archived) people, in the same query; the words say "suspended or deleted" (en / ms / ta; Tamil for a native read).
+- **TD-618:** drift test `permissionLayoutOverviewDrift.test.ts` pins the two Overview sentences on the Permissions tab to the server's rules; both were true, no words changed.
+- **Tests:** api `test_s1_served_flags.py`, `test_s1_write_replies_serve_flags.py`, `test_s1_finalise_case_stage.py`, `test_s1_team_leftovers.py`; web `view.s1Flags.test.tsx`, `permissionLayoutOverviewDrift.test.ts`, extended decision-bar, close, roles, scholar file and list-page tests; the cockpit harness states every flag (it never derives one from the role). The web role scan loses its QcPanel super fallback entry.
+
 ### chore: request #69 migration follows request #73's 0216_two_way_notes (2026-11-19)
 
 Branch req69 on #75 and #73, not pushed. Migration: `0217_reviewerprofile_highest_position` (additive; renumbered from 0215, now depends on `0216_two_way_notes`; the column and its database default are unchanged). Services: api.

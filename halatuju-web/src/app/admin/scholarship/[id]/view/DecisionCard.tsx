@@ -19,12 +19,14 @@ import { ReasonBox } from '@/components/admin/ReasonBox'
 import { decisionBarShows } from './DecisionBar'
 
 export function DecisionCard({
-  app, t, busy, canWrite, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, interviewSubmitted, interviewMissing, hasAssistance, doSave, canSave, verdictMsg, verdictMsgTone,
+  app, t, busy, canWrite, caseOpen, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, interviewSubmitted, interviewMissing, hasAssistance, doSave, canSave, verdictMsg, verdictMsgTone,
 }: {
   app: AdminScholarshipDetail
   t: T
   busy: string
   canWrite: boolean
+  /** The served `case_stage === 'open'` (S1): the verdict door's own stage answer. */
+  caseOpen: boolean
   isSuper: boolean
   error: string
   decisionLocked: boolean
@@ -60,7 +62,7 @@ export function DecisionCard({
   verdictMsg: string
   verdictMsgTone: 'ok' | 'warn'
 }) {
-  const saveShows = decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite })
+  const saveShows = decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite, caseOpen })
   return (<>
 
       {/* ── Decision — audit the four facts (records the verdict) → verify identity →

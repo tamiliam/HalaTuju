@@ -22,6 +22,9 @@ import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 installCockpitConsoleGuard()
 
 const loaded = () => screen.findByText('Test Student 07')
+/** Access S1: the served flags of a writer the close door lets close BEFORE the award (`can_close_pre_award`,
+ *  the server's `may_write_case` and `surface_gates.may_decide`) — stated, never worked out from the role. */
+const CLOSER = { can_write: true, can_cancel_decline: true, can_tranche: true, can_close_pre_award: true }
 const TITLE = 'admin.closure.title'
 
 /** The Close card — the element holding its heading. */
@@ -44,7 +47,7 @@ describe('before an award — stalled and withdrawn only', () => {
     ['submitted', {}],
     ['recommended', {}],
   ] as const)('a %s case shows the Close card with No movement and Withdrawn', async (stage, build) => {
-    renderCockpit({ role: 'super', writes: true, stage, build })
+    renderCockpit({ role: 'super', writes: CLOSER, stage, build })
     await loaded()
     expect(reasons()).toEqual(['stalled', 'withdrawn'])
     // The owner-approved explainer: a heading, then short lines naming the two stages.
@@ -58,7 +61,7 @@ describe('before an award — stalled and withdrawn only', () => {
   })
 
   it('closes with the chosen reason', async () => {
-    const { api, app } = renderCockpit({ role: 'super', writes: true, stage: 'recommended' })
+    const { api, app } = renderCockpit({ role: 'super', writes: CLOSER, stage: 'recommended' })
     await loaded()
     api.closeApplication.mockResolvedValue({ ...app, status: 'closed', closure_reason: 'stalled' })
     fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
@@ -75,14 +78,14 @@ describe('before an award — stalled and withdrawn only', () => {
     ['awaiting_qc', { outcome: 'recommend' }],
     ['awaiting_qc', { outcome: 'decline' }],
   ] as const)('TD-488: a %s case shows no Close card, even to a super', async (stage, build) => {
-    renderCockpit({ role: 'super', writes: true, stage, build })
+    renderCockpit({ role: 'super', writes: CLOSER, stage, build })
     await loaded()
     expect(screen.queryByText(TITLE)).toBeNull()
     expect(screen.queryByTestId('close-guide')).toBeNull()
   })
 
   it('shows the stage refusal in the card if the api answers stage_not_closeable', async () => {
-    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'submitted' })
+    const { api } = renderCockpit({ role: 'super', writes: CLOSER, stage: 'submitted' })
     await loaded()
     api.closeApplication.mockRejectedValue(new Error('stage_not_closeable'))
     fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
@@ -91,7 +94,7 @@ describe('before an award — stalled and withdrawn only', () => {
   })
 
   it('shows the sponsorship refusal in the card (e.g. money paid at recommended)', async () => {
-    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'recommended' })
+    const { api } = renderCockpit({ role: 'super', writes: CLOSER, stage: 'recommended' })
     await loaded()
     api.closeApplication.mockRejectedValue(new Error('sponsorship_open'))
     fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
@@ -102,7 +105,7 @@ describe('before an award — stalled and withdrawn only', () => {
 
 describe('closing is final — the button asks twice (review round 1, item 7)', () => {
   it('the first click only asks; "Go back" asks nothing and closes nothing', async () => {
-    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'submitted' })
+    const { api } = renderCockpit({ role: 'super', writes: CLOSER, stage: 'submitted' })
     await loaded()
     expect(within(card()).getByTestId('close-guide')).toBeTruthy()
     fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
@@ -118,7 +121,7 @@ describe('closing is final — the button asks twice (review round 1, item 7)', 
 
 describe('the confirm row stays until the request settles (review round 2)', () => {
   it('shows the loading label while the close is in flight, then goes', async () => {
-    const { api, app } = renderCockpit({ role: 'super', writes: true, stage: 'submitted' })
+    const { api, app } = renderCockpit({ role: 'super', writes: CLOSER, stage: 'submitted' })
     await loaded()
     let settle: (v: unknown) => void = () => {}
     api.closeApplication.mockReturnValue(new Promise((r) => { settle = r }) as never)
@@ -136,14 +139,14 @@ describe('the confirm row stays until the request settles (review round 2)', () 
   })
 })
 
-describe('who — a pre-award close is super / org_admin only (the api answers 403 to anyone else)', () => {
+describe('who — a pre-award close follows the served can_close_pre_award (the api answers 403 to anyone else)', () => {
   it('an org_admin sees the pre-award Close card', async () => {
-    renderCockpit({ role: 'org_admin', writes: true, stage: 'recommended' })
+    renderCockpit({ role: 'org_admin', writes: CLOSER, stage: 'recommended' })
     await loaded()
     expect(reasons()).toEqual(['stalled', 'withdrawn'])
   })
 
-  it('a qc (who may write) sees no Close card before an award', async () => {
+  it('a qc (who may write, served can_close_pre_award false) sees no Close card before an award', async () => {
     renderCockpit({ role: 'qc', writes: true, stage: 'recommended' })
     await loaded()
     expect(screen.queryByText(TITLE)).toBeNull()
@@ -160,7 +163,7 @@ describe('who — a pre-award close is super / org_admin only (the api answers 4
 
 describe('an awarded case — no Close card (TD-366: no door releases it; the api always refuses)', () => {
   it('shows none, even to a super', async () => {
-    renderCockpit({ role: 'super', writes: true, stage: 'awarded' })
+    renderCockpit({ role: 'super', writes: CLOSER, stage: 'awarded' })
     await loaded()
     expect(screen.queryByText(TITLE)).toBeNull()
   })
@@ -168,7 +171,7 @@ describe('an awarded case — no Close card (TD-366: no door releases it; the ap
 
 describe('a funded case — the close moved to the scholar file (maintenance S3)', () => {
   it('an active case has no Close card in the cockpit, even for a super', async () => {
-    renderCockpit({ role: 'super', writes: true, stage: 'active' })
+    renderCockpit({ role: 'super', writes: CLOSER, stage: 'active' })
     await loaded()
     expect(screen.queryByText(TITLE)).toBeNull()
   })
@@ -176,13 +179,13 @@ describe('a funded case — the close moved to the scholar file (maintenance S3)
 
 describe('a finished case — no Close card', () => {
   it.each(['rejected', 'expired'] as const)('a %s case shows none', async (stage) => {
-    renderCockpit({ role: 'super', writes: true, stage })
+    renderCockpit({ role: 'super', writes: CLOSER, stage })
     await loaded()
     expect(screen.queryByText(TITLE)).toBeNull()
   })
 
   it('a closed case shows the closed summary, not a control', async () => {
-    renderCockpit({ role: 'super', writes: true, stage: 'closed' })
+    renderCockpit({ role: 'super', writes: CLOSER, stage: 'closed' })
     await loaded()
     expect(screen.getByText(TITLE)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'admin.closure.close' })).toBeNull()

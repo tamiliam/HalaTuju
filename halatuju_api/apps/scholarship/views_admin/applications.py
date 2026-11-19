@@ -52,7 +52,7 @@ def _detail_payload(app, admin):
     with snapshot_unless_open(app):   # A2.4: the POSTs that answer with the case read documents once too
         data = AdminApplicationDetailSerializer(app, context={'admin': admin}).data
         data['qc_refusal'] = qc_separation.for_viewer(admin, app)
-        data.update(served_write_flags(admin, app))   # can_write, can_cancel_decline, can_tranche
+        data.update(served_write_flags(admin, app))   # the write flags, can_qc, can_close_pre_award, case_stage
         data['rejected_by_unassigned'] = rejected_by_unassigned(app)
         data['withdrawal_request'] = withdrawal_chain.payload_for(app, admin)   # A1.13b; no query unless awarded
         data['pre_interview'] = pre_interview_offer(app, admin)   # #75; no query but at Awaiting review
@@ -289,7 +289,7 @@ class AdminApplicationDetailView(_AdminBase):
             fields.append('vircle_id')
         if fields:
             app.save(update_fields=fields)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminVerdictSummaryView(_AdminBase):
@@ -377,7 +377,7 @@ class AdminVerifyAcceptView(_AdminBase):
             # Common profile S3: the reviewer's own activity list, in this transaction. The only
             # writer of `verified_at`, so the only door.
             staff_activity.record(admin, staff_activity.VERIFY_ACCEPT, app)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminRejectView(_AdminBase):
@@ -535,7 +535,7 @@ class AdminNudgeStudentView(_AdminBase):
                 {'error': 'The reminder could not be sent — please try again.',
                  'code': 'send_failed'}, status=status.HTTP_502_BAD_GATEWAY)
         logger.info('AUDIT student_nudge app_id=%s by=%s', app.id, getattr(admin, 'email', ''))
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminCancelDeclineView(_AdminBase):

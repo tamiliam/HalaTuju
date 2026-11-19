@@ -13,10 +13,9 @@ from .. import maintenance as maintenance_service
 from .. import closure as closure_service
 from .. import surface_gates
 from ..models import Disbursement, Programme, ScholarshipApplication
-from ..serializers_admin import AdminApplicationDetailSerializer
 
 from .applications import _detail_payload
-from .base import _AdminBase, tranche_key_held
+from .base import _AdminBase, _id_or_no_match, tranche_key_held
 
 
 def _tranche_refusal(admin, app):
@@ -127,7 +126,7 @@ class AdminDisbursementScheduleView(_AdminBase):
             )
         except disbursement_service.DisbursementError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminDisbursementActionView(_AdminBase):
@@ -158,7 +157,7 @@ class AdminDisbursementActionView(_AdminBase):
                    note=request.data.get('note', ''), actor=admin)
         except disbursement_service.DisbursementError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(disb.application).data)
+        return Response(_detail_payload(disb.application, admin))
 
 
 class AdminCloseApplicationView(_AdminBase):
@@ -215,7 +214,7 @@ class AdminMaintenanceSubstateView(_AdminBase):
                                              by_email=admin.email)
         except maintenance_service.MaintenanceError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(app, context={'admin': admin}).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminScopeListView(_AdminBase):
@@ -324,7 +323,12 @@ class AdminAssignableAdminsView(_AdminBase):
     or `see_all` (`qc` brings it) — the keys `services.is_review_target` reads (TD-622, sprint LABELS).
     Who may be PICKED is the served `assignable` flag (`may_assign_to`). A partner, source or mentor
     login holds neither key. (A qc's own reviewed case is QC'd by someone else — the self-QC guard
-    in _require_qc.)"""
+    in _require_qc.)
+
+    TD-634 (sprint S1): an optional `?application=<pk>` makes `assignable` per case — false for a
+    holder of another organisation than the case's, the fence `assign_reviewer` refuses with
+    `wrong_organisation`. Every row stays LISTED (bug #66). A case the caller cannot read (the org
+    fence) or that does not exist is ignored, so the parameter never says whether a case exists."""
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
@@ -350,6 +354,15 @@ class AdminAssignableAdminsView(_AdminBase):
         # to a real change). Never shown to sponsors/students — an internal quality
         # signal for whoever assigns reviewers.
         corrections = reopen_service.reviewer_correction_counts()
+        case = None
+        if request.query_params.get('application'):
+            case = self._get_application(_id_or_no_match(request.query_params.get('application')))
+            if case is not None and not self._org_allows(admin, case):
+                case = None
+
+        def assignable(a):
+            return may_assign_to(admin, a) and (
+                case is None or a.owning_organisation_id == case.owning_organisation_id)
 
         def langs(a):
             # Languages the reviewer can conduct a review in (conversational or better),
@@ -395,7 +408,7 @@ class AdminAssignableAdminsView(_AdminBase):
              'paused': a.paused_at is not None,
              # M3b E3: False for the caller's own row (nobody gives a case to themselves). The row
              # stays LISTED, so a case the caller already holds still names them (bug #66).
-             'assignable': may_assign_to(admin, a),
+             'assignable': assignable(a),   # TD-634: per case with ?application=
              'gifts': courses_public.staff_gift.gifts_payload(a),
              'corrections': corrections.get(a.id, 0)}
             for a in admins

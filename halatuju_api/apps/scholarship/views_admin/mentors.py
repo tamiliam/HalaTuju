@@ -209,15 +209,15 @@ def mentor_rows(caller, mentors, *, team=False):
 
 
 def _delete_fields(caller, mentor, login, staff, footprints):
-    """Sprint T2 (D6): `work` (the login's footprint, `{}` for none), `deletable` — a PURE mentor
-    this caller manages with no work — and `delete_never` (review N2): no Delete is ever drawn for
-    a row nobody may delete here. A staff mentor is never deleted here (their row is deleted from
-    Team -> Admins / Reviewers, where mentoring counts as work); nor is a row with no login, or one
-    this caller does not manage."""
+    """Sprint T2 (D6): `work` (the login's footprint, `{}` for none), `deletable` — a PURE mentor this caller
+    manages, with no work and (TD-616, sprint S1) in no group, `mentor_invite`'s `in_a_group` — and `delete_never`
+    (review N2): never for a staff mentor (deleted from Team, where mentoring is work), no login, or one not managed."""
+    from apps.courses import staff_tables
     from .. import mentor_invite
     work = footprints.get(login.pk, {}) if login is not None else {}
     never = login is None or staff or not mentor_invite.manageable(caller, mentor)
-    return {'work': work, 'deletable': not never and not work, 'delete_never': never}
+    in_group = bool(login is not None and staff_tables.groups_to_leave(login))
+    return {'work': work, 'deletable': not never and not work and not in_group, 'delete_never': never}
 
 
 # M3c review F1: what the Invitations page's Mentor tab (`MentorRoster`) reads of a mentor row.

@@ -311,10 +311,10 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields {
   rejection_comments: string
   // TD-227: a `/reject/` decline made by someone other than the assignee (null = the record cannot say).
   rejected_by_unassigned?: boolean | null
-  // TD-483: the code the QC door would refuse THIS viewer with (null = may decide, or not a QC case).
-  // Only on the detail read and the `/reject/` reply; other replies omit it. So do the three write flags.
-  qc_refusal?: string | null
-  can_write?: boolean; can_cancel_decline?: boolean; can_tranche?: boolean
+  // TD-483 / S1: the doors' answers for THIS viewer, on the detail read and every write reply carrying the
+  // case (`_detail_payload`). qc_refusal: the QC door's refusal code (null = may decide, or not a QC case).
+  qc_refusal?: string | null; can_qc?: boolean; can_close_pre_award?: boolean
+  can_write?: boolean; can_cancel_decline?: boolean; can_tranche?: boolean; case_stage?: 'open' | 'past_award' | 'pre_award_end'
   // A1.13b: the case's latest award-withdrawal request and this viewer's step (`award_withdrawal_chain.
   // payload_for`). Null (or absent) unless the case is awarded or recommended and there is something to show.
   withdrawal_request?: AwardWithdrawalRequest | null
@@ -568,11 +568,11 @@ export async function requestMoreInfo(id: number, note: string, options?: ApiOpt
     `/api/v1/admin/scholarship/applications/${id}/request-info/`, 'POST', { note }, options)
 }
 
-/** Active admins (for the assignment dropdown). Super admin only on the backend.
+/** Active admins (for the assignment dropdown). With `application` (TD-634), `assignable` asks that case's organisation.
  *  `languages` = the codes (en/ms/ta) the reviewer is conversational+ in, for matching.
  *  `past_assignees` = anyone still on record as an application's assignee (org-fenced,
  *  independent of is_active/role) — the list filter's "Past reviewers" group. */
-export async function getAssignableAdmins(options?: ApiOptions) {
+export async function getAssignableAdmins(options?: ApiOptions, application?: number) {
   return adminFetch<{
     /** ⚠ A PAUSED reviewer is in this list, flagged — never filtered out. The cockpit unions the
      *  current assignee in from here, so dropping anybody makes their case read "Unassigned"
@@ -588,7 +588,7 @@ export async function getAssignableAdmins(options?: ApiOptions) {
     }>
     past_assignees?: Array<{ id: number; name: string }>
   }>(
-    `/api/v1/admin/scholarship/assignable-admins/`, options)
+    `/api/v1/admin/scholarship/assignable-admins/${application ? `?application=${application}` : ''}`, options)
 }
 
 export async function getScholarshipApplication(id: number, options?: ApiOptions) {

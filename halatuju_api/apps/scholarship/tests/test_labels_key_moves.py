@@ -253,7 +253,7 @@ class ASuperGivesACaseOnlyWithinItsOrganisation(TestCase):
         app = make_application('profile_complete', cohort=self.cohort)
         self.assertTrue(assignment.may_assign_to(self.super, self.far))   # the rule asks no organisation
         r = self.post(app, self.far)
-        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_reviewer'))
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'wrong_organisation'))   # TD-634: said
         app.refresh_from_db()
         self.assertIsNone(app.assigned_to_id)
         self.assertFalse(AssignmentEvent.objects.filter(application=app).exists())

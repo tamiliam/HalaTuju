@@ -78,7 +78,9 @@ def sole_org_admin_ids(caller, targets):
 def delete_fields(caller, target, work=None, sole=None):
     """`work`, `deletable`, `delete_never` and `revocable` for one row. ``work`` is the row's entry of
     `staff_footprint.footprints` (a table) or None to read this one person's; ``sole`` is the table's
-    `sole_org_admin_ids`, or None to ask for this one person."""
+    `sole_org_admin_ids`, or None to ask for this one person. TD-616 (sprint S1): not `deletable` while
+    in a group (`staff_tables.groups_to_leave`, the `in_a_group` refusal of every Delete door)."""
+    from . import staff_tables
     from .views_admin import _deletable_now, _staff_target_manageable, scholarship_staff
     if work is None:
         staff_footprint, _ = scholarship_staff()
@@ -87,5 +89,6 @@ def delete_fields(caller, target, work=None, sole=None):
     alone = manageable and (target.id in sole if sole is not None else is_sole_org_admin(target))
     # `_deletable_now` with NO work answers the rule alone: may this caller ever delete this row?
     never = alone or target.pk == caller.pk or not _deletable_now(caller, target, work={})   # M1a: never yourself
-    return {'work': work, 'deletable': not never and not work, 'delete_never': never,
+    deletable = not never and not work and not staff_tables.groups_to_leave(target)
+    return {'work': work, 'deletable': deletable, 'delete_never': never,
             'revocable': bool(manageable and not target.is_super and target.pk != caller.pk and not alone)}

@@ -22,16 +22,20 @@ import type { T } from './shared'
 
 /**
  * True exactly when the decision card shows its Recommend / Decline / Save controls: the card shows, it is not
- * locked, it is not a committed acceptance, the status admits a decision, and this person may write. ONE rule —
- * DecisionCard.tsx gates those controls on this function (M6b review), and the phone's bar shows on it.
+ * locked, it is not a committed acceptance, the status admits a decision, the case is OPEN, and this person may
+ * write. ONE rule — DecisionCard.tsx gates those controls on this function (M6b review), and the phone's bar shows
+ * on it. `caseOpen` is the served `case_stage === 'open'` (S1, TD-664 c): the verdict door refuses `case_closed`
+ * on any other stage, so a reopened past-award case offers no Save.
  */
-export function decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }: {
+export function decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite, caseOpen }: {
   app: AdminScholarshipDetail
   decisionReopened: boolean
   decisionRecorded: boolean
   decisionLocked: boolean
   canWrite: boolean
+  caseOpen: boolean
 }): boolean {
+  if (!caseOpen) return false
   if (!showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded })) return false
   if (decisionLocked) return false
   if (isQcAccepted(stageStatus(app, 'recommended_at')) && !decisionReopened) return false

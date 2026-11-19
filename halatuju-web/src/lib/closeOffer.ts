@@ -37,15 +37,14 @@ export interface CloseOffer {
 }
 
 /**
- * `orgSuper` — the viewer opens the server's door `decide` (`students.approve`; a super or an org_admin
- * until M3c, list W). The api closes a PRE-award case for those only (`AdminCloseApplicationView`,
- * `surface_gates.may_decide`), so for anyone else the card is not
- * offered there at all rather than showing a button that answers 403.
+ * `canClosePreAward` — the server's served `can_close_pre_award` (S1, TD-664 a): the same
+ * `surface_gates.may_decide` the close door (`AdminCloseApplicationView`) asks before a PRE-award close.
+ * For anyone else the card is not offered there at all rather than showing a button that answers 403.
  */
-export function closeOffer(status: string, orgSuper: boolean): CloseOffer {
+export function closeOffer(status: string, canClosePreAward: boolean): CloseOffer {
   if ((PRE_AWARD_STATUSES as readonly string[]).includes(status)) {
     // TD-488: shortlisted / profile_complete / interviewing / interviewed are declined, not closed.
-    return orgSuper && (PRE_AWARD_CLOSEABLE as readonly string[]).includes(status)
+    return canClosePreAward && (PRE_AWARD_CLOSEABLE as readonly string[]).includes(status)
       ? { show: true, preAward: true, reasons: PRE_AWARD_REASONS }
       : { show: false, preAward: true, reasons: [] }
   }

@@ -43,9 +43,9 @@ def open_cases(admin):
     return staff_lifecycle.open_cases(admin)
 
 
-def open_cases_counts(admins):
+def open_cases_counts(admins, archived_of=None):
     from . import staff_tables_admin
-    return staff_tables_admin.open_case_counts([a.pk for a in admins])
+    return staff_tables_admin.open_case_counts([a.pk for a in admins], archived_of=archived_of)
 
 
 # ── mentors ─────────────────────────────────────────────────────────────────────────────────────────
@@ -126,15 +126,20 @@ def unfinished(admin):
                   open_cases(admin), scholars_now(admin))
 
 
-def unfinished_counts(admins):
+def unfinished_counts(admins, archived_of=None):
     """`{admin_id: unfinished(...)}` for a page of people in a FIXED number of queries (one per registry
-    entry, one for open cases, one for scholars), never per row."""
+    entry, one for open cases, one for scholars), never per row. With ``archived_of`` (TD-630, see
+    `staff_tables_admin.open_case_counts`) it returns `(that, open cases held by archived people)`,
+    counted inside the same open-cases query."""
     admins = list(admins)
     many = {e.field: e.many(admins) for e in ADMIN_WAITING.values()}
-    opened = open_cases_counts(admins)
+    opened = open_cases_counts(admins, archived_of)
     scholars = scholars_now_counts(admins)
-    return {a.pk: _shape({f: counts.get(a.pk, 0) for f, counts in many.items()},
+    out = {a.pk: _shape({f: counts.get(a.pk, 0) for f, counts in many.items()},
                          opened.get(a.pk, 0), scholars.get(a.pk, 0)) for a in admins}
+    if archived_of is None:
+        return out
+    return out, sum(n for pk, n in opened.items() if pk not in out)
 
 
 def any_work(work):

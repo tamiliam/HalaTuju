@@ -78,11 +78,14 @@ def _mentor_rules(caller, a, footprint, records):
                         'records': bool(footprint) or a.mentor_id in records}
 
 
-def list_rows(caller, admins):
-    """The Staff list's row dicts, in ``admins`` order."""
+def list_rows(caller, admins, archived_of=None):
+    """The Staff list's row dicts, in ``admins`` order. With ``archived_of`` (TD-630) it returns
+    `(rows, open cases held by archived people of it)`, counted in the same open-cases query."""
     admins = list(admins)
     works, cards = staff_footprint.footprints(admins), staff_photo.team_cards(admins)
-    waiting = staff_work.unfinished_counts(admins)
+    waiting = staff_work.unfinished_counts(admins, archived_of)
+    if archived_of is not None:
+        waiting, archived_open = waiting
     sole, records = courses_public.sole_org_admin_ids(caller, admins), _mentor_records(admins)
     out = []
     for a in admins:
@@ -100,4 +103,4 @@ def list_rows(caller, admins):
             'delete_outcome': None if never else ('archive' if rules['records'] else 'erase'),
             'revocable': rules['revocable'],
         })
-    return out
+    return out if archived_of is None else (out, archived_open)

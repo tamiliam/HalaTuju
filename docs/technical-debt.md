@@ -8800,6 +8800,8 @@ write an `AUDIT` log line but no `staff_activity` row, because `staff_activity` 
 needs its `WIRED` writers, its filter kind and its backfill. Fix: add `staff_archived` / `staff_restored` verbs when the
 Staff tab (M1b) or the activity box needs to show them.
 
+**Status 2026-11-19: not in sprint S1** (lead call, by the M1a ruling at `docs/decisions.md`:1011); stays open.
+
 ### ~~[TD-604] The web's programme-staff mirror does not know the `member` role - low~~ — RESOLVED 2026-11-11 (FIXED, sprint M1b, branch m1b, awaiting push: `member` added to `adminStaff.ts` `PROGRAMME_STAFF_ROLES` and left out of the Admins list (`adminStaff.test.ts`); the Staff tab draws the served `GET admin/staff/` rows unfiltered (`StaffList.test.tsx`); `AppShell` treats a member like a mentor (`AppShell.test.tsx`); the member's menu and landing were pinned in M1a (`navigation.test.ts`, `adminLanding.test.ts`))
 
 **Raised 2026-11-10 by Sprint M1a (left for M1b).** `halatuju-web/src/lib/adminStaff.ts` `PROGRAMME_STAFF_ROLES` lists
@@ -8941,9 +8943,13 @@ safe for the idempotent backup, and the command's docstring warns against pointi
 
 **Raised 2026-11-13 by the M2c review.** `staff_tables.groups_to_leave` returns `[]` for someone with no first sign-in, so the R2 rule "delete only from No group" is skipped for an invitee placed in a group. Fix: read group membership directly instead of through sign-in state, and add a test. *(A · S)*
 
+**Status 2026-11-19:** Owner 19 Nov: an invitee is removed by Cancel, which will archive the person in the same step (off every group table and picker; the address is always free to re-invite; refused while they hold open cases). That is its own step, S1b, after S1. Delete needs no group step for invitees, so TD-615's original fix is not needed and closes when S1b lands.
+
 ### [TD-616] Some delete payloads ignore the `in_a_group` rule - low
 
 **Raised 2026-11-13 by the M2c review.** `staff_delete_rules.delete_fields` has no `in_a_group` check, so the payloads from `views_staff.py` (around :516), `reviewers.py` (around :232), `views_admin/staff.py` (around :156) and the mentors `_delete_fields` can say "deletable" while `/admin/staff/` refuses. The web is unaffected today because it reads the staff list. The server still refuses the delete. Fix: put the check in `delete_fields`, so every caller gets it. *(A · S)*
+
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** `staff_delete_rules.delete_fields` and the mentors row's `_delete_fields` say not `deletable` while `groups_to_leave` is not empty, the same rule every Delete door refuses with `in_a_group`, so the Admins table, the person page, the Reviewers table and page, the Staff list and the Mentors row all agree with the door. Someone who never signed in keeps the narrow Delete (TD-615, owner 19 Nov). Test: `test_s1_team_leftovers.TD616NotDeletableWhileInAGroup`.
 
 ### ~~[TD-617] Are PISMP, MARA preparation and American Degree Program students degree-bound for money? - owner decision (money)~~ — RESOLVED 2026-11-14 (owner ruling, option 1; branch td617, local, awaiting push: the award and the funding estimate are unchanged; an SPM-only PISMP student is never owed higher results (`results_route.is_pismp`, `higher_owed._needs_higher`, `results_route.higher_need`); an American Degree Program or "Persediaan ... Luar Negara" name (MARA, JPA or another sponsor) turns Pathway red with `pathway_funded_or_abroad`, a CONFIDENT_DISQUALIFIER (`verdict_pathway.funded_or_abroad`); review fixes: a 'pismp' code at a university is not PISMP, IPGM / IPGK / Bachelor of Teaching are, `declared_kind` before submit, a frozen 'required' snapshot does not anchor an undeclared PISMP (`higher_results.anchors_on_higher`); `VERDICT_ENGINE_VERSION` 2026-11-14.2; tests `test_td617_pismp_adp.py`)
 
@@ -8960,6 +8966,8 @@ Admins key, stored page key or Reviewers key; the Programme Overview opens by ro
 `sees_every_gift`). The mock-up's "Opens with any page in this box" was not true and was reworded. If a door changes,
 the sentence will be wrong and no test will fail. Fix: serve the two sentences' facts from the API (or pin the door
 sets with a drift test beside `permissionLayout.test.ts`). *(A - S)*
+
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** `halatuju-web/src/lib/__tests__/permissionLayoutOverviewDrift.test.ts` reads the server source and pins each fact behind the two sentences: every key the layout gives a switch is an Admins key or a grantable v2 key (so it seats the person at Admins: `in_admins`, `admin_keys`, `stored_v2`, `GRANTABLE_V2`); a seat at Admins sees every gift (`my_programmes.sees_every_gift`), which opens the landing (`lands`, asked by `my_programmes` and `my_pending`); and the Programme Overview opens every gift for `sees_every_gift`, otherwise only a gift with review work (`may_open_overview`, asked by `overview.py`). Both sentences were found true, so no words changed. It closes when it is live.
 
 ### [TD-619] `mobile-check` does not open a person page, so the Permissions tab's sticky save bar is checked by hand only - low
 
@@ -8978,7 +8986,7 @@ organisation admin can do. The payment seats (who may prepare, check and approve
 the money keys an organisation admin should hold, drop `LEAD_MONEY_UNTIL_M4` and its pins in
 `test_m2b_stored_v2.OrgAdminVocabulary`, and move the five `payments_chain` entries of `LEAD_READS` off the role. *(A - S)*
 
-### ~~[TD-621] `SECTIONS_BY_ROLE` still decides the Overview sections for the other roles - low~~ — BUILT 2026-11-16 (sprint LABELS, branch labels, not pushed; no migration; Services: api)
+### ~~[TD-621] `SECTIONS_BY_ROLE` still decides the Overview sections for the other roles - low~~ — RESOLVED 2026-11-19 (live 17 Nov 11:00, e4d81a8fc..d991c39e8, api-01307-76l, web-01127-g47)
 
 **Raised 2026-11-14 by sprint M3a.** `programme_overview.SECTIONS_BY_ROLE` picks the Overview's sections by role.
 M3 moves the organisation admin's reads onto keys; the `admin`, `qc`, `finance`, `reviewer` and `partner` rows stay
@@ -8988,7 +8996,7 @@ that every section has a key. *(A - S)*
 
 **As built (2026-11-16).** `SECTIONS_BY_ROLE` and `KEYED_ROWS` are deleted. `programme_overview.SECTION_KEYS` names each section's keys, and `sections_for` is one rule over it: the applicant widgets (`funnel`, `attention`, `applications_series`) open on `see_all` held at Admins (`staff_tables.in_admins`; QC's own `see_all` is not an Admins hat, as before); `money` and `money_series` open on `spending` or any `payments.*` key (finance's existing widening, now read from the key); the `qc` and `mine` pages open on `qc` and `review` and are a team member's (`staff_tables.team_member`), so a super and an organisation admin get the five widgets and no page. Partners, sources, mentors and members hold no key, so they are refused (403) with no kind rule. `test_labels_preset_pins.py` (written and green on the base commit) pins every standard preset; `test_labels_key_moves.py` pins that every section has a key and declares each hand-granted move (the biggest: an admin invited since T2, `see_all` + `scholars` with no money key, loses the money widgets until a money key is ticked). Builder calls: `docs/decisions.md`, 2026-11-16, LABELS. **Web follow-up:** comments in `programme/overview/page.tsx`, `programmeOverview.ts`, `navigation.ts`, `admin-api/overview.ts` and the `roleIsDisplayOnly.test.ts` allowlist reason still name `SECTIONS_BY_ROLE` (no web change was in scope).
 
-### ~~[TD-622] `R1_SUPER_TARGET_ROLES` is a role list in the assignment rules - low~~ — BUILT 2026-11-16 (sprint LABELS, branch labels, not pushed; no migration; Services: api)
+### ~~[TD-622] `R1_SUPER_TARGET_ROLES` is a role list in the assignment rules - low~~ — RESOLVED 2026-11-19 (live 17 Nov 11:00, e4d81a8fc..d991c39e8, api-01307-76l, web-01127-g47)
 
 **Raised 2026-11-14 by sprint M3a.** `services/assignment.R1_SUPER_TARGET_ROLES` (`admin`, `qc`, `org_admin`) says
 whom a platform super may hand a case to, by role. It cannot retire until the reviewer target is a key for every
@@ -9011,7 +9019,7 @@ fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name
 
 **Review round (2026-11-15).** QC's assignee filter now loads the reviewer list; `navigation.hasGiftDoor` reads the served `programmes.edit` key (the server's `may_edit_programmes` is key-based, checked first), not the `programmeConfig` row's roles; the A10 scan reads whole files with comments blanked (both quotes, `==`/`!=`, `case`, multi-line arrays, `…roles.includes(`/`.has(`), floor 140 of 156 hits. New debt: TD-631, TD-632.
 
-### [TD-631] Surveys, Development and Announcements open on the `.edit` door while their reads accept `.view` - low
+### ~~[TD-631] Surveys, Development and Announcements open on the `.edit` door while their reads accept `.view` - low~~ — RESOLVED 2026-11-19 (live 16 Nov 11:00, 4619e1af1..b3b4c6114, api-01304-45w, web-01125-npt)
 
 **Raised 2026-11-15 by the TD-623 review (the architect assigns the number).** `SurveysAdmin`, `SurveyResults`, `DevelopmentAdmin`, `ModuleProgressView` and `AnnouncementsAdmin` (and the scholar Surveys/Growth tabs, `scholars/[id]/page.tsx`) draw only for `holdsDoor(role, 'surveys' | 'development' | 'announcements')`, whose keys are `*.edit` (`pageDoors.DOOR_KEYS`), while their list GETs also answer a `*.view` holder (`surveys_read`, `development_read`, `announcements_read`). Under the owner's rule (keys decide what a person views and edits), a person granted only `surveys.view` should see the screen read-only; today they see "no access". Fix: open each screen on its `_read` door, and hide New / Edit / Send behind the `.edit` door; pin both halves with rendered tests. *(A - S)*
 
@@ -9029,7 +9037,7 @@ fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name
 
 **Graduation-message review, moved (sprint THANKS-SCHOLARS, 2026-11-16): off the `review` key.** Owner 2026-11-16: thank-yous are scholar maintenance. Both THANKS routes are RETIRED (the case-page GET `admin/scholarship/applications/<pk>/graduation-messages/` and the POST `admin/graduation-messages/<pk>/review/`, with `may_moderate_thanks` and the case-page card). A thank-you is read and decided on the scholar file (`views_admin/scholar_thanks.py`): read through `_file_for`, decided by `_ThanksBase.may_decide_thanks` (today's scholar-file write rule). No role label and no `review` key gate it. `docs/decisions.md`, 2026-11-16, THANKS-SCHOLARS.
 
-### ~~[TD-633] The admin menu decides some rows by role - low~~ — BUILT 2026-11-16 (sprint NAVKEYS, on main, not live; no migration; Services: both after the review round)
+### ~~[TD-633] The admin menu decides some rows by role - low~~ — RESOLVED 2026-11-19 (live 16 Nov 16:00, b3b4c6114..119ffd0d3, api-01305-cfk, web-01126-5dd)
 
 **Raised 2026-11-15 by TD-623 (its follow-up line; the architect assigns the number).** `staffPermissions.admitsRow` let a row with a server door fall back to its role list when the payload had no `page_keys`, and Applications, Scholars, Spending and Payments were offered by role (with the organisation admin's keys as a second way in). Under the owner's rule ("there is admin, and there are permissions, which determine what the admin views and edits") the served keys should answer every row the server gates by a key. *(A - S)*
 
@@ -9041,9 +9049,13 @@ fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name
 
 **Raised 2026-11-16 by the sprint LABELS review round (the architect assigns the number).** `assign_reviewer` now refuses a new holder outside the case's organisation (the real defect: a super could hand a case to a reviewer who then got a 404 opening it). The super's picker (`AdminAssignableAdminsView`) is not per-case, so it still lists every organisation's reviewers with `assignable: True`, and the refusal reuses `not_reviewer` ("You can only assign to a reviewer."). Fix: let the picker take the case (or its organisation) and serve `assignable` per case, or give the refusal its own code and wording (`wrong_organisation`, en, ms, ta). *(C - S)*
 
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** Both halves. `assign_reviewer` refuses a holder from another organisation with its own code, `wrong_organisation` (en, ms, ta words; the cockpit and the list page know the code). The picker takes `?application=<id>` and then serves `assignable` per case: another organisation's reviewer is still LISTED (bug #66) but greyed; an id the caller cannot read is ignored. The cockpit passes its case. Tests: `test_s1_team_leftovers.TD634AnotherOrganisationIsSaid`, `page.phone.test.tsx`.
+
 ### [TD-630] An archived holder's open cases are missing from the Staff list's suspended-cases banner - low
 
 **Raised 2026-11-15 by sprint TD-613 (the architect assigns the number).** The banner counts open cases held by people the Staff list returns, and an archived person is not on the default list, so a case held by someone archived is not counted there. The case itself is not stuck: the applications list and the cockpit serve `needs_new_holder` and offer the change. Fix: count open cases whose holder is archived in the banner's existing `open_case_counts` query (one query over the listed ids today), without raising the Staff list's pinned query count (`test_m1a_staff_list.TestQueryBudget`, `test_m2c_members_lifecycle.test_the_query_count_does_not_change`). *(C - S)*
+
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** The banner's count also takes the open cases held by DELETED (archived) people of the listed organisation (or every organisation, or the one a super asks), inside the same query, so the pinned query counts do not move. The banner words now say "suspended or deleted" (en, ms, ta; the Tamil needs a native read). Tests: `test_s1_team_leftovers.TD630ADeletedHolderIsCounted`.
 
 ### [TD-624] The apply-form draft test fails now and then on Cloud Build - low
 
@@ -9078,6 +9090,8 @@ yet scheduled. *(W - M)*
 organisation may hand a case to a reviewer who also has none (`None == None`). The role rule before M3b had the same
 gap, and `_scoped_application` probably refuses first; no such row is known in production. Fix: also require
 `caller.owning_organisation_id is not None`, as `manageable_if_restored` already does, with a test. *(A - S)*
+
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** `may_hand_to` requires the caller to have an organisation before it compares, so `None == None` no longer passes. Tests: `test_s1_team_leftovers.TD627NoOrganisationIsNoMatch`.
 
 ### [TD-628] A Documents-page IC upload after an officer-requested IC goes live with no keep-the-better check - low
 
@@ -9372,6 +9386,8 @@ serve a per-type `replaceable` / `open` flag.
 
 Fix: serve a flag for each control from the server's own door (as `can_write` is), and have every write reply serve `_detail_payload`, or none of them. For (f), have `claimable` skip a case whose `case_stage` is past the award.
 *(A - S)*
+
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** (a)-(c), (e) and (f) are done; **(d) is left, so the item stays open.** The server serves `can_qc`, `can_close_pre_award` and `case_stage` beside `can_write` from `views_admin.base.served_write_flags` (the same functions the doors ask) and `qc_refusal`; the cockpit reads only those (the QC panel, Re-verify IC, the self-QC note, the pre-award Close card, and Save and the phone bar, now hidden when the case is not open). All twelve write replies that answer with the case go through `_detail_payload` (PATCH, verify-accept, nudge, the tranche schedule and actions, maintenance, NRIC lock release, award amount, suggest gaps, request info, add a resolution item and its actions), and a source scan refuses a bare serializer reply. `profile_finalise.run_finalise` and the first-assign draft (`assign_draft.run_draft`) drop a job with no Gemini call when the case is not open (`case_closed`). The scholar file serves `controls.can_write_activity` and the activity box reads it. Tests: `test_s1_served_flags.py`, `test_s1_write_replies_serve_flags.py`, `test_s1_finalise_case_stage.py`, `view.s1Flags.test.tsx`, `view.decisionBar.test.tsx`, `scholars/[id]/page.test.tsx`.
 
 ### [TD-665] The offer reader has no public / private field, so the IPTS rule infers it from names and saved reasons - medium
 

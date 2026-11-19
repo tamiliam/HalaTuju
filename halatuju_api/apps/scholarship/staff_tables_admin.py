@@ -429,15 +429,29 @@ def row_refusal(target, table, open_n, runs_n=None):
     return code
 
 
-def open_case_counts(admin_ids):
-    """`{admin_id: open cases}` in ONE query — `staff_lifecycle.open_cases`'s rule, for a page of rows."""
+#: `open_case_counts(..., archived_of=EVERY_ORGANISATION)`: archived holders of any organisation.
+EVERY_ORGANISATION = 'every'
+
+
+def open_case_counts(admin_ids, *, archived_of=None):
+    """`{admin_id: open cases}` in ONE query — `staff_lifecycle.open_cases`'s rule, for a page of rows.
+
+    TD-630 (sprint S1, the Staff list's banner): ``archived_of`` — an organisation id, or
+    `EVERY_ORGANISATION` — also counts, in the SAME query, the open cases held by ARCHIVED people of it
+    (never listed, so never in ``admin_ids``); their ids come back as keys too. None (the default) = off."""
     from django.db.models import Count, Q
     from .models import ScholarshipApplication
     from .staff_lifecycle import OPEN_CASE_STATUSES
     ids = [i for i in admin_ids if i is not None]
-    if not ids:
+    holders = Q(assigned_to_id__in=ids)
+    if archived_of is not None:
+        archived = Q(assigned_to__archived_at__isnull=False)
+        if archived_of != EVERY_ORGANISATION:
+            archived &= Q(assigned_to__owning_organisation_id=archived_of)
+        holders |= archived
+    elif not ids:
         return {}
-    rows = (ScholarshipApplication.objects.filter(assigned_to_id__in=ids)
+    rows = (ScholarshipApplication.objects.filter(holders)
             .filter(Q(status__in=OPEN_CASE_STATUSES) | Q(decision_reopened_at__isnull=False))
             .values('assigned_to_id').annotate(n=Count('id')))
     return {r['assigned_to_id']: r['n'] for r in rows}

@@ -98,7 +98,7 @@ def may_hand_to(caller, target):
         return False
     if caller.is_super:
         return True
-    return (surface_gates.may_assign(caller)
+    return (surface_gates.may_assign(caller) and caller.owning_organisation_id is not None   # TD-627
             and target.owning_organisation_id == caller.owning_organisation_id)
 
 
@@ -445,7 +445,7 @@ def _assign_once(application, reviewer, by_admin, now, *, relock, last=False):
             # the picker draws for an org admin. A super's `may_hand_to` asks no organisation, and
             # anyone else could never open a case of another (`_org_allows`): the case would be stranded.
             if not holder and reviewer.owning_organisation_id != application.owning_organisation_id:
-                raise AssignmentError('not_reviewer')
+                raise AssignmentError('wrong_organisation')   # TD-634: said, not `not_reviewer`
         if reviewer is not None and not _can_review(reviewer):
             # ⚠ SAY WHICH REFUSAL. `_can_review` folds three different facts into one False, and
             # telling an org_admin that a paused volunteer "is not a reviewer" is simply untrue — she

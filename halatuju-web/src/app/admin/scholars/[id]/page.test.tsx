@@ -345,3 +345,19 @@ it('TD-631 review: a survey title links to its Results only for who may open the
     unmount()
   }
 })
+
+// Access S1 (serve, never derive): the activity box follows the served `controls.can_write_activity` — the
+// activity door's own answer (a `scholars` holder on an open file) — never `in_maintenance` or a role.
+describe('access S1: the activity box follows the served flag', () => {
+  const CONTROLS = { can_review_results: false, can_set_substate: false, can_hold: false, close_reasons: [],
+    close_refusal: '' as const }
+  it.each([[true, true], [false, false], [undefined, false]] as const)(
+    'can_write_activity=%s on an open file: composer %s', async (flag, composer) => {
+      mockApi.getScholarFile.mockResolvedValue({ ...FILE, controls: { ...CONTROLS, can_write_activity: flag } })
+      render(<ScholarFilePage />)
+      fireEvent.click(await screen.findByRole('tab', { name: 'admin.scholars.tab.activity' }))
+      await screen.findByTestId('activity-empty')
+      expect(!!screen.queryByPlaceholderText('admin.scholars.activity.placeholder')).toBe(composer)
+      expect(!!screen.queryByTestId('activity-read-only')).toBe(!composer)
+    })
+})

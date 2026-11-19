@@ -9,9 +9,8 @@
  */
 import type { Dispatch, SetStateAction } from 'react'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
-import { hasPerm } from '@/lib/staffPermissions'
 
-import type { T, AdminRole } from './shared'
+import type { T } from './shared'
 import Toggle from '@/components/Toggle'
 
 /** TD-483: the cockpit's words for a QC-door refusal code (`qc_separation.MESSAGES`), or null for a
@@ -24,18 +23,15 @@ export function qcRefusalText(code: string | null | undefined, t: T): string | n
   return code && known.includes(code) ? t(`admin.scholarship.qcDecision.refusal.${code}`) : null
 }
 
-/** TD-483: why the QC door would refuse this viewer, or null. The server's answer (`qc_refusal`,
- * the same separation rule the door asks) when it sent one; otherwise the old local check (a QC
- * who is the current assignee), for a reply that carries no viewer. */
-export function qcRefusalFor(app: AdminScholarshipDetail, role: AdminRole): string | null {
-  if (app.qc_refusal !== undefined) return app.qc_refusal || null
-  const isSuper = !!role?.is_super_admin || role?.role === 'super'
-  return hasPerm(role, 'qc') && !isSuper && app.assigned_to_id === (role?.admin_id ?? null)
-    ? 'self_qc_forbidden' : null
+/** TD-483: why the QC door would refuse this viewer, or null. Served, never derived (S1, TD-664 b):
+ * the server's `qc_refusal` is the same separation rule the door asks, and every reply that carries
+ * the case carries it (`_detail_payload`). */
+export function qcRefusalFor(app: AdminScholarshipDetail): string | null {
+  return app.qc_refusal || null
 }
 
 export function QcPanel({
-  app, t, busy, canQc, role, doQcDecision,
+  app, t, busy, canQc, doQcDecision,
   qcReopenOpen, setQcReopenOpen, qcComments, setQcComments,
   qcRejectMode, setQcRejectMode, qcOverrideOpen, setQcOverrideOpen,
   qcOverrideReason, setQcOverrideReason,
@@ -44,7 +40,6 @@ export function QcPanel({
   t: T
   busy: string
   canQc: boolean
-  role: AdminRole
   doQcDecision: (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) => void
   qcReopenOpen: boolean
   setQcReopenOpen: Dispatch<SetStateAction<boolean>>
@@ -64,12 +59,12 @@ export function QcPanel({
             Self-QC guard (TD-483): a `qc` the server's separation rule refuses (assigned, interviewed,
             recorded the verdict, or other review work) sees a one-line note instead of the panel; the
             backend blocks it too. ── */}
-      {app.status === 'interviewed' && canQc && qcRefusalFor(app, role) && (
+      {app.status === 'interviewed' && canQc && qcRefusalFor(app) && (
         <p data-testid="qc-refusal" className="border-b border-ground-100 py-4 text-xs text-ground-600 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5">
-          {qcRefusalText(qcRefusalFor(app, role), t) || t('admin.scholarship.qcDecision.refusal.self_review_qc_forbidden')}
+          {qcRefusalText(qcRefusalFor(app), t) || t('admin.scholarship.qcDecision.refusal.self_review_qc_forbidden')}
         </p>
       )}
-      {app.status === 'interviewed' && canQc && !qcRefusalFor(app, role) && (() => {
+      {app.status === 'interviewed' && canQc && !qcRefusalFor(app) && (() => {
         // V5 gap floor (#5): a red/'gap' verdict fact blocks Accept. A super sees an override
         // affordance (reason recorded server-side); anyone else resolves the gap or reopens.
         // Request #31: the server adds the birth-state fact to the SAME floor when the current IC

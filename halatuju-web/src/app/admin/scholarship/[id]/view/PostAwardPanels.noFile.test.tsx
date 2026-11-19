@@ -21,7 +21,7 @@ const t = (k: string) => k
 const props = (app: Partial<AdminScholarshipDetail>, over: Record<string, unknown> = {}) => ({
   app: { id: 5, status: 'awarded', maintenance_substate: 'on_track', disbursements: [],
     closure_reason: '', closed_at: null, ...app } as unknown as AdminScholarshipDetail,
-  t: t as never, busy: '', isSuper: false, canWrite: true, canTranche: true, orgSuper: true, mayOpenFile: true,
+  t: t as never, busy: '', isSuper: false, canWrite: true, canTranche: true, canClosePreAward: true, mayOpenFile: true,
   bursary: null, bursaryMsg: '', doCountersignBursary: jest.fn(), doWitnessBursary: jest.fn(),
   disbAmount: '', setDisbAmount: jest.fn(), disbLabel: '', setDisbLabel: jest.fn(), disbMsg: '',
   doScheduleTranche: jest.fn(), doDisbursementAction: jest.fn(), doSetSubstate: jest.fn(),

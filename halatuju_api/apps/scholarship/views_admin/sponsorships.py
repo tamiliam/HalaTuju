@@ -10,10 +10,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from .. import pool
 from ..models import Sponsor, Sponsorship
-from ..serializers_admin import AdminApplicationDetailSerializer
 from .. import sponsorship as sponsorship_service
 
 from .. import surface_gates
+from .applications import _detail_payload
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
 
@@ -151,7 +151,7 @@ class AdminSetAwardAmountView(_AdminBase):
                         app.id, (getattr(admin, 'email', '') or '?'),
                         ('-' if award_was is None else award_was),
                         ('-' if amount is None else amount))
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 def _sponsorship_dict(s):

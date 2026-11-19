@@ -506,5 +506,10 @@ export function buildApplicationDetail(
     app.decline_due_at = DECLINE_DUE_AT
   }
 
+  // Access S1: the server's `case_stage` for the stage (`staff_lifecycle.case_stage`) — a fixture states it,
+  // as the server serves it; a test that reopens a decision passes its own.
+  app.case_stage = (['awarded', 'active', 'maintenance', 'closed'] as Stage[]).includes(stage) ? 'past_award'
+    : stage === 'rejected' || stage === 'expired' ? 'pre_award_end' : 'open'
+
   return { ...app, ...fieldOverrides }
 }

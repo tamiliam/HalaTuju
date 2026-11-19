@@ -13,11 +13,11 @@ from rest_framework.response import Response
 from .. import birth_state
 from .. import pool
 from ..models import Donation, ScholarshipApplication, Sponsor, Sponsorship
-from ..serializers_admin import AdminApplicationDetailSerializer
 from ..services.decline import held_decline_restore_target
 from .. import sponsorship as sponsorship_service
 from .. import sponsor_signup
 
+from .applications import _detail_payload
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
 
@@ -246,7 +246,7 @@ class AdminReleaseNricLockView(_AdminBase):
         # become a place identity numbers accumulate.
         logger.info('AUDIT nric_lock_released admin_id=%s app_id=%s reason=%r',
                     admin.id, pk, reason[:200])
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminSponsorReviewView(_AdminBase):

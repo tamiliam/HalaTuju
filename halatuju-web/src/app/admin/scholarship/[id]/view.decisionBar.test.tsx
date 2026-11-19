@@ -8,6 +8,7 @@
  *     where they exist, and a writer and a reader. `decisionBarShows` copies the card's own condition; if the two
  *     ever disagree, a phone either loses its way to a live decision or is sent to a card with nothing to press.
  *  2. Its button sends NOTHING: pressing it scrolls to the section and calls no endpoint.
+ *  3. (Access S1) Both follow the served `case_stage`: a decision reopened past the award offers no Save.
  *
  * (jsdom applies no media query, so the `md:hidden` bar is in the DOM at every width here.)
  */
@@ -46,6 +47,27 @@ describe('the phone decision bar (Mobile M6b)', () => {
                    build: outcome ? { outcome } : {} })
     await loaded()
     expect(!!bar()).toBe(saveOffered())
+  })
+
+  // Access S1 (TD-664 c): the bar and the card's Save read the served `case_stage`. A decision reopened on a
+  // case past the award stays `past_award` on the server, and the verdict door answers `case_closed` there.
+  it.each([
+    ['past_award', false],
+    ['open', true],
+  ] as const)('a reopened decision with case_stage=%s: bar and Save shown=%s', async (caseStage, shown) => {
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing',
+                   build: { decision_reopened_at: '2026-11-19T09:00:00+08:00', case_stage: caseStage } })
+    await loaded()
+    expect(saveOffered()).toBe(shown)
+    expect(!!bar()).toBe(shown)
+  })
+
+  it('a reopened awarded case: no bar and no Save', async () => {
+    renderCockpit({ role: 'super', writes: true, stage: 'awarded',
+                   build: { decision_reopened_at: '2026-11-19T09:00:00+08:00' } })
+    await loaded()
+    expect(saveOffered()).toBe(false)
+    expect(bar()).toBeNull()
   })
 
   it('the matrix is not empty on either side (the test would pass on an absent bar otherwise)', async () => {

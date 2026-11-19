@@ -193,7 +193,9 @@ describe('the assignment picker vs the api\'s bad_assignee rule', () => {
 
   test('the list serves the same rule as `assignable`, so the picker reads it, not a role', () => {
     const list = readApi('apps/scholarship/views_admin/lifecycle.py')
-    expect(list).toMatch(/'assignable': may_assign_to\(admin, a\)/)
+    // TD-634 (S1): the same rule, narrowed to the case's organisation when the picker names its case.
+    expect(list).toMatch(/'assignable': assignable\(a\),/)
+    expect(list).toMatch(/def assignable\(a\):\n\s+return may_assign_to\(admin, a\) and \(\n\s+case is None or a\.owning_organisation_id == case\.owning_organisation_id\)/)
     // A served flag wins over the role fallback in both directions.
     const served = [
       { id: 1, name: 'Fin + Review', role: 'finance', assignable: true },

@@ -169,12 +169,27 @@ def tranche_key_held(admin, app):
     return case_stage(app) == OPEN or payments.may_prepare(admin)
 
 
+def may_qc(admin):
+    """The QC key: THE ONE HOME of the first test `_require_qc` asks, and the `can_qc` the case
+    detail serves (sprint S1, TD-664 a). The door's org fence, stage and self-QC checks follow it."""
+    return bool(admin and admin.has_perm('qc'))
+
+
 def served_write_flags(admin, app):
-    """The write flags the case detail serves (`can_write`, `can_cancel_decline`, `can_tranche`), so
-    the cockpit draws each control from the server's own door and derives nothing."""
-    return {'can_write': may_write_case(admin, app),
+    """The write flags the case detail serves, so the cockpit draws each control from the server's
+    own door and derives nothing: `can_write`, `can_cancel_decline`, `can_tranche`, and since sprint
+    S1 (TD-664 a-c) `can_qc` (`_require_qc`'s key), `can_close_pre_award` (what the close door needs
+    before the award: the write rule and `students.approve`) and `case_stage` — not a write flag
+    but the stage the write rule reads (`open` / `past_award` / `pre_award_end`), so the phone's
+    decision bar hides where the verdict door answers `case_closed`."""
+    from .. import surface_gates
+    can_write = may_write_case(admin, app)
+    return {'can_write': can_write,
             'can_cancel_decline': may_cancel_held_decline(admin, app),   # owner 17 Nov: its own door
-            'can_tranche': may_tranche(admin, app)}
+            'can_tranche': may_tranche(admin, app),
+            'can_qc': may_qc(admin),
+            'can_close_pre_award': can_write and surface_gates.may_decide(admin),
+            'case_stage': case_stage(app)}
 
 
 def may_cancel_held_decline(admin, app):
@@ -463,7 +478,7 @@ class _AdminBase(courses_public.PartnerAdminMixin, APIView):
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
-        if not admin.has_perm('qc'):                  # #39 S3: qc / org_admin / super, as before
+        if not may_qc(admin):                         # #39 S3: qc / org_admin / super; S1: one home
             return None, None, self._deny_role()
         app = self._get_application(pk)
         if app is None:

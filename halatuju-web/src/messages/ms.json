@@ -4232,7 +4232,8 @@
           "reviewer_paused": "Beliau telah menjeda dirinya, jadi tiada kes baharu boleh diberikan kepadanya. Beliau boleh mula semula daripada profilnya sendiri, atau anda boleh membawanya kembali di halaman Penilai.",
           "gift_mismatch": "Penilai ini meliputi pemberian lain, jadi kes ini tidak boleh diberikan kepadanya. Pilih penilai untuk pemberian ini, atau penilai yang meliputi semua pemberian.",
           "not_signed_in": "{name} belum log masuk lagi. Kes boleh diberikan kepadanya sebaik sahaja beliau log masuk.",
-          "self_assign": "Anda tidak boleh memberikan kes kepada diri sendiri."
+          "self_assign": "Anda tidak boleh memberikan kes kepada diri sendiri.",
+          "wrong_organisation": "Penyemak ini dari organisasi lain. Pilih seseorang dari organisasi kes ini."
         }
       },
       "graduationThanks": {
@@ -10025,8 +10026,8 @@
       "filterAll": "Semua",
       "noMatch": "Tiada yang sepadan.",
       "suspendedCases": {
-        "one": "1 kes terbuka dipegang oleh ahli yang digantung. Pulihkan mereka atau tugaskan semula kes itu.",
-        "many": "{n} kes terbuka dipegang oleh ahli yang digantung. Pulihkan mereka atau tugaskan semula kes-kes itu."
+        "one": "1 kes terbuka dipegang oleh ahli yang digantung atau dipadam. Tugaskan semula kes itu, atau pulihkan ahli yang digantung.",
+        "many": "{n} kes terbuka dipegang oleh ahli yang digantung atau dipadam. Tugaskan semula kes-kes itu, atau pulihkan ahli yang digantung."
       },
       "showSuspended": "Tunjukkan ahli yang digantung"
     }

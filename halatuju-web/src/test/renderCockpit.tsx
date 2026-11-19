@@ -106,8 +106,10 @@ function authFor({ role, adminId, token = 'test-token', permissions }: CockpitAu
   }
 }
 
-/** POST-AWARD-CUT: the three write flags the server serves (`views_admin.base.served_write_flags`). */
-type WriteFlags = Partial<Pick<AdminScholarshipDetail, 'can_write' | 'can_cancel_decline' | 'can_tranche'>>
+/** POST-AWARD-CUT: the write flags the server serves (`views_admin.base.served_write_flags`); access S1 adds
+ *  the QC door (`can_qc`) and the pre-award close door (`can_close_pre_award`). */
+type WriteFlags = Partial<Pick<AdminScholarshipDetail,
+  'can_write' | 'can_cancel_decline' | 'can_tranche' | 'can_qc' | 'can_close_pre_award'>>
 const ALL_WRITES: WriteFlags = { can_write: true, can_cancel_decline: true, can_tranche: true }
 
 /**
@@ -184,7 +186,9 @@ export function renderCockpit(options: CockpitOptions): MountedCockpit {
   const flags = options.writes === true ? ALL_WRITES : options.writes ?? {}
   const app = { ...given, can_write: flags.can_write ?? given.can_write ?? false,
     can_cancel_decline: flags.can_cancel_decline ?? given.can_cancel_decline ?? false,
-    can_tranche: flags.can_tranche ?? given.can_tranche ?? false }
+    can_tranche: flags.can_tranche ?? given.can_tranche ?? false,
+    can_qc: flags.can_qc ?? given.can_qc ?? false,
+    can_close_pre_award: flags.can_close_pre_award ?? given.can_close_pre_award ?? false }
   authModule.__cockpitAuth = auth
   primeCockpitApi(app)
   if (options.loadFails) {

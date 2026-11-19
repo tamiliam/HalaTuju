@@ -109,7 +109,6 @@ const ALLOWED: Entry[] = [
   ['app/admin/course-data/page.tsx', SUPER, 1, 'PLATFORM', 'course data is a platform page; the server refuses anyone else'],
   ['app/admin/scholarship/page.tsx', "effRole === 'super'", 1, 'PLATFORM', 'the platform override beside the keys (a super holds every key)'],
   ['app/admin/scholarship/[id]/view.tsx', SUPER, 1, 'PLATFORM', 'cross-organisation super cases in the cockpit panels (the server\'s is_super)'],
-  ['app/admin/scholarship/[id]/view/QcPanel.tsx', "!!role?.is_super_admin || role?.role === 'super'", 1, 'PLATFORM', 'the super is exempt from QC separation, as on the server'],
   ['app/admin/auth/callback/page.tsx', `isSuper: ${SUPER}`, 1, 'PLATFORM', 'the sign-in record says whether a super signed in'],
   ['app/admin/login/page.tsx', `isSuper: ${SUPER}`, 1, 'PLATFORM', 'the sign-in record says whether a super signed in'],
   ['app/admin/contracts/[id]/page.tsx', SUPER, 1, 'PLATFORM', 'the deploy panel\'s platform-only actions'],
