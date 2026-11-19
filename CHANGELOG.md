@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: request #75 - the profile-complete email no longer promises an interview (2026-11-19)
+
+Owner-approved wording (19 Nov). Students who finish their profile now read "If your application goes forward, we'll invite you to a short interview", and the closing line adds "or news about your application". Malay changes the same way. The email golden was updated by hand for these four strings only; `test_email_branding.py` passes.
+
 ### test: request #75 on POST-AWARD-CUT - the reject door's access in every case stage (2026-11-19)
 
 Branch req75, rebased onto main 77a8e407f (POST-AWARD-CUT), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged). Services: api (tests only). No code change.

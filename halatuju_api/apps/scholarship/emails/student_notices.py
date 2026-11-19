@@ -134,7 +134,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
          'of a document, an extra document, or a short answer to a question — if so, it’ll appear in '
          'your Action Centre and we’ll email to let you know. Just reply inside the Action Centre; '
          'responding quickly helps your application move along.'),
-        ('We invite you to a short interview.', 'Once the review is settled, we’ll offer you three '
+        ('If your application goes forward, we’ll invite you to a short interview.', 'Once the review is settled, we’ll offer you three '
          'time slots — pick the one that suits you best. If you’re under 18, please choose a time a '
          'parent or guardian can join too, as they’ll need to be with you for the call. Please also '
          'check that your parent or guardian’s phone number on your profile is correct, as we will use '
@@ -147,7 +147,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
     ]
     en_after = ('For now, there’s nothing you need to arrange — just keep an eye on your email and '
                 'Action Centre. You’ll usually hear from us within about one to two weeks, whether '
-                'that’s a quick question or your invitation to interview.')
+                'that’s a quick question, your invitation to interview, or news about your application.')
     en_safety = (f'One note for your peace of mind: we’ll only ever ask about you and your studies. '
                  f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
                  f'does, it isn’t us — please tell us straight away at {_P.email_support}.')
@@ -164,7 +164,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
          'kepada soalan — jika ya, ia akan muncul di Pusat Tindakan anda dan kami akan menghantar '
          'e-mel untuk memberitahu anda. Balas sahaja di dalam Pusat Tindakan; membalas dengan cepat '
          'membantu permohonan anda bergerak.'),
-        ('Kami menjemput anda ke temu duga ringkas.', 'Setelah semakan selesai, kami akan menawarkan '
+        ('Jika permohonan anda diteruskan, kami akan menjemput anda ke temu duga ringkas.', 'Setelah semakan selesai, kami akan menawarkan '
          'anda tiga slot masa — pilih yang paling sesuai untuk anda. Jika anda di bawah 18 tahun, '
          'sila pilih masa yang membolehkan ibu bapa atau penjaga turut menyertai, kerana mereka '
          'perlu bersama anda semasa panggilan. Sila semak juga bahawa nombor telefon ibu bapa atau '
@@ -178,8 +178,8 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
     ]
     bm_after = ('Buat masa ini, tiada apa-apa yang perlu anda uruskan — pantau sahaja e-mel dan '
                 'Pusat Tindakan anda. Kebiasaannya anda akan mendengar daripada kami dalam masa '
-                'kira-kira satu hingga dua minggu, sama ada soalan ringkas atau jemputan temu duga '
-                'anda.')
+                'kira-kira satu hingga dua minggu, sama ada soalan ringkas, jemputan temu duga anda, '
+                'atau berita tentang permohonan anda.')
     bm_safety = (f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan '
                  f'pengajian anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
                  f'OTP atau PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami '

@@ -1,5 +1,9 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-19 — Request #75: the profile-complete email no longer promises an interview (owner)
+
+1. **Owner ruling, 19 Nov 2026.** Because an officer may now reject before interview, the students' "profile complete" email no longer says "We invite you to a short interview". English: "If your application goes forward, we'll invite you to a short interview." The closing line adds "or news about your application". The Malay version changes the same way ("Jika permohonan anda diteruskan, …"; "… atau berita tentang permohonan anda"). The email has no Tamil version. The text is in `apps/scholarship/emails/student_notices.py`. The email golden (`tests/fixtures/email_branding_golden.json`) was updated by hand for exactly these four strings (4 English and 2 Malay places), never through `UPDATE_EMAIL_GOLDEN`, and `test_email_branding.py` passes against the renderer.
+
 ## 2026-11-19 — Request #75 re-check 5
 
 One more commit on top of e4c21d021 (rebased onto main d42121307), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged; now after main's `0214_document_ocr_text`). Services: web. A fresh re-check of re-check 4 found nothing high or medium in the code (the medium, the migration graph, the lead fixed in the rebase). Two lows:
