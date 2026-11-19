@@ -9,7 +9,7 @@ info-block fields are read by ONE shared block reader (`_read_block`, S5): every
 taken by its SHAPE, in letter order, whatever the layout (label block then value block, label and
 value interleaved, label and value glued on one line). CONSERVATIVE: returns None (→ Gemini) unless
 it locks a coherent read incl. the fields the verdict needs. University (ua_offer) offers vary and
-stay on Gemini. PISMP deferred (new format).
+stay on Gemini, except the UMS template (OCR-first S1, `offer_parse_university`). PISMP deferred.
 
 Output mirrors the Gemini offer schema fields read by pathway_engine.student_offer_check:
   candidate_name, candidate_nric, candidate_nric_source, programme, programme_code, institution,
@@ -316,7 +316,10 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # title is required; identity from page 1 (`page1_text`).
 # 2.0.1 (A2.7a, 2026-11-09) — TD-474: a one-word line straight above a postcode line is the town, never
 # the wrapped end of the institution name.
-PARSER_VERSION = '2.0.1'
+# 2.1.0 (OCR-first S1, 2026-11-19) — a fourth family, the UMS university offer
+# (`offer_parse_university`), read from page 1's LAYOUT text on a digital PDF; its lock carries
+# ``rules_lane`` 'ua:UMS'. The three government families read exactly as before.
+PARSER_VERSION = '2.1.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)
@@ -349,28 +352,56 @@ def house_date(raw: str) -> str:
     return _normalise_reporting_date(raw)
 
 
-def parse_govt_offer(text: str, page1_text: str = None):
+def parse_govt_offer(text: str, page1_text: str = None, page1_layout: str = ''):
     """STPM/Matrikulasi/Polytechnic offer OCR text → the offer field dict, or None to defer to
     Gemini. Conservative: None unless the issuer and the offer title are recognised AND every
     required field is read. ``page1_text`` (a digital PDF's page-1 text layer) is where the
     identity is read (owner rule 2026-11-01: only the offer page counts); default ``text``."""
-    return diagnose(text, page1_text)['locked']
+    return diagnose(text, page1_text, page1_layout)['locked']
 
 
-def diagnose(text: str, page1_text: str = None) -> dict:
+def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str) -> dict:
+    """The UMS branch of `diagnose` (OCR-first S1). A digital PDF is read ONLY from its page-1 layout
+    text — its plain layer glues the name into the address — so a text layer without one never locks
+    (guard ``no_layout``). Every refusal is a guard; the letter then goes to the AI as before."""
+    from .offer_parse_university import LANE, read_ums
+    if out['portal']:
+        return out
+    if page1_text.strip() and not page1_layout.strip():
+        out['guard'] = 'no_layout'
+        return out
+    fields, reason = read_ums(page1_layout if page1_layout.strip() else text)
+    out['fields'], out['titled'] = fields, fields is not None
+    if reason.startswith('empty:'):
+        out['empty_required'] = reason[len('empty:'):].split(',')
+    elif reason:
+        out['guard'] = reason
+    else:
+        out['locked'] = {**fields, '_family': 'ums', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
+    return out
+
+
+def diagnose(text: str, page1_text: str = None, page1_layout: str = '') -> dict:
     """The parser's whole walk, for `parse_govt_offer` and the eval (`offer_replay`): ``{family,
     titled, portal, fields (the read before the exit checks, or None), empty_required, guard, locked}``
     — ``locked`` is the lock (the field dict) or None.
 
     ``page1_text`` is a digital PDF's page-1 text layer, given ONLY when ``text`` is that PDF's own text
     layer (`offer_exact` decides — review H1). The identity is read from it, AND from ``text``: when the
-    two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``)."""
+    two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``).
+    ``page1_layout`` is that page's LAYOUT text (`pdf_pages.pdf_page1_layout`) — read by the UMS family
+    only (`_diagnose_ums`)."""
     text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or ''))   # no-break spaces as spaces; no zero-width
     page1_text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_text or ''))
     up = text.upper()
     fam = _detect(up)
+    if not fam:
+        from .offer_parse_university import is_ums
+        fam = 'ums' if is_ums(up) else ''
     out = {'family': fam, 'titled': False, 'portal': bool(_PORTAL_TELL.search(text)), 'fields': None,
            'empty_required': [], 'guard': None, 'locked': None}
+    if fam == 'ums':
+        return _diagnose_ums(out, text, page1_text, _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or '')))
     if not fam:
         return out
     from .offer_parse_families import _FAMILY

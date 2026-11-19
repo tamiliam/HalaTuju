@@ -128,25 +128,42 @@ def page1_of(eval_dir, key, route):
         return page1_text_layer(fh.read(), 'application/pdf')
 
 
-def parser_diagnosis(text, route='vision', page1_layer='', profile_nric=''):
+def page1_layout_of(eval_dir, key, route):
+    """Page 1's LAYOUT text (`pdf_pages.pdf_page1_layout`) exactly as `offer_exact.exact_offer_read`
+    derives it — only for a text-layer letter the UMS family would read; '' otherwise (OCR-first S1)."""
+    if route != 'text_layer':
+        return ''
+    path = os.path.join(eval_dir, 'fixtures', 'offer_letter', key + '.pdf')
+    if not os.path.exists(path):
+        return ''
+    from apps.scholarship.offer_parse_university import is_ums
+    from apps.scholarship.pdf_pages import pdf_page1_layout
+    with open(path, 'rb') as fh:
+        data = fh.read()
+    page1 = page1_text_layer(data, 'application/pdf')
+    return pdf_page1_layout(data) if page1.strip() and is_ums(page1.upper()) else ''
+
+
+def parser_diagnosis(text, route='vision', page1_layer='', profile_nric='', page1_layout=''):
     """Why the Exact read locks or not — {detected, titled, empty_required, guard, locked, fields}.
     The parser's own walk (`offer_parse.diagnose`), then `offer_exact.exact_read` as production derives
     its inputs (a text-layer ``route`` reads the identity from ``page1_layer``): guard `no_page1_layer`
     when that page has none, `ic_guard` when the IC guard refuses the parser's IC. Never a copy of the rules."""
     from_layer = route == 'text_layer'
-    d = offer_parse.diagnose(text, page1_layer if from_layer else None)
-    ex = exact_read(text, from_text_layer=from_layer, page1_layer=page1_layer, profile_nric=profile_nric)
+    d = offer_parse.diagnose(text, page1_layer if from_layer else None, page1_layout if from_layer else '')
+    ex = exact_read(text, from_text_layer=from_layer, page1_layer=page1_layer, profile_nric=profile_nric,
+                    page1_layout=page1_layout)
     guard = ('no_page1_layer' if from_layer and not (page1_layer or '').strip() and d['locked'] else
              d['guard'] or ('ic_guard' if d['locked'] and ex is None else None))
     return {'detected': d['family'], 'titled': d['titled'], 'empty_required': d['empty_required'],
             'guard': guard, 'locked': ex is not None, 'fields': ex['fields'] if ex else None}
 
 
-def replay_letter(text, route, stored_fields, profile_nric='', page1_layer=''):
+def replay_letter(text, route, stored_fields, profile_nric='', page1_layer='', page1_layout=''):
     """The replay record for one letter (see the module docstring)."""
     stored_fields = stored_fields if isinstance(stored_fields, dict) else {}
     usable = len((text or '').strip()) >= MIN_TEXT
-    diag = (parser_diagnosis(text, route, page1_layer, profile_nric) if usable else
+    diag = (parser_diagnosis(text, route, page1_layer, profile_nric, page1_layout) if usable else
             {'detected': '', 'titled': False, 'empty_required': [], 'guard': None, 'locked': False,
              'fields': None})
     if diag['locked']:
@@ -216,7 +233,8 @@ def replay_corpus(eval_dir, write=False):
         text, route = production_text(snap, key)
         record = replay_letter(text, route, vf.get('fields'),
                                profile_nric=(context.get(key) or {}).get('profile_nric') or '',
-                               page1_layer=page1_of(eval_dir, key, route))
+                               page1_layer=page1_of(eval_dir, key, route),
+                               page1_layout=page1_layout_of(eval_dir, key, route))
         answer, problems = orc._read_answer(eval_dir, key)   # the family, as the scorer takes it
         family = orc.offer_family(vf, answer if isinstance(answer, dict) and not problems else None)
         kind = input_kind3(eval_dir, key, route)

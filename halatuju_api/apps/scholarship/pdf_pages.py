@@ -16,7 +16,7 @@ import io
 import logging
 import re
 import threading
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from typing import NamedTuple, Optional
 
 from . import pdf_pdfium_check, pdf_render_check, pdfium_run, pdfium_worker
@@ -547,6 +547,24 @@ def pdf_page_texts(data: bytes, max_pages: int) -> list:
     if read.texts is None:
         return []
     return [t.strip() for t in read.texts[:n]] + [''] * (n - len(read.texts[:n]))
+
+
+def pdf_page1_layout(data: bytes) -> str:
+    """Page 1's text in LAYOUT order (pypdf ``extraction_mode='layout'``: a label and its value on one line,
+    columns kept apart) — read by the UMS offer reader only (OCR-first S1, 2026-11-19), whose plain layer
+    glues the name into the address. '' unless page 1 passes the same visibility check as its plain layer
+    (`pdf_page_texts`) AND the layout holds exactly the same characters as that checked layer (spacing
+    aside), so the layout can never show text the visible-page check did not see. Any failure is ''."""
+    texts = pdf_page_texts(data, 1)
+    plain = texts[0] if texts else ''
+    if not plain:
+        return ''
+    try:
+        layout = _open_pdf(data).pages[0].extract_text(extraction_mode='layout') or ''
+    except Exception:  # pypdf raises many kinds on a damaged file; no layout is the safe answer
+        return ''
+    same = Counter(re.sub(r'\s', '', layout)) == Counter(re.sub(r'\s', '', plain))
+    return layout if same else ''
 
 
 def pdf_page_text(data: bytes, max_pages: int) -> str:

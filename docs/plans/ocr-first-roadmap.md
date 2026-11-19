@@ -131,8 +131,8 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
   - **`offer_course_match.py`:** add the UMS hostel names to `letter_place`, so the issuer (UMS) stands in for a hostel line, and match on the **base name / bracket menu** (from the base branch). The UPU code is extra evidence only.
   - **`catalogue_levels.py`:** refusals for level and specialisation stay as they are.
   - **`offer_exact.py`:** route ua_offer letters from UMS through the parser before AI.
-  - **`field_extraction._read_offer_letter`:** check the gate, then use the rules or fall back to `read_offer` (2.6.0).
-- **Version:** `OFFER_READER_VERSION` 2.6.0 → **2.7.0**. Record `rules_lane='ua:UMS'`.
+  - **`field_extraction._read_offer_letter`:** check the gate, then use the rules or fall back to `read_offer` (the AI read).
+- **Version:** `OFFER_READER_VERSION` 2.7.0 → **2.8.0** (S-visible took 2.7.0). Record `rules_lane='ua:UMS'`.
 - **Tests:** a parser unit test (synthetic text), a hostel-to-issuer test, catalogue uniqueness (menu base / one option / two options → none), a gate fall-through test, and regression on the existing offer tests and the A34 golden verdicts.
 - **Gate:** the S0 harness on the UMS held-out letters passes Gate 1. `offer_parse_check` and `offer_genuineness_check` are unchanged on the other families.
 - **Stays AI:** UMS letters that fail Gate 2, and every other university.
@@ -144,14 +144,14 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
   - A layout reader for each university in `offer_parse_university.py`.
   - UiTM's own local course code is already handled in `offer_course_match`, and is extra evidence only.
   - Each lane is switched on only if it passes Gate 1 with at least 20 held-out letters. A lane short of 20 stays AI and is listed.
-- **Version:** 2.8.0.
+- **Version:** 2.9.0.
 - **Tests and gate:** as for S1, for each lane.
 - **Stays AI:** lanes under the threshold, private universities and the PISMP letters (deferred).
 - **Complexity:** medium.
 
 ### OCR-14 (was S3): the remaining public universities (UKM, UTHM, UTeM, UNIMAS, UMK and the rest of the 20)
 - **Scope:** the same pattern. Most of these lanes have **fewer than 20 letters**, so the likely result is "built, measured, stays AI until enough letters arrive". The sprint ships the readers with their switches off, plus a monthly line in the dry-run report showing when each lane reaches 20.
-- **Version:** 2.9.0.
+- **Version:** 2.10.0.
 - **Complexity:** medium. **Option:** drop or postpone this sprint if S2 shows small lanes are not worth it.
 
 ### OCR-3 (was S4): the SPM slip gate fix (free, rules)

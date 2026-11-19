@@ -157,11 +157,12 @@ def offer_record(eval_dir, key, context, heldout, matcher):
     family = orc.offer_family(stored_vf, answer)
     text, route = rp.production_text(snap, key)
     ex = exact_read(text, from_text_layer=route == 'text_layer', page1_layer=rp.page1_of(eval_dir, key, route),
+                    page1_layout=rp.page1_layout_of(eval_dir, key, route),
                     profile_nric=(context.get(key) or {}).get('profile_nric') or '')
     fields = ex['fields'] if ex else None
     rec = {'lane': offer_lane(family, answer), 'family': family, 'split': 'heldout' if key in heldout else 'dev',
            'has_truth': answer is not None, 'real_offer': bool(answer) and answer.get('is_offer_letter') in REAL_OFFER,
-           'locked': fields is not None, 'rules_exist': family in orc.KNOWN_FORMAT_FAMILIES,
+           'locked': fields is not None, 'rules_exist': orc.rules_read(family, answer),
            'outcomes': None, 'ai': None, 'course': None, 'course_wrong': False}
     if fields is None:
         return rec

@@ -224,14 +224,17 @@ def _read_offer_letter(doc, ocr, _o, image_fn):
     """``(ex, image)``. STANDARDISED government offers (STPM / Matrikulasi / Polytechnic) read
     DETERMINISTICALLY from the OCR text — `offer_exact` (S5): the parser, the IC guard, the merge over
     the prior read; None unless it locks. Every other letter goes to the Gemini IMAGE read —
-    `offer_reader` (S4)."""
-    from ..offer_exact import exact_offer_read
+    `offer_reader` (S4). A UNIVERSITY rules read (OCR-first S1: UMS) stands only when its lane is
+    switched on and the catalogue match is unique (`offer_exact.rules_lane_open`); else the AI reads it."""
+    from ..offer_exact import exact_offer_read, rules_lane_open
     image = image_fn()
     _r = ocr if (ocr is not None) else _v.ocr_document(doc)
     _otext = (_o.get('text') if _o.get('text') is not None else (_r or {}).get('text', '')) or ''
     _ctx = _offer_context(doc, _otext)
     ex = exact_offer_read(_otext, prior=getattr(doc, 'vision_fields', None), image=image,
                           content_type=doc.content_type, **_ctx)
+    if ex is not None and not rules_lane_open(ex):
+        ex = None
     if ex is None:
         ex = (_v.extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type, **_ctx)
               if image is not None else _v.extract_document_fields(_otext, doc.doc_type, **_ctx))

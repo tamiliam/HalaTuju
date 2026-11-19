@@ -97,6 +97,10 @@ confidence threshold (the owner's long-term direction) can slot in front of them
 INVISIBLE (a scanner app's OCR overlay on a photo, render mode 3 / 7) has no text layer
 (`pdf_pages.pdf_page_texts`, per page): its text is never shown, and the second read of such a page 1
 is the page-1 image, as for a scanned PDF. Drawn text is shown as before. Prompt and schema unchanged.
+2.8.0 — OCR-FIRST S1 (2026-11-19). A UMS offer letter can be read by fixed rules first
+(`offer_parse_university`, lane 'ua:UMS'); the AI reader is the fallback whenever the rules do not lock,
+the lane switch (env `OCR_FIRST_LANES`) is off, or the catalogue match is not unique. Prompt and
+schema unchanged.
 
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in
@@ -113,7 +117,7 @@ import re
 logger = logging.getLogger(__name__)
 
 #: Semantic version of the AI offer reader — see the module docstring.
-OFFER_READER_VERSION = '2.7.0'
+OFFER_READER_VERSION = '2.8.0'
 #: Pages of a PDF shown to Gemini: an e-registration slip can sit in front of the offer and the
 #: reporting date can be on page 2 (owner notes, S1); later pages are mostly reply forms.
 MAX_PAGES = 3

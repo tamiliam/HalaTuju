@@ -114,6 +114,17 @@ FAMILIES = ('stpm', 'matriculation', 'polytechnic', 'pismp', 'uitm', 'other_univ
             'other')
 #: The families the fixed-format reader (`offer_parse.parse_govt_offer`) handles.
 KNOWN_FORMAT_FAMILIES = ('stpm', 'matriculation', 'polytechnic')
+#: The universities the rules read too (OCR-first S1, `offer_parse_university`): the answer's tidied
+#: institution, lower case (the dry run's lane name) -> the lock's ``rules_lane``.
+RULES_LANES = {'universiti malaysia sabah': 'ua:UMS'}
+
+
+def rules_read(family, answer) -> bool:
+    """True when the rules read this letter's kind: a fixed-format family, or a university in `RULES_LANES`."""
+    if family in KNOWN_FORMAT_FAMILIES:
+        return True
+    name = tidy_institution((answer or {}).get('institution_as_printed') or '')
+    return family in ('uitm', 'other_university') and name.lower() in RULES_LANES
 CORE = ('name', 'nric', 'institution', 'programme', 'intake', 'reporting_date')
 #: Scored, not in "fully exact". `campus` on every letter; `specialisation` only where the
 #: answer has one.

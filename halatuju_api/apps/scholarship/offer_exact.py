@@ -72,24 +72,59 @@ def merge_over(prior_fields, govt: dict) -> dict:
     return out
 
 
-def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profile_nric='') -> dict | None:
+def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profile_nric='',
+               page1_layout='') -> dict | None:
     """The Exact read from what production derived: ``from_text_layer`` — ``text`` is a digital PDF's own
-    text layer — and that PDF's ``page1_layer``. ``prior`` is the stored ``vision_fields``."""
+    text layer — and that PDF's ``page1_layer`` (and its LAYOUT text, ``page1_layout``, which only the UMS
+    family reads — OCR-first S1). ``prior`` is the stored ``vision_fields``. A university lock names its
+    lane (``rules_lane``, e.g. 'ua:UMS') on the result and in ``offer_reader_inputs``; '' otherwise."""
     from .offer_ic import guard_nric
     from .offer_parse import parse_govt_offer
     if from_text_layer and not (page1_layer or '').strip():
         return None                              # page 1 is a scan: no page-1 identity to read (H2)
     page1 = page1_layer if from_text_layer else ''
-    govt = parse_govt_offer(text, page1_text=page1 or None)
+    govt = parse_govt_offer(text, page1_text=page1 or None, page1_layout=page1_layout if from_text_layer else '')
     if govt is None:
         return None
     govt.pop('_family', None)
+    lane = govt.pop('rules_lane', '')
     check = guard_nric(govt, profile_nric=profile_nric, page1_text=page1 or text or '')
     if not (govt.get('candidate_nric') or '').strip():
         return None
     prior_fields = prior.get('fields') if isinstance(prior, dict) else None
+    inputs = {'reader': 'deterministic', 'nric_check': check, **({'rules_lane': lane} if lane else {})}
     return {'fields': merge_over(prior_fields, govt), 'warnings': [], 'error': '', 'capture': 'deterministic',
-            'offer_reader_inputs': {'reader': 'deterministic', 'nric_check': check}}
+            'rules_lane': lane, 'offer_reader_inputs': inputs}
+
+
+def ocr_first_lanes() -> tuple:
+    """The rules lanes switched ON (OCR-first S1, 2026-11-19): the env var ``OCR_FIRST_LANES``, a comma
+    list ("ua:UMS"); a test sets ``settings.OCR_FIRST_LANES``. Empty by default: every lane starts OFF and
+    is switched on only after it passes Gate 1 on held-out letters (docs/plans/ocr-first-roadmap.md).
+    Read here, not in settings/base.py, which is at its size allowance (`test_code_standards`)."""
+    import os
+    from django.conf import settings
+    got = getattr(settings, 'OCR_FIRST_LANES', None)
+    if got is None:
+        got = os.environ.get('OCR_FIRST_LANES', '').split(',')
+    return tuple(v.strip() for v in got if v and v.strip())
+
+
+def rules_lane_open(ex) -> bool:
+    """Gate 2's last checks for a UNIVERSITY rules read (OCR-first S1): its lane is switched on
+    (`ocr_first_lanes`, default none) AND the catalogue names exactly ONE course for the letter
+    (`offer_course_match.match_offer_course`, which reads the UPU code as extra evidence only). A
+    government-family read (no ``rules_lane``) is unaffected. False sends the letter to the AI reader."""
+    lane = (ex or {}).get('rules_lane') or ''
+    if not lane:
+        return True
+    if lane not in ocr_first_lanes():
+        return False
+    from .offer_course_match import letter_institution, match_offer_course, programme_line
+    f = ex.get('fields') or {}
+    return match_offer_course(programme_line(f.get('programme'), f.get('programme_code')),
+                              letter_institution(f.get('institution'), f.get('campus')),
+                              f.get('issuer') or '') is not None
 
 
 def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_nric='',
@@ -101,4 +136,10 @@ def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_n
         return None                              # a PDF whose bytes are not here: no page 1 to read (H2)
     layer, page1 = pdf_layers(image, content_type)
     from_layer = bool(layer.strip()) and layer.strip() == (text or '').strip()
-    return exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric)
+    from .offer_parse_university import is_ums
+    layout = ''
+    if from_layer and page1.strip() and is_ums((text or '').upper()):
+        from .pdf_pages import pdf_page1_layout
+        layout = pdf_page1_layout(image)
+    return exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric,
+                      page1_layout=layout)
