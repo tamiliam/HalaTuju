@@ -1,8 +1,9 @@
 # Turnstile / captcha rollout (security item C)
 
-Cloudflare Turnstile protects every Supabase Auth entry point (student anonymous
-sign-in, sponsor/admin password sign-in, sign-up, password reset) and the public
-contact form. The widget runs **invisibly** (Managed mode, `execution: 'execute'`)
+Cloudflare Turnstile protects every Supabase Auth password entry point (sponsor/admin
+password sign-in, sponsor sign-up, password reset) and the public contact form. (Student
+anonymous sign-in was one of them until 2026-11-19; the site no longer creates anonymous
+sessions — see "Captcha repair" below.) The widget runs **invisibly** (Managed mode, `execution: 'execute'`)
 — real users see nothing; only flagged traffic gets a visible challenge.
 
 **Keys** (Cloudflare dashboard → Turnstile, account `tamiliam@gmail.com`):
@@ -14,8 +15,8 @@ contact form. The widget runs **invisibly** (Managed mode, `execution: 'execute'
 ## Why the order matters
 
 Supabase's "Enable Captcha protection" toggle is **project-wide**: the instant it is
-on, EVERY auth call (including the automatic anonymous sign-in on first page load)
-must carry a valid token or it fails. So the frontend that *sends* tokens must be
+on, EVERY auth call must carry a valid token or it fails. (Until 2026-11-19 that included
+an automatic anonymous sign-in on every first page load; that sign-in is gone.) So the frontend that *sends* tokens must be
 live **before** the toggle is flipped. Likewise, anon INSERT on `contact_submissions`
 must stay open until the form is posting to the Edge Function instead.
 
@@ -42,7 +43,8 @@ must stay open until the form is posting to the Edge Function instead.
    **secret key** → Save. This is the enforcing step. Do it LAST.
 
 5. **Smoke every flow** immediately after step 4:
-   - First visit (anonymous sign-in succeeds, no visible captcha).
+   - First visit: no visible captcha, and no anonymous sign-in request (`/auth/v1/signup`)
+     in the browser's network tab (since 2026-11-19).
    - Sponsor login + register + password reset.
    - Admin login + password reset.
    - Contact form submit (success) — and confirm a direct anon insert now fails.
@@ -58,5 +60,38 @@ must stay open until the form is posting to the Edge Function instead.
 
 - Google OAuth sign-in is exempt — Supabase does not enforce captcha on the OAuth
   redirect, so those buttons are unaffected.
-- `getTurnstileToken()` resolves `undefined` when the site key is absent, so local
-  dev and any misconfiguration degrade gracefully rather than locking users out.
+- With no site key (local dev), `getTurnstileResult()` returns `off` and the doors call
+  Supabase without a token, which works only while the toggle is off.
+
+## Captcha repair (2026-11-19)
+
+Owner decision 19 Nov: keep the toggle ON and fix the code. Before the fix, a token fetch
+that failed for any reason (script blocked, slow network, 8 s timeout) resolved to
+`undefined`, the door called Supabase anyway, and the visitor read Supabase's raw
+"captcha protection: request disallowed".
+
+- **Typed outcome** (`halatuju-web/src/lib/turnstile.ts`, `getTurnstileResult`):
+  `ok` (token), `off` (no site key), `blocked` (the script never loaded within 10 s, or
+  was refused: ad blocker, firewall, network), `failed` (the challenge errored or timed
+  out after one retry). `getTurnstileToken()` stays for the contact form.
+- **Budgets:** script load 10 s; silent challenge 15 s per attempt (was 8 s; a Managed
+  pass makes several round trips to Cloudflare, and on congested mobile data those alone
+  ran past 8 s); 2 attempts (reset + execute); a visible challenge gets 120 s and is not
+  retried if nobody solves it.
+- **Expiry:** `refresh-expired: 'manual'` plus an `expired-callback` that resets the
+  widget; a token is never kept between calls. If Supabase still refuses a token
+  (lapsed in flight, or duplicate), the door asks for one fresh token and tries once more.
+- **The doors** (`halatuju-web/src/lib/captchaAuth.ts`, `withCaptcha`): admin/partner
+  sign-in and reset, sponsor sign-in, sign-up and reset. On `blocked` / `failed` they
+  return `error.code` `captcha_blocked` / `captcha_failed` and do **not** call Supabase.
+  The screens show plain words from `messages/*.json` (`errors.captchaBlocked`,
+  `errors.captchaFailed`, plus `errors.captchaGoogle` where the door offers Google).
+- **Guest session removed:** `AuthProvider` no longer calls Supabase's anonymous sign-in
+  on page load (it cost one Turnstile challenge and one auth row per visitor). The API
+  ignores anonymous tokens, so nothing changes for visitors; tokenless API calls fall
+  under the per-IP anonymous throttle. Browsers that already hold an anonymous session
+  keep it.
+- **Unchanged:** Google sign-in (OAuth carries no captcha) and the contact form /
+  `contact-submit` Edge Function.
+- **What a support reply can say:** the words on screen already tell the visitor to turn
+  off the ad blocker, try another browser or mobile data, or use Google where offered.

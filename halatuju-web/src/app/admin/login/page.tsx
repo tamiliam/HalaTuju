@@ -14,6 +14,7 @@ import { enforceCanonicalOrigin } from '@/lib/oauthOrigin'
 import { adminLanding } from '@/lib/adminLanding'
 import { pendingPasswordChange, tempPasswordExpired } from '@/lib/invitations'
 import { useT } from '@/lib/i18n'
+import { captchaErrorText } from '@/lib/captchaAuth'
 import { effectiveRole } from '@/lib/navigation'
 
 type Step = 'login' | 'forgot' | 'forgot-sent'
@@ -48,8 +49,11 @@ export default function AdminLoginPage() {
     const { data, error } = await adminSignInWithPassword(email, password)
 
     if (error) {
-      setError(error.message)
-      setHint(true)
+      // A failed security check gets plain words (never Supabase's raw "captcha protection"),
+      // and no "you were invited" hint — the password was never even tried.
+      const captcha = captchaErrorText(error, t, { offersGoogle: true })
+      setError(captcha ?? error.message)
+      setHint(!captcha)
       setLoading(false)
       return
     }
@@ -137,7 +141,7 @@ export default function AdminLoginPage() {
 
     const { error } = await adminResetPassword(email)
     if (error) {
-      setError(error.message)
+      setError(captchaErrorText(error, t, { offersGoogle: true }) ?? error.message)
       setLoading(false)
       return
     }

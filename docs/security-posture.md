@@ -41,6 +41,8 @@
 
 **Also shipped with C:** Cloudflare Turnstile captcha (invisible, Managed mode) now gates **every** Supabase Auth entry point — student anonymous sign-in, sponsor/admin sign-in, sign-up, password reset — enforced via the project-wide captcha toggle. Rollout/rollback: `halatuju_api/docs/security/turnstile-rollout.md`.
 
+**Captcha repair (2026-11-19).** The captcha toggle stays ON. Three changes in the web app: (1) the student site no longer creates an anonymous Supabase session on every page load (nothing read it: the API ignores anonymous tokens, and every student screen treats "no session" as "anonymous"); a visitor with no session now calls the API with no token and falls under the per-IP anonymous throttle. (2) The password doors (admin/partner sign-in and reset, sponsor sign-in, sign-up and reset) never call Supabase without a Turnstile token: a blocked script or a failed challenge stops the call and shows plain words (en/ms/ta) instead of Supabase's raw "captcha protection: request disallowed"; a Supabase captcha refusal gets one fresh token and one retry. (3) Turnstile itself: 15 s silent budget per attempt (was 8 s), one retry, a 10 s script-load budget that tells "blocked" apart from "failed", and expired tokens are reset, never reused. Google sign-in and the contact form are unchanged. Detail: `halatuju_api/docs/security/turnstile-rollout.md`.
+
 **Remaining:** nothing on this backlog — all items closed. (Standing recommendation: an independent pen-test before scaling the user base.)
 
 ## Write integrity — correction 2026-10-05

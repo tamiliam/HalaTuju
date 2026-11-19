@@ -1,5 +1,4 @@
 import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
-import { getTurnstileToken } from '@/lib/turnstile'
 
 let _supabase: AuthOnlyClient | null = null
 
@@ -70,15 +69,8 @@ export async function getUser() {
   return { user, error }
 }
 
-export async function signInAnonymously() {
-  // Supabase captcha protection (once enabled) enforces a token on anonymous
-  // sign-ins too. Fetch one invisibly; undefined when Turnstile is unconfigured.
-  const captchaToken = await getTurnstileToken('anonymous')
-  const { data, error } = await getSupabase().auth.signInAnonymously(
-    captchaToken ? { options: { captchaToken } } : undefined,
-  )
-  return { data, error }
-}
+// `signInAnonymously` was removed in the 2026-11-19 captcha repair: the AuthProvider no longer
+// mints an anonymous session on page load, and nothing else called it (see auth-context.tsx).
 
 export async function linkIdentity(provider: 'google') {
   const { data, error } = await getSupabase().auth.linkIdentity({

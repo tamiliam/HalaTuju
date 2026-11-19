@@ -13,6 +13,7 @@ import {
 import { enforceSingleScope, consumeSuperseded } from '@/lib/sessionPolicy'
 import { enforceCanonicalOrigin } from '@/lib/oauthOrigin'
 import { useT } from '@/lib/i18n'
+import { captchaErrorText } from '@/lib/captchaAuth'
 
 type Step = 'login' | 'forgot' | 'forgot-sent'
 
@@ -43,7 +44,7 @@ export default function SponsorLoginPage() {
     setError(null)
     const { data, error } = await sponsorSignInWithPassword(email, password)
     if (error) {
-      setError(error.message)
+      setError(captchaErrorText(error, t, { offersGoogle: true }) ?? error.message)
       setLoading(false)
       return
     }
@@ -72,7 +73,7 @@ export default function SponsorLoginPage() {
     setError(null)
     const { error } = await sponsorResetPassword(email)
     if (error) {
-      setError(error.message)
+      setError(captchaErrorText(error, t, { offersGoogle: true }) ?? error.message)
       setLoading(false)
       return
     }

@@ -28,7 +28,6 @@ jest.mock('next/navigation', () => ({ usePathname: () => '/dashboard' }))
 jest.mock('@/lib/api', () => ({ getProfile: jest.fn(() => Promise.resolve({})) }))
 jest.mock('@/lib/supabase', () => ({
   getSession: () => Promise.resolve({ session: mockSession }),
-  signInAnonymously: jest.fn(() => Promise.resolve({ data: { session: null } })),
   getSupabase: () => ({
     auth: {
       onAuthStateChange: (cb: Listener) => {
@@ -113,7 +112,33 @@ describe('AuthProvider', () => {
   })
 
   it('a page load with no session at all (offline) wipes nothing', async () => {
+    // Captcha repair (2026-11-19): "offline" used to be simulated by the anonymous mint failing;
+    // there is no mint any more, so the browser says it is offline.
+    const onLine = jest.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      holdGradesOf('user-a')
+      mockSession = null
+      render(<AuthProvider><div>app</div></AuthProvider>)
+      await waitFor(() => expect(listener).not.toBeNull())
+      await act(async () => { await Promise.resolve() })
+      expect(localStorage.getItem(KEY_GRADES)).not.toBeNull()
+    } finally {
+      onLine.mockRestore()
+    }
+  })
+
+  it("a page load with no session (online) drops the last account's tagged grades, with no anonymous mint", async () => {
+    // Captcha repair (2026-11-19): the wipe the anonymous mint's claim used to do, kept without it.
     holdGradesOf('user-a')
+    mockSession = null
+    render(<AuthProvider><div>app</div></AuthProvider>)
+    await waitFor(() => expect(localStorage.getItem(KEY_GRADES)).toBeNull())
+    expect(localStorage.getItem(KEY_OWNER)).toBeNull()
+    expect(localStorage.getItem(KEY_LOCALE)).toBe('ta')
+  })
+
+  it("a page load with no session keeps a signed-out visitor's own UNTAGGED grades", async () => {
+    holdGradesOf(null)
     mockSession = null
     render(<AuthProvider><div>app</div></AuthProvider>)
     await waitFor(() => expect(listener).not.toBeNull())

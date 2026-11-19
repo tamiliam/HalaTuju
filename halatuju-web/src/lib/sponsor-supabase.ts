@@ -1,5 +1,5 @@
 import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
-import { getTurnstileToken } from '@/lib/turnstile'
+import { withCaptcha } from '@/lib/captchaAuth'
 import { KEY_SPONSOR_PENDING } from '@/lib/storage'
 
 let _sponsorSupabase: AuthOnlyClient | null = null
@@ -32,14 +32,17 @@ export function getSponsorSupabase(): AuthOnlyClient {
   return _sponsorSupabase
 }
 
+// Captcha rule (lib/captchaAuth.ts): no Supabase call without a token when captcha is on; a
+// failed check comes back as `error.code` 'captcha_blocked' | 'captcha_failed'.
 export async function sponsorSignInWithPassword(email: string, password: string) {
-  const captchaToken = await getTurnstileToken('sponsor_signin')
-  const { data, error } = await getSponsorSupabase().auth.signInWithPassword({
-    email,
-    password,
-    options: captchaToken ? { captchaToken } : undefined,
-  })
-  return { data, error }
+  return withCaptcha('sponsor_signin', async (captchaToken) => {
+    const { data, error } = await getSponsorSupabase().auth.signInWithPassword({
+      email,
+      password,
+      options: captchaToken ? { captchaToken } : undefined,
+    })
+    return { data, error }
+  }, { data: { user: null, session: null } })
 }
 
 export async function sponsorSignUpWithPassword(
@@ -47,21 +50,22 @@ export async function sponsorSignUpWithPassword(
   password: string,
   fullName?: string,
 ) {
-  const captchaToken = await getTurnstileToken('sponsor_signup')
-  const { data, error } = await getSponsorSupabase().auth.signUp({
-    email,
-    password,
-    options: {
-      // Stash the name so it survives an email-confirmation gap (no session yet).
-      data: fullName ? { full_name: fullName } : undefined,
-      // Confirmation lands on a dedicated handler that logs the sponsor in when it can
-      // (same browser) and otherwise sends them to sign in with a friendly notice —
-      // never the raw PKCE error a cross-device click used to produce.
-      emailRedirectTo: `${window.location.origin}/sponsor/auth/confirm`,
-      ...(captchaToken ? { captchaToken } : {}),
-    },
-  })
-  return { data, error }
+  return withCaptcha('sponsor_signup', async (captchaToken) => {
+    const { data, error } = await getSponsorSupabase().auth.signUp({
+      email,
+      password,
+      options: {
+        // Stash the name so it survives an email-confirmation gap (no session yet).
+        data: fullName ? { full_name: fullName } : undefined,
+        // Confirmation lands on a dedicated handler that logs the sponsor in when it can
+        // (same browser) and otherwise sends them to sign in with a friendly notice —
+        // never the raw PKCE error a cross-device click used to produce.
+        emailRedirectTo: `${window.location.origin}/sponsor/auth/confirm`,
+        ...(captchaToken ? { captchaToken } : {}),
+      },
+    })
+    return { data, error }
+  }, { data: { user: null, session: null } })
 }
 
 export async function sponsorSignInWithGoogle() {
@@ -75,14 +79,15 @@ export async function sponsorSignInWithGoogle() {
 }
 
 export async function sponsorResetPassword(email: string) {
-  const captchaToken = await getTurnstileToken('sponsor_reset')
-  const { error } = await getSponsorSupabase().auth.resetPasswordForEmail(email, {
-    // Land on the set-a-new-password page (was /sponsor/login, which had no form to
-    // actually change the password — the reset dead-ended).
-    redirectTo: `${window.location.origin}/sponsor/auth/reset`,
-    ...(captchaToken ? { captchaToken } : {}),
-  })
-  return { error }
+  return withCaptcha('sponsor_reset', async (captchaToken) => {
+    const { error } = await getSponsorSupabase().auth.resetPasswordForEmail(email, {
+      // Land on the set-a-new-password page (was /sponsor/login, which had no form to
+      // actually change the password — the reset dead-ended).
+      redirectTo: `${window.location.origin}/sponsor/auth/reset`,
+      ...(captchaToken ? { captchaToken } : {}),
+    })
+    return { error }
+  }, {})
 }
 
 export async function sponsorSignOut() {

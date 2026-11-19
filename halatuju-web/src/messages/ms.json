@@ -3230,7 +3230,10 @@
     "saveFailed": "Gagal menyimpan. Sila cuba lagi.",
     "tempPasswordExpired": "Kata laluan sementara anda telah tamat tempoh. Sila minta orang yang menambah anda untuk menghantar semula butiran log masuk anda.",
     "accessWithdrawn": "Akses anda telah ditarik balik. Sila hubungi orang yang menjemput anda.",
-    "invitedHint": "Jika anda dijemput dan ini tidak lagi berfungsi, sila hubungi orang yang menjemput anda."
+    "invitedHint": "Jika anda dijemput dan ini tidak lagi berfungsi, sila hubungi orang yang menjemput anda.",
+    "captchaBlocked": "Kami tidak dapat memuatkan semakan keselamatan. Penyekat iklan, tembok api atau rangkaian anda mungkin menyekatnya. Sila matikan penyekat iklan anda, atau cuba pelayar lain atau data mudah alih.",
+    "captchaFailed": "Semakan keselamatan tidak selesai. Sila cuba lagi. Jika ini berulang, cuba pelayar lain, matikan penyekat iklan anda, atau tukar kepada data mudah alih.",
+    "captchaGoogle": "Anda juga boleh teruskan dengan Google."
   },
   "stpm": {
     "searchTitle": "Layari Kursus Ijazah STPM",

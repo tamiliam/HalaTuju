@@ -36,8 +36,9 @@ export function isPrivilegedConsolePath(pathname: string | null | undefined): bo
  * TWO REASONS, ONE EFFECT — and they are kept separate on purpose. A privileged console is inert
  * because it runs its own isolated auth (above). The design SANDBOX is inert because it must not
  * touch real auth infrastructure at all: it is handed to people outside the organisation, and
- * `AuthProvider` otherwise mints an anonymous Supabase user on mount — a real auth row created by
- * a design review.
+ * `AuthProvider` otherwise reads and listens to the real student session (and, until the
+ * 2026-11-19 captcha repair, minted an anonymous Supabase user on mount — a real auth row created
+ * by a design review). Kept: the sandbox still must not touch real auth.
  *
  * ⚠ Do NOT collapse this by adding '/sandbox' to `isPrivilegedConsolePath`. The sandbox is not a
  * privileged console, that predicate is read as a security statement elsewhere, and quietly

@@ -3230,7 +3230,10 @@
     "saveFailed": "Failed to save. Please try again.",
     "tempPasswordExpired": "Your temporary password has expired. Please ask whoever added you to re-send your sign-in details.",
     "accessWithdrawn": "Your access has been withdrawn. Please contact the person who invited you.",
-    "invitedHint": "If you were invited and this no longer works, please contact the person who invited you."
+    "invitedHint": "If you were invited and this no longer works, please contact the person who invited you.",
+    "captchaBlocked": "We could not load the security check. An ad blocker, a firewall or your network may be blocking it. Please turn off your ad blocker, or try another browser or mobile data.",
+    "captchaFailed": "The security check did not finish. Please try again. If it keeps happening, try another browser, turn off your ad blocker, or switch to mobile data.",
+    "captchaGoogle": "You can also continue with Google."
   },
   "stpm": {
     "searchTitle": "Browse STPM Degree Courses",

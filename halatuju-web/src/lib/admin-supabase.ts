@@ -1,5 +1,5 @@
 import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
-import { getTurnstileToken } from '@/lib/turnstile'
+import { withCaptcha } from '@/lib/captchaAuth'
 import { clearSignInDismissals } from '@/lib/topBanner'
 
 let _adminSupabase: AuthOnlyClient | null = null
@@ -30,14 +30,17 @@ export function getAdminSupabase(): AuthOnlyClient {
   return _adminSupabase
 }
 
+// Captcha rule (lib/captchaAuth.ts): no Supabase call without a token when captcha is on; a
+// failed check comes back as `error.code` 'captcha_blocked' | 'captcha_failed'.
 export async function adminSignInWithPassword(email: string, password: string) {
-  const captchaToken = await getTurnstileToken('admin_signin')
-  const { data, error } = await getAdminSupabase().auth.signInWithPassword({
-    email,
-    password,
-    options: captchaToken ? { captchaToken } : undefined,
-  })
-  return { data, error }
+  return withCaptcha('admin_signin', async (captchaToken) => {
+    const { data, error } = await getAdminSupabase().auth.signInWithPassword({
+      email,
+      password,
+      options: captchaToken ? { captchaToken } : undefined,
+    })
+    return { data, error }
+  }, { data: { user: null, session: null } })
 }
 
 export async function adminSignInWithGoogle() {
@@ -51,13 +54,14 @@ export async function adminSignInWithGoogle() {
 }
 
 export async function adminResetPassword(email: string) {
-  const captchaToken = await getTurnstileToken('admin_reset')
-  const { error } = await getAdminSupabase().auth.resetPasswordForEmail(email, {
-    // Land on the set-password page where the recovery session lets them choose a password.
-    redirectTo: `${window.location.origin}/admin/set-password`,
-    ...(captchaToken ? { captchaToken } : {}),
-  })
-  return { error }
+  return withCaptcha('admin_reset', async (captchaToken) => {
+    const { error } = await getAdminSupabase().auth.resetPasswordForEmail(email, {
+      // Land on the set-password page where the recovery session lets them choose a password.
+      redirectTo: `${window.location.origin}/admin/set-password`,
+      ...(captchaToken ? { captchaToken } : {}),
+    })
+    return { error }
+  }, {})
 }
 
 /** Set a new password on the CURRENT session (used by the set-password page after the user

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { captchaErrorText } from '@/lib/captchaAuth'
 import { sponsorSignUpWithPassword, sponsorSignInWithGoogle } from '@/lib/sponsor-supabase'
 import { registerSponsor } from '@/lib/api'
 import { checkPassword, SPONSOR_SOURCES, formatIntlPhone, isValidIntlPhone, toStoredPhone } from '@/lib/sponsorAuth'
@@ -52,7 +53,7 @@ export default function SponsorRegisterPage() {
 
     const { data, error } = await sponsorSignUpWithPassword(email.trim(), password, name.trim())
     if (error) {
-      setError(error.message)
+      setError(captchaErrorText(error, t, { offersGoogle: true }) ?? error.message)
       setLoading(false)
       return
     }

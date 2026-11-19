@@ -115,3 +115,19 @@ describe('a sign-in that fails says who to ask (staff lifecycle, 2026-10-09)', (
     expect(signOut).toHaveBeenCalled()
   })
 })
+
+describe('a failed security check shows plain words, never Supabase raw captcha text (captcha repair)', () => {
+  it('blocked: the blocked words plus the Google line, and no invited hint', async () => {
+    signIn.mockResolvedValue({ data: {}, error: { code: 'captcha_blocked', message: 'x', name: 'CaptchaError', status: 0 } })
+    await submit()
+    await waitFor(() => expect(screen.getByText('errors.captchaBlocked errors.captchaGoogle')).toBeTruthy())
+    expect(screen.queryByText('errors.invitedHint')).toBeNull()
+  })
+
+  it('a raw Supabase captcha refusal is mapped to the failed words', async () => {
+    signIn.mockResolvedValue({ data: {}, error: { message: 'captcha protection: request disallowed (timeout-or-duplicate)' } })
+    await submit()
+    await waitFor(() => expect(screen.getByText('errors.captchaFailed errors.captchaGoogle')).toBeTruthy())
+    expect(screen.queryByText(/captcha protection/)).toBeNull()
+  })
+})

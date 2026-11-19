@@ -415,6 +415,16 @@ Branch req75, not pushed. Migration `0215_pre_interview_reject` (additive). Serv
 - Docs: Org admin guide § *Rejecting before interview* and the Assigning section; FAQ (org admin); `docs/scholarship/role-matrix.md`.
 - Tests: `test_reject_before_interview.py` (26), `PreInterviewReject.test.tsx`, `PreInterviewCounts.test.tsx`, `applicationStatus.test.ts` (`displayStatus`), `applicationStatusDrift.test.ts` (the category), `page.phone.test.tsx` (plain text at Awaiting review), `teamTablesMatrix.test.ts` (the new Guide section), `test_org_fence.py` (classified).
 
+### fix: captcha repair - no raw captcha errors, no guest session on page load (2026-11-19)
+
+Branch captcha-repair, not pushed. Migration: none. Services: web. Owner decision 19 Nov: keep the Supabase captcha switch ON and repair the code. Google sign-in and the contact form are untouched.
+- **Turnstile (`lib/turnstile.ts`):** `getTurnstileResult()` returns a typed outcome (ok / off / blocked / failed) and never rejects. Silent budget 15 s per attempt (was 8 s; slow mobile networks ran past 8 s), one retry (reset + execute), a 10 s script-load budget so a silently dropped script reads as blocked, `refresh-expired: manual` with an expiry reset; a late token is dropped. A visible challenge gets 120 s and is not retried. `getTurnstileToken()` kept for the contact form.
+- **The doors (`lib/captchaAuth.ts`, `withCaptcha`):** admin/partner sign-in and reset, sponsor sign-in, sign-up and reset never call Supabase without a token when captcha is on. Blocked / failed return `captcha_blocked` / `captcha_failed`; a Supabase captcha refusal gets one fresh token and one more try, then `captcha_failed`.
+- **Words:** `errors.captchaBlocked`, `errors.captchaFailed`, `errors.captchaGoogle` in en / ms / ta (try another browser, turn off the ad blocker, use mobile data; "continue with Google" where the door offers it). The raw "captcha protection: request disallowed" is never shown. No layout change.
+- **Guest session:** the AuthProvider no longer creates an anonymous Supabase session on every page load (nothing read it; the API ignores anonymous tokens). `signInAnonymously` removed from `lib/supabase.ts`. The shared-phone wipe (TD-458) still runs on a load with no session while online; an existing anonymous session is kept.
+- **Tests:** turnstile (13 new: blocked, silent drop, timeout, retry then success, late token, expiry, no interactive retry), `captchaAuth.test.ts` (each door: no Supabase call without a token, the right code; the words in en / ms / ta), `guestSession.test.tsx`, shared-phone and admin login page cases.
+- **Docs:** `docs/security-posture.md`, `halatuju_api/docs/security/turnstile-rollout.md`.
+
 ### revert: Add source is back - withdrawn before it went live (2026-11-19)
 
 Owner, 19 Nov: the invite form already has "add a new source (name and short code)" (live since 30 Oct, bd22bfd7d), so the Add button on Sources is not needed. The three commits d6814f2ce, 79d00fee7 and dbbf1de88 are reverted; every file they touched is back to its live state. Nothing changes for users. TD-668 now names only the short-code check at the invite door. Migration: none.
