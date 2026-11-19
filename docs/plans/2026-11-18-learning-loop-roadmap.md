@@ -87,12 +87,12 @@ Nothing is merged. Nothing is published. **Left.** LL5 only.
 
 **Order of work.**
 1. Owner says "merge": the stack is brought up to date with `main`, the gates run again, then it goes to `main`.
-2. Owner applies the migration 0215 SQL by hand, does the three phone checks, then says "publish".
+2. Owner applies the migration 0218 SQL by hand, does the three phone checks, then says "publish".
    The publish goes in a release slot **outside** the A5 replay window (rule: no deploy during the replay).
    The learning-loop session sends the commit list to the HalaTuju lead before the publish.
 3. The HalaTuju lead (its plan, 2026-11-19): bring `a5` up to date with `main` and land R1 + R2 on `main` **before** the run;
    then a new step **R2b** (add the engine changes made after 14 Nov to the ruling catalogue; check the 25 adapters
-   that were tested on made-up data only; confirm the readers accept the new 0215 column); then R3 with the owner.
+   that were tested on made-up data only; confirm the readers accept the new 0218 column); then R3 with the owner.
    **The R3 date is not set.** The owner picks it after `a5` is on `main`. Until the HalaTuju lead sends the date, there is no no-deploy window.
    Steps 1-2 and step 3 do not depend on each other; only the publish and the replay run must not overlap.
    Whoever lands on `main` second brings their branch up to date. The overlap should be docs only (`CHANGELOG.md`, `docs/technical-debt.md`).
@@ -100,11 +100,11 @@ Nothing is merged. Nothing is published. **Left.** LL5 only.
    It adds one lens; it builds no second harness.
 
 **For the replay.** This stack changes no scoring logic and no engine answer, so it should add no old-vs-new difference.
-After migration 0215 the application table has one new column (`ai_verdict_context`).
+After migration 0218 the application table has one new column (`ai_verdict_context`).
 
 **Aligned with the OCR session (2026-11-19, on the owner's word).** The OCR session leads `docs/plans/ocr-first-roadmap.md`. Its open branch is `ocr-visible`: a PDF with an invisible text layer is read from the visible page (Cloud Vision), not from its hidden text.
 - **Objectives fit.** The OCR work makes the reader better. This stack measures it: LL3 and LL4 record which model version each verdict saw; the LL2 reason `read_wrong` and the LL2b QC disagreement are the **one** human feed for "the reader was wrong". The OCR session builds no feedback store of its own. LL5 will report the feed per model version.
-- **Overlap, measured with git.** Only `CHANGELOG.md` is changed by both. No shared code file. No migration clash (`ocr-visible` has none; 0215 stays here).
+- **Overlap, measured with git.** Only `CHANGELOG.md` is changed by both. No shared code file. No migration clash (`ocr-visible` has none; the LL migration stays here, renumbered 0218 after the requests work landed on main).
 - **The one real link is the LL3 guard.** `ocr-visible` moves genuineness `MODEL_VERSION` 1.29.0 to 1.31.0 and `OFFER_READER_VERSION` 2.6.0 to 2.7.0, and edits helper files that other models' digests may follow (`pdf_pages.py`, `spm_cert_parse.py`, `vision/ocr.py`, `vision/field_extraction.py`). Whoever lands on `main` second runs `test_model_versions.py` and `test_model_digest.py`, and for each model the guard names, bumps the version and its `model_versions/<model>.json` entry. Never re-seed a digest without a version bump.
 - **Answers do change on their side, for a narrow set** (new reads of invisible-layer PDFs; no automatic backfill). LL4 needs no change: the version bump is the marker. The OCR session tells the HalaTuju lead for the replay catalogue.
 - **Order.** `ocr-visible` aims for `main` around 20 Nov. Whoever lands second brings their branch up to date. This session tells the OCR session when LL3 is on `main`.
@@ -166,7 +166,7 @@ Open known gaps:
 
 ## Sprint LL4 — Record what fed each decision — DONE (2026-11-19; saved to `main` 2026-11-19, not published)
 
-Built: `apps/scholarship/verdict_context.py` builds a PII-free record `{schema, documents, models, fingerprint, key_check}`, stored in `ScholarshipApplication.ai_verdict_context` in the same save as `ai_verdict_snapshot`. The fingerprint is an HMAC over the live documents, the declared fields, the profile fields, the intake rules and the stage facts the engine reads (key derived from `SECRET_KEY`, no new env var). A record that cannot be built never blocks a decision (`{schema, error}`). No serializer lists the column. Old rows keep `{}` (no back-fill). Migration `0215_application_verdict_context` (additive, hand-written SQL in its docstring): THE OWNER APPLIES IT BEFORE THE PUBLISH, otherwise every application load fails. Detail: `CHANGELOG.md` (LL4 entry), the model's `help_text` and the migration docstring (there is no separate schema document).
+Built: `apps/scholarship/verdict_context.py` builds a PII-free record `{schema, documents, models, fingerprint, key_check}`, stored in `ScholarshipApplication.ai_verdict_context` in the same save as `ai_verdict_snapshot`. The fingerprint is an HMAC over the live documents, the declared fields, the profile fields, the intake rules and the stage facts the engine reads (key derived from `SECRET_KEY`, no new env var). A record that cannot be built never blocks a decision (`{schema, error}`). No serializer lists the column. Old rows keep `{}` (no back-fill). Migration `0218_application_verdict_context` (additive, hand-written SQL in its docstring): THE OWNER APPLIES IT BEFORE THE PUBLISH, otherwise every application load fails. Detail: `CHANGELOG.md` (LL4 entry), the model's `help_text` and the migration docstring (there is no separate schema document).
 
 Open known gaps:
 - The fingerprint covers this application's documents only; some helpers read the student's OTHER applications. Drafted.

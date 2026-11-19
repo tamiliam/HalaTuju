@@ -8,7 +8,7 @@ Five sprints, built on 18-19 November as one stack of branches (`ll1 -> ll3 -> l
 - **LL2 - one clear question.** The rating box now says "Check the four facts". A reviewer who fails a fact the AI called green taps one reason (five choices). A soft warning appears if a fact failed and the decision is accept. No migration.
 - **LL2b - the QC's second look.** On the QC step, a short "Facts in doubt" block. Doing nothing agrees with the reviewer; one tap disagrees. The numbers appear on the AI prediction card as "checked by the QC". No migration.
 - **LL3 - the model version guard.** One register of every AI model, one append-only log per model, and tests that fail when a model's files change without a new version.
-- **LL4 - what fed each decision.** Each recorded verdict stores a record with no personal data: which documents, which model versions, and one keyed fingerprint of the evidence. One additive migration, `0215_application_verdict_context`. The owner applies it by hand before any publish.
+- **LL4 - what fed each decision.** Each recorded verdict stores a record with no personal data: which documents, which model versions, and one keyed fingerprint of the evidence. One additive migration, `0218_application_verdict_context`. The owner applies it by hand before any publish.
 
 ## What Went Well
 

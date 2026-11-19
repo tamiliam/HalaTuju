@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### docs: learning loop stack brought up to main and closed (2026-11-19)
 
-Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (entries below). Migration: `0215_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: both.
+Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (entries below). Migration: `0218_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: both.
 - **Merge pass:** the stack was brought up to `main` with one test conflict. The model register was brought up to main's own verdict-engine bump. Two digests were re-seeded with dated notes, because main moved the IPTS reason texts into constants with the same text. No answer changed.
 - **LL2 cockpit tests** now pass main's served `writes` flag (no assertion changed).
 - **Mobile sandbox** shows three hard states for the AI prediction section (assigned-only note, a few-cases reviewer row, a long doubt label).
@@ -350,7 +350,7 @@ Branch ll3 (on top of ll1), NOT merged to main, not published. Migration: none. 
 
 ### feat: sprint LL4 - each recorded verdict stores the record of what fed it (2026-11-19)
 
-Branch ll4 (on top of ll3), NOT merged to main, not published. Migration: `0215_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: api. Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL4 as built).
+Branch ll4 (on top of ll3), NOT merged to main, not published. Migration: `0218_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: api. Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL4 as built).
 - **Record:** new `apps/scholarship/verdict_context.py`. `record-verdict` stores `ScholarshipApplication.ai_verdict_context` in the same save as `ai_verdict_snapshot`: `{schema, documents, models, fingerprint, key_check}`. Each document is ids, codes, versions and instants only; `models` is the running version of every model in the LL3 register.
 - **Fingerprint:** a keyed hash (HMAC-SHA256, key from `SECRET_KEY` with a fixed salt) over each live document's state including its stored read, the declared application fields (`DECLARED_FIELDS`) and the profile fields the verdict engine reads (`PROFILE_FIELDS`). Those values are hashed only, never written into the record. `key_check` tells a key rotation apart from moved evidence. At most two queries.
 - **Never blocks a decision:** a record that cannot be built stores `{schema, error}` and logs the application id and the error class only.
