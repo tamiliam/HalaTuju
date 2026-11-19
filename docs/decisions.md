@@ -1,5 +1,34 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-19 — Payment runs on Payments switches; one key, Organisation admin powers (sprint M4a)
+
+Owner rulings, 19 Nov (programme ACCESS-BY-SWITCHES S2). Services: both. Migration: courses 0100 (additive data,
+by hand, migrate-first, after the owner's yes). Brief: `docs/plans/2026-11-19-m4a-payment-runs-brief.md`.
+- **Q1, organisation admins.** Owner, verbatim: "Org admins are not invited like other members of Team. They are added
+  by Super Admin in the HalaTuju platform. They are special, but their powers must be documented and visible somewhere
+  so that they do not fall in a crack, taken for granted. It could be a single Org Admin power switch that is on only
+  for org admins." **Decision:** one key, `organisation.admin` ("Organisation admin powers"), stored on organisation
+  admin rows only, read by one helper (`staff_permissions.holds_org_admin_powers`), shown on the person's card with
+  the plain list of what it brings. Only a super changes it; the last holder in an organisation keeps it. The only
+  role read left is the one that confines the key to organisation admin rows. No Payments switch is stored on an
+  organisation admin.
+- **Q2, the fallback approver.** **Decision:** when nobody else can approve a run, anyone with Approve may approve it,
+  including the person who built it, as long as they did not sign it as maker. The maker never approves their own
+  run. The organisation admin's fallback comes through the key. This is the one seat that widens on ship day.
+- **Q3, giving (A12 for money).** **Decision:** a person gives only the Payments switches they hold. For GIVING only,
+  Organisation admin powers count as holding Payments View, Prepare and Approve, never Check; only a super gives
+  Check. **Why:** with Q1 an organisation admin holds no Payments switch, so A12 alone would stop them staffing
+  Payments at all.
+- **Q4, wording.** English approved as written in the brief; Malay follows it. The Approve help text is "Releases
+  payments from Vircle to students. Never on a run they signed as maker. Also checks sponsor credits." (owner, 19 Nov).
+- **Payments View** (`payments.view`) is the one page key that may be stored by itself; Prepare, Check and Approve
+  bring it. The card shows View on and locked while one of them is on (drawn, not stored).
+- **Tamil needs a native read.** The new Tamil strings (the powers switch, its list, the Payments row, View and the
+  Approve text) were written by the builder, not a native speaker, and are flagged for a native read. The repo has no convention for marking a string
+  for a native read, so the flag lives here and in the CHANGELOG entry.
+- **Revisit if:** a second kind of lead-tier row appears (the key is confined to `org_admin` rows), or the owner wants
+  an organisation admin to give Check.
+
 ## 2026-11-18 — Request #69: the sponsor's "Our volunteers" figures stay as built; the small-size risk is accepted (owner)
 
 Branch req69, not pushed. Migration 0214 (additive). Services: both.

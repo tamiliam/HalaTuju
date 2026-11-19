@@ -35,8 +35,9 @@ def send_payment_countersign_email(run):
 
     ⚠ ROUTED BY PERMISSION since #39 Sprint 2 (owner, 2026-10-19: Finance approves runs): the
     organisation's active `payments_approve` holders who have not signed this run
-    (`payments.eligible_approvers` — Finance, today); ELSE, under the fallback, its organisation
-    admins who have not signed it (`payments.fallback_approvers`), as before the change. The
+    (`payments.eligible_approvers`); ELSE, under the fallback, everyone who may then approve and
+    has not signed it: Organisation admin powers holders and eligible Approve holders
+    (`payments.fallback_approvers`, sprint M4a). The
     function keeps its old name so the sign service and its tests address it as they did."""
     from .. import payments
     frontend = _P.frontend_url

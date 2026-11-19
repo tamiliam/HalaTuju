@@ -37,6 +37,7 @@ from apps.scholarship.tests.factories import make_admin, make_org
 _M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')   # M2b: same app
 _M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')   # M3a: same app
 _M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')  # M3c: same app
+_M0100 = import_module('apps.courses.migrations.0100_store_org_admin_powers')  # M4a: same app
 
 #: The live shapes (investigation F; T1 matrix `SHAPES`), plus qc / super / partner for completeness.
 SHAPES = {
@@ -46,6 +47,8 @@ SHAPES = {
     'finance':                {'role': 'finance'},
     'org_admin':              {'role': 'org_admin'},
     'org_admin_reviews':      {'role': 'org_admin', 'permissions': ['review']},
+    # M4a: an organisation admin whose Organisation admin powers a super has switched off (no live row).
+    'org_admin_unkeyed':      {'role': 'org_admin', 'permissions': [], 'unkeyed': True},
     'reviewer':               {'role': 'reviewer'},
     'reviewer_see_all_spending': {'role': 'reviewer', 'permissions': ['review', 'see_all', 'spending']},
     'reviewer_see_all':       {'role': 'reviewer', 'permissions': ['review', 'see_all']},
@@ -71,6 +74,13 @@ _EVERY_PAGE_KEY = (
     'contracts.edit',
     'programmes.edit', *_ENGAGEMENT_ALL, 'payments.view', 'payments.prepare', 'payments.check',
     'payments.approve', 'spending.view', 'spending.edit')
+#: M4a (TD-620, owner-ruled): an organisation admin no longer holds the four money keys by role (nothing
+#: read them); Organisation admin powers give `organisation.admin` and `payments.view` instead.
+_M4A_DISPLAY_ONLY = {'payments.prepare', 'payments.check', 'payments.approve', 'sponsors.check'}
+_ORG_ADMIN_KEYED = {*(set(_EVERY_PAGE_KEY) - _M4A_DISPLAY_ONLY), 'organisation.admin'}
+#: ... and with the powers off: no Payments, no bill, no request approvals (the powers' own keys).
+_ORG_ADMIN_UNKEYED = set(_EVERY_PAGE_KEY) - _M4A_DISPLAY_ONLY - {'payments.view', 'billing.edit',
+                                                                 'requests.approve'}
 
 #: shape -> (today's `resolve()` tuple, the hand-written v2 set). Set order does not matter.
 GOLDEN_V2 = {
@@ -85,10 +95,13 @@ GOLDEN_V2 = {
                 {*_ORG_READ, 'sponsors.check', 'payments.view', 'payments.approve'}),
     # A1.13b (owner 2026-11-08): the lead tier also holds `award_withdraw_approve` (a v1 seat key, no v2 page)
     'org_admin': (('see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve', 'manage_team'),
-                  {*_EVERY_PAGE_KEY, 'qc'}),
+                  {*_ORG_ADMIN_KEYED, 'qc'}),
     'org_admin_reviews': (('review', 'see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve',
                            'manage_team'),
-                          {*_EVERY_PAGE_KEY, 'qc', 'review'}),
+                          {*_ORG_ADMIN_KEYED, 'qc', 'review'}),
+    # M4a: the powers off take `manage_team` (resolve) and the powers' keys; every stored key stays.
+    'org_admin_unkeyed': (('see_all', 'scholars', 'qc', 'spending', 'award_withdraw_approve'),
+                          {*_ORG_ADMIN_UNKEYED, 'qc'}),
     'reviewer': (('review',), {'review'}),
     'reviewer_see_all_spending': (('review', 'see_all', 'spending'),
                                   {'review', 'students.view', 'spending.view', 'spending.edit',
@@ -99,7 +112,7 @@ GOLDEN_V2 = {
     # T5b: `qc` brings `see_all` (old) / `students.view` (v2), and still seats nobody at Admins.
     'qc_alone': (('see_all', 'qc'), {'students.view', 'qc'}),
     'reviewer_review_qc': (('review', 'see_all', 'qc'), {'review', 'students.view', 'qc'}),
-    'super': (sp.CATALOGUE, {*_EVERY_PAGE_KEY, 'review', 'qc'}),
+    'super': (sp.CATALOGUE, {*_EVERY_PAGE_KEY, 'review', 'qc', 'organisation.admin'}),   # M4a: every V2 key
     'partner': ((), set()),
 }
 
@@ -117,7 +130,8 @@ def _make(spec, org):
         if plan:
             PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
             a.refresh_from_db()
-        for step in (_M0098, _M0099):                                                    # M3a, M3c: as live
+        steps = (_M0098, _M0099) if spec.get('unkeyed') else (_M0098, _M0099, _M0100)   # M3a, M3c, M4a
+        for step in steps:                                                               # as live
             plan = step.plan_row(a.role, a.permissions)
             if plan:
                 PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
@@ -278,10 +292,12 @@ def _doors():
         'qc_gate': (lambda a: a.has_perm('qc'), ('qc',)),
         'spending': (lambda a: a.has_perm('spending'), ('spending.view', 'spending.edit')),
         'payments_read': (payments_chain.may_read, ('payments.view',)),
-        'payments_prepare': (payments_chain.may_prepare, ('payments.prepare',)),
+        # M4a: Prepare by its key; the organisation admin's run powers come with `organisation.admin`.
+        'payments_prepare': (lambda a: a.has_perm('payments_prepare'), ('payments.prepare',)),
         'payments_check': (lambda a: a.has_perm('payments_check'), ('payments.check',)),
-        'payments_approve': (lambda a: a.has_perm('payments_approve') or sp.is_lead_tier(a),
-                             ('payments.approve',)),
+        'payments_approve': (lambda a: a.has_perm('payments_approve'), ('payments.approve',)),
+        'org_admin_powers': (sp.holds_org_admin_powers, ('organisation.admin', 'payments.view', 'billing.edit',
+                                                         'requests.approve')),
         'credit_record': (lambda a: _credit_refused(lambda: sponsorship.record_admin_credit(
             sponsor=None, programme=None, amount=None, external_reference='', admin=a)),
             ('sponsors.edit',)),
@@ -294,12 +310,13 @@ def _doors():
         'invite_mentor': (mentor_invite.may_invite, ('invitations.edit',)),
         'invite_source': (source_invite.may_invite, ('invitations.edit',)),
         'contracts': (surface_gates.may_open_contracts, ('contracts.view', 'contracts.edit')),
-        'requests': (surface_gates.requests_role, ('requests.view', 'requests.edit', 'requests.approve')),
+        # M4a: approving a request is an Organisation admin power (`org_admin_powers` below).
+        'requests': (surface_gates.requests_role, ('requests.view', 'requests.edit')),
+        'requests_decide': (surface_gates.may_decide_requests, ('requests.approve',)),
         'invoices': (surface_gates.may_read_invoices, ('billing.view',)),
         'overview_layout': (programme_overview.may_customise, ('settings.edit',)),
         'lead_powers': (sp.is_lead_tier, ('programmes.edit', 'students.edit', 'students.approve',
-                                          'sponsors.approve', 'billing.edit', 'invitations.edit',
-                                          'settings.edit')),
+                                          'sponsors.approve', 'invitations.edit', 'settings.edit')),
         # The Programmes landing is NOT a door here: it needs no v2 key (lead ruling 2026-11-04, decisions.md
         # 'T5c P5: Programmes landing has no v2 key'), and a door with an empty key list is always "held", so it
         # would test nothing. `LandingContent.test_the_landing_opens_for_...` asserts it for real.
@@ -458,6 +475,8 @@ V2_DOOR_MODULES = {
     'courses/views_staff.py',
     # M1a: the Staff list, the SAME team_roster door (parity: test_m1a_staff_list's gate tests)
     'courses/views_staff_list.py',
+    # S2 / M4a: Payments read (`may_read`: the old keys, or the payments_read door — View or the powers)
+    'scholarship/payments_chain.py',
 }
 
 
@@ -577,6 +596,8 @@ class DoorKeysTable(TestCase):
             'contracts_read': ('contracts.view',), 'contracts_write': ('contracts.edit',),
             # M3c (D5): the senior letters on a scholar's file.
             'senior_letters': ('scholars.approve',),
+            # S2 / M4a: Payments, on the View switch (Organisation admin powers hold it too).
+            'payments_read': ('payments.view',),
         })
 
     def test_an_unknown_door_raises(self):

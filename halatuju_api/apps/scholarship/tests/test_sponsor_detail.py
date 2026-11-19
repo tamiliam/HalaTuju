@@ -55,9 +55,10 @@ def _token(uid):
 
 
 def _admin(org, role, name, email, uid=None):
+    # TD-560 (S2 / M4a): a checker who never signed in arms nothing, so the cast has signed in.
     return PartnerAdmin.objects.create(
         supabase_user_id=uid or f'sd-{email}', role=role, is_active=True,
-        owning_organisation=org, name=name, email=email)
+        owning_organisation=org, name=name, email=email, first_seen_at=timezone.now())
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

@@ -17,6 +17,7 @@ import inspect
 from decimal import Decimal
 
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship import payments_chain
@@ -44,10 +45,12 @@ def _accept(sponsor, programme):
         sponsor=sponsor, programme=programme, status='approved')
 
 
-def _admin(org, role, name, email, uid=None, active=True):
+def _admin(org, role, name, email, uid=None, active=True, signed_in=True):
+    # TD-560 (S2 / M4a): a checker who never signed in arms nothing, so the cast has signed in.
     return PartnerAdmin.objects.create(
         supabase_user_id=uid or f'cr-{email}', role=role, is_active=active,
-        owning_organisation=org, name=name, email=email)
+        owning_organisation=org, name=name, email=email,
+        first_seen_at=timezone.now() if signed_in else None)
 
 
 class CreditMixin:
@@ -302,6 +305,16 @@ class TestTD475TheCheckerSeatIsTheKey(CreditMixin, TestCase):
     def test_an_inactive_holder_arms_nothing(self):
         self._keyed('admin', ['payments_approve'], 'Gone', 'gone@x.com', active=False)
         self.assertFalse(payments_chain.credit_check_required(self.org))
+
+    def test_td560_a_holder_who_never_signed_in_arms_nothing_until_they_do(self):
+        # TD-560 (S2 / M4a): the same rule as a run's check — they could never take the step.
+        a = _admin(self.org, 'admin', 'Not Yet', 'notyet@x.com', signed_in=False)
+        a.permissions = ['payments_approve']
+        a.save(update_fields=['permissions'])
+        self.assertFalse(payments_chain.credit_check_required(self.org))
+        a.first_seen_at = timezone.now()
+        a.save(update_fields=['first_seen_at'])
+        self.assertTrue(payments_chain.credit_check_required(self.org))
 
 
 class TestKeyedMakerNeverStrandsTheirCredit(CreditMixin, TestCase):

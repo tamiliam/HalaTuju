@@ -199,6 +199,8 @@ DOOR_KEYS = {
     'contracts_write':    ('contracts.edit',),                  # contract templates, writes (G9)
     # ── M3c (D5): the senior letters on a scholar's file (`letters._senior`). ──
     'senior_letters':     ('scholars.approve',),
+    # ── S2 / M4a: Payments (the View switch, or Organisation admin powers; `payments_chain.may_read`). ──
+    'payments_read':      ('payments.view',),
 }
 
 
@@ -253,10 +255,10 @@ def invite_permissions(role):
     """The `permissions` value a NEW invitation's row is written with: a list, or None (the preset).
 
     M3c (D3): a new organisation admin starts with the full set (`ORG_ADMIN_SET`, what migrations 0098
-    and 0099 store), never NULL."""
+    and 0099 store), never NULL; S2 / M4a: plus Organisation admin powers (`ORG_ADMIN_FULL`, as 0100)."""
     from . import staff_permissions_v2 as v2
     if role == sp.LEAD_ROLE:
-        return list(v2.ORG_ADMIN_SET)
+        return list(v2.ORG_ADMIN_FULL)
     start = INVITE_START.get(role)
     if start is None:
         return None

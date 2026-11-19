@@ -366,14 +366,15 @@ def plan_table_change(target, table, action, *, open_n=None, to_no_group=False):
         # The editor's own stranding rule (a Remove from Admins taking `see_all` from somebody who
         # reaches assigned cases only through it) — the same check, the same words.
         spa._refuse_stranding(target, out['before'], out['after'])
-    out['consequences'] = (spa.consequences(target, out['before'], out['after'])
-                           if not target.is_mentor else [])
+    out['consequences'] = (spa.consequences(target, out['before'], out['after'])   # TD-614: live only
+                           if live and not target.is_mentor else [])
     # TD-475 (A1.10a): the wallet-credit check turns on the KEY `payments_approve` (`credit_steps.
     # CHECKER_KEY`), so it goes off when this change takes the key from the organisation's last active
     # holder — whatever their label (was: leaving the Finance LABEL).
     from .credit_steps import CHECKER_KEY
     out['finance_check_off'] = bool(live and CHECKER_KEY in out['before'] and CHECKER_KEY not in out['after']
                                     and target.owning_organisation_id is not None
+                                    and staff_lifecycle.has_signed_in(target)   # TD-560: only a signed-in holder arms it
                                     and not staff_lifecycle.other_active_checker(target))
     # Lead ruling Q2b: said in plain words on the confirm. M2b: the change STORES the admin work pages
     # (`_v2_part`) — an Add to Admins, a Remove from Reviewers that makes them `admin` (Q2b), a mentor

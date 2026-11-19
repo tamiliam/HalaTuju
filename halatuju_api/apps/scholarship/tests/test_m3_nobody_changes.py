@@ -10,6 +10,8 @@ migration 0098's `plan_row` and read with the NEW code. Compared, per shape: the
 the menu, the tables, every door, the pending cards, the overview sections, the Reviewers seat, the
 assignment rules, the payment approval gate and fallback, the key holders of the organisation, and the
 admin route's `opens_elsewhere`. Then Restore, and the Team -> Reviewers Add / Remove round trip (A6).
+S2 / M4a: the rows also go through 0100 (the powers key), the old read takes the powers from the role,
+and the one owner-ruled difference is the display-only change `factories.M4A_DISPLAY_ONLY` names.
 """
 import copy
 from contextlib import ExitStack
@@ -26,10 +28,13 @@ from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import my_pending, payments_chain, programme_overview, staff_person
 from apps.scholarship.services import assignment
-from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, make_admin, make_org
+from apps.scholarship.tests.factories import (
+    TEST_JWT_SECRET, authed_client, m4a_display, make_admin, make_org,
+)
 
 M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
 M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')   # M3c: run after 0098
+M0100 = import_module('apps.courses.migrations.0100_store_org_admin_powers')    # M4a: run after 0099
 REAL_RESOLVE = sp.resolve
 REAL_EFFECTIVE = v2.effective_v2
 #: The old keys whose holders the payment, withdrawal and review gates count.
@@ -74,10 +79,27 @@ def _rest_of_opens_elsewhere(viewer, target):
     return staff_person.on_reviewer_route(target)
 
 
+def _m4a(read, a):
+    """The old read with only the M4a display change (`factories.M4A_DISPLAY_ONLY`, owner-ruled) applied, for an
+    active organisation admin holding the powers."""
+    if not (a.is_active and sp.holds_org_admin_powers(a)):     # an inactive row reads no v2 key at all
+        return read
+    out = dict(read)
+    for k in ('effective_v2', 'page_keys'):
+        out[k] = m4a_display(read[k])
+    return out
+
+
+def _old_powers(a):
+    """`staff_permissions.holds_org_admin_powers` before M4a: the powers were read from the role."""
+    return a is not None and sp.is_lead_tier(a)
+
+
 def _old_rules():
     stack = ExitStack()
     stack.enter_context(mock.patch.object(sp, 'resolve', _old_resolve))
     stack.enter_context(mock.patch.object(v2, 'effective_v2', _old_effective))
+    stack.enter_context(mock.patch.object(sp, 'holds_org_admin_powers', _old_powers))
     return stack
 
 
@@ -125,7 +147,8 @@ class NobodyChanges(TestCase):
 
     def migrate(self, a):
         # M3c (D5): 0099 appends `scholars.approve` (the senior letters, until then by role) after 0098.
-        for step in (M0098, M0099):
+        # M4a: 0100 appends `organisation.admin` (the powers, until then by role) after 0099.
+        for step in (M0098, M0099, M0100):
             a = self.load(a)
             plan = step.plan_row(a.role, a.permissions)
             if plan is not None:
@@ -166,14 +189,15 @@ class NobodyChanges(TestCase):
         with _old_rules():
             before = {n: self.read(a) for n, a in rows.items()}
             org_before = self.org_reads()
-        after = {n: self.read(self.migrate(a)) for n, a in rows.items()}
+        migrated = {n: self.migrate(a) for n, a in rows.items()}
+        after = {n: self.read(a) for n, a in migrated.items()}
         for name in rows:
             with self.subTest(shape=name):
-                self.assertEqual(after[name], before[name])
+                self.assertEqual(after[name], _m4a(before[name], migrated[name]))
         self.assertEqual(self.org_reads(), org_before)
 
     def test_the_two_live_shapes_become_the_planned_lists(self):
-        full = [*sp.ORG_ADMIN_KEYS, *M0098.V2_KEYS, M0099.KEY]
+        full = [*sp.ORG_ADMIN_KEYS, *M0098.V2_KEYS, M0099.KEY, M0100.KEY]
         self.assertEqual(self.migrate(self.shapes['org_admin, NULL (live shape 1)']).permissions, full)
         self.assertEqual(self.migrate(self.shapes['org_admin, ["review"] (live shape 2)']).permissions,
                          ['review', *full])
@@ -195,7 +219,8 @@ class NobodyChanges(TestCase):
                     old = self.read(restored_before)
                 after = self.migrate(self.shapes[name])
                 PartnerAdmin.objects.filter(pk=after.pk).update(is_active=True)
-                self.assertEqual(self.read(self.load(after)), old)
+                restored = self.load(after)
+                self.assertEqual(self.read(restored), _m4a(old, restored))
 
     def test_a_shape_the_migration_has_not_reached_still_reads_safely(self):
         # NULL is fail-safe: the new code reads it as the full set (A2), so a row the data step missed,
@@ -203,7 +228,7 @@ class NobodyChanges(TestCase):
         null = self.load(self.shapes['org_admin, NULL (live shape 1)'])
         with _old_rules():
             old = self.read(null)
-        self.assertEqual(self.read(null), old)
+        self.assertEqual(self.read(null), _m4a(old, null))      # M4a: NULL holds the powers too
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -231,12 +256,16 @@ class ReviewersRoundTrip(TestCase):
         old_added.permissions = ['review']                              # what the old writer stored
         with _old_rules():
             expected = (sp.resolve(old_added), v2.effective_v2(old_added), st.tables(old_added))
-        self.assertEqual((sp.resolve(added), v2.effective_v2(added), st.tables(added)), expected)
+        m4a = _m4a({'effective_v2': expected[1], 'page_keys': ()}, added)['effective_v2']   # M4a display
+        self.assertEqual((sp.resolve(added), v2.effective_v2(added), st.tables(added)),
+                         (expected[0], m4a, expected[2]))
         removed = self.act('remove')
         self.assertEqual(removed.permissions, start.permissions)
-        self.assertEqual((sp.resolve(removed), v2.effective_v2(removed), st.tables(removed)), old_start)
+        m4a = _m4a({'effective_v2': old_start[1], 'page_keys': ()}, removed)['effective_v2']
+        self.assertEqual((sp.resolve(removed), v2.effective_v2(removed), st.tables(removed)),
+                         (old_start[0], m4a, old_start[2]))
 
     def test_add_on_a_null_row_stores_the_full_set_with_review(self):
         PartnerAdmin.objects.filter(pk=self.lead.pk).update(permissions=None)
-        self.assertEqual(self.act('add').permissions, ['review', *v2.ORG_ADMIN_SET])
-        self.assertEqual(self.act('remove').permissions, list(v2.ORG_ADMIN_SET))
+        self.assertEqual(self.act('add').permissions, ['review', *v2.ORG_ADMIN_FULL])     # M4a: the powers kept
+        self.assertEqual(self.act('remove').permissions, list(v2.ORG_ADMIN_FULL))

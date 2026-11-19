@@ -35,7 +35,8 @@ jest.mock('@/lib/admin-api', () => ({
   getOrgRequestCount: jest.fn(() => Promise.reject(new Error('404'))),
   getBillingUsage: jest.fn(() => Promise.reject(new Error('404'))),
   getAdminScopes: jest.fn(),
-  getPaymentRuns: jest.fn(() => Promise.resolve({ runs: [] })),
+  // S2 / M4a: "New payment run" follows the served `can_prepare` only (a super holds Prepare).
+  getPaymentRuns: jest.fn(() => Promise.resolve({ runs: [], can_prepare: true })),
   getFundingSummary: jest.fn(() => Promise.resolve({ rows: [], totals: {} })),
   createPaymentRun: jest.fn(),
 }))
@@ -102,7 +103,8 @@ describe('TD-303 — the address names a gift the list cannot confirm', () => {
     // The page still opens (review F5's degrade): the runs are read, with no gift to send.
     await waitFor(() => expect(mockApi.getPaymentRuns).toHaveBeenCalledWith(undefined, { token: 'tok' }))
     expect(newRun()).toBeNull()
-    expect(blocked()?.textContent).toBe('admin.programmes.loadFailed')
+    // S2 / M4a: the line waits for the served `can_prepare` (nobody is offered a run before it answers).
+    await waitFor(() => expect(blocked()?.textContent).toBe('admin.programmes.loadFailed'))
   })
 
   it('review F4: the list came back EMPTY (no gifts at all): no New run, and NO "could not load" line', async () => {

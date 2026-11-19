@@ -9,7 +9,7 @@
  * still gets a switch under the boxes, and `permissionLayout.test.ts` fails the build until it is placed.
  *
  * Controls (D2): `tri` is "No access / View / View and change" over a page's `.view` and `.edit`; `switch`
- * is one key; `info` has no control (the Overview rows, and Payments, which opens with its sub-items).
+ * is one key; `info` has no control (the Overview rows, and Payments, whose four switches are its sub-items).
  * A row's `subs` are one switch each. Names are i18n keys — the sidebar's own label where the page has
  * one, so a renamed page reads the same in both places.
  */
@@ -46,6 +46,10 @@ const sw = (key: string): PermControl => ({ kind: 'switch', key })
  *  to the namespace guard (`namespaces-i18n.test.ts`), which scans every dotted literal. */
 const pageSw = (page: string, level: 'view' | 'edit'): PermControl => sw(`${page}.${level}`)
 const INFO: PermControl = { kind: 'info' }
+/** S2 / M4a: the Payments View switch, spelt like `pageSw` for the namespace guard. */
+export const PAYMENTS_VIEW = ['payments', 'view'].join('.')
+/** S2 / M4a: the Payments switches that bring View; while one is on, View is locked on. */
+export const PAYMENTS_BRING_VIEW: readonly string[] = ['payments_prepare', 'payments_check', 'payments_approve']
 /** A sub-item on one of today's keys: its own words (`admin.perm.<key>`). */
 const oldSub = (key: string): PermSub => ({ key, name: `admin.perm.${key}.name`, desc: `admin.perm.${key}.desc` })
 const sub = (key: string, id: string): PermSub => ({ key, name: `${L}.${id}.name`, desc: `${L}.${id}.desc` })
@@ -73,8 +77,10 @@ export const PERMISSION_LAYOUT: readonly PermBox[] = [
     { id: 'surveys', name: 'admin.surveys.nav', desc: `${L}.surveys.desc`, control: tri('surveys') },
     { id: 'development', name: 'admin.development.nav', desc: `${L}.development.desc`, control: tri('development') },
     { id: 'mentoring', name: 'admin.permV2.page.mentoring', desc: `${L}.mentoring.desc`, control: tri('mentoring') },
+    // S2 / M4a (owner Q4): four switches; View is locked on while any other is on (`PermissionEditor`).
     { id: 'payments', name: 'admin.payments.title', desc: `${L}.payments.desc`, control: INFO,
-      subs: [oldSub('payments_prepare'), oldSub('payments_check'), oldSub('payments_approve')] },
+      subs: [sub(PAYMENTS_VIEW, 'paymentsView'), oldSub('payments_prepare'), oldSub('payments_check'),
+        oldSub('payments_approve')] },
     { id: 'spending', name: 'admin.spending.nav', desc: `${L}.spending.desc`, control: sw('spending') },
     { id: 'contracts', name: 'admin.contracts.title', desc: `${L}.contracts.desc`, control: tri('contracts') },
     { id: 'programmeSettings', name: 'admin.programme.config.nav', desc: `${L}.programmeSettings.desc`,

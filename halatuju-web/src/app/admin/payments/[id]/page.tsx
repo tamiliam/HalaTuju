@@ -1,7 +1,7 @@
 'use client'
 // Payment run detail (P2) — eligibility table (editable in draft), greyed skipped list, the
 // prepare→[check]→approve sign-off, and the completed state (Drive link + CSV download).
-// Access: admin / org_admin / finance / super. Entered from the Payments landing.
+// Access: the Payments View switch (the door `payments_read`, S2 / M4a). Entered from the Payments landing.
 //
 // Since #39 Sprint 2 Finance APPROVES runs. Every branch below reads the PAYLOAD and never
 // re-derives a rule: whether the check is armed, `your_step` (a name box is drawn ONLY for the
@@ -74,11 +74,10 @@ export default function PaymentRunDetailPage() {
   const id = Number(params?.id)
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = canAccess('/admin/payments', effectiveRole(role), role?.permissions)
-  // Finance reads and APPROVES (#39 S2); editing and cancelling follow the served `can_prepare`
-  // (the backend refuses them with 403 regardless). Finance also has no B40 route, so applicant
-  // links must not render for it — a preset-bound read until Sprint 3 converts the B40 scope.
-  const isFinanceViewer = effectiveRole(role) === 'finance'
+  const allowed = canAccess('/admin/payments', effectiveRole(role), role?.permissions, undefined, role?.page_keys)
+  // Editing and cancelling follow the served `can_prepare` (the backend refuses them with 403 regardless).
+  // Applicant links render only for a viewer the server says may open a student's file (S2 / M4a:
+  // `can_open_applicant`, never the role); absent (a server older than M4a) = plain text.
 
   const [run, setRun] = useState<PaymentRunDetail | null>(null)
   const [error, setError] = useState('')
@@ -229,7 +228,7 @@ export default function PaymentRunDetailPage() {
               ? 'border-l-brand-fill'
               : 'border-l-ground-300 bg-ground-50/60'}`}>
             <div className="flex items-start justify-between gap-3">
-              {isFinanceViewer ? (
+              {!run.can_open_applicant ? (
                 <span className={`text-sm font-semibold ${it.included ? 'text-ground-900' : 'text-ground-500 line-through'}`}>
                   {it.name || '—'}
                 </span>
@@ -323,8 +322,8 @@ export default function PaymentRunDetailPage() {
             {sortedItems.map((it) => (
               <tr key={it.id} className={it.included ? 'hover:bg-primary-50/40' : 'bg-ground-50/60 text-ground-400'}>
                 <td className="px-4 py-3.5">
-                  {isFinanceViewer ? (
-                    // Finance has no B40 route — a link here would 403. Plain text instead.
+                  {!run.can_open_applicant ? (
+                    // No B40 route for this viewer — a link here would 403. Plain text instead.
                     <span className="font-medium text-ground-900">{it.name || '—'}</span>
                   ) : (
                     <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-600 hover:underline">{it.name || '—'} ↗</a>

@@ -272,9 +272,11 @@ def test_access(world, route, method, role):
 # ── M3c: a team member GRANTED the organisation admin's keys ────────────────────────────────────
 #: `access_world` seeds `admin_granted_a`: an `admin` of organisation A given, through the real editor,
 #: every key of `ORG_ADMIN_SET` (A9 / A12). It is held to org admin A's answer on every route: it gets
-#: through exactly where org admin A does, except the routes below — each one a power the ROLE still
-#: holds (`manage_team`, D4; the payment seats, E1, until M4) or a platform-wide power fenced to
-#: organisation admins and supers (the sponsor account and the sponsor terms, the M3c fence).
+#: through exactly where org admin A does, except the routes below — each one a power that comes with
+#: Organisation admin powers (`manage_team`, D4; S2 / M4a: through the key, no longer the role) or a
+#: platform-wide power fenced to organisation admins and supers (the sponsor account and the sponsor
+#: terms, the M3c fence). The payment seats (E1, by role until M4) never differed at the route: the
+#: `admin` preset holds `payments_prepare`; who signs what is `test_m4a_maker_checker`'s.
 GRANTED, GRANTED_LIKE = 'admin_granted_a', 'org_admin_a'
 GRANTED_DIFFERS = {
     ('api/v1/admin/invite/', 'post'): 'manage_team: team changes stay with the organisation admin (D4)',
@@ -319,6 +321,35 @@ def test_a_granted_team_member_opens_what_an_org_admin_does(world, route, method
 
 def test_the_granted_differences_are_still_served():
     assert set(GRANTED_DIFFERS) <= set(PAIRS)
+
+
+# ── S2 / M4a: Payments by switches, not labels ─────────────────────────────────────────────────────
+#: The payment routes, and who passes their gate (`payments.may_read` / `may_prepare`), by KEY: an admin
+#: with Approve only and one with View only pass exactly where `finance_a` does (the reads, and the sign
+#: route, whose step the chain refuses after the gate); an organisation admin whose Organisation admin
+#: powers are off passes none, where org admin A passes them all.
+PAYMENT_PAIRS = [p for p in PAIRS if p[0].startswith(('api/v1/admin/scholarship/payment-runs/',
+                                                      'api/v1/admin/scholarship/payments/'))]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('route,method', PAYMENT_PAIRS, ids=lambda v: v if isinstance(v, str) else None)
+def test_payments_open_by_switch(world, route, method):
+    def passes(role):
+        cache.clear()
+        with transaction.atomic():
+            code = world.call(role, route, method).status_code
+            transaction.set_rollback(True)
+        return code not in HIDE
+    finance, lead = passes('finance_a'), passes('org_admin_a')
+    assert lead, f'{method.upper()} {route}: org admin A (the powers on) is refused'
+    got = {role: passes(role) for role in access_world.PAYMENT_CALLERS}
+    assert got == {'payments_holder_a': finance, 'payments_viewer_a': finance, 'oa_unkeyed_a': False}, (
+        f'{method.upper()} {route}: finance_a {"passes" if finance else "is refused"}; {got}')
+
+
+def test_the_payment_routes_are_served():
+    assert len(PAYMENT_PAIRS) >= 4, PAYMENT_PAIRS
 
 
 # ── POST-AWARD-CUT review (18 Nov): the per-case writes in every case stage ───────────────────────────

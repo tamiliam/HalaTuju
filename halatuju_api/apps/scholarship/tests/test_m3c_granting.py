@@ -3,8 +3,8 @@
 Done-when:
 - An organisation admin gives a team member any key of its own set; `manage_team` stays `lead_tier`, the
   NEVER_GRANTABLE keys stay refused, and a key the giver does not hold is refused `not_held` (A9 / A12).
-- A super edits an organisation admin's card (D1): the payment seats are refused `money_by_role` (by role
-  until M4), the withdrawal "ask" may be given (E2), `manage_team` stays, the row stays a list. An
+- A super edits an organisation admin's card (D1): the payment seats are refused `money_through_org_admin`
+  (S2 / M4a: they come with Organisation admin powers), the withdrawal "ask" may be given (E2), `manage_team` stays, the row stays a list. An
   organisation admin may not edit a fellow one, and their own card is read-only to them.
 - A new organisation admin's invitation stores the full set (D3).
 - A GRANTED team member: give a power and its door opens; take it away and it closes; they can never give
@@ -121,7 +121,7 @@ class TheOrganisationAdminGives(_World):
         self.assertEqual((keys['settings.edit']['reason'], keys['settings.edit']['grantable']), (None, True))
 
     def test_a_new_organisation_admins_invitation_stores_the_full_set(self):
-        self.assertEqual(st.invite_permissions('org_admin'), list(v2.ORG_ADMIN_SET))
+        self.assertEqual(st.invite_permissions('org_admin'), list(v2.ORG_ADMIN_FULL))      # M4a: + the powers
 
 
 class TheLeadsOwnCard(_World):
@@ -139,12 +139,12 @@ class TheLeadsOwnCard(_World):
         self.assertEqual(took.status_code, 200, took.content[:300])
         self.assertNotIn('scholars.approve', _stored(self.lead))
 
-    def test_the_payment_seats_stay_by_role(self):
+    def test_the_payment_seats_come_with_the_powers(self):
         before = _stored(self.lead)
         for seat in ('payments_prepare', 'payments_check', 'payments_approve'):
             with self.subTest(seat=seat):
                 r = _patch(self.super, self.lead, [*before, seat])
-                self.assertEqual((r.status_code, r.json()['code'], r.json()['keys']), (400, 'money_by_role', [seat]))
+                self.assertEqual((r.status_code, r.json()['code'], r.json()['keys']), (400, 'money_through_org_admin', [seat]))
         self.assertEqual(_stored(self.lead), before)
 
     def test_an_organisation_admin_may_not_edit_a_fellow_one_nor_their_own_card(self):

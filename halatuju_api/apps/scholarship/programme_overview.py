@@ -70,11 +70,11 @@ PAGES = ('qc', 'mine')
 #: ⚠⚠ **THE SERVER DECIDES WHAT A PERSON RECEIVES, FROM THEIR KEYS** (TD-621, sprint LABELS: the role is
 #: only a label). A section absent from the answer is never built, so it is not in the payload at all —
 #: absent, never zeroed ("committed RM0" is still an answer about money). Each section opens on ANY of
-#: its keys. The money opens on the keys of the two screens it reconciles with (Spending, Payments):
-#: aggregate money, never a person (module docstring). The applicant widgets open on `see_all` worn as an
-#: Admins hat (`_admins_see_all`): QC's implied `see_all` opens the QC page, never the funnel, whatever
-#: seats QC at Admins (as `staff_tables.admin_keys`). Without those keys, reviewer and QC get no money and
-#: no programme-wide funnel: an Overview that handed over what the menu withholds would make it decorative.
+#: its keys. The money opens on the keys of the two screens it reconciles with (Spending, Payments; S2:
+#: and whoever opens Payments, `payments.may_read`): aggregate money, never a person (module docstring).
+#: The applicant widgets open on `see_all` worn as an Admins hat (`_admins_see_all`): QC's implied
+#: `see_all` opens the QC page, never the funnel, whatever seats QC at Admins. Without those keys, reviewer
+#: and QC get no money and no programme-wide funnel: an Overview handing over what the menu withholds is decorative.
 MONEY_KEYS = ('spending', 'payments_prepare', 'payments_check', 'payments_approve')
 SECTION_KEYS = {'funnel': ('see_all',), 'money': MONEY_KEYS, 'attention': ('see_all',),
                 'applications_series': ('see_all',), 'money_series': MONEY_KEYS,
@@ -96,7 +96,7 @@ def _admins_see_all(admin):
 def _opens(admin, section):
     if SECTION_KEYS[section] == ('see_all',):
         return _admins_see_all(admin)
-    return any(admin.has_perm(k) for k in SECTION_KEYS[section])
+    return any(admin.has_perm(k) for k in SECTION_KEYS[section]) or (SECTION_KEYS[section] is MONEY_KEYS and payments.may_read(admin))
 
 
 def sections_for(admin):

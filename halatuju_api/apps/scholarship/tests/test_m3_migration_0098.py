@@ -43,7 +43,8 @@ class FrozenConstants(TestCase):
         self.assertEqual([k for k in v2.ORG_ADMIN_SET if k not in M3C_KEYS], FULL)
 
     def test_nothing_held_by_role_or_an_alias_is_written(self):
-        for key in (*sp.LEAD_BY_ROLE, *v2.LEAD_BY_ROLE_V2, *v2.LEAD_MONEY_UNTIL_M4, *v2.ALIAS_V2):
+        # S2 / M4a: `LEAD_MONEY_UNTIL_M4` is gone (TD-620); its keys are the `payments.*` ones in `ALIAS_V2`.
+        for key in (*sp.LEAD_BY_ROLE, *v2.LEAD_BY_ROLE_V2, *v2.ALIAS_V2, v2.ORG_ADMIN_KEY):
             self.assertNotIn(key, REVIEWING, key)
 
     def test_the_module_imports_no_app_code(self):

@@ -133,13 +133,14 @@ function Words({ name, desc, changed, locked }: { name: string; desc: string; ch
   )
 }
 
-/** E1 (M3c): rows worded BY ROLE on this card (row id -> the i18n key of its words): no control, no sub-items. */
-export type ByRole = Readonly<Record<string, string>>
+/** S2 / M4a: rows WORDED instead of switched on this card (row id -> the i18n key of its words): no control,
+ *  no sub-items. An organisation admin's Payments row: it comes with Organisation admin powers. */
+export type RowWords = Readonly<Record<string, string>>
 
-/** A box's count (D5): M = its enabled controls (a three-way once, sub-items each), N = those on. A row
- *  worded by role counts nothing. */
-export function countBox(box: PermBox, ks: KeyStates, byRole?: ByRole): { on: number; of: number } {
-  const counted = box.rows.filter((r) => !byRole?.[r.id]).flatMap((r) => [
+/** A box's count (D5): M = its enabled controls (a three-way once, sub-items each), N = those on. A worded
+ *  row counts nothing. */
+export function countBox(box: PermBox, ks: KeyStates, worded?: RowWords): { on: number; of: number } {
+  const counted = box.rows.filter((r) => !worded?.[r.id]).flatMap((r) => [
     ...(r.control.kind === 'info' ? [] : [ks(controlKeys(r.control)[0])]),
     ...(r.subs ?? []).map((s) => ks(s.key)),
   ]).filter((k) => k.shown && !k.lock)
@@ -150,16 +151,16 @@ export function countBox(box: PermBox, ks: KeyStates, byRole?: ByRole): { on: nu
 const rowShown = (r: PermRow, ks: KeyStates) => (r.control.kind === 'info' && !r.subs)
   || controlKeys(r.control).some((k) => ks(k).shown) || (r.subs ?? []).some((s) => ks(s.key).shown)
 
-export function LayoutBox({ box, ks, onSwitch, onTri, byRole }: {
+export function LayoutBox({ box, ks, onSwitch, onTri, worded }: {
   box: PermBox
   ks: KeyStates
   onSwitch: (key: string, on: boolean) => void
   onTri: (view: string, edit: string, level: 0 | 1 | 2) => void
-  byRole?: ByRole
+  worded?: RowWords
 }) {
   const { t } = useT()
-  const rows = box.rows.filter((r) => !!byRole?.[r.id] || rowShown(r, ks))
-  const { on, of } = countBox(box, ks, byRole)
+  const rows = box.rows.filter((r) => !!worded?.[r.id] || rowShown(r, ks))
+  const { on, of } = countBox(box, ks, worded)
   const sub = (s: PermSub) => {
     const k = ks(s.key)
     if (!k.shown) return null
@@ -183,11 +184,11 @@ export function LayoutBox({ box, ks, onSwitch, onTri, byRole }: {
   return (
     <BoxShell title={t(box.title)} on={on} of={of} testId={`perm-box-${box.id}`}>
       {rows.map((r) => {
-        const roleWords = byRole?.[r.id]
-        if (roleWords) {
+        const words = worded?.[r.id]
+        if (words) {
           return (
-            <div key={r.id} data-row={r.id} data-by-role="true" className="grid gap-2 px-4 py-3">
-              <Words name={t(r.name)} desc={t(roleWords)} changed={false} locked={false} />
+            <div key={r.id} data-row={r.id} data-worded="true" className="grid gap-2 px-4 py-3">
+              <Words name={t(r.name)} desc={t(words)} changed={false} locked={false} />
             </div>
           )
         }
@@ -207,5 +208,24 @@ export function LayoutBox({ box, ks, onSwitch, onTri, byRole }: {
         )
       })}
     </BoxShell>
+  )
+}
+
+/** S2 / M4a (owner Q1): an organisation admin's card — the "Organisation admin powers" switch, with the plain
+ *  list of what it brings (the server's `org_admin_powers.powers`, in its order). Only a super edits the card;
+ *  on any other it is drawn as held, disabled (the card's own line says why). */
+export function PowersRow({ powers, k, onSwitch }: { powers: readonly string[]; k: KeyState; onSwitch: (on: boolean) => void }) {
+  const { t } = useT()
+  const name = t('admin.permLayout.orgAdminPowers.name')
+  return (
+    <section className="rounded-lg border border-ground-200 bg-ground-0 px-4 py-3" data-testid="perm-org-admin-powers">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <Words name={name} desc={t('admin.permLayout.orgAdminPowers.desc')} changed={k.changed} locked={false} />
+        <Switch label={name} k={k} onSwitch={onSwitch} />
+      </div>
+      <ul className="mt-2 ml-3 list-disc pl-4 text-[13px] text-ground-600" data-testid="perm-org-admin-powers-list">
+        {powers.map((p) => <li key={p} data-power={p}>{t(`admin.permLayout.orgAdminPowers.power.${p}`)}</li>)}
+      </ul>
+    </section>
   )
 }

@@ -34,7 +34,7 @@ class DemotingAMigratedOrgAdmin(TestCase):
             with self.subTest(role=role):
                 lead = make_admin('org_admin', owning_org=self.org, permissions=['review'])
                 self.assertEqual(lead.permissions, ['review', *ORG_ADMIN_MIGRATED])  # migrated by 0098, 0099
-                held = [*sp.resolve(lead), *v2.org_admin_v2(lead)]
+                held = [*sp.resolve(lead), *v2.org_admin_v2(lead), sp.ORG_ADMIN_KEY]   # S2 / M4a: the powers, by 0100
                 after = admin_site_role_change(lead, role)
                 self.assertEqual((after.role, after.permissions), (role, None))
                 self.assertEqual(sp.resolve(after), sp.preset_for(role))

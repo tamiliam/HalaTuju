@@ -8706,7 +8706,7 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 
 **Raised 2026-11-07 by the A1.9a review (follow-up F3, not fixed).** The `take_slot` counters (admin sign-in lock, claim-code limits) and the DRF throttle histories are entries in the production DatabaseCache, whose `MAX_ENTRIES` is 300. When the table passes that, Django culls entries (a fraction of the oldest by expiry), and a cull can remove a counter early, so a lock can reset before its 15 minutes. Low: it needs a busy cache and an attacker who is lucky, and the throttles are best-effort. **Fix options (later):** raise `MAX_ENTRIES` and `CULL_FREQUENCY` for the throttle cache, or give counters their own cache alias or table. *(B · S)*
 
-### [TD-560] A `payments_approve` holder who has never signed in still arms the wallet credit check - low
+### ~~[TD-560] A `payments_approve` holder who has never signed in still arms the wallet credit check - low~~ — BUILT 2026-11-19 (sprint M4a, branch access-s2-m4a, not pushed; only a signed-in holder arms it: `payments_chain.credit_check_required` filters `holders` by `_signed_in` (payments_chain.py:161), kept in step in `staff_tables_admin.py:377` and `staff_lifecycle.other_active_checker`; test `test_m4a_maker_checker.TD560OnlyASignedInHolderArmsTheChecks`)
 
 **Raised 2026-11-07 by the A1.10a review.** `payments_chain.py` (~126-131) counts every `payments_approve` holder when deciding whether the wallet credit check is armed, including one who has never signed in; payment runs skip such people (`_signed_in`). If the only holder is an invitee who never signs in, credits wait for them. The organisation admin can unstick it by removing the key or revoking the person. Pre-existing (the old finance rule behaved the same). **Fix:** apply the same `_signed_in` filter here. *(A · S)*
 
@@ -8808,7 +8808,7 @@ nothing breaks (a member sits in no group table, and the web filter drops them f
 but the M1b Staff tab must draw the API's `GET admin/staff/` rows and not filter them through this mirror. Fix in M1b:
 add `member`, or retire the mirror for the served rows.
 
-### [TD-605] The payment-run waiting check can race a new run - low
+### ~~[TD-605] The payment-run waiting check can race a new run - low~~ — BUILT 2026-11-19 (sprint M4a, branch access-s2-m4a, not pushed; `payments_chain.lock_actor` locks the actor's row first, then the run, re-reading the key: run create `payments.py:391`, the maker sign `payments_chain.py:349`; tests `test_m4a_maker_checker.TD605TheActorsRowFirst` (3))
 
 **Raised 2026-11-10 by the Sprint M1a review (fix 5, recorded rather than locked).** Remove from a group table and the
 archive refuse `run_in_progress` while the person made or signed (as maker) an unfinished payment run
@@ -8933,7 +8933,7 @@ safe for the idempotent backup, and the command's docstring warns against pointi
 
 **As built (2026-11-15).** Both stuck paths now finish: a reopen succeeds, and a diverted revert lands at `interviewed` able to change hands; the case goes to a signed-in member of Reviewers of its own organisation, never to the caller, and the new holder works it (a verdict, verify-and-accept), proved end to end. Every assign rule is unchanged (the `assign` door, `may_hand_to`, `self_assign`, the organisation fence, QC separation: a former holder stays barred from QC by the assignment history). A closed case (awarded, active, closed, withdrawn, not reopened) never moves. Side effects: the No-group holder is no longer undeletable, because the case can be handed on and their open-case count drops to 0 (tested). The archived holder missing from the suspended-cases banner is NOT fixed: it needs one more query on the Staff list, whose query count is pinned; logged as a new item (TD-630, banner). Builder calls: `docs/decisions.md`, 2026-11-15, TD-613.
 
-### [TD-614] The Remove confirm for a suspended person can show finance warnings that do nothing - low
+### ~~[TD-614] The Remove confirm for a suspended person can show finance warnings that do nothing - low~~ — BUILT 2026-11-19 (sprint M4a, branch access-s2-m4a, not pushed; the money `consequences` are served only when the person is live, `staff_tables_admin.plan_table_change` (staff_tables_admin.py:369); test `test_m4a_maker_checker.TD614ASuspendedPersonsRemoveNamesNoMoneyConsequence`)
 
 **Raised 2026-11-13 by the M2c review.** In `plan_table_change` (around line 359), `spa.consequences` is not gated on the person being live. When a suspended person is removed, the confirm can list payment-run consequences that will not happen. Fix: gate those consequence codes on `is_active`, and add a test. *(A · S)*
 
@@ -8969,7 +8969,7 @@ covers no Team person page (`/admin/organisation/team/admins/<id>`), so a future
 three-way at 360 px would not be caught. Fix: add one person page with the Permissions tab open to the targets, with
 a fixture admin, and refresh the baseline. *(A - S)*
 
-### [TD-620] An organisation admin's money keys are still held by role (`LEAD_MONEY_UNTIL_M4`) - medium
+### ~~[TD-620] An organisation admin's money keys are still held by role (`LEAD_MONEY_UNTIL_M4`) - medium~~ — BUILT 2026-11-19 (sprint M4a, branch access-s2-m4a, not pushed; `LEAD_MONEY_UNTIL_M4` removed (staff_permissions_v2.py:219); an organisation admin's Payments come through `organisation.admin` (`holds_org_admin_powers`), stored by migration courses 0100; tests `test_m2b_stored_v2`, `test_permission_catalogue_v2`, `test_m3_migration_0098`, `test_m4a_org_admin_powers.EachPowerTurnsOffWithTheKey.test_the_six`)
 
 **Raised 2026-11-14 by sprint M3a (A3).** `staff_permissions_v2.effective_v2` adds `payments.view`,
 `payments.prepare`, `payments.check`, `payments.approve` and `sponsors.check` to every active organisation admin by
@@ -9090,7 +9090,7 @@ and clean-read gates refuse another person's card for the name, the lock and ali
 good one. Fix: make the `ic` sweep symmetric (an `ic` upload counts every live non-household `ic` as stale/existing,
 whatever the request code), with a real-upload test. *(A - S)*
 
-### [TD-629] Unticking a v2 payments key on an organisation admin does nothing until M4 - low
+### ~~[TD-629] Unticking a v2 payments key on an organisation admin does nothing until M4 - low~~ — BUILT 2026-11-19 (sprint M4a, branch access-s2-m4a, not pushed; a Payments switch is no longer stored on an organisation admin: `staff_permissions_admin._lead_after` refuses it, `payments.view` included, with 400 `money_through_org_admin` (`LEAD_MONEY_OLD`, staff_permissions_admin.py:410); the powers come off with the key, which a super can untick; tests `test_m3c_granting.test_the_payment_seats_come_with_the_powers`, `test_m4a_org_admin_powers.TheEditor.test_only_a_super_sets_or_clears_it`, `test_the_card_saves_back_what_it_was_served`)
 
 **Raised 2026-11-15 by the M3c fresh review (low 2).** `staff_permissions_admin._lead_after` refuses only the old
 `payments_*` keys (`LEAD_MONEY_OLD`, refusal `money_by_role`), while `staff_permissions_v2.effective_v2` adds the v2

@@ -45,6 +45,9 @@ const CATALOGUE_V2: string[] = (() => {
   return out
 })()
 const HATS = pySeq(V2_SRC, 'HATS')
+/** S2 / M4a: `staff_permissions_v2.ORG_ADMIN_KEY`, and the v2 keys an organisation admin is no longer served. */
+const ORG_ADMIN_KEY = 'organisation.admin'
+const LEAD_MONEY_GONE = ['sponsors.check', 'payments.prepare', 'payments.check', 'payments.approve']
 
 /**
  * M3c (list W): what `GET /admin/role/` serves as `page_keys` for a super or an organisation admin on the
@@ -59,7 +62,10 @@ const HATS = pySeq(V2_SRC, 'HATS')
 export function servedPageKeys(role: string): string[] | undefined {
   if (role === 'super' || role === 'org_admin') {
     const held = servedPermissions(role)
-    return [...CATALOGUE_V2, ...HATS.filter((h) => held.includes(h))]
+    // S2 / M4a: both are served `organisation.admin`; an organisation admin is no longer served the four money keys
+    // its role used to carry (they are the Payments switches and the super's Check now).
+    const keys = role === 'super' ? CATALOGUE_V2 : CATALOGUE_V2.filter((k) => !LEAD_MONEY_GONE.includes(k))
+    return [...keys, ...HATS.filter((h) => held.includes(h)), ORG_ADMIN_KEY]
   }
   const shape = (SERVED as Record<string, { role: string; page_keys: string[] } | undefined>)[role]
   return shape && shape.role === role ? [...shape.page_keys] : undefined

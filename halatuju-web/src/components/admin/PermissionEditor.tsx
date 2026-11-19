@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Toggle from '@/components/Toggle'
 import PermissionHistory from './PermissionHistory'
-import { BoxShell, ChangedPill, LayoutBox, Padlock, type KeyState } from './PermissionBox'
+import { BoxShell, ChangedPill, LayoutBox, Padlock, PowersRow, type KeyState, type RowWords } from './PermissionBox'
 import { permName } from './permName'
 import { useT } from '@/lib/i18n'
-import { LAYOUT_KEYS, PERMISSION_LAYOUT } from '@/lib/permissionLayout'
+import { LAYOUT_KEYS, PAYMENTS_BRING_VIEW, PAYMENTS_VIEW, PERMISSION_LAYOUT } from '@/lib/permissionLayout'
 import {
   getStaffPermissions, saveStaffPermissions,
   type StaffPermissionsPlan, type StaffPermissionsView, type StaffV2Key,
@@ -33,8 +33,9 @@ import {
  * `never_grantable` or `alias` is not drawn (its old key's row stands in for an alias) and rides along in
  * the saved set untouched. M3c (A12): a key the viewer may not give (`not_held`, or one of today's keys in
  * `keys_not_held`) is drawn disabled with a padlock, on when it opens today, under ONE legend line — unless
- * the person already holds it, when it may be taken away. E1: an organisation admin's card shows Payments as
- * the role gives it (by role until payments move to keys), with no switches. No "Custom" chip: every admin is set up individually (the server's `custom` still tells
+ * the person already holds it, when it may be taken away. S2 / M4a (owner Q1): an organisation admin's card
+ * (the server serves `org_admin_powers`) draws the "Organisation admin powers" switch with its served list, and
+ * its Payments row says it comes with those powers, with no switches. No "Custom" chip: every admin is set up individually (the server's `custom` still tells
  * Reset whether there is anything to undo). The Engagement pages' need for Scholars is a note from the
  * server (`v2_gaps`, the dry run's), never a refusal.
  */
@@ -75,15 +76,22 @@ type Refusal = { message: string; code: string }
 const sameSet = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((k) => b.includes(k))
 
-/** M2b: the whole set a card starts from — today's keys, then the stored page keys. */
-const heldBy = (v: { permissions: string[]; v2_held?: string[] }) => [...v.permissions, ...(v.v2_held ?? [])]
+/** S2 / M4a: Organisation admin powers (`organisation.admin`), on an organisation admin's card only. */
+const POWERS_KEY = 'organisation.admin'
+/** S2 / M4a: a Payments switch brings View (the server stores View by itself only without one), so a set
+ *  holding one shows View on, locked. */
+const brings = (keys: readonly string[]) => PAYMENTS_BRING_VIEW.some((k) => keys.includes(k))
+/** M2b: the whole set a card starts from — today's keys, then the stored page keys (S2: and the powers key
+ *  when the served card says it is held). */
+const heldBy = (v: Pick<StaffPermissionsView, 'permissions' | 'v2_held' | 'org_admin_powers'>) =>
+  [...v.permissions, ...(v.v2_held ?? []), ...(v.org_admin_powers?.held ? [POWERS_KEY] : [])]
 /** The page a v2 key opens (`sponsors.edit` -> `sponsors`); a key of today has none. */
 const pageOf = (key: string) => (key.includes('.') ? key.slice(0, key.indexOf('.')) : null)
 /** D3: what the server marks so is never drawn. */
 const HIDDEN_REASONS: readonly (string | null)[] = ['never_grantable', 'alias']
 const OFF: KeyState = { shown: false, on: false, lock: false, disabled: true, changed: false }
-/** E1 (M3c): the rows an organisation admin's card words BY ROLE (row id -> its words), drawn without controls. */
-const BY_ROLE_ROWS: Readonly<Record<string, string>> = { payments: 'admin.permLayout.payments.byRole' }
+/** S2 / M4a: the rows an organisation admin's card words instead of switching (row id -> its words). */
+const POWERS_ROWS: RowWords = { payments: 'admin.permLayout.payments.withPowers' }
 
 type Translate = ReturnType<typeof useT>['t']
 
@@ -93,6 +101,11 @@ function keyStates(view: StaffPermissionsView, served: Map<string, StaffV2Key>, 
   frozen: boolean): (key: string) => KeyState {
   const fixed = !view.editable
   return (key) => {
+    if (key === POWERS_KEY) {
+      if (!view.org_admin_powers) return OFF
+      const on = fixed ? view.org_admin_powers.held : want.includes(key)
+      return { shown: true, on, lock: false, disabled: frozen, changed: !fixed && on !== held.includes(key) }
+    }
     const v2 = served.get(key)
     if (v2) {
       if (HIDDEN_REASONS.includes(v2.reason)) return OFF
@@ -100,9 +113,12 @@ function keyStates(view: StaffPermissionsView, served: Map<string, StaffV2Key>, 
       const keep = v2.reason === 'not_held' && held.includes(key)
       const lock = v2.reason === 'not_held' && !keep
       const tickable = (v2.grantable || keep) && !fixed
+      // S2 / M4a: View is on and locked while another Payments switch is on.
+      const brought = key === PAYMENTS_VIEW && tickable && brings(want)
       // D4: a key nobody here may store shows what opens today; so does a fixed card (its set is the server's).
-      const on = tickable ? want.includes(key) : v2.held
-      return { shown: true, on, lock, disabled: frozen || lock, changed: tickable && on !== held.includes(key) }
+      const on = tickable ? want.includes(key) || brought : v2.held
+      const wasOn = held.includes(key) || (key === PAYMENTS_VIEW && brings(held))
+      return { shown: true, on, lock, disabled: frozen || lock || brought, changed: tickable && on !== wasOn }
     }
     if (!view.keys.includes(key)) return OFF
     const on = want.includes(key)
@@ -277,9 +293,11 @@ function useWorkingSet({ adminId, token, onSaved, initial, table }: Omit<Permiss
     try {
       const p = await saveStaffPermissions(adminId, want, false, { token })
       const v2Held = p.v2_held ?? view?.v2_held
+      const powers = view?.org_admin_powers
+        ? { ...view.org_admin_powers, held: p.org_admin_powers_held ?? view.org_admin_powers.held } : view?.org_admin_powers
       setView((cur) => (cur ? { ...cur, permissions: p.permissions, custom: p.custom, v2_held: v2Held,
-        v2_gaps: p.v2_gaps ?? cur.v2_gaps } : cur))
-      setWant(heldBy({ permissions: p.permissions, v2_held: v2Held }))
+        v2_gaps: p.v2_gaps ?? cur.v2_gaps, org_admin_powers: powers } : cur))
+      setWant(heldBy({ permissions: p.permissions, v2_held: v2Held, org_admin_powers: powers }))
       setSaved(true)
       onSaved?.()
       // Re-read for the Changes list: the new line is the server's, with its own time and author.
@@ -338,16 +356,17 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
     .filter((k) => !placed.includes(k) && ks(k).shown)
   const locks = !fixed && [...(inAdmins ? LAYOUT_KEYS : []), ...(inReviewers ? reviewerKeys : [])]
     .some((k) => ks(k).shown && ks(k).lock)
-  // E1 (M3c): an organisation admin starts payment runs and is the fallback approver BY ROLE until M4 (the
-  // server refuses those keys on their card, `money_by_role`), so their Payments row says so, with no switches.
-  const byRole = view.role === 'org_admin' ? BY_ROLE_ROWS : undefined
+  // S2 / M4a: an organisation admin's Payments come with Organisation admin powers (the server refuses the
+  // Payments switches on their card, `money_through_org_admin`), so the row says so, with no switches.
+  const powers = view.org_admin_powers
+  const worded = powers ? POWERS_ROWS : undefined
 
   // O12: opened from one table, Reset weighs that table's keys only (M2b: the Admins table's keys include
   // the page keys, and its served preset ends with the role's own).
   const scope: readonly string[] | null = table === 'admins' ? [...TABLE_KEYS.admins, ...Array.from(grantable)]
     : table ? TABLE_KEYS[table] : null
   const mine = (keys: readonly string[]) => (scope ? keys.filter((k) => scope.includes(k)) : [...keys])
-  const fullPreset = [...view.preset, ...(view.v2_preset ?? [])]
+  const fullPreset = [...view.preset, ...(view.v2_preset ?? []), ...(powers ? [POWERS_KEY] : [])]
   const presetHere = scope ? (view.table_presets?.[table as TeamTable] ?? mine(fullPreset)) : fullPreset
   const resetTo = scope ? [...want.filter((k) => !scope.includes(k)), ...presetHere] : fullPreset
   // Review (d): a NULL row (the server's `custom` false) holds its preset although it stores no page key, so
@@ -376,8 +395,9 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
       <div className="mt-3 grid gap-3 pb-4">
         {inAdmins && (
           <div className="grid gap-3" data-testid="perm-section-admins">
+            {powers && <PowersRow powers={powers.powers} k={ks(POWERS_KEY)} onSwitch={(v) => flip(POWERS_KEY, v)} />}
             {PERMISSION_LAYOUT.map((box) => (
-              <LayoutBox key={box.id} box={box} ks={ks} onSwitch={flip} onTri={choose} byRole={byRole} />
+              <LayoutBox key={box.id} box={box} ks={ks} onSwitch={flip} onTri={choose} worded={worded} />
             ))}
           </div>
         )}

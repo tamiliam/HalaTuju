@@ -18,11 +18,11 @@ does today."*). It reads PERMISSIONS (`PartnerAdmin.has_perm`), not roles:
                                                                                      -> complete(run)
 
 * **The approver, with a per-run fallback.** The approvers of a run are the organisation's active
-  `payments_approve` holders who have NOT already signed it. If there are none, the organisation
-  admin (the lead tier) approves, exactly as before the change. So an organisation with no Finance
-  person works as it always did, BrightPath's Suresh drops out as soon as a Finance person exists,
-  and no run can strand (the sole approver who is also its maker; the last approver revoked or
-  switched mid-run; a run already `finance_checked` by the only Finance person).
+  `payments_approve` holders who have NOT already signed it. If there are none, the fallback opens
+  (S2 / M4a, owner Q2, 19 Nov): anybody holding Organisation admin powers (`holds_org_admin_powers`)
+  or Approve who has not signed it approves — the person who BUILT the run included; the maker never.
+  So no run can strand (the sole approver who is also its maker; the last approver revoked or switched
+  mid-run; a run already `finance_checked` by the only checker).
 * **The check stays live and is never stored** (decision 2026-07-23, kept): armed while an active
   member holds `payments_check`. No preset holds it after Sprint 2, so the chain is two steps
   everywhere until somebody is given it — a third signer is one permission away.
@@ -67,11 +67,18 @@ def _holders(organisation_id, key, cache=None):
         return staff_permissions.holders(organisation_id, key)
     slot = (organisation_id, key)
     if slot not in cache:
-        staff_slot = (organisation_id, None)
-        if staff_slot not in cache:
-            cache[staff_slot] = staff_permissions.org_staff(organisation_id)
-        cache[slot] = staff_permissions.holders(organisation_id, key, cache[staff_slot])
+        cache[slot] = staff_permissions.holders(organisation_id, key, _staff(organisation_id, cache))
     return cache[slot]
+
+
+def _staff(organisation_id, cache=None):
+    """`staff_permissions.org_staff`, read once per cache (shared with `_holders`)."""
+    from apps.courses import staff_permissions
+    if cache is None:
+        return staff_permissions.org_staff(organisation_id)
+    if (organisation_id, None) not in cache:
+        cache[(organisation_id, None)] = staff_permissions.org_staff(organisation_id)
+    return cache[(organisation_id, None)]
 
 
 def _signed_in(admin):
@@ -84,9 +91,28 @@ def _signed_in(admin):
     return has_signed_in(admin)
 
 
-def _is_lead_tier(admin):
+def _org_admin_powers(admin):
+    """S2 / M4a: Organisation admin powers (`staff_permissions.holds_org_admin_powers`), never the role."""
     from apps.courses import staff_permissions
-    return staff_permissions.is_lead_tier(admin)
+    return staff_permissions.holds_org_admin_powers(admin)
+
+
+def lock_actor(admin):
+    """TD-605: re-read the ACTOR's row under a row lock BEFORE the run is locked (one order everywhere:
+    the actor's row, then the run), so a key taken away while a request is in flight is seen before it
+    acts. The fresh keys, role and active flag are copied onto ``admin``; a row gone or revoked raises
+    `wrong_role`. Returns ``admin``."""
+    from apps.courses.models import PartnerAdmin
+    if admin is None or getattr(admin, 'pk', None) is None or not isinstance(admin, PartnerAdmin):
+        return admin
+    row = (PartnerAdmin.objects.select_for_update().filter(pk=admin.pk, is_active=True)
+           .values('permissions', 'role', 'first_seen_at').first())
+    if row is None:
+        from .payments import PaymentsError
+        raise PaymentsError('wrong_role')
+    for k, v in row.items():
+        setattr(admin, k, v)
+    return admin
 
 
 def finance_check_required(organisation, cache=None):
@@ -112,8 +138,9 @@ def credit_check_required(organisation, credit=None, holders=None):
     """Does this organisation's WALLET-CREDIT chain include the finance check?
 
     True iff it has at least one ACTIVE holder of the credit checker key (`credit_steps.CHECKER_KEY`,
-    `payments_approve`; a super is never a holder). Live, never stored. Split out at #39 Sprint 2 so
-    sponsor credits keep Admin records -> Finance checks -> the organisation admin countersigns (owner
+    `payments_approve`; a super is never a holder) WHO HAS SIGNED IN (TD-560, S2: as the run's check —
+    a holder who never signed in could never take the step, so must not arm it). Live, never stored.
+    Split out at #39 Sprint 2 so sponsor credits keep Admin records -> Finance checks -> the organisation admin countersigns (owner
     question 6: accepting money is the organisation's act).
 
     TD-475 (A1.10a): was "an active `finance` ROLE row". The Finance label is retired (owner rulings 4
@@ -131,6 +158,7 @@ def credit_check_required(organisation, credit=None, holders=None):
     from .credit_steps import CHECKER_KEY, collected_signer_emails
     if holders is None:
         holders = staff_permissions.holders(organisation, CHECKER_KEY)
+    holders = [a for a in holders if _signed_in(a)]         # TD-560
     if credit is None:
         return bool(holders)
     signed = collected_signer_emails(credit)
@@ -157,9 +185,10 @@ def _barred_from_approving(run):
     Approve could otherwise build a run, let a colleague sign it as maker, and approve it themselves —
     "never both on the same run" must hold for the author, not only the signers.
 
-    ⚠ NOT the fallback's rule. The organisation admin creates runs (lead tier, never the maker) and
-    approves only when nobody else can; barring the creator there would strand every run an org admin
-    built in an organisation with no eligible approver — today's path, unchanged."""
+    ⚠ NOT the fallback's rule (S2 / M4a, owner Q2, 19 Nov): when nobody eligible is left, anybody with
+    Approve (or Organisation admin powers) who has not SIGNED the run may approve it, the creator
+    included; the maker never (a signer). Barring the creator there would strand every run its only
+    approver built."""
     barred = set(_collected_signer_emails(run))
     author = (getattr(run, 'created_by', '') or '').strip().casefold()
     if author:
@@ -191,19 +220,24 @@ def eligible_approvers(run, cache=None):
 
 
 def approver_fallback(run, cache=None):
-    """True when NOBODY eligible holds the approval for this run, so the organisation admin approves
-    (today's path). Re-asked live, per run: it switches on and off with the people, never stored."""
+    """True when NOBODY eligible holds the approval for this run, so the fallback approves (`_may_approve`).
+    Re-asked live, per run: it switches on and off with the people, never stored."""
     return not eligible_approvers(run, cache)
 
 
-def fallback_approvers(run):
-    """The organisation admins who approve under the fallback: active, not already a signer."""
-    from apps.courses.models import PartnerAdmin
+def _fallback_may(admin):
+    """Who the fallback admits (owner Q2): Organisation admin powers, or Approve held eligibly."""
+    return _org_admin_powers(admin) or _holds_eligibly(admin, 'payments_approve')
+
+
+def fallback_approvers(run, cache=None):
+    """Who approves under the fallback (S2 / M4a, Q2): the organisation's active staff (`org_staff`, never
+    a super) holding Organisation admin powers or Approve (signed in) who have not signed the run."""
+    org_id = _org_id(run)
+    if org_id is None:
+        return []
     signed = _collected_signer_emails(run)
-    return [a for a in PartnerAdmin.objects.filter(
-                owning_organisation_id=_org_id(run), role='org_admin',
-                is_active=True).order_by('id')
-            if _email(a) not in signed]
+    return [a for a in _staff(org_id, cache) if _email(a) not in signed and _fallback_may(a)]
 
 
 def _in_organisation(run, admin):
@@ -223,21 +257,27 @@ def _holds_eligibly(admin, key):
 def _may_approve(run, admin, cache=None):
     if _holds_eligibly(admin, 'payments_approve') and _email(admin) not in _barred_from_approving(run):
         return True
-    return _is_lead_tier(admin) and approver_fallback(run, cache)
+    # The fallback (Q2): the signer bar is `next_step_for`'s, so the maker never gets here.
+    return (_email(admin) not in _collected_signer_emails(run) and _fallback_may(admin)
+            and approver_fallback(run, cache))
 
 
 def may_read(admin):
-    """Who opens Payments at all (list, run, CSV, funding summary): any `payments_*` key, or the lead
-    tier (the organisation admin creates, edits and cancels runs and is the fallback approver)."""
-    return admin is not None and (
-        any(admin.has_perm(k) for k in ('payments_prepare', 'payments_check', 'payments_approve'))
-        or _is_lead_tier(admin))
+    """Who opens Payments at all (list, run, CSV, funding summary): any `payments_*` key (as before), or
+    the Payments door the menu reads (`staff_tables.DOOR_KEYS['payments_read']`, `payments.view`): S2 / M4a,
+    a stored View switch or Organisation admin powers (who create, edit and cancel runs and approve under
+    the fallback). One door for the API and the menu; read from the loaded row, no query."""
+    if admin is None:
+        return False
+    from apps.courses import public as courses_public
+    return (any(admin.has_perm(k) for k in ('payments_prepare', 'payments_check', 'payments_approve'))
+            or courses_public.staff_tables.opens_door(admin, 'payments_read'))
 
 
 def may_prepare(admin):
-    """Who creates, edits and cancels a run: `payments_prepare`, or the lead tier (who never signs as
-    maker). Finance does not: approving a run is not authoring or withdrawing one."""
-    return admin is not None and (admin.has_perm('payments_prepare') or _is_lead_tier(admin))
+    """Who creates, edits and cancels a run: `payments_prepare`, or Organisation admin powers (who never
+    sign as maker). Approve alone does not: approving a run is not authoring or withdrawing one."""
+    return admin is not None and (admin.has_perm('payments_prepare') or _org_admin_powers(admin))
 
 
 def next_step_for(run, admin, cache=None):
@@ -269,9 +309,10 @@ def _refusal(run, admin):
         return 'wrong_role'
     if _email(admin) in _collected_signer_emails(run):
         return 'same_signer'
-    if (_email(admin) in _barred_from_approving(run) and not _is_lead_tier(admin)
-            and (admin.has_perm('payments_approve') or admin.has_perm('payments_check'))):
-        return 'same_signer'                     # S4 fix 2: they CREATED it — the same rule's reason
+    if (_email(admin) in _barred_from_approving(run)
+            and (admin.has_perm('payments_approve') or admin.has_perm('payments_check'))
+            and not (_fallback_may(admin) and approver_fallback(run))):
+        return 'same_signer'      # S4 fix 2: they CREATED it (Q2: unless the fallback admits them)
     if run.status == 'admin_signed' and check_required_for(run):
         if _may_approve(run, admin):
             return 'finance_check_required'      # told WHY: from his seat nothing looks amiss
@@ -301,10 +342,11 @@ def sign(run, admin, typed_name):
 
     Guards: `bad_state`; `name_mismatch` (typed name vs `PartnerAdmin.name`); then `_refusal`'s
     `wrong_role` / `same_signer` / `finance_check_required`. Emails, best-effort (never raise): after
-    the maker, the checkers when the check is armed, else the approvers (else the organisation admins
-    under the fallback); after the check, the approvers. Returns the run."""
+    the maker, the checkers when the check is armed, else the approvers (else `fallback_approvers`);
+    after the check, the approvers. Returns the run."""
     from . import staff_activity     # common profile S4: one `payment_run_signed` row per signature
     from .payments import PaymentsError, _name_matches, complete
+    lock_actor(admin)     # TD-605: the actor's row first, then the run
     _lock(run)
     if run.status not in _IN_FLIGHT:
         raise PaymentsError('bad_state')
@@ -358,8 +400,8 @@ def sign(run, admin, typed_name):
 @transaction.atomic
 def cancel(run, by=''):
     """Cancel a run at any pre-completion status (never a completed one). Who may is the view's
-    gate (`may_prepare`: Prepare, or the organisation admin) — Finance approves a run, it does not
-    withdraw one."""
+    gate (`may_prepare`: Prepare, or Organisation admin powers) — Approve alone approves a run, it does
+    not withdraw one."""
     from .payments import EDITABLE_STATUSES, PaymentsError
     _lock(run)        # review fix 1: a stale copy must never cancel a run completed since it was read
     if run.status not in EDITABLE_STATUSES:

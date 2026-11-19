@@ -165,9 +165,11 @@ class AdminStaffPermissionsView(_AdminBase):
                              'code': 'bad_request'}, status=status.HTTP_400_BAD_REQUEST)
         dry_run = body.get('dry_run') is True          # S4 review fix 10: only a JSON true
         try:
-            # M2b: a tab that predates v2 keys does not send `v2: true` — its save keeps the stored ones.
+            # M2b: a tab that predates v2 keys does not send `v2: true` — its save keeps the stored ones;
+            # S2 / M4a: the same for Organisation admin powers and `powers: true`.
             target, plan = spa.change_permissions(target.pk, body['permissions'], by=admin,
-                                                  dry_run=dry_run, with_v2=body.get('v2') is True)
+                                                  dry_run=dry_run, with_v2=body.get('v2') is True,
+                                                  with_powers=body.get('powers') is True)
         except spa.PermissionChangeRefused as refused:
             return Response({'error': refused.message, 'code': refused.code, **refused.extra},
                             status=refused.status)
@@ -180,6 +182,7 @@ class AdminStaffPermissionsView(_AdminBase):
                          # M2b: `permissions` stays today's keys (what a pre-M2b tab reads); `v2_held` the rest.
                          'permissions': [k for k in plan['after'] if k in spa.editable_keys()],
                          'v2_held': plan['v2_held'], 'v2_gaps': plan['v2_gaps'], 'added': plan['added'],
+                         'org_admin_powers_held': plan['org_admin_powers_held'],
                          'removed': plan['removed'], 'consequences': plan['consequences']})
 
 

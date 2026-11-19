@@ -57,7 +57,7 @@ from .search import apply_people_search, people_search_term
 from .stpm_engine import STPM_CGPA_POINTS, calculate_stpm_cgpa
 from .stpm_pngk import pngk_from_grades, stpm_cgpa_of
 from .staff_archive import archive_asked, in_a_group_refusal
-from .staff_delete_rules import delete_fields, sole_org_admin_ids
+from .staff_delete_rules import delete_fields, lock_org_admins_of, sole_org_admin_ids
 from .staff_fence import _deletable_now as deletable_now
 from .staff_fence import _staff_target_manageable as staff_target_manageable
 from .staff_fence import staff_target_readable
@@ -91,7 +91,7 @@ __all__ = [
     'PartnerAdminMixin', 'is_google_email', 'fetch_auth_data', 'invitation_dict',
     'MARA_DIVISION', 'SPM_PATHWAYS',
     'deletable_now', 'staff_target_manageable', 'staff_target_readable',
-    'delete_fields', 'sole_org_admin_ids', 'archive_asked', 'in_a_group_refusal',
+    'delete_fields', 'lock_org_admins_of', 'sole_org_admin_ids', 'archive_asked', 'in_a_group_refusal',
     'gift_as_id', 'gift_refusal', 'gift_not_found', 'resolve_gifts',
     'contrast',
     # Module doors (F2b stage 2): the object IS the home module, so patches on it keep working.

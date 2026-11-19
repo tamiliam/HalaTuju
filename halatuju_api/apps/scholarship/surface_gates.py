@@ -107,13 +107,14 @@ def may_vet_sponsors(admin):
 
 def may_approve_platform_sponsors(admin):
     """Vet a sponsor ACCOUNT (`AdminSponsorReviewView`) and publish the sponsor TERMS
-    (`AdminSponsorTermsPublishView`): `sponsors.approve` AND a super or an organisation admin (M3c, the
-    fence decisions.md "M3c" names). Both are platform-level — a `Sponsor` and a `SponsorTermsVersion`
-    belong to no organisation — so they reach every one (D6). A team member GRANTED the key accepts
-    sponsors into their own organisation's gifts (`AdminSponsorMembershipView`, fenced by gift) and
-    nothing platform-wide. Every organisation admin keeps exactly what they had."""
+    (`AdminSponsorTermsPublishView`): `sponsors.approve` AND a super or Organisation admin powers (M3c,
+    the fence decisions.md "M3c" names; S2 / M4a: the key, `holds_org_admin_powers`, not the role). Both
+    are platform-level — a `Sponsor` and a `SponsorTermsVersion` belong to no organisation — so they reach
+    every one (D6). A team member GRANTED the key accepts sponsors into their own organisation's gifts
+    (`AdminSponsorMembershipView`, fenced by gift) and nothing platform-wide. Every organisation admin
+    keeps exactly what they had."""
     from apps.courses import staff_permissions as sp
-    return may_vet_sponsors(admin) and bool(admin.is_super or sp.is_lead_tier(admin))
+    return may_vet_sponsors(admin) and bool(admin.is_super or sp.holds_org_admin_powers(admin))
 
 
 def may_send_senior_letters(admin):

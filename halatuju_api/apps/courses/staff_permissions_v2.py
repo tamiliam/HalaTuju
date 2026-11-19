@@ -93,8 +93,13 @@ CATALOGUE_V2 = {
 #: QC gate). They are both vocabularies at once; T5b made `qc` self-sufficient (`HAT_IMPLIES`).
 HATS = ('review', 'qc')
 
-#: Every v2 key, in display order: the page keys, then the hats.
-V2_KEYS = (*CATALOGUE_V2, *HATS)
+#: S2 / M4a (owner Q1, 19 Nov): "Organisation admin powers" — ONE key, outside `CATALOGUE_V2` (so no
+#: grid, alias or grantable set ever picks it up), stored only on org admin rows and set only by a super.
+#: Defined in the leaf (`staff_permissions.ORG_ADMIN_KEY`); its one reader is `holds_org_admin_powers`.
+ORG_ADMIN_KEY = sp.ORG_ADMIN_KEY
+
+#: Every v2 key, in display order: the page keys, then the hats, then Organisation admin powers.
+V2_KEYS = (*CATALOGUE_V2, *HATS, ORG_ADMIN_KEY)
 
 
 def _page_view(key):
@@ -171,9 +176,12 @@ NEVER_GRANTABLE = ('billing.edit', 'requests.approve')
 ALIAS_V2 = tuple(k for k in CATALOGUE_V2 if any(k in keys for keys in ALIASES.values()))
 
 #: The v2 page keys the editor may STORE: neither never-grantable nor an alias. M2b also left out the
-#: lead-only keys; M3c (A9) lets an org admin give those too, so this is now exactly `ORG_ADMIN_V2`
-#: (`test_m2b_stored_v2` pins it).
-GRANTABLE_V2 = tuple(k for k in CATALOGUE_V2 if k not in NEVER_GRANTABLE and k not in ALIAS_V2)
+#: lead-only keys; M3c (A9) lets an org admin give those too. S2 / M4a: plus `payments.view`, the team's
+#: Payments View switch (an alias of the three old money keys, stored by itself when none is held), so
+#: this is `ORG_ADMIN_V2` plus `payments.view` (`test_m2b_stored_v2` pins it).
+PAYMENTS_VIEW = 'payments.view'
+GRANTABLE_V2 = tuple(k for k in CATALOGUE_V2
+                     if k == PAYMENTS_VIEW or (k not in NEVER_GRANTABLE and k not in ALIAS_V2))
 
 #: M3c: an alias VIEW and the one old key that means it (`ALIASES`: `students.view` <- `see_all`,
 #: `scholars.view` <- `scholars`). A ticked `students.edit` / `scholars.approve` implies its page's view
@@ -194,17 +202,29 @@ ORG_ADMIN_V2 = tuple(k for k in CATALOGUE_V2 if k not in NEVER_GRANTABLE and k n
 #: cannot import this one at load time.
 ORG_ADMIN_SET = (*sp.ORG_ADMIN_KEYS, *ORG_ADMIN_V2)
 
-#: A2 (owner O15): the two v2 keys an active organisation admin holds BY ROLE — never stored, never
-#: assignable (`NEVER_GRANTABLE`). The third of the O15 three is the old key `manage_team`
-#: (`staff_permissions.LEAD_BY_ROLE`).
+#: S2 / M4a: what a NEW organisation admin's row stores (`staff_tables.invite_permissions`) and what a
+#: NULL org admin row reads as when a list is written for it (`org_admin_list`): `ORG_ADMIN_SET` plus
+#: Organisation admin powers (migration 0100 appends the key to every stored org admin list).
+ORG_ADMIN_FULL = (*ORG_ADMIN_SET, ORG_ADMIN_KEY)
+
+#: A2 (owner O15): the two v2 keys an active organisation admin holds — never stored, never assignable
+#: (`NEVER_GRANTABLE`). S2 / M4a: through Organisation admin powers (`holds_org_admin_powers`), no longer
+#: by role. The third of the O15 three is the old key `manage_team` (`staff_permissions.LEAD_BY_ROLE`).
 LEAD_BY_ROLE_V2 = NEVER_GRANTABLE
 
-#: A3 (TD-620): the MONEY CARRY-OVER, held by an active organisation admin BY ROLE until M4. No gate
-#: reads these v2 keys yet; storing their old-key spellings would arm or disarm the payment chain
-#: (`staff_permissions.holders`, the run's fallback), which is M4's. The one implicit grant left: M4
-#: removes it.
-LEAD_MONEY_UNTIL_M4 = ('payments.view', 'payments.prepare', 'payments.check', 'payments.approve',
-                       'sponsors.check')
+#: S2 / M4a (owner Q1): what Organisation admin powers grants — the plain list the Permissions card shows
+#: (`v2_editor` serves the codes; the web words them) — and, for each, the gate(s) that read the key
+#: through `holds_org_admin_powers`. `test_m4a_org_admin_powers` fails when a gate calls the helper and
+#: is not named here, or a name here calls it no more. S3 adds the credit approver and the Vircle ID.
+#: (A3's money carry-over by role, `LEAD_MONEY_UNTIL_M4`, is gone: TD-620.)
+ORG_ADMIN_POWERS = (
+    ('manage_team', ('courses/staff_permissions.py::resolve',)),
+    ('pay_bill', ('courses/staff_permissions_v2.py::effective_v2',)),
+    ('approve_requests', ('courses/staff_permissions_v2.py::effective_v2',)),
+    ('payment_runs', ('scholarship/payments_chain.py::may_read', 'scholarship/payments_chain.py::may_prepare')),
+    ('payment_fallback', ('scholarship/payments_chain.py::_fallback_may',)),
+    ('platform_sponsors', ('scholarship/surface_gates.py::may_approve_platform_sponsors',)),
+)
 
 
 def refusal_reason(key):
@@ -213,7 +233,7 @@ def refusal_reason(key):
     save (`staff_permissions_admin`, A12 `not_held`)."""
     if key in NEVER_GRANTABLE:
         return 'never_grantable'
-    if key in ALIAS_V2:
+    if key in ALIAS_V2 and key not in GRANTABLE_V2:      # S2: `payments.view` is both
         return 'alias'
     return None
 
@@ -279,10 +299,10 @@ def org_admin_v2(admin):
 
 def org_admin_list(admin, *, review):
     """M3a (A6): the list an organisation admin's row stores after Team -> Reviewers Add (``review``
-    True) or Remove (False): their stored list — `ORG_ADMIN_SET` when NULL or not a list — with `review`
+    True) or Remove (False): their stored list — `ORG_ADMIN_FULL` when NULL or not a list — with `review`
     put first or taken out, and every other entry KEPT as it stands, in its order."""
     stored = getattr(admin, 'permissions', None)
-    base = list(stored) if isinstance(stored, (list, tuple)) else list(ORG_ADMIN_SET)
+    base = list(stored) if isinstance(stored, (list, tuple)) else list(ORG_ADMIN_FULL)
     rest = [k for k in base if k != sp.LEAD_MAY_ADD]
     return [sp.LEAD_MAY_ADD, *rest] if review else rest
 
@@ -296,9 +316,9 @@ def effective_v2(admin):
       inactive row     -> nothing (sign-in refuses it: `views_admin.get_admin` reads `is_active=True`)
       org_admin        -> M3a (A2, A3): as a team member — `resolve` through `ALIASES`, the Admins
                           table (their seat is by role, A4) and their stored v2 keys (`org_admin_v2`)
-                          — plus `LEAD_BY_ROLE_V2` (O15) and `LEAD_MONEY_UNTIL_M4` (TD-620) by role.
-                          For the set migration 0098 stores this is exactly the lead set before M3a
-                          (every page key, the `qc` hat, and `review` when Team -> Reviewers added it)
+                          — plus, through Organisation admin powers (S2 / M4a, `holds_org_admin_powers`),
+                          the key itself, `LEAD_BY_ROLE_V2` (O15) and `payments.view` (Payments opens;
+                          the run's steps read the old keys and the helper, `payments_chain`)
       team member      -> as above
       anyone else      -> nothing (a referral partner, a source user, a mentor login)
 
@@ -318,7 +338,9 @@ def effective_v2(admin):
     if staff_tables.in_admins(admin):     # the one table that grants page keys (no mentor query)
         held.update(TABLE_GRANTS[staff_tables.ADMINS])
     if lead:
-        held.update((*org_admin_v2(admin), *LEAD_BY_ROLE_V2, *LEAD_MONEY_UNTIL_M4))
+        held.update(org_admin_v2(admin))
+        if sp.holds_org_admin_powers(admin):
+            held.update((ORG_ADMIN_KEY, *LEAD_BY_ROLE_V2, PAYMENTS_VIEW))
     else:
         held.update(stored_v2(admin))
     return with_implied_views(held)

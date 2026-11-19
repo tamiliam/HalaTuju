@@ -574,7 +574,7 @@ class CreditDoors(TestCase):
         self.assertEqual(credit.status, Donation.STATUS_ADMIN_SIGNED)
         self._refused_sign(credit)
         # finance_checked (an active finance admin arms the check): the next step is the countersign.
-        finance = make_admin('finance', owning_org=self.org)
+        finance = make_admin('finance', owning_org=self.org, first_seen_at=timezone.now())   # TD-560: signed in
         credit = credit_service.record_admin_credit(sponsor=self.sponsor, programme=self.programme,
                                                     amount=Decimal('100'), external_reference='T1-4',
                                                     admin=self.maker)

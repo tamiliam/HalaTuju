@@ -8594,11 +8594,11 @@
       },
       "payments_check": {
         "name": "Check payment runs",
-        "desc": "An optional middle check before approval."
+        "desc": "An optional middle check before approval. Turning it on for anyone who has signed in adds the step to every run."
       },
       "payments_approve": {
         "name": "Approve payment runs",
-        "desc": "Releases payments from Vircle to students. Never on a run they prepared. Also checks sponsor credits."
+        "desc": "Releases payments from Vircle to students. Never on a run they signed as maker. Also checks sponsor credits."
       },
       "award_withdraw_request": {
         "name": "Ask to withdraw an award",
@@ -8637,8 +8637,9 @@
       "effect": {
         "check_on": "Payment runs gain a check step: {name} checks each run before it is approved.",
         "check_off": "{name} is the only checker: runs go straight from preparing to approval again.",
-        "approver_fallback_off": "{name} becomes an approver of payment runs; the organisation admin stops approving them, except runs {name} prepared or already signed.",
-        "approver_fallback_on": "{name} is the only approver: the organisation admin approves payment runs again.",
+        "approver_fallback_off": "{name} becomes an approver of payment runs. The fallback (an organisation admin) then approves only the runs {name} prepared or already signed.",
+        "approver_fallback_on": "{name} was the only approver: nobody else can approve payment runs, so an organisation admin approves them as the fallback.",
+        "org_admin_powers_off": "{name} loses Organisation admin powers: managing the team, paying the bill, approving requests, payment runs, approving a run when no one else can, and approving platform sponsors.",
         "not_signed_in": "{name} has never signed in, so the payment change takes effect at their first sign-in.",
         "files_widened_all": "{name} will be able to read every application in this organisation.",
         "files_widened_assigned": "{name} will open the files of the students assigned to them.",
@@ -8698,8 +8699,24 @@
         "desc": "The mentoring tab on each scholar."
       },
       "payments": {
-        "desc": "Opens with any of the three below.",
-        "byRole": "Comes with the role until payments move to permissions: they start payment runs and approve one when no one else can, but never prepare one."
+        "desc": "Opens with any of the four below.",
+        "withPowers": "Comes with Organisation admin powers."
+      },
+      "paymentsView": {
+        "name": "View payment runs",
+        "desc": "See runs and their funding. Cannot change them."
+      },
+      "orgAdminPowers": {
+        "name": "Organisation admin powers",
+        "desc": "Set by HalaTuju for the organisation's admins. Only HalaTuju can change it.",
+        "power": {
+          "manage_team": "Manage the team: invite people, change what they can do, remove them",
+          "pay_bill": "Pay the HalaTuju bill",
+          "approve_requests": "Approve requests to the HalaTuju team",
+          "payment_runs": "See payment runs and build new ones",
+          "payment_fallback": "Approve a payment run when no one else can (never one they signed as maker)",
+          "platform_sponsors": "Approve sponsors from the HalaTuju platform"
+        }
       },
       "spending": {
         "desc": "See and sort how scholars spend their money."

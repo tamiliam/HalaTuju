@@ -364,9 +364,10 @@ class TestConsequences(TestCase):
     def setUpTestData(cls):
         cls.org = make_org()
         cls.org_admin = make_admin('org_admin', owning_org=cls.org)
+        cls.boss = make_admin('super', super_admin=True)
 
-    def _says(self, target, keys):
-        r = _patch(self.org_admin, target, keys, dry_run=True)
+    def _says(self, target, keys, by=None):
+        r = _patch(by or self.org_admin, target, keys, dry_run=True)
         self.assertEqual(r.status_code, 200, r.content[:300])
         return r.json()['consequences']
 
@@ -381,26 +382,37 @@ class TestConsequences(TestCase):
         self.assertEqual(self._says(fin, []), [])
 
     def test_the_check_step_switches_on_and_off(self):
+        # S2 / M4a (owner Q3): only a super gives Check; an organisation admin is refused it (`not_held`).
         target = make_admin('reviewer', owning_org=self.org, first_seen_at=SEEN)
-        self.assertEqual(self._says(target, ['review', 'payments_check']), ['check_on'])
-        _patch(self.org_admin, target, ['review', 'payments_check'])
+        self.assertEqual(_patch(self.org_admin, target, ['review', 'payments_check'], dry_run=True).json()['code'],
+                         'not_held')
+        self.assertEqual(self._says(target, ['review', 'payments_check'], by=self.boss), ['check_on'])
+        _patch(self.boss, target, ['review', 'payments_check'])
         self.assertTrue(payments.finance_check_required(self.org))            # the live rule moved
         self.assertEqual(self._says(target, ['review']), ['check_off'])
 
     def test_someone_who_never_signed_in_changes_nothing_until_they_do(self):
         target = make_admin('admin', owning_org=self.org)                      # first_seen_at NULL
         # M2d: `scholars` kept, so the stored Engagement pages raise no `scholars_needed` here.
+        # TD-560 (S2 / M4a): the credit check, like a run's check, counts only a signed-in holder.
+        self.assertEqual(self._says(target, ['see_all', 'scholars', 'payments_approve']), ['not_signed_in'])
+        target.first_seen_at = SEEN
+        target.save(update_fields=['first_seen_at'])
         self.assertEqual(self._says(target, ['see_all', 'scholars', 'payments_approve']),
-                         ['not_signed_in', 'credit_check_on'])    # the credit check counts them now
+                         ['approver_fallback_off', 'credit_check_on'])
 
     def test_the_first_keyed_holder_arms_the_wallet_credit_check(self):
-        """A1.10a review fix: `credit_check_required` counts every ACTIVE holder of
-        `payments_approve`, signed in or not, so the first one arms the credit check at once."""
+        """A1.10a review fix: `credit_check_required` counts every ACTIVE holder of `payments_approve`
+        who has signed in (TD-560, S2 / M4a: before, signed in or not), so the first one arms it at once."""
         target = make_admin('reviewer', owning_org=self.org, first_seen_at=SEEN)
         self.assertEqual(self._says(target, ['review', 'payments_approve']),
                          ['approver_fallback_off', 'credit_check_on'])
-        other = make_admin('finance', owning_org=self.org)                     # not signed in
-        self.assertEqual(self._says(target, ['review', 'payments_approve']), ['approver_fallback_off'])
+        other = make_admin('finance', owning_org=self.org)                     # not signed in: no holder
+        self.assertEqual(self._says(target, ['review', 'payments_approve']),
+                         ['approver_fallback_off', 'credit_check_on'])
+        other.first_seen_at = SEEN                                             # signed in: armed already
+        other.save(update_fields=['first_seen_at'])
+        self.assertEqual(self._says(target, ['review', 'payments_approve']), [])
         other.is_active = False                                                # revoked: not a holder
         other.save(update_fields=['is_active'])
         self.assertIn('credit_check_on', self._says(target, ['review', 'payments_approve']))
@@ -555,22 +567,26 @@ class TestReviewFixes(TestCase):
             created_by=creator.email.upper(), admin_signed_email=maker.email,
             admin_signed_name=maker.name)
 
-    def test_the_creator_cannot_approve_and_the_fallback_takes_it(self):
+    def test_the_creator_is_not_the_approver_but_may_approve_under_the_fallback(self):
+        # S2 / M4a (owner Q2, 19 Nov): under the fallback anyone holding the powers or Approve who has not
+        # SIGNED the run approves — the person who BUILT it included; the maker never. (Before: the
+        # creator was refused `same_signer` and only the organisation admin took it.)
         author = make_admin('admin', owning_org=self.org, first_seen_at=SEEN,
                             permissions=['see_all', 'payments_prepare', 'payments_approve'])
-        maker = make_admin('admin', owning_org=self.org, first_seen_at=SEEN)
+        maker = make_admin('admin', owning_org=self.org, first_seen_at=SEEN,
+                           permissions=['see_all', 'payments_prepare', 'payments_approve'])
         run = self._run(author, maker)
-        self.assertIsNone(payments.next_step_for(run, author))
-        self.assertEqual(payments.eligible_approvers(run), [])
+        self.assertEqual(payments.eligible_approvers(run), [])                 # the creator is not one
         self.assertTrue(payments.approver_fallback(run))
         self.assertEqual(payments.next_step_for(run, self.org_admin), 'approve')
-        with self.assertRaises(payments.PaymentsError) as caught:
-            payments.sign(run, author, author.name)
-        self.assertEqual(caught.exception.code, 'same_signer')
+        self.assertEqual(payments.next_step_for(run, author), 'approve')       # Q2: the creator may
+        self.assertIsNone(payments.next_step_for(run, maker))                  # the maker never
         # Another approver who did not create it is the approver; the fallback goes off.
         other = make_admin('finance', owning_org=self.org, first_seen_at=SEEN)
         self.assertEqual(payments.eligible_approvers(run), [other])
         self.assertEqual(payments.next_step_for(run, other), 'approve')
+        self.assertIsNone(payments.next_step_for(run, author))
+        self.assertIsNone(payments.next_step_for(run, self.org_admin))
 
     def test_the_creator_cannot_check_either(self):
         author = make_admin('admin', owning_org=self.org, first_seen_at=SEEN,

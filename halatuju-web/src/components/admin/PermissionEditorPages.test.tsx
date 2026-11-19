@@ -275,3 +275,68 @@ describe('permName: a v2 page key reads "<page>: <level>"', () => {
     expect(screen.getByText(name('surveys.edit'))).toBeTruthy()
   })
 })
+
+describe('S2 / M4a: Organisation admin powers and the Payments switches', () => {
+  const POWERS = ['manage_team', 'pay_bill', 'approve_requests', 'payment_runs', 'payment_fallback', 'platform_sponsors']
+  const KEY = ['organisation', 'admin'].join('.')
+  const VIEW = ['payments', 'view'].join('.')
+  const powersSwitch = () => screen.getByRole('switch', { name: 'admin.permLayout.orgAdminPowers.name' }) as HTMLButtonElement
+  const viewSwitch = () => screen.getByRole('switch', { name: 'admin.permLayout.paymentsView.name' }) as HTMLButtonElement
+  const prepareSwitch = () => screen.getByRole('switch', { name: 'admin.perm.payments_prepare.name' }) as HTMLButtonElement
+  const LEAD: api.StaffPermissionsView = { ...ADMIN, role: 'org_admin', permissions: ['see_all', 'scholars', 'manage_team'],
+    preset: ['see_all', 'scholars', 'manage_team'], org_admin_powers: { held: true, powers: POWERS } }
+  const withView = (held = false): api.StaffV2Group[] => [GROUPS[0],
+    { group: 'programme', keys: [...GROUPS[1].keys, k(VIEW, true, null, held)] }]
+
+  it('an organisation admin\'s card: the powers switch with its six-line list; Payments worded, no switches', async () => {
+    await open(LEAD)
+    expect(powersSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(powersSwitch().disabled).toBe(false)
+    const list = screen.getByTestId('perm-org-admin-powers-list')
+    expect(Array.from(list.querySelectorAll('[data-power]')).map((li) => li.getAttribute('data-power'))).toEqual(POWERS)
+    expect(list.querySelectorAll('li')[0].textContent).toBe('admin.permLayout.orgAdminPowers.power.manage_team')
+    const row = screen.getByTestId('perm-box-programme').querySelector('[data-row="payments"]') as HTMLElement
+    expect(row.getAttribute('data-worded')).toBe('true')
+    expect(within(row).getByText('admin.permLayout.payments.withPowers')).toBeTruthy()
+    expect(within(row).queryByRole('switch')).toBeNull()
+    expect(screen.queryByRole('switch', { name: 'admin.perm.payments_prepare.name' })).toBeNull()
+    expect(mockApi.saveStaffPermissions).not.toHaveBeenCalled()
+  })
+
+  it('unticking the powers asks with the set minus the key; ticking back is no change', async () => {
+    await open(LEAD)
+    fireEvent.click(powersSwitch())
+    expect(powersSwitch().getAttribute('aria-checked')).toBe('false')
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
+      [...LEAD.permissions, ...PRESET_V2], true, { token: 'tok' }))
+    fireEvent.click(powersSwitch())
+    expect(screen.getByText('admin.permEditor.noChange(name=Staff One)')).toBeTruthy()
+    expect(mockApi.saveStaffPermissions).toHaveBeenCalledTimes(1)
+  })
+
+  it('a fixed card draws the powers as held, disabled; a team card has no powers row', async () => {
+    await open({ ...LEAD, editable: false })
+    expect(powersSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(powersSwitch().disabled).toBe(true)
+    cleanup()
+    await open()
+    expect(screen.queryByTestId('perm-org-admin-powers')).toBeNull()
+    expect(screen.getByTestId('perm-box-programme').querySelector('[data-worded]')).toBeNull()
+  })
+
+  it('View is on and locked while Prepare is on, and not counted as changed', async () => {
+    await open({ ...ADMIN, v2_keys: withView() })
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().disabled).toBe(true)
+    expect(screen.queryAllByText('admin.permEditor.changed')).toHaveLength(0)
+    fireEvent.click(prepareSwitch())                       // Prepare off: View no longer brought, and free
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('false')
+    expect(viewSwitch().disabled).toBe(false)
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
+      ['see_all', 'scholars', 'spending', ...PRESET_V2], true, { token: 'tok' }))
+    fireEvent.click(viewSwitch())                          // View by itself is stored as its own key
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
+      ['see_all', 'scholars', 'spending', ...PRESET_V2, VIEW], true, { token: 'tok' }))
+    expect(mockApi.saveStaffPermissions.mock.calls.every(([, set]) => !set.includes(KEY))).toBe(true)
+  })
+})

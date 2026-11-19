@@ -32,8 +32,8 @@ class Entry:
 #: In the order the screen reads: money first (it moves when somebody signs), then requests, the review
 #: clock, agreements, and the bill.
 CATALOGUE = (
-    # Approvers who have not signed this run (`payments.eligible_approvers`); none -> the organisation
-    # admins who have not signed it (`payments.fallback_approvers`).
+    # Approvers who have not signed this run (`payments.eligible_approvers`); none -> the Organisation
+    # admin powers holders (and Approve holders) who have not signed it (`payments.fallback_approvers`).
     Entry('payment_approval', ('send_payment_countersign_email',)),
     # The `payments_check` holders who have not signed this run (`payments.eligible_checkers`).
     Entry('payment_check', ('send_payment_finance_check_email',)),

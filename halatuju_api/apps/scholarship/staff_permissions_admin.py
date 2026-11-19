@@ -10,8 +10,14 @@ The view's `_staff_target_manageable` already stops an org_admin reaching anybod
 that fence for everyone, so `plan_change` refuses the rest here, for both callers (`may_edit`).
 
 ⚠ M3c (A12): YOU GIVE ONLY WHAT YOU HOLD. Somebody who is not a super may add a key of the organisation
-admin's set (`ORG_ADMIN_SET`) only when it opens for them too (`not_held`). `review`, the payment seats
-and `award_withdraw_request` are outside that set and stay exempt, as before (decisions.md "M3c").
+admin's set (`ORG_ADMIN_SET`) only when it opens for them too (`not_held`). `review` and
+`award_withdraw_request` are outside that set and stay exempt, as before (decisions.md "M3c"). S2 / M4a
+(owner Q3, 19 Nov): the Payments switches count too — Organisation admin powers counts as holding View,
+Prepare and Approve for GIVING, never Check, so only a super gives Check (`MONEY_GIVE`).
+
+⚠ S2 / M4a (owner Q1): ORGANISATION ADMIN POWERS (`organisation.admin`) is stored on org admin rows only
+and changed by a super only (`may_edit`); never on a team row (`org_admin_powers_team`), never taken from
+an organisation's last holder (`last_org_admin_powers`).
 
 ⚠ A CHANGE MAY NOT STRAND A CASE (the S3 as-built notes). Somebody holding in-play cases keeps a key
 that lets them work it (`services.works_cases`, TD-613's rule: in Reviewers and holding `review` or
@@ -20,8 +26,8 @@ re-reads its target under the same lock, so an assignment racing a removal is se
 class): whichever commits second sees the first.
 
 ⚠ THE MONEY CONSEQUENCES ARE LIVE RULES, NOT STORED STATE (S2). Giving the first signed-in member
-`payments_approve` turns the organisation admin's fallback OFF; taking it from the last one turns it
-back ON; the same for `payments_check` and the optional check step. The dry run names them so the
+`payments_approve` turns the run's fallback OFF; taking it from the last one turns it back ON (since
+S2 / M4a the fallback is anybody with Organisation admin powers or Approve who has not signed the run); the same for `payments_check` and the optional check step. The dry run names them so the
 screen says it BEFORE the click, from the same holders the payment chain reads.
 
 ⚠ STORED AS THE PRESET WHEN IT IS THE PRESET. A set equal to the role's preset is saved as NULL, so
@@ -41,8 +47,14 @@ PREPARE_AND_APPROVE = 'prepare_and_approve'
 NOT_SIGNED_IN = 'not_signed_in'
 #: A1.10a (TD-475): gaining `payments_approve` (`credit_steps.CHECKER_KEY`) also ARMS the wallet-credit
 #: check when nobody else active in the organisation holds it. Counted as `credit_check_required`
-#: counts: every active holder, signed in or not, so it takes effect at once.
+#: counts: since TD-560 (S2) only holders who have signed in, so a never-signed-in target arms nothing.
 CREDIT_CHECK_ON = 'credit_check_on'
+#: S2 / M4a: unticking Organisation admin powers takes the powers listed in `ORG_ADMIN_POWERS` away.
+ORG_ADMIN_POWERS_OFF = 'org_admin_powers_off'
+#: S2 / M4a (owner Q3): the Payments switches Organisation admin powers counts as holding, for GIVING
+#: only — never Check (`payments_check`), which only a super gives.
+MONEY_GIVE = ('payments.view', 'payments_prepare', 'payments_approve')
+MONEY_KEYS = (*MONEY_GIVE, 'payments_check')
 #: A1.13b (owner ruling 2026-11-08): one person holding BOTH award-withdrawal seats (they still can
 #: never approve their own request — `award_withdrawal_chain` — but the screen says it, as for runs);
 #: and taking the approve seat from the last signed-in member who holds it, which leaves every request
@@ -101,7 +113,8 @@ def asked_set(asked):
     if not isinstance(asked, (list, tuple)) or not all(isinstance(k, str) for k in asked):
         raise PermissionChangeRefused(
             'bad_request', 400, 'permissions must be a list of permission names.')
-    unknown = sorted({k for k in asked if k not in sp.CATALOGUE and k not in v2.CATALOGUE_V2})
+    unknown = sorted({k for k in asked if k not in sp.CATALOGUE and k not in v2.CATALOGUE_V2
+                      and k != v2.ORG_ADMIN_KEY})
     if unknown:
         raise PermissionChangeRefused(
             'unknown_permission', 400, f'Unknown permission: {", ".join(unknown)}.', unknown=unknown)
@@ -123,7 +136,11 @@ def asked_set(asked):
     pages = v2.with_implied_views(page)
     held = sp.with_implied([*(k for k in asked if k in sp.CATALOGUE),
                             *(v2.VIEW_ALIAS_OLD[k] for k in pages if k in v2.VIEW_ALIAS_OLD)])
-    return (*(k for k in sp.CATALOGUE if k in held), *(k for k in pages if k not in v2.ALIAS_V2))
+    # S2 / M4a: the Payments View switch is stored by itself only; an old money key already means it.
+    view_alone = not any(k.startswith('payments_') for k in held)
+    return (*(k for k in sp.CATALOGUE if k in held),
+            *(k for k in pages if k not in v2.ALIAS_V2 or (k == v2.PAYMENTS_VIEW and view_alone)),
+            *((v2.ORG_ADMIN_KEY,) if v2.ORG_ADMIN_KEY in asked else ()))
 
 
 def _v2():
@@ -142,21 +159,27 @@ def stored_page_keys(target):
 
 def held_set(target):
     """What `target` holds as the editor sees it: `resolve` (today's keys), then the stored v2 page keys
-    (`stored_page_keys`; M2b, M3c)."""
+    (`stored_page_keys`; M2b, M3c), then Organisation admin powers when held (S2 / M4a)."""
     from apps.courses import staff_permissions as sp
-    return (*sp.resolve(target), *stored_page_keys(target))
+    powers = (_v2().ORG_ADMIN_KEY,) if sp.holds_org_admin_powers(target) else ()
+    return (*sp.resolve(target), *stored_page_keys(target), *powers)
 
 
 def not_held(asked, by):
     """M3c (A12): the keys of ``asked`` that ``by`` may NOT give because they do not open for ``by`` —
-    only keys of the organisation admin's set (`ORG_ADMIN_SET`) count; a super gives anything. An old
-    key opens through `resolve`, a v2 page key through `effective_v2`. In the order asked."""
+    only keys of the organisation admin's set (`ORG_ADMIN_SET`) and, since S2 / M4a (owner Q3), the
+    Payments switches (`MONEY_KEYS`) count; a super gives anything. An old key opens through `resolve`, a
+    v2 page key through `effective_v2`; Organisation admin powers counts as holding `MONEY_GIVE` (never
+    Check). In the order asked."""
     from apps.courses import staff_permissions as sp
     v2 = _v2()
     if by is None or by.is_super:
         return []
     old, page = set(sp.resolve(by)), set(v2.effective_v2(by))
-    return [k for k in asked if k in v2.ORG_ADMIN_SET and k not in (old if k in sp.CATALOGUE else page)]
+    if sp.holds_org_admin_powers(by):
+        old.update(MONEY_GIVE)
+    return [k for k in asked if (k in v2.ORG_ADMIN_SET or k in MONEY_KEYS)
+            and k not in (old if k in sp.CATALOGUE else page)]
 
 
 def v2_editor(target, by=None):
@@ -178,6 +201,9 @@ def v2_editor(target, by=None):
         for k, row in v2.CATALOGUE_V2.items() if row[0] == g]} for g in v2.GROUPS]
     lead = sp.is_lead_tier(target)
     return {'v2_keys': groups, 'v2_held': list(stored_page_keys(target)),
+            # S2 / M4a (owner Q1): an org admin card's Organisation admin powers switch and its plain list.
+            'org_admin_powers': ({'held': sp.holds_org_admin_powers(target),
+                                  'powers': [code for code, _gates in v2.ORG_ADMIN_POWERS]} if lead else None),
             'v2_preset': list(v2.ORG_ADMIN_V2 if lead else v2.V2_PRESETS.get(target.role, ())),
             # M3c (A12): today's keys the viewer cannot give (the v2 ones carry 'not_held').
             'keys_not_held': not_held(editable_keys(), by),
@@ -300,8 +326,7 @@ def consequences(target, before, after):
         if not signed_in and gained & {'payments_check', 'payments_approve'}:
             out.append(NOT_SIGNED_IN)
         from .credit_steps import CHECKER_KEY
-        if CHECKER_KEY in gained and not any(
-                a.pk != target.pk for a in sp.holders(target.owning_organisation_id, CHECKER_KEY)):
+        if signed_in and CHECKER_KEY in gained and not _others_hold(target, CHECKER_KEY):   # TD-560
             out.append(CREDIT_CHECK_ON)
         if signed_in and _WD_APPROVE in lost and not _others_hold(target, _WD_APPROVE):
             out.append(WITHDRAW_LAST_CHECKER)
@@ -319,6 +344,8 @@ def consequences(target, before, after):
         out.append(WITHDRAW_REQUEST_AND_APPROVE)
     if _approve_without_view(after) and not _approve_without_view(before):
         out.append(WITHDRAW_APPROVE_NEEDS_VIEW)
+    if _v2().ORG_ADMIN_KEY in lost:
+        out.append(ORG_ADMIN_POWERS_OFF)
     return out
 
 
@@ -338,11 +365,20 @@ def plan_change(target, asked, *, by=None):
     ``consequences`` ends with `SCHOLARS_NEEDED` whenever there is one."""
     from apps.courses import staff_permissions as sp
     _refuse_target(target, by)
+    lead = sp.is_lead_tier(target)
+    if lead and isinstance(asked, (list, tuple)):
+        # S2 / M4a: the card serves an organisation admin's `manage_team` (`resolve`) and sends it back; it
+        # comes with the powers key (`_lead_after`), so it is not "given" here and never refused `lead_tier`.
+        asked = [k for k in asked if k not in sp.LEAD_BY_ROLE]
     after = asked_set(asked)
     before = held_set(target)
-    lead = sp.is_lead_tier(target)
     if lead:
         after = _lead_after(after)
+        _refuse_last_powers(target, before, after)
+    elif _v2().ORG_ADMIN_KEY in after:
+        raise PermissionChangeRefused(
+            'org_admin_powers_team', 400, 'Organisation admin powers are only for organisation admins. '
+            'They cannot be given to a team member.')
     gives = not_held([k for k in after if k not in before], by)
     if gives:
         raise PermissionChangeRefused(
@@ -350,7 +386,7 @@ def plan_change(target, asked, *, by=None):
     _refuse_unlisted(target, after)
     _refuse_stranding(target, before, after)
     old = tuple(k for k in after if k in sp.CATALOGUE)
-    if lead:     # M3c (D1): always a list; `manage_team` is by role, never stored (`LEAD_BY_ROLE`)
+    if lead:     # M3c (D1): always a list; `manage_team` comes with the key (S2), never stored
         stored = [k for k in after if k not in sp.LEAD_BY_ROLE]
     else:
         stored = None if old == sp.preset_for(target.role) and old == after else list(after)
@@ -362,27 +398,46 @@ def plan_change(target, asked, *, by=None):
         'added': [k for k in after if k not in before],
         'removed': [k for k in before if k not in after],
         'stored': stored, 'custom': sp.is_custom(shadow), 'v2_held': list(stored_page_keys(shadow)),
-        'v2_gaps': gaps,
+        'v2_gaps': gaps, 'org_admin_powers_held': _v2().ORG_ADMIN_KEY in after,
         'consequences': [*consequences(target, before, after), *([SCHOLARS_NEEDED] if gaps else [])],
     }
 
 
-#: M3c (D1, E1): the payment seats an organisation admin holds BY ROLE until M4 (`LEAD_MONEY_UNTIL_M4`,
-#: the payment chain's fallback). A super's edit may not store them: refused with `money_by_role`.
-LEAD_MONEY_OLD = ('payments_prepare', 'payments_check', 'payments_approve')
+#: S2 / M4a (TD-629; was M3c's "by role until M4"): the Payments switches an organisation admin's row
+#: never stores — their Payments reach comes through Organisation admin powers (`payments_chain`). A
+#: stored old money key would still count for the old image's `holders()` (and `resolve` keeps it), so a
+#: super's edit may not store one: refused with `money_through_org_admin`.
+LEAD_MONEY_OLD = MONEY_KEYS
 
 
 def _lead_after(after):
-    """M3c (D1): an organisation admin's asked set as the row will hold it — `manage_team` put back BY
-    ROLE (the editor never offers it), in catalogue order; a payment seat refused (by role until M4)."""
+    """M3c (D1): an organisation admin's asked set as the row will hold it — `manage_team` put back
+    through Organisation admin powers (S2 / M4a: only when the asked set keeps the key; the editor never
+    offers `manage_team`), in catalogue order; a Payments switch refused (`LEAD_MONEY_OLD`)."""
     from apps.courses import staff_permissions as sp
     money = [k for k in after if k in LEAD_MONEY_OLD]
     if money:
         raise PermissionChangeRefused(
-            'money_by_role', 400, "An organisation admin's payment powers come with the role until "
-            'payments move to permissions. They cannot be changed here.', keys=money)
-    old = sp.with_implied([*(k for k in after if k in sp.CATALOGUE), *sp.LEAD_BY_ROLE])
+            'money_through_org_admin', 400, "An organisation admin's payment powers come with "
+            'Organisation admin powers. They cannot be changed here.', keys=money)
+    powers = sp.LEAD_BY_ROLE if _v2().ORG_ADMIN_KEY in after else ()
+    old = sp.with_implied([*(k for k in after if k in sp.CATALOGUE), *powers])
     return (*(k for k in sp.CATALOGUE if k in old), *(k for k in after if k not in sp.CATALOGUE))
+
+
+def _refuse_last_powers(target, before, after):
+    """S2 / M4a: never take Organisation admin powers from the organisation's last active holder (as
+    the sole-org-admin guard, `staff_delete_rules`: zero holders only, never a limit on how many).
+    `change_permissions` locks the organisation's org admins first (`lock_org_admins_of`)."""
+    from apps.courses import staff_permissions as sp
+    key = _v2().ORG_ADMIN_KEY
+    if key not in before or key in after or target.owning_organisation_id is None:
+        return
+    if not any(a.pk != target.pk and sp.holds_org_admin_powers(a)
+               for a in sp.org_staff(target.owning_organisation_id)):
+        raise PermissionChangeRefused(
+            'last_org_admin_powers', 409, f'{target.name} is the last person in the organisation with '
+            'Organisation admin powers. Give them to another organisation admin first.')
 
 
 def record(target, before, after, *, by, kind):
@@ -419,22 +474,29 @@ def record_role_reset(old, new, *, by):
     return record(new, history_held(old), history_held(new), by=by, kind='role_change')
 
 
-def change_permissions(target_id, asked, *, by, dry_run=False, with_v2=True):
+def change_permissions(target_id, asked, *, by, dry_run=False, with_v2=True, with_powers=True):
     """Plan, and unless ``dry_run`` apply, the change. Returns ``(target, plan)``; ``plan['changed']``
     says whether anything was written.
 
     M2b: ``with_v2=False`` is a caller that cannot see v2 keys (a browser tab opened before M2b): the
-    target's stored v2 keys are KEPT, never stripped by a list that could not show them.
+    target's stored v2 keys are KEPT, never stripped by a list that could not show them. S2 / M4a: the
+    same for ``with_powers=False`` (a tab opened before S2) and Organisation admin powers.
 
     The row is LOCKED for the plan and the write (see the module docstring), and the UPDATE carries
     the role and the active flag it planned against, belt and braces."""
+    from apps.courses import staff_permissions as sp
     from apps.courses.models import PartnerAdmin
+    from apps.courses.public import lock_org_admins_of
     with transaction.atomic():
+        if not dry_run:
+            lock_org_admins_of(target_id)      # S2: the last-holder count, serialised (org admins first)
         target = PartnerAdmin.objects.select_for_update().filter(pk=target_id, archived_at=None).first()
         if target is None:
             raise PermissionChangeRefused('not_found', 404, 'Admin not found')
         if not with_v2 and isinstance(asked, (list, tuple)):
             asked = [*asked, *stored_page_keys(target)]
+        if not with_powers and isinstance(asked, (list, tuple)) and sp.holds_org_admin_powers(target):
+            asked = [*asked, _v2().ORG_ADMIN_KEY]
         plan = plan_change(target, asked, by=by)
         # #39 S4 review fix 10: "changed" means what the person can DO changed. A list that resolves
         # to the same keys (a reordered or hand-written one) writes nothing and records nothing.

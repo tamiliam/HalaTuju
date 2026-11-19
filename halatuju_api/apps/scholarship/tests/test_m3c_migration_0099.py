@@ -16,7 +16,7 @@ from apps.courses import staff_permissions as sp
 from apps.courses import staff_permissions_v2 as v2
 from apps.courses.models import PartnerAdmin
 from apps.scholarship.models import StaffPermissionChange
-from apps.scholarship.tests.factories import ORG_ADMIN_MIGRATED, make_admin, make_org
+from apps.scholarship.tests.factories import ORG_ADMIN_PRE_M4A, make_admin, make_org
 
 M = import_module('apps.courses.migrations.0099_grant_scholars_approve')
 M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
@@ -33,7 +33,7 @@ class FrozenConstants(TestCase):
         self.assertEqual(set((*M0098.V2_KEYS, M.KEY)), set(v2.ORG_ADMIN_V2))
         self.assertEqual(len((*M0098.V2_KEYS, M.KEY)), len(v2.ORG_ADMIN_V2))
         self.assertEqual(set(FULL), set(v2.ORG_ADMIN_SET))
-        self.assertEqual(tuple(FULL), ORG_ADMIN_MIGRATED)
+        self.assertEqual(tuple(FULL), ORG_ADMIN_PRE_M4A)   # M4a: 0100 appends after
 
     def test_the_key_is_grantable_and_not_held_by_role(self):
         self.assertIn(M.KEY, v2.GRANTABLE_V2)

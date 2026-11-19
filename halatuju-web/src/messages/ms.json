@@ -8594,11 +8594,11 @@
       },
       "payments_check": {
         "name": "Semak larian pembayaran",
-        "desc": "Semakan pertengahan pilihan sebelum kelulusan."
+        "desc": "Semakan pertengahan pilihan sebelum kelulusan. Menghidupkannya untuk sesiapa yang telah log masuk menambah langkah ini pada setiap larian."
       },
       "payments_approve": {
         "name": "Luluskan larian pembayaran",
-        "desc": "Melepaskan bayaran daripada Vircle kepada pelajar. Tidak sekali-kali bagi larian yang disediakannya. Juga menyemak kredit penaja."
+        "desc": "Melepaskan bayaran daripada Vircle kepada pelajar. Tidak sekali-kali bagi larian yang ditandatanganinya sebagai penyedia. Juga menyemak kredit penaja."
       },
       "award_withdraw_request": {
         "name": "Minta tarik balik anugerah",
@@ -8637,8 +8637,9 @@
       "effect": {
         "check_on": "Larian pembayaran mendapat langkah semakan: {name} menyemak setiap larian sebelum diluluskan.",
         "check_off": "{name} satu-satunya penyemak: larian terus daripada penyediaan kepada kelulusan semula.",
-        "approver_fallback_off": "{name} menjadi pelulus larian pembayaran; pentadbir organisasi berhenti meluluskannya, kecuali larian yang {name} sediakan atau telah tandatangani.",
-        "approver_fallback_on": "{name} satu-satunya pelulus: pentadbir organisasi meluluskan larian pembayaran semula.",
+        "approver_fallback_off": "{name} menjadi pelulus larian pembayaran. Sandaran (pentadbir organisasi) kemudian hanya meluluskan larian yang {name} sediakan atau telah tandatangani.",
+        "approver_fallback_on": "{name} satu-satunya pelulus: tiada orang lain boleh meluluskan larian pembayaran, jadi pentadbir organisasi meluluskannya sebagai sandaran.",
+        "org_admin_powers_off": "{name} kehilangan Kuasa pentadbir organisasi: mengurus pasukan, membayar bil, meluluskan permintaan, larian pembayaran, meluluskan larian apabila tiada orang lain boleh, dan meluluskan penaja platform.",
         "not_signed_in": "{name} belum pernah log masuk, jadi perubahan pembayaran berkuat kuasa pada log masuk pertamanya.",
         "files_widened_all": "{name} akan dapat membaca setiap permohonan dalam organisasi ini.",
         "files_widened_assigned": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
@@ -8698,8 +8699,24 @@
         "desc": "Tab bimbingan mentor pada setiap penerima biasiswa."
       },
       "payments": {
-        "desc": "Dibuka dengan mana-mana satu daripada tiga di bawah.",
-        "byRole": "Datang bersama peranan sehingga pembayaran beralih kepada kebenaran: mereka memulakan larian pembayaran dan meluluskannya apabila tiada orang lain boleh, tetapi tidak sekali-kali menyediakannya."
+        "desc": "Dibuka dengan mana-mana satu daripada empat di bawah.",
+        "withPowers": "Datang bersama Kuasa pentadbir organisasi."
+      },
+      "paymentsView": {
+        "name": "Lihat larian pembayaran",
+        "desc": "Lihat larian dan pembiayaannya. Tidak boleh mengubahnya."
+      },
+      "orgAdminPowers": {
+        "name": "Kuasa pentadbir organisasi",
+        "desc": "Ditetapkan oleh HalaTuju untuk pentadbir organisasi. Hanya HalaTuju boleh mengubahnya.",
+        "power": {
+          "manage_team": "Mengurus pasukan: menjemput orang, mengubah apa yang mereka boleh buat, mengeluarkan mereka",
+          "pay_bill": "Membayar bil HalaTuju",
+          "approve_requests": "Meluluskan permintaan kepada pasukan HalaTuju",
+          "payment_runs": "Melihat larian pembayaran dan membina larian baharu",
+          "payment_fallback": "Meluluskan larian pembayaran apabila tiada orang lain boleh (tidak sekali-kali larian yang ditandatanganinya sebagai penyedia)",
+          "platform_sponsors": "Meluluskan penaja daripada platform HalaTuju"
+        }
       },
       "spending": {
         "desc": "Lihat dan susun cara penerima biasiswa membelanjakan wang mereka."

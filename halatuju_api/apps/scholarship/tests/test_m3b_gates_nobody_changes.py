@@ -176,7 +176,7 @@ class TheKeysDecide(TestCase):
 
     def without(self, *keys):
         PartnerAdmin.objects.filter(pk=self.lead.pk).update(
-            permissions=[k for k in v2.ORG_ADMIN_SET if k not in keys])
+            permissions=[k for k in v2.ORG_ADMIN_FULL if k not in keys])     # M4a: with the powers key
         return PartnerAdmin.objects.get(pk=self.lead.pk)
 
     def test_an_org_admin_without_a_key_is_refused_that_gate_and_keeps_the_others(self):
@@ -205,6 +205,15 @@ class TheKeysDecide(TestCase):
         self.assertTrue(surface_gates.requests_role(lead))
         self.assertTrue(surface_gates.may_read_billing(lead))
 
+    def test_m4a_they_come_with_organisation_admin_powers_and_go_with_it(self):
+        # S2 / M4a (owner 2026-11-19): those three are no longer read from the role; they come with the
+        # stored `organisation.admin` key (`holds_org_admin_powers`), which only a super may take away.
+        lead = self.without(v2.ORG_ADMIN_KEY)
+        self.assertFalse(lead.has_perm('manage_team'))
+        self.assertFalse(surface_gates.may_decide_requests(lead))
+        self.assertTrue(surface_gates.requests_role(lead))              # requests.view is still stored
+        self.assertFalse('billing.edit' in v2.effective_v2(lead))
+
     def test_without_students_edit_an_org_admin_hands_out_no_case(self):
         reviewer = make_admin('reviewer', owning_org=self.org, first_seen_at=timezone.now())
         self.assertTrue(assignment.may_hand_to(self.lead, reviewer))
@@ -217,7 +226,10 @@ class TheKeysDecide(TestCase):
         no_see_all = programme_overview.sections_for(self.without('see_all', 'qc'))   # qc brings see_all
         self.assertFalse({'funnel', 'attention', 'applications_series'} & set(no_see_all))
         self.assertIn('money', no_see_all)
-        no_spending = programme_overview.sections_for(self.without('spending'))
+        # S2 / M4a (brief: `MONEY_KEYS` gets the Payments reach): whoever opens Payments reads the money
+        # too, so the money goes only when `spending` AND the Payments door (the powers here) both go.
+        self.assertIn('money', programme_overview.sections_for(self.without('spending')))
+        no_spending = programme_overview.sections_for(self.without('spending', v2.ORG_ADMIN_KEY))
         self.assertFalse({'money', 'money_series'} & set(no_spending))
         self.assertIn('funnel', no_spending)
 

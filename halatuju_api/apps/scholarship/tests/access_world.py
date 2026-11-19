@@ -66,6 +66,10 @@ JWT_ROLES = (
 #: `students.approve` alone). Not manifest columns: swept only by the case-stage replay.
 WRITERS_WITHOUT_A_READ = ('scholars_only_a', 'approve_only_a')
 
+#: S2 / M4a: the Payments switches, by key and not by label. Not manifest columns: `test_access_matrix`
+#: holds them to the payment routes (`PAYMENT_CALLERS`). S6 retires `finance_a`.
+PAYMENT_CALLERS = ('payments_holder_a', 'payments_viewer_a', 'oa_unkeyed_a')
+
 #: Callers that authenticate with a shared secret instead of a JWT. They carry no JWT, so on every
 #: other route they ARE the anonymous caller (only the three internal views read these headers —
 #: `cron.py` X-Cron-Secret, `cron.py` X-Vircle-Secret, `intake.py` X-Twilio-Signature).
@@ -313,6 +317,18 @@ def build_world():
     spa.change_permissions(w.admin_granted_a.pk, [*w.admin_granted_a.permissions, *v2.ORG_ADMIN_SET],
                            by=w.org_admin_a, with_v2=True)
     w.admin_granted_a.refresh_from_db()
+    # S2 / M4a: an admin with Approve only, an admin with View only (no other key on either row), and an
+    # organisation admin whose Organisation admin powers a super took away through the real editor.
+    from apps.courses.models import PartnerAdmin
+    w.payments_holder_a = make_admin('admin', owning_org=w.org_a)
+    w.payments_viewer_a = make_admin('admin', owning_org=w.org_a)
+    PartnerAdmin.objects.filter(pk=w.payments_holder_a.pk).update(permissions=['payments_approve'])
+    PartnerAdmin.objects.filter(pk=w.payments_viewer_a.pk).update(permissions=['payments.view'])
+    w.oa_unkeyed_a = make_admin('org_admin', owning_org=w.org_a)
+    spa.change_permissions(w.oa_unkeyed_a.pk, [k for k in w.oa_unkeyed_a.permissions if k != v2.ORG_ADMIN_KEY],
+                           by=w.super, with_v2=True, with_powers=True)
+    for who in (w.payments_holder_a, w.payments_viewer_a, w.oa_unkeyed_a):
+        who.refresh_from_db()
     # Review round 2 (H1): two keys that WRITE but give no READ of a case, outside JWT_ROLES like the
     # granted member. `test_access_matrix` sweeps them in the case-stage replay, where they are allowed nowhere.
     w.scholars_only_a = make_admin('admin', owning_org=w.org_a, permissions=['scholars'])
@@ -459,6 +475,6 @@ def build_world():
         w.clients[role] = authed_client(who, APIClient(raise_request_exception=False))
     for role in SECRET_ROLES:
         w.clients[role] = APIClient(raise_request_exception=False)
-    for role in ('admin_granted_a', *WRITERS_WITHOUT_A_READ):
+    for role in ('admin_granted_a', *WRITERS_WITHOUT_A_READ, *PAYMENT_CALLERS):
         w.clients[role] = authed_client(getattr(w, role), APIClient(raise_request_exception=False))
     return w

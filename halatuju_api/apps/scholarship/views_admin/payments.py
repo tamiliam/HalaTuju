@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from ..models import ScholarshipApplication
 from ..serializers_admin_gift import gift_ref
-from .base import _AdminBase
+from .base import _AdminBase, b40_scope
 
 
 # ── Payments module (Vircle payment runs) — org-fenced (P2), gated on PERMISSIONS (#39 S2) ────
@@ -122,6 +122,9 @@ def _payment_run_detail(run, admin=None):
         'your_step': payments.next_step_for(run, admin, cache),
         'approver_fallback': in_flight and payments.approver_fallback(run, cache),
         'can_prepare': payments.may_prepare(admin),
+        # Sprint M4a: may this caller open a student's file from a run row? Served, never derived
+        # from a role in the browser (`b40_scope` 'all' — equal to the old `role != finance` today).
+        'can_open_applicant': b40_scope(admin) == 'all',
         'org_admin_signed': _sig(run.org_admin_signed_name, run.org_admin_signed_email, run.org_admin_signed_at),
         'items': [_payment_item_dict(i) for i in items],
         'skipped': skipped,
@@ -140,10 +143,10 @@ class _PaymentsBase(_AdminBase):
     """Shared gate + org-fenced run lookup for the Payments endpoints."""
     def _payments_admin(self, request, gate=_PAYMENTS_READ):
         """Gate a Payments endpoint. READ (the default: list, detail, CSV, funding summary, and
-        Sign, whose per-step logic lives in `payments.sign`) admits any `payments_*` holder or the
-        organisation admin. The MUTATING endpoints (create a run, edit an item, cancel) pass
-        ``gate=_PAYMENTS_WRITE``: Prepare, or the organisation admin — Finance approves a run, it
-        never authors or withdraws one. `payments.sign`'s refusal remains the backstop on signing."""
+        Sign, whose per-step logic lives in `payments.sign`) admits any `payments_*` holder, a stored
+        View switch, or Organisation admin powers. The MUTATING endpoints (create a run, edit an
+        item, cancel) pass ``gate=_PAYMENTS_WRITE``: Prepare, or Organisation admin powers — Approve
+        alone never authors or withdraws a run. `payments.sign`'s refusal remains the backstop."""
         from .. import payments
         admin = self.get_admin(request)
         if not admin:

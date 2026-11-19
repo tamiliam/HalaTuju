@@ -22,7 +22,10 @@ const V2_BLOCK = V2.slice(V2.indexOf('CATALOGUE_V2 = {'), V2.indexOf('\n}', V2.i
 const CATALOGUE_LOOSE = [...V2_BLOCK.matchAll(/^\s+'([a-z0-9_]+\.[a-z0-9_]+)':/gm)].map((m) => m[1])
 const NEVER = pySeq(V2, 'NEVER_GRANTABLE')
 const ALIAS = Object.values(pyDictOfSeqs(V2, 'ALIASES')).flat().filter((k) => CATALOGUE.includes(k))
-const HIDDEN = new Set([...NEVER, ...ALIAS])
+// S2 / M4a: `payments.view` is an alias that the editor may also STORE (`GRANTABLE_V2`'s one exception,
+// `PAYMENTS_VIEW`), so it is drawn (the team's Payments View switch), not hidden.
+const GRANTABLE_ALIAS = [...V2.matchAll(/^PAYMENTS_VIEW = '([a-z0-9_.]+)'$/gm)].map((m) => m[1])
+const HIDDEN = new Set([...NEVER, ...ALIAS].filter((k) => !GRANTABLE_ALIAS.includes(k)))
 const ADMIN_KEYS = pySeq(readApi('apps/courses/staff_tables.py'), 'ADMIN_KEYS').filter((k) => k !== 'manage_team')
 const SERVED = [...ADMIN_KEYS, ...CATALOGUE]
 
@@ -31,6 +34,7 @@ it('reads the api (parse sanity)', () => {
   expect([...CATALOGUE].sort()).toEqual([...CATALOGUE_LOOSE].sort())   // no catalogue row escapes the strict read
   expect(NEVER).toEqual(['billing.edit', 'requests.approve'])
   expect(ALIAS.length).toBeGreaterThanOrEqual(8)
+  expect(GRANTABLE_ALIAS).toEqual(['payments.view'])
   expect([...TABLE_KEYS.admins]).toEqual(ADMIN_KEYS)            // the editor's Admins keys are the server's
 })
 
@@ -45,7 +49,7 @@ it('places every key the server serves exactly once, or hides it (D3) — never 
 
 it('D3 hides exactly the never-grantable keys and the aliases', () => {
   expect([...HIDDEN].sort()).toEqual(['billing.edit', 'payments.approve', 'payments.check', 'payments.prepare',
-    'payments.view', 'requests.approve', 'scholars.view', 'spending.edit', 'spending.view', 'sponsors.check',
+    'requests.approve', 'scholars.view', 'spending.edit', 'spending.view', 'sponsors.check',
     'students.view'])
 })
 
@@ -60,7 +64,7 @@ it('D1/D2: the rows in sidebar order, each with its control', () => {
       'scholars:switch:scholars>award_withdraw_request,award_withdraw_approve,scholars.approve',
       'announcements:tri:announcements.view+announcements.edit', 'surveys:tri:surveys.view+surveys.edit',
       'development:tri:development.view+development.edit', 'mentoring:tri:mentoring.view+mentoring.edit',
-      'payments:info:>payments_prepare,payments_check,payments_approve', 'spending:switch:spending',
+      'payments:info:>payments.view,payments_prepare,payments_check,payments_approve', 'spending:switch:spending',
       'contracts:tri:contracts.view+contracts.edit', 'programmeSettings:switch:programmes.edit']],
   ])
   expect(PERMISSION_LAYOUT.flatMap(boxKeys)).toEqual([...LAYOUT_KEYS])

@@ -132,11 +132,16 @@ describe('NAVKEYS: a key granted by hand opens its row; a key unticked shuts it'
     expect(mayOpen('/admin/billing', shut)).toBe(false)
   })
 
-  it('⚠ M4: an organisation admin keeps Payments with no payment key (the lead tier, LEAD_MONEY_UNTIL_M4)', () => {
+  it('S2 / M4a: Payments opens by its served door (`payments.view`), never by the role', () => {
     expect(lead.permissions?.some((k) => k.startsWith('payments_'))).toBe(false)
+    expect(lead.page_keys).toContain('payments.view')          // the powers bring View (the server's answer)
     expect(menu(lead)).toContain('payments')
-    // …and a team member is answered by the keys alone: an admin without payments_prepare loses it.
-    expect(menu({ ...admin, permissions: without(admin.permissions, ['payments_prepare']) })).not.toContain('payments')
+    // A role string alone opens nothing: the same organisation admin without the served door loses the row.
+    const shut = { ...lead, page_keys: without(lead.page_keys, ['payments.view']) }
+    expect(menu(lead).filter((id) => !menu(shut).includes(id))).toEqual(['payments'])
+    expect(mayOpen('/admin/payments', shut)).toBe(false)
+    // …and a team member's old `payments_*` keys open nothing without the served door either.
+    expect(menu({ ...admin, page_keys: without(admin.page_keys, ['payments.view']) })).not.toContain('payments')
   })
 
   it('no page_keys opens no row with a door; no permissions opens no row on a key; the KIND rows stay', () => {

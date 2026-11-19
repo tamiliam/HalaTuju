@@ -15,11 +15,12 @@ payment run they made or signed is still waiting (as finance they would be its A
 not sign it again: the three-distinct-signers rule). Reviewer ↔ QC strands nothing — both are review roles and keep their
 assigned cases; the QC self-check guard still stops anybody QC-ing a verdict they recorded.
 
-⚠ **THE FINANCE PERSON CHANGES TWO CHAINS, LIVE** (#39 Sprint 2). Finance APPROVES payment runs
-(the preset holds `payments_approve`), so appointing the first one makes them the approver and the
-organisation admin stops approving (`payments.approver_fallback` goes off); and since TD-475 (A1.10a,
-2026-11-07) the wallet credit check turns on the same KEY (`payments.credit_check_required`: an active
-holder of `payments_approve`), so the same appointment arms the credit check. A switch KEEPS the keys
+⚠ **AN APPROVE HOLDER CHANGES TWO CHAINS, LIVE** (#39 Sprint 2). The `finance` preset holds
+`payments_approve`, so appointing the first holder makes them the approver and the fallback goes off
+(`payments.approver_fallback`; S2 / M4a: the fallback is anybody with Organisation admin powers or Approve
+who has not signed the run); and since TD-475 (A1.10a, 2026-11-07) the wallet credit check turns on the
+same KEY (`payments.credit_check_required`: an active holder of `payments_approve` who has signed in,
+TD-560), so the same appointment arms the credit check. A switch KEEPS the keys
 (T2, below), so a switch no longer moves either chain; adding or removing the key on Team does, and
 `staff_tables_admin.plan_table_change` says so (`finance_check_off`, code kept for the screen).
 
@@ -186,12 +187,14 @@ def runs_in_progress(admin):
 
 def other_active_checker(target):
     """Another ACTIVE holder of the credit CHECKER key (`credit_steps.CHECKER_KEY`) in the target's
-    organisation? TD-475 (A1.10a): the credit check turns on the KEY now, not the finance ROLE."""
+    organisation who has signed in? TD-475 (A1.10a): the credit check turns on the KEY now, not the finance
+    ROLE; TD-560 (S2): only a signed-in holder arms it (`payments_chain.credit_check_required`)."""
     from apps.courses import staff_permissions
     from .credit_steps import CHECKER_KEY
     if target.owning_organisation_id is None:
         return False
-    return any(a.pk != target.pk for a in staff_permissions.holders(target.owning_organisation, CHECKER_KEY))
+    return any(a.pk != target.pk and has_signed_in(a)
+               for a in staff_permissions.holders(target.owning_organisation, CHECKER_KEY))
 
 
 def plan_role_change(target, new_role):

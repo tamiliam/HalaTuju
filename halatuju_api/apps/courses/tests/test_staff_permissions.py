@@ -69,17 +69,24 @@ class Resolve(TestCase):
             with self.subTest(junk=str(junk)):
                 self.assertEqual(PartnerAdmin(role='reviewer', permissions=junk).permission_set, ())
 
-    def test_an_org_admin_reads_their_stored_list_plus_manage_team_by_role(self):
-        # Sprint M3a (A1, A2): an organisation admin's list is READ, strictly, as a team member's is, and
-        # `manage_team` comes by role (O15). Migration 0098 REPLACED every org admin's list first, so a
-        # leftover payment key is gone before it could be read (`test_m3_nobody_changes`).
-        a = PartnerAdmin(role='org_admin', permissions=['payments_approve', 'payments_check'])
+    def test_an_org_admin_reads_their_stored_list_plus_manage_team_through_the_powers(self):
+        # Sprint M3a (A1, A2): an organisation admin's list is READ, strictly, as a team member's is.
+        # Migration 0098 REPLACED every org admin's list first, so a leftover payment key is gone before it
+        # could be read (`test_m3_nobody_changes`). S2 / M4a: `manage_team` (O15) comes with Organisation
+        # admin powers (`organisation.admin`, `holds_org_admin_powers`), no longer with the role alone.
+        a = PartnerAdmin(role='org_admin', permissions=['payments_approve', 'payments_check', sp.ORG_ADMIN_KEY])
         self.assertEqual(a.permission_set, ('payments_check', 'payments_approve', 'manage_team'))
         self.assertFalse(sp.is_custom(a))
         self.assertTrue(sp.is_lead_tier(a))
-        b = PartnerAdmin(role='org_admin', permissions=['review', 'see_all', 'manage_team'])
-        self.assertEqual(b.permission_set, ('review', 'see_all', 'manage_team'))   # never stored, by role
+        b = PartnerAdmin(role='org_admin', permissions=['review', 'see_all', 'manage_team', sp.ORG_ADMIN_KEY])
+        self.assertEqual(b.permission_set, ('review', 'see_all', 'manage_team'))   # never stored: the powers
         self.assertFalse(sp.is_custom(b))
+        off = PartnerAdmin(role='org_admin', permissions=['review', 'see_all', 'manage_team'])
+        self.assertEqual(off.permission_set, ('review', 'see_all'))                # powers off: no manage_team
+        self.assertFalse(sp.holds_org_admin_powers(off))
+        for row in (PartnerAdmin(role='admin', permissions=[sp.ORG_ADMIN_KEY]),
+                    PartnerAdmin(role='super', permissions=[sp.ORG_ADMIN_KEY])):
+            self.assertFalse(sp.holds_org_admin_powers(row), row.role)              # only an org admin
         # NULL (an invitation the old image wrote) or a non-list: the stored set, fail-safe.
         for junk in (None, {'review': True}, 'review'):
             with self.subTest(junk=str(junk)):

@@ -92,7 +92,7 @@ CENSUS = {
     S + 'mentoring.py::mentor_facts': (2, 'KEEPS', "facts of mentors in hand; a past mentor's are history"),
     S + 'mentoring_read.py::_people': (1, 'KEEPS', 'names on mentoring records'),
     S + 'my_pending.py::_invitations': (1, 'SHAPE', 'waiting counts; the archive cancelled them'),
-    S + 'payments_chain.py::fallback_approvers': (1, 'ACTIVE', 'active org admins'),
+    S + 'payments_chain.py::lock_actor': (1, 'OWN_ROW', "the actor's own row, active, locked (TD-605, S2 / M4a)"),
     S + 'scholars.py::_mentor_name': (1, 'KEEPS', "the current mentor's name (an archived one has none)"),
     S + 'serializers_admin/names.py::_admin_name_by_email': (1, 'KEEPS', 'a name on a record'),
     S + 'services/assignment.py::_locked': (1, 'OWN_ROW', 'a reviewer already picked'),

@@ -198,6 +198,8 @@ describe('Team tables T5c P4: the doors are really read', () => {
       ['billing', 'billing_read'], ['requests', 'requests_read'], ['orgSettings', 'settings'],
       // TD-631: the engagement rows read their READ doors (`.view`); the writes stay on the `.edit` door.
       ['announcements', 'announcements_read'], ['surveys', 'surveys_read'], ['development', 'development_read'],
+      // S2 / M4a: Payments reads its door (`payments.view`); the role no longer opens it.
+      ['payments', 'payments_read'],
       ['contracts', 'contracts_read'], ['programmeConfig', 'programme_settings'],
     ])
   })
