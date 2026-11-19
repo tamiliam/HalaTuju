@@ -36,10 +36,11 @@ def ai_fact_pass(status) -> bool:
 
 
 def _snapshot_status_map(ai_verdict_snapshot) -> dict:
-    """fact → status from a stored ``build_verdict`` snapshot (a list of dicts)."""
+    """fact → status from a stored ``build_verdict`` snapshot (a list of dicts). An item whose
+    ``fact`` is not a non-empty string (a list, a dict: unhashable) is skipped, never a TypeError."""
     out = {}
     for f in (ai_verdict_snapshot or []):
-        if isinstance(f, dict) and f.get('fact'):
+        if isinstance(f, dict) and isinstance(f.get('fact'), str) and f['fact']:
             out[f['fact']] = f.get('status', '')
     return out
 

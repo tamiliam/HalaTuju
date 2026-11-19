@@ -210,6 +210,18 @@ class TestQcDecisionRecordsTheSecondLook(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(self._stored(app)[sl.KEY], {'income': 'agreed'})   # academic was not green
 
+    def test_a_snapshot_item_whose_fact_is_a_list_or_dict_never_fails_the_qc_decision(self):
+        # Gate round: an unhashable `fact` raised TypeError inside the decision's transaction.
+        odd = [{'fact': ['income'], 'status': 'verified'}, {'fact': {'f': 'income'}, 'status': 'verified'}]
+        app = make_application('awaiting_qc', outcome='recommend', cohort=self.cohort, reviewer=self.reviewer,
+                               ai_verdict_snapshot=odd + snap({'academic': 'review'}),
+                               officer_verdict=officer(income='fail', academic='fail'))
+        want = {'academic': 'agreed', 'income': 'disagreed'}
+        r = self._qc({'decision': 'accept', 'fact_checks': want}, app=app)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._stored(app)[sl.KEY], want)   # the odd items are skipped, the good ones read
+        self.assertEqual(ScholarshipApplication.objects.get(pk=app.pk).status, 'recommended')
+
     def test_bad_input_is_a_400_and_the_decision_is_not_saved(self):
         before = self._stored()
         for bad in ({'income': 'nope'}, {'colour': 'agreed'}, ['income'], 'income', {'income': 3}):
