@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### docs: the render batch records what its reviews left open (2026-11-21)
+
+Three TD-pending rows from the adversarial reviews of the unfiltered-content fix and the blank-page guard: the guard misses a white page that carries any other mark and can trip on a few odd hidden-image shapes (medium); a reference with the wrong generation number hides an object from the render check (high, pre-existing); two small render-check edges (low). Docs only.
+
 ### fix: a page that draws an image but renders pure white is a failed read, not a blank image (2026-11-21)
 
 Branch blank-guard (on b47cc1c40). Under the Linux child's 256 MiB cap, pdfium can fail to decode a big JPEG 2000 image and draw nothing, with no error: a one-page A4 400 dpi colour JPX scan at 1:7 (6.6 MB) rendered mean 255, spread 0, and went to the AI read as a white page (an empty offer read is stored as 'ok'; see the new TD-pending rows). Now:
