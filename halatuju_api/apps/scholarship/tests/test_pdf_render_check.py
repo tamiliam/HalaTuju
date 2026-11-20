@@ -12,7 +12,7 @@ from django.test import SimpleTestCase
 
 from apps.scholarship import pdf_pages, pdf_render_check, vision
 from apps.scholarship.read_errors import is_ic_decode_error
-from apps.scholarship.tests.test_ocr_visible import _stream
+from apps.scholarship.tests.test_ocr_visible import SPM_TEXT, _show, _stream
 from apps.scholarship.tests.test_ocr_visible_paths import _doc
 
 A4 = b'/MediaBox [0 0 595 842] '
@@ -56,6 +56,27 @@ def _type3(glyph_ops):
             7: _stream(b'<<', b'1000 0 0 0 1000 1000 d1 ' + curves)}
 
 
+def _annotated(content, annots, objs):
+    """An A4 page carrying ``annots`` (its /Annots array's entries) and the objects 6+ ``objs``."""
+    return _doc(content, objs, page_res=b'/Resources << /Font << /F1 3 0 R >> >> /Annots [' + annots + b']',
+                filtered=True).replace(b'/MediaBox [0 0 300 200] ', A4)
+
+
+def _stamp(appearance, rect=b'100 100 300 200', bbox=b'0 0 200 100'):
+    """A stamp annotation (object 6) drawn by the appearance stream ``appearance`` (object 7)."""
+    return {6: b'<< /Type /Annot /Subtype /Stamp /Rect [' + rect + b'] /AP << /N 7 0 R >> >>',
+            7: _stream(b'<< /Type /XObject /Subtype /Form /BBox [' + bbox + b'] /Filter /FlateDecode',
+                       zlib.compress(appearance))}
+
+
+def _nested_clips(n):
+    return b'q 0 0 m 595 0 l 297 842 l h W n ' * n + b'0 0 10 10 re f ' + b'Q ' * n
+
+
+def _side_clips(n):
+    return b'q 10 10 m 100 10 l 50 90 l h W n 10 10 5 5 re f Q\n' * n
+
+
 #: A scanner app's PDF: an A4 photo of the page (3000 x 4000 JPEG) drawn full page, its OCR text invisible.
 PHOTO = _a4(b'q ' + FULL_PAGE + b'/Im0 Do Q BT /F1 12 Tf 3 Tr 20 150 Td (CONTOH) Tj ET',
             b'/XObject << /Im0 6 0 R >> /Font << /F1 3 0 R >>', {6: _jpeg(3000, 4000)})
@@ -97,6 +118,15 @@ HOSTILE = {
     'an inline image': _a4(b'q 10 0 0 10 0 0 cm BI /W 1 /H 1 /CS /G /BPC 8 ID \x00\nEI Q\n'),
     'an image filter outside the whitelist': _a4(FULL_PAGE + b'/Im0 Do', b'/XObject << /Im0 6 0 R >>',
                                                  {6: _image(10, 10).replace(b'/FlateDecode', b'/ASCIIHexDecode')}),
+    # fix round 11
+    'a glyph past the size cap': _a4(b'BT /F1 1600 Tf 0 0 Td (W) Tj ET', b'/Font << /F1 3 0 R >>'),
+    'a glyph scaled past the size cap': _a4(b'4 0 0 4 0 0 cm BT /F1 100 Tf 4 0 0 1 0 0 Tm (W) Tj ET',
+                                            b'/Font << /F1 3 0 R >>'),
+    'clipping paths nested past the cap': _a4(_nested_clips(65)),
+    'clipping paths past the page cap': _a4(_side_clips(5_001)),
+    'an annotation appearance repainting the page': _annotated(b'', b'6 0 R', _stamp(
+        b'0 0 595 842 re f\n' * 2_000, rect=b'0 0 595 842', bbox=b'0 0 595 842')),
+    'annotations past the page cap': _annotated(b'', b'6 0 R ' * 501, _stamp(b'0 0 1 1 re f')),
 }
 
 
@@ -132,6 +162,25 @@ class TheRenderCheck(SimpleTestCase):
                     _a4(b'/G0 gs 0.5 g 0 0 595 842 re f', b'/ExtGState << /G0 << /BM /Multiply >> >>')):
             self.assertIsNone(pdf_render_check.render_refusal(pdf, lambda n: [0])[1])
             self.assertTrue(pdf_pages.pdf_first_page_png(pdf))
+
+    def test_real_shaped_pages_near_the_round_11_caps_still_render(self):
+        """Fix round 11: a large heading, invisible OCR text at any size, clips and annotations under the caps
+        (each far above the corpus: 60 pt, 6 nested clips, 374 clips, 5 annotations a page)."""
+        font = b'/Font << /F1 3 0 R >>'
+        for name, pdf in (
+                ('a 1,400 pt glyph', _a4(b'BT /F1 700 Tf 2 0 0 2 0 100 Tm (W) Tj ET', font)),
+                ('invisible OCR text past the size cap', _a4(b'BT 3 Tr /F1 5000 Tf 0 0 Td (CONTOH) Tj ET', font)),
+                ('64 nested clips', _a4(_nested_clips(64))),
+                ('5,000 clips side by side', _a4(_side_clips(5_000))),
+                ('a stamp annotation', _annotated(_show(SPM_TEXT), b'6 0 R', _stamp(b'1 0 0 rg 0 0 200 100 re f'))),
+                ('a stamp with an empty box and a 2^31 Rect (a real file\'s shape)',
+                 _annotated(_show(SPM_TEXT), b'6 0 R', _stamp(b'', rect=b'-2147483648 -2147483648 2147483648 '
+                                                                       b'2147483648', bbox=b'0 0 0 0'))),
+                ('500 annotations', _annotated(b'', b'6 0 R ' * 500, _stamp(b'0 0 1 1 re f')))):
+            with self.subTest(name):
+                self.assertIsNone(pdf_render_check.render_refusal(pdf, lambda n: [0])[1])
+                png = pdf_pages.pdf_first_page_png(pdf)
+                self.assertTrue(png and png.startswith(b'\x89PNG'))
 
     def test_the_render_path_runs_the_pdfium_load_check(self):
         with patch('apps.scholarship.pdf_pdfium_load.load_check', side_effect=ValueError('outside')) as load:

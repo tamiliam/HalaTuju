@@ -14,13 +14,15 @@ from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
 
-from apps.scholarship import pdf_pages, pdfium_run, pdfium_worker, spm_cert_parse
+from apps.scholarship import pdf_pages, pdf_render_check, pdfium_run, pdfium_worker, spm_cert_parse
 from apps.scholarship.tests.test_ocr_visible import DRAWN, SPM_TEXT, _pdf, _show
 from apps.scholarship.tests.test_ocr_visible_paths import _doc
 from apps.scholarship.tests.test_ocr_visible_round6 import BOMB_GLYPH, _flate
 
 TEXT = _show(SPM_TEXT)
-SHORT = 1.0          # the patched time limit: each crafted file below keeps pdfium busy 2-5 s on the dev machine
+SHORT = 1.0          # a short time limit, for the backstop tests
+LARGE = 60.0         # fix round 11: the crafted files are refused by the pre-filter, never by the clock, so a
+#                      generous limit gives the same answer on a fast machine and a slow one
 
 
 def _fresh():
@@ -59,26 +61,33 @@ def _type3_spaces(glyphs):
                 page_res=b'/Resources << /Font << /F1 3 0 R /T3 6 0 R >> >>', filtered=True)
 
 
-@patch.object(pdfium_run, 'TIMEOUT_S', SHORT)
+@patch.object(pdfium_run, 'TIMEOUT_S', LARGE)
 class TheFourCraftedFiles(SimpleTestCase):
+    """Fix round 11: each crafted file is refused by `pdf_render_check` before any child is spawned, so the answer
+    does not depend on how fast the machine renders (Cloud Build's Linux runner rendered the huge text inside the
+    1 s limit these tests once relied on). The time limit stays the backstop: the last test."""
+
     def setUp(self):
         _fresh()
 
-    def _no_render(self, pdf):
+    def _no_render(self, pdf, why):
+        self.assertIn(why, pdf_render_check.render_refusal(pdf, lambda n: [0])[1])
         t0 = time.perf_counter()
-        self.assertIsNone(pdf_pages.pdf_first_page_png(pdf))
-        self.assertEqual(pdf_pages.pdf_page_pngs(pdf, 1), [])         # the same question: the memo answers
-        self.assertIsNone(pdf_pages.pdf_pages_png(pdf))
-        self.assertLess(time.perf_counter() - t0, 2 * SHORT + 3.0)
+        with patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
+            self.assertIsNone(pdf_pages.pdf_first_page_png(pdf))
+            self.assertEqual(pdf_pages.pdf_page_pngs(pdf, 1), [])
+            self.assertIsNone(pdf_pages.pdf_pages_png(pdf))
+        self.assertEqual(spawned.call_count, 0)                    # the pre-filter refused it: no child at all
+        self.assertLess(time.perf_counter() - t0, 3.0)
 
     def test_an_annotation_appearance_stream(self):
-        self._no_render(_annotation(40_000))
+        self._no_render(_annotation(40_000), 'paint_px cap')       # its appearance is charged like a form
 
     def test_huge_spaced_text(self):
-        self._no_render(_huge_text(6_000))
+        self._no_render(_huge_text(6_000), 'size cap')
 
     def test_clip_paths(self):
-        self._no_render(_clips(2_000))
+        self._no_render(_clips(2_000), 'clipping paths nested')
 
     def test_type3_glyphs_behind_blank_text_are_load_checked(self):
         pdf = _type3_spaces(120)
@@ -88,8 +97,19 @@ class TheFourCraftedFiles(SimpleTestCase):
             self.assertIsNone(spm_cert_parse.parse_spm_cert('', pdf=pdf))
             self.assertIsNone(pdf_pages.pdf_first_page_png(pdf))
         self.assertEqual(spawned.call_count, 0)                    # the pre-filter refused it: no child at all
-        self.assertIsNone(pdfium_run.ask(pdf, [{'op': 'words'}]))  # and past the pre-filter, the time limit
-        self.assertLess(time.perf_counter() - t0, SHORT + 4.0)
+        self.assertLess(time.perf_counter() - t0, 4.0)
+
+    def test_past_the_pre_filter_the_time_limit_is_the_backstop(self):
+        """Each crafted file asked of a child directly (no pre-filter): a stand-in worker that never answers is
+        killed at the limit, whatever the machine's speed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            hang = _script(tmp, 'time.sleep(60)')
+            for pdf in (_annotation(40_000), _huge_text(6_000), _clips(2_000), _type3_spaces(120)):
+                _fresh()
+                with patch.object(pdfium_run, '_WORKER', hang), patch.object(pdfium_run, 'TIMEOUT_S', 0.5):
+                    t0 = time.perf_counter()
+                    self.assertIsNone(pdfium_run.ask(pdf, [{'op': 'words'}]))
+                    self.assertLess(time.perf_counter() - t0, 5.0)
 
 
 class AChildThatFails(SimpleTestCase):
