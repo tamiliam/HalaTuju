@@ -38,7 +38,7 @@ export function decisionBarShows({ app, decisionReopened, decisionRecorded, deci
 }): boolean {
   if (!caseOpen) return false
   if (!showsRecommendationCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, decisionRecorded })) return false
-  if (decisionLocked) return false
+  if (decisionLocked) return false
   if (isQcAccepted(stageStatus(app, 'recommended_at')) && !decisionReopened) return false
   if (!(decisionReopened || ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status))) return false
   return canWrite
