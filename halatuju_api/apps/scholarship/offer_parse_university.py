@@ -55,7 +55,7 @@ from .offer_parse import (_DMY_RE, _IC, _IC_END, _MALAY_MONTH, _NUM_DATE_RE, _de
                           first_date)
 from .offer_parse_families import _ENDS_MARKER, _blocked
 #: The refusal checks live in `offer_ums_refusal` since the owner-words split (2026-11-20).
-from .offer_ums_refusal import _STATUS, _squeeze, _withdrawn, fold_lookalikes
+from .offer_ums_refusal import _squeeze, _withdrawn, fold_lookalikes, status_said
 
 #: Recorded on a rules read (`rules_lane`) — the lane switch (`offer_exact.ocr_first_lanes`) names it.
 LANE = 'ua:UMS'
@@ -502,7 +502,7 @@ def read_ums(source: str):
     from .offer_parse import house_date
     if len(source or '') > MAX_CHARS or len((source or '').splitlines()) > MAX_LINES:
         return None, 'too_long'                  # more than a page 1 holds: no rule runs (S1c; every line break)
-    if _STATUS.search(source) or _STATUS.search(fold_lookalikes(source)):   # raw OR folded (review rounds 2-3)
+    if status_said(source) or status_said(fold_lookalikes(source)):   # raw OR folded, any spacing (rounds 2-5)
         return None, 'status_letter'
     lines = _text_lines(source)
     title_at, intake = _title(lines)

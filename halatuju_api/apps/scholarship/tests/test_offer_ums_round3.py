@@ -43,8 +43,12 @@ class TestFoldAndForeign(SimpleTestCase):
             with self.subTest(ch=ascii(ch)):
                 self.assertTrue(foreign_letters('Tawaran ' + ch))
 
-    def test_malay_and_latin_accents_are_not_foreign(self):
-        self.assertFalse(foreign_letters('Pengenalán Kota Kinabalu ā é – ’', ums()))
+    def test_punctuation_is_not_foreign_but_accents_are(self):
+        """Round 5 (MED B): no genuine UMS PDF holds a non-ASCII letter, so an accented one is foreign too."""
+        self.assertFalse(foreign_letters('Kota Kinabalu – ’', ums()))
+        for word in ('Pengenalán', 'ā', 'é'):
+            with self.subTest(word=ascii(word)):
+                self.assertTrue(foreign_letters(word))
 
     def test_a_cherokee_letter_refuses_a_digital_letter(self):
         page = ums() + 'Tawaran ini DIBᎪTALKAN\n'

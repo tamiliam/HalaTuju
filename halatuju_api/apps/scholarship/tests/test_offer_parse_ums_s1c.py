@@ -234,12 +234,15 @@ class TestReviewRoundTwo(SimpleTestCase):
 
     # Finding 4: another field's label ends the reporting window; a "not yet fixed" value reads no date.
     def test_another_labels_date_is_never_the_reporting_date(self):
-        for report in ('Akan dimaklumkan kemudian\nTarikh Pendaftaran Kursus :      5 Oktober 2031',
-                       'Sila rujuk lampiran\nTarikh Akhir Bayaran :      1 September 2031',
-                       '\nTarikh Akhir Bayaran :      1 September 2031', 'TBA\n28 September 2031',
-                       'Akan dimaklumkan\n28 September 2031'):
+        for report in ('Sila rujuk lampiran\nTarikh Akhir Bayaran :      1 September 2031',
+                       '\nTarikh Akhir Bayaran :      1 September 2031', 'TBA\n28 September 2031'):
             with self.subTest(report=report):
                 _refused(self, ums(report=report), 'reporting_date')
+        # Fix round 5 (LOW D): "akan dimaklumkan" now refuses the whole letter before any field is read.
+        for report in ('Akan dimaklumkan kemudian\nTarikh Pendaftaran Kursus :      5 Oktober 2031',
+                       'Akan dimaklumkan\n28 September 2031'):
+            with self.subTest(report=report):
+                self.assertEqual(read_ums(ums(report=report))[1], 'not_an_offer')
 
     def test_the_venue_line_and_a_lone_colon_do_not_end_the_window(self):
         for report in ('\n:\n28 September 2031', '\nTempat / Kolej :      Dewan Zantharion\n28 September 2031'):

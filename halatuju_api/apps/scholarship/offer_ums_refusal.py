@@ -25,6 +25,9 @@ import bisect
 import re
 
 _STATUS = re.compile(r'SURAT\s{1,3}PENGESAHAN', re.IGNORECASE)
+#: Round 5 (LOW C): the status title with ANY spacing ("SURAT    PENGESAHAN", "S U R A T  P E N G E S A H A N"),
+#: matched on the text with every character that is not a letter or digit taken out (`status_said`).
+_STATUS_KEY = 'SURATPENGESAHAN'
 #: A letter that withdraws, defers, refuses or answers an offer (review round 1): any of these words in the head
 #: or the title line means it is not the offer itself. TERBATAL / TIDAK BERJAYA (S1c): see `_CANCEL_WORD`.
 _NOT_AN_OFFER = re.compile(r'\b(?:PEMBATALAN|PENANGGUHAN|PENOLAKAN|TARIK\s{1,3}BALIK|RAYUAN|MAKLUM\s{0,3}BALAS|'
@@ -39,7 +42,12 @@ _WITHDRAWN = re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}T
                         r'DIGUGURKAN|DIMANSUHKAN|LUPUT|GAGAL|'
                         r'DITAMATKAN|PENAMATAN|TIDAK\s{1,3}(?:LAGI\s{1,3})?BERKUAT\s{0,3}KUASA|WITHDRAWN|CANCELL?ED|'
                         r'REVOKED|TIDAK\s{1,3}AKTIF|TIDAK\s{1,3}TERPAKAI|DITARIK|'
-                        r'TIDAK\s{1,3}(?:(?:AKAN|LAGI|DAPAT|BOLEH)\s{1,3})?DI\s{0,3}TERUSKAN)\b', re.IGNORECASE)
+                        r'TIDAK\s{1,3}(?:(?:AKAN|LAGI|DAPAT|BOLEH)\s{1,3})?DI\s{0,3}TERUSKAN|'
+                        r'(?:DI|TER)?\s{0,3}TANGGUH\w*|DI\s{0,3}TUNDA\w*|'
+                        r'AKAN\s{1,3}(?:DI\s{0,3})?(?:MAKLUM|UMUM|TETAP|BERITAHU)\w*)\b', re.IGNORECASE)
+#: Round 5 (LOW D): a deferral ("ditangguhkan", "ditunda") or a date still to come ("akan dimaklumkan
+#: kemudian") on ANY page refuses, also in the squeezed and dotless forms. Measured: none is on any page of the
+#: 58 cached UMS letters. A bare DITUNDA is never a stem: squeezed, "di Tun Datu" holds it.
 #: The same words with spaces, dots and dashes taken out ("D I B A T A L K A N", "TIDAK  .  BERJAYA"; S1c
 #: round 1). Measured: none is in the squeezed text of ANY page of the 58 cached UMS letters. A bare DITARIK is
 #: never a stem: squeezed, "DI TARIKH" holds it.
@@ -47,7 +55,8 @@ _WITHDRAWN_STEMS = ('DIBATALKAN', 'PEMBATALAN', 'TIDAKBERJAYA', 'DITARIKBALIK', 
                     'TIDAKLAGISAH', 'DITAMATKAN', 'TIDAKBERKUATKUASA', 'TIDAKLAGIBERKUATKUASA', 'WITHDRAWN',
                     'CANCELLED', 'CANCELED', 'REVOKED', 'TIDAKAKTIF', 'TIDAKTERPAKAI', 'TIDAKDITERUSKAN',
                     'TIDAKAKANDITERUSKAN', 'TIDAKLAGIDITERUSKAN', 'TIDAKDAPATDITERUSKAN', 'TIDAKBOLEHDITERUSKAN',
-                    'TIDAKAKANLAGIDITERUSKAN', 'TIDAKDAPATLAGIDITERUSKAN', 'TIDAKBOLEHLAGIDITERUSKAN')
+                    'TIDAKAKANLAGIDITERUSKAN', 'TIDAKDAPATLAGIDITERUSKAN', 'TIDAKBOLEHLAGIDITERUSKAN',
+                    'TANGGUH', 'AKANDIMAKLUMKAN', 'AKANDIUMUMKAN', 'AKANDITETAPKAN', 'AKANDIBERITAHU')
 #: Review round 3 (LOW-2): every character that is not a letter or digit is taken out ("D/I/B/A/T/A/L/K/A/N").
 _SQUEEZE_OUT = re.compile(r'[\W_]')
 #: Owner words review round 2 (fix 2): Cyrillic and Greek letters that look like Latin ones, folded to their
@@ -57,36 +66,52 @@ _SQUEEZE_OUT = re.compile(r'[\W_]')
 #: runs first, so fullwidth and mathematical letters and digits ("ＤＩＢＡＴＡＬＫＡＮ") fold too.
 _LOOKALIKE = str.maketrans('АВЕКМНОРСТХУЅІЈаеорсухѕіјԁӏΑΒΕΖΗΙΚΜΝΟΡΤΥΧαβεικνορτυχ',
                            'ABEKMHOPCTXYSIJaeopcyxsijdlABEZHIKMNOPTYXabeikvoptux')
-#: Review round 3 (MED-1): a letter, digit or combining mark of a digital letter is allowed only below U+0250
-#: (Basic Latin, Latin-1, Latin Extended-A/B) and only when NFKC leaves it as it is.
-_ALLOWED_BELOW = 0x250
+#: Round 5 (MED B): Latin letters with a stroke or a hook that no accent fold takes apart ("ÐIBATALKAN",
+#: "ƊIBATALKAN"), turned into their base letter after the accents are dropped.
+_STROKE_PAIRS = ('ÐD ðd ĐD đd ƉD ɖd ƊD ɗd ƋD ƌd ĦH ħh ŁL łl ȽL ƚl ØO øo ŦT ŧt ƬT ƭt ƮT ʈt ɃB ƀb ƁB ɓb ƂB ƃb '
+                 'ƇC ƈc ȻC ȼc ƑF ƒf ƓG ɠg ǤG ǥg ƗI ɨi ıi ƘK ƙk ƝN ɲn ƤP ƥp ɌR ɍr ƲV ʋv ƳY ƴy ɎY ɏy ƵZ ƶz ȤZ ȥz')
+_STROKE = str.maketrans(''.join(p[0] for p in _STROKE_PAIRS.split()), ''.join(p[1] for p in _STROKE_PAIRS.split()))
 _NON_ASCII = re.compile(r'[^\x00-\x7f]')
 _CHUNK = 256
 
 
+def _dropped(ch: str) -> bool:
+    """True for a combining mark (an accent once NFKD has taken it off its letter) or an invisible formatting
+    character (Unicode category Cf: soft hyphen, word joiner; round 5, MED A)."""
+    import unicodedata
+    cat = unicodedata.category(ch)
+    return cat[0] == 'M' or cat == 'Cf'
+
+
 def fold_lookalikes(s: str) -> str:
-    """``s`` NFKC-normalised (in 256-character pieces: one call on a long text is slow) with the Cyrillic /
-    Greek look-alike letters (`_LOOKALIKE`) turned into their Latin twins. A refusal check runs on the raw
-    text AND on this fold, so folding never makes a refusal go away (review round 3, MED-2)."""
+    """``s`` NFKC-normalised (in 256-character pieces: one call on a long text is slow), then (round 5, MED A /
+    MED B) NFKD with every combining mark and invisible formatting character (`_dropped`) taken out, with the
+    Cyrillic / Greek look-alike letters (`_LOOKALIKE`) and the stroke / hook letters (`_STROKE`) turned into
+    their Latin twins: "TERBA<soft hyphen>TAL" -> "TERBATAL", "DIBÁTALKAN" -> "DIBATALKAN". A refusal check runs
+    on the raw text AND on this fold, so folding never makes a refusal go away (review round 3, MED-2). NEVER
+    used before the owner-phrase check."""
     import unicodedata
     s = s or ''
     if s.isascii():
         return s
-    return ''.join(unicodedata.normalize('NFKC', s[i:i + _CHUNK]) for i in range(0, len(s), _CHUNK)).translate(_LOOKALIKE)
+    out = []
+    for i in range(0, len(s), _CHUNK):
+        part = unicodedata.normalize('NFKD', unicodedata.normalize('NFKC', s[i:i + _CHUNK]))
+        out.append(''.join(ch for ch in part if ch.isascii() or not _dropped(ch)))
+    return ''.join(out).translate(_LOOKALIKE).translate(_STROKE)
 
 
 def _foreign(ch: str) -> bool:
-    import unicodedata
-    if not (ch.isalnum() or unicodedata.category(ch).startswith('M')):
-        return False
-    return ord(ch) >= _ALLOWED_BELOW or unicodedata.normalize('NFKC', ch) != ch
+    """True for a non-ASCII letter, digit or combining mark, or an invisible formatting character (round 5)."""
+    return ch.isalnum() or _dropped(ch)
 
 
 def foreign_letters(*texts) -> bool:
-    """True when any of ``texts`` holds a letter, digit or combining mark outside Basic Latin, Latin-1 and Latin
-    Extended-A/B, or one NFKC changes (fullwidth, mathematical, superscript; review round 3, MED-1; round 2: a
-    Cyrillic or Greek letter). Measured: none in the text of any of the 36 cached genuine UMS PDFs; a scan's OCR
-    may hold them, so scans are never asked."""
+    """True when any of ``texts`` holds a letter, digit or combining mark outside ASCII (round 5, MED B: an
+    accented "DIBÁTALKAN" too; review round 3, MED-1: fullwidth, mathematical, superscript; round 2: Cyrillic,
+    Greek), or an invisible formatting character (round 5, MED A: soft hyphen, word joiner). Measured: none in the
+    text of any of the 36 cached genuine UMS PDFs; a scan's OCR may hold them (4 of 22 hold a non-ASCII letter),
+    so scans are never asked: their checks run on the fold (`fold_lookalikes`)."""
     return any(_foreign(m.group(0)) for t in texts for m in _NON_ASCII.finditer(t or ''))
 #: TERBATAL or TARIK BALIK SAID of this letter ("Status : TERBATAL", "adalah TERBATAL dan ..."; S1c rounds 1-2).
 #: A clause ends at a line break, ';', ':' or '.'; a bare word escapes only when SEKIRANYA / JIKA / JIKALAU /
@@ -121,9 +146,15 @@ _DIGIT_RUN = re.compile(r'\d{12,}')
 #: A numeric date ("5.10.2031", "5/10/31", "05 - 10 - 2031"): none on any genuine page 2. Review round 3 (MED-3):
 #: any dash-, slash- or dot-like separator (en dash, U+2011, U+2215, fullwidth: `_DATE_SEP`) with any spacing;
 #: fullwidth digits are read on the NFKC fold. Also a run of exactly 8 digits ("05102031").
+#: Round 5 (LOW D): also a year-first date ("2031-10-05"), any other separator ("5 10 2031", "5,10,2031",
+#: "5:10:2031", "5_10_2031", "5·10·2031"; with those a 4-digit year: 2 genuine page 2s print a time "8:30:00")
+#: and a run of 7 digits ("5102031"; not after a letter: page 1's own code "UH6481001" may show).
 _DATE_SEP = r'[./\\\-‐-―−⁄∕⧸﹒﹘﹣．／－․]'
+_ANY_SEP = r'(?:\s*' + _DATE_SEP + r'\s*|\s*[,:;_·•∙⋅‧，：；]\s*|\s+)'
 _NUM_DATE = re.compile(r'(?<!\d)\d{1,2}\s*' + _DATE_SEP + r'\s*\d{1,2}\s*' + _DATE_SEP + r'\s*\d{2,4}(?!\d)'
-                       r'|(?<!\d)\d{8}(?!\d)')
+                       r'|(?<!\d)\d{1,2}' + _ANY_SEP + r'\d{1,2}' + _ANY_SEP + r'\d{4}(?!\d)'
+                       r'|(?<!\d)\d{4}' + _ANY_SEP + r'\d{1,2}' + _ANY_SEP + r'\d{1,2}(?!\d)'
+                       r'|(?<!\d)\d{8}(?!\d)|(?<![0-9A-Za-z])\d{7}(?!\d)')
 #: Review round 3 (MED-3): a day before an English or short month name ("5 Oct 2031", "5 Okt. 2031"), or any
 #: month name before a day ("Oktober 5, 2031"). Genuine page 2s print their deadlines "26 Ogos 2031" (a whole
 #: Malay month, day first) and, on 2 of 36, "26 Sep 2031": those forms are not refused here (`_other_date`
@@ -160,6 +191,28 @@ _LABEL_SEPS = ':：;∶꞉=-–—'
 def _squeeze(s: str) -> str:
     """Spaced letters joined ("D I B A T A L K A N" -> "DIBATALKAN"), for the withdrawal words (S1c)."""
     return _LETTER_GAP.sub(r'\1', s or '')
+
+
+#: Round 5 (LOW C): dots, dashes, underscores, slashes and middle dots, taken out for `_dotless` ("Status :
+#: T.E.R.B.A.T.A.L", "TERBA-TAL"); spacing is kept, so a clause and its words stay apart.
+_DOTS_DASHES = re.compile(r'[._/\\\-‐-―−·•․‧⁃∙⋅﹒﹘﹣．－／＿]')
+#: A single letter, a dot or dash (any spacing round it) and another single letter ("T . E . R" -> "TER").
+_DOTTED_LETTERS = re.compile(r'(?<![^\W\d_])([^\W\d_])[^\S\n]*' + _DOTS_DASHES.pattern + r'[^\S\n]*'
+                             r'(?=[^\W\d_](?![^\W\d_]))')
+
+
+def _dotless(s: str):
+    """The forms of ``s`` with its dots and dashes squeezed out (round 5, LOW C): deleted (then spaced letters
+    joined), and single letters joined across them."""
+    gone = _DOTS_DASHES.sub('', s or '')
+    return gone, _squeeze(gone), _DOTTED_LETTERS.sub(r'\1', s or '')
+
+
+def status_said(s: str) -> bool:
+    """True when ``s`` (raw; the callers also ask its fold) prints "SURAT PENGESAHAN" in any spacing (`_STATUS`;
+    round 5, LOW C: also with every character that is not a letter or digit taken out)."""
+    s = s or ''
+    return bool(_STATUS.search(s)) or _STATUS_KEY in _SQUEEZE_OUT.sub('', s.upper())
 
 
 def _excused(text: str, m) -> bool:
@@ -208,11 +261,10 @@ def _withdrawn(source: str, head) -> bool:
 
 def _withdrawn_one(source: str, head) -> bool:
     key = _SQUEEZE_OUT.sub('', source.upper())
-    squeezed = _squeeze(source)
+    forms = (source, _squeeze(source)) + _dotless(source)    # round 5 (LOW C): also dots and dashes squeezed out
     return bool(any(_NOT_AN_OFFER.search(ln) or _NOT_AN_OFFER.search(_squeeze(ln)) for ln in head)
-                or _WITHDRAWN.search(source) or _WITHDRAWN.search(squeezed)
                 or any(stem in key for stem in _WITHDRAWN_STEMS)
-                or _cancel_said(source) or _cancel_said(squeezed))
+                or any(_WITHDRAWN.search(f) or _cancel_said(f) for f in forms))
 
 
 def letter_refusal(text: str) -> str:
@@ -224,8 +276,8 @@ def letter_refusal(text: str) -> str:
     folded = fold_lookalikes(text)               # review round 2: "SURAT PENGЕSAHAN" with a Cyrillic Е
     if len(text) > MAX_LETTER_CHARS or len(folded) > MAX_LETTER_CHARS:
         return 'too_long'                        # review round 3: NFKC may unpack one character into many
-    if _STATUS.search(text) or _STATUS.search(folded):
-        return 'status_letter'                   # raw OR folded (review round 3, MED-2)
+    if status_said(text) or status_said(folded):
+        return 'status_letter'                   # raw OR folded (review round 3, MED-2), any spacing (round 5)
     for one in (text, folded):
         lines = _text_lines(one)
         title_at = next((i for i, ln in enumerate(lines) if _TITLE.search(_one_space(ln))), -1)
@@ -341,6 +393,8 @@ def _page_refuses(page: str, nric: str, reporting_date: str, intake: str, code: 
     if any(k in rest for k in _OFFER_KEYS + _LATER_KEYS) or _SENTENCE.search(page) or _DAY_HB_KEY.search(rest):
         return True
     if any(_decimal_digits(r) != want for r in _DIGIT_RUN.findall(rest)) or _NUM_DATE.search(page):
+        return True
+    if _withdrawn_one(page, []):                 # round 5 (LOW D): a deferral or "akan dimaklumkan" on this page
         return True
     if _WORD_DATE.search(page) or any(_decimal_digits(m.group(1)) != want for m in _IC_RE.finditer(page)):
         return True
