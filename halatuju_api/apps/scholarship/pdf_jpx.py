@@ -6,17 +6,16 @@ claims (the codestream's SIZ marker: Xsiz - XOsiz by Ysiz - YOsiz pixels of Csiz
 charged the LARGER of the two, and one whose header cannot be read is refused. Nothing is decoded here; only the
 stream's headers are read.
 
-Review 3 (2026-11-21): pixels alone did not bound the decode time. pdfium can skip resolution levels only when
-the codestream has them; with ONE resolution level (the COD marker's decomposition levels NL = 0) OpenJPEG
-decodes every pixel at full size. Three 4890 x 4890 16-bit grey NL = 0 images on each of 3 pages passed the
-pixel caps and took 15-18 s of the child's 20 s. So every JPX image is also charged its DECODE WORK, the SIZ
-size times its components: in full when NL = 0 or when NL cannot be proved (no COD read before the first tile,
-a COD or COC in any tile-part header, a tile-part past the data read); at half when the main header proves
-NL >= 1 for every component (measured on Windows, one 4890 x 4890 grey image: NL = 0 solid fill 1.31 s 8-bit
-and 2.34 s 16-bit; NL >= 1 checkerboard 0.57-0.72 s). The work is capped per page (`MAX_PAGE_JPX_WORK`) and
-over all the pages one gate call checks (`MAX_DOC_JPX_WORK`). The caps do not model OpenJPEG's memory
-(measured peak 105 MiB for an 8484 x 8484 grey image); the child's memory cap (Linux) and time limit stay the
-backstop.
+Reviews 3 and 4 (2026-11-21): pixels alone did not bound the decode time, so every JPX image is also charged its
+DECODE WORK (`_work`): SIZ pixels x components x bytes per sample, plus `_TILE_WORK` for each tile. The number of
+resolution levels (NL) is not credited. pdfium asks OpenJPEG to skip levels only when the image is DRAWN at half
+its SIZ size or less, which the page decides, not the header; drawn on its A4 page at the 200 DPI render, a scan up
+to 400 DPI skips none (measured, Linux child, 3 pages: 300 DPI colour NL 0 / 1 / 5 rendered in 4.8 / 5.4 / 5.8 s).
+Review 3 halved the work at NL >= 1 and so refused a 300 DPI colour scan at its 10,000,000 page cap while it let
+three 4890 x 4890 16-bit images a page through at half. The work is capped per page (`MAX_PAGE_JPX_WORK`) and over
+all the pages one gate call checks (`MAX_DOC_JPX_WORK`). The caps do not model OpenJPEG's memory: on Linux the
+child's 256 MiB cap is the backstop (a 400 DPI A4 colour JPX scan passes the gate but its 200 DPI page render runs
+out of it, about 8 s for 3 pages, while the smaller stacked render of the same pages draws in 3.3-3.8 s).
 """
 import zlib
 
@@ -28,18 +27,20 @@ _JPX_MAX_BOXES = 64
 _JPX_MAX_DEPTH = 38                                  # the deepest a JPEG2000 component may be, in bits
 _J2K_START = b'\xff\x4f\xff\x51'                     # SOC then SIZ: a codestream's first two markers
 _JP2_SIGNATURE = b'\x00\x00\x00\x0cjP  \r\n\x87\n'   # a JP2 file's first box
-_JPX_MAX_MARKERS = 256                               # marker segments read in one header
-_JPX_MAX_TILE_PARTS = 4_096                          # tile-parts walked; past them NL counts as 0
-_SOT, _SOD, _EOC, _COD, _COC = b'\xff\x90', b'\xff\x93', b'\xff\xd9', b'\xff\x52', b'\xff\x53'
-#: JPX decode work (SIZ pixels x components; half when every component has >= 1 decomposition level) on one
-#: page, and summed over the pages one gate call checks. Real letters (870 fixture PDFs, 2026-11-21): one JPX
-#: letter is measured, 352972e6, 0.83 million RGB pixels with 5 levels: work 1,238,040 (rendered in 0.51 s);
-#: 10,000,000 is 8x it. A page at the cap renders in about 0.7 s (one 3162 x 3162 16-bit grey image, NL = 0).
-#: The call cap is three such pages (the most any renderer asks for: `pdf_pages_png` and the offer reader stack
-#: or read 3), so 3 pages of a 200 DPI A4 colour scan (NL >= 1: 5.8 million each) pass, and a census over 30
-#: pages is bounded too.
-MAX_PAGE_JPX_WORK = 10_000_000
-MAX_DOC_JPX_WORK = 30_000_000
+#: JPX decode work on one page, and summed over the pages one gate call checks (at most 3 in production: the stack
+#: and the offer reader read 3). Measured in the Linux child (256 MiB, 3 pages rendered at 200 DPI, 2026-11-21):
+#: A4 scans, one per page, 8-bit, NL 0, 1 or 5: 200 DPI grey 1.7-2.6 s, colour 3.5-6.2 s; 300 DPI grey 2.2-3.0 s,
+#: colour 4.8-5.8 s; 400 DPI grey 2.8-3.5 s, colour out of memory at 7.1-8.3 s; US letter 300 DPI colour 5.4 s.
+#: The review 3 probe (work 430 million) 12.1 s. A 400 DPI A4 colour page, 3307 x 4677 x 3 = 46,400,517, is the
+#: largest genuine page: the caps sit just above it and three of it. Near the caps: one 4890 x 4890 16-bit grey
+#: image a page (47.8 million, refused) 4.4 s; one 4000 x 4000 16-bit (32 million, passes) 3.4 s.
+MAX_PAGE_JPX_WORK = 47_000_000
+MAX_DOC_JPX_WORK = 140_000_000
+#: Work charged per tile: OpenJPEG pays a fixed cost for each. Measured, Linux child, 3 pages of 15,625 tiles each
+#: (1000 x 1000 grey in 8 x 8 tiles; 2000 x 2000 in 16 x 16): 4.6-4.8 s, about 75 microseconds a tile above the
+#: pixels; one unit of work measured 31-68 ns, so a tile costs 1,100-2,400 units. So 2,000 a tile: a page holds at
+#: most 23,500 tiles.
+_TILE_WORK = 2_000
 
 
 def jpx_charge(img, before, px, bits):
@@ -81,18 +82,17 @@ def _jpx_header(img, before):
     at most `_JPX_WINDOW` bytes inflated after one FlateDecode with no predictor (never the whole stream); after
     any other filter, two Flates or a predictor, not at all."""
     if not before:
-        data, whole = img._data, True
+        data = img._data
     elif before == ['/FlateDecode'] and not _predicted(img):
         try:
             data = zlib.decompressobj().decompress(img._data, _JPX_WINDOW)
         except zlib.error:
             return None
-        whole = len(data) < _JPX_WINDOW              # a full window may have cut the stream short
     else:
         return None
     if data[:4] == _J2K_START:                       # a bare codestream
         siz = _siz(data, 0)
-        return ([siz], _work(data, 0, whole)) if siz else None
+        return ([siz], _work(data, 0)) if siz else None
     if data[:12] != _JP2_SIGNATURE:
         return None
     found, at = [], 0
@@ -116,7 +116,7 @@ def _jpx_header(img, before):
                 sub = inner[2]
         elif kind == b'jp2c':                        # the codestream OpenJPEG decodes (the first one)
             siz = _siz(data, body)
-            return ([siz] + found, _work(data, body, whole)) if siz else None
+            return ([siz] + found, _work(data, body)) if siz else None
         at = end
     return None
 
@@ -153,55 +153,13 @@ def _siz(data, at):
     return (x - x0) * (y - y0), comps * max(depths)
 
 
-def _work(data, at, whole) -> int:
-    """The decode work of the codestream at ``at`` (its SIZ marker already read): SIZ pixels x components, halved
-    only when `_levels` proves every component has at least one decomposition level to skip."""
-    x, y, x0, y0 = (int.from_bytes(data[at + o:at + o + 4], 'big') for o in (8, 12, 16, 20))
-    full = (x - x0) * (y - y0) * int.from_bytes(data[at + 40:at + 42], 'big')
-    return full if _levels(data, at, whole) == 0 else (full + 1) // 2
-
-
-def _levels(data, at, whole) -> int:
-    """The fewest decomposition levels (NL) any component of the codestream at ``at`` has: the main header's
-    COD and COC markers. 0 (OpenJPEG decodes every pixel at full size) whenever it cannot be proved: no COD
-    before the first tile-part, a marker that cannot be read, a COD or COC in ANY tile-part header (it may
-    override the main header), a tile-part past the data read, or more than `_JPX_MAX_TILE_PARTS`."""
+def _work(data, at) -> int:
+    """The decode work of the codestream at ``at`` (its SIZ marker already read by `_siz`): SIZ pixels x components
+    x bytes per sample (the deepest component's bits, in whole bytes: 1 up to 8 bits, 2 up to 16), plus
+    `_TILE_WORK` for each tile of the SIZ tile grid. The number of resolution levels is not read: pdfium skips levels
+    only when the image is DRAWN at half its size or less, which the page (not the header) decides."""
+    px, bits = _siz(data, at)
+    x, y, x0, y0, xt, yt, xto, yto = (int.from_bytes(data[at + o:at + o + 4], 'big') for o in range(8, 40, 4))
+    tiles = -(-(x - min(xto, x0)) // max(xt, 1)) * -(-(y - min(yto, y0)) // max(yt, 1))
     comps = int.from_bytes(data[at + 40:at + 42], 'big')
-    pos, nl = at + 4 + int.from_bytes(data[at + 4:at + 6], 'big'), None   # the marker after SIZ
-    for _ in range(_JPX_MAX_MARKERS):
-        if pos + 4 > len(data) or data[pos] != 0xFF:
-            return 0
-        marker, length = data[pos:pos + 2], int.from_bytes(data[pos + 2:pos + 4], 'big')
-        if marker == _SOT:
-            break
-        if marker in (_COD, _COC):
-            spot = pos + 9 if marker == _COD else pos + 5 + (2 if comps >= 257 else 1)
-            if spot >= min(len(data), pos + 2 + length):
-                return 0
-            nl = data[spot] if nl is None else min(nl, data[spot])
-        pos += 2 + length
-    else:
-        return 0
-    if not nl:                                       # no COD in the main header, or NL = 0
-        return 0
-    for _ in range(_JPX_MAX_TILE_PARTS):             # tile-parts: Psot jumps, each header read to its SOD
-        if pos + 12 > len(data) or data[pos:pos + 2] != _SOT:
-            return 0
-        psot, head = int.from_bytes(data[pos + 6:pos + 10], 'big'), pos + 12
-        for _ in range(_JPX_MAX_MARKERS):
-            if head + 4 > len(data) or data[head] != 0xFF:
-                return 0
-            marker = data[head:head + 2]
-            if marker == _SOD:
-                break
-            if marker in (_COD, _COC):
-                return 0
-            head += 2 + int.from_bytes(data[head + 2:head + 4], 'big')
-        else:
-            return 0
-        if psot == 0:                                # the last tile-part: it runs to the end of the data
-            return nl
-        pos += psot
-        if data[pos:pos + 2] == _EOC or (whole and pos == len(data)):
-            return nl
-    return 0
+    return px * comps * -(-(bits // comps) // 8) + tiles * _TILE_WORK

@@ -204,85 +204,143 @@ def _jpx_levels(w, h, levels, codestream=True, mode='RGB'):
     return buf.getvalue()
 
 
-def _grey_page(side, levels, images=1, pages=1):
-    """``pages`` pages, each drawing ``images`` grey JPX images whose dictionary says 1600 x 2260 over a
-    codestream whose SIZ claims ``side`` x ``side`` (one component) with ``levels`` decomposition levels: the
-    shape of the review 3 probe (it was three 4890 x 4890 16-bit grey images with NL = 0 on each of 3 pages)."""
-    data = _claiming(_jpx_levels(64, 64, levels, mode='L'), side, side)
-    objs = {6 + i: _jpx(1600, 2260, data, cs=b'/DeviceGray') for i in range(images)}
-    names = b''.join(b'/Im%d %d 0 R ' % (i, 6 + i) for i in range(images))
-    content = b''.join(b'q ' + FULL_PAGE + b'/Im%d Do Q ' % i for i in range(images))
-    one = _a4(content, b'/XObject << ' + names + b'>>', objs)
-    if pages == 1:
-        return one
+def _codestream(w, h, comps=1, depth=8, levels=5, tile=None):
+    """A JPEG2000 codestream's headers only (SOC, SIZ, COD, one empty tile-part, EOC), built here, never encoded:
+    the gate reads headers only, so these tests run in milliseconds. One tile, or square tiles of side ``tile``."""
+    tw, th = (tile, tile) if tile else (w, h)
+    siz = (b'\xff\x51' + (38 + 3 * comps).to_bytes(2, 'big') + b'\x00\x00' + w.to_bytes(4, 'big')
+           + h.to_bytes(4, 'big') + bytes(8) + tw.to_bytes(4, 'big') + th.to_bytes(4, 'big') + bytes(8)
+           + comps.to_bytes(2, 'big') + bytes([depth - 1, 1, 1]) * comps)
+    cod = b'\xff\x52\x00\x0c\x00\x00\x00\x01\x00' + bytes([levels, 4, 4, 0, 1])
+    return b'\xff\x4f' + siz + cod + b'\xff\x90\x00\x0a\x00\x00\x00\x00\x00\x0e\x00\x01\xff\x93\xff\xd9'
+
+
+def _pages(*pages):
+    """A PDF whose page i draws, full page, each image of ``pages[i]``: (dictionary width, height, codestream)."""
     from pypdf import PdfReader, PdfWriter
     out, writer = io.BytesIO(), PdfWriter()
-    for _ in range(pages):
-        writer.add_page(PdfReader(io.BytesIO(one)).pages[0])
+    for images in pages:
+        objs, names, content = {}, b'', b''
+        for i, (w, h, data) in enumerate(images):
+            comps = int.from_bytes(data[40:42], 'big')
+            objs[6 + i] = _jpx(w, h, data, cs=b'/DeviceGray' if comps == 1 else b'/DeviceRGB')
+            names += b'/Im%d %d 0 R ' % (i, 6 + i)
+            content += b'q ' + FULL_PAGE + b'/Im%d Do Q ' % i
+        writer.add_page(PdfReader(io.BytesIO(_a4(content, b'/XObject << ' + names + b'>>', objs))).pages[0])
     writer.write(out)
     return out.getvalue()
 
 
-def _cod_in_tile_part(data):
-    """``data`` (a bare codestream) with its main header's COD marker copied into its first tile-part header."""
-    cod_at, sot_at = data.index(b'\xff\x52'), data.index(b'\xff\x90')
-    cod = data[cod_at:cod_at + 2 + int.from_bytes(data[cod_at + 2:cod_at + 4], 'big')]
-    psot = int.from_bytes(data[sot_at + 6:sot_at + 10], 'big') + len(cod)
-    return data[:sot_at + 6] + psot.to_bytes(4, 'big') + data[sot_at + 10:sot_at + 12] + cod + data[sot_at + 12:]
+def _scan(w, h, comps, levels, pages=1):
+    """``pages`` pages each holding one full-page scan: dictionary size = the codestream's true size."""
+    return _pages(*[[(w, h, _codestream(w, h, comps, 8, levels))]] * pages)
 
 
-# ── TD-692 review 3: pixels did not bound the decode time. With one resolution level (NL = 0) OpenJPEG decodes
-#    every pixel at full size: three 4890 x 4890 16-bit grey images on each of 3 pages passed the pixel caps and
-#    took 15-18 s of the child's 20 s. A JPX image is now charged its decode work too (SIZ pixels x components, half
-#    only when NL >= 1 is proved), capped per page and over the pages of one gate call.
+def _gate(pdf):
+    return pdf_render_check.render_refusal(pdf, lambda n: range(n))[1]
+
+
+_PAGE_CAP = 'OverBudget: past the render jpx_work cap'
+_DOC_CAP = 'OverBudget: past the render JPEG2000 document cap'
+#: Genuine scans (true pixel sizes): A4 at 200, 300 and 400 DPI and US letter at 300 DPI.
+_A4 = {200: (1654, 2339), 300: (2480, 3508), 400: (3307, 4677)}
+_LETTER_300 = (2550, 3300)
+#: The review 3 probe: three 4890 x 4890 16-bit grey images (dictionary 1600 x 2260) on each of 3 pages.
+_PROBE = 4890
+
+
+def _probe(side=_PROBE, images=3, pages=3, levels=0, depth=16):
+    return _pages(*[[(1600, 2260, _codestream(side, side, 1, depth, levels))] * images] * pages)
+
+
+# ── TD-692 reviews 3 and 4: pixels did not bound the decode time. With one resolution level (NL = 0) OpenJPEG
+#    decodes every pixel at full size: three 4890 x 4890 16-bit grey images on each of 3 pages passed the pixel caps
+#    and took 15-18 s of the child's 20 s. A JPX image is charged its decode work, SIZ pixels x components x bytes
+#    per sample plus 2,000 a tile, whatever its levels (review 4: review 3 halved the work at NL >= 1, which
+#    refused 300 DPI colour scans and let 16-bit images through at half), capped per page and over the pages of one
+#    gate call just above a 400 DPI A4 colour scan's.
 class ADecodeWork(SimpleTestCase):
-    def test_the_review_probe_shape_is_refused(self):
-        for name, pdf in (('3 pages of three 4890 x 4890 images', _grey_page(4890, 0, images=3, pages=3)),
-                          ('one page of three', _grey_page(4890, 0, images=3)),
-                          ('one 4890 x 4890 image', _grey_page(4890, 0))):
+    def test_genuine_scans_up_to_400_dpi_pass_grey_or_colour_any_levels_one_page_or_three(self):
+        for dpi, (w, h) in _A4.items():
+            for comps in (1, 3):
+                for levels in (5, 1, 0):
+                    for pages in (1, 3):
+                        with self.subTest(dpi=dpi, comps=comps, levels=levels, pages=pages):
+                            self.assertIsNone(_gate(_scan(w, h, comps, levels, pages)))
+
+    def test_a_us_letter_300_dpi_colour_scan_passes(self):
+        for pages in (1, 3):
+            with self.subTest(pages=pages):
+                self.assertIsNone(_gate(_scan(*_LETTER_300, 3, 5, pages)))
+
+    def test_the_review_probe_and_its_variants_are_refused(self):
+        for name, pdf, why in (
+                ('the probe: 3 pages of three 16-bit NL 0 images', _probe(), _PAGE_CAP),
+                ('the probe with 1 level', _probe(levels=1), _PAGE_CAP),
+                ('the probe with 5 levels', _probe(levels=5), _PAGE_CAP),
+                ('the probe at 8 bits', _probe(depth=8), _PAGE_CAP),
+                ('one page of three', _probe(pages=1), _PAGE_CAP),
+                ('one 16-bit image a page, 3 pages', _probe(images=1), _PAGE_CAP),
+                ('one 4300 x 4300 16-bit image a page, 4 pages', _probe(4300, images=1, pages=4), _DOC_CAP),
+                ('six 3400 x 3400 16-bit images a page, pixels in cap', _probe(3400, images=6, levels=1), _PAGE_CAP),
+                ('a dictionary telling the truth', _pages(*[[(_PROBE, _PROBE, _codestream(_PROBE, _PROBE, 1, 16, 0))]
+                                                             * 3] * 3), _PAGE_CAP),
+                ('three 8-bit colour NL 0 images a page',
+                 _pages(*[[(2480, 2480, _codestream(2480, 2480, 3, 8, 0))] * 3] * 3), _PAGE_CAP)):
             with self.subTest(name):
-                self.assertEqual(pdf_render_check.render_refusal(pdf, lambda n: range(n))[1],
-                                 'OverBudget: past the render jpx_work cap')
+                self.assertEqual(_gate(pdf), why)
 
     def test_one_large_image_is_refused_with_one_level_or_five(self):
         for side in (7000, 7500):
             for levels in (0, 5):
                 with self.subTest(side=side, levels=levels):
-                    self.assertEqual(_refusal(_grey_page(side, levels)), 'OverBudget: past the render jpx_work cap')
+                    pdf = _pages([(1600, 2260, _codestream(side, side, 1, 8, levels))])
+                    self.assertEqual(_refusal(pdf), _PAGE_CAP)
 
-    def test_the_work_is_full_at_one_level_and_half_with_more(self):
-        for codestream in (True, False):
-            with self.subTest(codestream=codestream):
-                for levels, work in ((0, 180_000), (1, 90_000), (5, 90_000)):
+    def test_the_work_is_pixels_times_components_times_sample_bytes_plus_tiles_whatever_the_levels(self):
+        for codestream in (True, False):                       # real Pillow files: a codestream and a JP2 file
+            for levels in (0, 1, 5):
+                with self.subTest(codestream=codestream, levels=levels):
                     pdf = _jpx_page(_jpx(300, 200, _jpx_levels(300, 200, levels, codestream)))
-                    self.assertEqual(_cost(pdf)['jpx_work'], work)
+                    self.assertEqual(_cost(pdf)['jpx_work'], 180_000 + 2_000)
+        for depth, work in ((1, 62_000), (8, 62_000), (9, 122_000), (12, 122_000), (16, 122_000)):
+            with self.subTest(depth=depth):
+                self.assertEqual(_cost(_pages([(300, 200, _codestream(300, 200, 1, depth))]))['jpx_work'], work)
 
-    def test_levels_that_cannot_be_proved_count_as_one(self):
-        data = _jpx_levels(300, 200, 5)
-        self.assertEqual(pdf_jpx._levels(data, 0, True), 5)
-        self.assertEqual(pdf_jpx._levels(_cod_in_tile_part(data), 0, True), 0)      # a tile may override
-        self.assertEqual(pdf_jpx._levels(data[:-40], 0, False), 0)                 # cut short in a window
-        no_cod = data.replace(b'\xff\x52', b'\xff\x64', 1)                          # COD renamed a comment
-        self.assertEqual(pdf_jpx._levels(no_cod, 0, True), 0)
-        grey = _jpx_levels(300, 200, 5, mode='L')
-        pdf = _jpx_page(_jpx(300, 200, _cod_in_tile_part(grey), cs=b'/DeviceGray'))
-        self.assertEqual(_cost(pdf)['jpx_work'], 60_000)
+    def test_each_tile_is_charged_2000_and_many_tiny_tiles_are_refused(self):
+        """3 pages of 1000 x 1000 in 8 x 8 tiles (15,625 a page) rendered in 4.6 s in the Linux child: they pass, at
+        32,250,000 a page. In 6 x 6 tiles (27,889 a page) the page is past the cap."""
+        self.assertEqual(_cost(_pages([(1000, 1000, _codestream(1000, 1000, tile=8))]))['jpx_work'],
+                         1_000_000 + 125 * 125 * 2_000)
+        self.assertIsNone(_gate(_pages(*[[(1000, 1000, _codestream(1000, 1000, tile=8))]] * 3)))
+        for tile in (6, 1):
+            with self.subTest(tile=tile):
+                self.assertEqual(_gate(_pages([(1000, 1000, _codestream(1000, 1000, tile=tile))])), _PAGE_CAP)
 
     def test_the_page_cap_and_the_call_cap(self):
-        at_cap = math.isqrt(pdf_jpx.MAX_PAGE_JPX_WORK)                             # 3162 x 3162, one component
-        self.assertIsNone(_refusal(_grey_page(at_cap, 0)))
-        self.assertEqual(_refusal(_grey_page(at_cap + 1, 0)), 'OverBudget: past the render jpx_work cap')
-        pages = pdf_jpx.MAX_DOC_JPX_WORK // pdf_jpx.MAX_PAGE_JPX_WORK                # 3, the most a renderer asks
-        pdf = _grey_page(at_cap, 0, pages=pages + 1)
-        self.assertIsNone(pdf_render_check.render_refusal(pdf, lambda n: range(pages))[1])
-        self.assertEqual(pdf_render_check.render_refusal(pdf, lambda n: range(n))[1],
-                         'OverBudget: past the render JPEG2000 document cap')
+        page, call = pdf_jpx.MAX_PAGE_JPX_WORK, pdf_jpx.MAX_DOC_JPX_WORK
+        self.assertEqual((page, call), (47_000_000, 140_000_000))
+        self.assertGreaterEqual(page, 3307 * 4677 * 3 + 2_000)          # a 400 DPI A4 colour scan's page
+        self.assertGreaterEqual(call, 3 * (3307 * 4677 * 3 + 2_000))    # and 3 of them
+        at_page_cap = (5250, 8952, _codestream(5250, 8952))     # 46,998,000 grey pixels + 1 tile: 47,000,000
+        self.assertIsNone(_gate(_pages([at_page_cap])))
+        self.assertEqual(_gate(_pages([(5250, 8953, _codestream(5250, 8953))])), _PAGE_CAP)
+        half16 = (4476, 5250, _codestream(4476, 5250, 1, 16))  # 16 bits: 23,499,000 pixels charged twice + 1 tile
+        self.assertIsNone(_gate(_pages([half16])))
+        self.assertEqual(_gate(_pages([half16, (1, 1, _codestream(1, 1))])), _PAGE_CAP)
+        last = (4220, 10900, _codestream(4220, 10900))          # 46,000,000: the call at exactly 140,000,000
+        self.assertIsNone(_gate(_pages([at_page_cap], [at_page_cap], [last])))
+        self.assertEqual(_gate(_pages([at_page_cap], [at_page_cap], [(4220, 10901, _codestream(4220, 10901))])),
+                         _DOC_CAP)
+        pdf = _pages([at_page_cap], [at_page_cap], [last], [at_page_cap])
+        self.assertIsNone(pdf_render_check.render_refusal(pdf, lambda n: range(3))[1])   # the most a renderer asks
+        self.assertEqual(pdf_render_check.render_refusal(pdf, lambda n: range(n))[1], _DOC_CAP)
 
     def test_a_real_looking_a4_colour_scan_with_levels_passes_and_is_drawn(self):
-        """200 DPI A4 RGB (1654 x 2339) with 5 levels: work 5.8 million, three such pages pass."""
+        """200 DPI A4 RGB (1654 x 2339) with 5 levels, a real Pillow file (one tile): work 11.6 million."""
         pdf = _jpx_page(_jpx(1654, 2339, _jpx_levels(1654, 2339, 5, codestream=False)))
         self.assertIsNone(_refusal(pdf))
-        self.assertEqual(_cost(pdf)['jpx_work'], (1654 * 2339 * 3 + 1) // 2)
+        self.assertEqual(_cost(pdf)['jpx_work'], 1654 * 2339 * 3 + 2_000)
         self.assertTrue(pdf_pages.pdf_first_page_png(pdf).startswith(b'\x89PNG'))
 
 
