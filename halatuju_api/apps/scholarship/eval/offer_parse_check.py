@@ -86,6 +86,7 @@ def check_corpus(eval_dir, base=DEFAULT_BASE, split_file=orc.SPLIT_PATH):
         text, route = rp.production_text(snap, key)
         ex = exact_read(text, from_text_layer=route == 'text_layer', page1_layer=rp.page1_of(eval_dir, key, route),
                         page1_layout=rp.page1_layout_of(eval_dir, key, route),
+                        page_texts=rp.page_texts_of(eval_dir, key, route),
                         profile_nric=(context.get(key) or {}).get('profile_nric') or '')
         fields = ex['fields'] if ex else None
         outcome, bad, od = classify(answer, family, fields)

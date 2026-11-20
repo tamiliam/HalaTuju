@@ -96,22 +96,27 @@ def _guard_reason(d: dict) -> str:
 
 
 def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profile_nric='',
-               page1_layout='', why=None) -> dict | None:
+               page1_layout='', why=None, page_texts=None) -> dict | None:
     """The Exact read from what production derived: ``from_text_layer`` — ``text`` is a digital PDF's own
     text layer — and that PDF's ``page1_layer`` (and its LAYOUT text, ``page1_layout``, which only the UMS
     family reads — OCR-first S1). ``prior`` is the stored ``vision_fields``. A university lock names its
     lane (``rules_lane``, e.g. 'ua:UMS') on the result and in ``offer_reader_inputs``; '' otherwise. When a
-    UMS letter does not lock, ``why`` (a dict, if given) gets the lane and the reason (`_note_ums_refusal`)."""
+    UMS letter does not lock, ``why`` (a dict, if given) gets the lane and the reason (`_note_ums_refusal`),
+    and the missing owner phrases' NUMBERS (``owner_words_missing``; never text). ``page_texts``: that PDF's
+    visible text per page (`pdf_pages.pdf_page_texts`), read by the UMS family only (S1c owner words)."""
     from .offer_ic import guard_nric
     from .offer_parse import diagnose
     if from_text_layer and not (page1_layer or '').strip():
         _note_ums_refusal(why, text, 'no_page1_layer')
         return None                              # page 1 is a scan: no page-1 identity to read (H2)
     page1 = page1_layer if from_text_layer else ''
-    d = diagnose(text, page1_text=page1 or None, page1_layout=page1_layout if from_text_layer else '')
+    d = diagnose(text, page1_text=page1 or None, page1_layout=page1_layout if from_text_layer else '',
+                 page_texts=page_texts if from_text_layer else None)
     govt = d['locked']
     if govt is None:
         _note_ums_refusal(why, text, _guard_reason(d))
+        if isinstance(why, dict) and why.get('reason') == 'read_owner_words_missing':
+            why['owner_words_missing'] = list(d.get('owner_words_missing') or ())
         return None
     govt.pop('_family', None)
     lane = govt.pop('rules_lane', '')
@@ -192,9 +197,9 @@ def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_n
         if isinstance(why, dict):
             why.update(lane=LANE, reason='lane_off')
         return None
-    layout = ''
+    layout, page_texts = '', None
     if lane_on and ums and from_layer and page1.strip():
-        from .pdf_pages import pdf_page1_layout
-        layout = pdf_page1_layout(image)
+        from .pdf_pages import MAX_LAYER_PAGES, pdf_page1_layout, pdf_page_texts
+        layout, page_texts = pdf_page1_layout(image), pdf_page_texts(image, MAX_LAYER_PAGES)
     return exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric,
-                      page1_layout=layout, why=why)
+                      page1_layout=layout, why=why, page_texts=page_texts)

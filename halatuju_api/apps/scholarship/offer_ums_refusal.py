@@ -9,7 +9,10 @@ Since the owner's method change (20 Nov) a UMS letter locks only when it shows A
 * TERBATAL / TARIK BALIK said of the letter refuses (`_cancel_said`). "akan terbatal" and "terbatal dengan
   sendirinya" are excused ONLY in a sentence that holds SEKIRANYA / JIKA / JIKALAU / APABILA, and never right
   after "telah", nor after "Status" or a colon earlier in that sentence (round 3 blocker 1);
-* a page after page 1 that shows a second offer refuses ('second_offer', round 3 MED 3, `later_pages_refusal`).
+* a page after page 1 that shows a second offer refuses ('second_offer', round 3 MED 3, `later_pages_refusal`);
+* a digital letter with no page texts, or with one of its first 3 pages showing no visible text, refuses
+  ('no_page_texts' / 'hidden_page', round 3 MED 4, `page_texts_refusal`): the owner's words are matched on
+  the visible pages, so a page we cannot see sends the letter to the AI.
 
 Every lookup is linear in the text (round 3 MED 5: the excused spans are found by one bisect each). Pure.
 """
@@ -56,6 +59,9 @@ _CLAUSE_COLON = re.compile(r'[:：]')
 _LETTER_GAP = re.compile(r'(?<![A-Za-z])([A-Za-z])[^\S\n](?=[A-Za-z](?![A-Za-z]))')
 #: Round 3 MED 3: a second offer title on a later page (any "TAWARAN KEMASUKAN", the university named or not).
 _OFFER_TITLE = re.compile(r'TAWARAN\s{1,3}KEMASUKAN', re.IGNORECASE)
+#: The template's own page 2 heading "SYARAT-SYARAT TAWARAN KEMASUKAN SESI ..." (conditions of the offer, on every
+#: genuine two-page UMS letter, 20 Nov measure) is not a second offer's title; its IC, sentence and date still judge.
+_CONDITIONS_HEADING = re.compile(r'SYARAT\s{0,3}-?\s{0,3}SYARAT\s{1,3}TAWARAN\s{1,3}KEMASUKAN', re.IGNORECASE)
 
 
 def _squeeze(s: str) -> str:
@@ -125,9 +131,25 @@ def letter_refusal(text: str) -> str:
     return 'not_an_offer' if _withdrawn(text, lines[:title_at + 1] if title_at >= 0 else []) else ''
 
 
+#: Round 3 MED 4: the first pages whose visible text must not be empty (a hidden or scanned page there may hold
+#: the withdrawal, the status or a second offer the rules cannot see).
+CHECKED_PAGES = 3
+
+
+def page_texts_refusal(page_texts) -> str:
+    """Why a DIGITAL letter's page texts (`pdf_pages.pdf_page_texts`, one visible text per page) refuse its lock:
+    'no_page_texts' when there are none; 'hidden_page' when any of its first `CHECKED_PAGES` pages is empty (a
+    page whose text is invisible or cannot be checked reads ''; a one-page letter's page 1 is never empty here,
+    its layout needs it); '' when every one of them shows text."""
+    pages = list(page_texts or ())
+    if not pages:
+        return 'no_page_texts'
+    return 'hidden_page' if any(not (t or '').strip() for t in pages[:CHECKED_PAGES]) else ''
+
+
 def later_pages_refusal(later_pages, nric: str, reporting_date: str) -> str:
     """'second_offer' when any page after page 1 (``later_pages``, each page's visible text) shows a second offer
-    (round 3 MED 3): a "TAWARAN KEMASUKAN" title, a programme sentence ("untuk mendapat ... dan sebanyak"), an
+    (round 3 MED 3): a "TAWARAN KEMASUKAN" title (not the template's "SYARAT-SYARAT TAWARAN KEMASUKAN"), a programme sentence ("untuk mendapat ... dan sebanyak"), an
     IC other than page 1's ``nric``, or a date by a "Tarikh Lapor Diri" label (its line and the six after it)
     other than page 1's ``reporting_date``; '' when none. A confirmation page that repeats them refuses too."""
     from .offer_parse import _decimal_digits, first_date, house_date
@@ -135,7 +157,7 @@ def later_pages_refusal(later_pages, nric: str, reporting_date: str) -> str:
     want = _decimal_digits(nric or '')
     for page in later_pages or ():
         page = page or ''
-        if _OFFER_TITLE.search(page) or _SENTENCE.search(page):
+        if _OFFER_TITLE.search(_CONDITIONS_HEADING.sub(' ', page)) or _SENTENCE.search(page):
             return 'second_offer'
         if any(_decimal_digits(m.group(1)) != want for m in _IC_RE.finditer(page)):
             return 'second_offer'

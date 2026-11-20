@@ -29,13 +29,13 @@ class TestMedAGluedName(SimpleTestCase):
                 layout = ums(name=NAME + word)
                 self.assertEqual(read_ums(layout)[1], '')          # the layout alone would lock the glued name
                 plain = ums() + word + '\n'                        # the plain layer: the word on its own line
-                d = diagnose(layout, page1_text=plain, page1_layout=layout)
+                d = diagnose(layout, page1_text=plain, page1_layout=layout, page_texts=[layout])
                 self.assertEqual(d['guard'], 'name_not_plain')
                 self.assertIsNone(d['locked'])
 
     def test_a_plain_line_that_spaces_the_glued_word_refuses_too(self):
         layout = ums(name=NAME + 'SULIT')
-        d = diagnose(layout, page1_text=ums(name=NAME + ' SULIT'), page1_layout=layout)
+        d = diagnose(layout, page1_text=ums(name=NAME + ' SULIT'), page1_layout=layout, page_texts=[layout])
         self.assertEqual(d['guard'], 'name_not_plain')
 
     def test_a_layout_read_without_its_plain_layer_refuses(self):
@@ -44,13 +44,13 @@ class TestMedAGluedName(SimpleTestCase):
         self.assertIsNone(d['locked'])
 
     def test_the_name_alone_on_its_plain_line_locks(self):
-        d = diagnose(ums(), page1_text=ums(), page1_layout=ums())
+        d = diagnose(ums(), page1_text=ums(), page1_layout=ums(), page_texts=[ums()])
         self.assertEqual(d['locked']['candidate_name'], NAME)
 
     def test_a_pypdf5_plain_layer_that_runs_the_name_into_the_next_line_still_locks(self):
         """pypdf 5's plain layer prints digits before the name and the next layout line's start after it."""
         plain = ums().replace(f'\n{NAME}\n', f'\n0102{NAME}')
-        d = diagnose(ums(), page1_text=plain, page1_layout=ums())
+        d = diagnose(ums(), page1_text=plain, page1_layout=ums(), page_texts=[ums()])
         self.assertEqual(d['locked']['candidate_name'], NAME)
 
     def test_a_letter_glued_before_or_after_the_name_in_the_plain_line_refuses(self):
@@ -215,7 +215,8 @@ class TestReviewRoundTwo(SimpleTestCase):
                              ('SURAT PENGESAHAN PELAJAR', 'status_letter'),
                              ('Tawaran ini TERBATAL', 'not_an_offer')):
             with self.subTest(page2=page2):
-                d = diagnose(ums() + '\n' + page2 + '\n', page1_text=ums(), page1_layout=ums())
+                d = diagnose(ums() + '\n' + page2 + '\n', page1_text=ums(), page1_layout=ums(),
+                             page_texts=[ums(), page2])
                 self.assertEqual(d['guard'], guard)
                 self.assertIsNone(d['locked'])
 
@@ -223,7 +224,8 @@ class TestReviewRoundTwo(SimpleTestCase):
         for page2 in ('Sila bawa dokumen asal semasa pendaftaran.',
                       'Sekiranya saudara tidak mendaftar, tawaran ini adalah\nterbatal dengan sendirinya.'):
             with self.subTest(page2=page2):
-                d = diagnose(ums() + '\n' + page2 + '\n', page1_text=ums(), page1_layout=ums())
+                d = diagnose(ums() + '\n' + page2 + '\n', page1_text=ums(), page1_layout=ums(),
+                             page_texts=[ums(), page2])
                 self.assertEqual(d['locked']['candidate_name'], NAME)
 
     def test_letter_refusal_caps_the_whole_letter(self):

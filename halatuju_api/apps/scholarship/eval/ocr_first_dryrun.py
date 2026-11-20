@@ -158,6 +158,7 @@ def offer_record(eval_dir, key, context, heldout, matcher):
     text, route = rp.production_text(snap, key)
     ex = exact_read(text, from_text_layer=route == 'text_layer', page1_layer=rp.page1_of(eval_dir, key, route),
                     page1_layout=rp.page1_layout_of(eval_dir, key, route),
+                    page_texts=rp.page_texts_of(eval_dir, key, route),
                     profile_nric=(context.get(key) or {}).get('profile_nric') or '')
     fields = ex['fields'] if ex else None
     rec = {'lane': offer_lane(family, answer), 'family': family, 'split': 'heldout' if key in heldout else 'dev',

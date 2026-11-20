@@ -1,16 +1,22 @@
 """S1c owner words, part 1 (2026-11-20): the owner's phrase list (`offer_owner_words`), the split refusal module
 (`offer_ums_refusal`) with round 3 blocker 1 and MED 5, MED 3's later-page check, and blocker 2 (the reporting
-date). The owner-words lock itself is wired into `_diagnose_ums` in part 2.
+date). Part 2: the owner-words lock wired into `_diagnose_ums`, with MED 4 (the visible page texts), MED 3's wiring,
+the lane-off path unchanged and the confirmation letters' result the same with the lane on and off.
 
 Synthetic twins only — invented names, ICs and places (`test_no_gitignored_corpus.py`)."""
 import time
+from unittest import mock
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
-from apps.scholarship.offer_owner_words import OWNER_WORDS, missing, page_of_each
+from apps.scholarship.genuineness.results_doc import signature_genuineness
+from apps.scholarship.offer_exact import exact_offer_read, exact_read
+from apps.scholarship.offer_owner_words import OPTIONAL_ON_TEXT_PDF, OWNER_WORDS, missing, page_of_each
+from apps.scholarship.offer_parse import diagnose, parse_govt_offer
 from apps.scholarship.offer_parse_university import read_ums
 from apps.scholarship.offer_ums_refusal import _cancel_said, later_pages_refusal, letter_refusal
-from apps.scholarship.tests.test_offer_parse_university import NRIC, ums
+from apps.scholarship.tests.test_offer_parse_university import LAYOUT, NAME, NRIC, PAGE_TEXTS, READ_UMS, ums
+from apps.scholarship.tests.test_offer_rulings import _confirm
 
 LANE = 'ua:UMS'
 #: A synthetic UMS letter's visible text carrying all 11 owner phrases.
@@ -45,11 +51,32 @@ class TestOwnerWords(SimpleTestCase):
         loose = loose.replace('No. Kad Pengenalan', 'no.  kad\npengenalan')
         self.assertEqual(missing(LANE, loose), [])
 
-    def test_nothing_else_is_loosened(self):
-        for old, new, n in (('Tahniah, sukacita', 'Tahniah , sukacita', 5), ('Saudara/i', 'Saudara / i', 11),
-                            ('No. Kad', 'No Kad', 3), ('Rujukan :', 'Rujukankami :', 2)):
+    def test_punctuation_and_accents_match_as_the_genuineness_markers_do(self):
+        """Owner option 1 (a): `results_doc._norm_fold_upper_alnum` on phrase and text alike."""
+        for old, new in (('Tahniah, sukacita', 'Tahniah , sukacita'), ('Saudara/i', 'Saudara / i'),
+                         ('saudara/saudari', 'saudara / saudari'), ('No. Kad', 'No Kad'),
+                         ('Tahniah, sukacita', 'Tahniah sukacita'), ('dimaklumkan', 'dimaklumkán')):
+            with self.subTest(new=new):
+                self.assertEqual(missing(LANE, FULL.replace(old, new, 1)), [])
+
+    def test_whole_words_and_spelling_are_not_loosened(self):
+        for old, new, n in (('Rujukan :', 'Rujukankami :', 2), ('bahawa', 'bahwa', 5), ('Saudara/i', 'Saudarai', 11),
+                            ('Tarikh Lapor Diri', 'Tarikh Lapor-Diri2', 10)):
             with self.subTest(new=new):
                 self.assertIn(n, missing(LANE, FULL.replace(old, new, 1)))
+
+    def test_phrase_one_is_optional_on_a_text_pdf_only(self):
+        """Owner option 1 (b): the UMS letterhead picture carries phrase 1; a scan still needs all 11."""
+        self.assertEqual(OPTIONAL_ON_TEXT_PDF[LANE], (1,))
+        no_head = FULL.replace('BAHAGIAN PERKHIDMATAN AKADEMIK', '')
+        self.assertEqual(missing(LANE, no_head), [1])
+        self.assertEqual(missing(LANE, no_head, text_pdf=True), [])
+        for n, phrase in enumerate(OWNER_WORDS[LANE][1:], start=2):
+            with self.subTest(n=n):
+                cut = no_head.replace(phrase, 'X' * len(phrase), 1)
+                if n == 7:
+                    cut = no_head.replace('Program :', 'Bidang :', 1)
+                self.assertIn(n, missing(LANE, cut, text_pdf=True))
 
     def test_program_inside_another_word_or_phrase_does_not_count(self):
         no_label = FULL.replace('Program :', 'Programme :', 1)
@@ -131,3 +158,139 @@ class TestLaterPages(SimpleTestCase):
                       'Tarikh Lapor Diri :\n5 Oktober 2031'):
             with self.subTest(page2=page2):
                 self.assertEqual(later_pages_refusal([page2], NRIC, '28 Sep 2031'), 'second_offer')
+
+    def test_the_templates_conditions_page_passes(self):
+        """Every genuine two-page UMS letter's page 2 is headed "SYARAT-SYARAT TAWARAN KEMASUKAN SESI ..."."""
+        for head in ('SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2031/2032.', 'B.P PENDAFTARSYARAT - SYARAT TAWARAN KEMASUKAN'):
+            with self.subTest(head=head):
+                self.assertEqual(later_pages_refusal([head + '\nTawaran ini tertakluk'], NRIC, '28 Sep 2031'), '')
+
+    def test_the_conditions_page_still_refuses_a_second_offer_on_it(self):
+        head = 'SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2031/2032.\n'
+        for rest in ('TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH', 'No. Kad Pengenalan : 020304-15-6789',
+                     'untuk mendapat Diploma Sains Marin dan sebanyak 90 jam kredit'):
+            with self.subTest(rest=rest):
+                self.assertEqual(later_pages_refusal([head + rest], NRIC, '28 Sep 2031'), 'second_offer')
+
+
+def _digital(layout, page_texts, text=None):
+    """`diagnose` as a digital PDF: the layer is ``text`` (default the layout), page 1's plain layer the layout."""
+    return diagnose(text or layout, page1_text=layout, page1_layout=layout, page_texts=page_texts)
+
+
+class TestOwnerWordsLock(SimpleTestCase):
+    """Part 2: a UMS letter locks by rules only when its VISIBLE text shows all 11 phrases (owner, 20 Nov)."""
+
+    def test_the_template_locks_digital_and_scanned(self):
+        self.assertEqual(_digital(ums(), [ums()])['locked']['candidate_name'], NAME)
+        self.assertEqual(parse_govt_offer(ums())['candidate_name'], NAME)
+
+    def test_a_missing_phrase_refuses_with_its_number_only(self):
+        cut = ums().replace('Sekiranya saudara/saudari menerima tawaran ini', 'Jika saudara bersetuju')
+        for name, d in (('digital', _digital(cut, [cut])), ('scan', diagnose(cut))):
+            with self.subTest(name):
+                self.assertEqual((d['guard'], d['owner_words_missing'], d['locked']),
+                                 ('owner_words_missing', [9], None))
+
+    def test_spaces_around_punctuation_lock(self):
+        """Owner option 1 (a): the digital layout's "Tahniah , sukacita" / "Saudara / i" now match."""
+        spaced = ums().replace('Tahniah, sukacita', 'Tahniah , sukacita').replace('Saudara/i', 'Saudara / i')
+        self.assertIsNotNone(_digital(spaced, [spaced])['locked'])
+        self.assertIsNotNone(parse_govt_offer(spaced))
+
+    def test_phrase_one_missing_locks_a_text_pdf_and_refuses_a_scan(self):
+        """Owner option 1 (b), wired: the PDF's letterhead picture; a scan without it refuses."""
+        no_head = ums().replace('BAHAGIAN PERKHIDMATAN AKADEMIK\n', '')
+        self.assertEqual(_digital(no_head, [no_head])['locked']['candidate_name'], NAME)
+        d = diagnose(no_head)
+        self.assertEqual((d['guard'], d['owner_words_missing']), ('owner_words_missing', [1]))
+        cut = no_head.replace('telah ditawarkan tempat', 'ditawarkan')
+        self.assertEqual(_digital(cut, [cut])['owner_words_missing'], [6])
+
+    def test_a_phrase_only_in_the_hidden_layer_does_not_count(self):
+        """S-visible: the page-1 layout and the visible pages judge, not the plain layer."""
+        cut = ums().replace('Sekiranya saudara/saudari menerima tawaran ini', 'Jika saudara bersetuju')
+        self.assertEqual(_digital(cut, [cut], text=ums())['owner_words_missing'], [9])
+
+    def test_a_phrase_on_a_visible_later_page_counts(self):
+        line = 'Saudara/i akan mengikuti program pengajian selama empat tahun.\n'
+        cut = ums().replace(line, '')
+        self.assertEqual(_digital(cut, [cut, line], text=cut + line)['locked']['candidate_name'], NAME)
+
+    def test_the_why_names_the_missing_numbers(self):
+        why = {}
+        self.assertIsNone(exact_read(ums().replace('Tarikh Lapor Diri', 'Tarikh Daftar'), why=why))
+        self.assertEqual(why, {'lane': LANE, 'reason': 'read_owner_words_missing', 'owner_words_missing': [10]})
+
+
+class TestVisiblePages(SimpleTestCase):
+    """Round 3 MED 4: a digital PDF needs its visible page texts, and its first 3 pages must all show text."""
+
+    def test_no_page_texts_refuses(self):
+        for pages in (None, []):
+            with self.subTest(pages=pages):
+                self.assertEqual(_digital(ums(), pages)['guard'], 'no_page_texts')
+
+    def test_an_empty_page_among_the_first_three_refuses(self):
+        for pages in ([''], [ums(), ''], [ums(), 'Lampiran', '  ']):
+            with self.subTest(n=len(pages)):
+                self.assertEqual(_digital(ums(), pages)['guard'], 'hidden_page')
+
+    def test_an_empty_fourth_page_is_not_checked(self):
+        self.assertIsNotNone(_digital(ums(), [ums(), 'Lampiran A', 'Lampiran B', ''])['locked'])
+
+
+class TestSecondOfferWired(SimpleTestCase):
+    """Round 3 MED 3, wired: a later page showing another IC refuses; the letter's own IC does not."""
+
+    def test_a_second_offer_on_page_two_refuses(self):
+        page2 = 'No. Kad Pengenalan :      020304-15-6789'
+        self.assertEqual(_digital(ums(), [ums(), page2], text=ums() + page2)['guard'], 'second_offer')
+
+    def test_the_letters_own_ic_on_page_two_still_locks(self):
+        page2 = f'Syarat-syarat tawaran\nNo. KP : {NRIC}'
+        self.assertIsNotNone(_digital(ums(), [ums(), page2], text=ums() + page2)['locked'])
+
+
+class TestTheLaneSwitch(SimpleTestCase):
+    """Lane off: exactly as before (no layout child, no page texts, no `read_ums`). Lane on: page texts read."""
+
+    def _read(self, text):
+        why = {}
+        with mock.patch('apps.scholarship.offer_exact.pdf_layers', return_value=(text, text)), \
+                mock.patch(LAYOUT, return_value=text) as layout, \
+                mock.patch(PAGE_TEXTS, return_value=[text]) as pages, mock.patch(READ_UMS, wraps=read_ums) as rules:
+            ex = exact_offer_read(text, image=b'%PDF-1.4 x', content_type='application/pdf', why=why)
+        return ex, why, (layout.call_count, pages.call_count, rules.call_count)
+
+    @override_settings(OCR_FIRST_LANES=())
+    def test_lane_off_reads_no_page_texts(self):
+        self.assertEqual(self._read(ums()), (None, {'lane': LANE, 'reason': 'lane_off'}, (0, 0, 0)))
+
+    @override_settings(OCR_FIRST_LANES=(LANE,))
+    def test_lane_on_reads_the_page_texts_once(self):
+        self.assertEqual(self._read(ums())[2], (1, 1, 1))
+
+
+class TestConfirmationsUnchanged(SimpleTestCase):
+    """A UMS confirmation letter: the same Exact read (none) and the same genuineness with the lane on and off."""
+
+    def _both(self, text):
+        out = []
+        for lanes in ((), (LANE,)):
+            with override_settings(OCR_FIRST_LANES=lanes), \
+                    mock.patch('apps.scholarship.offer_exact.pdf_layers', return_value=(text, text)), \
+                    mock.patch(LAYOUT, return_value=text), mock.patch(PAGE_TEXTS, return_value=[text]):
+                ex = exact_offer_read(text, image=b'%PDF-1.4 x', content_type='application/pdf', why={})
+                g = signature_genuineness(text, doc_type='offer_letter', has_crest=False) or {}
+            out.append((ex, g.get('doc_seen') or g.get('type'), g.get('status')))
+        return out
+
+    def test_a_ums_confirmation_reads_the_same_with_the_lane_on_and_off(self):
+        head = 'UNIVERSITI MALAYSIA SABAH\nBahagian Perkhidmatan Akademik'
+        for text in (_confirm(head), _confirm(head) + 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH\n'):
+            with self.subTest(title='TAWARAN' in text):
+                off, on = self._both(text)
+                self.assertEqual(off, on)
+                self.assertIsNone(on[0])
+                self.assertTrue(on[1])

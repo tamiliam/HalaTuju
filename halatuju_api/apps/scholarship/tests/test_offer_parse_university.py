@@ -28,14 +28,17 @@ LEVEL = 'apps.scholarship.offer_course_match.course_level'
 ONE = ('', {'course_id': 'uh6481001', 'institution': 'Universiti Malaysia Sabah'})
 READ_UMS = 'apps.scholarship.offer_parse_university.read_ums'
 LAYOUT = 'apps.scholarship.pdf_pages.pdf_page1_layout'
+PAGE_TEXTS = 'apps.scholarship.pdf_pages.pdf_page_texts'
 
 
 def ums(name=NAME, nric=NRIC, prog_line=PROG, said=PROG, report='28-29 September 2031', extra_head='',
         title='TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH SESI I-2031/2032', top='',
         kampus='Kampus :      Kota Kinabalu', code='Kod Program :      UH6481001'):
     """A synthetic UMS letter in the layout shape (label and value on one line, padded columns): the label
-    block (Program / Kod Program / Fakulti / Kampus) sits between the title and the "untuk mendapat" sentence."""
+    block (Program / Kod Program / Fakulti / Kampus) sits between the title and the "untuk mendapat" sentence.
+    It shows all 11 of the owner's phrases (`offer_owner_words`, S1c part 2)."""
     return f"""{top}UNIVERSITI MALAYSIA SABAH
+BAHAGIAN PERKHIDMATAN AKADEMIK
 Rujukan Kami :      UMS/PPA/100-1/2/3
 Tarikh :      15 Ogos 2031
 {name}
@@ -51,6 +54,9 @@ Dengan sukacitanya dimaklumkan bahawa saudara ditawarkan kemasukan untuk mendapa
 {said} dan sebanyak 128 jam kredit diperlukan.
 Tarikh Lapor Diri :      {report}
 Tempat / Kolej :      {HOSTEL}
+Tahniah, sukacita dimaklumkan bahawa saudara telah ditawarkan tempat di universiti ini.
+Sekiranya saudara/saudari menerima tawaran ini, sila isi borang penerimaan.
+Saudara/i akan mengikuti program pengajian selama empat tahun.
 """
 
 
@@ -128,7 +134,7 @@ class TestTheDiagnoseHook(SimpleTestCase):
     def test_a_text_layer_reads_from_its_layout(self):
         glued = ums().replace('\n', ' ')
         self.assertIsNone(diagnose(glued, page1_text=glued)['locked'])
-        self.assertEqual(diagnose(glued, page1_text=glued, page1_layout=ums())['locked']['candidate_name'], NAME)
+        self.assertEqual(diagnose(glued, page1_text=glued, page1_layout=ums(), page_texts=[ums()])['locked']['candidate_name'], NAME)
 
     def test_the_exact_read_names_the_lane(self):
         ex = exact_read(ums())
@@ -459,6 +465,7 @@ class TestReviewRoundThree(SimpleTestCase):
         text, why = text or ums(), {}
         with mock.patch('apps.scholarship.offer_exact.pdf_layers', return_value=(text, text)), \
                 mock.patch(LAYOUT, return_value=layout_text or ums()) as layout, \
+                mock.patch(PAGE_TEXTS, return_value=[layout_text or ums()]), \
                 mock.patch(READ_UMS, wraps=read_ums) as rules:
             ex = exact_offer_read(text, image=b'%PDF-1.4 x', content_type='application/pdf', why=why)
         return ex, why, layout, rules

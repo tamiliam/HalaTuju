@@ -363,16 +363,23 @@ def parse_govt_offer(text: str, page1_text: str = None, page1_layout: str = ''):
     return diagnose(text, page1_text, page1_layout)['locked']
 
 
-def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str) -> dict:
+def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
     """The UMS branch of `diagnose` (OCR-first S1). A digital PDF is read ONLY from its page-1 layout
     text — its plain layer glues the name into the address — so a text layer without one never locks
     (guard ``no_layout``). Every refusal is a guard; the letter then goes to the AI as before.
     S1c review round 1 (MED-A): a layout read needs its plain page-1 layer too (guard ``no_plain_layer``),
     and the layout's name must stand as its own words there (`name_in_plain`; guard ``name_not_plain``).
     S1c review round 2: the status and withdrawal checks also read the FULL letter text, every page
-    (`letter_refusal`), so a page-2 cancellation or status letter refuses too."""
-    from .offer_parse_university import LANE, name_in_plain, read_ums
-    from .offer_ums_refusal import letter_refusal
+    (`letter_refusal`), so a page-2 cancellation or status letter refuses too.
+    S1c owner words (20 Nov), in this order: a digital PDF needs its visible page texts (``page_texts``,
+    `pdf_pages.pdf_page_texts`; guards ``no_page_texts`` / ``hidden_page``, round 3 MED 4); the VISIBLE text
+    (the page-1 layout and pages 2 on; a scan's own text) must show ALL the owner's phrases
+    (`offer_owner_words`; on a text-layer PDF, not the letterhead-picture ones; guard ``owner_words_missing``,
+    the phrase NUMBERS in ``out['owner_words_missing']``);
+    then the checks above; last, a later page showing a second offer refuses (``second_offer``, MED 3)."""
+    from .offer_owner_words import missing
+    from .offer_parse_university import LANE, MAX_LETTER_CHARS, name_in_plain, read_ums
+    from .offer_ums_refusal import later_pages_refusal, letter_refusal, page_texts_refusal
     if out['portal']:
         return out
     if page1_text.strip() and not page1_layout.strip():
@@ -381,12 +388,24 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str) -> d
     if page1_layout.strip() and not page1_text.strip():
         out['guard'] = 'no_plain_layer'
         return out
-    fields, reason = read_ums(page1_layout if page1_layout.strip() else text)
+    digital = bool(page1_layout.strip())
+    pages = [_SPACES.sub(' ', _ZERO_WIDTH.sub('', t or '')) for t in (page_texts or ())]
+    fields, reason = read_ums(page1_layout if digital else text)
     out['fields'], out['titled'] = fields, fields is not None
-    if not reason and page1_layout.strip():
+    shown = '\n'.join([page1_layout] + pages[1:]) if digital else text
+    early = page_texts_refusal(pages) if digital else ''
+    if not early and len(shown) > MAX_LETTER_CHARS:
+        early = 'too_long'
+    if not early:
+        out['owner_words_missing'] = missing(LANE, shown, text_pdf=digital)
+        early = 'owner_words_missing' if out['owner_words_missing'] else ''
+    reason = early or reason
+    if not reason and digital:
         reason = letter_refusal(text)            # every page: a status letter or a withdrawal (review round 2)
-    if not reason and page1_layout.strip() and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
+    if not reason and digital and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
         reason = 'name_not_plain'
+    if not reason and digital:
+        reason = later_pages_refusal(pages[1:], fields['candidate_nric'], fields['reporting_date'])
     if reason.startswith('empty:'):
         out['empty_required'] = reason[len('empty:'):].split(',')
     elif reason:
@@ -405,7 +424,7 @@ def family_of(text: str) -> str:
     return _detect(up) or ('ums' if is_ums(up) else '')
 
 
-def diagnose(text: str, page1_text: str = None, page1_layout: str = '') -> dict:
+def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_texts=None) -> dict:
     """The parser's whole walk, for `parse_govt_offer` and the eval (`offer_replay`): ``{family,
     titled, portal, fields (the read before the exit checks, or None), empty_required, guard, locked}``
     — ``locked`` is the lock (the field dict) or None.
@@ -414,7 +433,7 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '') -> dict:
     layer (`offer_exact` decides — review H1). The identity is read from it, AND from ``text``: when the
     two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``).
     ``page1_layout`` is that page's LAYOUT text (`pdf_pages.pdf_page1_layout`) — read by the UMS family
-    only (`_diagnose_ums`)."""
+    only (`_diagnose_ums`), with ``page_texts`` (`pdf_pages.pdf_page_texts`: each page's VISIBLE text)."""
     text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or ''))   # no-break spaces as spaces; no zero-width
     page1_text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_text or ''))
     up = text.upper()
@@ -422,7 +441,8 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '') -> dict:
     out = {'family': fam, 'titled': False, 'portal': bool(_PORTAL_TELL.search(text)), 'fields': None,
            'empty_required': [], 'guard': None, 'locked': None}
     if fam == 'ums':
-        return _diagnose_ums(out, text, page1_text, _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or '')))
+        return _diagnose_ums(out, text, page1_text, _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or '')),
+                             page_texts)
     if not fam:
         return out
     from .offer_parse_families import _FAMILY
