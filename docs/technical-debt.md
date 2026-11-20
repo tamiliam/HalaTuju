@@ -9510,3 +9510,11 @@ Fix: serve a flag for each control from the server's own door (as `can_write` is
 
 **Raised 2026-11-19 by the LL sprint close (Opus review of the bundle trim: ship with notes, no blocker; no builder lane was free before the save).** The case page now loads `WithdrawAwardCard` as its own chunk, and mounts it only when the case has a withdraw request (`view.tsx`, through `view/LazyWithdrawAwardCard.tsx`). The reviewer found the mount rule equal to the card's own early return for every value, so nothing is hidden today. Three gaps remain. (1) The rule is written twice (`view.tsx` and `view/WithdrawAwardCard.tsx`) and only a comment ties the two; if one changes alone, a card about award money can go missing. (2) The test for "no request, no card" in `view.withdrawLazy.test.tsx` would still pass with the gate removed, because the lazy import finishes inside the test's wait. (3) No test pins the entry case the server sends for a fresh award: `status` null with `your_step` `request`. Fix: one small `withdrawCardShows(app)` helper in a light shared module, used by both files; mock the loader to prove the card is not mounted; add the entry-case test.
 *(A - S)*
+
+### [TD-687] The case page knows only the case's own gift when it offers reviewers; the list and the server also count the cohort's gift - low
+
+**Raised 2026-11-20 by the #75/#73 follow-ups.** The case page's reviewer drop-down uses `listAssignees` with the case's `programme_id` only, while the list and the server also count the cohort's gift, so a moved case can differ. Fix: serve `gift_ids` on the detail payload and pass them. *(A - S)*
+
+### [TD-688] Case page clean-up review notes (73f40d1f5) - medium
+
+**Raised 2026-11-20 by the review of the Submitted/Awaiting-review clean-up (ship with notes).** (MED) At profile_complete, after an unassign (`doAssign(null)`), notes written by the earlier holder are hidden until someone is assigned again. Fix: show the notes card when notes exist, or add this case to the `docs/decisions.md` "Revisit if" line. (LOW) `view.submittedCleanup.test.tsx` near line 120: the Check 2 test passes even if the box shows; assert `admin.scholarship.outstanding.title` is absent. (LOW) The comment at `AssignAndWitness.tsx` line 50 says the card is hidden at 'shortlisted' only; it is now hidden at Submitted too. *(A - S)*
