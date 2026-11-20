@@ -109,7 +109,7 @@ CLOSED = {   # each pdfium would parse on load (or might); none of the 533 real 
            b'/FontDescriptor 7 0 R >>',
         7: b'<< /Type /FontDescriptor /FontName /X /Flags 32 /FontBBox [0 0 1 1] /ItalicAngle 0 /Ascent 1 '
            b'/Descent 0 /CapHeight 1 /StemV 1 /FontFile2 8 0 R >>',
-        8: _stream(b'<< /Filter /ASCIIHexDecode', b'00>')}, page_res=b'/Resources << /Font << /F1 3 0 R /F2 6 0 R >> >>'),
+        8: _stream(b'<< /Filter /LZWDecode', b'00')}, page_res=b'/Resources << /Font << /F1 3 0 R /F2 6 0 R >> >>'),
     'embedded encoding CMap': _doc(b'BT /F2 12 Tf 20 100 Td <0041> Tj ET ' + TEXT, {
         6: b'<< /Type /Font /Subtype /Type0 /BaseFont /X /Encoding 7 0 R /DescendantFonts [8 0 R] >>',
         7: _stream(b'<< /Type /CMap /CMapName /X', b'begincmap endcmap'),

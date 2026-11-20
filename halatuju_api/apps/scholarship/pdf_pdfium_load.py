@@ -17,7 +17,7 @@ parse, so their streams are charged and whitelisted like a form's.
 import re
 import zlib
 
-from .pdf_layer_guards import OverBudget, _get
+from .pdf_layer_guards import OverBudget, _get, ascii_hex
 
 #: Decompressed bytes of font programs, Type3 glyph procedures, forms, ICC profiles, Indexed tables, function
 #: and pattern streams reachable from the judged pages of ONE document, a Type3 glyph once per code naming it.
@@ -124,6 +124,8 @@ def _inflated(stream, cap: int) -> bytes:
         data = zlib.decompressobj().decompress(stream._data, cap + 1)
     elif not filters:
         data = stream.get_data()
+    elif filters == ['/ASCIIHexDecode']:                 # TD-692: a genuine CFF font program is stored so
+        data = ascii_hex(stream._data, cap)
     else:
         raise ValueError('a stream filter outside the whitelist')
     if len(data) > cap:

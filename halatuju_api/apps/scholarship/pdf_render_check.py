@@ -17,7 +17,10 @@ tiling cells (their pixels and the number of tiles); Type 3 glyphs on every glyp
 filters, shadings and Type 3 glyph operations outside the corpus's, and an image or cell past its own cap, are
 refused. Content is read by this module's own tokenizer, so the verdict does not depend on the pypdf version.
 Since fix round 11 also: the size a visible glyph is drawn at, clipping paths (nested and in all), and every
-annotation's appearance stream (pdfium draws them with the page).
+annotation's appearance stream (pdfium draws them with the page). Since TD-692 (2026-11-20) a JPEG2000 (JPX)
+image is allowed anywhere, as an image's last filter, and charged the larger of its dictionary's size and its
+own header's (`pdf_jpx`; a header that cannot be read is refused), and an ASCIIHex content stream is decoded and
+charged. JPX is not decoded here. JBIG2 is still refused (TD-697).
 """
 import math
 import re
@@ -25,6 +28,7 @@ import zlib
 
 from pypdf.generic import StreamObject
 
+from .pdf_jpx import JPX, jpx_charge
 from .pdf_layer_guards import OverBudget, _get
 
 # ── Caps: about 2x the corpus maximum. Each "corpus" figure is the real maximum over the 533 PDFs' pages 1-3 and
@@ -53,7 +57,9 @@ MAX_BLEND_PAINTS = 8
 #: leaves room for a real background pattern, still well under a second of rendering).
 MAX_CELL_PX = 8_000_000
 MAX_TILES = 1_000
-#: Image filters the corpus uses. Anything else (JBIG2, JPX, LZW, ...): refused.
+#: Image filters the corpus uses. Anything else (LZW, ...): refused. Since TD-692 JPEG2000 (`JPX`) is
+#: allowed too, as an image's last filter only: genuine scanned letters use it (2 of the 870 fixture PDFs). JBIG2
+#: is refused (TD-697; 1 genuine fixture letter has a JBIG2 mask).
 IMAGE_FILTERS = frozenset(('/DCTDecode', '/FlateDecode', '/CCITTFaxDecode', '/RunLengthDecode', '/ASCII85Decode'))
 #: Shadings (shading type: function types) the corpus uses: axial, exponential or stitched exponential.
 SHADINGS = frozenset(('2:2', '2:3[2,2,2]'))
@@ -66,7 +72,12 @@ _GLYPH_OPS = frozenset(b'd0 d1 m l c v y h re f* f n W* W'.split())
 # ── Fix round 11 (2026-11-20): three shapes that kept pdfium busy for seconds were refused only by the child's
 #    time limit, so the answer depended on the machine's speed (a faster build machine rendered one in time).
 #    Each is now refused here, the same on every machine; the time limit stays the backstop. Caps far above the
-#    corpus maxima (832 fixture PDFs, every page up to 30 = 1,205 pages, measured 2026-11-20: none refused).
+#    corpus maxima. CORRECTED by TD-692: the round's "0 of 832 fixture PDFs (1,205 pages) refused" came from a
+#    `page_cost(limits=False)` probe, which skips the whitelists. Through the real gate, `render_refusal(data,
+#    lambda n: range(min(n, 30)))` over every fixture PDF (870 by then, `eval/render_check_corpus.py`), this
+#    module as of round 11 refused 4: 1 empty file, 2 genuine letters with a JPEG2000 image ("an image filter
+#    outside the whitelist") and 1 whose CFF font program is ASCIIHex-encoded (`pdf_pdfium_load`: "a stream
+#    filter outside the whitelist"). None was refused by a round 11 cap. After TD-692: 1 (the empty file).
 #: The largest a visible glyph is drawn: its font size times the text and graphics matrices' stretch, in points
 #: (an A4 page is 842 pt tall). corpus: 60. A 3000 pt glyph shown 18,000 times kept pdfium busy for seconds.
 MAX_FONT_PT = 1_500
@@ -517,11 +528,14 @@ class _Cost:
     def image(self, img, res):
         filters = _get(img, '/Filter')
         filters = list(filters) if isinstance(filters, list) else [filters] if filters is not None else []
+        names = []
         for f in filters:
             f = f.get_object() if hasattr(f, 'get_object') else f
             self.stats['filters'].add(str(f))
-            if f not in IMAGE_FILTERS:
-                raise Refused('an image filter outside the whitelist')
+            names.append(f)
+            last = len(names) == len(filters)                # JPX: the last filter only
+            if f not in IMAGE_FILTERS and not (f == JPX and last):
+                raise Refused(f'an image filter outside the whitelist ({str(f)[:40]!r})')
         w, h = _get(img, '/Width'), _get(img, '/Height')
         if not (isinstance(w, int) and isinstance(h, int) and w > 0 and h > 0):
             raise Refused('an image without a size')
@@ -531,16 +545,22 @@ class _Cost:
             bpc = _get(img, '/BitsPerComponent')
             bpc = bpc if isinstance(bpc, int) and 0 < bpc <= 16 else 8
             bits = bpc * self.components(_get(img, '/ColorSpace'), res)
-        size = math.ceil(w * h * bits / 8)
+        px = w * h
+        if names and names[-1] == JPX:
+            charge = jpx_charge(img, names[:-1], px, bits)
+            if charge is None:
+                raise Refused('a JPEG2000 image whose header was not read')
+            px, bits = charge
+        size = math.ceil(px * bits / 8)
         self.stats['max_image'] = max(self.stats['max_image'], size)
         if self.limits and size > MAX_IMAGE_BYTES:
             raise OverBudget('an image past the render cap')
         self.add('image_bytes', size, MAX_PAGE_IMAGE_BYTES)
         # pdfium expands every pixel (a 1-bit scan too), so pixels are charged as well as bytes
-        self.stats['max_image_px'] = max(self.stats['max_image_px'], w * h)
-        if self.limits and w * h > MAX_IMAGE_PX:
+        self.stats['max_image_px'] = max(self.stats['max_image_px'], px)
+        if self.limits and px > MAX_IMAGE_PX:
             raise OverBudget('an image past the render pixel cap')
-        self.add('image_px', w * h, MAX_PAGE_IMAGE_PX)
+        self.add('image_px', px, MAX_PAGE_IMAGE_PX)
         for key in ('/SMask', '/Mask'):
             sub = _get(img, key)
             if isinstance(sub, StreamObject):
