@@ -18,6 +18,8 @@ characters that are not letters or digits becomes one space. So case, line break
 * no OCR misreading is forgiven.
 
 Per issuer, as DATA (`OWNER_WORDS`), keyed by the rules lane: S2 / S3 add UPSI, UUM and the rest as new rows.
+The reverse, for every university lane (`AI_ONLY_WORDS`, `ai_only`): a letter whose visible text says ASASI never
+locks by rules (owner, 20 Nov); `offer_parse._university_exit` applies it to every university lock.
 Pure; never raises on text input; linear in the text (each phrase is literal words joined by bounded spaces).
 """
 from __future__ import annotations
@@ -47,6 +49,12 @@ OWNER_WORDS = {
 #: issuer prints them as part of its letterhead picture (owner, 20 Nov: UMS phrase 1). A scan (OCR of the page
 #: image) still needs every phrase.
 OPTIONAL_ON_TEXT_PDF = {'ua:UMS': (1,)}
+
+#: Words that keep a letter off EVERY university rules lane, whatever the issuer: the AI reads it instead (owner,
+#: 20 Nov: "For now, let AI handle Asasi. When there a larger sample, we can consider switching."). Asasi is a
+#: foundation programme, not a degree, and some UMS Asasi letters look like the degree template. word -> guard.
+AI_ONLY_WORDS = {'ASASI': 'asasi_ai_read'}
+_AI_ONLY = tuple((re.compile(r'(?<!\w)' + ' ?'.join(w) + r'(?!\w)'), g) for w, g in AI_ONLY_WORDS.items())
 
 
 #: Owner words review round 1 (LOW 5): the most text the phrases are looked for in, counted AFTER the unicode
@@ -127,6 +135,19 @@ def missing(lane: str, text: str, text_pdf: bool = False) -> list:
     shown = _shown(lane, text)
     excused = set(OPTIONAL_ON_TEXT_PDF.get(lane, ())) if text_pdf else set()
     return [k + 1 for k in range(len(OWNER_WORDS.get(lane, ()))) if k not in shown and k + 1 not in excused]
+
+
+def ai_only(text: str) -> str:
+    """The guard (`AI_ONLY_WORDS`, e.g. 'asasi_ai_read') when ``text`` — a letter's VISIBLE page-1 text, the same
+    text the owner phrases are looked for in — shows one of those words whole, folded as the phrases are (`_norm`:
+    any case, accents, line breaks, punctuation around it), its letters spaced out too ("A S A S I"); '' otherwise.
+    Fails closed: text with letters or digits that `_norm` will not fold (longer than `MAX_NORM_CHARS`) gives the
+    first guard."""
+    text = text or ''
+    folded = _norm(text)
+    if not folded:
+        return next(iter(AI_ONLY_WORDS.values())) if any(c.isalnum() for c in text) else ''
+    return next((guard for pat, guard in _AI_ONLY if pat.search(folded)), '')
 
 
 def page_of_each(lane: str, pages) -> dict:
