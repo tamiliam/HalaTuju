@@ -28,6 +28,12 @@ invite's gifts. The mentor link is kept with its mentor still deactivated (mento
 through Add to Mentors), unless the new role or organisation may not carry it. The caller writes the new
 Invitation, as for any invite. Another organisation's archived address keeps `not_invitable`.
 
+**A re-invite after Cancel behaves as new (owner, 20 Nov, S1b).** When the row never signed in, restore
+also restarts `created_at` (the "Joined" date and the list order read it) and drops a mentor link that
+never had a scholar or a meeting (`_never_mentored`), so the person is offered by Add to Mentors again.
+The old revoked invitation stays as the record but is off the Invitations list
+(`invitations.without_superseded`).
+
 ⚠ The activity verb: `staff_activity` verbs are a closed list with a database `choices`, so a
 `staff_archived` verb needs a scholarship migration M1a does not carry (TD-603). The AUDIT log line is
 the record meanwhile.
@@ -185,6 +191,15 @@ def may_restore(caller, existing):
             and manageable_if_restored(caller, existing))
 
 
+def _never_mentored(row):
+    """S1b owner ruling: a never-signed-in STAFF login whose mentor has no scholar and no meeting on
+    record. Its link goes on a re-invite (as `bring_back` drops it, S7d); the deactivated mentor stays,
+    unlisted (no login), as the record. A mentor login's mentor is who it is, so it never goes."""
+    m = row.mentor
+    return (not row.is_mentor and not m.assignments.exists()
+            and not m.sessions.exists())
+
+
 def restore(existing, *, name, role, org, owning_org, temp_password=None, email=None, gifts=()):
     """Bring the ARCHIVED ``existing`` back for a re-invite: ``(account, already_registered, error)``, the
     `bring_back` contract. The row is LOCKED and re-checked (still archived), so a second re-invite landing
@@ -206,10 +221,13 @@ def restore(existing, *, name, role, org, owning_org, temp_password=None, email=
             uid, already, err = _new_login(email, name, temp_password)
             if err:
                 return None, False, err
-        fields = []
+        fields, never_seen = [], row.first_seen_at is None
         if row.mentor_id is not None and (role not in PartnerAdmin.MENTOR_LINK_ROLES
-                                          or row.mentor.organisation_id != getattr(owning_org, 'pk', None)):
+                                          or row.mentor.organisation_id != getattr(owning_org, 'pk', None)
+                                          or (never_seen and _never_mentored(row))):
             row.mentor, fields = None, ['mentor']   # the new role or organisation may not carry the link
+        if never_seen:   # S1b owner ruling (20 Nov): never signed in, so the re-invite reads as new
+            row.created_at, fields = timezone.now(), [*fields, 'created_at']
         row.archived_at, row.archived_by_email = None, ''
         row.name, row.email, row.role, row.org, row.owning_organisation = name, email, role, org, owning_org
         row.is_active, row.paused_at, row.first_seen_at = True, None, None

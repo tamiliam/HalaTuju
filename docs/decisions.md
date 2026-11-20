@@ -15,9 +15,15 @@ both. Migration: none.
 - **TD-615's original fix (Delete needs no group) is not needed** and the item closes when S1b is live.
 - **Not archived:** a source invitation (an archived source row has no way back, so its address would stay taken; it
   is switched off as before) and a sponsor invitation (no account). A mentor invitation stays the Mentors page's.
-- **Known effect, awaiting the owner's view (review round):** a cancelled staff invitation leaves the Invitations list, even
-  with `all=1`, because archived people's invitations are hidden (`views_admin/invitations.py`, M1a); the row and the AUDIT
-  line keep the history, and a re-invite brings the old revoked invitation back into view. Behaviour left as built.
+- **owner 20 Nov: the cancelled invitation need not stay visible; a re-invite behaves as new.** So a cancelled staff
+  invitation stays off the Invitations list, even with `all=1` (archived people's invitations are hidden, M1a), and a
+  re-invite of the address now reads exactly as a brand-new invitee: the old revoked invitation stays off the list and
+  out of the totals (`invitations.without_superseded`); a never-signed-in row restored by the re-invite starts its
+  "Joined" date again (`created_at`) and drops a mentor link that never had a scholar or a meeting
+  (`staff_archive._never_mentored`), so Add to Mentors offers them again. The invitation row, its `revoked_at`, the
+  AUDIT lines, `staff_permission_changes` and `staff_activity` are kept untouched. A mentor link with a scholar or a
+  meeting on record is kept (the history stays theirs), and the person page's Changes list still shows any key change
+  made before the cancel; both are left for the owner.
 
 ## 2026-11-18 — Request #69: the sponsor's "Our volunteers" figures stay as built; the small-size risk is accepted (owner)
 

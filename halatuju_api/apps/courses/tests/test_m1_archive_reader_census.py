@@ -75,6 +75,8 @@ CENSUS = {
     S + 'invitations.py::create_or_refresh': (1, 'OWN_ROW', 'the caller passes the row'),
     S + 'invitations.py::open_invitation': (1, 'SHAPE', 'open ones only; the archive cancelled them'),
     S + 'invitations.py::purge_expired': (1, 'SHAPE', 'housekeeping by age'),
+    S + 'invitations.py::without_superseded': (1, 'OWN_ROW', 'S1b: a later invitation of the row the '
+                                                         'list holds; the list leaves archived rows out'),
     S + 'management/commands/backfill_invitations.py::Command.handle': (3, 'FILTERED', 'staff not archived'),
     S + 'management/commands/bursary_e2e.py::Command._walk': (1, 'OWN_ROW', 'a seed it creates'),
     S + 'management/commands/send_review_nudges.py::Command.handle.escalation_recipients':

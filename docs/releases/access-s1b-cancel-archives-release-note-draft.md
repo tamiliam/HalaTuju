@@ -18,10 +18,12 @@ Programme ACCESS-BY-SWITCHES. Owner ruling 19 Nov (`docs/decisions.md`). Debt: c
 - **If their sign-in cannot be removed** after the cancel (a Supabase fault), the invitation is still cancelled
   and they still leave the group, but the page warns: "Cancelled, but their sign-in could not be removed. Tell
   support." Support removes the login by hand (the log line `STAFF_LOGIN_ORPHANED` names it).
-- **Known effect, awaiting the owner's view:** a cancelled staff invitation no longer shows on the Invitations
-  page, not even under "show all", because the person is archived and archived people's invitations are hidden.
-  The row in the database and the AUDIT line keep the history, and a re-invite of the address brings the old
-  cancelled invitation back into view.
+- **A cancelled invitation leaves the Invitations page** (owner, 20 Nov: it need not stay visible). The row in the
+  database and the AUDIT line keep the history.
+- **Inviting the same address again works as if they were new** (owner, 20 Nov): one fresh invitation, with no old
+  cancelled one beside it and none in the counts; "Joined" shows the new date; and if they had been added to
+  Mentors but never had a scholar or a meeting, they are offered by "Add a staff member as mentor" again instead
+  of showing as "Mentored before". Someone who did mentor a scholar keeps that history.
 
 ## Not changed
 
@@ -36,7 +38,8 @@ Services: both. No migrate step. Publish in a release window with the owner's ye
 ## Phone check (owner, after live)
 
 As an org admin, invite a test reviewer into a group, then Cancel the invitation: they leave the group table, and
-the same address can be invited again.
+the same address can be invited again. Then cancel a never-signed-in invitation and invite the same address again:
+it shows as a fresh invitation, with no old cancelled one beside it.
 
 ## For a native reader
 

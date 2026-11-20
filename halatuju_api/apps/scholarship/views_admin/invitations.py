@@ -32,7 +32,8 @@ class AdminInvitationsView(_ReviewersBase):
     definition of waiting, shared with `waiting_counts`, so the table and its own badge can never
     disagree. Everybody who has already accepted belongs to the People directory, not here.
     `?all=1` returns the full history for a caller that genuinely wants it; nothing in the console
-    passes it today.
+    passes it today. A cancelled invitation followed by a re-invite is left out even there
+    (`invitations.without_superseded`, owner 20 Nov): the re-invite reads as a brand-new one.
 
     ⚠ **FENCED ON `Invitation.organisation`, NOT through `PartnerAdmin`.** A sponsor invitation has
     no staff row to fence through — that is the whole point of a sponsor invitation, which creates
@@ -57,7 +58,7 @@ class AdminInvitationsView(_ReviewersBase):
         from .. import sponsor_invite_gifts
         if org_id is not None:
             qs = qs.filter(organisation_id=org_id)
-
+        qs = inv_service.without_superseded(qs)   # S1b owner ruling: a re-invite reads as new
         counts = inv_service.waiting_counts(qs)
         totals = inv_service.kind_totals(qs)
         kind = (request.GET.get('kind') or inv_service.KIND_ADMINS).strip()
