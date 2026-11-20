@@ -327,6 +327,8 @@ def _op_ink(pdf, req, blobs):
     `STRAY_PAD` from every character's box; ``optional``: page content in optional content (an OC mark, or an
     XObject with /OC: a viewer may show what pdfium hides, or hide what it shows); ``xfa``: an XFA form;
     ``type3_ok``: every Type3 glyph page 1 can draw paints only inside its own box (`_type3_ok`, review round 2);
+    ``type3``: page 1 can reach a Type3 font at all (fix round 3: refused unless the lane allows Type3,
+    `pdf_ink.TYPE3_LANES`);
     ``px_pt``: one rendered pixel in points (`pdf_ink` widens each box by its +1 px ring when it asks who lends ink).
     ``{error}`` on a page count other than pypdf's, a page box out of bounds, too many characters, or any pdfium
     or pypdf failure."""
@@ -488,9 +490,9 @@ def _ink(pdf, req):
         finally:
             if annot:
                 raw.FPDFPage_CloseAnnot(annot)
-    oc_xobject, xfa, type3_ok = _pdf_flags(int(req['page']))
+    oc_xobject, xfa, type3_ok, type3 = _pdf_flags(int(req['page']))
     return {'chars': chars, 'modes_ok': modes_ok, 'annots_ok': annots_ok, 'stray_px': stray,
-            'optional': bool(optional or oc_xobject), 'xfa': xfa, 'type3_ok': bool(type3_ok),
+            'optional': bool(optional or oc_xobject), 'xfa': xfa, 'type3_ok': bool(type3_ok), 'type3': bool(type3),
             'px_pt': round(1.0 / scale, 4)}
 
 
@@ -499,7 +501,10 @@ def _ink(pdf, req):
 #: the overlap and stray rules miss it. Every Type3 font page 1 can reach must keep each path coordinate inside its
 #: glyph's ``d1`` box (`T3_TOLERANCE` of the box's longer side), use only the operators below, and a ``d0`` glyph
 #: (coloured: anything goes) may not paint at all. Genuine cost: the 6 UiTM letters with Type3 fonts pass; 0 of
-#: the 58 UMS use one.
+#: the 58 UMS use one. Fix round 3 (review round 3's BLOCKER): the tolerance is a share of the box's LONGER side,
+#: so a flat 1000 x 1 glyph may paint 20 units (20x its height) above and below its box, onto a white value. While
+#: the rules lane is UMS-only, ANY Type3 font page 1 can reach refuses (`pdf_ink.TYPE3_LANES` is empty); this
+#: check only matters once a lane allows Type3, and before that the tolerance must change (decisions.md).
 T3_TOLERANCE = 0.02
 #: Path construction: the operator and its operand count (each pair an x, y to check).
 _T3_PATH = {'m': 2, 'l': 2, 'c': 6, 'v': 4, 'y': 4}
@@ -566,7 +571,8 @@ def _op_name(op) -> str:
 
 def _pdf_flags(index: int) -> tuple:
     """(an XObject the page draws, at any depth, carries /OC; the document has an XFA form; every Type3 font page
-    1 can reach keeps its glyphs inside their boxes, `_type3_ok`), read with pypdf from the request's bytes
+    1 can reach keeps its glyphs inside their boxes, `_type3_ok`; page 1 can reach a Type3 font at all — a walk cut
+    short says True), read with pypdf from the request's bytes
     (``_DATA``). Fonts are reached through the page's resources and, at any depth, those of its form XObjects,
     tiling patterns and ExtGState /Font entries. Genuine cost: 0 of the 49 lockable letters (a document-level
     /OCProperties alone is NOT refused: every UUM letter carries one, with no optional content on page 1)."""
@@ -577,7 +583,7 @@ def _pdf_flags(index: int) -> tuple:
     acro = reader.trailer['/Root'].get_object().get('/AcroForm')
     xfa = bool(acro is not None and '/XFA' in acro.get_object())
     seen, todo, budget = set(), [(reader.pages[index].get('/Resources'), 0)], [T3_MAX_BYTES]
-    t3_ok = True
+    t3_ok, t3_any = True, False
 
     def new(ref) -> bool:
         key = ('r', ref.idnum) if hasattr(ref, 'idnum') else ('o', id(ref))
@@ -591,7 +597,7 @@ def _pdf_flags(index: int) -> tuple:
         if not hasattr(res, 'get') or depth > 15:
             continue
         if len(seen) >= 5000:
-            return True, xfa, False              # past any genuine page: counted as optional (refused)
+            return True, xfa, False, True        # past any genuine page: counted as optional (refused)
         fonts = res.get('/Font')
         fonts = list(fonts.get_object().values()) if fonts is not None else []
         states = res.get('/ExtGState')
@@ -605,6 +611,7 @@ def _pdf_flags(index: int) -> tuple:
                 continue
             font = ref.get_object()
             if hasattr(font, 'get') and font.get('/Subtype') == '/Type3':
+                t3_any = True
                 t3_ok = t3_ok and _type3_ok(font, budget)       # its glyphs draw no XObject or text: not walked
         patterns = res.get('/Pattern')
         for ref in (patterns.get_object().values() if patterns is not None else ()):
@@ -618,10 +625,10 @@ def _pdf_flags(index: int) -> tuple:
                 continue
             xo = ref.get_object()
             if '/OC' in xo:
-                return True, xfa, t3_ok
+                return True, xfa, False, True    # refused as optional; the walk stops, so Type3 is unknown
             if xo.get('/Subtype') == '/Form':
                 todo.append((xo.get('/Resources'), depth + 1))
-    return False, xfa, t3_ok
+    return False, xfa, t3_ok, t3_any
 
 
 _OPS = {'count': lambda pdf, req, blobs: {'count': len(pdf)}, 'paints': _op_paints, 'render': _op_render,

@@ -373,16 +373,29 @@ def _with_type3(data, glyph: bytes, shown=b'BT /T3 9 Tf 30 30 Td (a) Tj ET'):
     return out.getvalue()
 
 
+def _type3_allowed():
+    """The S2 path (a lane in `pdf_ink.TYPE3_LANES`): the ua:UMS lane allowed to carry Type3, for these tests only."""
+    from apps.scholarship import pdf_ink
+    return mock.patch.object(pdf_ink, 'TYPE3_LANES', frozenset((LANE,)))
+
+
+WELL_BEHAVED = (b'1 0 0 0 1 1 d1 0 0 1 1 re f', b'1 0 0 0 1 1 d1 0 0 m 1 0 l 0.5 1 l h f')
+
+
 @override_settings(OCR_FIRST_LANES=(LANE,))
 class TheReviewRound2Attacks(SimpleTestCase):
     """Review round 2, B2: a Type3 glyph painting outside its own ``d1`` box (a tiny glyph in the margin drawing
-    boxes over a white word) puts ink where no char box is. Every Type3 glyph page 1 can reach is checked."""
+    boxes over a white word) puts ink where no char box is. Every Type3 glyph page 1 can reach is checked. Fix
+    round 3: a UMS letter refuses ANY Type3 font, so these run with the lane allowed (`_type3_allowed`)."""
 
     def setUp(self):
         pdf_pages._layer_memo_clear()
+        allowed = _type3_allowed()
+        allowed.start()
+        self.addCleanup(allowed.stop)
 
-    def test_a_well_behaved_type3_font_still_locks(self):
-        for glyph in (b'1 0 0 0 1 1 d1 0 0 1 1 re f', b'1 0 0 0 1 1 d1 0 0 m 1 0 l 0.5 1 l h f'):
+    def test_a_well_behaved_type3_font_locks_where_type3_is_allowed(self):
+        for glyph in WELL_BEHAVED:
             with self.subTest(glyph=glyph):
                 ex, why = _read(_with_type3(build('none'), glyph))
                 self.assertEqual((ex or {}).get('rules_lane'), LANE, why)
@@ -423,6 +436,80 @@ class TheReviewRound2Attacks(SimpleTestCase):
         outside = b'1 0 0 0 1 1 d1 0 0 %.3f 1 re f' % (1 + 2 * tol)
         self.assertEqual(_read(_with_type3(build('none'), inside))[1], {})
         self.assertIn('page:type3', _read(_with_type3(build('none'), outside))[1]['ink_missing'])
+
+
+def build_t3tol(iso=False):
+    """Review round 3's BLOCKER: the IC line's label black, its value white, and under it one Type3 glyph whose
+    ``d1`` box is FLAT (1000 x 1 units). `T3_TOLERANCE` is a share of the box's longer side, so the glyph may paint
+    20 units above it: one block over each digit's box, which pdfium credits to the white digits. ``iso``: the same
+    glyph at an equal x / y scale (FontMatrix) instead of one stretched to the value's width."""
+    from apps.scholarship import pdf_ink
+    base = build_r1('whitetail', ICLINE)
+    value = ICLINE.split(':', 1)[1].strip()
+    chars = pdf_ink.page1_ink(base)['chars']
+    at = ''.join(chr(int(r[0])) for r in chars).index(value)
+    box = chars[at:at + len(value)]
+    left, right = min(r[2] for r in box), max(r[4] for r in box)
+    bottom, top = min(r[3] for r in box), max(r[5] for r in box)
+    sy = (top - bottom) / 20.0
+    sx = sy if iso else (right - left) / 1000.0
+    rects = b''.join(b'%.3f 1 %.3f 20 re ' % ((r[2] - left) / sx, (r[4] - r[2]) / sx)
+                     for k, r in enumerate(box) if value[k] != '-')
+    shown = b'q 0 g BT /T3 1 Tf 1 0 0 1 %.4f %.4f Tm (a) Tj ET Q\n' % (left, bottom - sy)
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.generic import ArrayObject, FloatObject, NameObject
+    data = _with_type3(base, b'0 0 0 0 1000 1 d1 ' + rects + b'f', shown)
+    w = PdfWriter()                                  # the font's own matrix, box and width (`_with_type3`: 1 unit)
+    w.append(PdfReader(io.BytesIO(data)))
+    font = w.pages[0]['/Resources']['/Font']['/T3'].get_object()
+    font[NameObject('/FontMatrix')] = ArrayObject([FloatObject(v) for v in (sx, 0, 0, sy, 0, 0)])
+    font[NameObject('/FontBBox')] = ArrayObject([FloatObject(v) for v in (0, 0, 1000, 21)])
+    font[NameObject('/Widths')] = ArrayObject([FloatObject(0)])
+    out = io.BytesIO()
+    w.write(out)
+    return out.getvalue()
+
+
+@override_settings(OCR_FIRST_LANES=(LANE,))
+class TheReviewRound3Type3Attack(SimpleTestCase):
+    """Review round 3, BLOCKER (fix round 3, owner 20 Nov: "refuse home-made fonts on UMS letters"): a flat Type3
+    glyph painting blocks onto a white IC value locked. A UMS letter now refuses ANY Type3 font on page 1
+    (``page:type3``; `pdf_ink.TYPE3_LANES` is empty), so neither the attack nor a well-behaved Type3 font locks."""
+
+    def setUp(self):
+        pdf_pages._layer_memo_clear()
+
+    def test_the_flat_glyph_attack_refuses(self):
+        for iso in (False, True):
+            with self.subTest(iso=iso):
+                ex, why = _read(build_t3tol(iso))
+                self.assertIsNone(ex, (ex or {}).get('fields'))
+                self.assertEqual((why.get('lane'), why.get('reason')), (LANE, 'not_inked'), why)
+                self.assertIn('page:type3', why['ink_missing'])
+
+    def test_a_well_behaved_type3_font_refuses_a_ums_letter(self):
+        for glyph in WELL_BEHAVED:
+            with self.subTest(glyph=glyph):
+                ex, why = _read(_with_type3(build('none'), glyph))
+                self.assertIsNone(ex)
+                self.assertEqual(why.get('ink_missing'), ['page:type3'], why)
+
+    def test_the_static_check_still_passes_the_flat_glyph(self):
+        """Why `TYPE3_LANES` stays empty: `_type3_ok` alone passes the attack (its tolerance scales with the box's
+        longer side). Before a lane allows Type3 (S2, UiTM), the tolerance must be ~0 or about one device pixel
+        after FontMatrix and text matrix, or Type3 ink credited to the glyph outline (decisions.md, 20 Nov), and
+        this test turned round."""
+        from pypdf import PdfReader
+        from apps.scholarship import pdfium_worker
+        for iso in (False, True):
+            with self.subTest(iso=iso):
+                font = PdfReader(io.BytesIO(build_t3tol(iso))).pages[0]['/Resources']['/Font']['/T3'].get_object()
+                self.assertIs(pdfium_worker._type3_ok(font, [pdfium_worker.T3_MAX_BYTES]), True)
+
+    def test_the_child_says_type3(self):
+        from apps.scholarship import pdf_ink
+        self.assertIs(pdf_ink.page1_ink(build('none'))['type3'], False)
+        self.assertIs(pdf_ink.page1_ink(_with_type3(build('none'), WELL_BEHAVED[0]))['type3'], True)
 
 
 def _wrapped(data, head: bytes, tail: bytes, zapf=False):

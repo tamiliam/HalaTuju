@@ -432,6 +432,15 @@ between the two (pypdf's own changes). Local counts are not production counts.
   some white digits, because the reach along the line is 0; a uniform ring passes at most 4 of 14 digits, but a ring
   tuned per character might pass all. Next idea: place each glyph's box where pdfium snaps it (char origin), then
   reach along the line too.
+- **Review round 3 (20 Nov), home-made fonts:** the Type3 static check allowed paint 2% of the glyph box's LONGER
+  side outside it, so a flat 1000 x 1 `d1` glyph got 20 units of slack, painted over a white IC value, and pdfium
+  credited that ink to the value: the letter locked. Owner (20 Nov): "refuse home-made fonts on UMS letters". Any
+  Type3 font page 1 can reach now refuses (`page:type3`) unless the lane is in `pdf_ink.TYPE3_LANES`, which is empty
+  (the child reports `type3`; a walk cut short counts as Type3). The static check stays for a lane that allows Type3
+  later. Cost 0: none of the 58 UMS letters carries Type3 (UMS 33 locks, 0 not_inked; Gate 1 unchanged); UUM, UPSI, UM
+  carry none. **Before UiTM (S2) allows Type3:** the tolerance must be zero or about 1 device pixel after the FontMatrix
+  and text matrix, or Type3 ink must be credited to the glyph outline rather than the character box; then re-measure on
+  the 6 UiTM letters with Type3 fonts (all 6 now fail on `page:type3`, so UiTM is 9 of 11 failing until then).
 - **Known residuals, for S-visible 3 (owner decides):** (1) a ToUnicode lie (a visible glyph whose text says another
   letter) still locks. **For S2:** 3 of the 11 UiTM letters fail the ink rules (heavy genuine overlap 0.79-0.95, or a faint title, share 0.029); S2 must
   measure and decide.

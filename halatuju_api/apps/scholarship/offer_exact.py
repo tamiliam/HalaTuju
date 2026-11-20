@@ -225,7 +225,7 @@ def _not_inked(ex, image, layout, lane) -> list:
         if lane != LANE:
             return ['no_targets']
         phrases, values = ink_targets(ex.get('fields'), layout)
-        return ink_missing(page1_ink(image), phrases, values)
+        return ink_missing(page1_ink(image), phrases, values, lane=lane)   # a Type3 font: `TYPE3_LANES`
     except Exception:  # fail closed: the AI reads the letter, as it always could
         logger.exception('rules lane %s: the ink check failed; the AI reads the letter', lane)
         return ['ink_error']

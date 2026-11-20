@@ -19,8 +19,9 @@ word of every owner phrase and every printed value the lock used, at EVERY place
 * the page: text objects only fill (render mode 0: another line's stroke paints past its glyph boxes), every
   annotation is a /Link (pdfium does not draw a FreeText with no appearance; another viewer might), at most
   `MAX_STRAY_PX` of ink lies away from every character's box (text drawing outside the box pdfium gives it), no
-  page-1 content is optional content, the document has no XFA form (a viewer may show another page), and every
-  Type3 glyph page 1 can draw paints only inside its own box (review round 2: a glyph painting far from its box).
+  page-1 content is optional content, the document has no XFA form (a viewer may show another page), and page 1
+  reaches no Type3 font at all (fix round 3, owner 20 Nov: "refuse home-made fonts on UMS letters"; a lane in
+  `TYPE3_LANES` may carry one when every glyph paints only inside its own box, review round 2).
 
 Known residuals (S-visible 3, owner decision): a font whose ToUnicode lies (its glyphs drawn as other letters) still
 passes; only reading the word crops closes it. (Black glyphs touching a white character put ink in its +1 px ring:
@@ -77,6 +78,11 @@ MAX_STRAY_PX = 4
 #: A target found more often than this on page 1 refuses (bounds the work; a genuine letter prints any one of
 #: its phrases a handful of times).
 MAX_OCCURRENCES = 20
+#: The rules lanes whose letters may carry a Type3 (home-made) font on page 1; every other lane's letter refuses
+#: one outright (``page:type3``). Fix round 3 (review round 3's BLOCKER: a flat Type3 glyph painted a block onto a
+#: white IC within `pdfium_worker.T3_TOLERANCE` and locked). Empty while the rules lane is UMS-only (0 of the 58
+#: UMS letters carry one); S2 adds a lane here only once that tolerance is fixed (decisions.md, 20 Nov).
+TYPE3_LANES: frozenset = frozenset()
 _NOT_WORD = re.compile(r'[\W_]')
 _ROW = 11           # [codepoint, generated, l, b, r, t, ink_px, area_px, inside, cover_h, cover_w]
 
@@ -219,29 +225,31 @@ def _rows(ink):
     return rows
 
 
-def _page_labels(ink) -> list:
-    """The page rules (module docstring) the answer breaks; a missing or malformed flag breaks its rule."""
+def _page_labels(ink, type3_allowed: bool) -> list:
+    """The page rules (module docstring) the answer breaks; a missing or malformed flag breaks its rule. Type3:
+    none at all, or (``type3_allowed``) every glyph inside its box."""
     stray = ink.get('stray_px')
     return [lab for lab, ok in (
         ('page:modes', ink.get('modes_ok') is True), ('page:annots', ink.get('annots_ok') is True),
         ('page:stray', isinstance(stray, int) and not isinstance(stray, bool) and 0 <= stray <= MAX_STRAY_PX),
         ('page:optional', ink.get('optional') is False), ('page:xfa', ink.get('xfa') is False),
-        ('page:type3', ink.get('type3_ok') is True)) if not ok]
+        ('page:type3', ink.get('type3_ok') is True and (type3_allowed or ink.get('type3') is False))) if not ok]
 
 
-def ink_missing(ink, phrases, values) -> list:
+def ink_missing(ink, phrases, values, lane: str = '') -> list:
     """The labels of the targets that do not leave real ink on page 1 ([] = every one does). ``ink``: the child's
     answer (`page1_ink`; None or an error refuses: ``no_answer``). ``phrases`` / ``values``: (label, text) pairs —
     a phrase may lose the space between its words, a value may gain a separator between any two characters. A
     target absent from pdfium's text, found more than `MAX_OCCURRENCES` times, or with ANY occurrence failing a
-    word rule gives its label; each page rule broken gives ``page:<rule>``. No targets: ``no_targets``."""
+    word rule gives its label; each page rule broken gives ``page:<rule>``. No targets: ``no_targets``. ``lane``:
+    the rules lane asking; a Type3 font on page 1 refuses unless it is in `TYPE3_LANES`."""
     chars = _rows(ink)
     if chars is None:
         return ['no_answer']
     targets = [(lab, t, False) for lab, t in phrases or ()] + [(lab, t, True) for lab, t in values or ()]
     if not targets:
         return ['no_targets']
-    out = _page_labels(ink)
+    out = _page_labels(ink, lane in TYPE3_LANES)
     normed, idx = _norm_map(chars)
     solid = [i for i, r in enumerate(chars) if not r[1] and (not chr(int(r[0])).isspace() or _drawn_space(r))]
     pad = RING_PX * ink['px_pt']

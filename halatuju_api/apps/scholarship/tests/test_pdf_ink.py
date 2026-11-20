@@ -17,14 +17,14 @@ def _line(text, x=30.0, y=700.0, h=7.0, w=5.4, ink=12, area=40, gap=0.0, cover=(
     return rows
 
 
-def _answer(*lines, modes=True, annots=True, stray=0, optional=False, xfa=False, type3=True, px_pt=0.72):
+def _answer(*lines, modes=True, annots=True, stray=0, optional=False, xfa=False, type3=True, t3=False, px_pt=0.72):
     chars = []
     for i, ln in enumerate(lines):
         if i:
             chars.append([13, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0])     # pdfium's generated line break
         chars.extend(ln)
     return {'chars': chars, 'modes_ok': modes, 'annots_ok': annots, 'stray_px': stray, 'optional': optional,
-            'xfa': xfa, 'type3_ok': type3, 'px_pt': px_pt}
+            'xfa': xfa, 'type3_ok': type3, 'type3': t3, 'px_pt': px_pt}
 
 
 PHRASE = [('p1', 'tawaran kemasukan')]
@@ -165,6 +165,25 @@ class ThePageRulesAndAnswers(SimpleTestCase):
                           ({'type3': None}, 'page:type3')):
             with self.subTest(kw=kw):
                 self.assertEqual(ink_missing(_answer(line, **kw), PHRASE, []), [label])
+
+    def test_any_type3_font_refuses_unless_the_lane_allows_it(self):
+        """Fix round 3 (owner, 20 Nov: "refuse home-made fonts on UMS letters"): a Type3 font on page 1 refuses,
+        however well its glyphs keep to their boxes, unless the lane is in `TYPE3_LANES` (empty today)."""
+        from unittest import mock
+        line = _line('TAWARAN KEMASUKAN')
+        self.assertEqual(pdf_ink.TYPE3_LANES, frozenset())
+        for kw in ({'t3': True}, {'t3': None}, {'t3': 1}):                  # Type3 present, or the flag malformed
+            with self.subTest(kw=kw):
+                self.assertEqual(ink_missing(_answer(line, **kw), PHRASE, [], lane='ua:UMS'), ['page:type3'])
+                self.assertEqual(ink_missing(_answer(line, **kw), PHRASE, []), ['page:type3'])
+        with mock.patch.object(pdf_ink, 'TYPE3_LANES', frozenset(('ua:X',))):
+            self.assertEqual(ink_missing(_answer(line, t3=True), PHRASE, [], lane='ua:X'), [])
+            self.assertEqual(ink_missing(_answer(line, t3=True, type3=False), PHRASE, [], lane='ua:X'),
+                             ['page:type3'])                               # allowed, but a glyph left its box
+            self.assertEqual(ink_missing(_answer(line, t3=True), PHRASE, [], lane='ua:UMS'), ['page:type3'])
+        answer = _answer(line)
+        del answer['type3']                                                 # an answer without the flag
+        self.assertEqual(ink_missing(answer, PHRASE, []), ['page:type3'])
 
     def test_an_annotation_other_than_a_link(self):
         self.assertEqual(ink_missing(_answer(_line('TAWARAN KEMASUKAN'), annots=False), PHRASE, []),
