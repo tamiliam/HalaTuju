@@ -480,16 +480,26 @@ def _checked(data: bytes, pick) -> int:
     return -1 if why else n
 
 
-def _render(data: bytes, pages: list, n: int) -> tuple:
-    """(PNGs, pdfium's page count or None) of ``pages`` rendered in ONE pdfium child, stopping at the first
-    page that fails or whose box is out of bounds (logged); ([], None) when the child fails."""
-    answer = pdfium_run.ask(data, [{'op': 'render', 'pages': pages, 'count': n, 'scale': _scale_args()},
-                                   {'op': 'count'}])
-    if answer is None:
-        return [], None
-    if answer[0]['stop']:
-        logger.warning('PDF rasterise stopped: %s', answer[0]['stop'])
-    return answer[0]['pngs'], answer[1]['count']
+def _render(data: bytes, pages: list, n: int) -> list:
+    """The PNGs of ``pages``, in order, each page rendered by its OWN pdfium child (2026-11-21), ending at the first
+    page that fails or whose box is out of bounds (logged); [] when page 1 of ``pages`` fails.
+
+    One page per child: a child's address space is capped (`pdfium_run.MEMORY_LIMIT_BYTES`, Linux), and an A4 400 dpi
+    colour JPEG2000 page alone takes the child to about 270 MiB resident, so a 3-page letter rendered in ONE child died
+    (exit -5 after 9-11 s) and gave no page at all. Each call is charged to the document's ONE time budget
+    (`pdfium_run.DOC_BUDGET_S`), so N pages never get N x `pdfium_run.TIMEOUT_S`. The first call also asks the page
+    count (`pdf_page_count` then spawns nothing), and page 1's call is the same question `pdf_first_page_png` asks,
+    so the two readers share one child through `pdfium_run`'s memo."""
+    out = []
+    for k, i in enumerate(pages):
+        ops = [{'op': 'render', 'pages': [i], 'count': n, 'scale': _scale_args()}]
+        answer = pdfium_run.ask(data, ops + [{'op': 'count'}] if k == 0 else ops)
+        if answer is None or not answer[0]['pngs']:
+            if answer is not None:
+                logger.warning('PDF rasterise stopped on page %d: %s', i + 1, answer[0]['stop'])
+            return out
+        out.append(answer[0]['pngs'][0])
+    return out
 
 
 def pdf_first_page_png(data: bytes) -> Optional[bytes]:
@@ -499,18 +509,20 @@ def pdf_first_page_png(data: bytes) -> Optional[bytes]:
     n = _checked(data, lambda n: [0])
     if n <= 0:
         return None
-    pngs, _count = _render(data, [0], n)
+    pngs = _render(data, [0], n)
     return pngs[0] if pngs else None
 
 
 def pdf_page_pngs(data: bytes, max_pages: int) -> list:
     """The first ``max_pages`` pages of a PDF, each its OWN PNG (within the pixel budget) — the offer
     reader shows Gemini one image per page, so no page is shrunk to share one raster (offer exact-read
-    S4, 2026-11-01). A page that cannot be rendered ends the list there; [] on any failure or a refused page.
-    The page count comes back from the same pdfium child (`pdf_page_count` then spawns nothing)."""
+    S4, 2026-11-01). Each page is rendered by its own pdfium child (`_render`), so a page that fails never
+    loses the pages before it. A page that fails ends the list there: the offer reader labels the k-th PNG
+    page k (``later_prompt``) and pairs it with that page's text, so a later page never moves up into a
+    failed page's place. [] when page 1 fails, on any failure before the render, or for a refused page."""
     n = _checked(data, lambda n: range(min(n, max(0, max_pages))))
     pages = list(range(min(n, max(0, max_pages))))
-    return _render(data, pages, n)[0] if pages else []
+    return _render(data, pages, n) if pages else []
 
 
 def pdf_page_count(data: bytes) -> int:

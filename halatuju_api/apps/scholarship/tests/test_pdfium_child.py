@@ -227,8 +227,8 @@ class TheSameAnswersAsInProcess(SimpleTestCase):
         with patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
             pdf_pages.pdf_page_pngs(three, 3)
             self.assertEqual(pdf_pages.pdf_page_count(three), 3)
-            pdf_pages.pdf_first_page_png(three)     # a different render question (page 1 only)
-        self.assertEqual(spawned.call_count, 2)
+            pdf_pages.pdf_first_page_png(three)     # page 1's question: answered by the first page's child
+        self.assertEqual(spawned.call_count, 3)     # 2026-11-21: one child per page, the count with page 1
 
 
 # ── Fix round 9: a per-document budget, a bounded slot wait, a capped output, a retry on spawn errors ──
