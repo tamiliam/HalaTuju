@@ -5,7 +5,8 @@ request from stdin (a JSON line, then the PDF's bytes), opens the PDF ONCE, runs
 and writes the answers to stdout (a JSON line, then the PNG bytes it names). Operations: ``count`` (pages),
 ``paints`` (pdf_pdfium_check's per-object painted-text check), ``render`` (each page its own PNG), ``stack`` (pages
 stacked into one PNG), ``words`` (page 1's word boxes for the SPM certificate reader), ``layout`` (page 1's pypdf
-layout text for the UMS offer reader).
+layout text for the UMS offer reader), ``ink`` (each page-1 character's own ink on the rendered page, S-visible 2:
+`pdf_ink`).
 
 Why a child: rounds 5-7 modelled what pdfium costs (load whitelists, render caps) and ran it under one process-wide
 lock, and every review still found a tiny crafted PDF that kept pdfium busy for 10-40 s — freezing every upload in
@@ -288,8 +289,91 @@ def _op_layout(pdf, req, blobs):
     return {'text': reader.pages[0].extract_text(extraction_mode='layout') or ''}
 
 
+#: The most characters the ``ink`` op reports on one page (a dense genuine page 1: about 5,000). Past it: an error.
+MAX_INK_CHARS = 20_000
+#: Text render modes the ``ink`` op allows on its page: fill, stroke, both. 4-6 add a clip (the second render is
+#: then not "the page minus its text"), 3 / 7 paint nothing: refused (`modes_ok` False).
+INK_MODES = frozenset((0, 1, 2))
+
+
+def _op_ink(pdf, req, blobs):
+    """S-visible 2 (`pdf_ink`): what each character of page ``page`` adds to the picture. The page is rendered as
+    is (A, greyscale, annotations drawn), then with EVERY text object (page level and inside forms) set to render
+    mode 3 (B); the diff |A - B| is the text's own ink — white, covered, clipped or same-colour text adds ~0.
+    -> ``{chars: [[codepoint, generated, l, b, r, t, ink_px, area_px, inside], ...], modes_ok, annots_ok}``: the
+    char box in points (pdfium's tight box), ``ink_px`` the pixels of the box (+1 px) whose luminance the text
+    changes by at least ``delta``, ``area_px`` the box's pixels, ``inside`` the box within the rendered page.
+    ``modes_ok``: every text object uses mode 0-2; ``annots_ok``: every annotation is a /Link. ``{error}`` on a
+    page count other than pypdf's, a page box out of bounds, too many characters, or any pdfium failure."""
+    try:
+        return _ink(pdf, req)
+    except MemoryError:                     # the whole child stops (`OUT_OF_MEMORY`)
+        raise
+    except Exception as e:                  # refused by the caller (`pdf_ink.ink_missing`: 'no_answer')
+        return {'error': type(e).__name__}
+
+
+def _ink(pdf, req):
+    import pypdfium2.raw as raw
+    from PIL import ImageChops
+    if len(pdf) == 0 or len(pdf) != req['count']:
+        return {'error': 'page count'}
+    page = pdf[int(req['page'])]
+    scale = raster_scale(page.get_width(), page.get_height(), *req['scale'])
+    if scale is None:
+        return {'error': 'page box'}
+    tp = page.get_textpage()
+    n = tp.count_chars()
+    if n < 0 or n > MAX_INK_CHARS:
+        return {'error': 'chars'}
+    a = page.render(scale=scale, grayscale=True).to_pil().convert('L')
+    modes_ok = True
+    for obj in page.get_objects(max_depth=15):
+        if raw.FPDFPageObj_GetType(obj.raw) == raw.FPDF_PAGEOBJ_TEXT:
+            modes_ok = modes_ok and raw.FPDFTextObj_GetTextRenderMode(obj.raw) in INK_MODES
+            if not raw.FPDFTextObj_SetTextRenderMode(obj.raw, raw.FPDF_TEXTRENDERMODE_INVISIBLE):
+                return {'error': 'mode'}
+    b = page.render(scale=scale, grayscale=True).to_pil().convert('L')
+    if a.size != b.size:
+        return {'error': 'size'}
+    width, height = a.size
+    mask = ImageChops.difference(a, b).point(lambda v: 255 if v >= int(req['delta']) else 0)
+    dx, dy = ctypes.c_int(), ctypes.c_int()
+
+    def dev(x, y):
+        raw.FPDF_PageToDevice(page.raw, 0, 0, width, height, 0, x, y, dx, dy)
+        return dx.value, dy.value
+
+    chars = []
+    for i in range(n):
+        gen = raw.FPDFText_IsGenerated(tp.raw, i) == 1
+        cp = 32 if gen else int(raw.FPDFText_GetUnicode(tp.raw, i) or 32)
+        if gen or chr(cp).isspace():
+            chars.append([cp, int(gen), 0, 0, 0, 0, 0, 0, 1])
+            continue
+        l, bo, r, t = tp.get_charbox(i)
+        (x0, y0), (x1, y1) = dev(l, t), dev(r, bo)
+        x0, x1, y0, y1 = min(x0, x1), max(x0, x1), min(y0, y1), max(y0, y1)
+        inside = x0 >= -1 and y0 >= -1 and x1 <= width + 1 and y1 <= height + 1
+        box = (max(0, x0 - 1), max(0, y0 - 1), min(width, x1 + 1), min(height, y1 + 1))
+        ink = area = 0
+        if box[2] > box[0] and box[3] > box[1]:
+            hist = mask.crop(box).histogram()
+            ink, area = hist[255], (box[2] - box[0]) * (box[3] - box[1])
+        chars.append([cp, 0, round(l, 2), round(bo, 2), round(r, 2), round(t, 2), ink, area, int(inside)])
+    annots_ok = True
+    for k in range(raw.FPDFPage_GetAnnotCount(page.raw)):
+        annot = raw.FPDFPage_GetAnnot(page.raw, k)
+        try:
+            annots_ok = annots_ok and bool(annot) and raw.FPDFAnnot_GetSubtype(annot) == raw.FPDF_ANNOT_LINK
+        finally:
+            if annot:
+                raw.FPDFPage_CloseAnnot(annot)
+    return {'chars': chars, 'modes_ok': modes_ok, 'annots_ok': annots_ok}
+
+
 _OPS = {'count': lambda pdf, req, blobs: {'count': len(pdf)}, 'paints': _op_paints, 'render': _op_render,
-        'stack': _op_stack, 'words': _op_words, 'layout': _op_layout}
+        'stack': _op_stack, 'words': _op_words, 'layout': _op_layout, 'ink': _op_ink}
 #: The request's PDF bytes, for an operation that reads them with pypdf (``layout``).
 _DATA = [b'']
 

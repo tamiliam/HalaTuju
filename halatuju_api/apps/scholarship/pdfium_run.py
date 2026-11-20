@@ -197,12 +197,15 @@ _WORD_BOX_BYTES = 64
 
 def _result_bytes(result) -> int:
     """What one answer holds against `_MEMO_MAX_BYTES`: its PNGs, and (review round 2) the layout ``text``
-    and the ``words`` boxes (each word's text plus `_WORD_BOX_BYTES`), so a huge text answer is evicted too."""
+    and the ``words`` boxes (each word's text plus `_WORD_BOX_BYTES`), so a huge text answer is evicted too;
+    the ``ink`` op's ``chars`` rows at `_WORD_BOX_BYTES` each."""
     if not isinstance(result, dict):
         return 0
     text = result.get('text')
     words = result.get('words')
+    chars = result.get('chars')               # S-visible 2: the ``ink`` op's per-character rows
     return (sum(len(p) for p in result.get('pngs') or ()) + len(result.get('png') or b'')
+            + (len(chars) * _WORD_BOX_BYTES if isinstance(chars, list) else 0)
             + (len(text) if isinstance(text, str) else 0)
             + (sum(len(str(w.get('text') or '')) + _WORD_BOX_BYTES for w in words if isinstance(w, dict))
                if isinstance(words, list) else 0))
