@@ -16,8 +16,8 @@ MODES
       `offer_fresh_gemini.guarded_production_read` (a 402 / 429 stops the whole run, every database
       query and Storage are refused). Cache first: `<eval-dir>/slip_s5/<key>.json`; a cached slip
       is never read again unless --force; a service failure (503, 404 model, …) is NOT cached.
-      --max-usd (default 4.00) stops the run at its cap, and a call that reports no token counts
-      (or has no price row) stops it too, since the cap could not be kept.
+      --max-usd (default 4.00) stops the run at its cap (exit 5), and a call that reports no token
+      counts (or has no price row) stops it too (exit 4), since the cap could not be kept.
   --score, FREE: reads those caches and scores them beside the STORED read
       (`snapshots/<key>.json`), on the typed-grade answer key: wrong grades (`compare_academics`
       `mismatched`), "please check" rows, refusals, and malformed grades (must be 0).
@@ -64,6 +64,11 @@ USD_PER_CALL_38_MAX = 2 * USD_PER_CALL_25
 PRICE_38_ASSUMED = {'input': 0.60, 'output': 5.00, 'thinking': 5.00}
 #: The roadmap's slip count for S5: the 98 cached slips plus the 137-slip answer key.
 ROADMAP_SLIPS = 98 + 137
+#: --live stopped at its --max-usd cap: slips are left unread, so the run is not a success.
+EXIT_CAP = 5
+EXIT_CODES = ('exit codes: 0 done; 2 nothing read (no corpus, unknown keys, no key, or a slip model '
+              'off the allow-list); 3 a 402 / 429 stopped --live; 4 a --live call reported no token '
+              'counts; 5 --live stopped at its --max-usd cap (slips left unread)')
 
 
 # ── The corpus ───────────────────────────────────────────────────────────────────────────────
@@ -180,7 +185,7 @@ def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=pr
             stop = ofg.cap_stop_line([{'usage': {'cost_usd': spent, 'unpriced_calls': unpriced}}], max_usd)
             if stop:
                 out(stop)
-                break
+                return EXIT_CAP              # review round 2: a capped run is not a finished run
             calls, meter = [], []
             try:
                 with ofg.guarded_production_read(client_factory, calls, meter) as extract:
@@ -257,7 +262,7 @@ def gate_totals(eval_dir, key_file=None):
 
 
 def main(argv=None, *, client_factory=None, out=print):
-    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0], epilog=EXIT_CODES)
     ap.add_argument('--eval-dir', default=HERE)
     ap.add_argument('--live', action='store_true', help='PAID: read on 3.8 Flash (owner\'s yes)')
     ap.add_argument('--score', action='store_true', help='free: score the caches')

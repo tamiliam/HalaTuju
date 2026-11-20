@@ -9,7 +9,7 @@ import os
 import shutil
 import tempfile
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase, override_settings
 
@@ -117,10 +117,30 @@ class TheLiveRunOnAFakeClient(_Corpus):
         factory = self._factory(_GOOD)
         lines = []
         with override_settings(GEMINI_API_KEY='test-key'):
-            gate.main(['--eval-dir', self.dir, '--live', '--max-usd', '0.0001'], client_factory=factory,
-                      out=lines.append)
+            code = gate.main(['--eval-dir', self.dir, '--live', '--max-usd', '0.0001'],
+                             client_factory=factory, out=lines.append)
         self.assertEqual(self.asked, ['gemini-3.8-flash'])
         self.assertTrue(any(l.startswith('STOP: the run has cost') for l in lines))
+        self.assertEqual(code, gate.EXIT_CAP)       # review round 2: a capped run exits non-zero
+        self.assertEqual(gate.EXIT_CAP, 5)
+
+    def test_the_exit_codes_are_in_the_help_text(self):
+        buf = io.StringIO()
+        with patch('sys.stdout', buf), self.assertRaises(SystemExit):
+            gate.main(['--help'])
+        self.assertIn('5 --live stopped at its --max-usd cap', ' '.join(buf.getvalue().split()))
+
+    def test_a_look_alike_model_is_refused_before_any_read(self):
+        """Review round 2: the gate keeps the slip read's allow-list (`slip_read.is_slip_model`)."""
+        for cascade in (['gemini-3.8-flash-lite'], ['gemini-3.81-pro', 'gemini-2.5-flash']):
+            factory = self._factory(_GOOD)
+            lines = []
+            with self.subTest(cascade=cascade), override_settings(GEMINI_API_KEY='test-key'), \
+                    patch('apps.scholarship.profile_engine.MODEL_CASCADE', cascade):
+                self.assertEqual(gate.main(['--eval-dir', self.dir, '--live'], client_factory=factory,
+                                           out=lines.append), 2)
+                self.assertEqual(self.asked, [])
+                self.assertFalse(os.path.exists(os.path.join(self.dir, gate.CACHE_DIR)))
 
     def test_it_reads_on_3_8_only_caches_and_never_rereads(self):
         factory = self._factory(_GOOD)

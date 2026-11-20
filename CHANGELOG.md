@@ -144,6 +144,7 @@ Branch ocr-s5, not pushed. Migration: none. Services: api. Decisions: `docs/deci
   - The models are an allow-list: only "gemini-3.8…" may read a slip.
   - The failed-read error names the model once.
   - The gate's `--live` does not cache a service failure, and stops when a response reports no token counts. Tests: 35 + 11.
+- Review round 2: the duplicate check keys rows as the comparison does (English and Malay names of one subject are checked together); bands that differ only in case or spacing, or where one is blank, count as the same row; the allow-list is exactly "gemini-3.8-flash" or "gemini-3.8-flash-…", never Lite; the gate exits 5 when `--max-usd` stops it. Tests: 41 + 13.
 
 ### fix: gift names are checked the same way on create as on rename (review of #71, 2026-11-19)
 

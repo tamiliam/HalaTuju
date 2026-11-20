@@ -156,6 +156,60 @@ class TheAnswerCheck(SimpleTestCase):
         self.assertEqual(problems, [])
         self.assertEqual([r['subject'] for r in cleaned['results']], ['BAHASA MELAYU', 'MATEMATIK'])
 
+    def test_an_english_and_a_malay_row_of_one_subject_are_checked_together(self):
+        """Review round 2: the duplicate check uses the comparison's own key (`_compare_key` after
+        the band-word split), so English and Malay names of one subject cannot carry two grades."""
+        for first, second in (
+                ({'subject': 'MATHEMATICS', 'grade': 'A', 'band': 'CEMERLANG'},
+                 {'subject': 'MATEMATIK', 'grade': 'D', 'band': 'LULUS'}),
+                ({'subject': 'PHYSICS CEMERLANG TINGGI', 'grade': 'A', 'band': ''},
+                 {'subject': '4531 FIZIK', 'grade': 'C', 'band': 'KEPUJIAN'}),
+                ({'subject': 'ADDITIONAL MATHEMATICS', 'grade': 'B', 'band': 'KEPUJIAN TINGGI'},
+                 {'subject': 'Matematik Tambahan', 'grade': 'A', 'band': 'KEPUJIAN TINGGI'})):
+            data = {'candidate_name': 'CALON CONTOH', 'exam': 'SPM', 'results': [first, second]}
+            with self.subTest(first=first, second=second):
+                cleaned, problems = slip_read.check_slip_answer(data)
+                self.assertIsNone(cleaned)
+                self.assertTrue(any('same subject' in p for p in problems))
+
+    def test_an_english_and_a_malay_row_that_agree_are_kept_once(self):
+        data = {'candidate_name': 'CALON CONTOH', 'exam': 'SPM',
+                'results': [{'subject': 'MATHEMATICS', 'grade': 'A', 'band': 'CEMERLANG TINGGI'},
+                            {'subject': 'MATEMATIK', 'grade': 'A', 'band': 'CEMERLANG TINGGI'},
+                            {'subject': 'SAINS', 'grade': 'B', 'band': 'KEPUJIAN TINGGI'}]}
+        cleaned, problems = slip_read.check_slip_answer(data)
+        self.assertEqual(problems, [])
+        self.assertEqual([r['subject'] for r in cleaned['results']], ['MATHEMATICS', 'SAINS'])
+
+    def test_a_duplicate_whose_band_differs_only_in_case_or_spacing_is_kept_once(self):
+        """Review round 2: the bands match case- and space-insensitively."""
+        for band in ('Cemerlang', 'cemerlang', ' CEMERLANG\t', 'CEMERLANG'):
+            data = {'candidate_name': 'X', 'exam': 'SPM',
+                    'results': [{'subject': 'SEJARAH', 'grade': 'A', 'band': band},
+                                {'subject': 'SEJARAH', 'grade': 'A', 'band': 'CEMERLANG'}]}
+            with self.subTest(band=band):
+                cleaned, problems = slip_read.check_slip_answer(data)
+                self.assertEqual(problems, [])
+                self.assertEqual(len(cleaned['results']), 1)
+
+    def test_a_duplicate_with_one_blank_band_is_kept_once_with_the_band(self):
+        for rows in ([('A', ''), ('A', 'CEMERLANG')], [('A', 'CEMERLANG'), ('A', '')]):
+            data = {'candidate_name': 'X', 'exam': 'SPM',
+                    'results': [{'subject': 'SEJARAH', 'grade': g, 'band': b} for g, b in rows]}
+            with self.subTest(rows=rows):
+                cleaned, problems = slip_read.check_slip_answer(data)
+                self.assertEqual(problems, [])
+                self.assertEqual(cleaned['results'], [{'subject': 'SEJARAH', 'grade': 'A',
+                                                       'band': 'CEMERLANG'}])
+
+    def test_a_real_conflict_is_still_a_bad_answer(self):
+        for second in (('B', 'CEMERLANG'), ('A', 'KEPUJIAN'), ('', 'CEMERLANG'), ('B', '')):
+            data = {'candidate_name': 'X', 'exam': 'SPM',
+                    'results': [{'subject': 'SEJARAH', 'grade': 'A', 'band': 'CEMERLANG'},
+                                {'subject': 'SEJARAH', 'grade': second[0], 'band': second[1]}]}
+            with self.subTest(second=second):
+                self.assertIsNone(slip_read.check_slip_answer(data)[0])
+
     def test_only_the_known_keys_are_kept(self):
         data = {**_good(), 'notes': 'extra', 'extra_id': 'X1'}
         data['results'][0] = {**data['results'][0], 'confidence': 0.9, 'code': '1103'}
@@ -293,6 +347,26 @@ class TwoPointFiveIsNeverCalled(SimpleTestCase):
                    ['gemini-4.0-pro', 'gemini-3.8-flash', 'gemini-2.5-flash', 'other-model']):
             self.assertEqual(slip_read.slip_read_models(), ['gemini-3.8-flash'])
         for models in (['gemini-4.0-pro'], ['gemini-3.8-flash', 'gemini-3.9-flash'], ['gpt-x'], []):
+            calls = []
+            with self.subTest(models=models):
+                out = slip_read.read_slip_checked(lambda m: calls.append(m) or _good(), models=models)
+                self.assertEqual(calls, [])
+                self.assertTrue(is_ai_service_error(out['error']))   # 'review_manually'
+
+    def test_the_allow_list_is_3_8_flash_exactly_never_a_look_alike(self):
+        """Review round 2: a bare 'gemini-3.8' prefix let look-alike and Lite names through."""
+        for name in ('gemini-3.8-flash', 'gemini-3.8-flash-preview-11-2026', 'gemini-3.8-flash-001'):
+            with self.subTest(allowed=name):
+                self.assertTrue(slip_read.is_slip_model(name))
+        for name in ('gemini-3.80', 'gemini-3.81-pro', 'gemini-3.8', 'gemini-3.8-flash-lite',
+                     'gemini-3.8-flash-lite-preview', 'gemini-3.8-pro', 'gemini-3.8-flashy',
+                     'gemini-3.8-flash-preview-lite', 'models/gemini-3.8-flash', '', None):
+            with self.subTest(refused=name):
+                self.assertFalse(slip_read.is_slip_model(name))
+        with patch('apps.scholarship.profile_engine.MODEL_CASCADE',
+                   ['gemini-3.8-flash-lite', 'gemini-3.80', 'gemini-2.5-flash']):
+            self.assertEqual(slip_read.slip_read_models(), [])
+        for models in (['gemini-3.8-flash-lite'], ['gemini-3.81-pro'], ['gemini-3.8']):
             calls = []
             with self.subTest(models=models):
                 out = slip_read.read_slip_checked(lambda m: calls.append(m) or _good(), models=models)
