@@ -159,6 +159,13 @@ class ServesTheDetailBlocks:
         LLM calls — mirrors get_anomalies."""
         return self._verdict(obj)
 
+    def get_second_look(self, obj):
+        """LL2b: the QC panel's "Facts in doubt", read from the STORED snapshot + the reviewer's verdict
+        (never a fresh engine run), and the QC's stored answers (None = not checked by the QC)."""
+        from .. import second_look
+        return {'in_doubt': second_look.for_application(obj),
+                'answers': second_look.stored(obj.officer_verdict)}
+
     def get_submission_review(self, obj):
         """Check 2 STEP 1: the deterministic facts ledger + completeness gaps +
         consistency flags. Pure rules, no LLM — mirrors get_verdict / get_anomalies."""

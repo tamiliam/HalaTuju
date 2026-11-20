@@ -20,6 +20,114 @@ export interface VerdictMetrics {
   /** Which verdict_engine generations this roll-up averaged, {version: applications}.
    *  More than one key means the rate below BLENDS predictors — see the card. */
   engine_versions?: Record<string, number>
+  /** LL1: the AI prediction scoreboard. Every figure is counted and rounded by the server; the
+   *  browser only prints them. Absent from a payload means "this reader may not see it". */
+  overall?: PredictionCounts
+  fact_counts?: Record<string, PredictionCounts>
+  /** LL2: why reviewers failed a fact the AI was sure of, by fact (zero-filled), plus those not given. */
+  fail_reasons?: Record<string, Record<string, number>>
+  fail_reasons_not_given?: Record<string, number>
+  /** LL2b: the facts in doubt the QC checked, in total and by fact. Absent on older payloads. */
+  qc_checked?: { total: QcCheckedCounts; facts: Record<string, QcCheckedCounts> }
+  by_version?: Record<string, PredictionCounts>
+  by_month?: Record<string, PredictionCounts>
+  doubt_codes?: DoubtRow[]
+  qc_agreement?: QcAgreement
+  /** Leads only: ABSENT (not empty) for everyone else. */
+  by_reviewer?: ReviewerRow[]
+  /** Whose cases the server counted: "assigned" = the reader's own assigned applicants only. */
+  counted_scope?: 'all' | 'assigned'
+}
+
+/** One block of the scoreboard. "Green" = the AI was sure; "unsure" = the AI was in doubt.
+ *  Rates are 0..1 (4 places). A `few_*` flag means too few cases to quote a percent. */
+export interface PredictionCounts {
+  green: number
+  green_failed: number
+  green_agreed: number
+  green_agree_rate: number
+  green_fail_rate: number
+  unsure: number
+  unsure_passed: number
+  unsure_pass_rate: number
+  few_green: boolean
+  few_unsure: boolean
+  few: boolean
+}
+
+export interface DoubtRow {
+  fact: string
+  code: string
+  passed: number
+  failed: number
+  total: number
+  fail_rate: number
+  pass_rate: number
+  few: boolean
+}
+
+export interface QcCounts {
+  accept: number
+  reopen: number
+  reject: number
+  total: number
+  accept_rate: number
+  few: boolean
+}
+
+export interface QcAgreement extends QcCounts {
+  by_month: Record<string, QcCounts>
+}
+
+/** LL2b: one block of "checked by the QC" counts. `few` = too few checked to read much into. */
+export interface QcCheckedCounts {
+  in_doubt: number
+  checked: number
+  not_checked: number
+  agreed: number
+  disagreed: number
+  ai_green_checked: number
+  ai_wrong_checked: number
+  ai_right_reviewer_wrong_checked: number
+  few: boolean
+  few_ai_green: boolean
+}
+
+export interface ReviewerRow extends PredictionCounts {
+  id: number | null
+  name: string
+  /** null = a named reviewer; otherwise a neutral label to translate instead of `name`. */
+  label_key: 'unmatched_reviewer' | 'unnamed_reviewer' | null
+  applications: number
+  /** LL2b: in-doubt facts the QC checked / disagreed with. Absent on older payloads. */
+  qc_checked?: number
+  qc_overturned?: number
+}
+
+/** LL2b: a fact the reviewer and the AI did not agree on, as the server decided it. */
+export interface SecondLookFact {
+  fact: string
+  ai_status: string | null
+  ai_green: boolean
+  reviewer: 'fail'
+  /** An LL2 reason code, or null. */
+  reason: string | null
+  groups: Array<'ai_green_reviewer_fail' | 'failed_but_accepted'>
+}
+
+/** LL2b: the QC's second look on the admin detail. `answers` null = never checked by the QC. */
+export interface SecondLook {
+  in_doubt: SecondLookFact[]
+  answers: Record<string, 'agreed' | 'disagreed'> | null
+}
+
+export interface QcDecisionPayload {
+  decision: 'accept' | 'reopen' | 'reject'
+  comments?: string
+  override_reason?: string
+  /** LL2b: only the QC's taps, as "disagreed"; `{}` = agrees with the reviewer on every fact
+   *  in doubt. Left out when no fact was in doubt (the request as before LL2b). */
+  fact_checks?: Record<string, 'agreed' | 'disagreed'>
 }
 
 /** Reverse a recorded decision (super-only): holds the sponsor profile from the pool
@@ -40,7 +148,7 @@ export async function cancelReopen(id: number, options?: ApiOptions) {
  *  override_reason: super-only pass of the V5 verdict gap floor — recorded server-side. */
 export async function recordQcDecision(
   id: number,
-  payload: { decision: 'accept' | 'reopen' | 'reject'; comments?: string; override_reason?: string },
+  payload: QcDecisionPayload,
   options?: ApiOptions,
 ) {
   return adminMutate<AdminScholarshipDetail>(
@@ -152,6 +260,8 @@ export interface RecordVerdictPayload {
     pathway?: string
     overall?: string
   }
+  /** LL2: {fact: code} for a fact the engine showed green and the reviewer failed. */
+  fail_reasons?: Record<string, string>
   reason?: string
   finalise?: boolean
   language?: string

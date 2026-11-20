@@ -59,7 +59,7 @@ class TestTheFacadeIsTheSameObjects(SimpleTestCase):
     def test_every_listed_name_is_the_home_module_object(self):
         for name in public.__all__:
             if name in ('register_stpm_document_witness', 'StudentProfile', 'FieldTaxonomy', 'contrast',
-                        'org_config', 'staff_permissions', *_MODULE_DOORS):
+                        'PartnerAdmin', 'org_config', 'staff_permissions', *_MODULE_DOORS):
                 continue            # not exam_questions names; pinned in test_scholarship_public_facade
             if name in _CATALOGUE_HOMES:
                 continue            # catalogue / merit names; pinned in the next test
@@ -99,6 +99,12 @@ class TestStageOneNames(SimpleTestCase):
         from apps.courses import staff_permissions
         self.assertIn('staff_permissions', public.__all__)
         self.assertIs(public.staff_permissions, staff_permissions)
+
+    def test_the_partner_admin_door_is_the_model(self):
+        # LL1: prediction_metrics reaches the model through the door, not a new direct import.
+        from apps.courses.models import PartnerAdmin
+        self.assertIn('PartnerAdmin', public.__all__)
+        self.assertIs(public.PartnerAdmin, PartnerAdmin)
 
     def test_the_contrast_door_is_the_module(self):
         from apps.courses import contrast

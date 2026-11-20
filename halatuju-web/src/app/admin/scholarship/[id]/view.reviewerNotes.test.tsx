@@ -35,7 +35,7 @@ it('the assigned reviewer reads the notes and gets the Reply box (#73)', async (
   const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing' })
   api.getReviewerNotes.mockResolvedValue({ ...NOTES, viewer: 'reviewer', can_add: true })
   expect(await screen.findByText('Please ask about the older brother.')).toBeTruthy()
-  expect(screen.getByText(`${P}.introReviewer`)).toBeTruthy()
+  expect(screen.queryByText(`${P}.introReviewer`)).toBeNull()
   expect(screen.getByLabelText(`${P}.replyLabel`)).toBeTruthy()
   expect(screen.getByRole('button', { name: `${P}.sendReply` })).toBeTruthy()
   expect(screen.queryByLabelText(`${P}.addLabel`)).toBeNull()
@@ -45,7 +45,7 @@ it('QC reads the notes, with no box', async () => {
   const { api } = renderCockpit({ role: 'qc', stage: 'interviewing' })
   api.getReviewerNotes.mockResolvedValue({ ...NOTES, viewer: 'reader', can_add: false })
   expect(await screen.findByText('Please ask about the older brother.')).toBeTruthy()
-  expect(screen.getByText(`${P}.introReader`)).toBeTruthy()
+  expect(screen.queryByText(`${P}.introReader`)).toBeNull()
   expect(screen.queryByRole('textbox', { name: `${P}.addLabel` })).toBeNull()
 })
 

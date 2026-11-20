@@ -120,8 +120,7 @@ export const roleReviewer: ManualChapter = {
         answer them. The conversation sits on the student&rsquo;s page in <strong>Org admin and reviewer
         notes</strong>, directly under <strong>Reviewer assigned</strong>, oldest first. Each note shows who wrote
         it, their side (<em>Org admin</em>, or <em>Reviewer (you)</em> for yours, tinted) and the date. Type in
-        <strong> Reply</strong> (up to 2,000 characters) and press <strong>Send reply</strong>; a note cannot be
-        edited or deleted, so to correct one, add another. When your org admin writes, you get an email (it never
+        <strong> Reply</strong> (up to 2,000 characters) and press <strong>Send reply</strong>. When your org admin writes, you get an email (it never
         contains the note) and a <strong>New note</strong> mark by the student&rsquo;s name in your list, plus a
         line in the bell; both clear when you open the student&rsquo;s page. A note written before the student
         was assigned to you shows as a New note once they are (the assignment email is the only email). Once
@@ -212,7 +211,8 @@ export const roleReviewer: ManualChapter = {
         can submit: tap <strong>Resolved</strong>, jot <strong>one line</strong> on what you found (a short note
         such as &ldquo;See conclusion&rdquo; is fine), or <strong>Delete</strong> a point that does not apply —
         then <strong>Submit interview findings</strong>. Approve and Decline stay greyed out until every point
-        is answered. If a point mentions income above the line,
+        is answered; press either one and a <strong>Still to do</strong> list shows exactly what is missing, and
+        each item takes you to the place to fix it. If a point mentions income above the line,
         that&rsquo;s for your judgement — explore the family&rsquo;s real situation, don&rsquo;t quote a figure.</>
       ),
       img: '/reviewer-guide/step7-interview.png',
@@ -223,9 +223,15 @@ export const roleReviewer: ManualChapter = {
       perm: 'review',
       title: 'Your decision',
       body: (
-        <>In the <strong>Decision</strong> card you rate the AI&rsquo;s verification (<strong>Pass</strong> or
-        <strong> Fail</strong> per fact — this only says whether the AI <em>read</em> each fact correctly, and is
-        separate from your recommendation), set a <strong>recommended assistance amount</strong>, write a short
+        <>In the <strong>Check the four facts</strong> box you tap <strong>Pass</strong> or
+        <strong> Fail</strong> for each fact. <strong>Pass</strong> means the fact is true for the student;
+        <strong> Fail</strong> means it is not true, or not proven. It is separate from your recommendation.
+        If you Fail a fact the system showed as green, it asks <strong>Why is this fact not true?</strong>:
+        tap one reason (the rule is wrong, the document was read wrong, new information, a programme rule, or
+        other). You cannot save until you pick one. If you choose <strong>Approve</strong> while a fact is on
+        Fail, a warning asks if you really want to accept; it does not stop you. QC sees these facts again
+        under <strong>Facts in doubt</strong> and says whether they agree with you. In the <strong>Decision</strong>
+        card you then set a <strong>recommended assistance amount</strong>, write a short
         <strong> conclusion</strong>, select <strong>Approve</strong> or <strong>Decline</strong>, and click
         <strong> Save verdict &amp; generate final profile</strong>. You can Pass all four facts and still Decline
         (for example, income is verified but sits above the B40 line, or the Pathway card is red with

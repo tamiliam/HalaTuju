@@ -1,0 +1,12 @@
+{
+  "1.29.0": {
+    "digest": "b9ead7705ce78294aa8fb32887ff9debced6d098c6cfd28e3f595e8eceace2be",
+    "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day. Digest re-seeded 2026-11-19: register brought up to main 0dea7e809 before its first merge (IPTS rule 10e1b432f moved the private-college, private-arm and private_offer reason openings into offer_issuers constants with the same text; no version bump by main).",
+    "also_ok": []
+  },
+  "1.31.0": {
+    "digest": "b9ead7705ce78294aa8fb32887ff9debced6d098c6cfd28e3f595e8eceace2be",
+    "note": "2026-11-19: main's OCR-first S-visible work (owner decision 2026-11-18): the visible page judges, so a PDF page with an invisible text layer has no text layer, for every document type. The change sits in pdf_pages.py and the new pdf modules, which this register does not list (see the technical debt row); the digest of the listed files is the same as under 1.29.0.",
+    "also_ok": []
+  }
+}

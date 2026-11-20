@@ -22,7 +22,9 @@ logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name 
 #: The SPM slip reader's version, stored as ``parser_version`` beside a deterministic read (and as
 #: ``reader`` in the fallback's diag). 1.1.0 (OCR-first S4, 2026-11-18): the gate reads the DOCUMENT;
 #: the profile's `results_held` is a hint only (1.0.0, unstamped: it vetoed every non-SPM profile).
-SLIP_READER_VERSION = 'spm_slip 1.1.0'
+#: 1.2.0 (S-visible, 2026-11-18): a PDF whose text is invisible has no layer, so the gate's page-1 text
+#: is the Vision read of the visible page (`_page1_text`), never the hidden layer.
+SLIP_READER_VERSION = 'spm_slip 1.2.0'
 
 #: Results that are NOT SPM, by the title the page prints, beside the higher kinds `results_kind`
 #: already recognises (STPM / Matriculation / Asasi / Diploma). Whole words only. A vocational
@@ -265,7 +267,7 @@ def _read_birth_certificate(doc, ocr, image_fn, pre_words):
 
 def _read_labelled_doc(doc, ocr, image_fn):
     """Every other type: the OCR text, read by its labels first, else by Gemini on the text."""
-    from ..doc_parse import parse_by_labels      # deterministic-first for standardised docs
+    from ..doc_parse import parse_by_labels, rules_parser_version   # deterministic-first
     r = ocr if ocr is not None else _v.ocr_document(doc)
     if r['error'] or not (r['text'] or '').strip():   # Vision OCR down → OUR outage (TD-392a), not the file
         return {'fields': {}, 'warnings': [], 'error': (f"{OCR_SERVICE_FAILED}: {r['error']}"
@@ -275,6 +277,9 @@ def _read_labelled_doc(doc, ocr, image_fn):
     parsed = parse_by_labels(doc.doc_type, r['text'])
     if parsed is not None:
         ex = deterministic_or_epf_fallback(doc.doc_type, parsed, r['text'], _v.extract_document_fields)
+        version = rules_parser_version(doc.doc_type, r['text'])   # OCR-first S6: the rules lane
+        if version and ex.get('capture') == 'deterministic':   # never on a Gemini-filled 'mixed' read
+            ex['parser_version'] = version
     else:
         ex = _v.extract_document_fields(r['text'], doc.doc_type)
         ex['capture'] = 'ai'

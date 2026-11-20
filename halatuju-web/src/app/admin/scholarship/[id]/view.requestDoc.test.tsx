@@ -40,7 +40,7 @@ async function raiseAndFail(rejection: unknown): Promise<string | null> {
 
 describe('while the student is still at their Documents step', () => {
   it('replaces the request controls with one line saying why', async () => {
-    renderCockpit({ role: 'super', writes: true, stage: 'shortlisted',
+    renderCockpit({ role: 'super', writes: true, stage: 'profile_complete',
                     build: { officer_requests: 'documents_step' } })
     await loaded()
     expect(screen.getByText('admin.scholarship.requestsDocumentsStep')).toBeTruthy()

@@ -7,8 +7,9 @@
  * ⚠ Lifted out of `view.tsx` whole at Mobile M6b (the file sits on the oversize ledger and M6b adds to the
  * page). MOVES ONLY: every line below is the line it was; `view.tsx` hands it the same names it used.
  */
-import type { Dispatch, SetStateAction } from 'react'
-import { isQcAccepted, rejectionTrail, showsDecisionCards } from '@/lib/officerCockpit'
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
+import type { DecisionMissingItem } from '@/lib/officerCockpit'
+import { isQcAccepted, rejectionTrail, showsRecommendationCard } from '@/lib/officerCockpit'
 import { stageStatus } from '@/lib/closeOffer'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
@@ -17,9 +18,10 @@ import { QcOverrideNote, type T } from './shared'
 import { ReopenHeaderControl } from './ReopenHeaderControl'
 import { ReasonBox } from '@/components/admin/ReasonBox'
 import { decisionBarShows } from './DecisionBar'
+import { AlertLine, DECISION_ALERT_EVENT, DecisionMissingList } from './DecisionMissing'
 
 export function DecisionCard({
-  app, t, busy, canWrite, caseOpen, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, interviewSubmitted, interviewMissing, hasAssistance, doSave, canSave, verdictMsg, verdictMsgTone,
+  app, t, busy, canWrite, caseOpen, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, missing, hasAssistance, doSave, canSave, reasonMissing, verdictMsg, verdictMsgTone,
 }: {
   app: AdminScholarshipDetail
   t: T
@@ -54,15 +56,34 @@ export function DecisionCard({
   selectDecline: () => void
   approveReady: boolean
   decisionReady: boolean
-  interviewSubmitted: boolean
-  interviewMissing: unknown[]
+  /** What is still missing (`decisionMissing`, computed once in deriveCockpit; empty = ready). */
+  missing: DecisionMissingItem[]
   hasAssistance: boolean
   doSave: () => void
   canSave: boolean
+  reasonMissing: boolean
   verdictMsg: string
   verdictMsgTone: 'ok' | 'warn'
 }) {
   const saveShows = decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite, caseOpen })
+  const amountReasonKey = app.award_disqualifier
+    ? 'admin.scholarship.recordVerdict.approveNeedsReview'
+    : 'admin.scholarship.recordVerdict.approveNeedsAmount'
+  // Request #70: `missing` is the ONE rule (computed once in deriveCockpit); `decisionReady` is `missing.length === 0`.
+  // Bumped by a press on a greyed button (or the phone bar): remounts the list as a focused alert.
+  const [alertKey, setAlertKey] = useState(0)
+  // Same, for a ready decision that still has no bursary amount (Recommend only).
+  const [amountKey, setAmountKey] = useState(0)
+  const showAlert = () => { if (missing.length > 0) setAlertKey((n) => n + 1) }
+  // Once the reviewer fixes an item, the list goes back to plain: a live region that kept role="alert" would be
+  // announced again on every fix. The next press makes it an alert again.
+  const missingSig = JSON.stringify(missing)
+  useEffect(() => { setAlertKey(0) }, [missingSig])
+  useEffect(() => { if (approveReady) setAmountKey(0) }, [approveReady])
+  useEffect(() => {
+    document.addEventListener(DECISION_ALERT_EVENT, showAlert)
+    return () => document.removeEventListener(DECISION_ALERT_EVENT, showAlert)
+  })
   return (<>
 
       {/* ── Decision — audit the four facts (records the verdict) → verify identity →
@@ -72,7 +93,7 @@ export function DecisionCard({
           Hidden on a CLOSED case with no verdict — there is no decision left to record, and the
           justification box invited writing one. WITH a verdict it stays: that is the frozen
           decision trail (21 rejected records on 2026-08-18), which must not disappear. */}
-      {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
+      {showsRecommendationCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, decisionRecorded }) && (
       <div id="decision-section" className="scroll-mt-16 border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.decision.title')}</h2>
@@ -215,6 +236,7 @@ export function DecisionCard({
             value={verdictReason}
             rows={3}
             disabled={!canWrite}
+            id="verdict-reason"
             onChange={(e) => setVerdictReason(e.target.value)}
             placeholder={t('admin.scholarship.recordVerdict.reasonPlaceholder')}
             className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -266,15 +288,17 @@ export function DecisionCard({
               )}
               {/* Reversible outcome selection. Approve needs an amount; Decline doesn't (and clears it). */}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={selectApprove} disabled={!!busy || !approveReady}
-                  className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
+                <button onClick={() => { if (!decisionReady) showAlert(); else if (!approveReady) setAmountKey((n) => n + 1); else selectApprove() }}
+                  disabled={!!busy} aria-disabled={!approveReady || undefined}
+                  className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 aria-disabled:opacity-50 ${
                     officerVerdict.overall === 'accept'
                       ? 'border-positive-fill bg-positive-fill text-positive-fill-ink'
                       : 'border-positive-600 bg-ground-0 text-positive-700 hover:bg-positive-50'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
                   {t('admin.scholarship.recordVerdict.approve')}
                 </button>
-                <button onClick={selectDecline} disabled={!!busy || !decisionReady}
-                  className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
+                <button onClick={() => { if (!decisionReady) showAlert(); else selectDecline() }}
+                  disabled={!!busy} aria-disabled={!decisionReady || undefined}
+                  className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 aria-disabled:opacity-50 ${
                     officerVerdict.overall === 'decline'
                       ? 'border-critical-fill bg-critical-fill text-critical-fill-ink'
                       : 'border-critical-500 bg-ground-0 text-critical-700 hover:bg-critical-50'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
@@ -283,16 +307,20 @@ export function DecisionCard({
               </div>
               {/* One contextual hint: what's still missing before Save. */}
               {!decisionReady ? (
-                <p className="text-xs md:text-[11px] text-caution-700">{interviewSubmitted && interviewMissing.length > 0
-                  ? t('admin.scholarship.recordVerdict.findingsIncomplete', { count: String(interviewMissing.length) })
-                  : t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
+                <DecisionMissingList key={alertKey} t={t} items={missing} alert={alertKey > 0} />
+              ) : amountKey > 0 && !approveReady ? (
+                <AlertLine key={amountKey}>{t(amountReasonKey)}</AlertLine>
               ) : !officerVerdict.overall ? (
                 <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
               ) : officerVerdict.overall === 'accept' && !hasAssistance ? (
-                <p className="text-xs md:text-[11px] text-caution-700">{t(app.award_disqualifier
-                  ? 'admin.scholarship.recordVerdict.approveNeedsReview'
-                  : 'admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
+                <p className="text-xs md:text-[11px] text-caution-700">{t(amountReasonKey)}</p>
+              ) : reasonMissing ? (
+                <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.pickReason')}</p>
               ) : null}
+              {/* LL2: a soft warning only (never blocks): Approve chosen while a fact is marked Fail. */}
+              {officerVerdict.overall === 'accept' && ['identity', 'academic', 'pathway', 'income'].some((f) => officerVerdict[f] === 'fail') && (
+                <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.failedAcceptWarn')}</p>
+              )}
               {/* Save is the final commit of the chosen outcome. */}
               <button onClick={doSave} disabled={!!busy || !canSave}
                 className="w-full px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">

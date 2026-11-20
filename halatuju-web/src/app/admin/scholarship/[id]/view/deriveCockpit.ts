@@ -7,13 +7,14 @@
  */
 import { fieldVerifications, type VerifiableField } from '@/lib/fieldVerification'
 import {
-  isStuckAfterVerdict, isDecisionReady, isApproveReady, isQueryingLocked, queryingLockReason,
+  isStuckAfterVerdict, decisionMissing, isApproveReady, isQueryingLocked, queryingLockReason,
 } from '@/lib/officerCockpit'
 import { interviewGateApplies, missingAgendaItems } from '@/lib/interviewCompleteness'
 import { formatDate } from '@/lib/formatDate'
 import { anomalyParams } from '@/lib/docSeen'
 import type { AdminScholarshipDetail, AdminAgendaEntry } from '@/lib/admin-api'
 import { ANOMALY_CHECK2_OWNER } from './shared'
+import { greenFailFacts } from './failReasons'
 import type { TFn } from './cockpitCtx'
 
 export function deriveCockpit(
@@ -22,6 +23,7 @@ export function deriveCockpit(
   findings: Record<string, { verdict: string; rationale: string }>,
   officerVerdict: Record<string, string>,
   verdictReason: string,
+  failReasons: Record<string, string> = {},
 ) {
   // Field-level "verified" ticks — a small badge beside a value that MATCHES an uploaded,
   // machine-read document (see lib/fieldVerification). vtip() → the hover tooltip naming the source
@@ -118,8 +120,10 @@ export function deriveCockpit(
   // (Approve's actual accept is still backend-gated on a complete profile + identity.)
   const interviewMissing = interviewGateApplies({ status: app.status, recordedOutcome, decisionReopened })
     ? missingAgendaItems(agendaItems.map((it) => it.code), app.interview_session?.findings) : []
-  const decisionReady = isDecisionReady(
-    app.interview_session?.status, officerVerdict, verdictReason, interviewMissing.length === 0)
+  // ONE computation (request #70): the list the card shows and the gate that greys its buttons are the same value.
+  const decisionMissingItems = decisionMissing(
+    app.interview_session?.status, officerVerdict, verdictReason, interviewMissing.length)
+  const decisionReady = decisionMissingItems.length === 0
   // The bursary is fixed by pathway type and always present (award.py) — so approve just needs a
   // complete decision. hasAssistance stays in the gate for safety (award_amount or the by-type
   // figure); it is effectively always true now.
@@ -127,13 +131,17 @@ export function deriveCockpit(
   const approveReady = isApproveReady(decisionReady, hasAssistance)
   // Save (the commit) is enabled once a reversible outcome is chosen AND its preconditions hold:
   // Approve → all of approveReady (incl. amount); Decline → decisionReady (no amount needed).
-  const canSave = (officerVerdict.overall === 'accept' && approveReady)
-    || (officerVerdict.overall === 'decline' && decisionReady)
+  // LL2: a fact the engine showed green and the reviewer failed needs its one-tap reason before Save
+  // (the server never blocks on it; the web does, so an old tab cannot be stranded).
+  const reasonMissing = greenFailFacts(app.verdict, officerVerdict).some((f) => !failReasons[f])
+  const canSave = !reasonMissing && ((officerVerdict.overall === 'accept' && approveReady)
+    || (officerVerdict.overall === 'decline' && decisionReady))
 
   return {
     vtip, decisionReopened, reviewerName, reviewerDate, hasQc, qcName, qcDate,
     queryingLocked, lockReason, interviewSubmitted, interviewLocked, decisionRecorded,
     recordedOutcome, stuckAfterVerdict, decisionLocked, agendaItems, editableAgenda,
-    interviewUnansweredCount, interviewMissing, decisionReady, hasAssistance, approveReady, canSave,
+    interviewUnansweredCount, decisionMissingItems, decisionReady, hasAssistance, approveReady, canSave,
+    reasonMissing,
   }
 }

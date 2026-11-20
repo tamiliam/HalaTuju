@@ -235,11 +235,19 @@ const A44_SECTIONS: Array<[chapter: string, after: string, added: string]> = [
 const R75_SECTIONS: Array<[chapter: string, after: string, added: string]> = [
   ['role-org-admin', 'org-admin-reviewer-notes', 'org-admin-reject-before-interview'],
 ]
+/**
+ * LL2b (2026-11-19): one more Guide SECTION in the QC chapter, "Facts in doubt" (`perm: 'qc'`), inserted after
+ * "qc-accept-reopen" (itself `perm: 'qc'`). Same rule as #55: only a shape that already sees the QC power's
+ * sections sees it; no chapter, menu row, page or landing moves.
+ */
+const LL2B_SECTIONS: Array<[chapter: string, after: string, added: string]> = [
+  ['role-qc', 'qc-accept-reopen', 'qc-facts-in-doubt'],
+]
 function r55GuideMoves(cells: Record<string, unknown>): Record<string, unknown> {
   const guide = (cells.guide as string[]).map((row) => {
     const [slug, list] = [row.slice(0, row.indexOf(':')), row.slice(row.indexOf(':') + 1)]
     let anchors = list ? list.split(',') : []
-    for (const [chapter, after, added] of [...R55_SECTIONS, ...A44_SECTIONS, ...R75_SECTIONS]) {
+    for (const [chapter, after, added] of [...R55_SECTIONS, ...A44_SECTIONS, ...R75_SECTIONS, ...LL2B_SECTIONS]) {
       const at = anchors.indexOf(after)
       if (slug === chapter && at >= 0) anchors = [...anchors.slice(0, at + 1), added, ...anchors.slice(at + 1)]
     }

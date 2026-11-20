@@ -13,6 +13,10 @@ from django.core.cache import cache
 @pytest.fixture(autouse=True)
 def _reset_cache_between_tests():
     cache.clear()
+    # S-visible: a PDF's text-layer read is memoised per bytes in-process; a test that mocks pypdf or the
+    # walk must not be answered from an earlier test's read of the same bytes.
+    from apps.scholarship.pdf_pages import _layer_memo_clear
+    _layer_memo_clear()
     yield
 
 

@@ -29,7 +29,9 @@ import TableFrame, { TH, TH_RIGHT } from '@/components/admin/TableFrame'
 import type { ProgrammeOverview } from '@/lib/admin-api'
 import { APPLICATION_STATUSES, statusLabelKey } from '@/lib/applicationStatus'
 import { formatDate } from '@/lib/formatDate'
+import { AiPredictionSection } from './AiPredictionSection'
 import { PreInterviewCounts } from './PreInterviewCounts'
+import type { SectionProps, Translate } from './sectionTypes'
 import {
   FULL_AXIS_BOX, SMALL_AXIS_BOX, WIDE_AXIS_BOX, bandTone, monthOf, monthTicks, num,
   orderSlices, rm, rmAxis, thinTicks, weekLabel,
@@ -46,16 +48,6 @@ export const CATEGORY_CODES = [
   'food', 'groceries', 'transport', 'study', 'phone', 'hostel',
   'health', 'clothing', 'micro_stall', 'transfer', 'unsorted', 'none',
 ]
-
-/** The translator handle, as `useT` hands it over. Passed in rather than read from the context
- *  here, so a section stays a plain function of its data and the tests can hand it a stub. */
-export type Translate = (key: string, params?: Record<string, string>) => string
-
-/** What every section is given: the whole payload (it reads only its own slice) and the words. */
-export interface SectionProps {
-  data: ProgrammeOverview
-  t: Translate
-}
 
 /** A headline figure. Deliberately not a component per section — a tile is a tile.
  *  ⚠ Mobile M8: on a phone a two-up tile is ~113 px inside, and `RM504,000.00` in `text-xl` is 138 px — it
@@ -584,4 +576,5 @@ export const SECTION_RENDERERS: Record<string, (props: SectionProps) => JSX.Elem
   money_series: MoneySeriesSection,
   mine: MineSection,
   qc: QcSection,
+  ai_prediction: AiPredictionSection,
 }

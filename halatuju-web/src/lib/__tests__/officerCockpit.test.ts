@@ -1,5 +1,4 @@
 import {
-  assignOptions,
   factTileTone,
   factBandKey,
   groupDocumentsByFact,
@@ -18,6 +17,7 @@ import {
   verdictSaveOutcome,
   isQueryingLocked,
   isDecisionReady,
+  decisionMissing,
   isApproveReady,
   verdictItemKey,
   headerTimeline,
@@ -1567,6 +1567,39 @@ describe('isDecisionReady', () => {
   })
 })
 
+describe('decisionMissing (request #70)', () => {
+  const all = { identity: 'pass', academic: 'fail', pathway: 'pass', income: 'pass' }
+  it('nothing missing when everything is done', () => {
+    expect(decisionMissing('submitted', all, 'Solid case.', 0)).toEqual([])
+  })
+  it('findings not submitted, alone', () => {
+    expect(decisionMissing('draft', all, 'x', 0)).toEqual([{ kind: 'findings_not_submitted' }])
+    expect(decisionMissing(undefined, all, 'x', 0)).toEqual([{ kind: 'findings_not_submitted' }])
+  })
+  it('unanswered questions, alone, with the count', () => {
+    expect(decisionMissing('submitted', all, 'x', 2)).toEqual([{ kind: 'findings_unanswered', count: 2 }])
+  })
+  it('unrated facts, alone, in the card order', () => {
+    expect(decisionMissing('submitted', { ...all, income: '', academic: '' }, 'x', 0))
+      .toEqual([{ kind: 'facts_unrated', facts: ['academic', 'income'] }])
+  })
+  it('empty or blank conclusion, alone', () => {
+    expect(decisionMissing('submitted', all, '   ', 0)).toEqual([{ kind: 'conclusion_empty' }])
+  })
+  it('all together, in the page order: interview, AI rating, conclusion', () => {
+    expect(decisionMissing('draft', {}, '', 3).map((i) => i.kind))
+      .toEqual(['findings_not_submitted', 'facts_unrated', 'conclusion_empty'])
+    expect(decisionMissing('submitted', {}, '', 3).map((i) => i.kind))
+      .toEqual(['findings_unanswered', 'facts_unrated', 'conclusion_empty'])
+  })
+  it('isDecisionReady is exactly "nothing missing"', () => {
+    for (const st of ['submitted', 'draft']) for (const n of [0, 1]) for (const r of ['', 'x'])
+      for (const v of [all, {}]) {
+        expect(isDecisionReady(st, v, r, n === 0)).toBe(decisionMissing(st, v, r, n).length === 0)
+      }
+  })
+})
+
 describe('isApproveReady', () => {
   it('requires decisionReady AND an assistance amount', () => {
     expect(isApproveReady(true, true)).toBe(true)
@@ -1648,8 +1681,9 @@ describe('headerTimeline — the cockpit header lifecycle chips', () => {
 })
 
 describe('pre-submission stage gate (shortlisted card hiding)', () => {
-  it('only shortlisted counts as pre-submission', () => {
+  it('only submitted and shortlisted count as pre-submission', () => {
     expect(isPreSubmissionStage('shortlisted')).toBe(true)
+    expect(isPreSubmissionStage('submitted')).toBe(true)
     for (const s of ['profile_complete', 'interviewing', 'interviewed', 'recommended',
       'awarded', 'active', 'maintenance', 'closed', 'rejected', '']) {
       expect(isPreSubmissionStage(s)).toBe(false)
@@ -1660,6 +1694,7 @@ describe('pre-submission stage gate (shortlisted card hiding)', () => {
 
   it('hides the verdict-flow / projection / profile cards at shortlisted only', () => {
     expect(showsPostSubmissionCards('shortlisted')).toBe(false)
+    expect(showsPostSubmissionCards('submitted')).toBe(false)
     expect(showsPostSubmissionCards('profile_complete')).toBe(true)
     expect(showsPostSubmissionCards('interviewed')).toBe(true)
     expect(showsPostSubmissionCards('active')).toBe(true)
@@ -1778,118 +1813,5 @@ describe('rejectionTrail — a decline names the reviewer AND the QC', () => {
   it('falls back to the email, then an em dash, when no name is resolved', () => {
     expect(rejectionTrail(rejected({ rejected_by_name: '' }))[0].name).toBe('suresh@example.com')
     expect(rejectionTrail(rejected({ rejected_by_name: '', rejected_by: '' }))[0].name).toBe('—')
-  })
-})
-
-// ── assignOptions — the assignee picker (request #10, pause) ──────────────────
-describe('assignOptions', () => {
-  const A = (over: Partial<{
-    id: number; name: string; role: string; paused: boolean
-    gifts: Array<{ id: number; code: string; name: string }>
-  }> = {}) =>
-    ({ id: 1, name: 'Anand', role: 'reviewer', paused: false, gifts: [], ...over })
-  const BP = { id: 7, code: 'bp', name: 'BrightPath Bursary' }
-  const SB = { id: 9, code: 'sb', name: 'Sabah Bursary' }
-
-  it('offers a non-super only their own organisation\'s reviewers', () => {
-    const rows = [A({ id: 1 }), A({ id: 2, role: 'qc' }), A({ id: 3, role: 'org_admin' })]
-    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: null }).map((o) => o.id))
-      .toEqual([1])
-  })
-
-  it('offers a super everybody who can be assigned', () => {
-    const rows = [A({ id: 1 }), A({ id: 2, role: 'qc' }), A({ id: 3, role: 'org_admin' })]
-    expect(assignOptions(rows, { isSuper: true, currentAssigneeId: null }).map((o) => o.id))
-      .toEqual([1, 2, 3])
-  })
-
-  it('always keeps the CURRENT assignee, whatever their role became', () => {
-    // #66: assigned as qc → promoted to org_admin → the case read "Unassigned".
-    const rows = [A({ id: 1 }), A({ id: 9, role: 'org_admin' })]
-    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: 9 }).map((o) => o.id))
-      .toEqual([1, 9])
-  })
-
-  it('DISABLES a paused reviewer rather than dropping them', () => {
-    // Dropping reproduces #66 and leaves the reader guessing where a name went.
-    const rows = [A({ id: 1 }), A({ id: 2, name: 'Kavitha', paused: true })]
-    const out = assignOptions(rows, { isSuper: false, currentAssigneeId: null })
-    expect(out.map((o) => o.id)).toEqual([1, 2])
-    expect(out.map((o) => o.disabled)).toEqual([false, true])
-  })
-
-  it('never disables the person already holding the case, even paused', () => {
-    // A <select> whose current value is disabled cannot show its own state — and pause stops NEW
-    // work, it does not confiscate a case already theirs.
-    const rows = [A({ id: 2, paused: true })]
-    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: 2 })[0].disabled).toBe(false)
-  })
-
-  it('treats a payload with no `paused` field as not paused', () => {
-    const rows = [{ id: 1, name: 'Anand', role: 'reviewer' }]
-    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: null })[0].disabled).toBe(false)
-  })
-
-  // ── which gifts a reviewer covers (S-ASSIGN, 2026-09-04; multi-gift 2026-11-06) ─
-  //
-  // Same treatment as pause, for the same two reasons: the current assignee is unioned in from
-  // this list, and a name that simply vanishes leaves the reader guessing.
-
-  it('DISABLES a reviewer who does not cover the case’s gift', () => {
-    const rows = [A({ id: 1, gifts: [BP] }), A({ id: 2, name: 'Kavitha', gifts: [SB] })]
-    const out = assignOptions(rows, {
-      isSuper: false, currentAssigneeId: null, applicationProgrammeId: 7,
-    })
-    expect(out.map((o) => o.id)).toEqual([1, 2])
-    expect(out.map((o) => o.disabled)).toEqual([false, true])
-    expect(out[1].reason).toBe('otherGift')
-  })
-
-  it('offers a reviewer who covers SEVERAL gifts when one of them is the case’s', () => {
-    // Multi-gift: two of three gifts. Greyed only when NONE of theirs is this case's gift.
-    const rows = [A({ id: 1, gifts: [SB, BP] }), A({ id: 2, gifts: [SB, { id: 4, code: 'x', name: 'X' }] })]
-    const out = assignOptions(rows, {
-      isSuper: false, currentAssigneeId: null, applicationProgrammeId: 7,
-    })
-    expect(out.map((o) => o.disabled)).toEqual([false, true])
-  })
-
-  it('⚠ an EMPTY gift list means EVERY gift and greys nobody', () => {
-    // The live default: org-scoped staff carry no gift rows, so reading it as "covers
-    // nothing" would grey out the entire roster on the first render.
-    const rows = [A({ id: 1, gifts: [] }), { id: 2, name: 'K', role: 'reviewer' }]
-    const out = assignOptions(rows, {
-      isSuper: false, currentAssigneeId: null, applicationProgrammeId: 7,
-    })
-    expect(out.map((o) => o.disabled)).toEqual([false, false])
-  })
-
-  it('⚠ an UNKNOWN application gift greys nobody either — a narrowing we cannot judge falls open', () => {
-    // An older payload with no `programme_id`. This is an OFFER, not a fence: the server does
-    // not refuse on it at all, so failing closed here would invent a refusal.
-    const rows = [A({ id: 1, gifts: [SB] })]
-    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: null })[0].disabled).toBe(false)
-  })
-
-  it('never disables the person already holding the case, even on another gift', () => {
-    // The gift narrows who is OFFERED new work. It never confiscates a case already theirs,
-    // and a <select> whose current value is disabled cannot show its own state.
-    const rows = [A({ id: 2, gifts: [SB] })]
-    const out = assignOptions(rows, {
-      isSuper: false, currentAssigneeId: 2, applicationProgrammeId: 7,
-    })
-    expect(out[0].disabled).toBe(false)
-    expect(out[0].reason).toBeNull()
-  })
-
-  it('reports PAUSED when somebody is both paused and on another gift', () => {
-    // Paused is a fact about the person; the gift is a fact about this one case. Either way
-    // they are unavailable, so the label leads with the one that outlives the case.
-    const rows = [A({ id: 1, paused: true, gifts: [SB] })]
-    const out = assignOptions(rows, {
-      isSuper: false, currentAssigneeId: null, applicationProgrammeId: 7,
-    })
-    expect(out[0].disabled).toBe(true)
-    expect(out[0].reason).toBe('paused')
   })
 })

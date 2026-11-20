@@ -24,11 +24,15 @@ from apps.scholarship.tests.factories import (
 
 ASSIGNABLE = '/api/v1/admin/scholarship/assignable-admins/'
 APPLICANT = ('funnel', 'attention', 'applications_series')
+# LL1: `ai_prediction` is a FIXED section (not customisable): it follows `see_all`, `qc` or `review`, the keys
+# whose B40 scope is not 'none', and is served after the widgets and before the personal pages.
+AI = 'ai_prediction'
+FULL_AI = (*po.FULL, AI)
 
 
 class EverySectionHasAKey(TestCase):
     def test_every_section_the_page_can_show_names_its_keys(self):
-        self.assertEqual(set(po.SECTION_KEYS), {*overview_layout.CUSTOMISABLE, *po.PAGES})
+        self.assertEqual(set(po.SECTION_KEYS), {*overview_layout.CUSTOMISABLE, *po.PAGES, AI})
         self.assertEqual(set(po.FULL), set(overview_layout.CUSTOMISABLE))
         for section, keys in po.SECTION_KEYS.items():
             with self.subTest(section=section):
@@ -60,9 +64,9 @@ class TheOverviewMovesForHandGrantedKeys(TestCase):
         self.assertEqual(staff_tables.INVITE_START, {'admin': ('see_all', 'scholars')})
         start = staff_tables.invite_permissions('admin')
         self.assertFalse(set(po.MONEY_KEYS) & set(start))
-        self.assertEqual(po.sections_for(self.custom('admin', start)), APPLICANT)
+        self.assertEqual(po.sections_for(self.custom('admin', start)), (*APPLICANT, AI))
         # One money key ticked brings the money back.
-        self.assertEqual(po.sections_for(self.custom('admin', [*start, 'spending'])), po.FULL)
+        self.assertEqual(po.sections_for(self.custom('admin', [*start, 'spending'])), FULL_AI)
 
     def test_an_admin_without_see_all_gets_no_applicant_widgets(self):
         self.assertEqual(po.sections_for(self.custom('admin', ['spending', 'payments_prepare'])),
@@ -71,26 +75,26 @@ class TheOverviewMovesForHandGrantedKeys(TestCase):
     def test_a_reviewer_with_see_all_and_spending_gets_the_widgets_and_keeps_her_page(self):
         # Was `('mine',)` by the label (R2, preset-bound).
         self.assertEqual(po.sections_for(self.custom('reviewer', ['review', 'see_all', 'spending'])),
-                         (*po.FULL, 'mine'))
+                         (*FULL_AI, 'mine'))
 
     def test_qc_alone_gets_no_applicant_widgets(self):
         # QC's own `see_all` is not an Admins hat: the preset stays `('qc',)`.
-        self.assertEqual(po.sections_for(self.custom('qc', ['see_all', 'qc'])), ('qc',))
+        self.assertEqual(po.sections_for(self.custom('qc', ['see_all', 'qc'])), (AI, 'qc'))
 
     def test_qc_given_spending_gets_the_money_but_never_the_applicant_widgets(self):
         # Review round: `spending` seats them at Admins, but QC's `see_all` is what `qc` brings, never an
         # Admins hat (`staff_tables.admin_keys` drops it), so only the money opens (was `('qc',)`).
         self.assertEqual(po.sections_for(self.custom('qc', ['see_all', 'qc', 'spending'])),
-                         ('money', 'money_series', 'qc'))
+                         ('money', 'money_series', AI, 'qc'))
 
     def test_qc_given_any_other_admin_seat_never_opens_the_applicant_widgets(self):
         # Review round: whatever seats a QC person at Admins (a money key, `scholars`, a stored page key),
         # their `see_all` stays QC's. A page key opens no section here; the preset answer stands.
-        for extra, served in ((['payments_approve'], ('money', 'money_series', 'qc')),
-                              (['scholars'], ('qc',)),
-                              (['team.view'], ('qc',)),
-                              (['announcements.view'], ('qc',)),
-                              (['sponsors.view'], ('qc',))):
+        for extra, served in ((['payments_approve'], ('money', 'money_series', AI, 'qc')),
+                              (['scholars'], (AI, 'qc')),
+                              (['team.view'], (AI, 'qc')),
+                              (['announcements.view'], (AI, 'qc')),
+                              (['sponsors.view'], (AI, 'qc'))):
             with self.subTest(extra=extra):
                 row = self.custom('qc', ['see_all', 'qc', *extra])
                 self.assertTrue(staff_tables.in_admins(row))
@@ -98,29 +102,29 @@ class TheOverviewMovesForHandGrantedKeys(TestCase):
 
     def test_a_saved_qc_alone_reads_as_the_preset(self):
         # `['qc']` is stored; `qc` brings `see_all`, which is still not an Admins hat.
-        self.assertEqual(po.sections_for(self.custom('qc', ['qc'])), ('qc',))
+        self.assertEqual(po.sections_for(self.custom('qc', ['qc'])), (AI, 'qc'))
 
     def test_finance_given_see_all_gets_the_applicant_widgets(self):
-        self.assertEqual(po.sections_for(self.custom('finance', ['payments_approve', 'see_all'])), po.FULL)
+        self.assertEqual(po.sections_for(self.custom('finance', ['payments_approve', 'see_all'])), FULL_AI)
 
     def test_a_qc_given_review_gets_both_pages(self):
-        self.assertEqual(po.sections_for(self.custom('qc', ['see_all', 'qc', 'review'])), ('qc', 'mine'))
+        self.assertEqual(po.sections_for(self.custom('qc', ['see_all', 'qc', 'review'])), (AI, 'qc', 'mine'))
 
     def test_an_admin_given_review_gets_their_own_page_too(self):
         keys = ['see_all', 'scholars', 'spending', 'payments_prepare', 'review']
-        self.assertEqual(po.sections_for(self.custom('admin', keys)), (*po.FULL, 'mine'))
+        self.assertEqual(po.sections_for(self.custom('admin', keys)), (*FULL_AI, 'mine'))
 
     def test_an_org_admin_without_spending_but_a_payment_key_gets_the_money(self):
         lead = make_admin('org_admin', owning_org=self.org)
         kept = [k for k in lead.permissions if k != 'spending'] + ['payments_approve']
         PartnerAdmin.objects.filter(pk=lead.pk).update(permissions=kept)
-        self.assertEqual(po.sections_for(PartnerAdmin.objects.get(pk=lead.pk)), po.FULL)
+        self.assertEqual(po.sections_for(PartnerAdmin.objects.get(pk=lead.pk)), FULL_AI)
 
     def test_the_lead_and_the_super_never_get_the_personal_pages(self):
         lead = make_admin('org_admin', owning_org=self.org)
         PartnerAdmin.objects.filter(pk=lead.pk).update(permissions=['review', *lead.permissions])
-        self.assertEqual(po.sections_for(PartnerAdmin.objects.get(pk=lead.pk)), po.FULL)
-        self.assertEqual(po.sections_for(make_admin('super', super_admin=True)), po.FULL)
+        self.assertEqual(po.sections_for(PartnerAdmin.objects.get(pk=lead.pk)), FULL_AI)
+        self.assertEqual(po.sections_for(make_admin('super', super_admin=True)), FULL_AI)
 
 
 @override_settings(SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

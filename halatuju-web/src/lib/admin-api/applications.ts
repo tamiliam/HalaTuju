@@ -15,7 +15,8 @@ import type { ApiOptions } from './client'
 import { DEFAULT_ADMIN_PAGE_SIZE } from './partners'
 import type { InterviewSchedule } from './interviews'
 import type {
-  AdminAgendaEntry, AdminAnomaly, AdminFundingEstimate, AdminQuerySla, AdminSubmissionReview, AdminVerdictFact,
+  AdminAgendaEntry, AdminAnomaly, AdminFundingEstimate, AdminQuerySla, AdminSubmissionReview,
+  AdminVerdictFact, SecondLook,
 } from './verdict'
 import type { NewNoteListFields } from './reviewerNotes'
 import type { AdminApplicantDocument, AdminReferee } from './documents'
@@ -390,12 +391,11 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields {
   // Sprint 5 — Verification verdict cockpit fields
   ai_verdict_snapshot: AdminVerdictFact[]
   officer_verdict: {
-    identity?: string
-    academic?: string
-    income?: string
-    pathway?: string
-    overall?: string
+    identity?: string; academic?: string; income?: string; pathway?: string; overall?: string
+    /** LL2: absent on rows from before the reason tap. */
+    fail_reasons?: Record<string, string>
   }
+  second_look?: SecondLook   // LL2b: the QC's second look; absent on old cached data (no block)
   verdict_reason: string
   verdict_decided_by: string
   verdict_decided_at: string | null
@@ -450,9 +450,9 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields {
   /** Internal-only corrections tally for the assigned reviewer (reopened decisions
    *  that led to a real change). Never shown on a sponsor/student surface. */
   assigned_to_corrections: number
-  /** WHICH GIFT funds this case. The assignee picker uses it to grey a reviewer scoped to a
+  /** WHICH GIFT funds this case. The assignee picker uses it to hide a reviewer scoped to a
    *  different gift. ⚠ Not a fence — the org fence is server-side; a blank on either side
-   *  greys nobody (see `officerCockpit.assignOptions`). */
+   *  hides nobody (see `assignOptions.listAssignees`). */
   programme_id?: number | null
   /** The GIFT itself (2026-09-28) — the same row as `programme_id`, with the code the breadcrumb
    *  speaks. ⚠ NOT `chosen_programme`, which is the student's COURSE. The cockpit pins the crumb
@@ -574,16 +574,16 @@ export async function requestMoreInfo(id: number, note: string, options?: ApiOpt
  *  independent of is_active/role) — the list filter's "Past reviewers" group. */
 export async function getAssignableAdmins(options?: ApiOptions, application?: number) {
   return adminFetch<{
-    /** ⚠ A PAUSED reviewer is in this list, flagged — never filtered out. The cockpit unions the
-     *  current assignee in from here, so dropping anybody makes their case read "Unassigned"
-     *  (bug #66). The option renders DISABLED with "Paused" as the reason. */
+    /** ⚠ A PAUSED reviewer is in this list, flagged — never filtered out here. The pickers
+     *  (`listAssignees`) keep a paused HOLDER (else their case reads "Unassigned", bug #66) and hide a
+     *  paused non-holder. */
     admins: Array<{
       id: number; name: string; email: string; role: string
       languages: string[]; other_language?: string; corrections: number; paused: boolean
       assignable?: boolean   // #39 S3: may THIS caller hand them a case (`may_assign_to`)
       /** Which gifts they cover (multi-gift, 2026-11-06). **`[]` = every gift** — the permissive
-       *  default all org-scoped staff still carry, so an empty list must never grey anybody out.
-       *  Flagged the same way `paused` is: greyed "Does not cover <gift>", never filtered out. */
+       *  default all org-scoped staff still carry, so an empty list must never hide anybody.
+       *  The pickers hide a non-holder who does not cover the case's gift (`listAssignees`). */
       gifts: Array<{ id: number; code: string; name: string }>
     }>
     past_assignees?: Array<{ id: number; name: string }>
