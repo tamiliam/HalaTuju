@@ -410,6 +410,19 @@ between the two (pypdf's own changes). Local counts are not production counts.
   >= 0.15 of its width, and other characters cover <= 30% of its own box, summed. **Not** refused, because genuine
   letters carry them: Type3 fonts (UiTM 1/3 on pypdf 5.9, 6/8 on 6.21) and a document /OCProperties (UUM 4/4).
   Borrowed ink from a crafted (e.g. Type3) font remains an open risk: closing it needs a per-object own-ink render.
+- **Review round 2 (20 Nov):** what other characters may cover of a target character is <= 8% (`MAX_OVERLAP`, below
+  the 10% ink floor, so they can never lend all the ink a character needs; the brief's 5% cost both UPSI letters,
+  genuine maximum 0.053). Every Type3 font page 1 can reach (page, form XObject, tiling pattern and ExtGState fonts)
+  must keep each glyph's path inside its `d1` box (+2% of its longer side), use only fill, path and state operators
+  (no `cm`, `gs`, `Do`, inline image, `sh`, text or stroke), and a `d0` glyph may not paint; else `page:type3`. Cost
+  0: the 6 UiTM letters with Type3 fonts pass. A space in the text with a real box and its own ink is a drawn glyph and
+  joins every overlap rule (genuine spaces have boxes, 4,731 of 4,742 on UMS, but never ink in them).
+- **Known residuals, for S-visible 3 (owner decides):** (1) a ToUnicode lie (a visible glyph whose text says another
+  letter) still locks; (2) black glyphs touching a white character from above and below put ink in the 1 px ring the
+  ink op counts (share 0.14, full height): a white IC with its label left black locked in the builder's probe;
+  widening the lending rule by 2 px closed it but failed every genuine letter, so it is not shipped. **For S2:** 3 of
+  the 11 UiTM letters fail the ink rules (heavy genuine overlap 0.79-0.95, or a faint title, share 0.029); S2 must
+  measure and decide.
 
 ## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)
 

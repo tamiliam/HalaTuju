@@ -340,6 +340,91 @@ class TheReviewRound1Attacks(SimpleTestCase):
         self.assertIs(pdf_ink.page1_ink(data)['optional'], True)
 
 
+def _with_type3(data, glyph: bytes, shown=b'BT /T3 9 Tf 30 30 Td (a) Tj ET'):
+    """``data`` with a one-glyph Type3 font /T3 (code ``a``, procedure ``glyph`` in a 1-unit glyph space at Tf 9)
+    shown by ``shown`` on page 1."""
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.generic import ArrayObject, DecodedStreamObject, DictionaryObject, FloatObject, NameObject, NumberObject
+    w = PdfWriter()
+    w.append(PdfReader(io.BytesIO(data)))
+    page = w.pages[0]
+
+    def stream(body):
+        s = DecodedStreamObject()
+        s.set_data(body)
+        return w._add_object(s)
+    font = DictionaryObject({
+        NameObject('/Type'): NameObject('/Font'), NameObject('/Subtype'): NameObject('/Type3'),
+        NameObject('/FontBBox'): ArrayObject([FloatObject(v) for v in (0, 0, 1, 1)]),
+        NameObject('/FontMatrix'): ArrayObject([FloatObject(v) for v in (1, 0, 0, 1, 0, 0)]),
+        NameObject('/CharProcs'): DictionaryObject({NameObject('/g'): stream(glyph)}),
+        NameObject('/Encoding'): DictionaryObject({NameObject('/Type'): NameObject('/Encoding'),
+                                                   NameObject('/Differences'): ArrayObject([NumberObject(97),
+                                                                                            NameObject('/g')])}),
+        NameObject('/FirstChar'): NumberObject(97), NameObject('/LastChar'): NumberObject(97),
+        NameObject('/Widths'): ArrayObject([FloatObject(1)])})
+    res = page['/Resources'].get_object()
+    res['/Font'].get_object()[NameObject('/T3')] = w._add_object(font)
+    old = page['/Contents'].get_object()
+    page[NameObject('/Contents')] = ArrayObject((list(old) if isinstance(old, ArrayObject)
+                                                 else [page.raw_get('/Contents')]) + [stream(shown)])
+    out = io.BytesIO()
+    w.write(out)
+    return out.getvalue()
+
+
+@override_settings(OCR_FIRST_LANES=(LANE,))
+class TheReviewRound2Attacks(SimpleTestCase):
+    """Review round 2, B2: a Type3 glyph painting outside its own ``d1`` box (a tiny glyph in the margin drawing
+    boxes over a white word) puts ink where no char box is. Every Type3 glyph page 1 can reach is checked."""
+
+    def setUp(self):
+        pdf_pages._layer_memo_clear()
+
+    def test_a_well_behaved_type3_font_still_locks(self):
+        for glyph in (b'1 0 0 0 1 1 d1 0 0 1 1 re f', b'1 0 0 0 1 1 d1 0 0 m 1 0 l 0.5 1 l h f'):
+            with self.subTest(glyph=glyph):
+                ex, why = _read(_with_type3(build('none'), glyph))
+                self.assertEqual((ex or {}).get('rules_lane'), LANE, why)
+
+    def test_a_glyph_painting_outside_its_box_refuses(self):
+        for glyph in (b'1 0 0 0 1 1 d1 0 0 1 1 re f 0 70 60 1.5 re f',             # boxes far from the glyph
+                      b'1 0 d0 0 0 1 1 re f',                                       # d0: may not paint at all
+                      b'0 0 1 1 re f'):                                             # no d0 / d1 first
+            with self.subTest(glyph=glyph):
+                ex, why = _read(_with_type3(build('none'), glyph))
+                self.assertIsNone(ex)
+                self.assertEqual((why.get('lane'), why.get('reason')), (LANE, 'not_inked'), why)
+                self.assertIn('page:type3', why['ink_missing'])
+
+    def test_every_operator_outside_the_list_is_refused(self):
+        """A matrix, shading, XObject, inline image or stroke in a glyph: S-visible 1's own Type3 whitelist refuses
+        most of these first (no lock either way); `_type3_ok` refuses each by itself too."""
+        from pypdf import PdfReader
+        from apps.scholarship import pdfium_worker
+        for glyph, ok in ((b'1 0 0 0 1 1 d1 0 0 1 1 re f', True), (b'1 0 d0 0.5 g', True),
+                          (b'1 0 0 0 1 1 d1 60 0 0 60 0 70 cm 0 0 1 1 re f', False), (b'1 0 d0 0 0 1 1 re f', False),
+                          (b'1 0 0 0 1 1 d1 /Sh sh', False), (b'1 0 0 0 1 1 d1 /X Do', False),
+                          (b'1 0 0 0 1 1 d1 /G gs 0 0 1 1 re f', False),
+                          (b'1 0 0 0 1 1 d1 BI /W 1 /H 1 /BPC 8 /CS /G ID \x00 EI', False),
+                          (b'1 0 0 0 1 1 d1 0 0 m 1 1 l S', False), (b'1 0 0 0 1 1 d1 BT ET', False)):
+            with self.subTest(glyph=glyph[:40]):
+                data = _with_type3(build('none'), glyph)
+                font = PdfReader(io.BytesIO(data)).pages[0]['/Resources']['/Font']['/T3'].get_object()
+                self.assertIs(pdfium_worker._type3_ok(font, [pdfium_worker.T3_MAX_BYTES]), ok)
+                if not ok:
+                    self.assertIsNone(_read(data)[0])
+        self.assertIs(pdfium_worker._type3_ok(font, [3]), False)        # past the byte budget
+
+    def test_a_glyph_within_the_tolerance_of_its_box_passes(self):
+        from apps.scholarship import pdfium_worker
+        tol = pdfium_worker.T3_TOLERANCE
+        inside = b'1 0 0 0 1 1 d1 0 0 %.3f %.3f re f' % (1 + tol / 2, 1 + tol / 2)
+        outside = b'1 0 0 0 1 1 d1 0 0 %.3f 1 re f' % (1 + 2 * tol)
+        self.assertEqual(_read(_with_type3(build('none'), inside))[1], {})
+        self.assertIn('page:type3', _read(_with_type3(build('none'), outside))[1]['ink_missing'])
+
+
 class EveryReturnedFieldIsInkChecked(SimpleTestCase):
     """Review round 1, B3: a field `read_ums` returns is an ink target, or named as not printed on the page."""
 

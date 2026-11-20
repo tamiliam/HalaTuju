@@ -17,14 +17,14 @@ def _line(text, x=30.0, y=700.0, h=7.0, w=5.4, ink=12, area=40, gap=0.0, cover=(
     return rows
 
 
-def _answer(*lines, modes=True, annots=True, stray=0, optional=False, xfa=False):
+def _answer(*lines, modes=True, annots=True, stray=0, optional=False, xfa=False, type3=True, px_pt=0.72):
     chars = []
     for i, ln in enumerate(lines):
         if i:
             chars.append([13, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0])     # pdfium's generated line break
         chars.extend(ln)
     return {'chars': chars, 'modes_ok': modes, 'annots_ok': annots, 'stray_px': stray, 'optional': optional,
-            'xfa': xfa}
+            'xfa': xfa, 'type3_ok': type3, 'px_pt': px_pt}
 
 
 PHRASE = [('p1', 'tawaran kemasukan')]
@@ -60,8 +60,32 @@ class TheWordRules(SimpleTestCase):
         self.assertEqual(ink_missing(_answer(cover, hidden), PHRASE, []), ['p1'])
 
     def test_a_small_overlap_of_a_neighbour_is_allowed(self):
-        above = _line('XXXXXXXXXXXXXXXXX', y=706.0)                 # 1 pt of a 7 pt box: 14 %
+        above = _line('XXXXXXXXXXXXXXXXX', y=706.5)                 # 0.5 pt of a 7 pt box: 7 %
         self.assertEqual(ink_missing(_answer(above, _line('TAWARAN KEMASUKAN')), PHRASE, []), [])
+        above = _line('XXXXXXXXXXXXXXXXX', y=706.0)                 # 1 pt: 14 %, past `MAX_OVERLAP`
+        self.assertEqual(ink_missing(_answer(above, _line('TAWARAN KEMASUKAN')), PHRASE, []), ['p1'])
+
+    def test_what_others_may_lend_stays_below_what_a_character_needs(self):
+        """Review round 2, B1: tall narrow black bars, each mostly outside the word's box and covering 29 % (and,
+        two to a character, 6 % each = 12 %) of a white character, lent it their ink at 0.30."""
+        self.assertLess(pdf_ink.MAX_OVERLAP, pdf_ink.MIN_CHAR_SHARE)
+        for share, per_char in ((0.29, 1), (0.06, 2)):
+            with self.subTest(share=share):
+                bars = []
+                for k in range(17):
+                    x = 30.0 + 5.4 * k
+                    for n in range(per_char):
+                        x0 = x + n * 2.7
+                        bars.append([0x25AE, 0, x0, 640.0, x0 + 5.4 * share, 760.0, 300, 300, 1, 1.0, 1.0])
+                self.assertEqual(ink_missing(_answer(bars, _line('TAWARAN KEMASUKAN')), PHRASE, []), ['p1'])
+
+    def test_a_drawn_space_over_a_word_lends_no_ink(self):
+        """Review round 2, #3: a glyph ToUnicode calls a space, with a real box and its own ink, drawn over the word
+        joins the overlap rules; a genuine space (a box but no ink in it) does not."""
+        drawn = [[32, 0, 28.0, 698.0, 125.0, 709.0, 900, 1000, 1, 1.0, 1.0]]
+        self.assertEqual(ink_missing(_answer(drawn, _line('TAWARAN KEMASUKAN')), PHRASE, []), ['p1'])
+        genuine = [[32, 0, 28.0, 698.0, 125.0, 709.0, 0, 1000, 1, 0.0, 0.0]]
+        self.assertEqual(ink_missing(_answer(genuine, _line('TAWARAN KEMASUKAN')), PHRASE, []), [])
 
     def test_every_occurrence_must_pass(self):
         good, bad = _line('TAWARAN KEMASUKAN'), _line('TAWARAN KEMASUKAN', y=600)
@@ -137,7 +161,8 @@ class ThePageRulesAndAnswers(SimpleTestCase):
         for kw, label in (({'stray': pdf_ink.MAX_STRAY_PX + 1}, 'page:stray'), ({'stray': None}, 'page:stray'),
                           ({'stray': True}, 'page:stray'), ({'optional': True}, 'page:optional'),
                           ({'optional': None}, 'page:optional'), ({'xfa': True}, 'page:xfa'),
-                          ({'xfa': None}, 'page:xfa')):
+                          ({'xfa': None}, 'page:xfa'), ({'type3': False}, 'page:type3'),
+                          ({'type3': None}, 'page:type3')):
             with self.subTest(kw=kw):
                 self.assertEqual(ink_missing(_answer(line, **kw), PHRASE, []), [label])
 
@@ -148,7 +173,9 @@ class ThePageRulesAndAnswers(SimpleTestCase):
     def test_no_answer_refuses(self):
         for bad in (None, {}, {'error': 'mode'}, {'chars': 'x'}, {'chars': [[65, 0, 1]]},
                     {'chars': [[0x110000, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]]},
-                    {'chars': [[65, 0, 0, 0, 0, 0, 0, 0, 1]]}):         # a row without the cover columns
+                    {'chars': [[65, 0, 0, 0, 0, 0, 0, 0, 1]]},          # a row without the cover columns
+                    _answer(_line('TAWARAN KEMASUKAN'), px_pt=None), _answer(_line('TAWARAN KEMASUKAN'), px_pt=0),
+                    _answer(_line('TAWARAN KEMASUKAN'), px_pt=True)):
             with self.subTest(bad=bad):
                 self.assertEqual(ink_missing(bad, PHRASE, NAME), ['no_answer'])
 

@@ -207,6 +207,7 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 - **Version:** offer reader `PARSER_VERSION` 2.2.0 (unreleased) digest updated in place.
 - **Corpus:** 0 genuine lockable letters fail ink (UMS 33 locks, UiTM, UUM, UPSI, UM; pypdf 5.9.0 and 6.21.4). UMS PDFs 33/36, scans 11/22, Gate 1 held-out 22/33 and dev 22/29 with 0 wrong: unchanged.
 - **Tests:** `test_pdf_ink.py` (pure), `test_ink_attacks.py` (13 attacks, controls, rotations, lane off), the ink op in `test_pdfium_child.py`.
+- **Review fix round 2:** lending cap 0.08 (below the 0.10 ink floor); Type3 glyphs must stay inside their `d1` box with fill/path/state operators only (`page:type3`); a drawn space joins the overlap rules. Genuine cost unchanged on both pypdf versions; Gate 1 unchanged. **Open for S-visible 3:** the ToUnicode lie, and the 1 px ring (black glyphs touching a white value). **For S2:** 3 of 11 UiTM letters fail ink (genuine heavy overlap or a faint title).
 
 ### OCR-10 (was S5): SPM slips off 2.5 (the AI fallback moves to 3.8)
 - **Problem:** `vision/gemini_read.py:86` `PINNED_25_DOC_TYPES={'results_slip'}` keeps slips on 2.5, because 3.8 returned malformed grades on **26 of 98** slips ("Aplus", stray JSON, tab or CJK characters).

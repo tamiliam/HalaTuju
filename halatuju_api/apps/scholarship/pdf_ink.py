@@ -14,11 +14,17 @@ word of every owner phrase and every printed value the lock used, at EVERY place
 * every character's box lies inside the rendered page;
 * no OTHER character covers more than `MAX_OVERLAP` of its own box with the word's box, and the other characters
   together cover at most `MAX_OVERLAP` of each target character's OWN box (review round 1, B1: a hidden word under
-  other visible text, or under a row of large black glyphs, would borrow that text's ink);
+  other visible text, or under a row of large black glyphs, would borrow that text's ink); a space in the text
+  with a real box and ink in it counts as another character (review round 2: a glyph ToUnicode calls a space);
 * the page: text objects only fill (render mode 0: another line's stroke paints past its glyph boxes), every
   annotation is a /Link (pdfium does not draw a FreeText with no appearance; another viewer might), at most
   `MAX_STRAY_PX` of ink lies away from every character's box (text drawing outside the box pdfium gives it), no
-  page-1 content is optional content and the document has no XFA form (a viewer may show another page).
+  page-1 content is optional content, the document has no XFA form (a viewer may show another page), and every
+  Type3 glyph page 1 can draw paints only inside its own box (review round 2: a glyph painting far from its box).
+
+Known residuals (S-visible 3, owner decision): a font whose ToUnicode lies (its glyphs drawn as other letters) still
+passes; only reading the word crops closes it. Black glyphs touching a white character put ink in its +1 px ring
+(`RING_PX`).
 
 The words are found in PDFIUM's own text of the page (the same engine as the boxes), normalised as the owner words
 are (`offer_owner_words._norm`: NFKD, accents off, upper case, each run of non-letters/digits one space), with two
@@ -46,8 +52,18 @@ INK_DELTA = 96
 MIN_H_PT = 3.0
 #: A word's width over (characters x height) (genuine minimum 0.12; Tz 3: 0.028).
 MIN_W_RATIO = 0.06
-#: Another character covering more than this share of its own box with the word's box refuses the word.
-MAX_OVERLAP = 0.30
+#: Another character covering more than this share of its own box with the word's box refuses the word; so do the
+#: other characters together covering more than this share of a target character's box. Review round 2, B1: at
+#: 0.30, tall narrow black bars (Tz-squeezed ZapfDingbats) each covering 29 % of a white character lent it their
+#: ink. Genuine: the most any target character is covered is 0.0 on UMS (33 locks), UUM and UM, 0.053 on UPSI
+#: (the brief's 0.05 cost both UPSI letters). Kept below `MIN_CHAR_SHARE`, so what other glyphs may lend never
+#: reaches the ink a character needs.
+MAX_OVERLAP = 0.08
+#: OPEN (the builder's own probe, review round 2): the ink op counts a character's box +1 px, so black glyphs
+#: TOUCHING a white character from above and below (no overlap) put their edge pixels in that ring: share 0.14,
+#: full height and width — a white IC passed. Widening the lending rule by 2 px closed it but cost every genuine
+#: letter (a colon or the next line touches a word within 2 px), so it is 0 here and the ring is the next fix.
+RING_PX = 0
 #: The least share of a character's box (+1 px) that must be ink (open risk 2: a character covered all but a
 #: sliver). Genuine minimum 0.143 over 16,647 characters of every target word (p0.1 0.159); 0.10 costs none.
 MIN_CHAR_SHARE = 0.10
@@ -135,8 +151,9 @@ def _words(m, idx) -> list:
     return words
 
 
-def _word_ok(ci, chars, solid) -> bool:
-    """The word rules (module docstring) for the char indices ``ci``; ``solid``: every non-space char's index."""
+def _word_ok(ci, chars, solid, pad=0.0) -> bool:
+    """The word rules (module docstring) for the char indices ``ci``; ``solid``: every drawn char's index (not
+    generated; a space only with a real box); ``pad``: `RING_PX` in points (what the lending rule widens by)."""
     rows = [chars[i] for i in ci]
     if not rows or any(r[1] or not r[8] or r[6] <= 0 or r[7] <= 0 for r in rows):
         return False
@@ -153,11 +170,24 @@ def _word_ok(ci, chars, solid) -> bool:
             continue
         r = chars[j]
         ix, iy = min(right, r[4]) - max(left, r[2]), min(top, r[5]) - max(bottom, r[3])
-        if ix > 0 and iy > 0:
-            if ix * iy > MAX_OVERLAP * _area(r):
-                return False                       # another character mostly inside the word's box
+        if ix > 0 and iy > 0 and ix * iy > MAX_OVERLAP * _area(r):
+            return False                           # another character mostly inside the word's box
+        if min(right + pad, r[4]) > max(left - pad, r[2]) and min(top + pad, r[5]) > max(bottom - pad, r[3]):
             near.append(r)
-    return all(_covered(a, near) <= MAX_OVERLAP * _area(a) for a in rows)
+    return all(_covered(w, near) <= MAX_OVERLAP * _area(w)
+               for w in ([a[0], a[1], a[2] - pad, a[3] - pad, a[4] + pad, a[5] + pad] for a in rows))
+
+
+def _boxed(r) -> bool:
+    """A real (non-empty) box."""
+    return r[4] > r[2] and r[5] > r[3]
+
+
+def _drawn_space(r) -> bool:
+    """Review round 2, #3: a space in the text with a real box and ink in that box (the child counts a space's
+    ink in its own box, no ring) is a drawn glyph — a glyph ToUnicode calls a space — and joins every overlap rule.
+    A genuine space draws nothing (0 of the genuine corpus's boxed spaces holds ink)."""
+    return _boxed(r) and r[6] > 0
 
 
 def _area(r) -> float:
@@ -178,6 +208,9 @@ def _rows(ink):
     """The answer's char rows, or None when it is not a well-formed answer."""
     if not isinstance(ink, dict) or ink.get('error') or not isinstance(ink.get('chars'), list):
         return None
+    px = ink.get('px_pt')
+    if isinstance(px, bool) or not isinstance(px, (int, float)) or not 0 < px <= 10:
+        return None
     rows = ink['chars']
     for r in rows:
         if not (isinstance(r, list) and len(r) == _ROW and all(isinstance(v, (int, float)) for v in r)
@@ -192,7 +225,8 @@ def _page_labels(ink) -> list:
     return [lab for lab, ok in (
         ('page:modes', ink.get('modes_ok') is True), ('page:annots', ink.get('annots_ok') is True),
         ('page:stray', isinstance(stray, int) and not isinstance(stray, bool) and 0 <= stray <= MAX_STRAY_PX),
-        ('page:optional', ink.get('optional') is False), ('page:xfa', ink.get('xfa') is False)) if not ok]
+        ('page:optional', ink.get('optional') is False), ('page:xfa', ink.get('xfa') is False),
+        ('page:type3', ink.get('type3_ok') is True)) if not ok]
 
 
 def ink_missing(ink, phrases, values) -> list:
@@ -209,12 +243,13 @@ def ink_missing(ink, phrases, values) -> list:
         return ['no_targets']
     out = _page_labels(ink)
     normed, idx = _norm_map(chars)
-    solid = [i for i, r in enumerate(chars) if not r[1] and not chr(int(r[0])).isspace()]
+    solid = [i for i, r in enumerate(chars) if not r[1] and (not chr(int(r[0])).isspace() or _drawn_space(r))]
+    pad = RING_PX * ink['px_pt']
     for label, target, value in targets:
         pat = _pattern(target, value)
         found = list(pat.finditer(normed)) if pat else []
         if not found or len(found) > MAX_OCCURRENCES or not all(
-                _word_ok(w, chars, solid) for m in found for w in _words(m, idx)):
+                _word_ok(w, chars, solid, pad) for m in found for w in _words(m, idx)):
             if label not in out:
                 out.append(label)
     return out
