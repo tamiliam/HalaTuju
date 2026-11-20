@@ -403,6 +403,13 @@ between the two (pypdf's own changes). Local counts are not production counts.
 - **Cost:** none for genuine letters — 0 of the 33 UMS locks, nor of the owner-phrase-lockable UiTM, UUM, UPSI and UM
   letters, fail, on pypdf 5.9.0 and 6.21.4; the least genuine ink share per character is 0.143. The ink op runs in the
   layout's own pdfium child (no extra spawn).
+- **Review round 1 page rules (20 Nov):** page 1 text fills only (render mode 0: a stroke paints past its glyph box, so
+  another line could lend its ink); at most 4 ink pixels lie more than 2 px from every character box; no page-1
+  optional content (an OC mark or an XObject with /OC) and no XFA form. Each costs 0 of the 49 lockable genuine
+  letters (UMS, UiTM, UUM, UPSI, UM) on both pypdf versions. Each character's ink spans >= 0.5 of its box height and
+  >= 0.15 of its width, and other characters cover <= 30% of its own box, summed. **Not** refused, because genuine
+  letters carry them: Type3 fonts (UiTM 1/3 on pypdf 5.9, 6/8 on 6.21) and a document /OCProperties (UUM 4/4).
+  Borrowed ink from a crafted (e.g. Type3) font remains an open risk: closing it needs a per-object own-ink render.
 
 ## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)
 

@@ -471,20 +471,32 @@ def _reporting_date_printed(lines) -> tuple:
     return '', ''
 
 
+#: S-visible 2: every field `read_ums` reads off the page, and its ink label (review round 1, B3: a value read but
+#: never ink-checked). The reporting date is checked as PRINTED (`_reporting_date_printed`), not as stored.
+INK_LABELS = {'candidate_name': 'v:name', 'candidate_nric': 'v:nric', 'programme': 'v:programme',
+              'programme_code': 'v:code', 'campus': 'v:campus', 'intake': 'v:intake', 'offer_date': 'v:offer_date',
+              'reporting_venue': 'v:venue', 'reporting_date': 'v:date'}
+#: Read from the page but optional: ink-checked only when read (a blank one locks nothing).
+INK_OPTIONAL = ('programme_code', 'campus', 'offer_date', 'reporting_venue')
+#: The fields `read_ums` returns that are NOT read off the page: constants (the institution and issuer follow from
+#: the title, an owner phrase) and labels of the reader's own. `test_ink_attacks` fails on a field in neither.
+NOT_PRINTED = ('candidate_nric_source', 'institution', 'issuer', 'stream', 'reporting_date_label')
+
+
 def ink_targets(fields, page1_layout) -> tuple:
     """S-visible 2 (`pdf_ink.ink_missing`): (phrases, values) a UMS lock relied on, as (label, text) pairs —
-    the owner phrases page 1's layout shows (``p<n>``, `offer_owner_words`), and the name, IC, programme, UPU
-    code (when read) and reporting date as printed (``v:name`` ...). A required value left blank stays in, so
-    the ink check refuses it rather than skipping it."""
+    the owner phrases page 1's layout shows (``p<n>``, `offer_owner_words`), and every field read off the page
+    (`INK_LABELS`: name, IC, programme, UPU code, campus, intake, offer date, venue, and the reporting date as
+    printed). A required value left blank stays in, so the ink check refuses it rather than skipping it; an
+    `INK_OPTIONAL` one is checked only when read."""
     from .offer_owner_words import OWNER_WORDS, _shown
     shown = _shown(LANE, page1_layout or '')
     phrases = [(f'p{k + 1}', p) for k, p in enumerate(OWNER_WORDS[LANE]) if k in shown]
     f = fields if isinstance(fields, dict) else {}
-    values = [('v:name', f.get('candidate_name') or ''), ('v:nric', f.get('candidate_nric') or ''),
-              ('v:programme', f.get('programme') or ''),
-              ('v:date', _reporting_date_printed(_text_lines(page1_layout or ''))[1])]
-    if (f.get('programme_code') or '').strip():
-        values.insert(3, ('v:code', f['programme_code']))
+    printed = {**{k: f.get(k) or '' for k in INK_LABELS},
+               'reporting_date': _reporting_date_printed(_text_lines(page1_layout or ''))[1]}
+    values = [(label, printed[k]) for k, label in INK_LABELS.items()
+              if k not in INK_OPTIONAL or str(printed[k]).strip()]
     return phrases, values
 
 

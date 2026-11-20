@@ -225,8 +225,9 @@ class TheSameAnswersAsInProcess(SimpleTestCase):
     def test_the_ink_op_measures_each_character(self):
         from apps.scholarship import pdf_ink
         got = pdf_ink.page1_ink(DRAWN)
-        self.assertTrue(got['modes_ok'] and got['annots_ok'])
-        self.assertTrue(any(r[6] > 0 for r in got['chars'] if not r[1] and r[0] != 32))
+        self.assertEqual((got['modes_ok'], got['annots_ok'], got['stray_px'], got['optional'], got['xfa']),
+                         (True, True, 0, False, False))
+        self.assertTrue(any(r[6] > 0 and r[9] >= 0.5 and r[10] > 0 for r in got['chars'] if not r[1] and r[0] != 32))
         self.assertEqual(pdf_ink.ink_missing(got, [('p1', 'SIJIL')], []), [])
         white = _pdf([b'1 g ' + _show(SPM_TEXT)])                   # the same words, painted white
         self.assertEqual(pdf_ink.ink_missing(pdf_ink.page1_ink(white), [('p1', 'SIJIL')], []), ['p1'])

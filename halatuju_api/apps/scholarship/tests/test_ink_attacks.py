@@ -175,6 +175,185 @@ class TheLaneOn(SimpleTestCase):
         self.assertEqual(spawned.call_count, 0)
 
 
+# ── Review round 1: the reviewer's working attacks (B1 borrowed ink, B2 thin strip, B3 values never checked) ──
+ICLINE = next(ln for ln in LINES if ln.startswith('No. Kad'))
+KAMPUS = next(ln for ln in LINES if ln.startswith('Kampus'))
+TITLE = next(ln for ln in LINES if ln.startswith('TAWARAN'))
+DATED = next(ln for ln in LINES if ln.startswith('Tarikh :'))
+VENUE = next(ln for ln in LINES if ln.startswith('Tempat'))
+SPLIT = {KAMPUS: ':', TITLE: 'SABAH', DATED: ':', VENUE: ':'}
+
+
+def _r1_line(c, mode, ln, y, strip):
+    c.saveState()
+    c.setFont('Courier', 9)
+    if mode == 'whitetail':                          # the label black, its value white
+        head, tail = ln.split(SPLIT[ln], 1)
+        c.drawString(30, y, head + SPLIT[ln])
+        c.setFillColorRGB(1, 1, 1)
+        c.drawString(30 + 5.4 * len(head + SPLIT[ln]), y, tail)
+    elif mode in ('squares', 'hyphens', 'white'):
+        c.setFillColorRGB(1, 1, 1)                   # the line itself white: never visible
+        c.drawString(30, y, ln)
+    elif mode in ('strip', 'sliver'):                # Courier-Bold, filled (strip) or fill + stroke (sliver)
+        t = c.beginText(30, y)
+        t.setFont('Courier-Bold', 9)
+        if mode == 'sliver':
+            t.setTextRenderMode(2)
+            c.setLineWidth(0.9)
+        t.textLine(ln)
+        c.drawText(t)
+    elif mode == 'ocmark':                           # the line in optional content (a viewer may hide it)
+        c._code.append('/OC <</Type /OCMD>> BDC')
+        c.drawString(30, y, ln)
+        c._code.append('EMC')
+    else:
+        c.drawString(30, y, ln)
+    c.restoreState()
+    c.saveState()                                    # what is drawn over the line leaves the rest of the page as is
+    _r1_over(c, mode, y, strip)
+    c.restoreState()
+
+
+def _r1_over(c, mode, y, strip):
+    if mode == 'squares':                            # a row of 60 pt black squares, text glyphs, over the line
+        c.setFont('ZapfDingbats', 60)
+        for k in range(14):
+            c.drawString(24 + 42 * k, y - 15, 'n')
+    elif mode == 'hyphens':                          # stroked hyphens, 16 pt wide, over the line
+        t = c.beginText(26, y + 9)
+        t.setFont('Courier', 9)
+        t.setTextRenderMode(1)
+        c.setLineWidth(16)
+        t.textLine('-' * 64)
+        c.drawText(t)
+    elif mode in ('strip', 'sliver'):                # all but a ``strip`` pt band at the foot covered white
+        c.setFillColorRGB(1, 1, 1)
+        c.rect(25, y + strip, 565, 8.5 - strip, stroke=0, fill=1)
+    elif mode == 'ocimage':
+        from reportlab.lib.utils import ImageReader
+        c.drawImage(ImageReader(io.BytesIO(_white_png())), 500, 30, 20, 20)
+
+
+def build_r1(mode, target=TARGET, strip=1.0):
+    from reportlab.pdfgen import canvas
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(595, 842))
+    y = 800
+    for ln in LINES:
+        if ln == target:
+            _r1_line(c, mode, ln, y, strip)
+        else:
+            c.setFont('Courier', 9)
+            c.drawString(30, y, ln)
+        y -= 14
+    c.showPage()
+    c.save()
+    data = buf.getvalue()
+    return _edited(data, mode, 800 - 14 * LINES.index(target)) if mode in ('linkap', 'ocimage', 'xfa') else data
+
+
+def _edited(data, mode, y):
+    """linkap: a /Link whose own appearance is a white box over the line at ``y``; ocimage: the page's image in
+    optional content; xfa: the document carries an XFA form."""
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.generic import (ArrayObject, DecodedStreamObject, DictionaryObject, FloatObject, NameObject,
+                               NumberObject, TextStringObject)
+    w, n = PdfWriter(), NameObject
+    w.append(PdfReader(io.BytesIO(data)))
+    if mode == 'linkap':
+        ap = DecodedStreamObject()
+        ap.set_data(b'1 g 0 0 560 13 re f')
+        ap.update({n('/Type'): n('/XObject'), n('/Subtype'): n('/Form'),
+                   n('/BBox'): ArrayObject([FloatObject(0), FloatObject(0), FloatObject(560), FloatObject(13)])})
+        annot = DictionaryObject({
+            n('/Type'): n('/Annot'), n('/Subtype'): n('/Link'), n('/F'): NumberObject(4),
+            n('/Rect'): ArrayObject([FloatObject(25), FloatObject(y - 3), FloatObject(585), FloatObject(y + 10)]),
+            n('/Border'): ArrayObject([NumberObject(0)] * 3), n('/AP'): DictionaryObject({n('/N'): w._add_object(ap)})})
+        w.pages[0][n('/Annots')] = ArrayObject([w._add_object(annot)])
+    elif mode == 'ocimage':
+        ocg = w._add_object(DictionaryObject({n('/Type'): n('/OCG'), n('/Name'): TextStringObject('x')}))
+        for ref in w.pages[0]['/Resources']['/XObject'].values():
+            ref.get_object()[n('/OC')] = ocg
+    else:
+        w._root_object[n('/AcroForm')] = DictionaryObject({n('/Fields'): ArrayObject(), n('/XFA'): ArrayObject()})
+    out = io.BytesIO()
+    w.write(out)
+    return out.getvalue()
+
+
+@override_settings(OCR_FIRST_LANES=(LANE,))
+class TheReviewRound1Attacks(SimpleTestCase):
+    def setUp(self):
+        pdf_pages._layer_memo_clear()
+
+    def _refused(self, data, label=None):
+        ex, why = _read(data)
+        self.assertIsNone(ex)
+        self.assertEqual((why.get('lane'), why.get('reason')), (LANE, 'not_inked'), why)
+        if label:
+            self.assertIn(label, why['ink_missing'])
+        return why
+
+    def test_the_controls_still_lock(self):
+        for mode, strip in (('none', 1.0), ('strip', 9.0)):    # Courier-Bold with no box over it locks
+            with self.subTest(mode=mode):
+                ex, why = _read(build_r1(mode, strip=strip))
+                self.assertEqual((ex or {}).get('rules_lane'), LANE, why)
+
+    def test_b1_large_black_squares_over_a_white_line(self):
+        for target in (TARGET, ICLINE):
+            with self.subTest(target=target[:8]):
+                self._refused(build_r1('squares', target))
+
+    def test_b1_stroked_text_lends_no_ink(self):
+        for mode in ('hyphens', 'sliver'):
+            with self.subTest(mode=mode):
+                self._refused(build_r1(mode), 'page:modes')
+
+    def test_b2_a_thin_strip_left_uncovered(self):
+        for target in (TARGET, ICLINE):
+            for strip in (0.5, 1.0, 1.5, 2.0):
+                with self.subTest(target=target[:8], strip=strip):
+                    self._refused(build_r1('strip', target, strip))
+
+    def test_b3_a_hidden_value_is_never_read_unchecked(self):
+        for mode, target, label in (('white', KAMPUS, None), ('whitetail', KAMPUS, 'v:campus'),
+                                    ('whitetail', TITLE, 'v:intake'), ('whitetail', DATED, 'v:offer_date'),
+                                    ('whitetail', VENUE, 'v:venue')):
+            with self.subTest(mode=mode, target=target[:8]):
+                ex, why = _read(build_r1(mode, target))
+                self.assertIsNone(ex, (ex or {}).get('fields'))
+                if label:
+                    self.assertIn(label, why.get('ink_missing') or [], why)
+
+    def test_a_link_drawing_its_own_appearance(self):
+        self._refused(build_r1('linkap'), 'p9')        # pdfium draws the white box: no ink under it
+
+    def test_optional_content_and_xfa(self):
+        for mode, label in (('ocimage', 'page:optional'), ('xfa', 'page:xfa')):
+            with self.subTest(mode=mode):
+                self._refused(build_r1(mode), label)
+        data = build_r1('ocmark')                   # S-visible 1 may refuse it first; the child flags it too
+        self.assertIsNone(_read(data)[0])
+        from apps.scholarship import pdf_ink
+        self.assertIs(pdf_ink.page1_ink(data)['optional'], True)
+
+
+class EveryReturnedFieldIsInkChecked(SimpleTestCase):
+    """Review round 1, B3: a field `read_ums` returns is an ink target, or named as not printed on the page."""
+
+    def test_every_field(self):
+        from apps.scholarship.offer_parse_university import INK_LABELS, NOT_PRINTED, ink_targets, read_ums
+        fields, reason = read_ums(ums())
+        self.assertEqual(reason, '')
+        self.assertEqual(set(fields) - set(INK_LABELS) - set(NOT_PRINTED), set())
+        _phrases, values = ink_targets(fields, ums())
+        want = {INK_LABELS[k] for k, v in fields.items() if k in INK_LABELS and str(v).strip()}
+        self.assertEqual(want - {lab for lab, _t in values}, set())
+        self.assertEqual(len(want), len(INK_LABELS))            # the synthetic letter prints every one
+
+
 class TestTheLayoutRunsInTheChild(SimpleTestCase):
     """Review round 1 #11 (moved from `test_offer_parse_university.py`): page 1's layout text comes from the pdfium
     child, under its limits; S-visible 2 asks the ink op in the same request."""

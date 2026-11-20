@@ -291,20 +291,29 @@ def _op_layout(pdf, req, blobs):
 
 #: The most characters the ``ink`` op reports on one page (a dense genuine page 1: about 5,000). Past it: an error.
 MAX_INK_CHARS = 20_000
-#: Text render modes the ``ink`` op allows on its page: fill, stroke, both. 4-6 add a clip (the second render is
-#: then not "the page minus its text"), 3 / 7 paint nothing: refused (`modes_ok` False).
-INK_MODES = frozenset((0, 1, 2))
+#: Text render modes the ``ink`` op allows on its page: fill only (review round 1, B1). A stroke (1, 2) paints
+#: past the glyph's own box, so another line's stroke could lend its ink to a hidden word (0 of the 49 lockable
+#: genuine UMS, UiTM, UUM, UPSI and UM letters strokes any page-1 text); 4-6 add a clip (the second render is then
+#: not "the page minus its text"), 3 / 7 paint nothing: refused (`modes_ok` False).
+INK_MODES = frozenset((0,))
+#: Ink farther than this (pixels) from every character's box is "stray" (``stray_px``): text drawing outside the
+#: box pdfium gives it (genuine: 0 pixels on every lockable letter; within 1 px: up to 17, antialiasing).
+STRAY_PAD = 2
 
 
 def _op_ink(pdf, req, blobs):
     """S-visible 2 (`pdf_ink`): what each character of page ``page`` adds to the picture. The page is rendered as
     is (A, greyscale, annotations drawn), then with EVERY text object (page level and inside forms) set to render
     mode 3 (B); the diff |A - B| is the text's own ink — white, covered, clipped or same-colour text adds ~0.
-    -> ``{chars: [[codepoint, generated, l, b, r, t, ink_px, area_px, inside], ...], modes_ok, annots_ok}``: the
-    char box in points (pdfium's tight box), ``ink_px`` the pixels of the box (+1 px) whose luminance the text
-    changes by at least ``delta``, ``area_px`` the box's pixels, ``inside`` the box within the rendered page.
-    ``modes_ok``: every text object uses mode 0-2; ``annots_ok``: every annotation is a /Link. ``{error}`` on a
-    page count other than pypdf's, a page box out of bounds, too many characters, or any pdfium failure."""
+    -> ``{chars: [[codepoint, generated, l, b, r, t, ink_px, area_px, inside, cover_h, cover_w], ...], modes_ok,
+    annots_ok, stray_px, optional, xfa}``: the char box in points (pdfium's tight box), ``ink_px`` the pixels of
+    the box (+1 px) whose luminance the text changes by at least ``delta``, ``area_px`` the box's pixels,
+    ``inside`` the box within the rendered page, ``cover_h`` / ``cover_w`` the share of the box's height / width
+    its ink's bounding box spans (review round 1, B2: a strip left uncovered). ``modes_ok``: every text object
+    fills (`INK_MODES`); ``annots_ok``: every annotation is a /Link; ``stray_px``: ink pixels more than
+    `STRAY_PAD` from every character's box; ``optional``: page content in optional content (an OC mark, or an
+    XObject with /OC: a viewer may show what pdfium hides, or hide what it shows); ``xfa``: an XFA form. ``{error}``
+    on a page count other than pypdf's, a page box out of bounds, too many characters, or any pdfium failure."""
     try:
         return _ink(pdf, req)
     except MemoryError:                     # the whole child stops (`OUT_OF_MEMORY`)
@@ -315,7 +324,7 @@ def _op_ink(pdf, req, blobs):
 
 def _ink(pdf, req):
     import pypdfium2.raw as raw
-    from PIL import ImageChops
+    from PIL import Image, ImageChops, ImageDraw
     if len(pdf) == 0 or len(pdf) != req['count']:
         return {'error': 'page count'}
     page = pdf[int(req['page'])]
@@ -327,8 +336,9 @@ def _ink(pdf, req):
     if n < 0 or n > MAX_INK_CHARS:
         return {'error': 'chars'}
     a = page.render(scale=scale, grayscale=True).to_pil().convert('L')
-    modes_ok = True
+    modes_ok, optional = True, False
     for obj in page.get_objects(max_depth=15):
+        optional = optional or _oc_marked(obj.raw, True, frozenset())    # any OC mark, or one pdfium cannot read
         if raw.FPDFPageObj_GetType(obj.raw) == raw.FPDF_PAGEOBJ_TEXT:
             modes_ok = modes_ok and raw.FPDFTextObj_GetTextRenderMode(obj.raw) in INK_MODES
             if not raw.FPDFTextObj_SetTextRenderMode(obj.raw, raw.FPDF_TEXTRENDERMODE_INVISIBLE):
@@ -344,12 +354,14 @@ def _ink(pdf, req):
         raw.FPDF_PageToDevice(page.raw, 0, 0, width, height, 0, x, y, dx, dy)
         return dx.value, dy.value
 
-    chars = []
+    chars, turned = [], page.get_rotation() in (90, 270)
+    near = Image.new('L', a.size, 0)          # every character's box, widened by STRAY_PAD
+    draw = ImageDraw.Draw(near)
     for i in range(n):
         gen = raw.FPDFText_IsGenerated(tp.raw, i) == 1
         cp = 32 if gen else int(raw.FPDFText_GetUnicode(tp.raw, i) or 32)
         if gen or chr(cp).isspace():
-            chars.append([cp, int(gen), 0, 0, 0, 0, 0, 0, 1])
+            chars.append([cp, int(gen), 0, 0, 0, 0, 0, 0, 1, 0, 0])
             continue
         l, bo, r, t = tp.get_charbox(i)
         (x0, y0), (x1, y1) = dev(l, t), dev(r, bo)
@@ -357,10 +369,20 @@ def _ink(pdf, req):
         inside = x0 >= -1 and y0 >= -1 and x1 <= width + 1 and y1 <= height + 1
         box = (max(0, x0 - 1), max(0, y0 - 1), min(width, x1 + 1), min(height, y1 + 1))
         ink = area = 0
+        cover_h = cover_w = 0.0
         if box[2] > box[0] and box[3] > box[1]:
-            hist = mask.crop(box).histogram()
-            ink, area = hist[255], (box[2] - box[0]) * (box[3] - box[1])
-        chars.append([cp, 0, round(l, 2), round(bo, 2), round(r, 2), round(t, 2), ink, area, int(inside)])
+            crop = mask.crop(box)
+            ink, area = crop.histogram()[255], (box[2] - box[0]) * (box[3] - box[1])
+            bb = crop.getbbox()
+            if bb:
+                cover_h = round((bb[3] - bb[1]) / (box[3] - box[1]), 3)
+                cover_w = round((bb[2] - bb[0]) / (box[2] - box[0]), 3)
+                if turned:                      # /Rotate 90 or 270: the glyph's height runs across the picture
+                    cover_h, cover_w = cover_w, cover_h
+            draw.rectangle((x0 - STRAY_PAD, y0 - STRAY_PAD, x1 + STRAY_PAD - 1, y1 + STRAY_PAD - 1), fill=255)
+        chars.append([cp, 0, round(l, 2), round(bo, 2), round(r, 2), round(t, 2), ink, area, int(inside),
+                      cover_h, cover_w])
+    stray = ImageChops.subtract(mask, near).histogram()[255]
     annots_ok = True
     for k in range(raw.FPDFPage_GetAnnotCount(page.raw)):
         annot = raw.FPDFPage_GetAnnot(page.raw, k)
@@ -369,12 +391,46 @@ def _ink(pdf, req):
         finally:
             if annot:
                 raw.FPDFPage_CloseAnnot(annot)
-    return {'chars': chars, 'modes_ok': modes_ok, 'annots_ok': annots_ok}
+    oc_xobject, xfa = _pdf_flags(int(req['page']))
+    return {'chars': chars, 'modes_ok': modes_ok, 'annots_ok': annots_ok, 'stray_px': stray,
+            'optional': bool(optional or oc_xobject), 'xfa': xfa}
+
+
+def _pdf_flags(index: int) -> tuple:
+    """(an XObject the page draws, at any depth, carries /OC; the document has an XFA form), read with pypdf
+    from the request's bytes (``_DATA``). Genuine cost: 0 of the 49 lockable letters (a document-level
+    /OCProperties alone is NOT refused: every UUM letter carries one, with no optional content on page 1)."""
+    from pypdf import PdfReader
+    reader = PdfReader(io.BytesIO(_DATA[0]))
+    if reader.is_encrypted:
+        reader.decrypt('')
+    acro = reader.trailer['/Root'].get_object().get('/AcroForm')
+    xfa = bool(acro is not None and '/XFA' in acro.get_object())
+    seen, todo = set(), [(reader.pages[index].get('/Resources'), 0)]
+    while todo:
+        res, depth = todo.pop()
+        res = res.get_object() if res is not None else None
+        if not hasattr(res, 'get') or depth > 15:
+            continue
+        xobjects = res.get('/XObject')
+        for ref in (xobjects.get_object().values() if xobjects is not None else ()):
+            key = getattr(ref, 'idnum', None) or id(ref)
+            if key in seen:
+                continue
+            if len(seen) >= 5000:
+                return True, xfa                 # past any genuine page: counted as optional (refused)
+            seen.add(key)
+            xo = ref.get_object()
+            if '/OC' in xo:
+                return True, xfa
+            if xo.get('/Subtype') == '/Form':
+                todo.append((xo.get('/Resources'), depth + 1))
+    return False, xfa
 
 
 _OPS = {'count': lambda pdf, req, blobs: {'count': len(pdf)}, 'paints': _op_paints, 'render': _op_render,
         'stack': _op_stack, 'words': _op_words, 'layout': _op_layout, 'ink': _op_ink}
-#: The request's PDF bytes, for an operation that reads them with pypdf (``layout``).
+#: The request's PDF bytes, for an operation that reads them with pypdf (``layout``, ``ink``).
 _DATA = [b'']
 
 
@@ -440,7 +496,7 @@ def _main() -> int:
     from PIL import Image
     Image.preinit()                        # Pillow's PNG writer loaded before the memory cap is set
     import pypdfium2 as pdfium
-    if any(op.get('op') == 'layout' for op in request['ops']):
+    if any(op.get('op') in ('layout', 'ink') for op in request['ops']):
         import pypdf  # noqa: F401  (loaded before the memory cap, like Pillow)
         _DATA[0] = data
     _limit_memory(int(request.get('memory') or 0))
