@@ -132,7 +132,10 @@ def page_cost(page, reader, limits: bool = True, doc=None) -> dict:
     cost.doc = {} if doc is None else doc
     contents = page.get('/Contents')
     contents = contents.get_object() if contents is not None else None
-    streams = [c.get_object() for c in contents] if isinstance(contents, list) else [contents] if contents else []
+    # `is not None`, never truthiness: pypdf drops /Length from a stream's dictionary, so an unfiltered content
+    # stream is an EMPTY (falsy) dict, and a truthiness test skipped the whole page walk and every cap with it
+    streams = ([c.get_object() for c in contents] if isinstance(contents, list)
+               else [contents] if contents is not None else [])
     cost.walk(b'\n'.join(_content_bytes(s, cost) for s in streams), _resources(page), reader, (1, 0, 0, 1, 0, 0), 0)
     annots = _get(page, '/Annots')
     for annot in annots if isinstance(annots, list) else ():
