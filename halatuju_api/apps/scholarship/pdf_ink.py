@@ -128,14 +128,14 @@ def _norm_map(chars) -> tuple:
     return ''.join(out), idx
 
 
-def _norm(s: str) -> str:
+def _ink_norm(s: str) -> str:
     return _norm_map([[ord(c), 0] for c in (s or '')])[0].strip()
 
 
-def _pattern(target: str, value: bool):
+def _ink_pattern(target: str, value: bool):
     """A phrase: its words with an optional space between them; a value: an optional space between any two
     characters. Strict word edges both ends. None when nothing is left to find."""
-    n = _norm(target)
+    n = _ink_norm(target)
     parts = list(n.replace(' ', '')) if value else n.split(' ')
     if not n:
         return None
@@ -210,7 +210,7 @@ def _covered(a, others) -> float:
     return total
 
 
-def _rows(ink):
+def _ink_rows(ink):
     """The answer's char rows, or None when it is not a well-formed answer."""
     if not isinstance(ink, dict) or ink.get('error') or not isinstance(ink.get('chars'), list):
         return None
@@ -243,7 +243,7 @@ def ink_missing(ink, phrases, values, lane: str = '') -> list:
     target absent from pdfium's text, found more than `MAX_OCCURRENCES` times, or with ANY occurrence failing a
     word rule gives its label; each page rule broken gives ``page:<rule>``. No targets: ``no_targets``. ``lane``:
     the rules lane asking; a Type3 font on page 1 refuses unless it is in `TYPE3_LANES`."""
-    chars = _rows(ink)
+    chars = _ink_rows(ink)
     if chars is None:
         return ['no_answer']
     targets = [(lab, t, False) for lab, t in phrases or ()] + [(lab, t, True) for lab, t in values or ()]
@@ -254,7 +254,7 @@ def ink_missing(ink, phrases, values, lane: str = '') -> list:
     solid = [i for i, r in enumerate(chars) if not r[1] and (not chr(int(r[0])).isspace() or _drawn_space(r))]
     pad = RING_PX * ink['px_pt']
     for label, target, value in targets:
-        pat = _pattern(target, value)
+        pat = _ink_pattern(target, value)
         found = list(pat.finditer(normed)) if pat else []
         if not found or len(found) > MAX_OCCURRENCES or not all(
                 _word_ok(w, chars, solid, pad) for m in found for w in _words(m, idx)):
