@@ -87,7 +87,7 @@ def check_slip_answer(data):
         if not isinstance(row, dict) or 'subject' not in row or 'grade' not in row:
             problems.append(f'row {i}: not a subject / grade pair')
             continue
-        subject, band = clean_slip_text(row.get('subject')), clean_slip_text(row.get('band'))
+        subject, band = clean_slip_text(row.get('subject')), _clean_band(row.get('band'))
         grade = clean_slip_grade(row.get('grade'))
         if subject is None or band is None:
             problems.append(f'row {i}: stray characters')
@@ -137,10 +137,23 @@ def check_slip_answer(data):
     return {**cleaned, 'results': rows}, []
 
 
+def _clean_band(raw):
+    """A band cell as `clean_slip_text` gives it, except the schema's blank word (`SLIP_BLANK`,
+    any case or spacing) is '' (short-check LOW-1): "BLANK" is no band, so a slip whose rows say
+    only that is not a good read."""
+    from .schemas import SLIP_BLANK
+    band = clean_slip_text(raw)
+    return '' if band and ''.join(band.split()).upper() == SLIP_BLANK else band
+
+
 #: Review round 4: the subject text is cut into words at spaces and the punctuation a slip row
 #: prints round a cell ("SEJARAH (C)", "SEJARAH, C"). Not at a hyphen: it is the minus of "A-",
 #: and "AL-QURAN" stays one word.
 _SUBJECT_WORDS = re.compile(r'[\s(),;:/|]+')
+#: Short-check LOW-2: the piece of a word after its last hyphen or dot ("SEJARAH-A", "SEJARAH.A",
+#: "SEJARAH-A-" keeps its minus). A grade-shaped piece there is a grade glued to the subject;
+#: "AL-QURAN", "E-DAGANG" and "B. MELAYU" leave a piece that is not.
+_GLUED_TAIL = re.compile(r'[-.]([^-.]*-?)$')
 #: A word shaped like a grade that is not an SPM grade ("C-", "B-", "F"): it still names a grade,
 #: so it is refused, never read past.
 _GRADE_SHAPED = re.compile(r'[A-G][+-]?|TH[+-]', re.IGNORECASE)
@@ -167,6 +180,12 @@ def _grades_named_in(text) -> set:
             out.add(clean_slip_grade(word))
         elif _GRADE_SHAPED.fullmatch(word):
             out.add(_NOT_A_GRADE)
+        elif (tail := _GLUED_TAIL.search(word)) and tail.group(1):
+            piece = tail.group(1)
+            if clean_slip_grade(piece):
+                out.add(clean_slip_grade(piece))
+            elif _GRADE_SHAPED.fullmatch(piece):
+                out.add(_NOT_A_GRADE)
     return out
 
 

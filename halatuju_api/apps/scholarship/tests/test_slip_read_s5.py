@@ -289,6 +289,37 @@ class TheAnswerCheck(SimpleTestCase):
                 self.assertEqual(slip_read._grades_named_in(subject), set())
                 self.assertEqual(self._check((subject, 'B', 'KEPUJIAN TINGGI'))[1], [])
 
+    def test_a_grade_glued_by_a_hyphen_or_dot_is_caught(self):
+        """Short-check LOW-2: 'SEJARAH-A' / 'SEJARAH.A' named a grade the word split never saw."""
+        for subject, named in (('SEJARAH-A', {'A'}), ('SEJARAH.A', {'A'}), ('SEJARAH-A-', {'A-'}),
+                               ('SEJARAH.B+', {'B+'}), ('SEJARAH-TH', {'TH'}), ('SEJARAH-F', {'?'}),
+                               ('BAHASA-MELAYU-C', {'C'})):
+            with self.subTest(subject=subject):
+                self.assertEqual(slip_read._grades_named_in(subject), named)
+                cleaned, problems = self._check((subject, 'B', 'KEPUJIAN TINGGI'))
+                self.assertIsNone(cleaned)
+                self.assertTrue(any('subject names a grade' in p for p in problems))
+        self.assertEqual(self._check(('SEJARAH-A', 'A', 'CEMERLANG TINGGI'))[1], [])   # its letter
+
+    def test_hyphen_and_dot_subject_names_still_pass(self):
+        from apps.scholarship.academic_engine import _SUBJECT_BM
+        for subject in ('AL-QURAN', 'E-DAGANG', 'B. MELAYU', 'B.MELAYU', 'P. ISLAM', 'PEND. MORAL',
+                        'ASUHAN KANAK-KANAK', *_SUBJECT_BM.values()):
+            with self.subTest(subject=subject):
+                self.assertEqual(slip_read._grades_named_in(subject), set())
+
+    def test_the_blank_word_as_a_band_is_no_band(self):
+        """Short-check LOW-1: a band of 'BLANK' counted as text, so a slip with no grade at all was
+        a good read with band 'BLANK'."""
+        for word in ('BLANK', 'blank', ' Blank ', 'B LANK'):
+            with self.subTest(word=word):
+                cleaned, problems = self._check(('SEJARAH', SLIP_BLANK, word), ('SAINS', '', word))
+                self.assertIsNone(cleaned)
+                self.assertIn('no grade or band read on any row', problems)
+                cleaned, problems = self._check(('SEJARAH', 'A', word))
+                self.assertEqual(problems, [])
+                self.assertEqual(cleaned['results'][0]['band'], '')
+
     def test_the_blocker_duplicates_are_refused_never_filled(self):
         """Review round 3 blocker: a blank band was filled from a duplicate whose band says another
         grade, so these stored a C and a G for an A."""

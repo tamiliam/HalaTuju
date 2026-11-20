@@ -213,14 +213,14 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 - **Review fix round 2b (the ring):** black glyphs touching a white value no longer lend it ink. The child counts as a character's ink only the change the other characters' exact boxes cannot explain (`pdfium_worker._ink`). Ring variants refuse (all sides, -0.1 to 1 pt gaps, six pixel phases). Genuine cost 0 on both pypdf versions; least share 0.130 against the 0.10 floor; Gate 1 unchanged.
 - **Review fix round 3 (home-made fonts):** any Type3 font reachable from page 1 refuses a UMS letter (`page:type3`, owner 20 Nov); `pdf_ink.TYPE3_LANES` stays empty until the Type3 tolerance is fixed (decisions.md). Both flat-glyph attacks refuse. Genuine cost 0 (no UMS letter carries Type3); UiTM 9 of 11 now fail (6 Type3), for S2.
 
-### OCR-10 (was S5): SPM slips off 2.5 (the AI fallback moves to 3.8) — BUILT (2026-11-20), paid gate waits for the owner's yes
+### OCR-10 (was S5): SPM slips off 2.5 (the AI fallback moves to 3.8) — BUILT (2026-11-20), paid gate PASSED 20 Nov (US$0.62)
 - **Problem:** `vision/gemini_read.py:86` `PINNED_25_DOC_TYPES={'results_slip'}` keeps slips on 2.5, because 3.8 returned malformed grades on **26 of 98** slips ("Aplus", stray JSON, tab or CJK characters).
 - **Fix, in three layers:**
   1. **Parser first** (S4), so fewer slips reach AI at all.
   2. **A stricter schema** for the slip in `vision/schemas.py`:
-     - each grade is an **enum**: A+, A, A-, B+, B, C+, C, D, E, G, TH, plus empty;
+     - each grade is an **enum**: A+, A, A-, B+, B, C+, C, D, E, G, TH, plus the word **BLANK** for a cell that cannot be read (Gemini refuses an empty string in an enum; the clean-up turns BLANK back into an empty grade, so it is never stored);
      - `required` on the subject list and on every grade key;
-     - an empty string is valid, a missing key is not (the 2.6.0 pattern).
+     - a BLANK grade is valid, a missing key is not (the 2.6.0 pattern).
   3. **A clean-up and one retry:**
      - `vision/sanitize.py` maps the known variants (Aplus → A+);
      - anything still outside the enum marks the slip as a failed read;
@@ -229,6 +229,7 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 - **Version:** bump the slip read version.
 - **Tests:** enum and required-schema tests, sanitiser cases taken from the 26 failure shapes (synthetic), and the retry path.
 - **Gate (paid, owner's yes):** re-run the 98 cached slips plus the 137 answer key on 3.8 with the new schema. 3.8 must score **at least as well as 2.5** on the answer key, with **0 malformed grades**. The owner's goal is "better than 2.5, not equal".
+- **Gate result (paid, ran 20 Nov on `gemini-3.8-flash`, US$0.62): PASS.** On the 38 slips the AI read before, 3.8 equals 2.5: 37 accurate and 1 wrong row each. 0 malformed grades (it was 26 of 98 before the schema). The owner's goal was "better, not equal": the result is **equal**, not better. Across all 94 key slips: 91 accurate, 4 wrong rows, 1 "please check", 0 malformed.
 - **Stays AI:** the fallback, on 3.8 only.
 - **Complexity:** medium.
 

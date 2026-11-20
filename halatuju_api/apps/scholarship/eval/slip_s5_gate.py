@@ -16,7 +16,9 @@ MODES
       `offer_fresh_gemini.guarded_production_read` (a 402 / 429 stops the whole run, every database
       query and Storage are refused). Cache first: `<eval-dir>/slip_s5/<key>.json`; a cached slip
       is never read again unless --force; a service failure (503, 404 model, …) is NOT cached.
-      --max-usd (default 4.00) stops the run at its cap (exit 5); a call that reports no token
+      The slip schema is checked as Gemini checks it before any call (exit 6, nothing read).
+      --max-usd (default 4.00; a finite number >= 0) stops the run at its cap (exit 5); it is
+      checked between slips, so a run may pass it by one slip's cost. A call that reports no token
       counts, or a call on a model with no price row, stops it too (exit 4), since the cap could
       not be kept. Every stop prints the summary line (slips read, US$ counted, service failures
       not cached) first - a 402 / 429 stop (exit 3) too, its billed calls counted (fix round 4);
@@ -44,6 +46,7 @@ Usage (from halatuju_api/):
 import argparse
 import glob
 import json
+import math
 import os
 import sys
 from types import SimpleNamespace
@@ -72,7 +75,7 @@ EXIT_CAP = 5
 EXIT_CODES = ('exit codes: 0 done; 2 nothing read (no corpus, unknown keys, no key, or a slip model '
               'off the allow-list); 3 a 402 / 429 stopped --live; 4 a --live call reported no token '
               'counts or had no price row; 5 --live stopped at its --max-usd cap (slips left unread); '
-              '6 the dry run found a slip schema Gemini would refuse')
+              '6 the dry run (or --live, before any call) found a slip schema Gemini would refuse')
 #: --live stopped because the cap could not be kept (no token counts, or no price row).
 EXIT_BLIND = 4
 #: Fix round 4: the dry run found a schema Gemini refuses (the paid gate's 400 on every call).
@@ -187,66 +190,87 @@ def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=pr
     from apps.scholarship.eval import offer_fresh_gemini as ofg
     from apps.scholarship.read_errors import is_ai_service_error
     from apps.scholarship.vision.slip_read import is_slip_model, slip_read_models
+    from apps.scholarship.vision.schemas import _FIELD_SCHEMAS, gemini_schema_problems
     models = slip_read_models()
     if not models or not all(is_slip_model(m) for m in models):
         out('Read 0 slips, US$0.0000; 0 service failure(s) not cached.')   # round 4: every exit
         out(f'STOP: the slip read models are {models} - 3.8 only expected. Nothing read.')
         return 2
+    # Short-check LOW-4: the schema the calls would send, checked as Gemini checks it, before any
+    # paid call (the dry run checks it too; a --live run need not follow one).
+    if problems := gemini_schema_problems(_FIELD_SCHEMAS.get(DOC_TYPE), DOC_TYPE):
+        out('Read 0 slips, US$0.0000; 0 service failure(s) not cached.')
+        out(f'STOP: Gemini would refuse the slip schema ({len(problems)} problem(s)): '
+            + '; '.join(problems[:5]) + ' - nothing read')
+        return EXIT_SCHEMA
     files, spent, read, unpriced, not_cached = slip_files(eval_dir), 0.0, 0, 0, 0
     os.makedirs(os.path.join(eval_dir, CACHE_DIR), exist_ok=True)
+    printed = []
 
     def summary():
+        printed.append(1)
         out(f'Read {read} slips on {models}, US${spent:.4f} (3.8 priced at the ASSUMED row unless '
             f'PRICES has one); {not_cached} service failure(s) not cached.')
 
-    with mock.patch.dict(ofg.PRICES, {m: ofg.PRICES.get(m) or PRICE_38_ASSUMED for m in models}):
-        for key in keys:
-            cache = os.path.join(eval_dir, CACHE_DIR, f'{key}.json')
-            if os.path.exists(cache) and not force:
-                continue
-            stop = ofg.cap_stop_line([{'usage': {'cost_usd': spent, 'unpriced_calls': unpriced}}], max_usd)
-            if stop:
-                summary()                    # review round 3: the counts before the stop line
-                out(stop)
-                # review round 2: a capped run is not a finished run; round 3: a call with no price
-                # row is the "cap cannot be kept" stop (4), as the docstring says, not the cap (5)
-                return EXIT_BLIND if unpriced else EXIT_CAP
-            calls, meter = [], []
-            try:
-                with ofg.guarded_production_read(client_factory, calls, meter) as extract:
-                    res = read_one(extract, files[key])
-            except ofg.StopRun as e:
-                # review round 4 (LOW-1): a call this slip made before the 402 / 429 was billed too;
-                # count it, and print the summary first, as every other stop does
-                spent += sum(c.get('cost_usd') or 0.0 for c in calls if c.get('answered'))
-                summary()
-                out(f'STOP: {e.model} answered {e.code} - the run ends here ({read} slips read)')
-                return 3
-            answered = [c for c in calls if c.get('answered')]
-            spent += sum(c.get('cost_usd') or 0.0 for c in answered)
-            unpriced += sum(1 for c in answered if c.get('cost_usd') is None)
-            read += 1
-            if is_ai_service_error(res.get('error')):
-                not_cached += 1          # our side failed (503, 404 model, …): read again next run
-            else:                        # a real read, or a real bad-answer refusal
-                with open(cache, 'w', encoding='utf-8') as fh:
-                    json.dump({'result': res, 'calls': calls, 'models': models}, fh, indent=1, sort_keys=True)
-            blind = sum(1 for c in answered
-                        if c.get('input_tokens') is None or c.get('output_tokens') is None)
-            if blind:
-                summary()
-                out(f'STOP: {blind} call(s) reported no token counts - the cap US${max_usd:.2f} cannot '
-                    f'be kept ({read} slips read, US${spent:.4f} counted) - nothing more read')
-                return EXIT_BLIND
-            if unpriced:
-                # review round 4 (LOW-2): stop on the read that had no price row, not before the
-                # NEXT read - so an unpriced call on the last slip is still exit 4, never 0
-                summary()
-                out(ofg.cap_stop_line([{'usage': {'cost_usd': spent, 'unpriced_calls': unpriced}}],
-                                      max_usd if max_usd is not None else 0.0))
-                return EXIT_BLIND
-    summary()
-    return 0
+    try:
+        with mock.patch.dict(ofg.PRICES, {m: ofg.PRICES.get(m) or PRICE_38_ASSUMED for m in models}):
+            for key in keys:
+                cache = os.path.join(eval_dir, CACHE_DIR, f'{key}.json')
+                if os.path.exists(cache) and not force:
+                    continue
+                stop = ofg.cap_stop_line([{'usage': {'cost_usd': spent, 'unpriced_calls': unpriced}}],
+                                         max_usd)
+                if stop:
+                    summary()                    # review round 3: the counts before the stop line
+                    out(stop)
+                    # review round 2: a capped run is not a finished run; round 3: a call with no
+                    # price row is the "cap cannot be kept" stop (4), as documented, not the cap (5)
+                    return EXIT_BLIND if unpriced else EXIT_CAP
+                calls, meter = [], []
+                try:
+                    with ofg.guarded_production_read(client_factory, calls, meter) as extract:
+                        res = read_one(extract, files[key])
+                except ofg.StopRun as e:
+                    # review round 4 (LOW-1): a call this slip made before the 402 / 429 was billed
+                    # too; count it, and print the summary first, as every other stop does
+                    spent += sum(c.get('cost_usd') or 0.0 for c in calls if c.get('answered'))
+                    summary()
+                    out(f'STOP: {e.model} answered {e.code} - the run ends here ({read} slips read)')
+                    return 3
+                except BaseException:
+                    # short-check LOW-5: a crash mid-read still counts this slip's billed calls
+                    spent += sum(c.get('cost_usd') or 0.0 for c in calls if c.get('answered'))
+                    raise
+                answered =[c for c in calls if c.get('answered')]
+                spent += sum(c.get('cost_usd') or 0.0 for c in answered)
+                unpriced += sum(1 for c in answered if c.get('cost_usd') is None)
+                read += 1
+                if is_ai_service_error(res.get('error')):
+                    not_cached += 1      # our side failed (503, 404 model, …): read again next run
+                else:                    # a real read, or a real bad-answer refusal
+                    with open(cache, 'w', encoding='utf-8') as fh:
+                        json.dump({'result': res, 'calls': calls, 'models': models}, fh, indent=1,
+                                  sort_keys=True)
+                blind = sum(1 for c in answered
+                            if c.get('input_tokens') is None or c.get('output_tokens') is None)
+                if blind:
+                    summary()
+                    out(f'STOP: {blind} call(s) reported no token counts - the cap '
+                        f'US${max_usd:.2f} cannot be kept ({read} slips read, US${spent:.4f} '
+                        'counted) - nothing more read')
+                    return EXIT_BLIND
+                if unpriced:
+                    # review round 4 (LOW-2): stop on the read that had no price row, not before
+                    # the NEXT read - so an unpriced call on the last slip is still exit 4, never 0
+                    summary()
+                    out(ofg.cap_stop_line([{'usage': {'cost_usd': spent, 'unpriced_calls': unpriced}}],
+                                          max_usd if max_usd is not None else 0.0))
+                    return EXIT_BLIND
+        summary()
+        return 0
+    finally:
+        if not printed:                  # short-check LOW-5: a crash mid-run still shows the money
+            summary()
 
 
 # ── Scoring (free) ───────────────────────────────────────────────────────────────────────────
@@ -297,6 +321,18 @@ def gate_totals(eval_dir, key_file=None):
     return out
 
 
+def _usd_cap(text):
+    """--max-usd: a finite number >= 0 (short-check LOW-3: nan never trips a cap, inf has none, and
+    a negative cap is a typo)."""
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f'{text!r} is not a number') from None
+    if not math.isfinite(value) or value < 0:
+        raise argparse.ArgumentTypeError(f'{text!r} must be a finite number, 0 or more')
+    return value
+
+
 def main(argv=None, *, client_factory=None, out=print):
     # Raw: argparse's wrapping would break "--max-usd" at its hyphen when the epilog grows.
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0], epilog=EXIT_CODES,
@@ -307,7 +343,10 @@ def main(argv=None, *, client_factory=None, out=print):
     ap.add_argument('--answer-key', default=None, help='JSON {slip key: {subject code: grade}}')
     ap.add_argument('--keys', default='', help='comma-separated slip keys (default: every slip)')
     ap.add_argument('--force', action='store_true', help='re-read cached slips (PAID)')
-    ap.add_argument('--max-usd', type=float, default=4.0)
+    ap.add_argument('--max-usd', type=_usd_cap, default=4.0,
+                    help='--live: stop before the next slip once the US$ counted reaches this '
+                         '(a finite number, 0 or more). Checked between slips, so the run may pass '
+                         'it by at most one slip\'s cost (its first read and retry).')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--env-file', default=DEFAULT_ENV_FILE, help="--live: the .env holding the key")
     args = ap.parse_args(argv)

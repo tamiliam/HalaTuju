@@ -74,7 +74,8 @@ class TheDryRun(_Corpus):
         self.assertEqual(gate.EXIT_SCHEMA, 6)
         self.assertTrue(lines[-1].startswith('STOP: Gemini would refuse the slip schema'))
         self.assertIn('enum[', lines[-1])
-        self.assertIn('6 the dry run found a slip schema Gemini would refuse', gate.EXIT_CODES)
+        self.assertIn('6 the dry run (or --live, before any call) found a slip schema Gemini would '
+                      'refuse', gate.EXIT_CODES)
 
     def test_the_estimate(self):
         self.assertEqual(gate.estimate(98), {'slips': 98, 'calls_min': 98, 'calls_max': 196,
@@ -201,6 +202,63 @@ class TheLiveRunOnAFakeClient(_Corpus):
                                        client_factory=self._factory(_GOOD), out=lines.append), 2)
         self.assertTrue(lines[-2].startswith('Read 0 slips'))
         self.assertTrue(lines[-1].startswith('STOP:'))
+
+    def test_a_bad_schema_stops_the_live_run_before_any_call(self):
+        """Short-check LOW-4: --live checks the schema too (a live run need not follow a dry run)."""
+        from apps.scholarship.vision import schemas
+        factory = self._factory(_GOOD)
+        lines = []
+        with override_settings(GEMINI_API_KEY='test-key'), \
+                patch.dict(schemas._SLIP_GRADE, {'enum': [*schemas.SLIP_GRADES, '']}):
+            code = gate.main(['--eval-dir', self.dir, '--live'], client_factory=factory,
+                             out=lines.append)
+        self.assertEqual(code, gate.EXIT_SCHEMA)
+        self.assertEqual(self.asked, [])
+        self.assertFalse(os.path.exists(os.path.join(self.dir, gate.CACHE_DIR)))
+        self.assertTrue(lines[-2].startswith('Read 0 slips'))
+        self.assertTrue(lines[-1].startswith('STOP: Gemini would refuse the slip schema'))
+
+    def test_a_crash_mid_run_still_prints_the_summary_with_the_money(self):
+        """Short-check LOW-5: the summary is printed in a finally, billed calls of the slip that
+        crashed counted."""
+        factory = self._factory(_GOOD)
+        lines = []
+        real_read = gate.read_one
+        seen = []
+
+        def crash_on_second(extract, path):
+            seen.append(path)
+            res = real_read(extract, path)
+            if len(seen) == 2:
+                raise KeyError('boom')
+            return res
+        with override_settings(GEMINI_API_KEY='test-key'), \
+                patch.object(gate, 'read_one', crash_on_second), self.assertRaises(KeyError):
+            gate.main(['--eval-dir', self.dir, '--live'], client_factory=factory, out=lines.append)
+        self.assertEqual(self.asked, ['gemini-3.8-flash', 'gemini-3.8-flash'])
+        self.assertTrue(lines[-1].startswith('Read 1 slips on'))
+        one = float(lines[-1].split('US$')[1].split(' ')[0])
+        self.assertGreater(one, 0)
+        lines = []          # the same run without the crash: the crashed slip's call was counted
+        shutil.rmtree(os.path.join(self.dir, gate.CACHE_DIR))
+        with override_settings(GEMINI_API_KEY='test-key'):
+            gate.main(['--eval-dir', self.dir, '--live'], client_factory=factory, out=lines.append)
+        self.assertEqual(float(lines[-1].split('US$')[1].split(' ')[0]), one)
+
+    def test_a_cap_that_is_not_a_finite_number_0_or_more_is_refused(self):
+        """Short-check LOW-3: nan never trips the cap, inf has none, a negative is a typo."""
+        for bad in ('nan', 'inf', '-inf', '-1', 'four'):
+            with self.subTest(bad=bad), patch('sys.stderr', io.StringIO()), \
+                    self.assertRaises(SystemExit) as stop:
+                gate.main(['--eval-dir', self.dir, '--live', '--max-usd', bad],
+                          client_factory=self._factory(_GOOD), out=lambda *_: None)
+            self.assertEqual(stop.exception.code, 2)
+            self.assertEqual(self.asked, [])
+        self.assertEqual(gate._usd_cap('0'), 0.0)
+        buf = io.StringIO()
+        with patch('sys.stdout', buf), self.assertRaises(SystemExit):
+            gate.main(['--help'])
+        self.assertIn("at most one slip's cost", ' '.join(buf.getvalue().split()))
 
     def test_the_exit_codes_are_in_the_help_text(self):
         buf = io.StringIO()

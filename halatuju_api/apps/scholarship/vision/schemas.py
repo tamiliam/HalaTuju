@@ -37,17 +37,23 @@ _SLIP_GRADE = {'type': 'string', 'enum': [*SLIP_GRADES, SLIP_BLANK]}
 
 
 _GEMINI_TYPES = frozenset({'string', 'number', 'integer', 'boolean', 'array', 'object'})
+#: Short-check LOW-6: the only schema keywords the check knows (and checks). Any other keyword
+#: ("additionalProperties", "$ref", "anyOf", …) is flagged, since nothing here vouches for it.
+_GEMINI_KEYWORDS = frozenset({'type', 'enum', 'properties', 'required', 'items'})
 
 
 def gemini_schema_problems(schema, path='schema') -> list:
     """What Gemini's structured output would refuse in ``schema`` (fix round 4: the SDK sends a
     schema unchecked, and the API answered 400 INVALID_ARGUMENT on every slip call for an empty
-    enum member). Empty when the schema is fine. Checked: a known type; an enum is a non-empty
-    list of distinct non-empty strings on a string field; an object has a non-empty properties
-    object and requires only keys it has; an array has items. Recurses into properties and items."""
+    enum member). Empty when the schema is fine. Checked: only known keywords (`_GEMINI_KEYWORDS`);
+    a known type; an enum is a non-empty list of distinct non-empty strings on a string field; an
+    object has a non-empty properties object and requires only keys it has; an array has items.
+    Recurses into properties and items."""
     if not isinstance(schema, dict):
         return [f'{path}: not an object']
     problems, kind = [], schema.get('type')
+    for word in sorted(set(schema) - _GEMINI_KEYWORDS, key=str):
+        problems.append(f'{path}.{word}: a keyword this check does not know')
     if kind not in _GEMINI_TYPES:
         problems.append(f'{path}.type: {kind!r} is not a Gemini type')
     if 'enum' in schema:

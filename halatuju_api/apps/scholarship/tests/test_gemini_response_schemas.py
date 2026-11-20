@@ -141,6 +141,20 @@ class TheSchemaCheck(SimpleTestCase):
         self.assertTrue(self._problems({'type': 'text'}))
         self.assertTrue(self._problems({'enum': ['a']}))
 
+    def test_a_keyword_the_check_does_not_know_is_flagged(self):
+        """Short-check LOW-6: nothing vouches for an unknown keyword, so it is flagged, deep too."""
+        for word, value in (('additionalProperties', False), ('$ref', '#/defs/x'),
+                            ('anyOf', [{'type': 'string'}]), ('format', 'date')):
+            with self.subTest(word=word):
+                problems = self._problems({'type': 'string', word: value})
+                self.assertTrue(any(f'properties[f].{word}' in p for p in problems))
+                top = gemini_schema_problems({'type': 'object', 'properties': {
+                    'f': {'type': 'string'}}, word: value})
+                self.assertTrue(any(f'schema.{word}' in p for p in top))
+        deep = {'type': 'array', 'items': {'type': 'object', 'additionalProperties': False,
+                                           'properties': {'g': {'type': 'string'}}}}
+        self.assertTrue(any('items.additionalProperties' in p for p in self._problems(deep)))
+
     def test_problems_deep_in_the_tree_are_found(self):
         deep = {'type': 'array', 'items': {'type': 'object', 'properties': {
             'g': {'type': 'string', 'enum': ['A', '']}}}}
