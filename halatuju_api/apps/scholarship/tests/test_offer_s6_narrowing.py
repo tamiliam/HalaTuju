@@ -15,6 +15,7 @@ from apps.scholarship.genuineness.offer_rulings import (_folded_lines, confirmat
                                                          ruling_of)
 from apps.scholarship.genuineness.results_doc import (MODEL_VERSION, baseline_genuineness, score_signatures,
                                                       signature_genuineness)
+from apps.scholarship.tests._timing import assert_linear
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROUND_FILES = ('test_offer_rulings.py', 'test_offer_s6_doors.py', 'test_offer_s6_review.py',
@@ -366,12 +367,10 @@ class Round8(SimpleTestCase):
                 TheProperty._check(self, text)
 
     def test_a_long_page_stays_fast(self):
-        import time
-        text = 'INSTITUT KEMAHIRAN BELIA NEGARA\nSURAT TAWARAN\n' + ''.join(
-            f'Baris {i} ABC SDN BHD contoh\n' for i in range(4000))
-        t0 = time.perf_counter()
-        signature_genuineness(text, doc_type='offer_letter')
-        self.assertLess(time.perf_counter() - t0, 5.0)
+        # TD-693: linear, counted (the calls at 2,000 and 4,000 lines), not timed against the machine
+        assert_linear(self, lambda text: signature_genuineness(text, doc_type='offer_letter'),
+                      lambda n: 'INSTITUT KEMAHIRAN BELIA NEGARA\nSURAT TAWARAN\n' + ''.join(
+                          f'Baris {i} ABC SDN BHD contoh\n' for i in range(n)), 2000)
 
 
 # ── Review round 9 (2026-11-03): stricter again, no new guesses ──────────────────────────────
@@ -487,11 +486,10 @@ class Round9(SimpleTestCase):
                 TheProperty._check(self, text)
 
     def test_a_long_one_line_unit_prefix_stays_fast(self):
-        import time
-        text = 'INSTITUT KEMAHIRAN BELIA NEGARA\n' + ' '.join(['ACADEMIC STUDENT'] * 3000) + '\nTAWARAN\n'
-        t0 = time.perf_counter()
-        signature_genuineness(text, doc_type='offer_letter')
-        self.assertLess(time.perf_counter() - t0, 2.0)
+        # TD-693: linear, counted (the calls at 1,500 and 3,000 words), not timed against the machine
+        assert_linear(self, lambda text: signature_genuineness(text, doc_type='offer_letter'),
+                      lambda n: 'INSTITUT KEMAHIRAN BELIA NEGARA\n' + ' '.join(['ACADEMIC STUDENT'] * n) + '\nTAWARAN\n',
+                      1500)
 
 
 # ── Owner ruling 2026-11-03 (decisions.md S6 item 9): ONE narrow agency-letterhead lift ───────────────
@@ -1312,10 +1310,8 @@ class Round14(SimpleTestCase):
                 self.assertTrue(glued_org(w))
 
     def test_a_long_mixed_token_page_is_quick(self):
-        import time
+        # TD-693: linear, counted (the calls at 130 and 260 row pairs), not timed against the machine
         rows = ('Lot21 Tingkat3 BlokA1 SHP03 DKM1 KKTM2 RM150 3Ogos2026 Makmal1 Sesi2 IKM13 KK3 SPM2025 MQA01 A10013\n'
-                'Kod EE101 ME301 CS1013 PT3 GRED3 TAHAP3 PUSAT1013 KOLEJ1 Ko1ej ACAD3MY Bengkel2 Studio3\n') * 260
-        for text in (_a11(_M, extra=rows), _a11(_M, extra=rows.replace('\n', ' ') + '\n')):
-            t0 = time.perf_counter()
-            signature_genuineness(text, doc_type='offer_letter')
-            self.assertLess(time.perf_counter() - t0, 3.0)
+                'Kod EE101 ME301 CS1013 PT3 GRED3 TAHAP3 PUSAT1013 KOLEJ1 Ko1ej ACAD3MY Bengkel2 Studio3\n')
+        for make in (lambda n: _a11(_M, extra=rows * n), lambda n: _a11(_M, extra=(rows * n).replace('\n', ' ') + '\n')):
+            assert_linear(self, lambda text: signature_genuineness(text, doc_type='offer_letter'), make, 130)

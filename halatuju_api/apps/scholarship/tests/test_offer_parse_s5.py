@@ -7,6 +7,7 @@ Synthetic text only — invented names, ICs and schools (rule: tests never read 
 from django.test import SimpleTestCase
 
 from apps.scholarship.offer_parse import PARSER_VERSION, diagnose, first_date, parse_govt_offer
+from apps.scholarship.tests._timing import assert_linear
 
 # ── A. STPM photo: six numbered labels, the numbers split from their words, a school code line, an
 # address under the school, the school's name wrapped onto a second line, "Melapor".
@@ -278,13 +279,11 @@ class TestReviewFixes(SimpleTestCase):
     """The adversarial review of 9298e2c9 (2026-11-03): M1-M4, L1."""
 
     def test_m1_a_long_space_run_never_hangs_any_family(self):
-        import time
-        run = ' ' * 3000
+        # TD-693: linear, counted (the calls at 3,000 and 6,000 spaces), not timed against the machine
         for text in (STPM_SIX, MATRIC_GLUED, MATRIC_SPLIT, POLY_NOISY, POLY_SESI_LABEL):
             for bait in ('SESI', 'Tarikh', 'K/P', 'No. Kad Pengenalan', '2.1. Bidang', '8 HINGGA', '12'):
-                start = time.perf_counter()
-                diagnose(text + '\n' + bait + run + 'x\n' + bait + run)
-                self.assertLess(time.perf_counter() - start, 1.0, bait)
+                assert_linear(self, diagnose, lambda n: text + '\n' + bait + ' ' * n + 'x\n' + bait + ' ' * n,
+                              3000, bait)
 
     def test_m2_a_portal_page_quoting_the_title_never_locks(self):
         portal = MATRIC_SPLIT.replace(
@@ -352,10 +351,10 @@ class TestSecondReview(SimpleTestCase):
         self.assertEqual(parse_govt_offer(MATRIC_SPLIT)['candidate_name'], 'VELKORAN')   # above it: a date
 
     def test_2_a_long_run_of_labels_is_fast_and_reads_nothing(self):
-        import time
-        start = time.perf_counter()
+        # TD-693: past `MAX_BLOCK_LABELS` the block reads as nothing, and the work is linear in the run (the calls
+        # at 4,000 and 8,000 labels, counted), not timed against the machine
         self.assertIsNone(parse_govt_offer(POLY_NOISY.replace('Program\n', 'Program\nzz\n' * 8000)))
-        self.assertLess(time.perf_counter() - start, 1.0)
+        assert_linear(self, parse_govt_offer, lambda n: POLY_NOISY.replace('Program\n', 'Program\nzz\n' * n), 4000)
 
     def test_3_non_ascii_digits_are_never_an_ic(self):
         wide = '１３０９２３０６０３５５'                                    # fullwidth

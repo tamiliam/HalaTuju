@@ -16,6 +16,11 @@ also pays the mask's own paint); decoded image bytes on EVERY draw (pdfium resam
 tiling cells (their pixels and the number of tiles); Type 3 glyphs on every glyph shown. Inline images, image
 filters, shadings and Type 3 glyph operations outside the corpus's, and an image or cell past its own cap, are
 refused. Content is read by this module's own tokenizer, so the verdict does not depend on the pypdf version.
+Since fix round 11 also: the size a visible glyph is drawn at, clipping paths (nested and in all), and every
+annotation's appearance stream (pdfium draws them with the page). Since TD-692 (2026-11-20) a JPEG2000 (JPX)
+image is allowed anywhere, as an image's last filter, and charged the larger of its dictionary's size and its
+own header's (`pdf_jpx`; a header that cannot be read is refused) and by its decode work, capped per page and per
+call (review 3), and an ASCIIHex content stream is decoded and charged. JBIG2 is still refused (TD-697).
 """
 import math
 import re
@@ -23,6 +28,7 @@ import zlib
 
 from pypdf.generic import StreamObject
 
+from .pdf_jpx import JPX, MAX_PAGE_JPX_WORK, charge_document, jpx_charge
 from .pdf_layer_guards import OverBudget, _get
 
 # ── Caps: about 2x the corpus maximum. Each "corpus" figure is the real maximum over the 533 PDFs' pages 1-3 and
@@ -51,7 +57,9 @@ MAX_BLEND_PAINTS = 8
 #: leaves room for a real background pattern, still well under a second of rendering).
 MAX_CELL_PX = 8_000_000
 MAX_TILES = 1_000
-#: Image filters the corpus uses. Anything else (JBIG2, JPX, LZW, ...): refused.
+#: Image filters the corpus uses. Anything else (LZW, ...): refused. Since TD-692 JPEG2000 (`JPX`) is
+#: allowed too, as an image's last filter only: genuine scanned letters use it (2 of the 870 fixture PDFs). JBIG2
+#: is refused (TD-697; 1 genuine fixture letter has a JBIG2 mask).
 IMAGE_FILTERS = frozenset(('/DCTDecode', '/FlateDecode', '/CCITTFaxDecode', '/RunLengthDecode', '/ASCII85Decode'))
 #: Shadings (shading type: function types) the corpus uses: axial, exponential or stitched exponential.
 SHADINGS = frozenset(('2:2', '2:3[2,2,2]'))
@@ -61,6 +69,27 @@ MAX_TYPE3_GLYPHS = 256
 MAX_GLYPH_BYTES = 20_000
 #: The round 6 load whitelist (pdf_pdfium_load.GLYPH_OPS) without q Q cm, so a glyph box is its path box.
 _GLYPH_OPS = frozenset(b'd0 d1 m l c v y h re f* f n W* W'.split())
+# ── Fix round 11 (2026-11-20): three shapes that kept pdfium busy for seconds were refused only by the child's
+#    time limit, so the answer depended on the machine's speed (a faster build machine rendered one in time).
+#    Each is now refused here, the same on every machine; the time limit stays the backstop. Caps far above the
+#    corpus maxima. CORRECTED by TD-692: the round's "0 of 832 fixture PDFs (1,205 pages) refused" came from a
+#    `page_cost(limits=False)` probe, which skips the whitelists. Through the real gate, `render_refusal(data,
+#    lambda n: range(min(n, 30)))` over every fixture PDF (870 by then, `eval/render_check_corpus.py`), this
+#    module as of round 11 refused 4: 1 empty file, 2 genuine letters with a JPEG2000 image ("an image filter
+#    outside the whitelist") and 1 whose CFF font program is ASCIIHex-encoded (`pdf_pdfium_load`: "a stream
+#    filter outside the whitelist"). None was refused by a round 11 cap. After TD-692: 1 (the empty file).
+#: The largest a visible glyph is drawn: its font size times the text and graphics matrices' stretch, in points
+#: (an A4 page is 842 pt tall). corpus: 60. A 3000 pt glyph shown 18,000 times kept pdfium busy for seconds.
+MAX_FONT_PT = 1_500
+#: Clipping paths in effect at once (nested, each limiting the next: pdfium intersects them for every later
+#: paint; corpus: 6), and clipping paths set on one page in all (corpus: 374). 2,000 nested triangle clips took
+#: seconds; 10,500 side by side, 2 s.
+MAX_CLIP_DEPTH = 64
+MAX_PAGE_CLIPS = 5_000
+#: Annotations on one page (corpus: 5; 225 PDFs carry some). Their normal appearance streams are walked like a
+#: form and charged to the page's caps (an appearance stream filling the page 40,000 times took seconds).
+MAX_PAGE_ANNOTS = 500
+_SHOWS = frozenset((b'Tj', b'TJ', b"'", b'"'))
 _COMPONENTS = {'/DeviceGray': 1, '/CalGray': 1, '/Indexed': 1, '/Separation': 1, '/DeviceRGB': 3, '/CalRGB': 3,
                '/Lab': 3, '/DeviceCMYK': 4}
 _PAINT = frozenset((b'f', b'F', b'f*', b'B', b'B*', b'b', b'b*', b'S', b's'))
@@ -80,18 +109,19 @@ def render_refusal(data: bytes, pick) -> tuple:
     from .pdf_pdfium_load import load_check
     try:
         reader = _open_pdf(data)
-        n, load_state = len(reader.pages), {}
+        n, load_state, doc = len(reader.pages), {}, {}
         for i in pick(n):
             if 0 <= i < n:
                 load_check(reader.pages[i], reader, load_state)
-                page_cost(reader.pages[i], reader)
+                page_cost(reader.pages[i], reader, doc=doc)
         return n, None
     except Exception as e:  # anything the check cannot follow is refused, never rendered
         return 0, f'{type(e).__name__}: {e}'[:200]
 
 
-def page_cost(page, reader, limits: bool = True) -> dict:
-    """Walk one page and return what its render costs; raise `Refused` / `OverBudget` past a cap."""
+def page_cost(page, reader, limits: bool = True, doc=None) -> dict:
+    """Walk one page and return what its render costs; raise `Refused` / `OverBudget` past a cap. ``doc``: the
+    totals shared by the pages of one gate call (JPX decode work)."""
     from .pdf_pages import _resources, raster_scale
     box = [float(v) for v in page.cropbox]
     x0, y0, x1, y1 = min(box[0], box[2]), min(box[1], box[3]), max(box[0], box[2]), max(box[1], box[3])
@@ -99,15 +129,23 @@ def page_cost(page, reader, limits: bool = True) -> dict:
     if scale is None:
         raise Refused('a page box outside the render bounds')
     cost = _Cost((x0, y0, x1, y1), scale, limits)
+    cost.doc = {} if doc is None else doc
     contents = page.get('/Contents')
     contents = contents.get_object() if contents is not None else None
-    streams = [c.get_object() for c in contents] if isinstance(contents, list) else [contents] if contents else []
+    # `is not None`, never truthiness: pypdf drops /Length from a stream's dictionary, so an unfiltered content
+    # stream is an EMPTY (falsy) dict, and a truthiness test skipped the whole page walk and every cap with it
+    streams = ([c.get_object() for c in contents] if isinstance(contents, list)
+               else [contents] if contents is not None else [])
     cost.walk(b'\n'.join(_content_bytes(s, cost) for s in streams), _resources(page), reader, (1, 0, 0, 1, 0, 0), 0)
+    annots = _get(page, '/Annots')
+    for annot in annots if isinstance(annots, list) else ():
+        cost.annotation(annot.get_object(), reader)
     return cost.stats
 
 
 def _content_bytes(stream, cost) -> bytes:
-    """A content stream decoded, charged to the page's content budget (Flate, none, or ASCII85 then Flate)."""
+    """A content stream decoded, charged to the page's content budget (Flate, none, ASCII85 then Flate, or
+    ASCIIHex through `pdf_pdfium_load._inflated`)."""
     from .pdf_pdfium_load import _inflated
     if not isinstance(stream, StreamObject):
         raise Refused('a content stream that is not a stream')
@@ -131,6 +169,13 @@ def _mul(a, b):
 
 def _det(m) -> float:
     return m[0] * m[3] - m[1] * m[2]
+
+
+def _stretch(m) -> float:
+    """The most the matrix ``m`` stretches any direction (its largest singular value)."""
+    s = m[0] * m[0] + m[1] * m[1] + m[2] * m[2] + m[3] * m[3]
+    d = _det(m)
+    return math.sqrt((s + math.sqrt(max(s * s - 4 * d * d, 0.0))) / 2)
 
 
 def _ctm_point(m, x, y):
@@ -234,11 +279,11 @@ class _Cost:
     def __init__(self, page_box, scale, limits):
         self.box, self.scale, self.limits = page_box, scale, limits
         self.content_left = _MAX_CONTENT_BYTES
-        self.fonts, self.blend = {}, False
+        self.fonts, self.blend, self.clips = {}, False, 0
         self.page_px = (page_box[2] - page_box[0]) * (page_box[3] - page_box[1]) * scale * scale
         self.stats = dict.fromkeys(('tokens', 'ops', 'paint_px', 'image_bytes', 'max_image', 'image_px', 'max_image_px',
                                     'cell_px', 'tiles', 'type3', 'glyph_ops', 'glyph_work', 'blend_paints', 'smasks',
-                                    'patterns', 'groups'), 0)
+                                    'patterns', 'groups', 'font_pt', 'clips', 'clip_depth', 'annots', 'jpx_work'), 0)
         self.stats.update(filters=set(), shadings=set())
 
     def add(self, key, n, cap):
@@ -266,13 +311,19 @@ class _Cost:
         res = resources if isinstance(resources, dict) else {}
         base = ctm if base is None else base             # patterns map to the stream's own starting space
         stack, path, lw, mask, pattern = [], [], 1.0, 0.0, [None, None]
-        t3, size, th, tm = None, 1.0, 1.0, (1, 0, 0, 1, 0, 0)
+        t3, size, th, tm, mode, clip, entry_clips = None, 1.0, 1.0, (1, 0, 0, 1, 0, 0), 0, False, self.clips
         for operands, op, text in _operations(data, self):
+            if op in _SHOWS and mode != 3:              # invisible text (mode 3) is not drawn
+                self.text_size(size * max(th, 1.0) * _stretch(_mul(tm, ctm)))
             if op == b'q':
-                stack.append((ctm, lw, mask, list(pattern), t3, size, th, self.blend))
+                stack.append((ctm, lw, mask, list(pattern), t3, size, th, self.blend, mode, self.clips))
             elif op == b'Q':
-                ctm, lw, mask, pattern, t3, size, th, self.blend = (
-                    stack.pop() if stack else (ctm, lw, mask, pattern, t3, size, th, self.blend))
+                ctm, lw, mask, pattern, t3, size, th, self.blend, mode, self.clips = (
+                    stack.pop() if stack else (ctm, lw, mask, pattern, t3, size, th, self.blend, mode, self.clips))
+            elif op == b'Tr':
+                mode = operands[-1] if operands and isinstance(operands[-1], float) else 0   # unread: drawn
+            elif op in (b'W', b'W*'):
+                clip = True
             elif op == b'BT':
                 tm = (1, 0, 0, 1, 0, 0)
             elif op == b'Tm':
@@ -306,7 +357,9 @@ class _Cost:
                     for p in pattern if op in _STROKE else pattern[:1]:
                         if p is not None:
                             self.add('tiles', px / p, MAX_TILES)
-                path = []
+                if clip:
+                    self.clip()
+                path, clip = [], False
             elif op in (b'scn', b'SCN'):
                 if operands and isinstance(operands[-1], str):
                     pattern[op == b'SCN'] = self.pattern(_named(res, '/Pattern', operands[-1]), reader, base, depth)
@@ -324,6 +377,44 @@ class _Cost:
                              mask, res)
             elif op in (b'BI', b'ID', b'EI'):
                 raise Refused('an inline image')
+        self.clips = entry_clips                        # a form's clips end with the form
+
+    def text_size(self, pt):
+        self.stats['font_pt'] = max(self.stats['font_pt'], pt)
+        if self.limits and pt > MAX_FONT_PT:
+            raise OverBudget('a glyph past the render size cap')
+
+    def clip(self):
+        self.clips += 1
+        self.add('clips', 1, MAX_PAGE_CLIPS)
+        self.stats['clip_depth'] = max(self.stats['clip_depth'], self.clips)
+        if self.limits and self.clips > MAX_CLIP_DEPTH:
+            raise OverBudget('clipping paths nested past the render cap')
+
+    def annotation(self, annot, reader):
+        """An annotation's normal appearance (every state of it), drawn in its /Rect as pdfium draws it: walked
+        like a form and charged to the page."""
+        self.add('annots', 1, MAX_PAGE_ANNOTS)
+        ap = _get(annot, '/AP')
+        normal = _get(ap, '/N')
+        states = [normal] if isinstance(normal, StreamObject) else (
+            [_get(normal, k) for k in normal] if isinstance(normal, dict) else [])
+        for form in states:
+            if not isinstance(form, StreamObject):
+                continue
+            matrix = _get(form, '/Matrix')
+            m = _numbers(list(matrix), 6) if matrix is not None else (1, 0, 0, 1, 0, 0)
+            b = _numbers(list(_get(form, '/BBox') or ()), 4)
+            pts = [_ctm_point(m, x, y) for x, y in ((b[0], b[1]), (b[2], b[1]), (b[0], b[3]), (b[2], b[3]))]
+            x0, y0 = min(p[0] for p in pts), min(p[1] for p in pts)
+            w, h = max(p[0] for p in pts) - x0, max(p[1] for p in pts) - y0
+            if w <= 0 or h <= 0:
+                continue                # an empty box: pdfium draws nothing (a real stamp's Rect is 2^31 here)
+            rect = _numbers(list(_get(annot, '/Rect') or ()), 4)
+            sx, sy = abs(rect[2] - rect[0]) / w, abs(rect[3] - rect[1]) / h
+            fit = (sx, 0, 0, sy, min(rect[0], rect[2]) - x0 * sx, min(rect[1], rect[3]) - y0 * sy)
+            self.clips = 0                              # drawn on its own, after the page's content
+            self.walk(_content_bytes(form, self), _get(form, '/Resources'), reader, _mul(m, fit), 1)
 
     def gstate(self, gs, reader, ctm, depth, mask):
         bm = _get(gs, '/BM') if isinstance(gs, dict) else None
@@ -443,11 +534,14 @@ class _Cost:
     def image(self, img, res):
         filters = _get(img, '/Filter')
         filters = list(filters) if isinstance(filters, list) else [filters] if filters is not None else []
+        names = []
         for f in filters:
             f = f.get_object() if hasattr(f, 'get_object') else f
             self.stats['filters'].add(str(f))
-            if f not in IMAGE_FILTERS:
-                raise Refused('an image filter outside the whitelist')
+            names.append(f)
+            last = len(names) == len(filters)                # JPX: the last filter only
+            if f not in IMAGE_FILTERS and not (f == JPX and last):
+                raise Refused(f'an image filter outside the whitelist ({str(f)[:40]!r})')
         w, h = _get(img, '/Width'), _get(img, '/Height')
         if not (isinstance(w, int) and isinstance(h, int) and w > 0 and h > 0):
             raise Refused('an image without a size')
@@ -457,16 +551,25 @@ class _Cost:
             bpc = _get(img, '/BitsPerComponent')
             bpc = bpc if isinstance(bpc, int) and 0 < bpc <= 16 else 8
             bits = bpc * self.components(_get(img, '/ColorSpace'), res)
-        size = math.ceil(w * h * bits / 8)
+        px, work = w * h, None
+        if names and names[-1] == JPX:
+            charge = jpx_charge(img, names[:-1], px, bits)
+            if charge is None:
+                raise Refused('a JPEG2000 image whose header was not read')
+            px, bits, work = charge
+        size = math.ceil(px * bits / 8)
         self.stats['max_image'] = max(self.stats['max_image'], size)
         if self.limits and size > MAX_IMAGE_BYTES:
             raise OverBudget('an image past the render cap')
         self.add('image_bytes', size, MAX_PAGE_IMAGE_BYTES)
         # pdfium expands every pixel (a 1-bit scan too), so pixels are charged as well as bytes
-        self.stats['max_image_px'] = max(self.stats['max_image_px'], w * h)
-        if self.limits and w * h > MAX_IMAGE_PX:
+        self.stats['max_image_px'] = max(self.stats['max_image_px'], px)
+        if self.limits and px > MAX_IMAGE_PX:
             raise OverBudget('an image past the render pixel cap')
-        self.add('image_px', w * h, MAX_PAGE_IMAGE_PX)
+        self.add('image_px', px, MAX_PAGE_IMAGE_PX)
+        if work is not None:                             # review 3: a JPX image's decode work, page and call
+            self.add('jpx_work', work, MAX_PAGE_JPX_WORK)
+            charge_document(self.doc, work, self.limits)
         for key in ('/SMask', '/Mask'):
             sub = _get(img, key)
             if isinstance(sub, StreamObject):

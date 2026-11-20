@@ -182,6 +182,14 @@ def _get(obj, key):
     return v.get_object() if v is not None else None
 
 
+def ascii_hex(data: bytes, cap: int) -> bytes:
+    """ASCIIHexDecode (TD-692), linear and at most half its input: up to ``cap`` + 1 bytes are decoded, so the
+    caller sees a stream past its cap without decoding the rest. ValueError on a byte that is not hex or space."""
+    end = data.find(b'>')
+    body = (data if end < 0 else data[:end]).translate(None, b' \t\r\n\f\x00')[:2 * (cap + 1)]
+    return bytes.fromhex((body + b'0' * (len(body) % 2)).decode('ascii'))
+
+
 def _stream_data(stream) -> bytes:
     from pypdf.generic import StreamObject
     if not isinstance(stream, StreamObject):

@@ -11,6 +11,7 @@ from django.test import SimpleTestCase
 
 from apps.scholarship.session_year import gift_reading
 from apps.scholarship.start_year import decide
+from apps.scholarship.tests._timing import assert_linear
 
 GIFT = [2025, 2026]
 
@@ -516,16 +517,15 @@ class OddUnicodeNeverRaises(SimpleTestCase):
 
     def test_a_long_odd_line_reads_fast(self):
         # No pattern backtracks badly on a long run of words, months or numbers (20,000 characters).
-        import time
-        n = 20000
-        for line in ('Sesi 2024/2025 ' + 'cuti bermula ' * (n // 13) + '1 Jan 2025',
-                     'Sesi 2024/2025 1/' + ' ' * n + '1/' + ' ' * n + 'x', 'STPM ' * (n // 5) + '2024/2025',
-                     'Ambilan Sesi 2024/2025 ' + 'Feb ' * (n // 4), 'Sesi 2024/2025\n' + 'Ambilan Feb\n' * (n // 12),
-                     'Sesi 2024/2025 ' + 'tarikh ' * (n // 7) + 'lapor diri 1 Feb 2025',
-                     'Ambilan Sesi 2024/2025 ' + '1 ' * (n // 2) + 'Feb'):
-            start = time.perf_counter()
-            gift_reading(line, '')
-            self.assertLess(time.perf_counter() - start, 1.0)
+        # TD-693: linear, counted (the calls at 10,000 and 20,000 characters), not timed against the machine
+        for line in (lambda n: 'Sesi 2024/2025 ' + 'cuti bermula ' * (n // 13) + '1 Jan 2025',
+                     lambda n: 'Sesi 2024/2025 1/' + ' ' * n + '1/' + ' ' * n + 'x',
+                     lambda n: 'STPM ' * (n // 5) + '2024/2025',
+                     lambda n: 'Ambilan Sesi 2024/2025 ' + 'Feb ' * (n // 4),
+                     lambda n: 'Sesi 2024/2025\n' + 'Ambilan Feb\n' * (n // 12),
+                     lambda n: 'Sesi 2024/2025 ' + 'tarikh ' * (n // 7) + 'lapor diri 1 Feb 2025',
+                     lambda n: 'Ambilan Sesi 2024/2025 ' + '1 ' * (n // 2) + 'Feb'):
+            assert_linear(self, lambda text: gift_reading(text, ''), line, 10000, line(20)[:24])
 
     def test_the_reader_never_raises(self):
         odd = ('İ', 'ı', 'ſ', 'K', 'ﬁ', 'ß', 'Ⅱ', '２０２５', '\u00a0', '\u200b', 'é', 'ம', '\ufffd')

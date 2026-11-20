@@ -9,22 +9,31 @@ import json
 import os
 import sys
 import tempfile
-import time
 from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
 
-from apps.scholarship import pdf_pages, pdfium_run, pdfium_worker, spm_cert_parse
+from apps.scholarship import pdf_pages, pdf_render_check, pdfium_run, pdfium_worker, spm_cert_parse
+from apps.scholarship.tests._timing import WALL_BACKSTOP_S, wall_backstop
 from apps.scholarship.tests.test_ocr_visible import DRAWN, SPM_TEXT, _pdf, _show
 from apps.scholarship.tests.test_ocr_visible_paths import _doc
 from apps.scholarship.tests.test_ocr_visible_round6 import BOMB_GLYPH, _flate
 
 TEXT = _show(SPM_TEXT)
-SHORT = 1.0          # the patched time limit: each crafted file below keeps pdfium busy 2-5 s on the dev machine
+SHORT = 1.0          # a short time limit, for the backstop tests
+LARGE = 60.0         # fix round 11: the crafted files are refused by the pre-filter, never by the clock, so a
+#                      generous limit gives the same answer on a fast machine and a slow one
 
 
 def _fresh():
     pdf_pages._layer_memo_clear()            # clears the child-answer memo too
+
+
+def _assert_killed_at_the_limit(test, pdf):
+    """TD-693: a child killed at the FULL time limit marks the document for good (`_SPENT`): the outcome pinned,
+    where an elapsed-time limit failed on slow machines. A child that finished, or one stopped any other way,
+    never marks it."""
+    test.assertIn(pdfium_run.hashlib.sha256(pdf).digest(), pdfium_run._SPENT)
 
 
 def _annotation(fills):
@@ -59,37 +68,51 @@ def _type3_spaces(glyphs):
                 page_res=b'/Resources << /Font << /F1 3 0 R /T3 6 0 R >> >>', filtered=True)
 
 
-@patch.object(pdfium_run, 'TIMEOUT_S', SHORT)
+@patch.object(pdfium_run, 'TIMEOUT_S', LARGE)
 class TheFourCraftedFiles(SimpleTestCase):
+    """Fix round 11: each crafted file is refused by `pdf_render_check` before any child is spawned, so the answer
+    does not depend on how fast the machine renders (Cloud Build's Linux runner rendered the huge text inside the
+    1 s limit these tests once relied on). The time limit stays the backstop: the last test."""
+
     def setUp(self):
         _fresh()
 
-    def _no_render(self, pdf):
-        t0 = time.perf_counter()
-        self.assertIsNone(pdf_pages.pdf_first_page_png(pdf))
-        self.assertEqual(pdf_pages.pdf_page_pngs(pdf, 1), [])         # the same question: the memo answers
-        self.assertIsNone(pdf_pages.pdf_pages_png(pdf))
-        self.assertLess(time.perf_counter() - t0, 2 * SHORT + 3.0)
+    def _no_render(self, pdf, why):
+        self.assertIn(why, pdf_render_check.render_refusal(pdf, lambda n: [0])[1])
+        with wall_backstop(self), patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
+            self.assertIsNone(pdf_pages.pdf_first_page_png(pdf))
+            self.assertEqual(pdf_pages.pdf_page_pngs(pdf, 1), [])
+            self.assertIsNone(pdf_pages.pdf_pages_png(pdf))
+        self.assertEqual(spawned.call_count, 0)                    # the pre-filter refused it: no child at all
 
     def test_an_annotation_appearance_stream(self):
-        self._no_render(_annotation(40_000))
+        self._no_render(_annotation(40_000), 'paint_px cap')       # its appearance is charged like a form
 
     def test_huge_spaced_text(self):
-        self._no_render(_huge_text(6_000))
+        self._no_render(_huge_text(6_000), 'size cap')
 
     def test_clip_paths(self):
-        self._no_render(_clips(2_000))
+        self._no_render(_clips(2_000), 'clipping paths nested')
 
     def test_type3_glyphs_behind_blank_text_are_load_checked(self):
         pdf = _type3_spaces(120)
-        t0 = time.perf_counter()
-        with patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
+        with wall_backstop(self), patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
             self.assertFalse(pdf_pages.first_page_drawn(pdf))    # the load check now judges a blank-text page
             self.assertIsNone(spm_cert_parse.parse_spm_cert('', pdf=pdf))
             self.assertIsNone(pdf_pages.pdf_first_page_png(pdf))
         self.assertEqual(spawned.call_count, 0)                    # the pre-filter refused it: no child at all
-        self.assertIsNone(pdfium_run.ask(pdf, [{'op': 'words'}]))  # and past the pre-filter, the time limit
-        self.assertLess(time.perf_counter() - t0, SHORT + 4.0)
+
+    def test_past_the_pre_filter_the_time_limit_is_the_backstop(self):
+        """Each crafted file asked of a child directly (no pre-filter): a stand-in worker that never answers is
+        killed at the limit, whatever the machine's speed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            hang = _script(tmp, 'time.sleep(60)')
+            for pdf in (_annotation(40_000), _huge_text(6_000), _clips(2_000), _type3_spaces(120)):
+                _fresh()
+                with patch.object(pdfium_run, '_WORKER', hang), patch.object(pdfium_run, 'TIMEOUT_S', 0.5):
+                    with wall_backstop(self):
+                        self.assertIsNone(pdfium_run.ask(pdf, [{'op': 'words'}]))
+                    _assert_killed_at_the_limit(self, pdf)
 
 
 class AChildThatFails(SimpleTestCase):
@@ -133,19 +156,19 @@ class AChildThatFails(SimpleTestCase):
 
     def test_a_child_that_hangs_is_killed(self):
         with self._worker('time.sleep(60)'), patch.object(pdfium_run, 'TIMEOUT_S', 0.5):
-            t0 = time.perf_counter()
-            self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
-            self.assertLess(time.perf_counter() - t0, 5.0)
+            with wall_backstop(self):
+                self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
+            _assert_killed_at_the_limit(self, DRAWN)
 
     def test_after_a_timeout_the_same_upload_spawns_nothing(self):
         with self._worker('time.sleep(60)'), patch.object(pdfium_run, 'TIMEOUT_S', 0.5), \
                 patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
             self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
-            t0 = time.perf_counter()
-            self.assertIsNone(pdf_pages.pdf_first_page_png(DRAWN))      # another question: answered at once
-            self.assertIsNone(spm_cert_parse._pdf_words(DRAWN))
-            self.assertLess(time.perf_counter() - t0, 0.5)
-        self.assertEqual(spawned.call_count, 1)
+            _assert_killed_at_the_limit(self, DRAWN)
+            with wall_backstop(self):
+                self.assertIsNone(pdf_pages.pdf_first_page_png(DRAWN))      # another question: answered at once
+                self.assertIsNone(spm_cert_parse._pdf_words(DRAWN))
+        self.assertEqual(spawned.call_count, 1)                         # TD-693: no second child, counted
 
     def test_pdfium_refusing_the_bytes(self):
         self.assertIsNone(pdfium_run.ask(b'%PDF-1.4 not a pdf', [{'op': 'count'}]))
@@ -204,8 +227,8 @@ class TheSameAnswersAsInProcess(SimpleTestCase):
         with patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
             pdf_pages.pdf_page_pngs(three, 3)
             self.assertEqual(pdf_pages.pdf_page_count(three), 3)
-            pdf_pages.pdf_first_page_png(three)     # a different render question (page 1 only)
-        self.assertEqual(spawned.call_count, 2)
+            pdf_pages.pdf_first_page_png(three)     # page 1's question: answered by the first page's child
+        self.assertEqual(spawned.call_count, 3)     # 2026-11-21: one child per page, the count with page 1
 
 
 # ── Fix round 9: a per-document budget, a bounded slot wait, a capped output, a retry on spawn errors ──
@@ -250,16 +273,22 @@ class ThePerDocumentBudget(SimpleTestCase):
 
     def test_a_real_child_tuned_to_finish_just_under_the_limit_pays_once(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = _script(tmp, 'req = json.loads(sys.stdin.buffer.readline())\ntime.sleep(0.9)\n'
+            path = _script(tmp, 'req = json.loads(sys.stdin.buffer.readline())\n'
+                                'time.sleep(0.9 if req["ops"][0]["op"] == "count" else 60)\n'
                                 'print(json.dumps({"results": [{"count": 1}] * len(req["ops"]), "blobs": []}))')
-            with patch.object(pdfium_run, '_WORKER', path), patch.object(pdfium_run, 'DOC_BUDGET_S', 1.5), \
-                    patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
+            with patch.object(pdfium_run, '_WORKER', path), patch.object(pdfium_run, 'DOC_BUDGET_S', 5.0), \
+                    patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned, \
+                    patch.object(pdfium_run, '_run_child', wraps=pdfium_run._run_child) as run:
                 self.assertEqual(pdfium_run.ask(DRAWN, [{'op': 'count'}]), [{'count': 1}])
-                t0 = time.perf_counter()
-                self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'words'}]))    # killed at the budget left
-                self.assertLess(time.perf_counter() - t0, 1.5)
+                spent = pdfium_run._BUDGET[pdfium_run.hashlib.sha256(DRAWN).digest()][0]
+                with wall_backstop(self), self.assertLogs('apps.scholarship.pdfium_run', 'WARNING') as logs:
+                    self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'words'}]))    # killed at the budget left
                 self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'render'}]))   # spent: no child
             self.assertEqual(spawned.call_count, 2)
+            # TD-693: pinned by the limit the second child was given (the budget left), and its kill, not by time
+            self.assertAlmostEqual(run.call_args_list[1].args[1], 5.0 - spent)
+            self.assertTrue(any('pdfium child killed after' in m for m in logs.output), logs.output)
+            self.assertNotIn(pdfium_run.hashlib.sha256(DRAWN).digest(), pdfium_run._SPENT)   # a budget kill only
 
 
 class TheSlotWait(SimpleTestCase):
@@ -270,10 +299,12 @@ class TheSlotWait(SimpleTestCase):
     def test_the_wait_is_bounded_charged_and_not_remembered(self):
         slots = pdfium_run.threading.BoundedSemaphore(1)
         slots.acquire()                                         # every slot busy
-        with patch.object(pdfium_run, '_SLOTS', slots), patch.object(pdfium_run, 'DOC_WAIT_S', 0.3):
-            t0 = time.perf_counter()
-            self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
-            self.assertLess(time.perf_counter() - t0, 1.5)
+        waited = Mock(wraps=slots)
+        with patch.object(pdfium_run, '_SLOTS', waited), patch.object(pdfium_run, 'DOC_WAIT_S', 0.3):
+            with wall_backstop(self):
+                self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
+            # TD-693: the bound is the wait the slot was asked for (the wait budget), not the time it took
+            self.assertEqual(waited.acquire.call_args.kwargs, {'timeout': 0.3})
             row = pdfium_run._BUDGET[pdfium_run.hashlib.sha256(DRAWN).digest()]
             self.assertGreaterEqual(row[1], 0.25)              # the wait is charged to the document
             self.assertEqual(row[0], 0.0)                       # but not to its pdfium budget
@@ -307,11 +338,14 @@ class TheOutputCap(SimpleTestCase):
                                 'print(\'{"results": [{"count": 1}], "blobs": [999999999]}\', flush=True)\n'
                                 'time.sleep(30)')
             with patch.object(pdfium_run, '_WORKER', path),                     patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
-                t0 = time.perf_counter()
-                self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
-                self.assertLess(time.perf_counter() - t0, 5.0)  # stopped on the header, not at the time limit
+                with wall_backstop(self), self.assertLogs('apps.scholarship.pdfium_run', 'WARNING') as logs:
+                    self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))
                 self.assertIsNone(pdfium_run.ask(DRAWN, [{'op': 'count'}]))   # killed by us: the bytes' failure
             self.assertEqual(spawned.call_count, 1)
+            # TD-693: stopped on the header, not at the time limit: counted by what ended it, not by the clock
+            self.assertTrue(any('output unreadable' in m for m in logs.output), logs.output)
+            self.assertFalse(any('killed after' in m for m in logs.output), logs.output)
+            self.assertNotIn(pdfium_run.hashlib.sha256(DRAWN).digest(), pdfium_run._SPENT)
 
 
 class TheSpawnRetry(SimpleTestCase):
@@ -529,34 +563,43 @@ class ConcurrentQuestionsAboutTheSameBytes(SimpleTestCase):
         for i in range(n):
             threads.append(threading.Thread(
                 target=lambda i=i: out.__setitem__(i, pdfium_run.ask(DRAWN, [{'op': 'count', 'step': i}]))))
-        t0 = time.perf_counter()
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join(30)
-        return out, time.perf_counter() - t0
+        with wall_backstop(self):
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(30)
+        return out
 
     def test_a_hostile_upload_asked_three_times_at_once_spends_its_limit_once(self):
         spawns = _Spawns()
         with patch.object(pdfium_run, '_WORKER', _script(self.dir.name, 'time.sleep(60)')), \
                 patch.object(pdfium_run, 'TIMEOUT_S', 1.0), patch.object(pdfium_run, 'DOC_BUDGET_S', 1.0), \
                 patch.object(pdfium_run.subprocess, 'Popen', spawns.Popen):
-            out, took = self._at_once(3)
+            out = self._at_once(3)
         self.assertEqual(out, {0: None, 1: None, 2: None})
         self.assertEqual(len(spawns.procs), 1)          # one child: the other two waited, then found it spent
-        self.assertLess(took, 2 * 1.0)
         self.assertIn(pdfium_run.hashlib.sha256(DRAWN).digest(), pdfium_run._SPENT)
 
     def test_a_genuine_upload_asked_three_times_at_once_answers_all(self):
         path = _script(self.dir.name, 'req = json.loads(sys.stdin.buffer.readline())\ntime.sleep(0.3)\n'
                                       'print(json.dumps({"results": [{"count": 1}] * len(req["ops"]), "blobs": []}))')
-        with patch.object(pdfium_run, '_WORKER', path), patch.object(pdfium_run, 'TIMEOUT_S', 5.0), \
-                patch.object(pdfium_run, 'DOC_BUDGET_S', 5.0):
-            out, _took = self._at_once(3)
+        used = []
+        real = pdfium_run._run_child
+
+        def run(payload, timeout, n_ops, max_blobs, spent):
+            try:
+                return real(payload, timeout, n_ops, max_blobs, spent)
+            finally:
+                used.append(spent[0])
+        # TD-693: limits no slow machine reaches (3 children of 0.3 s each could pass 5 s on a slow runner)
+        with patch.object(pdfium_run, '_WORKER', path), patch.object(pdfium_run, 'TIMEOUT_S', WALL_BACKSTOP_S), \
+                patch.object(pdfium_run, 'DOC_BUDGET_S', WALL_BACKSTOP_S), patch.object(pdfium_run, '_run_child', run):
+            out = self._at_once(3)
         self.assertEqual(out, {i: [{'count': 1}] for i in range(3)})
         row = pdfium_run._BUDGET[pdfium_run.hashlib.sha256(DRAWN).digest()]
         self.assertEqual(row[3], 0)                     # nothing still reserved
-        self.assertLess(row[0], 5.0)                    # the unused part of each reservation came back
+        self.assertEqual(len(used), 3)
+        self.assertAlmostEqual(row[0], sum(used))       # the unused part of each reservation came back, exactly
 
     def test_the_reservation_is_taken_before_the_child_and_refunded_after(self):
         seen = []

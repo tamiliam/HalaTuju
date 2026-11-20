@@ -17,7 +17,7 @@ parse, so their streams are charged and whitelisted like a form's.
 import re
 import zlib
 
-from .pdf_layer_guards import OverBudget, _get
+from .pdf_layer_guards import OverBudget, _get, ascii_hex
 
 #: Decompressed bytes of font programs, Type3 glyph procedures, forms, ICC profiles, Indexed tables, function
 #: and pattern streams reachable from the judged pages of ONE document, a Type3 glyph once per code naming it.
@@ -85,8 +85,8 @@ def _first_visit(obj, state: dict) -> bool:
 def _stream(stream, state: dict, content: bool = False, every_use: bool = False) -> None:
     """Charge one stream's decompressed size, once per document — or on EVERY use (``every_use``: a Type3
     glyph procedure, which pdfium parses for each glyph name that points at it). Measured once, never inflating
-    past what is left; only no filter or /FlateDecode is measured, any other filter is hidden. ``content``: a
-    content stream (a form, a pattern cell), refused when it holds an inline image (pdfium inflates those
+    past what is left (`_inflated`): no filter, one /FlateDecode or one /ASCIIHexDecode (TD-692) is measured,
+    any other filter is refused. ``content``: a content stream (a form, a pattern cell), refused when it holds an inline image (pdfium inflates those
     while parsing, and the walk never reads a stream that is only in the resources)."""
     from pypdf.generic import StreamObject
     if not isinstance(stream, StreamObject):
@@ -124,6 +124,8 @@ def _inflated(stream, cap: int) -> bytes:
         data = zlib.decompressobj().decompress(stream._data, cap + 1)
     elif not filters:
         data = stream.get_data()
+    elif filters == ['/ASCIIHexDecode']:                 # TD-692: a genuine CFF font program is stored so
+        data = ascii_hex(stream._data, cap)
     else:
         raise ValueError('a stream filter outside the whitelist')
     if len(data) > cap:
