@@ -89,10 +89,14 @@ Tarikh dan Masa Daftar: 15 JUN 2026 (8.00 PAGI - 11.00 PAGI)
 class TestGovtOfferParser(SimpleTestCase):
     def test_polytechnic_asasi_interleaved_125(self):
         # The reproduced #125 fault must now read cleanly — never institution-as-programme
-        # or a 'Tarikh…' line as the institution.
-        r = parse_govt_offer(POLY_ASASI_INTERLEAVED)
-        self.assertIsNotNone(r)
-        self.assertEqual(r['_family'], 'polytechnic')
+        # or a 'Tarikh…' line as the institution. Since 20 Nov (owner: "For now, let AI handle Asasi")
+        # an Asasi letter never LOCKS (guard asasi_ai_read): the read itself is still checked here.
+        from apps.scholarship.offer_parse import diagnose
+        self.assertIsNone(parse_govt_offer(POLY_ASASI_INTERLEAVED))
+        d = diagnose(POLY_ASASI_INTERLEAVED)
+        self.assertEqual((d['guard'], d['empty_required']), ('asasi_ai_read', []))
+        r = d['fields']
+        self.assertEqual(d['family'], 'polytechnic')
         self.assertEqual(r['candidate_name'], 'RUBESHAN A/L SANTHASWARAN')
         self.assertIn('ASASI TEKNOLOGI KEJURUTERAAN', r['programme'])
         self.assertEqual(r['institution'], 'POLITEKNIK SULTAN IDRIS SHAH')

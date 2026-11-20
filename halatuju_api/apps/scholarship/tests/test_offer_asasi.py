@@ -1,6 +1,6 @@
 """Asasi goes to the AI (owner, 20 Nov: "For now, let AI handle Asasi. When there a larger sample, we can consider
-switching."): a letter whose VISIBLE page-1 text says ASASI never locks in a university rules lane (guard
-``asasi_ai_read``). Made-up text only."""
+switching."): a letter whose VISIBLE page-1 text, or parsed programme, says ASASI never locks in ANY rules lane
+(university or government family; guard ``asasi_ai_read``). Made-up text only."""
 from unittest import mock
 
 from django.test import SimpleTestCase
@@ -74,7 +74,76 @@ class TestNoUniversityLock(SimpleTestCase):
         self.assertIsNone(exact_read(_asasi_letter(), why=why))
         self.assertEqual(why, {'lane': 'ua:UMS', 'reason': 'read_asasi_ai_read'})
 
-    def test_a_letter_with_no_university_lane_is_not_checked(self):
+    def test_a_letter_with_no_rules_lane_is_not_checked(self):
         with mock.patch(AI_ONLY, wraps=ai_only) as check:
             d = diagnose('SURAT BIASA\nProgram Asasi\n')
         self.assertEqual((check.call_count, d['family'], d['guard']), (0, '', None))
+
+
+#: A made-up polytechnic letter (the government polytechnic family; fake name and IC).
+POLY = """JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI
+Tarikh: 25/05/2031
+ZORVATH A/L QUENMIR (130212080355)
+SURAT TAWARAN PENGAJIAN SESI : 2031/2032
+Program
+Mod Pengajian
+Institusi
+Tempoh Pengajian
+:DKM-DIPLOMA KEJURUTERAAN MEKANIKAL
+SEPENUH MASA
+:POLITEKNIK ZELVORA
+:6 SEMESTER
+Tarikh dan Masa Daftar: 20 JUN 2031 (8.30 PAGI)
+"""
+POLY_PROG = ':DKM-DIPLOMA KEJURUTERAAN MEKANIKAL'
+
+
+def _poly(prog=POLY_PROG):
+    return POLY.replace(POLY_PROG, prog)
+
+
+class TestEveryRulesLane(SimpleTestCase):
+    """Not only the university lanes: a government family (polytechnic, STPM, matriculation) lock is refused the
+    same way (`offer_parse._rules_exit`), on its visible page-1 text OR its parsed programme / stream."""
+
+    def test_a_normal_polytechnic_letter_still_locks(self):
+        d = diagnose(_poly())
+        self.assertEqual((d['family'], d['guard'], d['locked']['programme']),
+                         ('polytechnic', None, 'DIPLOMA KEJURUTERAAN MEKANIKAL'))
+
+    def test_a_polytechnic_asasi_programme_is_refused(self):
+        letter = _poly(':ATK-ASASI TEKNOLOGI KEJURUTERAAN')
+        with mock.patch(AI_ONLY, return_value=''):              # control: the word alone is what refuses
+            self.assertIn('ASASI', diagnose(letter)['locked']['programme'])
+        for name, d in (('scan', diagnose(letter)), ('digital', diagnose(letter, page1_text=letter))):
+            with self.subTest(name):
+                self.assertEqual((d['family'], d['guard'], d['locked']), ('polytechnic', 'asasi_ai_read', None))
+        self.assertIsNone(exact_read(letter))
+
+    def test_the_programme_field_judges_too(self):
+        """Page 1's plain layer (the visible text a government read uses) shows no Asasi, but the programme
+        parsed from the whole layer does: refused all the same."""
+        letter = _poly(':ATK-ASASI TEKNOLOGI KEJURUTERAAN')
+        d = diagnose(letter, page1_text=_poly())
+        self.assertEqual((d['guard'], d['locked']), ('asasi_ai_read', None))
+
+    def test_asasi_on_the_visible_page_refuses_a_government_letter(self):
+        from apps.scholarship.tests.test_offer_parser import MATRIC, STPM
+        for name, letter in (('poly', _poly() + 'Calon program asasi tidak layak.\n'),
+                             ('stpm', STPM + 'Program A S A S I tidak berkaitan.\n'),
+                             ('matric', MATRIC + 'Bukan tawaran Asasi.\n')):
+            with self.subTest(name):
+                self.assertEqual(diagnose(letter)['guard'], 'asasi_ai_read')
+
+    def test_government_letters_without_the_word_still_lock(self):
+        from apps.scholarship.tests.test_offer_parser import MATRIC, STPM
+        for letter in (STPM, MATRIC, _poly()):
+            with self.subTest(letter[:20]):
+                self.assertIsNotNone(diagnose(letter)['locked'])
+
+    def test_look_alike_words_do_not_refuse(self):
+        for prog in (':DAS-DIPLOMA ASASIAH KEJURUTERAAN', ':DAK-DIPLOMA ASAS KEJURUTERAAN'):
+            with self.subTest(prog):
+                d = diagnose(_poly(prog))
+                self.assertEqual((d['guard'], d['locked'] is not None), (None, True))
+        self.assertIsNotNone(diagnose(_poly() + 'ASASIAH ASAS BASASI\n')['locked'])

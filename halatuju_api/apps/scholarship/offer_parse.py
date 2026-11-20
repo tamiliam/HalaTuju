@@ -322,7 +322,8 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # 2.2.0 (OCR-first S1c, 2026-11-19) — the UMS read refuses more (TD-699): a reporting range wrapped
 # across lines, more withdrawal words (spaced letters too), any programme label line, an '@' or
 # "NAME, KG ..." line under the name, and text longer than a page 1. Government families unchanged.
-# Also (20 Nov, unreleased): no university lock when the visible page-1 text says ASASI (`_university_exit`).
+# Also (20 Nov, unreleased): no lock on ANY rules lane (university or government family) when the visible
+# page-1 text or the parsed programme / stream says ASASI (`_rules_exit`).
 PARSER_VERSION = '2.2.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
@@ -427,13 +428,18 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page
     return out
 
 
-def _university_exit(out: dict, shown: str) -> dict:
-    """EVERY university rules lane's last step (UMS now; S2 / S3 lanes pass through it too): a lock whose VISIBLE
-    page-1 text ``shown`` (the text the owner phrases are looked for in: a digital PDF's page-1 layout, a scan its
-    own text) says ASASI (`offer_owner_words.ai_only`) does not lock — guard ``asasi_ai_read`` — and the AI reads
-    the letter (owner, 20 Nov: "For now, let AI handle Asasi"). A letter already refused keeps its own guard."""
+def _rules_exit(out: dict, shown: str) -> dict:
+    """EVERY rules lane's last step — the university lanes (UMS now; S2 / S3 pass through it too) AND the three
+    government families (STPM, matriculation, polytechnic): a lock whose VISIBLE page-1 text ``shown`` (a
+    university letter: a digital PDF's page-1 layout, a scan its own text; a government letter: a digital PDF's
+    page-1 plain layer, a scan its own text) or whose parsed programme or stream says ASASI
+    (`offer_owner_words.ai_only`) does not lock — guard ``asasi_ai_read`` — and the AI reads the letter (owner,
+    20 Nov: "For now, let AI handle Asasi"). A letter already refused keeps its own guard."""
     from .offer_owner_words import ai_only
-    guard = ai_only(shown) if out['locked'] else ''
+    lock = out['locked']
+    if not lock:
+        return out
+    guard = (ai_only(shown) or ai_only(lock.get('programme') or '') or ai_only(lock.get('stream') or ''))
     if guard:
         out['locked'], out['guard'] = None, guard
     return out
@@ -466,10 +472,16 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
            'empty_required': [], 'guard': None, 'locked': None}
     if fam == 'ums':                             # a university lane: S2 / S3 add theirs here, through the same exit
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
-        return _university_exit(_diagnose_ums(out, text, page1_text, layout, page_texts),
-                                layout if layout.strip() else text)
+        return _rules_exit(_diagnose_ums(out, text, page1_text, layout, page_texts),
+                           layout if layout.strip() else text)
     if not fam:
         return out
+    return _rules_exit(_diagnose_govt(out, fam, text, page1_text, up), page1_text if page1_text.strip() else text)
+
+
+def _diagnose_govt(out: dict, fam: str, text: str, page1_text: str, up: str) -> dict:
+    """The government-family branch of `diagnose` (STPM, matriculation, polytechnic); `diagnose` passes its
+    result through `_rules_exit`, as every university lane's."""
     from .offer_parse_families import _FAMILY
     reader, identity, glue = _FAMILY[fam]
     split = _split_glued(text, glue)

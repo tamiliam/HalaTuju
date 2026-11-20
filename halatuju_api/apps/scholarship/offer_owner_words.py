@@ -18,8 +18,8 @@ characters that are not letters or digits becomes one space. So case, line break
 * no OCR misreading is forgiven.
 
 Per issuer, as DATA (`OWNER_WORDS`), keyed by the rules lane: S2 / S3 add UPSI, UUM and the rest as new rows.
-The reverse, for every university lane (`AI_ONLY_WORDS`, `ai_only`): a letter whose visible text says ASASI never
-locks by rules (owner, 20 Nov); `offer_parse._university_exit` applies it to every university lock.
+The reverse, for EVERY rules lane (`AI_ONLY_WORDS`, `ai_only`): a letter whose visible text says ASASI never
+locks by rules (owner, 20 Nov); `offer_parse._rules_exit` applies it to every lock, university or government.
 Pure; never raises on text input; linear in the text (each phrase is literal words joined by bounded spaces).
 """
 from __future__ import annotations
@@ -50,7 +50,7 @@ OWNER_WORDS = {
 #: image) still needs every phrase.
 OPTIONAL_ON_TEXT_PDF = {'ua:UMS': (1,)}
 
-#: Words that keep a letter off EVERY university rules lane, whatever the issuer: the AI reads it instead (owner,
+#: Words that keep a letter off EVERY rules lane (university or government family): the AI reads it instead (owner,
 #: 20 Nov: "For now, let AI handle Asasi. When there a larger sample, we can consider switching."). Asasi is a
 #: foundation programme, not a degree, and some UMS Asasi letters look like the degree template. word -> guard.
 AI_ONLY_WORDS = {'ASASI': 'asasi_ai_read'}
