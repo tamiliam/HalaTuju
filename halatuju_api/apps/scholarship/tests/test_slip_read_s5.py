@@ -14,6 +14,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from apps.scholarship import vision
+from apps.scholarship.academic_engine import _GRADE_TO_BAND
 from apps.scholarship.read_errors import DOCUMENT_FAILED, is_ai_service_error
 from apps.scholarship.vision import slip_read
 from apps.scholarship.vision.sanitize import clean_slip_grade, clean_slip_text
@@ -22,7 +23,11 @@ from apps.scholarship.vision.schemas import _FIELD_SCHEMAS, SLIP_GRADES
 _SEAM = 'apps.scholarship.vision._call_gemini_json'
 
 
-def _good(grade='A', subject='MATEMATIK', band='CEMERLANG TINGGI'):
+def _good(grade='A', subject='MATEMATIK', band=None):
+    """A good two-row answer; the second row's band (by default) is the one that says ``grade``,
+    so a valid grade with its own band is never a band-vs-letter conflict (review round 3)."""
+    if band is None:
+        band = _GRADE_TO_BAND.get(clean_slip_grade(grade) or '', 'cemerlang tinggi').upper()
     return {'candidate_name': 'CALON CONTOH', 'exam': 'SPM 2025',
             'results': [{'subject': 'BAHASA MELAYU', 'grade': 'A+', 'band': 'CEMERLANG TERTINGGI'},
                         {'subject': subject, 'grade': grade, 'band': band}],
@@ -120,7 +125,7 @@ class TheAnswerCheck(SimpleTestCase):
         cleaned, problems = slip_read.check_slip_answer(data)
         self.assertEqual(problems, [])
         self.assertEqual(cleaned['results'][1], {'subject': 'MATEMATIK TAMBAHAN', 'grade': 'A+',
-                                                 'band': 'CEMERLANG TINGGI'})
+                                                 'band': 'CEMERLANG TERTINGGI'})
 
     def test_an_answer_with_no_rows_is_a_bad_answer(self):
         cleaned, problems = slip_read.check_slip_answer({'candidate_name': '', 'exam': '', 'results': []})
@@ -140,8 +145,8 @@ class TheAnswerCheck(SimpleTestCase):
         self.assertEqual(slip_read.check_slip_answer(data)[1], [])
 
     def test_one_subject_with_two_different_grades_is_a_bad_answer(self):
-        for second in ({'subject': 'MATEMATIK', 'grade': 'B', 'band': 'CEMERLANG TINGGI'},
-                       {'subject': 'matematik', 'grade': 'A', 'band': 'KEPUJIAN'}):
+        for second in ({'subject': 'MATEMATIK', 'grade': 'B', 'band': 'KEPUJIAN TINGGI'},
+                       {'subject': 'matematik', 'grade': 'A', 'band': 'CEMERLANG TINGI'}):
             data = _good()
             data['results'].append(second)
             with self.subTest(second=second):
@@ -160,12 +165,12 @@ class TheAnswerCheck(SimpleTestCase):
         """Review round 2: the duplicate check uses the comparison's own key (`_compare_key` after
         the band-word split), so English and Malay names of one subject cannot carry two grades."""
         for first, second in (
-                ({'subject': 'MATHEMATICS', 'grade': 'A', 'band': 'CEMERLANG'},
-                 {'subject': 'MATEMATIK', 'grade': 'D', 'band': 'LULUS'}),
+                ({'subject': 'MATHEMATICS', 'grade': 'A-', 'band': 'CEMERLANG'},
+                 {'subject': 'MATEMATIK', 'grade': 'D', 'band': 'LULUS ATAS'}),
                 ({'subject': 'PHYSICS CEMERLANG TINGGI', 'grade': 'A', 'band': ''},
                  {'subject': '4531 FIZIK', 'grade': 'C', 'band': 'KEPUJIAN'}),
                 ({'subject': 'ADDITIONAL MATHEMATICS', 'grade': 'B', 'band': 'KEPUJIAN TINGGI'},
-                 {'subject': 'Matematik Tambahan', 'grade': 'A', 'band': 'KEPUJIAN TINGGI'})):
+                 {'subject': 'Matematik Tambahan', 'grade': 'A', 'band': 'CEMERLANG TINGGI'})):
             data = {'candidate_name': 'CALON CONTOH', 'exam': 'SPM', 'results': [first, second]}
             with self.subTest(first=first, second=second):
                 cleaned, problems = slip_read.check_slip_answer(data)
@@ -185,30 +190,87 @@ class TheAnswerCheck(SimpleTestCase):
         """Review round 2: the bands match case- and space-insensitively."""
         for band in ('Cemerlang', 'cemerlang', ' CEMERLANG\t', 'CEMERLANG'):
             data = {'candidate_name': 'X', 'exam': 'SPM',
-                    'results': [{'subject': 'SEJARAH', 'grade': 'A', 'band': band},
-                                {'subject': 'SEJARAH', 'grade': 'A', 'band': 'CEMERLANG'}]}
+                    'results': [{'subject': 'SEJARAH', 'grade': 'A-', 'band': band},
+                                {'subject': 'SEJARAH', 'grade': 'A-', 'band': 'CEMERLANG'}]}
             with self.subTest(band=band):
                 cleaned, problems = slip_read.check_slip_answer(data)
                 self.assertEqual(problems, [])
                 self.assertEqual(len(cleaned['results']), 1)
 
     def test_a_duplicate_with_one_blank_band_is_kept_once_with_the_band(self):
-        for rows in ([('A', ''), ('A', 'CEMERLANG')], [('A', 'CEMERLANG'), ('A', '')]):
+        for rows in ([('A-', ''), ('A-', 'CEMERLANG')], [('A-', 'CEMERLANG'), ('A-', '')]):
             data = {'candidate_name': 'X', 'exam': 'SPM',
                     'results': [{'subject': 'SEJARAH', 'grade': g, 'band': b} for g, b in rows]}
             with self.subTest(rows=rows):
                 cleaned, problems = slip_read.check_slip_answer(data)
                 self.assertEqual(problems, [])
-                self.assertEqual(cleaned['results'], [{'subject': 'SEJARAH', 'grade': 'A',
+                self.assertEqual(cleaned['results'], [{'subject': 'SEJARAH', 'grade': 'A-',
                                                        'band': 'CEMERLANG'}])
 
     def test_a_real_conflict_is_still_a_bad_answer(self):
-        for second in (('B', 'CEMERLANG'), ('A', 'KEPUJIAN'), ('', 'CEMERLANG'), ('B', '')):
+        for second in (('B', 'CEMERLANG'), ('A-', 'KEPUJIAN'), ('', 'CEMERLANG'), ('B', ''),
+                       ('A-', 'CEMERLANG TINGI')):
             data = {'candidate_name': 'X', 'exam': 'SPM',
-                    'results': [{'subject': 'SEJARAH', 'grade': 'A', 'band': 'CEMERLANG'},
+                    'results': [{'subject': 'SEJARAH', 'grade': 'A-', 'band': 'CEMERLANG'},
                                 {'subject': 'SEJARAH', 'grade': second[0], 'band': second[1]}]}
             with self.subTest(second=second):
                 self.assertIsNone(slip_read.check_slip_answer(data)[0])
+
+    def _check(self, *rows):
+        return slip_read.check_slip_answer(
+            {'candidate_name': 'X', 'exam': 'SPM',
+             'results': [{'subject': s, 'grade': g, 'band': b} for s, g, b in rows]})
+
+    def test_a_band_that_says_another_grade_than_its_letter_is_a_bad_answer(self):
+        """Review round 3: `read_slip` lets the band win over the letter, so ('SEJARAH', 'A',
+        'KEPUJIAN') would be stored as a confident C. A band contradicting its letter is refused."""
+        for row in (('SEJARAH', 'A', 'KEPUJIAN'), ('SEJARAH', 'A+', 'CEMERLANG TINGGI'),
+                    ('SEJARAH', 'C', 'kepujian  atas'), ('SEJARAH', 'G', 'TIDAK HADIR'),
+                    ('SEJARAH KEPUJIAN', 'A', ''),                 # band words glued to the subject
+                    ('SEJARAH CEMERLANG TINGGI', 'A', 'GAGAL'),    # glued band vs band field
+                    ('SEJARAH CEMERLANG TINGGI', '', 'GAGAL')):    # two bands, two grades
+            with self.subTest(row=row):
+                cleaned, problems = self._check(row)
+                self.assertIsNone(cleaned)
+                self.assertTrue(any('band says a different grade' in p for p in problems))
+
+    def test_the_blocker_duplicates_are_refused_never_filled(self):
+        """Review round 3 blocker: a blank band was filled from a duplicate whose band says another
+        grade, so these stored a C and a G for an A."""
+        for rows in ([('SEJARAH', 'A', ''), ('SEJARAH', 'A', 'KEPUJIAN')],
+                     [('SEJARAH CEMERLANG TINGGI', 'A', ''), ('SEJARAH', 'A', 'GAGAL')],
+                     [('SEJARAH', 'A', 'KEPUJIAN'), ('SEJARAH', 'A', '')]):
+            with self.subTest(rows=rows):
+                cleaned, problems = self._check(*rows)
+                self.assertIsNone(cleaned)
+                self.assertTrue(problems)
+
+    def test_a_duplicate_band_is_filled_only_when_it_says_the_kept_letter(self):
+        cleaned, problems = self._check(('SEJARAH', 'A', ''), ('SEJARAH', 'A', 'CEMERLANG TINGGI'))
+        self.assertEqual(problems, [])
+        self.assertEqual(cleaned['results'], [{'subject': 'SEJARAH', 'grade': 'A', 'band': 'CEMERLANG TINGGI'}])
+        cleaned, problems = self._check(('SEJARAH CEMERLANG TINGGI', 'A', ''), ('SEJARAH', 'A', 'CEMERLANG TINGGI'))
+        self.assertEqual(problems, [])
+        self.assertEqual(len(cleaned['results']), 1)
+        # No letter to keep: a band from a duplicate is never filled in.
+        self.assertIsNone(self._check(('SEJARAH', '', ''), ('SEJARAH', '', 'KEPUJIAN'))[0])
+        # An unknown band text beside a blank one is not a band that says the letter.
+        self.assertIsNone(self._check(('SEJARAH', 'A', 'CEMERLANG TINGI'), ('SEJARAH', 'A', 'CEMERLANG TINGGI'))[0])
+
+    def test_every_spm_grade_with_its_own_band_is_a_good_answer(self):
+        """Every grade of the academic engine's map, with the band that says it (field or glued)."""
+        from apps.scholarship.academic_engine import _BAND_TO_GRADE
+        self.assertEqual(sorted(_BAND_TO_GRADE.values()), sorted(SLIP_GRADES))
+        for band, grade in _BAND_TO_GRADE.items():
+            for row in (('SEJARAH', grade, band.upper()), ('SEJARAH', grade, band),
+                        ('SEJARAH', '', band.upper())):
+                with self.subTest(row=row):
+                    cleaned, problems = self._check(row)
+                    self.assertEqual(problems, [])
+                    self.assertEqual(cleaned['results'][0]['grade'], row[1])
+            if grade != 'TH':                              # "tidak hadir" is never glued (`_BAND_RE`)
+                with self.subTest(glued=band):
+                    self.assertEqual(self._check((f'SEJARAH {band.upper()}', grade, ''))[1], [])
 
     def test_only_the_known_keys_are_kept(self):
         data = {**_good(), 'notes': 'extra', 'extra_id': 'X1'}
@@ -363,6 +425,23 @@ class TwoPointFiveIsNeverCalled(SimpleTestCase):
                      'gemini-3.8-flash-preview-lite', 'models/gemini-3.8-flash', '', None):
             with self.subTest(refused=name):
                 self.assertFalse(slip_read.is_slip_model(name))
+        # Review round 3: matched on the lowercased name as a whole; every other variant refused.
+        for name in ('GEMINI-3.8-FLASH', 'Gemini-3.8-Flash-Preview', 'gemini-3.8-flash-preview-05-20'):
+            with self.subTest(allowed=name):
+                self.assertTrue(slip_read.is_slip_model(name))
+        for name in ('gemini-3.8-flash-LITE', 'gemini-3.8-flash-8b', 'gemini-3.8-flash-image',
+                     'gemini-3.8-flash-tts', 'gemini-3.8-flash-thinking-exp', 'gemini-3.8-flash-preview-tts',
+                     'gemini-3.8-flash-preview-image', 'gemini-3.8-flash-exp', 'gemini-3.8-flash-latest',
+                     'gemini-3.8-flash-0001', 'gemini-3.8-flash\n', ' gemini-3.8-flash',
+                     'gemini-3.8-flash-٠٠١', 'gemini-3x8-flash'):
+            with self.subTest(refused=name):
+                self.assertFalse(slip_read.is_slip_model(name))
+        for models in (['gemini-3.8-flash-image'], ['gemini-3.8-flash-tts']):
+            calls = []
+            with self.subTest(models=models):
+                out = slip_read.read_slip_checked(lambda m: calls.append(m) or _good(), models=models)
+                self.assertEqual(calls, [])
+                self.assertTrue(is_ai_service_error(out['error']))
         with patch('apps.scholarship.profile_engine.MODEL_CASCADE',
                    ['gemini-3.8-flash-lite', 'gemini-3.80', 'gemini-2.5-flash']):
             self.assertEqual(slip_read.slip_read_models(), [])

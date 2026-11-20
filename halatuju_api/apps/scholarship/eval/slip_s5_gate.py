@@ -16,8 +16,10 @@ MODES
       `offer_fresh_gemini.guarded_production_read` (a 402 / 429 stops the whole run, every database
       query and Storage are refused). Cache first: `<eval-dir>/slip_s5/<key>.json`; a cached slip
       is never read again unless --force; a service failure (503, 404 model, …) is NOT cached.
-      --max-usd (default 4.00) stops the run at its cap (exit 5), and a call that reports no token
-      counts (or has no price row) stops it too (exit 4), since the cap could not be kept.
+      --max-usd (default 4.00) stops the run at its cap (exit 5); a call that reports no token
+      counts, or a call on a model with no price row, stops it too (exit 4), since the cap could
+      not be kept. Every stop prints the summary line (slips read, US$ counted, service failures
+      not cached) first.
   --score, FREE: reads those caches and scores them beside the STORED read
       (`snapshots/<key>.json`), on the typed-grade answer key: wrong grades (`compare_academics`
       `mismatched`), "please check" rows, refusals, and malformed grades (must be 0).
@@ -68,7 +70,9 @@ ROADMAP_SLIPS = 98 + 137
 EXIT_CAP = 5
 EXIT_CODES = ('exit codes: 0 done; 2 nothing read (no corpus, unknown keys, no key, or a slip model '
               'off the allow-list); 3 a 402 / 429 stopped --live; 4 a --live call reported no token '
-              'counts; 5 --live stopped at its --max-usd cap (slips left unread)')
+              'counts or had no price row; 5 --live stopped at its --max-usd cap (slips left unread)')
+#: --live stopped because the cap could not be kept (no token counts, or no price row).
+EXIT_BLIND = 4
 
 
 # ── The corpus ───────────────────────────────────────────────────────────────────────────────
@@ -177,6 +181,11 @@ def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=pr
         return 2
     files, spent, read, unpriced, not_cached = slip_files(eval_dir), 0.0, 0, 0, 0
     os.makedirs(os.path.join(eval_dir, CACHE_DIR), exist_ok=True)
+
+    def summary():
+        out(f'Read {read} slips on {models}, US${spent:.4f} (3.8 priced at the ASSUMED row unless '
+            f'PRICES has one); {not_cached} service failure(s) not cached.')
+
     with mock.patch.dict(ofg.PRICES, {m: ofg.PRICES.get(m) or PRICE_38_ASSUMED for m in models}):
         for key in keys:
             cache = os.path.join(eval_dir, CACHE_DIR, f'{key}.json')
@@ -184,8 +193,11 @@ def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=pr
                 continue
             stop = ofg.cap_stop_line([{'usage': {'cost_usd': spent, 'unpriced_calls': unpriced}}], max_usd)
             if stop:
+                summary()                    # review round 3: the counts before the stop line
                 out(stop)
-                return EXIT_CAP              # review round 2: a capped run is not a finished run
+                # review round 2: a capped run is not a finished run; round 3: a call with no price
+                # row is the "cap cannot be kept" stop (4), as the docstring says, not the cap (5)
+                return EXIT_BLIND if unpriced else EXIT_CAP
             calls, meter = [], []
             try:
                 with ofg.guarded_production_read(client_factory, calls, meter) as extract:
@@ -205,11 +217,11 @@ def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=pr
             blind = sum(1 for c in answered
                         if c.get('input_tokens') is None or c.get('output_tokens') is None)
             if blind:
+                summary()
                 out(f'STOP: {blind} call(s) reported no token counts - the cap US${max_usd:.2f} cannot '
                     f'be kept ({read} slips read, US${spent:.4f} counted) - nothing more read')
-                return 4
-    out(f'Read {read} slips on {models}, US${spent:.4f} (3.8 priced at the ASSUMED row unless PRICES '
-        f'has one); {not_cached} service failure(s) not cached.')
+                return EXIT_BLIND
+    summary()
     return 0
 
 
@@ -262,7 +274,9 @@ def gate_totals(eval_dir, key_file=None):
 
 
 def main(argv=None, *, client_factory=None, out=print):
-    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0], epilog=EXIT_CODES)
+    # Raw: argparse's wrapping would break "--max-usd" at its hyphen when the epilog grows.
+    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0], epilog=EXIT_CODES,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--eval-dir', default=HERE)
     ap.add_argument('--live', action='store_true', help='PAID: read on 3.8 Flash (owner\'s yes)')
     ap.add_argument('--score', action='store_true', help='free: score the caches')

@@ -145,6 +145,7 @@ Branch ocr-s5, not pushed. Migration: none. Services: api. Decisions: `docs/deci
   - The failed-read error names the model once.
   - The gate's `--live` does not cache a service failure, and stops when a response reports no token counts. Tests: 35 + 11.
 - Review round 2: the duplicate check keys rows as the comparison does (English and Malay names of one subject are checked together); bands that differ only in case or spacing, or where one is blank, count as the same row; the allow-list is exactly "gemini-3.8-flash" or "gemini-3.8-flash-…", never Lite; the gate exits 5 when `--max-usd` stops it. Tests: 41 + 13.
+- Review round 3: a row whose band (the band field or band words glued to the subject) says a different grade from its letter is a bad answer, and a duplicate row's band is filled in only when it says the kept letter (so ('SEJARAH', 'A', 'KEPUJIAN') can no longer store a C); the allow-list matches the whole lowercased name (3.8 Flash, "-NNN" or a dated preview; "-lite", "-8b", "-image", "-tts", "-thinking-exp" refused); the gate prints its summary before a cap stop and a no-price-row stop exits 4 as documented. Stored corpus: 0 of 98 slip reads (40 AI) have a band contradicting its letter. Tests: 45 + 14.
 
 ### fix: gift names are checked the same way on create as on rename (review of #71, 2026-11-19)
 

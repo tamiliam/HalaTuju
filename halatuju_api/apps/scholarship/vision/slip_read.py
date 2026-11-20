@@ -5,20 +5,24 @@ fallback when neither the certificate parser nor the word-box read locks. Until 
 stayed on 2.5 Flash, because in the paid eval 3.8 Flash wrote malformed grades on 26 of 98 slips
 ("Aplus", stray JSON, tab and CJK characters). SPM grades feed eligibility, so the rule here is:
 
-  * the model list is an ALLOW-list: only "gemini-3.8-flash" (or "gemini-3.8-flash-<x>", never
-    a Lite one) may read a slip
+  * the model list is an ALLOW-list: only "gemini-3.8-flash" (or a numbered / preview name of it,
+    never a Lite, image, TTS or other variant) may read a slip
     (`slip_read_models`) — a 2.5 (or any other) model is never called for a slip, and an empty
     list refuses the read (a service error, 'review_manually') rather than fall back;
   * the schema asks for a closed grade enum with every key required (`schemas.py`), and every
     answer is still CHECKED here: each grade must clean (`sanitize.clean_slip_grade`) to one of
-    the academic engine's grades, each subject / band must carry no stray characters, one subject
-    may not carry two different grades, and at least one row must show a grade or band. Only the
-    known keys are kept (name, exam, results, warnings; subject, grade, band per row);
+    the academic engine's grades, each subject / band must carry no stray characters, a row's
+    Malay band (its band field, or band words glued to the subject) may not say a different grade
+    from its letter, one subject may not carry two different grades, and at least one row must
+    show a grade or band. Only the known keys are kept (name, exam, results, warnings; subject,
+    grade, band per row);
   * a malformed answer, or an answer the model could not produce (DOCUMENT_FAILED), is asked ONCE
     more on 3.8; a service failure (our side — rate limit, outage) is not retried here;
   * still malformed after the retry → a failed read (DOCUMENT_FAILED, stored 'unreadable', the
     same verdict as any unparseable answer). A wrong grade is never stored; a refusal is safe.
 """
+
+import re
 
 from ..gemini import cascade_failure, document_failure
 from ..read_errors import DOCUMENT_FAILED
@@ -38,12 +42,18 @@ _TOP_KEYS = ('candidate_name', 'exam', 'results', 'warnings')
 _ROW_KEYS = ('subject', 'grade', 'band')
 
 
+#: Review round 3: the whole lowercased name must be 3.8 Flash itself, a numbered version
+#: ("-001") or a preview, optionally dated ("-preview-11-2026"). Anything else after "flash"
+#: ("-lite", "-8b", "-image", "-tts", "-thinking-exp", "-preview-tts") is a different model.
+_SLIP_MODEL_RE = re.compile(r'gemini-3\.8-flash(?:-[0-9]{3}|-preview(?:-[0-9]{2}-[0-9]{2,4})?)?')
+
+
 def is_slip_model(model) -> bool:
-    """True only for 3.8 Flash itself or a dated / preview name of it ("gemini-3.8-flash-<x>"),
-    never a Lite one. Review round 2: a bare prefix let "gemini-3.80", "gemini-3.81-pro",
-    "gemini-3.8" and "gemini-3.8-flash-lite" through."""
-    m = str(model)
-    return (m == SLIP_MODEL or m.startswith(SLIP_MODEL + '-')) and '-lite' not in m
+    """True only for 3.8 Flash itself, a numbered version or a (dated) preview of it, matched on
+    the lowercased name as a whole (`_SLIP_MODEL_RE`). Review round 2 refused prefix look-alikes
+    ("gemini-3.80", "gemini-3.81-pro", "gemini-3.8"); round 3 also refuses every other variant
+    ("-LITE", "-8b", "-image", "-tts", "-thinking-exp")."""
+    return isinstance(model, str) and _SLIP_MODEL_RE.fullmatch(model.lower()) is not None
 
 
 def slip_read_models() -> list:
@@ -62,13 +72,13 @@ def check_slip_answer(data):
     # (`read_slip`'s band-word split, then `academic_compare._compare_key`, which folds the English
     # names onto the Malay ones), so any two rows the comparison would merge are checked here.
     from ..academic_compare import _compare_key
-    from ..academic_engine import _split_band
+    from ..academic_engine import _band_to_grade, _split_band
     if not isinstance(data, dict):
         return None, ['the answer is not an object']
     results = data.get('results')
     if not isinstance(results, list):
         return None, ['no results list']
-    problems, rows, seen = [], [], {}
+    problems, rows, seen, implied_of = [], [], {}, {}
     for i, row in enumerate(results, start=1):
         if not isinstance(row, dict) or 'subject' not in row or 'grade' not in row:
             problems.append(f'row {i}: not a subject / grade pair')
@@ -86,15 +96,25 @@ def check_slip_answer(data):
         if not subject:
             problems.append(f'row {i}: a grade with no subject')
             continue
-        key = _compare_key(_split_band(subject)[0])
+        # Review round 3: the Malay band says the grade a second time, and `read_slip` lets the
+        # band WIN over the letter. So a band (the band field, or band words glued to the subject)
+        # that says a different grade from the row's letter is a bad answer, never a stored grade.
+        stem, glued = _split_band(subject)
+        said = {g for g in (_band_to_grade(band), glued) if g}
+        if len(said) > 1 or (grade and said and grade not in said):
+            problems.append(f'row {i}: the band says a different grade from the letter')
+            continue
+        implied = _band_to_grade(band) or glued    # `read_slip`'s own order: band field, then glued
+        key = _compare_key(stem)
         if key in seen:
             first = seen[key]
-            if not _same_reading(first, grade, band):
+            if not _same_reading(first, implied_of[key], grade, band, implied):
                 problems.append(f'row {i}: the same subject as an earlier row with a different grade')
             elif band and not first['band']:
                 first['band'] = band               # the duplicate carries the band the first lacked
+                implied_of[key] = implied_of[key] or implied
             continue
-        seen[key] = {'subject': subject, 'grade': grade, 'band': band}
+        seen[key], implied_of[key] = {'subject': subject, 'grade': grade, 'band': band}, implied
         rows.append(seen[key])
     if not problems and not any(r['grade'] or r['band'] for r in rows):
         problems.append('no grade or band read on any row')
@@ -107,14 +127,19 @@ def check_slip_answer(data):
     return {**cleaned, 'results': rows}, []
 
 
-def _same_reading(row, grade, band) -> bool:
-    """A repeated subject row agrees with the earlier ``row``: the same grade, and the bands the
-    same ignoring case and spacing, or one band blank (review round 2). A different grade, or two
-    different non-blank bands, is a real conflict."""
+def _same_reading(row, row_implied, grade, band, implied) -> bool:
+    """A repeated subject row agrees with the earlier ``row`` (whose band implies ``row_implied``):
+    the same letter, and EITHER the bands imply the same grade (with two non-blank band fields the
+    same ignoring case and spacing, review round 2) OR one row has no band at all and the other's
+    band implies the kept letter (review round 3). A band that implies a different grade is never
+    filled in from a duplicate; a different letter, or two different bands, is a real conflict."""
     if row['grade'] != grade:
         return False
     a, b = (' '.join(x.upper().split()) for x in (row['band'], band))
-    return not a or not b or a == b
+    if row_implied == implied:
+        return not a or not b or a == b
+    no_band_first, no_band_second = not a and not row_implied, not b and not implied
+    return bool(grade) and ((no_band_first and implied == grade) or (no_band_second and row_implied == grade))
 
 
 def read_slip_checked(call, models=None) -> dict:

@@ -123,6 +123,22 @@ class TheLiveRunOnAFakeClient(_Corpus):
         self.assertTrue(any(l.startswith('STOP: the run has cost') for l in lines))
         self.assertEqual(code, gate.EXIT_CAP)       # review round 2: a capped run exits non-zero
         self.assertEqual(gate.EXIT_CAP, 5)
+        # Review round 3: the summary line (incl. service failures not cached) comes before the stop.
+        self.assertTrue(lines[-2].startswith('Read 1 slips on'))
+        self.assertIn('service failure(s) not cached', lines[-2])
+
+    def test_a_call_with_no_price_row_stops_the_run_with_exit_4(self):
+        """Review round 3: the docstring's 'no price row' stop is exit 4, as the code returns."""
+        factory = self._factory(_GOOD)
+        lines = []
+        with override_settings(GEMINI_API_KEY='test-key'), patch.object(gate, 'PRICE_38_ASSUMED', None), \
+                patch.dict('apps.scholarship.eval.offer_fresh_gemini.PRICES', {}, clear=True):
+            code = gate.main(['--eval-dir', self.dir, '--live'], client_factory=factory, out=lines.append)
+        self.assertEqual(code, 4)
+        self.assertEqual(self.asked, ['gemini-3.8-flash'])
+        self.assertTrue(lines[-2].startswith('Read 1 slips on'))
+        self.assertTrue(lines[-1].startswith('STOP: 1 call(s) on a model with no price row'))
+        self.assertIn('4 a --live call reported no token counts or had no price row', gate.EXIT_CODES)
 
     def test_the_exit_codes_are_in_the_help_text(self):
         buf = io.StringIO()
