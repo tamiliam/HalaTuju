@@ -33,18 +33,40 @@ _NOT_AN_OFFER = re.compile(r'\b(?:PEMBATALAN|PENANGGUHAN|PENOLAKAN|TARIK\s{1,3}B
 #: an offer to lock. Added by S1c (DITOLAK, DITARIK SEMULA, TIDAK LAGI SAH, SURAT TIDAK BERJAYA), its round 1
 #: (TIDAK SAH, DIGUGURKAN, DIMANSUHKAN, LUPUT, GAGAL) and round 2 (DITAMATKAN ... DITARIK). Measured: no cached
 #: UMS letter prints any of them on ANY page (their conditional clause says "Kegagalan", "terbatal").
+#: Owner words review round 2: TIDAK (AKAN / LAGI / DAPAT / BOLEH) DITERUSKAN; "DITERUSKAN" is in none of them.
 _WITHDRAWN = re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}TARIK\s{1,3}(?:BALIK|SEMULA)|'
                         r'DI\s{0,3}TOLAK|TIDAK\s{1,3}LAGI\s{1,3}SAH|SURAT\s{1,3}TIDAK\s{1,3}BERJAYA|TIDAK\s{1,3}SAH|'
                         r'DIGUGURKAN|DIMANSUHKAN|LUPUT|GAGAL|'
                         r'DITAMATKAN|PENAMATAN|TIDAK\s{1,3}(?:LAGI\s{1,3})?BERKUAT\s{0,3}KUASA|WITHDRAWN|CANCELL?ED|'
-                        r'REVOKED|TIDAK\s{1,3}AKTIF|TIDAK\s{1,3}TERPAKAI|DITARIK)\b', re.IGNORECASE)
+                        r'REVOKED|TIDAK\s{1,3}AKTIF|TIDAK\s{1,3}TERPAKAI|DITARIK|'
+                        r'TIDAK\s{1,3}(?:(?:AKAN|LAGI|DAPAT|BOLEH)\s{1,3})?DI\s{0,3}TERUSKAN)\b', re.IGNORECASE)
 #: The same words with spaces, dots and dashes taken out ("D I B A T A L K A N", "TIDAK  .  BERJAYA"; S1c
 #: round 1). Measured: none is in the squeezed text of ANY page of the 58 cached UMS letters. A bare DITARIK is
 #: never a stem: squeezed, "DI TARIKH" holds it.
 _WITHDRAWN_STEMS = ('DIBATALKAN', 'PEMBATALAN', 'TIDAKBERJAYA', 'DITARIKBALIK', 'DITARIKSEMULA', 'PENARIKANBALIK',
                     'TIDAKLAGISAH', 'DITAMATKAN', 'TIDAKBERKUATKUASA', 'TIDAKLAGIBERKUATKUASA', 'WITHDRAWN',
-                    'CANCELLED', 'CANCELED', 'REVOKED', 'TIDAKAKTIF', 'TIDAKTERPAKAI')
+                    'CANCELLED', 'CANCELED', 'REVOKED', 'TIDAKAKTIF', 'TIDAKTERPAKAI', 'TIDAKDITERUSKAN',
+                    'TIDAKAKANDITERUSKAN', 'TIDAKLAGIDITERUSKAN')
 _SQUEEZE_OUT = re.compile(r'[\s.\-–—]')
+#: Owner words review round 2 (fix 2): Cyrillic and Greek letters that look like Latin ones, folded to their
+#: Latin twins ONLY before the withdrawal / status checks and the later-page checks ("DIBАTALKAN" with a
+#: Cyrillic А still refuses). NEVER before the owner-phrase check: a phrase with a look-alike letter must still
+#: be missing. A digital letter with ANY Cyrillic or Greek letter refuses (`foreign_letters`).
+_LOOKALIKE = str.maketrans('АВЕКМНОРСТХУЅІЈаеорсухѕіјԁӏΑΒΕΖΗΙΚΜΝΟΡΤΥΧαβεικνορτυχ',
+                           'ABEKMHOPCTXYSIJaeopcyxsijdlABEZHIKMNOPTYXabeikvoptux')
+#: Cyrillic (with its supplements and extensions) and Greek (with its extended block).
+_CYRILLIC_GREEK = re.compile('[Ͱ-ϿЀ-ԯᲀ-᲏ἀ-῿ⷠ-ⷿꙀ-ꚟ]')
+
+
+def fold_lookalikes(s: str) -> str:
+    """``s`` with the Cyrillic / Greek look-alike letters (`_LOOKALIKE`) turned into their Latin twins."""
+    return (s or '').translate(_LOOKALIKE)
+
+
+def foreign_letters(*texts) -> bool:
+    """True when any of ``texts`` holds a Cyrillic or Greek LETTER (review round 2, fix 2: a digital letter's
+    own text has none in any of the 36 cached genuine UMS PDFs; a scan's OCR may, so scans are never asked)."""
+    return any(ch.isalpha() for t in texts for m in _CYRILLIC_GREEK.finditer(t or '') for ch in m.group(0))
 #: TERBATAL or TARIK BALIK SAID of this letter ("Status : TERBATAL", "adalah TERBATAL dan ..."; S1c rounds 1-2).
 #: A clause ends at a line break, ';', ':' or '.'; a bare word escapes only when SEKIRANYA / JIKA / JIKALAU /
 #: APABILA comes BEFORE it in its clause. "akan terbatal" / "terbatal dengan sendirinya": see `_excused`.
@@ -65,13 +87,29 @@ _LETTER_GAP = re.compile(r'(?<![A-Za-z])([A-Za-z])[^\S\n](?=[A-Za-z](?![A-Za-z])
 #: A second offer's title (any "TAWARAN KEMASUKAN"), its programme sentence ("untuk mendapat" / "untuk
 #: mengikuti") or its "telah ditawarkan tempat". Measured 20 Nov: none of them is on any genuine page 2 outside
 #: the heading below; a bare "ditawarkan" is on all 36, so it is not a refusal word.
-_OFFER_KEYS = ('TAWARANKEMASUKAN', 'UNTUKMENDAPAT', 'UNTUKMENGIKUTI', 'TELAHDITAWARKANTEMPAT')
+_OFFER_KEYS = ('TAWARANKEMASUKAN', 'UNTUKMENDAPAT', 'UNTUKMENGIKUTI', 'TELAHDITAWARKAN')
+#: Owner words review round 2 (fixes 3-5): words no genuine later page prints (measured 20 Nov: none of them is
+#: on any of the 36 genuine page 2s, outside the heading): another programme label or a change of programme,
+#: and a reporting date's other forms ("5 haribulan", "Reporting Date"). "5hb": `_DAY_HB_KEY`.
+_LATER_KEYS = ('KURSUS', 'PROGRAMME', 'BIDANG', 'DIPINDA', 'PINDAAN', 'DITUKAR', 'COURSE', 'JURUSAN', 'HARIBULAN',
+               'REPORTING')
+_DAY_HB_KEY = re.compile(r'\dHB')
+#: Twelve digits or more in a row once spacing is taken out (an IC however it is printed): only page 1's own IC
+#: may show on a later page (none of the 36 genuine page 2s prints any).
+_DIGIT_RUN = re.compile(r'\d{12,}')
+#: A numeric date ("5.10.2031", "5/10/31", "05 - 10 - 2031"): none on any genuine page 2.
+_NUM_DATE = re.compile(r'(?<!\d)\d{1,2}\s{0,3}[./\-]\s{0,3}\d{1,2}\s{0,3}[./\-]\s{0,3}\d{2,4}(?!\d)')
+#: A programme label's colon, read with ALL spacing taken out ("P r o g r a m :", "Program\n: X"): counted
+#: against the labels `_PROGRAM_LABEL` reads line by line, so a label it cannot read refuses (fix 5).
+_PROGRAM_COLON = re.compile(r'PROGRAM[:：;]')
+_SPACING = re.compile(r'\s+')
 #: The template's own page 2 heading "SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2031/2032" (on all 36 genuine
 #: two-page UMS letters, no programme code, no "Program :" label beside it) is skipped ONLY with a session whose
 #: years are page 1's (and its series, "I-", when it prints one): another session is a second offer.
 _HEADING_KEY = re.compile(r'SYARATSYARATTAWARANKEMASUKAN(?:KEUNIVERSITIMALAYSIASABAH)?SESI([0-9IV]{0,3}?)(20\d{2})(20\d{2})')
 _SESSION_KEY = re.compile(r'SESI([0-9IV]{0,3}?)(20\d{2})(20\d{2})')
-_UPU_KEY = re.compile(r'U[A-Z]\d{7}')
+#: Every digit after the code is kept (review round 2, fix 6): "UH64810012" is not "UH6481001".
+_UPU_KEY = re.compile(r'U[A-Z]\d{7,}')
 #: A later page's "Program :" / "Kod Program :" label (any spacing, glued or not) and its value.
 _PROGRAM_LABEL = re.compile(r'(?<![^\W_])(KOD\s{0,40})?PROGRAM\s{0,40}[:：;]\s{0,40}(.*)$', re.IGNORECASE)
 #: The reporting-date label, also split over lines or spaced ("Tarikh\nLapor\nDiri"); its key form counts too.
@@ -123,7 +161,9 @@ def _cancel_said(text: str) -> bool:
 def _withdrawn(source: str, head) -> bool:
     """True when the letter withdraws, defers, refuses or answers an offer rather than making one: a head word
     at or above the title, a withdrawal word anywhere (also with its letters spaced, or squeezed of spaces, dots
-    and dashes), or TERBATAL / TARIK BALIK said with no condition (`_cancel_said`)."""
+    and dashes), or TERBATAL / TARIK BALIK said with no condition (`_cancel_said`). Look-alike letters are
+    folded to Latin first (`fold_lookalikes`, review round 2)."""
+    source, head = fold_lookalikes(source), [fold_lookalikes(ln) for ln in head]
     key = _SQUEEZE_OUT.sub('', source.upper())
     squeezed = _squeeze(source)
     return bool(any(_NOT_AN_OFFER.search(ln) or _NOT_AN_OFFER.search(_squeeze(ln)) for ln in head)
@@ -140,6 +180,7 @@ def letter_refusal(text: str) -> str:
     text = text or ''
     if len(text) > MAX_LETTER_CHARS:
         return 'too_long'
+    text = fold_lookalikes(text)                 # review round 2: "SURAT PENGЕSAHAN" with a Cyrillic Е
     if _STATUS.search(text):
         return 'status_letter'
     lines = _text_lines(text)
@@ -189,11 +230,13 @@ def _other_programme(page: str, code: str, programme: str) -> bool:
     from .offer_parse_university import _text_lines
     if set(_UPU_KEY.findall(_page_key(page))) - {_page_key(code)}:
         return True
+    labels = 0
     for ln in _text_lines(page):
         m = _PROGRAM_LABEL.search(ln)
+        labels += bool(m)
         if m and _page_key(m.group(2)) != _page_key(code if m.group(1) is not None else programme):
             return True
-    return False
+    return len(_PROGRAM_COLON.findall(_SPACING.sub('', page.upper()))) > labels   # a label read only unspaced
 
 
 def _other_date(page: str, reporting_date: str) -> bool:
@@ -218,17 +261,21 @@ def later_pages_refusal(later_pages, nric: str, reporting_date: str, intake: str
     (round 3 MED 3; owner words review round 1): an offer title, programme sentence or "telah ditawarkan tempat"
     in any spacing (`_OFFER_KEYS`; the template's conditions heading skipped only with page 1's session), a
     programme code or programme label value other than page 1's, an IC other than page 1's ``nric``, or a
-    reporting date other than page 1's; '' when none. A confirmation page that repeats them refuses too."""
+    reporting date other than page 1's; '' when none. A confirmation page that repeats them refuses too.
+    Review round 2: look-alike letters folded first; also `_LATER_KEYS`, a day "5hb", a numeric date, twelve
+    digits in a row that are not page 1's IC, and a programme label read only with spacing taken out."""
     from .offer_parse import _decimal_digits
     from .offer_parse_university import _IC_RE, _SENTENCE
     want = _decimal_digits(nric or '')
     for page in later_pages or ():
-        page = page or ''
+        page = fold_lookalikes(page)                                  # review round 2: "Tаrikh" with a Cyrillic а
         key = _page_key(page)
         if (page.strip() and not key) or _other_session(key, intake):   # no letter or digit, or too long unpacked
             return 'second_offer'
         rest = _HEADING_KEY.sub('', key)
-        if any(k in rest for k in _OFFER_KEYS) or _SENTENCE.search(page):
+        if any(k in rest for k in _OFFER_KEYS + _LATER_KEYS) or _SENTENCE.search(page) or _DAY_HB_KEY.search(rest):
+            return 'second_offer'
+        if any(_decimal_digits(r) != want for r in _DIGIT_RUN.findall(rest)) or _NUM_DATE.search(page):
             return 'second_offer'
         if any(_decimal_digits(m.group(1)) != want for m in _IC_RE.finditer(page)):
             return 'second_offer'

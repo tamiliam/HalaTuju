@@ -4,6 +4,7 @@ date). Part 2: the owner-words lock wired into `_diagnose_ums`, with MED 4 (the 
 the lane-off path unchanged and the confirmation letters' result the same with the lane on and off.
 
 Synthetic twins only — invented names, ICs and places (`test_no_gitignored_corpus.py`)."""
+import io
 import time
 from unittest import mock
 
@@ -14,7 +15,7 @@ from apps.scholarship.offer_exact import exact_offer_read, exact_read
 from apps.scholarship.offer_owner_words import OPTIONAL_ON_TEXT_PDF, OWNER_WORDS, missing, page_of_each
 from apps.scholarship.offer_parse import diagnose, parse_govt_offer
 from apps.scholarship.offer_parse_university import read_ums
-from apps.scholarship.offer_ums_refusal import _cancel_said, later_pages_refusal, letter_refusal
+from apps.scholarship.offer_ums_refusal import _cancel_said, fold_lookalikes, later_pages_refusal, letter_refusal
 from apps.scholarship.tests.test_offer_parse_university import LAYOUT, NAME, NRIC, PAGE_TEXTS, PROG, READ_UMS, ums
 from apps.scholarship.tests.test_offer_rulings import _confirm
 
@@ -222,9 +223,11 @@ class TestLaterPages(SimpleTestCase):
                       'T a r i k h  L a p o r  D i r i : 5 Oktober 2031', 'TarikhLaporDiri: 5 Oktober 2031'):
             with self.subTest(page2=page2):
                 self.assertEqual(later_pages_refusal([page2], NRIC, '28 Sep 2031', INTAKE), 'second_offer')
-        for page2 in ('Tarikh Lapor Diri : 28hb September 2031', 'Tarikh\nLapor Diri :\n28 September 2031'):
-            with self.subTest(page2=page2):
-                self.assertEqual(later_pages_refusal([page2], NRIC, '28 Sep 2031', INTAKE), '')
+        self.assertEqual(later_pages_refusal(['Tarikh\nLapor Diri :\n28 September 2031'], NRIC, '28 Sep 2031', INTAKE),
+                         '')
+        # review round 2: a day printed "28hb" refuses on a later page, even page 1's (no genuine page 2 has one)
+        self.assertEqual(later_pages_refusal(['Tarikh Lapor Diri : 28hb September 2031'], NRIC, '28 Sep 2031', INTAKE),
+                         'second_offer')
 
     def test_a_page_of_no_letters_refuses(self):
         self.assertEqual(later_pages_refusal(['- . -'], NRIC, '28 Sep 2031', INTAKE), 'second_offer')
@@ -383,3 +386,144 @@ class TestConfirmationsUnchanged(SimpleTestCase):
                 self.assertEqual(off, on)
                 self.assertIsNone(on[0])
                 self.assertTrue(on[1])
+
+
+#: A genuine-shape page 2 (the template's conditions page, synthetic): the heading with page 1's session, the
+#: bare "program yang ditawarkan" and "dari tarikh lapor diri" every genuine page 2 prints.
+PAGE2 = ('SYARAT-SYARAT TAWARAN KEMASUKAN SESI I-2031/2032\n'
+         '1. Tawaran ini tertakluk kepada syarat kemasukan dan program yang ditawarkan.\n'
+         '2. Saudara/i hendaklah mendaftar dalam tempoh yang ditetapkan dari tarikh lapor diri.\n')
+LATER = (NRIC, '28 Sep 2031', INTAKE, CODE, PROG)
+
+
+def _pdf(pages=1, password=None):
+    """A blank PDF built by pypdf (``password``: encrypted with that user password)."""
+    from pypdf import PdfWriter
+    w = PdfWriter()
+    for _ in range(pages):
+        w.add_blank_page(100, 100)
+    if password is not None:
+        w.encrypt(password, 'owner-pass')
+    buf = io.BytesIO()
+    w.write(buf)
+    return buf.getvalue()
+
+
+class TestReviewRoundTwo(SimpleTestCase):
+    """Owner words review round 2 (20 Nov): every new refusal refuses MORE, and a genuine-shape page 2 still
+    passes."""
+
+    def test_tidak_diteruskan_refuses(self):
+        """Fix 1."""
+        for tail in ('Tawaran ini TIDAK DITERUSKAN.', 'Tawaran ini tidak akan diteruskan.', 'tidak lagi  di teruskan',
+                     'T I D A K  D I T E R U S K A N', 'TIDAK.DITERUSKAN'):
+            with self.subTest(tail=tail):
+                self.assertEqual(letter_refusal(ums() + tail + '\n'), 'not_an_offer')
+                self.assertEqual(read_ums(ums() + tail + '\n')[1], 'not_an_offer')
+
+    def test_look_alike_letters_are_folded_for_the_withdrawal_and_status_words(self):
+        """Fix 2: a Cyrillic A in DIBATALKAN, a Cyrillic E in PENGESAHAN."""
+        self.assertEqual(fold_lookalikes('DIB\u0410TALKAN'), 'DIBATALKAN')
+        for tail, why in (('Tawaran ini DIB\u0410TALKAN.', 'not_an_offer'), ('SURAT PENG\u0415SAHAN', 'status_letter')):
+            with self.subTest(why=why):
+                self.assertEqual(letter_refusal(ums() + tail + '\n'), why)
+                self.assertEqual(read_ums(ums() + tail + '\n')[1], why)
+
+    def test_a_look_alike_owner_phrase_is_still_missing(self):
+        """Fix 2: never folded before the owner-phrase check."""
+        cut = ums().replace('Sekiranya', 'S\u0435kiranya')
+        for name, d in (('digital', _digital(cut, [cut])), ('scan', diagnose(cut))):
+            with self.subTest(name):
+                self.assertEqual((d['guard'], d['owner_words_missing'], d['locked']), ('owner_words_missing', [9], None))
+
+    def test_a_cyrillic_or_greek_letter_refuses_a_digital_letter_only(self):
+        """Fix 2: a digital letter's text layer with any Cyrillic / Greek letter refuses; a scan's OCR does not."""
+        for ch in ('\u03bb', '\u0436', '\u0430'):
+            page2 = PAGE2 + f'Nota {ch}\n'
+            with self.subTest(ch=ch):
+                self.assertEqual(_digital(ums(), [ums(), page2], text=ums() + page2)['guard'], 'foreign_letters')
+        self.assertIsNotNone(diagnose(ums() + 'Nota \u03bb \u0436\n')['locked'])
+
+    def test_a_genuine_shape_page_two_still_passes_and_locks(self):
+        self.assertEqual(later_pages_refusal([PAGE2], *LATER), '')
+        self.assertIsNotNone(_digital(ums(), [ums(), PAGE2], text=ums() + PAGE2)['locked'])
+
+    def test_new_later_page_words_refuse(self):
+        """Fixes 3-5: another programme label or a change, "telah ditawarkan", another date form."""
+        for line in ('Kursus : Diploma Sains Marin', 'Programme : Diploma Sains Marin', 'Bidang : Sains Marin',
+                     'Program saudara telah dipinda', 'Program telah ditukar', 'Saudara telah ditawarkan',
+                     'Course : Marine Science', 'Jurusan : Sains Marin', 'Pindaan tawaran',
+                     'Tarikh Lapor Diri : 5 haribulan Oktober 2031', 'Hadir pada 5hb.Oktober 2031',
+                     'Reporting Date : 5 October 2031', 'Hadir pada 28 hb September'):
+            with self.subTest(line=line):
+                self.assertEqual(later_pages_refusal([PAGE2 + line], *LATER), 'second_offer')
+
+    def test_twelve_digits_that_are_not_the_own_ic_refuse(self):
+        """Fix 3: any 12-digit run, however spaced; page 1's own IC passes."""
+        for line in ('Rujukan 020304156789', 'Akaun : 1234 5678 9012', 'No : 020304 15 6789'):
+            with self.subTest(line=line):
+                self.assertEqual(later_pages_refusal([PAGE2 + line], *LATER), 'second_offer')
+        for line in ('No. KP : 010203-14-5678', 'No KP 010203145678'):
+            with self.subTest(line=line):
+                self.assertEqual(later_pages_refusal([PAGE2 + line], *LATER), '')
+
+    def test_a_numeric_date_refuses(self):
+        """Fix 3: no genuine page 2 prints a numeric date."""
+        for line in ('Hadir pada 5.10.2031', 'Hadir pada 5/10/2031', 'Hadir pada 05 - 10 - 2031', 'Hadir 5/10/31'):
+            with self.subTest(line=line):
+                self.assertEqual(later_pages_refusal([PAGE2 + line], *LATER), 'second_offer')
+
+    def test_a_look_alike_reporting_label_refuses(self):
+        """Fix 4 via fix 2: "Tarikh" with a Cyrillic a is read as the label, and its other date refuses."""
+        self.assertEqual(later_pages_refusal([PAGE2 + 'T\u0430rikh Lapor Diri : 5 Oktober 2031'], *LATER),
+                         'second_offer')
+
+    def test_a_programme_label_however_spaced_refuses(self):
+        """Fix 5: letter-spaced, or its colon or value on the next line."""
+        for line in ('P r o g r a m : Diploma Sains Marin', 'Program\n: Diploma Sains Marin',
+                     'Program\n:\nDiploma Sains Marin', 'K o d  P r o g r a m : UH6481001'):
+            with self.subTest(line=line):
+                self.assertEqual(later_pages_refusal([PAGE2 + line], *LATER), 'second_offer')
+        self.assertEqual(later_pages_refusal([PAGE2 + 'Program : ' + PROG], *LATER), '')
+
+    def test_the_programme_code_has_a_right_edge(self):
+        """Fix 6: UH64810012 is not UH6481001."""
+        self.assertEqual(later_pages_refusal([PAGE2 + 'Rujuk UH64810012'], *LATER), 'second_offer')
+        self.assertEqual(later_pages_refusal([PAGE2 + 'Rujuk UH6481001'], *LATER), '')
+
+
+class TestPageTree(SimpleTestCase):
+    """Fix 7: a rules lane gets no page texts (so no lock) for an encrypted PDF or one whose /Count is not its
+    leaf count."""
+
+    def test_a_clean_pdf_passes(self):
+        from apps.scholarship.pdf_layer_guards import page_tree_refusal
+        from apps.scholarship.pdf_pages import _open_pdf, pdf_rules_page_texts
+        data = _pdf(2)
+        self.assertEqual(page_tree_refusal(_open_pdf(data)), '')
+        with mock.patch('apps.scholarship.pdf_pages.pdf_page_texts', return_value=['a', 'b']) as texts:
+            self.assertEqual(pdf_rules_page_texts(data, 3), ['a', 'b'])
+        self.assertEqual(texts.call_count, 1)
+
+    def test_a_count_other_than_the_leaves_refuses(self):
+        from apps.scholarship.pdf_layer_guards import page_tree_refusal
+        from apps.scholarship.pdf_pages import _open_pdf, pdf_rules_page_texts
+        data = _pdf(2)
+        self.assertIn(b'/Count 2', data)
+        for count in (b'/Count 3', b'/Count 1'):
+            bad = data.replace(b'/Count 2', count)
+            with self.subTest(count=count):
+                self.assertEqual(page_tree_refusal(_open_pdf(bad)), 'page_count')
+                with mock.patch('apps.scholarship.pdf_pages.pdf_page_texts') as texts:
+                    self.assertEqual(pdf_rules_page_texts(bad, 3), [])
+                self.assertEqual(texts.call_count, 0)
+
+    def test_an_encrypted_pdf_refuses(self):
+        from apps.scholarship.pdf_layer_guards import page_tree_refusal
+        from apps.scholarship.pdf_pages import _open_pdf, pdf_rules_page_texts
+        data = _pdf(1, password='')
+        self.assertEqual(page_tree_refusal(_open_pdf(data)), 'encrypted')
+        with mock.patch('apps.scholarship.pdf_pages.pdf_page_texts') as texts:
+            self.assertEqual(pdf_rules_page_texts(data, 3), [])
+        self.assertEqual(texts.call_count, 0)
+        self.assertEqual(pdf_rules_page_texts(b'not a pdf', 3), [])

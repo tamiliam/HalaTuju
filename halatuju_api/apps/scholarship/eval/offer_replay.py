@@ -148,13 +148,13 @@ def page1_layout_of(eval_dir, key, route):
 
 
 def page_texts_of(eval_dir, key, route):
-    """Each page's VISIBLE text (`pdf_pages.pdf_page_texts`) for the same letters `page1_layout_of` gives a
-    layout (a text-layer PDF whose page-1 layer carries the UMS title); None otherwise (S1c owner words)."""
+    """Each page's VISIBLE text (`pdf_pages.pdf_rules_page_texts`, as `offer_exact` reads it) for the same letters
+    `page1_layout_of` gives a layout (a text-layer PDF whose page-1 layer carries the UMS title); None otherwise."""
     if not page1_layout_of(eval_dir, key, route):
         return None
-    from apps.scholarship.pdf_pages import MAX_LAYER_PAGES, pdf_page_texts
+    from apps.scholarship.pdf_pages import MAX_LAYER_PAGES, pdf_rules_page_texts
     with open(os.path.join(eval_dir, 'fixtures', 'offer_letter', key + '.pdf'), 'rb') as fh:
-        return pdf_page_texts(fh.read(), MAX_LAYER_PAGES)
+        return pdf_rules_page_texts(fh.read(), MAX_LAYER_PAGES)
 
 
 def parser_diagnosis(text, route='vision', page1_layer='', profile_nric='', page1_layout='', page_texts=None):

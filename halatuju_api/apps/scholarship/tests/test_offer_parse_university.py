@@ -28,7 +28,7 @@ LEVEL = 'apps.scholarship.offer_course_match.course_level'
 ONE = ('', {'course_id': 'uh6481001', 'institution': 'Universiti Malaysia Sabah'})
 READ_UMS = 'apps.scholarship.offer_parse_university.read_ums'
 LAYOUT = 'apps.scholarship.pdf_pages.pdf_page1_layout'
-PAGE_TEXTS = 'apps.scholarship.pdf_pages.pdf_page_texts'
+PAGE_TEXTS = 'apps.scholarship.pdf_pages.pdf_rules_page_texts'
 
 
 def ums(name=NAME, nric=NRIC, prog_line=PROG, said=PROG, report='28-29 September 2031', extra_head='',

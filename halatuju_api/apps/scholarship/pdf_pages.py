@@ -21,7 +21,8 @@ from typing import NamedTuple, Optional
 
 from . import pdf_pdfium_check, pdf_render_check, pdfium_run, pdfium_worker
 from .pdf_layer_guards import (_MAX_DOC_FONT_COST, OverBudget as _OverBudget, _doc_may_switch_off, bad_operands,
-                               charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check, shown_chars)
+                               charge_fonts, longest_literal, oc_hides, page_tree_check, page_tree_refusal, raw_state_check,
+                               shown_chars)
 
 logger = logging.getLogger(__name__)
 
@@ -533,12 +534,13 @@ def pdf_page_count(data: bytes) -> int:
 
 def pdf_page_texts(data: bytes, max_pages: int) -> list:
     """The VISIBLE text layer of each of the first ``max_pages`` pages (`_layer_pages`' first run), one
-    string per page ([] if none / encrypted / unreadable): a page whose text is invisible or cannot be
+    string per page ([] if none / unreadable): a page whose text is invisible or cannot be
     checked is '' — decided PER PAGE (S-visible, 2026-11-18), so it reads as a scanned page, and a drawn
     page after a hidden page 1 keeps its text (only then are those pages walked again, one by one: the
     shared read stops at a hidden page 1); EVERY page is '' when the walk ran past the operation budget.
     Pass a page through `usable_text_layer` before trusting it. pypdf raises many kinds on a damaged file,
-    so any failure is no layer — the safe answer: the images are still shown."""
+    so any failure is no layer — the safe answer: the images are still shown. An encrypted PDF that opens
+    with the empty password is read like any other (`pdf_rules_page_texts` refuses it for a rules lane)."""
     opened = []                            # one open and parse of the PDF for both reads below
     read = _layer(data, 0, opened)
     n = min(read.pages, max(0, max_pages), MAX_LAYER_PAGES - (_TAIL_PAGES if read.pages > MAX_LAYER_PAGES else 0))
@@ -547,6 +549,19 @@ def pdf_page_texts(data: bytes, max_pages: int) -> list:
     if read.texts is None:
         return []
     return [t.strip() for t in read.texts[:n]] + [''] * (n - len(read.texts[:n]))
+
+
+def pdf_rules_page_texts(data: bytes, max_pages: int) -> list:
+    """`pdf_page_texts` for a rules lane (UMS, owner words review round 2): [] — no page texts, so no lock —
+    when the PDF is encrypted or its page tree's counts disagree (`page_tree_refusal`), or it cannot be opened."""
+    try:
+        why = page_tree_refusal(_open_pdf(data))
+    except Exception as e:  # unopenable is no page texts, so no lock
+        why = f'unreadable ({type(e).__name__})'
+    if why:
+        logger.warning('PDF page tree refused for a rules lane: %s', why)
+        return []
+    return pdf_page_texts(data, max_pages)
 
 
 def pdf_page1_layout(data: bytes) -> str:
