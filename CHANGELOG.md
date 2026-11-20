@@ -137,6 +137,13 @@ Branch ocr-s5, not pushed. Migration: none. Services: api. Decisions: `docs/deci
 - Version: SPM slip reader `spm_slip 1.3.0`; the fallback diag records `ai_calls` = 2 when the retry answered. No registered model's digest changed (the comments in `ai_registry.py` and `profile_engine.py` only).
 - Gate script, not run: `apps/scholarship/eval/slip_s5_gate.py`. The default is a free dry run with the model mocked. `--live` is paid, cache first, stops on 402/429 and has a `--max-usd` cap. `--score` is free. The live run on the 98 cached slips is 98-196 calls, about US$0.39-1.57; the roadmap's 235 slips are 235-470 calls, about US$0.94-3.76 (3.8 assumed at most twice the 2.5 per-call cost).
 - Tests: `test_slip_read_s5.py` (27) and `test_slip_s5_gate.py` (8); `test_gemini_phase2a.py` and `test_ai_registry.py` updated from "slip on 2.5" to "slip on 3.8 only".
+- Review round 1 (stricter):
+  - A bad answer gets one retry, then is stored 'unreadable'. That now includes one subject with two different grades or bands (an exact duplicate row is kept once), and an answer with no rows or no grade or band on any row.
+  - Only the known keys are kept.
+  - The grade cleaner refuses control and format characters (newline, NUL, zero-width marks) instead of stripping them.
+  - The models are an allow-list: only "gemini-3.8…" may read a slip.
+  - The failed-read error names the model once.
+  - The gate's `--live` does not cache a service failure, and stops when a response reports no token counts. Tests: 35 + 11.
 
 ### fix: gift names are checked the same way on create as on rename (review of #71, 2026-11-19)
 

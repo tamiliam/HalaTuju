@@ -71,7 +71,7 @@ class TheGradeCleanUp(SimpleTestCase):
 
     def test_known_variants_map(self):
         cases = {'A+': 'A+', 'Aplus': 'A+', 'APLUS': 'A+', 'A plus': 'A+', 'a+': 'A+',
-                 'A\t': 'A', '\tB+ ': 'B+', ' C + ': 'C+', 'A​+': 'A+', 'A\n': 'A',
+                 'A\t': 'A', '\tB+ ': 'B+', ' C + ': 'C+', 'A +': 'A+', 'A　': 'A',
                  'Ａ＋': 'A+', 'Ｂ': 'B', 'ＴＨ': 'TH', 'A−': 'A-',
                  'A–': 'A-', 'A minus': 'A-', 'Cplus': 'C+',
                  'th': 'TH', 'TH': 'TH', 'G': 'G', 'E': 'E', 'D': 'D', '': '', '   ': '', '\t': ''}
@@ -88,6 +88,14 @@ class TheGradeCleanUp(SimpleTestCase):
         for raw in ('A+}', '"A+"', '{"grade": "A"}', 'A十', '优', 'A++', '1A', 'F', 'B-', 'Bminus',
                     'Gplus', 'Eplus', 'A+B', 'AA', 'PLUS', 'A*', 'Cemerlang', 'A,', None, 5, ['A']):
             with self.subTest(raw=raw):
+                self.assertIsNone(clean_slip_grade(raw))
+
+    def test_control_and_format_characters_are_refused_not_stripped(self):
+        """Review round 1: only plain space and tab (and NFKC's spaces) are folded; a newline,
+        NUL, DEL, NEL, a zero-width mark or a line separator means the cell is not a clean grade."""
+        for raw in ('A\n', 'A\r', 'A\x00', 'A\x7f', 'A\x85', 'A​+', 'A‎', '﻿A',
+                    'A⁠', 'A ', 'B ', 'A '):
+            with self.subTest(raw=repr(raw)):
                 self.assertIsNone(clean_slip_grade(raw))
 
 
@@ -114,9 +122,50 @@ class TheAnswerCheck(SimpleTestCase):
         self.assertEqual(cleaned['results'][1], {'subject': 'MATEMATIK TAMBAHAN', 'grade': 'A+',
                                                  'band': 'CEMERLANG TINGGI'})
 
-    def test_an_empty_results_list_is_a_good_answer(self):
+    def test_an_answer_with_no_rows_is_a_bad_answer(self):
         cleaned, problems = slip_read.check_slip_answer({'candidate_name': '', 'exam': '', 'results': []})
-        self.assertEqual((cleaned['results'], problems), ([], []))
+        self.assertIsNone(cleaned)
+        self.assertTrue(problems)
+        blank_rows = {'results': [{'subject': '', 'grade': '', 'band': ''}]}
+        self.assertIsNone(slip_read.check_slip_answer(blank_rows)[0])
+
+    def test_rows_with_no_grade_and_no_band_anywhere_are_a_bad_answer(self):
+        data = {'candidate_name': 'X', 'exam': 'SPM',
+                'results': [{'subject': 'SEJARAH', 'grade': '', 'band': ''},
+                            {'subject': 'SAINS', 'grade': '', 'band': ''}]}
+        cleaned, problems = slip_read.check_slip_answer(data)
+        self.assertIsNone(cleaned)
+        self.assertIn('no grade or band read on any row', problems)
+        data['results'][1]['band'] = 'LULUS'               # one row read: a good answer
+        self.assertEqual(slip_read.check_slip_answer(data)[1], [])
+
+    def test_one_subject_with_two_different_grades_is_a_bad_answer(self):
+        for second in ({'subject': 'MATEMATIK', 'grade': 'B', 'band': 'CEMERLANG TINGGI'},
+                       {'subject': 'matematik', 'grade': 'A', 'band': 'KEPUJIAN'}):
+            data = _good()
+            data['results'].append(second)
+            with self.subTest(second=second):
+                cleaned, problems = slip_read.check_slip_answer(data)
+                self.assertIsNone(cleaned)
+                self.assertTrue(any('same subject' in p for p in problems))
+
+    def test_an_exact_duplicate_row_is_kept_once(self):
+        data = _good()
+        data['results'].append({'subject': 'MATEMATIK', 'grade': 'A', 'band': 'CEMERLANG TINGGI'})
+        cleaned, problems = slip_read.check_slip_answer(data)
+        self.assertEqual(problems, [])
+        self.assertEqual([r['subject'] for r in cleaned['results']], ['BAHASA MELAYU', 'MATEMATIK'])
+
+    def test_only_the_known_keys_are_kept(self):
+        data = {**_good(), 'notes': 'extra', 'extra_id': 'X1'}
+        data['results'][0] = {**data['results'][0], 'confidence': 0.9, 'code': '1103'}
+        cleaned, _ = slip_read.check_slip_answer(data)
+        self.assertEqual(sorted(cleaned), ['candidate_name', 'exam', 'results', 'warnings'])
+        for row in cleaned['results']:
+            self.assertEqual(sorted(row), ['band', 'grade', 'subject'])
+        out, _ = _read(data)
+        self.assertNotIn('notes', out['fields'])
+        self.assertNotIn('extra_id', out['fields'])
 
     def test_a_blank_row_is_dropped(self):
         data = _good()
@@ -166,6 +215,25 @@ class TheRetry(SimpleTestCase):
         self.assertTrue(out['error'].startswith(DOCUMENT_FAILED))
         self.assertIn(slip_read.MALFORMED_SLIP, out['error'])
         self.assertFalse(is_ai_service_error(out['error']))   # stored 'unreadable', not deferred
+
+    def test_the_failed_read_names_the_model_once(self):
+        unparseable = {'_error': f'{DOCUMENT_FAILED}: gemini-3.8-flash: UNPARSEABLE_RESPONSE'}
+        for answers in ((unparseable, unparseable), (_good(grade='A十'), unparseable)):
+            with self.subTest(answers=answers):
+                out, _ = _read(*answers)
+                self.assertEqual(out['error'].count('gemini-3.8-flash'), 1)
+                self.assertIn('try 1:', out['error'])
+                self.assertIn('try 2:', out['error'])
+
+    def test_a_bad_answer_of_any_new_kind_gets_one_retry_then_is_unreadable(self):
+        dup = _good()
+        dup['results'].append({'subject': 'MATEMATIK', 'grade': 'C', 'band': ''})
+        for bad in (dup, {'candidate_name': 'X', 'exam': 'SPM', 'results': []}):
+            with self.subTest(bad=bad):
+                out, models = _read(bad, bad)
+                self.assertEqual(len(models), 2)
+                self.assertTrue(out['error'].startswith(DOCUMENT_FAILED))
+                self.assertFalse(is_ai_service_error(out['error']))
 
     def test_an_unparseable_answer_is_retried_once(self):
         unparseable = {'_error': f'{DOCUMENT_FAILED}: gemini-3.8-flash: UNPARSEABLE_RESPONSE'}
@@ -218,6 +286,18 @@ class TwoPointFiveIsNeverCalled(SimpleTestCase):
                                           models=['gemini-3.8-flash', 'gemini-2.5-flash'])
         self.assertEqual(calls, [])
         self.assertTrue(out['error'])
+
+    def test_only_3_8_models_may_read_an_allow_list(self):
+        """Review round 1: a model that is merely 'not 2.5' is refused, never let through."""
+        with patch('apps.scholarship.profile_engine.MODEL_CASCADE',
+                   ['gemini-4.0-pro', 'gemini-3.8-flash', 'gemini-2.5-flash', 'other-model']):
+            self.assertEqual(slip_read.slip_read_models(), ['gemini-3.8-flash'])
+        for models in (['gemini-4.0-pro'], ['gemini-3.8-flash', 'gemini-3.9-flash'], ['gpt-x'], []):
+            calls = []
+            with self.subTest(models=models):
+                out = slip_read.read_slip_checked(lambda m: calls.append(m) or _good(), models=models)
+                self.assertEqual(calls, [])
+                self.assertTrue(is_ai_service_error(out['error']))   # 'review_manually'
 
     def test_nothing_is_pinned_to_2_5(self):
         self.assertEqual(vision.PINNED_25_DOC_TYPES, frozenset())

@@ -71,16 +71,56 @@ class TheDryRun(_Corpus):
                                    out=lines.append), 2)
 
 
+_USAGE = SimpleNamespace(prompt_token_count=300, candidates_token_count=40, thoughts_token_count=0,
+                         total_token_count=340, cached_content_token_count=None, prompt_tokens_details=None)
+
+
 class TheLiveRunOnAFakeClient(_Corpus):
-    def _factory(self, answer):
+    def _factory(self, answer, usage=_USAGE, raises=None):
         self.asked = []
 
         def generate_content(model, contents, config=None):
             self.asked.append(model)
-            return SimpleNamespace(text=json.dumps(answer), usage_metadata=None)
+            if raises is not None:
+                raise raises
+            return SimpleNamespace(text=json.dumps(answer), usage_metadata=usage)
         client = MagicMock()
         client.models.generate_content.side_effect = generate_content
         return lambda *a, **k: client
+
+    def _cached(self):
+        return sorted(os.listdir(os.path.join(self.dir, gate.CACHE_DIR)))
+
+    def test_a_service_failure_is_not_cached(self):
+        """Review round 1: a 503 / 404-model answer is our side, so the next run reads it again."""
+        factory = self._factory(None, raises=RuntimeError('503 UNAVAILABLE: the model is overloaded'))
+        lines = []
+        with override_settings(GEMINI_API_KEY='test-key'):
+            self.assertEqual(gate.main(['--eval-dir', self.dir, '--live'], client_factory=factory,
+                                       out=lines.append), 0)
+        self.assertEqual(self.asked, ['gemini-3.8-flash', 'gemini-3.8-flash'])   # one per slip, no retry
+        self.assertEqual(self._cached(), [])
+        self.assertIn('2 service failure(s) not cached', lines[-1])
+
+    def test_a_response_with_no_token_counts_stops_the_run(self):
+        """Review round 1: with no token counts the --max-usd cap cannot be kept."""
+        factory = self._factory(_GOOD, usage=None)
+        lines = []
+        with override_settings(GEMINI_API_KEY='test-key'):
+            self.assertEqual(gate.main(['--eval-dir', self.dir, '--live'], client_factory=factory,
+                                       out=lines.append), 4)
+        self.assertEqual(self.asked, ['gemini-3.8-flash'])          # the second slip is never read
+        self.assertEqual(self._cached(), [f'{self.keys[0]}.json'])  # the real read is still kept
+        self.assertTrue(lines[-1].startswith('STOP: 1 call(s) reported no token counts'))
+
+    def test_the_cap_stops_the_run(self):
+        factory = self._factory(_GOOD)
+        lines = []
+        with override_settings(GEMINI_API_KEY='test-key'):
+            gate.main(['--eval-dir', self.dir, '--live', '--max-usd', '0.0001'], client_factory=factory,
+                      out=lines.append)
+        self.assertEqual(self.asked, ['gemini-3.8-flash'])
+        self.assertTrue(any(l.startswith('STOP: the run has cost') for l in lines))
 
     def test_it_reads_on_3_8_only_caches_and_never_rereads(self):
         factory = self._factory(_GOOD)

@@ -191,8 +191,9 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
 # reads, and return None for anything else, which the slip reader treats as a failed read. A grade
 # is never guessed: a value is either one of SLIP_GRADES after the clean-up, or it is refused.
 _SLIP_GRADE_SET = frozenset(SLIP_GRADES)
-#: Whitespace of every kind (tab, newline, no-break, full-width) and the zero-width marks.
-_SLIP_INVISIBLE = re.compile(r'[\s\u200b-\u200f\u2060\ufeff]+')
+#: The only spacing a grade cell may carry and still be read: plain space and tab (NFKC has
+#: already turned the full-width and no-break spaces into a plain space).
+_SLIP_GRADE_SPACING = re.compile(r'[ \t]+')
 #: Dashes NFKC leaves alone; on a grade they can only mean the minus of "A-".
 _SLIP_DASHES = str.maketrans({'\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2013': '-',
                               '\u2014': '-', '\u2212': '-'})
@@ -207,12 +208,16 @@ def _nfkc(value: str) -> str:
 
 def clean_slip_grade(raw):
     """One grade cell → a member of SLIP_GRADES, '' (the cell is blank), or None (not a grade —
-    the read failed). Maps only the known variants: full-width forms, stray spaces / tabs /
-    zero-width marks, lower case, a word sign ("Aplus", "A plus", "B minus") and a typographic
-    dash. "A+}", "A十", "A++", "1A", a JSON fragment or a non-string all give None."""
+    the read failed). Maps only the known variants: full-width forms, stray spaces / tabs, lower
+    case, a word sign ("Aplus", "A plus", "B minus") and a typographic dash. "A+}", "A十", "A++",
+    "1A", a JSON fragment, a non-string, and a control or format character (a newline, NUL, a
+    zero-width mark: Unicode Cc / Cf, or a line separator) all give None."""
     if not isinstance(raw, str):
         return None
-    s = _SLIP_INVISIBLE.sub('', _nfkc(raw)).translate(_SLIP_DASHES).upper()
+    s = _nfkc(raw)
+    if any(ch not in ' \t' and unicodedata.category(ch)[0] in 'CZ' for ch in s):
+        return None
+    s = _SLIP_GRADE_SPACING.sub('', s).translate(_SLIP_DASHES).upper()
     for word, sign in (('PLUS', '+'), ('MINUS', '-')):
         if len(s) > len(word) and s.endswith(word):
             s = s[:-len(word)] + sign

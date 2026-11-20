@@ -5,11 +5,14 @@ fallback when neither the certificate parser nor the word-box read locks. Until 
 stayed on 2.5 Flash, because in the paid eval 3.8 Flash wrote malformed grades on 26 of 98 slips
 ("Aplus", stray JSON, tab and CJK characters). SPM grades feed eligibility, so the rule here is:
 
-  * the model list is 3.8 Flash ONLY (`slip_read_models`) — a 2.5 model is never called for a
-    slip, and an empty list refuses the read rather than fall back to the default cascade;
+  * the model list is an ALLOW-list: only a model named "gemini-3.8…" may read a slip
+    (`slip_read_models`) — a 2.5 (or any other) model is never called for a slip, and an empty
+    list refuses the read (a service error, 'review_manually') rather than fall back;
   * the schema asks for a closed grade enum with every key required (`schemas.py`), and every
     answer is still CHECKED here: each grade must clean (`sanitize.clean_slip_grade`) to one of
-    the academic engine's grades, and each subject / band must carry no stray characters;
+    the academic engine's grades, each subject / band must carry no stray characters, one subject
+    may not carry two different grades, and at least one row must show a grade or band. Only the
+    known keys are kept (name, exam, results, warnings; subject, grade, band per row);
   * a malformed answer, or an answer the model could not produce (DOCUMENT_FAILED), is asked ONCE
     more on 3.8; a service failure (our side — rate limit, outage) is not retried here;
   * still malformed after the retry → a failed read (DOCUMENT_FAILED, stored 'unreadable', the
@@ -26,26 +29,37 @@ DOC_TYPE = 'results_slip'
 MALFORMED_SLIP = 'MALFORMED_SLIP_ANSWER'
 #: How many times the slip is asked in all: the first read and at most one retry.
 MAX_CALLS = 2
+#: The ONLY model family that may read a slip (an allow-list: a new or renamed model is refused
+#: until it is named here, never let through because it is not "2.5").
+SLIP_MODEL_PREFIX = 'gemini-3.8'
+#: The keys kept from a model answer; anything else the model adds is dropped.
+_TOP_KEYS = ('candidate_name', 'exam', 'results', 'warnings')
+_ROW_KEYS = ('subject', 'grade', 'band')
+
+
+def is_slip_model(model) -> bool:
+    return str(model).startswith(SLIP_MODEL_PREFIX)
 
 
 def slip_read_models() -> list:
-    """The slip read's models: `profile_engine.MODEL_CASCADE` with every 2.5 model taken out
+    """The slip read's models: the models of `profile_engine.MODEL_CASCADE` on the allow-list
     (today `['gemini-3.8-flash']`). Read live, so the AI registry shows what the read uses."""
     from ..profile_engine import MODEL_CASCADE
-    return [m for m in MODEL_CASCADE if 'gemini-2.5' not in str(m)]
+    return [m for m in MODEL_CASCADE if is_slip_model(m)]
 
 
 def check_slip_answer(data):
     """One parsed slip answer → ``(cleaned, problems)``. ``cleaned`` is the answer with every
-    grade, subject and band in its plain spelling (None when the answer is unusable); ``problems``
-    lists what was wrong, empty for a good answer. An empty results list is a good answer (the
-    slip may show no table) — the academic engine then has nothing to confirm."""
+    grade, subject and band in its plain spelling and only the known keys (None when the answer
+    is unusable); ``problems`` lists what was wrong, empty for a good answer. An answer with no
+    rows, or no grade or band on any row, is a bad answer: a results slip always shows a table."""
+    from ..academic_engine import _slip_key
     if not isinstance(data, dict):
         return None, ['the answer is not an object']
     results = data.get('results')
     if not isinstance(results, list):
         return None, ['no results list']
-    problems, rows = [], []
+    problems, rows, seen = [], [], {}
     for i, row in enumerate(results, start=1):
         if not isinstance(row, dict) or 'subject' not in row or 'grade' not in row:
             problems.append(f'row {i}: not a subject / grade pair')
@@ -63,24 +77,34 @@ def check_slip_answer(data):
         if not subject:
             problems.append(f'row {i}: a grade with no subject')
             continue
-        rows.append({**row, 'subject': subject, 'grade': grade, 'band': band})
+        key = _slip_key(subject)
+        if key in seen and seen[key] != (grade, band):
+            problems.append(f'row {i}: the same subject as an earlier row with a different grade')
+            continue
+        if key not in seen:
+            seen[key] = (grade, band)
+            rows.append({'subject': subject, 'grade': grade, 'band': band})
+    if not problems and not any(r['grade'] or r['band'] for r in rows):
+        problems.append('no grade or band read on any row')
     for key in ('candidate_name', 'exam'):
         if data.get(key) is not None and not isinstance(data.get(key), str):
             problems.append(f'{key} is not text')
     if problems:
         return None, problems
-    return {**data, 'results': rows}, []
+    cleaned = {k: data[k] for k in _TOP_KEYS if k in data}
+    return {**cleaned, 'results': rows}, []
 
 
 def read_slip_checked(call, models=None) -> dict:
     """Run the slip read through ``call(models)`` (one `_call_gemini_json` answer) and return
     ``{fields, warnings, error}`` as `extract_document_fields` does, plus ``slip_calls`` (1 or 2)
     on a good read. At most `MAX_CALLS` calls, every one on ``models`` (default
-    `slip_read_models()`), never a 2.5 model."""
+    `slip_read_models()`), only ever a model on the allow-list."""
     models = list(slip_read_models() if models is None else models)
-    if not models or any('gemini-2.5' in str(m) for m in models):
+    if not models or not all(is_slip_model(m) for m in models):
         return {'fields': {}, 'warnings': [], 'error': cascade_failure(
-            [('slip read', 'no 3.8 model to read the slip with; 2.5 is never used for a slip')])}
+            [('slip read', f'no {SLIP_MODEL_PREFIX} model to read the slip with; no other model '
+                           'is used for a slip')])}
     failures = []
     for attempt in range(1, MAX_CALLS + 1):
         data = call(models)
@@ -88,13 +112,23 @@ def read_slip_checked(call, models=None) -> dict:
             err = str(data['_error'] or '')
             if not err.startswith(DOCUMENT_FAILED):
                 return {'fields': {}, 'warnings': [], 'error': err}   # our side: no retry here
-            failures.append((models[0], err[len(DOCUMENT_FAILED):].lstrip(': ')[:200]))
+            failures.append(f'try {attempt}: ' + _without_model(err[len(DOCUMENT_FAILED):].lstrip(': '),
+                                                                 models)[:200])
             continue
         cleaned, problems = check_slip_answer(data)
         if cleaned is None:
-            failures.append((models[0], f'{MALFORMED_SLIP}: ' + '; '.join(problems[:5])))
+            failures.append(f'try {attempt}: {MALFORMED_SLIP}: ' + '; '.join(problems[:5]))
             continue
         warnings = _drop_expected_warnings(DOC_TYPE, cleaned.pop('warnings', []) or [])
         fields = _sanitize_extracted_fields(DOC_TYPE, cleaned)
         return {'fields': fields, 'warnings': warnings, 'error': '', 'slip_calls': attempt}
-    return {'fields': {}, 'warnings': [], 'error': document_failure(failures)}
+    # One entry, so the stored error names the model ONCE ("…: gemini-3.8-flash: try 1: …; try 2: …").
+    return {'fields': {}, 'warnings': [], 'error': document_failure([(models[0], '; '.join(failures))])}
+
+
+def _without_model(msg, models):
+    """A seam error already names its model ("gemini-3.8-flash: UNPARSEABLE…"): drop that name."""
+    for m in models:
+        if msg.startswith(f'{m}: '):
+            return msg[len(m) + 2:]
+    return msg

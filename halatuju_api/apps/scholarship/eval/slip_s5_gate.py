@@ -15,7 +15,9 @@ MODES
   --live, PAID (owner's yes): the same read on the real 3.8 Flash, inside
       `offer_fresh_gemini.guarded_production_read` (a 402 / 429 stops the whole run, every database
       query and Storage are refused). Cache first: `<eval-dir>/slip_s5/<key>.json`; a cached slip
-      is never read again unless --force. --max-usd (default 4.00) stops the run at its cap.
+      is never read again unless --force; a service failure (503, 404 model, …) is NOT cached.
+      --max-usd (default 4.00) stops the run at its cap, and a call that reports no token counts
+      (or has no price row) stops it too, since the cap could not be kept.
   --score, FREE: reads those caches and scores them beside the STORED read
       (`snapshots/<key>.json`), on the typed-grade answer key: wrong grades (`compare_academics`
       `mismatched`), "please check" rows, refusals, and malformed grades (must be 0).
@@ -162,20 +164,22 @@ def estimate(n_slips):
 def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=print):
     """PAID. Reads each uncached slip on 3.8 Flash and caches the answer; returns an exit code."""
     from apps.scholarship.eval import offer_fresh_gemini as ofg
-    from apps.scholarship.vision.slip_read import slip_read_models
+    from apps.scholarship.read_errors import is_ai_service_error
+    from apps.scholarship.vision.slip_read import is_slip_model, slip_read_models
     models = slip_read_models()
-    if not models or any('2.5' in m for m in models):
+    if not models or not all(is_slip_model(m) for m in models):
         out(f'STOP: the slip read models are {models} - 3.8 only expected. Nothing read.')
         return 2
-    files, spent, read = slip_files(eval_dir), 0.0, 0
+    files, spent, read, unpriced, not_cached = slip_files(eval_dir), 0.0, 0, 0, 0
     os.makedirs(os.path.join(eval_dir, CACHE_DIR), exist_ok=True)
     with mock.patch.dict(ofg.PRICES, {m: ofg.PRICES.get(m) or PRICE_38_ASSUMED for m in models}):
         for key in keys:
             cache = os.path.join(eval_dir, CACHE_DIR, f'{key}.json')
             if os.path.exists(cache) and not force:
                 continue
-            if spent >= max_usd:
-                out(f'STOP: US${spent:.4f} spent, at the cap US${max_usd:.2f} - nothing more read')
+            stop = ofg.cap_stop_line([{'usage': {'cost_usd': spent, 'unpriced_calls': unpriced}}], max_usd)
+            if stop:
+                out(stop)
                 break
             calls, meter = [], []
             try:
@@ -184,11 +188,23 @@ def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=pr
             except ofg.StopRun as e:
                 out(f'STOP: {e.model} answered {e.code} - the run ends here ({read} slips read)')
                 return 3
-            cost = sum(c.get('cost_usd') or 0.0 for c in calls)
-            spent, read = spent + cost, read + 1
-            with open(cache, 'w', encoding='utf-8') as fh:
-                json.dump({'result': res, 'calls': calls, 'models': models}, fh, indent=1, sort_keys=True)
-    out(f'Read {read} slips on {models}, US${spent:.4f} (3.8 priced at the ASSUMED row unless PRICES has one).')
+            answered = [c for c in calls if c.get('answered')]
+            spent += sum(c.get('cost_usd') or 0.0 for c in answered)
+            unpriced += sum(1 for c in answered if c.get('cost_usd') is None)
+            read += 1
+            if is_ai_service_error(res.get('error')):
+                not_cached += 1          # our side failed (503, 404 model, …): read again next run
+            else:                        # a real read, or a real bad-answer refusal
+                with open(cache, 'w', encoding='utf-8') as fh:
+                    json.dump({'result': res, 'calls': calls, 'models': models}, fh, indent=1, sort_keys=True)
+            blind = sum(1 for c in answered
+                        if c.get('input_tokens') is None or c.get('output_tokens') is None)
+            if blind:
+                out(f'STOP: {blind} call(s) reported no token counts - the cap US${max_usd:.2f} cannot '
+                    f'be kept ({read} slips read, US${spent:.4f} counted) - nothing more read')
+                return 4
+    out(f'Read {read} slips on {models}, US${spent:.4f} (3.8 priced at the ASSUMED row unless PRICES '
+        f'has one); {not_cached} service failure(s) not cached.')
     return 0
 
 
