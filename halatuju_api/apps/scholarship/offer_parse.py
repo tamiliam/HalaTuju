@@ -377,12 +377,15 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page
     not checked yet) of PAGE 1 — its layout, or a scan's own text — must show ALL the owner's phrases
     (`offer_owner_words`; on a text-layer PDF, not the letterhead-picture ones; guard ``owner_words_missing``,
     the phrase NUMBERS in ``out['owner_words_missing']``), looked for only when `read_ums` has not refused;
-    then the checks above; a Cyrillic or Greek letter in a digital letter's text refuses (``foreign_letters``,
-    owner words review round 2; never on a scan); last, a later page showing a second offer refuses
-    (``second_offer``, MED 3)."""
+    then each anchored value must sit right after its owner phrase on page 1 (`anchor_refusal`, review round 3
+    part B: guards ``anchor_once`` / ``anchor_name`` / ``anchor_ic`` / ``anchor_code``); then the checks above;
+    a letter, digit or mark outside Latin, or one NFKC changes, in a digital letter's text refuses
+    (``foreign_letters``, owner words review rounds 2-3; never on a scan); last, a later page showing a second
+    offer refuses (``second_offer``, MED 3)."""
     from .offer_owner_words import missing
     from .offer_parse_university import LANE, MAX_LETTER_CHARS, name_in_plain, read_ums
-    from .offer_ums_refusal import foreign_letters, later_pages_refusal, letter_refusal, page_texts_refusal
+    from .offer_ums_refusal import (anchor_refusal, foreign_letters, later_pages_refusal, letter_refusal,
+                                    page_texts_refusal)
     if out['portal']:
         return out
     if page1_text.strip() and not page1_layout.strip():
@@ -403,6 +406,8 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page
         out['owner_words_missing'] = missing(LANE, shown, text_pdf=digital)
         early = 'owner_words_missing' if out['owner_words_missing'] else ''
     reason = early or reason
+    if not reason:
+        reason = anchor_refusal(shown, fields, digital)   # each value right after its owner phrase (round 3 B)
     if not reason and digital:
         reason = letter_refusal(text)            # every page: a status letter or a withdrawal (review round 2)
     if not reason and digital and foreign_letters(text, page1_text, page1_layout, *pages):

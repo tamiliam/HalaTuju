@@ -502,7 +502,7 @@ def read_ums(source: str):
     from .offer_parse import house_date
     if len(source or '') > MAX_CHARS or len((source or '').splitlines()) > MAX_LINES:
         return None, 'too_long'                  # more than a page 1 holds: no rule runs (S1c; every line break)
-    if _STATUS.search(fold_lookalikes(source)):     # look-alike letters folded (owner words review round 2)
+    if _STATUS.search(source) or _STATUS.search(fold_lookalikes(source)):   # raw OR folded (review rounds 2-3)
         return None, 'status_letter'
     lines = _text_lines(source)
     title_at, intake = _title(lines)

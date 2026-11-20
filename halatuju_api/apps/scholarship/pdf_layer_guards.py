@@ -146,18 +146,21 @@ def page_tree_refusal(reader) -> str:
     """Why a rules lane must not trust this PDF's page list (owner words review round 2, fix 7; on a reader
     `page_tree_check` passed, so no node is met twice): 'encrypted' (none of the 36 genuine UMS PDFs is);
     'page_count' when any page-tree node's /Count (the root's too) is not the number of leaf pages under it in
-    the /Kids tree, or a leaf holds /Kids (a viewer may show pages pypdf does not read); '' when none. All 36
-    genuine UMS PDFs pass. Walks the nodes the way pypdf's ``_flatten`` does (/Type, else /Kids)."""
+    the /Kids tree, or a leaf holds /Kids (a viewer may show pages pypdf does not read); review round 3 (LOW-3):
+    also a null or non-dictionary node, and a leaf whose /Type is neither /Page nor absent (/Template, /Foo).
+    '' when none. All 36 genuine UMS PDFs pass. Walks the nodes the way pypdf's ``_flatten`` does."""
     if reader.is_encrypted:
         return 'encrypted'
     todo, order = [(_get(reader.trailer['/Root'].get_object(), '/Pages'), -1)], []   # parents listed first
     while todo:
         ref, parent = todo.pop()
         node = ref.get_object() if ref is not None else None
-        kind = node.get('/Type') if isinstance(node, dict) else None
-        inner = isinstance(node, dict) and (kind == '/Pages' or (kind is None and '/Kids' in node))
-        if not inner and isinstance(node, dict) and '/Kids' in node:
-            return 'page_count'
+        if not isinstance(node, dict):
+            return 'page_count'                  # a null or broken kid (review round 3, LOW-3)
+        kind = node.get('/Type')
+        inner = kind == '/Pages' or (kind is None and '/Kids' in node)
+        if not inner and ('/Kids' in node or kind not in (None, '/Page')):
+            return 'page_count'                  # a leaf with /Kids, or of another type
         order.append([node if inner else None, parent, 0 if inner else 1])
         kids = _get(node, '/Kids') if inner else None
         todo.extend((k, len(order) - 1) for k in (kids if isinstance(kids, list) else ()))
