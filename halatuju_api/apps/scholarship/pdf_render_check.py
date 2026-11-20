@@ -19,8 +19,8 @@ refused. Content is read by this module's own tokenizer, so the verdict does not
 Since fix round 11 also: the size a visible glyph is drawn at, clipping paths (nested and in all), and every
 annotation's appearance stream (pdfium draws them with the page). Since TD-692 (2026-11-20) a JPEG2000 (JPX)
 image is allowed anywhere, as an image's last filter, and charged the larger of its dictionary's size and its
-own header's (`pdf_jpx`; a header that cannot be read is refused), and an ASCIIHex content stream is decoded and
-charged. JPX is not decoded here. JBIG2 is still refused (TD-697).
+own header's (`pdf_jpx`; a header that cannot be read is refused) and by its decode work, capped per page and per
+call (review 3), and an ASCIIHex content stream is decoded and charged. JBIG2 is still refused (TD-697).
 """
 import math
 import re
@@ -28,7 +28,7 @@ import zlib
 
 from pypdf.generic import StreamObject
 
-from .pdf_jpx import JPX, jpx_charge
+from .pdf_jpx import JPX, MAX_PAGE_JPX_WORK, charge_document, jpx_charge
 from .pdf_layer_guards import OverBudget, _get
 
 # ── Caps: about 2x the corpus maximum. Each "corpus" figure is the real maximum over the 533 PDFs' pages 1-3 and
@@ -109,18 +109,19 @@ def render_refusal(data: bytes, pick) -> tuple:
     from .pdf_pdfium_load import load_check
     try:
         reader = _open_pdf(data)
-        n, load_state = len(reader.pages), {}
+        n, load_state, doc = len(reader.pages), {}, {}
         for i in pick(n):
             if 0 <= i < n:
                 load_check(reader.pages[i], reader, load_state)
-                page_cost(reader.pages[i], reader)
+                page_cost(reader.pages[i], reader, doc=doc)
         return n, None
     except Exception as e:  # anything the check cannot follow is refused, never rendered
         return 0, f'{type(e).__name__}: {e}'[:200]
 
 
-def page_cost(page, reader, limits: bool = True) -> dict:
-    """Walk one page and return what its render costs; raise `Refused` / `OverBudget` past a cap."""
+def page_cost(page, reader, limits: bool = True, doc=None) -> dict:
+    """Walk one page and return what its render costs; raise `Refused` / `OverBudget` past a cap. ``doc``: the
+    totals shared by the pages of one gate call (JPX decode work)."""
     from .pdf_pages import _resources, raster_scale
     box = [float(v) for v in page.cropbox]
     x0, y0, x1, y1 = min(box[0], box[2]), min(box[1], box[3]), max(box[0], box[2]), max(box[1], box[3])
@@ -128,6 +129,7 @@ def page_cost(page, reader, limits: bool = True) -> dict:
     if scale is None:
         raise Refused('a page box outside the render bounds')
     cost = _Cost((x0, y0, x1, y1), scale, limits)
+    cost.doc = {} if doc is None else doc
     contents = page.get('/Contents')
     contents = contents.get_object() if contents is not None else None
     streams = [c.get_object() for c in contents] if isinstance(contents, list) else [contents] if contents else []
@@ -139,7 +141,8 @@ def page_cost(page, reader, limits: bool = True) -> dict:
 
 
 def _content_bytes(stream, cost) -> bytes:
-    """A content stream decoded, charged to the page's content budget (Flate, none, or ASCII85 then Flate)."""
+    """A content stream decoded, charged to the page's content budget (Flate, none, ASCII85 then Flate, or
+    ASCIIHex through `pdf_pdfium_load._inflated`)."""
     from .pdf_pdfium_load import _inflated
     if not isinstance(stream, StreamObject):
         raise Refused('a content stream that is not a stream')
@@ -277,7 +280,7 @@ class _Cost:
         self.page_px = (page_box[2] - page_box[0]) * (page_box[3] - page_box[1]) * scale * scale
         self.stats = dict.fromkeys(('tokens', 'ops', 'paint_px', 'image_bytes', 'max_image', 'image_px', 'max_image_px',
                                     'cell_px', 'tiles', 'type3', 'glyph_ops', 'glyph_work', 'blend_paints', 'smasks',
-                                    'patterns', 'groups', 'font_pt', 'clips', 'clip_depth', 'annots'), 0)
+                                    'patterns', 'groups', 'font_pt', 'clips', 'clip_depth', 'annots', 'jpx_work'), 0)
         self.stats.update(filters=set(), shadings=set())
 
     def add(self, key, n, cap):
@@ -545,12 +548,12 @@ class _Cost:
             bpc = _get(img, '/BitsPerComponent')
             bpc = bpc if isinstance(bpc, int) and 0 < bpc <= 16 else 8
             bits = bpc * self.components(_get(img, '/ColorSpace'), res)
-        px = w * h
+        px, work = w * h, None
         if names and names[-1] == JPX:
             charge = jpx_charge(img, names[:-1], px, bits)
             if charge is None:
                 raise Refused('a JPEG2000 image whose header was not read')
-            px, bits = charge
+            px, bits, work = charge
         size = math.ceil(px * bits / 8)
         self.stats['max_image'] = max(self.stats['max_image'], size)
         if self.limits and size > MAX_IMAGE_BYTES:
@@ -561,6 +564,9 @@ class _Cost:
         if self.limits and px > MAX_IMAGE_PX:
             raise OverBudget('an image past the render pixel cap')
         self.add('image_px', px, MAX_PAGE_IMAGE_PX)
+        if work is not None:                             # review 3: a JPX image's decode work, page and call
+            self.add('jpx_work', work, MAX_PAGE_JPX_WORK)
+            charge_document(self.doc, work, self.limits)
         for key in ('/SMask', '/Mask'):
             sub = _get(img, key)
             if isinstance(sub, StreamObject):

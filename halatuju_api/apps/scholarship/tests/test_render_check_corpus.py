@@ -20,7 +20,8 @@ from apps.scholarship.tests.test_pdf_render_jpx import _jpx, _jpx_bytes, _jpx_pa
 #: Refusals of genuine (non-empty) fixture letters that are known and left for later, by reason. Each is a real
 #: letter stored unreadable: remove the entry when its fix lands. One since TD-692 (measured 2026-11-21, 870
 #: fixture PDFs): f0450bfc, a genuine letter whose JPX image has a /JBIG2Decode mask (TD-697). The other refusal
-#: is b36e232b, the empty file, which is never counted here. Ids: first 8 of the sha1 of the root-relative path.
+#: is b36e232b, the empty file, which is never counted here. Ids: the first 8 hex digits of the sha1 of the path
+#: relative to the root as Windows writes it (backslash separators, UTF-8): os.path.relpath on Windows.
 KNOWN_GAPS = Counter({"Refused: an image filter outside the whitelist ('/JBIG2Decode')": 1})
 
 

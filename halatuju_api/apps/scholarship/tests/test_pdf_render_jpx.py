@@ -27,7 +27,8 @@ def _refusal(pdf):
 
 # ── TD-692: a JPEG2000 (JPX) image on page content was refused as "an image filter outside the whitelist", so a
 #    genuine scanned letter got no page image and was stored unreadable. It is now charged like any image, by the
-#    LARGER of its dictionary's size and its own header's (never decoded here); the time limit does the rest.
+#    LARGER of its dictionary's size and its own header's (never decoded here), and by its decode work (review 3,
+#    `ADecodeWork` below); the child's time limit stays the backstop.
 _RED = (200, 10, 10)
 
 
@@ -193,6 +194,96 @@ class AJpeg2000Image(SimpleTestCase):
         pdf = _annotated(_show(SPM_TEXT), b'6 0 R', stamp)
         self.assertIsNone(_refusal(pdf))
         self.assertEqual(_cost(pdf)['max_image_px'], 60_000)
+
+
+def _jpx_levels(w, h, levels, codestream=True, mode='RGB'):
+    """A real JPEG2000 file (Pillow / OpenJPEG) with ``levels`` decomposition levels (NL in its COD marker)."""
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new(mode, (w, h), 200).save(buf, 'JPEG2000', num_resolutions=levels + 1, no_jp2=codestream)
+    return buf.getvalue()
+
+
+def _grey_page(side, levels, images=1, pages=1):
+    """``pages`` pages, each drawing ``images`` grey JPX images whose dictionary says 1600 x 2260 over a
+    codestream whose SIZ claims ``side`` x ``side`` (one component) with ``levels`` decomposition levels: the
+    shape of the review 3 probe (it was three 4890 x 4890 16-bit grey images with NL = 0 on each of 3 pages)."""
+    data = _claiming(_jpx_levels(64, 64, levels, mode='L'), side, side)
+    objs = {6 + i: _jpx(1600, 2260, data, cs=b'/DeviceGray') for i in range(images)}
+    names = b''.join(b'/Im%d %d 0 R ' % (i, 6 + i) for i in range(images))
+    content = b''.join(b'q ' + FULL_PAGE + b'/Im%d Do Q ' % i for i in range(images))
+    one = _a4(content, b'/XObject << ' + names + b'>>', objs)
+    if pages == 1:
+        return one
+    from pypdf import PdfReader, PdfWriter
+    out, writer = io.BytesIO(), PdfWriter()
+    for _ in range(pages):
+        writer.add_page(PdfReader(io.BytesIO(one)).pages[0])
+    writer.write(out)
+    return out.getvalue()
+
+
+def _cod_in_tile_part(data):
+    """``data`` (a bare codestream) with its main header's COD marker copied into its first tile-part header."""
+    cod_at, sot_at = data.index(b'\xff\x52'), data.index(b'\xff\x90')
+    cod = data[cod_at:cod_at + 2 + int.from_bytes(data[cod_at + 2:cod_at + 4], 'big')]
+    psot = int.from_bytes(data[sot_at + 6:sot_at + 10], 'big') + len(cod)
+    return data[:sot_at + 6] + psot.to_bytes(4, 'big') + data[sot_at + 10:sot_at + 12] + cod + data[sot_at + 12:]
+
+
+# ── TD-692 review 3: pixels did not bound the decode time. With one resolution level (NL = 0) OpenJPEG decodes
+#    every pixel at full size: three 4890 x 4890 16-bit grey images on each of 3 pages passed the pixel caps and
+#    took 15-18 s of the child's 20 s. A JPX image is now charged its decode work too (SIZ pixels x components, half
+#    only when NL >= 1 is proved), capped per page and over the pages of one gate call.
+class ADecodeWork(SimpleTestCase):
+    def test_the_review_probe_shape_is_refused(self):
+        for name, pdf in (('3 pages of three 4890 x 4890 images', _grey_page(4890, 0, images=3, pages=3)),
+                          ('one page of three', _grey_page(4890, 0, images=3)),
+                          ('one 4890 x 4890 image', _grey_page(4890, 0))):
+            with self.subTest(name):
+                self.assertEqual(pdf_render_check.render_refusal(pdf, lambda n: range(n))[1],
+                                 'OverBudget: past the render jpx_work cap')
+
+    def test_one_large_image_is_refused_with_one_level_or_five(self):
+        for side in (7000, 7500):
+            for levels in (0, 5):
+                with self.subTest(side=side, levels=levels):
+                    self.assertEqual(_refusal(_grey_page(side, levels)), 'OverBudget: past the render jpx_work cap')
+
+    def test_the_work_is_full_at_one_level_and_half_with_more(self):
+        for codestream in (True, False):
+            with self.subTest(codestream=codestream):
+                for levels, work in ((0, 180_000), (1, 90_000), (5, 90_000)):
+                    pdf = _jpx_page(_jpx(300, 200, _jpx_levels(300, 200, levels, codestream)))
+                    self.assertEqual(_cost(pdf)['jpx_work'], work)
+
+    def test_levels_that_cannot_be_proved_count_as_one(self):
+        data = _jpx_levels(300, 200, 5)
+        self.assertEqual(pdf_jpx._levels(data, 0, True), 5)
+        self.assertEqual(pdf_jpx._levels(_cod_in_tile_part(data), 0, True), 0)      # a tile may override
+        self.assertEqual(pdf_jpx._levels(data[:-40], 0, False), 0)                 # cut short in a window
+        no_cod = data.replace(b'\xff\x52', b'\xff\x64', 1)                          # COD renamed a comment
+        self.assertEqual(pdf_jpx._levels(no_cod, 0, True), 0)
+        grey = _jpx_levels(300, 200, 5, mode='L')
+        pdf = _jpx_page(_jpx(300, 200, _cod_in_tile_part(grey), cs=b'/DeviceGray'))
+        self.assertEqual(_cost(pdf)['jpx_work'], 60_000)
+
+    def test_the_page_cap_and_the_call_cap(self):
+        at_cap = math.isqrt(pdf_jpx.MAX_PAGE_JPX_WORK)                             # 3162 x 3162, one component
+        self.assertIsNone(_refusal(_grey_page(at_cap, 0)))
+        self.assertEqual(_refusal(_grey_page(at_cap + 1, 0)), 'OverBudget: past the render jpx_work cap')
+        pages = pdf_jpx.MAX_DOC_JPX_WORK // pdf_jpx.MAX_PAGE_JPX_WORK                # 3, the most a renderer asks
+        pdf = _grey_page(at_cap, 0, pages=pages + 1)
+        self.assertIsNone(pdf_render_check.render_refusal(pdf, lambda n: range(pages))[1])
+        self.assertEqual(pdf_render_check.render_refusal(pdf, lambda n: range(n))[1],
+                         'OverBudget: past the render JPEG2000 document cap')
+
+    def test_a_real_looking_a4_colour_scan_with_levels_passes_and_is_drawn(self):
+        """200 DPI A4 RGB (1654 x 2339) with 5 levels: work 5.8 million, three such pages pass."""
+        pdf = _jpx_page(_jpx(1654, 2339, _jpx_levels(1654, 2339, 5, codestream=False)))
+        self.assertIsNone(_refusal(pdf))
+        self.assertEqual(_cost(pdf)['jpx_work'], (1654 * 2339 * 3 + 1) // 2)
+        self.assertTrue(pdf_pages.pdf_first_page_png(pdf).startswith(b'\x89PNG'))
 
 
 def _jbig2(w, h, extra=b'', data=b'\x00' * 64, mask=False):

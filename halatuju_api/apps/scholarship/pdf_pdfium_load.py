@@ -85,8 +85,8 @@ def _first_visit(obj, state: dict) -> bool:
 def _stream(stream, state: dict, content: bool = False, every_use: bool = False) -> None:
     """Charge one stream's decompressed size, once per document — or on EVERY use (``every_use``: a Type3
     glyph procedure, which pdfium parses for each glyph name that points at it). Measured once, never inflating
-    past what is left; only no filter or /FlateDecode is measured, any other filter is hidden. ``content``: a
-    content stream (a form, a pattern cell), refused when it holds an inline image (pdfium inflates those
+    past what is left (`_inflated`): no filter, one /FlateDecode or one /ASCIIHexDecode (TD-692) is measured,
+    any other filter is refused. ``content``: a content stream (a form, a pattern cell), refused when it holds an inline image (pdfium inflates those
     while parsing, and the walk never reads a stream that is only in the resources)."""
     from pypdf.generic import StreamObject
     if not isinstance(stream, StreamObject):
