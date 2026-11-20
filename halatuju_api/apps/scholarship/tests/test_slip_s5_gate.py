@@ -61,6 +61,21 @@ class TheDryRun(_Corpus):
         self.assertIn('235-470 calls', lines[2])
         self.assertFalse(os.path.exists(os.path.join(self.dir, gate.CACHE_DIR)))   # nothing written
 
+    def test_the_dry_run_checks_the_schema_it_would_send(self):
+        """Review round 4: the paid gate lost 98/98 calls to an '' grade enum member that the mocked
+        dry run never noticed. The dry run now checks each schema as Gemini does."""
+        from apps.scholarship.vision import schemas
+        lines = []
+        self.assertEqual(gate.main(['--eval-dir', self.dir], out=lines.append), 0)
+        self.assertFalse(any(l.startswith('STOP') for l in lines))
+        lines = []
+        with patch.dict(schemas._SLIP_GRADE, {'enum': [*schemas.SLIP_GRADES, '']}):
+            self.assertEqual(gate.main(['--eval-dir', self.dir], out=lines.append), gate.EXIT_SCHEMA)
+        self.assertEqual(gate.EXIT_SCHEMA, 6)
+        self.assertTrue(lines[-1].startswith('STOP: Gemini would refuse the slip schema'))
+        self.assertIn('enum[', lines[-1])
+        self.assertIn('6 the dry run found a slip schema Gemini would refuse', gate.EXIT_CODES)
+
     def test_the_estimate(self):
         self.assertEqual(gate.estimate(98), {'slips': 98, 'calls_min': 98, 'calls_max': 196,
                                              'usd_low': 0.39, 'usd_high': 1.57})
@@ -139,6 +154,53 @@ class TheLiveRunOnAFakeClient(_Corpus):
         self.assertTrue(lines[-2].startswith('Read 1 slips on'))
         self.assertTrue(lines[-1].startswith('STOP: 1 call(s) on a model with no price row'))
         self.assertIn('4 a --live call reported no token counts or had no price row', gate.EXIT_CODES)
+
+    def test_a_call_with_no_price_row_on_the_last_slip_is_still_exit_4(self):
+        """Review round 4 (LOW-2): the no-price stop ran before the NEXT read, so the last slip's
+        unpriced call ended the run with 0."""
+        factory = self._factory(_GOOD)
+        lines = []
+        with override_settings(GEMINI_API_KEY='test-key'), patch.object(gate, 'PRICE_38_ASSUMED', None), \
+                patch.dict('apps.scholarship.eval.offer_fresh_gemini.PRICES', {}, clear=True):
+            code = gate.main(['--eval-dir', self.dir, '--live', '--keys', self.keys[-1]],
+                             client_factory=factory, out=lines.append)
+        self.assertEqual(code, gate.EXIT_BLIND)
+        self.assertEqual(self.asked, ['gemini-3.8-flash'])
+        self.assertTrue(lines[-2].startswith('Read 1 slips on'))
+        self.assertTrue(lines[-1].startswith('STOP: 1 call(s) on a model with no price row'))
+
+    def test_a_429_prints_the_summary_with_its_billed_calls_and_exits_3(self):
+        """Review round 4 (LOW-1): the 402 / 429 stop skipped the summary and the money count. Here
+        the first call answers malformed (billed), and the retry is refused 429."""
+        self.asked = []
+        bad = {**_GOOD, 'results': [{'subject': 'SEJARAH', 'grade': 'Bplus}', 'band': ''}]}
+
+        def generate_content(model, contents, config=None):
+            self.asked.append(model)
+            if len(self.asked) > 1:
+                raise RuntimeError('429 RESOURCE_EXHAUSTED: quota')
+            return SimpleNamespace(text=json.dumps(bad), usage_metadata=_USAGE)
+        client = MagicMock()
+        client.models.generate_content.side_effect = generate_content
+        lines = []
+        with override_settings(GEMINI_API_KEY='test-key'):
+            code = gate.main(['--eval-dir', self.dir, '--live'], client_factory=lambda *a, **k: client,
+                             out=lines.append)
+        self.assertEqual(code, 3)
+        self.assertEqual(self.asked, ['gemini-3.8-flash', 'gemini-3.8-flash'])
+        self.assertTrue(lines[-2].startswith('Read 0 slips on'))
+        self.assertNotIn('US$0.0000', lines[-2])                  # the billed first call is counted
+        self.assertTrue(lines[-1].startswith('STOP: gemini-3.8-flash answered 429'))
+        self.assertEqual(self._cached(), [])
+
+    def test_a_model_allow_list_stop_prints_the_summary_too(self):
+        lines = []
+        with override_settings(GEMINI_API_KEY='test-key'), \
+                patch('apps.scholarship.profile_engine.MODEL_CASCADE', ['gemini-2.5-flash']):
+            self.assertEqual(gate.main(['--eval-dir', self.dir, '--live'],
+                                       client_factory=self._factory(_GOOD), out=lines.append), 2)
+        self.assertTrue(lines[-2].startswith('Read 0 slips'))
+        self.assertTrue(lines[-1].startswith('STOP:'))
 
     def test_the_exit_codes_are_in_the_help_text(self):
         buf = io.StringIO()

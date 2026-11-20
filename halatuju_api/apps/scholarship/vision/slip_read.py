@@ -13,7 +13,8 @@ stayed on 2.5 Flash, because in the paid eval 3.8 Flash wrote malformed grades o
     answer is still CHECKED here: each grade must clean (`sanitize.clean_slip_grade`) to one of
     the academic engine's grades, each subject / band must carry no stray characters, a row's
     Malay band (its band field, or band words glued to the subject) may not say a different grade
-    from its letter, one subject may not carry two different grades, and at least one row must
+    from its letter, a subject may not name a grade (a band word or a lone letter anywhere in it)
+    other than its letter, one subject may not carry two different grades, and at least one row must
     show a grade or band. Only the known keys are kept (name, exam, results, warnings; subject,
     grade, band per row);
   * a malformed answer, or an answer the model could not produce (DOCUMENT_FAILED), is asked ONCE
@@ -45,7 +46,10 @@ _ROW_KEYS = ('subject', 'grade', 'band')
 #: Review round 3: the whole lowercased name must be 3.8 Flash itself, a numbered version
 #: ("-001") or a preview, optionally dated ("-preview-11-2026"). Anything else after "flash"
 #: ("-lite", "-8b", "-image", "-tts", "-thinking-exp", "-preview-tts") is a different model.
-_SLIP_MODEL_RE = re.compile(r'gemini-3\.8-flash(?:-[0-9]{3}|-preview(?:-[0-9]{2}-[0-9]{2,4})?)?')
+#: Review round 4 (LOW-4): a dated preview is month-day ("-05-20") or month-year ("-11-2026")
+#: exactly, as Gemini names them; a three-digit tail or month 13 is not a 3.8 Flash name.
+_SLIP_MODEL_RE = re.compile(r'gemini-3\.8-flash(?:-[0-9]{3}|-preview'
+                            r'(?:-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01]|20[0-9]{2}))?)?')
 
 
 def is_slip_model(model) -> bool:
@@ -104,6 +108,12 @@ def check_slip_answer(data):
         if len(said) > 1 or (grade and said and grade not in said):
             problems.append(f'row {i}: the band says a different grade from the letter')
             continue
+        # Review round 4: a band word or a lone grade INSIDE the subject ("SEJARAH C", "SEJARAH
+        # KEPUJIAN (ELEKTIF)") is a grade the trailing-band split never sees; one that is not the
+        # row's letter (or a row with no letter) is a bad answer, never a stored grade.
+        if _grades_named_in(stem) - {grade}:
+            problems.append(f'row {i}: the subject names a grade the letter does not say')
+            continue
         implied = _band_to_grade(band) or glued    # `read_slip`'s own order: band field, then glued
         key = _compare_key(stem)
         if key in seen:
@@ -125,6 +135,39 @@ def check_slip_answer(data):
         return None, problems
     cleaned = {k: data[k] for k in _TOP_KEYS if k in data}
     return {**cleaned, 'results': rows}, []
+
+
+#: Review round 4: the subject text is cut into words at spaces and the punctuation a slip row
+#: prints round a cell ("SEJARAH (C)", "SEJARAH, C"). Not at a hyphen: it is the minus of "A-",
+#: and "AL-QURAN" stays one word.
+_SUBJECT_WORDS = re.compile(r'[\s(),;:/|]+')
+#: A word shaped like a grade that is not an SPM grade ("C-", "B-", "F"): it still names a grade,
+#: so it is refused, never read past.
+_GRADE_SHAPED = re.compile(r'[A-G][+-]?|TH[+-]', re.IGNORECASE)
+#: What `_grades_named_in` gives for a grade-shaped word outside the SPM set: never a row's letter.
+_NOT_A_GRADE = '?'
+
+
+def _grades_named_in(text) -> set:
+    """The grades a subject text names anywhere in it: a band word ("KEPUJIAN", "CEMERLANG
+    TINGGI", "TIDAK HADIR", modifier optional), a lone grade word ("C", "A+", "Aplus", cleaned by
+    `clean_slip_grade`), or a grade-shaped word outside the SPM set (`_NOT_A_GRADE`). The trailing
+    band `_split_band` strips is not here; this catches what it leaves INSIDE the subject. Empty for
+    a real subject name."""
+    from ..academic_engine import _BAND_HEADS, _BAND_MODS, _BAND_TO_GRADE
+    words = [w for w in _SUBJECT_WORDS.split(text or '') if w and w != '-']
+    out = set()
+    for i, word in enumerate(words):
+        low, nxt = word.lower(), (words[i + 1].lower() if i + 1 < len(words) else '')
+        if low in _BAND_HEADS:
+            out.add(_BAND_TO_GRADE[f'{low} {nxt}' if nxt in _BAND_MODS else low])
+        elif low == 'tidak' and nxt == 'hadir':
+            out.add('TH')
+        elif clean_slip_grade(word):
+            out.add(clean_slip_grade(word))
+        elif _GRADE_SHAPED.fullmatch(word):
+            out.add(_NOT_A_GRADE)
+    return out
 
 
 def _same_reading(row, row_implied, grade, band, implied) -> bool:

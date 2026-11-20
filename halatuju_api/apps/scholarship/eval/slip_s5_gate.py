@@ -19,7 +19,8 @@ MODES
       --max-usd (default 4.00) stops the run at its cap (exit 5); a call that reports no token
       counts, or a call on a model with no price row, stops it too (exit 4), since the cap could
       not be kept. Every stop prints the summary line (slips read, US$ counted, service failures
-      not cached) first.
+      not cached) first - a 402 / 429 stop (exit 3) too, its billed calls counted (fix round 4);
+      a call with no price row stops the run on the slip it was made for, the last slip included.
   --score, FREE: reads those caches and scores them beside the STORED read
       (`snapshots/<key>.json`), on the typed-grade answer key: wrong grades (`compare_academics`
       `mismatched`), "please check" rows, refusals, and malformed grades (must be 0).
@@ -70,9 +71,12 @@ ROADMAP_SLIPS = 98 + 137
 EXIT_CAP = 5
 EXIT_CODES = ('exit codes: 0 done; 2 nothing read (no corpus, unknown keys, no key, or a slip model '
               'off the allow-list); 3 a 402 / 429 stopped --live; 4 a --live call reported no token '
-              'counts or had no price row; 5 --live stopped at its --max-usd cap (slips left unread)')
+              'counts or had no price row; 5 --live stopped at its --max-usd cap (slips left unread); '
+              '6 the dry run found a slip schema Gemini would refuse')
 #: --live stopped because the cap could not be kept (no token counts, or no price row).
 EXIT_BLIND = 4
+#: Fix round 4: the dry run found a schema Gemini refuses (the paid gate's 400 on every call).
+EXIT_SCHEMA = 6
 
 
 # ── The corpus ───────────────────────────────────────────────────────────────────────────────
@@ -127,23 +131,30 @@ def read_one(extract, path):
 
 
 def synthetic_answer(n):
-    """The dry run's mocked model answer for the n-th call: a made-up two-subject slip; every 4th
-    call's answer is malformed ("Aplus}") so the retry path runs."""
+    """The dry run's mocked model answer for the n-th call: a made-up three-row slip (one cell
+    unread, sent as the blank word); every 4th call's answer is malformed ("Aplus}") so the retry
+    path runs."""
     grade = 'Aplus}' if n % 4 == 0 else 'A'
+    from apps.scholarship.vision.schemas import SLIP_BLANK
     return {'candidate_name': 'CALON CONTOH', 'exam': 'SPM',
             'results': [{'subject': 'BAHASA MELAYU', 'grade': grade, 'band': 'CEMERLANG TINGGI'},
-                        {'subject': 'SEJARAH', 'grade': 'B+', 'band': 'KEPUJIAN TERTINGGI'}],
+                        {'subject': 'SEJARAH', 'grade': 'B+', 'band': 'KEPUJIAN TERTINGGI'},
+                        {'subject': 'SAINS', 'grade': SLIP_BLANK, 'band': ''}],   # an unread cell
             'warnings': []}
 
 
 def dry_run(eval_dir, keys, out=print):
-    """Every slip through the real read with the seam mocked; returns the counts."""
+    """Every slip through the real read with the seam mocked; returns the counts. Fix round 4: the
+    schema each call would send is checked as Gemini checks it (`gemini_schema_problems`), since
+    the paid run lost every call to a 400 for an empty enum member the dry run never looked at."""
     from apps.scholarship import vision
+    from apps.scholarship.vision.schemas import gemini_schema_problems
     files = slip_files(eval_dir)
-    calls, models_seen = [], set()
+    calls, models_seen, schema_problems = [], set(), set()
 
     def fake_seam(prompt, schema, **kw):
         models_seen.update(kw.get('models') or ['<default cascade>'])
+        schema_problems.update(gemini_schema_problems(schema))
         calls.append(1)
         return synthetic_answer(len(calls))
 
@@ -160,6 +171,7 @@ def dry_run(eval_dir, keys, out=print):
             counts['retried'] += res.get('slip_calls') == 2
     counts['mock_calls'] = len(calls)
     counts['models_seen'] = sorted(models_seen)
+    counts['schema_problems'] = sorted(schema_problems)
     return counts
 
 
@@ -177,6 +189,7 @@ def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=pr
     from apps.scholarship.vision.slip_read import is_slip_model, slip_read_models
     models = slip_read_models()
     if not models or not all(is_slip_model(m) for m in models):
+        out('Read 0 slips, US$0.0000; 0 service failure(s) not cached.')   # round 4: every exit
         out(f'STOP: the slip read models are {models} - 3.8 only expected. Nothing read.')
         return 2
     files, spent, read, unpriced, not_cached = slip_files(eval_dir), 0.0, 0, 0, 0
@@ -203,6 +216,10 @@ def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=pr
                 with ofg.guarded_production_read(client_factory, calls, meter) as extract:
                     res = read_one(extract, files[key])
             except ofg.StopRun as e:
+                # review round 4 (LOW-1): a call this slip made before the 402 / 429 was billed too;
+                # count it, and print the summary first, as every other stop does
+                spent += sum(c.get('cost_usd') or 0.0 for c in calls if c.get('answered'))
+                summary()
                 out(f'STOP: {e.model} answered {e.code} - the run ends here ({read} slips read)')
                 return 3
             answered = [c for c in calls if c.get('answered')]
@@ -220,6 +237,13 @@ def live_run(eval_dir, keys, *, client_factory, force=False, max_usd=4.0, out=pr
                 summary()
                 out(f'STOP: {blind} call(s) reported no token counts - the cap US${max_usd:.2f} cannot '
                     f'be kept ({read} slips read, US${spent:.4f} counted) - nothing more read')
+                return EXIT_BLIND
+            if unpriced:
+                # review round 4 (LOW-2): stop on the read that had no price row, not before the
+                # NEXT read - so an unpriced call on the last slip is still exit 4, never 0
+                summary()
+                out(ofg.cap_stop_line([{'usage': {'cost_usd': spent, 'unpriced_calls': unpriced}}],
+                                      max_usd if max_usd is not None else 0.0))
                 return EXIT_BLIND
     summary()
     return 0
@@ -324,6 +348,10 @@ def main(argv=None, *, client_factory=None, out=print):
         out(f"Live, roadmap S5 ({ROADMAP_SLIPS} slips): {r['calls_min']}-{r['calls_max']} calls, "
             f"about US${r['usd_low']}-{r['usd_high']}")
         out(report['assumption'])
+    if counts['schema_problems']:
+        out(f"STOP: Gemini would refuse the slip schema ({len(counts['schema_problems'])} problem(s)): "
+            + '; '.join(counts['schema_problems'][:5]) + ' - do not run --live')
+        return EXIT_SCHEMA
     return 0
 
 

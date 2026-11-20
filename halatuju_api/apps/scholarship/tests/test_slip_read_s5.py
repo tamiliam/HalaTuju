@@ -18,7 +18,7 @@ from apps.scholarship.academic_engine import _GRADE_TO_BAND
 from apps.scholarship.read_errors import DOCUMENT_FAILED, is_ai_service_error
 from apps.scholarship.vision import slip_read
 from apps.scholarship.vision.sanitize import clean_slip_grade, clean_slip_text
-from apps.scholarship.vision.schemas import _FIELD_SCHEMAS, SLIP_GRADES
+from apps.scholarship.vision.schemas import _FIELD_SCHEMAS, SLIP_BLANK, SLIP_GRADES
 
 _SEAM = 'apps.scholarship.vision._call_gemini_json'
 
@@ -51,10 +51,19 @@ class TheSlipSchema(SimpleTestCase):
         from apps.scholarship.academic_engine import _GRADE_TOKENS
         self.assertEqual(set(SLIP_GRADES), set(_GRADE_TOKENS))
 
-    def test_each_grade_is_an_enum_of_the_grades_plus_empty(self):
+    def test_each_grade_is_an_enum_of_the_grades_plus_the_blank_word(self):
+        """Fix round 4: Gemini refused '' in the enum (400 on all 98 paid calls); the blank word
+        stands in for it and is never empty."""
         grade = self.row['properties']['grade']
         self.assertEqual(grade['type'], 'string')
-        self.assertEqual(grade['enum'], ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G', 'TH', ''])
+        self.assertEqual(grade['enum'], ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G', 'TH', 'BLANK'])
+        self.assertNotIn('', grade['enum'])
+        self.assertNotIn(SLIP_BLANK, SLIP_GRADES)
+
+    def test_the_prompt_asks_for_the_blank_word_not_an_empty_grade(self):
+        hint = vision._DOC_HINTS['results_slip']
+        self.assertIn('the word BLANK', hint)
+        self.assertNotIn('leave it empty', hint)
 
     def test_every_row_key_is_required(self):
         self.assertEqual(sorted(self.row['required']), ['band', 'grade', 'subject'])
@@ -83,6 +92,22 @@ class TheGradeCleanUp(SimpleTestCase):
         for raw, want in cases.items():
             with self.subTest(raw=raw):
                 self.assertEqual(clean_slip_grade(raw), want)
+
+    def test_the_blank_word_is_a_blank_cell_never_a_grade(self):
+        """Fix round 4: the schema's 'BLANK' comes back as '' and never reaches stored data."""
+        for raw in ('BLANK', 'blank', ' Blank\t', 'ＢＬＡＮＫ'):
+            with self.subTest(raw=raw):
+                self.assertEqual(clean_slip_grade(raw), '')
+        for raw in ('BLANKS', 'BLANK+', 'A BLANK', 'BLAN', 'BLANK\n'):
+            with self.subTest(refused=raw):
+                self.assertIsNone(clean_slip_grade(raw))
+        data = {'candidate_name': 'X', 'exam': 'SPM',
+                'results': [{'subject': 'SEJARAH', 'grade': 'BLANK', 'band': 'KEPUJIAN'},
+                            {'subject': 'SAINS', 'grade': 'A', 'band': 'CEMERLANG TINGGI'}]}
+        out, _ = _read(data)
+        self.assertEqual(out['error'], '')
+        self.assertEqual([r['grade'] for r in out['fields']['results']], ['', 'A'])
+        self.assertNotIn('BLANK', json.dumps(out))
 
     def test_every_grade_survives_unchanged(self):
         for g in SLIP_GRADES:
@@ -233,6 +258,36 @@ class TheAnswerCheck(SimpleTestCase):
                 cleaned, problems = self._check(row)
                 self.assertIsNone(cleaned)
                 self.assertTrue(any('band says a different grade' in p for p in problems))
+
+    def test_a_grade_named_inside_the_subject_must_be_the_letter(self):
+        """Review round 4 (MEDIUM): band words or a lone grade INSIDE the subject (not trailing,
+        so `_split_band` never sees them) that are not the row's letter are a bad answer."""
+        for row in (('SEJARAH C', 'A', ''), ('SEJARAH (C)', 'A', 'CEMERLANG TINGGI'),
+                    ('SEJARAH C+ ELEKTIF', 'A', ''), ('SEJARAH KEPUJIAN (ELEKTIF)', 'A', ''),
+                    ('SEJARAH CEMERLANG TINGGI (ELEKTIF)', 'A+', ''), ('SEJARAH GAGAL MORAL', 'A', ''),
+                    ('SEJARAH TIDAK HADIR', 'A', ''), ('SEJARAH, LULUS ATAS', 'E', ''),
+                    ('SEJARAH Aplus', 'A', ''), ('SEJARAH C-', 'C', ''), ('SEJARAH F', 'A', ''),
+                    ('SEJARAH C', '', ''), ('SEJARAH C', '', 'KEPUJIAN TINGGI'),
+                    ('SEJARAH A KEPUJIAN', 'A', '')):
+            with self.subTest(row=row):
+                cleaned, problems = self._check(row, ('SAINS', 'A', 'CEMERLANG TINGGI'))
+                self.assertIsNone(cleaned)
+                self.assertTrue(any('subject names a grade' in p or 'band says' in p for p in problems))
+
+    def test_a_grade_named_in_the_subject_that_is_the_letter_is_kept(self):
+        for row in (('SEJARAH C', 'C', 'KEPUJIAN'), ('SEJARAH (A-)', 'A-', ''),
+                    ('SEJARAH KEPUJIAN TINGGI (ELEKTIF)', 'B', ''), ('SEJARAH TIDAK HADIR', 'TH', '')):
+            with self.subTest(row=row):
+                self.assertEqual(self._check(row)[1], [])
+
+    def test_real_subject_names_name_no_grade(self):
+        for subject in ('BAHASA MELAYU', 'BAHASA ARAB TINGGI', 'PENDIDIKAN AL-QURAN DAN AL-SUNNAH',
+                        'PENDIDIKAN MORAL (ELEKTIF)', 'MATEMATIK TAMBAHAN', 'BAHASA TAMIL',
+                        'ENGLISH FOR SCIENCE AND TECHNOLOGY', 'PRINSIP PERAKAUNAN', 'SAINS - TAMBAHAN',
+                        'Pendidikan Seni Visual', 'TASAWWUR ISLAM', 'GRAFIK KOMUNIKASI TEKNIKAL'):
+            with self.subTest(subject=subject):
+                self.assertEqual(slip_read._grades_named_in(subject), set())
+                self.assertEqual(self._check((subject, 'B', 'KEPUJIAN TINGGI'))[1], [])
 
     def test_the_blocker_duplicates_are_refused_never_filled(self):
         """Review round 3 blocker: a blank band was filled from a duplicate whose band says another
@@ -451,6 +506,19 @@ class TwoPointFiveIsNeverCalled(SimpleTestCase):
                 out = slip_read.read_slip_checked(lambda m: calls.append(m) or _good(), models=models)
                 self.assertEqual(calls, [])
                 self.assertTrue(is_ai_service_error(out['error']))   # 'review_manually'
+
+    def test_a_dated_preview_is_month_day_or_month_year_exactly(self):
+        """Review round 4 (LOW-4): the date was looser than the docs ("-preview-11-202")."""
+        for name in ('gemini-3.8-flash-preview-05-20', 'gemini-3.8-flash-preview-11-2026',
+                     'gemini-3.8-flash-preview-12-31', 'gemini-3.8-flash-preview'):
+            with self.subTest(allowed=name):
+                self.assertTrue(slip_read.is_slip_model(name))
+        for name in ('gemini-3.8-flash-preview-11-202', 'gemini-3.8-flash-preview-13-20',
+                     'gemini-3.8-flash-preview-00-20', 'gemini-3.8-flash-preview-05-32',
+                     'gemini-3.8-flash-preview-05-00', 'gemini-3.8-flash-preview-11-1999',
+                     'gemini-3.8-flash-preview-5-20', 'gemini-3.8-flash-preview-05'):
+            with self.subTest(refused=name):
+                self.assertFalse(slip_read.is_slip_model(name))
 
     def test_nothing_is_pinned_to_2_5(self):
         self.assertEqual(vision.PINNED_25_DOC_TYPES, frozenset())

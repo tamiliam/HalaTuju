@@ -7,7 +7,7 @@ import unicodedata
 
 from .names import name_match, nric_dob_agrees
 from .judge import _strip_name_label
-from .schemas import SLIP_GRADES
+from .schemas import SLIP_BLANK, SLIP_GRADES
 
 
 # Headings / labels that are never a person's name. If the AI sweeps one into a NAME field
@@ -209,15 +209,18 @@ def _nfkc(value: str) -> str:
 def clean_slip_grade(raw):
     """One grade cell → a member of SLIP_GRADES, '' (the cell is blank), or None (not a grade —
     the read failed). Maps only the known variants: full-width forms, stray spaces / tabs, lower
-    case, a word sign ("Aplus", "A plus", "B minus") and a typographic dash. "A+}", "A十", "A++",
-    "1A", a JSON fragment, a non-string, and a control or format character (a newline, NUL, a
-    zero-width mark: Unicode Cc / Cf, or a line separator) all give None."""
+    case, a word sign ("Aplus", "A plus", "B minus") and a typographic dash. The schema's blank
+    word (`SLIP_BLANK`, fix round 4: Gemini refuses '' in an enum) is a blank cell, ''. "A+}",
+    "A十", "A++", "1A", a JSON fragment, a non-string, and a control or format character (a
+    newline, NUL, a zero-width mark: Unicode Cc / Cf, or a line separator) all give None."""
     if not isinstance(raw, str):
         return None
     s = _nfkc(raw)
     if any(ch not in ' \t' and unicodedata.category(ch)[0] in 'CZ' for ch in s):
         return None
     s = _SLIP_GRADE_SPACING.sub('', s).translate(_SLIP_DASHES).upper()
+    if s == SLIP_BLANK:
+        return ''
     for word, sign in (('PLUS', '+'), ('MINUS', '-')):
         if len(s) > len(word) and s.endswith(word):
             s = s[:-len(word)] + sign
