@@ -103,7 +103,8 @@ def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profi
     lane (``rules_lane``, e.g. 'ua:UMS') on the result and in ``offer_reader_inputs``; '' otherwise. When a
     UMS letter does not lock, ``why`` (a dict, if given) gets the lane and the reason (`_note_ums_refusal`),
     and the missing owner phrases' NUMBERS (``owner_words_missing``; never text). ``page_texts``: that PDF's
-    visible text per page (`pdf_pages.pdf_page_texts`), read by the UMS family only (S1c owner words)."""
+    drawn text per page (render-mode visible; `pdf_pages.pdf_page_texts`), read by the UMS family only (S1c
+    owner words)."""
     from .offer_ic import guard_nric
     from .offer_parse import diagnose
     if from_text_layer and not (page1_layer or '').strip():

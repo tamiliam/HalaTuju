@@ -371,11 +371,12 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page
     and the layout's name must stand as its own words there (`name_in_plain`; guard ``name_not_plain``).
     S1c review round 2: the status and withdrawal checks also read the FULL letter text, every page
     (`letter_refusal`), so a page-2 cancellation or status letter refuses too.
-    S1c owner words (20 Nov), in this order: a digital PDF needs its visible page texts (``page_texts``,
-    `pdf_pages.pdf_page_texts`; guards ``no_page_texts`` / ``hidden_page``, round 3 MED 4); the VISIBLE text
-    (the page-1 layout and pages 2 on; a scan's own text) must show ALL the owner's phrases
+    S1c owner words (20 Nov), in this order: a digital PDF needs its drawn page texts (``page_texts``,
+    `pdf_pages.pdf_page_texts`; guards ``no_page_texts`` / ``too_many_pages`` / ``hidden_page``, round 3 MED 4
+    and review round 1); the DRAWN text (render-mode visible: colour, size, covering and off-page placement are
+    not checked yet) of PAGE 1 — its layout, or a scan's own text — must show ALL the owner's phrases
     (`offer_owner_words`; on a text-layer PDF, not the letterhead-picture ones; guard ``owner_words_missing``,
-    the phrase NUMBERS in ``out['owner_words_missing']``);
+    the phrase NUMBERS in ``out['owner_words_missing']``), looked for only when `read_ums` has not refused;
     then the checks above; last, a later page showing a second offer refuses (``second_offer``, MED 3)."""
     from .offer_owner_words import missing
     from .offer_parse_university import LANE, MAX_LETTER_CHARS, name_in_plain, read_ums
@@ -392,11 +393,11 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page
     pages = [_SPACES.sub(' ', _ZERO_WIDTH.sub('', t or '')) for t in (page_texts or ())]
     fields, reason = read_ums(page1_layout if digital else text)
     out['fields'], out['titled'] = fields, fields is not None
-    shown = '\n'.join([page1_layout] + pages[1:]) if digital else text
+    shown = page1_layout if digital else text    # page 1 only: no phrase across a page break (review round 1)
     early = page_texts_refusal(pages) if digital else ''
     if not early and len(shown) > MAX_LETTER_CHARS:
         early = 'too_long'
-    if not early:
+    if not early and not reason:                 # read_ums refused: no owner-words walk (review round 1, LOW 5)
         out['owner_words_missing'] = missing(LANE, shown, text_pdf=digital)
         early = 'owner_words_missing' if out['owner_words_missing'] else ''
     reason = early or reason
@@ -405,7 +406,8 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page
     if not reason and digital and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
         reason = 'name_not_plain'
     if not reason and digital:
-        reason = later_pages_refusal(pages[1:], fields['candidate_nric'], fields['reporting_date'])
+        reason = later_pages_refusal(pages[1:], fields['candidate_nric'], fields['reporting_date'], fields['intake'],
+                                     fields['programme_code'], fields['programme'])
     if reason.startswith('empty:'):
         out['empty_required'] = reason[len('empty:'):].split(',')
     elif reason:
@@ -433,7 +435,7 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
     layer (`offer_exact` decides — review H1). The identity is read from it, AND from ``text``: when the
     two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``).
     ``page1_layout`` is that page's LAYOUT text (`pdf_pages.pdf_page1_layout`) — read by the UMS family
-    only (`_diagnose_ums`), with ``page_texts`` (`pdf_pages.pdf_page_texts`: each page's VISIBLE text)."""
+    only (`_diagnose_ums`), with ``page_texts`` (`pdf_pages.pdf_page_texts`: each page's drawn text, render-mode visible)."""
     text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or ''))   # no-break spaces as spaces; no zero-width
     page1_text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_text or ''))
     up = text.upper()

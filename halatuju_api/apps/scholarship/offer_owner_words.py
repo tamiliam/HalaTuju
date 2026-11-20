@@ -1,17 +1,18 @@
 """The owner's words: what a genuine offer letter of one issuer ALWAYS shows (owner method change, 2026-11-20).
 
 The same method as SPM, NRIC and EPF: the owner looked at sample letters of one issuer and gave the exact words
-every genuine letter prints. A university rules lane may lock a letter only when its VISIBLE text (S-visible: a
-digital PDF's checked layout / layer text, or a scan's OCR) shows ALL of them; otherwise the AI reads it. This is
-an allow-list: it replaces trying to list every way a letter can say "withdrawn" (S1c review rounds 1-3).
+every genuine letter prints. A university rules lane may lock a letter only when its DRAWN text (render-mode
+visible, S-visible: a digital PDF's checked page-1 layout, or a scan's OCR) shows ALL of them; otherwise the AI
+reads it. Colour, size, covering and off-page placement are NOT checked yet (a separate, planned piece of work).
+This is an allow-list: it replaces trying to list every way a letter can say "withdrawn" (S1c review rounds 1-3).
 
 Matching (owner's rule, 20 Nov, option 1): the way the genuineness markers match
-(`results_doc._norm_fold_upper_alnum`, ONE rule shared): the phrase AND the text are upper-cased, accents folded,
-and every run of characters that are not letters or digits becomes one space. So case, line breaks, spacing and
-the spaces around "," "/" "." do not matter ("Tahniah , sukacita", "Saudara / i" match). Kept:
+(`results_doc._norm_fold_upper_alnum`, with letters of any script kept: `_norm`): the phrase AND the text are upper-cased, accents folded, and every run of
+characters that are not letters or digits becomes one space. So case, line breaks, spacing and the spaces around
+"," "/" "." do not matter ("Tahniah , sukacita", "Saudara / i" match). Kept:
 
-* a phrase is whole words: no letter or digit glued on either side ("Programme" is not "Program",
-  "Rujukankami" is not "Rujukan");
+* a phrase is whole words: no letter or digit of ANY script glued on either side ("Programme" is not "Program",
+  "Rujukankami" and "RujukanЖ" are not "Rujukan"; `_norm`, review round 1);
 * a ONE-word phrase ("Program", "Rujukan") does not count where it sits inside another listed phrase's match
   ("Kod Program", "program pengajian"): the label must be printed on its own;
 * no OCR misreading is forgiven.
@@ -48,15 +49,38 @@ OWNER_WORDS = {
 OPTIONAL_ON_TEXT_PDF = {'ua:UMS': (1,)}
 
 
+#: Owner words review round 1 (LOW 5): the most text the phrases are looked for in, counted AFTER the unicode
+#: unpacking (one U+FDFA unpacks to 18 characters: 200,000 of them took about 5 s). Longer shows no phrase.
+MAX_NORM_CHARS = 200_000
+#: NFKD runs on pieces this long (splitting between characters changes only the ORDER of combining marks, and
+#: those are dropped): one call on the whole of 200,000 x U+FDFA took 4.7 s, pieces take milliseconds.
+_CHUNK = 256
+#: A run of characters that are not a letter or a digit (any script; '_' is not a letter).
+_NOT_WORD = re.compile(r'[\W_]+')
+
+
 def _norm(text: str) -> str:
-    """The genuineness markers' rule (`results_doc._norm_fold_upper_alnum`), applied to phrase and text alike."""
-    from .genuineness.results_doc import _norm_fold_upper_alnum
-    return _norm_fold_upper_alnum(text)
+    """The genuineness markers' rule (`results_doc._norm_fold_upper_alnum`: NFKD, accents dropped, upper case,
+    each run of other characters one space), applied to phrase and text alike, with ONE change (owner words
+    review round 1, LOW 6): a letter or digit of ANY script is kept as a word character, never turned into a
+    space, so "RujukanЖ" and "ProgramΑ" are not "Rujukan" / "Program". The phrases are plain A-Z, so for them
+    the two rules agree. '' when the unpacked text is longer than `MAX_NORM_CHARS`."""
+    import unicodedata
+    text, parts, size = text or '', [], 0
+    for i in range(0, len(text), _CHUNK):        # chunked: one long NFKD call is slow on its own (U+FDFA)
+        part = unicodedata.normalize('NFKD', text[i:i + _CHUNK])
+        size += len(part)
+        if size > MAX_NORM_CHARS:
+            return ''
+        parts.append(part)
+    s = ''.join(c for c in ''.join(parts) if not unicodedata.combining(c))
+    return _NOT_WORD.sub(' ', s.upper()).strip()
 
 
 def _pattern(phrase: str):
-    """The normalised phrase as whole words in the normalised text (single spaces, so a literal match)."""
-    return re.compile(r'(?<![A-Z0-9])' + re.escape(_norm(phrase)) + r'(?![A-Z0-9])')
+    """The normalised phrase as whole words in the normalised text (single spaces, so a literal match); a
+    letter or digit of any script on either side means it is part of a longer word."""
+    return re.compile(r'(?<!\w)' + re.escape(_norm(phrase)) + r'(?!\w)')
 
 
 _PATTERNS = {lane: tuple(_pattern(p) for p in phrases) for lane, phrases in OWNER_WORDS.items()}
@@ -99,7 +123,7 @@ def _inside(span, merged) -> bool:
 def missing(lane: str, text: str, text_pdf: bool = False) -> list:
     """The 1-based numbers of ``lane``'s owner phrases that ``text`` does NOT show ([] = all shown). A lane with
     no owner list misses nothing here; the caller decides whether such a lane may lock at all. ``text_pdf`` (the
-    visible text of a PDF read from its text layer) excuses the lane's `OPTIONAL_ON_TEXT_PDF` phrases only."""
+    drawn page-1 text of a PDF read from its text layer) excuses the lane's `OPTIONAL_ON_TEXT_PDF` phrases only."""
     shown = _shown(lane, text)
     excused = set(OPTIONAL_ON_TEXT_PDF.get(lane, ())) if text_pdf else set()
     return [k + 1 for k in range(len(OWNER_WORDS.get(lane, ()))) if k not in shown and k + 1 not in excused]

@@ -9,10 +9,13 @@ Since the owner's method change (20 Nov) a UMS letter locks only when it shows A
 * TERBATAL / TARIK BALIK said of the letter refuses (`_cancel_said`). "akan terbatal" and "terbatal dengan
   sendirinya" are excused ONLY in a sentence that holds SEKIRANYA / JIKA / JIKALAU / APABILA, and never right
   after "telah", nor after "Status" or a colon earlier in that sentence (round 3 blocker 1);
-* a page after page 1 that shows a second offer refuses ('second_offer', round 3 MED 3, `later_pages_refusal`);
-* a digital letter with no page texts, or with one of its first 3 pages showing no visible text, refuses
-  ('no_page_texts' / 'hidden_page', round 3 MED 4, `page_texts_refusal`): the owner's words are matched on
-  the visible pages, so a page we cannot see sends the letter to the AI.
+* a page after page 1 that shows a second offer refuses ('second_offer', round 3 MED 3, `later_pages_refusal`;
+  owner words review round 1: any spacing, another session, programme code or label value, a reporting date
+  however its label or day is printed);
+* a digital letter with no page texts, more than `MAX_PAGES` pages, or one of its first 3 pages showing no
+  drawn text, refuses ('no_page_texts' / 'too_many_pages' / 'hidden_page', round 3 MED 4 and review round 1,
+  `page_texts_refusal`): the owner's words are matched on drawn text (render-mode visible; colour, size,
+  covering and off-page placement are not checked yet), so a page we cannot see sends the letter to the AI.
 
 Every lookup is linear in the text (round 3 MED 5: the excused spans are found by one bisect each). Pure.
 """
@@ -57,11 +60,24 @@ _CLAUSE_COLON = re.compile(r'[:：]')
 #: The ONE space between two single letters ("D I B A T A L K A N" -> "DIBATALKAN"; "D I BATALKAN" -> "DI
 #: BATALKAN"); a wider gap is the gap between two spaced words ("S U R A T  T I D A K" -> "SURAT  TIDAK").
 _LETTER_GAP = re.compile(r'(?<![A-Za-z])([A-Za-z])[^\S\n](?=[A-Za-z](?![A-Za-z]))')
-#: Round 3 MED 3: a second offer title on a later page (any "TAWARAN KEMASUKAN", the university named or not).
-_OFFER_TITLE = re.compile(r'TAWARAN\s{1,3}KEMASUKAN', re.IGNORECASE)
-#: The template's own page 2 heading "SYARAT-SYARAT TAWARAN KEMASUKAN SESI ..." (conditions of the offer, on every
-#: genuine two-page UMS letter, 20 Nov measure) is not a second offer's title; its IC, sentence and date still judge.
-_CONDITIONS_HEADING = re.compile(r'SYARAT\s{0,3}-?\s{0,3}SYARAT\s{1,3}TAWARAN\s{1,3}KEMASUKAN', re.IGNORECASE)
+#: Round 3 MED 3, matched on a later page's KEY (`_page_key`: every character that is not a letter or digit taken
+#: out), so any spacing, a line break, an indent, glued or spaced letters all match (owner words review round 1).
+#: A second offer's title (any "TAWARAN KEMASUKAN"), its programme sentence ("untuk mendapat" / "untuk
+#: mengikuti") or its "telah ditawarkan tempat". Measured 20 Nov: none of them is on any genuine page 2 outside
+#: the heading below; a bare "ditawarkan" is on all 36, so it is not a refusal word.
+_OFFER_KEYS = ('TAWARANKEMASUKAN', 'UNTUKMENDAPAT', 'UNTUKMENGIKUTI', 'TELAHDITAWARKANTEMPAT')
+#: The template's own page 2 heading "SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2031/2032" (on all 36 genuine
+#: two-page UMS letters, no programme code, no "Program :" label beside it) is skipped ONLY with a session whose
+#: years are page 1's (and its series, "I-", when it prints one): another session is a second offer.
+_HEADING_KEY = re.compile(r'SYARATSYARATTAWARANKEMASUKAN(?:KEUNIVERSITIMALAYSIASABAH)?SESI([0-9IV]{0,3}?)(20\d{2})(20\d{2})')
+_SESSION_KEY = re.compile(r'SESI([0-9IV]{0,3}?)(20\d{2})(20\d{2})')
+_UPU_KEY = re.compile(r'U[A-Z]\d{7}')
+#: A later page's "Program :" / "Kod Program :" label (any spacing, glued or not) and its value.
+_PROGRAM_LABEL = re.compile(r'(?<![^\W_])(KOD\s{0,40})?PROGRAM\s{0,40}[:：;]\s{0,40}(.*)$', re.IGNORECASE)
+#: The reporting-date label, also split over lines or spaced ("Tarikh\nLapor\nDiri"); its key form counts too.
+_REPORT_ANY = re.compile(r'Tarikh[\W_]{1,40}Lapor[\W_]{1,40}Diri', re.IGNORECASE)
+#: "5hb Oktober 2031", "5 hb. Oktober": the day's "hb" taken out before the date is read.
+_HB = re.compile(r'(?<!\d)(\d{1,2})\s{0,3}HB\b\.?', re.IGNORECASE)
 
 
 def _squeeze(s: str) -> str:
@@ -131,41 +147,91 @@ def letter_refusal(text: str) -> str:
     return 'not_an_offer' if _withdrawn(text, lines[:title_at + 1] if title_at >= 0 else []) else ''
 
 
-#: Round 3 MED 4: the first pages whose visible text must not be empty (a hidden or scanned page there may hold
+#: Round 3 MED 4: the first pages whose drawn text must not be empty (a hidden or scanned page there may hold
 #: the withdrawal, the status or a second offer the rules cannot see).
 CHECKED_PAGES = 3
+#: Owner words review round 1 (LOW 3): a UMS letter with more pages than this never locks, so no page the
+#: checks do not read can carry a second offer. All 36 genuine digital UMS letters have exactly 2 pages.
+MAX_PAGES = 3
 
 
 def page_texts_refusal(page_texts) -> str:
-    """Why a DIGITAL letter's page texts (`pdf_pages.pdf_page_texts`, one visible text per page) refuse its lock:
-    'no_page_texts' when there are none; 'hidden_page' when any of its first `CHECKED_PAGES` pages is empty (a
-    page whose text is invisible or cannot be checked reads ''; a one-page letter's page 1 is never empty here,
-    its layout needs it); '' when every one of them shows text."""
+    """Why a DIGITAL letter's page texts (`pdf_pages.pdf_page_texts`, one drawn text per page) refuse its lock:
+    'no_page_texts' when there are none; 'too_many_pages' past `MAX_PAGES`; 'hidden_page' when any of its first
+    `CHECKED_PAGES` pages is empty (a page whose text is not drawn or cannot be checked reads ''; a one-page
+    letter's page 1 is never empty here, its layout needs it); '' when every one of them shows text."""
     pages = list(page_texts or ())
     if not pages:
         return 'no_page_texts'
+    if len(pages) > MAX_PAGES:
+        return 'too_many_pages'
     return 'hidden_page' if any(not (t or '').strip() for t in pages[:CHECKED_PAGES]) else ''
 
 
-def later_pages_refusal(later_pages, nric: str, reporting_date: str) -> str:
-    """'second_offer' when any page after page 1 (``later_pages``, each page's visible text) shows a second offer
-    (round 3 MED 3): a "TAWARAN KEMASUKAN" title (not the template's "SYARAT-SYARAT TAWARAN KEMASUKAN"), a programme sentence ("untuk mendapat ... dan sebanyak"), an
-    IC other than page 1's ``nric``, or a date by a "Tarikh Lapor Diri" label (its line and the six after it)
-    other than page 1's ``reporting_date``; '' when none. A confirmation page that repeats them refuses too."""
-    from .offer_parse import _decimal_digits, first_date, house_date
-    from .offer_parse_university import _IC_RE, _REPORT_LABEL, _SENTENCE, _text_lines
+def _page_key(s: str) -> str:
+    """``s`` upper-cased and accent-folded with every character that is not a letter or digit taken out."""
+    from .offer_owner_words import _norm
+    return _norm(s).replace(' ', '')
+
+
+def _other_session(key: str, intake: str) -> bool:
+    """True when a later page's conditions heading names a session other than page 1's ``intake``."""
+    want = _SESSION_KEY.search(_page_key(intake))
+    for m in _HEADING_KEY.finditer(key):
+        if want is None or m.group(2, 3) != want.group(2, 3) or (m.group(1) and m.group(1) != want.group(1)):
+            return True
+    return False
+
+
+def _other_programme(page: str, code: str, programme: str) -> bool:
+    """True when a later page prints a programme code (UH...) or a "Program :" / "Kod Program :" value other
+    than page 1's ``code`` / ``programme`` (letters and digits compared)."""
+    from .offer_parse_university import _text_lines
+    if set(_UPU_KEY.findall(_page_key(page))) - {_page_key(code)}:
+        return True
+    for ln in _text_lines(page):
+        m = _PROGRAM_LABEL.search(ln)
+        if m and _page_key(m.group(2)) != _page_key(code if m.group(1) is not None else programme):
+            return True
+    return False
+
+
+def _other_date(page: str, reporting_date: str) -> bool:
+    """True when a later page's "Tarikh Lapor Diri" (any spacing, also over lines) is followed, on its own line
+    or the six after it, by a date other than page 1's ``reporting_date`` ("5hb Oktober 2031" read as a date),
+    or when the label's letters show (spaced, glued) more often than the label itself can be read."""
+    from .offer_parse import first_date, house_date
+    from .offer_parse_university import _text_lines
+    found = list(_REPORT_ANY.finditer(page))
+    if _page_key(page).count('TARIKHLAPORDIRI') != len(found):
+        return True
+    for m in found:
+        window = _text_lines(page[m.end():])[:7]
+        if any(got and house_date(got) != reporting_date for got in (first_date(_HB.sub(r'\1', w)) for w in window)):
+            return True
+    return False
+
+
+def later_pages_refusal(later_pages, nric: str, reporting_date: str, intake: str = '', code: str = '',
+                        programme: str = '') -> str:
+    """'second_offer' when any page after page 1 (``later_pages``, each page's drawn text) shows a second offer
+    (round 3 MED 3; owner words review round 1): an offer title, programme sentence or "telah ditawarkan tempat"
+    in any spacing (`_OFFER_KEYS`; the template's conditions heading skipped only with page 1's session), a
+    programme code or programme label value other than page 1's, an IC other than page 1's ``nric``, or a
+    reporting date other than page 1's; '' when none. A confirmation page that repeats them refuses too."""
+    from .offer_parse import _decimal_digits
+    from .offer_parse_university import _IC_RE, _SENTENCE
     want = _decimal_digits(nric or '')
     for page in later_pages or ():
         page = page or ''
-        if _OFFER_TITLE.search(_CONDITIONS_HEADING.sub(' ', page)) or _SENTENCE.search(page):
+        key = _page_key(page)
+        if (page.strip() and not key) or _other_session(key, intake):   # no letter or digit, or too long unpacked
+            return 'second_offer'
+        rest = _HEADING_KEY.sub('', key)
+        if any(k in rest for k in _OFFER_KEYS) or _SENTENCE.search(page):
             return 'second_offer'
         if any(_decimal_digits(m.group(1)) != want for m in _IC_RE.finditer(page)):
             return 'second_offer'
-        lines = _text_lines(page)
-        for i, ln in enumerate(lines):
-            if not _REPORT_LABEL.search(ln):
-                continue
-            window = [_REPORT_LABEL.split(ln, maxsplit=1)[1]] + lines[i + 1:i + 7]
-            if any(got and house_date(got) != reporting_date for got in map(first_date, window)):
-                return 'second_offer'
+        if _other_programme(page, code, programme) or _other_date(page, reporting_date):
+            return 'second_offer'
     return ''

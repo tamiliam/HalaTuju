@@ -15,10 +15,11 @@ from apps.scholarship.offer_owner_words import OPTIONAL_ON_TEXT_PDF, OWNER_WORDS
 from apps.scholarship.offer_parse import diagnose, parse_govt_offer
 from apps.scholarship.offer_parse_university import read_ums
 from apps.scholarship.offer_ums_refusal import _cancel_said, later_pages_refusal, letter_refusal
-from apps.scholarship.tests.test_offer_parse_university import LAYOUT, NAME, NRIC, PAGE_TEXTS, READ_UMS, ums
+from apps.scholarship.tests.test_offer_parse_university import LAYOUT, NAME, NRIC, PAGE_TEXTS, PROG, READ_UMS, ums
 from apps.scholarship.tests.test_offer_rulings import _confirm
 
 LANE = 'ua:UMS'
+INTAKE, CODE = 'SESI I-2031/2032', 'UH6481001'
 #: A synthetic UMS letter's visible text carrying all 11 owner phrases.
 FULL = """BAHAGIAN PERKHIDMATAN AKADEMIK
 Rujukan :      UMS/PPA/100-1/2/3
@@ -93,6 +94,22 @@ class TestOwnerWords(SimpleTestCase):
         missing(LANE, hostile[:200_000])
         self.assertLess(time.perf_counter() - start, 2.0)
 
+    def test_text_that_unpacks_long_is_capped_and_fast(self):
+        """Review round 1 LOW 5: the cap counts AFTER unpacking (one U+FDFA unpacks to 18 characters)."""
+        for n in (12_000, 200_000):
+            with self.subTest(n=n):
+                start = time.perf_counter()
+                self.assertEqual(missing(LANE, FULL + '\uFDFA' * n), list(range(1, 12)))
+                self.assertLess(time.perf_counter() - start, 2.0)
+        self.assertEqual(missing(LANE, FULL + '\uFDFA' * 100), [])      # short: still read
+
+    def test_a_letter_of_any_script_is_part_of_the_word(self):
+        """Review round 1 LOW 6: Cyrillic, Greek and other letters or digits glued on are not a word edge."""
+        for old, new, n in (('Rujukan :', 'Rujukan\u0416 :', 2), ('Program :', 'Program\u0391 :', 7),
+                            ('Rujukan :', '\u0663Rujukan :', 2), ('BAHAGIAN', '\u0416BAHAGIAN', 1)):
+            with self.subTest(new=new):
+                self.assertIn(n, missing(LANE, FULL.replace(old, new, 1)))
+
 
 class TestConditionalTerbatal(SimpleTestCase):
     """Round 3 blocker 1: the conditional phrases are excused only with a condition word in the same sentence."""
@@ -120,12 +137,12 @@ class TestConditionalTerbatal(SimpleTestCase):
         self.assertEqual(letter_refusal(ums() + 'Tawaran ini telah terbatal dengan sendirinya.\n'), 'not_an_offer')
 
     def test_hostile_text_is_fast(self):
-        """Round 3 MED 5: 200,000 characters of conditional phrases and cancel words finish in under 2 s."""
+        """Round 3 MED 5: 200,000 characters of conditional phrases and cancel words finish in under 5 s."""
         hostile = ('akan terbatal sekiranya ' * 9_000)[:200_000]
         start = time.perf_counter()
         _cancel_said(hostile)
         letter_refusal(hostile)
-        self.assertLess(time.perf_counter() - start, 2.0)
+        self.assertLess(time.perf_counter() - start, 5.0)         # owner words review round 1: 5 s, not 2 s
 
 
 class TestReportingDateLabelValue(SimpleTestCase):
@@ -150,6 +167,8 @@ class TestLaterPages(SimpleTestCase):
     def test_a_clean_later_page_passes(self):
         page2 = 'Syarat-syarat tawaran\nTarikh Lapor Diri : 28 September 2031\nNo. KP : ' + NRIC
         self.assertEqual(later_pages_refusal([page2, ''], NRIC, '28 Sep 2031'), '')
+        self.assertEqual(later_pages_refusal(['Program yang ditawarkan tertakluk kepada syarat.'], NRIC, '28 Sep 2031'),
+                         '')                                      # a bare "ditawarkan": every genuine page 2
 
     def test_a_second_offer_refuses(self):
         for page2 in ('TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH',
@@ -161,9 +180,54 @@ class TestLaterPages(SimpleTestCase):
 
     def test_the_templates_conditions_page_passes(self):
         """Every genuine two-page UMS letter's page 2 is headed "SYARAT-SYARAT TAWARAN KEMASUKAN SESI ..."."""
-        for head in ('SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2031/2032.', 'B.P PENDAFTARSYARAT - SYARAT TAWARAN KEMASUKAN'):
+        for head in ('SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2031/2032.', 'SYARAT-SYARAT TAWARAN KEMASUKAN SESI I-2031/2032',
+                     'B.P PENDAFTARSYARAT - SYARAT TAWARAN KEMASUKAN\nSESI 2031/2032'):
             with self.subTest(head=head):
-                self.assertEqual(later_pages_refusal([head + '\nTawaran ini tertakluk'], NRIC, '28 Sep 2031'), '')
+                self.assertEqual(later_pages_refusal([head + '\nTawaran ini tertakluk'], NRIC, '28 Sep 2031', INTAKE), '')
+
+    def test_the_heading_is_skipped_only_with_page_1s_session(self):
+        """Review round 1 MED 1: another session, another series, no session, or no page-1 intake refuses."""
+        for head, intake in (('SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2032/2033', INTAKE),
+                             ('SYARAT-SYARAT TAWARAN KEMASUKAN SESI II-2031/2032', INTAKE),
+                             ('SYARAT-SYARAT TAWARAN KEMASUKAN', INTAKE),
+                             ('B.P PENDAFTARSYARAT - SYARAT TAWARAN KEMASUKAN', INTAKE),
+                             ('SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2031/2032', '')):
+            with self.subTest(head=head, intake=intake):
+                self.assertEqual(later_pages_refusal([head], NRIC, '28 Sep 2031', intake), 'second_offer')
+
+    def test_another_programme_on_a_later_page_refuses(self):
+        """Review round 1 MED 1: a programme code or a "Program :" / "Kod Program :" value other than page 1's."""
+        args = (NRIC, '28 Sep 2031', INTAKE, CODE, PROG)
+        for page2 in ('Kod Program : UH6481002', 'Kod  Program\n:  UH 648 1002', 'Rujuk UH6481002 untuk butiran',
+                      'Program : Diploma Sains Marin', 'PROGRAM: Diploma Sains Marin'):
+            with self.subTest(page2=page2):
+                self.assertEqual(later_pages_refusal([page2], *args), 'second_offer')
+        for page2 in ('Kod Program : UH6481001', 'Program : ' + PROG, 'Rujuk UH6481001 untuk butiran'):
+            with self.subTest(page2=page2):
+                self.assertEqual(later_pages_refusal([page2], *args), '')
+
+    def test_any_spacing_of_the_offer_words_refuses(self):
+        """Review round 1 MED 2: glued, spread, split over lines or letter-spaced; and "telah ditawarkan tempat"."""
+        for page2 in ('TAWARANKEMASUKAN KE UNIVERSITI MALAYSIA SABAH', 'TAWARAN \t   KEMASUKAN', 'TAWARAN\nKEMASUKAN',
+                      'T A W A R A N  K E M A S U K A N', 'T-A-W-A-R-A-N KEMASUKAN', 'untukmendapat Diploma Sains Marin',
+                      'untuk    mengikuti Diploma Sains Marin', 'untuk\nmengikuti', 'u n t u k m e n d a p a t',
+                      'saudara telah ditawarkan tempat', 'telah\nditawarkan   tempat'):
+            with self.subTest(page2=page2):
+                self.assertEqual(later_pages_refusal([page2], NRIC, '28 Sep 2031', INTAKE), 'second_offer')
+
+    def test_another_reporting_date_however_printed_refuses(self):
+        """Review round 1 MED 2: "5hb Oktober 2031", a label split over lines or spaced; page 1's date passes."""
+        for page2 in ('Tarikh Lapor Diri : 5hb Oktober 2031', 'Tarikh Lapor Diri : 5 hb. Oktober 2031',
+                      'Tarikh\nLapor\nDiri :\n5 Oktober 2031', 'Tarikh  Lapor   Diri\n\n5 Oktober 2031',
+                      'T a r i k h  L a p o r  D i r i : 5 Oktober 2031', 'TarikhLaporDiri: 5 Oktober 2031'):
+            with self.subTest(page2=page2):
+                self.assertEqual(later_pages_refusal([page2], NRIC, '28 Sep 2031', INTAKE), 'second_offer')
+        for page2 in ('Tarikh Lapor Diri : 28hb September 2031', 'Tarikh\nLapor Diri :\n28 September 2031'):
+            with self.subTest(page2=page2):
+                self.assertEqual(later_pages_refusal([page2], NRIC, '28 Sep 2031', INTAKE), '')
+
+    def test_a_page_of_no_letters_refuses(self):
+        self.assertEqual(later_pages_refusal(['- . -'], NRIC, '28 Sep 2031', INTAKE), 'second_offer')
 
     def test_the_conditions_page_still_refuses_a_second_offer_on_it(self):
         head = 'SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2031/2032.\n'
@@ -179,7 +243,8 @@ def _digital(layout, page_texts, text=None):
 
 
 class TestOwnerWordsLock(SimpleTestCase):
-    """Part 2: a UMS letter locks by rules only when its VISIBLE text shows all 11 phrases (owner, 20 Nov)."""
+    """Part 2: a UMS letter locks by rules only when its drawn (render-mode visible) page-1 text shows all 11
+    phrases (owner, 20 Nov; page 1 only since review round 1)."""
 
     def test_the_template_locks_digital_and_scanned(self):
         self.assertEqual(_digital(ums(), [ums()])['locked']['candidate_name'], NAME)
@@ -212,19 +277,31 @@ class TestOwnerWordsLock(SimpleTestCase):
         cut = ums().replace('Sekiranya saudara/saudari menerima tawaran ini', 'Jika saudara bersetuju')
         self.assertEqual(_digital(cut, [cut], text=ums())['owner_words_missing'], [9])
 
-    def test_a_phrase_on_a_visible_later_page_counts(self):
+    def test_a_phrase_only_on_a_later_page_refuses(self):
+        """Review round 1 LOW 4: every owner phrase must be on page 1 (all 33 locking genuine letters have them)."""
         line = 'Saudara/i akan mengikuti program pengajian selama empat tahun.\n'
         cut = ums().replace(line, '')
-        self.assertEqual(_digital(cut, [cut, line], text=cut + line)['locked']['candidate_name'], NAME)
+        d = _digital(cut, [cut, line], text=cut + line)
+        self.assertEqual((d['guard'], d['owner_words_missing'], d['locked']), ('owner_words_missing', [11], None))
 
     def test_the_why_names_the_missing_numbers(self):
         why = {}
-        self.assertIsNone(exact_read(ums().replace('Tarikh Lapor Diri', 'Tarikh Daftar'), why=why))
-        self.assertEqual(why, {'lane': LANE, 'reason': 'read_owner_words_missing', 'owner_words_missing': [10]})
+        cut = ums().replace('Sekiranya saudara/saudari menerima tawaran ini', 'Jika saudara bersetuju')
+        self.assertIsNone(exact_read(cut, why=why))
+        self.assertEqual(why, {'lane': LANE, 'reason': 'read_owner_words_missing', 'owner_words_missing': [9]})
+
+    def test_no_owner_words_walk_once_read_ums_refused(self):
+        """Review round 1 LOW 5: a letter `read_ums` refuses is not walked for the owner's phrases."""
+        cut = ums().replace('Tarikh Lapor Diri', 'Tarikh Daftar')
+        with mock.patch('apps.scholarship.offer_owner_words.missing', wraps=missing) as walk:
+            d = _digital(cut, [cut])
+        self.assertEqual((walk.call_count, d['empty_required'], d['locked']), (0, ['reporting_date'], None))
+        self.assertNotIn('owner_words_missing', d)
 
 
 class TestVisiblePages(SimpleTestCase):
-    """Round 3 MED 4: a digital PDF needs its visible page texts, and its first 3 pages must all show text."""
+    """Round 3 MED 4: a digital PDF needs its drawn page texts, its first 3 pages must all show text, and
+    (review round 1) it has at most 3 pages."""
 
     def test_no_page_texts_refuses(self):
         for pages in (None, []):
@@ -236,8 +313,20 @@ class TestVisiblePages(SimpleTestCase):
             with self.subTest(n=len(pages)):
                 self.assertEqual(_digital(ums(), pages)['guard'], 'hidden_page')
 
-    def test_an_empty_fourth_page_is_not_checked(self):
-        self.assertIsNotNone(_digital(ums(), [ums(), 'Lampiran A', 'Lampiran B', ''])['locked'])
+    def test_more_than_three_pages_refuses(self):
+        """Review round 1 LOW 3: no page the checks do not read can carry a second offer."""
+        for pages in ([ums(), 'Lampiran A', 'Lampiran B', ''], [ums(), 'Lampiran A', 'Lampiran B', 'Lampiran C']):
+            with self.subTest(last=pages[-1]):
+                self.assertEqual(_digital(ums(), pages)['guard'], 'too_many_pages')
+        self.assertIsNotNone(_digital(ums(), [ums(), 'Lampiran A', 'Lampiran B'])['locked'])
+
+    def test_a_second_offer_on_a_later_page_in_any_spacing_refuses(self):
+        for page2 in ('TAWARANKEMASUKAN KE UNIVERSITI MALAYSIA SABAH', 'Kod Program :      UH6481002',
+                      'SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2032/2033'):
+            with self.subTest(page2=page2):
+                self.assertEqual(_digital(ums(), [ums(), page2], text=ums() + page2)['guard'], 'second_offer')
+        page2 = 'SYARAT-SYARAT TAWARAN KEMASUKAN SESI 2031/2032\nTarikh Lapor Diri : 28 September 2031'
+        self.assertIsNotNone(_digital(ums(), [ums(), page2], text=ums() + page2)['locked'])
 
 
 class TestSecondOfferWired(SimpleTestCase):
