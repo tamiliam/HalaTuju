@@ -27,7 +27,7 @@ describe.each(['submitted', 'shortlisted'] as const)('at %s', (stage) => {
 })
 
 it('submitted keeps the Close the file card', async () => {
-  renderCockpit({ role: 'org_admin', writes: true, stage: 'submitted' })
+  renderCockpit({ role: 'org_admin', writes: { can_write: true, can_close_pre_award: true }, stage: 'submitted' })
   await loaded()
   expect(screen.getByText('admin.closure.title')).toBeTruthy()
 })
