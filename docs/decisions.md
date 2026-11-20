@@ -387,6 +387,23 @@ fonts). Production's own container fonts will differ again: renders are not port
 streams 5.9 cannot parse (hidden locally, Vision route) and 6.21.4 reads as drawn; 179 PDFs extract different text
 between the two (pypdf's own changes). Local counts are not production counts.
 
+## 2026-11-20 — A rules lock needs real ink on page 1 (OCR-first S-visible 2)
+
+- **Rule (owner, "the visible page always judges"):** before a rules lane (`ua:UMS` first) locks a text-layer letter,
+  pdfium renders page 1 and every word of every owner phrase the lock used, and every value it read (name, IC,
+  programme, code, the reporting date as printed), must leave real ink at EVERY place it occurs. Otherwise there is no
+  lock: the AI reads the letter, reason `not_inked`, with labels only (`p<n>`, `v:<field>`, `page:modes`,
+  `page:annots`, `no_answer`), never text. Scans are untouched; lane off asks no ink op.
+- **What counts as ink** (`pdf_ink.py`): the page as rendered minus the page with its text made invisible, at 100 DPI;
+  a pixel changed by >= 96 of 255; every character inked over >= 10% of its box; a word at least 3 pt high, not
+  squeezed (width ratio >= 0.06), inside the page, with no other character covering > 30% of it. Page 1 text uses
+  render modes 0-2 only and its annotations are /Link only. A phrase pdfium cannot find refuses.
+- **Why:** S-visible 1 refused hidden render modes only; white, grey, faint, covered, clipped, tiny, off-page,
+  cropped-away, same-colour, squeezed and under-other-text words still locked. Each now goes to the AI.
+- **Cost:** none for genuine letters — 0 of the 33 UMS locks, nor of the owner-phrase-lockable UiTM, UUM, UPSI and UM
+  letters, fail, on pypdf 5.9.0 and 6.21.4; the least genuine ink share per character is 0.143. The ink op runs in the
+  layout's own pdfium child (no extra spawn).
+
 ## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)
 
 Owner said yes on 2026-11-18. Branch ocr-keep. Migration 0214 (additive). Services: api. We keep the text each read

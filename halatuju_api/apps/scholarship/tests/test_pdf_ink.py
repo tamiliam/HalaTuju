@@ -67,12 +67,12 @@ class TheWordRules(SimpleTestCase):
         bad[0][6] = 0                                               # a hidden second copy
         self.assertEqual(ink_missing(_answer(good, bad), PHRASE, []), ['p1'])
 
-    def test_partial_ink_is_judged_only_when_a_share_is_set(self):
-        a = _answer(_line('TAWARAN KEMASUKAN', ink=1, area=40))
-        self.assertEqual(ink_missing(a, PHRASE, []), [])
-        from unittest.mock import patch
-        with patch.object(pdf_ink, 'MIN_CHAR_SHARE', 0.05):
-            self.assertEqual(ink_missing(a, PHRASE, []), ['p1'])
+    def test_a_character_carved_to_a_sliver(self):
+        """Open risk 2: each character needs ink over a tenth of its box (genuine minimum 0.143)."""
+        self.assertEqual(ink_missing(_answer(_line('TAWARAN KEMASUKAN', ink=5, area=40)), PHRASE, []), [])
+        a = _answer(_line('TAWARAN KEMASUKAN'))
+        a['chars'][4][6] = 3                                       # 3 of 40 pixels: 0.075
+        self.assertEqual(ink_missing(a, PHRASE, []), ['p1'])
 
 
 class FindingTheWords(SimpleTestCase):

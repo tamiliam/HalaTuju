@@ -203,5 +203,29 @@ def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_n
         from .pdf_pages import MAX_LAYER_PAGES
         from .pdf_rules_pages import pdf_page1_layout, pdf_rules_page_texts
         layout, page_texts = pdf_page1_layout(image), pdf_rules_page_texts(image, MAX_LAYER_PAGES)
-    return exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric,
-                      page1_layout=layout, why=why, page_texts=page_texts)
+    ex = exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric,
+                    page1_layout=layout, why=why, page_texts=page_texts)
+    lane = (ex or {}).get('rules_lane') or ''
+    if lane and lane in ocr_first_lanes() and from_layer:
+        missing = _not_inked(ex, image, layout, lane)
+        if missing:                              # S-visible 2: the visible page judges; the AI reads it
+            if isinstance(why, dict):
+                why.update(lane=lane, reason='not_inked', ink_missing=missing)
+            return None
+    return ex
+
+
+def _not_inked(ex, image, layout, lane) -> list:
+    """S-visible 2 (owner rule, 20 Nov: "the visible page always judges"): the labels (`pdf_ink.ink_missing`)
+    of the owner phrases and values a rules lock on a TEXT-LAYER PDF relied on that leave no real ink on the
+    rendered page 1; [] when every one does. A lane with no `ink_targets` reader, or any fault, refuses."""
+    try:
+        from .offer_parse_university import LANE, ink_targets
+        from .pdf_ink import ink_missing, page1_ink
+        if lane != LANE:
+            return ['no_targets']
+        phrases, values = ink_targets(ex.get('fields'), layout)
+        return ink_missing(page1_ink(image), phrases, values)
+    except Exception:  # fail closed: the AI reads the letter, as it always could
+        logger.exception('rules lane %s: the ink check failed; the AI reads the letter', lane)
+        return ['ink_error']

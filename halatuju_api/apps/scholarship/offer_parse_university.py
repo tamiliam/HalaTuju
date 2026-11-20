@@ -430,26 +430,32 @@ def _reporting_date(lines):
     A SECOND whole date anywhere in the window after the one read (a range's own end apart) is a list
     ("Kumpulan A ... / Kumpulan B ...", two dates on one line, a separate date for international students),
     and reads no date (S1c review round 1)."""
+    return _reporting_date_printed(lines)[0]
+
+
+def _reporting_date_printed(lines) -> tuple:
+    """(`_reporting_date`, the date AS PRINTED: the range or the date the read came from, for the ink check
+    `ink_targets`), or ('', '')."""
     at = [i for i, ln in enumerate(lines) if _REPORT_LABEL.search(ln)]
     if len(at) != 1:
-        return ''
+        return '', ''
     i = at[0]
     tail = _REPORT_LABEL.split(lines[i], maxsplit=1)[1]
     if tail.strip(' \t:：') and not first_date(tail):
-        return ''                                # the label's own value is not a date ("TBD"; round 3 blocker 2)
+        return '', ''                              # the label's own value is not a date ("TBD"; round 3 blocker 2)
     held = False                                # an earlier part held a day number or a joiner (S1c, MED-1)
     window = [tail] + lines[i + 1:i + 7]
     for k, part in enumerate(window):
         if _NO_DATE.search(part):
-            return ''                            # "Akan dimaklumkan kemudian": no date yet (review round 2)
+            return '', ''                          # "Akan dimaklumkan kemudian": no date yet (review round 2)
         if k and _FIELD_LABEL.match(part) and not _VENUE.match(_one_space(part)):
-            return ''                            # another field's label: its date is not this one (review round 2)
+            return '', ''                          # another field's label: its date is not this one (review round 2)
         got = first_date(part)
         if not got:
             held = held or bool(_DAY_NUMBER.search(part) or _JOINER.search(part))
             continue
         if held or _JOINER_START.match(part.lstrip(' \t:')):
-            return ''                            # a range or list wrapped across lines: its first day is above
+            return '', ''                          # a range or list wrapped across lines: its first day is above
         if _RANGE_SEP.search(part):
             m = _DAY_RANGE.search(part)
             got, start = _range_start(m), (m.start() if m else -1)
@@ -459,9 +465,27 @@ def _reporting_date(lines):
         day = _DAY_NUMBER.search(part)
         rest = _RANGE_END.sub('', part[m.end():], count=1) if m else part
         if any(first_date(later) or _LOOSE_DATE.search(later) for later in [rest] + window[k + 1:]):
-            return ''                            # a second date in the window: a list (S1c review round 1, LOW-E)
-        return got if day and day.start() == start else ''
-    return ''
+            return '', ''                          # a second date in the window: a list (S1c review round 1, LOW-E)
+        printed = (m.group(0) if _RANGE_SEP.search(part) else m.group(1)) if m and got else ''
+        return (got, printed) if day and day.start() == start and printed else ('', '')
+    return '', ''
+
+
+def ink_targets(fields, page1_layout) -> tuple:
+    """S-visible 2 (`pdf_ink.ink_missing`): (phrases, values) a UMS lock relied on, as (label, text) pairs —
+    the owner phrases page 1's layout shows (``p<n>``, `offer_owner_words`), and the name, IC, programme, UPU
+    code (when read) and reporting date as printed (``v:name`` ...). A required value left blank stays in, so
+    the ink check refuses it rather than skipping it."""
+    from .offer_owner_words import OWNER_WORDS, _shown
+    shown = _shown(LANE, page1_layout or '')
+    phrases = [(f'p{k + 1}', p) for k, p in enumerate(OWNER_WORDS[LANE]) if k in shown]
+    f = fields if isinstance(fields, dict) else {}
+    values = [('v:name', f.get('candidate_name') or ''), ('v:nric', f.get('candidate_nric') or ''),
+              ('v:programme', f.get('programme') or ''),
+              ('v:date', _reporting_date_printed(_text_lines(page1_layout or ''))[1])]
+    if (f.get('programme_code') or '').strip():
+        values.insert(3, ('v:code', f['programme_code']))
+    return phrases, values
 
 
 def _same_line(pattern, lines):

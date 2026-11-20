@@ -22,8 +22,9 @@ tolerances real letters need: the space BETWEEN a phrase's words is optional (pd
 value may carry a separator between any two characters (the IC is stored as printed 6-2-4 digits; pdfium may split
 words). Word edges stay strict. A target pdfium cannot find refuses (pypdf found it; pdfium did not).
 
-Thresholds measured on 52 lockable genuine letters (UMS 36, UiTM 8, UUM 4, UPSI 2, UM 2; 2,089 phrase words, 132
-values): 0 genuine fails. Pure (no pdfium here): `page1_ink` asks the child, the rest is arithmetic on its answer.
+Thresholds measured on the genuine corpus (counts only): the 33 UMS letters the lane locks (330 phrase targets, 165
+values) and the owner-phrase-lockable UiTM (3 on pypdf 5.9, 8 on 6.21), UUM 4, UPSI 2 and UM 2 letters: 0 fail, on
+both pypdf versions. Pure (no pdfium here): `page1_ink` asks the child, the rest is arithmetic on its answer.
 Labels only (``p<n>``, ``v:<field>``, ``page:modes``, ``page:annots``, ``no_answer``, ``no_targets``), never text.
 """
 from __future__ import annotations
@@ -43,9 +44,9 @@ MIN_H_PT = 3.0
 MIN_W_RATIO = 0.06
 #: Another character covering more than this share of its own box with the word's box refuses the word.
 MAX_OVERLAP = 0.30
-#: The least share of a character's box (+1 px) that must be ink (open risk 2, partial carving). 0: only "some
-#: ink" is required; see the build report for the measured genuine minimum.
-MIN_CHAR_SHARE = 0.0
+#: The least share of a character's box (+1 px) that must be ink (open risk 2: a character covered all but a
+#: sliver). Genuine minimum 0.143 over 16,647 characters of every target word (p0.1 0.159); 0.10 costs none.
+MIN_CHAR_SHARE = 0.10
 #: A target found more often than this on page 1 refuses (bounds the work; a genuine letter prints any one of
 #: its phrases a handful of times).
 MAX_OCCURRENCES = 20
@@ -69,7 +70,7 @@ def ink_ops(data: bytes) -> list:
 
 
 def page1_ink(data: bytes):
-    """Page 1's ink answer, or None (no answer: refused). `pdf_pages.pdf_page1_layout` asks the same op in the
+    """Page 1's ink answer, or None (no answer: refused). `pdf_rules_pages.pdf_page1_layout` asks the same op in the
     layout's own child, so this is normally the child memo's answer and spawns nothing."""
     from . import pdfium_run
     ops = ink_ops(data) if data else []
@@ -128,7 +129,7 @@ def _word_ok(ci, chars, solid) -> bool:
     rows = [chars[i] for i in ci]
     if not rows or any(r[1] or not r[8] or r[6] <= 0 or r[7] <= 0 for r in rows):
         return False
-    if MIN_CHAR_SHARE and any(r[6] < MIN_CHAR_SHARE * r[7] for r in rows):
+    if any(r[6] < MIN_CHAR_SHARE * r[7] for r in rows):
         return False
     height = max(r[5] - r[3] for r in rows)
     left, bottom = min(r[2] for r in rows), min(r[3] for r in rows)

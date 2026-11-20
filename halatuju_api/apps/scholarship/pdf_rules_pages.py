@@ -37,7 +37,8 @@ def pdf_page1_layout(data: bytes) -> str:
     plain = texts[0] if texts else ''
     if not plain:
         return ''
-    got = pdfium_run.ask(data, [{'op': 'layout'}])
+    from .pdf_ink import ink_ops                 # S-visible 2: page 1's ink in the same child (`pdf_ink.page1_ink`)
+    got = pdfium_run.ask(data, [{'op': 'layout'}] + ink_ops(data))
     layout = (got[0] or {}).get('text') if got else ''
     if not isinstance(layout, str) or not layout:
         return ''

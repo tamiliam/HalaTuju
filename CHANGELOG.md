@@ -135,6 +135,14 @@ Branch req70, not pushed. No migration, no API change. Services: web.
 - One rule: `decisionMissing` (`src/lib/cockpitStages.ts`) returns the ordered missing items (findings not submitted or N unanswered, unrated facts, empty conclusion); `isDecisionReady` is now `decisionMissing(...).length === 0`, so the list and the gate cannot disagree.
 - The Decision card shows "Still to do:" under the buttons, each item a button that scrolls to and focuses its place (interview stage, first unrated fact, conclusion box). Recommend and Decline are `aria-disabled` while not ready (busy stays `disabled`): a press shows the list as a focused `role="alert"` and acts on nothing. The phone decision bar asks the card for the same alert.
 - Words in en, ms, ta (`recordVerdict.missing.*`); `saveNeedsReady` retired (`findingsIncomplete` stays: the server-refusal text reads it). Reviewer Guide and FAQ explain the list.
+### feat: OCR-first S-visible 2 - a rules lock needs real ink on page 1 (2026-11-20)
+
+Branch ocr-svis2, not pushed. Migration: none. Services: api. The `ua:UMS` lane stays OFF; lane off unchanged (no ink op asked).
+- New `pdf_ink.py` and pdfium worker op `ink`: with a rules lane on, `offer_exact.exact_offer_read` locks a text-layer letter only when every owner-phrase word and every value read (`offer_parse_university.ink_targets`, incl. the reporting date as printed) leaves real ink at every place on rendered page 1; page 1 text in render modes 0-2 only, annotations /Link only. Otherwise reason `not_inked` (labels only) and the AI reads it.
+- Catches white, grey, faint, covered, image-covered, clipped, tiny, off-page, cropped-away, same-colour, squeezed and under-other-text words, a full-page cover and non-link annotations, also on rotated pages.
+- Measured (counts only, pypdf 5.9.0 and 6.21.4): 0 genuine lockable letters fail (UMS 33 locks, UiTM, UUM, UPSI, UM); least genuine ink share per character 0.143, so the 0.10 floor costs none. UMS PDFs 33/36, scans 11/22, Gate 1 held-out 22/33, dev 22/29, 0 wrong: unchanged. `PARSER_VERSION` 2.2.0 digest updated in place.
+- Tests: `test_pdf_ink.py`, `test_ink_attacks.py`, the ink op in `test_pdfium_child.py`.
+
 ### docs: learning loop stack brought up to main and closed (2026-11-19)
 
 Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (entries below). Migration: `0218_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: both.

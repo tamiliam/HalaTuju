@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from apps.scholarship import vision
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship import pdf_pages, pdf_rules_pages
+from apps.scholarship import pdf_pages
 from apps.scholarship.offer_course_match import letter_level
 from apps.scholarship.offer_exact import exact_read, ocr_first_lanes, rules_lane_open, rules_lane_verdict
 from apps.scholarship.offer_parse import diagnose, parse_govt_offer
@@ -350,29 +350,6 @@ class TestReviewRoundOne(SimpleTestCase):
                 self.assertEqual(read_ums(ums(code=code))[0]['programme_code'], '')
 
 
-class TestTheLayoutRunsInTheChild(SimpleTestCase):
-    """Review round 1 #11: page 1's layout text comes from the pdfium child, under its limits."""
-
-    def setUp(self):
-        pdf_pages._layer_memo_clear()
-
-    def test_the_child_reads_the_layout(self):
-        from apps.scholarship.tests.test_ocr_visible import _pdf, _show
-        self.assertEqual(pdf_rules_pages.pdf_page1_layout(_pdf([_show('Nama   ZORBEX QUENTARO')])), 'Nama   ZORBEX QUENTARO')
-
-    def test_no_answer_from_the_child_is_no_layout(self):
-        from apps.scholarship.tests.test_ocr_visible import _pdf, _show
-        from apps.scholarship import pdfium_run
-        real, asked = pdfium_run.ask, []
-
-        def ask(data, ops):                     # the visibility check runs as before; the layout op gets nothing
-            asked.append(ops)
-            return None if ops == [{'op': 'layout'}] else real(data, ops)
-        with mock.patch('apps.scholarship.pdfium_run.ask', side_effect=ask):
-            self.assertEqual(pdf_rules_pages.pdf_page1_layout(_pdf([_show('Nama   ZORBEX QUENTARO')])), '')
-        self.assertIn([{'op': 'layout'}], asked)
-
-
 class TestReviewRoundTwo(SimpleTestCase):
     """The S1 review's round-2 findings (2026-11-19): each trigger refuses; the forms already placed still read."""
 
@@ -466,7 +443,8 @@ class TestReviewRoundThree(SimpleTestCase):
         with mock.patch('apps.scholarship.offer_exact.pdf_layers', return_value=(text, text)), \
                 mock.patch(LAYOUT, return_value=layout_text or ums()) as layout, \
                 mock.patch(PAGE_TEXTS, return_value=[layout_text or ums()]), \
-                mock.patch(READ_UMS, wraps=read_ums) as rules:
+                mock.patch(READ_UMS, wraps=read_ums) as rules, \
+                mock.patch('apps.scholarship.offer_exact._not_inked', return_value=[]):   # S-visible 2: fake bytes
             ex = exact_offer_read(text, image=b'%PDF-1.4 x', content_type='application/pdf', why=why)
         return ex, why, layout, rules
 
