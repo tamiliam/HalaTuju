@@ -512,6 +512,95 @@ class TheReviewRound3Type3Attack(SimpleTestCase):
         self.assertIs(pdf_ink.page1_ink(_with_type3(build('none'), WELL_BEHAVED[0]))['type3'], True)
 
 
+def build_t3deep(chain=15):
+    """Review of fix round 3: `build_t3tol`'s flat glyph moved into a form Y the page draws as page -> /S Do ->
+    /Y Do. The page lists /S, then /A: A1 .. A``chain`` are forms never drawn, A_k lists A_(k+1) and the last lists
+    Y, so the Type3 walk (depth first, last listed first) meets Y first at depth ``chain`` + 1. S also lists
+    A``chain`` .. A2 (that order), so the load check (depth first, in listed order) meets each at depth 2. ``chain`` 0: page -> S -> Y alone (the control)."""
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.generic import (ArrayObject, DecodedStreamObject, DictionaryObject, FloatObject, NameObject,
+                               NumberObject)
+    w = PdfWriter()
+    w.append(PdfReader(io.BytesIO(build_t3tol())))
+    page = w.pages[0]
+    res = page['/Resources'].get_object()
+    fonts = res['/Font'].get_object()
+    t3 = fonts.raw_get('/T3')
+    del fonts['/T3']
+    cmap = DecodedStreamObject()                     # the glyph's text a space: pypdf's layout, which cannot see
+    cmap.set_data(b'/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CMapName /T3U def '  # Y's font,
+                  b'1 begincodespacerange <00> <FF> endcodespacerange 1 beginbfchar <61> <0020> endbfchar '  # then
+                  b'endcmap CMapName currentdict /CMap defineresource pop end end')    # holds the same characters
+    t3.get_object()[NameObject('/ToUnicode')] = w._add_object(cmap)
+    contents = list(page['/Contents'].get_object())
+    shown = contents[-1].get_object().get_data()
+
+    def form(body, xobjects=None, font=None):
+        s = DecodedStreamObject()
+        s.set_data(body)
+        s.update({NameObject('/Type'): NameObject('/XObject'), NameObject('/Subtype'): NameObject('/Form'),
+                  NameObject('/BBox'): ArrayObject([NumberObject(v) for v in (0, 0, 595, 842)]),
+                  NameObject('/Matrix'): ArrayObject([FloatObject(v) for v in (1, 0, 0, 1, 0, 0)])})
+        r = DictionaryObject()
+        if font is not None:
+            r[NameObject('/Font')] = DictionaryObject({NameObject('/T3'): font})
+        if xobjects:
+            r[NameObject('/XObject')] = DictionaryObject({NameObject(k): v for k, v in xobjects})
+        s[NameObject('/Resources')] = r
+        return w._add_object(s)
+    y = form(shown, font=t3)
+    chain_refs, nxt = [], y
+    for k in range(chain, 0, -1):                     # A_chain lists Y; A_k lists A_(k+1)
+        nxt = form(b'', [('/N', nxt)])
+        chain_refs.insert(0, nxt)
+    later = [('/A%d' % (k + 2), ref) for k, ref in enumerate(chain_refs[1:])]
+    s = form(b'/Y Do', [('/Y', y)] + later[::-1])    # deepest first: the load check meets each at depth 2
+    xo = DictionaryObject({NameObject('/S'): s})
+    if chain_refs:
+        xo[NameObject('/A')] = chain_refs[0]
+    res[NameObject('/XObject')] = xo
+    body = DecodedStreamObject()
+    body.set_data(b'q /S Do Q')
+    page[NameObject('/Contents')] = ArrayObject(contents[:-1] + [w._add_object(body)])
+    out = io.BytesIO()
+    w.write(out)
+    return out.getvalue()
+
+
+@override_settings(OCR_FIRST_LANES=(LANE,))
+class TheType3WalkCutShort(SimpleTestCase):
+    """Review of fix round 3: the Type3 walk dropped resources past depth 15 silently, and a form marked seen when
+    first LISTED deep in a never-drawn chain was never walked from the shallow path that draws it, so a Type3 font
+    in it went unseen (the chain-15 attack LOCKED a UMS letter). A walk cut short now counts as Type3 that fails
+    (``type3`` True, ``type3_ok`` False); chain 0 is the control."""
+
+    def setUp(self):
+        pdf_pages._layer_memo_clear()
+
+    def test_a_type3_font_past_the_depth_limit_counts_as_type3(self):
+        from apps.scholarship import pdf_ink
+        for chain in (0, 15):
+            with self.subTest(chain=chain):
+                ink = pdf_ink.page1_ink(build_t3deep(chain))
+                self.assertIs(ink['type3'], True)
+                if chain:
+                    self.assertIs(ink['type3_ok'], False)
+
+    def test_the_deep_attack_refuses_a_ums_letter(self):
+        for chain in (0, 15):
+            with self.subTest(chain=chain):
+                ex, why = _read(build_t3deep(chain))
+                self.assertIsNone(ex, (ex or {}).get('fields'))
+                self.assertEqual((why.get('lane'), why.get('reason')), (LANE, 'not_inked'), why)
+                self.assertIn('page:type3', why['ink_missing'])
+
+    def test_the_deep_attack_refuses_even_where_type3_is_allowed(self):
+        with _type3_allowed():
+            ex, why = _read(build_t3deep(15))
+        self.assertIsNone(ex, (ex or {}).get('fields'))
+        self.assertIn('page:type3', why.get('ink_missing') or [], why)
+
+
 def _wrapped(data, head: bytes, tail: bytes, zapf=False):
     """``data`` with page 1's content between ``head`` and ``tail`` (and /FZ, ZapfDingbats, among its fonts)."""
     from pypdf import PdfReader, PdfWriter

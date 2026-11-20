@@ -594,7 +594,13 @@ def _pdf_flags(index: int) -> tuple:
     while todo:
         res, depth = todo.pop()
         res = res.get_object() if res is not None else None
+        if res is None and depth <= 15:          # no resources of its own: it can name no font, form or pattern
+            continue
         if not hasattr(res, 'get') or depth > 15:
+            # Fix round 3b: a walk cut short (too deep, or resources that are not a dictionary) may hide a Type3
+            # font, so it counts as one that fails. Each resource is marked seen when first LISTED, not walked:
+            # still safe, as every listed one is walked from that path or trips this same rule.
+            t3_ok, t3_any = False, True
             continue
         if len(seen) >= 5000:
             return True, xfa, False, True        # past any genuine page: counted as optional (refused)
