@@ -322,8 +322,9 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # 2.2.0 (OCR-first S1c, 2026-11-19) — the UMS read refuses more (TD-699): a reporting range wrapped
 # across lines, more withdrawal words (spaced letters too), any programme label line, an '@' or
 # "NAME, KG ..." line under the name, and text longer than a page 1. Government families unchanged.
-# Also (20 Nov, unreleased): no lock on ANY rules lane (university or government family) when the visible
-# page-1 text or the parsed programme / stream says ASASI (`_rules_exit`).
+# Also (20 Nov, unreleased): no lock on ANY rules lane (university or government family) when the page-1
+# text (a university lane's drawn layout; a government letter's text layer) or the parsed programme / stream
+# says ASASI (`_rules_exit`).
 PARSER_VERSION = '2.2.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
@@ -430,9 +431,10 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page
 
 def _rules_exit(out: dict, shown: str) -> dict:
     """EVERY rules lane's last step — the university lanes (UMS now; S2 / S3 pass through it too) AND the three
-    government families (STPM, matriculation, polytechnic): a lock whose VISIBLE page-1 text ``shown`` (a
-    university letter: a digital PDF's page-1 layout, a scan its own text; a government letter: a digital PDF's
-    page-1 plain layer, a scan its own text) or whose parsed programme or stream says ASASI
+    government families (STPM, matriculation, polytechnic): a lock whose page-1 text ``shown`` (a university
+    letter: a digital PDF's DRAWN page-1 layout, render-mode visible, a scan its own text; a government letter: a
+    digital PDF's page-1 TEXT LAYER, not checked for visibility, a scan its own text) or whose parsed programme or
+    stream says ASASI (whole, glued, spaced or OCR-misread)
     (`offer_owner_words.ai_only`) does not lock — guard ``asasi_ai_read`` — and the AI reads the letter (owner,
     20 Nov: "For now, let AI handle Asasi"). A letter already refused keeps its own guard."""
     from .offer_owner_words import ai_only

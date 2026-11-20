@@ -1,6 +1,7 @@
 """Asasi goes to the AI (owner, 20 Nov: "For now, let AI handle Asasi. When there a larger sample, we can consider
-switching."): a letter whose VISIBLE page-1 text, or parsed programme, says ASASI never locks in ANY rules lane
-(university or government family; guard ``asasi_ai_read``). Made-up text only."""
+switching."): a letter whose page-1 text (as its rules lane reads it), or parsed programme, says ASASI (whole,
+spaced, glued or OCR-misread) never locks in ANY rules lane (university or government family; guard
+``asasi_ai_read``). Made-up text only."""
 from unittest import mock
 
 from django.test import SimpleTestCase
@@ -32,10 +33,58 @@ class TestTheWord(SimpleTestCase):
                 self.assertEqual(ai_only(text), 'asasi_ai_read')
 
     def test_other_words_do_not_count(self):
-        for text in ('', 'Program Ijazah Sarjana Muda', 'ASAS', 'ASASINYA', 'BASASI', 'ASASI2', 'KASA SI',
-                     'AS ASIA'):
+        """ASAS alone (basic), a spaced I with more letters after it ("ASAS INI"), a spaced 1 ("ASAS 1") and
+        letters split differently ("KASA SI", "AS ASIA") do not say ASASI: unchanged by the fix round."""
+        for text in ('', 'Program Ijazah Sarjana Muda', 'ASAS', 'Pendidikan Asas', 'ASAS INI', 'ASAS 1',
+                     'KASA SI', 'AS ASIA'):
             with self.subTest(text):
                 self.assertEqual(ai_only(text), '')
+
+    def test_asas_then_a_lone_i_refuses_as_before(self):
+        """The spaced form (any letter may be followed by one space) already took "ASAS I" (the I standing
+        alone) and "ASA SI": kept."""
+        for text in ('ASAS I', 'Program Asas\nI', 'A.S.A.S.I', 'ASA SI'):
+            with self.subTest(text):
+                self.assertEqual(ai_only(text), 'asasi_ai_read')
+
+
+class TestGluedAndMisread(SimpleTestCase):
+    """Asasi fix round (review MEDIUM): the unspaced ASASI anywhere, no word edges; OCR's 1 / L / | for the last I;
+    Cyrillic / Greek look-alike capitals folded first. Refusing more costs one AI call; a wrong lock is serious."""
+
+    def test_glued_to_other_letters_or_digits(self):
+        for text in ('PROGRAMASASI', 'ASASISAINS', '178Asasi', 'ASASIpin', 'Kod:178Asasi Sains', 'xASASIx'):
+            with self.subTest(text):
+                self.assertEqual(ai_only(text), 'asasi_ai_read')
+
+    def test_ocr_misreads_of_the_last_i(self):
+        for text in ('ASAS1', 'ASASl', 'ASAS|', 'Program ASAS1 Sains', 'asasl', 'ASASL', 'Program: ASAS| SAINS'):
+            with self.subTest(text):
+                self.assertEqual(ai_only(text), 'asasi_ai_read')
+
+    def test_cyrillic_and_greek_look_alikes(self):
+        for text in ('АSASI', 'AЅAЅI', 'ASASІ', 'ΑSASI', 'ASASΙ',
+                     'Program аsasi Sains', 'А S А S I'):
+            with self.subTest(text.encode('unicode_escape')):
+                self.assertEqual(ai_only(text), 'asasi_ai_read')
+
+    def test_longer_words_holding_asasi_now_refuse(self):
+        """The safe direction, accepted: before the fix round these were not ASASI (whole words only)."""
+        for text in ('ASASIAH', 'ASASINYA', 'BASASI', 'ASASI2'):
+            with self.subTest(text):
+                self.assertEqual(ai_only(text), 'asasi_ai_read')
+
+    def test_a_glued_programme_field_refuses_a_government_lock(self):
+        letter = _poly(':ATK-PROGRAMASASI TEKNOLOGI KEJURUTERAAN')
+        with mock.patch(AI_ONLY, return_value=''):              # control: otherwise a lock
+            self.assertIsNotNone(diagnose(letter)['locked'])
+        self.assertEqual(diagnose(letter)['guard'], 'asasi_ai_read')
+
+    def test_glued_or_misread_on_a_ums_page_refuses(self):
+        for word in ('178Asasi', 'ASASIpin', 'ASAS1', 'АSASI'):
+            letter = ums().replace('Saudara/i akan', f'Kod {word} tidak berkaitan.\nSaudara/i akan')
+            with self.subTest(word.encode('unicode_escape')):
+                self.assertEqual(diagnose(letter)['guard'], 'asasi_ai_read')
 
     def test_text_too_long_to_fold_fails_closed(self):
         self.assertEqual(ai_only('B' * (MAX_NORM_CHARS + 1)), 'asasi_ai_read')
@@ -141,9 +190,23 @@ class TestEveryRulesLane(SimpleTestCase):
             with self.subTest(letter[:20]):
                 self.assertIsNotNone(diagnose(letter)['locked'])
 
-    def test_look_alike_words_do_not_refuse(self):
-        for prog in (':DAS-DIPLOMA ASASIAH KEJURUTERAAN', ':DAK-DIPLOMA ASAS KEJURUTERAAN'):
-            with self.subTest(prog):
-                d = diagnose(_poly(prog))
-                self.assertEqual((d['guard'], d['locked'] is not None), (None, True))
-        self.assertIsNotNone(diagnose(_poly() + 'ASASIAH ASAS BASASI\n')['locked'])
+    def test_asas_alone_does_not_refuse(self):
+        d = diagnose(_poly(':DAK-DIPLOMA ASAS KEJURUTERAAN'))
+        self.assertEqual((d['guard'], d['locked'] is not None), (None, True))
+        self.assertIsNotNone(diagnose(_poly() + 'ASAS ASAS INI\n')['locked'])
+
+    def test_asasiah_now_refuses(self):
+        """Fix round: ASASI is matched anywhere, so "ASASIAH" (which holds ASASI) refuses. Accepted: the safe
+        direction (one AI call); before the round it locked."""
+        for letter in (_poly(':DAS-DIPLOMA ASASIAH KEJURUTERAAN'), _poly() + 'ASASIAH ASAS BASASI\n'):
+            with self.subTest(letter[-30:]):
+                d = diagnose(letter)
+                self.assertEqual((d['guard'], d['locked']), ('asasi_ai_read', None))
+
+    def test_normal_letters_of_every_lane_still_lock(self):
+        """STPM, matriculation, polytechnic and UMS letters with no Asasi in them lock after the fix round."""
+        from apps.scholarship.tests.test_offer_parser import MATRIC, STPM
+        for name, d in (('stpm', diagnose(STPM)), ('matric', diagnose(MATRIC)), ('poly', diagnose(_poly())),
+                        ('ums digital', _digital(ums())), ('ums scan', diagnose(ums()))):
+            with self.subTest(name):
+                self.assertIsNotNone(d['locked'])

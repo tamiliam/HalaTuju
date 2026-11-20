@@ -116,6 +116,15 @@ _KNOWN_GAPS = {
         f'{_VISION}:_is_pdf': _TRANSPORT,
         'apps/scholarship/pdf_pages.py:*': _TRANSPORT,
     },
+    'offer_parse': {
+        f'{_VISION}:_is_pdf via apps/scholarship/offer_exact.py': _TRANSPORT,
+        'apps/scholarship/offer_course_match.py:pinned_match via apps/scholarship/offer_exact.py': (
+            'KNOWN GAP. The catalogue match that a rules lane lock must pass (offer_exact.rules_lane_verdict) '
+            'reads the course catalogue, which changes without a deploy, and its code reaches offer_pathway, '
+            'catalogue_levels, school_names and the courses models (shared with the AI path). A change there '
+            'can open or close a rules lane with no offer_parse bump; it can only send a letter to the AI, '
+            'never change what the parser read.'),
+    },
 }
 
 #: Module-level `*VERSION` constants under apps/scholarship that are NOT a scoring model's version.

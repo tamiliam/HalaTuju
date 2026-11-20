@@ -18,8 +18,9 @@ characters that are not letters or digits becomes one space. So case, line break
 * no OCR misreading is forgiven.
 
 Per issuer, as DATA (`OWNER_WORDS`), keyed by the rules lane: S2 / S3 add UPSI, UUM and the rest as new rows.
-The reverse, for EVERY rules lane (`AI_ONLY_WORDS`, `ai_only`): a letter whose visible text says ASASI never
-locks by rules (owner, 20 Nov); `offer_parse._rules_exit` applies it to every lock, university or government.
+The reverse, for EVERY rules lane (`AI_ONLY_WORDS`, `ai_only`): a letter whose page-1 text says ASASI (glued,
+spaced or OCR-misread too) never locks by rules (owner, 20 Nov); `offer_parse._rules_exit` applies it to every
+lock, university or government.
 Pure; never raises on text input; linear in the text (each phrase is literal words joined by bounded spaces).
 """
 from __future__ import annotations
@@ -54,7 +55,13 @@ OPTIONAL_ON_TEXT_PDF = {'ua:UMS': (1,)}
 #: 20 Nov: "For now, let AI handle Asasi. When there a larger sample, we can consider switching."). Asasi is a
 #: foundation programme, not a degree, and some UMS Asasi letters look like the degree template. word -> guard.
 AI_ONLY_WORDS = {'ASASI': 'asasi_ai_read'}
+#: The spaced-out form, whole words ("A S A S I", "A.S.A.S.I", "ASAS I"), in the `_norm` fold.
 _AI_ONLY = tuple((re.compile(r'(?<!\w)' + ' ?'.join(w) + r'(?!\w)'), g) for w, g in AI_ONLY_WORDS.items())
+#: Asasi fix round (20 Nov, review MEDIUM): the unspaced form ANYWHERE, no word edges ("PROGRAMASASI", "178Asasi",
+#: a scan's "ASASIpin"), the last I also read as OCR's 1, L or | ("ASAS1", "ASASl", "ASAS|"); looked for in the
+#: look-alike fold (`offer_ums_refusal.fold_lookalikes`: a Cyrillic / Greek "АSASI" is ASASI), upper-cased, with
+#: every other character kept. Refusing more is the safe side: "ASASIAH" or "ASASINYA" refuse too (one AI call).
+_AI_ONLY_GLUED = ((re.compile(r'ASAS[I1L|]'), AI_ONLY_WORDS['ASASI']),)
 
 
 #: Owner words review round 1 (LOW 5): the most text the phrases are looked for in, counted AFTER the unicode
@@ -138,16 +145,22 @@ def missing(lane: str, text: str, text_pdf: bool = False) -> list:
 
 
 def ai_only(text: str) -> str:
-    """The guard (`AI_ONLY_WORDS`, e.g. 'asasi_ai_read') when ``text`` — a letter's VISIBLE page-1 text, the same
-    text the owner phrases are looked for in — shows one of those words whole, folded as the phrases are (`_norm`:
-    any case, accents, line breaks, punctuation around it), its letters spaced out too ("A S A S I"); '' otherwise.
+    """The guard (`AI_ONLY_WORDS`, e.g. 'asasi_ai_read') when ``text`` — a letter's page-1 text as its rules lane
+    reads it (`offer_parse._rules_exit`), or a parsed programme / stream — says ASASI; '' otherwise. Two forms:
+    whole words folded as the phrases are (`_norm`: any case, accents, line breaks, punctuation around it), its
+    letters spaced out too ("A S A S I", "A.S.A.S.I"); and the unspaced form anywhere, glued to other letters or
+    digits, the last I also OCR's 1 / L / |, Cyrillic or Greek look-alikes folded first (`_AI_ONLY_GLUED`).
     Fails closed: text with letters or digits that `_norm` will not fold (longer than `MAX_NORM_CHARS`) gives the
     first guard."""
+    from .offer_ums_refusal import fold_lookalikes
     text = text or ''
     folded = _norm(text)
     if not folded:
         return next(iter(AI_ONLY_WORDS.values())) if any(c.isalnum() for c in text) else ''
-    return next((guard for pat, guard in _AI_ONLY if pat.search(folded)), '')
+    looks = fold_lookalikes(text)
+    spaced = (folded, _norm(looks))
+    return (next((guard for pat, guard in _AI_ONLY if any(pat.search(s) for s in spaced)), '')
+            or next((guard for pat, guard in _AI_ONLY_GLUED if pat.search(looks.upper())), ''))
 
 
 def page_of_each(lane: str, pages) -> dict:

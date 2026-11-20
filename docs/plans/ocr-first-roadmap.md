@@ -168,11 +168,13 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 - **Tests and gate:** as for S1, for each lane.
 - **Stays AI:** lanes under the threshold, private universities and the PISMP letters (deferred).
 - **Complexity:** medium.
+- **Asasi note (20 Nov):** The shared Asasi exit refuses any page-1 ASASI. 17 of 18 UiTM letters print an 'Asasi & Diploma' office line, and UTeM diploma letters name 'Sekolah Asasi Teknikal dan Pengajian Diploma'. A UiTM or UTeM lane must excuse its own letterhead phrase (per issuer) or check only the programme field and offer sentence, or the lane refuses almost every letter. An English-language lane must also treat 'Foundation in' in the programme field as Asasi (programme field only; sponsor names contain 'Foundation').
 
 ### OCR-14 (was S3): the remaining public universities (UKM, UTHM, UTeM, UNIMAS, UMK and the rest of the 20)
 - **Scope:** the same pattern. Most of these lanes have **fewer than 20 letters**, so the likely result is "built, measured, stays AI until enough letters arrive". The sprint ships the readers with their switches off, plus a monthly line in the dry-run report showing when each lane reaches 20.
 - **Version:** 2.11.0.
 - **Complexity:** medium. **Option:** drop or postpone this sprint if S2 shows small lanes are not worth it.
+- **Asasi note (20 Nov):** The shared Asasi exit refuses any page-1 ASASI. 17 of 18 UiTM letters print an 'Asasi & Diploma' office line, and UTeM diploma letters name 'Sekolah Asasi Teknikal dan Pengajian Diploma'. A UiTM or UTeM lane must excuse its own letterhead phrase (per issuer) or check only the programme field and offer sentence, or the lane refuses almost every letter. An English-language lane must also treat 'Foundation in' in the programme field as Asasi (programme field only; sponsor names contain 'Foundation').
 
 ### OCR-3 (was S4): the SPM slip gate fix (free, rules)
 - **Problem:** 115 of the 158 AI-read SPM slips never reach the parser. `field_extraction._extract_slip_deterministic` (lines 32-34) returns `not_spm_exam` whenever the student's profile `results_held` is not 'spm'. The **document** is an SPM slip, even when the profile says otherwise (for example, a STPM or diploma student uploading their SPM slip).
