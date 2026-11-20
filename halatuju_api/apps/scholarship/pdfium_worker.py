@@ -18,6 +18,7 @@ library: the web process imports it for `raster_scale` alone.
 import ctypes
 import io
 import json
+import math
 import sys
 
 #: Text render modes that paint (as ``pdf_pages._DRAWN_MODES``).
@@ -299,6 +300,17 @@ INK_MODES = frozenset((0,))
 #: Ink farther than this (pixels) from every character's box is "stray" (``stray_px``): text drawing outside the
 #: box pdfium gives it (genuine: 0 pixels on every lockable letter; within 1 px: up to 17, antialiasing).
 STRAY_PAD = 2
+#: Review round 2b (the ring attack): how far (pixels, along and across the line) ANOTHER character's box reaches
+#: when it explains a pixel's change (`_ink`). Across the line: 0.5 (antialiasing past the box's edge). Along it:
+#: 0 — pdfium places a glyph up to ~0.6 px off its box along the line, so any reach there takes a narrow letter's
+#: own stem (an 'l' 1.1 px wide sits 0.14 px from its neighbour on genuine letters: 0.5 cost 5 of 33 UMS locks).
+OWN_PAD_X = 0.0
+OWN_PAD_Y = 0.5
+#: The grid (pixels per cell) that finds a character's neighbours; the most cells, and the most neighbours one
+#: character may have (a genuine character: a handful; a pile of glyphs past it counts as no ink).
+_CELL = 32
+MAX_INK_CELLS = 200_000
+MAX_INK_NEIGHBOURS = 64
 
 
 def _op_ink(pdf, req, blobs):
@@ -307,9 +319,10 @@ def _op_ink(pdf, req, blobs):
     mode 3 (B); the diff |A - B| is the text's own ink — white, covered, clipped or same-colour text adds ~0.
     -> ``{chars: [[codepoint, generated, l, b, r, t, ink_px, area_px, inside, cover_h, cover_w], ...], modes_ok,
     annots_ok, stray_px, optional, xfa}``: the char box in points (pdfium's tight box), ``ink_px`` the pixels of
-    the box (+1 px) whose luminance the text changes by at least ``delta``, ``area_px`` the box's pixels,
-    ``inside`` the box within the rendered page, ``cover_h`` / ``cover_w`` the share of the box's height / width
-    its ink's bounding box spans (review round 1, B2: a strip left uncovered). ``modes_ok``: every text object
+    the box (+1 px) whose luminance the text changes by at least ``delta`` once what the OTHER characters' boxes
+    can explain is taken off (review round 2b, the ring attack; a space: its own box, as is), ``area_px`` the
+    box's pixels, ``inside`` the box within the rendered page, ``cover_h`` / ``cover_w`` the share of the box's
+    height / width its ink's bounding box spans (review round 1, B2: a strip left uncovered). ``modes_ok``: every text object
     fills (`INK_MODES`); ``annots_ok``: every annotation is a /Link; ``stray_px``: ink pixels more than
     `STRAY_PAD` from every character's box; ``optional``: page content in optional content (an OC mark, or an
     XObject with /OC: a viewer may show what pdfium hides, or hide what it shows); ``xfa``: an XFA form;
@@ -323,6 +336,26 @@ def _op_ink(pdf, req, blobs):
         raise
     except Exception as e:                  # refused by the caller (`pdf_ink.ink_missing`: 'no_answer')
         return {'error': type(e).__name__}
+
+
+def _device_map(raw, page, width, height):
+    """Page points -> picture pixels, NOT rounded (`FPDF_PageToDevice` rounds): the inverse of the exact map
+    `FPDF_DeviceToPage` gives at three corners of the picture."""
+    px, py = ctypes.c_double(), ctypes.c_double()
+
+    def page_at(x, y):
+        raw.FPDF_DeviceToPage(page, 0, 0, width, height, 0, x, y, px, py)
+        return px.value, py.value
+    (ox, oy), (ax, ay), (bx, by) = page_at(0, 0), page_at(width, 0), page_at(0, height)
+    a, b, c, d = (ax - ox) / width, (bx - ox) / height, (ay - oy) / width, (by - oy) / height
+    det = a * d - b * c
+    if not det:
+        raise ValueError('device map')
+
+    def devf(x, y):
+        x, y = x - ox, y - oy
+        return (d * x - b * y) / det, (a * y - c * x) / det
+    return devf
 
 
 def _ink(pdf, req):
@@ -350,21 +383,26 @@ def _ink(pdf, req):
     if a.size != b.size:
         return {'error': 'size'}
     width, height = a.size
-    mask = ImageChops.difference(a, b).point(lambda v: 255 if v >= int(req['delta']) else 0)
+    delta = ImageChops.difference(a, b)
+    mask = delta.point(lambda v: 255 if v >= int(req['delta']) else 0)
     dx, dy = ctypes.c_int(), ctypes.c_int()
 
     def dev(x, y):
         raw.FPDF_PageToDevice(page.raw, 0, 0, width, height, 0, x, y, dx, dy)
         return dx.value, dy.value
+    devf = _device_map(raw, page.raw, width, height)
 
     chars, turned = [], page.get_rotation() in (90, 270)
+    pad_x, pad_y = (OWN_PAD_Y, OWN_PAD_X) if turned else (OWN_PAD_X, OWN_PAD_Y)   # the line runs down the picture
     near = Image.new('L', a.size, 0)          # every character's box, widened by STRAY_PAD
     draw = ImageDraw.Draw(near)
+    seen = []                                  # per char: None (generated) or (device box, ring box, space, boxed)
     for i in range(n):
         gen = raw.FPDFText_IsGenerated(tp.raw, i) == 1
         cp = 32 if gen else int(raw.FPDFText_GetUnicode(tp.raw, i) or 32)
         if gen:                                 # pdfium's own space or line break: nothing drawn
             chars.append([cp, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0])
+            seen.append(None)
             continue
         # A space in the text (review round 2, #3) is measured too, so a glyph that ToUnicode maps to a space but
         # that draws is in the overlap rules (`pdf_ink`). Its ink is counted in its OWN box, not +1 px (a genuine
@@ -378,20 +416,69 @@ def _ink(pdf, req):
         x0, x1, y0, y1 = min(x0, x1), max(x0, x1), min(y0, y1), max(y0, y1)
         inside = x0 >= -1 and y0 >= -1 and x1 <= width + 1 and y1 <= height + 1
         box = (max(0, x0 - ring), max(0, y0 - ring), min(width, x1 + ring), min(height, y1 + ring))
-        ink = area = 0
-        cover_h = cover_w = 0.0
-        if boxed and box[2] > box[0] and box[3] > box[1]:
-            crop = mask.crop(box)
-            ink, area = crop.histogram()[255], (box[2] - box[0]) * (box[3] - box[1])
-            bb = crop.getbbox()
-            if bb:
-                cover_h = round((bb[3] - bb[1]) / (box[3] - box[1]), 3)
-                cover_w = round((bb[2] - bb[0]) / (box[2] - box[0]), 3)
-                if turned:                      # /Rotate 90 or 270: the glyph's height runs across the picture
-                    cover_h, cover_w = cover_w, cover_h
+        if boxed:
             draw.rectangle((x0 - STRAY_PAD, y0 - STRAY_PAD, x1 + STRAY_PAD - 1, y1 + STRAY_PAD - 1), fill=255)
-        chars.append([cp, 0, round(l, 2), round(bo, 2), round(r, 2), round(t, 2), ink, area, int(inside),
-                      cover_h, cover_w])
+        chars.append([cp, 0, round(l, 2), round(bo, 2), round(r, 2), round(t, 2), 0, 0, int(inside), 0.0, 0.0])
+        fx = [devf(px, py) for px in (l, r) for py in (bo, t)]
+        reach = (min(p[0] for p in fx) - pad_x, min(p[1] for p in fx) - pad_y,
+                 max(p[0] for p in fx) + pad_x, max(p[1] for p in fx) + pad_y)
+        seen.append((reach, box, space, boxed))
+    for i, s in enumerate(seen):                # a space: its own box's ink, as is (`pdf_ink._drawn_space`)
+        if s and s[2] and s[3] and s[1][2] > s[1][0] and s[1][3] > s[1][1]:
+            box = s[1]
+            chars[i][6], chars[i][7] = mask.crop(box).histogram()[255], (box[2] - box[0]) * (box[3] - box[1])
+    # Review round 2b (the ring attack): a black glyph TOUCHING a white character put its edge pixels in that
+    # character's box (+1 px). Now a pixel is a character's ink only when the OTHER drawn characters (a non-space,
+    # or a space with ink) cannot explain its change: each changes a pixel by at most 255 x the share of it that
+    # its box covers (exactly placed, widened by `OWN_PAD_X` / `OWN_PAD_Y`); what is left must still reach
+    # ``delta``. A pixel two characters both reach is nobody's: a genuine letter keeps its inside, so this costs
+    # 0 genuine letters; bars TOUCHING a black character can take it too (refused: the AI reads it).
+    import numpy as np
+    big = np.asarray(delta, dtype=np.float32)
+    others = [k for k, s in enumerate(seen) if s and (not s[2] or (s[3] and chars[k][6] > 0))]
+    grid, entries = {}, 0
+    for k in others:
+        x0, y0, x1, y1 = seen[k][0]
+        cx = range(max(0, math.floor(x0)) // _CELL, max(0, min(width, math.ceil(x1)) - 1) // _CELL + 1)
+        cy = range(max(0, math.floor(y0)) // _CELL, max(0, min(height, math.ceil(y1)) - 1) // _CELL + 1)
+        entries += len(cx) * len(cy)
+        if entries > MAX_INK_CELLS:
+            return {'error': 'cells'}
+        for gx in cx:
+            for gy in cy:
+                grid.setdefault((gx, gy), []).append(k)
+    for i, s in enumerate(seen):
+        if not s or s[2]:
+            continue
+        box = s[1]
+        if not (box[2] > box[0] and box[3] > box[1]):
+            continue
+        part = big[box[1]:box[3], box[0]:box[2]]
+        nb = {k for gx in range(box[0] // _CELL, (box[2] - 1) // _CELL + 1)
+              for gy in range(box[1] // _CELL, (box[3] - 1) // _CELL + 1) for k in grid.get((gx, gy), ()) if k != i}
+        if len(nb) > MAX_INK_NEIGHBOURS:
+            part = np.zeros_like(part)            # a pile of glyphs: no ink of its own (refused)
+            nb = ()
+        if nb:
+            cols = np.arange(box[0], box[2], dtype=np.float32)
+            rows = np.arange(box[1], box[3], dtype=np.float32)
+            share = np.zeros_like(part)
+            for k in nb:
+                x0, y0, x1, y1 = seen[k][0]
+                ox = np.clip(np.minimum(cols + 1, x1) - np.maximum(cols, x0), 0, 1)
+                oy = np.clip(np.minimum(rows + 1, y1) - np.maximum(rows, y0), 0, 1)
+                share += np.outer(oy, ox)
+            part = part - 255 * np.minimum(share, 1)
+        own = part >= int(req['delta'])
+        crop = Image.fromarray((own * 255).astype(np.uint8), 'L')
+        chars[i][6], chars[i][7] = int(own.sum()), (box[2] - box[0]) * (box[3] - box[1])
+        bb = crop.getbbox()
+        if bb:
+            cover_h = round((bb[3] - bb[1]) / (box[3] - box[1]), 3)
+            cover_w = round((bb[2] - bb[0]) / (box[2] - box[0]), 3)
+            if turned:                          # /Rotate 90 or 270: the glyph's height runs across the picture
+                cover_h, cover_w = cover_w, cover_h
+            chars[i][9], chars[i][10] = cover_h, cover_w
     stray = ImageChops.subtract(mask, near).histogram()[255]
     annots_ok = True
     for k in range(raw.FPDFPage_GetAnnotCount(page.raw)):
@@ -601,7 +688,11 @@ def _main() -> int:
     del raw_in
     _die_with_parent(int(request.get('parent') or 0))
     _limit_cpu(int(request.get('cpu') or 0))
-    sys.modules['numpy'] = None            # pypdfium2 imports numpy only for to_numpy (never used): ~90 ms saved
+    inks = any(op.get('op') == 'ink' for op in request['ops'])
+    if inks:                               # the ink op's attribution (`_ink`, review round 2b) needs it
+        import numpy  # noqa: F401  (loaded before the memory cap, like Pillow)
+    else:                                  # pypdfium2 imports numpy only for to_numpy (never used): ~90 ms saved
+        sys.modules['numpy'] = None
     from PIL import Image
     Image.preinit()                        # Pillow's PNG writer loaded before the memory cap is set
     import pypdfium2 as pdfium

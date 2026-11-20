@@ -181,7 +181,7 @@ KAMPUS = next(ln for ln in LINES if ln.startswith('Kampus'))
 TITLE = next(ln for ln in LINES if ln.startswith('TAWARAN'))
 DATED = next(ln for ln in LINES if ln.startswith('Tarikh :'))
 VENUE = next(ln for ln in LINES if ln.startswith('Tempat'))
-SPLIT = {KAMPUS: ':', TITLE: 'SABAH', DATED: ':', VENUE: ':'}
+SPLIT = {KAMPUS: ':', TITLE: 'SABAH', DATED: ':', VENUE: ':', ICLINE: ':'}
 
 
 def _r1_line(c, mode, ln, y, strip):
@@ -423,6 +423,88 @@ class TheReviewRound2Attacks(SimpleTestCase):
         outside = b'1 0 0 0 1 1 d1 0 0 %.3f 1 re f' % (1 + 2 * tol)
         self.assertEqual(_read(_with_type3(build('none'), inside))[1], {})
         self.assertIn('page:type3', _read(_with_type3(build('none'), outside))[1]['ink_missing'])
+
+
+def _wrapped(data, head: bytes, tail: bytes, zapf=False):
+    """``data`` with page 1's content between ``head`` and ``tail`` (and /FZ, ZapfDingbats, among its fonts)."""
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.generic import ArrayObject, DecodedStreamObject, DictionaryObject, NameObject
+    w = PdfWriter()
+    w.append(PdfReader(io.BytesIO(data)))
+    page = w.pages[0]
+
+    def stream(body):
+        s = DecodedStreamObject()
+        s.set_data(body)
+        return w._add_object(s)
+    if zapf:
+        page['/Resources'].get_object()['/Font'].get_object()[NameObject('/FZ')] = w._add_object(DictionaryObject({
+            NameObject('/Type'): NameObject('/Font'), NameObject('/Subtype'): NameObject('/Type1'),
+            NameObject('/BaseFont'): NameObject('/ZapfDingbats')}))
+    old = page['/Contents'].get_object()
+    page[NameObject('/Contents')] = ArrayObject([stream(head)] + (list(old) if isinstance(old, ArrayObject)
+                                                                  else [page.raw_get('/Contents')]) + [stream(tail)])
+    out = io.BytesIO()
+    w.write(out)
+    return out.getvalue()
+
+
+def build_ring(sides='tb', gap=0.0, shift=0.0, bar=2.0, mode='whitetail'):
+    """The IC line's label black, its value white (``mode`` 'whitetail'; 'none': all black), the whole page moved
+    ``shift`` pt (another pixel phase), and each value character ringed by black bars ``gap`` pt off its box on
+    ``sides`` (t/b/l/r): ZapfDingbats 'n' (a square) squeezed to the character's width, or ``bar`` pt wide and as
+    tall as the character at its left and right."""
+    from apps.scholarship import pdf_ink
+    data = _wrapped(build_r1(mode, ICLINE), b'q 1 0 0 1 %.3f %.3f cm\n' % (shift, shift), b'Q\n')
+    value = ICLINE.split(':', 1)[1].strip()
+    chars = pdf_ink.page1_ink(data)['chars']
+    at = ''.join(chr(int(r[0])) for r in chars).index(value)
+    size, bars = 8.0, b'q 0 g BT /FZ 8 Tf '
+    for r in chars[at:at + len(value)]:
+        l, b, rt, t = r[2], r[3], r[4], r[5]
+        kz = (rt - l) * 100 / (0.692 * size)                 # ZapfDingbats 'n': 0.692 x 0.705 em, from x 0.035 em
+        x0 = l - 0.035 * size * kz / 100
+        if 't' in sides:
+            bars += b'%.3f Tz 1 0 0 1 %.3f %.3f Tm (n) Tj ' % (kz, x0, t + gap)
+        if 'b' in sides:
+            bars += b'%.3f Tz 1 0 0 1 %.3f %.3f Tm (n) Tj ' % (kz, x0, b - gap - 0.705 * size)
+        tall = (t - b) / 0.705
+        kz2 = bar * 100 / (0.692 * tall)
+        for side, xs in (('l', l - gap - bar), ('r', rt + gap)):
+            if side in sides:
+                bars += b'/FZ %.3f Tf %.3f Tz 1 0 0 1 %.3f %.3f Tm (n) Tj /FZ 8 Tf ' % (
+                    tall, kz2, xs - 0.035 * tall * kz2 / 100, b)
+    return _wrapped(data, b'', bars + b'ET Q\n', zapf=True)
+
+
+@override_settings(OCR_FIRST_LANES=(LANE,))
+class TheReviewRound2bRingAttack(SimpleTestCase):
+    """Review round 2b: black glyphs TOUCHING a white character put their edge pixels in its box (+1 px), and a
+    white IC value under a black label locked. A pixel is now a character's ink only when the other drawn
+    characters cannot explain its change (`pdfium_worker._ink`). Rules and paths are in both pictures, so only
+    text can lend ink; the rings here are ZapfDingbats glyphs."""
+
+    def setUp(self):
+        pdf_pages._layer_memo_clear()
+
+    def test_bars_near_a_black_value_still_lock(self):
+        """Bars TOUCHING a black value refuse it too (no lock, the AI reads it): their boxes explain its edges."""
+        for sides, gap in (('tb', 0.36), ('tb', 1.0)):
+            with self.subTest(sides=sides, gap=gap):
+                ex, why = _read(build_ring(sides, gap, mode='none'))
+                self.assertEqual((ex or {}).get('rules_lane'), LANE, why)
+
+    def test_a_ring_around_a_white_value_refuses(self):
+        for sides, gap, shift, bar in (('tb', 0.0, 0.0, 2.0), ('tb', -0.1, 0.0, 2.0), ('tb', 0.36, 0.0, 2.0),
+                                       ('tb', 0.5, 0.0, 2.0), ('tb', 0.72, 0.0, 2.0), ('tb', 0.0, 0.54, 2.0),
+                                       ('tb', 0.2, 0.54, 2.0), ('t', 0.0, 0.0, 2.0), ('t', 0.0, 0.54, 2.0),
+                                       ('lr', 0.0, 0.0, 0.5), ('lr', 0.0, 0.54, 1.0), ('tblr', 0.0, 0.0, 2.0),
+                                       ('tblr', 0.36, 0.66, 0.5)):
+            with self.subTest(sides=sides, gap=gap, shift=shift, bar=bar):
+                ex, why = _read(build_ring(sides, gap, shift, bar))
+                self.assertIsNone(ex, (ex or {}).get('fields'))
+                self.assertEqual((why.get('lane'), why.get('reason')), (LANE, 'not_inked'), why)
+                self.assertIn('v:nric', why['ink_missing'])
 
 
 class EveryReturnedFieldIsInkChecked(SimpleTestCase):

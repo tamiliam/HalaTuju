@@ -417,11 +417,23 @@ between the two (pypdf's own changes). Local counts are not production counts.
   (no `cm`, `gs`, `Do`, inline image, `sh`, text or stroke), and a `d0` glyph may not paint; else `page:type3`. Cost
   0: the 6 UiTM letters with Type3 fonts pass. A space in the text with a real box and its own ink is a drawn glyph and
   joins every overlap rule (genuine spaces have boxes, 4,731 of 4,742 on UMS, but never ink in them).
+- **Review round 2b (20 Nov), the ring:** black glyphs touching a white character from above and below put ink in
+  the 1 px ring the ink op counts (share up to 0.79, full height), and a white IC under a black label locked.
+  Closed in the child: a pixel counts as a character's ink only for the change the OTHER drawn characters cannot
+  explain (each changes a pixel by at most 255 x the share of it their exact box covers, reaching 0.5 px across the
+  line and 0 along it). Widening the lending rule by 2 px, or cutting other boxes out of the ring (even +-0.5 px
+  exactly placed), cost all 33 UMS locks; this rule reaching 0.5 px along the line too cost 5 (and UiTM 6, UM 2):
+  pdfium paints a glyph up to ~0.6 px off its box along the line, and a narrow 'l' sits 0.14 px from its neighbour.
+  Cost of the rule: 0 on pypdf 5.9.0 and 6.21.4 (UMS 33 locks; UUM 4, UPSI 2, UM 2 pass; UiTM the same 3 of 11
+  fail); genuine minimum share 0.130 (floor 0.10), height 0.545 (floor 0.5), width 0.25 (floor 0.15). Rings on top
+  and bottom, top only, bottom only, left/right, all four, ZapfDingbats bars at -0.1 to 1 pt, at six pixel phases,
+  refuse; rules and paths are in both renders, so they never lend ink. Bars TOUCHING a black value refuse it too
+  (fail-safe: the AI reads it). **Open (margin):** left/right bars still leak up to share 0.14 (full height) into
+  some white digits, because the reach along the line is 0; a uniform ring passes at most 4 of 14 digits, but a ring
+  tuned per character might pass all. Next idea: place each glyph's box where pdfium snaps it (char origin), then
+  reach along the line too.
 - **Known residuals, for S-visible 3 (owner decides):** (1) a ToUnicode lie (a visible glyph whose text says another
-  letter) still locks; (2) black glyphs touching a white character from above and below put ink in the 1 px ring the
-  ink op counts (share 0.14, full height): a white IC with its label left black locked in the builder's probe;
-  widening the lending rule by 2 px closed it but failed every genuine letter, so it is not shipped. **For S2:** 3 of
-  the 11 UiTM letters fail the ink rules (heavy genuine overlap 0.79-0.95, or a faint title, share 0.029); S2 must
+  letter) still locks. **For S2:** 3 of the 11 UiTM letters fail the ink rules (heavy genuine overlap 0.79-0.95, or a faint title, share 0.029); S2 must
   measure and decide.
 
 ## 2026-11-18 — Keep each read's OCR text, privately, deleted with the document (OCR-first S0b)

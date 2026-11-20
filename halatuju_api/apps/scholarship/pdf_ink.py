@@ -23,8 +23,8 @@ word of every owner phrase and every printed value the lock used, at EVERY place
   Type3 glyph page 1 can draw paints only inside its own box (review round 2: a glyph painting far from its box).
 
 Known residuals (S-visible 3, owner decision): a font whose ToUnicode lies (its glyphs drawn as other letters) still
-passes; only reading the word crops closes it. Black glyphs touching a white character put ink in its +1 px ring
-(`RING_PX`).
+passes; only reading the word crops closes it. (Black glyphs touching a white character put ink in its +1 px ring:
+closed in review round 2b, `pdfium_worker._ink` counts only ink the other characters cannot explain.)
 
 The words are found in PDFIUM's own text of the page (the same engine as the boxes), normalised as the owner words
 are (`offer_owner_words._norm`: NFKD, accents off, upper case, each run of non-letters/digits one space), with two
@@ -59,13 +59,13 @@ MIN_W_RATIO = 0.06
 #: (the brief's 0.05 cost both UPSI letters). Kept below `MIN_CHAR_SHARE`, so what other glyphs may lend never
 #: reaches the ink a character needs.
 MAX_OVERLAP = 0.08
-#: OPEN (the builder's own probe, review round 2): the ink op counts a character's box +1 px, so black glyphs
-#: TOUCHING a white character from above and below (no overlap) put their edge pixels in that ring: share 0.14,
-#: full height and width — a white IC passed. Widening the lending rule by 2 px closed it but cost every genuine
-#: letter (a colon or the next line touches a word within 2 px), so it is 0 here and the ring is the next fix.
+#: The ring (review round 2, the builder's own probe): black glyphs TOUCHING a white character from above and below
+#: put their edge pixels in its box +1 px (share 0.79, full height) and a white IC passed. Widening this lending
+#: rule by 2 px cost every genuine letter, so it stays 0; review round 2b closed the ring in the child instead
+#: (`pdfium_worker._ink`: a pixel another character's box can explain is not this character's ink).
 RING_PX = 0
 #: The least share of a character's box (+1 px) that must be ink (open risk 2: a character covered all but a
-#: sliver). Genuine minimum 0.143 over 16,647 characters of every target word (p0.1 0.159); 0.10 costs none.
+#: sliver). Genuine minimum 0.130 (UUM; UMS 0.159) after review round 2b's attribution; 0.10 costs none.
 MIN_CHAR_SHARE = 0.10
 #: The least share of a character box's height (+1 px) its ink spans (review round 1, B2). Genuine minimum per
 #: issuer: UMS 0.727 (16,945 characters), UiTM 0.545, UM 0.70, UPSI 0.667, UUM 0.667; a 1-2 pt strip: 0.2-0.3.
