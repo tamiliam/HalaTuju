@@ -21,6 +21,10 @@ by hand, migrate-first, after the owner's yes). Brief: `docs/plans/2026-11-19-m4
   Payments at all.
 - **Q4, wording.** English approved as written in the brief; Malay follows it. The Approve help text is "Releases
   payments from Vircle to students. Never on a run they signed as maker. Also checks sponsor credits." (owner, 19 Nov).
+- **The last holder's refusal, wording (owner, 20 Nov).** It says "only admin with full permissions": "{name} is
+  the only admin with full permissions. Another admin must have full permissions first." (`last_org_admin_powers`),
+  and the same words in `last_org_admin` and `sole_org_admin` (Archive, Revoke and Delete count the same holders).
+  The ta and ms lines go to Sol.
 - **Payments View** (`payments.view`) is the one page key that may be stored by itself; Prepare, Check and Approve
   bring it. The card shows View on and locked while one of them is on (drawn, not stored).
 - **Tamil needs a native read.** The new Tamil strings (the powers switch, its list, the Payments row, View and the

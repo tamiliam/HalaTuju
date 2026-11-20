@@ -436,8 +436,8 @@ def _refuse_last_powers(target, before, after):
         return
     if not powers_holder_ids(target.owning_organisation_id) - {target.pk}:
         raise PermissionChangeRefused(
-            'last_org_admin_powers', 409, f'{target.name} is the last person in the organisation with '
-            'Organisation admin powers. Give them to another organisation admin first.')
+            'last_org_admin_powers', 409, f'{target.name} is the only admin with full permissions. '
+            'Another admin must have full permissions first.')   # owner wording, 20 Nov
 
 
 def record(target, before, after, *, by, kind):
