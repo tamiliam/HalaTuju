@@ -19,6 +19,8 @@ import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 installCockpitConsoleGuard()
 
 const loaded = () => screen.findByText('Test Student 07')
+/** Access S1: a QC writer, as the server serves her (`can_qc` is the QC door's own key). */
+const QC_WRITER = { can_write: true, can_cancel_decline: true, can_tranche: true, can_qc: true }
 
 describe('the place of birth beside the NRIC', () => {
   it('prints the served line in the case header', async () => {
@@ -56,7 +58,7 @@ describe('the QC accept floor', () => {
   const accept = () => screen.getByRole('button', { name: 'admin.scholarship.qcDecision.accept' })
 
   it('shows the floor and asks for a reason instead of sending the accept', async () => {
-    const { api } = renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc', build: {
+    const { api } = renderCockpit({ role: 'qc', writes: QC_WRITER, stage: 'awaiting_qc', build: {
       outcome: 'recommend', birth_state: FAILS } })
     await loaded()
     expect(screen.getByText(FLOOR, { exact: false })).toBeTruthy()
@@ -66,7 +68,7 @@ describe('the QC accept floor', () => {
   })
 
   it('stays out of the way when the intake has no rule', async () => {
-    renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'qc', writes: QC_WRITER, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
     await loaded()
     expect(screen.queryByText(FLOOR, { exact: false })).toBeNull()
   })

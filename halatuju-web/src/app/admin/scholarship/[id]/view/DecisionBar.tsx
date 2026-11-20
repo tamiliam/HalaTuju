@@ -14,25 +14,30 @@
  * `sticky`, not `fixed`: it rests in the flow at the page's end, so it never covers the post-award panels for
  * good. `data-page-bar` (rule 6), so a tab bar would give way to it. Phones only (`md:hidden`).
  */
-import { isQcAccepted, showsDecisionCards } from '@/lib/officerCockpit'
+import { isQcAccepted, showsRecommendationCard } from '@/lib/officerCockpit'
 import { stageStatus } from '@/lib/closeOffer'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import type { T } from './shared'
+import { DECISION_ALERT_EVENT } from './DecisionMissing'
 
 /**
  * True exactly when the decision card shows its Recommend / Decline / Save controls: the card shows, it is not
- * locked, it is not a committed acceptance, the status admits a decision, and this person may write. ONE rule —
- * DecisionCard.tsx gates those controls on this function (M6b review), and the phone's bar shows on it.
+ * locked, it is not a committed acceptance, the status admits a decision, the case is OPEN, and this person may
+ * write. ONE rule — DecisionCard.tsx gates those controls on this function (M6b review), and the phone's bar shows
+ * on it. `caseOpen` is the served `case_stage === 'open'` (S1, TD-664 c): the verdict door refuses `case_closed`
+ * on any other stage, so a reopened past-award case offers no Save.
  */
-export function decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }: {
+export function decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite, caseOpen }: {
   app: AdminScholarshipDetail
   decisionReopened: boolean
   decisionRecorded: boolean
   decisionLocked: boolean
   canWrite: boolean
+  caseOpen: boolean
 }): boolean {
-  if (!showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded })) return false
+  if (!caseOpen) return false
+  if (!showsRecommendationCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, decisionRecorded })) return false
   if (decisionLocked) return false
   if (isQcAccepted(stageStatus(app, 'recommended_at')) && !decisionReopened) return false
   if (!(decisionReopened || ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status))) return false
@@ -64,7 +69,12 @@ export function DecisionBar({ t, outcome, canSave }: {
           </p>
         </div>
         <button type="button"
-          onClick={() => document.getElementById('decision-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onClick={() => {
+            document.getElementById('decision-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            // Request #70: ONE rule with the card — while something is missing the card answers with its alert list
+            // (it knows what; the bar only reads `canSave`). A ready card ignores it, so this still only jumps.
+            document.dispatchEvent(new Event(DECISION_ALERT_EVENT))
+          }}
           className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-lg bg-brand-fill px-4 text-sm font-semibold text-brand-fill-ink">
           {t('admin.scholarship.decisionBar.go')} ↓
         </button>

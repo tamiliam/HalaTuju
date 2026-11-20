@@ -129,6 +129,8 @@ export interface ScholarControls {
   close_reasons: ClosureReason[]
   /** 'sponsorship_open' for an awarded case still holding the sponsor's offer (TD-366); '' otherwise. */
   close_refusal: '' | 'sponsorship_open'
+  /** Sprint S1 (access): the activity door's answer — a `scholars` holder on an open file. Absent = no box. */
+  can_write_activity?: boolean
 }
 
 export type ActivityKind = 'note' | 'call' | 'meeting' | 'email' | 'system'

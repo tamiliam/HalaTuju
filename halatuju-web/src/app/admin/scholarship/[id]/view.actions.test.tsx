@@ -160,8 +160,8 @@ describe('assigning a reviewer', () => {
     api.assignApplication.mockRejectedValue(Object.assign(new Error('not_assignable'), { code: 'not_assignable' }))
     fireEvent.change(assignPicker('assignTitle'), { target: { value: String(OTHER_ADMIN_ID) } })
     await waitFor(() => expect(api.getScholarshipApplication.mock.calls.length).toBe(loads + 1))
-    // The page's one error slot, drawn under the profile and in the decision card: the words, nothing else.
-    expect(screen.getAllByText(NA).map((el) => [el.tagName, el.textContent])).toEqual([['P', NA], ['P', NA]])
+    // The page's one error slot, drawn under the profile (the decision card is hidden while no reviewer is assigned, 2026-11-19): the words, nothing else.
+    expect(screen.getAllByText(NA).map((el) => [el.tagName, el.textContent])).toEqual([['P', NA]])
     expect(screen.queryByText('admin.scholarship.assignError')).toBeNull()
   })
 
@@ -197,7 +197,7 @@ describe('assigning a reviewer', () => {
 
 describe('raising a query with the student', () => {
   it('sends what was written, and the question then appears in Outstanding', async () => {
-    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'shortlisted' })
+    const { api } = renderCockpit({ role: 'super', writes: true, stage: 'profile_complete' })
     await loaded()
     const send = () => screen.getByRole('button',
       { name: 'admin.scholarship.raiseQuerySend' }) as HTMLButtonElement
@@ -207,7 +207,7 @@ describe('raising a query with the student', () => {
                      { target: { value: 'Whose name is on the electricity bill?' } })
     expect(send().disabled).toBe(false)
 
-    api.raiseResolutionItem.mockResolvedValue(buildApplicationDetail('shortlisted', {
+    api.raiseResolutionItem.mockResolvedValue(buildApplicationDetail('profile_complete', {
       resolution_items: [{
         id: 901, fact: 'identity', code: 'officer_explanation', params: {},
         prompt: 'Whose name is on the electricity bill?', kind: 'explanation', doc_type: '',
@@ -250,8 +250,8 @@ describe('reject before interview, refused because a colleague got there first (
     } as never))
     const P = 'admin.scholarship.preInterview'
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    fireEvent.change(screen.getByLabelText(`${P}.reasonLabel`), { target: { value: 'not_b40' } })
-    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'Dummy note' } })
+    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'not_b40' } })
+    fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`), { target: { value: 'Dummy note' } })
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     // The reload shows the colleague's decline, and the officer still reads why theirs was refused.
@@ -291,8 +291,8 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
       reply.settle = (ok, v) => (ok ? res(v as never) : rej(v))
     }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    fireEvent.change(screen.getByLabelText(`${P}.reasonLabel`), { target: { value: 'not_b40' } })
-    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'Dummy note' } })
+    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'not_b40' } })
+    fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`), { target: { value: 'Dummy note' } })
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     view.api.getScholarshipApplication.mockImplementation(async (id: number) => (id === 8 ? case8() : case7Rejected()))
@@ -350,8 +350,8 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
     await loaded()
     api.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'boom' }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    fireEvent.change(screen.getByLabelText(`${P}.reasonLabel`), { target: { value: 'not_b40' } })
-    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'Dummy note' } })
+    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'not_b40' } })
+    fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`), { target: { value: 'Dummy note' } })
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     expect(await screen.findByText(`${P}.error.generic`)).toBeTruthy()   // the door stays; the words in it
@@ -379,8 +379,8 @@ describe('nothing on the case page carries to the next case (#75 re-check 4, TD-
     const view = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
     await loaded()
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    fireEvent.change(screen.getByLabelText(`${P}.reasonLabel`), { target: { value: 'not_b40' } })
-    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'Dummy note' } })
+    fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'not_b40' } })
+    fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`), { target: { value: 'Dummy note' } })
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     return view
   }
@@ -398,8 +398,8 @@ describe('nothing on the case page carries to the next case (#75 re-check 4, TD-
     expect(screen.queryByTestId('pre-interview-confirm')).toBeNull()
     expect(screen.queryByRole('button', { name: `${P}.confirmYes` })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    expect((screen.getByLabelText(`${P}.reasonLabel`) as HTMLSelectElement).value).toBe('')
-    expect((screen.getByLabelText(`${P}.whyLabel`) as HTMLTextAreaElement).value).toBe('')
+    expect((screen.getByLabelText(`${P}.whyLabel`) as HTMLSelectElement).value).toBe('')
+    expect((screen.getByLabelText(`${P}.detailsLabel`) as HTMLTextAreaElement).value).toBe('')
     expect(view.api.rejectBeforeInterview).not.toHaveBeenCalled()
   })
 
@@ -412,7 +412,7 @@ describe('nothing on the case page carries to the next case (#75 re-check 4, TD-
     await land(() => refuse(Object.assign(new Error('x'), { code: 'comments_required' })))
     expect(view.api.rejectBeforeInterview).toHaveBeenCalledTimes(1)
     expect(view.api.rejectBeforeInterview.mock.calls[0][0]).toBe(7)
-    expect(screen.queryByLabelText(`${P}.reasonLabel`)).toBeNull()
+    expect(screen.queryByLabelText(`${P}.whyLabel`)).toBeNull()
     expect(screen.queryByDisplayValue('Dummy note')).toBeNull()
     expect(screen.queryByText(`${P}.error.comments_required`)).toBeNull()
     expect(screen.getByRole('button', { name: `${P}.start` })).toBeTruthy()

@@ -30,7 +30,7 @@ import { MessageBanner } from '@/components/admin/StaffAdmin'
  * Sprint M2c (owner R4): the tab reads **Members** (`?tab=members` too) and the list is a table like the
  * console's others — sortable Name / Groups / Status (`lib/memberTable`), a name search, a status filter,
  * pages; below md the SAME table restacks as rows (`TableFrame phoneRows`), so every control exists once.
- * R1: whoever manages the team sees how many open cases suspended members still hold (`suspended_cases`, a
+ * R1: whoever manages the team sees how many open cases suspended or deleted (TD-630) members still hold (`suspended_cases`, a
  * banner here — the Overview card would have cost a query the ledger does not have), with a button that
  * filters the table to the suspended.
  *

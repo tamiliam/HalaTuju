@@ -7,12 +7,12 @@
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
-import type { Dispatch, SetStateAction } from 'react'
-import type { AdminScholarshipDetail } from '@/lib/admin-api'
-import { hasPerm } from '@/lib/staffPermissions'
+import { useState, type Dispatch, type SetStateAction } from 'react'
+import type { AdminScholarshipDetail, QcDecisionPayload } from '@/lib/admin-api'
 
-import type { T, AdminRole } from './shared'
+import type { T } from './shared'
 import Toggle from '@/components/Toggle'
+import { FactsInDoubt, factChecksFor, inDoubtOf } from './FactsInDoubt'
 
 /** TD-483: the cockpit's words for a QC-door refusal code (`qc_separation.MESSAGES`), or null for a
  * code it does not know (the caller then shows the server's English sentence). */
@@ -24,18 +24,15 @@ export function qcRefusalText(code: string | null | undefined, t: T): string | n
   return code && known.includes(code) ? t(`admin.scholarship.qcDecision.refusal.${code}`) : null
 }
 
-/** TD-483: why the QC door would refuse this viewer, or null. The server's answer (`qc_refusal`,
- * the same separation rule the door asks) when it sent one; otherwise the old local check (a QC
- * who is the current assignee), for a reply that carries no viewer. */
-export function qcRefusalFor(app: AdminScholarshipDetail, role: AdminRole): string | null {
-  if (app.qc_refusal !== undefined) return app.qc_refusal || null
-  const isSuper = !!role?.is_super_admin || role?.role === 'super'
-  return hasPerm(role, 'qc') && !isSuper && app.assigned_to_id === (role?.admin_id ?? null)
-    ? 'self_qc_forbidden' : null
+/** TD-483: why the QC door would refuse this viewer, or null. Served, never derived (S1, TD-664 b):
+ * the server's `qc_refusal` is the same separation rule the door asks, and every reply that carries
+ * the case carries it (`_detail_payload`). */
+export function qcRefusalFor(app: AdminScholarshipDetail): string | null {
+  return app.qc_refusal || null
 }
 
 export function QcPanel({
-  app, t, busy, canQc, role, doQcDecision,
+  app, t, busy, canQc, doQcDecision,
   qcReopenOpen, setQcReopenOpen, qcComments, setQcComments,
   qcRejectMode, setQcRejectMode, qcOverrideOpen, setQcOverrideOpen,
   qcOverrideReason, setQcOverrideReason,
@@ -44,8 +41,8 @@ export function QcPanel({
   t: T
   busy: string
   canQc: boolean
-  role: AdminRole
-  doQcDecision: (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) => void
+  doQcDecision: (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string,
+    factChecks?: QcDecisionPayload['fact_checks']) => void
   qcReopenOpen: boolean
   setQcReopenOpen: Dispatch<SetStateAction<boolean>>
   qcComments: string
@@ -57,6 +54,16 @@ export function QcPanel({
   qcOverrideReason: string
   setQcOverrideReason: Dispatch<SetStateAction<string>>
 }) {
+  // LL2b: the QC's "Disagree" taps on the facts in doubt, kept for THIS case and THIS verdict round
+  // only (another application, or a new verdict after a reopen, starts with no taps). With no fact in
+  // doubt no block shows and no `fact_checks` key is sent — the request is exactly as before LL2b.
+  const round = `${app.id}:${app.verdict_decided_at ?? ''}`
+  const [taps, setTaps] = useState<{ round: string; facts: string[] }>({ round, facts: [] })
+  const tapped = taps.round === round ? taps.facts : []
+  const doubt = inDoubtOf(app)
+  const checks = doubt.length > 0 ? factChecksFor(doubt, tapped) : undefined
+  const decide = (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) =>
+    doQcDecision(decision, overrideReason, checks)
   return (<>
 
       {/* ── Quality Control — the QC gate on an AWAITING-QC ('interviewed') case (a `qc` role or
@@ -64,12 +71,12 @@ export function QcPanel({
             Self-QC guard (TD-483): a `qc` the server's separation rule refuses (assigned, interviewed,
             recorded the verdict, or other review work) sees a one-line note instead of the panel; the
             backend blocks it too. ── */}
-      {app.status === 'interviewed' && canQc && qcRefusalFor(app, role) && (
+      {app.status === 'interviewed' && canQc && qcRefusalFor(app) && (
         <p data-testid="qc-refusal" className="border-b border-ground-100 py-4 text-xs text-ground-600 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5">
-          {qcRefusalText(qcRefusalFor(app, role), t) || t('admin.scholarship.qcDecision.refusal.self_review_qc_forbidden')}
+          {qcRefusalText(qcRefusalFor(app), t) || t('admin.scholarship.qcDecision.refusal.self_review_qc_forbidden')}
         </p>
       )}
-      {app.status === 'interviewed' && canQc && !qcRefusalFor(app, role) && (() => {
+      {app.status === 'interviewed' && canQc && !qcRefusalFor(app) && (() => {
         // V5 gap floor (#5): a red/'gap' verdict fact blocks Accept. A super sees an override
         // affordance (reason recorded server-side); anyone else resolves the gap or reopens.
         // Request #31: the server adds the birth-state fact to the SAME floor when the current IC
@@ -95,11 +102,13 @@ export function QcPanel({
               {canQc && <> {t('admin.scholarship.qcDecision.gapFloorSuper')}</>}
             </p>
           )}
+          <FactsInDoubt items={doubt} t={t} tapped={tapped} busy={!!busy}
+            setTapped={(facts) => setTaps({ round, facts })} />
           {!qcReopenOpen && !qcOverrideOpen ? (
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => {
-                  if (!floorBlocked) { doQcDecision('accept'); return }
+                  if (!floorBlocked) { decide('accept'); return }
                   if (canQc) { setQcOverrideOpen(true); setQcOverrideReason('') }
                 }}
                 disabled={!!busy || (floorBlocked && !canQc)}
@@ -124,7 +133,7 @@ export function QcPanel({
                 placeholder={t('admin.scholarship.qcDecision.overridePlaceholder')}
                 className="w-full rounded border border-critical-300 px-2 py-1.5 text-sm" />
               <div className="flex items-center gap-2">
-                <button onClick={() => doQcDecision('accept', qcOverrideReason)}
+                <button onClick={() => decide('accept', qcOverrideReason)}
                   disabled={!!busy || !qcOverrideReason.trim()}
                   className="rounded-lg bg-critical-fill px-3 py-1.5 text-xs font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.overrideConfirm')}
@@ -154,7 +163,7 @@ export function QcPanel({
               </label>
               )}
               <div className="flex items-center gap-2">
-                <button onClick={() => doQcDecision(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
+                <button onClick={() => decide(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-caution-fill-ink disabled:opacity-50 ${qcRejectMode ? 'bg-critical-fill hover:bg-critical-fill-hover' : 'bg-caution-fill hover:bg-caution-fill-hover'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
                   {busy === 'qc' ? t('common.loading')
                     : t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectConfirm' : 'admin.scholarship.qcDecision.reopenConfirm')}

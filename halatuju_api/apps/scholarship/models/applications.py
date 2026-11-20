@@ -797,6 +797,14 @@ class ScholarshipApplication(models.Model):
         help_text="The verdict_engine version that produced ai_verdict_snapshot. "
                   "'pre-versioning' = decided before this was recorded. Empty = never decided.",
     )
+    # LL4: WHAT FED THE SNAPSHOT ABOVE, stored in the same save (`verdict_context`). PII-free: ids,
+    # codes, versions, instants and one keyed hash. Staff-internal: no serializer returns it.
+    ai_verdict_context = models.JSONField(
+        default=dict, blank=True,
+        help_text="LL4: the PII-free record of what fed ai_verdict_snapshot "
+                  "{schema, documents, models, fingerprint, key_check}, or {schema, error} when it "
+                  "could not be built. Empty = decided before LL4 (evidence state unknown).",
+    )
     officer_verdict = models.JSONField(
         default=dict, blank=True,
         help_text="The officer's own four-fact decision at the cockpit: "

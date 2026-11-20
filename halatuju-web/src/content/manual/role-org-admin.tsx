@@ -236,7 +236,7 @@ export const roleOrgAdmin: ManualChapter = {
         applications table and a line in the bell; they clear when you open the student&rsquo;s page. Your fellow
         org admins&rsquo; notes do not mark or email you. Notes can be added from Awaiting review until the
         reviewer records a recommendation; after that they
-        stay on the file for good, read-only. Notes cannot be edited or deleted, so to correct one, add another.
+        stay on the file for good, read-only.
         A note written before a reviewer is assigned reaches them as a New note once the case is assigned to
         them. If the case moves to another reviewer, the new one reads the whole conversation. QC can read the notes
         (as can colleagues who may open the file); the student and sponsors never do, and the notes are never
@@ -252,9 +252,9 @@ export const roleOrgAdmin: ManualChapter = {
         <strong> Reject before interview</strong> under <strong>Assign a reviewer</strong>. No interview is held.
         If a reviewer is already on the case, set the reviewer back to <em>Unassigned</em> first. Whoever holds
         the quality control permission can do this (organisation admins and QC hold it); a reviewer never can.
-        <span className="mt-2 block">Choose the <strong>main reason</strong> and write <strong>why you are
-        rejecting</strong> (up to 2,000 characters). Both stay on the student&rsquo;s file for your team and are
-        never sent to the student. Press <strong>Reject student</strong>, check the summary, then press
+        <span className="mt-2 block">Under <strong>Why are you rejecting?</strong>, choose the reason, then add
+        <strong> Additional details</strong> (required, up to 2,000 characters). Both are confidential and are not
+        shared with the student. Press <strong>Reject student</strong>, check the summary, then press
         <strong> Yes, reject</strong>.</span>
         <span className="mt-2 block">The decision is recorded at once as <strong>Rejected before
         interview</strong>, and it never counts against a reviewer. The student gets the same kind decline email
@@ -383,7 +383,9 @@ export const roleOrgAdmin: ManualChapter = {
         gift, and your other gifts are not affected. A gift with no layout of its own shows the
         <em> organisation layout</em>, which you set from Customise with no gift chosen; <strong>Use the
         organisation layout</strong> sends a gift back to it. A reviewer&rsquo;s own cases and a QC&rsquo;s
-        queue are not panels and cannot be switched off. Platform-only tools —
+        queue are not panels and cannot be switched off. An <strong>AI prediction</strong> block, showing how
+        often reviewers agreed with the AI, is on this page and at the foot of the <strong>Programmes</strong> page (all your
+        gifts together); its <strong>By reviewer</strong> table is for organisation admins. Platform-only tools —
         adding organisations or referral partners — never appear for you; those stay with the HalaTuju
         platform team.</>
       ),
@@ -439,7 +441,13 @@ export const roleOrgAdmin: ManualChapter = {
         <strong> ⋮</strong> then <strong>Change the short code</strong>, which shows you the current link
         beside the box. <strong>The old code keeps working.</strong> Anything already printed or sent still
         reaches this gift, so a rename never strands an applicant part-way. A code another gift uses, or used
-        to use, is refused.</>
+        to use, is refused.
+        <br /><br />
+        To change what a gift is <em>called</em>, press <strong>⋮</strong> then <strong>Change the name</strong>.
+        The English name is required; the Malay and Tamil names are optional, and where one is left blank the
+        English name is shown instead. Changing the name does not change the short code or the apply link.
+        (The name students see for one intake year is separate and is changed under <strong>Settings</strong>,
+        <strong> Intake year</strong>, <strong>Edit</strong>.)</>
       ),
     },
     {

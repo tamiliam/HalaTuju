@@ -335,7 +335,9 @@ class TestTheWaysOut(_Base):
                                        {'action': 'revoke'}, format='json')
         self.assertEqual(self.act(mentor, 'resume').json().get('code'), 'not_eligible')
 
-    def test_cancelling_a_staff_invitation_stops_mentoring(self):
+    def test_cancelling_a_staff_invitation_is_refused_while_they_mentor(self):
+        # S1b (owner, 2026-11-19): Cancel ARCHIVES the invitee, so it takes the archive's refusal (owner O7,
+        # "refuse, never end"): 409 `has_unfinished_work` while they mentor anybody, and nothing changes.
         invitee = make_admin('reviewer', owning_org=self.org)
         PartnerAdmin.objects.filter(pk=invitee.pk).update(first_seen_at=None)
         inv = invitations.create_or_refresh(audience='staff', email=invitee.email, name=invitee.name,
@@ -344,8 +346,16 @@ class TestTheWaysOut(_Base):
         mentor = self.added(invitee)
         self.assign(mentor)
         r = authed_client(self.lead).post(f'/api/v1/admin/invitations/{inv.pk}/cancel/', {}, format='json')
-        self.assertEqual(r.status_code, 200, r.content)
-        self._stopped(mentor, invitee)
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'has_unfinished_work'), r.content)
+        self.assertEqual(r.json()['work']['mentors']['scholars_now'], 1)
+        mentor.refresh_from_db()
+        invitee.refresh_from_db()
+        inv.refresh_from_db()
+        self.assertIsNone(mentor.deactivated_at)
+        self.assertEqual(self.open_count(mentor), 1)
+        self.assertTrue(invitee.is_active)
+        self.assertIsNone(invitee.archived_at)
+        self.assertIsNone(inv.revoked_at)
 
     def test_a_re_invite_of_a_switched_off_staff_mentor_is_a_new_start(self):
         from apps.courses import staff_reinvite

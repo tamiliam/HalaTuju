@@ -74,6 +74,8 @@ CENSUS = {
     S + 'invitations.py::create_or_refresh': (1, 'OWN_ROW', 'the caller passes the row'),
     S + 'invitations.py::open_invitation': (1, 'SHAPE', 'open ones only; the archive cancelled them'),
     S + 'invitations.py::purge_expired': (1, 'SHAPE', 'housekeeping by age'),
+    S + 'invitations.py::without_superseded': (1, 'OWN_ROW', 'S1b: a later invitation of the row the '
+                                                         'list holds; the list leaves archived rows out'),
     S + 'management/commands/backfill_invitations.py::Command.handle': (3, 'FILTERED', 'staff not archived'),
     S + 'management/commands/bursary_e2e.py::Command._walk': (1, 'OWN_ROW', 'a seed it creates'),
     S + 'management/commands/send_review_nudges.py::Command.handle.escalation_recipients':
@@ -92,6 +94,7 @@ CENSUS = {
     S + 'mentoring_read.py::_people': (1, 'KEEPS', 'names on mentoring records'),
     S + 'my_pending.py::_invitations': (1, 'SHAPE', 'waiting counts; the archive cancelled them'),
     S + 'payments_chain.py::lock_actor': (1, 'OWN_ROW', "the actor's own row, active, locked (TD-605, S2 / M4a)"),
+    S + 'prediction_metrics.py::_staff_by_email': (1, 'KEEPS', 'names a past decision recorder; archived keeps its name'),
     S + 'scholars.py::_mentor_name': (1, 'KEEPS', "the current mentor's name (an archived one has none)"),
     S + 'serializers_admin/names.py::_admin_name_by_email': (1, 'KEEPS', 'a name on a record'),
     S + 'services/assignment.py::_locked': (1, 'OWN_ROW', 'a reviewer already picked'),

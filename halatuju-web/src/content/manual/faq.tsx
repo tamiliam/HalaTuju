@@ -62,6 +62,17 @@ export const FAQ: Record<Audience, QA[]> = {
         decides.</strong> Always check its reading against the documents.</>,
     },
     {
+      q: <>What does the <strong>AI prediction</strong> block mean?</>,
+      a: <>It shows how often the AI&rsquo;s check and the reviewer&rsquo;s Pass or Fail agreed. The first big
+        number is how often the reviewer confirmed a fact the AI was sure of. The second is how often the
+        reviewer passed a fact the AI doubted. &ldquo;Few cases&rdquo; means fewer than 30 cases; the page then
+        shows the count and no percentage. A Pass or Fail tap records the student&rsquo;s fact. It does not
+        rate the AI. Only organisation admins see the <strong>By reviewer</strong> table. A reviewer sees
+        numbers for their own assigned applicants only. <strong>Decision</strong> is the funder&rsquo;s choice
+        and is counted apart from the facts. It sits on a programme&rsquo;s <strong>Overview</strong> and at
+        the foot of the <strong>Programmes</strong> page.</>,
+    },
+    {
       q: <>I&rsquo;m stuck, or something looks wrong — whom do I contact?</>,
       a: <>Email the HalaTuju team at <strong>help@halatuju.xyz</strong> and we&rsquo;ll help.</>,
     },
@@ -101,6 +112,13 @@ export const FAQ: Record<Audience, QA[]> = {
         integrity.</>,
     },
     {
+      q: <>What is the <strong>Facts in doubt</strong> box?</>,
+      a: <>A second look at the facts where the reviewer and the AI did not agree. You agree with the reviewer
+        unless you tap <strong>Disagree with the reviewer</strong> on a fact (tap again to undo). Your answer goes
+        with your decision and never holds it up. It only counts how often the QC agreed with the reviewer
+        on these facts (&ldquo;checked by the QC&rdquo;); it does not change the case.</>,
+    },
+    {
       q: <>Why is Accept blocked on this case?</>,
       a: <>A verdict fact is still <strong className="text-critical-700">red</strong> — the gap floor blocks Accept so a
         red fact never reaches sponsors unexamined. Resolve the gap or reopen to the reviewer; if you&rsquo;re
@@ -124,8 +142,8 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>Can I reject a student <strong>before an interview</strong>?</>,
       a: <>Yes, while the student is at <strong>Awaiting review</strong> and has no reviewer. On the
-        applicant&rsquo;s page, press <strong>Reject before interview</strong>, choose the main reason and say why
-        (the note stays with your team and never reaches the student), then confirm. It is recorded as
+        applicant&rsquo;s page, press <strong>Reject before interview</strong>, choose the reason under <em>Why are you
+        rejecting?</em> and add the details (confidential, not shared with the student), then confirm. It is recorded as
         <strong> Rejected before interview</strong> and never counts against a reviewer. The decline email waits
         for the quality control hold, and until it goes you can press <strong>Cancel decline</strong> to put the
         student back at Awaiting review. See <em>Rejecting before interview</em> in your chapter of the Guide.</>,
@@ -282,8 +300,7 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>Use <strong>Org admin and reviewer notes</strong> on the applicant&rsquo;s page, under Reviewer
         assigned. The assigned reviewer can reply there, and each side is told by email (never the note itself),
         a <strong>New note</strong> mark by the name and a line in the bell. Notes can be added from Awaiting
-        review until the reviewer records a recommendation, up to 2,000 characters each. A note cannot be edited
-        or deleted; to correct one, add another. They stay on the file afterwards, and only staff who may open the file can read them.</>,
+        review until the reviewer records a recommendation, up to 2,000 characters each. They stay on the file afterwards, and only staff who may open the file can read them.</>,
     },
     {
       q: <>Can one person be an admin and a reviewer?</>,

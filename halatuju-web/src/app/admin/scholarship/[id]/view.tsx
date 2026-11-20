@@ -22,13 +22,13 @@
  * below. Do not lift it out without that design.
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import type { AssignCandidate } from '@/lib/assignOptions'
 import { useLatest } from '@/lib/useLatest'
 import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import { holdsDoor, mayOpen } from '@/lib/pageGuard'
-import { hasPerm } from '@/lib/staffPermissions'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import RecordState from '@/components/admin/RecordState'
@@ -41,6 +41,7 @@ import {
   type AdminSponsorProfile,
 } from '@/lib/admin-api'
 import { nudgeButton } from '@/lib/blockers'
+import { showsNotesCard } from '@/lib/cockpitStages'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 
 import { GroupLabel } from './view/shared'
@@ -60,7 +61,7 @@ import { AssignAndWitness } from './view/AssignAndWitness'
 import { PreInterviewOption, PreInterviewRecord } from './view/PreInterviewReject'   // request #75
 import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
-import { WithdrawAwardCard } from './view/WithdrawAwardCard'
+import { LazyWithdrawAwardCard } from './view/LazyWithdrawAwardCard'
 import { DecisionCard } from './view/DecisionCard'
 import { DecisionBar, decisionBarShows } from './view/DecisionBar'
 import { ConfirmSheet } from './view/ConfirmSheet'
@@ -125,10 +126,6 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   // Sprint M2b (D11): on the server's door — the witness endpoint is `_SourcesBase` (door `sources`,
   // `sources.edit`), read from the served `page_keys`. TD-623: no role fallback.
   const canManageSources = holdsDoor(role, 'sources')
-  // QC (2026-07): quality control acts on AWAITING-QC ('interviewed') cases — the `qc` permission
-  // (#39 S3: super, a `qc`, an `org_admin`). The backend recorder guard stops anyone QC-ing
-  // a verdict they themselves recorded (two-person control).
-  const canQc = hasPerm(role, 'qc')
   const [app, setRawApp] = useState<AdminScholarshipDetail | null>(null)
   // ⚠ #75 re-check 3 (TD-216 class): where `id` changes in place (the prop path; production remounts on a
   // new `[id]`, see above), a request sent for the case before could land after the next one loaded.
@@ -149,16 +146,19 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   // rule (`views_admin.base.may_write_case`, POST-AWARD-CUT: an open case is super, `qc` org-wide or the
   // assignee; past the award super or a `scholars` holder; ended before it super or a `students.approve`
   // holder). A write reply that omits it keeps the last value served; so do `can_cancel_decline` and
-  // `can_tranche` (the tranche steps). drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
-  const served = useRef({ write: false, cancelDecline: false, tranche: false })
-  if (typeof app?.can_write === 'boolean') served.current = { write: app.can_write, cancelDecline: app.can_cancel_decline === true, tranche: app.can_tranche === true }
-  const canWrite = served.current.write, canTranche = served.current.tranche
+  // `can_tranche` (the tranche steps). Sprint S1 (TD-664 a-c), served beside them: `can_qc` (the QC door's key,
+  // `may_qc`; the backend separation guard still answers `qc_refusal`), `can_close_pre_award` (the close door's
+  // pre-award test) and `case_stage` (the decision bar shows only on an open case: the verdict door answers
+  // `case_closed` otherwise). drift-test: halatuju-web/src/lib/__tests__/appMirrorDrift.test.ts
+  const served = useRef({ write: false, cancelDecline: false, tranche: false, qc: false, closePreAward: false, caseOpen: false })
+  if (typeof app?.can_write === 'boolean') served.current = { write: app.can_write, cancelDecline: app.can_cancel_decline === true, tranche: app.can_tranche === true, qc: app.can_qc === true, closePreAward: app.can_close_pre_award === true, caseOpen: app.case_stage === 'open' }
+  const canWrite = served.current.write, canTranche = served.current.tranche, canQc = served.current.qc
   const [caseSummary, setCaseSummary] = useState<VerdictCaseSummary | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const [viewerDoc, setViewerDoc] = useState<ViewerDoc | null>(null)   // in-cockpit doc viewer
-  const [admins, setAdmins] = useState<Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>>([])
+  const [admins, setAdmins] = useState<AssignCandidate[]>([])
   // #75 re-check: the reject-before-interview refusal lives HERE, so it survives the reload that a
   // stale refusal triggers even when that reload takes the door (and its component) away. It is
   // kept WITH its case, so it never follows to another one even where `id` changes in place (the prop
@@ -225,7 +225,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         postAward.setBursary(d.bursary_agreement ?? null)
       })
       .catch(() => { if (id === liveId.current) setError(t('admin.scholarship.loadFailed')) })
-    getAssignableAdmins({ token }).then((r) => setAdmins(r.admins)).catch(() => {})
+    getAssignableAdmins({ token }, id).then((r) => setAdmins(r.admins)).catch(() => {})   // TD-634: per case
     // Check-2 case summary — fetched lazily (in parallel), server-cached; dark-flag aware.
     getVerdictCaseSummary(id, { token })
       .then((s) => { if (id === liveId.current) setCaseSummary(s) }).catch(() => {})
@@ -234,7 +234,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   // Re-check 4: nothing is drawn against a record that is not this case's (the key makes it so).
   if (!app || app.id !== id) return <RecordState loading={!error} />
 
-  const d = deriveCockpit(app, t, findings, officerVerdict, verdict.verdictReason)
+  const d = deriveCockpit(app, t, findings, officerVerdict, verdict.verdictReason, verdict.failReasons)
   const { vtip, decisionReopened, decisionLocked, decisionRecorded } = d
   // Household income + size (request #54: the declared figures, ticked on a document match).
   const household = householdFigures(app, t)
@@ -263,7 +263,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   const {
     reviewerName, reviewerDate, hasQc, qcName, qcDate, queryingLocked, lockReason, interviewSubmitted,
     interviewLocked, recordedOutcome, stuckAfterVerdict, agendaItems, editableAgenda,
-    interviewUnansweredCount, interviewMissing, decisionReady, hasAssistance, approveReady, canSave,
+    interviewUnansweredCount, decisionMissingItems, decisionReady, hasAssistance, approveReady, canSave,
   } = d
   const {
     bursary, bursaryMsg, doCountersignBursary, doWitnessBursary, witnessCardVisible, activeSources,
@@ -377,6 +377,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         decisionReopened={decisionReopened} decisionRecorded={decisionRecorded}
         decisionLocked={decisionLocked}
         officerVerdict={officerVerdict} setOfficerVerdict={setOfficerVerdict}
+        failReasons={verdict.failReasons} setFailReason={verdict.setFailReason}
         reportingDateInput={reportingDateInput} setReportingDateInput={setReportingDateInput}
         reportingDateMsg={reportingDateMsg} doSetReportingDate={doSetReportingDate}
       />
@@ -384,15 +385,15 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
 
       <DecisionCard
         app={app} t={t} busy={busy} canWrite={canWrite} isSuper={isSuper} error={error}
-        decisionLocked={decisionLocked} decisionReopened={decisionReopened} decisionRecorded={decisionRecorded}
+        decisionLocked={decisionLocked} decisionReopened={decisionReopened} decisionRecorded={decisionRecorded} caseOpen={served.current.caseOpen}
         reopenOpen={reopenOpen} setReopenOpen={setReopenOpen} reopenReason={reopenReason}
         setReopenReason={setReopenReason} doReopenDecision={doReopenDecision} doCancelReopen={doCancelReopen}
         doCancelDecline={doCancelDecline} verdictReason={verdictReason} setVerdictReason={setVerdictReason}
         reviewerName={reviewerName} reviewerDate={reviewerDate} hasQc={hasQc} qcName={qcName} qcDate={qcDate}
         recordedOutcome={recordedOutcome} doReject={doReject} stuckAfterVerdict={stuckAfterVerdict}
         officerVerdict={officerVerdict} selectApprove={selectApprove} selectDecline={selectDecline}
-        approveReady={approveReady} decisionReady={decisionReady} interviewSubmitted={interviewSubmitted}
-        interviewMissing={interviewMissing} hasAssistance={hasAssistance} doSave={doSave} canSave={canSave}
+        approveReady={approveReady} decisionReady={decisionReady}
+        missing={decisionMissingItems} hasAssistance={hasAssistance} doSave={doSave} canSave={canSave} reasonMissing={d.reasonMissing}
         verdictMsg={verdictMsg} verdictMsgTone={verdictMsgTone}
       />
 
@@ -404,7 +405,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
 
       <ReverifyIcCard app={app} t={t} token={token} busy={busy} canQc={canQc} onDone={(a) => { setApp(a); loadVerdictState(a) }} />
       <QcPanel
-        app={app} t={t} busy={busy} canQc={canQc} role={role} doQcDecision={doQcDecision}
+        app={app} t={t} busy={busy} canQc={canQc} doQcDecision={doQcDecision}
         qcReopenOpen={qcReopenOpen} setQcReopenOpen={setQcReopenOpen}
         qcComments={qcComments} setQcComments={setQcComments}
         qcRejectMode={qcRejectMode} setQcRejectMode={setQcRejectMode}
@@ -434,7 +435,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         witnessBusy={witnessBusy} witnessMsg={witnessMsg} setWitnessMsg={setWitnessMsg}
         witnessEditing={witnessEditing} setWitnessEditing={setWitnessEditing}
         doAssignWitness={doAssignWitness}
-        notesCard={<ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
+        notesCard={!showsNotesCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened }) ? undefined : <ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
         preInterview={<PreInterviewOption key={app.id} app={app} t={t} token={token} busy={busy} canAssign={canAssign}
           err={preInterviewErr} setErr={setPreInterviewErr} onDone={onPreInterviewDone} onStale={() => reload(true)} />}
@@ -446,7 +447,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
       </div>{/* end cockpit grid */}
 
       <PostAwardPanels
-        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite} canTranche={canTranche} orgSuper={holdsDoor(role, 'decide')} mayOpenFile={mayOpen('/admin/scholars', role)}
+        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite} canTranche={canTranche} canClosePreAward={served.current.closePreAward} mayOpenFile={mayOpen('/admin/scholars', role)}
         bursary={bursary} bursaryMsg={bursaryMsg}
         doCountersignBursary={doCountersignBursary} doWitnessBursary={doWitnessBursary}
         disbAmount={disbAmount} setDisbAmount={setDisbAmount}
@@ -456,10 +457,10 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         closeReason={closeReason} setCloseReason={setCloseReason}
         closeMsg={closeMsg} doClose={doClose}
       />
-      <WithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />
+      {(app.withdrawal_request?.status || app.withdrawal_request?.your_step) && <LazyWithdrawAwardCard app={app} t={t} token={token} onChanged={setApp} />}
 
       {/* Mobile M6b: a phone's way back to the decision. It jumps; it never saves (see DecisionBar). */}
-      {decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }) && (
+      {decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite, caseOpen: served.current.caseOpen }) && (
         <DecisionBar t={t} outcome={officerVerdict.overall} canSave={canSave && !busy} />
       )}
       </>)}

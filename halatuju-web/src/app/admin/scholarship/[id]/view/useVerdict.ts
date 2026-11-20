@@ -8,18 +8,22 @@ import { useState } from 'react'
 import {
   verifyAcceptApplication, rejectApplication, submitDeclineApplication, orgRejectApplication,
   recordVerdict, reopenDecision, cancelReopen, recordQcDecision,
-  type AdminScholarshipDetail,
+  type AdminScholarshipDetail, type QcDecisionPayload,
 } from '@/lib/admin-api'
 import { isClearAccept, verdictSaveOutcome, verdictSaveErrorText } from '@/lib/officerCockpit'
 import { interviewRefusalText } from '@/lib/interviewCompleteness'
 import { qcRefusalText } from './QcPanel'
 import type { CockpitCtx } from './cockpitCtx'
+import { reasonsToSend } from './failReasons'
 
 export function useVerdict(ctx: CockpitCtx, genLang: string) {
   const { id, token, t, app, setApp, setProfile, setBusy, setError } = ctx
   // Sprint 5 — Officer cockpit
   const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
   const [verdictReason, setVerdictReason] = useState('')
+  // LL2: {fact: reason code} for a fact the engine showed green and the reviewer failed.
+  const [failReasons, setFailReasons] = useState<Record<string, string>>({})
+  const setFailReason = (fact: string, code: string) => setFailReasons((r) => ({ ...r, [fact]: code }))
   const [verdictMsg, setVerdictMsg] = useState('')
   const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
   // Decision reopen (reverse a recorded decision). The reopened STATE is server-driven
@@ -47,6 +51,7 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
       overall: v.overall ?? '',
     })
     setVerdictReason(d.verdict_reason ?? '')
+    setFailReasons({ ...(v.fail_reasons ?? {}) })   // rows from before LL2 have no key
   }
 
   // TD-227 (A1.11a): the decline needs a reason (stored on the case; the server answers 400
@@ -96,6 +101,7 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
     try {
       const result = await recordVerdict(id, {
         officer_verdict: officerVerdict,
+        fail_reasons: reasonsToSend(app?.verdict, officerVerdict, failReasons),
         reason: verdictReason || undefined,
         finalise,
         language: genLang,
@@ -227,7 +233,11 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
   // reviewer at 'interviewing' with the gaps comments (emailed to the assigned reviewer).
   // V5 gap floor: while a verdict fact is red the server refuses accept (verdict_gap_floor);
   // a super passes it with overrideReason, which the server records.
-  const doQcDecision = async (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) => {
+  // LL2b: `factChecks` = the QC's taps on the "Facts in doubt" block; undefined when no block shows.
+  const doQcDecision = async (
+    decision: 'accept' | 'reopen' | 'reject', overrideReason?: string,
+    factChecks?: QcDecisionPayload['fact_checks'],
+  ) => {
     if (!token) return
     // Reopen AND reject both carry the shared-with-reviewer comment (the gaps / the reject reason).
     const carriesComments = decision === 'reopen' || decision === 'reject'
@@ -236,7 +246,8 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
     try {
       const result = await recordQcDecision(
         id, { decision, comments: carriesComments ? qcComments.trim() : undefined,
-              override_reason: overrideReason?.trim() || undefined }, { token })
+              override_reason: overrideReason?.trim() || undefined,
+              ...(factChecks ? { fact_checks: factChecks } : {}) }, { token })
       setApp(result)
       setProfile(result.sponsor_profile)
       loadVerdictState(result)
@@ -246,12 +257,12 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
       const code = (e as { code?: string })?.code
       // TD-483: every separation code in en / ms / ta (was only `self_verdict_qc_forbidden`).
       setError(qcRefusalText(code, t)
-        || (e instanceof Error ? e.message : t('admin.scholarship.qcDecision.error')))
+        || (e instanceof Error && code !== 'bad_fact_checks' ? e.message : t('admin.scholarship.qcDecision.error')))
     } finally { setBusy('') }
   }
 
   return {
-    officerVerdict, setOfficerVerdict, verdictReason, setVerdictReason, verdictMsg, verdictMsgTone,
+    officerVerdict, setOfficerVerdict, failReasons, setFailReason, verdictReason, setVerdictReason, verdictMsg, verdictMsgTone,
     reopenOpen, setReopenOpen, reopenReason, setReopenReason,
     qcReopenOpen, setQcReopenOpen, qcComments, setQcComments, qcRejectMode, setQcRejectMode,
     qcOverrideOpen, setQcOverrideOpen, qcOverrideReason, setQcOverrideReason,

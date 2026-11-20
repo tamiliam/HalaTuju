@@ -102,7 +102,7 @@ class TestTheEndpointSays400(_Base):
         # case whose organisation is not theirs), so it is not handed over.
         app = self._case(None)
         r = self._post(self.boss, app, self.rev_a)
-        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_reviewer'))
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'wrong_organisation'))   # TD-634: said
         app.refresh_from_db()
         self.assertIsNone(app.assigned_to_id)
 

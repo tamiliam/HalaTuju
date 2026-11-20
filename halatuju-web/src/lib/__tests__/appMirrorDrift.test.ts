@@ -165,15 +165,26 @@ describe('who may write on a case — view.tsx canWrite is SERVED by views_admin
     expect(rule).toContain('return surface_gates.may_decide(admin)')
     // The cancel-decline door (owner 17 Nov) and the tranche door are served too, beside `can_write`.
     expect(rule).toContain('return may_write_case(admin, app, status=back_to)')
-    expect(rule).toContain("'can_write': may_write_case(admin, app)")
+    expect(rule).toContain('can_write = may_write_case(admin, app)')
+    expect(rule).toContain("return {'can_write': can_write,")
     expect(rule).toContain("'can_cancel_decline': may_cancel_held_decline(admin, app)")
     expect(rule).toContain("'can_tranche': may_tranche(admin, app)")
     expect(readApi('apps/scholarship/views_admin/applications.py')).toContain('data.update(served_write_flags(admin, app))')
     // The tranche door refuses on the same predicate the flag serves.
     expect(readApi('apps/scholarship/views_admin/lifecycle.py')).toContain('if tranche_key_held(admin, app):')
     const view = web('src/app/admin/scholarship/[id]/view.tsx')
-    expect(view).toContain("served.current = { write: app.can_write, cancelDecline: app.can_cancel_decline === true, tranche: app.can_tranche === true }")
-    expect(view).toContain('const canWrite = served.current.write, canTranche = served.current.tranche')
+    expect(view).toContain("served.current = { write: app.can_write, cancelDecline: app.can_cancel_decline === true, tranche: app.can_tranche === true, qc: app.can_qc === true, closePreAward: app.can_close_pre_award === true, caseOpen: app.case_stage === 'open' }")
+    expect(view).toContain('const canWrite = served.current.write, canTranche = served.current.tranche, canQc = served.current.qc')
+    // S1 (TD-664 a-c): the QC door, the pre-award close door and the case's stage are served beside them,
+    // and every write reply that carries the case serves them too (`_detail_payload`).
+    expect(rule).toContain("'can_qc': may_qc(admin)")
+    expect(rule).toContain("'can_close_pre_award': can_write and surface_gates.may_decide(admin)")
+    expect(rule).toContain("'case_stage': case_stage(app)}")
+    expect(view).not.toContain("hasPerm(role, 'qc')")
+    expect(view).not.toContain("holdsDoor(role, 'decide')")
+    const qc = web('src/app/admin/scholarship/[id]/view/QcPanel.tsx')
+    expect(qc).toContain('return app.qc_refusal || null')
+    expect(qc).not.toContain('role?.')
     // POST-AWARD-CUT: the old browser copy of the rule is gone, and must not come back.
     expect(view).not.toContain("const canWrite = hasPerm(role, 'qc')")
     expect(view).not.toContain('app.assigned_to_id === (role?.admin_id ?? null)')

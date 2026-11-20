@@ -214,7 +214,7 @@ class TheOfferSecondRead(SimpleTestCase):
         self.assertEqual([c['part'] for c in shown['calls']], ['page_1', 'retry_images'])
         self.assertEqual([c['model'] for c in shown['calls']], [THREE_EIGHT, THREE_EIGHT])
         self.assertEqual(shown['pages'], 1)                                     # a retry is not a page
-        self.assertEqual(ex['offer_reader_version'], '2.6.0')
+        self.assertEqual(ex['offer_reader_version'], '2.7.0')
 
     def test_a_retry_that_comes_back_blank_too_keeps_the_blank_read_and_never_retries_again(self):
         for second in (BLANK, {'_error': 'All AI models failed: x'}):

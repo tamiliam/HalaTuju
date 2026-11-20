@@ -9,7 +9,11 @@ import {
   isCaseClosed,
   queryingLockReason,
   reviewerCardState,
+  isWaitingForReviewer,
   showsCheck2Box,
+  showsEstimateCard,
+  showsNotesCard,
+  showsRecommendationCard,
   showsDecisionCards,
   showsGeneratedProfileCard,
   showsInterviewStage,
@@ -30,11 +34,12 @@ const shown = (fn: (s: string) => boolean) => ALL.filter(fn)
 describe('showsReviewerAssignedCard', () => {
   it('is visible only while the assignment can still change', () => {
     expect(shown(showsReviewerAssignedCard)).toEqual([
-      'submitted', 'profile_complete', 'interviewing', 'interviewed',
+      'profile_complete', 'interviewing', 'interviewed',
     ])
   })
 
-  it('is hidden at shortlisted — the Reject card takes that slot', () => {
+  it('is hidden at submitted and shortlisted (owner 2026-11-19; the Reject card takes the shortlisted slot)', () => {
+    expect(showsReviewerAssignedCard('submitted')).toBe(false)
     expect(showsReviewerAssignedCard('shortlisted')).toBe(false)
   })
 
@@ -165,9 +170,15 @@ describe('the closed-case gates', () => {
 
     it('is shown at every live stage past submission, with or without a session', () => {
       // The negative half: a gate that hid everything would pass the two cases above.
-      for (const status of LIVE.filter((s) => s !== 'shortlisted')) {
+      for (const status of LIVE.filter((s) => s !== 'shortlisted' && s !== 'submitted')) {
         expect(showsInterviewStage({ status, hasInterviewSession: false })).toBe(true)
       }
+    })
+
+    it('stays hidden at submitted too (owner 2026-11-19)', () => {
+      expect(showsInterviewStage({ status: 'submitted', hasInterviewSession: false })).toBe(false)
+      expect(showsDecisionCards({ status: 'submitted', decisionRecorded: false })).toBe(false)
+      expect(showsGeneratedProfileCard({ status: 'submitted', hasProfile: false })).toBe(false)
     })
 
     it('stays hidden at shortlisted — the pre-submission rule is unchanged', () => {
@@ -197,7 +208,7 @@ describe('the closed-case gates', () => {
     })
 
     it('is shown at every live stage past submission, verdict or not', () => {
-      for (const status of LIVE.filter((s) => s !== 'shortlisted')) {
+      for (const status of LIVE.filter((s) => s !== 'shortlisted' && s !== 'submitted')) {
         expect(showsDecisionCards({ status, decisionRecorded: false })).toBe(true)
       }
     })
@@ -234,7 +245,7 @@ describe('the closed-case gates', () => {
     })
 
     it('is shown at every live stage past submission, profile or not', () => {
-      for (const status of LIVE.filter((s) => s !== 'shortlisted')) {
+      for (const status of LIVE.filter((s) => s !== 'shortlisted' && s !== 'submitted')) {
         expect(showsGeneratedProfileCard({ status, hasProfile: false })).toBe(true)
       }
     })
@@ -257,11 +268,16 @@ describe('the closed-case gates', () => {
       }
     })
 
-    it('is shown at EVERY live stage, empty included — unlike the other cards', () => {
-      // Deliberately not gated on showsPostSubmissionCards: at `shortlisted` an empty Check 2
-      // is the working surface for chasing a student, and hiding it would break the one stage
-      // the box exists for. The negative half that proves this gate is about closure only.
-      for (const status of LIVE) {
+    it('is hidden at submitted and shortlisted when empty, kept when it has items', () => {
+      for (const status of ['submitted', 'shortlisted']) {
+        expect(showsCheck2Box({ status, hasItems: false })).toBe(false)
+        expect(showsCheck2Box({ status })).toBe(false)
+        expect(showsCheck2Box({ status, hasItems: true })).toBe(true)
+      }
+    })
+
+    it('is shown at every other live stage, empty included', () => {
+      for (const status of LIVE.filter((s) => s !== 'submitted' && s !== 'shortlisted')) {
         expect(showsCheck2Box({ status, hasItems: false })).toBe(true)
       }
     })
@@ -340,5 +356,37 @@ describe('reviewerCardState (TD-613: read from what the server serves, never the
       expect(card.mayUnassign).toBe(true)
       expect(card.needsNewHolder).toBe(false)
     }
+  })
+})
+
+describe('isWaitingForReviewer and the four cards it hides (owner 2026-11-19)', () => {
+  const waiting = { status: 'profile_complete', assignedToId: null }
+  it('is true only at Awaiting review, unassigned, not reopened', () => {
+    expect(isWaitingForReviewer(waiting)).toBe(true)
+    expect(isWaitingForReviewer({ ...waiting, assignedToId: 42 })).toBe(false)
+    expect(isWaitingForReviewer({ ...waiting, decisionReopened: true })).toBe(false)
+    expect(isWaitingForReviewer({ status: 'profile_complete' })).toBe(false)   // not told
+    expect(isWaitingForReviewer({ status: 'interviewing', assignedToId: null })).toBe(false)
+  })
+  it('hides interview, estimate, recommendation and notes while waiting', () => {
+    expect(showsInterviewStage(waiting)).toBe(false)
+    expect(showsEstimateCard(waiting)).toBe(false)
+    expect(showsRecommendationCard(waiting)).toBe(false)
+    expect(showsNotesCard(waiting)).toBe(false)
+  })
+  it('shows them once assigned or reopened', () => {
+    for (const o of [{ ...waiting, assignedToId: 42 }, { ...waiting, decisionReopened: true }]) {
+      expect(showsInterviewStage(o)).toBe(true)
+      expect(showsEstimateCard(o)).toBe(true)
+      expect(showsRecommendationCard(o)).toBe(true)
+      expect(showsNotesCard(o)).toBe(true)
+    }
+  })
+  it('notes and estimate stay hidden at submitted and shortlisted, shown after', () => {
+    for (const status of ['submitted', 'shortlisted']) {
+      expect(showsNotesCard({ status, assignedToId: null })).toBe(false)
+      expect(showsEstimateCard({ status, assignedToId: null })).toBe(false)
+    }
+    expect(showsNotesCard({ status: 'interviewed', assignedToId: null })).toBe(true)
   })
 })

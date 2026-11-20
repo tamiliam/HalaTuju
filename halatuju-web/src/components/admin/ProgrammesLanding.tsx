@@ -25,7 +25,9 @@ import { withGift } from '@/lib/giftHref'
 import { PHONE_CARD_XL } from '@/lib/phoneConsole'
 import { PHONE_PILL_SM } from '@/lib/phonePill'
 import { getMyProgrammes, type MyProgramme } from '@/lib/admin-api/myProgrammes'
+import { getVerdictMetrics, type VerdictMetrics } from '@/lib/admin-api/verdict'
 import GiftProgrammes from './GiftProgrammes'
+import { AiPredictionBlock } from './overview/AiPredictionSection'
 import PendingCards from './PendingCards'
 
 /** The counts a card may carry, in reading order, with the label each one wears. */
@@ -54,6 +56,35 @@ export default function ProgrammesLanding() {
       <h1 className="text-2xl font-semibold text-ground-900">{t('admin.orgPage.nav')}</h1>
       <PendingCards token={token} />
       {hasGiftDoor(role?.page_keys) ? <GiftProgrammes token={token} /> : <MyProgrammesCards token={token} />}
+      <OrganisationAiPrediction token={token} />
+    </div>
+  )
+}
+
+/**
+ * LL1: the AI prediction block for ALL programmes together, at the foot of the page.
+ *
+ * ⚠ THE SERVER DECIDES WHO MAY SEE IT. A 403 (or any other failure) draws NOTHING: no banner, no console
+ * noise. A reader the server refuses simply has no such block, and a page that apologised for a thing
+ * that reader never had would be the noise.
+ */
+function OrganisationAiPrediction({ token }: { token: string | null }) {
+  const { t } = useT()
+  const [ai, setAi] = useState<VerdictMetrics | null>(null)
+
+  useEffect(() => {
+    if (!token) return
+    let live = true
+    getVerdictMetrics({ token })
+      .then((d) => { if (live) setAi(d) })
+      .catch(() => { /* a refusal or a failure draws nothing */ })
+    return () => { live = false }
+  }, [token])
+
+  if (!ai) return null
+  return (
+    <div className="mt-8">
+      <AiPredictionBlock ai={ai} t={t} note={t('admin.programmeOverview.aiPrediction.allProgrammes')} />
     </div>
   )
 }

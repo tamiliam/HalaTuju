@@ -10,7 +10,7 @@
  *   • `org_admin` (an org admin or a super with students.edit): "Add a note" / "Add note";
  *   • `reviewer` (the reviewer assigned to the case): "Reply" / "Send reply";
  *   • `reader` (QC, a view-only admin): the list, read-only.
- * Writers get a live counter ("97 / 2,000") and the append-only line. While the window is shut both writers
+ * Writers get a live counter ("97 / 2,000"). The server stays append-only; the card no longer says so. While the window is shut both writers
  * see why, from the SERVED `reason`: 'not_yet' (the case has not reached Awaiting review) or 'finished'.
  *
  * ⚠ SERVE, NEVER DERIVE: the side is the server's `viewer`, whether the box shows is its `can_add` (the
@@ -27,6 +27,7 @@ import { useEffect, useRef, useState } from 'react'
 import { addReviewerNote, getReviewerNotes, type ReviewerNote, type ReviewerNotes } from '@/lib/admin-api'
 import { formatDateTime } from '@/lib/formatDate'
 import { announceNotesRead } from '@/lib/useNewNoteCount'
+import { CharCount } from '@/components/admin/CharCount'
 
 import type { T } from './shared'
 
@@ -112,16 +113,12 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
   const notes = data?.notes ?? []
   const viewer = data?.viewer ?? 'reader'
   const replying = viewer === 'reviewer'
-  const intro = viewer === 'org_admin' ? 'introOrgAdmin' : replying ? 'introReviewer' : 'introReader'
   const roleOf = (n: ReviewerNote) =>
     t(`${P}.role.${n.author_role === 'reviewer' ? (n.is_you ? 'reviewerYou' : 'reviewer') : (n.is_you ? 'orgAdminYou' : 'org_admin')}`)
   return (
     <section data-reviewer-notes
       className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
-      <div className="space-y-1">
-        <h2 className="text-base font-semibold tracking-tight text-ground-900">{t(`${P}.title`)}</h2>
-        <p className="text-sm text-ground-600">{t(`${P}.${intro}`)}</p>
-      </div>
+      <h2 className="text-base font-semibold tracking-tight text-ground-900">{t(`${P}.title`)}</h2>
 
       {loadFailed && <p className="text-sm text-critical-600">{t(`${P}.loadError`)}</p>}
 
@@ -156,13 +153,9 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
             placeholder={t(`${P}.${replying ? 'replyPlaceholder' : 'placeholder'}`)}
             aria-describedby={`reviewer-note-${appId}-count`}
             className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm leading-relaxed focus:border-info-500 focus:ring-2 focus:ring-info-500" />
-          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-            <span className="text-xs text-ground-600">{t(`${P}.appendOnly`)}</span>
-            <span id={`reviewer-note-${appId}-count`} aria-live="polite"
-              className={`text-xs whitespace-nowrap ${over ? 'font-semibold text-critical-600' : 'text-ground-600'}`}>
-              {t(`${P}.counter`, { count: fmt(length), max: fmt(max) })}
-            </span>
-          </div>
+          <CharCount id={`reviewer-note-${appId}-count`} live className={over ? 'font-semibold text-critical-600' : 'text-ground-600'}>
+            {t(`${P}.counter`, { count: fmt(length), max: fmt(max) })}
+          </CharCount>
           <button type="button" onClick={submit} disabled={busy || blank || over}
             className="w-full min-h-11 rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
             {replying

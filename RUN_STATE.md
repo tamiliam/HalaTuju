@@ -1,6 +1,21 @@
 # RUN_STATE — HalaTuju autonomous run
 
-## Grant
+> **RUN CLOSED (lead, 19 Nov 2026).** The 4–5 Nov run below (T5c P5, v3.1.0, the full audit) is finished or
+> superseded. No autonomous run is active now. Everything under this note is HISTORY and may be stale.
+>
+> **Current state lives in the memory file `halatuju.md`** (slimmed 19 Nov; full history in `halatuju_archive.md`):
+> status, NEXT, live rules, the release state and the landing order.
+>
+> - **How work runs now:** the release train and the station-and-laptop rule (from 20 Nov) in
+>   `Settings/_workflows/release-train.md`, and the lanes in `Settings/_workflows/credit-discipline.md`.
+> - **Who leads:** the station's HalaTuju session. It publishes, does hotfixes and lands the laptop branch
+>   `side/laptop`.
+> - **Still in force from this file:** Lane B branches `req-b` and `req-c` are never deployed without the owner's
+>   approval.
+>
+> A new grant starts a new RUN_STATE: replace this file; do not append to it.
+
+## Grant (CLOSED run, history)
 Owner, 2026-11-04 (second grant, given to lead session "Release"; extends the first): "finish T5c (part 5 after I
 approve the Stitch design), release v3.1.0, then run the full audit from your plan as a run. Ask me before each deploy."
 

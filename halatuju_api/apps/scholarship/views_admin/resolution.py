@@ -10,8 +10,8 @@ from rest_framework.response import Response
 from .. import staff_activity
 from ..document_snapshot import snapshot_unless_open
 from ..emails import send_request_info_email
-from ..serializers_admin import AdminApplicationDetailSerializer
 
+from .applications import _detail_payload
 from .base import _AdminBase
 
 
@@ -38,7 +38,7 @@ class AdminRequestInfoView(_AdminBase):
             send_request_info_email(to_email=app.notify_email, applicant_name=name,
                                     programme_name=app.cohort.name, note=note, lang=app.locale)
         with snapshot_unless_open(app):   # A2.4: one document read, as the GET does
-            return Response(AdminApplicationDetailSerializer(app).data)
+            return Response(_detail_payload(app, admin))
 
 
 class AdminResolutionItemView(_AdminBase):
@@ -93,7 +93,7 @@ class AdminResolutionItemView(_AdminBase):
             app.query_raised_notified_at = None
             app.save(update_fields=['query_raised_notified_at'])
         with snapshot_unless_open(app):   # A2.4: one document read, as the GET does
-            return Response(AdminApplicationDetailSerializer(app).data)
+            return Response(_detail_payload(app, admin))
 
 
 class AdminResolutionItemActionView(_AdminBase):
@@ -141,4 +141,4 @@ class AdminResolutionItemActionView(_AdminBase):
         else:
             staff_activity.record(admin, staff_activity.QUERY_RESOLVED, item.application,
                                   meta={'item': item, 'action': action})
-        return Response(AdminApplicationDetailSerializer(item.application).data)
+        return Response(_detail_payload(item.application, admin))

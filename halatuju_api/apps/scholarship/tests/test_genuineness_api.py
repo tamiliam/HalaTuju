@@ -71,7 +71,8 @@ class TestStoredDictContract(SimpleTestCase):
         with patch('apps.scholarship.vision._call_gemini_json',
                    return_value={'verdict': 'suspect', 'has_chip': False, 'reason': 'typed'}):
             r = vision.ic_genuineness(b'x', 'image/png')
-        self.assertEqual(set(r), {'status', 'markers', 'reason'})
+        # LL3 phase 2 added model_version; the other keys are as before.
+        self.assertEqual(set(r), {'status', 'markers', 'reason', 'model_version'})
 
     def test_doc_dict_has_status_docseen_reason(self):
         from apps.scholarship import vision
@@ -79,4 +80,5 @@ class TestStoredDictContract(SimpleTestCase):
                    return_value={'verdict': 'genuine', 'is_official': True,
                                  'is_expected_type': True, 'doc_seen': 'STR', 'reason': 'r'}):
             r = vision.doc_genuineness(b'x', 'image/png', 'str')
-        self.assertEqual(set(r), {'status', 'doc_seen', 'reason'})
+        # LL3 phase 2 added model_version; the other keys are as before.
+        self.assertEqual(set(r), {'status', 'doc_seen', 'reason', 'model_version'})

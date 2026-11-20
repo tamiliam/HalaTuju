@@ -2,13 +2,12 @@
 each. Every letter is invented (`test_no_gitignored_corpus.py`). Accepted residual risk (owner, decisions S6
 item 4): a full, well-laid-out institute letter with every part, and deliberate Unicode tricks.
 """
-import time
-
 from django.test import SimpleTestCase
 
 from apps.scholarship.genuineness.offer_rulings import (_folded_lines, _letter_structure, _private_signs,
                                                          confirmation_kind, ruled_offer, ruling_of, _TITLE)
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
+from apps.scholarship.tests._timing import assert_linear
 from apps.scholarship.tests.test_offer_s6_narrowing import baseline_status
 
 
@@ -158,11 +157,12 @@ class MediumPublicAcademy(SimpleTestCase):
 
 class MediumPerformance(SimpleTestCase):
     def test_forty_thousand_lines_in_under_a_second(self):
-        lines = _folded_lines('\n'.join(f'baris {i} kandungan surat' for i in range(40000)))
-        t0 = time.perf_counter()
-        _letter_structure(lines, _TITLE, min_lines=12, reporting=True)
-        _private_signs(lines)
-        self.assertLess(time.perf_counter() - t0, 1.0)
+        # TD-693: linear, counted (the calls at 20,000 and 40,000 lines), not timed against the machine
+        def read(lines):
+            _letter_structure(lines, _TITLE, min_lines=12, reporting=True)
+            _private_signs(lines)
+        assert_linear(self, read, lambda n: _folded_lines('\n'.join(f'baris {i} kandungan surat' for i in range(n))),
+                      20000)
 
 
 class LowUniklMention(SimpleTestCase):

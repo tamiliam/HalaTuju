@@ -172,7 +172,8 @@ class AdminScholarFileView(_ScholarsBase):
         return Response({**body, 'mentor_view': as_mentor, 'controls': scholars.controls(
             app, can_write=writes and self._can_review_app(admin, app),
             can_hold=writes and payments.may_prepare(admin),
-            can_review_results=writes and self._may_write_file(admin, app))})
+            can_review_results=writes and self._may_write_file(admin, app),
+            can_write_activity=writes and self._may_write_file(admin, app))})
 
 
 class AdminScholarResultsView(_ScholarsBase):

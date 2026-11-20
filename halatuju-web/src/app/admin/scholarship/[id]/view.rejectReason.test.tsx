@@ -18,11 +18,13 @@ import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 installCockpitConsoleGuard()
 
 const loaded = () => screen.findByText('Test Student 07')
+/** Access S1: a QC writer, as the server serves her (`can_qc` is the QC door's own key). */
+const QC_WRITER = { can_write: true, can_cancel_decline: true, can_tranche: true, can_qc: true }
 const qcPanel = () => screen.queryByText('admin.scholarship.qcDecision.title')
 
 describe('TD-483: the QC panel follows the server rule', () => {
   it('a QC the server would refuse sees why, and no panel', async () => {
-    renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
+    renderCockpit({ role: 'qc', writes: QC_WRITER, stage: 'awaiting_qc',
                     build: { outcome: 'recommend', qc_refusal: 'self_assigned_qc_forbidden' } })
     await loaded()
     expect(qcPanel()).toBeNull()
@@ -31,7 +33,7 @@ describe('TD-483: the QC panel follows the server rule', () => {
   })
 
   it('a QC the server clears sees the panel and no note', async () => {
-    renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
+    renderCockpit({ role: 'qc', writes: QC_WRITER, stage: 'awaiting_qc',
                     build: { outcome: 'recommend', qc_refusal: null } })
     await loaded()
     expect(qcPanel()).toBeTruthy()
@@ -39,7 +41,7 @@ describe('TD-483: the QC panel follows the server rule', () => {
   })
 
   it('a refusal on the click is shown in the cockpit language, for every code', async () => {
-    const { api } = renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
+    const { api } = renderCockpit({ role: 'qc', writes: QC_WRITER, stage: 'awaiting_qc',
                                     build: { outcome: 'recommend', qc_refusal: null } })
     await loaded()
     const refused = Object.assign(new Error('You interviewed this student.'),

@@ -267,7 +267,7 @@ Do one only when a sprint is already in that file.
 - ~~**TD-345**~~ — No local signed-in smoke path for the student apply flow: the live API's CORS refuses a localhost build and no local api + auth recipe exists. *(D · M · raised 2026-10-05 by the apply-gift-clarity sprint)* **FIXED 2026-11-11 (A4.7): documented local student recipe plus a pinning test (docs/testing.md).**
 - **TD-041** — The Settings page has no account options. *(D · S · partly done · same as TD-076)*
 - **TD-283** — `applications.py` sits exactly at its size limit (the `serializers_admin` half closed by A3.7). *(D · M)*
-- **TD-243** — The AI reliability rate blends engine versions. *(D · M)*
+- **TD-243** — The AI reliability rate blends engine versions. *(D · M)* **Fixed in code, saved to `main` 2026-11-19 (LL1 + LL3), not published: LL1 shows the rates per engine version (`by_version`); LL3's guard makes a verdict-engine logic change without a version bump fail the tests. Open until both are live; known gaps in the detail entry.**
 - **TD-212** — The email-template table is still named partner. *(D · M)*
 - **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module; A2.4 split it to A2.4b, not built)*
 - **TD-124** — Contact-form messages reach staff by email only. *(D · M)*
@@ -4920,6 +4920,19 @@ Medium-sized: the response shape changes and `AiReliabilityCard` needs rewriting
 not a bug — a new response shape from `audit.override_metrics`, served by `views_admin/verdict.py` (another lane's
 file), and a rewritten card. It needs the owner's word that the buckets are now comparable.
 
+**Fixed in code 2026-11-18/19 (learning-loop LL1 + LL3), saved to `main` 2026-11-19, not published.**
+- LL1: the new AI prediction section counts every rate per engine version
+  (`audit.override_metrics` → `by_version`, shown in `AiPredictionSection.tsx`); `AiReliabilityCard`
+  is deleted. The blended `override_rate` is still returned for old callers.
+- LL3: a per-version split only means something if the version moves whenever the
+  engine's logic moves. `apps/scholarship/model_registry.py` lists the verdict engine's files and
+  `tests/test_model_versions.py` fails when they change and `VERDICT_ENGINE_VERSION` does not.
+- Still open, honestly: (1) about 30 helper modules the engine's files import are not in its
+  fingerprint (listed with reasons as known gaps in the guard), so a change there can still ship
+  under the old version; (2) the 88 decisions under `pre-versioning` stay one blended bucket (no
+  back-fill); (3) the entry closes when LL1 and LL3 are live (the owner decides).
+- LL3's other guard gaps are TD-684; the IPTS names the engine reads through `offer_private` are TD-677; the PDF text-layer modules that no model pins are TD-685.
+
 ### [TD-244] Nothing watches a student whose wallet never gets switched on — low — **RESOLVED 2026-10-03** (Next-tier batch 3: a REPORT, never an email — `FundingSummaryRowSerializer.wallet_not_live` (vircle_id held, no `vircle_activated_at`) and `totals.wallet_not_live`; the Payments funding summary names those students in an amber line above the table; finance key snapshot extended deliberately; manual finance chapter says what to do)
 
 **2026-09-18:** the retired chaser's last two remains are gone — the paused scheduler job
@@ -8800,6 +8813,8 @@ write an `AUDIT` log line but no `staff_activity` row, because `staff_activity` 
 needs its `WIRED` writers, its filter kind and its backfill. Fix: add `staff_archived` / `staff_restored` verbs when the
 Staff tab (M1b) or the activity box needs to show them.
 
+**Status 2026-11-19: not in sprint S1** (lead call, by the M1a ruling at `docs/decisions.md`:1011); stays open.
+
 ### ~~[TD-604] The web's programme-staff mirror does not know the `member` role - low~~ — RESOLVED 2026-11-11 (FIXED, sprint M1b, branch m1b, awaiting push: `member` added to `adminStaff.ts` `PROGRAMME_STAFF_ROLES` and left out of the Admins list (`adminStaff.test.ts`); the Staff tab draws the served `GET admin/staff/` rows unfiltered (`StaffList.test.tsx`); `AppShell` treats a member like a mentor (`AppShell.test.tsx`); the member's menu and landing were pinned in M1a (`navigation.test.ts`, `adminLanding.test.ts`))
 
 **Raised 2026-11-10 by Sprint M1a (left for M1b).** `halatuju-web/src/lib/adminStaff.ts` `PROGRAMME_STAFF_ROLES` lists
@@ -8941,9 +8956,15 @@ safe for the idempotent backup, and the command's docstring warns against pointi
 
 **Raised 2026-11-13 by the M2c review.** `staff_tables.groups_to_leave` returns `[]` for someone with no first sign-in, so the R2 rule "delete only from No group" is skipped for an invitee placed in a group. Fix: read group membership directly instead of through sign-in state, and add a test. *(A · S)*
 
+**Status 2026-11-19:** Owner 19 Nov: an invitee is removed by Cancel, which will archive the person in the same step (off every group table and picker; the address is always free to re-invite; refused while they hold open cases). That is its own step, S1b, after S1. Delete needs no group step for invitees, so TD-615's original fix is not needed and closes when S1b lands.
+
+**Status 2026-11-19: BUILT (sprint S1b, branch access-s1b-cancel-archives, local, not pushed; no migration; Services: both). Closes when S1b is live.** Invitations → Cancel on a STAFF invitation now archives the never-signed-in invitee in the same step (`AdminInvitationCancelView.post` → `staff_archive.archive_locked`, decided under the row lock; the login retired after the commit with `staff_lifecycle.retire_login`): off the group tables and pickers, the address free to be invited again (the re-invite restores the same row), refused 409 `has_unfinished_work` while they hold open cases (the archive's own rule, `staff_work.unfinished`), and refused 400 `not_open` as before once they have signed in. A source invitation is not archived (an archived source row has no way back). Test: `apps/scholarship/tests/test_s1b_cancel_archives.py`.
+
 ### [TD-616] Some delete payloads ignore the `in_a_group` rule - low
 
 **Raised 2026-11-13 by the M2c review.** `staff_delete_rules.delete_fields` has no `in_a_group` check, so the payloads from `views_staff.py` (around :516), `reviewers.py` (around :232), `views_admin/staff.py` (around :156) and the mentors `_delete_fields` can say "deletable" while `/admin/staff/` refuses. The web is unaffected today because it reads the staff list. The server still refuses the delete. Fix: put the check in `delete_fields`, so every caller gets it. *(A · S)*
+
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** `staff_delete_rules.delete_fields` and the mentors row's `_delete_fields` say not `deletable` while `groups_to_leave` is not empty, the same rule every Delete door refuses with `in_a_group`, so the Admins table, the person page, the Reviewers table and page, the Staff list and the Mentors row all agree with the door. Someone who never signed in keeps the narrow Delete (TD-615, owner 19 Nov). Test: `test_s1_team_leftovers.TD616NotDeletableWhileInAGroup`.
 
 ### ~~[TD-617] Are PISMP, MARA preparation and American Degree Program students degree-bound for money? - owner decision (money)~~ — RESOLVED 2026-11-14 (owner ruling, option 1; branch td617, local, awaiting push: the award and the funding estimate are unchanged; an SPM-only PISMP student is never owed higher results (`results_route.is_pismp`, `higher_owed._needs_higher`, `results_route.higher_need`); an American Degree Program or "Persediaan ... Luar Negara" name (MARA, JPA or another sponsor) turns Pathway red with `pathway_funded_or_abroad`, a CONFIDENT_DISQUALIFIER (`verdict_pathway.funded_or_abroad`); review fixes: a 'pismp' code at a university is not PISMP, IPGM / IPGK / Bachelor of Teaching are, `declared_kind` before submit, a frozen 'required' snapshot does not anchor an undeclared PISMP (`higher_results.anchors_on_higher`); `VERDICT_ENGINE_VERSION` 2026-11-14.2; tests `test_td617_pismp_adp.py`)
 
@@ -8960,6 +8981,8 @@ Admins key, stored page key or Reviewers key; the Programme Overview opens by ro
 `sees_every_gift`). The mock-up's "Opens with any page in this box" was not true and was reworded. If a door changes,
 the sentence will be wrong and no test will fail. Fix: serve the two sentences' facts from the API (or pin the door
 sets with a drift test beside `permissionLayout.test.ts`). *(A - S)*
+
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** `halatuju-web/src/lib/__tests__/permissionLayoutOverviewDrift.test.ts` reads the server source and pins each fact behind the two sentences: every key the layout gives a switch is an Admins key or a grantable v2 key (so it seats the person at Admins: `in_admins`, `admin_keys`, `stored_v2`, `GRANTABLE_V2`); a seat at Admins sees every gift (`my_programmes.sees_every_gift`), which opens the landing (`lands`, asked by `my_programmes` and `my_pending`); and the Programme Overview opens every gift for `sees_every_gift`, otherwise only a gift with review work (`may_open_overview`, asked by `overview.py`). Both sentences were found true, so no words changed. It closes when it is live.
 
 ### [TD-619] `mobile-check` does not open a person page, so the Permissions tab's sticky save bar is checked by hand only - low
 
@@ -8978,7 +9001,7 @@ organisation admin can do. The payment seats (who may prepare, check and approve
 the money keys an organisation admin should hold, drop `LEAD_MONEY_UNTIL_M4` and its pins in
 `test_m2b_stored_v2.OrgAdminVocabulary`, and move the five `payments_chain` entries of `LEAD_READS` off the role. *(A - S)*
 
-### ~~[TD-621] `SECTIONS_BY_ROLE` still decides the Overview sections for the other roles - low~~ — BUILT 2026-11-16 (sprint LABELS, branch labels, not pushed; no migration; Services: api)
+### ~~[TD-621] `SECTIONS_BY_ROLE` still decides the Overview sections for the other roles - low~~ — RESOLVED 2026-11-19 (live 17 Nov 11:00, e4d81a8fc..d991c39e8, api-01307-76l, web-01127-g47)
 
 **Raised 2026-11-14 by sprint M3a.** `programme_overview.SECTIONS_BY_ROLE` picks the Overview's sections by role.
 M3 moves the organisation admin's reads onto keys; the `admin`, `qc`, `finance`, `reviewer` and `partner` rows stay
@@ -8988,7 +9011,7 @@ that every section has a key. *(A - S)*
 
 **As built (2026-11-16).** `SECTIONS_BY_ROLE` and `KEYED_ROWS` are deleted. `programme_overview.SECTION_KEYS` names each section's keys, and `sections_for` is one rule over it: the applicant widgets (`funnel`, `attention`, `applications_series`) open on `see_all` held at Admins (`staff_tables.in_admins`; QC's own `see_all` is not an Admins hat, as before); `money` and `money_series` open on `spending` or any `payments.*` key (finance's existing widening, now read from the key); the `qc` and `mine` pages open on `qc` and `review` and are a team member's (`staff_tables.team_member`), so a super and an organisation admin get the five widgets and no page. Partners, sources, mentors and members hold no key, so they are refused (403) with no kind rule. `test_labels_preset_pins.py` (written and green on the base commit) pins every standard preset; `test_labels_key_moves.py` pins that every section has a key and declares each hand-granted move (the biggest: an admin invited since T2, `see_all` + `scholars` with no money key, loses the money widgets until a money key is ticked). Builder calls: `docs/decisions.md`, 2026-11-16, LABELS. **Web follow-up:** comments in `programme/overview/page.tsx`, `programmeOverview.ts`, `navigation.ts`, `admin-api/overview.ts` and the `roleIsDisplayOnly.test.ts` allowlist reason still name `SECTIONS_BY_ROLE` (no web change was in scope).
 
-### ~~[TD-622] `R1_SUPER_TARGET_ROLES` is a role list in the assignment rules - low~~ — BUILT 2026-11-16 (sprint LABELS, branch labels, not pushed; no migration; Services: api)
+### ~~[TD-622] `R1_SUPER_TARGET_ROLES` is a role list in the assignment rules - low~~ — RESOLVED 2026-11-19 (live 17 Nov 11:00, e4d81a8fc..d991c39e8, api-01307-76l, web-01127-g47)
 
 **Raised 2026-11-14 by sprint M3a.** `services/assignment.R1_SUPER_TARGET_ROLES` (`admin`, `qc`, `org_admin`) says
 whom a platform super may hand a case to, by role. It cannot retire until the reviewer target is a key for every
@@ -9011,7 +9034,7 @@ fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name
 
 **Review round (2026-11-15).** QC's assignee filter now loads the reviewer list; `navigation.hasGiftDoor` reads the served `programmes.edit` key (the server's `may_edit_programmes` is key-based, checked first), not the `programmeConfig` row's roles; the A10 scan reads whole files with comments blanked (both quotes, `==`/`!=`, `case`, multi-line arrays, `…roles.includes(`/`.has(`), floor 140 of 156 hits. New debt: TD-631, TD-632.
 
-### [TD-631] Surveys, Development and Announcements open on the `.edit` door while their reads accept `.view` - low
+### ~~[TD-631] Surveys, Development and Announcements open on the `.edit` door while their reads accept `.view` - low~~ — RESOLVED 2026-11-19 (live 16 Nov 11:00, 4619e1af1..b3b4c6114, api-01304-45w, web-01125-npt)
 
 **Raised 2026-11-15 by the TD-623 review (the architect assigns the number).** `SurveysAdmin`, `SurveyResults`, `DevelopmentAdmin`, `ModuleProgressView` and `AnnouncementsAdmin` (and the scholar Surveys/Growth tabs, `scholars/[id]/page.tsx`) draw only for `holdsDoor(role, 'surveys' | 'development' | 'announcements')`, whose keys are `*.edit` (`pageDoors.DOOR_KEYS`), while their list GETs also answer a `*.view` holder (`surveys_read`, `development_read`, `announcements_read`). Under the owner's rule (keys decide what a person views and edits), a person granted only `surveys.view` should see the screen read-only; today they see "no access". Fix: open each screen on its `_read` door, and hide New / Edit / Send behind the `.edit` door; pin both halves with rendered tests. *(A - S)*
 
@@ -9029,7 +9052,7 @@ fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name
 
 **Graduation-message review, moved (sprint THANKS-SCHOLARS, 2026-11-16): off the `review` key.** Owner 2026-11-16: thank-yous are scholar maintenance. Both THANKS routes are RETIRED (the case-page GET `admin/scholarship/applications/<pk>/graduation-messages/` and the POST `admin/graduation-messages/<pk>/review/`, with `may_moderate_thanks` and the case-page card). A thank-you is read and decided on the scholar file (`views_admin/scholar_thanks.py`): read through `_file_for`, decided by `_ThanksBase.may_decide_thanks` (today's scholar-file write rule). No role label and no `review` key gate it. `docs/decisions.md`, 2026-11-16, THANKS-SCHOLARS.
 
-### ~~[TD-633] The admin menu decides some rows by role - low~~ — BUILT 2026-11-16 (sprint NAVKEYS, on main, not live; no migration; Services: both after the review round)
+### ~~[TD-633] The admin menu decides some rows by role - low~~ — RESOLVED 2026-11-19 (live 16 Nov 16:00, b3b4c6114..119ffd0d3, api-01305-cfk, web-01126-5dd)
 
 **Raised 2026-11-15 by TD-623 (its follow-up line; the architect assigns the number).** `staffPermissions.admitsRow` let a row with a server door fall back to its role list when the payload had no `page_keys`, and Applications, Scholars, Spending and Payments were offered by role (with the organisation admin's keys as a second way in). Under the owner's rule ("there is admin, and there are permissions, which determine what the admin views and edits") the served keys should answer every row the server gates by a key. *(A - S)*
 
@@ -9041,9 +9064,13 @@ fallbacks and the `admin` arm, and extend the A10 web scan to refuse a role name
 
 **Raised 2026-11-16 by the sprint LABELS review round (the architect assigns the number).** `assign_reviewer` now refuses a new holder outside the case's organisation (the real defect: a super could hand a case to a reviewer who then got a 404 opening it). The super's picker (`AdminAssignableAdminsView`) is not per-case, so it still lists every organisation's reviewers with `assignable: True`, and the refusal reuses `not_reviewer` ("You can only assign to a reviewer."). Fix: let the picker take the case (or its organisation) and serve `assignable` per case, or give the refusal its own code and wording (`wrong_organisation`, en, ms, ta). *(C - S)*
 
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** Both halves. `assign_reviewer` refuses a holder from another organisation with its own code, `wrong_organisation` (en, ms, ta words; the cockpit and the list page know the code). The picker takes `?application=<id>` and then serves `assignable` per case: another organisation's reviewer is still LISTED (bug #66) but greyed; an id the caller cannot read is ignored. The cockpit passes its case. Tests: `test_s1_team_leftovers.TD634AnotherOrganisationIsSaid`, `page.phone.test.tsx`.
+
 ### [TD-630] An archived holder's open cases are missing from the Staff list's suspended-cases banner - low
 
 **Raised 2026-11-15 by sprint TD-613 (the architect assigns the number).** The banner counts open cases held by people the Staff list returns, and an archived person is not on the default list, so a case held by someone archived is not counted there. The case itself is not stuck: the applications list and the cockpit serve `needs_new_holder` and offer the change. Fix: count open cases whose holder is archived in the banner's existing `open_case_counts` query (one query over the listed ids today), without raising the Staff list's pinned query count (`test_m1a_staff_list.TestQueryBudget`, `test_m2c_members_lifecycle.test_the_query_count_does_not_change`). *(C - S)*
+
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** The banner's count also takes the open cases held by DELETED (archived) people of the listed organisation (or every organisation, or the one a super asks), inside the same query, so the pinned query counts do not move. The banner words now say "suspended or deleted" (en, ms, ta; the Tamil needs a native read). Tests: `test_s1_team_leftovers.TD630ADeletedHolderIsCounted`.
 
 ### [TD-624] The apply-form draft test fails now and then on Cloud Build - low
 
@@ -9078,6 +9105,8 @@ yet scheduled. *(W - M)*
 organisation may hand a case to a reviewer who also has none (`None == None`). The role rule before M3b had the same
 gap, and `_scoped_application` probably refuses first; no such row is known in production. Fix: also require
 `caller.owning_organisation_id is not None`, as `manageable_if_restored` already does, with a test. *(A - S)*
+
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** `may_hand_to` requires the caller to have an organisation before it compares, so `None == None` no longer passes. Tests: `test_s1_team_leftovers.TD627NoOrganisationIsNoMatch`.
 
 ### [TD-628] A Documents-page IC upload after an officer-requested IC goes live with no keep-the-better check - low
 
@@ -9373,6 +9402,8 @@ serve a per-type `replaceable` / `open` flag.
 Fix: serve a flag for each control from the server's own door (as `can_write` is), and have every write reply serve `_detail_payload`, or none of them. For (f), have `claimable` skip a case whose `case_stage` is past the award.
 *(A - S)*
 
+**Status 2026-11-19: BUILT (sprint S1, branch access-s1-leftovers, local, not pushed; no migration; Services: both).** (a)-(c), (e) and (f) are done; **(d) is left, so the item stays open.** The server serves `can_qc`, `can_close_pre_award` and `case_stage` beside `can_write` from `views_admin.base.served_write_flags` (the same functions the doors ask) and `qc_refusal`; the cockpit reads only those (the QC panel, Re-verify IC, the self-QC note, the pre-award Close card, and Save and the phone bar, now hidden when the case is not open). All twelve write replies that answer with the case go through `_detail_payload` (PATCH, verify-accept, nudge, the tranche schedule and actions, maintenance, NRIC lock release, award amount, suggest gaps, request info, add a resolution item and its actions), and a source scan refuses a bare serializer reply. `profile_finalise.run_finalise` and the first-assign draft (`assign_draft.run_draft`) drop a job with no Gemini call when the case is not open (`case_closed`). The scholar file serves `controls.can_write_activity` and the activity box reads it. Tests: `test_s1_served_flags.py`, `test_s1_write_replies_serve_flags.py`, `test_s1_finalise_case_stage.py`, `view.s1Flags.test.tsx`, `view.decisionBar.test.tsx`, `scholars/[id]/page.test.tsx`.
+
 ### [TD-665] The offer reader has no public / private field, so the IPTS rule infers it from names and saved reasons - medium
 
 **Raised 2026-11-18 by the IPTS-offer sprint. Eligibility: an IPTS offer breaks the rule for every gift.** `offer_private` decides "this offer is from an IPTS" from two indirect signals: a private wing or named private body in the read programme, institution or issuer, or a saved genuineness reason that opens with an IPTS opening on a letter whose institution is not a public name we know. Neither is a reading of the letter's own answer to "is this institution public or private?". Fix: add a reader-level field (public / private / unknown) to the offer read, then let `offer_private` read it first and keep the two signals as the fallback. This is a reader change and needs a `MODEL_VERSION` bump and a re-read plan (never re-extract locally).
@@ -9413,3 +9444,168 @@ calls `_revert_to_draft`, which clears the signatures. Someone holding Prepare a
 can edit an item, wait for the maker (and checker) to sign again, then approve: `_barred_from_approving` bars the
 signers and the creator only, not the last editor. **Fix (later):** record the last editor on the run and bar them
 from approving too (the fallback rule stays the owner's Q2), with a test. *(A - S)*
+
+### [TD-NEW-reverify-card] Re-verify IC card shows a button a QC holder without write cannot use - low
+
+**Raised 2026-11-19 by the sprint S1 review (laptop session; placeholder number, the lead assigns one on landing).** ReverifyIcCard (halatuju-web/src/app/admin/scholarship/[id]/view/ReverifyIcCard.tsx:21/35) is gated on canQc but its door (verify-accept) is _require_app_write; a QC holder without write sees a button that returns 403. Predates S1. Fix: gate on canQc && served write, or serve a dedicated flag. *(A - S)*
+
+### [TD-670] pdfium child: its own crash signals are never remembered, and a refund before the memo write can start a second child - low
+
+**Raised 2026-11-19 by the S-visible round 10 review (PASS on safety; every answer stays safe and cost stays bounded).** (1) A child that dies by its OWN signal (SIGSEGV, SIGABRT, a pdfium abort under the 256 MiB cap) is treated like an outside kill: transient, never memoised, so the same bytes spawn again on the next question, each time charged to the document's 20 s budget until it is spent. (2) `pdfium_run.ask` refunds the unused reservation and wakes waiters before it writes the memo, so a waiter can start a duplicate child for the same question. Smaller: a budget window that restarts while a child runs; `_SPENT` set only on the first child's full-time kill; the `killed` flag tested only on POSIX; the unbounded `proc.wait` after a kill (pre-existing). Fix: tell our own kill from the child's own signal (remember SIGSEGV / SIGABRT, never SIGKILL from outside); write the memo before the refund under the same lock; add a Linux test for each.
+*(A - S)*
+
+### [TD-671] A stale QC tab can save "agreed" after the reviewer re-recorded a verdict with the same facts in doubt - low
+
+**Raised 2026-11-19 by the LL2b sprint (adversarial review, accepted). Decision flow, no money effect.** The QC accept keeps an answer only for facts in BOTH the tab's payload and the server's current in-doubt set. If the reviewer re-records the verdict and the SAME facts are in doubt again, a QC tab loaded before that re-record still passes the check and saves "agreed" for a verdict the QC did not see. Fix: the QC tab sends `verdict_decided_at`; `AdminQcDecisionView` refuses the answers (409) when it no longer matches the stored value. Add a test that drives a stale tab.
+*(A - S)*
+
+### [TD-672] A verdict record that is not a dict is skipped by the second-look code with no log line - low
+
+**Raised 2026-11-19 by the LL2b sprint. Silent failure, no money effect.** `second_look.py` treats an `officer_verdict` that is not a dict (and an odd snapshot or status) as "nothing to do", so the QC decision still saves, by design. But nothing is logged, so a damaged record would be invisible. Fix: one log line with the application id and the type found (no content, no names) at each skip, and a test that the line is written.
+*(A - S)*
+
+### [TD-673] Not confirmed: does `reopen_decision` keep or clear `verdict_decided_at` the way the second look expects? - low
+
+**Raised 2026-11-19 by the LL2b sprint. Unproven assumption.** The second look and the QC panel's tap reset key on `verdict_decided_at`. `reopen.reopen_decision` refuses when it is empty (`not_decided`) and the LL2b notes say "a reopen keeps the answers", but no test pins what happens to `verdict_decided_at` across Reopen then re-record. Fix: read `reopen.py` end to end, then add a test that runs Reopen, re-record, second QC round and checks both the date and the stored answers. If the behaviour differs from the roadmap note, correct the note, not the code.
+*(A - S)*
+
+### [TD-674] The AI prediction metrics have no query-budget test - low
+
+**Raised 2026-11-18 by the LL1 sprint (repeated in LL2 and LL2b, which added counts to the same payload).** `prediction_metrics.metrics()` serves the Programme Overview section and `verdict-metrics/`. Its reads grew with LL2 (reasons) and LL2b (`qc_checked`, activity rows) and no test pins how many queries it makes, so a loop added later would pass every gate. Fix: a budget test with a made-up cohort (same style as the applicant-detail 38-query pin), at the figure measured today.
+*(A - S)*
+
+### [TD-675] `programme_overview.py` sits at its growth cap (839 lines); the next change must split it - low
+
+**Raised 2026-11-18 by the LL1 sprint. Code standards, build gate.** The ledgered file may not grow, and LL1 filled the room. The next feature that touches the Overview sections must run the split first, in its own commit, moves only (owner rule 2026-09-19). Suggested cut: one module per group of sections (money, people, AI prediction) behind the existing `SECTION_KEYS` / `sections_for` seam. Never raise the ledger.
+*(A - M)*
+
+### [TD-676] Two files sit at the 600-line cap: `model_registry.py` (599) and `admin-api/applications.ts` (600) - low
+
+**Raised 2026-11-19 by the LL sprint close. Code standards, build gate.** `apps/scholarship/model_registry.py` holds 14 models and their pins (LL3); `halatuju-web/src/lib/admin-api/applications.ts` took the `second_look` and metrics types (LL2b) and is exactly at 600. The next model, pin or detail type fails the 600-line guard. Fix: split before the next change, moves only. Registry: one module per family of models (verdict, genuineness, readers and parsers). `applications.ts`: move the detail types into `applications-detail.ts` (see the older note on `AdminScholarshipDetail`). Do this before TD-685 adds the pdf modules to the register.
+*(A - S)*
+
+### [TD-677] The version guard does not pin the IPTS names the verdict engine reads through `offer_private` - medium
+
+**Raised 2026-11-19 by the LL3 sprint (known gap, noted honestly at the merge). Eligibility: an IPTS offer breaks the rule for every gift.** `offer_private` is in the verdict engine's file list, but the name lists it reads (`offer_reading._PRIVATE_BODIES`, `results_doc._PRIVATE_ARM_PHRASES`, and the `genuineness/offer_is...` helpers) are in files other models own, and are not pinned. Adding a private college name can change a verdict under the old engine version. Fix: pin those names in the verdict engine's `pins` (with their closure) and bump the version when the list changes. Related: TD-665, TD-666 (the lists themselves). Same-text moves of the reasons into constants were re-seeded on 2026-11-19 with dated notes; that must not become a habit.
+*(A - S)*
+
+### [TD-678] The LL4 evidence fingerprint does not cover the course catalogue or the programme catalogue - low
+
+**Raised 2026-11-19 by the LL4 sprint (known gaps). Replay accuracy.** When an application has no `requirements_snapshot`, the engine reads the live programme catalogue (`requirements.py`). The IPTS rule in `offer_private` reads the live course catalogue. Neither is in the fingerprint, so "same evidence" can hide a catalogue change and LL5 may call a catalogue-driven difference an engine difference. Fix: add a cheap catalogue stamp (row count and latest change time, or a hash of the rows the engine reads) to the fingerprint inputs; this changes every future fingerprint, so do it before LL4 is live, or bump `schema`.
+*(A - M)*
+
+### [TD-679] Other LL4 fingerprint gaps: other applications' documents, the clock, the stage at decision, two settings - low
+
+**Raised 2026-11-19 by the LL4 sprint (known gaps). Replay accuracy.** (a) `wrong_slip.stpm_results_on_file` and `identity.latest_live_ic` read the student's OTHER applications; the fingerprint covers this application only. (b) The clock is not hashed (salary-slip age, occupation and utility date checks depend on today). (c) The stage facts move at QC accept or reject, so LL5 must hash under the stage at the decision. (d) `SGD_TO_MYR_RATE` and the model-switching settings are not hashed. (b) and (c) are handled in LL5 by design (today set to `verdict_decided_at`; stage passed in); (a) and (d) need a decision. Fix: LL5 reports these cases apart, or adds the inputs.
+*(A - M)*
+
+### [TD-680] The first-load bundle budget has about 0.3 kB of headroom after the LL sprints - low
+
+**Raised 2026-11-19 by the LL sprint close. Build gate.** The median first-load size is 157.162 kB against the 157.5 kB line. The next string or component on a budgeted route fails `bundle-budget --gate`. Same shape as TD-344 / TD-427 (closed). Fix: find the largest shared string or chunk to remove, or put the new section behind a dynamic import; never raise the line without the owner's word (dated re-baseline, as W1).
+*(A - S)*
+
+### [TD-681] The QC panel does not show the stored second-look answers after the decision, and on Reopen or Reject silence records nothing - low
+
+**Raised 2026-11-19 by the LL2b sprint (as built, known limits). Reporting.** The "Facts in doubt" block goes away once the decision is made, so the QC cannot see what was recorded. On Reopen or Reject only a tap ("Disagree") is stored, so silence records nothing. When the reviewer re-records, `qc_fact_checks` is dropped, so a sent-back case's tap survives only in the `qc_decision` activity meta (`qc_disagreed`, `doubt_*`) and the on-screen numbers undercount overturned facts. Fix: a read-only line on the decided case listing the stored answers; LL5 counts overturns from the activity meta.
+*(A - S)*
+
+### [TD-682] The warning "One fact failed" uses the same words for two or more failed facts - low
+
+**Raised 2026-11-19 by the LL2 sprint (words approved by the owner as one line). Wording.** With Approve and two or three failed facts the soft warning still says "One fact failed. Do you want to accept?". It warns and never blocks, so no wrong save, but it is untrue. Fix: a count-aware string (one / many) in en, ms and ta, owner to approve the words; sync with Sol for ms and ta.
+*(A - S)*
+
+### [TD-683] A recorded decline from before LL2 with a failed green fact cannot be re-saved until a reason is picked - low
+
+**Raised 2026-11-19 by the LL2 sprint (known effect).** The web holds Save until a reason is chosen for each green-then-failed fact. Old rows have no reasons, so a reviewer who re-opens an old decline must pick a reason for a decision made before the question existed. The server never refuses (a missing reason saves). Fix: let the web treat an unchanged old failure as "not given" without forcing a tap, or accept the friction and say so in the Guide.
+*(A - S)*
+
+### [TD-684] LL3 guard gaps beyond the helper modules: settings, two decision files, append-only logs, the census, a scratch-file glob, late changes to pinned names - medium
+
+**Raised 2026-11-19 by the LL3 sprint (known gaps, listed with reasons in `_KNOWN_GAPS_OUTSIDE_THE_WALK`). Eligibility and scoring: a change here can ship under the old version.** (1) Settings that switch behaviour outside any digest: `OFFER_RETRY_MODEL`, `SGD_TO_MYR_RATE`, `SAMPLE_CHECK_ENABLED`. (2) `genuineness/__init__.assess` and `vision/authenticity.py` decide which scorer runs and how old results map, and no model registers them. (3) The logs are append-only by convention plus two checks; an in-place edit of the current digest, a deleted old entry or a backwards version is caught by review only. (4) The `*VERSION` census sees only names inside `apps/scholarship`. (5) `income_engine/*.py` also reads untracked local files, so a scratch file turns the guard red on that machine only. (6) A pinned name changed inside a called function, by `global`, an alias or `setattr` is not seen. (7) The guard has run on Python 3.13 only; its first run on 3.11 is Cloud Build after the push (fails closed). Fix: register (2) as models, add the settings to pins, and tighten (3) by pinning the log's earlier digests in a second file. Related: TD-243 (the helper modules).
+*(A - L)*
+
+### [TD-685] The PDF text-layer modules from OCR-first S-visible are in no model's version fingerprint, so a change there can ship under the old version - medium
+
+**Raised 2026-11-19 by the LL sprint close (found when the register was brought up to main).** `pdf_pages.py` and the new `pdf_layer_guards.py`, `pdf_pdfium_check.py`, `pdf_pdfium_load.py`, `pdf_render_check.py`, `pdfium_run.py` and `pdfium_worker.py` decide which PDF text each scorer is shown (an invisible text layer is no layer). `results_doc` (1.31.0) and `offer_reader` (2.7.0) both depend on them, and so does every other document scorer, but none of those files is in a model's file list, so the guard cannot see a change there (for example a changed render check or page rule). The register was not widened at the close: `model_registry.py` is at 599 of 600 lines (TD-676) and a shared helper would have to be added to about ten models. Fix: after the registry is split, give the document scorers one shared file list for the PDF reading layer, and seed the digests with a dated note. Related: TD-243, TD-684.
+*(A - S)*
+
+### [TD-686] The withdraw-award card's lazy mount: the show rule is written in two places and its tests do not prove the "not mounted" case - low
+
+**Raised 2026-11-19 by the LL sprint close (Opus review of the bundle trim: ship with notes, no blocker; no builder lane was free before the save).** The case page now loads `WithdrawAwardCard` as its own chunk, and mounts it only when the case has a withdraw request (`view.tsx`, through `view/LazyWithdrawAwardCard.tsx`). The reviewer found the mount rule equal to the card's own early return for every value, so nothing is hidden today. Three gaps remain. (1) The rule is written twice (`view.tsx` and `view/WithdrawAwardCard.tsx`) and only a comment ties the two; if one changes alone, a card about award money can go missing. (2) The test for "no request, no card" in `view.withdrawLazy.test.tsx` would still pass with the gate removed, because the lazy import finishes inside the test's wait. (3) No test pins the entry case the server sends for a fresh award: `status` null with `your_step` `request`. Fix: one small `withdrawCardShows(app)` helper in a light shared module, used by both files; mock the loader to prove the card is not mounted; add the entry-case test.
+*(A - S)*
+
+### [TD-687] The case page knows only the case's own gift when it offers reviewers; the list and the server also count the cohort's gift - low
+
+**Raised 2026-11-20 by the #75/#73 follow-ups.** The case page's reviewer drop-down uses `listAssignees` with the case's `programme_id` only, while the list and the server also count the cohort's gift, so a moved case can differ. Fix: serve `gift_ids` on the detail payload and pass them. *(A - S)*
+
+### [TD-688] Case page clean-up review notes (73f40d1f5) - medium
+
+**Raised 2026-11-20 by the review of the Submitted/Awaiting-review clean-up (ship with notes).** (MED) At profile_complete, after an unassign (`doAssign(null)`), notes written by the earlier holder are hidden until someone is assigned again. Fix: show the notes card when notes exist, or add this case to the `docs/decisions.md` "Revisit if" line. (LOW) `view.submittedCleanup.test.tsx` near line 120: the Check 2 test passes even if the box shows; assert `admin.scholarship.outstanding.title` is absent. (LOW) The comment at `AssignAndWitness.tsx` line 50 says the card is hidden at 'shortlisted' only; it is now hidden at Submitted too. *(A - S)*
+
+### [TD-689] The render pre-filter now checks annotation drawings against the page whitelist; an e-signed letter or phone signature with an unusual image or filter could be refused - medium
+
+**Raised 2026-11-20 by the Opus review of the pdfium timing fix (7e2cda522, ship with notes).** `pdf_render_check.py` `annotation()` (about lines 377-400) walks every annotation's appearance stream like page content, so the full resource whitelist now applies to stamps and signatures. A genuine signature or stamp that uses a JPEG2000 image, a shading type outside the two allowed, an inline image, an unusual filter, or an undefined resource name is refused before render. The 832-PDF corpus has no signed PDFs, no form fields and no phone-markup signatures (only links, 4 stamps, 3 pop-ups, 2 notes), so the rule is untested on this class. Owner rule: a genuine letter that does not go green is reputational harm. Fix: inside `annotation()`, catch only `Refused` (whitelist misses) and leave those to the time limit; keep `OverBudget`, which still refuses the crafted file the same way every time. Add a signed-PDF and a form-field fixture (synthetic, no PII). *(A - S)*
+
+### [TD-690] Three crafted shapes still pass the render pre-filter and are stopped only by the time limit - medium
+
+**Raised 2026-11-20 by the same review.** Each ends in a refusal by the time limit, never a wrong read. (1) Font size is not carried into forms: every content walk starts at size 1.0 (about line 297), but pdfium carries the page's `Tf` into a form XObject; a 3000 pt font set on the page and drawn inside a form passed and took 5.3 s. Fix: pass `size`, `th` and `mode` into `form()`/`walk()` like `ctm`. (2) Glyph count is not charged for normal fonts (about lines 299-300): 180,000 glyphs at 1,499 pt passed and took 11.8 s. Fix: charge visible text as painted pixels (glyphs x size squared, capped at the page) as Type 3 fonts are; re-measure the corpus. (3) Text used as a clip (render modes 4-7) is not counted as a clip (about lines 306-309, 370): 500 nested text clips passed and took 22.7 s. Fix: at `ET`, call `self.clip()` when the block used mode 4-7. *(A - S)*
+
+### [TD-691] Render pre-filter low notes: annotation cap, huge Rect, size in points, render-test margin - low
+
+**Raised 2026-11-20 by the same review.** (1) `MAX_PAGE_ANNOTS` 500 (about line 80) refuses a cheap fillable form with 501 fields that pdfium draws in 0.01 s; drawings are already charged, so raise it to about 5,000. (2) An annotation with a huge `/Rect` and a normal BBox fails `_numbers`' 1e9 limit (about line 396); one corpus file has such a Rect (with an empty box, skipped correctly). (3) `MAX_FONT_PT` is in points, not pixels; pages up to 20,000 pt get the same 1,500 pt cap as A4, and `max(th, 1)` over-counts vertical size a little; size x render scale would be fairer. (4) The near-cap genuine render test draws 5,000 clips through the real 20 s limit, about 6x margin. *(A - S)*
+
+### [TD-693] Test asserts on wall-clock time failed on a slow build machine - RESOLVED
+
+**Raised 2026-11-21 after Cloud Build failed two api tests on time alone** (`test_offer_parse_s5.py` line 358: 2.547 s against a 1.0 s limit; `test_ocr_visible_paths.py` line 166 via `_hostile`: 18.93 s against 8.0 s). **Resolved 2026-11-21 (tests only, no app change).** Every elapsed-time assert in the api tests (25, all in `apps/scholarship/tests`) now pins its guard by the work it counts: pypdf content-stream parses and text extractions for the document budgets, `_walk_text_modes` walks for the form fan-out, pdfium children spawned, the time limit handed to each child, the slot wait, the spent-digest mark and the kill log line for the pdfium backstops, and the Python call count at size N and 2N for every linear-time claim. Time stays only as one shared backstop, `WALL_BACKSTOP_S` = 60 s (`apps/scholarship/tests/_timing.py`). `test_no_tight_wall_clock.py` scans every api test file and fails on an elapsed-time assert under the backstop, naming file:line. Limit: a guard that lives only inside a regular expression (the bounded whitespace in `offer_parse` M1) is invisible to the call count, so for that one the backstop is the only time check. *(A - S)*
+
+**Review fix:** the 3 tests (fan-out, few form calls, stream cap) now pin the guard they name, and the pdfium budget test has start-up slack.
+
+### [TD-694] pypdf text layer and parse_govt_offer have no time limit of their own in the web process - medium
+
+**Raised 2026-11-21 by TD-693.** The pypdf text layer (pdf_pages) and parse_govt_offer run in the web process with no time limit of their own; only the work caps bound them (one stream of up to the per-stream token cap is parsed, about 3 s on dev and about 19 s on a slow build machine), plus gunicorn's 120 s worker timeout. Follow-up: lower the per-stream token cap or move that parse behind a time limit. *(A - S)*
+
+### ~~[TD-692] A JPEG2000 image on page content was refused by the render pre-filter; genuine scanned letters were stored unreadable - high~~ — RESOLVED 2026-11-21 (branch td692-nojbig2, built on main without TD-689, local, awaiting push)
+
+**Resolved 2026-11-21.** `/JPXDecode` is allowed as an image's last filter (page content, forms, annotations) and charged like any image by the LARGER of the dictionary's /Width x /Height and the JPX data's own header (SIZ: (Xsiz - XOsiz) x (Ysiz - YOsiz), Csiz components at the deepest component's bits; a JP2 file's ihdr too), read from the stream's first 64 KB (`pdf_jpx.py`; inflated through one plain FlateDecode at most, never decoded). A header that cannot be read (another filter first, two Flates, a Flate with a /Predictor, past the window) is REFUSED (review fix: a 10 x 10 dictionary hid 9000 x 9000). JBIG2 is NOT included (see TD-697): `/JBIG2Decode` is still refused like every other unlisted image filter, the refusal naming it by `repr`, cut to 40 characters. `/ASCIIHexDecode` streams are decoded (linear, at most half the input) in content streams and the pdfium load check (`pdf_layer_guards.ascii_hex`). Reviews 3 and 4: each JPX image is also charged its decode work, SIZ pixels x components x bytes per sample (1 up to 8 bits, 2 up to 16) plus 2,000 a tile, NOT credited for resolution levels (pdfium skips levels only when the image is drawn at half its size or less; a scan up to 400 DPI on its A4 page skips none), capped at 47,000,000 a page and 140,000,000 over one gate call's pages (a 400 DPI A4 colour page is 46,402,517), because with one resolution level OpenJPEG decodes every pixel at full size (three 4890 x 4890 16-bit grey images on each of 3 pages took 15-18 s; 12.1 s in the Linux child). Review 3's halving at NL >= 1 under 10,000,000 / 30,000,000 refused every 300 and 400 DPI colour scan. Linux child, 3 pages at 200 DPI: A4 200 / 300 DPI colour 3.5-6.2 / 4.8-5.8 s, 400 DPI grey 2.8-3.5 s, US letter 300 DPI colour 5.4 s, 15,625 tiles a page 4.6 s. Open (for the lead): a 400 DPI A4 colour JPX scan passes the gate but its 3-page 200 DPI render runs out of the Linux child's 256 MiB after 7-8 s (the stacked render draws in 3.3-3.8 s); a scan with fewer levels than pdfium skips when drawn small (NL 0 at 300 or 400 DPI, stacked) draws blank; code-block size is not charged. The caps do not model OpenJPEG's memory (measured peak 105 MiB for 8484 x 8484 grey). Tests `test_pdf_render_jpx.py` (synthetic only) and `test_render_check_corpus.py` (trivial on an empty root unless `HALATUJU_FIXTURES_ROOT` is set). Corpus through `render_refusal` (870 PDFs, pages up to 30), on main 663584edf: before 4 refused (1 empty, 2 genuine letters with an image filter outside the whitelist, 1 ASCIIHex-encoded font program); after 2 (the empty file, and 1 genuine letter whose JPX image has a /JBIG2Decode mask: TD-697). No genuine letter is refused by the round-0 annotation check. This also corrects round 11's "0 of 832 fixture PDFs" claim (CHANGELOG, `pdf_render_check.py`): that figure skipped the whitelists.
+
+**Raised 2026-11-20 by the TD-689 follow-up.** A JPEG2000 image on page content was refused by the render pre-filter; genuine scanned letters were stored unreadable. *(A - S)*
+
+### [TD-697] A genuine scanned letter whose image has a /JBIG2Decode mask is refused by the render pre-filter and stored unreadable - high
+
+**Raised 2026-11-21 by the TD-692 fallback build.** A genuine scanned letter whose image has a /JBIG2Decode mask is refused by the render pre-filter and stored unreadable (1 of 870 fixtures). The old live code had no pre-filter, so this letter read before. JBIG2 needs a segment-header walk in the gate before it can be allowed: a byte cap alone does not bound pdfium's JBIG2 decode time (a 1 MB stream of empty segments holds the child to its 20 s kill), and globals can come from an array /DecodeParms or be Flate-compressed. *(A - S)*
+
+### [TD-698] A [/FlateDecode /JPXDecode] image's Flate layer is inflated by pdfium with no charge - low
+
+**Raised 2026-11-21 by TD-692 review 3.** For an image whose filters are [/FlateDecode /JPXDecode] the render pre-filter inflates at most 64 KB to read the JPX header, and charges the JPX decode work, but not the Flate layer itself: pdfium inflates the whole stream before OpenJPEG sees it. A Flate bomb in front of a small JPX codestream is bounded only by pdfium's own allocation limits and the child's memory cap and time limit. No fixture letter uses this filter pair (their 3 page-level JPX images are bare /JPXDecode). Fix: inflate (or count) the Flate layer up to a byte cap, like `pdf_pdfium_load._inflated`, and refuse past it. *(A - S)*
+
+### [TD-pending] One page per pdfium child leaves five limits open - medium
+
+**Raised 2026-11-21 by the child-per-page fix** (number not yet given). `pdf_page_pngs` now renders each page in its own child, so a 3-page A4 400 dpi colour JPEG2000 letter renders again under the Linux 256 MiB cap. Open: (1) a failed middle page ends the list there, so the later pages are lost (kept as a prefix because the offer reader labels the k-th PNG "page k" and pairs it with that page's text; keeping later pages needs page numbers carried with each PNG); (2) one A4 600 dpi colour JPX page is over the child cap on its own (measured by the TD-692 measuring agent; the C decoder spikes by about 180 MiB inside the page render); (3) a 3-page 400 dpi colour JPX letter takes about 11-14 s of child time in the Linux child (WSL), out of the document's 20 s budget, which the other readers share, so on a slow machine page 3 may be cut. Cloud Run timing (added by the blank-page guard): on 1 vCPU the same letter may take 11-20 s, and two such letters read at once share that CPU, so a letter can pass the shared 20 s `DOC_BUDGET_S`; pages 2-3 are then cut and page 1 (rendered first) survives. The lead watches the logs for budget cuts ("PDF rasterise stopped on page 2" or "3", a child killed at its limit) after the publish; (4) the 3-page 400 dpi colour Flate stacked render (`pdf_pages_png`) peaks at 270 MiB resident, near the cap of about 296 MiB of address space.; (5) **added 2026-11-21 by the unfiltered-content fix:** an A4 400 dpi colour JPX page (work 46,402,517) has about 1.3% headroom under the 47,000,000 page cap, so with an SMask, CMYK, an extra photo or logo, or 128-256 tiles it is refused by the gate, and with 512 or 1024 tiles it passes the gate but the render child dies (exit -5, out of memory); every 300 dpi variant passes. *(A - S)*
+
+### [TD-pending] The JPX decode work under-charges two shapes - medium
+
+**Raised 2026-11-21 by the unfiltered-content fix** (number not yet given; found by the TD-692 adversarial review). (1) **SIZ bit-depth lie:** the work is charged from the SIZ marker's component depth, so a JPX whose SIZ claims 8-bit over 16-bit data is charged half; the worst passing hostile file, 3 pages x 3 images x 3940 x 3940, renders in 12-13 s in the 256 MiB Linux child (of the 20 s limit). Fix idea: charge from the QCD marker's bit-planes, not SIZ's depth. (2) **Code-block size not charged:** 16 x 16 code-blocks (a 9.7 MB file) render in 8.3 s, more than the pixels' work suggests. The child's time limit is the backstop for both. *(A - S)*
+
+### [TD-pending] The stacked image is blank for a JPX scan with one resolution level - low
+
+**Raised 2026-11-21 by the unfiltered-content fix** (number not yet given). The stacked image (`pdf_pages_png`) of a JPX scan with NL 0 (one resolution level), 2 or more pages at 300 or 400 dpi, draws blank: pdfium asks OpenJPEG to skip levels when the image is drawn small and an NL 0 codestream has none to skip. The old live code did the same. Only `income_declaration.py` uses the stacked image. *(A - S)*
+
+### [TD-pending] A JPEG 2000 page that runs out of the child's memory renders pure white with no error - medium
+
+**Raised 2026-11-21 by the blank-page guard** (number not yet given). Root cause: under the Linux child's 256 MiB address-space cap (`pdfium_run.MEMORY_LIMIT_BYTES`), pdfium's JPEG 2000 decoder (OpenJPEG) can run out of memory and pdfium then draws NOTHING for the image, with no error and no log: a one-page A4 400 dpi colour JPX scan at 1:7 (6.6 MB) rendered mean 255, spread 0 (peak 255 MiB); with no cap it renders properly (peak about 300 MiB). The old live code (no cap) read such letters. Mitigated by the guard (`pdfium_worker.blank_render`): such a page is now a failed render ("cannot read"), never a white picture. Still open: these letters are not READ. Fix options: (a) a higher cap for a render child (Cloud Run instance memory allows it; weigh against two children at once); (b) decode the JPX at reduced resolution (pdfium skips JPX resolution levels when the image is drawn at half its size or less: render a 400 dpi scan at 200 dpi through a smaller draw, or decode it ourselves at a lower level); (c) both. Also covers the 600 dpi page in the row above, item (2). *(A - S)*
+
+### [TD-pending] The AI read takes an all-white page image as a real page, and can store wrong facts - high
+
+**Raised 2026-11-21 by the blank-page guard** (number not yet given; traced by reading the code, no AI call made). The guard stops the one KNOWN source of white pages (a JPX decode that ran out of memory), but any other white image that reaches the readers is still read as a real page. (a) **Offer path:** `offer_reader.offer_inputs` (offer_reader.py:296) passes the white PNG as a valid image; there is no "not an offer letter" field (OFFER_SCHEMA holds only offer fields and warnings), so a blank page answers every field empty. `p1_blank` (offer_reader.py:401) runs the ONE second read on page 1 only, which is blank again; `read_offer` returns no error (offer_reader.py:537); `offer_ic.guard_nric` sets `candidate_nric_source` to 'none' (offer_ic.py:105), and that one non-empty string makes `vision/judge.py:63` (`_any_field_filled`) skip 'wrong_doc', so with no name to check the stored verdict is **'ok'** (vision/judge.py:90) with programme and institution empty (checked by running `clean_offer_fields` and `doc_student_verdict` on an all-empty answer). The student is shown an accepted offer letter that says nothing. Wrong facts: yes (an empty read stored as a good one). (b) **Income path:** `income_declaration.read_approval` sends the stacked image (`pdf_pages_png`); only None goes to `failed('no image')` (income_declaration.py:156, the retry window, then "could not read"). A white stack is read: the model answers no header, no signer, no stamp, no signature, stored as a CHECKED read (income_declaration.py:160), so `approval_missing` (income_declaration.py:385) returns ('header', 'approver'): the document is stored **unapproved**, its income does not count, and the family is coached to bring a signed form. Wrong facts: yes (unread stored as unapproved); one white page inside a 3-page stack can hide the page that carries the approval the same way. Other doc types through `gemini_read` get 'wrong_doc' (judge.py:63-64), not "unreadable"; Cloud Vision OCR of a white page returns empty text with no error; only the readers that need text then say "no text read" (unreadable). Fix: treat an all-empty AI answer on an image (or an image that is pure white) as "cannot read" in `_build_read_result` (vision/field_extraction.py:289), and stop counting `candidate_nric_source` as a filled field. *(A - S)*
+
+### [TD-pending] The blank-page guard misses a white page that carries any other mark, and can trip on a few odd shapes - medium
+
+**Raised 2026-11-21 by the blank-page guard's adversarial review** (number not yet given). The guard (`pdfium_worker.blank_render`) needs the WHOLE render to be pure white. (1) **Missed trip:** if anything else draws on the page (a scanner's footer bar, a page number, a stamp), the render is not pure white, so a JPX that ran out of the child's memory goes to the AI read as before and is stored as an empty 'ok' (see the all-white-page row above). Measured on Linux with the real 1:7 letter: a 120 x 4 pt footer bar (mean 254.7) and the text "Page 1 of 1" (mean 255.0, spread 2.5) both went through. Fix idea: test whether the JPX image's own on-page area is white, not the whole page; the "all-empty AI answer = cannot read" fix covers it too. (2) **False trips:** the guard also fires when a dense JPX is drawn but hidden: a white fill over it, placed off the page or outside the CropBox, an all-zero /SMask, optional content switched off, or a pure-white JPX padded with a large comment or metadata box. Those pages render blank anyway, but a trip on page 1 now drops pages 2-3 from the read, a trip on page 2 drops page 3, and any trip makes the stacked income-declaration read return None. None of these shapes is among the 1,234 fixture pages. Fix idea: count only a JPX whose bounds meet the visible crop box and which is not optional-content hidden (`_oc_marked`), and on a pure-white page decode the JPX itself (nothing back = a real failure; a white image = a genuinely white page, keep it); discount metadata boxes in the density test. (3) **Evidence:** the fixture sweep's "0 of 1,234 pages trip" covers only 3 JPX images, so it says little about JPX false trips. *(A - S)*
+
+### [TD-pending] A reference with the wrong generation number hides an object from the render check, so every cap is skipped - high
+
+**Raised 2026-11-21 by the unfiltered-content fix's adversarial review** (number not yet given). Pre-existing (not a regression; the old live code had no render check at all). An indirect reference whose generation number does not match the object (`/Contents 5 1 R` pointing at `5 0 obj`, or the reverse) resolves to None in pypdf (5.9.0 and 6.21.4), so `pdf_render_check` skips the walk and the file passes, while pdfium follows the reference by object NUMBER and draws it (20,000 full-page fills, past the paint cap). The same works on `/Annots [7 1 R]`, `/Annots 8 1 R` and an appearance stream `/AP /N 6 1 R`, and probably an image's /SMask (untested). The only backstop is the render child's time and memory limits. Fix idea: in the one resolver the check uses, resolve such a reference by object number as pdfium does (or refuse the file), then walk and charge it. *(A - S)*
+
+### [TD-pending] Two small render-check edges - low
+
+**Raised 2026-11-21 by the unfiltered-content fix's adversarial review** (number not yet given). (1) `/Contents null`, and a /Contents array holding a null or a missing object, are refused while pdfium renders the page (pre-existing; no fixture letter has it). (2) The census tool (`eval/render_check_corpus.py`) asks for up to 30 pages, stricter on JPX than production's 3: a 4-page 400 dpi A4 colour JPX letter is refused there at the 140,000,000 per-call JPX cap (it passed before only because its pages were skipped), so a census refusal does not always mean production would refuse. *(A - S)*

@@ -165,7 +165,7 @@ export interface StaffRow {
 }
 
 /** The Staff list. A super may name an `organisation`; everybody else reads their own. M2c (owner R1):
- *  `suspended_cases` = the open cases suspended members still hold, sent only to whoever manages the team. */
+ *  `suspended_cases` = the open cases suspended or deleted (TD-630) members still hold, sent only to whoever manages the team. */
 export async function getStaffList(options?: ApiOptions, organisation?: number) {
   const q = organisation === undefined ? '' : `?organisation=${organisation}`
   return adminFetch<{ staff: StaffRow[]; suspended_cases?: number }>(`/api/v1/admin/staff/${q}`, options)

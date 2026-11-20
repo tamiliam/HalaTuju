@@ -4219,7 +4219,6 @@
       "assign": {
         "assignedTitle": "Reviewer assigned",
         "lockedHint": "Locked — a decision has been recorded. Reopen the decision to change the reviewer.",
-        "doesNotCover": "Does not cover {gift}",
         "notReadyHint": "Assignment opens once the applicant's queries are answered, or their time to answer has passed.",
         "needsNewHolderHint": "The reviewer on this case can no longer review it. Give it to someone in Reviewers.",
         "reloadAfterAssign": "Assigned. Reload the page to see the latest.",
@@ -4232,7 +4231,8 @@
           "reviewer_paused": "They have paused themselves, so no new cases can be given to them. They can start again from their own profile, or you can bring them back on the Reviewers page.",
           "gift_mismatch": "This reviewer covers a different gift, so this case cannot be given to them. Choose a reviewer for this gift, or one who covers every gift.",
           "not_signed_in": "{name} hasn't signed in yet. Cases can go to them once they have.",
-          "self_assign": "You cannot give a case to yourself."
+          "self_assign": "You cannot give a case to yourself.",
+          "wrong_organisation": "This reviewer is in another organisation. Choose someone from this case's organisation."
         }
       },
       "graduationThanks": {
@@ -4282,14 +4282,10 @@
       },
       "reviewerNotes": {
         "title": "Org admin and reviewer notes",
-        "introOrgAdmin": "Between you and the assigned reviewer. Quality control can read them. Never seen by the student or sponsors.",
-        "introReviewer": "Between you and your org admin. Quality control can read them. Never seen by the student or sponsors.",
-        "introReader": "Between the org admin and the assigned reviewer. Read-only.",
         "empty": "No notes yet.",
         "addLabel": "Add a note",
         "placeholder": "What should the reviewer look into?",
         "counter": "{count} / {max}",
-        "appendOnly": "Notes can't be edited or deleted. To correct one, add another.",
         "add": "Add note",
         "adding": "Adding…",
         "replyLabel": "Reply",
@@ -4815,13 +4811,6 @@
         "hide": "Hide the student's own words"
       },
       "studentNote": "Student's note",
-      "reliability": {
-        "title": "AI reliability",
-        "subtitle": "How often the AI's suggestion matched the reviewer's decision — across {n} reviewed application(s).",
-        "overall": "Overall",
-        "empty": "No reviewed applications yet — the AI's reliability will appear here once reviewers record their verdicts.",
-        "mixedEngines": "This figure averages {n} versions of the checking engine ({versions}). The engine has changed since some of these decisions were recorded, so read the trend with care."
-      },
       "verdict": {
         "title": "AI Prediction",
         "intro": "AI has attempted to check these details, but we need you to make the final judgement.",
@@ -5164,7 +5153,14 @@
         "chooseOutcome": "Choose Recommend or Decline.",
         "savedNotSubmitted": "Your verdict was saved on {date}, but this case has not moved to QC yet. Press Approve again to submit it.",
         "savedNotSubmittedDecline": "Your decline was saved on {date}, but this case has not been sent to QC yet. Press Decline again to send it.",
-        "saveNeedsReady": "Submit your findings, rate the AI and add your conclusion.",
+        "missing": {
+          "heading": "Still to do:",
+          "submit": "Submit your interview findings",
+          "answerOne": "Answer 1 interview question in your findings",
+          "answerMany": "Answer {count} interview questions in your findings",
+          "rate": "Check {facts}",
+          "conclusion": "Write your conclusion"
+        },
         "findingsIncomplete": "Answer every interview question before deciding ({count} left).",
         "reasonPlaceholder": "Make your case: why this student deserves to be sponsored — or does NOT meet the {programmeName} requirements.",
         "save": "Save & generate final profile",
@@ -5196,7 +5192,19 @@
         "finaliseEngineError": "The final profile could not be written. Please press again.",
         "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
         "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
-        "rateTitle": "Rate AI Prediction"
+        "rateTitle": "Check the four facts",
+        "rateHelp": "Pass = this fact is true for the student. Fail = it is not true, or not proven.",
+        "failedAcceptWarn": "One fact failed. Do you want to accept?",
+        "failWhy": "Why is this fact not true?",
+        "failReasonLabel": "Reason",
+        "pickReason": "Pick a reason for the failed fact.",
+        "failReason": {
+          "engine_wrong": "The rule is wrong",
+          "read_wrong": "The document was read wrong",
+          "new_information": "New information (interview, call)",
+          "programme_rule": "A programme rule",
+          "other": "Other"
+        }
       },
       "qcDecision": {
         "title": "Quality control",
@@ -5232,7 +5240,17 @@
         "overrideConfirm": "Record reason & accept",
         "reverifyTitle": "The IC lock was released",
         "reverifyHint": "This intake has a \"Born in\" rule and the student's IC is no longer locked, so Accept is refused. Re-verify the IC here: it locks the IC again and checks that no other account holds it verified. The case stays awaiting QC and the reviewer is not told. Unless you are a super admin, someone else then does the QC.",
-        "reverifyButton": "Re-verify IC"
+        "reverifyButton": "Re-verify IC",
+        "secondLook": {
+          "title": "Facts in doubt",
+          "help": "The reviewer and the AI did not agree on these facts. You agree with the reviewer unless you tap Disagree.",
+          "aiSaid": "AI said",
+          "reviewerSaid": "Reviewer said",
+          "disagree": "Disagree with the reviewer",
+          "undo": "You disagree. Tap to undo.",
+          "agree": "You agree with the reviewer.",
+          "butDecision": "but the decision is {decision}"
+        }
       },
       "caveats": {
         "studentAnswer": "Student's answer",
@@ -5491,7 +5509,6 @@
         "help": "For a student whose documents already show they don't qualify. No interview is held.",
         "unassignFirst": "To reject before interview, set the reviewer back to Unassigned first.",
         "unassignAsk": "To reject before interview, ask someone who assigns reviewers to set the reviewer back to Unassigned first.",
-        "reasonLabel": "Main reason",
         "reasonPlaceholder": "Choose the main reason",
         "reasons": {
           "not_b40": "Not B40",
@@ -5502,7 +5519,8 @@
           "other": "Other"
         },
         "whyLabel": "Why are you rejecting?",
-        "whyHint": "Kept on the student's file for your team. Never sent to the student.",
+        "detailsLabel": "Additional details",
+        "whyHint": "Confidential. Not shared with the student.",
         "counter": "{count} / {max} characters",
         "submit": "Reject student",
         "cancel": "Cancel",
@@ -5520,7 +5538,7 @@
           "bad_status": "Only a student at Awaiting review can be rejected before interview.",
           "has_reviewer": "This student has a reviewer now, so they cannot be rejected before interview.",
           "reason_required": "Choose the main reason.",
-          "comments_required": "Say why you are rejecting. The note stays on the file for your team.",
+          "comments_required": "Add the details before you reject.",
           "comments_too_long": "The note can be 2,000 characters at most.",
           "generic": "Couldn't reject this student. Please try again."
         },
@@ -7604,6 +7622,52 @@
         "completed": "Checks completed",
         "turnaround": "Students waited a median of {days} days from the reviewer's verdict to your check.",
         "none": "Nothing is waiting to be checked in this gift."
+      },
+      "aiPrediction": {
+        "title": "AI prediction",
+        "sub": "How often reviewers agreed with what the AI predicted. The AI checks four facts on each application; a reviewer then makes the final call.",
+        "empty": "No reviewed applications yet. Figures will appear once reviewers record their verdicts.",
+        "sureTile": "When the AI was sure, reviewers agreed",
+        "doubtTile": "When the AI was in doubt, reviewers passed the fact",
+        "factsOf": "{a} of {b} facts",
+        "xOfY": "{a} of {b}",
+        "fewCases": "Few cases",
+        "trend": "When the AI was sure, by month",
+        "trendChart": "Share of facts the reviewer agreed with when the AI was sure, by month",
+        "trendHint": "Each figure is the share of facts the AI was sure about that a reviewer agreed with. Months with few cases show the count only.",
+        "byFact": "By fact",
+        "doubts": "Doubts that reviewers pass most often",
+        "doubtsHint": "A doubt that reviewers often pass may be one the AI is too cautious about.",
+        "decision": "Decision",
+        "decisionNote": "What the quality check decided",
+        "qcAgreed": "accepted at the quality check",
+        "qcOther": "Sent back: {reopen}. Rejected: {reject}.",
+        "byVersion": "By engine version",
+        "byReviewer": "By reviewer",
+        "leadsOnly": "Leads only",
+        "reviewerHint": "Shown to leads only, to support reviewers and not to rank them.",
+        "footer": "Only the facts in doubt are checked by the QC. The other numbers compare the AI with the reviewer.",
+        "allProgrammes": "All programmes together.",
+        "assignedOnly": "Your assigned applicants only.",
+        "versionUnknown": "Unknown version",
+        "unmatchedReviewer": "Reviewer not matched to an account",
+        "notGiven": "Not given",
+        "unnamedReviewer": "Reviewer not named",
+        "qcChecked": "Facts in doubt, checked by the QC",
+        "col": {
+          "qcChecked": "Checked by the QC",
+          "qcAgreed": "Agreed with the reviewer",
+          "qcDisagreed": "Disagreed with the reviewer",
+          "reasons": "Why it failed",
+          "sure": "AI sure, reviewer agreed",
+          "doubt": "AI in doubt, reviewer passed",
+          "fact": "Fact",
+          "doubtCode": "Doubt",
+          "passed": "Reviewer passed",
+          "version": "Version",
+          "reviewer": "Reviewer",
+          "applications": "Applications"
+        }
       }
     },
     "programme": {
@@ -7762,9 +7826,11 @@
       "resent": "Invitation sent again.",
       "resendFailed": "We could not send it. The row below shows what happened.",
       "cancel": "Cancel invitation",
-      "cancelConfirm": "Cancel the invitation to {email}? Its link will stop working. If it gave them an account they never used, that account is switched off too.",
+      "cancelConfirm": "Cancel the invitation to {email}? Its link will stop working. If they were invited into a group, they are removed from it, and you can invite the same address again later.",
       "cancelled": "Invitation cancelled.",
       "cancelFailed": "We could not cancel it. Reload the page and try again.",
+      "cancelHasWork": "They still have work waiting on them, such as cases or scholars, so the invitation was not cancelled. Hand that work to someone else first.",
+      "cancelledLoginFailed": "Cancelled, but their sign-in could not be removed. Tell support.",
       "waitingHeading": "Waiting to reply",
       "allAccepted": "Nobody is waiting — everyone invited has accepted.",
       "seePeople": "See who is in",
@@ -7836,12 +7902,17 @@
         "name": "Name",
         "code": "Short code",
         "codeHint": "Lower-case letters, numbers and hyphens. Used in the web address.",
-        "newCode": "New short code"
+        "newCode": "New short code",
+        "nameEn": "Name in English",
+        "nameMs": "Name in Malay (optional)",
+        "nameTa": "Name in Tamil (optional)",
+        "nameHint": "If the Malay or Tamil name is left blank, the English name is shown instead."
       },
       "error": {
         "badCode": "The short code may use lower case letters, numbers and hyphens only.",
         "codeTaken": "That short code is already in use. Please choose another.",
         "nameRequired": "Enter a name for the programme.",
+        "nameTooLong": "That name is too long. Please keep each name to 200 characters or fewer.",
         "hasOpenYear": "This programme is accepting applications. Close its intake year first.",
         "noOrg": "This account is not linked to an organisation.",
         "generic": "The change could not be saved. No changes were made.",
@@ -7858,6 +7929,10 @@
       "copied": "Link copied",
       "copyFailed": "The link could not be copied. It is: {url}",
       "changeCode": "Change the short code",
+      "changeName": "Change the name",
+      "nameTitle": "Change the name of {name}",
+      "nameCta": "Save the name",
+      "nameKeeps": "Only the name changes. The short code and the apply link stay as they are, so links already printed or sent keep working.",
       "renameTitle": "Change the short code for {name}",
       "applyLinkLabel": "The link applicants follow today",
       "renameKeeps": "The old short code keeps working. Links already printed or sent still reach this gift programme.",
@@ -10042,8 +10117,8 @@
       "filterAll": "Everyone",
       "noMatch": "Nobody matches that.",
       "suspendedCases": {
-        "one": "1 open case is held by a suspended member. Restore them or reassign the case.",
-        "many": "{n} open cases are held by suspended members. Restore them or reassign the cases."
+        "one": "1 open case is held by a suspended or deleted member. Reassign the case, or restore a suspended member.",
+        "many": "{n} open cases are held by suspended or deleted members. Reassign the cases, or restore the suspended members."
       },
       "showSuspended": "Show suspended members"
     }

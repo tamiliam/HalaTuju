@@ -31,7 +31,7 @@ import type { BursaryAgreement } from '@/lib/api'
 import type { T } from './shared'
 
 export function PostAwardPanels({
-  app, t, busy, isSuper, canWrite, canTranche, orgSuper, mayOpenFile,
+  app, t, busy, isSuper, canWrite, canTranche, canClosePreAward, mayOpenFile,
   bursary, bursaryMsg, doCountersignBursary, doWitnessBursary,
   disbAmount, setDisbAmount, disbLabel, setDisbLabel, disbMsg,
   doScheduleTranche, doDisbursementAction, doSetSubstate,
@@ -44,8 +44,8 @@ export function PostAwardPanels({
   canWrite: boolean
   /** The served `can_tranche` (`views_admin.base.may_tranche`, the api's tranche door): Release, Withhold, Schedule. */
   canTranche: boolean
-  /** super or org_admin — the only roles the api lets close a PRE-award case (TD-352). */
-  orgSuper: boolean
+  /** The served `can_close_pre_award` (S1, TD-664 a): the close door's own pre-award answer (TD-352). */
+  canClosePreAward: boolean
   /** Sprint S1: whether the reader may open the Scholars page (`mayOpen('/admin/scholars')`, the menu's
    *  rule): the `scholars` key, not this cockpit's Applications rule. Without it, no "Open scholar file".
    *  ⚠ The menu rule also admits staff who mentor, and this payload does not say whether the viewer
@@ -335,7 +335,7 @@ export function PostAwardPanels({
           open after closure). Before an award: no offboarding checklist, and the owner's
           explainer says when close fits, what to use instead, and what the student is emailed. */}
       {/* Since maintenance S3 a POST-award close is on the scholar file; only a pre-award one here. */}
-      {((closeOffer(app.status, orgSuper).show && closeOffer(app.status, orgSuper).preAward)
+      {((closeOffer(app.status, canClosePreAward).show && closeOffer(app.status, canClosePreAward).preAward)
         || app.status === 'closed') && (
         <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
@@ -357,7 +357,7 @@ export function PostAwardPanels({
             </div>
           ) : canWrite ? (
             <>
-              {closeOffer(app.status, orgSuper).preAward ? (
+              {closeOffer(app.status, canClosePreAward).preAward ? (
                 // TD-488 (owner-approved explainer, 2026-11-07): close is extraordinary — it shows
                 // at submitted / recommended only, and says when to use Reject or QC instead.
                 <div className="space-y-1 text-xs text-ground-500" data-testid="close-guide">
@@ -375,7 +375,7 @@ export function PostAwardPanels({
                 <p className="text-xs text-ground-500">{t('admin.closure.note')}</p>
               )}
               {/* Offboarding checklist — informational guidance before closing a funded file. */}
-              {!closeOffer(app.status, orgSuper).preAward && (
+              {!closeOffer(app.status, canClosePreAward).preAward && (
                 <ul className="list-disc ml-5 text-xs text-ground-500 space-y-0.5">
                   {(['finalDisbursement', 'thankYou', 'records'] as const).map((k) => (
                     <li key={k}>{t(`admin.closure.checklist.${k}`)}</li>
@@ -389,7 +389,7 @@ export function PostAwardPanels({
                     onChange={(e) => setCloseReason(e.target.value as ClosureReason | '')}
                     className="rounded-lg border px-3 py-1.5 text-sm max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     <option value="">{t('admin.closure.reasonUnset')}</option>
-                    {closeOffer(app.status, orgSuper).reasons.map((r) => (
+                    {closeOffer(app.status, canClosePreAward).reasons.map((r) => (
                       <option key={r} value={r}>{t(`admin.closure.reason.${r}`)}</option>
                     ))}
                   </select>

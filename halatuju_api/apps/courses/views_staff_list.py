@@ -14,7 +14,9 @@ scholarship door (`views_admin.scholarship_staff()`). No phone and no email (O9,
 Sprint M2c (owner R1): `suspended_cases`, for a viewer holding `manage_team` only, is the open cases (the
 `staff_lifecycle.OPEN_CASE_STATUSES` rule) held by the SUSPENDED people listed - summed from the rows, so
 no extra query. It is a banner on the Members tab, not an Overview card: `my-pending` is at its admitted
-query count and the ledger is never raised (brief C4 fallback).
+query count and the ledger is never raised (brief C4 fallback). TD-630 (sprint S1): it also counts the
+open cases held by ARCHIVED people of the listed organisation (every organisation for a super with none
+named), who are never listed - inside the same open-cases query, so the query count does not change.
 """
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -36,6 +38,7 @@ class StaffListView(PartnerAdminMixin, APIView):
         people = (PartnerAdmin.objects.select_related('mentor', 'owning_organisation')
                   .filter(archived_at=None, first_seen_at__isnull=False, role__in=LISTED_ROLES)
                   .order_by('name', 'id'))
+        archived_of = 'every' if admin.is_super else admin.owning_organisation_id   # TD-630
         if admin.is_super:
             asked = request.query_params.get('organisation')
             if asked not in (None, ''):
@@ -45,13 +48,16 @@ class StaffListView(PartnerAdminMixin, APIView):
                 if not PartnerOrganisation.objects.filter(pk=int(asked)).exists():
                     return Response({'error': 'Organisation not found', 'code': 'not_found'}, status=404)
                 people = people.filter(owning_organisation_id=int(asked))
+                archived_of = int(asked)
         else:
             people = people.filter(owning_organisation_id=admin.owning_organisation_id)
             if admin.owning_organisation_id is None:
                 people = people.none()
         _, staff_lifecycle = scholarship_staff()
-        rows = staff_lifecycle.staff_list_rows(admin, people)
-        body = {'staff': rows}
-        if admin.has_perm('manage_team'):   # M2c (owner R1): the banner, read from the rows (no query)
-            body['suspended_cases'] = sum(r['work']['reviewers']['open_cases'] for r in rows if r['suspended'])
-        return Response(body)
+        if not admin.has_perm('manage_team'):
+            return Response({'staff': staff_lifecycle.staff_list_rows(admin, people)})
+        rows, archived_open = (staff_lifecycle.staff_list_rows(admin, people, archived_of) if archived_of is not None
+                               else (staff_lifecycle.staff_list_rows(admin, people), 0))
+        # M2c (owner R1): the banner, read from the rows; TD-630: plus the archived holders' (same query)
+        held = sum(r['work']['reviewers']['open_cases'] for r in rows if r['suspended'])
+        return Response({'staff': rows, 'suspended_cases': held + archived_open})

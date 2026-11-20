@@ -7,7 +7,8 @@
  * #75 re-check 5 moved the assign controls into `AssignControls` so the reject panel keeps one slot.
  */
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
-import { reviewerCardState, assignOptions } from '@/lib/officerCockpit'
+import { reviewerCardState } from '@/lib/officerCockpit'
+import { listAssignees, type AssignCandidate } from '@/lib/assignOptions'
 import type { AdminScholarshipDetail, SourceItem } from '@/lib/admin-api'
 
 import type { T } from './shared'
@@ -24,7 +25,7 @@ export function AssignAndWitness({
   isSuper: boolean
   canAssign: boolean
   decisionLocked: boolean
-  admins: Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>
+  admins: AssignCandidate[]
   doAssign: (adminId: number | null) => void
   witnessCardVisible: boolean
   activeSources: SourceItem[]
@@ -154,7 +155,7 @@ function AssignControls({ app, t, busy, isSuper, card, decisionLocked, admins, d
   isSuper: boolean
   card: ReturnType<typeof reviewerCardState>
   decisionLocked: boolean
-  admins: Array<{ id: number; name: string; role: string; gifts?: Array<{ id: number }> }>
+  admins: AssignCandidate[]
   doAssign: (adminId: number | null) => void
 }) {
   const ready = app.query_sla?.ready_for_assignment ?? false
@@ -164,11 +165,11 @@ function AssignControls({ app, t, busy, isSuper, card, decisionLocked, admins, d
   // the holder can no longer work the case.
   const assignLocked = card.locked
   const assigned = !!app.assigned_to_id
-  const options = assignOptions(admins, {
-    isSuper,
-    currentAssigneeId: app.assigned_to_id,
-    applicationProgrammeId: app.programme_id ?? null,
-  })
+  // ONE rule with the case list (`listAssignees`): the holder, plus the active reviewers of this gift.
+  const options = listAssignees(admins, {
+    assigned_to_id: app.assigned_to_id,
+    gift_ids: app.programme_id ? [app.programme_id] : [],
+  }, isSuper)
   // TD-613: a holder who has left (suspended / archived) is not in `admins`; still name them,
   // so the select shows its own value instead of reading "Unassigned".
   const holderMissing = assigned && !options.some((a) => a.id === app.assigned_to_id)
@@ -189,30 +190,18 @@ function AssignControls({ app, t, busy, isSuper, card, decisionLocked, admins, d
         {holderMissing && (
           <option value={app.assigned_to_id ?? ''} disabled>{app.assigned_to_name || app.assigned_to_id}</option>
         )}
-        {/* Assignable options. The backend already returns the org-fenced, review-capable set
-            (AdminAssignableAdminsView) and SERVES `assignable` per row (#39 S3: may_assign_to —
-            a super any review target, an org_admin their own org's `review` holders; the assign
-            endpoint rejects anything else as bad_assignee). The CURRENT assignee always renders so a later
-            role change never hides them (#66: assigned as qc → promoted to org_admin → was
-            showing "Unassigned"). Role suffixed so a senior assignee is distinguishable.
-            ⚠ A PAUSED reviewer is DISABLED here, not removed — for the same #66 reason, and
-            because a name that simply vanishes leaves the reader guessing. The label says why.
-            The person already holding the case is never disabled: pause stops NEW work, and
-            disabling the current value would make the select unable to show its own state.
-            ⚠ A reviewer who does not cover THIS case's gift is greyed the same way, "Does not
-            cover <gift>" (S-ASSIGN; multi-gift 2026-11-06). Same two reasons, and an empty gift
-            list (every gift) or a case of unknown gift greys nobody.
-            All the rules live in the pure `assignOptions`, where they are tested. */}
-        {options
-          .map((a) => (
-            <option key={a.id} value={a.id} disabled={a.disabled}>
-              {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
-              {a.reason === 'paused' ? ` — ${t('admin.reviewers.status.paused')}` : ''}
-              {a.reason === 'otherGift'
-                ? ` — ${t('admin.scholarship.assign.doesNotCover', { gift: app.programme?.name ?? '' })}`
-                : ''}
-            </option>
-          ))}
+        {/* Who is offered: the SAME rule as the case list (`listAssignees`, tested there). The server
+            serves the org-fenced, review-capable set (AdminAssignableAdminsView) with `assignable`
+            per row (#39 S3: may_assign_to); the CURRENT holder always renders (#66: assigned as qc →
+            promoted to org_admin → was showing "Unassigned"), even paused or of another gift. Everyone
+            else is offered only when active and covering THIS case's gift; the rest are not shown
+            (no greying, no reason). An empty gift list (every gift) or a case of unknown gift hides
+            nobody by gift. Role suffixed so a senior assignee is distinguishable. */}
+        {options.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
+          </option>
+        ))}
       </select>
       {card.needsNewHolder && !assignLocked ? (
         <p className="text-xs text-caution-700" data-needs-new-holder>

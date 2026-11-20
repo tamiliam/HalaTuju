@@ -10,9 +10,9 @@ from rest_framework.response import Response
 from .. import pool, profile_finalise
 from ..models import ApplicantDocument, SponsorProfile
 from ..serializers import ApplicantDocumentSerializer
-from ..serializers_admin import AdminApplicationDetailSerializer, SponsorProfileSerializer
-
+from ..serializers_admin import SponsorProfileSerializer
 from ..staff_lifecycle import PAST_AWARD, case_stage
+from .applications import _detail_payload
 from .base import _AdminBase
 
 
@@ -143,7 +143,7 @@ class AdminSuggestGapsView(_AdminBase):
         app.interview_gaps = (existing + result['gaps']) if append else result['gaps']
         app.interview_gaps_run_at = timezone.now()
         app.save(update_fields=['interview_gaps', 'interview_gaps_run_at'])
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(_detail_payload(app, admin))
 
 
 class AdminProfileEditView(_AdminBase):

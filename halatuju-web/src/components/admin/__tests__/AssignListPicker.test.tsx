@@ -63,6 +63,16 @@ describe('who the list offers for one case', () => {
     expect(ids(listAssignees(roster, row({ gift_ids: undefined }), true))).toEqual([1, 2, 3])
   })
 
+  it('hides a paused reviewer, but keeps a paused holder', () => {
+    const paused = [rv(1, { paused: true }), rv(3)]
+    expect(ids(listAssignees(paused, row(), true))).toEqual([3])
+    expect(ids(listAssignees(paused, row({ assigned_to_id: 1 }), true))).toEqual([1, 3])
+  })
+
+  it('hides a paused reviewer even when the case\'s gift is unknown', () => {
+    expect(ids(listAssignees([rv(1, { paused: true }), rv(3)], row({ gift_ids: [] }), true))).toEqual([3])
+  })
+
   it('renders the holder as an option and hides the others', () => {
     render(<select aria-label="assign"><AssigneeOptions reviewers={roster} row={row({ assigned_to_id: 5 })} isSuper /></select>)
     const names = screen.getAllByRole('option').map((o) => o.textContent)

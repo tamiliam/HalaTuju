@@ -71,7 +71,10 @@ def _release(sp_id, token, *, give_up):
 
 
 def run_draft(sp_id):
-    """Claim, draft, release. Returns 'done', 'retry', 'failed', 'superseded' or 'not_claimed'."""
+    """Claim, draft, release. Returns 'done', 'retry', 'failed', 'superseded', 'not_claimed' or
+    'case_closed' (sprint S1, the TD-664 f leak here too: the case left OPEN after the assign queued
+    the draft, so the row is let go with no paid call)."""
+    from .staff_lifecycle import OPEN, case_stage
     now = timezone.now()
     if not SponsorProfile.objects.filter(
         claimable(now), pk=sp_id, finalise_state=DRAFTING, finalise_attempts__lt=MAX_ATTEMPTS,
@@ -82,6 +85,9 @@ def run_draft(sp_id):
     if sp.generated_at is not None:          # drafted meanwhile: never a second paid call
         _release(sp_id, token, give_up=True)
         return 'superseded'
+    if case_stage(sp.application) != OPEN:
+        _release(sp_id, token, give_up=True)
+        return 'case_closed'
     from .services import generate_ready_profile
     try:
         _, error = generate_ready_profile(sp.application)
@@ -103,7 +109,7 @@ def draft_pending(started, limit=BATCH, deadline=DEADLINE_SECONDS, clock=time.mo
     claiming none once ``deadline`` seconds have gone since ``started`` (the run's start, on
     ``clock``). Never raises."""
     counts = {'done': 0, 'retry': 0, 'failed': 0, 'superseded': 0, 'not_claimed': 0, 'error': 0,
-              'deferred': 0}
+              'deferred': 0, 'case_closed': 0}
     now = timezone.now()
     queued = SponsorProfile.objects.filter(finalise_state=DRAFTING)
     if not getattr(settings, 'CHECK2_AUTO_GENERATE', False):

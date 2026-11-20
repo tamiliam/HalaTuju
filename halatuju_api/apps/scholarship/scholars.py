@@ -367,13 +367,16 @@ def file_payload(app, *, with_internal=True):
     }
 
 
-def controls(app, *, can_write, can_hold, can_review_results=None):
+def controls(app, *, can_write, can_hold, can_review_results=None, can_write_activity=False):
     """What the file's header may OFFER this officer (maintenance S3 — the sub-state and Close moved
     here from the cockpit). An offer, never the gate: `AdminMaintenanceSubstateView` and
     `AdminCloseApplicationView` judge every request again.
 
       * `can_review_results` — may accept / query a result: the scholar-file write (S1-d,
         `_may_write_file`; `can_write` when not given) while she is in maintenance;
+      * `can_write_activity` — may add an activity note: the activity POST's door
+        (`AdminScholarActivityView.post`: `_may_write_file`, then in maintenance, else 409
+        `file_closed`). Its own key (sprint S1): S4 moves the file write key, S5 gives mentors notes;
       * `can_set_substate` — may write this case (`_can_review_app`) and the case takes a sub-state
         (`maintenance.can_set_substate`);
       * `can_hold` — may move it to or from `on_hold`: payments rights (`payments.may_prepare`, S1 M1);
@@ -393,6 +396,7 @@ def controls(app, *, can_write, can_hold, can_review_results=None):
         # S4a: accepting / querying a result is a write on the case, and only while she is in it.
         'can_review_results': bool((can_write if can_review_results is None else can_review_results)
                                    and maintenance_scope.is_in_maintenance(app)),
+        'can_write_activity': bool(can_write_activity and maintenance_scope.is_in_maintenance(app)),
         'can_set_substate': bool(can_write and can_set_substate(app)),
         'can_hold': bool(can_hold),
         'close_reasons': (list(closure.reasons_for(app.status))

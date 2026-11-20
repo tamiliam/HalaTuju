@@ -27,12 +27,16 @@ installCockpitConsoleGuard()
 const loaded = () => screen.findByText('Test Student 07')
 const qcPanel = () => screen.queryByText('admin.scholarship.qcDecision.title')
 const rejectCard = () => screen.queryByRole('button', { name: 'admin.scholarship.orgReject.start' })
+/** Access S1: the panel reads the served `can_qc` (`views_admin.base.may_qc`, the QC door's own key) and the
+ *  served `qc_refusal` — each stated here as the server sends it, never worked out from the role. */
+const QC = { can_qc: true }
+const QC_WRITER = { can_write: true, can_cancel_decline: true, can_tranche: true, can_qc: true }
 
 // ── The QC gate ──────────────────────────────────────────────────────────────────────────────
 describe('the QC decision panel at AWAITING QC', () => {
   it.each(['super', 'qc', 'org_admin'] as const)('%s may act as the second pair of eyes',
     async (role) => {
-      renderCockpit({ role, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+      renderCockpit({ role, writes: QC, stage: 'awaiting_qc', build: { outcome: 'recommend' } })
       await loaded()
       expect(qcPanel()).toBeTruthy()
       expect(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.accept' })).toBeTruthy()
@@ -45,10 +49,10 @@ describe('the QC decision panel at AWAITING QC', () => {
     expect(qcPanel()).toBeNull()
   })
 
-  // #39 Sprint 3: the panel reads the SERVED `qc` permission, not the role — so a saved custom set
-  // moves it (the server's `_require_qc` reads the same key).
+  // #39 Sprint 3: the panel reads the SERVED answer, not the role — so a saved custom set moves it.
+  // Access S1: that answer is `can_qc`, the key `_require_qc` reads, served beside the case.
   it('an admin GIVEN qc may act; a qc whose set lost it may not', async () => {
-    const admin = renderCockpit({ role: 'admin', adminId: 43, permissions: ['see_all', 'qc'],
+    const admin = renderCockpit({ role: 'admin', adminId: 43, permissions: ['see_all', 'qc'], writes: QC,
       stage: 'awaiting_qc', build: { outcome: 'recommend' } })
     await loaded()
     expect(qcPanel()).toBeTruthy()
@@ -60,26 +64,29 @@ describe('the QC decision panel at AWAITING QC', () => {
   })
 
   it('an admin GIVEN qc still never QCs the case they hold', async () => {
-    renderCockpit({ role: 'admin', adminId: ASSIGNED_ADMIN_ID, permissions: ['see_all', 'qc'],
-      stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    renderCockpit({ role: 'admin', adminId: ASSIGNED_ADMIN_ID, permissions: ['see_all', 'qc'], writes: QC,
+      stage: 'awaiting_qc', build: { outcome: 'recommend', qc_refusal: 'self_qc_forbidden' } })
     await loaded()
     expect(qcPanel()).toBeNull()
+    expect(screen.getByTestId('qc-refusal')).toBeTruthy()
   })
 
   it('⚠ HIDES IT FROM THE QC WHO REVIEWED THE CASE — a gate of one is no gate', async () => {
     // Two-person control. Signed in as a `qc` whose own admin id IS the assignee's.
+    // The server's separation rule answers it (`qc_refusal`); the cockpit shows that answer.
     renderCockpit({
-      role: 'qc', adminId: ASSIGNED_ADMIN_ID,
-      stage: 'awaiting_qc', build: { outcome: 'recommend' },
+      role: 'qc', adminId: ASSIGNED_ADMIN_ID, writes: QC,
+      stage: 'awaiting_qc', build: { outcome: 'recommend', qc_refusal: 'self_qc_forbidden' },
     })
     await loaded()
     expect(qcPanel()).toBeNull()
+    expect(screen.getByTestId('qc-refusal')).toBeTruthy()
   })
 
   it('reads CONFIRM DECLINE, not Accept, when the verdict is a decline', async () => {
     // A decline at QC confirms a REJECTION, not a recommendation (owner 2026-07-19). The red
     // primary button is the whole difference between upholding a decline and awarding a bursary.
-    renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc', build: { outcome: 'decline' } })
+    renderCockpit({ role: 'qc', writes: QC_WRITER, stage: 'awaiting_qc', build: { outcome: 'decline' } })
     await loaded()
     expect(screen.getByRole('button',
       { name: 'admin.scholarship.qcDecision.confirmDecline' })).toBeTruthy()
@@ -92,7 +99,7 @@ describe('the QC decision panel at AWAITING QC', () => {
 
   it('is not offered before the case reaches QC, nor after', async () => {
     for (const stage of ['interviewing', 'recommended'] as const) {
-      const view = renderCockpit({ role: 'qc', stage })
+      const view = renderCockpit({ role: 'qc', writes: QC, stage })
       await loaded()
       expect(qcPanel()).toBeNull()
       view.unmount()
@@ -100,7 +107,7 @@ describe('the QC decision panel at AWAITING QC', () => {
   })
 
   it('accepting sends the QC decision, with no comment attached', async () => {
-    const { api } = renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
+    const { api } = renderCockpit({ role: 'qc', writes: QC_WRITER, stage: 'awaiting_qc',
                                     build: { outcome: 'recommend' } })
     await loaded()
     api.recordQcDecision.mockResolvedValue(buildApplicationDetail('recommended'))
@@ -115,7 +122,7 @@ describe('the QC decision panel at AWAITING QC', () => {
 
   it('reopening refuses to send until the gaps are written down', async () => {
     // The comment is emailed to the reviewer and is the only thing telling her what to fix.
-    const { api } = renderCockpit({ role: 'qc', writes: true, stage: 'awaiting_qc',
+    const { api } = renderCockpit({ role: 'qc', writes: QC_WRITER, stage: 'awaiting_qc',
                                     build: { outcome: 'recommend' } })
     await loaded()
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.reopen' }))

@@ -11,6 +11,7 @@ today, sitting in Supabase metadata that nothing reads back.
 """
 import secrets
 
+from django.db.models import Exists, OuterRef
 from django.utils import timezone
 
 from . import staff_activity
@@ -185,6 +186,18 @@ def kind_totals(qs):
         if kind is not None:
             out[kind] += 1
     return out
+
+
+def without_superseded(qs):
+    """Drop a CANCELLED invitation once the same person has been invited again.
+
+    ⚠ Owner, 20 Nov (S1b): a re-invite after Cancel behaves exactly as a brand-new invite, so the
+    old revoked row must not sit beside the fresh one, not even under `?all=1`, and must not be
+    counted in `kind_totals`. The row itself is never deleted or rewritten; it stays the audit
+    record. Only a revoked row with a LATER invitation for the same staff row is dropped.
+    """
+    later = Invitation.objects.filter(partner_admin_id=OuterRef('partner_admin_id'), pk__gt=OuterRef('pk'))
+    return qs.exclude(Exists(later), revoked_at__isnull=False, accepted_at__isnull=True)
 
 
 # ── the derived status ───────────────────────────────────────────────────────────

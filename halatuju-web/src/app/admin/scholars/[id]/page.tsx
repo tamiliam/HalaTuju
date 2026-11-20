@@ -326,7 +326,7 @@ function StaffScholarFile() {
           <div className="min-w-0 flex-[1_1_320px] space-y-5 lg:max-w-md">
             {/* THANKS-SCHOLARS: scholar maintenance; the buttons follow the served `may_decide`. */}
             <ScholarThanks id={file.id} token={token} />
-            <ScholarActivity key={reloads} id={file.id} token={token} compact readOnly={asMentor || !file.in_maintenance} />
+            <ScholarActivity key={reloads} id={file.id} token={token} compact readOnly={!file.controls?.can_write_activity} />
           </div>
         </div>
       )}
@@ -356,7 +356,7 @@ function StaffScholarFile() {
         resultsLinks={mayOpen('/admin/programme/surveys', role)} /></div>}
       {tab === 'growth' && seesGrowth && <div className="max-w-3xl"><ScholarGrowth id={file.id} token={token}
         progressLinks={mayOpen('/admin/programme/development', role)} /></div>}
-      {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={asMentor || !file.in_maintenance} /></div>}
+      {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={!file.controls?.can_write_activity} /></div>}
     </div>
   )
 }

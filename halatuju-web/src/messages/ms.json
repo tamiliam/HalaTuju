@@ -4219,7 +4219,6 @@
       "assign": {
         "assignedTitle": "Penyemak ditugaskan",
         "lockedHint": "Dikunci — keputusan telah direkodkan. Buka semula keputusan untuk menukar penyemak.",
-        "doesNotCover": "Tidak meliputi {gift}",
         "notReadyHint": "Tugasan dibuka apabila pertanyaan pemohon dijawab, atau masa untuk menjawab telah tamat.",
         "needsNewHolderHint": "Penyemak kes ini tidak lagi boleh menyemaknya. Berikan kes ini kepada seseorang dalam Penilai.",
         "reloadAfterAssign": "Telah ditugaskan. Muat semula halaman untuk melihat yang terkini.",
@@ -4232,7 +4231,8 @@
           "reviewer_paused": "Beliau telah menjeda dirinya, jadi tiada kes baharu boleh diberikan kepadanya. Beliau boleh mula semula daripada profilnya sendiri, atau anda boleh membawanya kembali di halaman Penilai.",
           "gift_mismatch": "Penilai ini meliputi pemberian lain, jadi kes ini tidak boleh diberikan kepadanya. Pilih penilai untuk pemberian ini, atau penilai yang meliputi semua pemberian.",
           "not_signed_in": "{name} belum log masuk lagi. Kes boleh diberikan kepadanya sebaik sahaja beliau log masuk.",
-          "self_assign": "Anda tidak boleh memberikan kes kepada diri sendiri."
+          "self_assign": "Anda tidak boleh memberikan kes kepada diri sendiri.",
+          "wrong_organisation": "Penyemak ini dari organisasi lain. Pilih seseorang dari organisasi kes ini."
         }
       },
       "graduationThanks": {
@@ -4282,14 +4282,10 @@
       },
       "reviewerNotes": {
         "title": "Nota pentadbir organisasi dan penyemak",
-        "introOrgAdmin": "Antara anda dan penyemak yang ditugaskan. Kawalan mutu boleh membacanya. Tidak sekali-kali dilihat oleh pelajar atau penaja.",
-        "introReviewer": "Antara anda dan pentadbir organisasi anda. Kawalan mutu boleh membacanya. Tidak sekali-kali dilihat oleh pelajar atau penaja.",
-        "introReader": "Antara pentadbir organisasi dan penyemak yang ditugaskan. Baca sahaja.",
         "empty": "Belum ada nota.",
         "addLabel": "Tambah nota",
         "placeholder": "Apakah yang patut diteliti oleh penyemak?",
         "counter": "{count} / {max}",
-        "appendOnly": "Nota tidak boleh diubah atau dipadam. Untuk membetulkannya, tambah nota lain.",
         "add": "Tambah nota",
         "adding": "Menambah…",
         "replyLabel": "Balas",
@@ -4815,13 +4811,6 @@
         "hide": "Sembunyikan kata-kata pelajar sendiri"
       },
       "studentNote": "Nota pelajar",
-      "reliability": {
-        "title": "Kebolehharapan AI",
-        "subtitle": "Berapa kerap cadangan AI sepadan dengan keputusan penyemak — merentas {n} permohonan yang telah disemak.",
-        "overall": "Keseluruhan",
-        "empty": "Belum ada permohonan yang disemak — kebolehharapan AI akan dipaparkan di sini setelah penyemak merekod keputusan mereka.",
-        "mixedEngines": "Angka ini ialah purata bagi {n} versi enjin pemeriksaan ({versions}). Enjin telah berubah selepas sebahagian daripada keputusan ini direkodkan, jadi tafsirkan aliran ini dengan berhati-hati."
-      },
       "verdict": {
         "title": "Ramalan AI",
         "intro": "AI telah cuba menyemak butiran ini, tetapi kami memerlukan anda untuk membuat pertimbangan akhir.",
@@ -5164,7 +5153,14 @@
         "chooseOutcome": "Pilih Syorkan atau Tolak.",
         "savedNotSubmitted": "Keputusan anda telah disimpan pada {date}, tetapi kes ini belum berpindah ke QC. Tekan Luluskan sekali lagi untuk menghantarnya.",
         "savedNotSubmittedDecline": "Penolakan anda telah disimpan pada {date}, tetapi kes ini belum dihantar ke QC. Tekan Tolak sekali lagi untuk menghantarnya.",
-        "saveNeedsReady": "Hantar penemuan anda, nilai AI dan tambah kesimpulan anda.",
+        "missing": {
+          "heading": "Masih perlu dibuat:",
+          "submit": "Hantar penemuan temu duga anda",
+          "answerOne": "Jawab 1 soalan temu duga dalam penemuan anda",
+          "answerMany": "Jawab {count} soalan temu duga dalam penemuan anda",
+          "rate": "Semak fakta: {facts}",
+          "conclusion": "Tulis kesimpulan anda"
+        },
         "findingsIncomplete": "Jawab setiap soalan temu duga sebelum membuat keputusan ({count} lagi).",
         "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau TIDAK memenuhi syarat {programmeName}.",
         "save": "Simpan & jana profil akhir",
@@ -5196,7 +5192,19 @@
         "finaliseEngineError": "Profil akhir tidak dapat ditulis. Sila tekan sekali lagi.",
         "mayAlreadyBeSaved": "Keputusan anda mungkin sudah disimpan. Muat semula halaman dan semak sebelum menekan sekali lagi.",
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
-        "rateTitle": "Nilaikan Ramalan AI"
+        "rateTitle": "Semak empat fakta",
+        "rateHelp": "Lulus = fakta ini benar bagi pelajar. Gagal = ia tidak benar, atau tidak dibuktikan.",
+        "failedAcceptWarn": "Satu fakta gagal. Adakah anda mahu menerima?",
+        "failWhy": "Mengapa fakta ini tidak benar?",
+        "failReasonLabel": "Sebab",
+        "pickReason": "Pilih satu sebab untuk fakta yang gagal.",
+        "failReason": {
+          "engine_wrong": "Peraturan itu salah",
+          "read_wrong": "Dokumen dibaca dengan salah",
+          "new_information": "Maklumat baharu (temu duga, panggilan)",
+          "programme_rule": "Peraturan program",
+          "other": "Lain-lain"
+        }
       },
       "qcDecision": {
         "title": "Kawalan mutu",
@@ -5232,7 +5240,17 @@
         "overrideConfirm": "Rekod sebab & terima",
         "reverifyTitle": "Kunci IC telah dibuka",
         "reverifyHint": "Pengambilan ini mempunyai syarat \"Tempat lahir\" dan IC pelajar tidak lagi dikunci, jadi Terima ditolak. Sahkan semula IC di sini: ia mengunci IC sekali lagi dan menyemak bahawa tiada akaun lain yang memegangnya sebagai disahkan. Kes ini kekal menunggu QC dan penyemak tidak dimaklumkan. Melainkan anda super admin, orang lain akan membuat QC selepas itu.",
-        "reverifyButton": "Sahkan semula IC"
+        "reverifyButton": "Sahkan semula IC",
+        "secondLook": {
+          "title": "Fakta yang diragui",
+          "help": "Penyemak dan AI tidak sependapat tentang fakta ini. Anda bersetuju dengan penyemak melainkan anda menekan Tidak setuju.",
+          "aiSaid": "Kata AI",
+          "reviewerSaid": "Kata penyemak",
+          "disagree": "Tidak setuju dengan penyemak",
+          "undo": "Anda tidak setuju. Tekan untuk batal.",
+          "agree": "Anda bersetuju dengan penyemak.",
+          "butDecision": "tetapi keputusannya {decision}"
+        }
       },
       "caveats": {
         "studentAnswer": "Jawapan pelajar",
@@ -5491,7 +5509,6 @@
         "help": "Untuk pelajar yang dokumennya sudah menunjukkan mereka tidak layak. Tiada temu duga diadakan.",
         "unassignFirst": "Untuk menolak sebelum temu duga, tetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
         "unassignAsk": "Untuk menolak sebelum temu duga, minta seseorang yang menugaskan penyemak untuk menetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
-        "reasonLabel": "Sebab utama",
         "reasonPlaceholder": "Pilih sebab utama",
         "reasons": {
           "not_b40": "Bukan B40",
@@ -5502,7 +5519,8 @@
           "other": "Lain-lain"
         },
         "whyLabel": "Mengapa anda menolak?",
-        "whyHint": "Disimpan dalam fail pelajar untuk pasukan anda. Tidak sekali-kali dihantar kepada pelajar.",
+        "detailsLabel": "Butiran tambahan",
+        "whyHint": "Sulit. Tidak dikongsi dengan pelajar.",
         "counter": "{count} / {max} aksara",
         "submit": "Tolak pelajar",
         "cancel": "Batal",
@@ -5520,7 +5538,7 @@
           "bad_status": "Hanya pelajar di peringkat Menunggu semakan boleh ditolak sebelum temu duga.",
           "has_reviewer": "Pelajar ini kini mempunyai penyemak, jadi tidak boleh ditolak sebelum temu duga.",
           "reason_required": "Pilih sebab utama.",
-          "comments_required": "Nyatakan mengapa anda menolak. Nota ini kekal dalam fail untuk pasukan anda.",
+          "comments_required": "Tambahkan butiran sebelum anda menolak.",
           "comments_too_long": "Nota ini boleh mengandungi paling banyak 2,000 aksara.",
           "generic": "Tidak dapat menolak pelajar ini. Sila cuba lagi."
         },
@@ -7604,6 +7622,52 @@
         "completed": "Semakan disiapkan",
         "turnaround": "Pelajar menunggu median {days} hari dari keputusan penilai sehingga semakan anda.",
         "none": "Tiada apa-apa menunggu semakan dalam pemberian ini."
+      },
+      "aiPrediction": {
+        "title": "Ramalan AI",
+        "sub": "Kekerapan penyemak bersetuju dengan ramalan AI. AI menyemak empat fakta bagi setiap permohonan; penyemak kemudian membuat keputusan akhir.",
+        "empty": "Belum ada permohonan yang disemak. Angka akan muncul selepas penyemak merekodkan keputusan mereka.",
+        "sureTile": "Apabila AI yakin, penyemak bersetuju",
+        "doubtTile": "Apabila AI ragu, penyemak meluluskan fakta itu",
+        "factsOf": "{a} daripada {b} fakta",
+        "xOfY": "{a} daripada {b}",
+        "fewCases": "Kes sedikit",
+        "trend": "Apabila AI yakin, mengikut bulan",
+        "trendChart": "Kadar fakta yang dipersetujui penyemak apabila AI yakin, mengikut bulan",
+        "trendHint": "Setiap angka ialah kadar fakta yang AI yakin dan penyemak bersetuju. Bulan yang kesnya sedikit hanya menunjukkan bilangan.",
+        "byFact": "Mengikut fakta",
+        "doubts": "Keraguan yang paling kerap diluluskan penyemak",
+        "doubtsHint": "Keraguan yang kerap diluluskan penyemak mungkin terlalu berhati-hati bagi AI.",
+        "decision": "Keputusan",
+        "decisionNote": "Keputusan semakan kualiti",
+        "qcAgreed": "diterima pada semakan kualiti",
+        "qcOther": "Dikembalikan: {reopen}. Ditolak: {reject}.",
+        "byVersion": "Mengikut versi enjin",
+        "byReviewer": "Mengikut penyemak",
+        "leadsOnly": "Ketua sahaja",
+        "reviewerHint": "Dipaparkan kepada ketua sahaja, untuk menyokong penyemak dan bukan untuk menarafkan mereka.",
+        "footer": "Hanya fakta yang diragui disemak oleh QC. Angka lain membandingkan AI dengan penyemak.",
+        "allProgrammes": "Semua program bersama.",
+        "assignedOnly": "Pemohon yang ditugaskan kepada anda sahaja.",
+        "versionUnknown": "Versi tidak diketahui",
+        "unmatchedReviewer": "Penyemak tidak dipadankan dengan akaun",
+        "notGiven": "Tidak diberi",
+        "unnamedReviewer": "Penyemak tanpa nama",
+        "qcChecked": "Fakta yang diragui, disemak oleh QC",
+        "col": {
+          "qcChecked": "Disemak oleh QC",
+          "qcAgreed": "Setuju dengan penyemak",
+          "qcDisagreed": "Tidak setuju dengan penyemak",
+          "reasons": "Sebab gagal",
+          "sure": "AI yakin, penyemak setuju",
+          "doubt": "AI ragu, penyemak meluluskan",
+          "fact": "Fakta",
+          "doubtCode": "Keraguan",
+          "passed": "Diluluskan penyemak",
+          "version": "Versi",
+          "reviewer": "Penyemak",
+          "applications": "Permohonan"
+        }
       }
     },
     "programme": {
@@ -7762,9 +7826,11 @@
       "resent": "Jemputan dihantar semula.",
       "resendFailed": "Kami tidak dapat menghantarnya. Baris di bawah menunjukkan apa yang berlaku.",
       "cancel": "Batalkan jemputan",
-      "cancelConfirm": "Batalkan jemputan kepada {email}? Pautannya tidak akan berfungsi lagi. Jika ia memberi mereka akaun yang belum pernah digunakan, akaun itu juga dimatikan.",
+      "cancelConfirm": "Batalkan jemputan kepada {email}? Pautannya tidak akan berfungsi lagi. Jika mereka dijemput ke dalam kumpulan, mereka dikeluarkan daripadanya, dan anda boleh menjemput alamat yang sama sekali lagi kemudian.",
       "cancelled": "Jemputan dibatalkan.",
       "cancelFailed": "Kami tidak dapat membatalkannya. Muat semula halaman dan cuba lagi.",
+      "cancelHasWork": "Masih ada kerja yang menunggu mereka, seperti kes atau penerima biasiswa, jadi jemputan tidak dibatalkan. Serahkan kerja itu kepada orang lain dahulu.",
+      "cancelledLoginFailed": "Dibatalkan, tetapi log masuk mereka tidak dapat dibuang. Beritahu pasukan sokongan.",
       "waitingHeading": "Menunggu jawapan",
       "allAccepted": "Tiada sesiapa menunggu — semua yang dijemput telah menerima.",
       "seePeople": "Lihat siapa yang ada",
@@ -7836,12 +7902,17 @@
         "name": "Nama",
         "code": "Kod ringkas",
         "codeHint": "Huruf kecil, nombor dan tanda sempang. Digunakan dalam alamat web.",
-        "newCode": "Kod ringkas baharu"
+        "newCode": "Kod ringkas baharu",
+        "nameEn": "Nama dalam Bahasa Inggeris",
+        "nameMs": "Nama dalam Bahasa Melayu (pilihan)",
+        "nameTa": "Nama dalam Bahasa Tamil (pilihan)",
+        "nameHint": "Jika nama Bahasa Melayu atau Tamil dibiarkan kosong, nama Bahasa Inggeris dipaparkan."
       },
       "error": {
         "badCode": "The short code may use lower case letters, numbers and hyphens only.",
         "codeTaken": "That short code is already in use. Please choose another.",
         "nameRequired": "Masukkan nama bagi program ini.",
+        "nameTooLong": "Nama itu terlalu panjang. Hadkan setiap nama kepada 200 aksara atau kurang.",
         "hasOpenYear": "Program ini sedang menerima permohonan. Tutup tahun pengambilannya terlebih dahulu.",
         "noOrg": "Akaun ini tidak dipautkan kepada mana-mana organisasi.",
         "generic": "Perubahan tidak dapat disimpan. Tiada perubahan dibuat.",
@@ -7858,6 +7929,10 @@
       "copied": "Pautan disalin",
       "copyFailed": "Pautan tidak dapat disalin. Pautannya ialah: {url}",
       "changeCode": "Tukar kod ringkas",
+      "changeName": "Tukar nama",
+      "nameTitle": "Tukar nama bagi {name}",
+      "nameCta": "Simpan nama",
+      "nameKeeps": "Hanya nama yang berubah. Kod ringkas dan pautan permohonan kekal, jadi pautan yang telah dicetak atau dihantar masih berfungsi.",
       "renameTitle": "Tukar kod ringkas untuk {name}",
       "applyLinkLabel": "Pautan yang diikuti pemohon hari ini",
       "renameKeeps": "Kod ringkas lama terus berfungsi. Pautan yang telah dicetak atau dihantar masih sampai ke program hadiah ini.",
@@ -10042,8 +10117,8 @@
       "filterAll": "Semua",
       "noMatch": "Tiada yang sepadan.",
       "suspendedCases": {
-        "one": "1 kes terbuka dipegang oleh ahli yang digantung. Pulihkan mereka atau tugaskan semula kes itu.",
-        "many": "{n} kes terbuka dipegang oleh ahli yang digantung. Pulihkan mereka atau tugaskan semula kes-kes itu."
+        "one": "1 kes terbuka dipegang oleh ahli yang digantung atau dipadam. Tugaskan semula kes itu, atau pulihkan ahli yang digantung.",
+        "many": "{n} kes terbuka dipegang oleh ahli yang digantung atau dipadam. Tugaskan semula kes-kes itu, atau pulihkan ahli yang digantung."
       },
       "showSuspended": "Tunjukkan ahli yang digantung"
     }

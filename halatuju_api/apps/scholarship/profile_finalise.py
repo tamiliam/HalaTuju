@@ -172,12 +172,37 @@ def _write_result(sp_id, app_id, token, result, blurb):
     return 'done'
 
 
+def _drop_closed(sp_id, app_id, token):
+    """TD-664 (f): the case is no longer OPEN, so drop the queued job with no paid call. Same locks,
+    in the same order, as ``_write_result``; the fields ``supersede_pending`` clears."""
+    with transaction.atomic():
+        ScholarshipApplication.objects.select_for_update().get(pk=app_id)
+        sp = SponsorProfile.objects.select_for_update().get(pk=sp_id)
+        if not _still_ours(sp, token):
+            return 'superseded'
+        sp.finalise_state = ''
+        sp.finalise_claimed_at = None
+        sp.save(update_fields=QUEUE_FIELDS)
+    return 'case_closed'
+
+
 def run_finalise(sp_id):
-    """Claim, refine, write. Returns 'done', 'retry', 'failed', 'superseded' or 'not_claimed'."""
+    """Claim, refine, write. Returns 'done', 'retry', 'failed', 'superseded', 'not_claimed' or
+    'case_closed'.
+
+    'case_closed' (TD-664 f, sprint S1): a profile queued while the case was open, but the case is
+    no longer OPEN (``staff_lifecycle.case_stage``: awarded, declined, withdrawn, closed) when the
+    cron claims it. The job is dropped and Gemini is NOT called. A super reopen sets the case OPEN
+    again and the re-recorded verdict queues afresh. Accepted window: a case that changes stage
+    DURING the call has already paid for it, and ``_write_result`` never publishes, so there is no
+    second check after the call."""
+    from .staff_lifecycle import OPEN, case_stage
     if not _claim_row(sp_id, timezone.now()):
         return 'not_claimed'
     sp = SponsorProfile.objects.select_related('application').get(pk=sp_id)
     token, app = sp.finalise_requested_at, sp.application
+    if case_stage(app) != OPEN:
+        return _drop_closed(sp_id, app.pk, token)
     session = app.interview_sessions.filter(status='submitted').order_by('-submitted_at').first()
     draft = sp.current_markdown
     if session is None or not draft.strip():
@@ -202,7 +227,7 @@ def run_pending(limit=BATCH, budget=TIME_BUDGET_SECONDS, clock=time.monotonic):
     started = clock()
     from .services.outage import gemini_reads_down
     counts = {'done': 0, 'retry': 0, 'failed': 0, 'superseded': 0, 'not_claimed': 0, 'error': 0,
-              'deferred': 0}
+              'deferred': 0, 'case_closed': 0}
     now = timezone.now()
     # A run killed mid-call on its LAST attempt can never be claimed again: close it as failed.
     counts['failed'] += SponsorProfile.objects.filter(

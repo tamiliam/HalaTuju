@@ -75,7 +75,7 @@ class TestReviewerPlusSpending(pe._Base):
         self.assertEqual(self.client.get(FUNDING).status_code, 403)
 
     def test_the_overview_follows_her_keys(self):
-        self.assertEqual(sections_for(self.reviewer), ('money', 'money_series', 'mine'))
+        self.assertEqual(sections_for(self.reviewer), ('money', 'money_series', 'ai_prediction', 'mine'))
 
 
 class TestFinancePlusReview(pe._FinanceBase):
@@ -124,7 +124,7 @@ class TestFinancePlusReview(pe._FinanceBase):
     def test_the_overview_follows_their_keys(self):
         # Was R2 (preset-bound: no "my cases" page). TD-621 (sprint LABELS): `review` opens a team
         # member's own page, beside the money `payments_approve` opens; still no funnel.
-        self.assertEqual(sections_for(self.finance), ('money', 'money_series', 'mine'))
+        self.assertEqual(sections_for(self.finance), ('money', 'money_series', 'ai_prediction', 'mine'))
 
     def test_an_org_admin_may_assign_them_and_they_sit_on_the_reviewers_tab(self):
         self.assertTrue(may_assign_to(self.approver, self.finance))
