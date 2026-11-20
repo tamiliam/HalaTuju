@@ -8,6 +8,7 @@ checked takes the Vision route, never the hidden text.
 Synthetic PDFs built here (fictional words only). Vision is always mocked; nothing reaches the network.
 """
 import io
+from contextlib import ExitStack
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -15,6 +16,7 @@ from django.test import SimpleTestCase
 
 from apps.scholarship import offer_exact, offer_reader, pdf_pages, vision
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION
+from apps.scholarship.tests._timing import wall_backstop
 from apps.scholarship.vision import field_extraction
 
 SPM_TEXT = 'SIJIL PELAJARAN MALAYSIA KEPUTUSAN PEPERIKSAAN CALON CONTOH'
@@ -157,15 +159,14 @@ class TheDetectionRule(SimpleTestCase):
         self.assertEqual(pdf_pages.pdf_page_texts(SELF_CALL, 1), [''])
 
     def test_a_fan_out_bomb_stops_fast_on_the_vision_route_and_is_never_extracted(self):
-        import time
-        from pypdf import PageObject
-        t0 = time.perf_counter()
-        with patch.object(PageObject, 'extract_text', side_effect=AssertionError('no extraction of a bomb')):
-            self.assertEqual(pdf_pages.pdf_text_layer(FAN_OUT), '')
-            self.assertEqual(pdf_pages.pdf_page_texts(FAN_OUT, 3), [''])
-            self.assertFalse(pdf_pages.first_page_drawn(FAN_OUT))
         self.assertLess(len(FAN_OUT), 4096)
-        self.assertLess(time.perf_counter() - t0, 2.0)
+        # the four other document budgets are lifted, so the operation budget is what stops it
+        with self._only_the_operation_budget():
+            walks = self._hostile(FAN_OUT, [''])
+        # TD-693: the operation budget, counted: each form call costs at least `_DO_COST`, so one read walks at
+        # most budget / 20 forms (2.5 million without it); two reads (the memo answers the third). The 20 is
+        # written out, so lowering `_DO_COST` cannot raise the bound with it.
+        self.assertLessEqual(walks, 2 * (pdf_pages._MAX_DOC_OPS // 20 + 1))
 
     def test_an_over_budget_later_page_stops_extraction_of_the_whole_pdf(self):
         with patch('apps.scholarship.pdf_pages._MAX_DOC_OPS', 10):
@@ -176,28 +177,44 @@ class TheDetectionRule(SimpleTestCase):
             self.assertEqual(pdf_pages.pdf_page_texts(pdf, 2), ['', ''])
             self.assertFalse(pdf_pages.first_page_drawn(pdf))
 
-    def _hostile(self, data):
-        """Every reader gives the Vision route, never extracts, and the whole check is fast."""
-        import time
+    def _only_the_operation_budget(self):
+        """TD-693: lift the other document budgets so only the operation budget can stop the walk."""
+        stack = ExitStack()
+        for name in ('_MAX_DOC_TOKENS', '_MAX_DOC_BYTES', '_MAX_DOC_SHOWN_CHARS', '_MAX_DOC_FONT_COST'):
+            stack.enter_context(patch.object(pdf_pages, name, 10 ** 9))
+        return stack
+
+    def _hostile(self, data, page_texts=None):
+        """Every reader gives the Vision route and never extracts (counted: the reader catches a raise inside the
+        extraction). Returns the walks (`_walk_text_modes`: a page or a form, each time it is walked) — TD-693:
+        the work, counted, not the time."""
         from pypdf import PageObject
         pdf_pages._layer_memo_clear()
-        t0 = time.perf_counter()
-        with patch.object(PageObject, 'extract_text', side_effect=AssertionError('no extraction of a bomb')):
+        with wall_backstop(self), \
+                patch.object(PageObject, 'extract_text', side_effect=AssertionError('no extraction of a bomb')) as ex, \
+                patch.object(pdf_pages, '_walk_text_modes', wraps=pdf_pages._walk_text_modes) as walked:
             self.assertEqual(pdf_pages.pdf_text_layer(data), '')
-            self.assertEqual(''.join(pdf_pages.pdf_page_texts(data, 3)), '')
+            texts = pdf_pages.pdf_page_texts(data, 3)
+            self.assertEqual(''.join(texts), '')
+            if page_texts is not None:
+                self.assertEqual(texts, page_texts)
             self.assertFalse(pdf_pages.first_page_drawn(data))
-        return time.perf_counter() - t0
+        self.assertEqual(ex.call_count, 0)
+        return walked.call_count
 
     def test_few_form_calls_of_many_plain_operations_are_charged_every_call(self):
-        # 20,000 calls of one form holding 10,000 non-text operations: 200 million walked without the charge
+        # 20,000 calls of one form holding 10,000 non-text operations: 200 million walked without the charge.
+        # Each call is charged its 10,000 operations, so one read walks at most budget / 10,000 forms (+ the page).
         data = _pdf_forms(b'/A Do ' * 20_000, {'A': b'0 g ' * 10_000})
-        self.assertLess(self._hostile(data), 3.0)
+        with self._only_the_operation_budget():
+            self.assertLessEqual(self._hostile(data), 2 * (pdf_pages._MAX_DOC_OPS // 10_000 + 2))
 
     def test_many_pages_sharing_one_big_stream_share_one_budget(self):
-        # 20 pages, one stream of 49,000 drawn text shows: each page is within any per-page limit
+        # 20 pages, one stream of 49,000 drawn text shows (98,000 shown characters): each page is within any
+        # per-page limit; ONE document budget of shown characters runs out on page 3, so the document is walked
+        # 3 times in all, the refusal reused by every reader (20 or more with a budget per page).
         data = _pdf([b'BT /F1 12 Tf ' + b'(AB) Tj ' * 49_000 + b'ET'] * 20, shared=True)
-        # 0.9 s alone; 4.1 s in a loaded full -n auto run (19 Nov). 8 s still catches a lost budget (multi-second per page).
-        self.assertLess(self._hostile(data), 8.0)
+        self.assertEqual(self._hostile(data), 3)
 
     def test_page_1_not_drawn_stops_the_walk_at_once(self):
         with patch.object(pdf_pages, '_page_visibility', wraps=pdf_pages._page_visibility) as walk:

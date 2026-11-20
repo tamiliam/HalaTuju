@@ -4,7 +4,6 @@ Each hostile page below stalled a pdfium render for seconds to minutes; each mus
 land on the upload's existing "cannot read" path, and a real-shaped phone-photo PDF must still render.
 """
 import io
-import time
 import zlib
 from unittest.mock import patch
 
@@ -134,10 +133,13 @@ class TheRenderCheck(SimpleTestCase):
     def test_each_hostile_page_is_refused_fast(self):
         for name, pdf in HOSTILE.items():
             with self.subTest(name):
-                start = time.perf_counter()
-                png = pdf_pages.pdf_first_page_png(pdf)
+                # TD-693: refused before any pdfium child (counted), never timed against a slow machine
+                from apps.scholarship import pdfium_run
+                from apps.scholarship.tests._timing import wall_backstop
+                with wall_backstop(self), patch.object(pdfium_run, '_spawn', wraps=pdfium_run._spawn) as spawned:
+                    png = pdf_pages.pdf_first_page_png(pdf)
                 self.assertIsNone(png)
-                self.assertLess(time.perf_counter() - start, 3.0)
+                self.assertEqual(spawned.call_count, 0)
                 self.assertEqual(pdf_pages.pdf_page_pngs(pdf, 3), [])
                 self.assertIsNone(pdf_pages.pdf_pages_png(pdf))
 

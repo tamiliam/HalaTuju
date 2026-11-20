@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### test: TD-693 - api tests pin their guards by the work counted, not by the machine's speed (2026-11-21)
+
+Branch td693-deterministic-timing. Cloud Build failed two tests on time alone (2.5 s against a 1.0 s limit; 18.9 s against 8.0 s). All 25 elapsed-time asserts in the api tests now count the work instead: pypdf parses and text extractions, form walks, pdfium children spawned, each child's time limit, the slot wait, the spent mark and the kill log, and the call count at size N and 2N for every linear-time claim. Time stays only as one 60 s backstop (`WALL_BACKSTOP_S` in `apps/scholarship/tests/_timing.py`). New lint `test_no_tight_wall_clock.py` fails on any elapsed-time assert under the backstop. Tests only, no app change. Services: api. No migration.
+- **Review fix:** the fan-out, few-form-calls and stream-cap tests now pin the guard they name (the other document budgets are lifted so only the named one can stop the walk; a new test pins the 400,000 per-stream cap); the pdfium budget test has start-up slack (5 s budget, the second child sleeps 60 s and is killed).
+- **Debt:** TD-693 RESOLVED; new TD-694 (pypdf text layer and parse_govt_offer have no time limit of their own in the web process, medium).
+
 ### fix: S-visible round 11 - the render pre-filter refuses three crafted shapes the same on every machine (2026-11-20)
 
 Branch fix-pdfium-timing. A Cloud Build run failed `test_huge_spaced_text`: the Linux runner rendered it inside the 1 s limit the test relied on. `pdf_render_check` now refuses, before any pdfium child: a visible glyph drawn past 1,500 pt (`MAX_FONT_PT`; corpus 60), clipping paths nested past 64 (`MAX_CLIP_DEPTH`; corpus 6) or set past 5,000 on a page (`MAX_PAGE_CLIPS`; corpus 374), more than 500 annotations on a page (`MAX_PAGE_ANNOTS`; corpus 5), and walks every annotation's appearance stream like a form under the page's caps (it was not charged at all). Genuine cost 0 of 832 fixture PDFs (1,205 pages). The crafted-file tests run with a 60 s limit and assert no child is spawned; the time-limit backstop is pinned by a stand-in worker that never answers. Services: api. No migration.

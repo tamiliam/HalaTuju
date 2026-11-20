@@ -5,13 +5,13 @@ Each hostile shape is the Vision route in under 3 seconds; each real-corpus shap
 Fictional words only.
 """
 import threading
-import time
 import zlib
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
 from apps.scholarship import pdf_pages, spm_cert_parse
+from apps.scholarship.tests._timing import wall_backstop
 from apps.scholarship.tests.test_ocr_visible import DRAWN, SPM_TEXT, _raw_layer, _show, _stream
 from apps.scholarship.tests.test_ocr_visible_paths import ALL_ON, FONT_RES, MARKED, SECRET, _doc, _oc_doc, _xobj
 
@@ -139,13 +139,11 @@ CLOSED = {   # each pdfium would parse on load (or might); none of the 533 real 
 class WhatPdfiumLoadsWithAPage(SimpleTestCase):
     def _hostile(self, pdf):
         """pypdf extracts the page (it never runs a glyph); the load check hides it before pdfium loads it."""
-        with patch('apps.scholarship.pdfium_run.ask') as opened:
-            t0 = time.perf_counter()
+        with patch('apps.scholarship.pdfium_run.ask') as opened, wall_backstop(self):
             self.assertFalse(_reads(pdf))
             self.assertEqual(''.join(pdf_pages.pdf_page_texts(pdf, 3)), '')
             self.assertFalse(pdf_pages.first_page_drawn(pdf))
-            self.assertLess(time.perf_counter() - t0, 3.0)
-        self.assertEqual(opened.call_count, 0)                   # no pdfium child loaded it
+        self.assertEqual(opened.call_count, 0)                   # no pdfium child loaded it (TD-693: the pin)
 
     def test_the_type3_glyph_bomb(self):
         # 120 glyph procedures of 2.8 MB each in a 670 KB file: pdfium took 13.5 s to load the page

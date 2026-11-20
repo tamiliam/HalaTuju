@@ -5,14 +5,14 @@ follow, resources it did not inherit, a render mode it took for drawn) or feeds 
 costly to parse. ``*_premise`` checks show pypdf really extracts the hidden words. Fictional words only.
 """
 import io
-import time
 import zlib
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-from apps.scholarship import pdf_pages
+from apps.scholarship import pdf_pages, pdfium_run
 from apps.scholarship.pdf_layer_guards import OverBudget, page_tree_check
+from apps.scholarship.tests._timing import wall_backstop
 from apps.scholarship.tests.test_ocr_visible import DRAWN, SPM_TEXT, _pdf, _raw_layer, _show, _stream
 
 FONT = b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
@@ -121,16 +121,22 @@ class TheRenderModes(SimpleTestCase):
 
 
 class TheDocumentBudgets(SimpleTestCase):
-    def _hostile(self, data, limit=3.0):
-        """Every reader gives the Vision route, never extracts, and the whole check is fast (< ``limit`` s)."""
+    def _hostile(self, data, parses=0):
+        """Every reader gives the Vision route and never extracts; pypdf parses exactly ``parses`` content streams
+        (TD-693: the work counted, not the time; a bomb is refused before its parse, a small stream is parsed and
+        then stopped by a budget). The extraction is counted too: a raise inside it would be caught by the reader."""
         from pypdf import PageObject
+        from pypdf.generic import ContentStream
         pdf_pages._layer_memo_clear()
-        t0 = time.perf_counter()
-        with patch.object(PageObject, 'extract_text', side_effect=AssertionError('no extraction of a bomb')):
+        parse = ContentStream._parse_content_stream
+        with wall_backstop(self), \
+                patch.object(PageObject, 'extract_text', side_effect=AssertionError('no extraction of a bomb')) as ex, \
+                patch.object(ContentStream, '_parse_content_stream', autospec=True, side_effect=parse) as parsed:
             self.assertEqual(pdf_pages.pdf_text_layer(data), '')
             self.assertEqual(''.join(pdf_pages.pdf_page_texts(data, 3)), '')
             self.assertFalse(pdf_pages.first_page_drawn(data))
-        self.assertLess(time.perf_counter() - t0, limit)
+        self.assertEqual(ex.call_count, 0)
+        self.assertEqual(parsed.call_count, parses)
 
     def test_decompressed_bytes_past_the_cap_are_refused_unparsed(self):
         data = _doc(b' ' * 9_000_000, filtered=True)
@@ -158,13 +164,13 @@ class TheDocumentBudgets(SimpleTestCase):
 
     def test_streams_each_just_under_the_stream_token_cap(self):
         # 3 pages of 190,000 operations (380,000 tokens each): page 2 is past the document's tokens, unparsed.
-        # Page 1 is parsed by design (about 3 s of pypdf on the dev machine, so a wall-clock limit of 3 s was
-        # flaky): the guard is pinned by what pypdf parses, ONE stream; the time limit only catches all three.
-        from pypdf.generic import ContentStream
-        parse = ContentStream._parse_content_stream
-        with patch.object(ContentStream, '_parse_content_stream', autospec=True, side_effect=parse) as parsed:
-            self._hostile(_pdf([b'0 g ' * 190_000 + _show(SPM_TEXT)] * 3), limit=8.0)
-        self.assertEqual(parsed.call_count, 1)
+        # Page 1 is parsed by design (about 3 s of pypdf on the dev machine, 19 s on a slow build runner): the
+        # guard is pinned by what pypdf parses, ONE stream (TD-693: no wall-clock limit but the backstop).
+        self._hostile(_pdf([b'0 g ' * 190_000 + _show(SPM_TEXT)] * 3), parses=1)
+
+    def test_one_stream_past_the_stream_token_cap_is_refused_before_any_parse(self):
+        # 420,000 tokens in ONE stream: under the 700,000 document cap, over the 400,000 per-stream cap
+        self._hostile(_pdf([b'0 g ' * 210_000 + _show(SPM_TEXT)]), parses=0)
 
     def test_a_read_with_more_text_than_the_memo_limit_is_not_kept(self):
         with patch('apps.scholarship.pdf_pages._MEMO_MAX_TEXT', 10):
@@ -224,14 +230,16 @@ class TheFontMaps(SimpleTestCase):
         return _doc(b'/Fm1 Do ' * calls + _show(SPM_TEXT), {6: _to_unicode(b'0000', b'FFFF'), 7: form, 8: FONT},
                     font=BIG_FONT, page_res=_res(b'/F1 8 0 R', b'/XObject << /Fm1 7 0 R >>'))
 
+    # Each parses its small streams (the page; the form) and is stopped by the font-map budget, unextracted.
     def test_one_tiny_form_called_150_times(self):
-        self._hostile(self._form_fan_out(150, b'/F1 3 0 R'))
+        self._hostile(self._form_fan_out(150, b'/F1 3 0 R'), parses=2)
 
     def test_40_font_names_for_one_font(self):
-        self._hostile(_doc(_show(SPM_TEXT), {6: _to_unicode(b'0000', b'FFFF')}, font=BIG_FONT, page_res=_res(NAMES_40)))
+        self._hostile(_doc(_show(SPM_TEXT), {6: _to_unicode(b'0000', b'FFFF')}, font=BIG_FONT, page_res=_res(NAMES_40)),
+                      parses=1)
 
     def test_40_font_names_in_a_form_called_150_times(self):
-        self._hostile(self._form_fan_out(150, NAMES_40))
+        self._hostile(self._form_fan_out(150, NAMES_40), parses=2)
 
     def test_one_font_past_its_own_limit(self):
         huge_range = {6: _to_unicode(b'00000000', b'FFFFFFFF')}            # pypdf 5.9 would map 4 billion codes
@@ -240,7 +248,7 @@ class TheFontMaps(SimpleTestCase):
         long_range = b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /FirstChar 0 /LastChar 900000000 >>'
         for objs, font in ((huge_range, BIG_FONT), ({}, wide), ({}, long_range)):
             with self.subTest(font=font[-30:]):
-                self._hostile(_doc(_show(SPM_TEXT), objs, font=font))
+                self._hostile(_doc(_show(SPM_TEXT), objs, font=font), parses=1)
 
     def test_a_real_sized_map_called_a_few_times_keeps_the_layer(self):
         pdf = self._form_fan_out(3, b'/F1 3 0 R')
@@ -425,7 +433,7 @@ class TheHostileShapes(SimpleTestCase):
 
     def test_each_form_call_costs_20_operations(self):
         # 24,000 calls: 24,000 operations + 20 x 24,000 = 504,000, past the 500,000 budget, never extracted
-        self._hostile(_pdf([b'/Fm1 Do ' * 24_000 + _show(SPM_TEXT)], form=b''))
+        self._hostile(_pdf([b'/Fm1 Do ' * 24_000 + _show(SPM_TEXT)], form=b''), parses=2)   # the page and the form
 
     def test_form_calls_at_the_budget_edge(self):
         # a form with no font (no font-map charge): 23,000 calls stay within the walk's operation budget
@@ -441,11 +449,9 @@ class TheHostileShapes(SimpleTestCase):
         # machine, so a 3 s limit was flaky, round 9): pdfium is pinned to ONE child for both readers; the time
         # limit only catches a gross regression.
         from apps.scholarship import pdfium_run
-        t0 = time.perf_counter()
-        with patch.object(pdfium_run, '_spawn', side_effect=pdfium_run._spawn) as spawned:
+        with wall_backstop(self), patch.object(pdfium_run, '_spawn', side_effect=pdfium_run._spawn) as spawned:
             self.assertEqual(pdf_pages.pdf_text_layer(data), '')
             self.assertEqual(''.join(pdf_pages.pdf_page_texts(data, 3)), '')
-        self.assertLess(time.perf_counter() - t0, 8.0)
         self.assertEqual(spawned.call_count, 1)
 
     def test_pdfium_objects_at_the_cap_keep_the_layer_and_one_more_hides_it(self):
@@ -453,10 +459,11 @@ class TheHostileShapes(SimpleTestCase):
         for n, kept in ((MAX_OBJECTS, True), (MAX_OBJECTS + 1, False)):
             with self.subTest(n=n):
                 pdf_pages._layer_memo_clear()
-                t0 = time.perf_counter()
-                self.assertEqual('SIJIL' in pdf_pages.pdf_text_layer(_many_objects(n)), kept)
-                # about 1.8 s alone (a pdfium child); 6.4 s in a loaded full -n auto run (19 Nov), as round 9's 8 s limits.
-                self.assertLess(time.perf_counter() - t0, 8.0)
+                # about 1.8 s alone (a pdfium child); 6.4 s in a loaded full -n auto run (19 Nov). TD-693: pinned
+                # by the ONE child that judges the objects, not by the time.
+                with wall_backstop(self), patch.object(pdfium_run, '_spawn', side_effect=pdfium_run._spawn) as spawned:
+                    self.assertEqual('SIJIL' in pdf_pages.pdf_text_layer(_many_objects(n)), kept)
+                self.assertEqual(spawned.call_count, 1)
 
     def test_one_call_opens_the_pdf_once(self):
         with patch('apps.scholarship.pdf_pages._open_pdf', wraps=pdf_pages._open_pdf) as opened:
