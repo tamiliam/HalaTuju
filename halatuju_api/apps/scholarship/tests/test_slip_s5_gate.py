@@ -1,0 +1,123 @@
+"""The OCR-first S5 slip gate script (`eval/slip_s5_gate.py`), on a SYNTHETIC corpus.
+
+The dry run reads every slip through the production read with the model mocked; the live path is
+driven with a fake genai client (no network, no key, no database); scoring reads synthetic caches.
+"""
+import io
+import json
+import os
+import shutil
+import tempfile
+from types import SimpleNamespace
+from unittest.mock import MagicMock
+
+from django.test import SimpleTestCase, override_settings
+
+from apps.scholarship.eval import slip_s5_gate as gate
+
+_GOOD = {'candidate_name': 'CALON CONTOH', 'exam': 'SPM 2025',
+         'results': [{'subject': 'BAHASA MELAYU', 'grade': 'A', 'band': 'CEMERLANG TINGGI'},
+                     {'subject': 'SEJARAH', 'grade': 'B+', 'band': 'KEPUJIAN TERTINGGI'}],
+         'warnings': []}
+
+
+def _png():
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new('RGB', (40, 40), 'white').save(buf, format='PNG')
+    return buf.getvalue()
+
+
+class _Corpus(SimpleTestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        os.makedirs(os.path.join(self.dir, 'fixtures', 'results_slip'))
+        os.makedirs(os.path.join(self.dir, 'snapshots'))
+        self.keys = ['results_slip__a1__d1', 'results_slip__a2__d2']
+        for k in self.keys:
+            with open(os.path.join(self.dir, 'fixtures', 'results_slip', f'{k}.png'), 'wb') as fh:
+                fh.write(_png())
+        typed = {'bm': 'A', 'hist': 'B+'}
+        self._write('applicants.json', {'1': {'profile': {'grades': typed}}, '2': {'profile': {'grades': typed}}})
+        stored = {'fields': {**_GOOD, 'results': [{'subject': 'BAHASA MELAYU', 'grade': 'A', 'band': ''},
+                                                  {'subject': 'SEJARAH', 'grade': 'C', 'band': ''}]},
+                  'error': '', 'capture': 'ai'}
+        for k in self.keys:
+            self._write(os.path.join('snapshots', f'{k}.json'), {'vision_fields': stored})
+
+    def _write(self, rel, data):
+        with open(os.path.join(self.dir, rel), 'w', encoding='utf-8') as fh:
+            json.dump(data, fh)
+
+
+class TheDryRun(_Corpus):
+    def test_every_slip_is_read_on_3_8_with_the_model_mocked(self):
+        lines = []
+        self.assertEqual(gate.main(['--eval-dir', self.dir], out=lines.append), 0)
+        self.assertIn("models ['gemini-3.8-flash']", lines[0])
+        self.assertIn('2 slips', lines[0])
+        self.assertIn('2-4 calls', lines[1])
+        self.assertIn('235-470 calls', lines[2])
+        self.assertFalse(os.path.exists(os.path.join(self.dir, gate.CACHE_DIR)))   # nothing written
+
+    def test_the_estimate(self):
+        self.assertEqual(gate.estimate(98), {'slips': 98, 'calls_min': 98, 'calls_max': 196,
+                                             'usd_low': 0.39, 'usd_high': 1.57})
+
+    def test_no_corpus_reads_nothing(self):
+        lines = []
+        self.assertEqual(gate.main(['--eval-dir', tempfile.gettempdir() + '/no-such-corpus'],
+                                   out=lines.append), 2)
+
+
+class TheLiveRunOnAFakeClient(_Corpus):
+    def _factory(self, answer):
+        self.asked = []
+
+        def generate_content(model, contents, config=None):
+            self.asked.append(model)
+            return SimpleNamespace(text=json.dumps(answer), usage_metadata=None)
+        client = MagicMock()
+        client.models.generate_content.side_effect = generate_content
+        return lambda *a, **k: client
+
+    def test_it_reads_on_3_8_only_caches_and_never_rereads(self):
+        factory = self._factory(_GOOD)
+        with override_settings(GEMINI_API_KEY='test-key'):
+            self.assertEqual(gate.main(['--eval-dir', self.dir, '--live'], client_factory=factory,
+                                       out=lambda *_: None), 0)
+            self.assertEqual(self.asked, ['gemini-3.8-flash', 'gemini-3.8-flash'])
+            gate.main(['--eval-dir', self.dir, '--live'], client_factory=factory, out=lambda *_: None)
+        self.assertEqual(len(self.asked), 2)                    # cache first: no second read
+        lines = []
+        gate.main(['--eval-dir', self.dir, '--score'], out=lines.append)
+        s = json.loads(lines[0])
+        self.assertEqual((s['s5_on_ai']['wrong'], s['stored_ai']['wrong']), (0, 2))
+        self.assertEqual(s['s5_all']['malformed'], 0)
+        self.assertEqual(s['gate'], 'PASS')
+
+    def test_a_malformed_answer_twice_is_a_refusal_never_a_grade(self):
+        factory = self._factory({**_GOOD, 'results': [{'subject': 'SEJARAH', 'grade': 'Bplus}', 'band': ''}]})
+        with override_settings(GEMINI_API_KEY='test-key'):
+            gate.main(['--eval-dir', self.dir, '--live', '--keys', self.keys[0]], client_factory=factory,
+                      out=lambda *_: None)
+        self.assertEqual(self.asked, ['gemini-3.8-flash', 'gemini-3.8-flash'])   # one retry only
+        lines = []
+        gate.main(['--eval-dir', self.dir, '--score'], out=lines.append)
+        s = json.loads(lines[0])
+        self.assertEqual((s['s5_all']['refused'], s['s5_all']['malformed']), (1, 0))
+
+    def test_without_a_key_nothing_is_read(self):
+        lines = []
+        with override_settings(GEMINI_API_KEY=''):
+            self.assertEqual(gate.main(['--eval-dir', self.dir, '--live'], out=lines.append), 2)
+
+
+class TheScore(SimpleTestCase):
+    def test_a_grade_outside_the_set_counts_as_malformed(self):
+        s = gate.score_read({'results': [{'subject': 'SEJARAH', 'grade': 'Aplus', 'band': ''}]}, {'hist': 'A+'})
+        self.assertEqual(s['malformed'], 1)
+
+    def test_no_read_is_a_refusal(self):
+        self.assertEqual(gate.score_read(None, {'bm': 'A'})['refused'], 1)

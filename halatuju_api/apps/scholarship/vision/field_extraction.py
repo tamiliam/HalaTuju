@@ -24,7 +24,10 @@ logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name 
 #: the profile's `results_held` is a hint only (1.0.0, unstamped: it vetoed every non-SPM profile).
 #: 1.2.0 (S-visible, 2026-11-18): a PDF whose text is invisible has no layer, so the gate's page-1 text
 #: is the Vision read of the visible page (`_page1_text`), never the hidden layer.
-SLIP_READER_VERSION = 'spm_slip 1.2.0'
+#: 1.3.0 (OCR-first S5, 2026-11-20): the AI fallback reads on 3.8 Flash only (`slip_read.py`) — a
+#: closed grade enum, every answer checked, one 3.8 retry, a malformed answer a failed read; the
+#: diag's ``ai_calls`` says 2 when the retry answered.
+SLIP_READER_VERSION = 'spm_slip 1.3.0'
 
 #: Results that are NOT SPM, by the title the page prints, beside the higher kinds `results_kind`
 #: already recognises (STPM / Matriculation / Asasi / Diploma). Whole words only. A vocational
@@ -209,13 +212,15 @@ def _read_results_slip(doc, ocr, _o, image_fn, pre_words):
             else:
                 ex = _v.extract_document_fields(_text, doc.doc_type)
             ex['capture'] = 'ai'
+            calls = ex.pop('slip_calls', None)   # S5: 2 = the 3.8 retry answered
             ex = _empty_answer_failed(ex)      # OCR-11: judged BEFORE the OCR year backfill below
             # Record WHY we fell back (+ what Vision read) so the slip can be diagnosed. A failed read
             # keeps no fields (`_build_read_result`), so it keeps the diagnostic beside them (`_EX_KEPT`).
             if ex.get('error'):
                 ex['_slip_ocr_diag'] = diag
             elif isinstance(ex.get('fields'), dict):
-                ex['fields']['_slip_ocr_diag'] = diag
+                ex['fields']['_slip_ocr_diag'] = ({**diag, 'ai_calls': calls}
+                                                  if calls and isinstance(diag, dict) else diag)
                 # Backfill the exam YEAR from the OCR text — Gemini's `exam` field drops a
                 # certificate's foot-of-page year, silently killing the exam-year chip.
                 ex['fields']['exam'] = ensure_exam_year(ex['fields'].get('exam', ''), _text)

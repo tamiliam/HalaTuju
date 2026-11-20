@@ -213,7 +213,7 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 - **Review fix round 2b (the ring):** black glyphs touching a white value no longer lend it ink. The child counts as a character's ink only the change the other characters' exact boxes cannot explain (`pdfium_worker._ink`). Ring variants refuse (all sides, -0.1 to 1 pt gaps, six pixel phases). Genuine cost 0 on both pypdf versions; least share 0.130 against the 0.10 floor; Gate 1 unchanged.
 - **Review fix round 3 (home-made fonts):** any Type3 font reachable from page 1 refuses a UMS letter (`page:type3`, owner 20 Nov); `pdf_ink.TYPE3_LANES` stays empty until the Type3 tolerance is fixed (decisions.md). Both flat-glyph attacks refuse. Genuine cost 0 (no UMS letter carries Type3); UiTM 9 of 11 now fail (6 Type3), for S2.
 
-### OCR-10 (was S5): SPM slips off 2.5 (the AI fallback moves to 3.8)
+### OCR-10 (was S5): SPM slips off 2.5 (the AI fallback moves to 3.8) — BUILT (2026-11-20), paid gate waits for the owner's yes
 - **Problem:** `vision/gemini_read.py:86` `PINNED_25_DOC_TYPES={'results_slip'}` keeps slips on 2.5, because 3.8 returned malformed grades on **26 of 98** slips ("Aplus", stray JSON, tab or CJK characters).
 - **Fix, in three layers:**
   1. **Parser first** (S4), so fewer slips reach AI at all.

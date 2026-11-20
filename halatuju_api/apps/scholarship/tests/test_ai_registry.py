@@ -161,15 +161,21 @@ class TestItResolvesRatherThanRemembers(TestCase):
                 self.assertEqual(jobs[key]['fallbacks'][0], 'gemini-2.5-flash')
 
     def test_the_jobs_the_owner_kept_on_2_5_still_start_there(self):
-        """THE EXCEPTIONS. 3.8 returned malformed grades on 26 of 98 SPM results slips in the paid
-        eval, and genuineness was not tested on it: the results-slip read and the three genuineness
-        jobs stay on 2.5 Flash first, exactly as before."""
+        """THE EXCEPTIONS. Genuineness was not tested on 3.8: the three genuineness jobs stay on
+        2.5 Flash first, exactly as before."""
         jobs = {j['key']: j for j in ai_registry.snapshot()}
-        for key in ('results_slip_read', 'ic_genuine', 'results_genuine', 'doc_genuine'):
+        for key in ('ic_genuine', 'results_genuine', 'doc_genuine'):
             with self.subTest(job=key):
                 self.assertEqual(jobs[key]['model'], 'gemini-2.5-flash')
                 self.assertEqual(jobs[key]['fallbacks'], ['gemini-2.5-flash-lite'])
                 self.assertNotIn('gemini-3.8-flash', [jobs[key]['model']] + jobs[key]['fallbacks'])
+
+    def test_the_results_slip_read_is_on_3_8_only(self):
+        """OCR-first S5: the SPM slip read moved off 2.5 to 3.8 Flash ONLY — checked answers and
+        one 3.8 retry (`vision/slip_read.py`), no 2.5 fallback. The screen shows exactly that."""
+        job = {j['key']: j for j in ai_registry.snapshot()}['results_slip_read']
+        self.assertEqual(job['model'], 'gemini-3.8-flash')
+        self.assertEqual(job['fallbacks'], [])
 
     def test_a_fallback_list_never_repeats_the_first_model(self):
         # Otherwise the screen reads "gemini-2.5-flash, then gemini-2.5-flash" — which looks like

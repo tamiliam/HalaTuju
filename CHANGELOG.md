@@ -127,6 +127,17 @@ Services: web. No migration.
 - The notes card drops its intro line and the "Notes can't be edited or deleted" line (the server stays append-only). Guide and FAQ lines updated.
 - One character-count placement (`CharCount`: right-aligned, under the box) for the notes card and the reject form.
 
+### feat: OCR-first S5 - SPM slips off 2.5; the AI fallback reads on 3.8 Flash only, checked (2026-11-20)
+
+Branch ocr-s5, not pushed. Migration: none. Services: api. Decisions: `docs/decisions.md` (2026-11-20, OCR-first S5). Not live: the paid gate waits for the owner's yes.
+- Why: the slip's AI fallback stayed on 2.5 Flash because 3.8 wrote malformed grades on 26 of 98 slips ("Aplus", stray JSON, tab and CJK characters). SPM grades feed eligibility: a refusal is safe, a wrong grade is not.
+- Schema (`vision/schemas.py`): each grade is an enum of A+, A, A-, B+, B, C+, C, D, E, G, TH plus empty (exactly `academic_engine._GRADE_TOKENS`, test-pinned); `required` on `subject`, `grade`, `band` in every row and on `candidate_name`, `exam`, `results`. The prompt names the allowed grades.
+- Clean-up (`vision/sanitize.py`, new `clean_slip_grade` / `clean_slip_text`; the pinned functions untouched): full-width forms, stray spaces, tabs, zero-width marks, lower case, "Aplus" / "A plus" / "A minus" and typographic dashes map to the one spelling. Anything else, a stray JSON character, a control character or a non-Latin letter is refused. A grade is never guessed.
+- One retry (`vision/slip_read.py`): every answer is checked; a malformed or unparseable answer is asked once more on 3.8; still malformed means a failed read (DOCUMENT_FAILED, stored 'unreadable'). A service error is not retried (it stays 'review_manually'). The model list is `MODEL_CASCADE` minus every 2.5 model; an empty list refuses rather than fall back. `PINNED_25_DOC_TYPES` is empty; the AI registry shows the slip on 3.8 with no fallback.
+- Version: SPM slip reader `spm_slip 1.3.0`; the fallback diag records `ai_calls` = 2 when the retry answered. No registered model's digest changed (the comments in `ai_registry.py` and `profile_engine.py` only).
+- Gate script, not run: `apps/scholarship/eval/slip_s5_gate.py`. The default is a free dry run with the model mocked. `--live` is paid, cache first, stops on 402/429 and has a `--max-usd` cap. `--score` is free. The live run on the 98 cached slips is 98-196 calls, about US$0.39-1.57; the roadmap's 235 slips are 235-470 calls, about US$0.94-3.76 (3.8 assumed at most twice the 2.5 per-call cost).
+- Tests: `test_slip_read_s5.py` (27) and `test_slip_s5_gate.py` (8); `test_gemini_phase2a.py` and `test_ai_registry.py` updated from "slip on 2.5" to "slip on 3.8 only".
+
 ### fix: gift names are checked the same way on create as on rename (review of #71, 2026-11-19)
 
 Services: both. No migration.

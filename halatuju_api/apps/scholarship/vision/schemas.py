@@ -26,11 +26,21 @@ _STR = {'type': 'string'}
 _STR_SOURCE = {'type': 'string', 'enum': ['letter', 'semakan_status', 'dashboard', 'unknown']}
 
 
-def _doc_schema(props: dict) -> dict:
-    """An object schema with the given string fields + a shared warnings array."""
+#: OCR-first S5: the grades an SPM slip carries — exactly `academic_engine._GRADE_TOKENS` (a test
+#: asserts it). The slip read's schema allows these plus '' (the cell could not be read).
+SLIP_GRADES = ('A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G', 'TH')
+_SLIP_GRADE = {'type': 'string', 'enum': [*SLIP_GRADES, '']}
+
+
+def _doc_schema(props: dict, required=None) -> dict:
+    """An object schema with the given string fields + a shared warnings array; ``required``
+    (OCR-first S5) lists the keys the answer must carry."""
     out = dict(props)
     out['warnings'] = {'type': 'array', 'items': {'type': 'string'}}
-    return {'type': 'object', 'properties': out}
+    schema = {'type': 'object', 'properties': out}
+    if required:
+        schema['required'] = list(required)
+    return schema
 
 
 _FIELD_SCHEMAS = {
@@ -70,10 +80,17 @@ _FIELD_SCHEMAS = {
     # Cemerlang Tinggi / …) — a SECOND, redundant encoding of the grade printed on the
     # slip. The academic engine cross-checks letter↔band to catch row-transposition
     # misreads (e.g. Matematik A vs Sains A+ swapped) and degrades to 'check' on conflict.
+    # OCR-first S5 (2026-11-20): the slip read moves to 3.8 Flash, which wrote malformed grades on
+    # 26 of 98 slips ("Aplus", stray JSON / tab / CJK). So the GRADE is a closed enum (the
+    # academic engine's _GRADE_TOKENS plus '' for an unreadable cell) and every key is required;
+    # vision/slip_read.py still checks every answer, since a schema is a request, not a promise.
     'results_slip': _doc_schema({'candidate_name': _STR, 'exam': _STR,
-                                 'results': {'type': 'array', 'items': {'type': 'object',
-                                             'properties': {'subject': _STR, 'grade': _STR,
-                                                            'band': _STR}}}}),
+                                 'results': {'type': 'array', 'items': {
+                                     'type': 'object',
+                                     'properties': {'subject': _STR, 'grade': _SLIP_GRADE,
+                                                    'band': _STR},
+                                     'required': ['subject', 'grade', 'band']}}},
+                                required=['candidate_name', 'exam', 'results']),
     # Pathway Check-1: the offer letter's facts. Its schema, prompt, inputs (up to 3 pages + the PDF
     # text layer) and version live in offer_reader.py (offer exact-read S4, 2026-11-01), where
     # extract_document_fields sends every offer read.
@@ -155,7 +172,10 @@ _DOC_HINTS = {
                      'differ, trust the BAND. Read strictly row by row: the grade and band '
                      'belong to the subject printed on the SAME line; NEVER carry a grade or '
                      'band up or down to a different subject, even if the slip is faint or '
-                     'watermarked. Ignore the "Ujian Lisan" line and any watermark text.'),
+                     'watermarked. Ignore the "Ujian Lisan" line and any watermark text. '
+                     'Write each grade as EXACTLY one of A+, A, A-, B+, B, C+, C, D, E, G, TH '
+                     '(plain characters, no words such as "plus"), or leave it empty if the row '
+                     'cannot be read.'),
     'str': (' This is meant to be a Malaysian STR (Sumbangan Tunai Rahmah) proof. It should be ONE '
             'of three recognised kinds — set "source_type" to: "letter" (an official Kementerian '
             'Kewangan STR APPROVAL letter — KEMENTERIAN KEWANGAN letterhead, a "No. Rujukan" + '
