@@ -569,4 +569,6 @@ def pdf_pages_png(data: bytes) -> Optional[bytes]:
     if n <= 0:
         return None
     answer = pdfium_run.ask(data, [{'op': 'stack', 'pages': pick(n), 'count': n, 'scale': _scale_args()}])
+    if answer and answer[0].get('stop'):
+        logger.warning('PDF stacked rasterise stopped: %s', answer[0]['stop'])   # `pdfium_worker.blank_render`
     return answer[0]['png'] if answer else None

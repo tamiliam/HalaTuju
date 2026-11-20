@@ -122,9 +122,82 @@ def _png(image) -> bytes:
     return buf.getvalue()
 
 
+# ── The blank-page guard (2026-11-21) ──
+# Under the Linux memory cap (`_limit_memory`) pdfium can fail to decode a big JPEG 2000 image and draw NOTHING,
+# with no error: an A4 400 dpi colour JPX scan at 1:7 (6.6 MB) rendered mean 255, spread 0. A white page then went
+# to the AI read as if it were the letter (an empty offer read is stored as 'ok'). A page that renders PURE white
+# while it draws a JPX image whose data cannot be pure white is a failed render ("cannot read"), never a picture.
+BLANK_STOP = 'render came back blank although the page draws a JPEG 2000 image'
+#: A JPX image counts when its encoded data holds at least this many bytes per pixel AND `JPX_MIN_BYTES`. A
+#: pure-white JPX is far under the ratio at any size (Pillow, A4 400 dpi colour: 448 B, about 0.00003 B/px; with
+#: 128 px tiles about 0.003 B/px, the worst measured), so a genuinely blank scanned page never trips; a colour scan
+#: at 1:200 is 0.015 B/px, and the failed letter 0.43 B/px. The floor keeps a tiny image, whose fixed header alone
+#: passes the ratio, out: a decode that runs out of memory is megabytes of data.
+JPX_MIN_BYTES_PER_PX = 0.01
+JPX_MIN_BYTES = 16 * 1024
+#: Page objects walked looking for that image (forms included); past it the page is not judged (kept as drawn).
+_BLANK_WALK_MAX = 10_000
+
+
+def _pure_white(image) -> bool:
+    """True when every pixel of a render is 255 in every colour band (one C pass, about 10 ms for 4 MP)."""
+    bands, extrema = image.getbands(), image.getextrema()
+    extrema = (extrema,) if len(bands) == 1 else extrema
+    return all(lo == 255 for band, (lo, _hi) in zip(bands, extrema) if band not in ('A', 'X'))
+
+
+def _filters(obj) -> list:
+    import pypdfium2.raw as raw
+    names = []
+    for k in range(max(0, raw.FPDFImageObj_GetImageFilterCount(obj))):
+        buf = ctypes.create_string_buffer(64)
+        size = raw.FPDFImageObj_GetImageFilter(obj, k, buf, len(buf))
+        names.append(buf.raw[:max(0, size - 1)].decode('latin-1') if 0 < size <= len(buf) else '?')
+    return names
+
+
+def _dense_jpx(obj) -> bool:
+    """True for an image object filtered by /JPXDecode whose encoded data reaches `JPX_MIN_BYTES` and
+    `JPX_MIN_BYTES_PER_PX` (the floor alone when pdfium cannot give its pixel size)."""
+    import pypdfium2.raw as raw
+    if 'JPXDecode' not in _filters(obj):
+        return False
+    size = raw.FPDFImageObj_GetImageDataRaw(obj, None, 0)
+    w, h = ctypes.c_uint(), ctypes.c_uint()
+    if not raw.FPDFImageObj_GetImagePixelSize(obj, ctypes.byref(w), ctypes.byref(h)):
+        return size >= JPX_MIN_BYTES
+    return size >= max(JPX_MIN_BYTES, JPX_MIN_BYTES_PER_PX * w.value * h.value)
+
+
+def draws_dense_jpx(page) -> bool:
+    """True when the page (or a form on it, at any depth) draws a `_dense_jpx` image."""
+    import pypdfium2.raw as raw
+    todo, walked = [(page.raw, False)], 0
+    while todo:
+        holder, is_form = todo.pop()
+        count = raw.FPDFFormObj_CountObjects(holder) if is_form else raw.FPDFPage_CountObjects(holder)
+        walked += max(0, count)
+        if walked > _BLANK_WALK_MAX:
+            return False
+        for j in range(max(0, count)):
+            obj = raw.FPDFFormObj_GetObject(holder, j) if is_form else raw.FPDFPage_GetObject(holder, j)
+            kind = raw.FPDFPageObj_GetType(obj) if obj else None
+            if kind == raw.FPDF_PAGEOBJ_IMAGE and _dense_jpx(obj):
+                return True
+            if kind == raw.FPDF_PAGEOBJ_FORM:
+                todo.append((obj, True))
+    return False
+
+
+def blank_render(page, image) -> bool:
+    """The guard: the render is pure white (`_pure_white`) AND the page draws a dense JPX image. The page objects are
+    walked only for a pure-white render, so an ordinary page pays one pass over its pixels."""
+    return _pure_white(image) and draws_dense_jpx(page)
+
+
 def _op_render(pdf, req, blobs):
-    """Each page in ``pages`` its own PNG, in order, stopping at the first page box out of bounds or failure
-    (what was rendered before it is kept). Nothing when pdfium sees another page count than pypdf."""
+    """Each page in ``pages`` its own PNG, in order, stopping at the first page box out of bounds, failure or
+    `blank_render` (what was rendered before it is kept). Nothing when pdfium sees another page count than pypdf."""
     out = {'pngs': [], 'stop': None}
     if len(pdf) == 0 or len(pdf) != req['count']:
         out['stop'] = 'page count'
@@ -137,7 +210,11 @@ def _op_render(pdf, req, blobs):
             if scale is None:
                 out['stop'] = 'page box %.0f x %.0f pt' % (width, height)
                 break
-            blobs.append(_png(page.render(scale=scale).to_pil()))
+            image = page.render(scale=scale).to_pil()
+            if blank_render(page, image):
+                out['stop'] = BLANK_STOP
+                break
+            blobs.append(_png(image))
             out['pngs'].append(len(blobs) - 1)
         except Exception as e:   # the rest of the pages are not rendered; the caller logs it
             out['stop'] = type(e).__name__
@@ -146,7 +223,8 @@ def _op_render(pdf, req, blobs):
 
 
 def _op_stack(pdf, req, blobs):
-    """{png: blob index or None}: ``pages`` rendered to ONE vertical PNG within the pixel budget."""
+    """{png: blob index or None}: ``pages`` rendered to ONE vertical PNG within the pixel budget; None (with
+    ``stop``) when any page is a `blank_render`, so the caller's read is not made rather than made on a gap."""
     from PIL import Image
     indices = list(req['pages'])
     if len(pdf) == 0 or len(pdf) != req['count']:
@@ -158,7 +236,12 @@ def _op_stack(pdf, req, blobs):
         return {'png': None}
     total_h = sum(h for _w, h in boxes)
     scale = min(dpi / 72.0, max_side / max(total_h, max(w for w, _h in boxes)))
-    images = [pages[i].render(scale=scale).to_pil().convert('RGB') for i in indices]
+    images = []
+    for i in indices:
+        image = pages[i].render(scale=scale).to_pil()
+        if blank_render(pages[i], image):
+            return {'png': None, 'stop': BLANK_STOP}
+        images.append(image.convert('RGB'))
     sheet = Image.new('RGB', (max(im.width for im in images), sum(im.height for im in images)), 'white')
     y = 0
     for im in images:
