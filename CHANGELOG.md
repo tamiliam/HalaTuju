@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### fix: S-visible round 11 - the render pre-filter refuses three crafted shapes the same on every machine (2026-11-20)
 
 Branch fix-pdfium-timing. A Cloud Build run failed `test_huge_spaced_text`: the Linux runner rendered it inside the 1 s limit the test relied on. `pdf_render_check` now refuses, before any pdfium child: a visible glyph drawn past 1,500 pt (`MAX_FONT_PT`; corpus 60), clipping paths nested past 64 (`MAX_CLIP_DEPTH`; corpus 6) or set past 5,000 on a page (`MAX_PAGE_CLIPS`; corpus 374), more than 500 annotations on a page (`MAX_PAGE_ANNOTS`; corpus 5), and walks every annotation's appearance stream like a form under the page's caps (it was not charged at all). Genuine cost 0 of 832 fixture PDFs (1,205 pages). The crafted-file tests run with a 60 s limit and assert no child is spawned; the time-limit backstop is pinned by a stand-in worker that never answers. Services: api. No migration.
+- **Debt:** the Opus review said "ship with notes"; its notes are TD-689 (annotation whitelist may refuse an e-signed letter, medium), TD-690 (three shapes left to the time limit, medium) and TD-691 (low notes).
 
 ### feat: admin case page - the pre-submission cleanup also covers Submitted (owner, 2026-11-19)
 
