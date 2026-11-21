@@ -16,13 +16,12 @@ import io
 import logging
 import re
 import threading
-from collections import Counter, OrderedDict
+from collections import OrderedDict
 from typing import NamedTuple, Optional
 
 from . import pdf_pdfium_check, pdf_render_check, pdfium_run, pdfium_worker
 from .pdf_layer_guards import (_MAX_DOC_FONT_COST, OverBudget as _OverBudget, _doc_may_switch_off, bad_operands,
-                               charge_fonts, longest_literal, oc_hides, page_tree_check, page_tree_refusal, raw_state_check,
-                               shown_chars)
+                               charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check, shown_chars)
 
 logger = logging.getLogger(__name__)
 
@@ -540,7 +539,8 @@ def pdf_page_texts(data: bytes, max_pages: int) -> list:
     shared read stops at a hidden page 1); EVERY page is '' when the walk ran past the operation budget.
     Pass a page through `usable_text_layer` before trusting it. pypdf raises many kinds on a damaged file,
     so any failure is no layer — the safe answer: the images are still shown. An encrypted PDF that opens
-    with the empty password is read like any other (`pdf_rules_page_texts` refuses it for a rules lane)."""
+    with the empty password is read like any other (`pdf_rules_pages.pdf_rules_page_texts` refuses it for a
+    rules lane)."""
     opened = []                            # one open and parse of the PDF for both reads below
     read = _layer(data, 0, opened)
     n = min(read.pages, max(0, max_pages), MAX_LAYER_PAGES - (_TAIL_PAGES if read.pages > MAX_LAYER_PAGES else 0))
@@ -549,40 +549,6 @@ def pdf_page_texts(data: bytes, max_pages: int) -> list:
     if read.texts is None:
         return []
     return [t.strip() for t in read.texts[:n]] + [''] * (n - len(read.texts[:n]))
-
-
-def pdf_rules_page_texts(data: bytes, max_pages: int) -> list:
-    """`pdf_page_texts` for a rules lane (UMS, owner words review round 2): [] — no page texts, so no lock —
-    when the PDF is encrypted or its page tree's counts disagree (`page_tree_refusal`), or it cannot be opened."""
-    try:
-        why = page_tree_refusal(_open_pdf(data))
-    except Exception as e:  # unopenable is no page texts, so no lock
-        why = f'unreadable ({type(e).__name__})'
-    if why:
-        logger.warning('PDF page tree refused for a rules lane: %s', why)
-        return []
-    return pdf_page_texts(data, max_pages)
-
-
-def pdf_page1_layout(data: bytes) -> str:
-    """Page 1's text in LAYOUT order (pypdf ``extraction_mode='layout'``: a label and its value on one line,
-    columns kept apart) — read by the UMS offer reader only (OCR-first S1, 2026-11-19), whose plain layer
-    glues the name into the address. '' unless page 1 passes the same visibility check as its plain layer
-    (`pdf_page_texts`) AND the layout holds exactly the same characters as that checked layer (spacing
-    aside), so the layout can never show text the visible-page check did not see. Any failure is ''.
-    Layout mode pads each line by x-position, so it runs in the pdfium CHILD (op ``layout``, review round 1)
-    under its time limit, memory cap and the document's budget: no answer, no layout, no lock."""
-    texts = pdf_page_texts(data, 1)
-    plain = texts[0] if texts else ''
-    if not plain:
-        return ''
-    from . import pdfium_run
-    got = pdfium_run.ask(data, [{'op': 'layout'}])
-    layout = (got[0] or {}).get('text') if got else ''
-    if not isinstance(layout, str) or not layout:
-        return ''
-    same = Counter(re.sub(r'\s', '', layout)) == Counter(re.sub(r'\s', '', plain))
-    return layout if same else ''
 
 
 def pdf_page_text(data: bytes, max_pages: int) -> str:

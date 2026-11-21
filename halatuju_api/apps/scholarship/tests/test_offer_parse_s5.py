@@ -287,16 +287,14 @@ class TestReviewFixes(SimpleTestCase):
 
     def test_m1_a_long_space_run_never_hangs_the_ums_reader(self):
         """OCR-first S1 review round 1 (#13): the UMS family too, as Vision text and as layout text."""
-        import time
         from apps.scholarship.tests.test_offer_parse_university import ums
-        run = ' ' * 3000
         for bait in ('untuk mendapat', 'Tarikh Lapor Diri', 'Program :', 'Kampus :', 'Tarikh :', '28 - 29',
                      '28 September hingga', 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH', 'UH'):
-            text = ums() + '\n' + bait + run + 'x\n' + bait + run
-            for kwargs in ({}, {'page1_text': text, 'page1_layout': text}):
-                start = time.perf_counter()
-                diagnose(text, **kwargs)
-                self.assertLess(time.perf_counter() - start, 1.0, bait)
+            def make(n, b=bait):
+                return ums() + '\n' + b + ' ' * n + 'x\n' + b + ' ' * n
+            for read in (diagnose, lambda t: diagnose(t, page1_text=t, page1_layout=t)):
+                with self.subTest(bait=bait):
+                    assert_linear(self, read, make, 3000, bait)
 
     def test_m2_a_portal_page_quoting_the_title_never_locks(self):
         portal = MATRIC_SPLIT.replace(

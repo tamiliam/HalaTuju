@@ -4,7 +4,7 @@ The first UNIVERSITY family of the Exact read (`offer_parse.diagnose` hands a UM
 UMS letter is one fixed template ("TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH, SESI ..."), seen
 two ways:
 
-* a digital PDF: read from page 1's LAYOUT text (`pdf_pages.pdf_page1_layout`), where each label and
+* a digital PDF: read from page 1's LAYOUT text (`pdf_rules_pages.pdf_page1_layout`), where each label and
   its value share a line and the name stands alone under the offer date. The plain text layer glues
   the IC, the student number, the name and the address into one run, so a name read from it could
   swallow an address word: a text-layer letter WITHOUT its layout text never locks here;

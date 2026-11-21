@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from apps.scholarship import vision
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship import pdf_pages
+from apps.scholarship import pdf_pages, pdf_rules_pages
 from apps.scholarship.offer_course_match import letter_level
 from apps.scholarship.offer_exact import exact_read, ocr_first_lanes, rules_lane_open, rules_lane_verdict
 from apps.scholarship.offer_parse import diagnose, parse_govt_offer
@@ -27,8 +27,8 @@ PINNED = 'apps.scholarship.offer_course_match.pinned_match'
 LEVEL = 'apps.scholarship.offer_course_match.course_level'
 ONE = ('', {'course_id': 'uh6481001', 'institution': 'Universiti Malaysia Sabah'})
 READ_UMS = 'apps.scholarship.offer_parse_university.read_ums'
-LAYOUT = 'apps.scholarship.pdf_pages.pdf_page1_layout'
-PAGE_TEXTS = 'apps.scholarship.pdf_pages.pdf_rules_page_texts'
+LAYOUT = 'apps.scholarship.pdf_rules_pages.pdf_page1_layout'
+PAGE_TEXTS = 'apps.scholarship.pdf_rules_pages.pdf_rules_page_texts'
 
 
 def ums(name=NAME, nric=NRIC, prog_line=PROG, said=PROG, report='28-29 September 2031', extra_head='',
@@ -358,7 +358,7 @@ class TestTheLayoutRunsInTheChild(SimpleTestCase):
 
     def test_the_child_reads_the_layout(self):
         from apps.scholarship.tests.test_ocr_visible import _pdf, _show
-        self.assertEqual(pdf_pages.pdf_page1_layout(_pdf([_show('Nama   ZORBEX QUENTARO')])), 'Nama   ZORBEX QUENTARO')
+        self.assertEqual(pdf_rules_pages.pdf_page1_layout(_pdf([_show('Nama   ZORBEX QUENTARO')])), 'Nama   ZORBEX QUENTARO')
 
     def test_no_answer_from_the_child_is_no_layout(self):
         from apps.scholarship.tests.test_ocr_visible import _pdf, _show
@@ -369,7 +369,7 @@ class TestTheLayoutRunsInTheChild(SimpleTestCase):
             asked.append(ops)
             return None if ops == [{'op': 'layout'}] else real(data, ops)
         with mock.patch('apps.scholarship.pdfium_run.ask', side_effect=ask):
-            self.assertEqual(pdf_pages.pdf_page1_layout(_pdf([_show('Nama   ZORBEX QUENTARO')])), '')
+            self.assertEqual(pdf_rules_pages.pdf_page1_layout(_pdf([_show('Nama   ZORBEX QUENTARO')])), '')
         self.assertIn([{'op': 'layout'}], asked)
 
 
@@ -566,15 +566,15 @@ class TestS1c(SimpleTestCase):
                 self.assertEqual((reason, f['candidate_name']), ('', NAME))
 
     def test_text_longer_than_a_page_one_is_refused_at_once(self):
-        import time
         from apps.scholarship.offer_parse_university import MAX_CHARS, MAX_LINES
+        from apps.scholarship.tests._timing import assert_linear
         self.assertEqual(read_ums(ums() + 'x' * MAX_CHARS)[1], 'too_long')
         self.assertEqual(read_ums(ums() + '.\n' * MAX_LINES)[1], 'too_long')
-        hostile = ums() + ('untuk mendapat x' + ' ' * 79) * 2500
-        start = time.perf_counter()
-        self.assertEqual(read_ums(hostile), (None, 'too_long'))
-        self.assertIsNone(diagnose(hostile)['locked'])
-        self.assertLess(time.perf_counter() - start, 1.0)
+        def make(n):
+            return ums() + ('untuk mendapat x' + ' ' * 79) * n
+        self.assertEqual(read_ums(make(2500)), (None, 'too_long'))
+        self.assertIsNone(diagnose(make(2500))['locked'])
+        assert_linear(self, lambda t: (read_ums(t), diagnose(t)['locked']), make, 2500, 'too long')
 
     def test_diagnose_and_the_exact_read_share_one_family_helper(self):
         from apps.scholarship.offer_exact import _ums_family

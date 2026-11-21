@@ -278,7 +278,7 @@ def _op_words(pdf, req, blobs):
 
 
 def _op_layout(pdf, req, blobs):
-    """{text}: page 1's pypdf LAYOUT text (`pdf_pages.pdf_page1_layout`, OCR-first S1 review round 1) — here, not
+    """{text}: page 1's pypdf LAYOUT text (`pdf_rules_pages.pdf_page1_layout`, OCR-first S1 review round 1) — here, not
     in the web process, because layout mode pads every line by x-position: a crafted page is bounded by this
     child's time limit and memory cap. pypdf reads the same bytes pdfium opened (``_DATA``)."""
     from pypdf import PdfReader

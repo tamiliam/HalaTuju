@@ -443,7 +443,7 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
     ``page1_text`` is a digital PDF's page-1 text layer, given ONLY when ``text`` is that PDF's own text
     layer (`offer_exact` decides — review H1). The identity is read from it, AND from ``text``: when the
     two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``).
-    ``page1_layout`` is that page's LAYOUT text (`pdf_pages.pdf_page1_layout`) — read by the UMS family
+    ``page1_layout`` is that page's LAYOUT text (`pdf_rules_pages.pdf_page1_layout`) — read by the UMS family
     only (`_diagnose_ums`), with ``page_texts`` (`pdf_pages.pdf_page_texts`: each page's drawn text, render-mode visible)."""
     text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or ''))   # no-break spaces as spaces; no zero-width
     page1_text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_text or ''))

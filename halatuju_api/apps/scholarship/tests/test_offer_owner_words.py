@@ -5,7 +5,6 @@ the lane-off path unchanged and the confirmation letters' result the same with t
 
 Synthetic twins only — invented names, ICs and places (`test_no_gitignored_corpus.py`)."""
 import io
-import time
 from unittest import mock
 
 from django.test import SimpleTestCase, override_settings
@@ -17,6 +16,7 @@ from apps.scholarship.offer_parse import diagnose, parse_govt_offer
 from apps.scholarship.offer_parse_university import read_ums
 from apps.scholarship.offer_ums_refusal import _cancel_said, fold_lookalikes, later_pages_refusal, letter_refusal
 from apps.scholarship.tests.test_offer_parse_university import LAYOUT, NAME, NRIC, PAGE_TEXTS, PROG, READ_UMS, ums
+from apps.scholarship.tests._timing import assert_linear, calls, wall_backstop
 from apps.scholarship.tests.test_offer_rulings import _confirm
 
 LANE = 'ua:UMS'
@@ -90,18 +90,18 @@ class TestOwnerWords(SimpleTestCase):
         self.assertEqual(page_of_each(LANE, ['', 'Tarikh Lapor Diri'])[10], 2)
 
     def test_hostile_text_is_fast(self):
-        hostile = ('Program ' + ' ' * 150 + 'Kod ') * 12_000
-        start = time.perf_counter()
-        missing(LANE, hostile[:200_000])
-        self.assertLess(time.perf_counter() - start, 2.0)
+        """200,000 hostile characters: linear work (TD-693: counted, not timed)."""
+        assert_linear(self, lambda t: missing(LANE, t),
+                      lambda n: (('Program ' + ' ' * 150 + 'Kod ') * (n // 162 + 1))[:n], 100_000, 'missing')
 
     def test_text_that_unpacks_long_is_capped_and_fast(self):
         """Review round 1 LOW 5: the cap counts AFTER unpacking (one U+FDFA unpacks to 18 characters)."""
+        work = {}
         for n in (12_000, 200_000):
-            with self.subTest(n=n):
-                start = time.perf_counter()
-                self.assertEqual(missing(LANE, FULL + '\uFDFA' * n), list(range(1, 12)))
-                self.assertLess(time.perf_counter() - start, 2.0)
+            with self.subTest(n=n), wall_backstop(self):
+                got, work[n] = calls(missing, LANE, FULL + '\uFDFA' * n)
+                self.assertEqual(got, list(range(1, 12)))
+        self.assertLessEqual(work[200_000], 2.5 * work[12_000])     # capped: 16x the text is not 16x the work
         self.assertEqual(missing(LANE, FULL + '\uFDFA' * 100), [])      # short: still read
 
     def test_a_letter_of_any_script_is_part_of_the_word(self):
@@ -139,11 +139,8 @@ class TestConditionalTerbatal(SimpleTestCase):
 
     def test_hostile_text_is_fast(self):
         """Round 3 MED 5: 200,000 characters of conditional phrases and cancel words finish in under 5 s."""
-        hostile = ('akan terbatal sekiranya ' * 9_000)[:200_000]
-        start = time.perf_counter()
-        _cancel_said(hostile)
-        letter_refusal(hostile)
-        self.assertLess(time.perf_counter() - start, 5.0)         # owner words review round 1: 5 s, not 2 s
+        assert_linear(self, lambda t: (_cancel_said(t), letter_refusal(t)),
+                      lambda n: ('akan terbatal sekiranya ' * (n // 24 + 1))[:n], 100_000, 'cancel words')
 
 
 class TestReportingDateLabelValue(SimpleTestCase):
@@ -498,7 +495,8 @@ class TestPageTree(SimpleTestCase):
 
     def test_a_clean_pdf_passes(self):
         from apps.scholarship.pdf_layer_guards import page_tree_refusal
-        from apps.scholarship.pdf_pages import _open_pdf, pdf_rules_page_texts
+        from apps.scholarship.pdf_pages import _open_pdf
+        from apps.scholarship.pdf_rules_pages import pdf_rules_page_texts
         data = _pdf(2)
         self.assertEqual(page_tree_refusal(_open_pdf(data)), '')
         with mock.patch('apps.scholarship.pdf_pages.pdf_page_texts', return_value=['a', 'b']) as texts:
@@ -507,7 +505,8 @@ class TestPageTree(SimpleTestCase):
 
     def test_a_count_other_than_the_leaves_refuses(self):
         from apps.scholarship.pdf_layer_guards import page_tree_refusal
-        from apps.scholarship.pdf_pages import _open_pdf, pdf_rules_page_texts
+        from apps.scholarship.pdf_pages import _open_pdf
+        from apps.scholarship.pdf_rules_pages import pdf_rules_page_texts
         data = _pdf(2)
         self.assertIn(b'/Count 2', data)
         for count in (b'/Count 3', b'/Count 1'):
@@ -520,7 +519,8 @@ class TestPageTree(SimpleTestCase):
 
     def test_an_encrypted_pdf_refuses(self):
         from apps.scholarship.pdf_layer_guards import page_tree_refusal
-        from apps.scholarship.pdf_pages import _open_pdf, pdf_rules_page_texts
+        from apps.scholarship.pdf_pages import _open_pdf
+        from apps.scholarship.pdf_rules_pages import pdf_rules_page_texts
         data = _pdf(1, password='')
         self.assertEqual(page_tree_refusal(_open_pdf(data)), 'encrypted')
         with mock.patch('apps.scholarship.pdf_pages.pdf_page_texts') as texts:

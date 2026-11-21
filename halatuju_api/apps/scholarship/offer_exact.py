@@ -200,7 +200,8 @@ def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_n
         return None
     layout, page_texts = '', None
     if lane_on and ums and from_layer and page1.strip():
-        from .pdf_pages import MAX_LAYER_PAGES, pdf_page1_layout, pdf_rules_page_texts
+        from .pdf_pages import MAX_LAYER_PAGES
+        from .pdf_rules_pages import pdf_page1_layout, pdf_rules_page_texts
         layout, page_texts = pdf_page1_layout(image), pdf_rules_page_texts(image, MAX_LAYER_PAGES)
     return exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric,
                       page1_layout=layout, why=why, page_texts=page_texts)

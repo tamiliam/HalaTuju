@@ -129,7 +129,7 @@ def page1_of(eval_dir, key, route):
 
 
 def page1_layout_of(eval_dir, key, route):
-    """Page 1's LAYOUT text (`pdf_pages.pdf_page1_layout`) for a text-layer letter whose page-1 layer carries
+    """Page 1's LAYOUT text (`pdf_rules_pages.pdf_page1_layout`) for a text-layer letter whose page-1 layer carries
     the UMS title (`is_ums`); '' otherwise (OCR-first S1). This matches `offer_exact.exact_offer_read` only
     as if the ua:UMS lane were ON: production derives the layout only with the lane on, and only when the
     whole text is the UMS family (`offer_parse.family_of`; S1c). `diagnose` reads the layout only for that
@@ -140,7 +140,7 @@ def page1_layout_of(eval_dir, key, route):
     if not os.path.exists(path):
         return ''
     from apps.scholarship.offer_parse_university import is_ums
-    from apps.scholarship.pdf_pages import pdf_page1_layout
+    from apps.scholarship.pdf_rules_pages import pdf_page1_layout
     with open(path, 'rb') as fh:
         data = fh.read()
     page1 = page1_text_layer(data, 'application/pdf')
@@ -148,11 +148,12 @@ def page1_layout_of(eval_dir, key, route):
 
 
 def page_texts_of(eval_dir, key, route):
-    """Each page's VISIBLE text (`pdf_pages.pdf_rules_page_texts`, as `offer_exact` reads it) for the same letters
+    """Each page's VISIBLE text (`pdf_rules_pages.pdf_rules_page_texts`, as `offer_exact` reads it) for the same letters
     `page1_layout_of` gives a layout (a text-layer PDF whose page-1 layer carries the UMS title); None otherwise."""
     if not page1_layout_of(eval_dir, key, route):
         return None
-    from apps.scholarship.pdf_pages import MAX_LAYER_PAGES, pdf_rules_page_texts
+    from apps.scholarship.pdf_pages import MAX_LAYER_PAGES
+    from apps.scholarship.pdf_rules_pages import pdf_rules_page_texts
     with open(os.path.join(eval_dir, 'fixtures', 'offer_letter', key + '.pdf'), 'rb') as fh:
         return pdf_rules_page_texts(fh.read(), MAX_LAYER_PAGES)
 
