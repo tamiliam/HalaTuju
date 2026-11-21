@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: the suite stops unless it runs on the production pypdf, pypdfium2 and Python (2026-11-21)
+
+Branch fix-pypdf621 (on 9e8b23f04). Test and tooling only, no production code changed. A full api suite under the locked packages (pypdf 6.21.4) failed one test that passes on the station's pypdf 5.9.0: `TheHostileShapes::test_each_form_call_costs_20_operations` expected 2 content-stream parses and got 1. Root cause: 5.9 reads an empty (`/Length 0`) form as one newline and parses it, 6.21.4 reads it as empty and skips the parse; on both, the walk stops the file at the same call on the font-maps budget (the form lists a font: 256 units a call), not on the operations budget the test was named for, and nothing is extracted. Now:
+- **The test** is split in two, the same on both versions: a form with no font and one blank byte stops on the OPERATIONS budget (24,006 + 20 x 24,000), and a form that lists a font stops on the FONT-MAPS budget; both assert the budget named in the log, no extraction, and the exact parses (for the empty form, against what the installed pypdf reads).
+- **The pin check** (root `conftest.py`, `apps/scholarship/tests/_install_pins.py`): a pytest session stops at start when pypdf or pypdfium2 differs from `requirements.lock`, or the Python major.minor from the Dockerfile's FROM line (3.11), with both versions and the venv fix; `--unpinned-cross-check` (off by default) only warns. Neither file enters the production image (`.dockerignore`); `manage.py` does not load it.
+- **The genuine side:** the 870 eval fixture PDFs (553 distinct files) through the walk and both reads (whole layer, first 3 pages), pypdf 5.9.0 on Python 3.13 against 6.21.4 on 3.11.18: no budget stop on 6.21.4 that 5.9 lacks (the same 2 files stop on the per-stream token limit on both), none stops on font maps (max 792,972 of 1,200,000, on 6.21.4); 13 letters that 5.9 could not parse (a NUL byte in the content stream) walk as drawn on 6.21.4, which production already runs; 1 file fails the walk on both.
+- TD-pending row: station gate suites ran on pypdf 5.9.0; the Python still differs (medium).
+
 ### docs: the render batch records what its reviews left open (2026-11-21)
 
 Three TD-pending rows from the adversarial reviews of the unfiltered-content fix and the blank-page guard: the guard misses a white page that carries any other mark and can trip on a few odd hidden-image shapes (medium); a reference with the wrong generation number hides an object from the render check (high, pre-existing); two small render-check edges (low). Docs only.

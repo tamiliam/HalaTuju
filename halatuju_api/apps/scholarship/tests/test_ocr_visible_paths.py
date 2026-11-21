@@ -431,9 +431,31 @@ class TheHostileShapes(SimpleTestCase):
     def test_350k_empty_form_calls(self):
         self._hostile(_pdf([b'/Fm1 Do ' * 350_000 + _show(SPM_TEXT)], form=b''))
 
+    def _stops_at(self, data, budget, parses):
+        """`_hostile`, and the walk stopped on THIS budget (the log names it), not on another first."""
+        with self.assertLogs('apps.scholarship.pdf_pages', 'WARNING') as logs:
+            self._hostile(data, parses=parses)
+        self.assertIn(f'past the {budget} budget of one PDF', '\n'.join(logs.output))
+
     def test_each_form_call_costs_20_operations(self):
-        # 24,000 calls: 24,000 operations + 20 x 24,000 = 504,000, past the 500,000 budget, never extracted
-        self._hostile(_pdf([b'/Fm1 Do ' * 24_000 + _show(SPM_TEXT)], form=b''), parses=2)   # the page and the form
+        # A form with NO font (no font-map charge) and one blank byte, so pypdf parses it on 5.9 and 6.21.4 alike.
+        # 24,000 calls: 24,006 page operations + 20 x 24,000 = 504,006, past the 500,000 budget, never extracted
+        form = _stream(b'<< /Type /XObject /Subtype /Form /BBox [0 0 300 200] /Resources << /ProcSet [/PDF] >>', b' ')
+        data = _doc(b'/Fm1 Do ' * 24_000 + _show(SPM_TEXT), {6: form},
+                    page_res=b'/Resources << ' + FONT_RES + b' /XObject << /Fm1 6 0 R >> >>')
+        self._stops_at(data, 'operations', parses=2)                          # the page and the form
+
+    def test_each_form_call_charges_the_fonts_it_lists(self):
+        # The same 24,000 calls of a form that lists /F1: 256 font-map units a call pass the 1,200,000 budget at
+        # call 4,686, long before the operations. An EMPTY form (/Length 0) is parsed by pypdf 5.9 (it reads the
+        # stream as b'\n') but never by 6.21.4 (b''): the parses are pinned against what THIS pypdf reads.
+        from pypdf import PdfReader
+        for form in (b' ', b''):
+            with self.subTest(form=form):
+                data = _pdf([b'/Fm1 Do ' * 24_000 + _show(SPM_TEXT)], form=form)
+                read = PdfReader(io.BytesIO(data)).pages[0]['/Resources']['/XObject']['/Fm1'].get_object().get_data()
+                self.assertEqual(read.strip(), b'')
+                self._stops_at(data, 'font maps', parses=1 + bool(read))
 
     def test_form_calls_at_the_budget_edge(self):
         # a form with no font (no font-map charge): 23,000 calls stay within the walk's operation budget
