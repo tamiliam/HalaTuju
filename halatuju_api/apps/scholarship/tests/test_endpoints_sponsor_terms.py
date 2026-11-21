@@ -9,8 +9,8 @@ Four routes the TD-219 guard listed as never driven by any test:
 The terms are a CONSENT document — what a benefactor accepts — so each test reads back what the
 service decided rather than what the caller sent: orders assigned by position, a quiz payload
 dropped with its flag, a translation kept only if it marks the same answer, a sub-clause folded
-into its parent. The two Gemini seams are mocked at the one boundary the module names
-(`sponsor_terms._gemini_generate`); no test reaches a model. The .docx is a REAL Word file built
+into its parent. The Gemini calls are mocked at the one seam
+(`contracts._gemini_generate`); no test reaches a model. The .docx is a REAL Word file built
 with python-docx, so `contracts._docx_structure` parses it for real.
 
 The relay is the anonymity boundary in the other direction: student words reaching a funder. The
