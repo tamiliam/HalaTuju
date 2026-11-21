@@ -187,6 +187,23 @@ describe('F3 review fixes: the date line and the served box answer', () => {
     expect(document.body.textContent).not.toContain(K + 'missing.reportingDate')
   })
 
+  it('with Decline chosen and only the date missing, a Recommend press still names the date (round 2)', async () => {
+    const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: noDate() })
+    await loaded()
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(document.getElementById('decision-missing')).toBeNull()   // the resting list leaves it out
+    fireEvent.click(btn('recordVerdict.approve'))
+    const alert = screen.getByRole('alert')
+    expect(Array.from(alert.querySelectorAll('li button')).map((b) => b.textContent))
+      .toEqual([K + 'missing.reportingDate'])
+    expect(document.activeElement).toBe(alert)
+    expect(outcome()).toBe('admin.scholarship.recordVerdict.decline')   // Recommend did not act
+    expect(api.recordVerdict).not.toHaveBeenCalled()
+    // Choosing Decline again puts the resting rule back: the date line leaves.
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(document.getElementById('decision-missing')).toBeNull()
+  })
+
   it('an unreadable letter date ("JULAI 2026"): the served answer shows the box and the line (fix 1)', async () => {
     renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing',
       build: { ...noDate(), documents: julaiLetter(), shows_reporting_date_box: true } })

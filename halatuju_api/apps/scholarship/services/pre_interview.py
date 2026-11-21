@@ -130,6 +130,23 @@ def take_back_assessment(application):
     return [field for field, _ in ASSESSMENT_DEFAULTS]
 
 
+def assessment_meta(assessment, kept):
+    """What the DECLINER assessed, for the reject's own activity row (`declined`, category
+    `pre_interview`), written on EVERY reject: with no recorded assessment the same four facts are
+    also on the case (`officer_verdict`); with one (``kept``) the case keeps the earlier assessment and
+    this row is the only record of the decliner's. A cancel never touches it: it is the history of
+    what was pressed. ``facts_passed`` / ``facts_failed``: fact names; ``why_<fact>``: the Fail reason
+    code of each failed fact; ``assessment_kept``: the case kept an earlier recorded assessment. Fact
+    names and reason codes only (closed `staff_activity.META_KEYS`), never free text."""
+    from .. import fail_reasons
+    from ..audit import FACTS
+    why = assessment.get(fail_reasons.KEY) or {}
+    return {'facts_passed': [f for f in FACTS if assessment.get(f) == 'pass'],
+            'facts_failed': [f for f in FACTS if assessment.get(f) == 'fail'],
+            **{f'why_{f}': why[f] for f in FACTS if f in why},
+            'assessment_kept': bool(kept)}
+
+
 def reject_before_interview(application, admin, reason, comments, facts=None, fail_reasons=None):
     """Record the decline now and hold its email for the QC hold. Raises ValueError with
     'bad_status' (not Awaiting review), 'has_reviewer', 'reason_required', 'comments_required',
@@ -145,16 +162,19 @@ def reject_before_interview(application, admin, reason, comments, facts=None, fa
         raise ValueError('has_reviewer')
     comments = _checked_note(reason, comments)
     assessment = checked_assessment(facts, fail_reasons)
-    # Fix 2: a recorded assessment already on the case is kept, never written over.
-    assessed = {} if has_recorded_assessment(application) else _assessment_fields(application, assessment)
     hold = hold_for(application)
     with transaction.atomic():
         try:
-            lock_application_for(application, PRE_INTERVIEW_FROM)
+            lock_application_for(application, PRE_INTERVIEW_FROM)   # refreshes `application` in place
         except StatusRefused:
             raise ValueError('bad_status')
         if application.assigned_to_id is not None:
             raise ValueError('has_reviewer')
+        # Fix 2: a recorded assessment already on the case is kept, never written over. Read from the
+        # LOCKED row (review round 2), so a verdict recorded a moment ago is never overwritten; the AI
+        # snapshot beside the facts is read here too, before the reject changes the case.
+        kept = has_recorded_assessment(application)
+        assessed = {} if kept else _assessment_fields(application, assessment)
         by = getattr(admin, 'email', '') or ''
         _record_reject(application, CATEGORY, by, comments=comments)   # the decision is immediate
         application.rejection_reason = reason
@@ -172,5 +192,6 @@ def reject_before_interview(application, admin, reason, comments, facts=None, fa
     if hold.total_seconds() <= 0:
         _send_decline_for(application)
     staff_activity.record(admin, staff_activity.DECLINED, application,
-                          meta={'category': CATEGORY, 'reason': reason})
+                          meta={'category': CATEGORY, 'reason': reason,
+                                **assessment_meta(assessment, kept)})
     return True

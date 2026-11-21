@@ -6,8 +6,14 @@
  *
  * F3 review fix 1: the cockpit now reads the SERVER's answer (`shows_reporting_date_box`, via
  * `reportingDateBoxShown`). `letter_cases` are whole cases (the letter's date TEXT, a recorded date);
- * pytest checks the server answers them, and here the web follows the served value, even where its
- * own fallback would read "JULAI 2026" as a date.
+ * pytest checks the server answers them.
+ *
+ * Review round 2: the web has NO letter-date parser and no recorded-date input; its fallback (for an
+ * older API) reads any date text on a live letter as a date. So here the fallback is RUN on the letter
+ * rows it can judge (no date text, or a readable date that is recorded), and every row where it
+ * answers differently must be one it cannot judge (unparseable text such as "JULAI 2026", or a
+ * readable date not yet recorded): the known gap, which the served answer closes. The served answer
+ * itself is checked only for what it is: it passes through, whatever the documents say.
  */
 import { reportingDateBoxShown, showsReportingDateBox } from '@/lib/cockpitTrail'
 import { readApi } from '@/test/apiSource'
@@ -45,9 +51,27 @@ describe('reporting-date box drift (F3)', () => {
     expect(letterCases.some((c) => c.letter_date === 'JULAI 2026' && c.shows)).toBe(true)
   })
 
-  it.each(letterCases)('the cockpit follows the served answer: %o', (c) => {
-    expect(reportingDateBoxShown(
-      { status: c.status, shows_reporting_date_box: c.shows, documents: docsFor(c) }, c.reopened)).toBe(c.shows)
+  // The web fallback's answer for a letter row (no served field).
+  const fallback = (c: LetterCase) => reportingDateBoxShown(
+    { status: c.status, shows_reporting_date_box: undefined, documents: docsFor(c) }, c.reopened)
+  // The rows the fallback can judge: no date text, or a readable date that is recorded.
+  const fallbackCanJudge = (c: LetterCase) => !c.letter_date || (c.letter_has_date && c.recorded)
+
+  it.each(letterCases.filter(fallbackCanJudge))('the web fallback answers a letter row it can judge: %o', (c) => {
+    expect(fallback(c)).toBe(c.shows)
+  })
+
+  it('the fallback differs from the server only on the rows it cannot judge (the known gap)', () => {
+    const differs = letterCases.filter((c) => fallback(c) !== c.shows)
+    expect(differs.length).toBeGreaterThan(0)   // else the gap is gone and this comment is stale
+    expect(differs.filter(fallbackCanJudge)).toEqual([])
+  })
+
+  it.each(letterCases)('the served answer passes through, whatever the documents say: %o', (c) => {
+    for (const served of [true, false]) {
+      expect(reportingDateBoxShown(
+        { status: c.status, shows_reporting_date_box: served, documents: docsFor(c) }, c.reopened)).toBe(served)
+    }
   })
 
   it('an unreadable letter date still shows the box when the server says so', () => {
