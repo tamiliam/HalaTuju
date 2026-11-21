@@ -23,5 +23,10 @@
     "digest": "e8ed31fadebc86314bc19feda1337daca3d55bf934253a35801f5d076af2b424",
     "note": "2026-11-21: OCR-11 review round 3. The white check opens only income_declaration.WHITE_CHECK_FORMATS (JPEG, PNG, GIF, BMP, TIFF, WEBP; HEIF only while pillow_heif has registered it): PIL's ICO opener decodes the whole image inside open, before any size check (a 580 kB ICO of a 12000 x 12000 PNG took ~600 MB). An image over 16 MP that is not a baseline JPEG is not white BEFORE the draft: libjpeg holds a progressive JPEG's full-size buffer whatever the scale (a 2 MB 13000 x 13000 one took ~1 GB). The draft also covers MPO. Both are not white, so the approval read goes ahead as before 1.32.0.",
     "also_ok": []
+  },
+  "1.35.0": {
+    "digest": "7bb0a1d2ed9835003647ff22ef84eeff0059463c5ecdb78eba5d30de14395df8",
+    "note": "2026-11-21: OCR-11 review round 4. The 16 MP cap (income_declaration.WHITE_CHECK_MAX_PIXELS) applies to EVERY format by the header size, before any draft or decode: a baseline (SOF0/SOF1) JPEG with one scan per colour is not marked progressive, yet libjpeg holds its full buffer whatever the scale (158-177 byte 13000 x 13000 files peaked 361-1,383 MB). So a white 48/50 MP phone photo gets the paid read as before 1.32.0. TIFF is removed from WHITE_CHECK_FORMATS: a 1 MB TIFF with a 64 x 64 header and one 16384 x 16384 tile peaked ~1.1 GB and read white; a TIFF page now gets the paid read. Every over-cap round 3 and round 4 repro and the tiled TIFF now peak at 21-24 MB.",
+    "also_ok": []
   }
 }

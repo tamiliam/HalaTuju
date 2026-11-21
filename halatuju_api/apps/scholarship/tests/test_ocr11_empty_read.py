@@ -235,6 +235,43 @@ def _ink_page(mode):
     return buf.getvalue()
 
 
+def _multi_scan_jpeg(width, height, sof=0xFFC0):
+    """A hand-built baseline (SOF0, or SOF1) 3-colour JPEG of this header size with NON-interleaved scans
+    (one scan per colour), cut after its first scan: a few hundred bytes. PIL does not mark it progressive."""
+    import struct
+
+    def seg(marker, body):
+        return struct.pack('>HH', marker, len(body) + 2) + body
+    one = bytes([1] + [0] * 15)
+    comps = b''.join(struct.pack('>BBB', i + 1, 0x11, 0) for i in range(3))
+    return (b'\xff\xd8' + seg(0xFFDB, b'\x00' + b'\x01' * 64)
+            + seg(sof, struct.pack('>BHHB', 8, height, width, 3) + comps)
+            + seg(0xFFC4, b'\x00' + one + b'\x00' + b'\x10' + one + b'\x00')
+            + seg(0xFFDA, struct.pack('>BBBBBB', 1, 1, 0x00, 0, 63, 0)) + b'\x00' * 16 + b'\xff\xd9')
+
+
+def _tiled_tiff(width, height, tile):
+    """A deflate RGBA TIFF whose header says ``width`` x ``height`` and whose ONE tile is ``tile`` square.
+    The tile's data is a stub: only the header is read here."""
+    import struct
+    import zlib
+    data = zlib.compress(b'\xff' * 1024)
+    entries = [(256, 3, 1, width), (257, 3, 1, height), (258, 3, 4, None), (259, 3, 1, 8), (262, 3, 1, 2),
+               (277, 3, 1, 4), (284, 3, 1, 1), (322, 3, 1, tile), (323, 3, 1, tile),
+               (324, 4, 1, None), (325, 4, 1, len(data)), (338, 3, 1, 2)]
+    bps_off = 8 + 2 + len(entries) * 12 + 4
+    data_off = bps_off + 8
+    out = b'II*\x00' + struct.pack('<I', 8) + struct.pack('<H', len(entries))
+    for tag, typ, cnt, val in entries:
+        if tag in (258, 324):
+            out += struct.pack('<HHII', tag, typ, cnt, bps_off if tag == 258 else data_off)
+        elif typ == 3:
+            out += struct.pack('<HHIHH', tag, typ, cnt, val, 0)
+        else:
+            out += struct.pack('<HHII', tag, typ, cnt, val)
+    return out + struct.pack('<I', 0) + struct.pack('<HHHH', 8, 8, 8, 8) + data
+
+
 class TheWhiteCheckGuards(SimpleTestCase):
     """Review round 2: the white check runs in the request's own process on an uploaded image."""
 
@@ -296,6 +333,39 @@ class TheWhiteCheckGuards(SimpleTestCase):
         with Image.open(io.BytesIO(bytes(data))) as im:
             self.assertEqual((im.size, bool(im.info.get('progressive'))), ((13000, 13000), True))
         self._never_decoded(bytes(data))
+
+    def test_a_huge_multi_scan_baseline_jpeg_is_not_white_and_is_never_decoded(self):
+        """Review round 4, B1: a baseline (SOF0/SOF1) JPEG with one scan per colour is not marked
+        progressive, yet libjpeg holds its full-size buffer whatever the draft scale (a 158-byte
+        13000 x 13000 one peaked over 1 GB). The header cap now applies to every format, before the draft."""
+        from PIL import Image, JpegImagePlugin
+        for sof in (0xFFC0, 0xFFC1):
+            with self.subTest(sof=hex(sof)):
+                data = _multi_scan_jpeg(13000, 13000, sof)
+                self.assertLess(len(data), 1000)
+                with Image.open(io.BytesIO(data)) as im:
+                    self.assertEqual((im.format, im.size, bool(im.info.get('progressive'))),
+                                     ('JPEG', (13000, 13000), False))
+                with mock.patch.object(JpegImagePlugin.JpegImageFile, 'draft') as draft:
+                    self._never_decoded(data)
+                draft.assert_not_called()
+
+    def test_a_tiff_is_never_opened_and_is_not_white(self):
+        """Review round 4, B2: a TIFF with a 64 x 64 header and ONE 16384 x 16384 tile is decoded whole by
+        libtiff (a 1 MB file peaked ~1.1 GB and came back white). TIFF is not an allowed format: even a
+        plain white TIFF page gets the paid read."""
+        from PIL import Image, TiffImagePlugin
+        from apps.scholarship.income_declaration import WHITE_CHECK_FORMATS, approval_page_white
+        self.assertNotIn('TIFF', WHITE_CHECK_FORMATS)
+        tiled = _tiled_tiff(64, 64, 16384)
+        with Image.open(io.BytesIO(tiled)) as im:                  # PIL's TIFF driver would take it
+            self.assertEqual((im.format, im.size), ('TIFF', (64, 64)))
+        with mock.patch.object(TiffImagePlugin.TiffImageFile, 'load') as tiff_load:
+            self._never_decoded(tiled)
+        tiff_load.assert_not_called()
+        buf = io.BytesIO()
+        Image.new('RGB', (600, 800), 'white').save(buf, format='TIFF')
+        self.assertFalse(approval_page_white(buf.getvalue()))
 
     def test_a_12_mp_phone_photo_is_judged_as_before_baseline_and_progressive(self):
         from PIL import Image, ImageDraw

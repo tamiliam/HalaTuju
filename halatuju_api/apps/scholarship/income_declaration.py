@@ -175,12 +175,13 @@ PAGE_INK_LEVEL = 200
 #: (CHANGELOG, OCR-11 round 1): every genuine income scan and photo sits far above it.
 WHITE_PAGE_INK_SHARE = 0.002
 #: OCR-11 round 2, a decompression-bomb guard (`staff_photo.MAX_PIXELS`'s 16 MP): an image larger than this,
-#: read from the HEADER (a JPEG after its reduced-scale draft), is never decoded here and is not white.
+#: read from the HEADER (round 4: before any draft, every format), is never decoded here and is not white.
 WHITE_CHECK_MAX_PIXELS = 16_000_000
 #: Round 3: the only formats the white check opens. Some PIL openers decode the whole image inside `open`,
 #: before any size check (an ICO wrapping a huge PNG); any other format is not white (the read goes ahead).
 #: HEIF is added only while `pillow_heif` has registered it (`imaging.convert_heic_to_jpeg`).
-WHITE_CHECK_FORMATS = ('JPEG', 'PNG', 'GIF', 'BMP', 'TIFF', 'WEBP')
+#: Round 4: TIFF dropped (a small header over one huge tile is decoded whole); a TIFF page gets the paid read.
+WHITE_CHECK_FORMATS = ('JPEG', 'PNG', 'GIF', 'BMP', 'WEBP')
 
 
 def approval_page_white(img: bytes) -> bool:
@@ -194,7 +195,10 @@ def approval_page_white(img: bytes) -> bool:
     Round 2: an image over `WHITE_CHECK_MAX_PIXELS`, and a 16/32-bit or float one (modes I, I;16..., F —
     PIL clips those to 8-bit instead of scaling, so dark ink would read as white), is not white either.
     Round 3: only `WHITE_CHECK_FORMATS` are opened, and an image over the cap that is not a baseline JPEG
-    is not white BEFORE the draft (libjpeg holds a progressive JPEG's full-size buffer whatever the scale)."""
+    is not white BEFORE the draft (libjpeg holds a progressive JPEG's full-size buffer whatever the scale).
+    Round 4: the header-size cap applies to EVERY format before any draft or decode (a baseline JPEG with one
+    scan per colour is not marked progressive, yet libjpeg holds its full buffer too), and TIFF is no longer
+    opened (one huge tile behind a small header is decoded whole)."""
     import io
     from PIL import Image
     formats = WHITE_CHECK_FORMATS + (('HEIF',) if 'HEIF' in Image.OPEN else ())
@@ -202,10 +206,9 @@ def approval_page_white(img: bytes) -> bool:
         with Image.open(io.BytesIO(img), formats=formats) as im:   # the header only: nothing is decoded yet
             if im.mode in ('I', 'F') or im.mode.startswith('I;'):
                 return False
-            jpeg = im.format in ('JPEG', 'MPO')
-            if im.width * im.height > WHITE_CHECK_MAX_PIXELS and not (jpeg and not im.info.get('progressive')):
+            if im.width * im.height > WHITE_CHECK_MAX_PIXELS:   # round 4: every format, by the header size
                 return False
-            if jpeg:
+            if im.format in ('JPEG', 'MPO'):
                 im.draft('L', (1600, 1600))
             if im.width * im.height > WHITE_CHECK_MAX_PIXELS:
                 return False
