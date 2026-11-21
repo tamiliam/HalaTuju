@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: F1 (fix plan) - words and display fixes (2026-11-22)
+
+Branch fix-f1, not pushed. Migration: none. Services: web, api.
+- **I-3:** the reject-before-interview form marks both labels required and the select carries aria-required.
+- **I-5:** the case-page reviewer drop-down shows the name only (no role label).
+- **I-6:** at submitted the Documents and AI Prediction boxes are hidden; at shortlisted they stay.
+- **I-7:** the student's note follows one rule at every stage: shown when it has text, hidden when empty (it was hidden on engine-rejected cases).
+- **I-8:** the "Rejected before interview" overview card is gone (web card, API funnel key, `counts()` and their tests). The Rejected tile shows the total only.
+- **I-9:** case-page wording in en/ms/ta: Record your assessment, Reviewer Assessment, AI Prediction:, Complete your assessment, verdict to assessment in about a dozen strings; the saved-not-submitted hint now says Recommend (was Approve).
+- **I-13:** the case list "Assigned" column is plain text: reviewer name, Waiting for a reviewer (with the Prefers note), Not ready yet with Ready on a date, or a dash. New read-only `ready_on` on the list serializer, from the same source as `is_ready_for_assignment`. The list select and its dead helpers and tests are deleted.
+
 ### refactor: one home for the single-model Gemini seam, dup 1 to 0 (2026-11-19)
 
 Migration: none. Services: api. Closes audit item CH-07 (A3.11 "One Gemini helper"); no behaviour change.

@@ -26,6 +26,49 @@ describe.each(['submitted', 'shortlisted'] as const)('at %s', (stage) => {
   })
 })
 
+describe('F1 / I-6: Documents and AI Prediction boxes', () => {
+  it('are hidden at submitted', async () => {
+    renderCockpit({ role: 'org_admin', writes: true, stage: 'submitted' })
+    await loaded()
+    expect(screen.queryByText('admin.scholarship.verdict.title')).toBeNull()
+    expect(screen.queryByText(/admin\.scholarship\.docsDrawer\.title/)).toBeNull()
+  })
+
+  it('stay at shortlisted', async () => {
+    renderCockpit({ role: 'org_admin', writes: true, stage: 'shortlisted' })
+    await loaded()
+    expect(screen.getByText('admin.scholarship.verdict.title')).toBeTruthy()
+    expect(screen.getByText(/admin\.scholarship\.docsDrawer\.title/)).toBeTruthy()
+  })
+})
+
+describe('F1 / I-7: the student note, one rule at every stage', () => {
+  it.each(['shortlisted', 'interviewing', 'recommended'] as const)('shows at %s when it has text', async (stage) => {
+    renderCockpit({ role: 'org_admin', writes: true, stage, build: { uncertainty_note: 'Dummy note' } as never })
+    await loaded()
+    expect(screen.getByText('Dummy note')).toBeTruthy()
+  })
+
+  it('shows on an engine-rejected case, where the review panel is hidden', async () => {
+    renderCockpit({
+      role: 'org_admin', writes: true, stage: 'shortlisted',
+      build: { status: 'rejected', rejection_category: 'merit', uncertainty_note: 'Dummy note' } as never,
+    })
+    await loaded()
+    expect(screen.getByText('Dummy note')).toBeTruthy()
+  })
+
+  it('is hidden when empty', async () => {
+    renderCockpit({
+      role: 'org_admin', writes: true, stage: 'interviewing',
+      build: { uncertainty_note: '', anything_else: '' } as never,
+    })
+    await loaded()
+    expect(screen.queryByText('admin.scholarship.studentNote')).toBeNull()
+    expect(screen.queryByText('Dummy note')).toBeNull()
+  })
+})
+
 it('submitted keeps the Close the file card', async () => {
   renderCockpit({ role: 'org_admin', writes: { can_write: true, can_close_pre_award: true }, stage: 'submitted' })
   await loaded()

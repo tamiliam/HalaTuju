@@ -121,15 +121,15 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
       {step === 'form' && (<>
         <h3 className="text-sm font-semibold text-ground-900">{t(`${P}.title`)}</h3>
         <label htmlFor="pre-interview-reason" className="block text-sm font-medium text-ground-700">
-          {t(`${P}.whyLabel`)}
+          {t(`${P}.whyLabel`)}<span className="ml-0.5 text-critical-600" aria-hidden>*</span>
         </label>
-        <select id="pre-interview-reason" ref={selectRef} value={reason} onChange={(e) => setReason(e.target.value)}
+        <select id="pre-interview-reason" ref={selectRef} aria-required="true" value={reason} onChange={(e) => setReason(e.target.value)}
           className={`w-full rounded-lg border px-3 py-2 text-sm ${BTN}`}>
           <option value="">{t(`${P}.reasonPlaceholder`)}</option>
           {offer.reasons.map((r) => <option key={r} value={r}>{t(`${P}.reasons.${r}`)}</option>)}
         </select>
         <label htmlFor="pre-interview-why" className="block text-sm font-medium text-ground-700">
-          {t(`${P}.detailsLabel`)}
+          {t(`${P}.detailsLabel`)}<span className="ml-0.5 text-critical-600" aria-hidden>*</span>
         </label>
         <textarea id="pre-interview-why" rows={4} value={note} maxLength={max} aria-required="true"
           aria-describedby="pre-interview-why-hint pre-interview-why-count"

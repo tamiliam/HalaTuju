@@ -10,7 +10,7 @@ Pinned here, one test per rule the organisation approved:
   * THE EMAIL: held for the organisation's QC decline hold, the same markers and release cron as a
     QC decline; until it goes the student still sees Awaiting review; cancel puts the student back at
     Awaiting review with no reviewer and nothing is sent. The reason and note never reach the student.
-  * It never counts against a reviewer, and the Programme overview counts it, by reason.
+  * It never counts against a reviewer, and the Programme overview no longer breaks it out (F1 / I-8).
   * #75 review: the reject and the assign each re-read the case under its row lock, so whichever
     commits second sees the first.
   * #75 re-check: an unassign's interview teardown cancels the Meet event and sends its two emails
@@ -30,7 +30,7 @@ from apps.scholarship.emails.student_decisions import _DECLINE_TEMPLATES
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.services import (AssignmentError, assign_reviewer, cancel_pending_decline,
                                        release_pending_declines)
-from apps.scholarship.services.pre_interview import REASONS, counts, reject_before_interview
+from apps.scholarship.services.pre_interview import REASONS, reject_before_interview
 from apps.scholarship.student_status import student_facing_status
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org,
@@ -563,43 +563,3 @@ class CountsTest(_Base):
         self.assertEqual(after['declined'], 0)
         self.app.refresh_from_db()
         self.assertIsNone(self.app.assigned_to_id)
-
-    def test_counts_by_reason(self):
-        for reason in ('not_b40', 'not_b40', 'results_too_low'):
-            app = make_application('profile_complete', cohort=self.cohort)
-            reject_before_interview(app, self.org_admin, reason, NOTE)
-        scope = ScholarshipApplication.objects.filter(owning_organisation=self.org)
-        got = counts(scope)
-        self.assertEqual(got['total'], 3)
-        self.assertEqual(got['by_reason']['not_b40'], 2)
-        self.assertEqual(got['by_reason']['results_too_low'], 1)
-        self.assertEqual(set(got['by_reason']), set(REASONS))
-        self.assertEqual(got['by_reason']['other'], 0)
-
-    def test_another_organisations_rejections_stay_out(self):
-        other_org = make_org()
-        other = make_application('profile_complete', cohort=make_cohort(owning_organisation=other_org))
-        reject_before_interview(other, make_admin('org_admin', owning_org=other_org), 'not_b40', NOTE)
-        reject_before_interview(self.app, self.org_admin, 'other', NOTE)
-        got = counts(ScholarshipApplication.objects.filter(owning_organisation=self.org))
-        self.assertEqual(got['total'], 1)
-        self.assertEqual(got['by_reason']['not_b40'], 0)
-        r = authed_client(self.org_admin).get('/api/v1/admin/scholarship/programme-overview/')
-        self.assertEqual(r.status_code, 200, r.content)
-        self.assertEqual(r.data['funnel']['pre_interview']['total'], 1)
-
-    def test_a_cancelled_one_is_not_counted(self):
-        reject_before_interview(self.app, self.org_admin, 'other', NOTE)
-        cancel_pending_decline(self.app)
-        scope = ScholarshipApplication.objects.filter(owning_organisation=self.org)
-        self.assertEqual(counts(scope)['total'], 0)
-
-    def test_the_programme_overview_funnel_carries_the_counts(self):
-        reject_before_interview(self.app, self.org_admin, 'not_responsive', NOTE)
-        code = self.cohort.programme.code if self.cohort.programme_id else ''
-        q = f'?programme={code}' if code else ''
-        r = authed_client(self.org_admin).get(f'/api/v1/admin/scholarship/programme-overview/{q}')
-        self.assertEqual(r.status_code, 200, r.content)
-        pre = r.data['funnel']['pre_interview']
-        self.assertEqual(pre['total'], 1)
-        self.assertEqual(pre['by_reason']['not_responsive'], 1)

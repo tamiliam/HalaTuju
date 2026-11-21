@@ -234,12 +234,20 @@ const PRE_SUBMISSION_STATUSES = ['submitted', 'shortlisted']
  * Also (owner 2026-11-19) the Interview Stage, funding projection, Recommendation and notes cards stay
  * hidden at Awaiting review while NO reviewer is assigned (`isWaitingForReviewer`).
  *
- * What DOES stay at submitted and shortlisted: Blockers, Documents, Check 2 only when it holds
- * resolution items (`showsCheck2Box`; empty it does no work here), AI Prediction (the verification read as documents arrive), Close the file and Reject-this-student
- * (`ORG_REJECT_FROM = ('shortlisted',)` — it exists only there).
+ * What DOES stay at submitted and shortlisted: Blockers, Check 2 only when it holds
+ * resolution items (`showsCheck2Box`; empty it does no work here), Close the file and Reject-this-student
+ * (`ORG_REJECT_FROM = ('shortlisted',)` — it exists only there). Documents and AI Prediction stay at shortlisted but are hidden at submitted (`showsDocumentsAndPredictionBoxes`).
  */
 export function isPreSubmissionStage(status: string | null | undefined): boolean {
   return PRE_SUBMISSION_STATUSES.includes(status || '')
+}
+
+/**
+ * Show the Documents box and the AI Prediction box? Hidden at `submitted` only (F1 / I-6, owner
+ * 2026-11-21): nothing has been handed to a reviewer yet. They stay at `shortlisted` and after.
+ */
+export function showsDocumentsAndPredictionBoxes(status: string | null | undefined): boolean {
+  return status !== 'submitted'
 }
 
 /** Show the verdict-flow / funding-projection / generated-profile cards? Hidden pre-submission. */

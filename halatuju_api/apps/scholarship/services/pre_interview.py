@@ -108,18 +108,3 @@ def reject_before_interview(application, admin, reason, comments):
     staff_activity.record(admin, staff_activity.DECLINED, application,
                           meta={'category': CATEGORY, 'reason': reason})
     return True
-
-
-def counts(scope):
-    """The Programme overview's count of rejections before interview, and by reason (#75).
-
-    Every reason is listed, zero-filled, in the panel's order, like the funnel beside it. A
-    cancelled one is not counted: cancel clears the bucket."""
-    rows = scope.filter(status='rejected', rejection_category=CATEGORY).values_list(
-        'rejection_reason', flat=True)
-    by_reason = {code: 0 for code in REASONS}
-    total = 0
-    for code in rows:
-        total += 1
-        by_reason[code if code in by_reason else 'other'] += 1
-    return {'total': total, 'by_reason': by_reason}

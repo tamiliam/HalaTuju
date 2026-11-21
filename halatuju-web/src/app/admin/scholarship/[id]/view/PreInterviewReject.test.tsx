@@ -42,11 +42,23 @@ const draw = (app: api.AdminScholarshipDetail, canAssign = true) => {
   return onDone
 }
 const fill = (reason: string, note: string) => {
-  fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: reason } })
-  fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`), { target: { value: note } })
+  fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: reason } })
+  fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: note } })
 }
 
 beforeEach(() => jest.clearAllMocks())
+
+describe('required marks (F1 / I-3)', () => {
+  it('marks both labels required and the select aria-required', async () => {
+    draw(caseOf())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    const why = await screen.findByLabelText(`${P}.whyLabel`, { exact: false })
+    expect(why.getAttribute('aria-required')).toBe('true')
+    const labels = document.querySelectorAll('label')
+    const marked = Array.from(labels).filter((l) => l.querySelector('span[aria-hidden]')?.textContent === '*')
+    expect(marked.length).toBeGreaterThanOrEqual(2)
+  })
+})
 
 describe('the door', () => {
   it('shows nothing when the server does not offer it (a reviewer, or another stage)', () => {
@@ -77,7 +89,7 @@ describe('the panel', () => {
   it('lists the served reasons and rests until a reason and a note are given', () => {
     draw(caseOf())
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    const options = screen.getByLabelText(`${P}.whyLabel`).querySelectorAll('option')
+    const options = screen.getByLabelText(`${P}.whyLabel`, { exact: false }).querySelectorAll('option')
     expect(options).toHaveLength(OFFER.reasons.length + 1)
     const submit = screen.getByRole('button', { name: `${P}.submit` }) as HTMLButtonElement
     expect(submit.disabled).toBe(true)
@@ -94,7 +106,7 @@ describe('the panel', () => {
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
     fill('other', 'Dummy')
     expect(screen.getByTestId('pre-interview-counter').textContent).toBe(`${P}.counter|{"count":"5","max":"20"}`)
-    expect((screen.getByLabelText(`${P}.detailsLabel`) as HTMLTextAreaElement).maxLength).toBe(20)
+    expect((screen.getByLabelText(`${P}.detailsLabel`, { exact: false }) as HTMLTextAreaElement).maxLength).toBe(20)
   })
 
   it('Cancel closes the panel and sends nothing', () => {
@@ -110,7 +122,7 @@ describe('focus and labels (#75 review)', () => {
   it('opening the form puts focus on the reason; Cancel puts it back on the start button', () => {
     draw(caseOf())
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    expect(document.activeElement).toBe(screen.getByLabelText(`${P}.whyLabel`))
+    expect(document.activeElement).toBe(screen.getByLabelText(`${P}.whyLabel`, { exact: false }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.cancel` }))
     expect(document.activeElement).toBe(screen.getByRole('button', { name: `${P}.start` }))
   })
@@ -118,7 +130,7 @@ describe('focus and labels (#75 review)', () => {
   it('the note names its hint and its counter', () => {
     draw(caseOf())
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    const ids = (screen.getByLabelText(`${P}.detailsLabel`).getAttribute('aria-describedby') || '').split(' ')
+    const ids = (screen.getByLabelText(`${P}.detailsLabel`, { exact: false }).getAttribute('aria-describedby') || '').split(' ')
     expect(ids.map((id) => document.getElementById(id)?.textContent)).toEqual([
       `${P}.whyHint`, `${P}.counter|{"count":"0","max":"20"}`])
   })
@@ -126,7 +138,7 @@ describe('focus and labels (#75 review)', () => {
   it('the details box is marked required, and its counter is not read out on every keystroke', () => {
     draw(caseOf())
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    expect(screen.getByLabelText(`${P}.detailsLabel`).getAttribute('aria-required')).toBe('true')
+    expect(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }).getAttribute('aria-required')).toBe('true')
     expect(screen.getByTestId('pre-interview-counter').hasAttribute('aria-live')).toBe(false)
   })
 
@@ -204,7 +216,7 @@ describe('are you sure?', () => {
     draw(caseOf())
     toConfirm()
     fireEvent.click(screen.getByRole('button', { name: `${P}.back` }))
-    expect((screen.getByLabelText(`${P}.detailsLabel`) as HTMLTextAreaElement).value).toBe('Dummy note')
+    expect((screen.getByLabelText(`${P}.detailsLabel`, { exact: false }) as HTMLTextAreaElement).value).toBe('Dummy note')
   })
 
   it('Yes, reject sends the reason and note and hands the case back', async () => {

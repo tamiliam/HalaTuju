@@ -22,6 +22,7 @@ import {
   verdictItemKey,
   headerTimeline,
   isPreSubmissionStage,
+  showsDocumentsAndPredictionBoxes,
   showsPostSubmissionCards,
   rejectionTrail,
   spmExamYear,
@@ -1681,6 +1682,13 @@ describe('headerTimeline — the cockpit header lifecycle chips', () => {
 })
 
 describe('pre-submission stage gate (shortlisted card hiding)', () => {
+  it('F1 / I-6: Documents and AI Prediction are hidden at submitted only', () => {
+    expect(showsDocumentsAndPredictionBoxes('submitted')).toBe(false)
+    for (const s of ['shortlisted', 'profile_complete', 'interviewing', 'rejected', 'awarded']) {
+      expect(showsDocumentsAndPredictionBoxes(s)).toBe(true)
+    }
+  })
+
   it('only submitted and shortlisted count as pre-submission', () => {
     expect(isPreSubmissionStage('shortlisted')).toBe(true)
     expect(isPreSubmissionStage('submitted')).toBe(true)

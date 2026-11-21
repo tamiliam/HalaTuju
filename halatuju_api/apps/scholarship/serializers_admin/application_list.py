@@ -87,6 +87,9 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
     # offers an assign the server would refuse with 'not_ready' (= services.is_ready_for_assignment,
     # the same value the detail serializer ships inside query_sla).
     ready_for_assignment = serializers.SerializerMethodField()
+    # F1 / I-13: when the 5-day window ends, for an unassigned Awaiting-review case that is not ready
+    # yet (the list says "Ready on <date>"); null when ready or not applicable.
+    ready_on = serializers.SerializerMethodField()
     # #73: the caller has a note from the other side here they have not seen (the list's EXISTS column,
     # `staff_notifications.with_new_note`); False wherever the column was not asked for.
     new_note = serializers.SerializerMethodField()
@@ -100,7 +103,7 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
             'assigned_to_id', 'assigned_to_name', 'assignable', 'needs_new_holder', 'may_unassign',
-            'ready_for_assignment',
+            'ready_for_assignment', 'ready_on',
             # When set, the list pill shows "Reopened" (overriding accepted/rejected).
             'decision_reopened_at',
             # #75: 'pre_interview' shows "Rejected before interview" in the list's status pill.
@@ -110,6 +113,13 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
 
     def get_new_note(self, obj):
         return bool(getattr(obj, 'new_note', False))
+
+    def get_ready_on(self, obj):
+        from ..services import ready_on
+        if obj.status != 'profile_complete' or obj.assigned_to_id is not None:
+            return None
+        when = ready_on(obj)
+        return when.isoformat() if when else None
 
     def get_ready_for_assignment(self, obj):
         from ..services import is_ready_for_assignment

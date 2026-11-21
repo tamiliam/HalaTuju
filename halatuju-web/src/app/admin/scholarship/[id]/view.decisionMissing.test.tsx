@@ -162,9 +162,9 @@ describe('the fact list reads as the language does, with the real messages', () 
     return Object.entries(params).reduce((acc, [k, x]) => acc.replace(`{${k}}`, x), v)
   }
   it.each([
-    ['en', 'Check Academic and Income'],
-    ['ms', 'Semak fakta: Akademik dan Pendapatan'],
-    ['ta', 'உண்மைகளைச் சரிபாருங்கள்: கல்வி மற்றும் வருமானம்'],
+    ['en', 'Complete your assessment: Academic and Income'],
+    ['ms', 'Lengkapkan penilaian anda: Akademik dan Pendapatan'],
+    ['ta', 'உங்கள் மதிப்பீட்டை நிறைவு செய்யுங்கள்: கல்வி மற்றும் வருமானம்'],
   ])('%s', (loc, expected) => {
     const t = real(loc)
     const facts = joinFacts(['academic', 'income'].map((f) => t(`admin.scholarship.verdict.fact.${f}`)), loc)

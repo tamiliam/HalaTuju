@@ -41,14 +41,14 @@ import {
   type AdminSponsorProfile,
 } from '@/lib/admin-api'
 import { nudgeButton } from '@/lib/blockers'
-import { showsNotesCard } from '@/lib/cockpitStages'
+import { showsNotesCard, showsDocumentsAndPredictionBoxes } from '@/lib/cockpitStages'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 
 import { GroupLabel } from './view/shared'
 import { CockpitHeader } from './view/CockpitHeader'
 import { ApplicantCards, householdFigures } from './view/ApplicantCards'
 import { VerificationVerdict } from './view/VerificationVerdict'
-import { GeneratedProfile } from './view/GeneratedProfile'
+import { GeneratedProfile, StudentOwnWords } from './view/GeneratedProfile'
 import { OutstandingPanel } from './view/OutstandingPanel'
 import { RefereesPanel, InterviewStage } from './view/InterviewPanels'
 import { DocumentsDrawer } from './view/DocumentsDrawer'
@@ -311,14 +311,14 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
           the column shrinking, or it pushes the 340px Record panel off-screen. */}
       <div className="space-y-4 min-w-0">
 
-      <VerificationVerdict app={app} t={t} caseSummary={caseSummary} />
+      {showsDocumentsAndPredictionBoxes(app.status) && <VerificationVerdict app={app} t={t} caseSummary={caseSummary} />}
 
 
       <GeneratedProfile
         app={app} t={t} profile={profile} genLang={genLang} setGenLang={setGenLang}
         busy={busy} error={error} decisionReopened={decisionReopened}
-        showOwnWords={showOwnWords} setShowOwnWords={setShowOwnWords}
       />
+      <StudentOwnWords app={app} t={t} showOwnWords={showOwnWords} setShowOwnWords={setShowOwnWords} />
 
 
       <OutstandingPanel
@@ -362,9 +362,11 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
 
 
 
-      <DocumentsDrawer
-        app={app} t={t} busy={busy} canWrite={canWrite} setViewerDoc={setViewerDoc} doReRunVision={doReRunVision}
-      />
+      {showsDocumentsAndPredictionBoxes(app.status) && (
+        <DocumentsDrawer
+          app={app} t={t} busy={busy} canWrite={canWrite} setViewerDoc={setViewerDoc} doReRunVision={doReRunVision}
+        />
+      )}
 
 
       </div>{/* end LEFT column */}
@@ -464,6 +466,11 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         <DecisionBar t={t} outcome={officerVerdict.overall} canSave={canSave && !busy} />
       )}
       </>)}
+
+      {/* F1 / I-7: engine-rejected cases hide the panel above, but the student's note still shows when it has text. */}
+      {app.status === 'rejected' && ['merit', 'need', 'ineligible'].includes(app.rejection_category) && (
+        <StudentOwnWords app={app} t={t} showOwnWords={showOwnWords} setShowOwnWords={setShowOwnWords} noteOnly />
+      )}
     </div>
   )
 }

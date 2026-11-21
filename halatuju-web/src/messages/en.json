@@ -4455,8 +4455,8 @@
       "none": "None yet.",
       "profileTitle": "Student profile (draft)",
       "profileFinalTitle": "Student profile (final)",
-      "profileDraftHint": "This draft will be replaced with an updated final version that incorporates your findings when you save your verdict.",
-      "profileFinalHint": "This is the final profile, generated from the interview findings and your verdict. Reopen the decision to revise it.",
+      "profileDraftHint": "This draft will be replaced with an updated final version that incorporates your findings when you save your assessment.",
+      "profileFinalHint": "This is the final profile, generated from the interview findings and your assessment. Reopen the decision to revise it.",
       "profileFinalising": "The final profile is being written. It will appear here in a few minutes; reload the page to see it.",
       "profileFinaliseFailed": "The final profile could not be written after three tries. The draft is shown below. Please tell a super admin.",
       "profileDrafting": "The profile draft is being written. It will appear here in a few minutes; reload the page to see it.",
@@ -5074,9 +5074,9 @@
       },
       "decision": {
         "title": "Recommendation",
-        "savedAndAccepted": "Verdict saved — applicant accepted.",
-        "notSubmittedIncomplete": "Verdict saved, but NOT sent to QC — this applicant still has required steps outstanding.",
-        "notSubmittedStatus": "Verdict saved, but NOT sent to QC — this case is past the stage where it can be submitted.",
+        "savedAndAccepted": "Assessment saved — applicant accepted.",
+        "notSubmittedIncomplete": "Assessment saved, but NOT sent to QC — this applicant still has required steps outstanding.",
+        "notSubmittedStatus": "Assessment saved, but NOT sent to QC — this case is past the stage where it can be submitted.",
         "declineSentToQc": "Decline recorded — sent to QC for confirmation."
       },
       "withdrawAward": {
@@ -5146,7 +5146,7 @@
         }
       },
       "recordVerdict": {
-        "title": "Record your verdict",
+        "title": "Record your assessment",
         "factPass": "Pass",
         "factFail": "Fail",
         "reasonLabel": "Justification and conclusion",
@@ -5154,14 +5154,14 @@
         "approveNeedsAmount": "Set a recommended assistance amount before approving.",
         "approveNeedsReview": "The system recommends no amount. Settle the pathway/income, or override the amount, before recommending.",
         "chooseOutcome": "Choose Recommend or Decline.",
-        "savedNotSubmitted": "Your verdict was saved on {date}, but this case has not moved to QC yet. Press Approve again to submit it.",
+        "savedNotSubmitted": "Your assessment was saved on {date}, but this case has not moved to QC yet. Press Recommend again to submit it.",
         "savedNotSubmittedDecline": "Your decline was saved on {date}, but this case has not been sent to QC yet. Press Decline again to send it.",
         "missing": {
           "heading": "Still to do:",
           "submit": "Submit your interview findings",
           "answerOne": "Answer 1 interview question in your findings",
           "answerMany": "Answer {count} interview questions in your findings",
-          "rate": "Check {facts}",
+          "rate": "Complete your assessment: {facts}",
           "conclusion": "Write your conclusion"
         },
         "findingsIncomplete": "Answer every interview question before deciding ({count} left).",
@@ -5183,19 +5183,19 @@
         "declineAcceptedBy": "Rejection accepted by",
         "recommendationAcceptedBy": "Recommendation accepted by",
         "reopenedBy": "Reopened by",
-        "aiSuggested": "AI verdict:",
+        "aiSuggested": "AI Prediction:",
         "suggest": {
           "yes": "yes",
           "no": "no",
           "unsure": "unsure"
         },
-        "finaliseOk": "Verdict saved and final profile generated.",
-        "finalisePending": "Verdict saved. The final profile is being written and will appear on the profile card in a few minutes.",
-        "finaliseNoDraft": "Verdict saved. Generate a draft profile first before finalising.",
+        "finaliseOk": "Assessment saved and final profile generated.",
+        "finalisePending": "Assessment saved. The final profile is being written and will appear on the profile card in a few minutes.",
+        "finaliseNoDraft": "Assessment saved. Generate a draft profile first before finalising.",
         "finaliseEngineError": "The final profile could not be written. Please press again.",
         "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
-        "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
-        "rateTitle": "Check the four facts",
+        "finaliseNoInterview": "Submit the interview findings before saving an assessment.",
+        "rateTitle": "Reviewer Assessment",
         "rateHelp": "Pass = this fact is true for the student. Fail = it is not true, or not proven.",
         "failedAcceptWarn": "One fact failed. Do you want to accept?",
         "failWhy": "Why is this fact not true?",
@@ -5229,12 +5229,12 @@
         "error": "Could not submit the QC decision.",
         "refusal": {
           "self_qc_forbidden": "You reviewed this case — it must be QC-checked by someone else.",
-          "self_verdict_qc_forbidden": "You recorded this verdict — it must be QC-checked by someone else.",
+          "self_verdict_qc_forbidden": "You recorded this assessment — it must be QC-checked by someone else.",
           "self_assigned_qc_forbidden": "You were assigned this case before — it must be QC-checked by someone else.",
           "self_interview_qc_forbidden": "You interviewed this student — the case must be QC-checked by someone else.",
           "self_review_qc_forbidden": "You worked on this review — it must be QC-checked by someone else.",
           "profile_pending": "The final sponsor profile is still being written. Wait a few minutes, reload the page and read it, then accept.",
-          "profile_failed": "The final sponsor profile could not be written. Reopen the case for the reviewer, who records the verdict again with the final profile. Then accept."
+          "profile_failed": "The final sponsor profile could not be written. Reopen the case for the reviewer, who records the assessment again with the final profile. Then accept."
         },
         "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
         "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",
@@ -5463,7 +5463,10 @@
         "title": "Final profile (v2 — with interview)"
       },
       "prefersLang": "Prefers {lang}",
-      "assignLangLegend": "✓ speaks the student's language · ⚠ does not",
+      "assignedCell": {
+        "notReady": "Not ready yet",
+        "readyOn": "Ready on {date}"
+      },
       "bursary": {
         "title": "Bursary agreement",
         "student": "Student",
@@ -7513,9 +7516,7 @@
       "allHidden": "Every panel on this Overview has been switched off for your organisation. An organisation admin can switch them back on with Customise.",
       "funnel": {
         "title": "Applications",
-        "total": "Applications received",
-        "preInterview": "Rejected before interview",
-        "preInterviewByReason": "By main reason"
+        "total": "Applications received"
       },
       "money": {
         "title": "Money",

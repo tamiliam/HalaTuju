@@ -60,7 +60,7 @@ export interface AdminScholarshipListItem extends PreInterviewListFields, NewNot
   // NOT a copied rule: this is the SERVED answer, and the detail cockpit reads the same field on
   // its own payload (`firstAssignBlocked = !assigned_to_id && !ready_for_assignment`). Neither
   // screen re-derives readiness, which is why there is nothing here for a drift test to hold.
-  ready_for_assignment: boolean
+  ready_for_assignment: boolean; ready_on?: string | null   // F1 / I-13: ready_on = when the window ends
   gift_ids?: number[]   // T1-e: the case's gifts; the dropdown hides a Reviewer of another gift
   decision_reopened_at: string | null   // when set, the pill shows "Reopened" (overrides accepted/rejected)
 }

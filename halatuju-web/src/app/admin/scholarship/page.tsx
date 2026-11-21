@@ -16,14 +16,13 @@ import TableFrame from '@/components/admin/TableFrame'
 import CaseListPhoneTools, { type CaseSortKey } from '@/components/admin/CaseListPhoneTools'
 import NewNoteMark from '@/components/admin/NewNoteMark'   // #73: "New note" by the name
 import { bucketBadge, type Reviewer } from '@/lib/assignOptions'
-import { AssignedPlain, AssigneeOptions, AssignLangNote, AssignLegend, assignsInCockpitOnly, legendIdFor } from '@/components/admin/AssignListPicker'
+import { AssignedCell } from '@/components/admin/AssignListPicker'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { holdsDoor } from '@/lib/pageGuard'
 import {
   getScholarshipApplications,
   getAssignableAdmins,
   getSourceNames,
-  assignApplication,
   DEFAULT_ADMIN_PAGE_SIZE,
   type AdminScholarshipListData,
 } from '@/lib/admin-api'
@@ -84,11 +83,10 @@ function StaffScholarshipList() {
   // `?programme=` narrows this list to that gift (TD-296); with none it stays the all-gifts list.
   const urlRead = useGiftInUrl()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
-  // Inline reviewer assignment (the "Assigned" column dropdown) — super or org_admin.
+  // Reviewers for the assignee filter's "By reviewer" group (the list itself holds no picker, F1 / I-13).
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
   // Past assignees (org-fenced, incl. inactive/role-changed) — the filter's "Past reviewers".
   const [pastAssignees, setPastAssignees] = useState<Array<{ id: number; name: string }>>([])
-  const [assignNote, setAssignNote] = useState<Record<number, string>>({})
   const [bucket, setBucket] = useState('')
   const [statusF, setStatusF] = useState('')
   const [source, setSource] = useState('')
@@ -219,32 +217,6 @@ function StaffScholarshipList() {
     ...FIXED_REFERRAL_CODES,
   ]
   const sourceTitle = (code?: string | null) => referralLabel(code, t, sourceNames)
-
-  // Inline (re)assign — option A: attempt and surface a 'not ready' / error inline. The
-  // backend enforces super-only + reviewer-target; first-assign needs the app to be ready.
-  const handleAssign = async (appId: number, reviewerId: number | null) => {
-    if (!token) return
-    setAssignNote((n) => ({ ...n, [appId]: '' }))
-    try {
-      const updated = await assignApplication(appId, reviewerId, { token })
-      setData((d) => d && {
-        ...d,
-        applications: d.applications.map((a) => a.id === appId
-          ? { ...a, assigned_to_id: updated.assigned_to_id, assigned_to_name: updated.assigned_to_name }
-          : a),
-      })
-    } catch (e) {
-      // M3c: a refusal with a `code` (`self_assign`) is read by it; the older ones put the code in `error`.
-      const code = (e as { code?: string }).code || (e instanceof Error ? e.message : '')
-      const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',
-                     'not_assignable', 'findings_submitted', 'gift_mismatch', 'not_signed_in', 'self_assign',
-                     'wrong_organisation']   // TD-634
-      setAssignNote((n) => ({ ...n, [appId]: known.includes(code)
-        ? t(`admin.scholarship.assign.error.${code}`, code === 'not_signed_in'
-          ? { name: reviewers.find((r) => r.id === reviewerId)?.name ?? '' } : undefined)
-        : t('admin.scholarship.assignError') }))
-    }
-  }
 
   // #7: persist the current filtered/sorted page's ordered ids so the detail cockpit
   // can offer prev/next navigation that follows what the officer is looking at.
@@ -388,8 +360,6 @@ function StaffScholarshipList() {
         <div className="divide-y divide-ground-100 border-y border-ground-100 md:hidden" data-testid="application-cards">
           {apps.map((a) => {
             const s = displayStatus(a)
-            const blocked = a.assignable === false
-              || (a.assigned_to_id == null && a.ready_for_assignment === false)
             return (
               <div key={a.id} data-app-row>
                 <Link href={`/admin/scholarship/${a.id}`} data-row-link
@@ -424,31 +394,7 @@ function StaffScholarshipList() {
                 <svg aria-hidden className="h-5 w-5 shrink-0 text-ground-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 6 6 6-6 6" /></svg>
                 </Link>
 
-                {canAssign && assignsInCockpitOnly(a.status) && <AssignedPlain name={a.assigned_to_name} className="pb-3 text-sm text-ground-700" />}
-                {canAssign && !assignsInCockpitOnly(a.status) && (
-                  <div className="pb-3">
-                    <AssignLangNote lang={a.call_language} className="mb-1 text-xs text-ground-500" legendId={`assign-legend-${a.id}`} />
-                    <select
-                      value={a.assigned_to_id ?? ''}
-                      onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
-                      disabled={blocked}
-                      aria-label={t('admin.scholarship.assigned')}
-                      aria-describedby={legendIdFor(a.call_language, `assign-legend-${a.id}`)}
-                      className="min-h-11 w-full rounded-lg border bg-ground-0 px-2 py-1.5 text-sm disabled:cursor-not-allowed disabled:bg-ground-100 disabled:text-ground-placeholder"
-                    >
-                      <AssigneeOptions reviewers={reviewers} row={a} isSuper={isSuper} />
-                    </select>
-                    {/* Why it is asleep: the SAME two reasons the table's title gives, written out. */}
-                    {blocked && (
-                      <p className="mt-1 text-xs text-ground-500" data-assign-reason>
-                        {a.assignable === false
-                          ? t('admin.scholarship.assign.error.not_assignable')
-                          : t('admin.scholarship.assign.error.not_ready')}
-                      </p>
-                    )}
-                    {assignNote[a.id] && <p className="mt-1 text-xs text-critical-600">{assignNote[a.id]}</p>}
-                  </div>
-                )}
+                {canAssign && <div className="pb-3"><AssignedCell row={a} className="text-sm text-ground-700" noteClassName="text-xs text-ground-500" /></div>}
               </div>
             )
           })}
@@ -524,43 +470,12 @@ function StaffScholarshipList() {
                     })()}
                   </td>
                   <td className="px-4 py-3 text-ground-500">{formatDate(a.submitted_at)}</td>
-                  {canAssign && assignsInCockpitOnly(a.status) && <td className="px-4 py-3"><AssignedPlain name={a.assigned_to_name} className="text-sm text-ground-700" /></td>}
-                  {canAssign && !assignsInCockpitOnly(a.status) && (
-                    <td className="px-4 py-3">
-                      <AssignLangNote lang={a.call_language} className="mb-1 text-[11px] text-ground-500" />
-                      <select
-                        value={a.assigned_to_id ?? ''}
-                        onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
-                        aria-describedby={legendIdFor(a.call_language, 'assign-legend-table')}
-                        // A case may only change hands while there IS a review to do (Completed /
-                        // interviewing). Shortlisted and rejected aren't ready; awaiting-QC and
-                        // beyond are over. AND a FIRST assignment waits until the app is ready — all
-                        // student tasks done OR the 5-day window lapsed — the same rule as the detail
-                        // cockpit's firstAssignBlocked, so the list can't offer an assign the server
-                        // refuses ('not_ready'). The server refuses either way; disabling here means
-                        // the officer isn't invited to take an action that will bounce.
-                        disabled={a.assignable === false
-                          || (a.assigned_to_id == null && a.ready_for_assignment === false)}
-                        title={a.assignable === false
-                          ? t('admin.scholarship.assign.error.not_assignable')
-                          : (a.assigned_to_id == null && a.ready_for_assignment === false)
-                            ? t('admin.scholarship.assign.error.not_ready')
-                            : undefined}
-                        className="border rounded-lg px-2 py-1 text-sm bg-ground-0 max-w-[220px] disabled:bg-ground-100 disabled:text-ground-placeholder disabled:cursor-not-allowed"
-                      >
-                        {/* The holder always; else the served `assignable` (T1: the Reviewers table),
-                            not paused, who covers this case's gift (`listAssignees`). */}
-                        <AssigneeOptions reviewers={reviewers} row={a} isSuper={isSuper} />
-                      </select>
-                      {assignNote[a.id] && <p className="text-xs text-critical-600 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}
-                    </td>
-                  )}
+                  {canAssign && <td className="px-4 py-3"><AssignedCell row={a} className="text-sm text-ground-700" noteClassName="text-[11px] text-ground-500" /></td>}
                 </tr>
               ))}
             </tbody>
           </table>
         </TableFrame>
-        {canAssign && <AssignLegend id="assign-legend-table" className="hidden md:block mt-2 text-xs text-ground-500" />}
         {data && (
           <Pagination
             page={data.page}

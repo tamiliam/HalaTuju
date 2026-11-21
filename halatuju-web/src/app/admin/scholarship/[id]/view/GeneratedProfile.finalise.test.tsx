@@ -14,8 +14,7 @@ const t = (k: string) => k
 
 const renderCard = (profile: AdminSponsorProfile) => render(
   <GeneratedProfile app={buildApplicationDetail('interviewing')} t={t as never} profile={profile}
-    genLang="en" setGenLang={jest.fn()} busy="" error="" decisionReopened={false}
-    showOwnWords={false} setShowOwnWords={jest.fn()} />)
+    genLang="en" setGenLang={jest.fn()} busy="" error="" decisionReopened={false} />)
 
 const DRAFT = { final_markdown: '', current_markdown: 'A determined SPM leaver.' }
 

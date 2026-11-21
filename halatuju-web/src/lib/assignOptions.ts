@@ -49,12 +49,3 @@ export function listAssignees<R extends AssignCandidate>(reviewers: R[], row: As
     return gifts.length === 0 || caseGifts.length === 0 || gifts.some((g) => caseGifts.includes(g.id))
   })
 }
-/** Order reviewers for a student's preferred call language: when it's a specific language
- *  (en/ms/ta), reviewers who speak it come first and each carries a match flag; otherwise
- *  ('mixed'/unset) the list is unchanged and nothing is flagged. */
-export function orderReviewersFor(reviewers: Reviewer[], lang: string): Array<{ rv: Reviewer; match: boolean; specific: boolean }> {
-  const specific = lang === 'en' || lang === 'ms' || lang === 'ta'
-  const out = reviewers.map((rv) => ({ rv, match: specific ? rv.languages.includes(lang) : true, specific }))
-  if (specific) out.sort((a, b) => Number(b.match) - Number(a.match) || a.rv.name.localeCompare(b.rv.name))
-  return out
-}

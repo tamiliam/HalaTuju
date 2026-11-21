@@ -223,7 +223,7 @@ export const roleReviewer: ManualChapter = {
       perm: 'review',
       title: 'Your decision',
       body: (
-        <>In the <strong>Check the four facts</strong> box you tap <strong>Pass</strong> or
+        <>In the <strong>Reviewer Assessment</strong> box you tap <strong>Pass</strong> or
         <strong> Fail</strong> for each fact. <strong>Pass</strong> means the fact is true for the student;
         <strong> Fail</strong> means it is not true, or not proven. It is separate from your recommendation.
         If you Fail a fact the system showed as green, it asks <strong>Why is this fact not true?</strong>:
