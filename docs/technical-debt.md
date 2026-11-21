@@ -9606,3 +9606,7 @@ Fix: serve a flag for each control from the server's own door (as `can_write` is
 ### [TD-700] Work-counted timing tests miss a catastrophic regex backtrack inside one re call - low
 
 **Raised 2026-11-21 by the OCR-7 review.** The work-counted timing tests (`tests/_timing.py` `calls()`) count calls, not seconds, so a catastrophic regex backtrack inside a single `re` call is not seen until the 60 s backstop fires. Fix later: add an input-length bound, or a generous wall-clock bound, to those tests. **Decision:** accepted for now by the lead, 21 Nov 2026.
+
+### [TD-701] OCR-11 white check: the transparency path builds about four full-size RGBA copies - medium
+
+**Raised 2026-11-21 by the OCR-11 review.** The white check's transparency path builds about four full-size RGBA copies (about 280 MB at 16 MP); the live api has 2 GiB memory and concurrency 80, so 4 x about 280 MB at 16 MP on one 2 GiB instance is an out-of-memory risk under a burst. Fix: paste in greyscale (an 'L' page, the mask taken from the alpha channel; a P image with transparency converts to RGBA first). Also drop HEIF from `WHITE_CHECK_FORMATS`: its decode size is unverified, and HEIC is already turned into JPEG at upload. **Decision:** the owner chose on 21 Nov 2026 to ship OCR-11 now and fix this after this batch, with its own short review.
