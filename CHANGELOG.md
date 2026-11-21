@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### docs: the OCR-first sprints get one name each, OCR-1 to OCR-17 (2026-11-21)
+
+- The roadmap names every sprint OCR- and its run number, with a table from the old names (S0, S4, S-visible, D1, Blank-gap 1, the gen fix). OCR-11 and OCR-12 build now (owner, 21 Nov).
+
 ### fix: the suite stops unless it runs on the production pypdf, pypdfium2 and Python (2026-11-21)
 
 Branch fix-pypdf621 (on 9e8b23f04). Test and tooling only, no production code changed. A full api suite under the locked packages (pypdf 6.21.4) failed one test that passes on the station's pypdf 5.9.0: `TheHostileShapes::test_each_form_call_costs_20_operations` expected 2 content-stream parses and got 1. Root cause: 5.9 reads an empty (`/Length 0`) form as one newline and parses it, 6.21.4 reads it as empty and skips the parse; on both, the walk stops the file at the same call on the font-maps budget (the form lists a font: 256 units a call), not on the operations budget the test was named for, and nothing is extracted. Now:
