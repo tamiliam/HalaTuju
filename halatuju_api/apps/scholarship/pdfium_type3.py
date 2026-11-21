@@ -1,7 +1,8 @@
 """The Type3 glyph rules for the pdfium child (moved out of `pdfium_worker`, which was over the line limit).
 
 Pure Python plus pypdf (imported inside the function): no pdfium. `pdfium_worker` re-exports `T3_TOLERANCE`,
-`T3_MAX_BYTES` and `_type3_ok`, and loads this file by path when it runs as a script.
+`T3_MAX_BYTES` and `_type3_ok`, and loads this file by path when it runs as a script. `page_flags` (the ink op's
+pypdf flags) lives here too since the OCR-9 rebase.
 """
 
 #: Type3 glyph procedures (review round 2, B2): a glyph whose procedure paints outside its own ``d1`` box draws
@@ -75,3 +76,73 @@ def type3_ok(font, budget: list) -> bool:
 
 def _op_name(op) -> str:
     return op.decode('latin-1') if isinstance(op, bytes) else str(op)
+
+
+def page_flags(data: bytes, index: int) -> tuple:
+    """(an XObject the page draws, at any depth, carries /OC; the document has an XFA form; every Type3 font page
+    1 can reach keeps its glyphs inside their boxes, `type3_ok`; page 1 can reach a Type3 font at all — a walk cut
+    short says True), read with pypdf from the request's bytes ``data`` (moved here from `pdfium_worker` with
+    no change, OCR-9 rebase: the worker was over the line limit). Fonts are reached through the page's resources
+    and, at any depth, those of its form XObjects, tiling patterns and ExtGState /Font entries. Genuine cost: 0 of
+    the 49 lockable letters (a document-level /OCProperties alone is NOT refused: every UUM letter carries one,
+    with no optional content on page 1)."""
+    import io
+    from pypdf import PdfReader
+    reader = PdfReader(io.BytesIO(data))
+    if reader.is_encrypted:
+        reader.decrypt('')
+    acro = reader.trailer['/Root'].get_object().get('/AcroForm')
+    xfa = bool(acro is not None and '/XFA' in acro.get_object())
+    seen, todo, budget = set(), [(reader.pages[index].get('/Resources'), 0)], [T3_MAX_BYTES]
+    t3_ok, t3_any = True, False
+
+    def new(ref) -> bool:
+        key = ('r', ref.idnum) if hasattr(ref, 'idnum') else ('o', id(ref))
+        if key in seen:
+            return False
+        seen.add(key)
+        return True
+    while todo:
+        res, depth = todo.pop()
+        res = res.get_object() if res is not None else None
+        if res is None and depth <= 15:          # no resources of its own: it can name no font, form or pattern
+            continue
+        if not hasattr(res, 'get') or depth > 15:
+            # Fix round 3b: a walk cut short (too deep, or resources that are not a dictionary) may hide a Type3
+            # font, so it counts as one that fails. Each resource is marked seen when first LISTED, not walked:
+            # still safe, as every listed one is walked from that path or trips this same rule.
+            t3_ok, t3_any = False, True
+            continue
+        if len(seen) >= 5000:
+            return True, xfa, False, True        # past any genuine page: counted as optional (refused)
+        fonts = res.get('/Font')
+        fonts = list(fonts.get_object().values()) if fonts is not None else []
+        states = res.get('/ExtGState')
+        for gs in (states.get_object().values() if states is not None else ()):
+            font = gs.get_object().get('/Font')
+            font = font.get_object() if font is not None else None
+            if font is not None and len(font) > 0:
+                fonts.append(font[0])
+        for ref in fonts:
+            if not new(ref):
+                continue
+            font = ref.get_object()
+            if hasattr(font, 'get') and font.get('/Subtype') == '/Type3':
+                t3_any = True
+                t3_ok = t3_ok and type3_ok(font, budget)        # its glyphs draw no XObject or text: not walked
+        patterns = res.get('/Pattern')
+        for ref in (patterns.get_object().values() if patterns is not None else ()):
+            if new(ref):
+                pat = ref.get_object()
+                if hasattr(pat, 'get') and pat.get('/PatternType') == 1:
+                    todo.append((pat.get('/Resources'), depth + 1))
+        xobjects = res.get('/XObject')
+        for ref in (xobjects.get_object().values() if xobjects is not None else ()):
+            if not new(ref):
+                continue
+            xo = ref.get_object()
+            if '/OC' in xo:
+                return True, xfa, False, True    # refused as optional; the walk stops, so Type3 is unknown
+            if xo.get('/Subtype') == '/Form':
+                todo.append((xo.get('/Resources'), depth + 1))
+    return False, xfa, t3_ok, t3_any

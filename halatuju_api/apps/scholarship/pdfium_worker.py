@@ -18,18 +18,21 @@ library: the web process imports it for `raster_scale` alone.
 import ctypes
 import io
 import json
-import math
 import sys
 
 try:                                           # imported as part of the app (the web process, the tests)
-    from . import pdfium_type3 as _t3
-except ImportError:                            # run as a script by `python -I`: load the sibling by path
+    from . import pdfium_ink_own as _own, pdfium_type3 as _t3
+except ImportError:                            # run as a script by `python -I`: load the siblings by path
     import importlib.util
     import os
-    _spec = importlib.util.spec_from_file_location(
-        'pdfium_type3', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pdfium_type3.py'))
-    _t3 = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_t3)
+
+    def _sibling(name):
+        spec = importlib.util.spec_from_file_location(
+            name, os.path.join(os.path.dirname(os.path.abspath(__file__)), name + '.py'))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    _t3, _own = _sibling('pdfium_type3'), _sibling('pdfium_ink_own')
 T3_TOLERANCE, T3_MAX_BYTES, _type3_ok = _t3.T3_TOLERANCE, _t3.T3_MAX_BYTES, _t3.type3_ok
 
 #: Text render modes that paint (as ``pdf_pages._DRAWN_MODES``).
@@ -317,11 +320,7 @@ STRAY_PAD = 2
 #: own stem (an 'l' 1.1 px wide sits 0.14 px from its neighbour on genuine letters: 0.5 cost 5 of 33 UMS locks).
 OWN_PAD_X = 0.0
 OWN_PAD_Y = 0.5
-#: The grid (pixels per cell) that finds a character's neighbours; the most cells, and the most neighbours one
-#: character may have (a genuine character: a handful; a pile of glyphs past it counts as no ink).
-_CELL = 32
-MAX_INK_CELLS = 200_000
-MAX_INK_NEIGHBOURS = 64
+#: The neighbour grid and its caps (`pdfium_ink_own`: ``_CELL``, ``MAX_INK_CELLS``, ``MAX_INK_NEIGHBOURS``).
 
 
 def _op_ink(pdf, req, blobs):
@@ -349,26 +348,6 @@ def _op_ink(pdf, req, blobs):
         raise
     except Exception as e:                  # refused by the caller (`pdf_ink.ink_missing`: 'no_answer')
         return {'error': type(e).__name__}
-
-
-def _device_map(raw, page, width, height):
-    """Page points -> picture pixels, NOT rounded (`FPDF_PageToDevice` rounds): the inverse of the exact map
-    `FPDF_DeviceToPage` gives at three corners of the picture."""
-    px, py = ctypes.c_double(), ctypes.c_double()
-
-    def page_at(x, y):
-        raw.FPDF_DeviceToPage(page, 0, 0, width, height, 0, x, y, px, py)
-        return px.value, py.value
-    (ox, oy), (ax, ay), (bx, by) = page_at(0, 0), page_at(width, 0), page_at(0, height)
-    a, b, c, d = (ax - ox) / width, (bx - ox) / height, (ay - oy) / width, (by - oy) / height
-    det = a * d - b * c
-    if not det:
-        raise ValueError('device map')
-
-    def devf(x, y):
-        x, y = x - ox, y - oy
-        return (d * x - b * y) / det, (a * y - c * x) / det
-    return devf
 
 
 def _ink(pdf, req):
@@ -403,7 +382,7 @@ def _ink(pdf, req):
     def dev(x, y):
         raw.FPDF_PageToDevice(page.raw, 0, 0, width, height, 0, x, y, dx, dy)
         return dx.value, dy.value
-    devf = _device_map(raw, page.raw, width, height)
+    devf = _own.device_map(raw, page.raw, width, height)
 
     chars, turned = [], page.get_rotation() in (90, 270)
     pad_x, pad_y = (OWN_PAD_Y, OWN_PAD_X) if turned else (OWN_PAD_X, OWN_PAD_Y)   # the line runs down the picture
@@ -440,59 +419,10 @@ def _ink(pdf, req):
         if s and s[2] and s[3] and s[1][2] > s[1][0] and s[1][3] > s[1][1]:
             box = s[1]
             chars[i][6], chars[i][7] = mask.crop(box).histogram()[255], (box[2] - box[0]) * (box[3] - box[1])
-    # Review round 2b (the ring attack): a black glyph TOUCHING a white character put its edge pixels in that
-    # character's box (+1 px). Now a pixel is a character's ink only when the OTHER drawn characters (a non-space,
-    # or a space with ink) cannot explain its change: each changes a pixel by at most 255 x the share of it that
-    # its box covers (exactly placed, widened by `OWN_PAD_X` / `OWN_PAD_Y`); what is left must still reach
-    # ``delta``. A pixel two characters both reach is nobody's: a genuine letter keeps its inside, so this costs
-    # 0 genuine letters; bars TOUCHING a black character can take it too (refused: the AI reads it).
-    import numpy as np
-    big = np.asarray(delta, dtype=np.float32)
-    others = [k for k, s in enumerate(seen) if s and (not s[2] or (s[3] and chars[k][6] > 0))]
-    grid, entries = {}, 0
-    for k in others:
-        x0, y0, x1, y1 = seen[k][0]
-        cx = range(max(0, math.floor(x0)) // _CELL, max(0, min(width, math.ceil(x1)) - 1) // _CELL + 1)
-        cy = range(max(0, math.floor(y0)) // _CELL, max(0, min(height, math.ceil(y1)) - 1) // _CELL + 1)
-        entries += len(cx) * len(cy)
-        if entries > MAX_INK_CELLS:
-            return {'error': 'cells'}
-        for gx in cx:
-            for gy in cy:
-                grid.setdefault((gx, gy), []).append(k)
-    for i, s in enumerate(seen):
-        if not s or s[2]:
-            continue
-        box = s[1]
-        if not (box[2] > box[0] and box[3] > box[1]):
-            continue
-        part = big[box[1]:box[3], box[0]:box[2]]
-        nb = {k for gx in range(box[0] // _CELL, (box[2] - 1) // _CELL + 1)
-              for gy in range(box[1] // _CELL, (box[3] - 1) // _CELL + 1) for k in grid.get((gx, gy), ()) if k != i}
-        if len(nb) > MAX_INK_NEIGHBOURS:
-            part = np.zeros_like(part)            # a pile of glyphs: no ink of its own (refused)
-            nb = ()
-        if nb:
-            cols = np.arange(box[0], box[2], dtype=np.float32)
-            rows = np.arange(box[1], box[3], dtype=np.float32)
-            share = np.zeros_like(part)
-            for k in nb:
-                x0, y0, x1, y1 = seen[k][0]
-                ox = np.clip(np.minimum(cols + 1, x1) - np.maximum(cols, x0), 0, 1)
-                oy = np.clip(np.minimum(rows + 1, y1) - np.maximum(rows, y0), 0, 1)
-                share += np.outer(oy, ox)
-            part = part - 255 * np.minimum(share, 1)
-        own = part >= int(req['delta'])
-        crop = Image.fromarray((own * 255).astype(np.uint8), 'L')
-        chars[i][6], chars[i][7] = int(own.sum()), (box[2] - box[0]) * (box[3] - box[1])
-        bb = crop.getbbox()
-        if bb:
-            cover_h = round((bb[3] - bb[1]) / (box[3] - box[1]), 3)
-            cover_w = round((bb[2] - bb[0]) / (box[2] - box[0]), 3)
-            if turned:                          # /Rotate 90 or 270: the glyph's height runs across the picture
-                cover_h, cover_w = cover_w, cover_h
-            chars[i][9], chars[i][10] = cover_h, cover_w
-    stray = ImageChops.subtract(mask, near).histogram()[255]
+    # Review round 2b (the ring attack): only ink the OTHER characters cannot explain (`pdfium_ink_own.own_ink`).
+    if not _own.own_ink(delta, seen, chars, width, height, int(req['delta']), turned):
+        return {'error': 'cells'}
+    stray =ImageChops.subtract(mask, near).histogram()[255]
     annots_ok = True
     for k in range(raw.FPDFPage_GetAnnotCount(page.raw)):
         annot = raw.FPDFPage_GetAnnot(page.raw, k)
@@ -501,81 +431,13 @@ def _ink(pdf, req):
         finally:
             if annot:
                 raw.FPDFPage_CloseAnnot(annot)
-    oc_xobject, xfa, type3_ok, type3 = _pdf_flags(int(req['page']))
+    oc_xobject, xfa, type3_ok, type3 = _t3.page_flags(_DATA[0], int(req['page']))
     return {'chars': chars, 'modes_ok': modes_ok, 'annots_ok': annots_ok, 'stray_px': stray,
             'optional': bool(optional or oc_xobject), 'xfa': xfa, 'type3_ok': bool(type3_ok), 'type3': bool(type3),
             'px_pt': round(1.0 / scale, 4)}
 
 
-def _pdf_flags(index: int) -> tuple:
-    """(an XObject the page draws, at any depth, carries /OC; the document has an XFA form; every Type3 font page
-    1 can reach keeps its glyphs inside their boxes, `_type3_ok`; page 1 can reach a Type3 font at all — a walk cut
-    short says True), read with pypdf from the request's bytes
-    (``_DATA``). Fonts are reached through the page's resources and, at any depth, those of its form XObjects,
-    tiling patterns and ExtGState /Font entries. Genuine cost: 0 of the 49 lockable letters (a document-level
-    /OCProperties alone is NOT refused: every UUM letter carries one, with no optional content on page 1)."""
-    from pypdf import PdfReader
-    reader = PdfReader(io.BytesIO(_DATA[0]))
-    if reader.is_encrypted:
-        reader.decrypt('')
-    acro = reader.trailer['/Root'].get_object().get('/AcroForm')
-    xfa = bool(acro is not None and '/XFA' in acro.get_object())
-    seen, todo, budget = set(), [(reader.pages[index].get('/Resources'), 0)], [T3_MAX_BYTES]
-    t3_ok, t3_any = True, False
-
-    def new(ref) -> bool:
-        key = ('r', ref.idnum) if hasattr(ref, 'idnum') else ('o', id(ref))
-        if key in seen:
-            return False
-        seen.add(key)
-        return True
-    while todo:
-        res, depth = todo.pop()
-        res = res.get_object() if res is not None else None
-        if res is None and depth <= 15:          # no resources of its own: it can name no font, form or pattern
-            continue
-        if not hasattr(res, 'get') or depth > 15:
-            # Fix round 3b: a walk cut short (too deep, or resources that are not a dictionary) may hide a Type3
-            # font, so it counts as one that fails. Each resource is marked seen when first LISTED, not walked:
-            # still safe, as every listed one is walked from that path or trips this same rule.
-            t3_ok, t3_any = False, True
-            continue
-        if len(seen) >= 5000:
-            return True, xfa, False, True        # past any genuine page: counted as optional (refused)
-        fonts = res.get('/Font')
-        fonts = list(fonts.get_object().values()) if fonts is not None else []
-        states = res.get('/ExtGState')
-        for gs in (states.get_object().values() if states is not None else ()):
-            font = gs.get_object().get('/Font')
-            font = font.get_object() if font is not None else None
-            if font is not None and len(font) > 0:
-                fonts.append(font[0])
-        for ref in fonts:
-            if not new(ref):
-                continue
-            font = ref.get_object()
-            if hasattr(font, 'get') and font.get('/Subtype') == '/Type3':
-                t3_any = True
-                t3_ok = t3_ok and _type3_ok(font, budget)       # its glyphs draw no XObject or text: not walked
-        patterns = res.get('/Pattern')
-        for ref in (patterns.get_object().values() if patterns is not None else ()):
-            if new(ref):
-                pat = ref.get_object()
-                if hasattr(pat, 'get') and pat.get('/PatternType') == 1:
-                    todo.append((pat.get('/Resources'), depth + 1))
-        xobjects = res.get('/XObject')
-        for ref in (xobjects.get_object().values() if xobjects is not None else ()):
-            if not new(ref):
-                continue
-            xo = ref.get_object()
-            if '/OC' in xo:
-                return True, xfa, False, True    # refused as optional; the walk stops, so Type3 is unknown
-            if xo.get('/Subtype') == '/Form':
-                todo.append((xo.get('/Resources'), depth + 1))
-    return False, xfa, t3_ok, t3_any
-
-
-_OPS = {'count': lambda pdf, req, blobs: {'count': len(pdf)}, 'paints': _op_paints, 'render': _op_render,
+_OPS ={'count': lambda pdf, req, blobs: {'count': len(pdf)}, 'paints': _op_paints, 'render': _op_render,
         'stack': _op_stack, 'words': _op_words, 'layout': _op_layout, 'ink': _op_ink}
 #: The request's PDF bytes, for an operation that reads them with pypdf (``layout``, ``ink``).
 _DATA = [b'']

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### chore: sprint OCR-9 (was S-visible 2) rebased onto main, offer_parse 2.3.0 (2026-11-21)
+
+- The ink check and the Asasi rule (branch ocr-svis2) rebased onto main after OCR-6, OCR-7 and OCR-8 (branch `ocr-9-ink`). The old commits are kept; the branch's own 2.2.0 digest commit is dropped (main recorded 2.2.0 first).
+- Conflicts kept both sides. Main had moved the rules-lane page readers into `pdf_rules_pages.py`, so the ink op now joins the layout request there (one child, as before). The layout-child tests sit in `test_ink_attacks.py`, using main's module paths. CHANGELOG and `model_versions/offer_parse.json` keep main's entries.
+- `pdfium_worker.py` came to 670 lines with main's blank-page guard plus the ink op (the limit is 600). Two parts moved out with no change: the own-ink attribution and the point-to-pixel map now live in `pdfium_ink_own.py`, and the pypdf page flags in `pdfium_type3.page_flags`. The worker loads both by path when it runs as a child. It is now 532 lines.
+- `PARSER_VERSION` 2.2.0 -> 2.3.0, appended to `offer_parse.json` with its digest. `OFFER_READER_VERSION` stays 2.9.0 (its digest is unchanged). The roadmap now says "OCR-9 (was S-visible 2)".
+- Corpus, cached text only. Gate 1 held-out is the same as main: UMS 22/33, matriculation 4/4, polytechnic 4/4, STPM 2/2. Dev: UMS 22/29, matriculation 29/31 and STPM 31/31 are unchanged. Polytechnic goes from 26/26 to 22/26, and those 4 are exactly the Asasi rule's (with the rule switched off, dev matches main). 0 wrong anywhere. The ink check, measured with the `ua:UMS` lane on over all 526 offer-letter PDFs (the real render, in the child): every lock stays (132 with the check and 132 without; UMS 33 of 33), 0 not_inked, 0 errors.
+- Migration: none. Services: api.
+
 ### test: OCR-7 - the install-pin check reads CRLF, any FROM line and extras pins (2026-11-21)
 
 - `_install_pins.py`: reads the lock and Dockerfile the same with LF, CRLF or lone CR; the FROM line matches in any case, with extra spaces, `--platform` flags and an `AS name`, and no matching line is a loud stop (never a silent pass); a pin with extras (`pypdf[extra]==6.21.4`) counts as the pypdf. Raised TD-700 (low, accepted by the lead): work-counted timing tests (`tests/_timing.py` `calls()`) miss a catastrophic regex backtrack inside one `re` call until the 60 s backstop pin. A test for each. The parse-count comment in `test_ocr_visible_paths.py` now says what the code counts (the page's parse plus the form's, when this pypdf reads it non-empty).

@@ -85,7 +85,7 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 | OCR-6 | PDF safety fixes: the render gate, the blank-page guard, the pdfium child timing, the pypdf 6.21.4 test fix and the install-pin check | D1 + fix-pypdf621 | main `dbf4e9d70`, publish 21 Nov 16:00 |
 | OCR-7 | Small jobs after OCR-6: the synthetic hostile PDFs saved as tests, the hidden-object TD row brought up to date, the pin check's review notes | (none) | Next |
 | OCR-8 | UMS offer letters, rules first | S1 + S1c | Built, waits for the lead's "go" |
-| OCR-9 | The ink check (a matched word must show real ink) and the Asasi rule | S-visible 2 | Built, waits |
+| OCR-9 | The ink check (a matched word must show real ink) and the Asasi rule | S-visible 2 | Built, rebased on main 21 Nov (branch ocr-9-ink), waits |
 | OCR-10 | SPM slips off 2.5 | S5 | Built; paid gate passed (owner yes 20 Nov) |
 | OCR-11 | An all-empty AI answer means "cannot read" | Blank-gap 1 | To build now (owner 21 Nov) |
 | OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | To build now (owner 21 Nov), new design |
@@ -203,10 +203,10 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 - **Review fix round 10:** an outside signal is checked first and never remembered; only a full 20 s kill marks a document for good; the child's limit is reserved before it starts (concurrent asks about one hostile file start 1 child); a thread that will not start is transient; a child MemoryError logs "out of memory". Linux corpus with the 256 MiB cap: answers identical to no cap, no MemoryError, largest child 181 MiB of address space (cap about 300). Corpus unchanged on both pypdf versions.
 - **Residuals (accepted, not new):** text under an image; transparent / white / size-0 / 0 Tz / off-page text. **Follow-up idea:** strip invisible runs inside a page during extraction (track `Tr` in pypdf's visitor). For rules locks these residuals are closed by S-visible 2.
 
-### S-visible 2: a rules lock needs real ink on page 1 (owner rule 20 Nov) — MUST ship before any rules lane goes live
+### OCR-9 (was S-visible 2): a rules lock needs real ink on page 1 (owner rule 20 Nov) — MUST ship before any rules lane goes live
 - **Rule:** before a rules lane locks a text-layer letter, pdfium renders page 1 and every owner-phrase word and every value read must leave real ink everywhere it occurs; else no lock, the AI reads it (`not_inked`, labels only). Page 1: render modes 0-2 only, /Link annotations only. Thresholds and reasons: `docs/decisions.md` (2026-11-20).
 - **Code:** `pdf_ink.py` (rules), `pdfium_worker` op `ink` (asked with the layout, one child), hook in `offer_exact.exact_offer_read`, `offer_parse_university.ink_targets`. Lane off: no ink op.
-- **Version:** offer reader `PARSER_VERSION` 2.2.0 (unreleased) digest updated in place.
+- **Version:** offer reader `PARSER_VERSION` 2.2.0 (unreleased) digest updated in place while built; on the rebase onto main (21 Nov), OCR-8 had shipped 2.2.0, so OCR-9 is **2.3.0** (a new entry; 2.2.0 kept as main recorded it). `OFFER_READER_VERSION` unchanged (2.9.0).
 - **Corpus:** 0 genuine lockable letters fail ink (UMS 33 locks, UiTM, UUM, UPSI, UM; pypdf 5.9.0 and 6.21.4). UMS PDFs 33/36, scans 11/22, Gate 1 held-out 22/33 and dev 22/29 with 0 wrong: unchanged.
 - **Tests:** `test_pdf_ink.py` (pure), `test_ink_attacks.py` (13 attacks, controls, rotations, lane off), the ink op in `test_pdfium_child.py`.
 - **Review fix round 2:** lending cap 0.08 (below the 0.10 ink floor); Type3 glyphs must stay inside their `d1` box with fill/path/state operators only (`page:type3`); a drawn space joins the overlap rules. Genuine cost unchanged on both pypdf versions; Gate 1 unchanged. **Open for S-visible 3:** the ToUnicode lie. **For S2:** 3 of 11 UiTM letters fail ink (genuine heavy overlap or a faint title).
