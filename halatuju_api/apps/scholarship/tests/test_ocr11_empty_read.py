@@ -99,10 +99,10 @@ class AnEmptyOfferAnswerIsAFailedRead(SimpleTestCase):
 
 class AnEmptyResultsAnswerIsAFailedRead(TestCase):
 
-    def _upload(self, doc_type, text):
+    def _upload(self, doc_type, text, answer=None):
         app = make_application('profile_complete')
         doc = create_document(application=app, doc_type=doc_type, storage_path=f'{app.id}/r/x')
-        empty = {'fields': {'candidate_name': '', 'exam': '', 'results': []}, 'warnings': [], 'error': ''}
+        empty = answer or {'fields': {'candidate_name': '', 'exam': '', 'results': []}, 'warnings': [], 'error': ''}
         with mock.patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'img'), \
              mock.patch('apps.scholarship.vision._extract_slip_deterministic', return_value=(None, {'reason': 'x'})), \
              mock.patch('apps.scholarship.higher_results._exact_read', return_value=(None, '')), \
@@ -114,6 +114,26 @@ class AnEmptyResultsAnswerIsAFailedRead(TestCase):
         vf = self._upload('results_slip', 'SIJIL PELAJARAN MALAYSIA\nPEPERIKSAAN TAHUN 2030\nPage 1 of 1')
         self.assertEqual((vf['student_verdict'], vf['error'], vf['fields']), ('unreadable', EMPTY_ANSWER, {}))
         self.assertEqual(vf['_slip_ocr_diag'], {'reason': 'x'})      # review round 1: the diagnostic is kept
+
+    def test_the_s5_retry_count_goes_into_the_diag_of_a_good_slip_read_and_nowhere_else(self):
+        """OCR-10 (S5) on top of OCR-11: the 3.8 read's ``slip_calls`` is taken off the answer before the
+        empty-answer rule, and lands as ``ai_calls`` in the kept diagnostic of a good read."""
+        good = {'fields': {'candidate_name': '', 'exam': 'SPM', 'results': [
+            {'subject': 'MATEMATIK', 'grade': 'A', 'band': 'CEMERLANG TINGGI'}]},
+            'warnings': [], 'error': '', 'slip_calls': 2}
+        vf = self._upload('results_slip', 'SIJIL PELAJARAN MALAYSIA\nPEPERIKSAAN TAHUN 2030', good)
+        self.assertEqual(vf['error'], '')
+        self.assertEqual(vf['fields']['_slip_ocr_diag'], {'reason': 'x', 'ai_calls': 2})
+        self.assertNotIn('slip_calls', vf)
+        self.assertNotIn('slip_calls', vf['fields'])
+
+    def test_an_empty_slip_answer_with_a_retry_count_is_still_cannot_read(self):
+        empty = {'fields': {'candidate_name': '', 'exam': '', 'results': []}, 'warnings': [], 'error': '',
+                 'slip_calls': 2}
+        vf = self._upload('results_slip', 'SIJIL PELAJARAN MALAYSIA\nPage 1 of 1', empty)
+        self.assertEqual((vf['student_verdict'], vf['error'], vf['fields']), ('unreadable', EMPTY_ANSWER, {}))
+        self.assertEqual(vf['_slip_ocr_diag'], {'reason': 'x'})
+        self.assertNotIn('slip_calls', vf)
 
     def test_an_empty_higher_results_answer_is_cannot_read_though_the_kind_was_detected(self):
         vf = self._upload('higher_results', 'MAJLIS PEPERIKSAAN MALAYSIA\nSIJIL TINGGI PERSEKOLAHAN MALAYSIA')
