@@ -68,7 +68,6 @@ MODELS = {
     },
     'results_doc': {
         'constant': (f'{_G}/results_doc.py', 'MODEL_VERSION'),
-        # It scores the slip AND the offer letter (its lazy offer rulings are its files); OCR-11: the empty-read CALLERS.
         'files': [f'{_G}/{name}.py' for name in (
             'results_doc', 'stpm_doc', 'matric_poly_doc', 'bands', 'epf_app_doc',
             'offer_signatures', 'offer_rulings', 'offer_issuers', 'offer_reading', 'offer_text',
