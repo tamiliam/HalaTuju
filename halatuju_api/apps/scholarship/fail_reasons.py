@@ -30,7 +30,7 @@ CODES = ('proof_missing', 'document_false', 'documents_differ', 'interview_diffe
 DEFAULT = OTHER
 #: F3 review fix 3: LL2's old codes, which a browser tab opened before the F3 deploy still sends. For
 #: this one release they are read as Other, so that tab can still save; any other unknown code is
-#: still refused. Remove after one release; tracked as a TD row.
+#: still refused. Remove after one release; tracked as TD-704.
 OLD_CODES_READ_AS_OTHER = frozenset({'engine_wrong', 'read_wrong', 'new_information', 'programme_rule'})
 
 KEY = 'fail_reasons'   # the key inside `officer_verdict`
