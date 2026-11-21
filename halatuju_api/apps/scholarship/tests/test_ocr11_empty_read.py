@@ -4,13 +4,16 @@ retry path), never a stored 'ok' and never a checked-but-unapproved approval.
 * Offer: `candidate_nric_source` (the IC guard writes 'none' on every IC-less read) no longer fills a read;
   an all-empty answer is `read_errors.EMPTY_ANSWER`, judged before the IC guard and its text backstop.
 * Results slip / higher results: `_slip_ocr_diag` and the `results_kind_*` routing detection no longer
-  fill a read; an all-empty AI answer is `EMPTY_ANSWER`.
-* Income approval: an all-empty / all-"no" answer goes through `failed()` (the retry window), so the
-  document is still checking, then the officer's, never `approval_missing` ("unapproved").
+  fill a read; an all-empty AI answer is `EMPTY_ANSWER` (the slip's diagnostic is kept on the failed read).
+  A list or dict counts only if something inside it is filled.
+* Income approval (review round 1): judged on the IMAGE, not the answer. A (nearly) white page image
+  (`approval_page_white`, also with a footer or a thin bar) is a failed read with no paid call: still
+  checking, ONE sweep retry, then the officer's. A genuine unmarked document with text answers "nothing"
+  too and stays a checked, unapproved read (`approval_missing`).
 * The marked white page (TD row 2, item 1): a page white apart from a footer mark passes the blank-page
   guard, reaches the model, and its empty answer is a failed read too.
 
-Synthetic data only: invented names, a made-up IC, blank images.
+Synthetic data only: invented names, a made-up IC, drawn pages.
 """
 import io
 from unittest import mock
@@ -110,45 +113,110 @@ class AnEmptyResultsAnswerIsAFailedRead(TestCase):
     def test_an_empty_slip_answer_is_cannot_read_though_the_diag_and_year_backfill_are_there(self):
         vf = self._upload('results_slip', 'SIJIL PELAJARAN MALAYSIA\nPEPERIKSAAN TAHUN 2030\nPage 1 of 1')
         self.assertEqual((vf['student_verdict'], vf['error'], vf['fields']), ('unreadable', EMPTY_ANSWER, {}))
+        self.assertEqual(vf['_slip_ocr_diag'], {'reason': 'x'})      # review round 1: the diagnostic is kept
 
     def test_an_empty_higher_results_answer_is_cannot_read_though_the_kind_was_detected(self):
         vf = self._upload('higher_results', 'MAJLIS PEPERIKSAAN MALAYSIA\nSIJIL TINGGI PERSEKOLAHAN MALAYSIA')
         self.assertEqual((vf['student_verdict'], vf['error'], vf['fields']), ('unreadable', EMPTY_ANSWER, {}))
 
 
-class AnEmptyApprovalAnswerIsAFailedRead(SimpleTestCase):
-    """The income path: never a checked read that says "unapproved" for a page the model did not see."""
+def _page(*, footer=False, bar=False, typed=False):
+    """A synthetic A4-sized page at 150 dpi (1240 x 1754), the size `pdf_pages` renders: white, plus a
+    "Page 1 of 1" footer, a thin bar, or eight typed lines of an invented unsigned self-declaration."""
+    from PIL import Image, ImageDraw, ImageFont
+    im = Image.new('RGB', (1240, 1754), 'white')
+    d = ImageDraw.Draw(im)
+    if footer:
+        d.text((560, 1694), 'Page 1 of 1', fill='black', font=ImageFont.load_default(size=18))
+    if bar:
+        d.rectangle((495, 1714, 745, 1722), fill='black')
+    if typed:
+        lines = ('PENGAKUAN PENDAPATAN SENDIRI', '', 'Saya yang bernama ZORBEX A/L QUENTARO',
+                 f'No. K/P {FAKE_IC} mengaku bahawa pendapatan', 'bulanan saya ialah RM800 sebagai',
+                 'penoreh getah di Kampung Contoh.', '', 'Tarikh: 1 November 2026')
+        for i, line in enumerate(lines):
+            d.text((120, 160 + i * 40), line, fill='black', font=ImageFont.load_default(size=24))
+    buf = io.BytesIO()
+    im.save(buf, format='PNG')
+    return buf.getvalue()
+
+
+class AWhiteApprovalPageIsAFailedRead(SimpleTestCase):
+    """The income path, judged on the IMAGE the approval read would send (review round 1): a white page is
+    a failed read with no paid call; a genuine unmarked document is still a checked, unapproved read."""
 
     NOTHING = {'issuer_header': '', 'approver_name': '', 'approver_title': '', 'has_stamp_or_signature': 'no',
                'has_signature': 'no', 'has_stamp': 'no'}
 
-    def _read(self, answer):
+    def _read(self, image, answer=None, prior=None):
         from apps.scholarship.income_declaration import read_approval
-        doc = ApplicantDocument(doc_type='income_support_doc', content_type='image/jpeg', vision_fields={})
+        doc = ApplicantDocument(doc_type='income_support_doc', content_type='image/png', vision_fields=prior or {})
         ex = {'fields': {'amount': 'RM800'}, 'warnings': [], 'error': ''}
-        with _answer(answer):
-            out = read_approval(doc, ex, 'SURAT PENGESAHAN PENDAPATAN\nRM800', lambda: b'img')
+        with _answer(answer or self.NOTHING) as gem:
+            out = read_approval(doc, ex, 'PENGAKUAN PENDAPATAN SENDIRI\nRM800', lambda: image)
         doc.vision_fields = {**out, 'fields': out['fields']}
-        return doc, out
+        return doc, out, gem.call_count
 
-    def test_an_all_no_answer_is_a_failed_read_still_checking_not_unapproved(self):
+    def test_a_genuine_unmarked_document_stays_a_checked_unapproved_read(self):
         from apps.scholarship.income_declaration import (APPROVAL_ERROR, APPROVAL_FIELDS, approval_missing,
-                                                         approval_unchecked)
+                                                         approval_page_white, approval_unchecked)
+        page = _page(typed=True)
+        self.assertFalse(approval_page_white(page))
         for answer in (self.NOTHING, {k: '' for k in self.NOTHING}):
             with self.subTest(marks=answer['has_stamp']):
-                doc, out = self._read(answer)
+                doc, out, calls = self._read(page, answer)
+                self.assertEqual(calls, 1)
+                self.assertNotIn(APPROVAL_ERROR, out)
+                self.assertLessEqual(set(APPROVAL_FIELDS), set(out['fields']))
+                self.assertFalse(approval_unchecked(doc))
+                self.assertNotEqual(approval_missing(doc), ())         # checked, and unapproved
+
+    def test_a_white_page_and_a_white_page_with_a_footer_or_a_bar_fail_with_no_paid_call(self):
+        from apps.scholarship.income_declaration import (APPROVAL_ERROR, APPROVAL_FIELDS, approval_expired,
+                                                         approval_missing, approval_unchecked)
+        for marks in ({}, {'footer': True}, {'bar': True}, {'footer': True, 'bar': True}):
+            with self.subTest(**marks):
+                doc, out, calls = self._read(_page(**marks))
+                self.assertEqual(calls, 0)
                 self.assertEqual(out[APPROVAL_ERROR], EMPTY_ANSWER)
                 self.assertFalse(set(APPROVAL_FIELDS) & set(out['fields']))
                 self.assertEqual(out['fields']['amount'], 'RM800')
-                self.assertTrue(approval_unchecked(doc))
+                self.assertTrue(approval_unchecked(doc))               # still checking: the sweep retries it
+                self.assertFalse(approval_expired(doc))
                 self.assertEqual(approval_missing(doc), ())
 
-    def test_any_one_mark_is_still_a_checked_read(self):
-        from apps.scholarship.income_declaration import APPROVAL_ERROR, approval_missing
+    def test_the_one_retry_that_sees_a_white_page_again_closes_the_window(self):
+        """The paid-read cap: the sweep's one retry finds the same white page, so the window is shut at once
+        and the document is the officer's (`approval_expired`); the sweep excludes a shut window."""
+        import time
+        from apps.scholarship.income_declaration import APPROVAL_ERROR, APPROVAL_UNTIL, approval_expired
+        prior = {APPROVAL_ERROR: EMPTY_ANSWER, APPROVAL_UNTIL: int(time.time()) + 3600, 'fields': {}}
+        doc, out, calls = self._read(_page(footer=True), prior=prior)
+        self.assertEqual((calls, out[APPROVAL_ERROR]), (0, EMPTY_ANSWER))
+        self.assertLessEqual(out[APPROVAL_UNTIL], time.time())
+        self.assertTrue(approval_expired(doc))
+        _, other, _ = self._read(_page(), prior={**prior, APPROVAL_ERROR: 'no image'})   # another failure first
+        self.assertEqual(other[APPROVAL_UNTIL], prior[APPROVAL_UNTIL])               # keeps its window
+
+    def test_an_image_pil_cannot_open_is_not_white_and_any_one_mark_is_still_a_checked_read(self):
+        from apps.scholarship.income_declaration import APPROVAL_ERROR, approval_missing, approval_page_white
+        self.assertFalse(approval_page_white(b'not an image'))
         for key, value in (('issuer_header', 'JKKK KAMPUNG CONTOH'), ('has_stamp', 'yes'),
                            ('has_signature', 'yes'), ('approver_name', 'QORVA BIN ZELT')):
             with self.subTest(key):
-                doc, out = self._read({**self.NOTHING, key: value})
+                doc, out, _ = self._read(_page(typed=True), {**self.NOTHING, key: value})
                 self.assertNotIn(APPROVAL_ERROR, out)
                 self.assertEqual(out['fields'][key], value)
                 self.assertNotEqual(approval_missing(doc), ())
+
+
+class NestedValuesAreLookedInside(SimpleTestCase):
+
+    def test_blank_slip_rows_are_not_a_filled_read_and_one_filled_cell_is(self):
+        from apps.scholarship.vision.judge import _any_field_filled
+        blank = {'results': [{'subject': '', 'grade': ' ', 'band': ''}], 'exam': {'year': ''}}
+        self.assertFalse(_any_field_filled(blank))
+        self.assertEqual(doc_student_verdict('results_slip', blank, names=['X']), 'wrong_doc')
+        self.assertTrue(_any_field_filled({'results': [{'subject': 'BAHASA MELAYU', 'grade': ''}]}))
+        self.assertTrue(_any_field_filled({'exam': {'year': '2030'}}))
+        self.assertTrue(_any_field_filled({'count': 3}))

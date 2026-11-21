@@ -136,12 +136,14 @@ from .offer_signatures import english_ua_lists
 #       text (a born-digital PDF) keeps its layer; a check that fails (or runs past its operation budget) is the Vision
 #       route. Every family, weight, band and veto unchanged. Backfill: none automatic (the owner's Re-run).
 #   1.32.0 (2026-11-21) OCR-11, owner decision 2026-11-21: a read that found NOTHING on the page is a failed read, never a
-#       stored good read. The approval read (`income_declaration.read_approval`) that answers no header, no approver and no
-#       stamp or signature (`_nothing_seen`, what a white page image answers) goes to `failed()` (the retry window, then
-#       "could not read"), never a checked read `approval_missing` calls unapproved. The student verdict
+#       stored good read. The approval read (`income_declaration.read_approval`) whose page IMAGE is (nearly) all white
+#       (`approval_page_white`: under `WHITE_PAGE_INK_SHARE` ink pixels) goes to `failed()` with no paid call (one
+#       sweep retry, then "could not read"), never a checked read `approval_missing` calls unapproved; a genuine
+#       unmarked document is still read and stays checked and unapproved. The student verdict
 #       (`vision/judge._any_field_filled`) no longer counts the reader's own bookkeeping (`BOOKKEEPING_FIELDS`: the offer's
-#       `candidate_nric_source`, the slip's `_slip_ocr_diag`, the higher-results `results_kind_*` detection) as a field
-#       read; an all-empty AI answer on the results slip / higher results is a failed read
+#       `candidate_nric_source`, the slip's `_slip_ocr_diag`, the higher-results `results_kind_*` detection), nor a
+#       list or dict with nothing filled inside, as a field read; an all-empty AI answer on the results slip / higher
+#       results is a failed read
 #       (`vision/field_extraction._empty_answer_failed`). The offer reader's own change is `offer_reader` 2.8.0.
 #       Every family, weight, band and veto unchanged.
 #       Backfill: none automatic (the owner's Re-run).

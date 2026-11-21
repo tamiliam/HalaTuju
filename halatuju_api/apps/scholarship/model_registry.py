@@ -68,14 +68,14 @@ MODELS = {
     },
     'results_doc': {
         'constant': (f'{_G}/results_doc.py', 'MODEL_VERSION'),
-        # results_doc scores the results slip AND the offer letter; the offer rulings it reaches
-        # lazily are part of its answer, so they are its files rather than a gap.
+        # It scores the slip AND the offer letter (its lazy offer rulings are its files); OCR-11: the empty-read pins.
         'files': [f'{_G}/{name}.py' for name in (
             'results_doc', 'stpm_doc', 'matric_poly_doc', 'bands', 'epf_app_doc',
             'offer_signatures', 'offer_rulings', 'offer_issuers', 'offer_reading', 'offer_text',
             'offer_confirmations', 'offer_confirm_checks', 'offer_agency')] + [_AI_REGISTRY],
-        'pins': [_FLASH_25] + [(f'{_APP}/results_kind.py', name) for name in (
-            'detect', 'prints_polytechnic', '_NOT_ISSUERS')],
+        'pins': [_FLASH_25] + [(f'{_APP}/results_kind.py', n) for n in ('detect', 'prints_polytechnic', '_NOT_ISSUERS')]
+        + [(f'{_APP}/{f}.py', n) for f, n in (('vision/judge', '_any_field_filled'), ('read_errors', 'EMPTY_ANSWER'),
+           ('vision/field_extraction', '_empty_answer_failed'), ('income_declaration', 'approval_page_white'))],
     },
     'salary_doc': {
         'constant': (f'{_G}/salary_doc.py', 'MODEL_VERSION'),

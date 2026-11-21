@@ -37,6 +37,7 @@ import re
 from datetime import timedelta
 
 from .genuineness.declaration_doc import DECLARATION
+from .read_errors import EMPTY_ANSWER
 
 _STR = {'type': 'string'}
 #: The approval fields — read from the document's IMAGE (`read_approval`), never from its OCR text.
@@ -133,7 +134,10 @@ def read_approval(doc, ex, ocr_text, image_fn):
     def failed(why):
         from django.utils import timezone
         prior = getattr(doc, 'vision_fields', None)
-        until = prior.get(APPROVAL_UNTIL) if isinstance(prior, dict) else None
+        prior = prior if isinstance(prior, dict) else {}
+        until = prior.get(APPROVAL_UNTIL)
+        if why == EMPTY_ANSWER and prior.get(APPROVAL_ERROR) == EMPTY_ANSWER:
+            until = int(timezone.now().timestamp())     # OCR-11: the ONE retry saw a white page again: stop
         return {**ex, APPROVAL_ERROR: why,
                 APPROVAL_UNTIL: until or int((timezone.now() + APPROVAL_RETRY_WINDOW).timestamp())}
     from .genuineness.declaration_doc import income_doc_genuineness
@@ -154,24 +158,49 @@ def read_approval(doc, ex, ocr_text, image_fn):
         img, mime = vision._as_image_for_gemini(data, getattr(doc, 'content_type', '')) if data else (None, '')
     if img is None:
         return failed('no image')
+    if approval_page_white(img):    # OCR-11: a white page is never sent, and never stored as a CHECKED read
+        return failed(EMPTY_ANSWER)
     got = vision._call_gemini_json(APPROVAL_PROMPT, _APPROVAL_SCHEMA, image=img, mime_type=mime)
     if not isinstance(got, dict) or got.get('_error'):
         return failed(str((got or {}).get('_error') or 'no answer')[:200] if isinstance(got, dict) else 'no answer')
     approval = {k: (got.get(k) if isinstance(got.get(k), str) else '') for k in APPROVAL_FIELDS}
-    if _nothing_seen(approval):     # OCR-11: a white stack reads like this; never stored as a CHECKED read
-        from .read_errors import EMPTY_ANSWER
-        return failed(EMPTY_ANSWER)
     return {**ex, 'fields': {**ex['fields'], **approval}}
 
 
-def _nothing_seen(approval) -> bool:
-    """OCR-11 (owner 2026-11-21): the approval answer found NOTHING on the page — no header, no approver's
-    name or title, and no stamp or signature in any of the three marks. That is what a white or blank page
-    image answers, so it is a failed read (`read_errors.EMPTY_ANSWER` through `failed()`: the retry window,
-    then "could not read"), never a checked read that `approval_missing` would call unapproved."""
-    return (not any(str(approval.get(k) or '').strip() for k in ('issuer_header', 'approver_name', 'approver_title'))
-            and not any(str(approval.get(k) or '').strip().lower() in (*STAMP_MARKS, *SIGNATURE_MARKS)
-                        for k in ('has_stamp_or_signature', 'has_signature', 'has_stamp')))
+#: OCR-11 round 1: a pixel darker than this grey level (0-255) is ink. Paper in a phone photo, a scanner's
+#: grey and every printed or written mark sit below it; a white render and JPEG noise on white sit above it.
+PAGE_INK_LEVEL = 200
+#: The share of ink pixels under which the image the approval read would send is a WHITE page (a blank
+#: render, or white apart from a footer "Page 1 of 1" or a thin bar). Set from the fixture measurement
+#: (CHANGELOG, OCR-11 round 1): every genuine income scan and photo sits far above it.
+WHITE_PAGE_INK_SHARE = 0.002
+
+
+def approval_page_white(img: bytes) -> bool:
+    """OCR-11 round 1 (owner 2026-11-21): the page image itself is (nearly) all white — under
+    `WHITE_PAGE_INK_SHARE` of its pixels are ink (`PAGE_INK_LEVEL`). Then nothing on it can be read, so the
+    approval read FAILS (`read_errors.EMPTY_ANSWER`, no paid call) instead of a checked read that
+    `approval_missing` calls unapproved. Judged on the IMAGE, never on the model's answer: a genuine
+    unmarked document (an unsigned typed self-declaration, a handwritten note) answers "no header, no
+    approver" too, and must stay a checked, unapproved read. An image PIL cannot open is not white (the
+    read is made as before). One C pass over the pixels; a large JPEG is decoded at a reduced scale."""
+    import io
+    from PIL import Image
+    try:
+        with Image.open(io.BytesIO(img)) as im:
+            if im.format == 'JPEG':
+                im.draft('L', (1600, 1600))
+            if im.mode in ('RGBA', 'LA', 'PA') or (im.mode == 'P' and 'transparency' in im.info):
+                rgba = im.convert('RGBA')
+                page = Image.new('RGBA', rgba.size, (255, 255, 255, 255))
+                page.alpha_composite(rgba)
+                grey = page.convert('L')
+            else:
+                grey = im.convert('L')
+        counts = grey.histogram()
+        return sum(counts[:PAGE_INK_LEVEL]) < WHITE_PAGE_INK_SHARE * max(1, grey.width * grey.height)
+    except Exception:
+        return False
 
 
 #: Round 3 (TD-390's pattern): an approval image read that failed on OUR side is retried by the hourly sweep

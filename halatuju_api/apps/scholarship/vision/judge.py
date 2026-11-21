@@ -19,15 +19,20 @@ BOOKKEEPING_FIELDS = frozenset({'candidate_nric_source', '_slip_ocr_diag', 'resu
 
 
 def _any_field_filled(fields: dict) -> bool:
-    for k, v in fields.items():
-        if k in BOOKKEEPING_FIELDS:
-            continue
-        if isinstance(v, str):
-            if v.strip():
-                return True
-        elif v:
-            return True
-    return False
+    return any(_value_filled(v) for k, v in fields.items() if k not in BOOKKEEPING_FIELDS)
+
+
+def _value_filled(v) -> bool:
+    """OCR-11 round 1: a value says something only if some string in it is not blank (or it is a true
+    non-string scalar). A list or dict is looked INSIDE: a results list of rows whose subject, grade and
+    band are all '' (what a blank slip answers) is not filled."""
+    if isinstance(v, str):
+        return bool(v.strip())
+    if isinstance(v, dict):
+        return any(_value_filled(x) for x in v.values())
+    if isinstance(v, (list, tuple)):
+        return any(_value_filled(x) for x in v)
+    return bool(v)
 
 
 _DOC_NAME_LABEL_RE = re.compile(r'^\s*(?:NAMA(?:\s+CALON)?|NAME|CALON)\s*[:.\-]?\s+', re.IGNORECASE)

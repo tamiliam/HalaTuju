@@ -10,8 +10,8 @@
     "also_ok": []
   },
   "1.32.0": {
-    "digest": "b9ead7705ce78294aa8fb32887ff9debced6d098c6cfd28e3f595e8eceace2be",
-    "note": "2026-11-21: OCR-11 (owner decision 2026-11-21): a read that found nothing on the page is a failed read. The approval read that answers no header, no approver and no mark goes to failed(), never a checked unapproved read; the student verdict no longer counts a reader's bookkeeping fields as read; an all-empty AI answer on the results slip or higher results is a failed read. The change sits in income_declaration.py, vision/judge.py and vision/field_extraction.py, which this register does not list; the digest of the listed files is the same as under 1.31.0.",
+    "digest": "75346d588c1a935a920f422f202aa7c16c78e49d951cb80822388f2f1a09760d",
+    "note": "2026-11-21: OCR-11 (owner decision 2026-11-21): a read that found nothing on the page is a failed read. The approval read whose page IMAGE is (nearly) all white (income_declaration.approval_page_white: under 0.2% ink pixels) fails with no paid call, one sweep retry, then the officer's; a genuine unmarked document stays a checked, unapproved read. The student verdict no longer counts a reader's bookkeeping fields, or a list or dict with nothing filled inside, as read (vision/judge._any_field_filled); an all-empty AI answer on the results slip or higher results is a failed read (vision/field_extraction._empty_answer_failed). Review round 1: those three definitions and read_errors.EMPTY_ANSWER are now pins of this model, so the digest moved from 1.31.0's.",
     "also_ok": []
   }
 }
