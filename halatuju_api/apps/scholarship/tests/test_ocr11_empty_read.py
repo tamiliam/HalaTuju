@@ -210,6 +210,57 @@ class AWhiteApprovalPageIsAFailedRead(SimpleTestCase):
                 self.assertNotEqual(approval_missing(doc), ())
 
 
+def _png_header_only(width, height, bit_depth=8):
+    """A one-colour (white) greyscale PNG of this size whose IDAT holds only its first rows: PIL reads the
+    size off the header, and any decode of the whole image would be needed to judge it."""
+    import struct
+    import zlib
+
+    def chunk(kind, data):
+        return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+    row = b'\x00' + b'\xff' * (width * bit_depth // 8)
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, bit_depth, 0, 0, 0, 0))
+            + chunk(b'IDAT', zlib.compress(row * 4)) + chunk(b'IEND', b''))
+
+
+def _ink_page(mode):
+    """A 1000 x 1400 page with a dark text block (about 10% ink), in the given PIL mode, as PNG bytes."""
+    from PIL import Image, ImageDraw
+    im = Image.new('L', (1000, 1400), 255)
+    ImageDraw.Draw(im).rectangle([100, 100, 900, 280], fill=30)
+    if mode != 'L':
+        im = im.point(lambda v: v * 257, 'I').convert(mode)        # 16-bit: 0..65535, the ink stays dark
+    buf = io.BytesIO()
+    im.save(buf, format='PNG')
+    return buf.getvalue()
+
+
+class TheWhiteCheckGuards(SimpleTestCase):
+    """Review round 2: the white check runs in the request's own process on an uploaded image."""
+
+    def test_an_image_over_the_pixel_cap_is_not_white_and_is_never_decoded(self):
+        from PIL import Image, ImageFile
+        from apps.scholarship.income_declaration import WHITE_CHECK_MAX_PIXELS, approval_page_white
+        big = _png_header_only(5000, 4000)                     # 20 MP: over the 16 MP cap, ~1 kB of bytes
+        with Image.open(io.BytesIO(big)) as im:
+            self.assertGreater(im.width * im.height, WHITE_CHECK_MAX_PIXELS)
+        with mock.patch.object(ImageFile.ImageFile, 'load') as load, \
+                mock.patch.object(Image.Image, 'convert') as convert:
+            self.assertFalse(approval_page_white(big))
+        load.assert_not_called()
+        convert.assert_not_called()
+        self.assertTrue(approval_page_white(_page()))                          # under the cap: still judged
+
+    def test_a_16_bit_greyscale_page_with_ink_is_not_white(self):
+        from PIL import Image
+        from apps.scholarship.income_declaration import approval_page_white
+        self.assertFalse(approval_page_white(_ink_page('L')))                  # the 8-bit control
+        page = _ink_page('I;16')
+        with Image.open(io.BytesIO(page)) as im:
+            self.assertTrue(im.mode == 'I' or im.mode.startswith('I;'), im.mode)
+        self.assertFalse(approval_page_white(page))
+
+
 class NestedValuesAreLookedInside(SimpleTestCase):
 
     def test_blank_slip_rows_are_not_a_filled_read_and_one_filled_cell_is(self):

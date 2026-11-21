@@ -174,6 +174,9 @@ PAGE_INK_LEVEL = 200
 #: render, or white apart from a footer "Page 1 of 1" or a thin bar). Set from the fixture measurement
 #: (CHANGELOG, OCR-11 round 1): every genuine income scan and photo sits far above it.
 WHITE_PAGE_INK_SHARE = 0.002
+#: OCR-11 round 2, a decompression-bomb guard (`staff_photo.MAX_PIXELS`'s 16 MP): an image larger than this,
+#: read from the HEADER (a JPEG after its reduced-scale draft), is never decoded here and is not white.
+WHITE_CHECK_MAX_PIXELS = 16_000_000
 
 
 def approval_page_white(img: bytes) -> bool:
@@ -183,13 +186,19 @@ def approval_page_white(img: bytes) -> bool:
     `approval_missing` calls unapproved. Judged on the IMAGE, never on the model's answer: a genuine
     unmarked document (an unsigned typed self-declaration, a handwritten note) answers "no header, no
     approver" too, and must stay a checked, unapproved read. An image PIL cannot open is not white (the
-    read is made as before). One C pass over the pixels; a large JPEG is decoded at a reduced scale."""
+    read is made as before). One C pass over the pixels; a large JPEG is decoded at a reduced scale.
+    Round 2: an image over `WHITE_CHECK_MAX_PIXELS`, and a 16/32-bit or float one (modes I, I;16..., F —
+    PIL clips those to 8-bit instead of scaling, so dark ink would read as white), is not white either."""
     import io
     from PIL import Image
     try:
-        with Image.open(io.BytesIO(img)) as im:
+        with Image.open(io.BytesIO(img)) as im:            # the header only: nothing is decoded yet
+            if im.mode in ('I', 'F') or im.mode.startswith('I;'):
+                return False
             if im.format == 'JPEG':
                 im.draft('L', (1600, 1600))
+            if im.width * im.height > WHITE_CHECK_MAX_PIXELS:
+                return False
             if im.mode in ('RGBA', 'LA', 'PA') or (im.mode == 'P' and 'transparency' in im.info):
                 rgba = im.convert('RGBA')
                 page = Image.new('RGBA', rgba.size, (255, 255, 255, 255))

@@ -235,6 +235,13 @@ def _empty_answer_failed(ex):
     return ex
 
 
+def _read_higher_results(doc, ocr, image_fn):
+    """Higher results (`higher_results.extract`). OCR-11: an all-empty AI answer is a failed read (the
+    routing detection `results_kind_*` is not a field). Its own definition so the model register can pin it."""
+    ex = _higher_extract(doc, ocr, image_fn, _v.extract_document_fields)
+    return _empty_answer_failed(ex) if ex.get('capture') == 'ai' else ex
+
+
 def _read_offer_letter(doc, ocr, _o, image_fn):
     """``(ex, image)``. STANDARDISED government offers (STPM / Matrikulasi / Polytechnic) read
     DETERMINISTICALLY from the OCR text — `offer_exact` (S5): the parser, the IC guard, the merge over
@@ -368,9 +375,7 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
     elif doc.doc_type == 'offer_letter':
         ex, image = _read_offer_letter(doc, ocr, _o, _image)
     elif doc.doc_type == 'higher_results':
-        ex = _higher_extract(doc, ocr, _image, _v.extract_document_fields)
-        if ex.get('capture') == 'ai':                  # OCR-11: the routing detection is not a field
-            ex = _empty_answer_failed(ex)
+        ex = _read_higher_results(doc, ocr, _image)
     elif doc.doc_type == 'birth_certificate':
         ex = _read_birth_certificate(doc, ocr, _image, pre_words)
     else:
