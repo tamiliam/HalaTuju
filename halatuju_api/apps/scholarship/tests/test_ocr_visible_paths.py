@@ -447,8 +447,9 @@ class TheHostileShapes(SimpleTestCase):
 
     def test_each_form_call_charges_the_fonts_it_lists(self):
         # The same 24,000 calls of a form that lists /F1: 256 font-map units a call pass the 1,200,000 budget at
-        # call 4,686, long before the operations. An EMPTY form (/Length 0) is parsed by pypdf 5.9 (it reads the
-        # stream as b'\n') but never by 6.21.4 (b''): the parses are pinned against what THIS pypdf reads.
+        # call 4,686, long before the operations. A one-blank-byte form is read as non-empty and parsed on every
+        # pypdf. An EMPTY form (/Length 0) is parsed only by pypdf 5.9 (it reads b'\n'), not by 6.21.4 (b''). The
+        # content-stream parses counted are the page's own (1) plus the form's (1 if THIS pypdf reads it non-empty).
         from pypdf import PdfReader
         for form in (b' ', b''):
             with self.subTest(form=form):

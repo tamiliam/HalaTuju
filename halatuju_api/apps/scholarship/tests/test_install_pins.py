@@ -83,3 +83,35 @@ def test_no_mismatch_neither_stops_nor_warns():
 def test_a_session_off_the_pins_got_here_only_by_asking_for_the_cross_check(pytestconfig):
     if pins.check():
         assert pytestconfig.getoption(pins.OPT_OUT) is True
+
+
+def test_the_dockerfile_reads_the_same_with_lf_or_crlf_line_ends():
+    lock_crlf, docker_crlf = LOCK.replace('\n', '\r\n'), DOCKER.replace('\n', '\r\n')
+    assert pins.lock_pins(lock_crlf) == pins.lock_pins(LOCK) == SAME
+    assert pins.production_python(docker_crlf) == pins.production_python(DOCKER) == '3.11'
+    assert pins.mismatches(lock_crlf, docker_crlf, SAME, '3.11') == []
+    assert pins.production_python(DOCKER.replace('\n', '\r')) == '3.11'      # a lone CR too
+
+
+def test_the_from_line_is_matched_whatever_the_case_spacing_flags_or_stage_name():
+    for line in ('FROM python:3.11-slim AS build', 'from python:3.11-slim as build', 'FROM   python:3.11   AS   build  ',
+                 'FROM --platform=linux/amd64 python:3.11-slim', 'From --platform=$BUILDPLATFORM python:3.11 As base',
+                 '\tFROM python:3.11-slim-bookworm'):
+        for eol in ('\n', '\r\n'):
+            assert pins.production_python('# api' + eol + line + eol + 'ENV A=1' + eol) == '3.11', line
+
+
+def test_no_matching_from_stage_fails_loudly_not_silently():
+    for bad in ('', '# only a comment\n', 'FROM node:20 AS build\nFROM nginx\n', 'FROM python:latest AS build\n',
+                'RUN echo FROM python:3.11\n'):
+        with pytest.raises(ValueError, match='found 0'):
+            pins.production_python(bad)
+    problems = pins.mismatches(LOCK, 'FROM node:20 AS build\n', SAME, '3.11')
+    assert len(problems) == 1 and problems[0].startswith('Python: expected one "FROM python:X.Y" line')
+
+
+def test_a_pin_written_with_extras_is_still_that_package_pin():
+    lock = 'pypdf[crypto,image] == 6.21.4 ; python_version >= "3.9"\r\npypdfium2[x]==4.30.0\r\nother[extra]==1.0\r\n'
+    assert pins.lock_pins(lock) == SAME
+    assert pins.lock_pins('pypdf[extra]==6.21.4\n', names=('pypdf',)) == {'pypdf': '6.21.4'}
+    assert pins.mismatches(lock, DOCKER, SAME, '3.11') == []

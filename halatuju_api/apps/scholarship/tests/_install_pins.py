@@ -20,7 +20,16 @@ API_DIR = Path(__file__).resolve().parents[3]
 #: The packages whose version changes what the document checks read (the PDF text layer and the renderer).
 PINNED = ('pypdf', 'pypdfium2')
 OPT_OUT = '--unpinned-cross-check'
-_FROM_PYTHON = re.compile(r'^FROM\s+python:(\d+\.\d+)\S*\s*$', re.MULTILINE)
+#: One ``FROM [--flag=x ...] python:X.Y[-tag] [AS name]`` line: FROM/AS in any case, any spaces or tabs, any
+#: ``--platform=...`` style flags. Read on LF text (`_lf`), so CRLF and LF files match alike.
+_FROM_PYTHON = re.compile(
+    r'^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*python:(\d+\.\d+)\S*(?:[ \t]+AS[ \t]+\S+)?[ \t]*$',
+    re.MULTILINE | re.IGNORECASE)
+
+
+def _lf(text: str) -> str:
+    """The text with CRLF (and lone CR) line ends read as LF, so the checks do not depend on the checkout."""
+    return text.replace('\r\n', '\n').replace('\r', '\n')
 
 
 def _norm(name: str) -> str:
@@ -30,16 +39,18 @@ def _norm(name: str) -> str:
 def lock_pins(lock_text: str, names=PINNED) -> dict:
     """``{name: version}`` for each of ``names`` pinned ``name==version`` in a requirements lock."""
     wanted, out = {_norm(n): n for n in names}, {}
-    for line in lock_text.splitlines():
-        m = re.match(r'\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*==\s*([^\s;#]+)', line)
+    for line in _lf(lock_text).split('\n'):
+        # ``name==v`` or, with extras, ``name[extra,other]==v``: the extras do not change which package it is
+        m = re.match(r'\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*==\s*([^\s;#]+)', line)
         if m and _norm(m.group(1)) in wanted:
             out[wanted[_norm(m.group(1))]] = m.group(2)
     return out
 
 
 def production_python(dockerfile_text: str) -> str:
-    """The major.minor of the Dockerfile's ``FROM python:X.Y...`` line. ValueError unless exactly one."""
-    found = _FROM_PYTHON.findall(dockerfile_text)
+    """The major.minor of the Dockerfile's ``FROM python:X.Y...`` line. ValueError unless exactly one: no
+    matching stage is a loud failure (a problem line, a stopped session), never a silent pass."""
+    found = _FROM_PYTHON.findall(_lf(dockerfile_text))
     if len(found) != 1:
         raise ValueError(f'expected one "FROM python:X.Y" line in the Dockerfile, found {len(found)}')
     return found[0]

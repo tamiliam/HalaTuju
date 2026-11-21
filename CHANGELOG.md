@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### test: OCR-7 - the install-pin check reads CRLF, any FROM line and extras pins (2026-11-21)
+
+- `_install_pins.py`: reads the lock and Dockerfile the same with LF, CRLF or lone CR; the FROM line matches in any case, with extra spaces, `--platform` flags and an `AS name`, and no matching line is a loud stop (never a silent pass); a pin with extras (`pypdf[extra]==6.21.4`) counts as the pypdf pin. A test for each. The parse-count comment in `test_ocr_visible_paths.py` now says what the code counts (the page's parse plus the form's, when this pypdf reads it non-empty).
+
 ### docs: the OCR-first sprints get one name each, OCR-1 to OCR-17 (2026-11-21)
 
 - The roadmap names every sprint OCR- and its run number, with a table from the old names (S0, S4, S-visible, D1, Blank-gap 1, the gen fix). OCR-11 and OCR-12 build now (owner, 21 Nov).
