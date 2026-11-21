@@ -132,6 +132,7 @@ MODELS = {
                  (f'{_APP}/offer_course_match.py', 'COURSE_CODE_RE'),
                  (f'{_APP}/offer_course_match.py', '_LOCAL_CODE_RE'),
                  (f'{_APP}/offer_ic.py', 'guard_nric'),
+                 (f'{_APP}/read_errors.py', 'EMPTY_ANSWER'),     # OCR-11: the error an empty answer stores
                  # what the pins above reach in other files (LL3 review: pins follow their imports)
                  (f'{_APP}/vision/judge.py', '_strip_name_label'),
                  (f'{_APP}/name_order.py', 'patronymic_reversed')]

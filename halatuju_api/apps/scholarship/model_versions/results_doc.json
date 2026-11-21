@@ -8,5 +8,10 @@
     "digest": "b9ead7705ce78294aa8fb32887ff9debced6d098c6cfd28e3f595e8eceace2be",
     "note": "2026-11-19: main's OCR-first S-visible work (owner decision 2026-11-18): the visible page judges, so a PDF page with an invisible text layer has no text layer, for every document type. The change sits in pdf_pages.py and the new pdf modules, which this register does not list (see the technical debt row); the digest of the listed files is the same as under 1.29.0.",
     "also_ok": []
+  },
+  "1.32.0": {
+    "digest": "b9ead7705ce78294aa8fb32887ff9debced6d098c6cfd28e3f595e8eceace2be",
+    "note": "2026-11-21: OCR-11 (owner decision 2026-11-21): a read that found nothing on the page is a failed read. The approval read that answers no header, no approver and no mark goes to failed(), never a checked unapproved read; the student verdict no longer counts a reader's bookkeeping fields as read; an all-empty AI answer on the results slip or higher results is a failed read. The change sits in income_declaration.py, vision/judge.py and vision/field_extraction.py, which this register does not list; the digest of the listed files is the same as under 1.31.0.",
+    "also_ok": []
   }
 }

@@ -26,6 +26,11 @@ RATE_LIMITED = 'rate_limited'
 #: A model answered, was billed, and returned nothing usable (a safety block, a truncated or
 #: malformed JSON body). The model DID look at the document — the one model's note, not an outage.
 UNPARSEABLE_RESPONSE = 'unparseable model response'
+#: OCR-11 (owner 2026-11-21): a model answered, and every field the page could show came back EMPTY (a
+#: white or blank page image reads like that). Nothing was read, so it is a FAILED read ("cannot read"),
+#: never a stored good read: the offer reader's error (`unreadable`) and the approval read's
+#: `failed()` (its retry window, then "could not read"). Not a service error.
+EMPTY_ANSWER = 'the read found nothing on the page'
 #: Prefix of a read in which EVERY model looked at the document and none could use it (each one
 #: answered unparseably, or refused the FILE — see `model_rejected_document`). The document's
 #: problem: stored `unreadable`, never retried. If even ONE model failed on our side instead, the

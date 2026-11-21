@@ -10,9 +10,9 @@ from django.utils import timezone
 from ..genuineness.bands import keep_stored_authenticity
 from ..higher_results import extract as _higher_extract
 from ..income_declaration import read_approval as _read_approval
-from ..read_errors import OCR_SERVICE_FAILED, is_ai_service_error, is_ocr_service_error, read_deferred
+from ..read_errors import EMPTY_ANSWER, OCR_SERVICE_FAILED, is_ai_service_error, is_ocr_service_error, read_deferred
 from .authenticity import add_read_authenticity
-from .judge import doc_student_verdict
+from .judge import _any_field_filled, doc_student_verdict
 from .ocr import _doc_usage_ctx
 from .. import vision as _v   # seams resolve on the package: one patch target reaches every caller
 
@@ -209,6 +209,7 @@ def _read_results_slip(doc, ocr, _o, image_fn, pre_words):
             else:
                 ex = _v.extract_document_fields(_text, doc.doc_type)
             ex['capture'] = 'ai'
+            ex = _empty_answer_failed(ex)      # OCR-11: judged BEFORE the OCR year backfill below
             # Record WHY we fell back (+ what Vision read) so the slip can be diagnosed.
             if isinstance(ex.get('fields'), dict):
                 ex['fields']['_slip_ocr_diag'] = diag
@@ -218,6 +219,15 @@ def _read_results_slip(doc, ocr, _o, image_fn, pre_words):
         else:
             ex['capture'] = 'deterministic'
     return ex, image
+
+
+def _empty_answer_failed(ex):
+    """OCR-11 (owner 2026-11-21): an AI answer with every real field blank (a white or blank page; the
+    bookkeeping keys `judge.BOOKKEEPING_FIELDS` do not count) is a FAILED read, cannot read, retried as
+    any failed read is: never a stored 'ok' that says nothing, never 'wrong_doc' for a page we did not see."""
+    if not ex.get('error') and isinstance(ex.get('fields'), dict) and not _any_field_filled(ex['fields']):
+        return {**ex, 'fields': {}, 'warnings': [], 'error': EMPTY_ANSWER}
+    return ex
 
 
 def _read_offer_letter(doc, ocr, _o, image_fn):
@@ -354,6 +364,8 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
         ex, image = _read_offer_letter(doc, ocr, _o, _image)
     elif doc.doc_type == 'higher_results':
         ex = _higher_extract(doc, ocr, _image, _v.extract_document_fields)
+        if ex.get('capture') == 'ai':                  # OCR-11: the routing detection is not a field
+            ex = _empty_answer_failed(ex)
     elif doc.doc_type == 'birth_certificate':
         ex = _read_birth_certificate(doc, ocr, _image, pre_words)
     else:

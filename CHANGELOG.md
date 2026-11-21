@@ -13,6 +13,15 @@ All notable changes to this project will be documented in this file.
 - Corpus, cached text only. Gate 1 held-out is the same as main: UMS 22/33, matriculation 4/4, polytechnic 4/4, STPM 2/2. Dev: UMS 22/29, matriculation 29/31 and STPM 31/31 are unchanged. Polytechnic goes from 26/26 to 22/26, and those 4 are exactly the Asasi rule's (with the rule switched off, dev matches main). 0 wrong anywhere. The ink check, measured with the `ua:UMS` lane on over all 526 offer-letter PDFs (the real render, in the child): every lock stays (132 with the check and 132 without; UMS 33 of 33), 0 not_inked, 0 errors.
 - Migration: none. Services: api.
 
+### fix: an AI read that finds nothing on the page is "cannot read", never an accepted document (sprint OCR-11, 2026-11-21)
+
+A white or blank page (or one white apart from a footer mark such as "Page 1 of 1") used to be stored as a good read that said nothing: an offer letter shown as accepted with no programme, a results slip 'ok' with no grades, an income letter checked and "unapproved". Now every real field empty is a failed read (`read_errors.EMPTY_ANSWER`, 'unreadable', retried like any failed read).
+- **Offer** (`offer_reader.read_offer`, offer reader 2.10.0): all offer fields blank after the second read is a failed read, judged before the IC guard and its text backstop.
+- **Income approval** (`income_declaration.read_approval`): an answer with no header, no approver and no stamp or signature goes to `failed()`: still checking for the retry window, then the officer's, never stored unapproved.
+- **Bookkeeping keys never fill a read** (`vision/judge.BOOKKEEPING_FIELDS`): `candidate_nric_source`, `_slip_ocr_diag`, `results_kind_detected` / `_markers` / `_issuer`.
+- **Results slip and higher results** (`vision/field_extraction._empty_answer_failed`): an all-empty AI answer is a failed read (the slip judged before the OCR year backfill).
+- results_doc MODEL_VERSION 1.32.0; register entries for offer_reader 2.10.0 and results_doc 1.32.0. Genuine cost over the eval corpus: 1 stored empty higher-results 'ok' becomes cannot read; 0 others. Tests: `test_ocr11_empty_read.py` (synthetic). TD rows "all-white page image" (fixed) and "blank-page guard misses a marked page" (item 1 covered) updated.
+
 ### test: OCR-7 - the install-pin check reads CRLF, any FROM line and extras pins (2026-11-21)
 
 - `_install_pins.py`: reads the lock and Dockerfile the same with LF, CRLF or lone CR; the FROM line matches in any case, with extra spaces, `--platform` flags and an `AS name`, and no matching line is a loud stop (never a silent pass); a pin with extras (`pypdf[extra]==6.21.4`) counts as the pypdf. Raised TD-700 (low, accepted by the lead): work-counted timing tests (`tests/_timing.py` `calls()`) miss a catastrophic regex backtrack inside one `re` call until the 60 s backstop pin. A test for each. The parse-count comment in `test_ocr_visible_paths.py` now says what the code counts (the page's parse plus the form's, when this pypdf reads it non-empty).

@@ -8,8 +8,20 @@ from .schemas import _NAME_FIELD
 from .match import address_match
 
 
+#: OCR-11 (owner 2026-11-21): keys stored among a read's fields that say HOW it was read, never WHAT the
+#: page says, so they never make a read "filled". `candidate_nric_source` (the offer reader's IC source;
+#: `offer_ic.guard_nric` writes 'none' on every read with no IC) made an all-empty offer read 'ok'.
+#: `_slip_ocr_diag` (why a results slip fell back to the AI read, always a non-empty dict) did the same to
+#: an all-empty slip read. `results_kind_detected` / `results_kind_markers` / `results_kind_issuer` (the
+#: routing detection `higher_results.extract` stores beside a higher-results read) are ours too.
+BOOKKEEPING_FIELDS = frozenset({'candidate_nric_source', '_slip_ocr_diag', 'results_kind_detected',
+                                'results_kind_markers', 'results_kind_issuer'})
+
+
 def _any_field_filled(fields: dict) -> bool:
-    for v in fields.values():
+    for k, v in fields.items():
+        if k in BOOKKEEPING_FIELDS:
+            continue
         if isinstance(v, str):
             if v.strip():
                 return True

@@ -158,7 +158,20 @@ def read_approval(doc, ex, ocr_text, image_fn):
     if not isinstance(got, dict) or got.get('_error'):
         return failed(str((got or {}).get('_error') or 'no answer')[:200] if isinstance(got, dict) else 'no answer')
     approval = {k: (got.get(k) if isinstance(got.get(k), str) else '') for k in APPROVAL_FIELDS}
+    if _nothing_seen(approval):     # OCR-11: a white stack reads like this; never stored as a CHECKED read
+        from .read_errors import EMPTY_ANSWER
+        return failed(EMPTY_ANSWER)
     return {**ex, 'fields': {**ex['fields'], **approval}}
+
+
+def _nothing_seen(approval) -> bool:
+    """OCR-11 (owner 2026-11-21): the approval answer found NOTHING on the page — no header, no approver's
+    name or title, and no stamp or signature in any of the three marks. That is what a white or blank page
+    image answers, so it is a failed read (`read_errors.EMPTY_ANSWER` through `failed()`: the retry window,
+    then "could not read"), never a checked read that `approval_missing` would call unapproved."""
+    return (not any(str(approval.get(k) or '').strip() for k in ('issuer_header', 'approver_name', 'approver_title'))
+            and not any(str(approval.get(k) or '').strip().lower() in (*STAMP_MARKS, *SIGNATURE_MARKS)
+                        for k in ('has_stamp_or_signature', 'has_signature', 'has_stamp')))
 
 
 #: Round 3 (TD-390's pattern): an approval image read that failed on OUR side is retried by the hourly sweep
