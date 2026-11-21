@@ -678,6 +678,8 @@
     "interview_agenda",
     "verdict",
     "results_change_notes",
+    "ai_fact_bands",
+    "qc_floor_facts",
     "submission_review",
     "query_sla",
     "funding_estimate",

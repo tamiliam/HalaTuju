@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### F2 (fix plan) - server AI band + I-10 (2026-11-21)
+
+Branch fix-f2, not pushed. Migration: none. Services: api, web. No doc-recognition change (no MODEL_VERSION bump).
+- **One home for the band:** new pure module `apps/scholarship/fact_bands.py` (`fact_band`, `fact_bands`, `application_fact_bands`, `floor_facts`) is an exact port of the browser's `factBandKey` with every override (Rule not met, unreadable higher results, other-kind cap, Probable needs a real verified value). No DB write, no AI call; LL5 can import it.
+- **Served:** the case detail adds `ai_fact_bands` ({fact: band key}) and `qc_floor_facts`, both from the cached verdict (the detail GET stays at 38 queries).
+- **Web:** the tiles and the grey "AI Prediction" line both read the served band and show the same five words (existing `admin.scholarship.verdict.band.*` keys; Probable kept). The browser band logic (`factTileTone`, `factBandKey`, `hasRuleNotMet`, `SOFT_EVIDENCE`, `aiSuggestionFor`) and `soft-evidence-drift.test.ts` are deleted; a thin `BAND_TONE` map stays. A missing `ai_fact_bands` (deploy skew) reads Unsure; a missing `qc_floor_facts` falls back to the gap-only list. No message value changed.
+- **I-10 (D1 = A):** a QC Accept of a Recommend is refused (`400 verdict_gap_floor`) while any fact is `gap` OR shows Rule not met, even when its raw status is not `gap`. Same override (QC or super, recorded reason, audit log). Decline unchanged.
+- **Tests:** `tests/test_fact_bands.py` (parity table of every old jest case plus every disqualifier code and override, the soft-evidence drift guard moved here, the served fields, the I-10 floor cases); jest updated in `officerCockpit.test.ts`, `verdictTileHigherResults.test.ts`, `disqualifier-drift.test.ts`.
+- **Docs:** `docs/decisions.md` (new F2 entry; QC floor note), `docs/scholarship/verdict-confidence-bands.md`, `docs/testing.md`, `.claude/ARCHITECTURE_MAP.md`.
+- **Not changed (reported):** the overview AI Prediction aggregates count the raw snapshot status, a different measure (F4); `verdict_narrative._fact_band` and `eval/offer_s6_dry_run.py` keep their own simpler mirrors; comments in `verdict_engine.py` / `verdict_pathway.py` still name the deleted jest guard (model files under the digest guard, not edited).
+
 ### fix: F1 (fix plan) - words and display fixes (2026-11-22)
 
 Branch fix-f1, not pushed. Migration: none. Services: web, api.

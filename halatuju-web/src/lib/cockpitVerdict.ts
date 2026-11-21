@@ -1,8 +1,8 @@
 /**
- * Officer cockpit — verdict items, fact tones, document grouping, AI suggestion and reliability.
+ * Officer cockpit — verdict items, the served fact band, document grouping and reliability.
  *
  * One of five modules `officerCockpit.ts` was split into (audit A3.3, structure only — every line
- * below is the line it was). `officerCockpit.ts` re-exports all five, so `@/lib/officerCockpit`
+ * below is the line it was; F2 moved the band to the server). `officerCockpit.ts` re-exports all five, so `@/lib/officerCockpit`
  * still serves every importer.
  */
 
@@ -26,76 +26,43 @@ export function verdictItemKey(it: AdminVerdictItem): string {
   return it.code
 }
 
-// ── Fact tile tone ───────────────────────────────────────────────────────────
+// ── Fact band (served by the API) ────────────────────────────────────────────
+
+/**
+ * The AI Prediction band of a fact, in five words (i18n `admin.scholarship.verdict.band.<band>`).
+ * F2 (fix plan): computed ONCE, on the server (`apps/scholarship/fact_bands.py`), and served on the
+ * case detail as `ai_fact_bands` ({fact: band}). The tiles and the grey "AI Prediction" line both
+ * render it; the browser no longer derives a band from the engine status (that copy drifted from
+ * the grey line, and the QC floor read neither).
+ */
+export type FactBand = 'certain' | 'probable' | 'unsure' | 'unverifiable' | 'ruleNotMet'
 
 export type FactTileTone = 'green' | 'amber' | 'blue' | 'red'
 
-// Evidence codes that are NOT a verified value — a self-declaration or a soft signal.
-// "Probable" (blue) must rest on at least one real verified value, so a fact backed
-// only by these (or by nothing) is "Unsure", not "Probable".
-//
-// PINNED to the backend: every code the verdict engine emits with a `# SOFT` marker
-// MUST appear here (and nothing here should be un-marked there). The jest guard
-// `__tests__/soft-evidence-drift.test.ts` reads verdict_engine.py and fails on any
-// drift — the denylist had rotted (Phase-2B/2C soft codes leaked a tile to blue,
-// audit #11) precisely because nothing enforced the mirror.
-// drift-test: halatuju-web/src/lib/__tests__/soft-evidence-drift.test.ts
-export const SOFT_EVIDENCE = new Set<string>([
-  'pathway_declared',              // the student's own declared pathway (unverified)
-  'utility_percapita_b40',         // soft income proxy from the utility bills
-  'utility_percapita_high',
-  'utility_hardship',
-  'unemployment_epf_corroborated', // Phase 2B: EPF (all-zeros/lapsed) hinting unemployment — soft
-  'household_size_confirm',        // Phase 2C: described people > stated household size — soft
-])
-
-// Evidence codes that are display-only "not proof": the note that genuineness was not checked
-// says nothing is verified. Kept apart from SOFT_EVIDENCE because that set is pinned to the
-// engine's `# SOFT` markers by the drift test; this one is a frontend tone rule.
-const HIGHER_RESULTS_NOT_CHECKED = 'higher_results_not_checked'
-const HIGHER_RESULTS_UNREADABLE = 'higher_results_unreadable'
-const HIGHER_RESULTS_KIND_CODES = ['higher_results_kind_differs', 'higher_results_is_spm']
-export const NOT_PROOF_EVIDENCE = new Set<string>([HIGHER_RESULTS_NOT_CHECKED])
-
-/** True when the fact carries a confident disqualifier (a broken gift rule), whatever its status. */
-export function hasRuleNotMet(fact: AdminVerdictFact): boolean {
-  return fact.unresolved.some((u) => CONFIDENT_DISQUALIFIERS.has(u.code))
+/** The colour each band is drawn in (Kent scale; both red bands share the red). */
+export const BAND_TONE: Record<FactBand, FactTileTone> = {
+  certain: 'green',
+  probable: 'blue',
+  unsure: 'amber',
+  unverifiable: 'red',
+  ruleNotMet: 'red',
 }
+
+/** The legend order, green to red. */
+export const BAND_ORDER: readonly FactBand[] = ['certain', 'probable', 'unsure', 'unverifiable', 'ruleNotMet']
 
 /**
- * Map a verdict fact to a colour tone on a collapsed Kent confidence scale —
- * how sure the engine is that the fact is sound:
- *   verified  → green  (Certain  — checks passed)
- *   review    → blue   (Probable — ≥1 verified value backs it; confirm the rest)
- *             → amber  (Unsure   — review with NO verified value: declared-only /
- *                        soft-signal-only / incomplete. Blue requires a green.)
- *   recommend → amber  (Unsure   — even odds; the coordinator places the verdict)
- *   gap       → red    (Can't verify — missing/unreadable evidence)
- *   any status with a confident disqualifier → red (Rule not met — a gift rule is broken)
+ * The served band of one fact. A band the page does not know (an older API during a deploy, or a
+ * fact the server did not band) reads 'unsure': never green, never a claimed broken rule.
  */
-export function factTileTone(fact: AdminVerdictFact): FactTileTone {
-  // Owner rulings 2026-11-17 (display only; the engine status is untouched).
-  // Precedence: red (unreadable) beats amber (other kind / no real proof) beats blue.
-  const unresolved = new Set(fact.unresolved.map((u) => u.code))
-  if (hasRuleNotMet(fact)) return 'red'
-  if (fact.status !== 'gap' && unresolved.has(HIGHER_RESULTS_UNREADABLE)) return 'red'
-  const kindDiffers = [...HIGHER_RESULTS_KIND_CODES].some((c) => unresolved.has(c))
-  switch (fact.status) {
-    case 'verified':
-      return kindDiffers ? 'amber' : 'green'
-    case 'recommend':
-      return 'amber'
-    case 'review': {
-      // Probable needs a green: at least one genuinely-verified value, not just a
-      // declaration, a soft signal or a "not checked" note. Otherwise it's Unsure.
-      const hasVerified = fact.evidence.some((e) => !SOFT_EVIDENCE.has(e.code) && !NOT_PROOF_EVIDENCE.has(e.code))
-      return hasVerified && !kindDiffers ? 'blue' : 'amber'
-    }
-    case 'gap':
-    default:
-      return 'red'
-  }
+export function factBandOf(bands: Partial<Record<string, string>> | null | undefined, fact: string): FactBand {
+  const band = bands?.[fact]
+  return band && Object.prototype.hasOwnProperty.call(BAND_TONE, band) ? (band as FactBand) : 'unsure'
 }
+
+// The "genuineness NOT checked yet" note (an evidence code the subtitle promotes on a tile that
+// is not green).
+const HIGHER_RESULTS_NOT_CHECKED = 'higher_results_not_checked'
 
 // The confident "outside this gift's criteria" codes: usually the reason a tile is red (a fake
 // offer with a validated reporting date can sit at 'review' and still carries
@@ -116,11 +83,11 @@ export const CONFIDENT_DISQUALIFIERS = new Set<string>([
  * that is not green, the "genuineness NOT checked yet" note leads the positive lines, so a
  * blue tile never reads as though the results were proved. Null = fall back to the status.
  */
-export function factSubtitleItem(fact: AdminVerdictFact): AdminVerdictItem | null {
+export function factSubtitleItem(fact: AdminVerdictFact, band: FactBand): AdminVerdictItem | null {
   const decisive = fact.unresolved.find((it) => CONFIDENT_DISQUALIFIERS.has(it.code))
   if (decisive) return decisive
   if (fact.unresolved.length > 0) return fact.unresolved[0]
-  if (factTileTone(fact) !== 'green') {
+  if (band !== 'certain') {
     const nc = fact.evidence.find((e) => e.code === HIGHER_RESULTS_NOT_CHECKED)
     if (nc) return nc
   }
@@ -128,27 +95,14 @@ export function factSubtitleItem(fact: AdminVerdictFact): AdminVerdictItem | nul
 }
 
 /** The detail list under the tiles: every line except the one the tile's subtitle already shows. */
-export function factDetailItems(fact: AdminVerdictFact): { unresolved: AdminVerdictItem[]; evidence: AdminVerdictItem[] } {
-  const shown = factSubtitleItem(fact)
+export function factDetailItems(
+  fact: AdminVerdictFact, band: FactBand,
+): { unresolved: AdminVerdictItem[]; evidence: AdminVerdictItem[] } {
+  const shown = factSubtitleItem(fact, band)
   return {
     unresolved: fact.unresolved.filter((it) => it !== shown),
     evidence: fact.evidence.filter((it) => it !== shown),
   }
-}
-
-// The estimative-probability band each tone names (Kent scale, collapsed to four).
-// Used for the tile labels + legend; the i18n key is admin.scholarship.verdict.band.<key>.
-export const TONE_BAND_KEY: Record<FactTileTone, string> = {
-  green: 'certain',
-  blue: 'probable',
-  amber: 'unsure',
-  red: 'unverifiable',
-}
-
-/** The band key a fact's tile shows: red splits into 'ruleNotMet' (broken rule) and 'unverifiable' (no proof). */
-export function factBandKey(fact: AdminVerdictFact): string {
-  const tone = factTileTone(fact)
-  return tone === 'red' && hasRuleNotMet(fact) ? 'ruleNotMet' : TONE_BAND_KEY[tone]
 }
 
 // ── Document grouping ────────────────────────────────────────────────────────
@@ -206,45 +160,6 @@ export function groupDocumentsByFact(
   orderBy(groups.academic, ['higher_results', 'results_slip', 'semester_result'])
   orderBy(groups.additional, ['school_leaving_cert', 'statement_of_intent', 'photo'])
   return groups
-}
-
-// ── AI suggestion summary ────────────────────────────────────────────────────
-
-export type AiSuggest = 'yes' | 'no' | 'unsure'
-
-export interface AiSuggestions {
-  identity: AiSuggest
-  academic: AiSuggest
-  pathway: AiSuggest
-  income: AiSuggest
-}
-
-/** Derive a plain yes / no / unsure suggestion from each fact's AI status. */
-function statusToSuggest(status: AdminVerdictFact['status']): AiSuggest {
-  if (status === 'verified') return 'yes'
-  if (status === 'gap') return 'no'
-  return 'unsure'
-}
-
-/**
- * Summarise the AI's verdict for each fact as a simple yes/no/unsure so the
- * record-verdict panel can render "AI suggested: Identity yes, Academic unsure…"
- * The coordinator then decides for themselves.
- */
-export function aiSuggestionFor(verdictFacts: AdminVerdictFact[]): AiSuggestions {
-  const defaults: AiSuggestions = {
-    identity: 'unsure',
-    academic: 'unsure',
-    pathway: 'unsure',
-    income: 'unsure',
-  }
-  for (const f of verdictFacts) {
-    const key = f.fact as keyof AiSuggestions
-    if (key in defaults) {
-      defaults[key] = statusToSuggest(f.status)
-    }
-  }
-  return defaults
 }
 
 // ── AI reliability (the scorekeeper — verification-assurance Sprint 3) ─────────

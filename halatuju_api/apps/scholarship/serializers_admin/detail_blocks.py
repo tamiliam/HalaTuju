@@ -159,6 +159,18 @@ class ServesTheDetailBlocks:
         LLM calls — mirrors get_anomalies."""
         return self._verdict(obj)
 
+    def get_ai_fact_bands(self, obj):
+        """F2: the AI Prediction band per fact ({fact: band key}) from the SAME verdict as `verdict`.
+        One home (`fact_bands`): the tiles and the grey line render it, the QC floor refuses on it."""
+        from ..fact_bands import fact_bands
+        return fact_bands(self._verdict(obj))
+
+    def get_qc_floor_facts(self, obj):
+        """F2 / I-10: the facts that stop a QC accept of a Recommend ('gap' or Rule not met), so the
+        QC panel shows the floor before the 400. The birth-state fact joins on the web, as before."""
+        from ..fact_bands import floor_facts
+        return floor_facts(self._verdict(obj))
+
     def get_second_look(self, obj):
         """LL2b: the QC panel's "Facts in doubt", read from the STORED snapshot + the reviewer's verdict
         (never a fresh engine run), and the QC's stored answers (None = not checked by the QC)."""

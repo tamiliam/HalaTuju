@@ -6,15 +6,18 @@
  * yet green.
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
+ * F2 (fix plan): the band of each tile is the SERVED one (`app.ai_fact_bands`, computed once in
+ * `apps/scholarship/fact_bands.py`); this file only draws it.
  */
-import { factBandKey, factDetailItems, factSubtitleItem, factTileTone, TONE_BAND_KEY, verdictItemKey } from '@/lib/officerCockpit'
+import { BAND_ORDER, BAND_TONE, factBandOf, factDetailItems, factSubtitleItem, verdictItemKey } from '@/lib/officerCockpit'
+import type { FactBand } from '@/lib/officerCockpit'
 import { localiseParams } from '@/lib/actionCentre'
 import type { AdminScholarshipDetail, AdminVerdictFact, AdminVerdictItem, VerdictCaseSummary } from '@/lib/admin-api'
 
 import type { T } from './shared'
 
-const hasDetail = (f: AdminVerdictFact) => {
-  const d = factDetailItems(f)
+const hasDetail = (f: AdminVerdictFact, band: FactBand) => {
+  const d = factDetailItems(f, band)
   return d.unresolved.length + d.evidence.length > 0
 }
 
@@ -23,6 +26,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
   t: T
   caseSummary: VerdictCaseSummary | null
 }) {
+  const bandOf = (f: AdminVerdictFact) => factBandOf(app.ai_fact_bands, f.fact)
   return (<>
 
       {/* ── Verification verdict — four horizontal tiles ───────────────────────── */}
@@ -36,7 +40,8 @@ export function VerificationVerdict({ app, t, caseSummary }: {
         {/* Horizontal tile row */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(app.verdict || []).map((f) => {
-            const tone = factTileTone(f)
+            const band = bandOf(f)
+            const tone = BAND_TONE[band]
             const tileColour = {
               green: 'border-positive-200 bg-positive-50',
               amber: 'border-caution-200 bg-caution-50',
@@ -59,7 +64,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
             const resolve = (it: AdminVerdictItem) =>
               t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                 localiseParams(it.params, t))
-            const subItem = factSubtitleItem(f)
+            const subItem = factSubtitleItem(f, band)
             const subtitle = subItem ? resolve(subItem) : t(`admin.scholarship.verdict.status.${f.status}`)
             // A green (verified) fact is done — the tick says it all, so we drop the
             // description (and its detail block below). Amber/red keep the lead line.
@@ -78,7 +83,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
                 </div>
                 {/* The estimative-probability band (Kent scale) the colour stands for. */}
                 <p className={`text-xs md:text-[10px] font-semibold uppercase tracking-wide max-md:break-words ${labelColour}`}>
-                  {t(`admin.scholarship.verdict.band.${factBandKey(f)}`)}
+                  {t(`admin.scholarship.verdict.band.${band}`)}
                 </p>
                 {!isGreen && (
                   <p className="text-xs md:text-[11px] text-ground-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
@@ -93,13 +98,8 @@ export function VerificationVerdict({ app, t, caseSummary }: {
         {/* Legend — the confidence scale the tile colours encode (green→red). */}
         {(app.verdict || []).length > 0 && (
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-[10px] text-ground-400">
-            {([
-              { tone: 'green', key: TONE_BAND_KEY.green },
-              { tone: 'blue', key: TONE_BAND_KEY.blue },
-              { tone: 'amber', key: TONE_BAND_KEY.amber },
-              { tone: 'red', key: TONE_BAND_KEY.red },
-              { tone: 'red', key: 'ruleNotMet' },
-            ] as const).map(({ tone: tn, key }) => {
+            {BAND_ORDER.map((key) => {
+              const tn = BAND_TONE[key]
               return (
                 <span key={key} className="flex items-center gap-1"
                   title={t(`admin.scholarship.verdict.bandHint.${key}`)}>
@@ -148,14 +148,15 @@ export function VerificationVerdict({ app, t, caseSummary }: {
         )}
         {/* Expanded evidence / unresolved — shown ONLY for facts that still need attention.
             A green fact is hidden here (its tile tick is the whole story). */}
-        {(app.verdict || []).some((f) => factTileTone(f) !== 'green' && hasDetail(f)) && (
+        {(app.verdict || []).some((f) => bandOf(f) !== 'certain' && hasDetail(f, bandOf(f))) && (
           <div className="mt-3 space-y-2 border-t border-ground-100 pt-3">
             {(app.verdict || []).map((f) => {
               const resolve = (it: AdminVerdictItem) =>
                 t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                   localiseParams(it.params, t))
-              if (factTileTone(f) === 'green' || !hasDetail(f)) return null
-              const detail = factDetailItems(f)
+              const band = bandOf(f)
+              if (band === 'certain' || !hasDetail(f, band)) return null
+              const detail = factDetailItems(f, band)
               return (
                 <div key={`detail-${f.fact}`} className="text-xs text-ground-600">
                   <span className="font-medium text-ground-500 uppercase text-xs md:text-[10px] tracking-wide">

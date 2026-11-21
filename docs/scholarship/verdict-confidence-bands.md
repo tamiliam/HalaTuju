@@ -5,8 +5,13 @@ Kent's *words of estimative probability*, collapsed to four bands. Each tile's c
 **how sure the engine is that the fact is sound**, and the human effort rises as confidence
 falls.
 
-Source of truth: `apps/scholarship/verdict_engine.py` (statuses) and
-`halatuju-web/src/lib/officerCockpit.ts` (`factTileTone`, colours/labels).
+Source of truth: `apps/scholarship/verdict_engine.py` (statuses) and, since F2 of the fix plan
+(2026-11-21), `apps/scholarship/fact_bands.py` (`fact_band` / `fact_bands` / `floor_facts`) for the
+band each fact shows. The case detail serves it as `ai_fact_bands` ({fact: band key}); the tiles, the
+grey "AI Prediction" line and the QC floor all read that one answer. The web only maps a band to a
+colour (`BAND_TONE` in `halatuju-web/src/lib/cockpitVerdict.ts`). Today there are five bands: the four
+below plus **Rule not met** (red, a confident disqualifier on any status), and an unreadable
+higher-results slip shows **Can't verify** on any non-gap status.
 
 ## The four bands
 
@@ -22,7 +27,8 @@ Two rules that shape the colours:
 1. **Blue requires a green.** A `review` fact is Blue **only if it carries at least one
    genuinely-verified value**. Backed only by a self-declaration (`pathway_declared`) or a
    soft signal (utility per-capita / hardship) — or by nothing — it drops to 🟡 Unsure.
-   (`SOFT_EVIDENCE` in `officerCockpit.ts`.)
+   (`SOFT_EVIDENCE` in `apps/scholarship/fact_bands.py`; it must equal the `# SOFT` codes in
+   `verdict_engine.py`, guarded by `tests/test_fact_bands.py`.)
 2. **The gate bounces the hard fails.** Some low-confidence cases never reach an officer:
    the **submission gate** (`services.application_completeness` / `consent_blockers`) blocks
    them and makes the student re-upload — see the per-fact notes. The verdict still shows

@@ -51,6 +51,7 @@ GUARD_FILES = (
     'src/lib/__tests__/applicationStatusDrift.test.ts',
     'src/lib/__tests__/commsKindsDrift.test.ts',
     'src/lib/__tests__/contractTermsDrift.test.ts',
+    'src/lib/__tests__/disqualifier-drift.test.ts',   # reads award.py; listed in F2
     'src/lib/__tests__/familyRosterDrift.test.ts',
     'src/lib/__tests__/financeAllowlistDrift.test.ts',
     'src/lib/__tests__/incomeEvidenceHomes.test.ts',
@@ -63,7 +64,8 @@ GUARD_FILES = (
     'src/lib/__tests__/referralSourcesDrift.test.ts',
     'src/lib/__tests__/requestComponentDrift.test.ts',
     'src/lib/__tests__/requestStatusDrift.test.ts',
-    'src/lib/__tests__/soft-evidence-drift.test.ts',
+    # soft-evidence-drift.test.ts DELETED deliberately in F2 (fix plan, 2026-11-21): the FE copy
+    # it guarded is gone (the band is served); the guard is now tests/test_fact_bands.py.
     'src/lib/__tests__/staffDrift.test.ts',
     'src/lib/__tests__/stpmSubjectsDrift.test.ts',    # STPM CGPA sprint C1, 2026-10-28
     'src/lib/__tests__/strCoachDrift.test.ts',

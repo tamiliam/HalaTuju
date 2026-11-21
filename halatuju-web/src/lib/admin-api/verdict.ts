@@ -121,6 +121,15 @@ export interface SecondLook {
   answers: Record<string, 'agreed' | 'disagreed'> | null
 }
 
+/** F2 (fix plan): served on the case detail from the same verdict as `verdict` (`fact_bands.py`).
+ *  Optional only for an older API during a deploy; the page then reads 'unsure' / the gap list. */
+export interface ServedFactBands {
+  /** The AI Prediction band per fact (`FactBand` keys; read them with `factBandOf`). */
+  ai_fact_bands?: Record<string, string>
+  /** The facts that stop a QC accept of a Recommend: 'gap' or Rule not met (I-10). */
+  qc_floor_facts?: string[]
+}
+
 export interface QcDecisionPayload {
   decision: 'accept' | 'reopen' | 'reject'
   comments?: string

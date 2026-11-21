@@ -12,7 +12,7 @@
  * `(value, label)` pairs — and it THROWS when it cannot find the name or cannot read the shape.
  * That is the point: a refactor on the api side that moves a constant must turn a web test RED,
  * never make it silently assert nothing. Every caller additionally asserts a minimum size, the
- * same parse-sanity guard `soft-evidence-drift.test.ts` and `test_subject_drift.py` carry.
+ * same parse-sanity guard `disqualifier-drift.test.ts` and `test_subject_drift.py` carry.
  *
  * Jest runs in the node environment here, so `fs`/`path` are available.
  */

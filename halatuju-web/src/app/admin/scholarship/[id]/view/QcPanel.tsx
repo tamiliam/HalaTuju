@@ -82,9 +82,12 @@ export function QcPanel({
         // Request #31: the server adds the birth-state fact to the SAME floor when the current IC
         // fails the intake's rule (`meets_rule` is its served answer); labelled with the served
         // English warning, so the floor and its override box appear here and not only as a 400.
+        // F2 / I-10: the verdict facts on the floor are SERVED (`qc_floor_facts`: 'gap' or Rule not met,
+        // the rule the accept enforces); an older API without the field falls back to the gap-only list.
         const birthFails = app.birth_state?.meets_rule === false
-        const qcGapFacts = [...(app.verdict || []).filter((f) => f.status === 'gap').map((f) => f.fact),
-          ...(birthFails ? ['birth_state'] : [])]
+        const floorFacts = app.qc_floor_facts
+          ?? (app.verdict || []).filter((f) => f.status === 'gap').map((f) => f.fact)
+        const qcGapFacts = [...floorFacts, ...(birthFails ? ['birth_state'] : [])]
         const qcGapLabels = qcGapFacts.map((f) => (f === 'birth_state' ? app.birth_state.warning
           : t(`admin.scholarship.verdict.fact.${f}`))).join(', ')
         // A DECLINE verdict at QC confirms a REJECTION, not a recommendation (owner 2026-07-19).

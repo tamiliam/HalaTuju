@@ -1,5 +1,13 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-21 — F2 (fix plan): the AI Prediction band has one home, on the server; I-10 QC floor
+
+Branch fix-f2, not pushed.
+
+- **One home for the band.** `apps/scholarship/fact_bands.py` (`fact_band`, `fact_bands`, `application_fact_bands`, `floor_facts`) is a pure port of the browser's old `factBandKey` with every override (confident disqualifier = Rule not met; unreadable higher results = Can't verify on a non-gap status; other-kind slip caps at Unsure; Probable needs a real verified value). No database write, no AI call. The case detail serves `ai_fact_bands` ({fact: band key}) and `qc_floor_facts`. The tiles and the grey "AI Prediction" line both render the served band in the same five words; the browser keeps only a band-to-colour map. The LL5 replay tool imports the same function.
+- **I-10, D1 = A: the QC floor also stops on Rule not met.** A QC Accept of a Recommend is refused (`400 verdict_gap_floor`, naming the facts) while any fact is `gap` OR shows Rule not met, even when its raw status is not `gap`. Override mechanics are unchanged: a QC or super with a recorded reason (`qc_override_reason/_by/_at`, audit log `qc_gap_override`). A red "Can't verify" from an unreadable higher-results slip on a non-gap fact does NOT stop (only `gap` and Rule not met do). Decline is unchanged.
+- **Kept apart, on purpose:** the overview "AI Prediction" aggregates (`prediction_metrics.py`, `audit.py`, `programme_overview.py`) count the raw snapshot status (`verified` = an AI pass), a different measure from the band; F4 owns any redesign. `verdict_narrative._fact_band` (feeds a Gemini prompt; a change needs a `CASE_SUMMARY_VERSION` bump) and `eval/offer_s6_dry_run.py` still hold their own simpler mirrors.
+
 ## 2026-11-20 — OCR-first S1c: a UMS letter locks only on the owner's words (owner method change)
 
 Branch ocr-s1c, not pushed. The `ua:UMS` lane stays off.
@@ -10078,7 +10086,7 @@ generic phrasing confuses — then thread the member param.
      THIS household.
 
 2. **QC soft floor (#5, owner decision 1).** QC-Accept is **refused (`400 verdict_gap_floor`, naming
-   the red facts) while any verdict fact is 🔴 `gap`** — a red income/identity/pathway fact must not
+   the red facts) while any verdict fact is 🔴 `gap`** (since F2, 2026-11-21: also while any fact shows Rule not met; see the F2 entry at the top) — a red income/identity/pathway fact must not
    reach `recommended` (and sponsor publication) unexamined. A **`super` may override**, and **only
    with a recorded reason** (`qc_override_reason/_by/_at` on the application; migration 0092, additive,
    migrate-first). It is a *soft* floor: amber/blue facts do not block; only red does. The override is

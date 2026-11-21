@@ -744,7 +744,7 @@ flat list), and a sticky **Record-verdict** panel. Backend (additive, **migratio
 officer's, and optionally fires Phase-D `refine_sponsor_profile` for the final profile in one action) +
 `AdminVerdictMetricsView` (`…/verdict-metrics/`) + pure `apps/scholarship/audit.py` (`compute_overrides`/
 `override_metrics` = the AI override rate). FE pure `halatuju-web/src/lib/officerCockpit.ts`
-(`factTileTone`/`groupDocumentsByFact`/`aiSuggestionFor`/`documentPill`, node-tested) +
+(`groupDocumentsByFact`/`documentPill`, node-tested; the fact band moved to the server in F2 2026-11-21, `apps/scholarship/fact_bands.py`, served as `ai_fact_bands`) +
 `recordVerdict`/`getVerdictMetrics`/`raiseResolutionItem`/`actionResolutionItem` + audit/`AdminResolutionItem`
 types in `lib/admin-api.ts`; admin i18n `admin.scholarship.{recordVerdict,caveats,docsDrawer}.*`. **Roadmap S1–S5
 COMPLETE; the whole branch deploys next** (migrate-first `0036` new-model + `0037` additive; TD-058 + RLS). Plan:

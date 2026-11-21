@@ -202,7 +202,6 @@ and there is nothing to render:
 | `icPadlockGuard.test.ts` | A verified NRIC stays locked. Structural: one expression either consults the rule or it does not. |
 | `no-icu-messageformat.test.ts` | The SHAPE of a message value. `t` has no ICU engine, so an ICU construct renders its template verbatim — that is a property of the catalogue, not of a screen. |
 | `navigation.test.ts` | Walks the routes on DISK against the registry, so a page that exists with no row (or the reverse) is found. Only the filesystem can answer that. |
-| `soft-evidence-drift.test.ts` | A backend list copied into the front end. The guard is that the copy still matches its source. |
 | `codeStandards.test.ts` | The standards themselves. Deliberately ONE file, so the project gains one source-reading test and not a habit of them. |
 | `theme.test.ts`, `pageWidth.test.ts` | Convention checks that belong in ESLint. Noted, not moved (H6 scope). |
 | `applicationStatus` / `requestStatus` / `screenshotInput` (the disk-walk half) | Each asks "is there a case/surface nobody thought about?" — a question only a walk of the tree can answer. The BEHAVIOUR each one used to assert now lives in a mount. |

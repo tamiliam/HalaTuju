@@ -1,8 +1,8 @@
 import {
-  factTileTone,
-  factBandKey,
+  BAND_ORDER,
+  BAND_TONE,
+  factBandOf,
   groupDocumentsByFact,
-  aiSuggestionFor,
   documentPill,
   documentFacts,
   utilityBillValues,
@@ -73,96 +73,38 @@ function doc(over: Partial<AdminApplicantDocument> = {}): AdminApplicantDocument
   }
 }
 
-// ── factTileTone ──────────────────────────────────────────────────────────────
+// ── The served band (F2: the band is computed on the server, `fact_bands.py`) ───────
 
-describe('factTileTone', () => {
-  it('returns green for verified', () => {
-    expect(factTileTone(fact('identity', 'verified'))).toBe('green')
+describe('the served fact band', () => {
+  it('draws each band in its colour; both red bands share the red', () => {
+    expect(BAND_TONE).toEqual({
+      certain: 'green', probable: 'blue', unsure: 'amber', unverifiable: 'red', ruleNotMet: 'red' })
+    expect([...BAND_ORDER]).toEqual(['certain', 'probable', 'unsure', 'unverifiable', 'ruleNotMet'])
   })
 
-  it('returns blue (Probable) for review backed by a verified value', () => {
-    expect(factTileTone(fact('identity', 'review', ['nric_match']))).toBe('blue')
+  it('reads the served band of a fact', () => {
+    const bands = { identity: 'certain', pathway: 'ruleNotMet', income: 'unverifiable' }
+    expect(factBandOf(bands, 'identity')).toBe('certain')
+    expect(factBandOf(bands, 'pathway')).toBe('ruleNotMet')
+    expect(factBandOf(bands, 'income')).toBe('unverifiable')
   })
 
-  it('returns amber (Unsure) for review with NO verified value — blue needs a green', () => {
-    expect(factTileTone(fact('income', 'review'))).toBe('amber')
+  it('reads unsure when the band is missing or unknown (an older API during a deploy)', () => {
+    expect(factBandOf(undefined, 'identity')).toBe('unsure')
+    expect(factBandOf({}, 'academic')).toBe('unsure')
+    expect(factBandOf({ academic: 'green' }, 'academic')).toBe('unsure')
+    expect(factBandOf({ academic: 'toString' }, 'academic')).toBe('unsure')
   })
 
-  it('treats a declared-only / soft-signal value as not verified (amber, not blue)', () => {
-    expect(factTileTone(fact('pathway', 'review', ['pathway_declared']))).toBe('amber')
-    expect(factTileTone(fact('income', 'review', ['utility_percapita_b40']))).toBe('amber')
-  })
-
-  it('returns amber (Unsure) for recommend', () => {
-    expect(factTileTone(fact('income', 'recommend'))).toBe('amber')
-  })
-
-  it('returns red for gap', () => {
-    expect(factTileTone(fact('identity', 'gap'))).toBe('red')
-  })
-})
-
-describe('red tile reason: Rule not met vs Cant verify', () => {
-  const withUnresolved = (status: AdminVerdictFact['status'], code: string, evidence: string[] = []): AdminVerdictFact => ({
-    ...fact('pathway', status, evidence), unresolved: [{ code, params: {} }],
-  })
-  const bandText = (f: AdminVerdictFact) => {
-    const band = (enMessages as any).admin.scholarship.verdict.band
-    return band[factBandKey(f)]
-  }
-
-  it('a review fact with offer_not_official is red and reads Rule not met', () => {
-    const f = withUnresolved('review', 'offer_not_official', ['nric_match'])
-    expect(factTileTone(f)).toBe('red')
-    expect(bandText(f)).toBe('Rule not met')
-  })
-
-  it('a review fact with no evidence plus offer_not_official is red and reads Rule not met', () => {
-    const f = withUnresolved('review', 'offer_not_official')
-    expect(factTileTone(f)).toBe('red')
-    expect(bandText(f)).toBe('Rule not met')
-  })
-
-  it('a disqualifier listed second among unresolved items still makes it red, Rule not met', () => {
-    const f: AdminVerdictFact = {
-      ...fact('pathway', 'review', ['nric_match']),
-      unresolved: [{ code: 'pathway_declared', params: {} }, { code: 'pathway_start_year_outside', params: {} }],
-    }
-    expect(factTileTone(f)).toBe('red')
-    expect(bandText(f)).toBe('Rule not met')
-  })
-
-  it('a gap fact with pathway_funded_or_abroad is red and reads Rule not met', () => {
-    const f = withUnresolved('gap', 'pathway_funded_or_abroad')
-    expect(factTileTone(f)).toBe('red')
-    expect(bandText(f)).toBe('Rule not met')
-  })
-
-  it('a plain gap is red and reads Cant verify', () => {
-    const f = fact('identity', 'gap')
-    expect(factTileTone(f)).toBe('red')
-    expect(bandText(f)).toBe("Can't verify")
-  })
-
-  it('HIGHER_RESULTS_UNREADABLE stays Cant verify', () => {
-    const f = withUnresolved('review', 'higher_results_unreadable')
-    expect(factTileTone(f)).toBe('red')
-    expect(bandText(f)).toBe("Can't verify")
-  })
-
-  it('verified and review facts with no disqualifier are unchanged', () => {
-    expect(factTileTone(fact('identity', 'verified'))).toBe('green')
-    expect(bandText(fact('identity', 'verified'))).toBe('Certain')
-    expect(factTileTone(fact('identity', 'review', ['nric_match']))).toBe('blue')
-    expect(bandText(fact('identity', 'review', ['nric_match']))).toBe('Probable')
-  })
-
-  it('has the new band and hint keys in en, ms and ta', () => {
+  it('has every band and hint key in en, ms and ta', () => {
     for (const m of [enMessages, msMessages, taMessages] as any[]) {
       const v = m.admin.scholarship.verdict
-      expect(v.band.ruleNotMet).toBeTruthy()
-      for (const k of ['certain', 'probable', 'unsure', 'unverifiable', 'ruleNotMet']) expect(v.bandHint[k]).toBeTruthy()
+      for (const k of BAND_ORDER) {
+        expect(v.band[k]).toBeTruthy()
+        expect(v.bandHint[k]).toBeTruthy()
+      }
     }
+    expect((enMessages as any).admin.scholarship.verdict.band.ruleNotMet).toBe('Rule not met')
   })
 })
 
@@ -269,47 +211,6 @@ describe('groupDocumentsByFact', () => {
     expect(groups.identity).toHaveLength(1)   // only the live IC
     expect(groups.income).toHaveLength(0)     // the replaced STR is NOT a live income input
     expect(groups.superseded.map((d) => d.id)).toEqual([2, 3])
-  })
-})
-
-// ── aiSuggestionFor ───────────────────────────────────────────────────────────
-
-describe('aiSuggestionFor', () => {
-  it('maps verified → yes', () => {
-    const result = aiSuggestionFor([fact('identity', 'verified')])
-    expect(result.identity).toBe('yes')
-  })
-
-  it('maps gap → no', () => {
-    const result = aiSuggestionFor([fact('income', 'gap')])
-    expect(result.income).toBe('no')
-  })
-
-  it('maps review → unsure', () => {
-    const result = aiSuggestionFor([fact('academic', 'review')])
-    expect(result.academic).toBe('unsure')
-  })
-
-  it('maps recommend → unsure', () => {
-    const result = aiSuggestionFor([fact('pathway', 'recommend')])
-    expect(result.pathway).toBe('unsure')
-  })
-
-  it('defaults to unsure when a fact is missing from the list', () => {
-    const result = aiSuggestionFor([fact('identity', 'verified')])
-    expect(result.academic).toBe('unsure')
-    expect(result.income).toBe('unsure')
-    expect(result.pathway).toBe('unsure')
-  })
-
-  it('handles all four facts in one pass', () => {
-    const result = aiSuggestionFor([
-      fact('identity', 'verified'),
-      fact('academic', 'gap'),
-      fact('income', 'review'),
-      fact('pathway', 'recommend'),
-    ])
-    expect(result).toEqual({ identity: 'yes', academic: 'no', income: 'unsure', pathway: 'unsure' })
   })
 })
 

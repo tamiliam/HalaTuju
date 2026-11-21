@@ -16,7 +16,7 @@ import { DEFAULT_ADMIN_PAGE_SIZE } from './partners'
 import type { InterviewSchedule } from './interviews'
 import type {
   AdminAgendaEntry, AdminAnomaly, AdminFundingEstimate, AdminQuerySla, AdminSubmissionReview,
-  AdminVerdictFact, SecondLook,
+  AdminVerdictFact, SecondLook, ServedFactBands,
 } from './verdict'
 import type { NewNoteListFields } from './reviewerNotes'
 import type { AdminApplicantDocument, AdminReferee } from './documents'
@@ -143,7 +143,7 @@ export type VerifyChecklist = Record<string, boolean | string | VerifyRelock | u
 }
 export interface VerifyRelock { by: string; at: string; checklist: Record<string, boolean> }
 
-export interface AdminScholarshipDetail extends PreInterviewDetailFields {
+export interface AdminScholarshipDetail extends PreInterviewDetailFields, ServedFactBands {
   id: number
   name: string
   school: string

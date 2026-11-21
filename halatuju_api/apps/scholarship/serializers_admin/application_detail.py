@@ -73,6 +73,8 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
     anomalies = serializers.SerializerMethodField()
     interview_agenda = serializers.SerializerMethodField()   # V3 (#9): folded Check-3 agenda
     verdict = serializers.SerializerMethodField()
+    ai_fact_bands = serializers.SerializerMethodField()    # F2: {fact: band key}, the one band home
+    qc_floor_facts = serializers.SerializerMethodField()   # F2 / I-10: the facts that stop a QC accept
     second_look = serializers.SerializerMethodField()   # LL2b: the QC's facts in doubt + answers
     submission_review = serializers.SerializerMethodField()
     query_sla = serializers.SerializerMethodField()
@@ -256,6 +258,7 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
             'anomalies',
             'interview_agenda',
             'verdict', 'results_change_notes',   # S3b: results changed after submit (D13)
+            'ai_fact_bands', 'qc_floor_facts',   # F2: the server AI band + the QC floor facts
             'submission_review',
             'query_sla',
             'funding_estimate',

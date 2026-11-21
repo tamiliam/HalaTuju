@@ -11,7 +11,8 @@
  */
 import type { Dispatch, SetStateAction } from 'react'
 import {
-  aiSuggestionFor,
+  BAND_TONE,
+  factBandOf,
   showsDecisionCards,
   showsEstimateCard,
   showsReportingDateBox,
@@ -123,26 +124,31 @@ export function RateAndEstimate({
             )
           ))}
         </div>
-        {/* AI's suggested verdict — the officer decides; this is the AI's read. */}
+        {/* AI's suggested verdict — the officer decides; this is the AI's read. F2 (fix plan): the
+            SAME served band and words as the tiles (`app.ai_fact_bands`), never the raw status. */}
         {(() => {
-          const sugg = aiSuggestionFor(app.verdict || [])
           const facts = ['identity', 'academic', 'pathway', 'income'] as const
+          const bandColour = {
+            green: 'text-positive-700 font-medium',
+            blue: 'text-primary-700 font-medium',
+            amber: 'text-caution-700 font-medium',
+            red: 'text-critical-600 font-medium',
+          }
           return (
             <p className="text-xs md:text-[11px] text-ground-400">
               {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
-              {facts.map((f, i) => (
-                <span key={f}>
-                  {i > 0 && ', '}
-                  {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
-                  <span className={
-                    sugg[f] === 'yes' ? 'text-positive-700 font-medium'
-                    : sugg[f] === 'no' ? 'text-critical-600 font-medium'
-                    : 'text-caution-700 font-medium'
-                  }>
-                    {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
+              {facts.map((f, i) => {
+                const band = factBandOf(app.ai_fact_bands, f)
+                return (
+                  <span key={f}>
+                    {i > 0 && ', '}
+                    {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
+                    <span className={bandColour[BAND_TONE[band]]}>
+                      {t(`admin.scholarship.verdict.band.${band}`)}
+                    </span>
                   </span>
-                </span>
-              ))}{'.'}
+                )
+              })}{'.'}
             </p>
           )
         })()}
