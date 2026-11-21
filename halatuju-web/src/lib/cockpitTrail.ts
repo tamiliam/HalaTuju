@@ -182,6 +182,10 @@ export function showsWitnessCard(status: string | null | undefined): boolean {
  *
  * Hidden when the LETTER already carries a date — then the value syncs itself and a manual box
  * would only invite contradicting the document.
+ *
+ * F3 (I-12): while the box shows and no date is saved, Recommend is blocked ("Still to do") and the
+ * server refuses it (`course_start.box_shows`, the same case table).
+ * drift-test: halatuju-web/src/lib/__tests__/reportingDateBoxDrift.test.ts
  */
 export function showsReportingDateBox(opts: {
   status: string | null | undefined
@@ -190,6 +194,15 @@ export function showsReportingDateBox(opts: {
 }): boolean {
   if (opts.letterHasDate) return false
   return (opts.status || '') === 'interviewing' || !!opts.decisionReopened
+}
+
+/** Does a live (not superseded) offer letter carry a readable reporting date? The box's
+ *  `letterHasDate`; the server reads the same (`course_start.letter_has_date`). */
+export function letterHasReportingDate(
+  documents: readonly { doc_type: string; superseded_at?: string | null; pathway_check?: { reporting_date?: string | null } | null }[] | null | undefined,
+): boolean {
+  return (documents || []).some(
+    (d) => d.doc_type === 'offer_letter' && !d.superseded_at && !!d.pathway_check?.reporting_date)
 }
 
 // ── Rejection decision trail (owner 2026-07-25) ─────────────────────────────

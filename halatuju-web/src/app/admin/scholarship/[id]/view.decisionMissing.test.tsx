@@ -134,6 +134,44 @@ describe('a press on a greyed Recommend or Decline', () => {
   })
 })
 
+describe('the reporting date before Recommend (F3, I-12)', () => {
+  const noDate = () => ({ ...readyCase(), reporting_date: null })
+
+  it('names "Record the reporting date", which takes you to the date box', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: noDate() })
+    await loaded()
+    const items = Array.from(document.querySelectorAll('#decision-missing li button')) as HTMLButtonElement[]
+    expect(items.map((b) => b.textContent)).toEqual([K + 'missing.reportingDate'])
+    fireEvent.click(items[0])
+    expect(document.activeElement).toBe(document.getElementById('reporting-date-input'))
+  })
+
+  it('blocks Recommend only: a press shows the alert and does not act; Decline still works', async () => {
+    const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: noDate() })
+    await loaded()
+    expect(btn('recordVerdict.approve').getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(btn('recordVerdict.approve'))
+    expect(screen.getByRole('alert').textContent).toContain(K + 'missing.reportingDate')
+    expect(outcome()).toBe('—')
+    expect(api.recordVerdict).not.toHaveBeenCalled()
+    expect(btn('recordVerdict.decline').getAttribute('aria-disabled')).toBeNull()
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(outcome()).toBe('admin.scholarship.recordVerdict.decline')
+  })
+
+  it('is not asked once the date is saved', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: readyCase() })
+    await loaded()
+    expect(document.getElementById('decision-missing')).toBeNull()
+  })
+
+  it('the line is written in all three languages', () => {
+    const at = (m: Record<string, any>) => m.admin.scholarship.recordVerdict.missing.reportingDate
+    expect([at(en), at(ms), at(ta)]).toEqual(
+      ['Record the reporting date', 'Rekodkan tarikh pendaftaran', 'பதிவு செய்யும் தேதியைப் பதிவு செய்யவும்'])
+  })
+})
+
 describe('the phone decision bar', () => {
   it('a press while something is missing shows the same list as an alert', async () => {
     renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: nothingDone() })

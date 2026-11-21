@@ -17,11 +17,12 @@ import {
   showsEstimateCard,
   showsReportingDateBox,
 } from '@/lib/officerCockpit'
+import { letterHasReportingDate } from '@/lib/cockpitTrail'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import type { T } from './shared'
-import { FAIL_REASON_CODES, greenFailFacts } from './failReasons'
+import { DEFAULT_FAIL_REASON, FAIL_REASON_CODES, failedFacts } from '@/lib/failReasons'
 
 export function RateAndEstimate({
   app, t, busy, canWrite, decisionReopened, decisionRecorded, decisionLocked,
@@ -89,7 +90,12 @@ export function RateAndEstimate({
                     {t('admin.scholarship.recordVerdict.factPass')}
                   </button>
                   <button
-                    onClick={() => { setFailReason(fact, ''); setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'fail' ? '' : 'fail' })) }}
+                    onClick={() => {
+                      // F3 (I-11): a Fail asks Why, with Other already chosen; un-failing clears it.
+                      const failing = officerVerdict[fact] !== 'fail'
+                      setFailReason(fact, failing ? DEFAULT_FAIL_REASON : '')
+                      setOfficerVerdict((v) => ({ ...v, [fact]: failing ? 'fail' : '' }))
+                    }}
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'fail'
@@ -100,17 +106,18 @@ export function RateAndEstimate({
                     {t('admin.scholarship.recordVerdict.factFail')}
                   </button>
                 </div>
-                {/* LL2: only a fact the engine showed green and the reviewer failed asks why. */}
-                {greenFailFacts(app.verdict, officerVerdict).includes(fact) && (
+                {/* F3 (I-11): EVERY Fail asks why — a reason about the student, never the AI. */}
+                {failedFacts(officerVerdict).includes(fact) && (
                   <div className="basis-full space-y-1.5" role="group" aria-label={t('admin.scholarship.recordVerdict.failWhy')}>
                     <p className="text-xs text-ground-600">{t('admin.scholarship.recordVerdict.failWhy')}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FAIL_REASON_CODES.map((code) => (
-                        <button key={code} type="button" aria-pressed={failReasons[fact] === code}
-                          onClick={() => setFailReason(fact, failReasons[fact] === code ? '' : code)}
+                        <button key={code} type="button"
+                          aria-pressed={(failReasons[fact] || DEFAULT_FAIL_REASON) === code}
+                          onClick={() => setFailReason(fact, code)}
                           disabled={!canWrite}
                           className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                            failReasons[fact] === code
+                            (failReasons[fact] || DEFAULT_FAIL_REASON) === code
                               ? 'border-brand-fill bg-brand-fill text-brand-fill-ink'
                               : 'border-ground-300 text-ground-600 hover:border-ground-500'
                           } disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center`}>
@@ -225,8 +232,7 @@ export function RateAndEstimate({
       {showsReportingDateBox({
         status: app.status,
         decisionReopened,
-        letterHasDate: (app.documents || []).some(
-          (d) => d.doc_type === 'offer_letter' && !d.superseded_at && !!d.pathway_check?.reporting_date),
+        letterHasDate: letterHasReportingDate(app.documents),
       }) && (
         <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-caution-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
@@ -236,6 +242,7 @@ export function RateAndEstimate({
           {/* A `type="date"` box carries no accessible name of its own, so a screen reader
               announced nothing here. The heading's own key — nothing on screen changes. */}
           <input
+            id="reporting-date-input"
             aria-label={t('admin.scholarship.reportingDateEntry.title')}
             type="date" value={reportingDateInput}
             onChange={(e) => setReportingDateInput(e.target.value)}

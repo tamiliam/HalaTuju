@@ -189,12 +189,38 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>The <strong>Pass/Fail</strong> on each fact records whether <em>that fact is right for the student</em>.
         <strong> Approve / Decline</strong> is your actual recommendation. They&rsquo;re separate: you can Pass all
         four facts and still <strong>Decline</strong> — for instance, income verified but above the B40 line.
-        A Pass or Fail tap records the student&rsquo;s fact; it does not rate the AI.
-        If you Fail a fact the system showed as green, tap one reason for it before you save. If you Approve
+        A Pass or Fail tap records the student&rsquo;s fact; it does not rate the AI. <strong>Pass</strong> = yes,
+        this is true. <strong>Fail</strong> = no, or not proven. Every Fail asks <strong>Why?</strong>, with
+        <em> Other</em> already chosen; change it if a better reason fits. If you Approve
         while a fact is on Fail, you see a warning, but you can still go ahead. QC then takes a second look at
         those facts (a Fail on a green fact, or a Fail you still approved) and either agrees with you or taps
         <strong> Disagree</strong>. The answers count how often QC agreed with you; leads also see how often QC
         disagreed with each reviewer, to support reviewers, not to rank them.</>,
+    },
+    {
+      q: <>What does each of the four facts ask me to prove?</>,
+      a: <><strong>Identity</strong>: the student is who they say they are. <strong>Results</strong>: the results
+        are real. <strong>Pathway</strong>: a real offer for a course this programme funds (a public IPTA or ILKA,
+        the right start year, not already funded, not abroad). <strong>Income</strong>: the family is B40.</>,
+    },
+    {
+      q: <>Which reasons can I give when I <strong>Fail</strong> a fact?</>,
+      a: <>Five, all about the student, never the AI: <em>Proof is missing or unclear</em>, <em>A document looks
+        false or altered</em>, <em>The documents show something different</em>, <em>The interview or a call showed
+        something different</em>, and <em>Other</em>. Every Fail takes one; <em>Other</em> is chosen for you until
+        you pick another.</>,
+    },
+    {
+      q: <>Why is <strong>Approve</strong> greyed with &ldquo;Record the reporting date&rdquo;?</>,
+      a: <>A recommendation needs the date the student reports to her course. When the reporting-date box shows
+        and no date is saved, enter it in that box (the <strong>Still to do</strong> line takes you there). Decline
+        needs no date. If the offer letter already carries the date, the box does not show and nothing is asked.</>,
+    },
+    {
+      q: <>Can QC accept my recommendation while a fact is red?</>,
+      a: <>Not without a reason. While a fact is still red or shows <em>Rule not met</em>, QC&rsquo;s Accept is
+        blocked; QC can resolve it, reopen it to you, or record a reason for going ahead, which is kept on the
+        case.</>,
     },
     {
       q: <>Can I undo a decision after I Save?</>,

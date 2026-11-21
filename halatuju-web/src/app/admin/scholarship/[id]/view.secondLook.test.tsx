@@ -60,10 +60,10 @@ describe('LL2b: the block on the QC panel', () => {
   })
 
   it('a reason given shows the LL2 label; a failed-but-recommended fact says so and has no Reason row', async () => {
-    asQc({ ...TWO, in_doubt: [{ ...TWO.in_doubt[0], reason: 'read_wrong' }, TWO.in_doubt[1]] })
+    asQc({ ...TWO, in_doubt: [{ ...TWO.in_doubt[0], reason: 'documents_differ' }, TWO.in_doubt[1]] })
     await loaded()
     expect(within(screen.getByTestId('doubt-identity'))
-      .getByText('admin.scholarship.recordVerdict.failReason.read_wrong')).toBeTruthy()
+      .getByText('admin.scholarship.recordVerdict.failReason.documents_differ')).toBeTruthy()
     const income = screen.getByTestId('doubt-income')
     expect(within(income).getByText(new RegExp(`${K}.butDecision`))).toBeTruthy()
     expect(within(income).queryByText('admin.scholarship.recordVerdict.failReasonLabel')).toBeNull()

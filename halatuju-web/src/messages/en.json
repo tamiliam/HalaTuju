@@ -5162,7 +5162,8 @@
           "answerOne": "Answer 1 interview question in your findings",
           "answerMany": "Answer {count} interview questions in your findings",
           "rate": "Complete your assessment: {facts}",
-          "conclusion": "Write your conclusion"
+          "conclusion": "Write your conclusion",
+          "reportingDate": "Record the reporting date"
         },
         "findingsIncomplete": "Answer every interview question before deciding ({count} left).",
         "reasonPlaceholder": "Make your case: why this student deserves to be sponsored — or does NOT meet the {programmeName} requirements.",
@@ -5196,16 +5197,15 @@
         "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
         "finaliseNoInterview": "Submit the interview findings before saving an assessment.",
         "rateTitle": "Reviewer Assessment",
-        "rateHelp": "Pass = this fact is true for the student. Fail = it is not true, or not proven.",
+        "rateHelp": "Pass = yes, this is true. Fail = no, or not proven.",
         "failedAcceptWarn": "One fact failed. Do you want to accept?",
-        "failWhy": "Why is this fact not true?",
+        "failWhy": "Why?",
         "failReasonLabel": "Reason",
-        "pickReason": "Pick a reason for the failed fact.",
         "failReason": {
-          "engine_wrong": "The rule is wrong",
-          "read_wrong": "The document was read wrong",
-          "new_information": "New information (interview, call)",
-          "programme_rule": "A programme rule",
+          "proof_missing": "Proof is missing or unclear",
+          "document_false": "A document looks false or altered",
+          "documents_differ": "The documents show something different",
+          "interview_differs": "The interview or a call showed something different",
           "other": "Other"
         }
       },
@@ -5236,7 +5236,7 @@
           "profile_pending": "The final sponsor profile is still being written. Wait a few minutes, reload the page and read it, then accept.",
           "profile_failed": "The final sponsor profile could not be written. Reopen the case for the reviewer, who records the assessment again with the final profile. Then accept."
         },
-        "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
+        "gapFloor": "A fact in the assessment is still red or shows “Rule not met” ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
         "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",
         "overrideTitle": "Override the red-fact block? Your reason is recorded on the case.",
         "overridePlaceholder": "Why is it safe to recommend this case despite the red fact?",
@@ -5511,6 +5511,8 @@
       },
       "preInterview": {
         "title": "Reject before interview",
+        "factsTitle": "The four facts",
+        "factsNeeded": "Record Pass or Fail for all four facts before you reject.",
         "start": "Reject before interview",
         "help": "For a student whose documents already show they don't qualify. No interview is held.",
         "unassignFirst": "To reject before interview, set the reviewer back to Unassigned first.",
@@ -5546,6 +5548,8 @@
           "reason_required": "Choose the main reason.",
           "comments_required": "Add the details before you reject.",
           "comments_too_long": "The note can be 2,000 characters at most.",
+          "assessment_incomplete": "Record Pass or Fail for all four facts first.",
+          "bad_fail_reasons": "One of the reasons is not on the list. Choose it again.",
           "generic": "Couldn't reject this student. Please try again."
         },
         "or": "or"

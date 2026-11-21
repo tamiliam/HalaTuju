@@ -15,6 +15,7 @@ import type { PredictionCounts, DoubtRow, ReviewerRow, QcCheckedCounts } from '@
 import { tOr } from '@/lib/i18n'
 import { PHONE_PILL_SM } from '@/lib/phonePill'
 import type { Translate } from './sectionTypes'
+import { FAIL_REASON_CODES } from '@/lib/failReasons'
 
 /** ⚠ The i18n guard resolves `${K}.` templates by this LITERAL name. */
 const K = 'admin.programmeOverview.aiPrediction'
@@ -93,9 +94,10 @@ export function doubtName(t: Translate, code: string): string {
   return own && !own.includes('{') ? own : code.replace(/_/g, ' ')
 }
 
-const REASON_CODES = ['engine_wrong', 'read_wrong', 'new_information', 'programme_rule', 'other'] as const
+// F3 (I-11): the reviewer's reason list, one home (`@/lib/failReasons`, drift-tested against the api).
+const REASON_CODES = FAIL_REASON_CODES
 
-/** LL2: "New information 3 · Document read wrong 1 · Not given 2" for one fact; '' when the fact has no
+/** LL2: "The interview or a call showed something different 3 · Proof is missing or unclear 1 · Not given 2" for one fact; '' when the fact has no
  *  green -> fail case or the payload predates the reasons (old cached data). Counts only, no percent. */
 function reasonLine(
   t: Translate, f: string, counts: Record<string, PredictionCounts>,

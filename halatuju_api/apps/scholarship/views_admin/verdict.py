@@ -12,6 +12,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
 from .. import birth_state
+from .. import course_start
 from .. import fact_bands
 from .. import fail_reasons as fail_reasons_rule
 from .. import pool
@@ -133,6 +134,11 @@ class AdminRecordVerdictView(_AdminBase):
             refusal = decision_refusal(app)
             if refusal:
                 return Response(refusal, status=status.HTTP_400_BAD_REQUEST)
+        # F3 (I-12): Recommend needs the reporting date the cockpit's box asks for. Decline never does.
+        if overall == 'accept' and course_start.recommend_needs_date(app):
+            return Response({'error': 'Record the reporting date before you recommend.',
+                             'code': 'reporting_date_required_before_recommend'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         # ⚠ STAMP THE PREDICTOR WITH ITS SNAPSHOT, IN THE SAME BREATH. The two are one fact: what
         # the AI said, and which engine said it. Splitting them (stamping elsewhere, or later)
@@ -142,10 +148,9 @@ class AdminRecordVerdictView(_AdminBase):
         app.ai_verdict_engine_version = VERDICT_ENGINE_VERSION
         # LL4: what fed that snapshot, same save. Never raises: a failure stores {schema, error}.
         app.ai_verdict_context = verdict_context_or_empty(app)
-        # LL2: kept only for a fact the human failed that THIS snapshot calls verified. Always written
-        # ({} when none), as every other officer_verdict key is; old rows simply have no key.
-        officer_verdict[fail_reasons_rule.KEY] = fail_reasons_rule.keep(
-            fail_reasons, officer_verdict, app.ai_verdict_snapshot)
+        # F3 (I-11): one reason for every failed fact (none given -> Other); a reason on a Pass is
+        # dropped. Always written ({} when nothing failed); old rows simply have no key.
+        officer_verdict[fail_reasons_rule.KEY] = fail_reasons_rule.keep(fail_reasons, officer_verdict)
         app.officer_verdict = officer_verdict
         app.verdict_reason = (request.data.get('reason') or '').strip()
         app.verdict_decided_by = getattr(admin, 'email', '') or ''

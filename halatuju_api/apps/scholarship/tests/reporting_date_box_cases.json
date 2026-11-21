@@ -1,0 +1,13 @@
+{
+  "_about": "F3 (I-12): when the cockpit shows the reporting-date box. ONE table, run by course_start.box_shows (test_f3_assessment.py) and the web's showsReportingDateBox (reportingDateBoxDrift.test.ts).",
+  "cases": [
+    {"status": "interviewing", "reopened": false, "letter_has_date": false, "shows": true},
+    {"status": "interviewing", "reopened": false, "letter_has_date": true, "shows": false},
+    {"status": "interviewed", "reopened": true, "letter_has_date": false, "shows": true},
+    {"status": "recommended", "reopened": true, "letter_has_date": true, "shows": false},
+    {"status": "interviewed", "reopened": false, "letter_has_date": false, "shows": false},
+    {"status": "profile_complete", "reopened": false, "letter_has_date": false, "shows": false},
+    {"status": "recommended", "reopened": false, "letter_has_date": false, "shows": false},
+    {"status": "", "reopened": false, "letter_has_date": false, "shows": false}
+  ]
+}

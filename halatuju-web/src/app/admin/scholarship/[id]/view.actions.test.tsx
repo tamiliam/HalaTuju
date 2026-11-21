@@ -252,6 +252,7 @@ describe('reject before interview, refused because a colleague got there first (
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
+    for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     // The reload shows the colleague's decline, and the officer still reads why theirs was refused.
@@ -293,6 +294,7 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
+    for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     view.api.getScholarshipApplication.mockImplementation(async (id: number) => (id === 8 ? case8() : case7Rejected()))
@@ -352,6 +354,7 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
+    for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     expect(await screen.findByText(`${P}.error.generic`)).toBeTruthy()   // the door stays; the words in it
@@ -381,6 +384,7 @@ describe('nothing on the case page carries to the next case (#75 re-check 4, TD-
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
+    for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     return view
   }

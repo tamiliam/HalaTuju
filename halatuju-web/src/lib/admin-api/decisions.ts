@@ -63,11 +63,14 @@ export async function cancelPendingDecline(id: number, options?: ApiOptions) {
 /** Request #75: reject before interview (the qc key, Awaiting review, no reviewer). The email waits for the
  * organisation's QC decline hold; `cancelPendingDecline` undoes it. */
 export async function rejectBeforeInterview(
-  id: number, reason: string, comments: string, options?: ApiOptions,
+  id: number, reason: string, comments: string,
+  /** F3 (I-4): the four facts (Pass/Fail each) and one reason per Fail; the server refuses without them. */
+  assessment: { facts: Record<string, string>; fail_reasons: Record<string, string> },
+  options?: ApiOptions,
 ) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/reject-before-interview/`, 'POST',
-    { reason, comments }, options,
+    { reason, comments, facts: assessment.facts, fail_reasons: assessment.fail_reasons }, options,
   )
 }
 

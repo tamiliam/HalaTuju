@@ -26,6 +26,7 @@ export function missingTarget(item: DecisionMissingItem): string {
     case 'findings_unanswered': return 'interview-section'
     case 'facts_unrated': return `rate-fact-${item.facts[0]}-pass`
     case 'conclusion_empty': return 'verdict-reason'
+    case 'reporting_date_missing': return 'reporting-date-input'
   }
 }
 
@@ -70,6 +71,7 @@ function itemText(t: T, item: DecisionMissingItem, locale: string): string {
     case 'facts_unrated':
       return t(`${k}rate`, { facts: joinFacts(item.facts.map((f) => t(`admin.scholarship.verdict.fact.${f}`)), locale) })
     case 'conclusion_empty': return t(`${k}conclusion`)
+    case 'reporting_date_missing': return t(`${k}reportingDate`)
   }
 }
 

@@ -41,7 +41,12 @@ const draw = (app: api.AdminScholarshipDetail, canAssign = true) => {
   render(<Page app={app} canAssign={canAssign} onDone={onDone} />)
   return onDone
 }
-const fill = (reason: string, note: string) => {
+const FACTS = ['identity', 'academic', 'pathway', 'income']
+const rate = (v: 'pass' | 'fail' = 'pass') => {
+  for (const f of FACTS) fireEvent.click(screen.getByTestId(`pre-interview-${f}-${v}`))
+}
+const fill = (reason: string, note: string, facts = true) => {
+  if (facts) rate()
   fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: reason } })
   fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: note } })
 }
@@ -115,6 +120,66 @@ describe('the panel', () => {
     fireEvent.click(screen.getByRole('button', { name: `${P}.cancel` }))
     expect(screen.getByRole('button', { name: `${P}.start` })).toBeTruthy()
     expect(mockApi.rejectBeforeInterview).not.toHaveBeenCalled()
+  })
+})
+
+describe('the four facts first (F3, I-4)', () => {
+  const open = (over: Record<string, unknown> = {}) => {
+    draw(caseOf(over))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+  }
+  const submit = () => screen.getByRole('button', { name: `${P}.submit` }) as HTMLButtonElement
+
+  it('shows the four facts with the Pass/Fail help line', () => {
+    open()
+    expect(screen.getByText('admin.scholarship.recordVerdict.rateHelp')).toBeTruthy()
+    for (const f of FACTS) expect(screen.getByTestId(`pre-interview-${f}-pass`)).toBeTruthy()
+  })
+
+  it('Reject stays greyed, with a visible line, until every fact is recorded', () => {
+    open()
+    fill('not_b40', 'Dummy note', false)
+    expect(submit().disabled).toBe(true)
+    expect(screen.getByTestId('pre-interview-facts-needed').textContent).toBe(`${P}.factsNeeded`)
+    for (const f of FACTS.slice(0, 3)) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
+    expect(submit().disabled).toBe(true)
+    fireEvent.click(screen.getByTestId('pre-interview-income-fail'))
+    expect(submit().disabled).toBe(false)
+    expect(screen.queryByTestId('pre-interview-facts-needed')).toBeNull()
+  })
+
+  it('a Fail asks Why with Other already chosen; the chosen reason is sent; a Pass sends none', async () => {
+    mockApi.rejectBeforeInterview.mockResolvedValue(caseOf() as never)
+    open()
+    fill('not_b40', 'Dummy note')
+    fireEvent.click(screen.getByTestId('pre-interview-income-fail'))
+    fireEvent.click(screen.getByTestId('pre-interview-academic-fail'))
+    expect(screen.getByTestId('pre-interview-income-why-other').getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByTestId('pre-interview-income-why-proof_missing'))
+    fireEvent.click(submit())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    await waitFor(() => expect(mockApi.rejectBeforeInterview).toHaveBeenCalled())
+    expect(mockApi.rejectBeforeInterview.mock.calls[0][3]).toEqual({
+      facts: { identity: 'pass', academic: 'fail', pathway: 'pass', income: 'fail' },
+      fail_reasons: { academic: 'other', income: 'proof_missing' },
+    })
+  })
+
+  it('an assessment already on the case is pre-filled', () => {
+    open({ officer_verdict: { identity: 'pass', academic: 'pass', pathway: 'pass', income: 'fail',
+      fail_reasons: { income: 'documents_differ' } } })
+    expect(screen.getByTestId('pre-interview-income-fail').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByTestId('pre-interview-income-why-documents_differ').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.queryByTestId('pre-interview-facts-needed')).toBeNull()
+  })
+
+  it('the server refusal for unrecorded facts is shown in words', async () => {
+    mockApi.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'assessment_incomplete' }))
+    open()
+    fill('not_b40', 'Dummy note')
+    fireEvent.click(submit())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    expect((await screen.findByRole('alert')).textContent).toBe(`${P}.error.assessment_incomplete`)
   })
 })
 
@@ -226,7 +291,8 @@ describe('are you sure?', () => {
     toConfirm()
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     await waitFor(() => expect(onDone).toHaveBeenCalledWith(next))
-    expect(mockApi.rejectBeforeInterview).toHaveBeenCalledWith(7, 'results_too_low', 'Dummy note', { token: 'tok' })
+    expect(mockApi.rejectBeforeInterview).toHaveBeenCalledWith(7, 'results_too_low', 'Dummy note',
+      { facts: { identity: 'pass', academic: 'pass', pathway: 'pass', income: 'pass' }, fail_reasons: {} }, { token: 'tok' })
   })
 
   it.each([['has_reviewer'], ['bad_status'], ['comments_too_long']])('a %s refusal reads as words', async (code) => {

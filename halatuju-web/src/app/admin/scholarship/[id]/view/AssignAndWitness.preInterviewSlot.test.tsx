@@ -55,6 +55,7 @@ const rejectThenFlip = (from: boolean) => {
   fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
   fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
   fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
+  for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
   fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
   fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
   expect(screen.getByRole('button', { name: `${P}.running` })).toBeTruthy()

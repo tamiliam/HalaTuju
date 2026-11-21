@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### F3 (fix plan) - reviewer assessment rules (2026-11-22)
+
+Branch fix-f3, not pushed. Migration: none. Services: api, web. No doc-recognition change (no MODEL_VERSION bump).
+- **I-11, Why on every Fail:** the five reasons are now about the student, never the AI (`proof_missing`, `document_false`, `documents_differ`, `interview_differs`, `other`); the old LL2 codes and strings are gone. Every failed fact takes one, whatever the engine showed; Other is pre-chosen, so Save is never held back. Server (`fail_reasons.keep`): a Fail with no reason is stored as Other, a reason on a Pass is dropped, an unknown code is REFUSED (400 `bad_fail_reasons`). One code list for the web (`src/lib/failReasons.ts`, drift-tested against `fail_reasons.py` and `audit.FACTS`); the overview "Why it failed" column keeps its green-to-fail scope with the new labels. Help line under Reviewer Assessment: "Pass = yes, this is true. Fail = no, or not proven." (en, ms, ta).
+- **I-4, the four facts before a pre-interview reject:** `reject-before-interview` takes `facts` (Pass/Fail each) and `fail_reasons`, refuses 400 `assessment_incomplete` when any fact is unrecorded, and stores them in `officer_verdict` with the AI snapshot (no `verdict_decided_at`, so the reviewer metrics do not count them). The form shows the four facts with the same Why chips, pre-filled from any assessment already on the case; Reject stays greyed with a visible line until all four are recorded.
+- **I-12, the reporting date before Recommend:** one rule, `course_start.box_shows` / `showsReportingDateBox`, run on a shared case table (`tests/reporting_date_box_cases.json`) by pytest and jest. When the box shows and no date is saved, "Still to do" lists "Record the reporting date" (taking you to the date box) and Recommend is blocked; Decline is not. `record-verdict` refuses an accept in that state (400 `reporting_date_required_before_recommend`).
+- **QC gap floor wording:** `qcDecision.gapFloor` says a fact in the assessment is still red or shows "Rule not met" (en, ms, ta).
+- **Guide and FAQ:** the four facts as statements to prove, Pass/Fail meaning, Why on every Fail with the five reasons, the reporting date before Recommend, the four facts before a pre-interview reject, and the QC red / Rule-not-met floor (role-reviewer, role-org-admin, role-qc, faq-reviewer, faq).
+
 ### F2 (fix plan) - server AI band + I-10 (2026-11-21)
 
 Branch fix-f2, not pushed. Migration: none. Services: api, web. No doc-recognition change (no MODEL_VERSION bump).

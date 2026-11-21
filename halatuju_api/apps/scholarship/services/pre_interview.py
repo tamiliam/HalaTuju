@@ -70,10 +70,42 @@ def _checked_note(reason, comments):
     return comments
 
 
-def reject_before_interview(application, admin, reason, comments):
+def checked_assessment(raw_facts, raw_reasons):
+    """F3 (I-4): the four facts as the reviewer's assessment stores them (`officer_verdict`), with the
+    same Why-on-every-Fail rule (`fail_reasons.keep`). Raises ValueError 'assessment_incomplete' when
+    any fact is not Pass or Fail, and 'bad_fail_reasons' for a malformed or unknown reason code."""
+    from .. import fail_reasons
+    from ..audit import FACTS
+    raw_facts = raw_facts if isinstance(raw_facts, dict) else {}
+    facts = {f: raw_facts.get(f) for f in FACTS}
+    if any(v not in ('pass', 'fail') for v in facts.values()):
+        raise ValueError('assessment_incomplete')
+    try:
+        reasons = fail_reasons.validate(raw_reasons)
+    except fail_reasons.BadFailReasons:
+        raise ValueError('bad_fail_reasons')
+    return {**facts, fail_reasons.KEY: fail_reasons.keep(reasons, facts)}
+
+
+def _assessment_fields(application, assessment):
+    """The assessment goes where a reviewer's does: `officer_verdict`, beside the AI's snapshot of the
+    same moment (engine version and LL4 context too), so a later comparison reads one shape. NOT
+    `verdict_decided_at`: that stamp means a reviewer's recorded decision, and a held decline that is
+    cancelled puts the case back at Awaiting review with no reviewer. Read BEFORE the reject changes
+    the case; returns ``{field: value}`` to write with it."""
+    from ..verdict_context import verdict_context_or_empty
+    from ..verdict_engine import VERDICT_ENGINE_VERSION, build_verdict
+    return {'officer_verdict': assessment,
+            'ai_verdict_snapshot': build_verdict(application),
+            'ai_verdict_engine_version': VERDICT_ENGINE_VERSION,
+            'ai_verdict_context': verdict_context_or_empty(application)}
+
+
+def reject_before_interview(application, admin, reason, comments, facts=None, fail_reasons=None):
     """Record the decline now and hold its email for the QC hold. Raises ValueError with
-    'bad_status' (not Awaiting review), 'has_reviewer', 'reason_required', 'comments_required' or
-    'comments_too_long'. The stage and the reviewer are read again under the row lock, so an
+    'bad_status' (not Awaiting review), 'has_reviewer', 'reason_required', 'comments_required',
+    'comments_too_long', 'assessment_incomplete' (F3 I-4: all four facts Pass or Fail first) or
+    'bad_fail_reasons'. The stage and the reviewer are read again under the row lock, so an
     assignment that committed a moment ago wins. Returns True."""
     from .. import staff_activity
     from ..status_lock import StatusRefused, lock_application_for
@@ -83,6 +115,7 @@ def reject_before_interview(application, admin, reason, comments):
     if application.assigned_to_id is not None:
         raise ValueError('has_reviewer')
     comments = _checked_note(reason, comments)
+    assessed = _assessment_fields(application, checked_assessment(facts, fail_reasons))
     hold = hold_for(application)
     with transaction.atomic():
         try:
@@ -94,7 +127,9 @@ def reject_before_interview(application, admin, reason, comments):
         by = getattr(admin, 'email', '') or ''
         _record_reject(application, CATEGORY, by, comments=comments)   # the decision is immediate
         application.rejection_reason = reason
-        fields = ['rejection_reason']
+        for field, value in assessed.items():   # F3 (I-4): the four facts, saved with the reject
+            setattr(application, field, value)
+        fields = ['rejection_reason', *assessed]
         if hold.total_seconds() > 0:
             # `admin_reject`'s embargo, written out: that function refuses this bucket on purpose,
             # so its `/reject/` door (open to the assignee) can never reach this one.

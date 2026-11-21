@@ -25,3 +25,34 @@ def recorded_date(application):
     Exactly ``application.reporting_date`` today — the single place a future rule about which
     dates count would go."""
     return getattr(application, 'reporting_date', None)
+
+
+# ── F3 (I-12): the reporting date is required before Recommend ─────────────────────────────────────
+
+def box_shows(status, decision_reopened, letter_has_date) -> bool:
+    """Does the cockpit show the "record the reporting date" box? The case table both sides run is
+    ``tests/reporting_date_box_cases.json``.
+
+    drift-test: halatuju-web/src/lib/__tests__/reportingDateBoxDrift.test.ts — the web's
+    ``showsReportingDateBox`` answers the same table, so the box and this rule cannot disagree."""
+    if letter_has_date:
+        return False
+    return (status or '') == 'interviewing' or bool(decision_reopened)
+
+
+def letter_has_date(application) -> bool:
+    """Does a LIVE offer letter carry a reporting date? The same reading the cockpit makes of each
+    document's ``pathway_check.reporting_date`` (`serializers/documents.get_pathway_check`)."""
+    from .document_snapshot import live_docs
+    from .pathway_engine import student_offer_check
+    return any(student_offer_check(d).get('reporting_date') for d in live_docs(application, 'offer_letter'))
+
+
+def recommend_needs_date(application) -> bool:
+    """Recording a Recommend (``overall == 'accept'``) is refused while the box shows and no date is
+    recorded (``reporting_date_required_before_recommend``). Decline never asks. The web's "Still to
+    do" line is the same condition."""
+    if recorded_date(application) is not None:
+        return False
+    return box_shows(application.status, getattr(application, 'decision_reopened_at', None),
+                     letter_has_date(application))

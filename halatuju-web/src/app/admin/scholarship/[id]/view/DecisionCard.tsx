@@ -21,7 +21,7 @@ import { decisionBarShows } from './DecisionBar'
 import { AlertLine, DECISION_ALERT_EVENT, DecisionMissingList } from './DecisionMissing'
 
 export function DecisionCard({
-  app, t, busy, canWrite, caseOpen, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, missing, hasAssistance, doSave, canSave, reasonMissing, verdictMsg, verdictMsgTone,
+  app, t, busy, canWrite, caseOpen, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, missing, hasAssistance, doSave, canSave, verdictMsg, verdictMsgTone,
 }: {
   app: AdminScholarshipDetail
   t: T
@@ -61,7 +61,6 @@ export function DecisionCard({
   hasAssistance: boolean
   doSave: () => void
   canSave: boolean
-  reasonMissing: boolean
   verdictMsg: string
   verdictMsgTone: 'ok' | 'warn'
 }) {
@@ -288,7 +287,7 @@ export function DecisionCard({
               )}
               {/* Reversible outcome selection. Approve needs an amount; Decline doesn't (and clears it). */}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => { if (!decisionReady) showAlert(); else if (!approveReady) setAmountKey((n) => n + 1); else selectApprove() }}
+                <button onClick={() => { if (missing.length > 0) showAlert(); else if (!approveReady) setAmountKey((n) => n + 1); else selectApprove() }}
                   disabled={!!busy} aria-disabled={!approveReady || undefined}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 aria-disabled:opacity-50 ${
                     officerVerdict.overall === 'accept'
@@ -305,8 +304,9 @@ export function DecisionCard({
                   {t('admin.scholarship.recordVerdict.decline')}
                 </button>
               </div>
-              {/* One contextual hint: what's still missing before Save. */}
-              {!decisionReady ? (
+              {/* One contextual hint: what's still missing before Save. F3 (I-12): the list can hold a
+                  Recommend-only line (the reporting date), so it shows while Decline stays usable. */}
+              {missing.length > 0 ? (
                 <DecisionMissingList key={alertKey} t={t} items={missing} alert={alertKey > 0} />
               ) : amountKey > 0 && !approveReady ? (
                 <AlertLine key={amountKey}>{t(amountReasonKey)}</AlertLine>
@@ -314,8 +314,6 @@ export function DecisionCard({
                 <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
               ) : officerVerdict.overall === 'accept' && !hasAssistance ? (
                 <p className="text-xs md:text-[11px] text-caution-700">{t(amountReasonKey)}</p>
-              ) : reasonMissing ? (
-                <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.pickReason')}</p>
               ) : null}
               {/* LL2: a soft warning only (never blocks): Approve chosen while a fact is marked Fail. */}
               {officerVerdict.overall === 'accept' && ['identity', 'academic', 'pathway', 'income'].some((f) => officerVerdict[f] === 'fail') && (

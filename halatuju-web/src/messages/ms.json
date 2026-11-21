@@ -5162,7 +5162,8 @@
           "answerOne": "Jawab 1 soalan temu duga dalam penemuan anda",
           "answerMany": "Jawab {count} soalan temu duga dalam penemuan anda",
           "rate": "Lengkapkan penilaian anda: {facts}",
-          "conclusion": "Tulis kesimpulan anda"
+          "conclusion": "Tulis kesimpulan anda",
+          "reportingDate": "Rekodkan tarikh pendaftaran"
         },
         "findingsIncomplete": "Jawab setiap soalan temu duga sebelum membuat keputusan ({count} lagi).",
         "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau TIDAK memenuhi syarat {programmeName}.",
@@ -5196,16 +5197,15 @@
         "mayAlreadyBeSaved": "Keputusan anda mungkin sudah disimpan. Muat semula halaman dan semak sebelum menekan sekali lagi.",
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan penilaian.",
         "rateTitle": "Penilaian Penyemak",
-        "rateHelp": "Lulus = fakta ini benar bagi pelajar. Gagal = ia tidak benar, atau tidak dibuktikan.",
+        "rateHelp": "Lulus = ya, ini benar. Gagal = tidak, atau tidak dibuktikan.",
         "failedAcceptWarn": "Satu fakta gagal. Adakah anda mahu menerima?",
-        "failWhy": "Mengapa fakta ini tidak benar?",
+        "failWhy": "Mengapa?",
         "failReasonLabel": "Sebab",
-        "pickReason": "Pilih satu sebab untuk fakta yang gagal.",
         "failReason": {
-          "engine_wrong": "Peraturan itu salah",
-          "read_wrong": "Dokumen dibaca dengan salah",
-          "new_information": "Maklumat baharu (temu duga, panggilan)",
-          "programme_rule": "Peraturan program",
+          "proof_missing": "Bukti tiada atau tidak jelas",
+          "document_false": "Dokumen kelihatan palsu atau telah diubah",
+          "documents_differ": "Dokumen menunjukkan perkara yang berbeza",
+          "interview_differs": "Temu duga atau panggilan menunjukkan perkara yang berbeza",
           "other": "Lain-lain"
         }
       },
@@ -5236,7 +5236,7 @@
           "profile_pending": "Profil penaja akhir masih sedang ditulis. Tunggu beberapa minit, muat semula halaman dan baca profil itu, kemudian terima.",
           "profile_failed": "Profil penaja akhir tidak dapat ditulis. Buka semula kes ini untuk penyemak, yang akan merekodkan penilaian sekali lagi bersama profil akhir. Kemudian terima."
         },
-        "gapFloor": "Masih ada fakta verdik berstatus merah ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
+        "gapFloor": "Masih ada fakta penilaian yang berstatus merah atau menunjukkan “Syarat tidak dipenuhi” ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
         "gapFloorSuper": "Sebagai QC atau pentadbir super, anda boleh mengatasi sekatan ini dengan sebab yang direkodkan.",
         "overrideTitle": "Atasi sekatan fakta merah? Sebab anda akan direkodkan pada kes ini.",
         "overridePlaceholder": "Mengapa selamat untuk mengesyorkan kes ini walaupun ada fakta merah?",
@@ -5511,6 +5511,8 @@
       },
       "preInterview": {
         "title": "Tolak sebelum temu duga",
+        "factsTitle": "Empat fakta",
+        "factsNeeded": "Rekodkan Lulus atau Gagal bagi keempat-empat fakta sebelum anda menolak.",
         "start": "Tolak sebelum temu duga",
         "help": "Untuk pelajar yang dokumennya sudah menunjukkan mereka tidak layak. Tiada temu duga diadakan.",
         "unassignFirst": "Untuk menolak sebelum temu duga, tetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
@@ -5546,6 +5548,8 @@
           "reason_required": "Pilih sebab utama.",
           "comments_required": "Tambahkan butiran sebelum anda menolak.",
           "comments_too_long": "Nota ini boleh mengandungi paling banyak 2,000 aksara.",
+          "assessment_incomplete": "Rekodkan Lulus atau Gagal bagi keempat-empat fakta dahulu.",
+          "bad_fail_reasons": "Salah satu sebab tiada dalam senarai. Pilih semula.",
           "generic": "Tidak dapat menolak pelajar ini. Sila cuba lagi."
         },
         "or": "atau"

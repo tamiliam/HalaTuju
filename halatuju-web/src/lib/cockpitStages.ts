@@ -181,6 +181,8 @@ export type DecisionMissingItem =
   | { kind: 'findings_unanswered'; count: number }
   | { kind: 'facts_unrated'; facts: string[] }
   | { kind: 'conclusion_empty' }
+  /** F3 (I-12): Recommend only — added by the cockpit, never by `decisionMissing` (Decline needs no date). */
+  | { kind: 'reporting_date_missing' }
 
 /**
  * WHAT is still missing before Recommend / Decline can act, in the page's order (interview, AI rating, conclusion).

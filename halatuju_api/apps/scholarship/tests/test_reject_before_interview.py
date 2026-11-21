@@ -37,6 +37,9 @@ from apps.scholarship.tests.factories import (
 )
 
 NOTE = 'ZQX-pre-interview-note: the payslip shows a household income above the band.'
+#: F3 (I-4): the four facts recorded before the reject (income failed, the reason given).
+FACTS = {'identity': 'pass', 'academic': 'pass', 'pathway': 'pass', 'income': 'fail'}
+WHY = {'income': 'proof_missing'}
 
 
 def _url(pk):
@@ -52,9 +55,9 @@ class _Base(TestCase):
         self.app = make_application('profile_complete', cohort=self.cohort)
         mail.outbox = []
 
-    def _post(self, who, app=None, reason='not_b40', comments=NOTE):
-        return authed_client(who).post(_url((app or self.app).pk),
-                                       {'reason': reason, 'comments': comments}, format='json')
+    def _post(self, who, app=None, reason='not_b40', comments=NOTE, facts=FACTS, fail_reasons=WHY):
+        body = {'reason': reason, 'comments': comments, 'facts': facts, 'fail_reasons': fail_reasons}
+        return authed_client(who).post(_url((app or self.app).pk), body, format='json')
 
 
 class WhoMayRejectTest(_Base):
@@ -169,7 +172,7 @@ class TheRowLockTest(_Base):
         stale = ScholarshipApplication.objects.get(pk=self.app.pk)
         ScholarshipApplication.objects.filter(pk=self.app.pk).update(assigned_to=self.reviewer)
         with self.assertRaisesMessage(ValueError, 'has_reviewer'):
-            reject_before_interview(stale, self.org_admin, 'not_b40', NOTE)
+            reject_before_interview(stale, self.org_admin, 'not_b40', NOTE, FACTS, WHY)
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'profile_complete')
         self.assertEqual(self.app.rejection_category, '')
@@ -177,7 +180,7 @@ class TheRowLockTest(_Base):
     def test_a_reject_committed_after_the_case_was_loaded_refuses_the_assign(self):
         stale = ScholarshipApplication.objects.get(pk=self.app.pk)
         reject_before_interview(ScholarshipApplication.objects.get(pk=self.app.pk),
-                                self.org_admin, 'not_b40', NOTE)
+                                self.org_admin, 'not_b40', NOTE, FACTS, WHY)
         with self.assertRaises(AssignmentError) as cm:
             assign_reviewer(stale, reviewer=self.reviewer, by_admin=self.org_admin)
         self.assertEqual(str(cm.exception), 'not_assignable')
@@ -444,6 +447,52 @@ class WhatIsRequiredTest(_Base):
                 self.assertEqual(self._post(self.org_admin, app=app, reason=reason).status_code, 200)
                 app.refresh_from_db()
                 self.assertEqual(app.rejection_reason, reason)
+
+
+class TheFourFactsFirstTest(_Base):
+    """F3 (I-4): Pass or Fail on each of the four facts before the reject goes through, with the
+    reviewer assessment's Why-on-every-Fail rule, stored where a reviewer's assessment is."""
+    def _refused(self, code, **kw):
+        r = self._post(self.org_admin, **kw)
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertEqual(r.data['code'], code)
+        self.assertTrue(r.data['error'])
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'profile_complete')
+        self.assertFalse(self.app.officer_verdict)
+
+    def test_refused_while_any_fact_is_unrecorded(self):
+        self._refused('assessment_incomplete', facts=None)
+        self._refused('assessment_incomplete', facts={})
+        self._refused('assessment_incomplete', facts={**FACTS, 'pathway': ''})
+        self._refused('assessment_incomplete', facts={**FACTS, 'identity': 'maybe'})
+        self._refused('assessment_incomplete', facts='pass')
+
+    def test_an_unknown_reason_is_refused(self):
+        self._refused('bad_fail_reasons', fail_reasons={'income': 'engine_wrong'})
+        self._refused('bad_fail_reasons', fail_reasons={'nope': 'other'})
+
+    def test_stored_as_the_reviewer_assessment_with_the_ai_snapshot(self):
+        self.assertEqual(self._post(self.org_admin).status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.officer_verdict, {**FACTS, 'fail_reasons': WHY})
+        self.assertEqual([r['fact'] for r in self.app.ai_verdict_snapshot], list(FACTS))
+        self.assertTrue(self.app.ai_verdict_engine_version)
+        # Not a reviewer's recorded decision: the metrics' stamp stays empty.
+        self.assertIsNone(self.app.verdict_decided_at)
+
+    def test_a_fail_with_no_reason_is_other_and_a_reason_on_a_pass_is_dropped(self):
+        facts = {**FACTS, 'academic': 'fail'}
+        self._post(self.org_admin, facts=facts, fail_reasons={'identity': 'document_false'})
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.officer_verdict['fail_reasons'],
+                         {'academic': 'other', 'income': 'other'})
+
+    def test_all_pass_is_allowed(self):
+        facts = dict.fromkeys(FACTS, 'pass')
+        self.assertEqual(self._post(self.org_admin, facts=facts, fail_reasons=None).status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.officer_verdict, {**facts, 'fail_reasons': {}})
 
 
 class WhatIsRecordedTest(_Base):
