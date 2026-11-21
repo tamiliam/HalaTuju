@@ -140,6 +140,8 @@ class TestParity(SimpleTestCase):
         # academic is red (Cant verify) but NOT a floor fact: only gap and Rule not met stop QC.
         self.assertEqual(fb.floor_facts(verdict), ['identity', 'pathway'])
         self.assertEqual(fb.floor_facts([]), [])
+        # a fact with no name never crashes the case page or the accept
+        self.assertEqual(fb.floor_facts([{'status': 'gap'}, fact('income', 'gap')]), ['income'])
 
     def test_application_fact_bands_runs_the_engine(self):
         with mock.patch(DETAIL_ENGINE, return_value=[fact('identity', 'verified')]) as engine:

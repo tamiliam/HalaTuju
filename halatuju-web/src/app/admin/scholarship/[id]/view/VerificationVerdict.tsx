@@ -26,7 +26,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
   t: T
   caseSummary: VerdictCaseSummary | null
 }) {
-  const bandOf = (f: AdminVerdictFact) => factBandOf(app.ai_fact_bands, f.fact)
+  const bandOf = (f: AdminVerdictFact) => factBandOf(app.ai_fact_bands, f.fact, f.status)
   return (<>
 
       {/* ── Verification verdict — four horizontal tiles ───────────────────────── */}

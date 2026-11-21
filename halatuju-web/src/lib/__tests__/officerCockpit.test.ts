@@ -96,6 +96,15 @@ describe('the served fact band', () => {
     expect(factBandOf({ academic: 'toString' }, 'academic')).toBe('unsure')
   })
 
+  it('keeps a gap fact red when the band is missing (new web on an older API)', () => {
+    expect(factBandOf(undefined, 'income', 'gap')).toBe('unverifiable')
+    expect(factBandOf({}, 'income', 'gap')).toBe('unverifiable')
+    expect(factBandOf(undefined, 'income', 'verified')).toBe('unsure')
+    expect(factBandOf(undefined, 'income', null)).toBe('unsure')
+    // a served band always wins over the raw status
+    expect(factBandOf({ income: 'probable' }, 'income', 'gap')).toBe('probable')
+  })
+
   it('has every band and hint key in en, ms and ta', () => {
     for (const m of [enMessages, msMessages, taMessages] as any[]) {
       const v = m.admin.scholarship.verdict

@@ -138,7 +138,7 @@ export function RateAndEstimate({
             <p className="text-xs md:text-[11px] text-ground-400">
               {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
               {facts.map((f, i) => {
-                const band = factBandOf(app.ai_fact_bands, f)
+                const band = factBandOf(app.ai_fact_bands, f, app.verdict?.find((v) => v.fact === f)?.status)
                 return (
                   <span key={f}>
                     {i > 0 && ', '}

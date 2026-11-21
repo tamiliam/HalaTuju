@@ -53,11 +53,15 @@ export const BAND_ORDER: readonly FactBand[] = ['certain', 'probable', 'unsure',
 
 /**
  * The served band of one fact. A band the page does not know (an older API during a deploy, or a
- * fact the server did not band) reads 'unsure': never green, never a claimed broken rule.
+ * fact the server did not band) falls back on the raw status: a 'gap' fact reads 'unverifiable'
+ * (red, as it always was), anything else 'unsure': never green, never a claimed broken rule.
  */
-export function factBandOf(bands: Partial<Record<string, string>> | null | undefined, fact: string): FactBand {
+export function factBandOf(
+  bands: Partial<Record<string, string>> | null | undefined, fact: string, rawStatus?: string | null,
+): FactBand {
   const band = bands?.[fact]
-  return band && Object.prototype.hasOwnProperty.call(BAND_TONE, band) ? (band as FactBand) : 'unsure'
+  if (band && Object.prototype.hasOwnProperty.call(BAND_TONE, band)) return band as FactBand
+  return rawStatus === 'gap' ? 'unverifiable' : 'unsure'
 }
 
 // The "genuineness NOT checked yet" note (an evidence code the subtitle promotes on a tile that

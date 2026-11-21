@@ -107,4 +107,5 @@ def floor_facts(verdict) -> list:
     status is not 'gap' (I-10, owner decision D1 = A, 2026-11-21). A QC or super may pass the floor
     only with a recorded reason. Birth state joins at the caller (`views_admin.verdict`)."""
     return [f['fact'] for f in (verdict or [])
-            if isinstance(f, dict) and (f.get('status') == 'gap' or fact_band(f) == RULE_NOT_MET)]
+            if isinstance(f, dict) and f.get('fact')
+            and (f.get('status') == 'gap' or fact_band(f) == RULE_NOT_MET)]
