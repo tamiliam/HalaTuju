@@ -664,6 +664,7 @@
     "uncertainty_reasons",
     "uncertainty_note",
     "reporting_date",
+    "shows_reporting_date_box",
     "income_route",
     "income_earner",
     "income_working_members",

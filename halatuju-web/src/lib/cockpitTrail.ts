@@ -181,7 +181,8 @@ export function showsWitnessCard(status: string | null | undefined): boolean {
  * they reopen, which returns the case to the reviewer who owns the case's facts.
  *
  * Hidden when the LETTER already carries a date — then the value syncs itself and a manual box
- * would only invite contradicting the document.
+ * would only invite contradicting the document. The cockpit reads the server's answer
+ * (`reportingDateBoxShown`); this rule is the fallback for a payload without it.
  *
  * F3 (I-12): while the box shows and no date is saved, Recommend is blocked ("Still to do") and the
  * server refuses it (`course_start.box_shows`, the same case table).
@@ -203,6 +204,23 @@ export function letterHasReportingDate(
 ): boolean {
   return (documents || []).some(
     (d) => d.doc_type === 'offer_letter' && !d.superseded_at && !!d.pathway_check?.reporting_date)
+}
+
+/** F3 review fix 1: THE answer to "does the reporting-date box show?". The server serves it
+ *  (`shows_reporting_date_box`, `course_start.shows_box`: a letter dates the case only when its date
+ *  PARSES and a date is recorded), so the box, its "Still to do" line and the Recommend refusal
+ *  agree. A payload without the field (an older API) falls back to the web's own rule above. */
+export function reportingDateBoxShown(
+  app: {
+    status: string | null | undefined
+    shows_reporting_date_box?: boolean | null
+    documents?: Parameters<typeof letterHasReportingDate>[0]
+  },
+  decisionReopened: boolean | null | undefined,
+): boolean {
+  if (typeof app.shows_reporting_date_box === 'boolean') return app.shows_reporting_date_box
+  return showsReportingDateBox({
+    status: app.status, decisionReopened, letterHasDate: letterHasReportingDate(app.documents) })
 }
 
 // ── Rejection decision trail (owner 2026-07-25) ─────────────────────────────

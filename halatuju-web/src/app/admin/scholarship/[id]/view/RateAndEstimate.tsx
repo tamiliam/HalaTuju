@@ -15,9 +15,8 @@ import {
   factBandOf,
   showsDecisionCards,
   showsEstimateCard,
-  showsReportingDateBox,
 } from '@/lib/officerCockpit'
-import { letterHasReportingDate } from '@/lib/cockpitTrail'
+import { reportingDateBoxShown } from '@/lib/cockpitTrail'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
@@ -228,12 +227,8 @@ export function RateAndEstimate({
             meets the empty field while deciding, and most cases are settled before they ever
             reach QC. QC's refusal is the backstop, not the normal route.
             Shown only when the offer letter carries NO readable date, and only in the reviewer's
-            window (interviewing, or a reopened case) — `showsReportingDateBox`. ─────────────── */}
-      {showsReportingDateBox({
-        status: app.status,
-        decisionReopened,
-        letterHasDate: letterHasReportingDate(app.documents),
-      }) && (
+            window (interviewing, or a reopened case) — the server's answer, `reportingDateBoxShown`. ── */}
+      {reportingDateBoxShown(app, decisionReopened) && (
         <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-caution-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.reportingDateEntry.title')}

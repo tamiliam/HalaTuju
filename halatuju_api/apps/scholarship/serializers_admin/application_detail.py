@@ -75,6 +75,7 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
     verdict = serializers.SerializerMethodField()
     ai_fact_bands = serializers.SerializerMethodField()    # F2: {fact: band key}, the one band home
     qc_floor_facts = serializers.SerializerMethodField()   # F2 / I-10: the facts that stop a QC accept
+    shows_reporting_date_box = serializers.SerializerMethodField()   # F3 fix: the box, one server answer
     second_look = serializers.SerializerMethodField()   # LL2b: the QC's facts in doubt + answers
     submission_review = serializers.SerializerMethodField()
     query_sla = serializers.SerializerMethodField()
@@ -251,6 +252,8 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
             # blank POLY-diploma institution live from the offer (see the method).
             # S3: normalised (sortable) offer reporting date.
             'reporting_date',
+            # F3 review fix 1: does the reporting-date box show (`course_start.shows_box`)?
+            'shows_reporting_date_box',
             # Income wizard answers — drive the cockpit's route-aware income document panel.
             'income_route', 'income_earner', 'income_working_members',
             'household_check', 'income_shown',

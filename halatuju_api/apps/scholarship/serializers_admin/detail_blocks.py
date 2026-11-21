@@ -171,6 +171,12 @@ class ServesTheDetailBlocks:
         from ..fact_bands import floor_facts
         return floor_facts(self._verdict(obj))
 
+    def get_shows_reporting_date_box(self, obj):
+        """F3 review fix 1: the cockpit's reporting-date box, ONE server answer (`course_start.shows_box`).
+        The web reads this, so the box, its "Still to do" line and the Recommend refusal agree."""
+        from .. import course_start
+        return course_start.shows_box(obj)
+
     def get_second_look(self, obj):
         """LL2b: the QC panel's "Facts in doubt", read from the STORED snapshot + the reviewer's verdict
         (never a fresh engine run), and the QC's stored answers (None = not checked by the QC)."""

@@ -322,7 +322,7 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields, Served
   // The stored reporting date (ISO). Read the COLUMN, not the offer document's raw string —
   // the two used to be able to disagree, which is how a case displayed a ticked date while the
   // field driving its bursary was empty. Null when neither the letter nor an officer supplied it.
-  reporting_date: string | null
+  reporting_date: string | null; shows_reporting_date_box?: boolean | null   // F3 fix: the box (reportingDateBoxShown)
   // Closure bucket: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
   closure_reason: string
   // Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation + its reveal date.

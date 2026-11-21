@@ -74,6 +74,9 @@ export function DecisionCard({
   // Same, for a ready decision that still has no bursary amount (Recommend only).
   const [amountKey, setAmountKey] = useState(0)
   const showAlert = () => { if (missing.length > 0) setAlertKey((n) => n + 1) }
+  // F3 review fix 4: the reporting date is a Recommend-only item, so once Decline is chosen it leaves the list.
+  const shownMissing = officerVerdict.overall === 'decline'
+    ? missing.filter((m) => m.kind !== 'reporting_date_missing') : missing
   // Once the reviewer fixes an item, the list goes back to plain: a live region that kept role="alert" would be
   // announced again on every fix. The next press makes it an alert again.
   const missingSig = JSON.stringify(missing)
@@ -306,8 +309,8 @@ export function DecisionCard({
               </div>
               {/* One contextual hint: what's still missing before Save. F3 (I-12): the list can hold a
                   Recommend-only line (the reporting date), so it shows while Decline stays usable. */}
-              {missing.length > 0 ? (
-                <DecisionMissingList key={alertKey} t={t} items={missing} alert={alertKey > 0} />
+              {shownMissing.length > 0 ? (
+                <DecisionMissingList key={alertKey} t={t} items={shownMissing} alert={alertKey > 0} />
               ) : amountKey > 0 && !approveReady ? (
                 <AlertLine key={amountKey}>{t(amountReasonKey)}</AlertLine>
               ) : !officerVerdict.overall ? (

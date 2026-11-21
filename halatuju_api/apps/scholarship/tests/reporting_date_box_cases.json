@@ -9,5 +9,16 @@
     {"status": "profile_complete", "reopened": false, "letter_has_date": false, "shows": false},
     {"status": "recommended", "reopened": false, "letter_has_date": false, "shows": false},
     {"status": "", "reopened": false, "letter_has_date": false, "shows": false}
+  ],
+  "_about_letter_cases": "F3 review fix 1: whole cases. letter_date is the live offer letter's date TEXT (null = no letter); recorded = a reporting_date is saved. letter_has_date is the server's reading (the text parses with offer_sync's parser); shows is the served shows_reporting_date_box, which the web follows. 'JULAI 2026' does not parse, so it is no date and the box shows.",
+  "letter_cases": [
+    {"status": "interviewing", "reopened": false, "letter_date": "JULAI 2026", "recorded": false, "letter_has_date": false, "shows": true},
+    {"status": "interviewing", "reopened": false, "letter_date": "JULAI 2026", "recorded": true, "letter_has_date": false, "shows": true},
+    {"status": "interviewed", "reopened": true, "letter_date": "JULAI 2026", "recorded": false, "letter_has_date": false, "shows": true},
+    {"status": "interviewed", "reopened": false, "letter_date": "JULAI 2026", "recorded": false, "letter_has_date": false, "shows": false},
+    {"status": "interviewing", "reopened": false, "letter_date": "22 JUN 2026", "recorded": true, "letter_has_date": true, "shows": false},
+    {"status": "interviewing", "reopened": false, "letter_date": "22 JUN 2026", "recorded": false, "letter_has_date": true, "shows": true},
+    {"status": "interviewing", "reopened": false, "letter_date": "", "recorded": false, "letter_has_date": false, "shows": true},
+    {"status": "interviewing", "reopened": false, "letter_date": null, "recorded": false, "letter_has_date": false, "shows": true}
   ]
 }

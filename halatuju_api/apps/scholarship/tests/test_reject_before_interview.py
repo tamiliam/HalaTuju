@@ -469,7 +469,7 @@ class TheFourFactsFirstTest(_Base):
         self._refused('assessment_incomplete', facts='pass')
 
     def test_an_unknown_reason_is_refused(self):
-        self._refused('bad_fail_reasons', fail_reasons={'income': 'engine_wrong'})
+        self._refused('bad_fail_reasons', fail_reasons={'income': 'made_up_code'})
         self._refused('bad_fail_reasons', fail_reasons={'nope': 'other'})
 
     def test_stored_as_the_reviewer_assessment_with_the_ai_snapshot(self):

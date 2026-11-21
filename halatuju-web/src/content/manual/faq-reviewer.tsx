@@ -214,7 +214,8 @@ export const REVIEWER_FAQ: QA[] = [
       q: <>Why is <strong>Approve</strong> greyed with &ldquo;Record the reporting date&rdquo;?</>,
       a: <>A recommendation needs the date the student reports to her course. When the reporting-date box shows
         and no date is saved, enter it in that box (the <strong>Still to do</strong> line takes you there). Decline
-        needs no date. If the offer letter already carries the date, the box does not show and nothing is asked.</>,
+        needs no date. If the offer letter&rsquo;s date can be read and is already saved, the box does not show and
+        nothing is asked. A letter whose date cannot be read (only a month and year, say) still shows the box.</>,
     },
     {
       q: <>Can QC accept my recommendation while a fact is red?</>,

@@ -110,11 +110,19 @@ class TestRecordVerdict(TestCase):
                 self.assertEqual(self._stored()['income'], 'fail')
 
     def test_an_unknown_code_is_refused_not_mapped(self):
-        for bad in ('engine_wrong', 'new_information', 'OTHER', ''):   # the old LL2 codes too
+        for bad in ('made_up_code', 'OTHER', ''):
             with self.subTest(bad=bad):
                 r = self._post({'income': 'fail'}, fail_reasons={'income': bad})
                 self.assertEqual(r.status_code, 400)
                 self.assertEqual(r.json()['code'], 'bad_fail_reasons')
+
+    def test_an_old_tab_s_ll2_code_is_saved_as_other(self):
+        # Review fix 3, for one release: a tab opened before the F3 deploy still saves.
+        for old in ('engine_wrong', 'new_information'):
+            with self.subTest(old=old):
+                r = self._post({'income': 'fail'}, fail_reasons={'income': old})
+                self.assertEqual(r.status_code, 200, r.content)
+                self.assertEqual(self._stored()['fail_reasons'], {'income': 'other'})
 
     def test_a_reason_for_a_passed_fact_is_dropped(self):
         r = self._post({'income': 'fail'}, fail_reasons={'income': 'other', 'identity': 'documents_differ'})

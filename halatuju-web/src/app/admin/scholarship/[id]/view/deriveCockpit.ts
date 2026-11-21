@@ -14,7 +14,7 @@ import { formatDate } from '@/lib/formatDate'
 import { anomalyParams } from '@/lib/docSeen'
 import type { AdminScholarshipDetail, AdminAgendaEntry } from '@/lib/admin-api'
 import { ANOMALY_CHECK2_OWNER } from './shared'
-import { letterHasReportingDate, showsReportingDateBox } from '@/lib/cockpitTrail'
+import { reportingDateBoxShown } from '@/lib/cockpitTrail'
 import type { DecisionMissingItem } from '@/lib/cockpitStages'
 import type { TFn } from './cockpitCtx'
 
@@ -126,8 +126,7 @@ export function deriveCockpit(
   const decisionReady = decisionMissingItems.length === 0
   // F3 (I-12): while the reporting-date box shows and no date is saved, Recommend is blocked (Decline
   // is not). The server refuses the same (`course_start.recommend_needs_date`, the box's case table).
-  const reportingDateMissing = !app.reporting_date && showsReportingDateBox({
-    status: app.status, decisionReopened, letterHasDate: letterHasReportingDate(app.documents) })
+  const reportingDateMissing = !app.reporting_date && reportingDateBoxShown(app, decisionReopened)
   const recommendMissingItems: DecisionMissingItem[] = reportingDateMissing
     ? [...decisionMissingItems, { kind: 'reporting_date_missing' }] : decisionMissingItems
   // The bursary is fixed by pathway type and always present (award.py) — so approve just needs a

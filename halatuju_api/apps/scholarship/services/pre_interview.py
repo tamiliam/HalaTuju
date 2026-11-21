@@ -101,6 +101,35 @@ def _assessment_fields(application, assessment):
             'ai_verdict_context': verdict_context_or_empty(application)}
 
 
+#: F3 review fix 2: the fields the reject writes from the four facts, and a cancel takes back, with
+#: the empty value each starts at (the model defaults).
+ASSESSMENT_DEFAULTS = (('officer_verdict', dict), ('ai_verdict_snapshot', list),
+                       ('ai_verdict_engine_version', str), ('ai_verdict_context', dict))
+
+
+def has_recorded_assessment(application):
+    """Is a reviewer's (or a super's) own assessment already on the case? `record-verdict` always
+    stamps `verdict_decided_at` with it; this door never does. It can be true at Awaiting review
+    with no reviewer: a super records at any open stage, and an unassign keeps what was recorded.
+    Such an assessment is KEPT: the reject does not write over it, so a cancel has nothing to undo."""
+    return application.verdict_decided_at is not None
+
+
+def take_back_assessment(application):
+    """F3 review fix 2: a CANCELLED reject before interview takes its four facts (and the AI snapshot
+    beside them) back off the case, so the next reviewer meets an empty assessment ("Complete your
+    assessment") instead of facts she never rated. Called by `decline._cancel_pending_decline_locked`
+    while it restores the case, BEFORE it clears `rejection_category`. Only this bucket, and only
+    when no recorded assessment is on the case (then the facts are the reject's own: see
+    `has_recorded_assessment`). No migration: nothing older is kept, because the reject wrote over
+    nothing. Returns the fields it changed."""
+    if application.rejection_category != CATEGORY or has_recorded_assessment(application):
+        return []
+    for field, empty in ASSESSMENT_DEFAULTS:
+        setattr(application, field, empty())
+    return [field for field, _ in ASSESSMENT_DEFAULTS]
+
+
 def reject_before_interview(application, admin, reason, comments, facts=None, fail_reasons=None):
     """Record the decline now and hold its email for the QC hold. Raises ValueError with
     'bad_status' (not Awaiting review), 'has_reviewer', 'reason_required', 'comments_required',
@@ -115,7 +144,9 @@ def reject_before_interview(application, admin, reason, comments, facts=None, fa
     if application.assigned_to_id is not None:
         raise ValueError('has_reviewer')
     comments = _checked_note(reason, comments)
-    assessed = _assessment_fields(application, checked_assessment(facts, fail_reasons))
+    assessment = checked_assessment(facts, fail_reasons)
+    # Fix 2: a recorded assessment already on the case is kept, never written over.
+    assessed = {} if has_recorded_assessment(application) else _assessment_fields(application, assessment)
     hold = hold_for(application)
     with transaction.atomic():
         try:

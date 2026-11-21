@@ -8,7 +8,7 @@
 import { act, fireEvent, screen } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
-import { buildInterviewSession } from '@/test/adminApplicationDetail'
+import { buildDocument, buildInterviewSession } from '@/test/adminApplicationDetail'
 import { joinFacts } from './view/DecisionMissing'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
@@ -169,6 +169,46 @@ describe('the reporting date before Recommend (F3, I-12)', () => {
     const at = (m: Record<string, any>) => m.admin.scholarship.recordVerdict.missing.reportingDate
     expect([at(en), at(ms), at(ta)]).toEqual(
       ['Record the reporting date', 'Rekodkan tarikh pendaftaran', 'பதிவு செய்யும் தேதியைப் பதிவு செய்யவும்'])
+  })
+})
+
+describe('F3 review fixes: the date line and the served box answer', () => {
+  const noDate = () => ({ ...readyCase(), reporting_date: null })
+  const julaiLetter = () => [buildDocument('offer_letter', {
+    pathway_check: { reporting_date: 'JULAI 2026' } as never })]
+
+  it('with Decline chosen, "Record the reporting date" leaves Still to do (fix 4)', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: noDate() })
+    await loaded()
+    expect(document.getElementById('decision-missing')?.textContent).toContain(K + 'missing.reportingDate')
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(outcome()).toBe('admin.scholarship.recordVerdict.decline')
+    expect(document.getElementById('decision-missing')).toBeNull()
+    expect(document.body.textContent).not.toContain(K + 'missing.reportingDate')
+  })
+
+  it('an unreadable letter date ("JULAI 2026"): the served answer shows the box and the line (fix 1)', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing',
+      build: { ...noDate(), documents: julaiLetter(), shows_reporting_date_box: true } })
+    await loaded()
+    expect(document.getElementById('reporting-date-input')).not.toBeNull()
+    expect(document.getElementById('decision-missing')?.textContent).toContain(K + 'missing.reportingDate')
+    expect(btn('recordVerdict.approve').getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('a served false hides the box and the line', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing',
+      build: { ...noDate(), shows_reporting_date_box: false } })
+    await loaded()
+    expect(document.getElementById('reporting-date-input')).toBeNull()
+    expect(document.getElementById('decision-missing')).toBeNull()
+  })
+
+  it('an emptied assessment (what a cancelled pre-interview decline serves) asks "Complete your assessment" (fix 2)', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing',
+      build: { ...readyCase(), officer_verdict: {} as never, reporting_date: '2026-06-22' } })
+    await loaded()
+    expect(document.getElementById('decision-missing')?.textContent).toContain(K + 'missing.rate')
   })
 })
 

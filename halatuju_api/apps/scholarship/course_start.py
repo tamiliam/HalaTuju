@@ -33,26 +33,51 @@ def box_shows(status, decision_reopened, letter_has_date) -> bool:
     """Does the cockpit show the "record the reporting date" box? The case table both sides run is
     ``tests/reporting_date_box_cases.json``.
 
+    ``letter_has_date`` here means "the letter's date is the case's date": a live offer letter's
+    date that parses AND a recorded date (`letter_dates_the_case`). The cockpit itself reads the
+    served answer (`shows_box`, field ``shows_reporting_date_box``), so the box and this rule cannot
+    disagree.
+
     drift-test: halatuju-web/src/lib/__tests__/reportingDateBoxDrift.test.ts — the web's
-    ``showsReportingDateBox`` answers the same table, so the box and this rule cannot disagree."""
+    ``showsReportingDateBox`` (its fallback for a payload without the field) answers the same table."""
     if letter_has_date:
         return False
     return (status or '') == 'interviewing' or bool(decision_reopened)
 
 
 def letter_has_date(application) -> bool:
-    """Does a LIVE offer letter carry a reporting date? The same reading the cockpit makes of each
-    document's ``pathway_check.reporting_date`` (`serializers/documents.get_pathway_check`)."""
-    from .document_snapshot import live_docs
-    from .pathway_engine import student_offer_check
-    return any(student_offer_check(d).get('reporting_date') for d in live_docs(application, 'offer_letter'))
+    """Does the latest LIVE offer letter give a reporting date that PARSES? Exactly the reading the
+    copy into ``reporting_date`` makes (`services/offer_sync.sync_reporting_date_from_offer`: the
+    latest live offer, ``parse_reporting_date``), via ``pathway_engine.offer_reporting_date``. A date
+    text the parser cannot read ("JULAI 2026") is NO date: nothing is copied, so the box must show
+    (F3 review fix 1)."""
+    from .pathway_engine import offer_reporting_date
+    return offer_reporting_date(application) is not None
+
+
+def letter_dates_the_case(application) -> bool:
+    """The letter's date is the case's date: the letter's date parses AND a date is recorded. Only
+    then is the box hidden. A readable letter whose copy has not landed yet (no recorded date)
+    still shows the box, so a case can never be left with no date and no way to type one."""
+    return recorded_date(application) is not None and letter_has_date(application)
+
+
+def shows_box(application) -> bool:
+    """THE server answer to "does the reporting-date box show?", served to the cockpit as
+    ``shows_reporting_date_box`` (`serializers_admin/detail_blocks`)."""
+    return box_shows(application.status, getattr(application, 'decision_reopened_at', None),
+                     letter_dates_the_case(application))
 
 
 def recommend_needs_date(application) -> bool:
     """Recording a Recommend (``overall == 'accept'``) is refused while the box shows and no date is
     recorded (``reporting_date_required_before_recommend``). Decline never asks. The web's "Still to
-    do" line is the same condition."""
+    do" line is the same condition.
+
+    With no recorded date the letter never hides the box (`letter_dates_the_case`), so inside the
+    box's window (interviewing, or a reopened case) this refuses exactly when QC accept's absolute
+    stop (`views_admin/qc_checks._accept_absolute_stop`, ``reporting_date_required``) would: both
+    read ``recorded_date``. Pinned by ``test_f3_assessment.RecommendAndQcAgreeTest``."""
     if recorded_date(application) is not None:
         return False
-    return box_shows(application.status, getattr(application, 'decision_reopened_at', None),
-                     letter_has_date(application))
+    return shows_box(application)
