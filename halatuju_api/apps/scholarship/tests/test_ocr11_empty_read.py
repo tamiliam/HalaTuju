@@ -260,6 +260,57 @@ class TheWhiteCheckGuards(SimpleTestCase):
             self.assertTrue(im.mode == 'I' or im.mode.startswith('I;'), im.mode)
         self.assertFalse(approval_page_white(page))
 
+    def _never_decoded(self, data):
+        """``approval_page_white(data)`` with every decode patched out: False, and nothing was decoded."""
+        from PIL import IcoImagePlugin, Image, ImageFile
+        from apps.scholarship.income_declaration import approval_page_white
+        with mock.patch.object(ImageFile.ImageFile, 'load') as load, \
+                mock.patch.object(IcoImagePlugin.IcoImageFile, 'load') as ico_load, \
+                mock.patch.object(Image.Image, 'convert') as convert:
+            self.assertFalse(approval_page_white(data))
+        load.assert_not_called()
+        ico_load.assert_not_called()
+        convert.assert_not_called()
+
+    def test_an_ico_wrapping_a_huge_png_is_not_white_and_is_never_decoded(self):
+        """Review round 3, B1: PIL's ICO opener decodes the whole image inside `open`, before any size
+        check (a 580 kB ICO of a 12000 x 12000 PNG took ~600 MB). ICO is not an allowed format."""
+        import struct
+        from PIL import IcoImagePlugin, Image
+        png = _png_header_only(12000, 12000)
+        ico = struct.pack('<HHH', 0, 1, 1) + struct.pack('<BBBBHHII', 0, 0, 0, 0, 1, 32, len(png), 22) + png
+        self.assertTrue(IcoImagePlugin._accept(ico[:16]))      # PIL's ICO driver would take it ...
+        with Image.open(io.BytesIO(png)) as im:
+            self.assertEqual(im.size, (12000, 12000))           # ... and decode this PNG inside `open`
+        self._never_decoded(ico)
+
+    def test_a_huge_progressive_jpeg_is_not_white_and_is_never_decoded(self):
+        """Review round 3, B2: libjpeg holds a progressive JPEG's full-size buffer whatever the draft scale
+        (a 2 MB 13000 x 13000 one took ~1 GB), so the cap is judged on the HEADER size, before the draft."""
+        from PIL import Image
+        buf = io.BytesIO()
+        Image.new('RGB', (64, 64), 'white').save(buf, format='JPEG', progressive=True)
+        data = bytearray(buf.getvalue())
+        sof = data.index(b'\xff\xc2')                          # SOF2: marker, length, precision, height, width
+        data[sof + 5:sof + 9] = (13000).to_bytes(2, 'big') * 2
+        with Image.open(io.BytesIO(bytes(data))) as im:
+            self.assertEqual((im.size, bool(im.info.get('progressive'))), ((13000, 13000), True))
+        self._never_decoded(bytes(data))
+
+    def test_a_12_mp_phone_photo_is_judged_as_before_baseline_and_progressive(self):
+        from PIL import Image, ImageDraw
+        from apps.scholarship.income_declaration import approval_page_white
+        for progressive in (False, True):
+            for inked in (False, True):
+                with self.subTest(progressive=progressive, inked=inked):
+                    im = Image.new('RGB', (4000, 3000), 'white')
+                    if inked:
+                        ImageDraw.Draw(im).rectangle([400, 400, 3600, 900], fill=(30, 30, 30))
+                    buf = io.BytesIO()
+                    im.save(buf, format='JPEG', quality=85, progressive=progressive)
+                    self.assertLess(len(buf.getvalue()), 2_000_000)
+                    self.assertEqual(approval_page_white(buf.getvalue()), not inked)
+
 
 class NestedValuesAreLookedInside(SimpleTestCase):
 

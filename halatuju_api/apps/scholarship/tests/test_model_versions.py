@@ -86,6 +86,10 @@ _OTHER_MODELS_FILE = (
     "KNOWN GAP. A listed file of ANOTHER registered model (declaration_doc: salary_doc; higher_results: "
     "verdict_engine), so that model's version moves when it changes; this one's does not. The OCR-11 pins "
     "(round 2) hold only the reader that calls the empty-read check, so deleting the call moves the digest.")
+_FIELD_READER = (
+    'KNOWN GAP. The shared AI field read the higher-results reader calls: its closure holds the '
+    'per-doc-type prompts, _FIELD_SCHEMAS and _DOC_HINTS, so a prompt or schema change there can move '
+    "what the empty-read check sees without a bump. The OCR-11 pin holds only the reader's own check.")
 
 #: Per model: dependencies that are logic but are not (yet) in the model's files. A key
 #: `<dependency> via <importer>` excuses it only when that one file or pin imports it.
@@ -101,9 +105,9 @@ _KNOWN_GAPS = {
         'apps/courses/public.py:*': _COURSES,
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
-        f'{_VISION}:_is_pdf': _TRANSPORT,
-        f'{_VISION}:extract_document_fields': _TRANSPORT,
-        'apps/scholarship/pdf_pages.py:pdf_pages_png': _TRANSPORT,
+        f'{_VISION}:_is_pdf via {_APPROVAL_PIN}': _TRANSPORT,
+        f'{_VISION}:extract_document_fields via {_HIGHER_PIN}': _FIELD_READER,
+        f'apps/scholarship/pdf_pages.py:pdf_pages_png via {_APPROVAL_PIN}': _TRANSPORT,
         **{f'{_G}/declaration_doc.py:{n} via {_APPROVAL_PIN}': _OTHER_MODELS_FILE for n in (
             'DECLARATION', 'income_doc_genuineness')},
         f'apps/scholarship/higher_results.py:extract via {_HIGHER_PIN}': _OTHER_MODELS_FILE,

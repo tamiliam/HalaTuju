@@ -18,5 +18,10 @@
     "digest": "9c918861a85bfd101cbf479c46e2d247ac3649acd5e5071bcee288823d58cc54",
     "note": "2026-11-21: OCR-11 review round 2. The white check judges no image over 16 MP (income_declaration.WHITE_CHECK_MAX_PIXELS, read from the header; a JPEG after its reduced-scale draft) and no 16/32-bit or float image (modes I, I;16, F): both are not white, so the approval read goes ahead as before 1.32.0. The pins are now the callers (income_declaration.read_approval, vision/field_extraction._read_higher_results), whose closures hold the checks, so deleting the white check, the one-retry window close or the higher-results empty check moves the digest.",
     "also_ok": []
+  },
+  "1.34.0": {
+    "digest": "e8ed31fadebc86314bc19feda1337daca3d55bf934253a35801f5d076af2b424",
+    "note": "2026-11-21: OCR-11 review round 3. The white check opens only income_declaration.WHITE_CHECK_FORMATS (JPEG, PNG, GIF, BMP, TIFF, WEBP; HEIF only while pillow_heif has registered it): PIL's ICO opener decodes the whole image inside open, before any size check (a 580 kB ICO of a 12000 x 12000 PNG took ~600 MB). An image over 16 MP that is not a baseline JPEG is not white BEFORE the draft: libjpeg holds a progressive JPEG's full-size buffer whatever the scale (a 2 MB 13000 x 13000 one took ~1 GB). The draft also covers MPO. Both are not white, so the approval read goes ahead as before 1.32.0.",
+    "also_ok": []
   }
 }
