@@ -726,6 +726,7 @@
     "needs_new_holder",
     "may_unassign",
     "ready_for_assignment",
+    "ready_on",
     "decision_reopened_at",
     "rejection_category",
     "new_note"
