@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### test: OCR-7 - the install-pin check reads CRLF, any FROM line and extras pins (2026-11-21)
 
-- `_install_pins.py`: reads the lock and Dockerfile the same with LF, CRLF or lone CR; the FROM line matches in any case, with extra spaces, `--platform` flags and an `AS name`, and no matching line is a loud stop (never a silent pass); a pin with extras (`pypdf[extra]==6.21.4`) counts as the pypdf pin. A test for each. The parse-count comment in `test_ocr_visible_paths.py` now says what the code counts (the page's parse plus the form's, when this pypdf reads it non-empty).
+- `_install_pins.py`: reads the lock and Dockerfile the same with LF, CRLF or lone CR; the FROM line matches in any case, with extra spaces, `--platform` flags and an `AS name`, and no matching line is a loud stop (never a silent pass); a pin with extras (`pypdf[extra]==6.21.4`) counts as the pypdf. Raised TD-700 (low, accepted by the lead): work-counted timing tests (`tests/_timing.py` `calls()`) miss a catastrophic regex backtrack inside one `re` call until the 60 s backstop pin. A test for each. The parse-count comment in `test_ocr_visible_paths.py` now says what the code counts (the page's parse plus the form's, when this pypdf reads it non-empty).
 
 ### docs: the OCR-first sprints get one name each, OCR-1 to OCR-17 (2026-11-21)
 
