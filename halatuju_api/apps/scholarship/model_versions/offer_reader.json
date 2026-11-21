@@ -16,7 +16,7 @@
   },
   "2.9.0": {
     "digest": "196cffe3cbf7cad10f278d1fd86c0a8812bb2ef1aab976706b4d962df5ca0f7e",
-    "note": "2026-11-19: OCR-first S1c (TD-688): the UMS rules read (offer_parse 2.2.0) refuses more letters; the page-1 layout child runs only for a UMS-family letter with the lane on. The listed files digest is unchanged (version line and comments only); prompt and schema unchanged.",
+    "note": "2026-11-19: OCR-first S1c (TD-699): the UMS rules read (offer_parse 2.2.0) refuses more letters; the page-1 layout child runs only for a UMS-family letter with the lane on. The listed files digest is unchanged (version line and comments only); prompt and schema unchanged.",
     "also_ok": []
   }
 }

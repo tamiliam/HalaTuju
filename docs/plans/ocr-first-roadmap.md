@@ -139,15 +139,15 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 - **Complexity:** high (it feeds the pathway and eligibility).
 
 ### S1c: fix the S1 review round 3 notes before the UMS lane is switched on (owner option A, 19 Nov) - BUILT 19 Nov, review stopped after round 3 (20 Nov); method changed by the owner (see below)
-- **Why:** S1 ships with the `ua:UMS` lane off (with the lane off, no layout child and no `read_ums` run). Review round 3 left notes that must be fixed first (TD-688 in the CHANGELOG).
-- **Goal:** fix every TD-688 item: a reporting range wrapped across lines ('28 -' / '29 September 2031') locks the last day; missed withdrawal words (DITOLAK, ditarik semula, spaced letters; TERBATAL needs care); 'Nama Program :' / 'Program Baharu :' lines unchecked; the '@' name connector and 'NAME, KG ...' lines; `read_ums` time on 200k hostile characters.
+- **Why:** S1 ships with the `ua:UMS` lane off (with the lane off, no layout child and no `read_ums` run). Review round 3 left notes that must be fixed first (TD-699 in the CHANGELOG).
+- **Goal:** fix every TD-699 item: a reporting range wrapped across lines ('28 -' / '29 September 2031') locks the last day; missed withdrawal words (DITOLAK, ditarik semula, spaced letters; TERBATAL needs care); 'Nama Program :' / 'Program Baharu :' lines unchecked; the '@' name connector and 'NAME, KG ...' lines; `read_ums` time on 200k hostile characters.
 - **Gate:** re-run Gate 1 and the layout tests under pypdf **6.21.4** (the production pin; S1 measured under local 5.9.0).
 - **Build and review:** its own Opus build and an adversarial review (3-round cap).
 - **Version:** `OFFER_READER_VERSION` 2.8.0 → **2.9.0** and `PARSER_VERSION` 2.1.0 → **2.2.0** (minor bumps). S2 and S3 below moved up one (2.10.0, 2.11.0).
-- **Built:** every TD-688 item fixed by refusing more; Gate 1 unchanged under pypdf 5.9.0 and 6.21.4 (see the S1c CHANGELOG entry).
+- **Built:** every TD-699 item fixed by refusing more; Gate 1 unchanged under pypdf 5.9.0 and 6.21.4 (see the S1c CHANGELOG entry).
 - **Switch:** the `ua:UMS` lane is not switched on before S1c ships and the owner says yes.
 
-- **Review (19-20 Nov):** round 1 and round 2 fixed (d834a026f, f7ba9b26a). Round 3 (last) SHIP WITH FIXES: no blocker with the lane off; with the lane on, 2 blockers and 3 MED remain. The cause: a list of "withdrawn" words can never be complete. The stop rule applied, and the owner changed the method (below).
+- **Review (19-20 Nov):** round 1 and round 2 fixed (da9b2ed82, b10398935). Round 3 (last) SHIP WITH FIXES: no blocker with the lane off; with the lane on, 2 blockers and 3 MED remain. The cause: a list of "withdrawn" words can never be complete. The stop rule applied, and the owner changed the method (below).
 
 ### Owner method change (20 Nov): the owner's exact words decide genuineness
 - **Owner decision (20 Nov):** for every document lane still pending, use the method already used for SPM, NRIC and EPF. The owner looks at **5 sample documents per issuer** (including suspicious ones, if any) and gives the exact words a genuine document must show, plus any words that mean it is not genuine or not valid.

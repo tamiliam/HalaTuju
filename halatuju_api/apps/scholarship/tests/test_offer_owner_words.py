@@ -138,7 +138,7 @@ class TestConditionalTerbatal(SimpleTestCase):
         self.assertEqual(letter_refusal(ums() + 'Tawaran ini telah terbatal dengan sendirinya.\n'), 'not_an_offer')
 
     def test_hostile_text_is_fast(self):
-        """Round 3 MED 5: 200,000 characters of conditional phrases and cancel words finish in under 5 s."""
+        """Round 3 MED 5: 200,000 characters of conditional phrases and cancel words cost work in proportion to size (linear, not quadratic)."""
         assert_linear(self, lambda t: (_cancel_said(t), letter_refusal(t)),
                       lambda n: ('akan terbatal sekiranya ' * (n // 24 + 1))[:n], 100_000, 'cancel words')
 

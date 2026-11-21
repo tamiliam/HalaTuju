@@ -319,7 +319,7 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # 2.1.0 (OCR-first S1, 2026-11-19) — a fourth family, the UMS university offer
 # (`offer_parse_university`), read from page 1's LAYOUT text on a digital PDF; its lock carries
 # ``rules_lane`` 'ua:UMS'. The three government families read exactly as before.
-# 2.2.0 (OCR-first S1c, 2026-11-19) — the UMS read refuses more (TD-688): a reporting range wrapped
+# 2.2.0 (OCR-first S1c, 2026-11-19) — the UMS read refuses more (TD-699): a reporting range wrapped
 # across lines, more withdrawal words (spaced letters too), any programme label line, an '@' or
 # "NAME, KG ..." line under the name, and text longer than a page 1. Government families unchanged.
 PARSER_VERSION = '2.2.0'

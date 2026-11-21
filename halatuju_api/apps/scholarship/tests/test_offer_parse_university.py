@@ -508,7 +508,7 @@ class TestReviewRoundThree(SimpleTestCase):
 
 
 class TestS1c(SimpleTestCase):
-    """S1c (TD-688, 2026-11-19): the review's medium and low findings. Synthetic letters only."""
+    """S1c (TD-699, 2026-11-19): the review's medium and low findings. Synthetic letters only."""
 
     def test_a_range_wrapped_across_lines_reads_no_date(self):
         """MED-1: the last day of a wrapped range must never lock (the venue line between label and value

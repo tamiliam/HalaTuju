@@ -102,7 +102,7 @@ is the page-1 image, as for a scanned PDF. Drawn text is shown as before. Prompt
 the lane switch (env `OCR_FIRST_LANES`) is off, or the catalogue match is not unique. Prompt and
 schema unchanged.
 
-2.9.0 - OCR-FIRST S1c (2026-11-19). The UMS rules read refuses more (TD-688), so more UMS letters may
+2.9.0 - OCR-FIRST S1c (2026-11-19). The UMS rules read refuses more (TD-699), so more UMS letters may
 reach this reader: a reporting range wrapped across lines, more withdrawal words, any programme label
 line, an '@' or "NAME, KG ..." line under the name, text longer than a page 1. Prompt and schema
 unchanged; the lane stays off by default.
