@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getQuizQuestions, submitQuiz, type QuizQuestion, type QuizAnswer } from '@/lib/api'
@@ -36,6 +36,21 @@ export default function QuizPage() {
   const { t, locale } = useT()
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [currentStep, setCurrentStep] = useState(0)
+  // TD-708: the one pending auto-advance. Next, Previous and the dots cancel it; it moves on from the
+  // step the answer was given on, so an answer then Next is one step, not two.
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  function cancelAdvance() {
+    if (advanceTimer.current !== null) { clearTimeout(advanceTimer.current); advanceTimer.current = null }
+  }
+  function goToStep(step: number) { cancelAdvance(); setCurrentStep(step) }
+  function advanceFrom(answeredStep: number, delay: number) {
+    cancelAdvance()
+    advanceTimer.current = setTimeout(() => {
+      advanceTimer.current = null
+      setCurrentStep(Math.min(answeredStep + 1, visibleQuestions.length - 1))
+    }, delay)
+  }
+  useEffect(() => cancelAdvance, [])
   const [answers, setAnswers] = useState<(number | number[] | null)[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -117,7 +132,7 @@ export default function QuizPage() {
         updated[origIdx] = [optIdx]
         setAnswers(updated)
         // Auto-advance after brief pause (exclusive selection = done)
-        setTimeout(() => setCurrentStep(prev => Math.min(prev + 1, visibleQuestions.length - 1)), 400)
+        advanceFrom(currentStep, 400)
         return
       }
 
@@ -138,7 +153,7 @@ export default function QuizPage() {
           setAnswers(updated)
           // Auto-advance after reaching max selections
           if (newSel.length >= maxSel) {
-            setTimeout(() => setCurrentStep(prev => Math.min(prev + 1, visibleQuestions.length - 1)), 400)
+            advanceFrom(currentStep, 400)
           }
         }
       }
@@ -148,7 +163,7 @@ export default function QuizPage() {
       setAnswers(updated)
       // Auto-advance after 300ms
       if (currentStep < visibleQuestions.length - 1) {
-        setTimeout(() => setCurrentStep(prev => prev + 1), 300)
+        advanceFrom(currentStep, 300)
       }
     }
   }
@@ -295,7 +310,7 @@ export default function QuizPage() {
             return (
               <button
                 key={q.id}
-                onClick={() => setCurrentStep(i)}
+                onClick={() => goToStep(i)}
                 className={`w-2.5 h-2.5 rounded-full transition-all ${
                   i === currentStep
                     ? 'bg-info-500 scale-125'
@@ -385,7 +400,7 @@ export default function QuizPage() {
         {/* Navigation — Previous + Submit; on a phone also Next (desktop: the dots, and auto-advance) */}
         <div className="flex items-center justify-between mt-4">
           <button
-            onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+            onClick={() => goToStep(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
             className="-ml-2 inline-flex min-h-11 items-center px-2 md:ml-0 md:min-h-0 md:px-0 text-ground-400 hover:text-ground-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
           >
@@ -407,7 +422,7 @@ export default function QuizPage() {
             <>
               {/* Phones (owner, 2026-11-02): no dot row, so Next moves on — once this question has an answer. */}
               <button
-                onClick={() => setCurrentStep(currentStep + 1)}
+                onClick={() => goToStep(currentStep + 1)}
                 disabled={!currentAnswered}
                 className="btn-primary min-h-11 md:hidden disabled:opacity-40"
                 data-testid="quiz-next"

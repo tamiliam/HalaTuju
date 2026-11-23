@@ -16,6 +16,11 @@ Not pushed. Migration: none. Services: web. No behaviour or text change; no key 
 Test only. Migration: none. Services: web (build gate). No behaviour change.
 - The cockpit console guard's `afterEach` awaits `settleCockpit()` (`src/test/renderCockpit.tsx`): late async updates (notes card fetch, lazy parts) finish inside `act` before the console check. Cause of the 22 Nov and 23 Nov 16:00 web build failures in `view.failReasons.test.tsx`, whose `loaded()` helper now also settles before the first click.
 
+### Quiz fixes (TD-705, TD-708, TD-709) (2026-11-23)
+
+Branch quiz-fixes, not pushed. Migration: none.
+- TD-708: on a phone, answering then tapping Next no longer skips a question (main and STPM quiz); one pending auto-advance, cancelled by Next, Previous and the dots.
+
 ### Web first-load JS back under budget - case page and median (2026-11-23)
 
 Not pushed. Migration: none. Services: web. No behaviour change; one new error line (below); no budget or ledger number touched.

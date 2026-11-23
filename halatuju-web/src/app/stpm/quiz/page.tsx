@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -81,6 +81,21 @@ export default function StpmQuizPage() {
   const [apiSubjects, setApiSubjects] = useState<string[]>([])
   const [apiGrades, setApiGrades] = useState<Record<string, string>>({})
   const [currentStep, setCurrentStep] = useState(0)
+  // TD-708: the one pending auto-advance. Next, Previous and the dots cancel it; it moves on from the
+  // step the answer was given on, so an answer then Next is one step, not two.
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelAdvance = useCallback(() => {
+    if (advanceTimer.current !== null) { clearTimeout(advanceTimer.current); advanceTimer.current = null }
+  }, [])
+  function goToStep(step: number) { cancelAdvance(); setCurrentStep(step) }
+  const advanceTo = useCallback((step: number, delay: number) => {
+    cancelAdvance()
+    advanceTimer.current = setTimeout(() => {
+      advanceTimer.current = null
+      setCurrentStep(step)
+    }, delay)
+  }, [cancelAdvance])
+  useEffect(() => cancelAdvance, [cancelAdvance])
   const [answers, setAnswers] = useState<(number | null)[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -169,13 +184,13 @@ export default function StpmQuizPage() {
       setQ2Resolved(true)
 
       // Auto-advance to Q3
-      setTimeout(() => setCurrentStep(2), 300)
+      advanceTo(2, 300)
     } catch {
       // If resolve fails, continue with remaining questions (skip Q3/Q4)
       setQ2Resolved(true)
-      setTimeout(() => setCurrentStep(2), 300)
+      advanceTo(2, 300)
     }
-  }, [q2Resolved, allQuestions, branch, apiGrades, locale, answers])
+  }, [q2Resolved, allQuestions, branch, apiGrades, locale, answers, advanceTo])
 
   const question = currentStep < allQuestions.length ? allQuestions[currentStep] : null
   const currentAnswer = currentStep < answers.length ? answers[currentStep] : null
@@ -196,7 +211,7 @@ export default function StpmQuizPage() {
 
     // Auto-advance after 300ms
     if (currentStep < allQuestions.length - 1) {
-      setTimeout(() => setCurrentStep(prev => prev + 1), 300)
+      advanceTo(currentStep + 1, 300)
     }
   }
 
@@ -318,7 +333,7 @@ export default function StpmQuizPage() {
                 key={q.id}
                 onClick={() => {
                   // Only allow navigating to answered questions or the current one
-                  if (i <= currentStep || hasAnswer) setCurrentStep(i)
+                  if (i <= currentStep || hasAnswer) goToStep(i)
                 }}
                 className={`w-2.5 h-2.5 rounded-full transition-all ${
                   i === currentStep
@@ -377,7 +392,7 @@ export default function StpmQuizPage() {
         {/* Navigation */}
         <div className="flex items-center justify-between mt-4">
           <button
-            onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+            onClick={() => goToStep(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
             className="-ml-2 inline-flex min-h-11 items-center px-2 md:ml-0 md:min-h-0 md:px-0 text-ground-400 hover:text-ground-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
           >
@@ -396,7 +411,7 @@ export default function StpmQuizPage() {
             <>
               {/* Phones (owner, 2026-11-02): no dot row, so Next moves on — once this question has an answer. */}
               <button
-                onClick={() => setCurrentStep(currentStep + 1)}
+                onClick={() => goToStep(currentStep + 1)}
                 disabled={!currentAnswered}
                 className="btn-primary min-h-11 md:hidden disabled:opacity-40"
                 data-testid="quiz-next"
