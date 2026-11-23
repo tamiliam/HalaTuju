@@ -114,11 +114,19 @@ def _bc_link(bc_child_name: str, bc_parent_name: str,
 
 
 def mother_relationship(bc_child_name: str, bc_mother_name: str,
-                        student_name: str, earner_ic_name: str) -> str:
-    """The Birth Certificate ties the earner (mother) to the student: its child
-    must be the student AND its mother must be the earner IC. Either side disjoint
-    → mismatch; both agree → match; not enough read yet → pending."""
-    return _bc_link(bc_child_name, bc_mother_name, student_name, earner_ic_name)
+                        student_name: str, earner_ic_name: str, nums=None) -> str:
+    """The Birth Certificate ties the earner (mother) to the student: its CHILD row (name + IC
+    number vs the student) and its MOTHER row (name + IC number vs the mother's own IC), scored by
+    the one row score in `match_bands` (request #78) — the same scoring the case-page chips read.
+    GREEN → 'match'; RED → 'mismatch'; anything else → 'pending' (the officer looks). ``nums``
+    (`link_numbers`) carries the IC numbers and the student's typed name; without it a row is
+    scored on its name alone, which is never green (#23)."""
+    from .match_bands import link_status, mother_link
+    n = nums or {}
+    rows = mother_link(bc_child_name, n.get('child', ''), bc_mother_name, n.get('mother', ''),
+                       (student_name, n.get('student_name', '')), n.get('student', ''),
+                       earner_ic_name, n.get('ic', ''))
+    return link_status(rows['link'])
 
 
 def father_via_bc(bc_child_name: str, bc_father_name: str,
@@ -145,22 +153,17 @@ def father_link(student_name: str, earner_ic_name: str,
 
 
 def guardian_relationship(letter_name: str, earner_ic_name: str,
-                          ward_name: str = '', student_name: str = '') -> str:
-    """Soft name check between a guardianship letter and the earner IC. The hard
-    requirement is the letter's PRESENCE (handled by income_requirements); a name
-    that disagrees is a flag, agreement a bonus, missing text → pending.
-
-    Review F1 (TD-089): the letter must also be about THIS student, as a birth certificate's
-    child must (`_bc_link`). A ward that was READ and does not tolerant-match the student →
-    mismatch; an unread ward changes nothing. The cockpit's `ward_status` reads the same pair."""
-    if (ward_name or '').strip() and (student_name or '').strip() \
-            and name_match(ward_name, student_name) == 'mismatch':
-        return 'mismatch'
-    if not (letter_name or '').strip():
-        return 'pending'
-    if not (earner_ic_name or '').strip():
-        return 'pending'
-    return 'mismatch' if name_match(letter_name, earner_ic_name) == 'mismatch' else 'match'
+                          ward_name: str = '', student_name: str = '', nums=None) -> str:
+    """The guardianship letter ties the earner (guardian) to the student: its WARD row (the name
+    vs the student — a letter reads no ward number) and its GUARDIAN row (name + IC number vs the
+    guardian's own IC), scored by `match_bands` exactly as the chips are (request #78; review F1:
+    the letter must be about THIS student). 'match' | 'mismatch' | 'pending'."""
+    from .match_bands import guardian_link_rows, link_status
+    n = nums or {}
+    rows = guardian_link_rows(letter_name, n.get('guardian', ''), ward_name,
+                              (student_name, n.get('student_name', '')),
+                              earner_ic_name, n.get('ic', ''))
+    return link_status(rows['link'])
 
 
 def letter_names(g) -> tuple:
@@ -179,10 +182,29 @@ def letter_names(g) -> tuple:
     return guardian, (f.get('ward_name', '') or '').strip()
 
 
-def guardian_link(g, earner_ic_name: str, student_name: str) -> str:
+def letter_nric(g) -> str:
+    """The guardian's IC number read off a guardianship letter ('' for None or unread)."""
+    vf = (getattr(g, 'vision_fields', None) if g is not None else None) or {}
+    f = vf.get('fields', {}) if isinstance(vf, dict) else {}
+    return ((f.get('guardian_nric', '') if isinstance(f, dict) else '') or '').strip()
+
+
+def link_numbers(application, bc_fields=None, letter=None, ic_nric='') -> dict:
+    """The IC numbers (and the student's typed name) a mother / guardian link is scored on
+    (request #78). ``bc_fields`` / ``letter`` are the caller's USABLE reading — a wrong-type
+    document's numbers must not score a row any more than its names may (#27)."""
+    profile = getattr(application, 'profile', None)
+    bcf = bc_fields if isinstance(bc_fields, dict) else {}
+    return {'student': getattr(profile, 'nric', '') or '',
+            'student_name': getattr(profile, 'name', '') or '',
+            'child': bcf.get('bc_child_nric', '') or '', 'mother': bcf.get('bc_mother_nric', '') or '',
+            'guardian': letter_nric(letter), 'ic': ic_nric or ''}
+
+
+def guardian_link(g, earner_ic_name: str, student_name: str, nums=None) -> str:
     """``guardian_relationship`` read straight off the letter document ``g`` (None → pending)."""
     guardian, ward = letter_names(g)
-    return guardian_relationship(guardian, earner_ic_name, ward, student_name)
+    return guardian_relationship(guardian, earner_ic_name, ward, student_name, nums)
 
 
 _RELATIONSHIP_DOC = {'mother': 'birth_certificate', 'guardian': 'guardianship_letter'}
@@ -270,19 +292,21 @@ def effective_working_members(application, any_route: bool = False) -> list:
 def member_relationship_status(member: str, student_name: str, member_ic_name: str,
                                bc_child_name: str = '', bc_mother_name: str = '',
                                letter_name: str = '', bc_father_name: str = '',
-                               letter_ward_name: str = '') -> str:
+                               letter_ward_name: str = '', nums=None) -> str:
     """The relationship verdict for one working member — routes to the right check.
     father → patronymic, with a Birth-Certificate fallback for a mononym student (#55);
     brother/sister → father_relationship (shared patronymic only); mother → birth cert;
-    guardian → guardianship letter. 'match' | 'mismatch' | 'unknown' | 'pending'."""
+    guardian → guardianship letter. 'match' | 'mismatch' | 'unknown' | 'pending'. ``nums``
+    (`link_numbers`) feeds the mother / guardian row scores (request #78)."""
     if member == 'father':
         return father_link(student_name, member_ic_name, bc_child_name, bc_father_name)
     if member in _PATRONYMIC_MEMBERS:            # brother / sister — patronymic only
         return father_relationship(student_name, member_ic_name)
     if member == 'mother':
-        return mother_relationship(bc_child_name, bc_mother_name, student_name, member_ic_name)
+        return mother_relationship(bc_child_name, bc_mother_name, student_name, member_ic_name, nums)
     if member == 'guardian':
-        return guardian_relationship(letter_name, member_ic_name, letter_ward_name, student_name)
+        return guardian_relationship(letter_name, member_ic_name, letter_ward_name, student_name,
+                                     nums)
     return 'unknown'
 
 
@@ -290,7 +314,15 @@ def _relationship_inputs(application, member, member_ic_name):
     """Pull the relationship-proof inputs for one member from the application's documents
     (birth cert for a mother — also the FATHER fields for the #55 mononym father fallback;
     guardianship letter for a guardian — its guardian AND its ward, review F1)."""
+    return relationship_inputs_and_numbers(application, member, member_ic_name)[:5]
+
+
+def relationship_inputs_and_numbers(application, member, member_ic_name, ic_nric=''):
+    """`_relationship_inputs` plus the `link_numbers` its mother / guardian rows are scored on
+    (request #78), off the SAME documents read once:
+    ``(bc_child, bc_mother, bc_father, letter_name, letter_ward, nums)``."""
     bc_child = bc_mother = bc_father = letter_name = letter_ward = ''
+    f, letter = {}, None
     if member in ('mother', 'father', 'brother', 'sister'):
         bc = latest_doc(application, 'birth_certificate')
         vf = (getattr(bc, 'vision_fields', None) if bc else None) or {}
@@ -301,5 +333,7 @@ def _relationship_inputs(application, member, member_ic_name):
             bc_father = f.get('bc_father_name', '')
     elif member == 'guardian':
         # TD-089 / review F1: the letter's guardian AND ward, through the one reading.
-        letter_name, letter_ward = letter_names(latest_doc(application, 'guardianship_letter'))
-    return bc_child, bc_mother, bc_father, letter_name, letter_ward
+        letter = latest_doc(application, 'guardianship_letter')
+        letter_name, letter_ward = letter_names(letter)
+    nums = link_numbers(application, f, letter, ic_nric)
+    return bc_child, bc_mother, bc_father, letter_name, letter_ward, nums

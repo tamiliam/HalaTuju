@@ -8,5 +8,10 @@
     "digest": "50f89ba648c788646c099e11e0477b48ac76de819bd30962ca612ce700726a9f",
     "note": "Main's own bump (IPTS offers, 10e1b432f, owner 2026-11-18): an offer from a private college / university or a public university's private wing turns Pathway red (pathway_offer_private). Logged 2026-11-19 when the register was brought up to main 0dea7e809 before its first merge: offer_private.py joins the files. The genuineness names it reads (PRIVATE_ARM_OPENING, PRIVATE_COLLEGE_OPENING, PRIVATE_OFFER_TAG and _UA_SHORT from genuineness/offer_issuers.py) are NOT pinned: they are a recorded known gap (offer_issuers.py:* in _VERDICT_SECOND_LEVEL), so a change to an IPTS opening moves the results_doc version but not the verdict engine version.",
     "also_ok": []
+  },
+  "2026-11-23.1": {
+    "digest": "4caef86d666a35679b2c1fc90fd76e74920291fb3053ec6483077565ed782cb0",
+    "note": "Request #78 step 1 (owner rulings 23 Nov 2026): the mother / guardian link is scored on name + IC number by one row score (income_engine/match_bands.py), read by the case-page chips and by every decision reader (student_income_ic_check, STR precedence, the STR route, the salary route). Only a red row blocks; with no number on the document the name decides, as before; the ward row is the name alone.",
+    "also_ok": []
   }
 }

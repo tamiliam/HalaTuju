@@ -14,7 +14,8 @@ from ..document_snapshot import latest_doc, live_docs
 from ..read_errors import ic_second_opinion_deferred
 from ..vision import nric_close, relationship_name_match as name_match
 from .buckets import _name_bucket, _nric_bucket
-from .relationships import _relationship_inputs, member_relationship_status, student_name_for_link
+from .relationships import (member_relationship_status, relationship_inputs_and_numbers,
+                            student_name_for_link)
 from .salary_figures import _doc_fields
 
 
@@ -128,11 +129,11 @@ def student_income_ic_check(doc):
         # IC-aware (#88): a typed profile name without the A/P connector must not lose the
         # patronymic link when the student's own verified IC carries it.
         student_name = student_name_for_link(app)
-        bc_child, bc_mother, bc_father, letter_name, letter_ward = _relationship_inputs(
-            app, member, name)
+        bc_child, bc_mother, bc_father, letter_name, letter_ward, nums = \
+            relationship_inputs_and_numbers(app, member, name, nric)   # #78: name + IC number
         name_status = member_relationship_status(member, student_name, name,
                                                  bc_child, bc_mother, letter_name, bc_father,
-                                                 letter_ward)
+                                                 letter_ward, nums)
 
     # Cross-check against the cluster's income proof (STR / salary slip) — the reason the
     # earner IC is uploaded. Green when the IC's name + number match the proof's recipient.

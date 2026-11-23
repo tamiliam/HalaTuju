@@ -5,11 +5,17 @@ reference: the certificate's child against the student, its mother against the m
 a letter's guardian against the guardian's IC, a letter's ward against the student. Each row is
 scored on its NAME and its IC NUMBER, by slips counted (never percentages), into one band:
 
-    GREEN  both exact; or one exact and the other close
+    GREEN  both exact; or one exact and the other close; or NO NUMBER and an exact or close name
     BLUE   both close; or exact number + far name (a name change, a bad read)
-    AMBER  close + far; exact name + far number; one value missing, the other exact or close
+    AMBER  close + far; exact name + far number; NO NAME and an exact or close number
     RED    both far, or one far and the other missing
     GREY   nothing read
+
+⚠ OWNER RULING, 23 Nov 2026 (later the same evening): NO NUMBER ON THE DOCUMENT = THE NAME ALONE,
+AS TODAY. When the document or the reference IC gives no IC number for a row, the NAME decides it
+(exact / close → GREEN, far → RED), exactly as the name-only decision did before #78. "One value
+missing = AMBER" applies only when the NAME is missing and the number is present. The ward row on a
+guardianship letter is always judged on the name alone (letters never print the ward's number).
 
 Two rows make the relationship link (``link_band``): only RED asks the student to act, GREEN
 confirms the link, and everything between goes to the reviewer. The case-page chips
@@ -107,8 +113,8 @@ _BAND = {
     (EXACT, EXACT): GREEN, (EXACT, CLOSE): GREEN, (CLOSE, EXACT): GREEN,
     (CLOSE, CLOSE): BLUE, (FAR, EXACT): BLUE,
     (CLOSE, FAR): AMBER, (FAR, CLOSE): AMBER, (EXACT, FAR): AMBER,
-    (EXACT, MISSING): AMBER, (CLOSE, MISSING): AMBER,
-    (MISSING, EXACT): AMBER, (MISSING, CLOSE): AMBER,
+    (EXACT, MISSING): GREEN, (CLOSE, MISSING): GREEN,      # no number: the name decides (ruling)
+    (MISSING, EXACT): AMBER, (MISSING, CLOSE): AMBER,      # no name: a number alone is not green
     (FAR, FAR): RED, (FAR, MISSING): RED, (MISSING, FAR): RED,
     (MISSING, MISSING): GREY,
 }
@@ -131,20 +137,13 @@ def score_row(name, nric, ref_names, ref_nric, *, waiting=False) -> dict:
 
 
 def score_name_only_row(name, ref_names) -> dict:
-    """A row whose document never carries a number (a guardianship letter's WARD: the letter
-    reads no ward IC). Scored on the name alone, as it is today: exact or today's tolerant match →
-    GREEN; the owner's new close slips only → AMBER; far → RED; blank → GREY. Not the two-value
-    table, which would make every letter AMBER for a number no letter is asked to carry."""
+    """A row whose document never carries a number (a guardianship letter's WARD: letters never
+    print the ward's number). Owner ruling 23 Nov 2026: judged on the name alone, always —
+    exact or close → GREEN, far → RED, blank → GREY (the no-number column of the row table)."""
     if isinstance(ref_names, str):
         ref_names = (ref_names,)
     n = best_name_level(name, ref_names)
-    if n == CLOSE:
-        legacy = any((r or '').strip() and relationship_name_match(name, r) != 'mismatch'
-                     for r in ref_names)
-        band = GREEN if legacy else AMBER
-    else:
-        band = {EXACT: GREEN, FAR: RED, MISSING: GREY}[n]
-    return {'name': n, 'number': MISSING, 'band': band, 'waiting': False}
+    return {'name': n, 'number': MISSING, 'band': row_band(n, MISSING), 'waiting': False}
 
 
 def link_band(child: dict, parent: dict) -> str:
@@ -190,7 +189,7 @@ def chip_status(row: dict) -> str:
         return 'check'                 # the name holds; check the number
     if n == CLOSE and k == CLOSE:
         return 'check_near'            # one slip in each: likely a scan misread
-    return 'check_one'                 # one cell held, or neither cleanly: a person reads it
+    return 'check_one'                 # the number held with no name, or neither cleanly
 
 
 def mother_link(child_name, child_nric, mother_name, mother_nric,
@@ -204,8 +203,14 @@ def mother_link(child_name, child_nric, mother_name, mother_nric,
 
 def guardian_link_rows(guardian_name, guardian_nric, ward_name,
                        student_names, ic_name, ic_nric) -> dict:
-    """A guardianship letter's ward + guardian rows and the link they make."""
+    """A guardianship letter's ward + guardian rows and the link they make. The ward row is the
+    name alone, as today (owner ruling 23 Nov 2026), so an UNREAD ward has no say, as before
+    (review F1): the link is then the guardian row's own band (BLUE shown as AMBER)."""
     ward = score_name_only_row(ward_name, student_names)
     waiting = not ((ic_name or '').strip() or (ic_nric or '').strip())
     parent = score_row(guardian_name, guardian_nric, (ic_name,), ic_nric, waiting=waiting)
-    return {'child': ward, 'parent': parent, 'link': link_band(ward, parent)}
+    if ward['band'] == GREY:
+        link = AMBER if parent['band'] == BLUE else parent['band']
+    else:
+        link = link_band(ward, parent)
+    return {'child': ward, 'parent': parent, 'link': link}

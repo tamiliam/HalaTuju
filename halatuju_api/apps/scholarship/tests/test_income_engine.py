@@ -1725,11 +1725,13 @@ class TestFilledChildNricCanOnlyHelp(SimpleTestCase):
             self._child_status(child='THAVAMALAR A/P VIJAYAN', child_nric='060202-05-1234'),
             'mismatch')
 
-    def test_a_name_with_no_number_is_amber_not_green(self):
-        # ⚠ This assertion was 'match' when step 1 shipped and CHANGED with step 3, on purpose:
-        # a matching name with nothing to corroborate it is half a check, so the row says half.
-        # It still does not block — only a red does.
-        self.assertEqual(self._child_status(child=_STUDENT, child_nric=''), 'check_one')
+    def test_a_name_with_no_number_is_decided_by_the_name(self):
+        # ⚠ This assertion was 'match' when step 1 shipped, 'check_one' from step 3 (#23), and is
+        # 'match' again by the owner's #78 ruling (23 Nov 2026): NO NUMBER ON THE DOCUMENT = THE
+        # NAME ALONE. A far name with no number is still red.
+        self.assertEqual(self._child_status(child=_STUDENT, child_nric=''), 'match')
+        self.assertEqual(
+            self._child_status(child='THAVAMALAR A/P VIJAYAN', child_nric=''), 'mismatch')
 
 
 from apps.scholarship.income_engine import _combine_relationship  # noqa: E402 — import kept beside the tests that use it

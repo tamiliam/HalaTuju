@@ -107,7 +107,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-15.11 — merge train (2026-11-17): help H3's .9 renumbered to sit above help H2's .10, which merges first; no rule change ('.11' sorts after '.10' as text).
 #   2026-11-18.1 — #804 offer course proof (owner 2026-11-18): a letter whose ONE catalogue course the linker writes (plan_offer_link: one campus, its own level, a genuine letter for an empty pick) asks nothing of a student with no pick of her own (the one-tap confirm is gone for it; pre-U and unique-bidang PISMP keep theirs); a tertiary student's named degrees count as declared and her old pre-U school never raises "is this where you're going?"; a letter matching no one course asks her to pick her course; the matcher reads a bracketed option list as options; the no-offer line names her degree(s).
 #   2026-11-18.2 — IPTS offers (owner 2026-11-18): an offer letter from a private college / university or a public university's private wing turns Pathway red (pathway_offer_private, a confident disqualifier): flag only, reviewers only; it blocks nothing and the amount does not move.
-VERDICT_ENGINE_VERSION = '2026-11-18.2'   # IPTS offers (above); '.2' sorts after '.1' as text in cockpitVerdict.ts.
+#   2026-11-23.1 — request #78 (owner 23 Nov): birth-certificate / guardianship links score each row on name + IC number (`income_engine.match_bands`); only a red row blocks, and with no number on the document the name decides, as before.
+VERDICT_ENGINE_VERSION = '2026-11-23.1'   # #78 match bands (above); sorts after '2026-11-18.2' as text.
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -290,7 +291,7 @@ def _str_precedence_verdict(application, utility=None):
         applied via ``confirmed_members``."""
     from .income_engine import (household_str_status, _member_ic_doc, letter_names,
                                 member_relationship_status, chain_verified_earner,
-                                student_name_for_link)
+                                student_name_for_link, link_numbers)
     grade, member = household_str_status(application)
     if not grade or not member:
         return None
@@ -305,9 +306,11 @@ def _str_precedence_verdict(application, utility=None):
     _, bcf, _ = _usable_relationship_fields(application, 'birth_certificate')
     g_doc, _, g_unusable = _usable_relationship_fields(application, 'guardianship_letter')
     g_name, g_ward = letter_names(None if g_unusable else g_doc)    # TD-089 + review F1
+    nums = link_numbers(application, bcf, None if g_unusable else g_doc,       # #78: name + number
+                        (getattr(ic_doc, 'vision_nric', '') or '').strip() if ic_doc else '')
     rel = member_relationship_status(member, student_name, ic_name, bcf.get('bc_child_name', ''),
                                      bcf.get('bc_mother_name', ''), g_name,
-                                     bcf.get('bc_father_name', ''), g_ward)
+                                     bcf.get('bc_father_name', ''), g_ward, nums)
     if rel != 'match' and member in ('mother', 'father') and chain_verified_earner(application, member):
         rel = 'match'
     if rel != 'match':

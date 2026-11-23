@@ -57,8 +57,8 @@ ROW_TABLE = {
     (EXACT, EXACT): GREEN, (EXACT, CLOSE): GREEN, (CLOSE, EXACT): GREEN,
     (CLOSE, CLOSE): BLUE, (FAR, EXACT): BLUE,
     (CLOSE, FAR): AMBER, (FAR, CLOSE): AMBER, (EXACT, FAR): AMBER,
-    (EXACT, MISSING): AMBER, (CLOSE, MISSING): AMBER, (MISSING, EXACT): AMBER,
-    (MISSING, CLOSE): AMBER,
+    (EXACT, MISSING): GREEN, (CLOSE, MISSING): GREEN,     # ruling: no number → the name decides
+    (MISSING, EXACT): AMBER, (MISSING, CLOSE): AMBER,     # no name: a number alone is not green
     (FAR, FAR): RED, (FAR, MISSING): RED, (MISSING, FAR): RED,
     (MISSING, MISSING): GREY,
 }
@@ -85,11 +85,21 @@ def test_both_far_is_red():
     assert row['band'] == RED and mb.chip_status(row) == 'mismatch'
 
 
-def test_one_value_alone_is_never_green():
-    # BrightPath #23 kept: a row with one value read cannot be green.
-    for name_lvl, num_lvl in itertools.product((EXACT, CLOSE), (MISSING,)):
-        assert mb.row_band(name_lvl, num_lvl) != GREEN
-        assert mb.row_band(num_lvl, name_lvl) != GREEN
+def test_a_number_alone_is_never_green():
+    # BrightPath #23, as the 23 Nov ruling leaves it: a row with a number and NO NAME is amber.
+    for num_lvl in (EXACT, CLOSE):
+        assert mb.row_band(MISSING, num_lvl) == AMBER
+
+
+@pytest.mark.parametrize('name, band', [
+    ('ARUN KUMAR', GREEN), ('KUMAR ARUN', GREEN), ('ARUN KUMR', GREEN),
+    ('BALA SUNDRAM', RED), ('', GREY),
+])
+def test_no_number_means_the_name_alone_decides(name, band):
+    # Owner ruling 23 Nov 2026 (later the same evening): no IC number on the document, or none
+    # on the reference IC, → the name decides the row, as the name-only check did before #78.
+    assert mb.score_row(name, '', ('ARUN KUMAR',), STUDENT_IC)['band'] == band
+    assert mb.score_row(name, STUDENT_IC, ('ARUN KUMAR',), '')['band'] == band
 
 
 # --- the link (Part B) ----------------------------------------------------------------------
@@ -133,7 +143,7 @@ def test_link_status(band, status):
 @pytest.mark.parametrize('cells, chip', [
     ((EXACT, EXACT), 'match'), ((FAR, FAR), 'mismatch'), ((MISSING, MISSING), 'no_ref'),
     ((FAR, EXACT), 'check_name'), ((EXACT, FAR), 'check'), ((CLOSE, FAR), 'check'),
-    ((CLOSE, CLOSE), 'check_near'), ((EXACT, MISSING), 'check_one'),
+    ((CLOSE, CLOSE), 'check_near'), ((EXACT, MISSING), 'match'), ((CLOSE, MISSING), 'match'),
     ((MISSING, EXACT), 'check_one'), ((FAR, CLOSE), 'check_one'),
 ])
 def test_chip_words(cells, chip):
@@ -168,6 +178,30 @@ def test_guardianship_uses_the_same_bands():
 
 
 def test_ward_row_is_scored_on_the_name_alone():
+    # Owner ruling 23 Nov 2026: letters never print the ward's number, so the ward row is the name
+    # alone, always: exact or close → GREEN (the case-177 slip included), far → RED.
     assert mb.score_name_only_row('ARUN KUMAR', 'ARUN KUMAR')['band'] == GREEN
+    assert mb.score_name_only_row('ARUN KUMR', 'ARUN KUMAR')['band'] == GREEN
     assert mb.score_name_only_row('BALA SUNDRAM', 'ARUN KUMAR')['band'] == RED
     assert mb.score_name_only_row('', 'ARUN KUMAR')['band'] == GREY
+
+
+def test_mother_link_with_no_numbers_is_the_name_alone():
+    # Neither the certificate nor the reference IC gave a number: both rows decided by name.
+    rows = mb.mother_link('ARUN KUMAR', '', 'LATHA DEVI', '', ('ARUN KUMAR',), STUDENT_IC,
+                          'LATHA DEVI', MOTHER_IC)
+    assert rows['link'] == GREEN
+    rows = mb.mother_link('ARUN KUMAR', '', 'SITI AMINAH', '', ('ARUN KUMAR',), STUDENT_IC,
+                          'LATHA DEVI', MOTHER_IC)
+    assert rows['link'] == RED
+
+
+def test_an_unread_ward_has_no_say_as_before():
+    # Review F1 as it stood: an unread ward changes nothing; the guardian row decides the link.
+    rows = mb.guardian_link_rows('SITI AMINAH', '', '', ('ARUN KUMAR',), 'SITI AMINAH', '')
+    assert rows['child']['band'] == GREY and rows['link'] == GREEN
+    rows = mb.guardian_link_rows('SITI AMINAH', '990101109999', '', ('ARUN KUMAR',),
+                                 'SITI AMINAH', MOTHER_IC)
+    assert rows['link'] == AMBER                       # exact name + far number, the ward unread
+    rows = mb.guardian_link_rows('BALA SUNDRAM', '', '', ('ARUN KUMAR',), 'SITI AMINAH', '')
+    assert rows['link'] == RED
