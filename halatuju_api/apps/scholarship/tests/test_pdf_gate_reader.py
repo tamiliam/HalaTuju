@@ -4,10 +4,12 @@ searches, so a crafted PDF held a web worker for minutes (100 numbers with no ro
 read and refuses past `MAX_WHOLE_FILE_READS`, and answers a number the file holds no header for at once.
 
 Every PDF here is built in code: one page whose /Contents lists N small content streams, after a padding stream
-that makes each whole-file search cost something.
+that makes each whole-file search cost something. The guard is pinned by the searches it counts, not by time
+(TD-693): a spy counts pypdf's whole-file searches (`get_stream_data`, the helper each search calls).
 """
-import time
+from unittest import mock
 
+import pypdf._reader
 from django.test import SimpleTestCase
 
 from apps.scholarship import pdf_layer_guards, pdf_render_check
@@ -55,10 +57,10 @@ def _pdf(mode: str, n: int, pad: int = PAD) -> bytes:
 
 
 def _gate(data: bytes):
-    """(page count, refusal or None, seconds) of the real gate over the first 30 pages."""
-    t = time.perf_counter()
-    n, why = pdf_render_check.render_refusal(data, lambda k: range(min(k, 30)))
-    return n, why, time.perf_counter() - t
+    """(page count, refusal or None, whole-file searches pypdf made) of the real gate over the first 30 pages."""
+    with mock.patch.object(pypdf._reader, 'get_stream_data', wraps=pypdf._reader.get_stream_data) as search:
+        n, why = pdf_render_check.render_refusal(data, lambda k: range(min(k, 30)))
+    return n, why, search.call_count
 
 
 def _whole_reads(data: bytes) -> int:
@@ -88,20 +90,20 @@ class HostileLookupsAreBounded(SimpleTestCase):
     def test_numbers_the_file_never_defines_cost_one_read_not_one_each(self):
         self.assertEqual(_whole_reads(_pdf('missing', 200)), 1)       # the one header scan
 
-    def test_numbers_the_file_never_defines_are_refused_fast(self):
-        n, why, took = _gate(_pdf('missing', 200))
+    def test_numbers_the_file_never_defines_are_refused_with_no_search(self):
+        _n, why, searches = _gate(_pdf('missing', 200))
         self.assertIsNotNone(why)                                     # a content stream that is not a stream
-        self.assertLess(took, 5)
+        self.assertEqual(searches, 0)                                 # was one whole-file search per number
 
-    def test_rows_of_the_wrong_generation_are_refused_fast(self):
-        n, why, took = _gate(_pdf('gen', 200))
+    def test_rows_of_the_wrong_generation_are_refused_at_the_cap(self):
+        _n, why, searches = _gate(_pdf('gen', 200))
         self.assertIn('whole-file reads past the cap', why or '')     # was ACCEPTED after one search per row
-        self.assertLess(took, 5)
+        self.assertEqual(searches, MAX_WHOLE_FILE_READS + 1)          # the search that crosses the cap, then stop
 
-    def test_rows_on_a_comment_before_the_header_are_refused_fast(self):
-        n, why, took = _gate(_pdf('comment', 200))
+    def test_rows_on_a_comment_before_the_header_are_refused_at_the_cap(self):
+        _n, why, searches = _gate(_pdf('comment', 200))
         self.assertIn('whole-file reads past the cap', why or '')     # was ACCEPTED after one search per row
-        self.assertLess(took, 5)
+        self.assertEqual(searches, MAX_WHOLE_FILE_READS)              # one header scan, then searches to the cap
 
     def test_each_unplaceable_row_is_one_counted_search(self):
         self.assertEqual(_whole_reads(_pdf('gen', 7)), 7)
@@ -114,18 +116,18 @@ class GenuineFilesAreUnchanged(SimpleTestCase):
 
     def test_the_control_is_accepted_with_no_whole_file_read(self):
         data = _pdf('plain', 200)
-        self.assertEqual(_gate(data)[:2], (1, None))
+        self.assertEqual(_gate(data), (1, None, 0))
         self.assertEqual(_whole_reads(data), 0)
 
     def test_a_few_real_repairs_are_accepted_as_before(self):
-        for mode, n in (('shifted', MAX_WHOLE_FILE_READS), ('unlisted', MAX_WHOLE_FILE_READS - 1)):
+        for mode, count in (('shifted', MAX_WHOLE_FILE_READS), ('unlisted', MAX_WHOLE_FILE_READS - 1)):
             with self.subTest(mode=mode):
-                data = _pdf(mode, n)
+                data = _pdf(mode, count)
                 self.assertEqual(_gate(data)[:2], (1, None))
                 self.assertLessEqual(_whole_reads(data), MAX_WHOLE_FILE_READS)
 
     def test_repairs_past_the_cap_are_refused(self):
-        n, why, _took = _gate(_pdf('shifted', MAX_WHOLE_FILE_READS + 1))
+        _n, why, _searches = _gate(_pdf('shifted', MAX_WHOLE_FILE_READS + 1))
         self.assertIn('whole-file reads past the cap', why or '')
 
     def test_an_object_with_no_row_is_still_found_by_pypdf(self):
