@@ -309,6 +309,27 @@ def _offer_blocks(application):
 _INCOME_CLUSTER_DOC_TYPES = ('parent_ic', 'salary_slip', 'epf', 'str')
 
 
+#: Request #78 (2026-11-23): the members whose link to the student is the father's name in the student's
+#: own name (`relationships.father_link` / `father_relationship`); a mother or guardian links through a
+#: birth certificate or guardianship letter.
+_NAME_LINK_MEMBERS = ('father', 'brother', 'sister')
+
+
+def _parent_ic_red_code(chk):
+    """The owed line for a red parent IC, naming the check that failed (request #78). Red on the LINK
+    alone -> `parent_link_mismatch` (birth certificate / guardianship letter) or
+    `parent_name_link_mismatch` (the father's name in the student's own name). Red against the income
+    proof -> `parent_ic_person_mismatch`, as before, and that line ALSO wins when the link fails too:
+    a card that matches neither is most likely the wrong person's card, so the card is the first fix;
+    once it matches the proof, a link still broken is owed in its own words."""
+    from ..doc_red_keys import PARENT_IC_LINK_KEY, red_keys
+    if red_keys('parent_ic', chk) != (PARENT_IC_LINK_KEY,):
+        return 'parent_ic_person_mismatch'
+    if (chk or {}).get('member') in _NAME_LINK_MEMBERS:
+        return 'parent_name_link_mismatch'
+    return 'parent_link_mismatch'
+
+
 def document_red_blockers(application, per_doc=False):
     """Every RED ('Doesn't match' / rejected / stale) per-document check that must
     clear before consent. Reads the SAME stored verification the student sees in the
@@ -372,7 +393,7 @@ def document_red_blockers(application, per_doc=False):
         elif dt == 'parent_ic':
             chk = income_engine.student_income_ic_check(doc)
             if person_red(dt, chk):
-                codes.append((doc, 'parent_ic_person_mismatch'))
+                codes.append((doc, _parent_ic_red_code(chk)))
         elif dt == 'salary_slip':
             # Only a COMPULSORY salary slip (salary route + a SELECTED working member) blocks on a
             # person-mismatch — an optional/extraneous slip must not (see the note above).
