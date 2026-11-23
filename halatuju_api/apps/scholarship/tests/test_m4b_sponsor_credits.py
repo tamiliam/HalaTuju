@@ -349,15 +349,22 @@ class TestBefore0100(_Credits):
 
 
 class TestAReviewerStoringSponsorsEdit(_Credits):
-    """Review SF3 (production: one reviewer's custom list stores `sponsors.edit`). Under the key rule that
-    reviewer records, first-signs and cancels; the owner is asked. Either answer is one line and no code:
-    keep it, or untick Sponsors: edit on that reviewer's card. Pinned so the answer is never a surprise."""
+    """Owner 24 Nov: powers follow the groups a person sits in. Sponsors: edit is an Admins switch, so a
+    reviewer who holds it sits in Admins too (production: one, by O8), and records, first-signs and cancels.
+    To undo it for that person, untick Sponsors: edit on their Admins tab (no code)."""
 
     def test_the_stored_key_decides_not_the_label(self):
         keyed = _exact(make_admin('reviewer', owning_org=self.org), ['sponsors.view', 'sponsors.edit'])
         plain = make_admin('reviewer', owning_org=self.org)
         self.assertEqual((_seats(keyed)['record'], _seats(keyed)['cancel']), (True, True))
         self.assertEqual((_seats(plain)['record'], _seats(plain)['cancel']), (False, False))
+
+    def test_holding_the_switch_is_sitting_in_admins(self):
+        from apps.courses import staff_tables
+        keyed = _exact(make_admin('reviewer', owning_org=self.org), ['review', 'sponsors.view', 'sponsors.edit'])
+        plain = make_admin('reviewer', owning_org=self.org)
+        self.assertEqual((staff_tables.in_admins(keyed), staff_tables.in_reviewers(keyed)), (True, True))
+        self.assertEqual((staff_tables.in_admins(plain), staff_tables.in_reviewers(plain)), (False, True))
 
 
 class TestInactiveRowsHoldNoSeat(_Credits):
