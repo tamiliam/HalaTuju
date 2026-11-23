@@ -17,9 +17,13 @@ has stored `organisation.admin`). Brief: `docs/plans/2026-11-23-m4b-sponsor-cred
   (storing any admin page key IS the Admins seat, `staff_tables.in_admins`). Production has one active person in both
   Reviewers and Admins (row 9, the default admin powers by O8, stored by migration 0097); under Q-A's key rule they gain
   record, first-sign and cancel on day one. To undo it, untick their Sponsors: edit on the Admins tab (no code).
-  Pinned by `TestAPersonInReviewersAndAdmins`. ⚠ Open gap (put to the owner 24 Nov): the stored role `reviewer` / `qc`
-  still seats a person in Reviewers by itself (`staff_tables.REVIEWER_ROLES`), so for Reviewers the label still
-  makes the group.
+  Pinned by `TestAPersonInReviewersAndAdmins`. ⚠ Open gap, fixed in S6: the stored role `reviewer` / `qc` still
+  seats a person in Reviewers by itself (`staff_tables.REVIEWER_ROLES`), so for Reviewers the label still makes the
+  group, and `would_leave_people` refuses unticking both Review and QC.
+- **A person in no group stays a team member (owner 24 Nov, for S6).** Leaving every group takes away every power
+  but not the membership: the person stays on the Team list, with no access, until they are deleted from it. A
+  delete of someone with past records archives them instead (today's delete-or-archive rule). So the
+  `would_leave_people` refusal goes in S6.
 - **Q-B, cancel (owner 23 Nov).** Cancel stays on Sponsors: edit only (`credit_steps.may_cancel`, the `credits_write`
   door); Payments: Approve alone does not cancel.
 - **Q-C, the approver (owner 23 Nov).** The organisation admin approves through Organisation admin powers, and anyone
