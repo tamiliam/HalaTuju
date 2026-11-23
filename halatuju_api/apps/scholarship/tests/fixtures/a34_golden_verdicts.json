@@ -2613,6 +2613,13 @@
      }
     ],
     [
+     "chain_link_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
      "student_str_check",
      {
       "args": [],
@@ -2728,6 +2735,101 @@
     "fact": "income",
     "status": "verified",
     "unresolved": []
+   }
+  },
+  "i18c_mother_chain_child_amber": {
+   "calls": [
+    [
+     "household_str_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "_member_ic_doc",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "mother_relationship",
+     {
+      "args": [
+       "ANBU A/L DEVARAJ",
+       "KAMALA A/P SUPPIAH",
+       "ANBU A/L DEVARAJ",
+       "DEVARAJ A/L MUNUSAMY",
+       {
+        "child": "",
+        "guardian": "",
+        "ic": "",
+        "mother": "",
+        "student": "080808-14-0808",
+        "student_name": "ANBU A/L DEVARAJ"
+       }
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_verified_earner",
+     {
+      "args": [
+       "mother"
+      ],
+      "kwargs": {}
+     }
+    ],
+    [
+     "chain_link_status",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ],
+    [
+     "student_str_check",
+     {
+      "args": [],
+      "kwargs": {}
+     }
+    ]
+   ],
+   "fact": {
+    "evidence": [
+     {
+      "code": "utility_percapita_b40",
+      "params": {
+       "amount": 123
+      }
+     },
+     {
+      "code": "utility_hardship",
+      "params": {}
+     },
+     {
+      "code": "earner_ic_present",
+      "params": {
+       "name": "DEVARAJ A/L MUNUSAMY"
+      }
+     },
+     {
+      "code": "str_verified",
+      "params": {}
+     }
+    ],
+    "fact": "income",
+    "status": "recommend",
+    "unresolved": [
+     {
+      "code": "income_unverified_needs_interview",
+      "params": {}
+     }
+    ]
    }
   },
   "i19_mother_no_bc": {

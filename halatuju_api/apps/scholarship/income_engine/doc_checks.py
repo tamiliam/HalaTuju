@@ -8,7 +8,7 @@ from __future__ import annotations
 from ..read_errors import ic_second_opinion_deferred
 from .buckets import _name_bucket
 from .identity_checks import _member_ic_doc, chain_verified_earner
-from .match_bands import GREEN, GREY, RED, chip_status, guardian_link_rows, mother_link
+from .match_bands import GREY, RED, chained_link, chip_status, guardian_link_rows, mother_link
 from .relationships import _newly_derived, father_name_from_ic, student_name_for_link
 from .salary_figures import _doc_fields
 
@@ -60,18 +60,21 @@ def student_bc_check(doc):
     mother_name = (f.get('bc_mother_name', '') or '').strip()
     mother_nric = (f.get('bc_mother_nric', '') or '').strip()
     mic = _member_ic_doc(app, 'mother')
-    # Request #78: ONE scoring for the chips and the decision (`match_bands`), never two.
+    # Request #78: ONE scoring for the chips and the decision (`match_bands`), never two. The
+    # link name first, the typed name second, exactly as the decision passes them (review round 2).
     rows = mother_link(child_name, f.get('bc_child_nric', ''), mother_name, mother_nric,
-                       (student, student_name_for_link(app)), student_nric,
+                       (student_name_for_link(app), student), student_nric,
                        getattr(mic, 'vision_name', '') if mic else '',
                        getattr(mic, 'vision_nric', '') if mic else '')
     child_status, mother_status = chip_status(rows['child']), chip_status(rows['parent'])
     link = rows['link']
     # IC-NUMBER chain (#9): the mother's IC NUMBER appears on the income proof → she is the
     # confirmed earner, regardless of a wrong card uploaded in her slot. The BC mother row is
-    # exactly what the chain is built on, so it is verified (never red on the wrong card).
+    # exactly what the chain is built on, so it is verified (never red on the wrong card). The
+    # chain stands in for the MOTHER row only, never the child row (review round 2): the link is
+    # the child row with a green parent row, as the decision reads it (`chain_link_status`).
     if mother_status != 'match' and chain_verified_earner(app, 'mother'):
-        mother_status, link = 'match', GREEN       # the decision reads the chain the same way
+        mother_status, link = 'match', chained_link(rows['child'])
     if mic is not None and ic_second_opinion_deferred(mic):
         if mother_status == 'mismatch':
             mother_status = 'no_ref'     # TD-390: a card our outage left half-read proves no clash
@@ -106,7 +109,7 @@ def student_guardianship_check(doc):
     g_nric = (f.get('guardian_nric', '') or '').strip()
     ward_name = (f.get('ward_name', '') or '').strip()
     gic = _member_ic_doc(app, 'guardian')
-    rows = guardian_link_rows(g_name, g_nric, ward_name, (student, student_name_for_link(app)),
+    rows = guardian_link_rows(g_name, g_nric, ward_name, (student_name_for_link(app), student),
                               getattr(gic, 'vision_name', '') if gic else '',
                               getattr(gic, 'vision_nric', '') if gic else '')
     guardian_status, link = chip_status(rows['parent']), rows['link']

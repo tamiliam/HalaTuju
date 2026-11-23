@@ -172,3 +172,109 @@ class TestTheFatherFallbackReadsTheChildRow(_Base):
 
     def test_no_child_number_is_the_name_alone_as_today(self):
         self.assertEqual(self._status(''), ('mismatch', 'mismatch'))
+
+
+class TestTheChainStandsInForTheParentRowOnly(_Base):
+    """Review round 2, Finding 1: the IC-number chain (#9) checks the certificate's child by name
+    alone, so it may vouch for the PARENT row only. The link is the child row's own score with a
+    green parent row, in the chip and in the decision alike: an exact child name beside a far
+    child number stays amber (the owner's table), whether or not the mother's IC is uploaded."""
+
+    def _str(self, app, nric):
+        _doc(app, 'str', fields={'recipient_name': MOTHER, 'recipient_nric': nric, 'status': 'Lulus',
+                                 'year': str(timezone.localdate().year),
+                                 'source_type': 'semakan_status'})
+
+    def _case(self, child_nric, with_ic=True, ic_nric=MOTHER_IC, deferred=False, child=STUDENT):
+        app = self._app('str', earner='mother')
+        ic = _doc(app, 'parent_ic', 'mother', name=MOTHER, nric=ic_nric) if with_ic else None
+        if deferred:
+            from apps.scholarship.models import ApplicantDocument
+            from apps.scholarship.read_errors import IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL
+            ApplicantDocument.objects.filter(id=ic.id).update(vision_fields={
+                IC_SECOND_OPINION_ERROR: 'outage',
+                IC_SECOND_OPINION_UNTIL: timezone.now().timestamp() + 3600})
+            ic.refresh_from_db()
+        bc = self._bc(app, child=child, child_nric=child_nric)
+        self._str(app, MOTHER_IC)              # the certificate's mother number is the STR's
+        return app, ic, bc
+
+    def test_the_proving_case_is_pending_in_the_decision_and_amber_on_the_chip(self):
+        app, ic, bc = self._case(FAR_IC)
+        self.assertEqual(student_bc_check(bc)['link'], 'amber')
+        self.assertEqual(student_income_ic_check(ic)['name_status'], 'pending')
+        evidence, unresolved = self._income(app)
+        self.assertNotIn('relationship_confirmed', evidence)
+        self.assertNotIn('birth_cert_mismatch', unresolved)
+
+    def test_the_chip_and_the_decision_agree_with_and_without_the_mothers_ic(self):
+        # Before: amber with the right IC uploaded, the student's green tick without it.
+        for with_ic in (True, False):
+            with self.subTest(with_ic=with_ic):
+                app, _, bc = self._case(FAR_IC, with_ic=with_ic)
+                self.assertEqual(student_bc_check(bc)['link'], 'amber')
+                evidence, _ = self._income(app)
+                self.assertNotIn('relationship_confirmed', evidence)
+
+    def test_the_chain_still_confirms_when_the_child_row_is_green(self):
+        # The card in the mother's slot carries another number; the chain vouches for her row.
+        app, ic, bc = self._case(STUDENT_IC, ic_nric=FAR_IC)
+        self.assertEqual(student_bc_check(bc)['link'], 'green')
+        self.assertEqual(student_income_ic_check(ic)['name_status'], 'match')
+        evidence, _ = self._income(app)
+        self.assertIn('relationship_confirmed', evidence)
+
+    def test_a_red_child_row_stays_red_under_the_chain(self):
+        # Another child on the certificate (far name, far number): the chain vouches for the
+        # mother only, so the link is red in the chip and the decision alike.
+        app, ic, bc = self._case(FAR_IC, child='SITI NUR AISYAH BINTI AHMAD')
+        self.assertEqual(student_bc_check(bc)['link'], 'red')
+        self.assertEqual(student_income_ic_check(ic)['name_status'], 'mismatch')
+        evidence, _ = self._income(app)
+        self.assertNotIn('relationship_confirmed', evidence)
+
+    def test_the_chain_still_works_with_the_unread_card_deferral(self):
+        # TD-390: the card in the slot is half-read. A green child row still confirms; an amber
+        # child row stays pending; neither turns red.
+        for child_nric, link, status in ((STUDENT_IC, 'green', 'match'), (FAR_IC, 'amber', 'pending')):
+            with self.subTest(child_nric=child_nric):
+                app, ic, bc = self._case(child_nric, ic_nric=FAR_IC, deferred=True)
+                self.assertEqual(student_bc_check(bc)['link'], link)
+                self.assertEqual(student_income_ic_check(ic)['name_status'], status)
+                _, unresolved = self._income(app)
+                self.assertNotIn('birth_cert_mismatch', unresolved)
+
+    def test_the_father_chain_reads_the_child_row_too(self):
+        father, father_ic = 'MURUGAN A/L SELVAM', '710303-10-5559'  # the patronymic disagrees
+        for child_nric, confirmed in ((STUDENT_IC, True), (FAR_IC, False)):
+            with self.subTest(child_nric=child_nric):
+                app = self._app('str', earner='father')
+                ic = _doc(app, 'parent_ic', 'father', name=father, nric=father_ic)
+                _doc(app, 'birth_certificate', fields={
+                    'bc_child_name': STUDENT, 'bc_child_nric': child_nric,
+                    'bc_father_name': father, 'bc_father_nric': father_ic})
+                _doc(app, 'str', fields={'recipient_name': father, 'recipient_nric': father_ic,
+                                         'status': 'Lulus', 'year': str(timezone.localdate().year),
+                                         'source_type': 'semakan_status'})
+                self.assertEqual(student_income_ic_check(ic)['name_status'],
+                                 'match' if confirmed else 'pending')
+                evidence, unresolved = self._income(app)
+                self.assertEqual('relationship_confirmed' in evidence, confirmed)
+                self.assertNotIn('father_patronymic_mismatch', unresolved)
+
+
+class TestATypedOnlyNameIsAmber(_Base):
+    """Review round 2, Finding 2 (the lead's ruling): with no number, the IC-aware link name the
+    decision has always used decides; a name only the typed profile name passes is AMBER in the
+    chip and pending in the decision (before: the decision said mismatch, the chip green)."""
+
+    def test_a_child_only_the_typed_name_passes_is_amber_in_both(self):
+        app = make_application('submitted', cohort=self.cohort,
+                               student=make_student(name='DEVI', nric=STUDENT_IC),
+                               income_route='salary', income_working_members=['mother'])
+        _doc(app, 'ic', name='DEVI A/P RAJAGOPAL', nric=STUDENT_IC)     # the link name
+        ic = _doc(app, 'parent_ic', 'mother', name=MOTHER, nric=MOTHER_IC)
+        bc = self._bc(app, child='DEVI KUMARI', child_nric='', mother_nric='')
+        chip = student_bc_check(bc)
+        self.assertEqual((chip['child_status'], chip['link']), ('check_one', 'amber'))
+        self.assertEqual(student_income_ic_check(ic)['name_status'], 'pending')

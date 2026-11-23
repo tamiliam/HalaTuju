@@ -58,7 +58,8 @@ def _salary_member_scan(application, members, student_name, present, rel_docs):
     twice would collide, so ``_salary_unresolved`` aggregates each kind into ONE item that lists
     everyone."""
     from .income_engine import (member_relationship_status, relationship_doc_for,
-                                chain_verified_earner, earner_monthly_income)
+                                chain_verified_earner, earner_monthly_income,
+                                chain_link_status)
     from .income_shown import income_shown
     from .read_errors import ic_second_opinion_deferred
     evidence = []
@@ -100,9 +101,10 @@ def _salary_member_scan(application, members, student_name, present, rel_docs):
                                          rel_docs['bc_father'], rel_docs['letter_ward'],
                                          nums=dict(rel_docs['nums'], ic=ic_nric))
         # IC-number chain: BC parent number == income-proof number confirms a mother/father earner
-        # even when the IC uploaded in their slot is the wrong card or absent (#9).
+        # even when the IC uploaded in their slot is the wrong card or absent (#9). The parent row
+        # only: the certificate's child row still decides (#78 review round 2).
         if rel != 'match' and m in ('mother', 'father') and chain_verified_earner(application, m):
-            rel = 'match'
+            rel = chain_link_status(application)
         if rel == 'match':
             evidence.append(_item('relationship_confirmed', member=m))
         elif rel == 'mismatch' and not deferred:

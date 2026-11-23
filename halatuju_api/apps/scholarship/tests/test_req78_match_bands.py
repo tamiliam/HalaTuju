@@ -307,3 +307,94 @@ def test_father_path_no_child_row_that_passes_today_turns_red(child, child_nric)
     from apps.scholarship.vision import relationship_name_match
     assert relationship_name_match(child, 'DIVYA') != 'mismatch'       # passes today
     assert father_via_bc(child, FATHER, 'DIVYA', FATHER, _fnums(child_nric)) != 'mismatch'
+
+
+# --- review round 2, Finding 2: with no number the LINK name decides; typed-only is AMBER ------
+
+LINK, TYPED = 'DEVI A/P RAJAGOPAL', 'DEVI'      # a typed name with no connector: the IC name links
+
+
+def test_the_probe_names_behave_as_the_ruling_needs():
+    from apps.scholarship.vision import relationship_name_match as m
+    assert m('DEVI KUMARI', LINK) == 'mismatch'       # today's decision: refused
+    assert m('DEVI KUMARI', TYPED) != 'mismatch'      # the old chip (typed name): passed
+
+
+def test_a_child_only_the_typed_name_passes_is_amber_in_the_chip_and_pending_in_the_decision():
+    from apps.scholarship.income_engine.relationships import mother_relationship
+    nums = {'student': STUDENT_IC, 'student_name': TYPED, 'ic': MOTHER_IC}
+    assert mother_relationship('DEVI KUMARI', 'LATHA A/P MUNIAN', LINK, 'LATHA A/P MUNIAN',
+                               nums) == 'pending'
+    rows = mb.mother_link('DEVI KUMARI', '', 'LATHA A/P MUNIAN', '', (LINK, TYPED), STUDENT_IC,
+                          'LATHA A/P MUNIAN', MOTHER_IC)
+    assert (rows['child']['name'], rows['child']['band'], rows['link']) == (mb.TYPED_ONLY, AMBER, AMBER)
+    assert mb.chip_status(rows['child']) == 'check_one'
+
+
+def test_a_ward_only_the_typed_name_passes_is_amber_too():
+    from apps.scholarship.income_engine.relationships import guardian_relationship
+    assert guardian_relationship('ALI BIN ABU', 'ALI BIN ABU', 'DEVI KUMARI', LINK,
+                                 {'student_name': TYPED, 'ic': MOTHER_IC}) == 'pending'
+    rows = mb.guardian_link_rows('ALI BIN ABU', '', 'DEVI KUMARI', (LINK, TYPED), 'ALI BIN ABU', '')
+    assert (rows['child']['band'], rows['link']) == (AMBER, AMBER)
+
+
+@pytest.mark.parametrize('child, band', [
+    ('DEVI A/P RAJAGOPAL', GREEN),       # the link name passes: green, as the decision always said
+    ('DEVI KUMARI', AMBER),              # only the typed name passes: the officer looks
+    ('KAVITHA A/P MUNIAN', RED),         # neither passes: red, as today
+])
+def test_the_link_name_first_then_the_typed_name(child, band):
+    assert mb.score_row(child, '', (LINK, TYPED), STUDENT_IC)['band'] == band
+
+
+def test_with_a_number_the_typed_name_still_counts_as_before():
+    # Finding 2 is the no-number branch only: beside an exact number, both spellings are tried.
+    assert mb.score_row('DEVI KUMARI', STUDENT_IC, (LINK, TYPED), STUDENT_IC)['band'] == GREEN
+
+
+def test_when_the_typed_name_is_the_link_name_nothing_differs_from_today():
+    """The reviewer's random comparison, at a small scale: names built from a fixed word pool with
+    one-letter slips, dropped words and swapped connectors; with no numbers and the typed name ==
+    the link name (the usual case), the certificate link and the ward row give today's answer."""
+    import random
+    from apps.scholarship.income_engine.relationships import guardian_relationship, mother_relationship
+    from apps.scholarship.vision import relationship_name_match as m
+    rnd = random.Random(78)
+    words = ['ARUN', 'RANI', 'VANI', 'DEVI', 'KUMAR', 'RAJAN', 'MUNIAN', 'LATHA', 'SITI', 'AMINAH',
+             'MOHD', 'ALI', 'ABU', 'K', 'M', 'SELVAM', 'KAVITHA', 'RAJAGOPAL', 'NUR', 'AISYAH']
+
+    def name():
+        parts = rnd.sample(words, rnd.randint(1, 3))
+        if rnd.random() < 0.5:
+            parts.insert(1, rnd.choice(['A/P', 'A/L', 'BIN', 'BINTI']))
+        return ' '.join(parts)
+
+    def slip(n):
+        r = rnd.random()
+        ws = n.split()
+        if r < 0.3 and ws:                        # a dropped / changed letter in one word
+            i = rnd.randrange(len(ws))
+            w = ws[i]
+            if len(w) > 1:
+                j = rnd.randrange(len(w))
+                ws[i] = w[:j] + (rnd.choice('AEIKLMNRS') if rnd.random() < 0.5 else '') + w[j + 1:]
+        elif r < 0.45 and len(ws) > 1:            # a word missing
+            ws.pop(rnd.randrange(len(ws)))
+        elif r < 0.6:                             # someone else's name
+            return name()
+        return ' '.join(ws)
+
+    for _ in range(300):
+        student, mother = name(), name()
+        child, bc_mother = slip(student), slip(mother)
+        today = 'match' if m(child, student) != 'mismatch' and m(bc_mother, mother) != 'mismatch' \
+            else 'mismatch'
+        nums = {'student': STUDENT_IC, 'student_name': student, 'ic': MOTHER_IC}
+        assert mother_relationship(child, bc_mother, student, mother, nums) == today, \
+            (child, student, bc_mother, mother)
+        rows = mb.mother_link(child, '', bc_mother, '', (student, student), STUDENT_IC, mother, MOTHER_IC)
+        assert mb.link_status(rows['link']) == today
+        # The same pairs as a letter: the guardian row and the ward row, with no numbers.
+        assert guardian_relationship(bc_mother, mother, child, student,
+                                     {'student_name': student, 'ic': MOTHER_IC}) == today

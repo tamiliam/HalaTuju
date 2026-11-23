@@ -101,6 +101,23 @@ def chain_verified_earner(application, member) -> bool:
     return nric_close(bc_nric, p_nric) and _name_bucket(bc_name, p_name) == 'match'
 
 
+def chain_link_status(application) -> str:
+    """The relationship once the IC-NUMBER chain holds (`chain_verified_earner` is True): the chain
+    stands in for the PARENT row only, never the CHILD row (request #78, review round 2). It checks
+    the certificate's child by name alone, so the child row keeps its shared score (name + child IC
+    vs the student, `match_bands.score_row`) and the link is `chained_link` of it: a green child row
+    → 'match'; an amber one (an exact name + a far child number) → 'pending', never a confirm; a
+    red one → 'mismatch' (the chain needs the child's name to pass, so it never newly reds). The
+    case-page chip (`doc_checks.student_bc_check`) reads the same rule, so the two agree."""
+    from .match_bands import chained_link, link_status, score_row
+    f = _doc_fields(_bc_doc(application))
+    profile = getattr(application, 'profile', None)
+    child = score_row((f.get('bc_child_name', '') or '').strip(), f.get('bc_child_nric', ''),
+                      (student_name_for_link(application), getattr(profile, 'name', '') or ''),
+                      getattr(profile, 'nric', '') or '')
+    return link_status(chained_link(child))
+
+
 def student_income_ic_check(doc):
     """For an income earner's IC (``parent_ic``): the OCR'd IC No / Name / Address, the
     RELATIONSHIP verdict (``name_status`` — does this earner link to the student's family,
@@ -161,7 +178,7 @@ def student_income_ic_check(doc):
     wrong_card = False
     if chain_verified:
         wrong_card = 'mismatch' in (name_status, proof_name_status, proof_nric_status)
-        name_status = 'match'
+        name_status = chain_link_status(app)     # the parent row only (#78 review round 2)
     # TD-390: the card needed the Gemini second opinion and our outage skipped it — a mismatch read
     # off half a read is not a finding. Pending until the hourly sweep re-reads it; never a match.
     deferred = ic_second_opinion_deferred(doc)

@@ -70,7 +70,8 @@ def _earner_relationship(application, earner, student_name, earner_ic_name, ic_d
     guardian rows, and the certificate's child row on the father fallback, are scored on name +
     IC number (`link_numbers`, request #78)."""
     from .income_engine import (father_link, mother_relationship,
-                                guardian_link, chain_verified_earner, link_numbers)
+                                guardian_link, chain_verified_earner, link_numbers,
+                                chain_link_status)
     # A WRONG-TYPE relationship doc (#27: a non-BC in the birth-certificate slot) is UNUSABLE —
     # its fields prove nothing, and the student gets a specific re-upload ticket (gap, like a
     # missing doc) instead of the officer-only generic genuineness caveat.
@@ -107,9 +108,10 @@ def _earner_relationship(application, earner, student_name, earner_ic_name, ic_d
                 rel = guardian_link(g, earner_ic_name, student_name,   # TD-089 + review F1
                                     link_numbers(application, letter=g, ic_nric=ic_nric))
     # IC-number chain: the BC's parent number matching the income proof's number confirms a
-    # mother/father earner even when the IC uploaded in their slot is the wrong card (#9).
+    # mother/father earner even when the IC uploaded in their slot is the wrong card (#9). It stands
+    # in for the parent row only; the certificate's child row still decides (#78 review round 2).
     if rel != 'match' and earner in ('mother', 'father') and chain_verified_earner(application, earner):
-        rel = 'match'
+        rel = chain_link_status(application)
     rel = 'pending' if (rel == 'mismatch' and ic_deferred) else rel   # TD-390: half a read, no clash
     if rel == 'match':
         evidence.append(_item('relationship_confirmed'))

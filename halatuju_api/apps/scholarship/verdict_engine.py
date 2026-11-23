@@ -290,7 +290,7 @@ def _str_precedence_verdict(application, utility=None):
         logic asks for the missing tie (BC / patronymic) — the fraud guard the salary route already
         applied via ``confirmed_members``."""
     from .income_engine import (household_str_status, _member_ic_doc, letter_names,
-                                member_relationship_status, chain_verified_earner,
+                                member_relationship_status, chain_verified_earner, chain_link_status,
                                 student_name_for_link, link_numbers)
     grade, member = household_str_status(application)
     if not grade or not member:
@@ -312,7 +312,7 @@ def _str_precedence_verdict(application, utility=None):
                                      bcf.get('bc_mother_name', ''), g_name,
                                      bcf.get('bc_father_name', ''), g_ward, nums)
     if rel != 'match' and member in ('mother', 'father') and chain_verified_earner(application, member):
-        rel = 'match'
+        rel = chain_link_status(application)     # the parent row only (#78 review round 2)
     if rel != 'match':
         return None            # recipient not yet an established parent/guardian → route logic runs
     # TD-287 (review F5): the caller's own bills reading, deep-copied; None reads them here.

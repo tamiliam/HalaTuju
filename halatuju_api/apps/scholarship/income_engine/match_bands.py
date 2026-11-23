@@ -6,9 +6,10 @@ a letter's guardian against the guardian's IC, a letter's ward against the stude
 scored on its NAME and its IC NUMBER, by slips counted (never percentages), into one band:
 
     GREEN  both exact; or one exact and the other close; or NO NUMBER and a name today's
-           name-only link accepts (`relationship_name_match`)
+           name-only link accepts (`relationship_name_match`) against the IC-aware link name
     BLUE   both close; or exact number + far name (a name change, a bad read)
-    AMBER  close + far; exact name + far number; NO NAME and an exact or close number
+    AMBER  close + far; exact name + far number; NO NAME and an exact or close number; NO
+           NUMBER and a name only the student's typed spelling passes (review round 2)
     RED    both far, or one far and the other missing
     GREY   nothing read
 
@@ -44,6 +45,9 @@ from ..vision import relationship_name_match
 
 GREEN, BLUE, AMBER, RED, GREY = 'green', 'blue', 'amber', 'red', 'grey'
 EXACT, CLOSE, FAR, MISSING = 'exact', 'close', 'far', 'missing'
+#: No number beside it, and only the student's TYPED name passes today's matcher, not the IC-aware
+#: link name the decision has always used (review round 2, the lead's ruling): AMBER, never green.
+TYPED_ONLY = 'typed_only'
 
 #: A word this long may carry two slips; a shorter one, one (owner: slips are counted).
 _LONG_WORD = 8
@@ -121,34 +125,49 @@ _BAND = {
     (MISSING, EXACT): AMBER, (MISSING, CLOSE): AMBER,      # no name: a number alone is not green
     (FAR, FAR): RED, (FAR, MISSING): RED, (MISSING, FAR): RED,
     (MISSING, MISSING): GREY,
+    (TYPED_ONLY, MISSING): AMBER,      # no number; only the typed spelling passes (review round 2)
 }
 
 
 def row_band(name_lvl: str, number_lvl: str) -> str:
-    """The owner's table, (name level, number level) → band. All sixteen pairs are listed."""
+    """The owner's table, (name level, number level) → band. All sixteen pairs are listed, plus
+    the one TYPED_ONLY pair (`name_alone_level` gives it only where no number stands)."""
     return _BAND[(name_lvl, number_lvl)]
 
 
 def name_alone_level(read, refs) -> str:
     """The name level when NO NUMBER corroborates it: EXACT / CLOSE only where today's name-only
-    link passes (`relationship_name_match` not 'mismatch' against one of ``refs``), else FAR.
+    link passes (`relationship_name_match` not 'mismatch') against the FIRST of ``refs``, else FAR.
+
+    ⚠ THE ORDER OF ``refs`` MATTERS (review round 2, the lead's ruling). The first name is the one
+    the decision has always tried (the student's IC-aware link name, `student_name_for_link`); the
+    rest are other spellings of the same identity (the typed profile name, which the old chip
+    used). The link name passes → EXACT / CLOSE (GREEN); only another spelling passes →
+    TYPED_ONLY (AMBER: the officer looks; no confirm, no tick); none passes → FAR (RED). So the
+    decision makes no new green and the chip no new red; when the two names are the same, as they
+    usually are, nothing changes.
 
     ⚠ OWNER RULING 23 Nov 2026: "no number on the document = name alone, AS TODAY". The owner's
     wider slip count (`_slips_close`, no 5-letter floor) needs a number beside it: alone it would
     merge short words the floor keeps apart on purpose (`vision.names._tokens_close`: Siva≠Sira,
     Vani≠Vasu; TD-404) and turn today's reds green (review round 1: K RAJAN vs M RAJAN)."""
+    refs = [r for r in refs if (r or '').strip()]
     level = best_name_level(read, refs)
     if level not in (EXACT, CLOSE):
         return level                    # FAR / MISSING stand as they are
-    today = any(relationship_name_match(read, r) != 'mismatch' for r in refs if (r or '').strip())
-    return level if today else FAR
+    if relationship_name_match(read, refs[0]) != 'mismatch':
+        return level
+    if any(relationship_name_match(read, r) != 'mismatch' for r in refs[1:]):
+        return TYPED_ONLY
+    return FAR
 
 
 def score_row(name, nric, ref_names, ref_nric, *, waiting=False) -> dict:
     """One row: ``{name, number, band, waiting}``. ``waiting`` marks a GREY row whose REFERENCE
     is not in yet (the parent's IC not uploaded or not read) — as opposed to a row the document
     itself could not give us. With no number on either side the name is judged as today
-    (`name_alone_level`); the slip-count close name counts only beside a number."""
+    (`name_alone_level`); the slip-count close name counts only beside a number. For the
+    student's rows ``ref_names`` is ``(link name, typed name)``, IN THAT ORDER."""
     if isinstance(ref_names, str):
         ref_names = (ref_names,)
     k = number_level(nric, ref_nric)
@@ -160,7 +179,8 @@ def score_row(name, nric, ref_names, ref_nric, *, waiting=False) -> dict:
 def score_name_only_row(name, ref_names) -> dict:
     """A row whose document never carries a number (a guardianship letter's WARD: letters never
     print the ward's number). Owner ruling 23 Nov 2026: judged on the name alone, always, by
-    today's matcher (`name_alone_level`): passes → GREEN, fails → RED, blank → GREY."""
+    today's matcher (`name_alone_level`): the link name passes → GREEN, only the typed name
+    passes → AMBER, neither → RED, blank → GREY."""
     if isinstance(ref_names, str):
         ref_names = (ref_names,)
     n = name_alone_level(name, ref_names)
@@ -187,6 +207,19 @@ def link_band(child: dict, parent: dict) -> str:
     return AMBER                       # B+B included: both names far, both numbers exact (ruling)
 
 
+#: The PARENT row when the IC-number chain (#9) vouches for it: the certificate's parent number is
+#: the income proof's number, so that row holds whatever card sits in the parent's slot.
+_PARENT_BY_CHAIN = {'name': EXACT, 'number': EXACT, 'band': GREEN, 'waiting': False}
+
+
+def chained_link(child: dict) -> str:
+    """The link when the IC-number chain (#9) stands in for the PARENT row. ⚠ Never for the CHILD
+    row (review round 2): the chain checks the certificate's child by name alone, so the child row
+    keeps its own score and a non-green child row stops a confirm (exact name + far child number
+    stays AMBER; a RED child row stays RED). The chip and the decision both read this."""
+    return link_band(child, _PARENT_BY_CHAIN)
+
+
 def link_status(band: str) -> str:
     """The decision's word for a link band: GREEN → 'match' (the relationship is confirmed),
     RED → 'mismatch' (the only state that asks the student to act), anything else → 'pending'
@@ -211,7 +244,8 @@ def chip_status(row: dict) -> str:
         return 'check_near'            # one slip in each: likely a scan misread
     if n == FAR and k == CLOSE:
         return 'check_both'            # spelt differently AND one digit off: both were read
-    return 'check_one'                 # the number held with no name to read beside it
+    return 'check_one'                 # half the row held: a number with no name, or (no number)
+                                       # a name only the student's typed spelling carries
 
 
 def mother_link(child_name, child_nric, mother_name, mother_nric,
