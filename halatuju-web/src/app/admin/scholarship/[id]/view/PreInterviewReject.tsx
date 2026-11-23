@@ -128,7 +128,7 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, box, err, s
   const hasHold = offer.hold_hours > 0
   // Plain words, never a link or a button (owner, phone check 4g): the box is higher on the page.
   const factsLine = !factsDone && (
-    <p className="text-xs text-caution-700" data-testid="pre-interview-facts-needed">{t(`${P}.factsNeeded`)}</p>
+    <p className="text-xs text-critical-600" data-testid="pre-interview-facts-needed">{t(`${P}.factsNeeded`)}</p>
   )
   return (
     <div className="space-y-2 border-t border-ground-100 pt-3" data-testid="pre-interview">

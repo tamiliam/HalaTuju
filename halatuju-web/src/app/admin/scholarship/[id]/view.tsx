@@ -179,7 +179,9 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
     const d = await getScholarshipApplication(liveId.current, { token })
     if (!isLive(d)) return   // re-check 4 (L2): a dropped payload leaves the refusal as it was
     focusRefusal.current = afterRefusal
-    if (!afterRefusal) setPreInterviewRefusal(null)
+    // A stale refusal (has_reviewer, bad_status) reloads the ONE box too, so no unsaved taps sit beside
+    // a recommendation that is already in (fix round, 23 Nov).
+    if (afterRefusal) loadVerdictState(d); else setPreInterviewRefusal(null)
     setApp(d)
   }
   const refreshApp = () => reload(false)

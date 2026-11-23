@@ -134,6 +134,39 @@ describe('one box: the reject panel reads the Reviewer Assessment box', () => {
     expect(api.recordVerdict).not.toHaveBeenCalled()
   })
 
+  it('a stale refusal (a reviewer got there first) reloads the box from the server, not only the case', async () => {
+    const { api } = atAwaitingReview()
+    await loaded()
+    for (const f of FACTS) fireEvent.click(pass(f))
+    await openPanel()
+    // Meanwhile a reviewer took the case and their assessment is on the server: Identity is a Fail there.
+    api.getScholarshipApplication.mockResolvedValue(buildApplicationDetail('profile_complete', {
+      pre_interview: OFFER, assigned_to_id: 5, verdict_decided_at: null,
+      officer_verdict: { identity: 'fail', academic: 'pass', pathway: 'pass', income: 'pass',
+        fail_reasons: { identity: 'other' } },
+    } as never))
+    api.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'has_reviewer' }))
+    fireEvent.click(submit())
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` })) })
+    await waitFor(() => expect(api.getScholarshipApplication).toHaveBeenCalledTimes(2))
+    // The page's unsaved Pass on Identity is gone: the box shows the server's Fail.
+    await waitFor(() => expect(fail('identity').className).toMatch(/bg-critical-fill/))
+    expect(pass('identity').className).not.toMatch(/bg-positive-fill/)
+    expect(api.recordVerdict).not.toHaveBeenCalled()
+  })
+
+  it('a viewer who may not write: the box cannot be tapped, the red line shows and Reject stays greyed', async () => {
+    renderCockpit({ role: 'org_admin', writes: {}, stage: 'profile_complete', build: { pre_interview: OFFER } as never })
+    await loaded()
+    await openPanel()
+    for (const f of FACTS) {
+      expect(pass(f).disabled).toBe(true)
+      expect(fail(f).disabled).toBe(true)
+    }
+    expect(line()?.className).toContain('text-critical-600')   // the RED line (owner), not amber
+    expect(submit().disabled).toBe(true)
+  })
+
   it('after "Cancel decline" the box is reloaded from the reply: the decliner\'s facts do not linger', async () => {
     const declined = { identity: 'pass', academic: 'fail', pathway: 'pass', income: 'pass', fail_reasons: { academic: 'other' } }
     const { api } = renderCockpit({ role: 'org_admin', writes: true, stage: 'rejected',

@@ -254,9 +254,9 @@ export const roleOrgAdmin: ManualChapter = {
         the quality control permission can do this (organisation admins and QC hold it); a reviewer never can.
         <span className="mt-2 block">First fill in the <strong>Reviewer Assessment</strong> box above, as a reviewer
         does: <strong>Pass</strong> (yes, this is true) or <strong>Fail</strong> (no, or not proven) for Identity,
-        Results, Pathway and Income. Every Fail asks <em>Why?</em>, with <em>Other</em> already chosen. Until all four
-        are rated, a red line shows in the reject panel and Reject stays greyed. You can change any of them until you
-        press <strong>Yes, reject</strong>; nothing is saved before then. They are kept on the case where a reviewer&rsquo;s assessment goes, unless an
+        Academic, Pathway and Income. Every Fail asks <em>Why?</em>, with <em>Other</em> already chosen. Until all four
+        are rated, a red line shows in the reject panel and Reject stays greyed. You can change them until someone
+        submits: <strong>Yes, reject</strong> here, or a reviewer&rsquo;s recommendation. Taps alone save nothing. They are kept on the case where a reviewer&rsquo;s assessment goes, unless an
         assessment is already recorded there: that one stays as it is. Either way, the four facts and reasons you
         gave are kept with your reject, and <strong>Cancel decline</strong> never removes that record.</span>
         <span className="mt-2 block">Under <strong>Why are you rejecting?</strong>, choose the reason, then add

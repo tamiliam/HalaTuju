@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Taps in the box save nothing; only "Yes, reject" sends the box's facts and Why reasons, in the same payload as before. The reject path never records a verdict. After a reject, and after Cancel decline, the box reloads from the server's reply.
 - No API change, no migration. The unused "factsTitle" words go from en, ms and ta. The org-admin Guide chapter "Rejecting before interview" and the FAQ follow.
 - Tests: PreInterviewReject.test.tsx, view.actions.test.tsx and AssignAndWitness.preInterviewSlot.test.tsx follow; new view.preInterviewOneBox.test.tsx pins one set of Pass/Fail, the red line and Reject following the box, the payload equal to the box, no recordVerdict, and the reloads.
+- Review fixes: the line is now the red error colour (it was amber). A stale refusal (a reviewer or a new status got there first) reloads the box as well as the case, so no unsaved taps sit beside a recommendation. The Guide says "Academic", as the box does, and says the facts can change until someone submits (Yes, reject, or a reviewer's recommendation).
 
 ### Reviewer "Still to do" list: owner wording and bullet place (2026-11-23)
 
