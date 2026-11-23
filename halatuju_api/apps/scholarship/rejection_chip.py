@@ -46,6 +46,9 @@ def qc_rejected_ids(apps):
     ids = [a.pk for a in apps if _is_interview_decline(a)]
     if not ids:
         return set()
+    # Latest row is right after a super reopen too: `/reject/` refuses 'interview' at every status,
+    # so any new interview decline after a reopen goes through the QC gate and writes a NEW
+    # `qc_decision` row (accept or reject); no reopen is needed to filter rows by time.
     latest = {}
     rows = (StaffActivity.objects
             .filter(verb='qc_decision', subject_type='application', subject_id__in=ids)

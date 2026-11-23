@@ -156,6 +156,19 @@ describe('owner 2026-11-23: "Rejected" plus ONE served second chip', () => {
 describe('owner 2026-11-23: a case rejected before any review shows only its record', () => {
   const titles = () => Array.from(document.querySelectorAll('#record-verdict-panel h2')).map((h) => h.textContent)
   const HIDDEN = ['admin.scholarship.estimate.title', 'admin.scholarship.reviewerNotes.title']
+  /** Everything else a review case carries, by heading text: it must be absent from the WHOLE page. */
+  const ABSENT_TITLES = [
+    ...HIDDEN, 'admin.scholarship.decision.title',
+    'admin.scholarship.qcDecision.title', 'admin.scholarship.qcDecision.overrideTitle',
+    'admin.scholarship.assignTitle', 'admin.scholarship.assign.assignedTitle',
+    'admin.sources.witness.title',
+    'admin.scholarship.recordVerdict.rateTitle']
+  const ABSENT_IDS = ['decision-section', 'decision-missing', 'verdict-reason']
+  const expectNoReviewCards = () => {
+    for (const title of ABSENT_TITLES) expect(screen.queryByText(title)).toBeNull()
+    for (const id of ABSENT_IDS) expect(document.getElementById(id)).toBeNull()
+    expect(screen.queryByTestId('qc-refusal')).toBeNull()
+  }
   const BOTH = { rejection_comments: 'Not a B40 household.', proposed_award_amount: '1200.00',
                  assigned_to_id: 3, assigned_to_name: 'Rev' }
 
@@ -165,12 +178,14 @@ describe('owner 2026-11-23: a case rejected before any review shows only its rec
     await loaded()
     await screen.findByTestId('pre-interview-record')
     expect(titles()).toEqual(['admin.scholarship.preInterview.recordTitle', 'admin.scholarship.orgReject.recordTitle'])
+    expectNoReviewCards()
   })
 
   it('by the org admin at Shortlisted: only "Rejection reason"', async () => {
     renderCockpit({ role: 'super', stage: 'rejected', build: { ...BOTH, rejection_category: 'incomplete' } })
     await loaded()
     expect(titles()).toEqual(['admin.scholarship.orgReject.recordTitle'])
+    expectNoReviewCards()
   })
 
   it('a decline after interview still shows the estimate and notes cards', async () => {

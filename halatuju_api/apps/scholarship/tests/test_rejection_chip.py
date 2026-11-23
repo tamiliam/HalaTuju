@@ -102,6 +102,17 @@ class TestTheChip(TestCase):
         self._qc(later, 'reject', minutes_ago=5)
         self.assertEqual(self._served(later), 'qc')
 
+    def test_qc_reject_then_reopen_then_a_later_confirmed_decline_reads_interview(self):
+        # Every interview decline goes through the QC gate (`/reject/` refuses it), so the decline
+        # after a super's reopen writes its own qc_decision row, which is the latest.
+        app = self._rejected('interview')
+        app.decision_reopened_at = timezone.now() - timedelta(minutes=20)
+        app.save(update_fields=['decision_reopened_at'])
+        self._qc(app, 'reject', minutes_ago=60)
+        self._qc(app, 'accept', minutes_ago=2)
+        self.assertEqual(self._served(app), 'interview')
+        self.assertEqual(self._listed()[app.pk], 'interview')
+
     def test_a_qc_reject_on_a_case_not_declined_at_interview_is_ignored(self):
         app = self._rejected('merit')
         self._qc(app, 'reject')
