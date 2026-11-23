@@ -484,6 +484,16 @@ describe('documentFacts', () => {
     expect(child('match')).toBe('verified')     // both cells agreed → still green
   })
 
+  // #78 review round 1. A far name beside an IC number one digit off: both cells were read and
+  // both are slightly wrong. Amber with its own words (`check_both`), never red, never green.
+  it('a far name with a one-digit-off number is AMBER (check_both)', () => {
+    const mother = documentFacts(doc({
+      doc_type: 'birth_certificate',
+      bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status: 'check_both', father_name: '', father_status: 'match', bc_number: '', link: 'amber' },
+    })).find((f) => f.key === 'mother')?.status
+    expect(mother).toBe('partial')
+  })
+
   // BrightPath #23. An unreadable certificate buckets EVERY row to `no_ref`, which renders as
   // three grey chips — indistinguishable from a document that checked out, which is exactly the
   // owner's complaint ("we could not read it scores the same as it checked out"). One amber row.

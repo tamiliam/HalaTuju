@@ -377,7 +377,7 @@ function relPill(status: string, t: (k: string) => string): ReactNode {
   const kind: ICCheckKind =
     status === 'match' ? 'match'
       : status === 'mismatch' ? 'mismatch'
-        : status === 'check' || status === 'check_near' || status === 'check_name' ? 'partial'
+        : status === 'check' || status === 'check_near' || status === 'check_name' || status === 'check_both' ? 'partial'
           : 'none'
   const label =
     status === 'match' ? t('scholarship.docs.relCheck.confirmed')
@@ -387,7 +387,8 @@ function relPill(status: string, t: (k: string) => string): ReactNode {
             // #19: spelt differently, same IC number. The student must NOT be told to correct a
             // certificate — the document is right and the spelling difference is real.
             : status === 'check_name' ? t('scholarship.docs.relCheck.checkName')
-              : t('scholarship.docs.relCheck.reviewing')
+              : status === 'check_both' ? t('scholarship.docs.relCheck.checkBoth')   // #78: both read, both slightly off
+                : t('scholarship.docs.relCheck.reviewing')
   return <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${REL_PILL[kind]}`}>{label}</span>
 }
 

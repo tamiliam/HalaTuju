@@ -1700,7 +1700,8 @@
         "checkNumber": "Name matches — check the IC number",
         "checkNumberOneDigit": "Name matches — IC number differs by one digit (likely a scan misread)",
         "reviewing": "We'll review this",
-        "checkName": "Spelt differently — same IC number"
+        "checkName": "Spelt differently — same IC number",
+        "checkBoth": "Spelt differently — IC number differs by one digit"
       },
       "strCheck": {
         "recipient": "Name",
@@ -1825,8 +1826,8 @@
         "birth_cert_person_mismatch": "The names on your birth certificate don't match (shown in red in the Documents step) — please re-upload the correct one.",
         "guardianship_person_mismatch": "The names on your guardianship letter don't match (shown in red in the Documents step) — please re-upload the correct one.",
         "parent_ic_person_mismatch": "Your parent's or guardian's IC doesn't match your income documents (shown in red in the Documents step) — please check and re-upload.",
-        "parent_link_mismatch": "The birth certificate (or guardianship letter) that links your parent or guardian to you doesn't match their IC — the names or IC numbers on it differ (shown in red in the Documents step). Please check both and re-upload the one that's wrong.",
-        "parent_name_link_mismatch": "The name on your father's or sibling's IC doesn't match the father's name in your own name or on your birth certificate (shown in red in the Documents step) — please check you uploaded the right IC.",
+        "parent_link_mismatch": "Your birth certificate (or guardianship letter) doesn't link you to this parent or guardian — the names or IC numbers on it don't match yours or theirs (shown in red in the Documents step). Please check it is your own certificate and the right person's IC, and re-upload whichever is wrong.",
+        "parent_name_link_mismatch": "The name on your father's or sibling's IC doesn't match your father's name as it appears in your own name (after A/L, A/P, bin or binti) or on your birth certificate (shown in red in the Documents step) — please check you uploaded the right person's IC.",
         "results_slip_unreadable": "We couldn't read your results slip — please re-upload a clearer, straight-on photo in the Documents step.",
         "offer_letter_unreadable": "We couldn't read your offer letter — please re-upload a clearer copy in the Documents step.",
         "income_document_unreadable": "We couldn't read one of your income documents — please re-upload a clearer photo in the Documents step.",
@@ -5067,7 +5068,7 @@
           "birth_cert_person_mismatch": "A corrected birth certificate — the names on it don't match",
           "guardianship_person_mismatch": "A corrected guardianship letter — the names on it don't match",
           "parent_ic_person_mismatch": "A matching parent's or guardian's IC — it doesn't match their income documents",
-          "parent_link_mismatch": "A birth certificate (or guardianship letter) that links this parent to them — the names or IC numbers on it don't match the parent's IC",
+          "parent_link_mismatch": "A birth certificate (or guardianship letter) that links them to this parent — the names or IC numbers on it don't match the student or the parent's IC",
           "parent_name_link_mismatch": "The right IC for their father or sibling — it doesn't match the father's name in their own name or on their birth certificate",
           "results_slip_unreadable": "A clearer results slip — we couldn't read the one uploaded",
           "offer_letter_unreadable": "A clearer offer letter — we couldn't read the one uploaded",

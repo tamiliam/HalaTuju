@@ -252,3 +252,43 @@ describe('#78 — the birth certificate ticks the cluster only on the served gre
     expect(screen.queryByText(DONE)).toBeNull()
   })
 })
+
+describe('#78 — the guardianship letter ticks the cluster only on the served green link', () => {
+  // The guardian's STR route: their STR, their IC and the guardianship letter are the compulsory
+  // three. The letter counts as verified only on `guardianship_check.link === 'green'`, the server's
+  // one score of the ward + guardian rows (review round 1). The browser never re-combines the rows.
+  const SATISFIED = `${W}.satisfiedTitle`
+  const DONE = `${W}.clusterDone`
+  const ownStr = doc(3, 'str', 'guardian', {
+    str_check: { name: 'A NAME', nric: '', status: 'Lulus', year: '2026', member: 'guardian',
+                 name_status: 'match', nric_status: 'match', current_status: 'current', ic_present: true,
+                 ic_slots: { missing: [], unreadable: [] } },
+  })
+  const theirIc = doc(1, 'parent_ic', 'guardian', {
+    income_ic_check: { nric: '', name: '', address: '', member: 'guardian', name_status: 'match', readable: true },
+  })
+  const letter = (link: string) => doc(2, 'guardianship_letter', '', {
+    guardianship_check: { guardian_name: '', guardian_nric: '', guardian_status: 'match', ward_name: '',
+                          ward_status: 'match', link },
+  })
+  const guardiansCluster = async (gl: api.ApplicantDocument) => {
+    mockApi.listDocuments.mockResolvedValue({ documents: [theirIc, gl, ownStr] })
+    render(<ScholarshipDocuments token="sandbox-token" app={{
+      ...sandboxApplication, requirements: FULL, income_route: 'str',
+      income_earner: 'guardian', income_working_members: ['guardian'],
+    } as unknown as ScholarshipApplication} />)
+    await waitFor(() => expect(screen.getByText('scholarship.docs.section.identity.title')).toBeTruthy())
+  }
+
+  it('green link → the income section is satisfied', async () => {
+    await guardiansCluster(letter('green'))
+    await waitFor(() => expect(screen.getByText(SATISFIED)).toBeTruthy())
+  })
+
+  it.each(['amber', 'grey', 'red'])('%s link → no tick, even with both rows reading match', async (link) => {
+    await guardiansCluster(letter(link))
+    await waitFor(() => expect(screen.getByText('guardianship_letter-household.pdf')).toBeTruthy())
+    expect(screen.queryByText(SATISFIED)).toBeNull()
+    expect(screen.queryByText(DONE)).toBeNull()
+  })
+})

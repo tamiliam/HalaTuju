@@ -89,7 +89,8 @@ export interface ApplicantDocument {
 // a different person). All three render partial, never green and never red.
 // `check_one` (#23): only ONE of the two cells was present at all, so half the row was
 // checked. Amber — never green off a single piece of evidence, never red either.
-type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'check_name' | 'check_one'
+// `check_both` (#78): both cells read — the name spelt differently AND the number one digit off.
+type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'check_name' | 'check_one' | 'check_both'
 // #78 (owner 23 Nov 2026): the server's verdict on the LINK the two rows make ("this parent is the
 // student's parent"): green confirms it, red asks the student to act, amber / grey go to a person.
 // The same scoring the income decision reads (`income_engine.match_bands`); never re-derived here.
