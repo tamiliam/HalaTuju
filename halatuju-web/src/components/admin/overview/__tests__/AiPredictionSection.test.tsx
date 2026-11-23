@@ -67,7 +67,7 @@ describe('the card\'s figures (an organisation admin)', () => {
     expect(identity.textContent).toContain('lost −52')
     const chips = within(screen.getByTestId('ai-reasons-identity')).getAllByRole('listitem')
     expect(chips.map((c) => c.textContent)).toEqual([
-      'The documents show something different −30', 'Not given −20'])
+      'Document(s) show something different −30', 'Not given −20'])
   })
 
   it('shows the "By fact" columns in the design\'s order', () => {

@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Owner phone check, 23 Nov: "Submit your interview findings" now reads "Submit interview findings", and "Write your conclusion" now reads "Write your recommendation" (en; ms and ta follow, for Sol review).
 - A long item that wraps (for example "Complete your assessment: Identity, Academic, Pathway, and Income") showed its bullet beside its last line. Each item button is now a block, so the bullet sits on the first line.
 - Tests: view.decisionMissing.test.tsx pins the block class and the three-language wording.
+- Fail "Why?" chips, owner wording 23 Nov (en only; ms and ta unchanged, for Sol): "Proof is missing/unclear", "Document looks false/altered", "Document(s) show something different", "Interview revealed something different". The reviewer Guide and FAQ, the AI card tests and the fail_reasons.py comments follow. Codes are unchanged.
 
 ### Web first-load JS: the profile and course words leave core (2026-11-23)
 

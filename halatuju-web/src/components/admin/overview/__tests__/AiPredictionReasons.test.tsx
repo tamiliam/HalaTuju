@@ -26,8 +26,8 @@ jest.mock('@/lib/i18n', () => ({
 
 describe('reason keys as words', () => {
   it.each([
-    ['fail:proof_missing', 'Proof is missing or unclear'],
-    ['fail:interview_differs', 'The interview or a call showed something different'],
+    ['fail:proof_missing', 'Proof is missing/unclear'],
+    ['fail:interview_differs', 'Interview revealed something different'],
     ['fail:other', 'Other'],
     ['fail:not_given', 'Not given'],
     ['pass:ruleNotMet', 'AI said Rule not met, reviewer passed'],
@@ -46,7 +46,7 @@ describe('the chips on the card', () => {
   it('prints the top reasons with their points, and a dash for a fact with none', () => {
     render(<AiPredictionBlock ai={metrics()} t={t} />)
     expect(screen.getByTestId('ai-reasons-academic').textContent)
-      .toBe('The interview or a call showed something different −50AI said Rule not met, reviewer passed −28')
+      .toBe('Interview revealed something different −50AI said Rule not met, reviewer passed −28')
     expect(screen.getByTestId('ai-reasons-income').textContent).toBe('–')
   })
 
@@ -57,6 +57,6 @@ describe('the chips on the card', () => {
     render(<AiPredictionBlock ai={ai} t={t} />)
     const text = screen.getByTestId('ai-reasons-identity').textContent as string
     expect(text).not.toMatch(/fail:|pass:/)
-    expect(text).toContain('A document looks false or altered −10')
+    expect(text).toContain('Document looks false/altered −10')
   })
 })

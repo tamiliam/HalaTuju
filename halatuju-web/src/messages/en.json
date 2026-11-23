@@ -5208,10 +5208,10 @@
         "failWhy": "Why?",
         "failReasonLabel": "Reason",
         "failReason": {
-          "proof_missing": "Proof is missing or unclear",
-          "document_false": "A document looks false or altered",
-          "documents_differ": "The documents show something different",
-          "interview_differs": "The interview or a call showed something different",
+          "proof_missing": "Proof is missing/unclear",
+          "document_false": "Document looks false/altered",
+          "documents_differ": "Document(s) show something different",
+          "interview_differs": "Interview revealed something different",
           "other": "Other"
         }
       },

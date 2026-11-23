@@ -205,9 +205,9 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>Which reasons can I give when I <strong>Fail</strong> a fact?</>,
-      a: <>Five, all about the student, never the AI: <em>Proof is missing or unclear</em>, <em>A document looks
-        false or altered</em>, <em>The documents show something different</em>, <em>The interview or a call showed
-        something different</em>, and <em>Other</em>. Every Fail takes one; <em>Other</em> is chosen for you until
+      a: <>Five, all about the student, never the AI: <em>Proof is missing/unclear</em>, <em>Document looks
+        false/altered</em>, <em>Document(s) show something different</em>, <em>Interview revealed something
+        different</em>, and <em>Other</em>. Every Fail takes one; <em>Other</em> is chosen for you until
         you pick another.</>,
     },
     {

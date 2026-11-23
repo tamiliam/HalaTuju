@@ -237,9 +237,9 @@ export const roleReviewer: ManualChapter = {
           IPTA or ILKA, the right start year, not already funded, not abroad.</span>
           <span className="block"><strong>Income</strong> — the family is B40.</span>
           <span className="mt-2 block">Every Fail asks <strong>Why?</strong> The reason is about the student, never
-          about the AI. Tap one: <em>Proof is missing or unclear</em>, <em>A document looks false or altered</em>,
-          <em> The documents show something different</em>, <em>The interview or a call showed something
-          different</em>, or <em>Other</em>. <em>Other</em> is already chosen, so a Fail never stops you saving.</span>
+          about the AI. Tap one: <em>Proof is missing/unclear</em>, <em>Document looks false/altered</em>,
+          <em> Document(s) show something different</em>, <em>Interview revealed something different</em>,
+          or <em>Other</em>. <em>Other</em> is already chosen, so a Fail never stops you saving.</span>
           <span className="mt-2 block">If you choose <strong>Approve</strong> while a fact is on
         Fail, a warning asks if you really want to accept; it does not stop you. <strong>Approve needs the
         reporting date</strong>: when the reporting-date box shows and no date is saved, the <strong>Still to
