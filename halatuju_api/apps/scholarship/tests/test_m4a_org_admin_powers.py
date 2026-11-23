@@ -7,7 +7,8 @@ a super only, read through ONE helper (`staff_permissions.holds_org_admin_powers
 - only a super sets or clears it; a NULL organisation admin row reads as holding it (fail-safe);
 - the organisation's last holder cannot lose it (`last_org_admin_powers`, 409);
 - a new organisation admin's invitation carries it (`invite_permissions`);
-- each of the six powers (`ORG_ADMIN_POWERS`) turns off with the key;
+- each of the eight powers (`ORG_ADMIN_POWERS`; S3 / M4b added credit approve and the Vircle ID) turns
+  off with the key;
 - the drift test: a gate that calls the helper is named in `ORG_ADMIN_POWERS`, and every name there
   still reads it;
 - Q3: for GIVING, the powers count as holding Payments View, Prepare and Approve, never Check (`not_held`).
@@ -25,7 +26,7 @@ from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
 from apps.courses.staff_delete_rules import sole_org_admin_ids
 from apps.courses.tests.test_m1a_archive_restore import ARCHIVE, DELETE, READ, SUPABASE
-from apps.scholarship import payments, payments_chain, surface_gates
+from apps.scholarship import credit_steps, payments, payments_chain, surface_gates
 from apps.scholarship.models import StaffActivity
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_org,
@@ -85,7 +86,8 @@ class TheHelper(TestCase):
 
 
 class EachPowerTurnsOffWithTheKey(TestCase):
-    """The six powers `ORG_ADMIN_POWERS` lists, asked of the same organisation admin with and without the key."""
+    """The eight powers `ORG_ADMIN_POWERS` lists (six at M4a, two at S3 / M4b), asked of the same
+    organisation admin with and without the key."""
 
     @classmethod
     def setUpTestData(cls):
@@ -97,7 +99,7 @@ class EachPowerTurnsOffWithTheKey(TestCase):
         cls.off.refresh_from_db()
         cls.on.refresh_from_db()
 
-    def test_the_six(self):
+    def test_the_eight(self):
         def powers(a):
             return {
                 'manage_team': 'manage_team' in sp.resolve(a),
@@ -107,6 +109,10 @@ class EachPowerTurnsOffWithTheKey(TestCase):
                 'payment_fallback': payments_chain._fallback_may(a),
                 # `may_approve_platform_sponsors` also asks `sponsors.approve`, which both hold (ORG_ADMIN_SET)
                 'platform_sponsors': surface_gates.may_approve_platform_sponsors(a),
+                # S3 / M4b (owner Q-C): countersigning a credit and correcting the Vircle ID. The organisation
+                # admin's stored list holds no Payments Approve here, so the powers alone decide.
+                'credit_approve': credit_steps.may_approve(a),
+                'vircle_id': surface_gates.may_correct_vircle_id(a),
             }
         names = [code for code, _gates in v2.ORG_ADMIN_POWERS]
         self.assertEqual(sorted(powers(self.on)), sorted(names))

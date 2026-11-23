@@ -28,7 +28,7 @@
  *   TARGET    a rule about the person ACTED ON or listed, not the viewer
  *   SIDE      which side of an organisation request the viewer is on (owner or requester)
  *   DISPLAY   a label, chip, Guide chapter or line of text; never a fence
- *   M4        the money lane, frozen until M4
+ *   M4        the money lane, frozen until M4 (empty since S3 / M4b, 23 Nov: the sponsor credit seats are served)
  *   FALSE     not a role at all (a key name, an invitation kind, a busy state, a session scope, a family role)
  */
 import * as fs from 'fs'
@@ -210,10 +210,6 @@ const ALLOWED: Entry[] = [
   ['lib/navigation.ts', "roles: ['source_partner', 'mentor']", 1, 'KIND', 'Scholars for a source or mentor login: its own page, or its own students; staff by the key'],
   ['lib/staffPermissions.ts', "TEAM_ROLES = ['admin', 'finance', 'qc', 'reviewer']", 1, 'SERVER', 'the server\'s TEAM_ROLES (who carries a permission set), held by a drift test'],
   ['lib/staffPermissions.ts', 'if (row.roles?.includes(role)) return true', 1, 'KIND', 'admitsRow: a row\'s KIND or PLATFORM logins (who the login is), never a staff role on a key row'],
-  // ── M4: money, frozen ────────────────────────────────────────────────────────────────────────────────────
-  ['lib/sponsorDetail.ts', "isSuper = viewerRole === 'super'", 1, 'M4', 'sponsor credit maker and approver; frozen until M4'],
-  ['lib/sponsorDetail.ts', "viewerRole === 'super' || viewerRole === 'admin'", 2, 'M4', 'canRecordCredit mirrors record_admin_credit; frozen until M4'],
-  ['lib/sponsorDetail.ts', "viewerRole === 'org_admin' && !holdsChecker", 1, 'M4', 'sponsor credit approval wait; frozen until M4'],
   // ── FALSE: not a role ────────────────────────────────────────────────────────────────────────────────────
   ['app/admin/scholarship/[id]/view/QcPanel.tsx', "busy === 'qc' ? t(", 3, 'FALSE', 'a busy state named qc'],
   ['app/admin/organisation/staff/page.tsx', "KINDS.filter((k) => k !== 'mentor')", 2, 'FALSE', 'the invitation kind mentor'],
@@ -291,8 +287,10 @@ describe('the scanner itself', () => {
 describe('TD-623 / A10 (web): a role name is never a permission gate', () => {
   it('the scan reads the source (it is not blind)', () => {
     // About 90% of the 156 hits counted when this floor was set (TD-623 review): a scan that quietly loses a
-    // pattern or a directory falls through it.
-    expect(HITS.length).toBeGreaterThanOrEqual(140)
+    // pattern or a directory falls through it. S3 / M4b (23 Nov): 137 hits after the sprint DELETED the four
+    // money role reads in `sponsorDetail.ts` (served flags now); the floor follows a deletion, never a lost
+    // read — the next test still pins every kept entry's exact count.
+    expect(HITS.length).toBeGreaterThanOrEqual(130)
     expect(HITS.some((h) => h.file === 'lib/superRole.ts')).toBe(true)
   })
 

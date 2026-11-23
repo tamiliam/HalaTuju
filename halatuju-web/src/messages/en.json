@@ -8804,7 +8804,9 @@
           "approve_requests": "Approve requests to the HalaTuju team",
           "payment_runs": "See payment runs and build new ones",
           "payment_fallback": "Approve a payment run when no one else can (never one they signed as maker)",
-          "platform_sponsors": "Approve sponsors from the HalaTuju platform"
+          "platform_sponsors": "Approve sponsors from the HalaTuju platform",
+          "credit_approve": "Countersign a sponsor's wallet credit (never one they recorded or checked)",
+          "vircle_id": "Correct a student's Vircle ID"
         }
       },
       "spending": {

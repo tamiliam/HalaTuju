@@ -280,7 +280,10 @@ class TestWalletCreditsKeepToday(TestCase):
                                              email='ben@x.com', status='approved')
         SponsorProgrammeMembership.objects.create(sponsor=cls.sponsor, programme=cls.gift,
                                                   status='approved')
-        cls.maker = _person(cls.org, 'admin', 'Kulaly Maker', 'kc@x.com')
+        # S3 / M4b: the maker in production shape (Sponsors: edit stored, as every live Admin row holds it).
+        from apps.courses import staff_tables
+        cls.maker = _person(cls.org, 'admin', 'Kulaly Maker', 'kc@x.com',
+                            permissions=staff_tables.invite_permissions('admin'))
         cls.suresh = _person(cls.org, 'org_admin', 'Suresh Lead', 'sc@x.com')
 
     def _credit(self):
@@ -300,8 +303,8 @@ class TestWalletCreditsKeepToday(TestCase):
         svc.sign_admin_credit(credit, fin, fin.name)
         self.assertEqual(credit.status, Donation.STATUS_FINANCE_CHECKED)
         with self.assertRaises(svc.CreditError) as cm:
-            svc.sign_admin_credit(credit, fin, fin.name)              # Finance never confirms
-        self.assertEqual(cm.exception.code, 'wrong_role')
+            svc.sign_admin_credit(credit, fin, fin.name)              # the checker never confirms
+        self.assertEqual(cm.exception.code, 'same_signer')            # S3: an approver, never twice
         svc.sign_admin_credit(credit, self.suresh, self.suresh.name)
         self.assertEqual(credit.status, Donation.STATUS_CONFIRMED)
 

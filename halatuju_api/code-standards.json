@@ -305,7 +305,7 @@
       "why": "The pending cards as finance with one payment run and one wallet credit waiting: the chain's holders once per organisation.",
       "ledger": "query_budgets",
       "key": "api/v1/admin/scholarship/my-pending/::GET::finance-1-run",
-      "value": 9
+      "value": 8
     },
     {
       "on": "2026-11-05",
@@ -313,7 +313,7 @@
       "why": "The same as finance with four runs and four credits: EQUAL to the one-run reading.",
       "ledger": "query_budgets",
       "key": "api/v1/admin/scholarship/my-pending/::GET::finance-4-runs",
-      "value": 9
+      "value": 8
     },
     {
       "on": "2026-11-05",

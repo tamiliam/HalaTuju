@@ -4,10 +4,43 @@ Branch `access-s3-m4b`, cut from `2edab4dab` (S1, S1b and S2/M4a inside). Writte
 Roadmap: `docs/plans/2026-11-19-access-by-switches-roadmap.md`, S3 (lines 73-86). Template: the S2 brief
 `docs/plans/2026-11-19-m4a-payment-runs-brief.md`.
 
-**Status: STOPPED AT THE BRIEF.** The stop rule fires: three readings of the roadmap text would change who
-may do what on day one beyond the roadmap plus ruling Q2 (Q-A, Q-B below), one choice has no obvious
-precedent (Q-C), and one debt item needs a ruling the register already asks for (Q-D). No data step is
-needed. Nothing is built until the owner answers.
+**Status: BUILT 23 Nov (local commit on `access-s3-m4b`, not pushed).** The brief stopped first for Q-A to Q-D;
+the owner ruled all four on 23 Nov (below) and the build followed them. Lands WITH or AFTER S2's courses 0100 (its
+migrate-first step): before 0100 an organisation admin with a custom key list does not hold Organisation admin
+powers, so would lose credit approval and the Vircle ID (seat table below).
+
+## Owner rulings, 23 Nov (recorded in `docs/decisions.md` as "owner 23 Nov")
+
+- **Q-A:** only Admins with Sponsors: edit stored in their own seat may record a credit and sign it first. An
+  organisation admin never records or first-signs. (`credit_steps.may_record`)
+- **Q-B:** cancel stays on Sponsors: edit only. (`credit_steps.may_cancel`, the `credits_write` door)
+- **Q-C:** the organisation admin approves through Organisation admin powers, and anyone with Payments: Approve
+  also approves. Nobody approves a credit they recorded or checked. (`credit_steps.may_approve`, `same_signer`)
+- **Q-D:** sponsor terms and sponsor emails are readable with Sponsors: view; writing stays on Sponsors: edit.
+  Closes the TD-498 remainder when live. (`sponsor_terms_read`, `sponsor_emails_read`)
+
+**Production counts (read-only, 23 Nov):** active staff 2 admin, 1 finance, 2 org_admin (all with custom key
+lists), 34 reviewers, 1 super. `sponsor_donations`: 10 rows, all confirmed, none mid-chain. So no in-flight credit
+changes hands on day one.
+
+## Seat table as built (`test_m4b_sponsor_credits.TestTheSeatTable` pins it)
+
+"Check" is the checker seat (`holds_checker_seat`); a super passes every step but is never a seat holder, so
+never arms the check. "Card" is the Overview's wallet-credits card (TD-503).
+
+| Caller | Record | Check | Approve | Cancel | Vircle ID | Card |
+|---|---|---|---|---|---|---|
+| admin, production preset | yes | no | no | yes | no | yes |
+| admin with Payments: Approve added | yes | yes | yes | yes | yes | yes |
+| Payments switches only | no | yes | yes | no | yes | yes |
+| finance, production preset | no | yes | yes | no | yes | yes |
+| organisation admin, after 0100 | no | no | yes | yes | yes | yes |
+| organisation admin, BEFORE 0100 | no | no | **no** | yes | **no** | **no** |
+| reviewer | no | no | no | no | no | no |
+| super | yes | (passes) | yes | yes | yes | no |
+
+The Vircle ID also needs the case itself (`_require_app_write`): a fenced Payments-only person with no
+`scholars` key passes the switch and is still refused by the case fence (403).
 
 ## Owner rulings that bind this sprint
 
@@ -172,7 +205,7 @@ So `Migration: none`.
 
 - **TD-561:** lock the credit row in the sign path: `select_for_update(of=('self',))` inside the transaction,
   re-check the status after the lock, no network call under the lock. Closed "when live".
-- **TD-498 remainder:** waits for Q-D.
+- **TD-498 remainder:** closed by Q-D (owner 23 Nov), when live.
 - **TD-503:** the wallet-credits card shows to anyone holding a credit step seat (maker, checker or
   approver), each seeing only credits waiting on them. Display only; implementation choice.
 - **TD-664 (d):** the Vircle ID gate on keys. Closed "when live".

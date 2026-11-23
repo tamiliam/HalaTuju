@@ -132,8 +132,8 @@ ALIASES = {
     'spending':         ('spending.view', 'spending.edit'),
     'payments_prepare': ('payments.view', 'payments.prepare'),
     'payments_check':   ('payments.view', 'payments.check'),
-    # TD-475 (A1.10a): `payments_approve` IS the wallet credit's checker seat (`credit_steps.CHECKER_KEY`),
-    # so it means the credit's middle check too (was the `finance` LABEL's grant).
+    # TD-475 (A1.10a): `payments_approve` IS the wallet credit's checker seat (S3: the door `credits_check`,
+    # `credit_steps.holds_checker_seat`), so it means the credit's middle check too (was the `finance` LABEL's grant).
     'payments_approve': ('payments.view', 'payments.approve', 'sponsors.check'),
     'manage_team':      (),
     # A1.13b: the award-withdrawal seats have no v2 key yet (like `manage_team`).
@@ -215,7 +215,8 @@ LEAD_BY_ROLE_V2 = NEVER_GRANTABLE
 #: S2 / M4a (owner Q1): what Organisation admin powers grants — the plain list the Permissions card shows
 #: (`v2_editor` serves the codes; the web words them) — and, for each, the gate(s) that read the key
 #: through `holds_org_admin_powers`. `test_m4a_org_admin_powers` fails when a gate calls the helper and
-#: is not named here, or a name here calls it no more. S3 adds the credit approver and the Vircle ID.
+#: is not named here, or a name here calls it no more. S3 / M4b: + the credit approver and the Vircle ID
+#: (owner Q-C, 23 Nov: each also opens to the Payments Approve switch).
 #: (A3's money carry-over by role, `LEAD_MONEY_UNTIL_M4`, is gone: TD-620.)
 ORG_ADMIN_POWERS = (
     ('manage_team', ('courses/staff_permissions.py::resolve',)),
@@ -224,6 +225,8 @@ ORG_ADMIN_POWERS = (
     ('payment_runs', ('scholarship/payments_chain.py::may_read', 'scholarship/payments_chain.py::may_prepare')),
     ('payment_fallback', ('scholarship/payments_chain.py::_fallback_may',)),
     ('platform_sponsors', ('scholarship/surface_gates.py::may_approve_platform_sponsors',)),
+    ('credit_approve', ('scholarship/credit_steps.py::may_approve',)),
+    ('vircle_id', ('scholarship/surface_gates.py::may_correct_vircle_id',)),
 )
 
 

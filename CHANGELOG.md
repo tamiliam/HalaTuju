@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint M4b — sponsor credits and the Vircle ID on Payments switches (2026-11-23)
+
+Branch access-s3-m4b, not pushed. Migration: none (lands with or after S2's courses 0100: before 0100 an organisation admin cannot approve a credit or correct a Vircle ID, see the seat table in the brief). Services: both. Programme ACCESS-BY-SWITCHES S3; owner rulings 23 Nov (Q-A to Q-D) in `docs/decisions.md`. Brief: `docs/plans/2026-11-23-m4b-sponsor-credits-brief.md`.
+- **Q-A, the maker:** only a team member with Sponsors: edit stored in their own seat (or a super) records a wallet credit and signs it first (`credit_steps.may_record`). An organisation admin never does.
+- **Q-B, cancel:** cancelling a credit before it is confirmed stays on Sponsors: edit (`credit_steps.may_cancel`).
+- **Q-C, the approver:** Organisation admin powers (new power `credit_approve`) or Payments Approve countersigns. Nobody approves a credit they recorded or checked (`same_signer`, by email). The checker seat is the `credits_check` door (`sponsors.check`, which Payments Approve brings).
+- **Q-D, sponsor reads:** the sponsor terms and sponsor emails GETs open on Sponsors: view (`sponsor_terms_read`, `sponsor_emails_read`); every write stays on Sponsors: edit. The web tabs still show to editors only (TD-NEW-sponsor-reads-web).
+- **Vircle ID:** the case PATCH's correction asks `surface_gates.may_correct_vircle_id`: the Payments switches, or the organisation admin's new `vircle_id` power. No role label.
+- **Served, never derived:** the sponsor page reads `can_record_credit` and, per credit, `can_sign`, `blocked` and `can_void` from the server (`credit_steps.served`); the web's role reads for credits are deleted.
+- **TD-561:** signing and voiding a credit lock the actor's row first, then the credit's, and re-read its state under the lock (`sponsorship/credits._lock`).
+- **TD-503 (wallet half):** the Overview's wallet_credits card counts for anyone in the maker, checker or approver seat. The Overview reads each organisation's staff once for both money cards, and `programme_overview.attention` reads its awaiting counts in one query: my-pending's budgets for a Payments holder drop from 9 to 8 queries; the organisation admin stays at 11.
+- **Ledgers:** api GATE-LEFT 14 to 10 (money 4 to 0); one new SEPARATION lead read (`credit_steps.may_record`, owner Q-A); cross-app imports 155 to 153; web display-only M4 block emptied (floor 140 to 130 after the deletion, 137 hits). `programme_overview.py` 838 to 835 lines.
+- **Debt closed when live:** TD-498, TD-561, TD-664 (d); TD-503 wallet half. New: TD-NEW-sponsor-reads-web, TD-NEW-credit-maker-unstored.
+- **Tests:** new `test_m4b_sponsor_credits.py` (the seat table, Q-A to Q-D, the lock, the served flags, the card, the Vircle ID); M4b cells in `test_team_tables_matrix` and `test_access_matrix`; web `sponsorDetail.test.ts` and the sponsor page test rewritten for the served flags (the page reads no role for credits). New wording in en / ms / ta (two Organisation admin powers lines); the Malay and Tamil are drafts for a native read.
+
 ### refactor: sprint M4a review round - last Organisation admin powers holder kept through archive, revoke and delete (2026-11-19)
 
 Branch access-s2-m4a, not pushed. Migration: none (0100's hand SQL gains one read-only pre-check). Services: both. From the Opus adversarial review of sprint M4a.

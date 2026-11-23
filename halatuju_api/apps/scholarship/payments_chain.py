@@ -137,8 +137,8 @@ check_step_required = finance_check_required
 def credit_check_required(organisation, credit=None, holders=None):
     """Does this organisation's WALLET-CREDIT chain include the finance check?
 
-    True iff it has at least one ACTIVE holder of the credit checker key (`credit_steps.CHECKER_KEY`,
-    `payments_approve`; a super is never a holder) WHO HAS SIGNED IN (TD-560, S2: as the run's check —
+    True iff it has at least one ACTIVE holder of the credit checker seat (`credit_steps.checker_holders`:
+    `sponsors.check`, which `payments_approve` means; a super is never a holder) WHO HAS SIGNED IN (TD-560, S2: as the run's check —
     a holder who never signed in could never take the step, so must not arm it). Live, never stored.
     Split out at #39 Sprint 2 so sponsor credits keep Admin records -> Finance checks -> the organisation admin countersigns (owner
     question 6: accepting money is the organisation's act).
@@ -154,10 +154,9 @@ def credit_check_required(organisation, credit=None, holders=None):
     """
     if organisation is None:
         return False
-    from apps.courses import staff_permissions
-    from .credit_steps import CHECKER_KEY, collected_signer_emails
+    from .credit_steps import checker_holders, collected_signer_emails
     if holders is None:
-        holders = staff_permissions.holders(organisation, CHECKER_KEY)
+        holders = checker_holders(organisation)
     holders = [a for a in holders if _signed_in(a)]         # TD-560
     if credit is None:
         return bool(holders)

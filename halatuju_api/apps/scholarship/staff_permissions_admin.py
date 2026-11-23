@@ -45,8 +45,8 @@ FILES_ALL = 'files_widened_all'            # gains `see_all`: EVERY student's fi
 FILES_ASSIGNED = 'files_widened_assigned'  # gains `review` from no file access: the assigned ones
 PREPARE_AND_APPROVE = 'prepare_and_approve'
 NOT_SIGNED_IN = 'not_signed_in'
-#: A1.10a (TD-475): gaining `payments_approve` (`credit_steps.CHECKER_KEY`) also ARMS the wallet-credit
-#: check when nobody else active in the organisation holds it. Counted as `credit_check_required`
+#: A1.10a (TD-475): gaining the credit checker seat (`payments_approve` means it; S3: read through
+#: `credit_steps.opens_check`, never the key) ARMS the wallet-credit check when nobody else active in the organisation holds it. Counted as `credit_check_required`
 #: counts: since TD-560 (S2) only holders who have signed in, so a never-signed-in target arms nothing.
 CREDIT_CHECK_ON = 'credit_check_on'
 #: S2 / M4a: unticking Organisation admin powers takes the powers listed in `ORG_ADMIN_POWERS` away.
@@ -309,6 +309,13 @@ def _others_hold(target, key):
                for a in sp.holders(target.owning_organisation_id, key))
 
 
+def _others_check(target):
+    """`_others_hold` for the credit checker seat (S3: `credit_steps.checker_holders`, never the key)."""
+    from .credit_steps import checker_holders
+    return any(a.pk != target.pk and a.first_seen_at is not None
+               for a in checker_holders(target.owning_organisation_id))
+
+
 def consequences(target, before, after):
     """What saving ``after`` over ``before`` would do beyond the keys themselves — codes, in a stable
     order. Pure apart from reads."""
@@ -325,8 +332,9 @@ def consequences(target, before, after):
                 out.append(off)
         if not signed_in and gained & {'payments_check', 'payments_approve'}:
             out.append(NOT_SIGNED_IN)
-        from .credit_steps import CHECKER_KEY
-        if signed_in and CHECKER_KEY in gained and not _others_hold(target, CHECKER_KEY):   # TD-560
+        from . import credit_steps
+        if (signed_in and credit_steps.opens_check(after) and not credit_steps.opens_check(before)
+                and not _others_check(target)):   # TD-560
             out.append(CREDIT_CHECK_ON)
         if signed_in and _WD_APPROVE in lost and not _others_hold(target, _WD_APPROVE):
             out.append(WITHDRAW_LAST_CHECKER)

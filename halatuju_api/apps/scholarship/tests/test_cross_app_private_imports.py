@@ -296,7 +296,6 @@ SCHOLARSHIP_COURSES_ALLOWED = frozenset({
     ('scholarship/card_display.py', 'apps.courses.models', 'Institution'),
     ('scholarship/card_display.py', 'apps.courses.models', 'StpmCourse'),
     ('scholarship/check2_queries.py', 'apps.courses', 'org_config'),
-    ('scholarship/credit_steps.py', 'apps.courses', 'staff_permissions'),
     ('scholarship/development.py', 'apps.courses', 'staff_tables'),
     ('scholarship/emails/interview_mail.py', 'apps.courses', 'org_config'),
     ('scholarship/emails/payment_mail.py', 'apps.courses.models', 'PartnerAdmin'),
@@ -426,7 +425,6 @@ SCHOLARSHIP_COURSES_ALLOWED = frozenset({
     ('scholarship/views_admin/sources.py', 'apps.courses', 'staff_tables'),
     ('scholarship/views_admin/sources.py', 'apps.courses.models', 'PartnerOrganisation'),
     ('scholarship/views_admin/sponsor_terms.py', 'apps.courses', 'staff_tables'),
-    ('scholarship/views_admin/sponsors.py', 'apps.courses', 'staff_permissions'),
     ('scholarship/views_admin/staff.py', 'apps.courses', 'staff_permissions'),
     ('scholarship/views_admin/staff.py', 'apps.courses', 'staff_tables'),
     ('scholarship/views_admin/staff.py', 'apps.courses.models', 'PartnerAdmin'),
@@ -482,7 +480,7 @@ class TestScholarshipReachesCoursesThroughThePublicDoor(SimpleTestCase):
 
     def test_the_allowlist_only_shrinks(self):
         # 155 direct (file, module, name) entries today. Lower this when a line is deleted.
-        self.assertLessEqual(len(SCHOLARSHIP_COURSES_ALLOWED), 155)
+        self.assertLessEqual(len(SCHOLARSHIP_COURSES_ALLOWED), 153)
 
     def test_a_synthetic_new_direct_import_is_caught(self):
         cases = {

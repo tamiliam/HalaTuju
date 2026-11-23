@@ -415,7 +415,11 @@ class TestEndpoints(TestCase):
         return c
 
     def test_finance_may_read_sponsors_but_not_author_what_they_are_bound_by(self):
-        self.assertEqual(self._client(self.finance).get(TERMS).status_code, 403)
+        # S3 / M4b (TD-498 remainder, owner Q-D, 23 Nov): reading the terms asks Sponsors: view, which the
+        # Payments switches bring; writing them still asks Sponsors: edit.
+        c = self._client(self.finance)
+        self.assertEqual(c.get(TERMS).status_code, 200)
+        self.assertEqual(c.post(TERMS, {'version': '2026-sponsor-9'}, format='json').status_code, 403)
 
     def test_an_unauthenticated_caller_is_refused(self):
         self.assertIn(APIClient().get(TERMS).status_code, (401, 403))

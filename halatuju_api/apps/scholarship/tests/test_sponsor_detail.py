@@ -46,6 +46,7 @@ EXPECTED_KEYS = {
     'programmes', 'credits', 'sponsorships', 'referrals', 'memberships',
     'assignable_programmes',
     'finance_check_required', 'fenced',
+    'can_record_credit',   # S3 / M4b: served, so the web derives no seat
 }
 
 
@@ -56,9 +57,12 @@ def _token(uid):
 
 def _admin(org, role, name, email, uid=None):
     # TD-560 (S2 / M4a): a checker who never signed in arms nothing, so the cast has signed in.
+    # S3 / M4b: an Admin row in its production shape (Sponsors: edit stored), the maker's seat.
+    from apps.courses import staff_tables
     return PartnerAdmin.objects.create(
         supabase_user_id=uid or f'sd-{email}', role=role, is_active=True,
-        owning_organisation=org, name=name, email=email, first_seen_at=timezone.now())
+        owning_organisation=org, name=name, email=email, first_seen_at=timezone.now(),
+        permissions=staff_tables.invite_permissions(role) if role == 'admin' else None)
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -441,7 +445,7 @@ class TestFinanceCheckFlag(SponsorDetailBase):
         """A1.10a review fix: the sign service arms the check per credit (a holder who signed it does
         not count), so the screen gets the same answer per credit, `check_required`."""
         keyed = _admin(self.org_a, 'admin', 'Keyed Maker', 'keyedmaker@a.com')
-        keyed.permissions = ['see_all', 'payments_approve']
+        keyed.permissions = ['see_all', 'payments_approve', 'sponsors.view', 'sponsors.edit']   # S3: the maker's seat
         keyed.save(update_fields=['permissions'])
         own = svc.record_admin_credit(
             sponsor=self.sponsor, programme=self.prog_a, amount=Decimal('9000'),

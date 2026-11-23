@@ -29,7 +29,7 @@ from apps.courses.models import PartnerAdmin
 from apps.scholarship import my_pending, payments_chain, programme_overview, staff_person
 from apps.scholarship.services import assignment
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, m4a_display, make_admin, make_org,
+    M4A_DISPLAY_ONLY, TEST_JWT_SECRET, authed_client, m4a_display, make_admin, make_org,
 )
 
 M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
@@ -87,6 +87,12 @@ def _m4a(read, a):
     out = dict(read)
     for k in ('effective_v2', 'page_keys'):
         out[k] = m4a_display(read[k])
+    if 'doors' in read:
+        # S3 / M4b: a door that reads ONLY display-only keys (`credits_check` = `sponsors.check`) follows
+        # the display change; their gates read the powers instead (`credit_steps.may_approve`).
+        out['doors'] = {d: (any(k in out['effective_v2'] for k in st.DOOR_KEYS[d])
+                            if set(st.DOOR_KEYS[d]) <= set(M4A_DISPLAY_ONLY) else v)
+                        for d, v in read['doors'].items()}
     return out
 
 

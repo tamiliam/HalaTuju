@@ -368,11 +368,11 @@ def plan_table_change(target, table, action, *, open_n=None, to_no_group=False):
         spa._refuse_stranding(target, out['before'], out['after'])
     out['consequences'] = (spa.consequences(target, out['before'], out['after'])   # TD-614: live only
                            if live and not target.is_mentor else [])
-    # TD-475 (A1.10a): the wallet-credit check turns on the KEY `payments_approve` (`credit_steps.
-    # CHECKER_KEY`), so it goes off when this change takes the key from the organisation's last active
-    # holder — whatever their label (was: leaving the Finance LABEL).
-    from .credit_steps import CHECKER_KEY
-    out['finance_check_off'] = bool(live and CHECKER_KEY in out['before'] and CHECKER_KEY not in out['after']
+    # TD-475 (A1.10a): the wallet-credit check turns on the checker SEAT (S3: `credit_steps.opens_check`),
+    # so it goes off when this change takes the seat from the organisation's last active holder —
+    # whatever their label (was: leaving the Finance LABEL).
+    from .credit_steps import opens_check
+    out['finance_check_off'] = bool(live and opens_check(out['before']) and not opens_check(out['after'])
                                     and target.owning_organisation_id is not None
                                     and staff_lifecycle.has_signed_in(target)   # TD-560: only a signed-in holder arms it
                                     and not staff_lifecycle.other_active_checker(target))

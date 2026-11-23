@@ -8,7 +8,6 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import RecordState from '@/components/admin/RecordState'
-import { effectiveRole } from '@/lib/navigation'
 import { holdsDoor } from '@/lib/pageGuard'
 import {
   canRecordCredit, creditActions, creditArmed, creditableProgrammes, creditChain,
@@ -90,7 +89,6 @@ export default function AdminSponsorDetailPage() {
   const { t } = useT()
   const params = useParams<{ id: string }>()
   const id = Number(params?.id)
-  const viewerRole = effectiveRole(role)
 
   const [detail, setDetail] = useState<AdminSponsorDetail | null>(null)
   // A BOOLEAN, not a message — `RecordState` owns the wording (see reviewers/[id]).
@@ -153,7 +151,7 @@ export default function AdminSponsorDetailPage() {
 
   const pending = pendingTotal(detail.credits)
   const creditable = creditableProgrammes(detail)
-  const mayRecord = canRecordCredit(viewerRole) && creditable.length > 0
+  const mayRecord = canRecordCredit(detail) && creditable.length > 0
   const gifts = membershipRows(detail)
   const maySetGift = holdsDoor(role, 'sponsor_vet')   // M3c list W: `sponsors.approve`
 
@@ -384,7 +382,7 @@ export default function AdminSponsorDetailPage() {
               <tbody className="divide-y">
                 {pagedCredits.rows.map((c) => {
                   const armed = creditArmed(c, detail.finance_check_required) // A1.10a: per credit; payments_approve key
-                  const actions = creditActions(c, armed, viewerRole, role?.permissions)
+                  const actions = creditActions(c, armed)   // S3 / M4b: the served can_sign / blocked / can_void
                   return (
                   <tr key={c.id} className="align-top">
                     <td className="px-4 py-3 whitespace-nowrap text-ground-600">{formatDate(c.created_at)}</td>

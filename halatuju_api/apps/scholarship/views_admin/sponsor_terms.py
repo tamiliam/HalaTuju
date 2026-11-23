@@ -7,6 +7,7 @@ views. The alias is the original one and is kept exactly so the moved bodies are
 Part of the `views_admin` package. Every name below is re-exported from
 `views_admin/__init__.py`, so `urls.py` and every importer are unchanged.
 """
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
 from .. import sponsor_terms as sponsor_terms_mod
@@ -91,16 +92,25 @@ class _SponsorTermsBase(_AdminBase):
     reason: authoring what every donor is bound by is an editorial power, not a reading one.
     Finance reads the sponsor list because money is its business; it does not write the terms.
     Team tables T5c: the v2 key `sponsors.edit` (finance holds `sponsors.view` / `.check`, never `.edit`).
+
+    S3 / M4b (TD-498 remainder, owner Q-D, 23 Nov): a READ (GET / HEAD / OPTIONS: the list, a version,
+    its validation and its preview) asks `sponsors.view` (`may_read`); every write still asks
+    `sponsors.edit` (`may_author`), and publishing also asks `may_approve_platform_sponsors`.
     """
     @staticmethod
     def may_author(admin):
         return staff_tables.opens_door(admin, 'sponsor_terms')
 
+    @staticmethod
+    def may_read(admin):
+        return staff_tables.opens_door(admin, 'sponsor_terms_read')
+
     def _terms_admin(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not self.may_author(admin):
+        door = _SponsorTermsBase.may_read if request.method in SAFE_METHODS else _SponsorTermsBase.may_author
+        if not door(admin):
             return None, self._deny_role()
         return admin, None
 

@@ -117,6 +117,16 @@ def may_approve_platform_sponsors(admin):
     return may_vet_sponsors(admin) and bool(admin.is_super or sp.holds_org_admin_powers(admin))
 
 
+def may_correct_vircle_id(admin):
+    """CORRECT a scholar's Vircle ID on the case (`AdminApplicationDetailView.patch`, Payments D9): a super,
+    Organisation admin powers, or the Payments Approve switch (S3 / M4b, TD-664 d; owner Q-C, 23 Nov — the
+    ID decides where money goes, so it sits with the people who approve money). The case's own write
+    fence (`_require_app_write`) still comes first, in the view."""
+    from apps.courses import staff_permissions as sp
+    return bool(admin is not None and (admin.is_super or sp.holds_org_admin_powers(admin)
+                                       or sp.holds(admin, 'payments_approve')))
+
+
 def may_send_senior_letters(admin):
     """Issue, resend or withdraw a SENIOR letter on a scholar's file (`letters._senior`): `scholars.approve`
     (M3c D5; migration 0099 gives it to every organisation admin's row). The file is fenced by its view."""

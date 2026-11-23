@@ -47,9 +47,13 @@ def _accept(sponsor, programme):
 
 def _admin(org, role, name, email, uid=None, active=True, signed_in=True):
     # TD-560 (S2 / M4a): a checker who never signed in arms nothing, so the cast has signed in.
+    # S3 / M4b: an Admin is made in the production shape (Sponsors: edit stored, as every live Admin row
+    # holds it after 0097), since the maker's seat is that switch, never the label.
+    from apps.courses import staff_tables
     return PartnerAdmin.objects.create(
         supabase_user_id=uid or f'cr-{email}', role=role, is_active=active,
         owning_organisation=org, name=name, email=email,
+        permissions=staff_tables.invite_permissions(role) if role == 'admin' else None,
         first_seen_at=timezone.now() if signed_in else None)
 
 
@@ -324,7 +328,9 @@ class TestKeyedMakerNeverStrandsTheirCredit(CreditMixin, TestCase):
 
     def _keyed_maker(self):
         m = _admin(self.org, 'admin', 'Keyed Maker', 'keyedmaker@x.com')
-        m.permissions = ['see_all', 'spending', 'payments_prepare', 'payments_approve']
+        # S3 / M4b: the maker's seat is Sponsors: edit stored in their own seat (owner Q-A, 23 Nov).
+        m.permissions = ['see_all', 'spending', 'payments_prepare', 'payments_approve',
+                         'sponsors.view', 'sponsors.edit']
         m.save(update_fields=['permissions'])
         return m
 
@@ -336,7 +342,7 @@ class TestKeyedMakerNeverStrandsTheirCredit(CreditMixin, TestCase):
         self.assertFalse(payments_chain.credit_check_required(self.org, c))   # …but not for THIS credit
         with self.assertRaises(svc.CreditError) as ctx:                       # they still cannot sign twice
             self._sign(c, maker)
-        self.assertEqual(ctx.exception.code, 'wrong_role')
+        self.assertEqual(ctx.exception.code, 'same_signer')                  # S3: Payments Approve approves
         self._sign(c, self.approver)
         self.assertEqual(c.status, Donation.STATUS_CONFIRMED)
         self.assertEqual(c.finance_checked_by, '')
@@ -357,7 +363,7 @@ class TestKeyedMakerNeverStrandsTheirCredit(CreditMixin, TestCase):
         self.assertEqual(c.status, Donation.STATUS_FINANCE_CHECKED)
         with self.assertRaises(svc.CreditError) as ctx:                       # nor the checker approve
             self._sign(c, checker)
-        self.assertEqual(ctx.exception.code, 'wrong_role')
+        self.assertEqual(ctx.exception.code, 'same_signer')                  # S3: an approver, never twice
         self._sign(c, self.approver)
         self.assertEqual(c.status, Donation.STATUS_CONFIRMED)
 

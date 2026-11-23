@@ -1,5 +1,37 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-23 — Sponsor credits and the Vircle ID on Payments switches (sprint M4b)
+
+Owner rulings, 23 Nov (programme ACCESS-BY-SWITCHES S3). Services: both. Migration: none, but the sprint lands WITH or
+AFTER S2's courses 0100 (an organisation admin with a custom key list holds Organisation admin powers only once 0100
+has stored `organisation.admin`). Brief: `docs/plans/2026-11-23-m4b-sponsor-credits-brief.md`.
+- **Q-A, the maker (owner 23 Nov).** Only Admins with Sponsors: edit stored in their own seat may record a credit and
+  sign it first; an organisation admin never records or first-signs. **Decision:** `credit_steps.may_record` = a super,
+  or a team member (never the lead tier) who opens `credits_write` (`sponsors.edit`, stored). The sponsor page reads
+  the served `can_record_credit`. Why: the approver has to stay free to countersign; an organisation admin who recorded
+  could never approve their own credit (`same_signer`), and a one-admin organisation would be stuck.
+- **Q-B, cancel (owner 23 Nov).** Cancel stays on Sponsors: edit only (`credit_steps.may_cancel`, the `credits_write`
+  door); Payments: Approve alone does not cancel.
+- **Q-C, the approver (owner 23 Nov).** The organisation admin approves through Organisation admin powers, and anyone
+  with Payments: Approve also approves; nobody approves a credit they recorded or checked. **Decision:**
+  `credit_steps.may_approve` (super, `holds_org_admin_powers`, or `payments_approve`); `same_signer` by email in
+  `step_refusal`. No fallback rule (unlike payment runs). The checker seat is `sponsors.check` (the `credits_check`
+  door), which Payments: Approve brings through the alias; `CHECKER_KEY` is gone. The Vircle ID correction reads the
+  same pair (`surface_gates.may_correct_vircle_id`), after the case's own write fence.
+- **Q-D, sponsor terms and emails (owner 23 Nov).** Readable with Sponsors: view; writing stays on Sponsors: edit.
+  **Decision:** two read doors, `sponsor_terms_read` and `sponsor_emails_read` (`sponsors.view`); every GET on the terms
+  and the emails reads them, every write keeps `sponsor_terms` / `sponsor_emails`. Closes the TD-498 remainder when
+  live. The web still shows the Emails and Terms tabs to editors only (TD-NEW-sponsor-reads-web).
+- **Served, never derived (web).** The sponsor page draws each credit's `can_sign`, `blocked` and `can_void` from
+  `credit_steps.served`; the screen derives only which step is next (a label). The four money role reads in
+  `sponsorDetail.ts` are deleted, and the four money GATE-LEFT entries on the server (14 to 10, 4 money to 0).
+- **The Overview card (TD-503).** The wallet-credits card shows to anyone in the maker, checker or approver seat, each
+  counting only the credits waiting for them. To keep the Overview inside its query budget (org admin 11), the card
+  shares the payment-run card's staff read, and `programme_overview.attention` reads the with-reviewer and awaiting-QC
+  populations in one query (same answers).
+- **Lock (TD-561).** Signing and cancelling a credit lock its row (`select_for_update`), re-read the status under the
+  lock, and send the confirmation email after commit.
+
 ## 2026-11-19 — Payment runs on Payments switches; one key, Organisation admin powers (sprint M4a)
 
 Owner rulings, 19 Nov (programme ACCESS-BY-SWITCHES S2). Services: both. Migration: courses 0100 (additive data,

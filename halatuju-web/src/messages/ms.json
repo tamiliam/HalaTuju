@@ -8804,7 +8804,9 @@
           "approve_requests": "Meluluskan permintaan kepada pasukan HalaTuju",
           "payment_runs": "Melihat larian pembayaran dan membina larian baharu",
           "payment_fallback": "Meluluskan larian pembayaran apabila tiada orang lain boleh (tidak sekali-kali larian yang ditandatanganinya sebagai penyedia)",
-          "platform_sponsors": "Meluluskan penaja daripada platform HalaTuju"
+          "platform_sponsors": "Meluluskan penaja daripada platform HalaTuju",
+          "credit_approve": "Menandatangani balas kredit dompet penaja (tidak sekali-kali kredit yang direkod atau diperiksanya)",
+          "vircle_id": "Membetulkan ID Vircle pelajar"
         }
       },
       "spending": {

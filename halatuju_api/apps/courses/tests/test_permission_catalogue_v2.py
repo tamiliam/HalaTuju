@@ -256,12 +256,23 @@ def _credit(status):
                            finance_checked_by_email='', confirmed_by_email='', save=lambda **kw: None)
 
 
+#: TD-561 (S3 / M4b): sign and cancel lock the actor and the credit's row first; the probe credit is no row,
+#: so the lock is stood down here (it is pinned for real in `test_m4b_sponsor_credits`).
+_NO_LOCK = 'apps.scholarship.sponsorship.credits._lock'
+
+
 def _sign_credit(a, status, check_armed):
     from apps.scholarship import sponsorship
     with mock.patch('apps.scholarship.payments.credit_check_required', return_value=check_armed), \
-            mock.patch('apps.scholarship.staff_activity.record'), \
+            mock.patch('apps.scholarship.staff_activity.record'), mock.patch(_NO_LOCK), \
             mock.patch('apps.scholarship.sponsor_notify.send_credit_confirmed'):
         return _credit_refused(lambda: sponsorship.sign_admin_credit(_credit(status), a, a.name))
+
+
+def _void_credit(a):
+    from apps.scholarship import sponsorship
+    with mock.patch(_NO_LOCK):
+        return _credit_refused(lambda: sponsorship.cancel_admin_credit(_credit('confirmed'), a))
 
 
 def _doors():
@@ -303,10 +314,12 @@ def _doors():
             ('sponsors.edit',)),
         'credit_maker_sign': (lambda a: _sign_credit(a, 'draft', False), ('sponsors.edit',)),
         'credit_check': (lambda a: _sign_credit(a, 'admin_signed', True), ('sponsors.check',)),
-        'credit_countersign': (lambda a: _sign_credit(a, 'finance_checked', True),
-                               ('sponsors.approve',)),
-        'credit_void': (lambda a: _credit_refused(lambda: sponsorship.cancel_admin_credit(
-            _credit('confirmed'), a)), ('sponsors.edit',)),
+        # S3 / M4b (owner Q-C): the approver is Payments Approve OR Organisation admin powers; one probe each.
+        'credit_countersign': (lambda a: not sp.holds_org_admin_powers(a)
+                               and _sign_credit(a, 'finance_checked', True), ('payments.approve',)),
+        'credit_countersign_powers': (lambda a: sp.holds_org_admin_powers(a)
+                                      and _sign_credit(a, 'finance_checked', True), ('organisation.admin',)),
+        'credit_void': (_void_credit, ('sponsors.edit',)),
         'invite_mentor': (mentor_invite.may_invite, ('invitations.edit',)),
         'invite_source': (source_invite.may_invite, ('invitations.edit',)),
         'contracts': (surface_gates.may_open_contracts, ('contracts.view', 'contracts.edit')),
@@ -477,6 +490,8 @@ V2_DOOR_MODULES = {
     'courses/views_staff_list.py',
     # S2 / M4a: Payments read (`may_read`: the old keys, or the payments_read door — View or the powers)
     'scholarship/payments_chain.py',
+    # S3 / M4b: the credit seats (maker: sponsors.edit; checker: sponsors.check; cancel: sponsors.edit)
+    'scholarship/credit_steps.py',
 }
 
 
@@ -598,6 +613,9 @@ class DoorKeysTable(TestCase):
             'senior_letters': ('scholars.approve',),
             # S2 / M4a: Payments, on the View switch (Organisation admin powers hold it too).
             'payments_read': ('payments.view',),
+            # S3 / M4b: the credit checker's seat; sponsor terms and emails read on `.view` (owner Q-D, TD-498).
+            'credits_check': ('sponsors.check',),
+            'sponsor_terms_read': ('sponsors.view',), 'sponsor_emails_read': ('sponsors.view',),
         })
 
     def test_an_unknown_door_raises(self):

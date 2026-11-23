@@ -266,11 +266,11 @@ class AdminApplicationDetailView(_AdminBase):
         if 'mentoring_candidate' in request.data:
             app.mentoring_candidate = bool(request.data['mentoring_candidate'])
             fields.append('mentoring_candidate')
-        # Payments D9: a super/org_admin may CORRECT the Vircle ID here (without asking the
-        # student to redo the Action-Centre task). Digits-only; must pass the D9 rule (or blank
-        # to clear). Restricted to super/org_admin even though _require_app_write is wider.
+        # Payments D9: CORRECT the Vircle ID here (without asking the student to redo the Action-Centre
+        # task). Digits-only; must pass the D9 rule (or blank to clear). S3 / M4b (TD-664 d): on top of
+        # the case's write fence, `surface_gates.may_correct_vircle_id` (a switch, never the role).
         if 'vircle_id' in request.data:
-            if not (admin.is_super or admin.role == 'org_admin'):
+            if not surface_gates.may_correct_vircle_id(admin):
                 return self._deny_role()
             from .. import payments
             vid = ''.join(ch for ch in (request.data.get('vircle_id') or '') if ch.isdigit())

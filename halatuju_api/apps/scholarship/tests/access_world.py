@@ -70,6 +70,10 @@ WRITERS_WITHOUT_A_READ = ('scholars_only_a', 'approve_only_a')
 #: holds them to the payment routes (`PAYMENT_CALLERS`). S6 retires `finance_a`.
 PAYMENT_CALLERS = ('payments_holder_a', 'payments_viewer_a', 'oa_unkeyed_a')
 
+#: S3 / M4b: the wallet-credit seats, by key and not by label. Not manifest columns: `test_access_matrix` holds
+#: them to the credit routes and drives one credit through the chain (`test_a_credit_runs_by_switch`).
+CREDIT_CALLERS = ('sponsors_editor_a',)
+
 #: Callers that authenticate with a shared secret instead of a JWT. They carry no JWT, so on every
 #: other route they ARE the anonymous caller (only the three internal views read these headers —
 #: `cron.py` X-Cron-Secret, `cron.py` X-Vircle-Secret, `intake.py` X-Twilio-Signature).
@@ -329,6 +333,11 @@ def build_world():
                            by=w.super, with_v2=True, with_powers=True)
     for who in (w.payments_holder_a, w.payments_viewer_a, w.oa_unkeyed_a):
         who.refresh_from_db()
+    # S3 / M4b: an admin with Sponsors: view + edit only (the credit maker's seat; no other key on the row).
+    # The checker and approver by switch is `payments_holder_a` (Payments Approve, owner Q-C).
+    w.sponsors_editor_a = make_admin('admin', owning_org=w.org_a)
+    PartnerAdmin.objects.filter(pk=w.sponsors_editor_a.pk).update(permissions=['sponsors.view', 'sponsors.edit'])
+    w.sponsors_editor_a.refresh_from_db()
     # Review round 2 (H1): two keys that WRITE but give no READ of a case, outside JWT_ROLES like the
     # granted member. `test_access_matrix` sweeps them in the case-stage replay, where they are allowed nowhere.
     w.scholars_only_a = make_admin('admin', owning_org=w.org_a, permissions=['scholars'])
@@ -475,6 +484,6 @@ def build_world():
         w.clients[role] = authed_client(who, APIClient(raise_request_exception=False))
     for role in SECRET_ROLES:
         w.clients[role] = APIClient(raise_request_exception=False)
-    for role in ('admin_granted_a', *WRITERS_WITHOUT_A_READ, *PAYMENT_CALLERS):
+    for role in ('admin_granted_a', *WRITERS_WITHOUT_A_READ, *PAYMENT_CALLERS, *CREDIT_CALLERS):
         w.clients[role] = authed_client(getattr(w, role), APIClient(raise_request_exception=False))
     return w

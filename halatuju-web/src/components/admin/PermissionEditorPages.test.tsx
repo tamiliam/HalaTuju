@@ -277,7 +277,8 @@ describe('permName: a v2 page key reads "<page>: <level>"', () => {
 })
 
 describe('S2 / M4a: Organisation admin powers and the Payments switches', () => {
-  const POWERS = ['manage_team', 'pay_bill', 'approve_requests', 'payment_runs', 'payment_fallback', 'platform_sponsors']
+  const POWERS = ['manage_team', 'pay_bill', 'approve_requests', 'payment_runs', 'payment_fallback', 'platform_sponsors',
+    'credit_approve', 'vircle_id']
   const KEY = ['organisation', 'admin'].join('.')
   const VIEW = ['payments', 'view'].join('.')
   const powersSwitch = () => screen.getByRole('switch', { name: 'admin.permLayout.orgAdminPowers.name' }) as HTMLButtonElement

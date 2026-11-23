@@ -1,5 +1,5 @@
 import {
-  canRecordCredit, canVoid, creditActions, creditArmed, creditableProgrammes, creditChain, creditErrorKey,
+  canRecordCredit, creditActions, creditArmed, creditableProgrammes, creditChain, creditErrorKey,
   hasNoMoney, pendingTotal, seenBand, studentStage,
 } from '../sponsorDetail'
 import type { AdminSponsorCredit, AdminSponsorDetail } from '../admin-api'
@@ -82,21 +82,6 @@ describe('creditChain', () => {
   })
 })
 
-describe('canVoid', () => {
-  it('refuses a confirmed credit — it is reversed by a compensating entry, never cancelled', () => {
-    expect(canVoid(credit({ status: 'confirmed' }))).toBe(false)
-  })
-
-  it('refuses an already-cancelled credit', () => {
-    expect(canVoid(credit({ status: 'cancelled' }))).toBe(false)
-  })
-
-  it('allows an unconfirmed credit', () => {
-    expect(canVoid(credit({ status: 'draft' }))).toBe(true)
-    expect(canVoid(credit({ status: 'admin_signed' }))).toBe(true)
-  })
-})
-
 describe('pendingTotal', () => {
   it('sums only money that has not cleared the chain', () => {
     expect(pendingTotal([
@@ -136,86 +121,42 @@ describe('hasNoMoney', () => {
   })
 })
 
-// ── S2: the actions the credit UI may offer ─────────────────────────────────────
-// Every rule below is ENFORCED by `sponsorship.sign_admin_credit`; these tests pin the
-// mirror, so a divergence shows up here rather than as a button the server refuses.
+// ── S3 / M4b: the actions the credit UI may offer are SERVED ────────────────────
+// `credit_steps.served` answers can_sign / blocked / can_void per credit (owner rulings Q-A to Q-C,
+// 23 Nov: every seat is a switch). The screen derives only which step is next, as a label.
 
 describe('creditActions', () => {
-  it('offers the maker signature on a draft, to the maker only', () => {
-    const draft = credit({ status: 'draft' })
-    expect(creditActions(draft, false, 'admin')).toMatchObject({ nextStep: 'recorded', canSign: true })
-    expect(creditActions(draft, false, 'org_admin').canSign).toBe(false)
-    expect(creditActions(draft, false, 'finance').canSign).toBe(false)
+  it('draws exactly the served flags, never a role', () => {
+    const draft = credit({ status: 'draft', can_sign: true, blocked: null, can_void: true })
+    expect(creditActions(draft, false)).toEqual({
+      nextStep: 'recorded', canSign: true, blocked: null, canVoid: true,
+    })
+    const other = credit({ status: 'draft', can_sign: false, blocked: null, can_void: false })
+    expect(creditActions(other, false)).toMatchObject({ canSign: false, canVoid: false })
   })
 
-  it('sends a signed credit to the APPROVER when finance is dormant', () => {
-    // BrightPath's live path today: no finance admin, so the chain is two steps.
-    const signed = credit({ status: 'admin_signed' })
-    expect(creditActions(signed, false, 'org_admin')).toMatchObject({ nextStep: 'approved', canSign: true })
-    expect(creditActions(signed, false, 'admin').canSign).toBe(false)
+  it('names the next step from the status and whether the check is armed', () => {
+    expect(creditActions(credit({ status: 'admin_signed' }), false).nextStep).toBe('approved')
+    expect(creditActions(credit({ status: 'admin_signed' }), true).nextStep).toBe('checked')
+    expect(creditActions(credit({ status: 'finance_checked' }), true).nextStep).toBe('approved')
   })
 
-  it('sends it to the CHECKER instead once a holder of payments_approve exists', () => {
-    const signed = credit({ status: 'admin_signed' })
-    expect(creditActions(signed, true, 'finance', ['payments_approve']))
-      .toMatchObject({ nextStep: 'checked', canSign: true })
+  it('says WHY an approver cannot countersign yet, as the server serves it', () => {
+    const signed = credit({ status: 'admin_signed', can_sign: false, blocked: 'awaiting_finance' })
+    expect(creditActions(signed, true)).toMatchObject({ canSign: false, blocked: 'awaiting_finance' })
   })
 
-  it('gives the check to the payments_approve KEY, not the finance label (TD-475)', () => {
-    // The server's checker seat is `credit_steps.CHECKER_KEY`: an Admin given the key checks; a
-    // Finance label without it does not.
-    const signed = credit({ status: 'admin_signed' })
-    expect(creditActions(signed, true, 'admin', ['see_all', 'payments_approve']))
-      .toMatchObject({ nextStep: 'checked', canSign: true, blocked: null })
-    expect(creditActions(signed, true, 'finance', ['see_all']).canSign).toBe(false)
-    expect(creditActions(signed, true, 'finance').canSign).toBe(false)
-    expect(creditActions(signed, true, 'admin', ['see_all', 'payments_prepare']).canSign).toBe(false)
-  })
-
-  it('tells an org_admin WHY they cannot countersign yet, rather than hiding the reason', () => {
-    // The service answers `finance_check_required` for exactly this case, because from the
-    // approver's seat nothing looks amiss. The screen says the same thing.
-    const signed = credit({ status: 'admin_signed' })
-    expect(creditActions(signed, true, 'org_admin')).toMatchObject({
-      canSign: false, blocked: 'awaiting_finance',
+  it('offers nothing on a payload without the served flags', () => {
+    expect(creditActions(credit({ status: 'draft' }), false)).toMatchObject({
+      canSign: false, blocked: null, canVoid: false,
     })
   })
 
-  it('returns the credit to the approver after the finance check', () => {
-    const checked = credit({ status: 'finance_checked' })
-    expect(creditActions(checked, true, 'org_admin')).toMatchObject({ nextStep: 'approved', canSign: true })
-    expect(creditActions(checked, true, 'finance', ['payments_approve']).canSign).toBe(false)
-  })
-
-  it('lets a super sign any step', () => {
-    expect(creditActions(credit({ status: 'draft' }), false, 'super').canSign).toBe(true)
-    expect(creditActions(credit({ status: 'admin_signed' }), true, 'super').canSign).toBe(true)
-    expect(creditActions(credit({ status: 'finance_checked' }), true, 'super').canSign).toBe(true)
-  })
-
-  it('offers nothing at all on a settled credit', () => {
+  it('offers nothing at all on a settled credit, whatever a payload says', () => {
     for (const status of ['confirmed', 'cancelled'] as const) {
-      expect(creditActions(credit({ status }), true, 'super')).toEqual({
+      expect(creditActions(credit({ status, can_sign: true, can_void: true }), true)).toEqual({
         nextStep: null, canSign: false, blocked: null, canVoid: false,
       })
-    }
-  })
-
-  it('offers Void to the maker and the approver, never on confirmed money', () => {
-    const draft = credit({ status: 'draft' })
-    expect(creditActions(draft, false, 'admin').canVoid).toBe(true)
-    expect(creditActions(draft, false, 'org_admin').canVoid).toBe(true)
-    expect(creditActions(draft, false, 'super').canVoid).toBe(true)
-    // Finance checks; it does not undo.
-    expect(creditActions(draft, false, 'finance').canVoid).toBe(false)
-    expect(creditActions(credit({ status: 'confirmed' }), false, 'admin').canVoid).toBe(false)
-  })
-
-  it('refuses every action to a role with no business here', () => {
-    for (const role of ['reviewer', 'qc', 'partner']) {
-      const a = creditActions(credit({ status: 'draft' }), false, role)
-      expect(a.canSign).toBe(false)
-      expect(a.canVoid).toBe(false)
     }
   })
 })
@@ -235,14 +176,10 @@ describe('creditArmed', () => {
 })
 
 describe('canRecordCredit', () => {
-  it('is the maker or a super — org_admin is deliberately excluded', () => {
-    // The approver must stay free to countersign; a maker who is also the approver cannot
-    // complete their own chain (`record_admin_credit` refuses org_admin for this reason).
-    expect(canRecordCredit('admin')).toBe(true)
-    expect(canRecordCredit('super')).toBe(true)
-    expect(canRecordCredit('org_admin')).toBe(false)
-    expect(canRecordCredit('finance')).toBe(false)
-    expect(canRecordCredit('reviewer')).toBe(false)
+  it('reads the served can_record_credit, never a role (owner Q-A, 23 Nov)', () => {
+    expect(canRecordCredit({ can_record_credit: true })).toBe(true)
+    expect(canRecordCredit({ can_record_credit: false })).toBe(false)
+    expect(canRecordCredit({})).toBe(false)
   })
 })
 

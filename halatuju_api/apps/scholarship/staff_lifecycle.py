@@ -187,15 +187,14 @@ def runs_in_progress(admin):
 
 
 def other_active_checker(target):
-    """Another ACTIVE holder of the credit CHECKER key (`credit_steps.CHECKER_KEY`) in the target's
+    """Another ACTIVE holder of the credit CHECKER seat (`credit_steps.checker_holders`) in the target's
     organisation who has signed in? TD-475 (A1.10a): the credit check turns on the KEY now, not the finance
     ROLE; TD-560 (S2): only a signed-in holder arms it (`payments_chain.credit_check_required`)."""
-    from apps.courses import staff_permissions
-    from .credit_steps import CHECKER_KEY
+    from .credit_steps import checker_holders
     if target.owning_organisation_id is None:
         return False
     return any(a.pk != target.pk and has_signed_in(a)
-               for a in staff_permissions.holders(target.owning_organisation, CHECKER_KEY))
+               for a in checker_holders(target.owning_organisation))
 
 
 def plan_role_change(target, new_role):

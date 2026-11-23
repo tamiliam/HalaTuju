@@ -352,6 +352,67 @@ def test_the_payment_routes_are_served():
     assert len(PAYMENT_PAIRS) >= 4, PAYMENT_PAIRS
 
 
+# ── S3 / M4b: wallet credits by switches, not labels ─────────────────────────────────────────────────
+#: The credit routes, and who passes their doors by KEY: Sponsors: edit opens the ledger, record, sign and
+#: cancel; Payments Approve (`payments_holder_a`, which reads Sponsors: view through its check) opens the
+#: ledger and sign, whose step is the chain's, and never record or cancel (owner Q-A, Q-B).
+CREDIT_PAIRS = [p for p in PAIRS if p[0].startswith('api/v1/admin/scholarship/credits/')]
+CREDIT_READ_OR_SIGN = {('api/v1/admin/scholarship/credits/', 'get'),
+                       ('api/v1/admin/scholarship/credits/<int:pk>/sign/', 'post')}
+
+
+def _passes(world, role, route, method):
+    cache.clear()
+    with transaction.atomic():
+        code = world.call(role, route, method).status_code
+        transaction.set_rollback(True)
+    return code not in HIDE
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('route,method', CREDIT_PAIRS, ids=lambda v: v if isinstance(v, str) else None)
+def test_credits_open_by_switch(world, route, method):
+    got = {role: _passes(world, role, route, method)
+           for role in (*access_world.CREDIT_CALLERS, 'payments_holder_a')}
+    assert got == {'sponsors_editor_a': True,
+                   'payments_holder_a': (route, method) in CREDIT_READ_OR_SIGN}, f'{method.upper()} {route}: {got}'
+
+
+def test_the_credit_routes_are_served():
+    assert len(CREDIT_PAIRS) == 4 and CREDIT_READ_OR_SIGN <= set(CREDIT_PAIRS), CREDIT_PAIRS
+
+
+@pytest.mark.django_db
+def test_a_credit_runs_by_switch(world):
+    """The maker-checker chain through the HTTP routes, every seat a switch (owner Q-A to Q-C, 23 Nov): the
+    Sponsors: edit holder records and signs first; an organisation admin may not record; the check is armed
+    (finance A and the Payments Approve holders), so the organisation admin waits; the Payments Approve
+    holder checks and may not approve their own check; the organisation admin approves."""
+    base = '/api/v1/admin/scholarship/credits/'
+
+    def post(role, url, body):
+        cache.clear()
+        return world.clients[role].post(url, body, format='json')
+
+    def sign(role, pk):
+        return post(role, f'{base}{pk}/sign/', {'typed_name': getattr(world, role).name})
+
+    with transaction.atomic():
+        body = access_world.BODIES['api/v1/admin/scholarship/credits/'](world)
+        refused = post('org_admin_a', base, body)
+        assert (refused.status_code, refused.data['code']) == (400, 'wrong_role')       # Q-A
+        made = post('sponsors_editor_a', base, body)
+        assert made.status_code == 201, made.data
+        pk = made.data['id']
+        assert sign('sponsors_editor_a', pk).data['status'] == 'admin_signed'
+        assert sign('sponsors_editor_a', pk).data['code'] == 'wrong_role'              # not an approver
+        assert sign('org_admin_a', pk).data['code'] == 'finance_check_required'
+        assert sign('payments_holder_a', pk).data['status'] == 'finance_checked'
+        assert sign('payments_holder_a', pk).data['code'] == 'same_signer'             # Q-C: never twice
+        assert sign('org_admin_a', pk).data['status'] == 'confirmed'
+        transaction.set_rollback(True)
+
+
 # ── POST-AWARD-CUT review (18 Nov): the per-case writes in every case stage ───────────────────────────
 #: app_a is seeded ACTIVE, so the matrix above proves only the past-the-award stage WITH a scholar file. The
 #: manifest's `case_stages` lists the pairs whose callers turn on the stage; each is replayed here with app_a

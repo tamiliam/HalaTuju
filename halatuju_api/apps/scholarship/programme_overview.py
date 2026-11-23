@@ -51,7 +51,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.db.models import Q
+from django.db.models import BooleanField, Case, Q, Value, When
 from django.utils import timezone
 
 from apps.courses.public import staff_tables
@@ -341,21 +341,18 @@ def attention(scope, *, now, clocks, organisation=None):
     from .services.queries_sla import assignable_now
 
     unassigned = assignable_now(scope, now, organisation).count()
-    with_reviewer = due_soon = overdue = 0
-    for assigned_at in scope.filter(AWAITING_VERDICT).values_list('assigned_at', flat=True):
-        with_reviewer += 1
-        band = review_band(assigned_at, now=now, clocks=clocks)
-        if band == 'overdue':
-            overdue += 1
-        elif band == 'due_soon':
-            due_soon += 1
-    return {
-        'unassigned': unassigned,
-        'with_reviewer': with_reviewer,
-        'due_soon': due_soon,
-        'overdue': overdue,
-        'awaiting_qc': scope.filter(status='interviewed').count(),
-    }
+    with_reviewer = due_soon = overdue = awaiting_qc = 0     # S3 / M4b: ONE read for both (the Overview's query budget)
+    waiting = Case(When(AWAITING_VERDICT, then=Value(True)), default=Value(False), output_field=BooleanField())
+    for assigned_at, status, is_waiting in scope.filter(AWAITING_VERDICT | Q(status='interviewed')).values_list(
+            'assigned_at', 'status', waiting):
+        awaiting_qc += status == 'interviewed'
+        if is_waiting:
+            with_reviewer += 1
+            band = review_band(assigned_at, now=now, clocks=clocks)
+            overdue += band == 'overdue'
+            due_soon += band == 'due_soon'
+    return {'unassigned': unassigned, 'with_reviewer': with_reviewer, 'due_soon': due_soon, 'overdue': overdue,
+            'awaiting_qc': awaiting_qc}
 
 
 def applications_per_week(scope, *, today):

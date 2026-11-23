@@ -8242,7 +8242,7 @@ last 30 days of `halatuju-api` logs. Removed on branch a111a: `AdminGraduationMe
 `UNMAPPED` entry) and its `GATE-LEFT` line in `test_role_is_display_only`; the access-matrix fixtures keep the old
 cell, filtered by `RETIRED_CELLS`. Kept: the moderation POST `.../<id>/review/` and its `_require_reviewer` door.
 
-### [TD-498] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
+### ~~[TD-498] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)~~ — BUILT 2026-11-23 (sprint M4b, branch access-s3-m4b, not pushed; closes when live; owner Q-D 23 Nov: the sponsor terms and sponsor emails GETs open on the read doors `sponsor_terms_read` / `sponsor_emails_read` (`sponsors.view`), every write stays on `.edit`; the other converted doors were split earlier; tests `test_m4b_sponsor_credits.TestQDSponsorReads`, `test_team_tables_matrix` (M4b cells). The web tabs still show to editors only: TD-NEW-sponsor-reads-web)
 
 **Raised 2026-11-04 by Team tables T5c P1.** Announcements, Surveys, Development, the scholar Mentoring tab, the
 sponsor terms and the sponsor emails each have ONE door that both reads and writes, so P1 asks the writing key
@@ -8309,7 +8309,7 @@ It is a permission change: Opus build, adversarial review, owner phone check bef
 
 **Raised 2026-11-05 by T5c P5b / P5c (NOT fixed).** The cards qc_awaiting, invitations, sponsors_to_vet, payment_runs, wallet_credits and the mentor cards open their page unfiltered, so the count and the list can differ. P5c linked only the application-list cards (`?ready=1`, `?band=`, `?status`, `?assigned=me`) and requests (`?tab=action`). **Fix:** add the filter to each target page, then link the card, with a parity test per card as P5c did. *(A · M)*
 
-### [TD-503] Overview wallet_credits and sponsors_to_vet card scope - low (owner's call)
+### [TD-503] Overview wallet_credits and sponsors_to_vet card scope - low (owner's call) — wallet_credits half BUILT 2026-11-23 (sprint M4b, branch access-s3-m4b, not pushed; closes when live for that half: the card counts for anyone in the maker, checker or approver seat, `credit_steps.checks_credits`; test `test_m4b_sponsor_credits.TestTD503Card`). The sponsors_to_vet and awaiting_qc halves stay open.
 
 **Raised 2026-11-05 by the P5b adversarial review (NOT fixed).** Admins and organisation admins get no wallet_credits card (finance only), though admins can also sign a credit. Finance sees the sponsors_to_vet card but may only read the page. Admin-General sees the org-wide awaiting_qc count. **Fix:** owner rules who should see each card; then align the card door with the page door in `my_pending.py`. *(A · S)*
 
@@ -8723,7 +8723,7 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 
 **Raised 2026-11-07 by the A1.10a review.** `payments_chain.py` (~126-131) counts every `payments_approve` holder when deciding whether the wallet credit check is armed, including one who has never signed in; payment runs skip such people (`_signed_in`). If the only holder is an invitee who never signs in, credits wait for them. The organisation admin can unstick it by removing the key or revoking the person. Pre-existing (the old finance rule behaved the same). **Fix:** apply the same `_signed_in` filter here. *(A · S)*
 
-### [TD-561] The credit sign view loads the credit without a row lock - medium
+### ~~[TD-561] The credit sign view loads the credit without a row lock - medium~~ — BUILT 2026-11-23 (sprint M4b, branch access-s3-m4b, not pushed; closes when live; `sponsorship/credits._lock` locks the actor's row first (`payments_chain.lock_actor`), then the credit's row, re-reading its state, for sign and void; test `test_m4b_sponsor_credits.TestTD561Lock`)
 
 **Raised 2026-11-07 by the A1.10a review (money).** `views_admin/credits.py` (~86-87) loads the credit with no row lock, so two people signing the same credit at once could both act. Pre-existing. **Fix:** load it with `select_for_update(of=('self',))` inside a transaction, re-check the state under the lock, and make no network call while the lock is held. *(A · S)*
 
@@ -9389,7 +9389,7 @@ serve a per-type `replaceable` / `open` flag.
 **Raised 2026-11-18 by the POST-AWARD-CUT review round, on the owner's word. No money effect today.** Owner, 18 Nov: "Finance and view only admin are legacy roles … Today, there are only admins. And some of them have finance permissions." The code still reads both labels: a grep (tests and migrations left out) finds about 36 lines in 18 files. API, 21 lines in 10 files: `courses/staff_permissions.py` (`TEAM_ROLES` and the presets keyed by role label), `courses/models_staff.py` (the role choices), `courses/staff_tables.py`, `scholarship/staff_lifecycle.py` (`RETIRED_LABELS`, the role-change steps), `scholarship/staff_tables_admin.py`, `scholarship/invitations.py`, `scholarship/credit_steps.py` (the wallet-credit maker is still `role == 'admin'`), `scholarship/sponsorship/credits.py`, `scholarship/payments.py` (the `admin_signed_*` / `finance_signed_*` slots) and `scholarship/emails/reviewer_mail.py`. Web, 15 lines in 8 files: `lib/staffPermissions.ts`, `lib/staffRole.ts`, `lib/adminStaff.ts`, `lib/roleBadge.ts`, `lib/profileCards.ts`, `content/manual/faq.tsx`, `content/manual/index.ts` and `app/admin/payments/[id]/page.tsx`. TD-475 already moved the wallet-credit checker onto a key (`payments_approve`). Nothing fixed here. Fix: retire both labels so access reads keys only (an admin with the Payments switches, not a finance role); any data step (existing staff rows, signature columns) needs the owner's yes.
 *(A - M)*
 
-### [TD-664] Leftovers after POST-AWARD-CUT: the web works out some write controls itself, and the finalise cron does not re-check the stage - low
+### ~~[TD-664] Leftovers after POST-AWARD-CUT: the web works out some write controls itself, and the finalise cron does not re-check the stage - low~~ — (d) BUILT 2026-11-23, so all of (a)-(f) are built (sprint M4b, branch access-s3-m4b, not pushed; closes when live; the `vircle_id` correction asks `surface_gates.may_correct_vircle_id`, a switch: Payments switches or the org admin's `vircle_id` power, `views_admin/applications.py` ~272; test `test_m4b_sponsor_credits.TestVircleIdBySwitch`)
 
 **Raised 2026-11-18 by the POST-AWARD-CUT review rounds 2 and 3. (a)-(e) have no money effect: the server refuses each of these writes; only what the screen offers is wrong. (f) is a small paid-call leak.**
 - (a) The QC controls are drawn from the role: `canQc = hasPerm(role, 'qc')` in `app/admin/scholarship/[id]/view.tsx` (about line 108) and `view/QcPanel.tsx` (about line 33).
@@ -9427,6 +9427,22 @@ Fix: serve a flag for each control from the server's own door (as `can_write` is
 ### [TD-669] The deploy migrate step sets no lock_timeout, so an ALTER queues behind a long reader - medium
 
 **Raised 2026-11-13 by the A5 replay second re-check (branch a5).** Deploy migrate step should set lock_timeout (~5-10s) so an ALTER fails fast instead of queueing app reads behind a long reader. Today a migration's `ALTER TABLE` waits for its ACCESS EXCLUSIVE lock behind any open read transaction (the A5 replay job, a long report, a stuck session), and every app query on that table then queues behind the waiting ALTER, so one long reader plus one deploy can stall the live site. **Fix:** the migrate step runs with `lock_timeout` of about 5-10 seconds (for example `SET lock_timeout` in the migrate connection's options, or per migration), so the ALTER fails and the deploy stops instead of blocking reads; retry the deploy once the reader is gone. Until then the A5 owner steps carry a hard rule: no deploy, no migration, no ALTER while the replay job runs. *(A · S)*
+
+### [TD-NEW-sponsor-reads-web] The sponsor Emails and Terms tabs still show only to editors on the web - low
+
+**Raised 2026-11-23 by sprint M4b (laptop session, number placeholder until the desk numbers it).** Owner Q-D (23 Nov)
+lets Sponsors: view read the sponsor terms and sponsor emails, and the server now serves both GETs on the read doors
+(`sponsor_terms_read`, `sponsor_emails_read`). The web still draws the two tabs from `holdsDoor(role, 'sponsor_emails')`
+(`src/app/admin/sponsors/page.tsx`), the editing door, so a viewer cannot open them yet. Not built in M4b because a
+read-only view of each tab adds JS to the sponsor route and the sprint added none. **Fix:** serve a `can_read` / `can_edit`
+pair for each tab and draw a read-only view for a reader, inside the route's budget. *(A - S)*
+
+### [TD-NEW-credit-maker-unstored] A credit does not store who recorded it as a seat, only the signer's email - low
+
+**Raised 2026-11-23 by sprint M4b.** The maker's step signs with `recorded_by_email`; `same_signer` compares emails, which
+is the rule (two admins share a display name). Nothing records which seat (switch) the maker held when they signed, so an
+audit cannot tell later whether a credit was recorded under Sponsors: edit or by a super. **Fix:** log the seat in an
+`AUDIT` line when a credit is signed, or store it beside the email (a migration; owner's call). *(A - S)*
 
 ### [TD-NEW-run-lock-gaps] Editing a run's item and cancelling a run do not lock the actor's row first - low
 

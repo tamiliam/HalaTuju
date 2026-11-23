@@ -58,6 +58,10 @@ export const DOOR_KEYS = {
   senior_letters: ['scholars.approve'],
   // S2 / M4a: Payments (the View switch, or Organisation admin powers; `payments_chain.may_read`).
   payments_read: ['payments.view'],
+  // S3 / M4b: the credit's check seat, and the sponsor terms / emails READS on Sponsors: view (owner Q-D).
+  credits_check: ['sponsors.check'],
+  sponsor_terms_read: ['sponsors.view'],
+  sponsor_emails_read: ['sponsors.view'],
 } as const satisfies Record<string, readonly string[]>
 
 export type DoorName = keyof typeof DOOR_KEYS

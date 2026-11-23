@@ -238,7 +238,14 @@ class AdminSponsorEmailsView(_SponsorEmailsBase):
     say "these switches do nothing yet" instead of implying a switched-on template will send.
     That is the lesson from the bursary panel, which rendered for everyone because its gate lived
     only in a comment (L380).
+
+    S3 / M4b (TD-498 remainder, owner Q-D, 23 Nov): this view only READS, so it asks `sponsors.view`;
+    changing a template (`AdminSponsorEmailDetailView`) stays on `sponsors.edit`.
     """
+    @staticmethod
+    def may_open(admin):
+        return staff_tables.opens_door(admin, 'sponsor_emails_read')
+
     def get(self, request):
         admin, err = self._emails_admin(request)
         if err:
