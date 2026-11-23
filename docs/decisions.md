@@ -10,6 +10,10 @@ has stored `organisation.admin`). Brief: `docs/plans/2026-11-23-m4b-sponsor-cred
   or a team member (never the lead tier) who opens `credits_write` (`sponsors.edit`, stored). The sponsor page reads
   the served `can_record_credit`. Why: the approver has to stay free to countersign; an organisation admin who recorded
   could never approve their own credit (`same_signer`), and a one-admin organisation would be stuck.
+- **A reviewer storing Sponsors: edit (owner 24 Nov): the switch decides.** Production has one active reviewer whose
+  stored list holds `sponsors.edit`; under Q-A's key rule they gain record, first-sign and cancel on day one. The owner
+  chose the switch over the label; to undo it for that person, untick their Sponsors: edit (no code). Pinned by
+  `TestAReviewerStoringSponsorsEdit`.
 - **Q-B, cancel (owner 23 Nov).** Cancel stays on Sponsors: edit only (`credit_steps.may_cancel`, the `credits_write`
   door); Payments: Approve alone does not cancel.
 - **Q-C, the approver (owner 23 Nov).** The organisation admin approves through Organisation admin powers, and anyone
