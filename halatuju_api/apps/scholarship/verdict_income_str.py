@@ -169,6 +169,10 @@ def _str_reading(str_doc, earner, evidence, gap, review):
     return str_verified, str_failed, str_unsure, str_mismatch
 
 
+#: The items `_str_reading` raises; one of them is what sets the Unsure band in `_place_income_verdict`.
+_STR_BAND_CODES = ('str_not_current', 'str_recipient_mismatch', 'str_present_unverified')
+
+
 def _place_income_verdict(application, earner, str_doc, student_name, present, utility, rel,
                           reading, evidence, gap, review):
     """── Place the verdict ──"""
@@ -200,6 +204,10 @@ def _place_income_verdict(application, earner, str_doc, student_name, present, u
     # looked at. They now offer the salary reading too and keep whichever is stronger — see
     # `_stronger_income_fact`, which can only ever RAISE a household.
     if str_unsure or str_mismatch:
+        # Request #78, Part D (the owner's rule, after the 17 Nov Academic fix and #804): the item that
+        # decides the band leads the tile (`unresolved[0]`). The STR's own item was appended AFTER the
+        # earner-IC / relationship items, so it moves to the front; the rest keep their order.
+        review = sorted(review, key=lambda i: i['code'] not in _STR_BAND_CODES)
         return _ve._stronger_income_fact(_fact('income', 'recommend', evidence, review),
                                          application, student_name, present, utility)
     if review:

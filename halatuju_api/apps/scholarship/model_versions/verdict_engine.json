@@ -10,8 +10,8 @@
     "also_ok": []
   },
   "2026-11-23.1": {
-    "digest": "4caef86d666a35679b2c1fc90fd76e74920291fb3053ec6483077565ed782cb0",
-    "note": "Request #78 step 1 (owner rulings 23 Nov 2026): the mother / guardian link is scored on name + IC number by one row score (income_engine/match_bands.py), read by the case-page chips and by every decision reader (student_income_ic_check, STR precedence, the STR route, the salary route). Only a red row blocks; with no number on the document the name decides, as before; the ward row is the name alone.",
+    "digest": "3c48a890dd744f0f50c5c5711ccdfc7f3cbe1ea7b64e6244394d0b00efd4fd1b",
+    "note": "Request #78 step 1 (owner rulings 23 Nov 2026): the mother / guardian link is scored on name + IC number by one row score (income_engine/match_bands.py), read by the case-page chips and by every decision reader (student_income_ic_check, STR precedence, the STR route, the salary route). Only a red row blocks; with no number on the document the name decides, as before; the ward row is the name alone. Step 3 (same unreleased version, never live): when the STR alone sets Income at Unsure, its item now leads unresolved (verdict_income_str.py), so the tile names the reason for its band.",
     "also_ok": []
   }
 }
