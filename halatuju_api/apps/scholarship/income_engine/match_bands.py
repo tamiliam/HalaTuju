@@ -1,0 +1,211 @@
+"""THE ONE ROW SCORE for a relationship document (request #78, owner rulings 23 Nov 2026).
+
+A row is one person on a birth certificate or guardianship letter compared with that person's
+reference: the certificate's child against the student, its mother against the mother's own IC,
+a letter's guardian against the guardian's IC, a letter's ward against the student. Each row is
+scored on its NAME and its IC NUMBER, by slips counted (never percentages), into one band:
+
+    GREEN  both exact; or one exact and the other close
+    BLUE   both close; or exact number + far name (a name change, a bad read)
+    AMBER  close + far; exact name + far number; one value missing, the other exact or close
+    RED    both far, or one far and the other missing
+    GREY   nothing read
+
+Two rows make the relationship link (``link_band``): only RED asks the student to act, GREEN
+confirms the link, and everything between goes to the reviewer. The case-page chips
+(`doc_checks`) and the decision (`relationships.mother_relationship` / `guardian_relationship`)
+both read this module, so the two can no longer disagree.
+
+⚠ OUTSIDE THE BANDS, ON PURPOSE: the father row on a birth certificate and the father / brother /
+sister patronymic links (BrightPath #23: the father row never blocks). Pure: no I/O, no queries.
+"""
+from __future__ import annotations
+
+import re
+from itertools import permutations
+
+from ..name_order import patronymic_reversed
+from ..vision import _canonical_name_seq, _fold_name_token, _levenshtein
+from ..vision import name_match as exact_name_match
+from ..vision import relationship_name_match
+
+GREEN, BLUE, AMBER, RED, GREY = 'green', 'blue', 'amber', 'red', 'grey'
+EXACT, CLOSE, FAR, MISSING = 'exact', 'close', 'far', 'missing'
+
+#: A word this long may carry two slips; a shorter one, one (owner: slips are counted).
+_LONG_WORD = 8
+#: Above this many words the pairing search stops trying every order (names are short).
+_PAIRING_CAP = 7
+
+
+def _digits(s) -> str:
+    return re.sub(r'\D', '', str(s or ''))
+
+
+def number_level(read, ref) -> str:
+    """EXACT (every digit equal) · CLOSE (the same length, exactly ONE digit substituted) · FAR ·
+    MISSING (either side blank). Close is the owner's definition: a substitution only — not
+    `vision.nric_close`, which also accepts an inserted or dropped digit."""
+    a, b = _digits(read), _digits(ref)
+    if not a or not b:
+        return MISSING
+    if a == b:
+        return EXACT
+    if len(a) == len(b) and sum(x != y for x, y in zip(a, b)) == 1:
+        return CLOSE
+    return FAR
+
+
+def _word_close(x: str, y: str) -> bool:
+    fx, fy = _fold_name_token(x), _fold_name_token(y)
+    allowed = 2 if max(len(x), len(y)) >= _LONG_WORD else 1
+    return _levenshtein(fx, fy) <= allowed
+
+
+def _slips_close(read: str, ref: str) -> bool:
+    """The owner's close name: every word within one letter (two in a word of 8+ letters), with
+    at most one word missing or extra. Word order does not matter. A father's and a son's
+    reversed patronymic (TD-408) is never close."""
+    a, b = _canonical_name_seq(read), _canonical_name_seq(ref)
+    if not a or not b or abs(len(a) - len(b)) > 1:
+        return False
+    if patronymic_reversed(read, ref, relationship_name_match):
+        return False
+    short, long_ = (a, b) if len(a) <= len(b) else (b, a)
+    if len(long_) > _PAIRING_CAP:
+        return False
+    for order in permutations(long_, len(short)):
+        if all(_word_close(x, y) for x, y in zip(short, order)):
+            return True
+    return False
+
+
+def name_level(read, ref) -> str:
+    """EXACT (the same words, ignoring spacing, word order and the connectors) · CLOSE · FAR ·
+    MISSING. CLOSE is the owner's slip count OR anything today's tolerant matcher already accepts
+    (`relationship_name_match`): no name that passes today may score FAR (never newly red)."""
+    if not (read or '').strip() or not (ref or '').strip():
+        return MISSING
+    if exact_name_match(read, ref) == 'match':
+        return EXACT
+    if relationship_name_match(read, ref) != 'mismatch' or _slips_close(read, ref):
+        return CLOSE
+    return FAR
+
+
+_RANK = {EXACT: 0, CLOSE: 1, FAR: 2, MISSING: 3}
+
+
+def best_name_level(read, refs) -> str:
+    """The best `name_level` of ``read`` against any of ``refs`` (the student's typed name and
+    the name off their own verified IC are two spellings of ONE identity)."""
+    levels = [name_level(read, r) for r in refs if (r or '').strip()] or [MISSING]
+    return min(levels, key=_RANK.get)
+
+
+_BAND = {
+    (EXACT, EXACT): GREEN, (EXACT, CLOSE): GREEN, (CLOSE, EXACT): GREEN,
+    (CLOSE, CLOSE): BLUE, (FAR, EXACT): BLUE,
+    (CLOSE, FAR): AMBER, (FAR, CLOSE): AMBER, (EXACT, FAR): AMBER,
+    (EXACT, MISSING): AMBER, (CLOSE, MISSING): AMBER,
+    (MISSING, EXACT): AMBER, (MISSING, CLOSE): AMBER,
+    (FAR, FAR): RED, (FAR, MISSING): RED, (MISSING, FAR): RED,
+    (MISSING, MISSING): GREY,
+}
+
+
+def row_band(name_lvl: str, number_lvl: str) -> str:
+    """The owner's table, (name level, number level) → band. All sixteen pairs are listed."""
+    return _BAND[(name_lvl, number_lvl)]
+
+
+def score_row(name, nric, ref_names, ref_nric, *, waiting=False) -> dict:
+    """One row: ``{name, number, band, waiting}``. ``waiting`` marks a GREY row whose REFERENCE
+    is not in yet (the parent's IC not uploaded or not read) — as opposed to a row the document
+    itself could not give us."""
+    if isinstance(ref_names, str):
+        ref_names = (ref_names,)
+    n, k = best_name_level(name, ref_names), number_level(nric, ref_nric)
+    band = row_band(n, k)
+    return {'name': n, 'number': k, 'band': band, 'waiting': bool(waiting and band == GREY)}
+
+
+def score_name_only_row(name, ref_names) -> dict:
+    """A row whose document never carries a number (a guardianship letter's WARD: the letter
+    reads no ward IC). Scored on the name alone, as it is today: exact or today's tolerant match →
+    GREEN; the owner's new close slips only → AMBER; far → RED; blank → GREY. Not the two-value
+    table, which would make every letter AMBER for a number no letter is asked to carry."""
+    if isinstance(ref_names, str):
+        ref_names = (ref_names,)
+    n = best_name_level(name, ref_names)
+    if n == CLOSE:
+        legacy = any((r or '').strip() and relationship_name_match(name, r) != 'mismatch'
+                     for r in ref_names)
+        band = GREEN if legacy else AMBER
+    else:
+        band = {EXACT: GREEN, FAR: RED, MISSING: GREY}[n]
+    return {'name': n, 'number': MISSING, 'band': band, 'waiting': False}
+
+
+def link_band(child: dict, parent: dict) -> str:
+    """Part B: the link "this parent is the student's parent" from its two rows. Chips have no
+    blue (BLUE shows as AMBER). RED + anything = RED; G+G = G; B+B = G only when BOTH rows carry
+    an exact IC number; any other mix of green / blue / amber = AMBER; GREY + GREEN = GREY while
+    the other document is still coming, AMBER once everything is in; both GREY = GREY."""
+    bands = (child['band'], parent['band'])
+    if RED in bands:
+        return RED
+    if bands == (GREY, GREY):
+        return GREY
+    if GREY in bands:
+        grey_row = child if child['band'] == GREY else parent
+        other = parent['band'] if grey_row is child else child['band']
+        return GREY if (other == GREEN and grey_row['waiting']) else AMBER
+    if bands == (GREEN, GREEN):
+        return GREEN
+    if bands == (BLUE, BLUE) and child['number'] == parent['number'] == EXACT:
+        return GREEN
+    return AMBER
+
+
+def link_status(band: str) -> str:
+    """The decision's word for a link band: GREEN → 'match' (the relationship is confirmed),
+    RED → 'mismatch' (the only state that asks the student to act), anything else → 'pending'
+    (no claim; the officer looks)."""
+    return {GREEN: 'match', RED: 'mismatch'}.get(band, 'pending')
+
+
+def chip_status(row: dict) -> str:
+    """The served row status the web already draws (`checklists.relPill`, `cockpitDocFacts`):
+    GREEN 'match', RED 'mismatch', GREY 'no_ref'; BLUE and AMBER as one of the amber
+    'check_*' words, chosen by which cell held."""
+    band, n, k = row['band'], row['name'], row['number']
+    if band in (GREEN, RED):
+        return 'match' if band == GREEN else 'mismatch'
+    if band == GREY:
+        return 'no_ref'
+    if n == FAR and k == EXACT:
+        return 'check_name'            # #19: spelt differently, the same IC number
+    if n in (EXACT, CLOSE) and k == FAR:
+        return 'check'                 # the name holds; check the number
+    if n == CLOSE and k == CLOSE:
+        return 'check_near'            # one slip in each: likely a scan misread
+    return 'check_one'                 # one cell held, or neither cleanly: a person reads it
+
+
+def mother_link(child_name, child_nric, mother_name, mother_nric,
+                student_names, student_nric, ic_name, ic_nric) -> dict:
+    """A birth certificate's child + mother rows and the link they make."""
+    child = score_row(child_name, child_nric, student_names, student_nric)
+    waiting = not ((ic_name or '').strip() or (ic_nric or '').strip())
+    parent = score_row(mother_name, mother_nric, (ic_name,), ic_nric, waiting=waiting)
+    return {'child': child, 'parent': parent, 'link': link_band(child, parent)}
+
+
+def guardian_link_rows(guardian_name, guardian_nric, ward_name,
+                       student_names, ic_name, ic_nric) -> dict:
+    """A guardianship letter's ward + guardian rows and the link they make."""
+    ward = score_name_only_row(ward_name, student_names)
+    waiting = not ((ic_name or '').strip() or (ic_nric or '').strip())
+    parent = score_row(guardian_name, guardian_nric, (ic_name,), ic_nric, waiting=waiting)
+    return {'child': ward, 'parent': parent, 'link': link_band(ward, parent)}
