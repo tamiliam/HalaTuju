@@ -19,6 +19,7 @@ Test only. Migration: none. Services: web (build gate). No behaviour change.
 ### Quiz fixes (TD-705, TD-708, TD-709) (2026-11-23)
 
 Branch quiz-fixes, not pushed. Migration: none.
+- TD-705: the STPM quiz showed a question mark for 56 of its 67 answer icons; the map now covers every icon name, and a test keeps the main and STPM maps in step with the data (missing and unused names both fail).
 - TD-708: on a phone, answering then tapping Next no longer skips a question (main and STPM quiz); one pending auto-advance, cancelled by Next, Previous and the dots.
 
 ### Web first-load JS back under budget - case page and median (2026-11-23)
