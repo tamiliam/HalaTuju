@@ -147,3 +147,28 @@ class TestTheVerdictRoutesReadBothRows(_Base):
         self._bc(app, mother='LATHA A/P GOPAL', mother_nric=FAR_IC)
         _, unresolved = self._income(app)
         self.assertIn('birth_cert_mismatch', unresolved)
+
+
+class TestTheFatherFallbackReadsTheChildRow(_Base):
+    """Owner, 23 Nov 2026: the certificate's CHILD row on the mononym father fallback is the same
+    row score as the mother path and the chip; the FATHER row stays the name alone."""
+
+    FATHER = 'MURUGAN A/L RAJAN'
+    FATHER_IC = '710303-10-5559'
+
+    def _status(self, child_nric):
+        app = make_application('submitted', cohort=self.cohort,
+                               student=make_student(name='DIVYA', nric=STUDENT_IC),
+                               income_route='salary', income_working_members=['father'])
+        ic = _doc(app, 'parent_ic', 'father', name=self.FATHER, nric=self.FATHER_IC)
+        bc = _doc(app, 'birth_certificate', fields={
+            'bc_child_name': 'DIVA', 'bc_child_nric': child_nric,
+            'bc_father_name': self.FATHER, 'bc_mother_name': MOTHER})
+        return student_income_ic_check(ic)['name_status'], student_bc_check(bc)['child_status']
+
+    def test_case_177_shape_on_the_father_path_is_a_match(self):
+        # One-word name, a letter dropped (under today's 5-letter floor), the child's IC exact.
+        self.assertEqual(self._status(STUDENT_IC), ('match', 'match'))
+
+    def test_no_child_number_is_the_name_alone_as_today(self):
+        self.assertEqual(self._status(''), ('mismatch', 'mismatch'))

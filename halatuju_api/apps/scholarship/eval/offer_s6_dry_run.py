@@ -90,7 +90,7 @@ def _tone(s):
     if s in ('match', 'found', 'ok', 'current'):
         return 'verified'
     if s in ('partial', 'uncertain', 'pending', 'stale', 'unconfirmed', 'check', 'check_near', 'check_name',
-             'check_one'):
+             'check_one', 'check_both'):
         return 'partial'
     if s in ('mismatch', 'unreadable', 'not_found', 'rejected'):
         return 'not'

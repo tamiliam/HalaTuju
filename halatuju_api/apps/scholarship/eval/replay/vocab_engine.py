@@ -104,6 +104,7 @@ scrub.register_codes((
     'cgpa_slip',
     'cgpa_status',
     'chain_verified',
+    'check_both',
     'check_name',
     'check_near',
     'check_one',

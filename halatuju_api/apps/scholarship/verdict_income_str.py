@@ -67,7 +67,8 @@ def _earner_ic(application, earner, evidence, gap, review):
 def _earner_relationship(application, earner, student_name, earner_ic_name, ic_deferred, present,
                          evidence, gap, review, ic_nric=''):
     """── Relationship: prove the earner is the student's family ── Returns ``rel``. The mother /
-    guardian rows are scored on name + IC number (`link_numbers`, request #78)."""
+    guardian rows, and the certificate's child row on the father fallback, are scored on name +
+    IC number (`link_numbers`, request #78)."""
     from .income_engine import (father_link, mother_relationship,
                                 guardian_link, chain_verified_earner, link_numbers)
     # A WRONG-TYPE relationship doc (#27: a non-BC in the birth-certificate slot) is UNUSABLE —
@@ -78,7 +79,8 @@ def _earner_relationship(application, earner, student_name, earner_ic_name, ic_d
         # Patronymic, with a BC fallback for a mononym student (#55) when a BC is uploaded.
         _, bcf, _ = _usable_relationship_fields(application, 'birth_certificate')
         rel = father_link(student_name, earner_ic_name,
-                          bcf.get('bc_child_name', ''), bcf.get('bc_father_name', ''))
+                          bcf.get('bc_child_name', ''), bcf.get('bc_father_name', ''),
+                          link_numbers(application, bcf, ic_nric=ic_nric))   # #78: the child row
     elif earner == 'mother':
         if 'birth_certificate' not in present:
             gap.append(_item('birth_cert_missing'))

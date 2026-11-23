@@ -22,8 +22,10 @@ MOTHER_IC = '780405105678'
     (STUDENT_IC, STUDENT_IC, EXACT),
     ('050312-10-1234', STUDENT_IC, EXACT),
     ('050312101236', STUDENT_IC, CLOSE),          # one digit substituted
-    ('05031210123', STUDENT_IC, FAR),             # a dropped digit is not the owner's close
+    ('05031210123', STUDENT_IC, CLOSE),           # a dropped digit (owner ruling 23 Nov 2026)
+    ('0503121012345', STUDENT_IC, CLOSE),         # an added digit
     ('050312101299', STUDENT_IC, FAR),            # two digits
+    ('0503121012', STUDENT_IC, FAR),              # two dropped
     ('', STUDENT_IC, MISSING),
     (STUDENT_IC, '', MISSING),
 ])
@@ -92,7 +94,8 @@ def test_a_number_alone_is_never_green():
 
 
 @pytest.mark.parametrize('name, band', [
-    ('ARUN KUMAR', GREEN), ('KUMAR ARUN', GREEN), ('ARUN KUMR', GREEN),
+    ('ARUN KUMAR', GREEN), ('KUMAR ARUN', GREEN), ('ARUN KUMAAR', GREEN),
+    ('ARUN KUMR', RED),            # the slip count needs a number beside it; today's matcher refuses
     ('BALA SUNDRAM', RED), ('', GREY),
 ])
 def test_no_number_means_the_name_alone_decides(name, band):
@@ -117,15 +120,21 @@ def _row(band, number=EXACT, waiting=False):
     (RED, GREY, RED), (GREY, RED, RED), (RED, RED, RED),
     (GREY, GREY, GREY),
     (GREY, BLUE, AMBER), (AMBER, GREY, AMBER),
+    (BLUE, BLUE, AMBER),
 ])
 def test_link_combinations(a, b, want):
     assert mb.link_band(_row(a), _row(b)) == want
 
 
-def test_blue_blue_is_green_only_with_both_numbers_exact():
-    assert mb.link_band(_row(BLUE, EXACT), _row(BLUE, EXACT)) == GREEN
+def test_blue_blue_is_never_green():
+    # Owner ruling 23 Nov 2026: both names far + both numbers exact → the officer checks (AMBER);
+    # the link is never confirmed. B+B is AMBER in every case.
+    assert mb.link_band(_row(BLUE, EXACT), _row(BLUE, EXACT)) == AMBER
     assert mb.link_band(_row(BLUE, CLOSE), _row(BLUE, EXACT)) == AMBER
     assert mb.link_band(_row(BLUE, EXACT), _row(BLUE, CLOSE)) == AMBER
+    rows = mb.mother_link('BALA SUNDRAM', STUDENT_IC, 'SITI AMINAH', MOTHER_IC,
+                          ('ARUN KUMAR',), STUDENT_IC, 'LATHA DEVI', MOTHER_IC)
+    assert (rows['child']['band'], rows['parent']['band'], rows['link']) == (BLUE, BLUE, AMBER)
 
 
 def test_grey_plus_green_waits_then_turns_amber():
@@ -144,7 +153,8 @@ def test_link_status(band, status):
     ((EXACT, EXACT), 'match'), ((FAR, FAR), 'mismatch'), ((MISSING, MISSING), 'no_ref'),
     ((FAR, EXACT), 'check_name'), ((EXACT, FAR), 'check'), ((CLOSE, FAR), 'check'),
     ((CLOSE, CLOSE), 'check_near'), ((EXACT, MISSING), 'match'), ((CLOSE, MISSING), 'match'),
-    ((MISSING, EXACT), 'check_one'), ((FAR, CLOSE), 'check_one'),
+    ((MISSING, EXACT), 'check_one'), ((MISSING, CLOSE), 'check_one'),
+    ((FAR, CLOSE), 'check_both'),        # both cells read: spelt differently AND one digit off
 ])
 def test_chip_words(cells, chip):
     n, k = cells
@@ -179,9 +189,10 @@ def test_guardianship_uses_the_same_bands():
 
 def test_ward_row_is_scored_on_the_name_alone():
     # Owner ruling 23 Nov 2026: letters never print the ward's number, so the ward row is the name
-    # alone, always: exact or close → GREEN (the case-177 slip included), far → RED.
+    # alone, always, judged by today's matcher: passes → GREEN, fails → RED.
     assert mb.score_name_only_row('ARUN KUMAR', 'ARUN KUMAR')['band'] == GREEN
-    assert mb.score_name_only_row('ARUN KUMR', 'ARUN KUMAR')['band'] == GREEN
+    assert mb.score_name_only_row('ARUN KUMAAR', 'ARUN KUMAR')['band'] == GREEN
+    assert mb.score_name_only_row('ARUN KUMR', 'ARUN KUMAR')['band'] == RED     # as today
     assert mb.score_name_only_row('BALA SUNDRAM', 'ARUN KUMAR')['band'] == RED
     assert mb.score_name_only_row('', 'ARUN KUMAR')['band'] == GREY
 
@@ -197,7 +208,8 @@ def test_mother_link_with_no_numbers_is_the_name_alone():
 
 
 def test_an_unread_ward_has_no_say_as_before():
-    # Review F1 as it stood: an unread ward changes nothing; the guardian row decides the link.
+    # Owner ruling 23 Nov 2026 (RULED, was open): an unread ward changes nothing; the guardian row
+    # decides the link, as review F1 left it.
     rows = mb.guardian_link_rows('SITI AMINAH', '', '', ('ARUN KUMAR',), 'SITI AMINAH', '')
     assert rows['child']['band'] == GREY and rows['link'] == GREEN
     rows = mb.guardian_link_rows('SITI AMINAH', '990101109999', '', ('ARUN KUMAR',),
@@ -205,3 +217,93 @@ def test_an_unread_ward_has_no_say_as_before():
     assert rows['link'] == AMBER                       # exact name + far number, the ward unread
     rows = mb.guardian_link_rows('BALA SUNDRAM', '', '', ('ARUN KUMAR',), 'SITI AMINAH', '')
     assert rows['link'] == RED
+
+
+# --- review round 1: no number = name alone, AS TODAY (the probe cases) -----------------------
+
+def _today_bc(child, mother, student, ic_name):
+    """The name-only certificate link as it stood before #78, written out from today's matcher."""
+    from apps.scholarship.vision import relationship_name_match as m
+    ok = m(child, student) != 'mismatch' and m(mother, ic_name) != 'mismatch'
+    return 'match' if ok else 'mismatch'
+
+
+@pytest.mark.parametrize('child, student', [
+    ('K RAJAN', 'M RAJAN'),                     # initials differ: short words never merge
+    ('VANI A/P RAJU', 'RANI A/P RAJU'),         # Vani / Rani: the 5-letter floor, on purpose
+    ('ARUN KUMR', 'ARUN KUMAR'),                # the case-177 slip, with no number to back it
+    ('ARUN KUMAAR', 'ARUN KUMAR'),              # a doubled letter: today passes it
+    ('ARUN KUMAR', 'ARUN KUMAR'),
+])
+def test_no_number_child_row_gives_todays_answer(child, student):
+    from apps.scholarship.income_engine.relationships import mother_relationship
+    today = _today_bc(child, 'LATHA DEVI', student, 'LATHA DEVI')
+    nums = {'student': STUDENT_IC, 'student_name': student, 'ic': MOTHER_IC}
+    assert mother_relationship(child, 'LATHA DEVI', student, 'LATHA DEVI', nums) == today
+    rows = mb.mother_link(child, '', 'LATHA DEVI', '', (student,), STUDENT_IC,
+                          'LATHA DEVI', MOTHER_IC)
+    assert mb.link_status(rows['link']) == today
+    # The chip agrees with the decision: today's red is the child chip's red.
+    assert mb.chip_status(rows['child']) == ('match' if today == 'match' else 'mismatch')
+
+
+@pytest.mark.parametrize('guardian, ic_name, ward, student, want', [
+    ('ALI BIN ABD', 'ALI BIN ABU', 'RANI A/P RAJU', 'RANI A/P RAJU', 'mismatch'),
+    ('ALI BIN ABU', 'ALI BIN ABU', 'VANI A/P RAJU', 'RANI A/P RAJU', 'mismatch'),
+    ('ALI BIN ABU', 'ALI BIN ABU', 'RANI A/P RAJU', 'RANI A/P RAJU', 'match'),
+])
+def test_no_number_guardian_and_ward_give_todays_answer(guardian, ic_name, ward, student, want):
+    from apps.scholarship.income_engine.relationships import guardian_relationship
+    assert guardian_relationship(guardian, ic_name, ward, student,
+                                 {'student_name': student, 'ic': MOTHER_IC}) == want
+
+
+@pytest.mark.parametrize('child, student', [('K RAJAN', 'M RAJAN'), ('VANI A/P RAJU', 'RANI A/P RAJU')])
+def test_a_short_word_slip_with_an_exact_number_is_green(child, student):
+    # The owner's exact + close rule: the number corroborates the slip, so the slip count applies.
+    row = mb.score_row(child, STUDENT_IC, (student,), STUDENT_IC)
+    assert (row['name'], row['band']) == (CLOSE, GREEN)
+
+
+def test_case_177_shape_with_a_dropped_digit_is_still_green():
+    # Exact name + a dropped digit is exact + close (owner ruling 23 Nov 2026): GREEN.
+    row = mb.score_row('ARUN KUMAR', STUDENT_IC[:-1], ('ARUN KUMAR',), STUDENT_IC)
+    assert (row['number'], row['band']) == (CLOSE, GREEN)
+
+
+# --- the father fallback: the certificate's CHILD row is the shared row score ----------------
+
+FATHER = 'MURUGAN A/L RAJAN'
+
+
+def _fnums(child_nric):
+    return {'child': child_nric, 'student': STUDENT_IC, 'student_name': 'DIVYA'}
+
+
+def test_father_path_case_177_shape_is_green():
+    from apps.scholarship.income_engine.relationships import father_link, father_via_bc
+    # A one-word student name with a letter dropped (DIVYA → DIVA: under today's 5-letter floor)
+    # and the child's IC number exact: the child row is CLOSE + EXACT = GREEN.
+    assert father_via_bc('DIVA', FATHER, 'DIVYA', FATHER, _fnums(STUDENT_IC)) == 'match'
+    assert father_link('DIVYA', FATHER, 'DIVA', FATHER, _fnums(STUDENT_IC)) == 'match'
+    # With no number the name decides, as today: still refused.
+    assert father_via_bc('DIVA', FATHER, 'DIVYA', FATHER) == 'mismatch'
+    assert father_via_bc('DIVA', FATHER, 'DIVYA', FATHER, _fnums('')) == 'mismatch'
+
+
+def test_father_path_father_row_is_unchanged():
+    from apps.scholarship.income_engine.relationships import father_link, father_via_bc
+    # The FATHER row stays the name alone: a far father name is refused whatever the child number.
+    assert father_via_bc('DIVYA', 'OTHERMAN A/L X', 'DIVYA', FATHER, _fnums(STUDENT_IC)) == 'mismatch'
+    assert father_via_bc('DIVYA', '', 'DIVYA', FATHER, _fnums(STUDENT_IC)) == 'pending'
+    # The patronymic wins before any certificate is read.
+    assert father_link('ARUN A/L MURUGAN', FATHER, 'BALA', 'OTHERMAN', _fnums('')) == 'match'
+
+
+@pytest.mark.parametrize('child_nric', [STUDENT_IC, STUDENT_IC[:-1], '990101109999', ''])
+@pytest.mark.parametrize('child', ['DIVYA', 'DIVYAA', 'DIVYA KUMARI'])
+def test_father_path_no_child_row_that_passes_today_turns_red(child, child_nric):
+    from apps.scholarship.income_engine.relationships import father_via_bc
+    from apps.scholarship.vision import relationship_name_match
+    assert relationship_name_match(child, 'DIVYA') != 'mismatch'       # passes today
+    assert father_via_bc(child, FATHER, 'DIVYA', FATHER, _fnums(child_nric)) != 'mismatch'

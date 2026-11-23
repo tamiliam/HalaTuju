@@ -1876,15 +1876,15 @@ class TestRelationshipChecklists(TestCase):
     def test_a_NEAR_nric_never_vouches_for_a_differing_name(self):
         """⚠ A near number never VOUCHES for a differing name: it is not green, and not the #19
         'check_name' that an exact number earns. ⚠ CHANGED BY #78 (owner's table, 23 Nov 2026):
-        close number + far name is AMBER ('check_one', a person reads the row), no longer red —
-        only both far, or far + missing, blocks."""
+        close number + far name is AMBER ('check_both': both cells read, a person reads the row),
+        no longer red — only both far, or far + missing, blocks."""
         from apps.scholarship.income_engine import student_bc_check
         _parent_ic(self.app, 'VANITHA A/P MOHAN', member='mother', nric='760820-02-5230')
         bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
                       fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
                               'bc_mother_name': 'STRANGER WOMAN',
                               'bc_mother_nric': '760920-02-5230'})   # one digit out
-        self.assertEqual(student_bc_check(bc)['mother_status'], 'check_one')
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'check_both')
 
     def test_a_differing_name_with_NO_nric_read_stays_red(self):
         """Nothing to vouch with. An unread number must not be treated as agreement."""

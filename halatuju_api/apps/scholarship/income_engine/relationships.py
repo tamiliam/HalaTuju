@@ -95,15 +95,23 @@ def father_relationship(student_name: str, earner_ic_name: str) -> str:
 
 
 def _bc_link(bc_child_name: str, bc_parent_name: str,
-             student_name: str, earner_ic_name: str) -> str:
-    """Birth-Certificate linkage: the BC's child must be the student AND its named
-    parent must be the earner IC. Either side disjoint → mismatch; both agree →
-    match; not enough read yet → pending. Shared by mother_relationship (BC mother)
-    and father_via_bc (BC father)."""
+             student_name: str, earner_ic_name: str, nums=None) -> str:
+    """Birth-Certificate linkage for the FATHER (`father_via_bc`): the BC's child must be the
+    student AND its named father must be the earner IC. Either side disjoint → mismatch; both
+    agree → match; not enough read yet → pending.
+
+    The CHILD side is the shared row score (`match_bands.score_row`, request #78, owner 23 Nov
+    2026): child name + child IC number vs the student, exactly as on the mother path and the
+    case-page chip — GREEN holds, RED is disjoint, anything between makes no claim; with no number
+    the name decides, as before. The FATHER side stays the name alone, outside the bands on
+    purpose (BrightPath #23). ``nums`` is `link_numbers`; without it the child is the name alone."""
+    from .match_bands import GREEN, RED, score_row
     if not (bc_child_name or '').strip() and not (bc_parent_name or '').strip():
         return 'pending'                       # BC not uploaded / not read
-    child_ok = (name_match(bc_child_name, student_name) != 'mismatch'
-                if bc_child_name and student_name else None)
+    n = nums or {}
+    child = score_row(bc_child_name, n.get('child', ''),
+                      (student_name, n.get('student_name', '')), n.get('student', ''))
+    child_ok = {GREEN: True, RED: False}.get(child['band'])
     parent_ok = (name_match(bc_parent_name, earner_ic_name) != 'mismatch'
                  if bc_parent_name and earner_ic_name else None)
     if child_ok is False or parent_ok is False:
@@ -119,8 +127,8 @@ def mother_relationship(bc_child_name: str, bc_mother_name: str,
     number vs the student) and its MOTHER row (name + IC number vs the mother's own IC), scored by
     the one row score in `match_bands` (request #78) — the same scoring the case-page chips read.
     GREEN → 'match'; RED → 'mismatch'; anything else → 'pending' (the officer looks). ``nums``
-    (`link_numbers`) carries the IC numbers and the student's typed name; without it a row is
-    scored on its name alone, which is never green (#23)."""
+    (`link_numbers`) carries the IC numbers and the student's typed name; without a number a row
+    is judged on its name alone, exactly as before #78 (owner ruling 23 Nov 2026)."""
     from .match_bands import link_status, mother_link
     n = nums or {}
     rows = mother_link(bc_child_name, n.get('child', ''), bc_mother_name, n.get('mother', ''),
@@ -130,17 +138,17 @@ def mother_relationship(bc_child_name: str, bc_mother_name: str,
 
 
 def father_via_bc(bc_child_name: str, bc_father_name: str,
-                  student_name: str, earner_ic_name: str) -> str:
+                  student_name: str, earner_ic_name: str, nums=None) -> str:
     """Mononym fallback for the FATHER link: when the student's name carries no patronymic,
     father_relationship can't read the father off it (#55, DIVIYA) — so the Birth Certificate
     ties the earner (father) to the student instead: its child must be the student AND its
-    FATHER must be the earner's IC. Mirrors mother_relationship (which uses the BC mother).
-    Either side disjoint → mismatch; both agree → match; not enough read → pending."""
-    return _bc_link(bc_child_name, bc_father_name, student_name, earner_ic_name)
+    FATHER must be the earner's IC. The child row is the shared row score (#78); the father row
+    stays the name alone. Either side disjoint → mismatch; both agree → match; else pending."""
+    return _bc_link(bc_child_name, bc_father_name, student_name, earner_ic_name, nums)
 
 
 def father_link(student_name: str, earner_ic_name: str,
-                bc_child_name: str = '', bc_father_name: str = '') -> str:
+                bc_child_name: str = '', bc_father_name: str = '', nums=None) -> str:
     """The father→student link: the shared patronymic, OR — when the student is a mononym so
     the patronymic can't apply — the Birth Certificate's child+father (#55). The patronymic
     result wins; only its 'unknown' (no patronymic) defers to the BC, and only if one was
@@ -148,7 +156,7 @@ def father_link(student_name: str, earner_ic_name: str,
     a deterministic father verdict instead of a permanent 'officer reviews'."""
     r = father_relationship(student_name, earner_ic_name)
     if r == 'unknown' and (bc_child_name or bc_father_name):
-        return father_via_bc(bc_child_name, bc_father_name, student_name, earner_ic_name)
+        return father_via_bc(bc_child_name, bc_father_name, student_name, earner_ic_name, nums)
     return r
 
 
@@ -297,9 +305,10 @@ def member_relationship_status(member: str, student_name: str, member_ic_name: s
     father → patronymic, with a Birth-Certificate fallback for a mononym student (#55);
     brother/sister → father_relationship (shared patronymic only); mother → birth cert;
     guardian → guardianship letter. 'match' | 'mismatch' | 'unknown' | 'pending'. ``nums``
-    (`link_numbers`) feeds the mother / guardian row scores (request #78)."""
+    (`link_numbers`) feeds the mother / guardian row scores and the certificate's child row on
+    the father fallback (request #78)."""
     if member == 'father':
-        return father_link(student_name, member_ic_name, bc_child_name, bc_father_name)
+        return father_link(student_name, member_ic_name, bc_child_name, bc_father_name, nums)
     if member in _PATRONYMIC_MEMBERS:            # brother / sister — patronymic only
         return father_relationship(student_name, member_ic_name)
     if member == 'mother':
@@ -310,17 +319,12 @@ def member_relationship_status(member: str, student_name: str, member_ic_name: s
     return 'unknown'
 
 
-def _relationship_inputs(application, member, member_ic_name):
+def relationship_inputs_and_numbers(application, member, member_ic_name, ic_nric=''):
     """Pull the relationship-proof inputs for one member from the application's documents
     (birth cert for a mother — also the FATHER fields for the #55 mononym father fallback;
-    guardianship letter for a guardian — its guardian AND its ward, review F1)."""
-    return relationship_inputs_and_numbers(application, member, member_ic_name)[:5]
-
-
-def relationship_inputs_and_numbers(application, member, member_ic_name, ic_nric=''):
-    """`_relationship_inputs` plus the `link_numbers` its mother / guardian rows are scored on
-    (request #78), off the SAME documents read once:
-    ``(bc_child, bc_mother, bc_father, letter_name, letter_ward, nums)``."""
+    guardianship letter for a guardian — its guardian AND its ward, review F1), plus the
+    `link_numbers` its mother / guardian rows are scored on (request #78), off the SAME documents
+    read once: ``(bc_child, bc_mother, bc_father, letter_name, letter_ward, nums)``."""
     bc_child = bc_mother = bc_father = letter_name = letter_ward = ''
     f, letter = {}, None
     if member in ('mother', 'father', 'brother', 'sister'):

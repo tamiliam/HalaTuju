@@ -5,7 +5,8 @@ reference: the certificate's child against the student, its mother against the m
 a letter's guardian against the guardian's IC, a letter's ward against the student. Each row is
 scored on its NAME and its IC NUMBER, by slips counted (never percentages), into one band:
 
-    GREEN  both exact; or one exact and the other close; or NO NUMBER and an exact or close name
+    GREEN  both exact; or one exact and the other close; or NO NUMBER and a name today's
+           name-only link accepts (`relationship_name_match`)
     BLUE   both close; or exact number + far name (a name change, a bad read)
     AMBER  close + far; exact name + far number; NO NAME and an exact or close number
     RED    both far, or one far and the other missing
@@ -13,16 +14,22 @@ scored on its NAME and its IC NUMBER, by slips counted (never percentages), into
 
 ⚠ OWNER RULING, 23 Nov 2026 (later the same evening): NO NUMBER ON THE DOCUMENT = THE NAME ALONE,
 AS TODAY. When the document or the reference IC gives no IC number for a row, the NAME decides it
-(exact / close → GREEN, far → RED), exactly as the name-only decision did before #78. "One value
+by today's matcher (passes → GREEN, fails → RED), exactly as the name-only decision did before #78;
+the wider slip-count close name counts only where a number stands beside it. "One value
 missing = AMBER" applies only when the NAME is missing and the number is present. The ward row on a
 guardianship letter is always judged on the name alone (letters never print the ward's number).
 
 Two rows make the relationship link (``link_band``): only RED asks the student to act, GREEN
 confirms the link, and everything between goes to the reviewer. The case-page chips
-(`doc_checks`) and the decision (`relationships.mother_relationship` / `guardian_relationship`)
-both read this module, so the two can no longer disagree.
+(`doc_checks`) and the decision (`relationships.mother_relationship` / `guardian_relationship`,
+and the certificate's CHILD row on the mononym father fallback, `relationships._bc_link`) all
+read this module, so they can no longer disagree.
 
-⚠ OUTSIDE THE BANDS, ON PURPOSE: the father row on a birth certificate and the father / brother /
+A close number is one digit changed, dropped or added (`vision.nric_close`). A close name is the
+owner's slip count OR anything today's tolerant matcher accepts, so no row that passes today
+turns red.
+
+⚠ OUTSIDE THE BANDS, ON PURPOSE: the FATHER row on a birth certificate and the father / brother /
 sister patronymic links (BrightPath #23: the father row never blocks). Pure: no I/O, no queries.
 """
 from __future__ import annotations
@@ -31,7 +38,7 @@ import re
 from itertools import permutations
 
 from ..name_order import patronymic_reversed
-from ..vision import _canonical_name_seq, _fold_name_token, _levenshtein
+from ..vision import _canonical_name_seq, _fold_name_token, _levenshtein, nric_close
 from ..vision import name_match as exact_name_match
 from ..vision import relationship_name_match
 
@@ -49,17 +56,14 @@ def _digits(s) -> str:
 
 
 def number_level(read, ref) -> str:
-    """EXACT (every digit equal) · CLOSE (the same length, exactly ONE digit substituted) · FAR ·
-    MISSING (either side blank). Close is the owner's definition: a substitution only — not
-    `vision.nric_close`, which also accepts an inserted or dropped digit."""
+    """EXACT (every digit equal) · CLOSE (exactly ONE digit changed, dropped or added:
+    `vision.nric_close`, owner ruling 23 Nov 2026) · FAR · MISSING (either side blank)."""
     a, b = _digits(read), _digits(ref)
     if not a or not b:
         return MISSING
     if a == b:
         return EXACT
-    if len(a) == len(b) and sum(x != y for x, y in zip(a, b)) == 1:
-        return CLOSE
-    return FAR
+    return CLOSE if nric_close(a, b) else FAR
 
 
 def _word_close(x: str, y: str) -> bool:
@@ -125,31 +129,49 @@ def row_band(name_lvl: str, number_lvl: str) -> str:
     return _BAND[(name_lvl, number_lvl)]
 
 
+def name_alone_level(read, refs) -> str:
+    """The name level when NO NUMBER corroborates it: EXACT / CLOSE only where today's name-only
+    link passes (`relationship_name_match` not 'mismatch' against one of ``refs``), else FAR.
+
+    ⚠ OWNER RULING 23 Nov 2026: "no number on the document = name alone, AS TODAY". The owner's
+    wider slip count (`_slips_close`, no 5-letter floor) needs a number beside it: alone it would
+    merge short words the floor keeps apart on purpose (`vision.names._tokens_close`: Siva≠Sira,
+    Vani≠Vasu; TD-404) and turn today's reds green (review round 1: K RAJAN vs M RAJAN)."""
+    level = best_name_level(read, refs)
+    if level not in (EXACT, CLOSE):
+        return level                    # FAR / MISSING stand as they are
+    today = any(relationship_name_match(read, r) != 'mismatch' for r in refs if (r or '').strip())
+    return level if today else FAR
+
+
 def score_row(name, nric, ref_names, ref_nric, *, waiting=False) -> dict:
     """One row: ``{name, number, band, waiting}``. ``waiting`` marks a GREY row whose REFERENCE
     is not in yet (the parent's IC not uploaded or not read) — as opposed to a row the document
-    itself could not give us."""
+    itself could not give us. With no number on either side the name is judged as today
+    (`name_alone_level`); the slip-count close name counts only beside a number."""
     if isinstance(ref_names, str):
         ref_names = (ref_names,)
-    n, k = best_name_level(name, ref_names), number_level(nric, ref_nric)
+    k = number_level(nric, ref_nric)
+    n = name_alone_level(name, ref_names) if k == MISSING else best_name_level(name, ref_names)
     band = row_band(n, k)
     return {'name': n, 'number': k, 'band': band, 'waiting': bool(waiting and band == GREY)}
 
 
 def score_name_only_row(name, ref_names) -> dict:
     """A row whose document never carries a number (a guardianship letter's WARD: letters never
-    print the ward's number). Owner ruling 23 Nov 2026: judged on the name alone, always —
-    exact or close → GREEN, far → RED, blank → GREY (the no-number column of the row table)."""
+    print the ward's number). Owner ruling 23 Nov 2026: judged on the name alone, always, by
+    today's matcher (`name_alone_level`): passes → GREEN, fails → RED, blank → GREY."""
     if isinstance(ref_names, str):
         ref_names = (ref_names,)
-    n = best_name_level(name, ref_names)
+    n = name_alone_level(name, ref_names)
     return {'name': n, 'number': MISSING, 'band': row_band(n, MISSING), 'waiting': False}
 
 
 def link_band(child: dict, parent: dict) -> str:
     """Part B: the link "this parent is the student's parent" from its two rows. Chips have no
-    blue (BLUE shows as AMBER). RED + anything = RED; G+G = G; B+B = G only when BOTH rows carry
-    an exact IC number; any other mix of green / blue / amber = AMBER; GREY + GREEN = GREY while
+    blue (BLUE shows as AMBER). RED + anything = RED; G+G = G; any other mix of green / blue /
+    amber = AMBER — B+B too, even with both numbers exact (owner ruling 23 Nov 2026: the officer
+    checks; the link is never confirmed while both names are far); GREY + GREEN = GREY while
     the other document is still coming, AMBER once everything is in; both GREY = GREY."""
     bands = (child['band'], parent['band'])
     if RED in bands:
@@ -162,9 +184,7 @@ def link_band(child: dict, parent: dict) -> str:
         return GREY if (other == GREEN and grey_row['waiting']) else AMBER
     if bands == (GREEN, GREEN):
         return GREEN
-    if bands == (BLUE, BLUE) and child['number'] == parent['number'] == EXACT:
-        return GREEN
-    return AMBER
+    return AMBER                       # B+B included: both names far, both numbers exact (ruling)
 
 
 def link_status(band: str) -> str:
@@ -189,7 +209,9 @@ def chip_status(row: dict) -> str:
         return 'check'                 # the name holds; check the number
     if n == CLOSE and k == CLOSE:
         return 'check_near'            # one slip in each: likely a scan misread
-    return 'check_one'                 # the number held with no name, or neither cleanly
+    if n == FAR and k == CLOSE:
+        return 'check_both'            # spelt differently AND one digit off: both were read
+    return 'check_one'                 # the number held with no name to read beside it
 
 
 def mother_link(child_name, child_nric, mother_name, mother_nric,
