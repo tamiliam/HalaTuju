@@ -852,6 +852,25 @@ class GiftLayoutTests(_Base):
         self.assertEqual(body['layout_source'], 'gift')
 
 
+class AiTeamFoldTests(_Base):
+    """F4: the AI section's `ai_team` fold ("For the AI team") is a super's only, on the real payload."""
+
+    def test_ai_team_is_a_supers_only(self):
+        PartnerAdmin.objects.create(
+            supabase_user_id='ov-su-qc', role='super', is_active=True, permissions=['qc'],
+            name='Super QC', email='ov-su-qc@ov.test')
+        for uid in ('ov-su', 'ov-su-qc'):
+            with self.subTest(uid=uid):
+                section = self._body(uid)['ai_prediction']
+                self.assertIn('ai_team', section)
+                self.assertEqual(set(section['ai_team']), {'doubt_codes', 'by_version'})
+        for uid in ('ov-oa', 'ov-adm', 'ov-qc'):
+            with self.subTest(uid=uid):
+                section = self._body(uid)['ai_prediction']
+                self.assertNotIn('ai_team', section)
+                self.assertIn('score', section)
+
+
 class IntakeTests(_Base):
     """`?intake=` narrows INSIDE the fence — everything on the page — and never widens."""
 

@@ -75,18 +75,18 @@ class TestThePercent(SimpleTestCase):
         self.assertIsNone(ai_score.percent(0, 0))
 
     def test_unsure_facts_count_in_best(self):
-        m = ai_score.score([(snap(identity=UNSURE, academic=UNSURE, pathway=UNSURE, income=UNSURE),
+        m = ai_score.score_marks([(snap(identity=UNSURE, academic=UNSURE, pathway=UNSURE, income=UNSURE),
                              officer(), 'v1')])
         self.assertEqual((m['facts'], m['points'], m['best'], m['score_pct']), (4, 0, 8, 0))
         self.assertEqual(m['unsure'], 4)
 
     def test_all_sure_and_right_is_100(self):
-        m = ai_score.score([(snap(), officer(), 'v1')])
+        m = ai_score.score_marks([(snap(), officer(), 'v1')])
         self.assertEqual((m['points'], m['best'], m['score_pct'], m['lost']), (8, 8, 100, 0))
         self.assertIsNone(m['most_lost'])
 
     def test_a_score_below_zero(self):
-        m = ai_score.score([(snap(), officer(identity='fail', academic='fail'), 'v1')])
+        m = ai_score.score_marks([(snap(), officer(identity='fail', academic='fail'), 'v1')])
         self.assertEqual((m['points'], m['best'], m['score_pct'], m['lost']), (-16, 8, -200, -20))
 
 
@@ -99,7 +99,7 @@ class TestByFactAndReasons(SimpleTestCase):
             (snap(pathway=UNVERIFIABLE), officer(), 'v1'),                                   # -1
             (snap(), officer(pathway='fail', reasons={'pathway': 'proof_missing'}), 'v1'),   # -10
         ]
-        m = ai_score.score(records)
+        m = ai_score.score_marks(records)
         p = m['by_fact']['pathway']
         self.assertEqual((p['facts'], p['points'], p['best'], p['lost']), (4, -19, 8, -21))
         self.assertEqual(p['score_pct'], -238)
@@ -111,7 +111,7 @@ class TestByFactAndReasons(SimpleTestCase):
         self.assertEqual(m['most_lost'], {'fact': 'pathway', 'points': -21})
 
     def test_a_fail_with_no_reason_is_not_given_and_a_pass_reason_is_what_the_ai_said(self):
-        m = ai_score.score([(snap(income=PROBABLE), officer(income='fail'), 'v1'),
+        m = ai_score.score_marks([(snap(income=PROBABLE), officer(income='fail'), 'v1'),
                             (snap(income=UNVERIFIABLE), officer(), 'v1')])
         self.assertEqual(m['by_fact']['income']['top_reasons'],
                          [{'key': 'fail:not_given', 'points': -3}, {'key': 'pass:unverifiable', 'points': -1}])
@@ -119,7 +119,7 @@ class TestByFactAndReasons(SimpleTestCase):
     def test_only_two_reasons_are_kept(self):
         records = [(snap(), officer(identity='fail', reasons={'identity': c}), 'v1')
                    for c in ('proof_missing', 'proof_missing', 'document_false', 'other')]
-        reasons = ai_score.score(records)['by_fact']['identity']['top_reasons']
+        reasons = ai_score.score_marks(records)['by_fact']['identity']['top_reasons']
         self.assertEqual(reasons, [{'key': 'fail:proof_missing', 'points': -20},
                                    {'key': 'fail:document_false', 'points': -10}])
 
@@ -127,24 +127,24 @@ class TestByFactAndReasons(SimpleTestCase):
 class TestWhatIsNotScored(SimpleTestCase):
 
     def test_undecided_facts_are_skipped(self):
-        m = ai_score.score([(snap(), {'identity': 'pass', 'academic': ''}, 'v1')])
+        m = ai_score.score_marks([(snap(), {'identity': 'pass', 'academic': ''}, 'v1')])
         self.assertEqual(m['facts'], 1)
         self.assertEqual(m['not_scored'], 0)
 
     def test_a_decided_fact_without_a_snapshot_band_is_not_scored(self):
-        m = ai_score.score([([], officer(), ''), (None, officer(identity='fail'), '')])
+        m = ai_score.score_marks([([], officer(), ''), (None, officer(identity='fail'), '')])
         self.assertEqual((m['facts'], m['not_scored'], m['best']), (0, 8, 0))
         self.assertIsNone(m['score_pct'])
 
     def test_a_malformed_snapshot_item_never_raises(self):
-        m = ai_score.score([([{'fact': ['x']}, 'odd', fact('income', CERTAIN)], officer(), 'v1')])
+        m = ai_score.score_marks([([{'fact': ['x']}, 'odd', fact('income', CERTAIN)], officer(), 'v1')])
         self.assertEqual((m['facts'], m['not_scored']), (1, 3))
 
 
 class TestByVersion(SimpleTestCase):
 
     def test_split_and_sorted_by_version(self):
-        m = ai_score.score([(snap(), officer(), 'v2'), (snap(), officer(identity='fail'), 'v1'),
+        m = ai_score.score_marks([(snap(), officer(), 'v2'), (snap(), officer(identity='fail'), 'v1'),
                             (snap(), officer(), '')])
         self.assertEqual([(v['version'], v['facts'], v['points'], v['best'], v['score_pct'])
                           for v in m['by_version']],

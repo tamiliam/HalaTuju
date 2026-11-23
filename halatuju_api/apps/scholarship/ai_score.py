@@ -74,11 +74,11 @@ def reason_key(band: str, officer: str, officer_verdict, fact: str) -> str:
     return f'pass:{band}'
 
 
-def _block() -> dict:
+def _mark_tally() -> dict:
     return {'facts': 0, 'points': 0, 'lost': 0, **{o: 0 for o in OUTCOMES}}
 
 
-def _finish(block: dict) -> dict:
+def _close_tally(block: dict) -> dict:
     block['best'] = BEST_PER_FACT * block['facts']
     block['score_pct'] = percent(block['points'], block['best'])
     return block
@@ -89,12 +89,12 @@ def _bands(snapshot) -> dict:
             if isinstance(f, dict) and isinstance(f.get('fact'), str) and f['fact']}
 
 
-def score(records) -> dict:
+def score_marks(records) -> dict:
     """The marks over ``records``: ``(ai_verdict_snapshot, officer_verdict, engine_version, …)``
     tuples of RECORDED decisions. Returns ``{facts, points, best, score_pct, lost, outcomes counts,
     not_scored, most_lost: {fact, points} | None, by_fact: {fact: block + top_reasons}, by_version:
     [block + version]}``; ``by_version`` is for the AI team only (the caller decides who gets it)."""
-    total, by_fact = _block(), {f: _block() for f in FACTS}
+    total, by_fact = _mark_tally(), {f: _mark_tally() for f in FACTS}
     reasons = {f: {} for f in FACTS}
     by_version: dict = {}
     not_scored = 0
@@ -112,7 +112,7 @@ def score(records) -> dict:
                 not_scored += 1
                 continue
             points, outcome = mark(band, officer)
-            for block in (total, by_fact[fact], by_version.setdefault(version, _block())):
+            for block in (total, by_fact[fact], by_version.setdefault(version, _mark_tally())):
                 block['facts'] += 1
                 block['points'] += points
                 block[outcome] += 1
@@ -124,12 +124,12 @@ def score(records) -> dict:
     for fact in FACTS:
         ranked = sorted(reasons[fact].items(), key=lambda kv: (kv[1], kv[0]))
         by_fact[fact]['top_reasons'] = [{'key': k, 'points': p} for k, p in ranked[:TOP_REASONS]]
-        _finish(by_fact[fact])
+        _close_tally(by_fact[fact])
     worst = min(FACTS, key=lambda f: (by_fact[f]['lost'], FACTS.index(f)))
-    out = _finish(total)
+    out = _close_tally(total)
     out['not_scored'] = not_scored
     out['most_lost'] = ({'fact': worst, 'points': by_fact[worst]['lost']}
                         if by_fact[worst]['lost'] < 0 else None)
     out['by_fact'] = by_fact
-    out['by_version'] = [{'version': v, **_finish(by_version[v])} for v in sorted(by_version)]
+    out['by_version'] = [{'version': v, **_close_tally(by_version[v])} for v in sorted(by_version)]
     return out

@@ -103,7 +103,7 @@ def may_see_ai_team(admin) -> bool:
 def metrics(applications, admin) -> dict:
     """The whole answer for ``applications`` (a FENCED queryset), F4 shape (owner design 2026-11-23):
 
-    * ``applications`` — decided applications counted; ``score`` — `ai_score.score` (the two tiles and
+    * ``applications`` — decided applications counted; ``score`` — `ai_score.score_marks` (the two tiles and
       "By fact"), WITHOUT its per-version part;
     * ``by_reviewer`` — the lead tier only (`may_see_reviewers`);
     * ``ai_team`` — a super only (`may_see_ai_team`): ``doubt_codes`` and ``by_version``.
@@ -123,7 +123,7 @@ def metrics(applications, admin) -> dict:
     records = list(decided.values_list(
         'ai_verdict_snapshot', 'officer_verdict', 'ai_verdict_engine_version',
         'verdict_decided_at', 'verdict_decided_by', 'id'))
-    marks = ai_score.score(records)
+    marks = ai_score.score_marks(records)
     by_version = marks.pop('by_version')
     out = {'applications': len(records), 'score': marks}
     if may_see_reviewers(admin):

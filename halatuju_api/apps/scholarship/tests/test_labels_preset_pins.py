@@ -31,7 +31,7 @@ SHAPES = ('super', 'org_admin', 'org_admin in Reviewers', 'admin', 'finance', 'q
           'mentor', 'partner', 'source_partner')
 
 #: (a) The Overview, per preset: the `sections` served (200), or the status of the refusal.
-#: LL1: the FIXED `ai_prediction` section follows `see_all` / `qc` / `review` (B40 scope not 'none'), so
+#: LL1: the FIXED `ai_prediction` section follows `see_all` / `qc` (F4: never `review`) (B40 scope not 'none'), so
 #: finance (scope none), member, mentor and the partners never get it; it sits after the widgets.
 OVERVIEW_PINS = {
     'super': [*FULL, 'ai_prediction'],
@@ -40,7 +40,7 @@ OVERVIEW_PINS = {
     'admin': [*FULL, 'ai_prediction'],
     'finance': ['money', 'money_series'],
     'qc': ['ai_prediction', 'qc'],
-    'reviewer': ['ai_prediction', 'mine'],
+    'reviewer': ['mine'],   # F4: a reviewer (`review` alone) gets no AI card
     'member': 403,
     'mentor': 403,
     'partner': 403,
