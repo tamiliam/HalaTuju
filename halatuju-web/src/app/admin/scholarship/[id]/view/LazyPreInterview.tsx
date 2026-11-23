@@ -8,16 +8,20 @@
  * 250 kB ceiling. Most cases never draw either screen, yet both rode in every visit. The budget is
  * never raised; the weight is paid for here.
  *
- * The cockpit mounts each wrapper under the SAME condition as the component's own early return:
- *   - option: `app.pre_interview` is set (the component returns null without it; `AssignAndWitness`
- *     already mounts the slot only when it is set);
- *   - record: the case is `rejected` in the pre-interview category.
- * Keep the conditions identical. The import is owned by `lazySource`, with LITERAL specifiers.
+ * The record is mounted under the SAME condition as the component's own early return: the case is
+ * `rejected` in the pre-interview category. Keep that condition identical. The import is owned by `lazySource`, with LITERAL specifiers.
+ *
+ * The OPTION's element is passed to the cockpit on every case (the card decides whether to show it);
+ * the component itself returns null without `app.pre_interview`. So it uses the
+ * QUIET fallback (nothing while loading): a "Loading..." line would sit under the assign controls on
+ * every case with no option. It stays mounted (keyed by case) because it holds its pending reply
+ * across a reload.
  */
 import { lazySource } from '@/components/source/LazySource'
 
 export const LazyPreInterviewOption = lazySource(
   () => import('./PreInterviewReject').then((m) => m.PreInterviewOption),
+  { quiet: true },
 )
 
 export const LazyPreInterviewRecord = lazySource(

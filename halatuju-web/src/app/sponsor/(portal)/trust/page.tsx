@@ -4,15 +4,13 @@ import '@/lib/messagesSponsor'   // TD-416: this page's sponsor* words (their ow
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
-import { lazy, Suspense } from 'react'
+import { LazyTrustView } from './LazyTrustView'
 
 /**
  * Trust & Transparency hub (R5). The page holds the loading state; the five sections (Who we are,
  * Governance, Our volunteers, Sources & uses of funds, Independent assurance) are `TrustView.tsx`,
- * fetched as their own chunk once the shared context's `trust` has loaded.
+ * fetched as their own chunk (`LazyTrustView`, which says so in place if it cannot load) once the shared context's `trust` has loaded.
  */
-const TrustView = lazy(() => import('./TrustView').then((m) => ({ default: m.TrustView })))
-
 export default function TrustPage() {
   const { t } = useT()
   const { trust } = useSponsorPortal()
@@ -26,5 +24,5 @@ export default function TrustPage() {
     )
   }
 
-  return <Suspense fallback={null}><TrustView trust={trust} /></Suspense>
+  return <LazyTrustView trust={trust} />
 }

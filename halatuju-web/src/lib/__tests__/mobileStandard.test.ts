@@ -313,14 +313,15 @@ const RULE15_SWEPT = [
   'src/components/sponsor/SponsorShell.tsx', 'src/app/sponsor/(portal)/page.tsx',
   'src/app/sponsor/(portal)/students/[id]/page.tsx', 'src/app/sponsor/(portal)/account/page.tsx',
   'src/components/SponsorLanding.tsx',
+  // They import phoneSection (the section frame), so they are swept in full, not parts.
+  'src/app/sponsor/(portal)/trust/TrustView.tsx', 'src/app/sponsor/(portal)/account/InviteFriends.tsx',
   // Mobile M8: the two student screens B1 found still boxed — the award's comprehension quiz and the e-mail check.
   'src/components/AwardComprehensionQuiz.tsx', 'src/app/verify-email/page.tsx',
 ]
 /** Swept too, but with no section or gutter of their own (so no import): rows and pills inside one. */
 const RULE15_SWEPT_PARTS = [
   // The trust page was split: the page keeps the loading state, TrustView holds the sections.
-  'src/app/sponsor/(portal)/trust/page.tsx', 'src/app/sponsor/(portal)/trust/TrustView.tsx',
-  'src/app/sponsor/(portal)/account/InviteFriends.tsx', 'src/app/sponsor/(portal)/account/GivingStatement.tsx',
+  'src/app/sponsor/(portal)/trust/page.tsx', 'src/app/sponsor/(portal)/account/GivingStatement.tsx',
   // A3.9: the profile's section views and edit panels (no section or gutter of their own: SectionCard holds the frame).
   'src/app/profile/sections/IdentitySection.tsx', 'src/app/profile/sections/ContactDetailsSection.tsx',
   'src/app/profile/sections/LocationSection.tsx', 'src/app/profile/sections/FamilySection.tsx',

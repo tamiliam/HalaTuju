@@ -17,7 +17,7 @@ import { VOLUNTEER_LEVELS, type SponsorVolunteers } from '@/lib/api/sponsor'
  *
  * WHY IT IS A SEPARATE FILE (first-load budget, 2026-11-23): the page only draws this once `trust` has
  * loaded, and the median route sat on its line, so the page fetches this view as its own chunk
- * (`page.tsx`, `lazySource`) instead of every visitor downloading it up front.
+ * (`LazyTrustView.tsx`, via `lazyPart`) instead of every visitor downloading it up front.
  */
 export function TrustView({ trust }: { trust: SponsorTrust }) {
   const { t } = useT()

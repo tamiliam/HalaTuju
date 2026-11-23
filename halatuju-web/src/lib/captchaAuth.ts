@@ -91,13 +91,14 @@ export async function withCaptcha<R extends { error: unknown }>(
   return { ...onCaptchaError, error: captchaError('captcha_failed') }
 }
 
-/**
- * The words a screen shows for a captcha failure: the main sentence, plus the "sign in with
- * Google" line only where that screen offers Google. Null when `error` is not a captcha failure
- * (the screen keeps its own handling). `t` is the screen's `useT()`.
- */
 export type CaptchaWords = { blocked: string; failed: string; google: string }
 
+/**
+ * The words a screen shows for a captcha failure: the main sentence, plus the "sign in with
+ * Google" line only where that screen offers Google. `captchaErrorText` returns null when `error`
+ * is not a captcha failure (the screen keeps its own handling). The screen reads its own words
+ * from the slice it already loads and passes them in as `words`.
+ */
 export function captchaErrorText(
   error: unknown,
   words: CaptchaWords,

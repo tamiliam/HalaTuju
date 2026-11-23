@@ -14,24 +14,18 @@
  *
  * ⚠ WHEN A CHUNK FAILS (a tab held open across a deploy asks for a hash that is gone), it says so
  * in one line rather than leaving a blank page.
+ *
+ * OPTION: `quiet` draws nothing while the chunk is in the air (for a part that mostly draws nothing
+ * once loaded, so a "Loading..." line would be a stray). The mechanics live in `LazyPart.tsx`; this
+ * is the admin-words version (a non-admin route must use `lazyPart` and name its own words, or it
+ * would reach the admin slice).
  */
-import { useEffect, useState, type ComponentType } from 'react'
-import { useT } from '@/lib/i18n'
+import type { ComponentType } from 'react'
+import { lazyPart } from '@/components/LazyPart'
 
-export function lazySource<P extends object>(load: () => Promise<ComponentType<P>>): ComponentType<P> {
-  return function LazySourceScreen(props: P) {
-    const { t } = useT()
-    const [Screen, setScreen] = useState<ComponentType<P> | null>(null)
-    const [failed, setFailed] = useState(false)
-    useEffect(() => {
-      let live = true
-      load()
-        .then((c) => { if (live) setScreen(() => c) })
-        .catch(() => { if (live) setFailed(true) })
-      return () => { live = false }
-    }, [])
-    if (Screen) return <Screen {...props} />
-    if (!failed) return <p className="text-sm text-ground-500">{t('common.loading')}</p>
-    return <p className="text-sm text-critical-600" role="alert">{t('admin.sourceConsole.loadFailed')}</p>
-  }
+export function lazySource<P extends object>(
+  load: () => Promise<ComponentType<P>>,
+  opts: { quiet?: boolean } = {},
+): ComponentType<P> {
+  return lazyPart(load, { failedKey: 'admin.sourceConsole.loadFailed', quiet: opts.quiet })
 }

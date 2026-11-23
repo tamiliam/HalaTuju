@@ -10,7 +10,16 @@
  */
 import type { withCaptcha as WithCaptcha } from '@/lib/captchaAuth'
 
+// Shaped like `captchaError('captcha_failed')` (the codes the screens read are the same); kept
+// to the fields a screen reads, because this file rides every admin and sponsor route.
+const FAILED = { code: 'captcha_failed', message: 'Security check failed.' }
+
 export const withCaptcha: typeof WithCaptcha = async (action, call, onCaptchaError) => {
-  const m = await import('@/lib/captchaAuth')
+  let m: typeof import('@/lib/captchaAuth')
+  try {
+    m = await import('@/lib/captchaAuth')
+  } catch {
+    return { ...onCaptchaError, error: FAILED } as never
+  }
   return m.withCaptcha(action, call, onCaptchaError)
 }

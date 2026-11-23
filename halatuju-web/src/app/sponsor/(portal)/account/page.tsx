@@ -1,7 +1,7 @@
 'use client'
 
 import '@/lib/messagesSponsor'   // TD-416: this page's sponsor* words (their own slice)
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
@@ -13,9 +13,8 @@ import SponsorLogOut from '@/components/sponsor/SponsorLogOut'
 import { DisplayControls } from '@/components/DisplaySegments'
 import { PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 import Toggle from '@/components/Toggle'
+import { LazyInviteFriends, LazyGivingStatement } from './LazyAccountParts'
 
-const InviteFriends = lazy(() => import('./InviteFriends').then((m) => ({ default: m.InviteFriends })))
-const GivingStatement = lazy(() => import('./GivingStatement').then((m) => ({ default: m.GivingStatement })))
 
 /** Rule 15 (Mobile M5): a full-width section on a phone, the card it always was from md. */
 const CARD = PHONE_SECTION_NO_GAP
@@ -161,11 +160,11 @@ export default function AccountPage() {
       )}
 
       {/* Invite a friend + your invitations */}
-      <Suspense fallback={null}><InviteFriends /></Suspense>
+      <LazyInviteFriends />
 
       {/* Giving statement — two ledgers (donations in vs gifts out) */}
       {statement && (statement.donations.length > 0 || statement.gifts.length > 0) && (
-        <Suspense fallback={null}><GivingStatement statement={statement} /></Suspense>
+        <LazyGivingStatement statement={statement} />
       )}
 
       {/* Phones (Mobile M5, owner): the theme, the language and Log out live HERE — the portal's phone

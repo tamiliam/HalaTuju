@@ -140,6 +140,6 @@ describe('a failed security check shows plain words, never Supabase raw captcha 
     fireEvent.change(screen.getByPlaceholderText('admin@organisation.com'), { target: { value: 'a@example.org' } })
     fireEvent.click(screen.getByRole('button', { name: 'admin.sendResetLink' }))
     await waitFor(() => expect(screen.getByText('admin.loginCaptcha.blocked')).toBeTruthy())
-    expect(screen.queryByText(/errors\.captchaGoogle/)).toBeNull()
+    expect(screen.queryByText(/admin\.loginCaptcha\.google/)).toBeNull()
   })
 })

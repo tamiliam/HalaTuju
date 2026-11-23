@@ -100,8 +100,8 @@ that failed for any reason (script blocked, slow network, 8 s timeout) resolved 
 - **The doors** (`halatuju-web/src/lib/captchaAuth.ts`, `withCaptcha`): admin/partner
   sign-in and reset, sponsor sign-in, sign-up and reset. On `blocked` / `failed` they
   return `error.code` `captcha_blocked` / `captcha_failed` and do **not** call Supabase.
-  The screens show plain words from `messages/*.json` (`errors.captchaBlocked`,
-  `errors.captchaFailed`, plus `errors.captchaGoogle` where the door offers Google).
+  The screens show plain words from `messages/*.json` (`admin.loginCaptcha.*` on the admin
+  door, `sponsorAuth.captchaBlocked` / `captchaFailed`, plus the `google` line where the door offers Google).
 - **Guest session removed:** `AuthProvider` no longer calls Supabase's anonymous sign-in
   on page load (it cost one Turnstile challenge and one auth row per visitor). Browsers that
   already hold an anonymous session keep it. The API ignores an anonymous token for data
