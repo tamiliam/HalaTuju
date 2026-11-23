@@ -53,8 +53,9 @@ const rejectThenFlip = (from: boolean) => {
   const view = render(<Page canAssign={from} onDone={onDone} />)
   expect(!!screen.queryByText('admin.scholarship.assignTitle')).toBe(from)
   fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-  fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: 'not_b40' } })
-  fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`), { target: { value: 'Dummy note' } })
+  fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
+  fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
+  for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
   fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
   fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
   expect(screen.getByRole('button', { name: `${P}.running` })).toBeTruthy()
@@ -76,7 +77,7 @@ describe.each([
     const { reply } = rejectThenFlip(from)
     await land(() => reply.settle(false, Object.assign(new Error('x'), { code: 'comments_required' })))
     expect(screen.getByRole('alert').textContent).toBe(`${P}.error.comments_required`)
-    expect(screen.getByLabelText(`${P}.detailsLabel`)).toBeTruthy()   // back on the form, as without the flip
+    expect(screen.getByLabelText(`${P}.detailsLabel`, { exact: false })).toBeTruthy()   // back on the form, as without the flip
   })
 
   it('its success still reaches the page', async () => {

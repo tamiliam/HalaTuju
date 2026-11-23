@@ -11,16 +11,17 @@
  */
 import type { Dispatch, SetStateAction } from 'react'
 import {
-  aiSuggestionFor,
+  BAND_TONE,
+  factBandOf,
   showsDecisionCards,
   showsEstimateCard,
-  showsReportingDateBox,
 } from '@/lib/officerCockpit'
+import { reportingDateBoxShown } from '@/lib/cockpitTrail'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import type { T } from './shared'
-import { FAIL_REASON_CODES, greenFailFacts } from './failReasons'
+import { DEFAULT_FAIL_REASON, FAIL_REASON_CODES, failedFacts } from '@/lib/failReasons'
 
 export function RateAndEstimate({
   app, t, busy, canWrite, decisionReopened, decisionRecorded, decisionLocked,
@@ -88,7 +89,12 @@ export function RateAndEstimate({
                     {t('admin.scholarship.recordVerdict.factPass')}
                   </button>
                   <button
-                    onClick={() => { setFailReason(fact, ''); setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'fail' ? '' : 'fail' })) }}
+                    onClick={() => {
+                      // F3 (I-11): a Fail asks Why, with Other already chosen; un-failing clears it.
+                      const failing = officerVerdict[fact] !== 'fail'
+                      setFailReason(fact, failing ? DEFAULT_FAIL_REASON : '')
+                      setOfficerVerdict((v) => ({ ...v, [fact]: failing ? 'fail' : '' }))
+                    }}
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'fail'
@@ -99,17 +105,18 @@ export function RateAndEstimate({
                     {t('admin.scholarship.recordVerdict.factFail')}
                   </button>
                 </div>
-                {/* LL2: only a fact the engine showed green and the reviewer failed asks why. */}
-                {greenFailFacts(app.verdict, officerVerdict).includes(fact) && (
+                {/* F3 (I-11): EVERY Fail asks why — a reason about the student, never the AI. */}
+                {failedFacts(officerVerdict).includes(fact) && (
                   <div className="basis-full space-y-1.5" role="group" aria-label={t('admin.scholarship.recordVerdict.failWhy')}>
                     <p className="text-xs text-ground-600">{t('admin.scholarship.recordVerdict.failWhy')}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FAIL_REASON_CODES.map((code) => (
-                        <button key={code} type="button" aria-pressed={failReasons[fact] === code}
-                          onClick={() => setFailReason(fact, failReasons[fact] === code ? '' : code)}
+                        <button key={code} type="button"
+                          aria-pressed={(failReasons[fact] || DEFAULT_FAIL_REASON) === code}
+                          onClick={() => setFailReason(fact, code)}
                           disabled={!canWrite}
                           className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                            failReasons[fact] === code
+                            (failReasons[fact] || DEFAULT_FAIL_REASON) === code
                               ? 'border-brand-fill bg-brand-fill text-brand-fill-ink'
                               : 'border-ground-300 text-ground-600 hover:border-ground-500'
                           } disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center`}>
@@ -123,26 +130,31 @@ export function RateAndEstimate({
             )
           ))}
         </div>
-        {/* AI's suggested verdict — the officer decides; this is the AI's read. */}
+        {/* AI's suggested verdict — the officer decides; this is the AI's read. F2 (fix plan): the
+            SAME served band and words as the tiles (`app.ai_fact_bands`), never the raw status. */}
         {(() => {
-          const sugg = aiSuggestionFor(app.verdict || [])
           const facts = ['identity', 'academic', 'pathway', 'income'] as const
+          const bandColour = {
+            green: 'text-positive-700 font-medium',
+            blue: 'text-primary-700 font-medium',
+            amber: 'text-caution-700 font-medium',
+            red: 'text-critical-600 font-medium',
+          }
           return (
             <p className="text-xs md:text-[11px] text-ground-400">
               {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
-              {facts.map((f, i) => (
-                <span key={f}>
-                  {i > 0 && ', '}
-                  {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
-                  <span className={
-                    sugg[f] === 'yes' ? 'text-positive-700 font-medium'
-                    : sugg[f] === 'no' ? 'text-critical-600 font-medium'
-                    : 'text-caution-700 font-medium'
-                  }>
-                    {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
+              {facts.map((f, i) => {
+                const band = factBandOf(app.ai_fact_bands, f, app.verdict?.find((v) => v.fact === f)?.status)
+                return (
+                  <span key={f}>
+                    {i > 0 && ', '}
+                    {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
+                    <span className={bandColour[BAND_TONE[band]]}>
+                      {t(`admin.scholarship.verdict.band.${band}`)}
+                    </span>
                   </span>
-                </span>
-              ))}{'.'}
+                )
+              })}{'.'}
             </p>
           )
         })()}
@@ -215,13 +227,8 @@ export function RateAndEstimate({
             meets the empty field while deciding, and most cases are settled before they ever
             reach QC. QC's refusal is the backstop, not the normal route.
             Shown only when the offer letter carries NO readable date, and only in the reviewer's
-            window (interviewing, or a reopened case) — `showsReportingDateBox`. ─────────────── */}
-      {showsReportingDateBox({
-        status: app.status,
-        decisionReopened,
-        letterHasDate: (app.documents || []).some(
-          (d) => d.doc_type === 'offer_letter' && !d.superseded_at && !!d.pathway_check?.reporting_date),
-      }) && (
+            window (interviewing, or a reopened case) — the server's answer, `reportingDateBoxShown`. ── */}
+      {reportingDateBoxShown(app, decisionReopened) && (
         <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-caution-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.reportingDateEntry.title')}
@@ -230,6 +237,7 @@ export function RateAndEstimate({
           {/* A `type="date"` box carries no accessible name of its own, so a screen reader
               announced nothing here. The heading's own key — nothing on screen changes. */}
           <input
+            id="reporting-date-input"
             aria-label={t('admin.scholarship.reportingDateEntry.title')}
             type="date" value={reportingDateInput}
             onChange={(e) => setReportingDateInput(e.target.value)}

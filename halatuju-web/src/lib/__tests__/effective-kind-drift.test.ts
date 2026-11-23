@@ -15,7 +15,7 @@
  *                                        that sets the price
  *   - the FE `effectiveKind`          — what a reader sees
  *
- * Like `soft-evidence-drift.test.ts`, this sanity-checks its own parse so a refactor that stops
+ * Like `disqualifier-drift.test.ts`, this sanity-checks its own parse so a refactor that stops
  * matching cannot quietly turn the file into a 0-assert no-op.
  */
 import { effectiveKind, filedKindDiffers } from '@/lib/requestStatus'

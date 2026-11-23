@@ -9,7 +9,7 @@ info-block fields are read by ONE shared block reader (`_read_block`, S5): every
 taken by its SHAPE, in letter order, whatever the layout (label block then value block, label and
 value interleaved, label and value glued on one line). CONSERVATIVE: returns None (→ Gemini) unless
 it locks a coherent read incl. the fields the verdict needs. University (ua_offer) offers vary and
-stay on Gemini. PISMP deferred (new format).
+stay on Gemini, except the UMS template (OCR-first S1, `offer_parse_university`). PISMP deferred.
 
 Output mirrors the Gemini offer schema fields read by pathway_engine.student_offer_check:
   candidate_name, candidate_nric, candidate_nric_source, programme, programme_code, institution,
@@ -316,7 +316,17 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # title is required; identity from page 1 (`page1_text`).
 # 2.0.1 (A2.7a, 2026-11-09) — TD-474: a one-word line straight above a postcode line is the town, never
 # the wrapped end of the institution name.
-PARSER_VERSION = '2.0.1'
+# 2.1.0 (OCR-first S1, 2026-11-19) — a fourth family, the UMS university offer
+# (`offer_parse_university`), read from page 1's LAYOUT text on a digital PDF; its lock carries
+# ``rules_lane`` 'ua:UMS'. The three government families read exactly as before.
+# 2.2.0 (OCR-first S1c, 2026-11-19) — the UMS read refuses more (TD-699): a reporting range wrapped
+# across lines, more withdrawal words (spaced letters too), any programme label line, an '@' or
+# "NAME, KG ..." line under the name, and text longer than a page 1. Government families unchanged.
+# 2.3.0 (OCR-9, was S-visible 2, 2026-11-21) — a text-layer rules lock needs real ink under every owner-phrase
+# word and value on rendered page 1 (`pdf_ink`, `offer_exact`); no lock on ANY rules lane (university or
+# government family) when the page-1 text (a university lane's drawn layout; a government letter's text layer)
+# or the parsed programme / stream says ASASI (`_rules_exit`). Built on 2.2.0 after OCR-8 shipped it.
+PARSER_VERSION = '2.3.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)
@@ -349,30 +359,132 @@ def house_date(raw: str) -> str:
     return _normalise_reporting_date(raw)
 
 
-def parse_govt_offer(text: str, page1_text: str = None):
+def parse_govt_offer(text: str, page1_text: str = None, page1_layout: str = ''):
     """STPM/Matrikulasi/Polytechnic offer OCR text → the offer field dict, or None to defer to
     Gemini. Conservative: None unless the issuer and the offer title are recognised AND every
     required field is read. ``page1_text`` (a digital PDF's page-1 text layer) is where the
     identity is read (owner rule 2026-11-01: only the offer page counts); default ``text``."""
-    return diagnose(text, page1_text)['locked']
+    return diagnose(text, page1_text, page1_layout)['locked']
 
 
-def diagnose(text: str, page1_text: str = None) -> dict:
+def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
+    """The UMS branch of `diagnose` (OCR-first S1). A digital PDF is read ONLY from its page-1 layout
+    text — its plain layer glues the name into the address — so a text layer without one never locks
+    (guard ``no_layout``). Every refusal is a guard; the letter then goes to the AI as before.
+    S1c review round 1 (MED-A): a layout read needs its plain page-1 layer too (guard ``no_plain_layer``),
+    and the layout's name must stand as its own words there (`name_in_plain`; guard ``name_not_plain``).
+    S1c review round 2: the status and withdrawal checks also read the FULL letter text, every page
+    (`letter_refusal`), so a page-2 cancellation or status letter refuses too.
+    S1c owner words (20 Nov), in this order: a digital PDF needs its drawn page texts (``page_texts``,
+    `pdf_pages.pdf_page_texts`; guards ``no_page_texts`` / ``too_many_pages`` / ``hidden_page``, round 3 MED 4
+    and review round 1); the DRAWN text (render-mode visible: colour, size, covering and off-page placement are
+    not checked yet) of PAGE 1 — its layout, or a scan's own text — must show ALL the owner's phrases
+    (`offer_owner_words`; on a text-layer PDF, not the letterhead-picture ones; guard ``owner_words_missing``,
+    the phrase NUMBERS in ``out['owner_words_missing']``), looked for only when `read_ums` has not refused;
+    then each anchored value must sit right after its owner phrase on page 1 (`anchor_refusal`, review round 3
+    part B: guards ``anchor_once`` / ``anchor_name`` / ``anchor_ic`` / ``anchor_code``); then the checks above;
+    a letter, digit or mark outside Latin, or one NFKC changes, in a digital letter's text refuses
+    (``foreign_letters``, owner words review rounds 2-3; never on a scan); last, a later page showing a second
+    offer refuses (``second_offer``, MED 3)."""
+    from .offer_owner_words import missing
+    from .offer_parse_university import LANE, MAX_LETTER_CHARS, name_in_plain, read_ums
+    from .offer_ums_refusal import (anchor_refusal, foreign_letters, later_pages_refusal, letter_refusal,
+                                    page_texts_refusal)
+    if out['portal']:
+        return out
+    if page1_text.strip() and not page1_layout.strip():
+        out['guard'] = 'no_layout'
+        return out
+    if page1_layout.strip() and not page1_text.strip():
+        out['guard'] = 'no_plain_layer'
+        return out
+    digital = bool(page1_layout.strip())
+    pages = [_SPACES.sub(' ', _ZERO_WIDTH.sub('', t or '')) for t in (page_texts or ())]
+    fields, reason = read_ums(page1_layout if digital else text)
+    out['fields'], out['titled'] = fields, fields is not None
+    shown = page1_layout if digital else text    # page 1 only: no phrase across a page break (review round 1)
+    early = page_texts_refusal(pages) if digital else ''
+    if not early and len(shown) > MAX_LETTER_CHARS:
+        early = 'too_long'
+    if not early and not reason:                 # read_ums refused: no owner-words walk (review round 1, LOW 5)
+        out['owner_words_missing'] = missing(LANE, shown, text_pdf=digital)
+        early = 'owner_words_missing' if out['owner_words_missing'] else ''
+    reason = early or reason
+    if not reason:
+        reason = anchor_refusal(shown, fields, digital)   # each value right after its owner phrase (round 3 B)
+    if not reason and digital:
+        reason = letter_refusal(text)            # every page: a status letter or a withdrawal (review round 2)
+    if not reason and digital and foreign_letters(text, page1_text, page1_layout, *pages):
+        reason = 'foreign_letters'               # a Cyrillic / Greek letter in a text layer (owner words round 2)
+    if not reason and digital and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
+        reason = 'name_not_plain'
+    if not reason and digital:
+        reason = later_pages_refusal(pages[1:], fields['candidate_nric'], fields['reporting_date'], fields['intake'],
+                                     fields['programme_code'], fields['programme'])
+    if reason.startswith('empty:'):
+        out['empty_required'] = reason[len('empty:'):].split(',')
+    elif reason:
+        out['guard'] = reason
+    else:
+        out['locked'] = {**fields, '_family': 'ums', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
+    return out
+
+
+def _rules_exit(out: dict, shown: str) -> dict:
+    """EVERY rules lane's last step — the university lanes (UMS now; S2 / S3 pass through it too) AND the three
+    government families (STPM, matriculation, polytechnic): a lock whose page-1 text ``shown`` (a university
+    letter: a digital PDF's DRAWN page-1 layout, render-mode visible, a scan its own text; a government letter: a
+    digital PDF's page-1 TEXT LAYER, not checked for visibility, a scan its own text) or whose parsed programme or
+    stream says ASASI (whole, glued, spaced or OCR-misread)
+    (`offer_owner_words.ai_only`) does not lock — guard ``asasi_ai_read`` — and the AI reads the letter (owner,
+    20 Nov: "For now, let AI handle Asasi"). A letter already refused keeps its own guard."""
+    from .offer_owner_words import ai_only
+    lock = out['locked']
+    if not lock:
+        return out
+    guard = (ai_only(shown) or ai_only(lock.get('programme') or '') or ai_only(lock.get('stream') or ''))
+    if guard:
+        out['locked'], out['guard'] = None, guard
+    return out
+
+
+def family_of(text: str) -> str:
+    """The family `diagnose` reads ``text`` as: a government family ('stpm', 'matriculation', 'polytechnic'),
+    else 'ums' for the UMS offer title, else ''. ONE helper for `diagnose` and `offer_exact._ums_family`
+    (S1c), so the lane switch and the parser never disagree on which letter is a UMS letter."""
+    from .offer_parse_university import is_ums
+    up = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or '')).upper()
+    return _detect(up) or ('ums' if is_ums(up) else '')
+
+
+def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_texts=None) -> dict:
     """The parser's whole walk, for `parse_govt_offer` and the eval (`offer_replay`): ``{family,
     titled, portal, fields (the read before the exit checks, or None), empty_required, guard, locked}``
     — ``locked`` is the lock (the field dict) or None.
 
     ``page1_text`` is a digital PDF's page-1 text layer, given ONLY when ``text`` is that PDF's own text
     layer (`offer_exact` decides — review H1). The identity is read from it, AND from ``text``: when the
-    two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``)."""
+    two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``).
+    ``page1_layout`` is that page's LAYOUT text (`pdf_rules_pages.pdf_page1_layout`) — read by the UMS family
+    only (`_diagnose_ums`), with ``page_texts`` (`pdf_pages.pdf_page_texts`: each page's drawn text, render-mode visible)."""
     text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or ''))   # no-break spaces as spaces; no zero-width
     page1_text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_text or ''))
     up = text.upper()
-    fam = _detect(up)
+    fam = family_of(text)
     out = {'family': fam, 'titled': False, 'portal': bool(_PORTAL_TELL.search(text)), 'fields': None,
            'empty_required': [], 'guard': None, 'locked': None}
+    if fam == 'ums':                             # a university lane: S2 / S3 add theirs here, through the same exit
+        layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
+        return _rules_exit(_diagnose_ums(out, text, page1_text, layout, page_texts),
+                           layout if layout.strip() else text)
     if not fam:
         return out
+    return _rules_exit(_diagnose_govt(out, fam, text, page1_text, up), page1_text if page1_text.strip() else text)
+
+
+def _diagnose_govt(out: dict, fam: str, text: str, page1_text: str, up: str) -> dict:
+    """The government-family branch of `diagnose` (STPM, matriculation, polytechnic); `diagnose` passes its
+    result through `_rules_exit`, as every university lane's."""
     from .offer_parse_families import _FAMILY
     reader, identity, glue = _FAMILY[fam]
     split = _split_glued(text, glue)

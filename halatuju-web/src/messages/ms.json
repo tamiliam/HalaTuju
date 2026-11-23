@@ -3230,7 +3230,10 @@
     "saveFailed": "Gagal menyimpan. Sila cuba lagi.",
     "tempPasswordExpired": "Kata laluan sementara anda telah tamat tempoh. Sila minta orang yang menambah anda untuk menghantar semula butiran log masuk anda.",
     "accessWithdrawn": "Akses anda telah ditarik balik. Sila hubungi orang yang menjemput anda.",
-    "invitedHint": "Jika anda dijemput dan ini tidak lagi berfungsi, sila hubungi orang yang menjemput anda."
+    "invitedHint": "Jika anda dijemput dan ini tidak lagi berfungsi, sila hubungi orang yang menjemput anda.",
+    "captchaBlocked": "Kami tidak dapat memuatkan semakan keselamatan. Penyekat iklan, tembok api atau rangkaian anda mungkin menyekatnya. Sila matikan penyekat iklan anda, atau cuba pelayar lain atau data mudah alih.",
+    "captchaFailed": "Semakan keselamatan tidak selesai. Sila cuba lagi. Jika ini berulang, cuba pelayar lain, matikan penyekat iklan anda, atau tukar kepada data mudah alih.",
+    "captchaGoogle": "Anda juga boleh teruskan dengan Google."
   },
   "stpm": {
     "searchTitle": "Layari Kursus Ijazah STPM",
@@ -4452,8 +4455,8 @@
       "none": "Tiada lagi.",
       "profileTitle": "Profil pelajar (draf)",
       "profileFinalTitle": "Profil pelajar (akhir)",
-      "profileDraftHint": "Draf ini akan digantikan dengan versi akhir yang dikemas kini dan menggabungkan penemuan anda apabila anda menyimpan keputusan anda.",
-      "profileFinalHint": "Ini ialah profil akhir, dijana daripada penemuan temu duga dan keputusan anda. Buka semula keputusan untuk menyemaknya.",
+      "profileDraftHint": "Draf ini akan digantikan dengan versi akhir yang dikemas kini dan menggabungkan penemuan anda apabila anda menyimpan penilaian anda.",
+      "profileFinalHint": "Ini ialah profil akhir, dijana daripada penemuan temu duga dan penilaian anda. Buka semula keputusan untuk menyemaknya.",
       "profileFinalising": "Profil akhir sedang ditulis. Ia akan dipaparkan di sini dalam beberapa minit; muat semula halaman untuk melihatnya.",
       "profileFinaliseFailed": "Profil akhir tidak dapat ditulis selepas tiga kali cubaan. Draf ditunjukkan di bawah. Sila maklumkan kepada pentadbir utama.",
       "profileDrafting": "Draf profil sedang ditulis. Ia akan dipaparkan di sini dalam beberapa minit; muat semula halaman untuk melihatnya.",
@@ -5071,9 +5074,9 @@
       },
       "decision": {
         "title": "Cadangan",
-        "savedAndAccepted": "Keputusan disimpan — pemohon diterima.",
-        "notSubmittedIncomplete": "Keputusan disimpan, tetapi TIDAK dihantar ke QC — pemohon ini masih mempunyai langkah wajib yang belum selesai.",
-        "notSubmittedStatus": "Keputusan disimpan, tetapi TIDAK dihantar ke QC — kes ini sudah melepasi peringkat yang boleh dihantar.",
+        "savedAndAccepted": "Penilaian disimpan — pemohon diterima.",
+        "notSubmittedIncomplete": "Penilaian disimpan, tetapi TIDAK dihantar ke QC — pemohon ini masih mempunyai langkah wajib yang belum selesai.",
+        "notSubmittedStatus": "Penilaian disimpan, tetapi TIDAK dihantar ke QC — kes ini sudah melepasi peringkat yang boleh dihantar.",
         "declineSentToQc": "Penolakan direkodkan — dihantar ke QC untuk pengesahan."
       },
       "withdrawAward": {
@@ -5143,7 +5146,7 @@
         }
       },
       "recordVerdict": {
-        "title": "Rekod keputusan anda",
+        "title": "Rekod penilaian anda",
         "factPass": "Lulus",
         "factFail": "Gagal",
         "reasonLabel": "Justifikasi dan kesimpulan",
@@ -5151,15 +5154,16 @@
         "approveNeedsAmount": "Tetapkan jumlah bantuan yang disyorkan sebelum meluluskan.",
         "approveNeedsReview": "Sistem mengesyorkan tiada jumlah. Selesaikan laluan/pendapatan, atau tetapkan jumlah ganti, sebelum mengesyorkan.",
         "chooseOutcome": "Pilih Syorkan atau Tolak.",
-        "savedNotSubmitted": "Keputusan anda telah disimpan pada {date}, tetapi kes ini belum berpindah ke QC. Tekan Luluskan sekali lagi untuk menghantarnya.",
+        "savedNotSubmitted": "Penilaian anda telah disimpan pada {date}, tetapi kes ini belum berpindah ke QC. Tekan Syorkan sekali lagi untuk menghantarnya.",
         "savedNotSubmittedDecline": "Penolakan anda telah disimpan pada {date}, tetapi kes ini belum dihantar ke QC. Tekan Tolak sekali lagi untuk menghantarnya.",
         "missing": {
           "heading": "Masih perlu dibuat:",
           "submit": "Hantar penemuan temu duga anda",
           "answerOne": "Jawab 1 soalan temu duga dalam penemuan anda",
           "answerMany": "Jawab {count} soalan temu duga dalam penemuan anda",
-          "rate": "Semak fakta: {facts}",
-          "conclusion": "Tulis kesimpulan anda"
+          "rate": "Lengkapkan penilaian anda: {facts}",
+          "conclusion": "Tulis kesimpulan anda",
+          "reportingDate": "Rekodkan tarikh pendaftaran"
         },
         "findingsIncomplete": "Jawab setiap soalan temu duga sebelum membuat keputusan ({count} lagi).",
         "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau TIDAK memenuhi syarat {programmeName}.",
@@ -5180,29 +5184,28 @@
         "declineAcceptedBy": "Penolakan diterima oleh",
         "recommendationAcceptedBy": "Syor diterima oleh",
         "reopenedBy": "Dibuka semula oleh",
-        "aiSuggested": "Keputusan AI:",
+        "aiSuggested": "Ramalan AI:",
         "suggest": {
           "yes": "ya",
           "no": "tidak",
           "unsure": "tidak pasti"
         },
-        "finaliseOk": "Keputusan disimpan dan profil akhir dijana.",
-        "finalisePending": "Keputusan disimpan. Profil akhir sedang ditulis dan akan dipaparkan pada kad profil dalam beberapa minit.",
-        "finaliseNoDraft": "Keputusan disimpan. Jana draf profil dahulu sebelum memuktamadkan.",
+        "finaliseOk": "Penilaian disimpan dan profil akhir dijana.",
+        "finalisePending": "Penilaian disimpan. Profil akhir sedang ditulis dan akan dipaparkan pada kad profil dalam beberapa minit.",
+        "finaliseNoDraft": "Penilaian disimpan. Jana draf profil dahulu sebelum memuktamadkan.",
         "finaliseEngineError": "Profil akhir tidak dapat ditulis. Sila tekan sekali lagi.",
         "mayAlreadyBeSaved": "Keputusan anda mungkin sudah disimpan. Muat semula halaman dan semak sebelum menekan sekali lagi.",
-        "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
-        "rateTitle": "Semak empat fakta",
-        "rateHelp": "Lulus = fakta ini benar bagi pelajar. Gagal = ia tidak benar, atau tidak dibuktikan.",
+        "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan penilaian.",
+        "rateTitle": "Penilaian Penyemak",
+        "rateHelp": "Lulus = ya, ini benar. Gagal = tidak, atau tidak dibuktikan.",
         "failedAcceptWarn": "Satu fakta gagal. Adakah anda mahu menerima?",
-        "failWhy": "Mengapa fakta ini tidak benar?",
+        "failWhy": "Mengapa?",
         "failReasonLabel": "Sebab",
-        "pickReason": "Pilih satu sebab untuk fakta yang gagal.",
         "failReason": {
-          "engine_wrong": "Peraturan itu salah",
-          "read_wrong": "Dokumen dibaca dengan salah",
-          "new_information": "Maklumat baharu (temu duga, panggilan)",
-          "programme_rule": "Peraturan program",
+          "proof_missing": "Bukti tiada atau tidak jelas",
+          "document_false": "Dokumen kelihatan palsu atau telah diubah",
+          "documents_differ": "Dokumen menunjukkan perkara yang berbeza",
+          "interview_differs": "Temu duga atau panggilan menunjukkan perkara yang berbeza",
           "other": "Lain-lain"
         }
       },
@@ -5226,14 +5229,14 @@
         "error": "Tidak dapat menghantar keputusan QC.",
         "refusal": {
           "self_qc_forbidden": "Anda yang menyemak kes ini — ia mesti disemak QC oleh orang lain.",
-          "self_verdict_qc_forbidden": "Anda yang merekodkan verdik ini — ia mesti disemak QC oleh orang lain.",
+          "self_verdict_qc_forbidden": "Anda yang merekodkan penilaian ini — ia mesti disemak QC oleh orang lain.",
           "self_assigned_qc_forbidden": "Kes ini pernah ditugaskan kepada anda — ia mesti disemak QC oleh orang lain.",
           "self_interview_qc_forbidden": "Anda yang menemu duga pelajar ini — kes ini mesti disemak QC oleh orang lain.",
           "self_review_qc_forbidden": "Anda terlibat dalam semakan ini — ia mesti disemak QC oleh orang lain.",
           "profile_pending": "Profil penaja akhir masih sedang ditulis. Tunggu beberapa minit, muat semula halaman dan baca profil itu, kemudian terima.",
-          "profile_failed": "Profil penaja akhir tidak dapat ditulis. Buka semula kes ini untuk penyemak, yang akan merekodkan verdik sekali lagi bersama profil akhir. Kemudian terima."
+          "profile_failed": "Profil penaja akhir tidak dapat ditulis. Buka semula kes ini untuk penyemak, yang akan merekodkan penilaian sekali lagi bersama profil akhir. Kemudian terima."
         },
-        "gapFloor": "Masih ada fakta verdik berstatus merah ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
+        "gapFloor": "Masih ada fakta penilaian yang berstatus merah atau menunjukkan “Syarat tidak dipenuhi” ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
         "gapFloorSuper": "Sebagai QC atau pentadbir super, anda boleh mengatasi sekatan ini dengan sebab yang direkodkan.",
         "overrideTitle": "Atasi sekatan fakta merah? Sebab anda akan direkodkan pada kes ini.",
         "overridePlaceholder": "Mengapa selamat untuk mengesyorkan kes ini walaupun ada fakta merah?",
@@ -5460,7 +5463,10 @@
         "title": "Profil akhir (v2 — dengan temu duga)"
       },
       "prefersLang": "Suka {lang}",
-      "assignLangLegend": "✓ bertutur dalam bahasa pelajar · ⚠ tidak",
+      "assignedCell": {
+        "notReady": "Belum sedia",
+        "readyOn": "Sedia pada {date}"
+      },
       "bursary": {
         "title": "Perjanjian biasiswa",
         "student": "Pelajar",
@@ -5505,6 +5511,8 @@
       },
       "preInterview": {
         "title": "Tolak sebelum temu duga",
+        "factsTitle": "Empat fakta",
+        "factsNeeded": "Rekodkan Lulus atau Gagal bagi keempat-empat fakta sebelum anda menolak.",
         "start": "Tolak sebelum temu duga",
         "help": "Untuk pelajar yang dokumennya sudah menunjukkan mereka tidak layak. Tiada temu duga diadakan.",
         "unassignFirst": "Untuk menolak sebelum temu duga, tetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
@@ -5540,6 +5548,8 @@
           "reason_required": "Pilih sebab utama.",
           "comments_required": "Tambahkan butiran sebelum anda menolak.",
           "comments_too_long": "Nota ini boleh mengandungi paling banyak 2,000 aksara.",
+          "assessment_incomplete": "Rekodkan Lulus atau Gagal bagi keempat-empat fakta dahulu.",
+          "bad_fail_reasons": "Salah satu sebab tiada dalam senarai. Pilih semula.",
           "generic": "Tidak dapat menolak pelajar ini. Sila cuba lagi."
         },
         "or": "atau"
@@ -7510,9 +7520,7 @@
       "allHidden": "Setiap panel pada Gambaran keseluruhan ini telah dimatikan untuk organisasi anda. Pentadbir organisasi boleh menghidupkannya semula melalui Sesuaikan.",
       "funnel": {
         "title": "Permohonan",
-        "total": "Permohonan diterima",
-        "preInterview": "Ditolak sebelum temu duga",
-        "preInterviewByReason": "Mengikut sebab utama"
+        "total": "Permohonan diterima"
       },
       "money": {
         "title": "Wang",

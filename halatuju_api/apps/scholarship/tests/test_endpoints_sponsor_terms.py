@@ -9,8 +9,8 @@ Four routes the TD-219 guard listed as never driven by any test:
 The terms are a CONSENT document — what a benefactor accepts — so each test reads back what the
 service decided rather than what the caller sent: orders assigned by position, a quiz payload
 dropped with its flag, a translation kept only if it marks the same answer, a sub-clause folded
-into its parent. The two Gemini seams are mocked at the one boundary the module names
-(`sponsor_terms._gemini_generate`); no test reaches a model. The .docx is a REAL Word file built
+into its parent. The Gemini calls are mocked at the one seam
+(`contracts._gemini_generate`); no test reaches a model. The .docx is a REAL Word file built
 with python-docx, so `contracts._docx_structure` parses it for real.
 
 The relay is the anonymity boundary in the other direction: student words reaching a funder. The
@@ -112,7 +112,7 @@ class TestGenerateQuiz(_TermsCase):
         return self.client.post(f'{ST}{self.terms.id}/sections/{order}/generate-quiz/', {},
                                 format='json')
 
-    @mock.patch('apps.scholarship.sponsor_terms._gemini_generate')
+    @mock.patch('apps.scholarship.contracts._gemini_generate')
     def test_a_draft_quiz_is_saved_and_a_translation_marking_a_different_answer_is_dropped(self, gen):
         gen.return_value = json.dumps({
             'en': dict(QUIZ), 'ms': dict(QUIZ, question='s?'),
@@ -127,13 +127,13 @@ class TestGenerateQuiz(_TermsCase):
         self.assertEqual(section.quiz_ta, {})
         self.assertTrue(section.quiz_generated_model)
 
-    @mock.patch('apps.scholarship.sponsor_terms._gemini_generate')
+    @mock.patch('apps.scholarship.contracts._gemini_generate')
     def test_a_section_not_flagged_for_a_quiz_spends_no_ai_call(self, gen):
         r = self._generate(2)
         self.assertEqual((r.status_code, r.json()['error']), (400, 'quiz_not_candidate'))
         gen.assert_not_called()
 
-    @mock.patch('apps.scholarship.sponsor_terms._gemini_generate')
+    @mock.patch('apps.scholarship.contracts._gemini_generate')
     def test_an_order_with_no_section_is_not_found(self, gen):
         self.assertEqual(self._generate(7).status_code, 404)
         gen.assert_not_called()

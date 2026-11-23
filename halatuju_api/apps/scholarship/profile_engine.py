@@ -52,9 +52,9 @@ logger = logging.getLogger(__name__)
 
 #: The 2.5 Flash cascade (2.0-flash retired (404), 2026-10-24). Since Gemini Phase 2 Option A
 #: (owner, 2026-11-14) it is the FALLBACK of every Flash job, and the FIRST choice only of the jobs
-#: the owner kept on 2.5: the SPM results-slip read (`vision.doc_read_cascade`) and the three
-#: genuineness jobs (`genuineness/ic.py`, `results_doc.py`, `supporting_doc.py`). Why: in the paid
-#: eval 3.8 returned malformed grades on 26 of 98 results slips; genuineness was not tested.
+#: the owner kept on 2.5: the three genuineness jobs (`genuineness/ic.py`, `results_doc.py`,
+#: `supporting_doc.py`) — genuineness was not tested on 3.8. The SPM results-slip read was kept here
+#: too until OCR-first S5 (2026-11-20) moved it to 3.8 Flash ONLY (`vision/slip_read.py`).
 FLASH_25_CASCADE = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']
 
 #: Every other Flash job: 3.8 Flash first, then the 2.5 cascade (Gemini Phase 2 Option A,

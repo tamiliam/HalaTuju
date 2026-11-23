@@ -17,11 +17,11 @@ Neither of the first two could absorb this without changing what its own callers
 third shape keeps a home — but ONE home instead of three near-identical copies in
 `apply_copy_draft`, `sponsor_terms` and `contracts`.
 
-**The mockable seam does NOT move.** Each of those modules keeps a `_gemini_generate` of its own
-name, three lines long, and every `patch('apps.scholarship.<module>._gemini_generate')` in the
-suite goes on working untouched. That is deliberate and is what tenancy rule 6 asks for: the
-per-feature seam is where the metering wrapper and the test double attach, and a shared core that
-swallowed the seams would move the boundary the rule names.
+**ONE mockable seam: `contracts._gemini_generate`** (CH-07, 2026-11-19). Until then each of the three
+modules kept a `_gemini_generate` of its own name; `apply_copy_draft` and `sponsor_terms` now call
+the contracts one through `generate_with_fallback` and map its two config refusals back to their
+own error class and codes. That is the boundary tenancy rule 6 names, the metering wrapper and the
+test double attach there, and every test `patch()`es `apps.scholarship.contracts._gemini_generate`.
 
 **Metering is inside.** `usage.record_usage` runs on every successful call, best-effort, exactly
 as it did in all three copies. A caller that bypassed this would be a billable call outside the
@@ -130,8 +130,8 @@ def generate_with_fallback(seam, prompt, model, *, fatal, **kwargs):
 
     Gemini Phase 1 (owner, 2026-11-10): every former Pro job may fall back to the Flash cascade,
     contracts included — superseding the contract module's "Owner decision 4: no downgrade".
-    ``seam`` is the caller's own ``_gemini_generate``, looked up by the caller at call time, so
-    every ``patch('apps.scholarship.<module>._gemini_generate')`` still lands.
+    ``seam`` is ``contracts._gemini_generate`` (the one home since 19 Nov 2026), looked up by the
+    caller at call time, so every ``patch('apps.scholarship.contracts._gemini_generate')`` still lands.
 
     The next model is tried on what the prose cascade (``profile_engine._call_gemini_text``) moves
     on from: any error from the call, or an empty or missing answer. ``fatal`` is the caller's own

@@ -14,7 +14,8 @@ import { formatDate } from '@/lib/formatDate'
 import { anomalyParams } from '@/lib/docSeen'
 import type { AdminScholarshipDetail, AdminAgendaEntry } from '@/lib/admin-api'
 import { ANOMALY_CHECK2_OWNER } from './shared'
-import { greenFailFacts } from './failReasons'
+import { reportingDateBoxShown } from '@/lib/cockpitTrail'
+import type { DecisionMissingItem } from '@/lib/cockpitStages'
 import type { TFn } from './cockpitCtx'
 
 export function deriveCockpit(
@@ -23,7 +24,6 @@ export function deriveCockpit(
   findings: Record<string, { verdict: string; rationale: string }>,
   officerVerdict: Record<string, string>,
   verdictReason: string,
-  failReasons: Record<string, string> = {},
 ) {
   // Field-level "verified" ticks — a small badge beside a value that MATCHES an uploaded,
   // machine-read document (see lib/fieldVerification). vtip() → the hover tooltip naming the source
@@ -124,24 +124,27 @@ export function deriveCockpit(
   const decisionMissingItems = decisionMissing(
     app.interview_session?.status, officerVerdict, verdictReason, interviewMissing.length)
   const decisionReady = decisionMissingItems.length === 0
+  // F3 (I-12): while the reporting-date box shows and no date is saved, Recommend is blocked (Decline
+  // is not). The server refuses the same (`course_start.recommend_needs_date`, the box's case table).
+  const reportingDateMissing = !app.reporting_date && reportingDateBoxShown(app, decisionReopened)
+  const recommendMissingItems: DecisionMissingItem[] = reportingDateMissing
+    ? [...decisionMissingItems, { kind: 'reporting_date_missing' }] : decisionMissingItems
   // The bursary is fixed by pathway type and always present (award.py) — so approve just needs a
   // complete decision. hasAssistance stays in the gate for safety (award_amount or the by-type
   // figure); it is effectively always true now.
   const hasAssistance = app.award_amount != null || app.proposed_award_amount != null
-  const approveReady = isApproveReady(decisionReady, hasAssistance)
+  const approveReady = isApproveReady(decisionReady && !reportingDateMissing, hasAssistance)
   // Save (the commit) is enabled once a reversible outcome is chosen AND its preconditions hold:
   // Approve → all of approveReady (incl. amount); Decline → decisionReady (no amount needed).
-  // LL2: a fact the engine showed green and the reviewer failed needs its one-tap reason before Save
-  // (the server never blocks on it; the web does, so an old tab cannot be stranded).
-  const reasonMissing = greenFailFacts(app.verdict, officerVerdict).some((f) => !failReasons[f])
-  const canSave = !reasonMissing && ((officerVerdict.overall === 'accept' && approveReady)
-    || (officerVerdict.overall === 'decline' && decisionReady))
+  // F3 (I-11): a failed fact's reason never blocks Save — Other is chosen until she taps another.
+  const canSave = (officerVerdict.overall === 'accept' && approveReady)
+    || (officerVerdict.overall === 'decline' && decisionReady)
 
   return {
     vtip, decisionReopened, reviewerName, reviewerDate, hasQc, qcName, qcDate,
     queryingLocked, lockReason, interviewSubmitted, interviewLocked, decisionRecorded,
     recordedOutcome, stuckAfterVerdict, decisionLocked, agendaItems, editableAgenda,
-    interviewUnansweredCount, decisionMissingItems, decisionReady, hasAssistance, approveReady, canSave,
-    reasonMissing,
+    interviewUnansweredCount, decisionMissingItems, recommendMissingItems, reportingDateMissing,
+    decisionReady, hasAssistance, approveReady, canSave,
   }
 }

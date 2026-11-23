@@ -2,7 +2,9 @@
 
 Every Flash job moves to gemini-3.8-flash first, 2.5 Flash as its fallback. Two exceptions stay on
 2.5 Flash first, exactly as before: the SPM results-slip READ (3.8 returned malformed grades on 26
-of 98 slips in the paid eval) and the three GENUINENESS jobs (not tested on 3.8). The offer reader's
+of 98 slips in the paid eval) and the three GENUINENESS jobs (not tested on 3.8). OCR-first S5
+(2026-11-20) moved the slip read to 3.8 Flash ONLY (`vision/slip_read.py`: checked answers, one 3.8
+retry, never 2.5); `test_slip_read_s5.py` holds its own tests. The offer reader's
 second read (2.6.0, `OFFER_RETRY_MODEL`, never 2.5) replaced its 2.5 reporting-date re-ask.
 `docs/decisions.md`, 2026-11-16 and 2026-11-18.
 
@@ -75,23 +77,39 @@ class TheCascades(SimpleTestCase):
                          os.environ.get('APPLY_COPY_DRAFT_MODEL', 'gemini-3.8-flash'))
 
 
-class TheResultsSlipReadIsPinnedTo2_5(_RealSeam):
-    """THE PER-TYPE PIN. `doc_read` chooses its cascade by document type."""
+class TheResultsSlipReadIsOn3_8Only(_RealSeam):
+    """THE PER-TYPE CHOICE. `doc_read` chooses its cascade by document type; since OCR-first S5 the
+    results slip reads on 3.8 Flash ONLY (no 2.5 tail) and nothing is pinned to 2.5."""
 
     def test_the_cascade_by_type(self):
-        self.assertEqual(vision.doc_read_cascade('results_slip'), FLASH_25_CASCADE)
+        self.assertEqual(vision.PINNED_25_DOC_TYPES, frozenset())
+        self.assertEqual(vision.doc_read_cascade('results_slip'), ['gemini-3.8-flash'])
         for doc_type in ('salary_slip', 'epf', 'water_bill', 'electricity_bill', 'str'):
             with self.subTest(doc_type=doc_type):
                 self.assertEqual(vision.doc_read_cascade(doc_type), MODEL_CASCADE)
 
-    def test_a_results_slip_image_is_read_on_2_5_first(self):
-        model = self._first_model(lambda: vision.extract_document_fields(
-            '', 'results_slip', image=_png(), content_type='image/png'))
-        self.assertEqual(model, 'gemini-2.5-flash')
+    def _asked(self, fn, answer='{}'):
+        client = _client(answer)
+        with override_settings(GEMINI_API_KEY='test-key'), patch('google.genai.Client', return_value=client):
+            fn()
+        return client.asked
 
-    def test_a_results_slip_text_is_read_on_2_5_first(self):
-        model = self._first_model(lambda: vision.extract_document_fields('SIJIL PELAJARAN MALAYSIA', 'results_slip'))
-        self.assertEqual(model, 'gemini-2.5-flash')
+    def test_a_results_slip_image_is_read_on_3_8_only(self):
+        # '{}' has no results list: a malformed answer, so the ONE retry runs — on 3.8 again.
+        asked = self._asked(lambda: vision.extract_document_fields(
+            '', 'results_slip', image=_png(), content_type='image/png'))
+        self.assertEqual(asked, ['gemini-3.8-flash', 'gemini-3.8-flash'])
+
+    def test_a_results_slip_text_is_read_on_3_8_only(self):
+        asked = self._asked(lambda: vision.extract_document_fields('SIJIL PELAJARAN MALAYSIA', 'results_slip'))
+        self.assertEqual(asked, ['gemini-3.8-flash', 'gemini-3.8-flash'])
+
+    def test_a_good_first_answer_is_one_call(self):
+        answer = json.dumps({'candidate_name': '', 'exam': 'SPM',
+                             'results': [{'subject': 'MATEMATIK', 'grade': 'A', 'band': 'CEMERLANG TINGGI'}]})
+        asked = self._asked(lambda: vision.extract_document_fields('SIJIL PELAJARAN MALAYSIA', 'results_slip'),
+                            answer)
+        self.assertEqual(asked, ['gemini-3.8-flash'])
 
     def test_a_salary_slip_is_read_on_3_8_first(self):
         model = self._first_model(lambda: vision.extract_document_fields('PENYATA GAJI', 'salary_slip'))
@@ -102,7 +120,7 @@ class TheResultsSlipReadIsPinnedTo2_5(_RealSeam):
             '', 'electricity_bill', image=_png(), content_type='image/png'))
         self.assertEqual(model, 'gemini-3.8-flash')
 
-    def test_a_2_5_failure_on_a_results_slip_never_reaches_3_8(self):
+    def test_a_3_8_failure_on_a_results_slip_never_reaches_2_5(self):
         client = MagicMock()
         client.asked = []
 
@@ -111,8 +129,10 @@ class TheResultsSlipReadIsPinnedTo2_5(_RealSeam):
             raise RuntimeError('503 UNAVAILABLE')
         client.models.generate_content.side_effect = generate_content
         with override_settings(GEMINI_API_KEY='test-key'), patch('google.genai.Client', return_value=client):
-            vision.extract_document_fields('SIJIL PELAJARAN MALAYSIA', 'results_slip')
-        self.assertEqual(client.asked, FLASH_25_CASCADE)
+            out = vision.extract_document_fields('SIJIL PELAJARAN MALAYSIA', 'results_slip')
+        self.assertEqual(client.asked, ['gemini-3.8-flash'])   # a service error is not retried here
+        self.assertTrue(out['error'])
+        self.assertEqual(out['fields'], {})
 
 
 class TheGenuinenessJobsStayOn2_5(_RealSeam):
@@ -214,7 +234,7 @@ class TheOfferSecondRead(SimpleTestCase):
         self.assertEqual([c['part'] for c in shown['calls']], ['page_1', 'retry_images'])
         self.assertEqual([c['model'] for c in shown['calls']], [THREE_EIGHT, THREE_EIGHT])
         self.assertEqual(shown['pages'], 1)                                     # a retry is not a page
-        self.assertEqual(ex['offer_reader_version'], '2.7.0')
+        self.assertEqual(ex['offer_reader_version'], '2.10.0')
 
     def test_a_retry_that_comes_back_blank_too_keeps_the_blank_read_and_never_retries_again(self):
         for second in (BLANK, {'_error': 'All AI models failed: x'}):
@@ -554,7 +574,7 @@ class TheApplyCopyDraftFallsBack(SimpleTestCase):
             return good
         programme = SimpleNamespace(pk=1, apply_copy={'en': {'title': 'T', 'intro': 'I', 'criteria': ['a']}})
         with override_settings(APPLY_COPY_DRAFT_MODEL='gemini-3.8-flash'), \
-                patch.object(acd, '_gemini_generate', side_effect=seam):
+                patch('apps.scholarship.contracts._gemini_generate', side_effect=seam):
             block = acd.draft(programme, 'ms')
         self.assertEqual(asked, ['gemini-3.8-flash', 'gemini-2.5-flash'])
         self.assertEqual(block['criteria'], ['a'])

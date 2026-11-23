@@ -14,7 +14,8 @@ digital PDF's page-1 layer, read here from the corpus's own PDF, free) and the p
   INCOMPLETE      a lock with a core field the letter prints and the lock left blank (the merge keeps
                   the prior read's value there), none wrong
   WRONG           a lock with a core field `wrong` or `extra` against the answer — must never happen
-  CONTROL-LOCKED  a lock on a letter whose answer family is not STPM / matriculation / polytechnic, or
+  CONTROL-LOCKED  a lock on a letter whose answer family is not STPM / matriculation / polytechnic (or a
+                  university the rules read, `offer_read_check.RULES_LANES` — OCR-first S1), or
                   whose `is_offer_letter` is portal_page / not_offer — must never happen
   FALLBACK        no lock (→ the AI reader)
   UNANSWERED      a lock on a letter with no answer (counted, not scored)
@@ -60,7 +61,7 @@ def classify(answer, family, fields):
         return 'FALLBACK', [], None
     if not isinstance(answer, dict):
         return 'UNANSWERED', [], None
-    if family not in orc.KNOWN_FORMAT_FAMILIES or answer.get('is_offer_letter') in NOT_OFFER:
+    if not orc.rules_read(family, answer) or answer.get('is_offer_letter') in NOT_OFFER:
         return 'CONTROL-LOCKED', [], None
     sc = orc.score_letter(answer, fields, family)
     bad = sorted(f for f in orc.CORE if sc[f] in ('wrong', 'extra'))
@@ -84,6 +85,8 @@ def check_corpus(eval_dir, base=DEFAULT_BASE, split_file=orc.SPLIT_PATH):
         family = orc.offer_family(vf, answer)
         text, route = rp.production_text(snap, key)
         ex = exact_read(text, from_text_layer=route == 'text_layer', page1_layer=rp.page1_of(eval_dir, key, route),
+                        page1_layout=rp.page1_layout_of(eval_dir, key, route),
+                        page_texts=rp.page_texts_of(eval_dir, key, route),
                         profile_nric=(context.get(key) or {}).get('profile_nric') or '')
         fields = ex['fields'] if ex else None
         outcome, bad, od = classify(answer, family, fields)

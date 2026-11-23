@@ -38,12 +38,12 @@ def officer(overall='accept', **kw):
 class TestInDoubt(SimpleTestCase):
     def test_the_two_groups_and_a_fact_in_both_appears_once(self):
         got = sl.in_doubt(snap({'academic': 'review'}),
-                          officer(income='fail', academic='fail', fail_reasons={'income': 'read_wrong'}))
+                          officer(income='fail', academic='fail', fail_reasons={'income': 'documents_differ'}))
         self.assertEqual(got, [
             {'fact': 'academic', 'ai_status': 'review', 'ai_green': False, 'reviewer': 'fail',
              'reason': None, 'groups': [sl.FAILED_BUT_ACCEPTED]},
             {'fact': 'income', 'ai_status': 'verified', 'ai_green': True, 'reviewer': 'fail',
-             'reason': 'read_wrong', 'groups': [sl.AI_GREEN_REVIEWER_FAIL, sl.FAILED_BUT_ACCEPTED]},
+             'reason': 'documents_differ', 'groups': [sl.AI_GREEN_REVIEWER_FAIL, sl.FAILED_BUT_ACCEPTED]},
         ])
 
     def test_a_decline_shows_only_group_one(self):

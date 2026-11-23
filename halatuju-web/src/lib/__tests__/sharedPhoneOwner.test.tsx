@@ -23,12 +23,12 @@ import {
 type Listener = (event: string, session: unknown) => void
 let listener: Listener | null = null
 let mockSession: unknown = null
+let mockSessionError: unknown = null
 
 jest.mock('next/navigation', () => ({ usePathname: () => '/dashboard' }))
 jest.mock('@/lib/api', () => ({ getProfile: jest.fn(() => Promise.resolve({})) }))
 jest.mock('@/lib/supabase', () => ({
-  getSession: () => Promise.resolve({ session: mockSession }),
-  signInAnonymously: jest.fn(() => Promise.resolve({ data: { session: null } })),
+  getSession: () => Promise.resolve({ session: mockSession, error: mockSessionError }),
   getSupabase: () => ({
     auth: {
       onAuthStateChange: (cb: Listener) => {
@@ -55,6 +55,7 @@ beforeEach(() => {
   sessionStorage.clear()
   listener = null
   mockSession = null
+  mockSessionError = null
 })
 
 describe('claimStudentData', () => {
@@ -113,7 +114,71 @@ describe('AuthProvider', () => {
   })
 
   it('a page load with no session at all (offline) wipes nothing', async () => {
+    // Captcha repair (2026-11-19): "offline" used to be simulated by the anonymous mint failing;
+    // there is no mint any more, so the browser says it is offline.
+    const onLine = jest.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      holdGradesOf('user-a')
+      mockSession = null
+      render(<AuthProvider><div>app</div></AuthProvider>)
+      await waitFor(() => expect(listener).not.toBeNull())
+      await act(async () => { await Promise.resolve() })
+      expect(localStorage.getItem(KEY_GRADES)).not.toBeNull()
+    } finally {
+      onLine.mockRestore()
+    }
+  })
+
+  it("a page load with no session (online) drops the last account's tagged grades, with no anonymous mint", async () => {
+    // Captcha repair (2026-11-19): the wipe the anonymous mint's claim used to do, kept without it.
     holdGradesOf('user-a')
+    mockSession = null
+    render(<AuthProvider><div>app</div></AuthProvider>)
+    await waitFor(() => expect(localStorage.getItem(KEY_GRADES)).toBeNull())
+    expect(localStorage.getItem(KEY_OWNER)).toBeNull()
+    expect(localStorage.getItem(KEY_LOCALE)).toBe('ta')
+  })
+
+  it.each([
+    ['a network failure', { name: 'AuthRetryableFetchError', message: 'Failed to fetch', status: 0 }],
+    ['a 503', { name: 'AuthRetryableFetchError', message: 'Service Unavailable', status: 503 }],
+  ])('a page load with no session but a retryable refresh error (%s), online, wipes nothing', async (_l, err) => {
+    // Review fix (2026-11-19): auth-js returns no session when a refresh fails on the network or
+    // with a 502/503/504, but keeps the session in storage and refreshes later. The student's data stays.
+    holdGradesOf('user-a')
+    sessionStorage.setItem('halatuju_apply_return', '1')
+    mockSession = null
+    mockSessionError = err
+    render(<AuthProvider><div>app</div></AuthProvider>)
+    await waitFor(() => expect(listener).not.toBeNull())
+    await act(async () => { await Promise.resolve() })
+    expect(localStorage.getItem(KEY_GRADES)).not.toBeNull()
+    expect(localStorage.getItem(KEY_PROFILE)).not.toBeNull()
+    expect(localStorage.getItem(KEY_OWNER)).toBe('user-a')
+    expect(sessionStorage.getItem('halatuju_apply_return')).toBe('1')
+  })
+
+  it('a retryable refresh error on load wipes nothing, but a later SIGNED_OUT does wipe', async () => {
+    // Review round 2: the load-time guard must not make the listener's SIGNED_OUT a no-op. Once
+    // Supabase gives the session up for good, another account's data is dropped as before.
+    holdGradesOf('user-a')
+    sessionStorage.setItem('halatuju_apply_return', '1')
+    mockSession = null
+    mockSessionError = { name: 'AuthRetryableFetchError', message: 'Failed to fetch', status: 0 }
+    render(<AuthProvider><div>app</div></AuthProvider>)
+    await waitFor(() => expect(listener).not.toBeNull())
+    await act(async () => { await Promise.resolve() })
+    expect(localStorage.getItem(KEY_GRADES)).not.toBeNull()   // the guard held on load
+    await act(async () => { listener!('SIGNED_OUT', null) })
+    expect(localStorage.getItem(KEY_GRADES)).toBeNull()
+    expect(localStorage.getItem(KEY_PROFILE)).toBeNull()
+    expect(localStorage.getItem(KEY_OWNER)).toBeNull()
+    expect(sessionStorage.getItem('halatuju_apply_return')).toBeNull()
+    expect(localStorage.getItem(KEY_LOCALE)).toBe('ta')
+  })
+
+  it("a page load with no session keeps a signed-out visitor's own UNTAGGED grades", async () => {
+    holdGradesOf(null)
     mockSession = null
     render(<AuthProvider><div>app</div></AuthProvider>)
     await waitFor(() => expect(listener).not.toBeNull())

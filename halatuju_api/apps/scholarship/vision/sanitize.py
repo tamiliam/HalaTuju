@@ -1,10 +1,13 @@
 """Cleaning a Gemini read: non-names out, the reporting date normalised, expected warnings
-dropped (moved verbatim from ``vision.py``, audit sprint A3.1)."""
+dropped (moved verbatim from ``vision.py``, audit sprint A3.1); the SPM slip's grade and
+subject cells checked (OCR-first S5)."""
 
 import re
+import unicodedata
 
 from .names import name_match, nric_dob_agrees
 from .judge import _strip_name_label
+from .schemas import SLIP_BLANK, SLIP_GRADES
 
 
 # Headings / labels that are never a person's name. If the AI sweeps one into a NAME field
@@ -180,3 +183,63 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
                     or ('negative' in s and 'credit' in s))
         return [w for w in warnings if not _is_utility_note_noise(w)]
     return warnings
+
+
+# ── SPM results slip: grade / subject clean-up (OCR-first S5, 2026-11-20) ──────────────────────
+# 3.8 Flash wrote malformed grades on 26 of 98 slips in the paid eval: "Aplus", stray JSON, tab and
+# CJK characters. These map the KNOWN harmless variants onto the one spelling the academic engine
+# reads, and return None for anything else, which the slip reader treats as a failed read. A grade
+# is never guessed: a value is either one of SLIP_GRADES after the clean-up, or it is refused.
+_SLIP_GRADE_SET = frozenset(SLIP_GRADES)
+#: The only spacing a grade cell may carry and still be read: plain space and tab (NFKC has
+#: already turned the full-width and no-break spaces into a plain space).
+_SLIP_GRADE_SPACING = re.compile(r'[ \t]+')
+#: Dashes NFKC leaves alone; on a grade they can only mean the minus of "A-".
+_SLIP_DASHES = str.maketrans({'\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2013': '-',
+                              '\u2014': '-', '\u2212': '-'})
+#: Characters that never belong in a subject or band: JSON structure, markup, control.
+_SLIP_STRAY = frozenset('{}[]"\\<>|`')
+
+
+def _nfkc(value: str) -> str:
+    """Full-width and compatibility forms folded to their plain spelling ("Ａ＋" → "A+")."""
+    return unicodedata.normalize('NFKC', value)
+
+
+def clean_slip_grade(raw):
+    """One grade cell → a member of SLIP_GRADES, '' (the cell is blank), or None (not a grade —
+    the read failed). Maps only the known variants: full-width forms, stray spaces / tabs, lower
+    case, a word sign ("Aplus", "A plus", "B minus") and a typographic dash. The schema's blank
+    word (`SLIP_BLANK`, fix round 4: Gemini refuses '' in an enum) is a blank cell, ''. "A+}",
+    "A十", "A++", "1A", a JSON fragment, a non-string, and a control or format character (a
+    newline, NUL, a zero-width mark: Unicode Cc / Cf, or a line separator) all give None."""
+    if not isinstance(raw, str):
+        return None
+    s = _nfkc(raw)
+    if any(ch not in ' \t' and unicodedata.category(ch)[0] in 'CZ' for ch in s):
+        return None
+    s = _SLIP_GRADE_SPACING.sub('', s).translate(_SLIP_DASHES).upper()
+    if s == SLIP_BLANK:
+        return ''
+    for word, sign in (('PLUS', '+'), ('MINUS', '-')):
+        if len(s) > len(word) and s.endswith(word):
+            s = s[:-len(word)] + sign
+    if not s:
+        return ''
+    return s if s in _SLIP_GRADE_SET else None
+
+
+def clean_slip_text(raw):
+    """A subject or band cell → its plain spelling (NFKC, runs of whitespace and tabs to one
+    space), or None when it carries a character no SPM slip prints: JSON structure, a control
+    character, or a letter outside the Latin script (the CJK characters 3.8 Flash wrote). A
+    missing cell (None) is ''."""
+    if raw is None:
+        return ''
+    if not isinstance(raw, str):
+        return None
+    s = ' '.join(_nfkc(raw).replace('\u200b', ' ').split())
+    for ch in s:
+        if ch in _SLIP_STRAY or unicodedata.category(ch).startswith('C') or ord(ch) > 0x024F:
+            return None
+    return s

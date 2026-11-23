@@ -16,7 +16,7 @@ import { DEFAULT_ADMIN_PAGE_SIZE } from './partners'
 import type { InterviewSchedule } from './interviews'
 import type {
   AdminAgendaEntry, AdminAnomaly, AdminFundingEstimate, AdminQuerySla, AdminSubmissionReview,
-  AdminVerdictFact, SecondLook,
+  AdminVerdictFact, SecondLook, ServedFactBands,
 } from './verdict'
 import type { NewNoteListFields } from './reviewerNotes'
 import type { AdminApplicantDocument, AdminReferee } from './documents'
@@ -60,7 +60,7 @@ export interface AdminScholarshipListItem extends PreInterviewListFields, NewNot
   // NOT a copied rule: this is the SERVED answer, and the detail cockpit reads the same field on
   // its own payload (`firstAssignBlocked = !assigned_to_id && !ready_for_assignment`). Neither
   // screen re-derives readiness, which is why there is nothing here for a drift test to hold.
-  ready_for_assignment: boolean
+  ready_for_assignment: boolean; ready_on?: string | null   // F1 / I-13: ready_on = when the window ends
   gift_ids?: number[]   // T1-e: the case's gifts; the dropdown hides a Reviewer of another gift
   decision_reopened_at: string | null   // when set, the pill shows "Reopened" (overrides accepted/rejected)
 }
@@ -143,7 +143,7 @@ export type VerifyChecklist = Record<string, boolean | string | VerifyRelock | u
 }
 export interface VerifyRelock { by: string; at: string; checklist: Record<string, boolean> }
 
-export interface AdminScholarshipDetail extends PreInterviewDetailFields {
+export interface AdminScholarshipDetail extends PreInterviewDetailFields, ServedFactBands {
   id: number
   name: string
   school: string
@@ -322,7 +322,7 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields {
   // The stored reporting date (ISO). Read the COLUMN, not the offer document's raw string —
   // the two used to be able to disagree, which is how a case displayed a ticked date while the
   // field driving its bursary was empty. Null when neither the letter nor an officer supplied it.
-  reporting_date: string | null
+  reporting_date: string | null; shows_reporting_date_box?: boolean | null   // F3 fix: the box (reportingDateBoxShown)
   // Closure bucket: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
   closure_reason: string
   // Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation + its reveal date.

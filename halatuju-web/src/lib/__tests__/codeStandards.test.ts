@@ -1009,7 +1009,7 @@ describe('no unguarded mirror', () => {
       'Comment(s) in src claiming a rule is mirrored or kept in sync, with nothing enforcing',
       'it. A comment asking two files to stay in step is a request; only a test is a rule — the',
       'SOFT_EVIDENCE denylist rotted for exactly this reason and leaked a tile to blue. WRITE THE',
-      'DRIFT TEST (soft-evidence-drift.test.ts is the model: read the other side and assert both',
+      'DRIFT TEST (disqualifier-drift.test.ts is the model: read the other side and assert both',
       'directions), then put `drift-test: <repo-relative path to it>` inside the same comment.',
       'Better still, do not mirror at all — have the server SERVE the value. If the comment does',
       'not in fact describe a duplicated rule, reword it so it stops saying so. Do NOT add it to',
@@ -1380,10 +1380,10 @@ describe('the mirror rule, proven both ways', () => {
 
   test('a drift-test marker discharges the claim', () => {
     const found = at('/**\n * Mirrors `STATUS_CHOICES` in models.py.\n'
-      + ' * drift-test: halatuju-web/src/lib/__tests__/soft-evidence-drift.test.ts\n */\n'
+      + ' * drift-test: halatuju-web/src/lib/__tests__/disqualifier-drift.test.ts\n */\n'
       + 'const a = 1\n')
     expect(found[0].guarded).toBe(true)
-    expect(found[0].driftTest).toBe('halatuju-web/src/lib/__tests__/soft-evidence-drift.test.ts')
+    expect(found[0].driftTest).toBe('halatuju-web/src/lib/__tests__/disqualifier-drift.test.ts')
   })
 
   test('SERVED, NOT MIRRORED is the good pattern and is never flagged', () => {

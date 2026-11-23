@@ -41,12 +41,29 @@ const draw = (app: api.AdminScholarshipDetail, canAssign = true) => {
   render(<Page app={app} canAssign={canAssign} onDone={onDone} />)
   return onDone
 }
-const fill = (reason: string, note: string) => {
-  fireEvent.change(screen.getByLabelText(`${P}.whyLabel`), { target: { value: reason } })
-  fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`), { target: { value: note } })
+const FACTS = ['identity', 'academic', 'pathway', 'income']
+const rate = (v: 'pass' | 'fail' = 'pass') => {
+  for (const f of FACTS) fireEvent.click(screen.getByTestId(`pre-interview-${f}-${v}`))
+}
+const fill = (reason: string, note: string, facts = true) => {
+  if (facts) rate()
+  fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: reason } })
+  fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: note } })
 }
 
 beforeEach(() => jest.clearAllMocks())
+
+describe('required marks (F1 / I-3)', () => {
+  it('marks both labels required and the select aria-required', async () => {
+    draw(caseOf())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    const why = await screen.findByLabelText(`${P}.whyLabel`, { exact: false })
+    expect(why.getAttribute('aria-required')).toBe('true')
+    const labels = document.querySelectorAll('label')
+    const marked = Array.from(labels).filter((l) => l.querySelector('span[aria-hidden]')?.textContent === '*')
+    expect(marked.length).toBeGreaterThanOrEqual(2)
+  })
+})
 
 describe('the door', () => {
   it('shows nothing when the server does not offer it (a reviewer, or another stage)', () => {
@@ -77,7 +94,7 @@ describe('the panel', () => {
   it('lists the served reasons and rests until a reason and a note are given', () => {
     draw(caseOf())
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    const options = screen.getByLabelText(`${P}.whyLabel`).querySelectorAll('option')
+    const options = screen.getByLabelText(`${P}.whyLabel`, { exact: false }).querySelectorAll('option')
     expect(options).toHaveLength(OFFER.reasons.length + 1)
     const submit = screen.getByRole('button', { name: `${P}.submit` }) as HTMLButtonElement
     expect(submit.disabled).toBe(true)
@@ -94,7 +111,7 @@ describe('the panel', () => {
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
     fill('other', 'Dummy')
     expect(screen.getByTestId('pre-interview-counter').textContent).toBe(`${P}.counter|{"count":"5","max":"20"}`)
-    expect((screen.getByLabelText(`${P}.detailsLabel`) as HTMLTextAreaElement).maxLength).toBe(20)
+    expect((screen.getByLabelText(`${P}.detailsLabel`, { exact: false }) as HTMLTextAreaElement).maxLength).toBe(20)
   })
 
   it('Cancel closes the panel and sends nothing', () => {
@@ -106,11 +123,71 @@ describe('the panel', () => {
   })
 })
 
+describe('the four facts first (F3, I-4)', () => {
+  const open = (over: Record<string, unknown> = {}) => {
+    draw(caseOf(over))
+    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+  }
+  const submit = () => screen.getByRole('button', { name: `${P}.submit` }) as HTMLButtonElement
+
+  it('shows the four facts with the Pass/Fail help line', () => {
+    open()
+    expect(screen.getByText('admin.scholarship.recordVerdict.rateHelp')).toBeTruthy()
+    for (const f of FACTS) expect(screen.getByTestId(`pre-interview-${f}-pass`)).toBeTruthy()
+  })
+
+  it('Reject stays greyed, with a visible line, until every fact is recorded', () => {
+    open()
+    fill('not_b40', 'Dummy note', false)
+    expect(submit().disabled).toBe(true)
+    expect(screen.getByTestId('pre-interview-facts-needed').textContent).toBe(`${P}.factsNeeded`)
+    for (const f of FACTS.slice(0, 3)) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
+    expect(submit().disabled).toBe(true)
+    fireEvent.click(screen.getByTestId('pre-interview-income-fail'))
+    expect(submit().disabled).toBe(false)
+    expect(screen.queryByTestId('pre-interview-facts-needed')).toBeNull()
+  })
+
+  it('a Fail asks Why with Other already chosen; the chosen reason is sent; a Pass sends none', async () => {
+    mockApi.rejectBeforeInterview.mockResolvedValue(caseOf() as never)
+    open()
+    fill('not_b40', 'Dummy note')
+    fireEvent.click(screen.getByTestId('pre-interview-income-fail'))
+    fireEvent.click(screen.getByTestId('pre-interview-academic-fail'))
+    expect(screen.getByTestId('pre-interview-income-why-other').getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByTestId('pre-interview-income-why-proof_missing'))
+    fireEvent.click(submit())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    await waitFor(() => expect(mockApi.rejectBeforeInterview).toHaveBeenCalled())
+    expect(mockApi.rejectBeforeInterview.mock.calls[0][3]).toEqual({
+      facts: { identity: 'pass', academic: 'fail', pathway: 'pass', income: 'fail' },
+      fail_reasons: { academic: 'other', income: 'proof_missing' },
+    })
+  })
+
+  it('an assessment already on the case is pre-filled', () => {
+    open({ officer_verdict: { identity: 'pass', academic: 'pass', pathway: 'pass', income: 'fail',
+      fail_reasons: { income: 'documents_differ' } } })
+    expect(screen.getByTestId('pre-interview-income-fail').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByTestId('pre-interview-income-why-documents_differ').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.queryByTestId('pre-interview-facts-needed')).toBeNull()
+  })
+
+  it('the server refusal for unrecorded facts is shown in words', async () => {
+    mockApi.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'assessment_incomplete' }))
+    open()
+    fill('not_b40', 'Dummy note')
+    fireEvent.click(submit())
+    fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
+    expect((await screen.findByRole('alert')).textContent).toBe(`${P}.error.assessment_incomplete`)
+  })
+})
+
 describe('focus and labels (#75 review)', () => {
   it('opening the form puts focus on the reason; Cancel puts it back on the start button', () => {
     draw(caseOf())
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    expect(document.activeElement).toBe(screen.getByLabelText(`${P}.whyLabel`))
+    expect(document.activeElement).toBe(screen.getByLabelText(`${P}.whyLabel`, { exact: false }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.cancel` }))
     expect(document.activeElement).toBe(screen.getByRole('button', { name: `${P}.start` }))
   })
@@ -118,7 +195,7 @@ describe('focus and labels (#75 review)', () => {
   it('the note names its hint and its counter', () => {
     draw(caseOf())
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    const ids = (screen.getByLabelText(`${P}.detailsLabel`).getAttribute('aria-describedby') || '').split(' ')
+    const ids = (screen.getByLabelText(`${P}.detailsLabel`, { exact: false }).getAttribute('aria-describedby') || '').split(' ')
     expect(ids.map((id) => document.getElementById(id)?.textContent)).toEqual([
       `${P}.whyHint`, `${P}.counter|{"count":"0","max":"20"}`])
   })
@@ -126,7 +203,7 @@ describe('focus and labels (#75 review)', () => {
   it('the details box is marked required, and its counter is not read out on every keystroke', () => {
     draw(caseOf())
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
-    expect(screen.getByLabelText(`${P}.detailsLabel`).getAttribute('aria-required')).toBe('true')
+    expect(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }).getAttribute('aria-required')).toBe('true')
     expect(screen.getByTestId('pre-interview-counter').hasAttribute('aria-live')).toBe(false)
   })
 
@@ -204,7 +281,7 @@ describe('are you sure?', () => {
     draw(caseOf())
     toConfirm()
     fireEvent.click(screen.getByRole('button', { name: `${P}.back` }))
-    expect((screen.getByLabelText(`${P}.detailsLabel`) as HTMLTextAreaElement).value).toBe('Dummy note')
+    expect((screen.getByLabelText(`${P}.detailsLabel`, { exact: false }) as HTMLTextAreaElement).value).toBe('Dummy note')
   })
 
   it('Yes, reject sends the reason and note and hands the case back', async () => {
@@ -214,7 +291,8 @@ describe('are you sure?', () => {
     toConfirm()
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     await waitFor(() => expect(onDone).toHaveBeenCalledWith(next))
-    expect(mockApi.rejectBeforeInterview).toHaveBeenCalledWith(7, 'results_too_low', 'Dummy note', { token: 'tok' })
+    expect(mockApi.rejectBeforeInterview).toHaveBeenCalledWith(7, 'results_too_low', 'Dummy note',
+      { facts: { identity: 'pass', academic: 'pass', pathway: 'pass', income: 'pass' }, fail_reasons: {} }, { token: 'tok' })
   })
 
   it.each([['has_reviewer'], ['bad_status'], ['comments_too_long']])('a %s refusal reads as words', async (code) => {

@@ -14,7 +14,7 @@ import { isClearAccept, verdictSaveOutcome, verdictSaveErrorText } from '@/lib/o
 import { interviewRefusalText } from '@/lib/interviewCompleteness'
 import { qcRefusalText } from './QcPanel'
 import type { CockpitCtx } from './cockpitCtx'
-import { reasonsToSend } from './failReasons'
+import { reasonsToSend } from '@/lib/failReasons'
 
 export function useVerdict(ctx: CockpitCtx, genLang: string) {
   const { id, token, t, app, setApp, setProfile, setBusy, setError } = ctx
@@ -101,7 +101,7 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
     try {
       const result = await recordVerdict(id, {
         officer_verdict: officerVerdict,
-        fail_reasons: reasonsToSend(app?.verdict, officerVerdict, failReasons),
+        fail_reasons: reasonsToSend(officerVerdict, failReasons),
         reason: verdictReason || undefined,
         finalise,
         language: genLang,

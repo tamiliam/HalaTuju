@@ -46,7 +46,7 @@ from .profile_sync import (
     build_intake_snapshot, sync_profile_fields,
 )
 from .queries_sla import (
-    QUERY_SLA_ACTIVE_STATUSES, is_ready_for_assignment, open_clarify_queries,
+    QUERY_SLA_ACTIVE_STATUSES, is_ready_for_assignment, open_clarify_queries, ready_on,
     open_student_tasks, query_sla, query_sla_days,
 )
 from ..read_errors import _IC_DECODE_ERROR_MARKERS  # moved out of blockers.py, 2026-10-24

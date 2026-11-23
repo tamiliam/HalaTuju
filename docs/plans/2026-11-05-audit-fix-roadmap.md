@@ -935,7 +935,7 @@ See section 6. This is a measurement step, not a sprint.
 - **"≥ 3 kB bundle headroom" cannot be reached by design.** The ratchet sets each line to build + 2 kB, so the most room a line can hold is 2 kB. Read the target as "under the line, never raised".
 - **guard% needs A3.16b.** A3.16a brought it 12 → 11; ≤ 9% (interim) and ≤ 8% need the test conversion in A3.16b, not built.
 - **The noqa budget of 80 was not lowered.** A3.14 made 60 noqa carry a code and a reason, but the budget counts reasoned ones too, so it only falls when a noqa is removed.
-- **dup stays 4, and that is accepted.** The four names (`_gemini_generate`, `render`, `banned_phrases`, `unknown_placeholders`) are thin per-caller adapters over one engine each (`gemini.generate_text`, `email_templates`); tenancy rule 6 and about 35 `patch()` strings depend on the names, so A3.11 left them by design and kept the `duplicated_names` budget at 4.
+- **SUPERSEDED 19 Nov 2026: dup is 0** (`_gemini_generate` now has one home, `contracts._gemini_generate`; closure row CH-07). Old text: **dup stays 4, and that is accepted.** The four names (`_gemini_generate`, `render`, `banned_phrases`, `unknown_placeholders`) are thin per-caller adapters over one engine each (`gemini.generate_text`, `email_templates`); tenancy rule 6 and about 35 `patch()` strings depend on the names, so A3.11 left them by design and kept the `duplicated_names` budget at 4.
 - **std still FAILs** on the four web lines loosened before the audit (since 227eaf7). G13 raised no budget.
 
 ### Wave 4 — remaining open TDs, grouped by area
@@ -1352,5 +1352,6 @@ _Added 2026-11-12 by the Consolidation Review (`docs/consolidation-log.md`, 2026
 
 #### Gemini duplicate (`_gemini_generate`)
 
+- **DONE 2026-11-19 (branch gemdup, CH-07):** one home, `contracts._gemini_generate`; `dup` 0.
 - **Goal:** `dup` 0. The last duplicate name lives in the Gemini lane (`apply_copy_draft.py`, `__init__.py`, `sponsor_terms.py`); tenancy rule 6 and the `patch()` targets depend on the name, so the fix is designed with that lane after Gemini Phase 2 is live.
 - **Deadline (owner, 2026-11-12):** by Fri 4 Dec.

@@ -153,7 +153,6 @@ const ALLOWED: Entry[] = [
   ['lib/adminLanding.ts', "OUTSIDER_ROLES = ['source_partner', 'mentor', 'member']", 1, 'LANDING', 'outsider logins land on their own page'],
   ['lib/adminLanding.ts', '!(OUTSIDER_ROLES as readonly string[]).includes(r)', 1, 'LANDING', 'outsider logins land on their own page'],
   // ── TARGET: the person acted on or listed ────────────────────────────────────────────────────────────────
-  ['app/admin/scholarship/[id]/view/AssignAndWitness.tsx', "a.role !== 'reviewer' ? ` (${a.role})`", 1, 'TARGET', 'the assignee\'s role named beside them'],
   ['app/admin/organisation/team/page.tsx', "a.role === 'org_admin' || a.manageable !== false", 1, 'TARGET', 'which listed people have a person page'],
   ['app/admin/organisation/team/page.tsx', '(PERSON_PAGE_ROLES as readonly string[]).includes(a.role)', 1, 'TARGET', 'which listed people have a person page'],
   ['app/admin/organisation/staff/page.tsx', 'payload.invitable_roles.includes(cur)', 1, 'TARGET', 'the role being invited stays one the server serves as invitable'],

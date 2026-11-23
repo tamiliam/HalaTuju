@@ -1,9 +1,8 @@
 'use client'
 
 /**
- * THE SYSTEM-GENERATED STUDENT PROFILE (draft at handoff, final at the verdict) and, folded
- * under it, THE STUDENT'S OWN WORDS — the note, the story and the funding need the reviewer
- * reveals on demand.
+ * THE SYSTEM-GENERATED STUDENT PROFILE (draft at handoff, final at the verdict). The student's own
+ * words (note, story, funding need) live in `StudentOwnWords` below.
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
@@ -15,7 +14,6 @@ import { Field, joinOr, yn, type T } from './shared'
 
 export function GeneratedProfile({
   app, t, profile, genLang, setGenLang, busy, error, decisionReopened,
-  showOwnWords, setShowOwnWords,
 }: {
   app: AdminScholarshipDetail
   t: T
@@ -25,8 +23,6 @@ export function GeneratedProfile({
   busy: string
   error: string
   decisionReopened: boolean
-  showOwnWords: boolean
-  setShowOwnWords: Dispatch<SetStateAction<boolean>>
 }) {
   return (<>
 
@@ -96,11 +92,30 @@ export function GeneratedProfile({
       </div>
       )}
 
+  </>)
+}
+
+/**
+ * THE STUDENT'S OWN WORDS. One rule at every stage (F1 / I-7): the note shows when it has text and
+ * hides when empty. `noteOnly` renders just the note (used on engine-rejected cases, where the
+ * rest of the review panel is hidden).
+ */
+export function StudentOwnWords({
+  app, t, showOwnWords, setShowOwnWords, noteOnly = false,
+}: {
+  app: AdminScholarshipDetail
+  t: T
+  showOwnWords: boolean
+  setShowOwnWords: Dispatch<SetStateAction<boolean>>
+  noteOnly?: boolean
+}) {
+  return (<>
+
       {/* ── The student's own words — collapsed by default. The reviewer's job is to
            check & sign off the AI profile above; the raw note/story/funding is the
            safety valve, revealed on demand. ──────────────────────────────────────── */}
       {(() => {
-        const hasStory = !!(app.aspirations || app.plans || app.fears || app.justification
+        const hasStory = !noteOnly && !!(app.aspirations || app.plans || app.fears || app.justification
           || app.daily_life || app.first_in_family || app.parents_occupation
           || app.siblings_studying_count || app.siblings_in_school || app.siblings_in_tertiary
           || app.family_context)
@@ -111,7 +126,7 @@ export function GeneratedProfile({
         const showLegacySiblings = app.siblings_in_school == null
           && app.siblings_in_tertiary == null
           && (app.siblings_studying_count ?? 0) > 0
-        if (!(app.uncertainty_note || app.anything_else || hasStory || app.funding_need)) return null
+        if (!(app.uncertainty_note || app.anything_else || hasStory || (!noteOnly && app.funding_need))) return null
         return (
         <div className="space-y-4">
           <button
@@ -170,7 +185,7 @@ export function GeneratedProfile({
               )}
 
               {/* Funding — hidden when empty */}
-              {app.funding_need && (
+              {!noteOnly && app.funding_need && (
                 <div className="py-4 first:pt-0 last:pb-0">
                   <h3 className="mb-2.5 text-xs md:text-[11px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.scholarship.sec.funding')}</h3>
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">

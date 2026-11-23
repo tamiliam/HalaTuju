@@ -15,6 +15,11 @@
  *     the Reject button on Go back (or a refusal), and the start button on Cancel. The refusal is
  *     held by the page (#75 re-check), so it outlives a reload that takes this door away, and is
  *     cleared when the form opens again.
+ *     F3 (I-4): the form first records the four facts, Pass or Fail, with the reviewer assessment's
+ *     Why-on-every-Fail rule (Other pre-chosen); pre-filled from an assessment already on the case.
+ *     Until all four are recorded the Reject button stays greyed with a visible line saying so; the
+ *     server refuses the same (`assessment_incomplete`) and stores them where a reviewer's
+ *     assessment goes (`officer_verdict`).
  *   • `PreInterviewRecord` — once made: the decline kind, the main reason, and the email: held
  *     ("This decline is scheduled to be sent on"; the header's cool-off banner carries "Cancel
  *     decline", the same cancel as every held decline) or sent ("Decline email sent on"). The note
@@ -26,11 +31,14 @@ import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { PRE_INTERVIEW_CATEGORY } from '@/lib/applicationStatus'
 import { formatDate } from '@/lib/formatDate'
 import { CharCount } from '@/components/admin/CharCount'
+import { DEFAULT_FAIL_REASON, FAIL_REASON_CODES, VERDICT_FACTS, reasonsToSend } from '@/lib/failReasons'
 
 import type { T } from './shared'
 
 const P = 'admin.scholarship.preInterview'
-const REFUSALS = ['bad_status', 'has_reviewer', 'reason_required', 'comments_required', 'comments_too_long']
+const REFUSALS = ['bad_status', 'has_reviewer', 'reason_required', 'comments_required', 'comments_too_long',
+  'assessment_incomplete', 'bad_fail_reasons']
+const RV = 'admin.scholarship.recordVerdict'
 /** The refusals that mean the page is stale: the case is reloaded. */
 const STALE = ['bad_status', 'has_reviewer']
 const BTN = 'max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center'
@@ -54,6 +62,11 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
   const [step, setStep] = useState<'idle' | 'form' | 'confirm'>('idle')
   const [reason, setReason] = useState('')
   const [note, setNote] = useState('')
+  const saved = (app.officer_verdict || {}) as Record<string, unknown>
+  const [facts, setFacts] = useState<Record<string, string>>(() => Object.fromEntries(
+    VERDICT_FACTS.map((f) => [f, saved[f] === 'pass' || saved[f] === 'fail' ? String(saved[f]) : ''])))
+  const [why, setWhy] = useState<Record<string, string>>(
+    () => ({ ...((saved.fail_reasons || {}) as Record<string, string>) }))
   const [working, setWorking] = useState(false)
   const startRef = useRef<HTMLButtonElement>(null)
   const selectRef = useRef<HTMLSelectElement>(null)
@@ -83,13 +96,15 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
     </>)
   }
   const max = offer.note_max
-  const ready = !!reason && !!note.trim() && note.length <= max
+  const factsDone = VERDICT_FACTS.every((f) => facts[f] === 'pass' || facts[f] === 'fail')
+  const ready = factsDone && !!reason && !!note.trim() && note.length <= max
   const close = () => { setReason(''); setNote(''); setErr(''); go('idle', 'start') }
   const submit = async () => {
     if (!token) return
     setWorking(true); setErr('')
     try {
-      const next = await rejectBeforeInterview(app.id, reason, note, { token })
+      const next = await rejectBeforeInterview(
+        app.id, reason, note, { facts, fail_reasons: reasonsToSend(facts, why) }, { token })
       if (!mounted.current) return
       setReason(''); setNote(''); setStep('idle')
       onDone(next)
@@ -120,16 +135,17 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
 
       {step === 'form' && (<>
         <h3 className="text-sm font-semibold text-ground-900">{t(`${P}.title`)}</h3>
+        <PreInterviewFacts t={t} facts={facts} setFacts={setFacts} why={why} setWhy={setWhy} />
         <label htmlFor="pre-interview-reason" className="block text-sm font-medium text-ground-700">
-          {t(`${P}.whyLabel`)}
+          {t(`${P}.whyLabel`)}<span className="ml-0.5 text-critical-600" aria-hidden>*</span>
         </label>
-        <select id="pre-interview-reason" ref={selectRef} value={reason} onChange={(e) => setReason(e.target.value)}
+        <select id="pre-interview-reason" ref={selectRef} aria-required="true" value={reason} onChange={(e) => setReason(e.target.value)}
           className={`w-full rounded-lg border px-3 py-2 text-sm ${BTN}`}>
           <option value="">{t(`${P}.reasonPlaceholder`)}</option>
           {offer.reasons.map((r) => <option key={r} value={r}>{t(`${P}.reasons.${r}`)}</option>)}
         </select>
         <label htmlFor="pre-interview-why" className="block text-sm font-medium text-ground-700">
-          {t(`${P}.detailsLabel`)}
+          {t(`${P}.detailsLabel`)}<span className="ml-0.5 text-critical-600" aria-hidden>*</span>
         </label>
         <textarea id="pre-interview-why" rows={4} value={note} maxLength={max} aria-required="true"
           aria-describedby="pre-interview-why-hint pre-interview-why-count"
@@ -139,6 +155,9 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
           {t(`${P}.counter`, { count: String(note.length), max: String(max) })}
         </CharCount>
         <p id="pre-interview-why-hint" className="text-xs text-ground-500">{t(`${P}.whyHint`)}</p>
+        {!factsDone && (
+          <p className="text-xs text-caution-700" data-testid="pre-interview-facts-needed">{t(`${P}.factsNeeded`)}</p>
+        )}
         <div className="flex gap-2">
           <button type="button" onClick={close}
             className={`flex-1 rounded-lg border px-3 py-2 text-sm text-ground-600 hover:bg-ground-50 ${BTN}`}>
@@ -181,6 +200,64 @@ export function PreInterviewOption({ app, t, token, busy, canAssign, err, setErr
 
       {err && <p className="text-sm text-critical-600" role="alert">{err}</p>}
     </div>
+  )
+}
+
+type Marks = Record<string, string>
+
+/** F3 (I-4): the four facts, Pass or Fail, before a reject; every Fail asks Why (Other pre-chosen). */
+function PreInterviewFacts({ t, facts, setFacts, why, setWhy }: {
+  t: T
+  facts: Marks
+  setFacts: (fn: (x: Marks) => Marks) => void
+  why: Marks
+  setWhy: (fn: (x: Marks) => Marks) => void
+}) {
+  const mark = (f: string, v: 'pass' | 'fail') => {
+    setFacts((x) => ({ ...x, [f]: v }))
+    setWhy((x) => ({ ...x, [f]: v === 'fail' ? (x[f] || DEFAULT_FAIL_REASON) : '' }))
+  }
+  const chip = (on: boolean, onCls: string) =>
+    `rounded-full border px-3 py-1 text-xs font-medium ${on ? onCls : 'border-ground-300 text-ground-600'} ${BTN}`
+  return (
+    <fieldset className="space-y-2" aria-describedby="pre-interview-facts-help" data-testid="pre-interview-facts">
+      <legend className="text-sm font-medium text-ground-700">
+        {t(`${P}.factsTitle`)}<span className="ml-0.5 text-critical-600" aria-hidden>*</span>
+      </legend>
+      <p id="pre-interview-facts-help" className="text-xs text-ground-500">{t(`${RV}.rateHelp`)}</p>
+      {VERDICT_FACTS.map((f) => (
+        <div key={f} className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm text-ground-700">{t(`admin.scholarship.verdict.fact.${f}`)}</span>
+          <div className="flex gap-1.5">
+            <button type="button" aria-pressed={facts[f] === 'pass'} data-testid={`pre-interview-${f}-pass`}
+              onClick={() => mark(f, 'pass')}
+              className={chip(facts[f] === 'pass', 'border-positive-fill bg-positive-fill text-positive-fill-ink')}>
+              {t(`${RV}.factPass`)}
+            </button>
+            <button type="button" aria-pressed={facts[f] === 'fail'} data-testid={`pre-interview-${f}-fail`}
+              onClick={() => mark(f, 'fail')}
+              className={chip(facts[f] === 'fail', 'border-critical-fill bg-critical-fill text-critical-fill-ink')}>
+              {t(`${RV}.factFail`)}
+            </button>
+          </div>
+          {facts[f] === 'fail' && (
+            <div className="basis-full space-y-1" role="group" aria-label={t(`${RV}.failWhy`)}>
+              <p className="text-xs text-ground-600">{t(`${RV}.failWhy`)}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {FAIL_REASON_CODES.map((code) => (
+                  <button key={code} type="button" aria-pressed={(why[f] || DEFAULT_FAIL_REASON) === code}
+                    data-testid={`pre-interview-${f}-why-${code}`}
+                    onClick={() => setWhy((x) => ({ ...x, [f]: code }))}
+                    className={chip((why[f] || DEFAULT_FAIL_REASON) === code, 'border-brand-fill bg-brand-fill text-brand-fill-ink')}>
+                    {t(`${RV}.failReason.${code}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </fieldset>
   )
 }
 

@@ -1,7 +1,8 @@
 /**
  * #804 (owner 2026-11-18): a red Pathway tile read "No pathway chosen yet" while the reason it was
  * red was the course start year. A confident disqualifier now leads the tile's subtitle, and the
- * FE list is pinned to the backend `award.CONFIDENT_DISQUALIFIERS` in both directions.
+ * FE list is pinned to the backend `award.CONFIDENT_DISQUALIFIERS` in both directions. (Since F2 the
+ * band itself is served; the FE set stays for the subtitle only.)
  */
 import { CONFIDENT_DISQUALIFIERS, factDetailItems, factSubtitleItem } from '@/lib/officerCockpit'
 import type { AdminVerdictFact } from '@/lib/admin-api'
@@ -33,21 +34,21 @@ describe('CONFIDENT_DISQUALIFIERS mirror', () => {
 describe('tile subtitle - a confident disqualifier leads', () => {
   test('#804: the start year leads an earlier undeclared line', () => {
     const f = pathway('gap', ['offer_programme'], ['pathway_undeclared', 'pathway_start_year_outside'])
-    expect(factSubtitleItem(f)?.code).toBe('pathway_start_year_outside')
-    const d = factDetailItems(f)
+    expect(factSubtitleItem(f, 'ruleNotMet')?.code).toBe('pathway_start_year_outside')
+    const d = factDetailItems(f, 'ruleNotMet')
     expect(d.unresolved.map((i) => i.code)).toEqual(['pathway_undeclared'])
     expect(d.evidence.map((i) => i.code)).toEqual(['offer_programme'])
   })
   test('the first disqualifier leads when there are two', () => {
     const f = pathway('gap', [], ['pathway_undeclared', 'pathway_funded_or_abroad', 'pathway_start_year_outside'])
-    expect(factSubtitleItem(f)?.code).toBe('pathway_funded_or_abroad')
+    expect(factSubtitleItem(f, 'ruleNotMet')?.code).toBe('pathway_funded_or_abroad')
   })
   test('IPTS offers: the IPTS line leads an earlier undeclared line', () => {
     const f = pathway('gap', ['offer_programme'], ['pathway_undeclared', 'pathway_offer_private'])
-    expect(factSubtitleItem(f)?.code).toBe('pathway_offer_private')
+    expect(factSubtitleItem(f, 'ruleNotMet')?.code).toBe('pathway_offer_private')
   })
   test('no disqualifier: the first unresolved line leads as before', () => {
     const f = pathway('review', ['offer_programme'], ['pathway_undeclared', 'offer_issuer_not_checked'])
-    expect(factSubtitleItem(f)?.code).toBe('pathway_undeclared')
+    expect(factSubtitleItem(f, 'probable')?.code).toBe('pathway_undeclared')
   })
 })

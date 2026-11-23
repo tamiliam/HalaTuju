@@ -8,7 +8,7 @@
 import { act, fireEvent, screen } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
-import { buildInterviewSession } from '@/test/adminApplicationDetail'
+import { buildDocument, buildInterviewSession } from '@/test/adminApplicationDetail'
 import { joinFacts } from './view/DecisionMissing'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
@@ -134,6 +134,101 @@ describe('a press on a greyed Recommend or Decline', () => {
   })
 })
 
+describe('the reporting date before Recommend (F3, I-12)', () => {
+  const noDate = () => ({ ...readyCase(), reporting_date: null })
+
+  it('names "Record the reporting date", which takes you to the date box', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: noDate() })
+    await loaded()
+    const items = Array.from(document.querySelectorAll('#decision-missing li button')) as HTMLButtonElement[]
+    expect(items.map((b) => b.textContent)).toEqual([K + 'missing.reportingDate'])
+    fireEvent.click(items[0])
+    expect(document.activeElement).toBe(document.getElementById('reporting-date-input'))
+  })
+
+  it('blocks Recommend only: a press shows the alert and does not act; Decline still works', async () => {
+    const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: noDate() })
+    await loaded()
+    expect(btn('recordVerdict.approve').getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(btn('recordVerdict.approve'))
+    expect(screen.getByRole('alert').textContent).toContain(K + 'missing.reportingDate')
+    expect(outcome()).toBe('—')
+    expect(api.recordVerdict).not.toHaveBeenCalled()
+    expect(btn('recordVerdict.decline').getAttribute('aria-disabled')).toBeNull()
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(outcome()).toBe('admin.scholarship.recordVerdict.decline')
+  })
+
+  it('is not asked once the date is saved', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: readyCase() })
+    await loaded()
+    expect(document.getElementById('decision-missing')).toBeNull()
+  })
+
+  it('the line is written in all three languages', () => {
+    const at = (m: Record<string, any>) => m.admin.scholarship.recordVerdict.missing.reportingDate
+    expect([at(en), at(ms), at(ta)]).toEqual(
+      ['Record the reporting date', 'Rekodkan tarikh pendaftaran', 'பதிவு செய்யும் தேதியைப் பதிவு செய்யவும்'])
+  })
+})
+
+describe('F3 review fixes: the date line and the served box answer', () => {
+  const noDate = () => ({ ...readyCase(), reporting_date: null })
+  const julaiLetter = () => [buildDocument('offer_letter', {
+    pathway_check: { reporting_date: 'JULAI 2026' } as never })]
+
+  it('with Decline chosen, "Record the reporting date" leaves Still to do (fix 4)', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: noDate() })
+    await loaded()
+    expect(document.getElementById('decision-missing')?.textContent).toContain(K + 'missing.reportingDate')
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(outcome()).toBe('admin.scholarship.recordVerdict.decline')
+    expect(document.getElementById('decision-missing')).toBeNull()
+    expect(document.body.textContent).not.toContain(K + 'missing.reportingDate')
+  })
+
+  it('with Decline chosen and only the date missing, a Recommend press still names the date (round 2)', async () => {
+    const { api } = renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: noDate() })
+    await loaded()
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(document.getElementById('decision-missing')).toBeNull()   // the resting list leaves it out
+    fireEvent.click(btn('recordVerdict.approve'))
+    const alert = screen.getByRole('alert')
+    expect(Array.from(alert.querySelectorAll('li button')).map((b) => b.textContent))
+      .toEqual([K + 'missing.reportingDate'])
+    expect(document.activeElement).toBe(alert)
+    expect(outcome()).toBe('admin.scholarship.recordVerdict.decline')   // Recommend did not act
+    expect(api.recordVerdict).not.toHaveBeenCalled()
+    // Choosing Decline again puts the resting rule back: the date line leaves.
+    fireEvent.click(btn('recordVerdict.decline'))
+    expect(document.getElementById('decision-missing')).toBeNull()
+  })
+
+  it('an unreadable letter date ("JULAI 2026"): the served answer shows the box and the line (fix 1)', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing',
+      build: { ...noDate(), documents: julaiLetter(), shows_reporting_date_box: true } })
+    await loaded()
+    expect(document.getElementById('reporting-date-input')).not.toBeNull()
+    expect(document.getElementById('decision-missing')?.textContent).toContain(K + 'missing.reportingDate')
+    expect(btn('recordVerdict.approve').getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('a served false hides the box and the line', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing',
+      build: { ...noDate(), shows_reporting_date_box: false } })
+    await loaded()
+    expect(document.getElementById('reporting-date-input')).toBeNull()
+    expect(document.getElementById('decision-missing')).toBeNull()
+  })
+
+  it('an emptied assessment (what a cancelled pre-interview decline serves) asks "Complete your assessment" (fix 2)', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing',
+      build: { ...readyCase(), officer_verdict: {} as never, reporting_date: '2026-06-22' } })
+    await loaded()
+    expect(document.getElementById('decision-missing')?.textContent).toContain(K + 'missing.rate')
+  })
+})
+
 describe('the phone decision bar', () => {
   it('a press while something is missing shows the same list as an alert', async () => {
     renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: nothingDone() })
@@ -162,9 +257,9 @@ describe('the fact list reads as the language does, with the real messages', () 
     return Object.entries(params).reduce((acc, [k, x]) => acc.replace(`{${k}}`, x), v)
   }
   it.each([
-    ['en', 'Check Academic and Income'],
-    ['ms', 'Semak fakta: Akademik dan Pendapatan'],
-    ['ta', 'உண்மைகளைச் சரிபாருங்கள்: கல்வி மற்றும் வருமானம்'],
+    ['en', 'Complete your assessment: Academic and Income'],
+    ['ms', 'Lengkapkan penilaian anda: Akademik dan Pendapatan'],
+    ['ta', 'உங்கள் மதிப்பீட்டை நிறைவு செய்யுங்கள்: கல்வி மற்றும் வருமானம்'],
   ])('%s', (loc, expected) => {
     const t = real(loc)
     const facts = joinFacts(['academic', 'income'].map((f) => t(`admin.scholarship.verdict.fact.${f}`)), loc)

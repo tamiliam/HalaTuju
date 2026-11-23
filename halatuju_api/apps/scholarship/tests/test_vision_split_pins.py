@@ -237,7 +237,7 @@ class TestOfferBranch(_Base):
             doc = self.doc('offer_letter', vision_fields={'fields': {'old': 1}})
             r = self.run_impl(doc)
         exact.assert_called_once_with('SURAT TAWARAN', prior={'fields': {'old': 1}}, image=b'IMG',
-                                      content_type='image/jpeg', profile_nric=NRIC, page1_ocr='SURAT TAWARAN')
+                                      content_type='image/jpeg', profile_nric=NRIC, page1_ocr='SURAT TAWARAN', why={})
         m['extract'].assert_not_called()
         self.assertEqual((r['capture'], r['offer_reader_version']), ('deterministic', 'x1'))
 

@@ -10,7 +10,7 @@ Pinned here, one test per rule the organisation approved:
   * THE EMAIL: held for the organisation's QC decline hold, the same markers and release cron as a
     QC decline; until it goes the student still sees Awaiting review; cancel puts the student back at
     Awaiting review with no reviewer and nothing is sent. The reason and note never reach the student.
-  * It never counts against a reviewer, and the Programme overview counts it, by reason.
+  * It never counts against a reviewer, and the Programme overview no longer breaks it out (F1 / I-8).
   * #75 review: the reject and the assign each re-read the case under its row lock, so whichever
     commits second sees the first.
   * #75 re-check: an unassign's interview teardown cancels the Meet event and sends its two emails
@@ -30,13 +30,16 @@ from apps.scholarship.emails.student_decisions import _DECLINE_TEMPLATES
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.services import (AssignmentError, assign_reviewer, cancel_pending_decline,
                                        release_pending_declines)
-from apps.scholarship.services.pre_interview import REASONS, counts, reject_before_interview
+from apps.scholarship.services.pre_interview import REASONS, reject_before_interview
 from apps.scholarship.student_status import student_facing_status
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org,
 )
 
 NOTE = 'ZQX-pre-interview-note: the payslip shows a household income above the band.'
+#: F3 (I-4): the four facts recorded before the reject (income failed, the reason given).
+FACTS = {'identity': 'pass', 'academic': 'pass', 'pathway': 'pass', 'income': 'fail'}
+WHY = {'income': 'proof_missing'}
 
 
 def _url(pk):
@@ -52,9 +55,9 @@ class _Base(TestCase):
         self.app = make_application('profile_complete', cohort=self.cohort)
         mail.outbox = []
 
-    def _post(self, who, app=None, reason='not_b40', comments=NOTE):
-        return authed_client(who).post(_url((app or self.app).pk),
-                                       {'reason': reason, 'comments': comments}, format='json')
+    def _post(self, who, app=None, reason='not_b40', comments=NOTE, facts=FACTS, fail_reasons=WHY):
+        body = {'reason': reason, 'comments': comments, 'facts': facts, 'fail_reasons': fail_reasons}
+        return authed_client(who).post(_url((app or self.app).pk), body, format='json')
 
 
 class WhoMayRejectTest(_Base):
@@ -169,7 +172,7 @@ class TheRowLockTest(_Base):
         stale = ScholarshipApplication.objects.get(pk=self.app.pk)
         ScholarshipApplication.objects.filter(pk=self.app.pk).update(assigned_to=self.reviewer)
         with self.assertRaisesMessage(ValueError, 'has_reviewer'):
-            reject_before_interview(stale, self.org_admin, 'not_b40', NOTE)
+            reject_before_interview(stale, self.org_admin, 'not_b40', NOTE, FACTS, WHY)
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'profile_complete')
         self.assertEqual(self.app.rejection_category, '')
@@ -177,7 +180,7 @@ class TheRowLockTest(_Base):
     def test_a_reject_committed_after_the_case_was_loaded_refuses_the_assign(self):
         stale = ScholarshipApplication.objects.get(pk=self.app.pk)
         reject_before_interview(ScholarshipApplication.objects.get(pk=self.app.pk),
-                                self.org_admin, 'not_b40', NOTE)
+                                self.org_admin, 'not_b40', NOTE, FACTS, WHY)
         with self.assertRaises(AssignmentError) as cm:
             assign_reviewer(stale, reviewer=self.reviewer, by_admin=self.org_admin)
         self.assertEqual(str(cm.exception), 'not_assignable')
@@ -446,6 +449,52 @@ class WhatIsRequiredTest(_Base):
                 self.assertEqual(app.rejection_reason, reason)
 
 
+class TheFourFactsFirstTest(_Base):
+    """F3 (I-4): Pass or Fail on each of the four facts before the reject goes through, with the
+    reviewer assessment's Why-on-every-Fail rule, stored where a reviewer's assessment is."""
+    def _refused(self, code, **kw):
+        r = self._post(self.org_admin, **kw)
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertEqual(r.data['code'], code)
+        self.assertTrue(r.data['error'])
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'profile_complete')
+        self.assertFalse(self.app.officer_verdict)
+
+    def test_refused_while_any_fact_is_unrecorded(self):
+        self._refused('assessment_incomplete', facts=None)
+        self._refused('assessment_incomplete', facts={})
+        self._refused('assessment_incomplete', facts={**FACTS, 'pathway': ''})
+        self._refused('assessment_incomplete', facts={**FACTS, 'identity': 'maybe'})
+        self._refused('assessment_incomplete', facts='pass')
+
+    def test_an_unknown_reason_is_refused(self):
+        self._refused('bad_fail_reasons', fail_reasons={'income': 'made_up_code'})
+        self._refused('bad_fail_reasons', fail_reasons={'nope': 'other'})
+
+    def test_stored_as_the_reviewer_assessment_with_the_ai_snapshot(self):
+        self.assertEqual(self._post(self.org_admin).status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.officer_verdict, {**FACTS, 'fail_reasons': WHY})
+        self.assertEqual([r['fact'] for r in self.app.ai_verdict_snapshot], list(FACTS))
+        self.assertTrue(self.app.ai_verdict_engine_version)
+        # Not a reviewer's recorded decision: the metrics' stamp stays empty.
+        self.assertIsNone(self.app.verdict_decided_at)
+
+    def test_a_fail_with_no_reason_is_other_and_a_reason_on_a_pass_is_dropped(self):
+        facts = {**FACTS, 'academic': 'fail'}
+        self._post(self.org_admin, facts=facts, fail_reasons={'identity': 'document_false'})
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.officer_verdict['fail_reasons'],
+                         {'academic': 'other', 'income': 'other'})
+
+    def test_all_pass_is_allowed(self):
+        facts = dict.fromkeys(FACTS, 'pass')
+        self.assertEqual(self._post(self.org_admin, facts=facts, fail_reasons=None).status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.officer_verdict, {**facts, 'fail_reasons': {}})
+
+
 class WhatIsRecordedTest(_Base):
     def test_recorded_at_once_as_its_own_kind_with_the_reason_and_note(self):
         self._post(self.org_admin, reason='results_too_low', comments=f'  {NOTE}  ')
@@ -563,43 +612,3 @@ class CountsTest(_Base):
         self.assertEqual(after['declined'], 0)
         self.app.refresh_from_db()
         self.assertIsNone(self.app.assigned_to_id)
-
-    def test_counts_by_reason(self):
-        for reason in ('not_b40', 'not_b40', 'results_too_low'):
-            app = make_application('profile_complete', cohort=self.cohort)
-            reject_before_interview(app, self.org_admin, reason, NOTE)
-        scope = ScholarshipApplication.objects.filter(owning_organisation=self.org)
-        got = counts(scope)
-        self.assertEqual(got['total'], 3)
-        self.assertEqual(got['by_reason']['not_b40'], 2)
-        self.assertEqual(got['by_reason']['results_too_low'], 1)
-        self.assertEqual(set(got['by_reason']), set(REASONS))
-        self.assertEqual(got['by_reason']['other'], 0)
-
-    def test_another_organisations_rejections_stay_out(self):
-        other_org = make_org()
-        other = make_application('profile_complete', cohort=make_cohort(owning_organisation=other_org))
-        reject_before_interview(other, make_admin('org_admin', owning_org=other_org), 'not_b40', NOTE)
-        reject_before_interview(self.app, self.org_admin, 'other', NOTE)
-        got = counts(ScholarshipApplication.objects.filter(owning_organisation=self.org))
-        self.assertEqual(got['total'], 1)
-        self.assertEqual(got['by_reason']['not_b40'], 0)
-        r = authed_client(self.org_admin).get('/api/v1/admin/scholarship/programme-overview/')
-        self.assertEqual(r.status_code, 200, r.content)
-        self.assertEqual(r.data['funnel']['pre_interview']['total'], 1)
-
-    def test_a_cancelled_one_is_not_counted(self):
-        reject_before_interview(self.app, self.org_admin, 'other', NOTE)
-        cancel_pending_decline(self.app)
-        scope = ScholarshipApplication.objects.filter(owning_organisation=self.org)
-        self.assertEqual(counts(scope)['total'], 0)
-
-    def test_the_programme_overview_funnel_carries_the_counts(self):
-        reject_before_interview(self.app, self.org_admin, 'not_responsive', NOTE)
-        code = self.cohort.programme.code if self.cohort.programme_id else ''
-        q = f'?programme={code}' if code else ''
-        r = authed_client(self.org_admin).get(f'/api/v1/admin/scholarship/programme-overview/{q}')
-        self.assertEqual(r.status_code, 200, r.content)
-        pre = r.data['funnel']['pre_interview']
-        self.assertEqual(pre['total'], 1)
-        self.assertEqual(pre['by_reason']['not_responsive'], 1)

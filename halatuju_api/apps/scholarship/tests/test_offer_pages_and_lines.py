@@ -149,5 +149,5 @@ class ModelVersionTest(SimpleTestCase):
     def test_the_doc_recognition_version_is_bumped(self):
         from apps.scholarship.genuineness.results_doc import MODEL_VERSION
         # A2.7a shipped 1.27.0; student help H1 bumped it to 1.28.0, help H2 to 1.29.0 (2026-11-15);
-        # #823 takes 1.30.0 (offer-scan-ocr), S-visible 1.31.0 (2026-11-18).
-        self.assertEqual(MODEL_VERSION, '1.31.0')
+        # #823 takes 1.30.0 (offer-scan-ocr), S-visible 1.31.0 (2026-11-18), OCR-11 1.32.0 (2026-11-21).
+        self.assertEqual(MODEL_VERSION, '1.35.0')

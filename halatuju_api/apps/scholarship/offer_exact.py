@@ -23,6 +23,10 @@ would derive. Each returns the stored-read dict, or None (→ the AI reader, `of
 """
 from __future__ import annotations
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 #: The keys the parser owns — written whole on a lock, blank or not. The last five are AI-only fields the
 #: parser never reads (review L2): blank under an Exact read; every reader takes them with `or ''`.
 OWNED = ('candidate_name', 'candidate_nric', 'candidate_nric_source', 'programme', 'programme_code',
@@ -72,33 +76,156 @@ def merge_over(prior_fields, govt: dict) -> dict:
     return out
 
 
-def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profile_nric='') -> dict | None:
+def _note_ums_refusal(why, text, reason: str) -> None:
+    """Fill ``why`` (the caller's dict, or None) with the UMS rules read's refusal (review round 2): the
+    lane and ``read_<reason>`` ('read_no_layout', 'read_not_an_offer', 'read_empty:programme', ...), the
+    same shape as `rules_lane_verdict`'s ``rules_fallback``. Only a letter with the UMS title: a letter no
+    rules lane exists for records nothing."""
+    from .offer_parse_university import LANE, is_ums
+    if isinstance(why, dict) and is_ums((text or '').upper()):
+        why.update(lane=LANE, reason=f'read_{reason}')
+
+
+def _guard_reason(d: dict) -> str:
+    """`offer_parse.diagnose`'s refusal as one word: its guard, ``empty:<fields>``, 'portal' or 'no_title'."""
+    if d.get('guard'):
+        return d['guard']
+    if d.get('empty_required'):
+        return 'empty:' + ','.join(d['empty_required'])
+    return 'portal' if d.get('portal') else 'no_title'
+
+
+def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profile_nric='',
+               page1_layout='', why=None, page_texts=None) -> dict | None:
     """The Exact read from what production derived: ``from_text_layer`` — ``text`` is a digital PDF's own
-    text layer — and that PDF's ``page1_layer``. ``prior`` is the stored ``vision_fields``."""
+    text layer — and that PDF's ``page1_layer`` (and its LAYOUT text, ``page1_layout``, which only the UMS
+    family reads — OCR-first S1). ``prior`` is the stored ``vision_fields``. A university lock names its
+    lane (``rules_lane``, e.g. 'ua:UMS') on the result and in ``offer_reader_inputs``; '' otherwise. When a
+    UMS letter does not lock, ``why`` (a dict, if given) gets the lane and the reason (`_note_ums_refusal`),
+    and the missing owner phrases' NUMBERS (``owner_words_missing``; never text). ``page_texts``: that PDF's
+    drawn text per page (render-mode visible; `pdf_pages.pdf_page_texts`), read by the UMS family only (S1c
+    owner words)."""
     from .offer_ic import guard_nric
-    from .offer_parse import parse_govt_offer
+    from .offer_parse import diagnose
     if from_text_layer and not (page1_layer or '').strip():
+        _note_ums_refusal(why, text, 'no_page1_layer')
         return None                              # page 1 is a scan: no page-1 identity to read (H2)
     page1 = page1_layer if from_text_layer else ''
-    govt = parse_govt_offer(text, page1_text=page1 or None)
+    d = diagnose(text, page1_text=page1 or None, page1_layout=page1_layout if from_text_layer else '',
+                 page_texts=page_texts if from_text_layer else None)
+    govt = d['locked']
     if govt is None:
+        _note_ums_refusal(why, text, _guard_reason(d))
+        if isinstance(why, dict) and why.get('reason') == 'read_owner_words_missing':
+            why['owner_words_missing'] = list(d.get('owner_words_missing') or ())
         return None
     govt.pop('_family', None)
+    lane = govt.pop('rules_lane', '')
     check = guard_nric(govt, profile_nric=profile_nric, page1_text=page1 or text or '')
     if not (govt.get('candidate_nric') or '').strip():
+        _note_ums_refusal(why, text, 'nric_guard')
         return None
     prior_fields = prior.get('fields') if isinstance(prior, dict) else None
+    inputs = {'reader': 'deterministic', 'nric_check': check, **({'rules_lane': lane} if lane else {})}
     return {'fields': merge_over(prior_fields, govt), 'warnings': [], 'error': '', 'capture': 'deterministic',
-            'offer_reader_inputs': {'reader': 'deterministic', 'nric_check': check}}
+            'rules_lane': lane, 'offer_reader_inputs': inputs}
+
+
+def ocr_first_lanes() -> tuple:
+    """The rules lanes switched ON (OCR-first S1, 2026-11-19): the env var ``OCR_FIRST_LANES``, a comma
+    list ("ua:UMS"); a test sets ``settings.OCR_FIRST_LANES``. Empty by default: every lane starts OFF and
+    is switched on only after it passes Gate 1 on held-out letters (docs/plans/ocr-first-roadmap.md).
+    Read here, not in settings/base.py, which is at its size allowance (`test_code_standards`)."""
+    import os
+    from django.conf import settings
+    got = getattr(settings, 'OCR_FIRST_LANES', None)
+    if got is None:
+        got = os.environ.get('OCR_FIRST_LANES', '').split(',')
+    return tuple(v.strip() for v in got if v and v.strip())
+
+
+def rules_lane_verdict(ex) -> str:
+    """Gate 2's last checks for a UNIVERSITY rules read (OCR-first S1): '' when its lane is switched on
+    (`ocr_first_lanes`, default none) AND the catalogue pins exactly ONE course, at the letter's own level
+    and at one campus (`offer_course_match.pinned_match`; the UPU code is extra evidence only). Else WHY
+    the AI reads the letter instead: 'lane_off', 'match_<pinned_match reason>', or 'match_error' when the
+    match raised (logged; review round 1). A government-family read (no ``rules_lane``) is unaffected."""
+    lane = (ex or {}).get('rules_lane') or ''
+    if not lane:
+        return ''
+    if lane not in ocr_first_lanes():
+        return 'lane_off'
+    try:
+        from .offer_course_match import letter_institution, pinned_match, programme_line
+        f = ex.get('fields') or {}
+        reason, _match = pinned_match(programme_line(f.get('programme'), f.get('programme_code')),
+                                      letter_institution(f.get('institution'), f.get('campus')), f.get('issuer') or '')
+    except Exception:  # any fault in the match: the AI reads the letter, as it always could
+        logger.exception('rules lane %s: the catalogue match failed; the AI reads the letter', lane)
+        return 'match_error'
+    return f'match_{reason}' if reason else ''
+
+
+def _ums_family(text) -> bool:
+    """True when `offer_parse.diagnose` reads ``text`` as a UMS letter (the SAME helper,
+    `offer_parse.family_of`: no government family, and the UMS title). `exact_offer_read` uses it twice:
+    with the lane off such a letter goes to the AI before the page-1 layout child or `read_ums` runs
+    (recording 'lane_off', the reason `rules_lane_verdict` gave before review round 3); with the lane on,
+    only such a letter gets the layout child (a government letter that also prints the UMS title does not)."""
+    from .offer_parse import family_of
+    return family_of(text) == 'ums'
+
+
+def rules_lane_open(ex) -> bool:
+    """True when a rules read may stand (`rules_lane_verdict` is ''); False sends the letter to the AI."""
+    return rules_lane_verdict(ex) == ''
 
 
 def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_nric='',
-                     page1_ocr='') -> dict | None:
+                     page1_ocr='', why=None) -> dict | None:
     """Production's Exact read → ``{fields, warnings, error, capture, offer_reader_inputs}``, or None (→ AI).
     ``text`` came from the PDF's text layer exactly when it IS that layer (`vision.ocr_document_full`'s
-    rule); ``page1_ocr`` is accepted for `vision._offer_context`'s shape and not read."""
+    rule); ``page1_ocr`` is accepted for `vision._offer_context`'s shape and not read. ``why``: see
+    `exact_read` (a UMS letter's refusal, for ``offer_reader_inputs['rules_fallback']``)."""
     if image is None and 'pdf' in (content_type or '').lower():
+        _note_ums_refusal(why, text, 'no_pdf_bytes')
         return None                              # a PDF whose bytes are not here: no page 1 to read (H2)
     layer, page1 = pdf_layers(image, content_type)
     from_layer = bool(layer.strip()) and layer.strip() == (text or '').strip()
-    return exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric)
+    from .offer_parse_university import LANE
+    lane_on, ums = LANE in ocr_first_lanes(), _ums_family(text)
+    if not lane_on and ums:                      # review round 3 (option A): no layout child, no read_ums
+        if isinstance(why, dict):
+            why.update(lane=LANE, reason='lane_off')
+        return None
+    layout, page_texts = '', None
+    if lane_on and ums and from_layer and page1.strip():
+        from .pdf_pages import MAX_LAYER_PAGES
+        from .pdf_rules_pages import pdf_page1_layout, pdf_rules_page_texts
+        layout, page_texts = pdf_page1_layout(image), pdf_rules_page_texts(image, MAX_LAYER_PAGES)
+    ex = exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric,
+                    page1_layout=layout, why=why, page_texts=page_texts)
+    lane = (ex or {}).get('rules_lane') or ''
+    if lane and lane in ocr_first_lanes() and from_layer:
+        missing = _not_inked(ex, image, layout, lane)
+        if missing:                              # S-visible 2: the visible page judges; the AI reads it
+            if isinstance(why, dict):
+                why.update(lane=lane, reason='not_inked', ink_missing=missing)
+            return None
+    return ex
+
+
+def _not_inked(ex, image, layout, lane) -> list:
+    """S-visible 2 (owner rule, 20 Nov: "the visible page always judges"): the labels (`pdf_ink.ink_missing`)
+    of the owner phrases and values a rules lock on a TEXT-LAYER PDF relied on that leave no real ink on the
+    rendered page 1; [] when every one does. A lane with no `ink_targets` reader, or any fault, refuses."""
+    try:
+        from .offer_parse_university import LANE, ink_targets
+        from .pdf_ink import ink_missing, page1_ink
+        if lane != LANE:
+            return ['no_targets']
+        phrases, values = ink_targets(ex.get('fields'), layout)
+        return ink_missing(page1_ink(image), phrases, values, lane=lane)   # a Type3 font: `TYPE3_LANES`
+    except Exception:  # fail closed: the AI reads the letter, as it always could
+        logger.exception('rules lane %s: the ink check failed; the AI reads the letter', lane)
+        return ['ink_error']

@@ -12,6 +12,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
 from .. import birth_state
+from .. import course_start
+from .. import fact_bands
 from .. import fail_reasons as fail_reasons_rule
 from .. import pool
 from .. import profile_finalise
@@ -132,6 +134,11 @@ class AdminRecordVerdictView(_AdminBase):
             refusal = decision_refusal(app)
             if refusal:
                 return Response(refusal, status=status.HTTP_400_BAD_REQUEST)
+        # F3 (I-12): Recommend needs the reporting date the cockpit's box asks for. Decline never does.
+        if overall == 'accept' and course_start.recommend_needs_date(app):
+            return Response({'error': 'Record the reporting date before you recommend.',
+                             'code': 'reporting_date_required_before_recommend'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         # ⚠ STAMP THE PREDICTOR WITH ITS SNAPSHOT, IN THE SAME BREATH. The two are one fact: what
         # the AI said, and which engine said it. Splitting them (stamping elsewhere, or later)
@@ -141,10 +148,9 @@ class AdminRecordVerdictView(_AdminBase):
         app.ai_verdict_engine_version = VERDICT_ENGINE_VERSION
         # LL4: what fed that snapshot, same save. Never raises: a failure stores {schema, error}.
         app.ai_verdict_context = verdict_context_or_empty(app)
-        # LL2: kept only for a fact the human failed that THIS snapshot calls verified. Always written
-        # ({} when none), as every other officer_verdict key is; old rows simply have no key.
-        officer_verdict[fail_reasons_rule.KEY] = fail_reasons_rule.keep(
-            fail_reasons, officer_verdict, app.ai_verdict_snapshot)
+        # F3 (I-11): one reason for every failed fact (none given -> Other); a reason on a Pass is
+        # dropped. Always written ({} when nothing failed); old rows simply have no key.
+        officer_verdict[fail_reasons_rule.KEY] = fail_reasons_rule.keep(fail_reasons, officer_verdict)
         app.officer_verdict = officer_verdict
         app.verdict_reason = (request.data.get('reason') or '').strip()
         app.verdict_decided_by = getattr(admin, 'email', '') or ''
@@ -270,7 +276,9 @@ def _accept_refusal(request, app):
     stop = _accept_absolute_stop(app)   # no override passes these (see the helper)
     if stop is not None:
         return stop, [], ''
-    gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
+    # The floor: every 'gap' fact AND (I-10, F2, owner D1 = A) every fact whose band is "Rule not
+    # met" whatever its status - the ONE band home, `fact_bands`, that the tiles render too.
+    gap_facts = fact_bands.floor_facts(build_verdict(app))
     # Request #31 review: the birth-state gate ran at SUBMIT, and an unverified NRIC can
     # be changed after it (a MyKad matching the new number then locks it). An IC that
     # fails the intake's CURRENT rule joins the floor (passed only with a recorded reason).
@@ -299,8 +307,9 @@ class AdminQcDecisionView(_AdminBase):
     the reviewer).
       accept → 'interviewed' → 'recommended' (the case becomes pool-eligible). SOFT FLOOR
                (V5 #5, owner decision 1): refused (400 verdict_gap_floor + the red facts) while
-               any verdict fact is 'gap' — a red income fact must not reach sponsors unexamined.
-               A `super` may pass the floor by providing `override_reason`, which is RECORDED
+               any verdict fact is 'gap' or reads "Rule not met" (I-10, `fact_bands.floor_facts`) —
+               a red income fact must not reach sponsors unexamined.
+               A QC or `super` may pass the floor by providing `override_reason`, which is RECORDED
                (qc_override_reason/_by/_at) — advisory model, but the override leaves a trail.
       reopen → require `comments` (what was missing/the gaps); reopen the decision back to the
                reviewer ('interviewing', reopened banner + DecisionReopen audit) and email the

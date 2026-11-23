@@ -10,9 +10,9 @@ from django.utils import timezone
 from ..genuineness.bands import keep_stored_authenticity
 from ..higher_results import extract as _higher_extract
 from ..income_declaration import read_approval as _read_approval
-from ..read_errors import OCR_SERVICE_FAILED, is_ai_service_error, is_ocr_service_error, read_deferred
+from ..read_errors import EMPTY_ANSWER, OCR_SERVICE_FAILED, is_ai_service_error, is_ocr_service_error, read_deferred
 from .authenticity import add_read_authenticity
-from .judge import doc_student_verdict
+from .judge import _any_field_filled, doc_student_verdict
 from .ocr import _doc_usage_ctx
 from .. import vision as _v   # seams resolve on the package: one patch target reaches every caller
 
@@ -24,7 +24,10 @@ logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name 
 #: the profile's `results_held` is a hint only (1.0.0, unstamped: it vetoed every non-SPM profile).
 #: 1.2.0 (S-visible, 2026-11-18): a PDF whose text is invisible has no layer, so the gate's page-1 text
 #: is the Vision read of the visible page (`_page1_text`), never the hidden layer.
-SLIP_READER_VERSION = 'spm_slip 1.2.0'
+#: 1.3.0 (OCR-first S5, 2026-11-20): the AI fallback reads on 3.8 Flash only (`slip_read.py`) — a
+#: closed grade enum, every answer checked, one 3.8 retry, a malformed answer a failed read; the
+#: diag's ``ai_calls`` says 2 when the retry answered.
+SLIP_READER_VERSION = 'spm_slip 1.3.0'
 
 #: Results that are NOT SPM, by the title the page prints, beside the higher kinds `results_kind`
 #: already recognises (STPM / Matriculation / Asasi / Diploma). Whole words only. A vocational
@@ -179,7 +182,7 @@ def _offer_context(doc, page1_text):
 
 #: Keys of a read kept on the stored record beside its fields (S4: the offer reader's version + inputs).
 _EX_KEPT = ('parser_version', 'stpm_rows_from_entry', 'stpm_rows_sign_from_point', 'approval_read_error',
-            'approval_read_until', 'offer_reader_version', 'offer_reader_inputs')
+            'approval_read_until', 'offer_reader_version', 'offer_reader_inputs', '_slip_ocr_diag')
 
 
 
@@ -209,9 +212,15 @@ def _read_results_slip(doc, ocr, _o, image_fn, pre_words):
             else:
                 ex = _v.extract_document_fields(_text, doc.doc_type)
             ex['capture'] = 'ai'
-            # Record WHY we fell back (+ what Vision read) so the slip can be diagnosed.
-            if isinstance(ex.get('fields'), dict):
-                ex['fields']['_slip_ocr_diag'] = diag
+            calls = ex.pop('slip_calls', None)   # S5: 2 = the 3.8 retry answered
+            ex = _empty_answer_failed(ex)      # OCR-11: judged BEFORE the OCR year backfill below
+            # Record WHY we fell back (+ what Vision read) so the slip can be diagnosed. A failed read
+            # keeps no fields (`_build_read_result`), so it keeps the diagnostic beside them (`_EX_KEPT`).
+            if ex.get('error'):
+                ex['_slip_ocr_diag'] = diag
+            elif isinstance(ex.get('fields'), dict):
+                ex['fields']['_slip_ocr_diag'] = ({**diag, 'ai_calls': calls}
+                                                  if calls and isinstance(diag, dict) else diag)
                 # Backfill the exam YEAR from the OCR text — Gemini's `exam` field drops a
                 # certificate's foot-of-page year, silently killing the exam-year chip.
                 ex['fields']['exam'] = ensure_exam_year(ex['fields'].get('exam', ''), _text)
@@ -220,22 +229,50 @@ def _read_results_slip(doc, ocr, _o, image_fn, pre_words):
     return ex, image
 
 
+def _empty_answer_failed(ex):
+    """OCR-11 (owner 2026-11-21): an AI answer with every real field blank (a white or blank page; the
+    bookkeeping keys `judge.BOOKKEEPING_FIELDS` do not count, and a list or dict counts only if something
+    inside it is filled) is a FAILED read, stored "cannot read" ('unreadable'): never a stored 'ok' that
+    says nothing, never 'wrong_doc' for a page we did not see. It is NOT retried automatically (it is not
+    a service error); the student is asked to upload again, as for any 'unreadable' read."""
+    if not ex.get('error') and isinstance(ex.get('fields'), dict) and not _any_field_filled(ex['fields']):
+        return {**ex, 'fields': {}, 'warnings': [], 'error': EMPTY_ANSWER}
+    return ex
+
+
+def _read_higher_results(doc, ocr, image_fn):
+    """Higher results (`higher_results.extract`). OCR-11: an all-empty AI answer is a failed read (the
+    routing detection `results_kind_*` is not a field). Its own definition so the model register can pin it."""
+    ex = _higher_extract(doc, ocr, image_fn, _v.extract_document_fields)
+    return _empty_answer_failed(ex) if ex.get('capture') == 'ai' else ex
+
+
 def _read_offer_letter(doc, ocr, _o, image_fn):
     """``(ex, image)``. STANDARDISED government offers (STPM / Matrikulasi / Polytechnic) read
     DETERMINISTICALLY from the OCR text — `offer_exact` (S5): the parser, the IC guard, the merge over
     the prior read; None unless it locks. Every other letter goes to the Gemini IMAGE read —
-    `offer_reader` (S4)."""
-    from ..offer_exact import exact_offer_read
+    `offer_reader` (S4). A UNIVERSITY rules read (OCR-first S1: UMS) stands only when its lane is
+    switched on and the catalogue pins one course (`offer_exact.rules_lane_verdict`); else the AI reads it,
+    and its read records the lane and why (``offer_reader_inputs['rules_fallback']``, review round 1) —
+    also when the UMS rules read itself refused ('read_<reason>', review round 2)."""
+    from ..offer_exact import exact_offer_read, rules_lane_verdict
     image = image_fn()
     _r = ocr if (ocr is not None) else _v.ocr_document(doc)
     _otext = (_o.get('text') if _o.get('text') is not None else (_r or {}).get('text', '')) or ''
     _ctx = _offer_context(doc, _otext)
+    refused = {}
     ex = exact_offer_read(_otext, prior=getattr(doc, 'vision_fields', None), image=image,
-                          content_type=doc.content_type, **_ctx)
+                          content_type=doc.content_type, why=refused, **_ctx)
+    why = rules_lane_verdict(ex) if ex is not None else ''
+    fallback = {'lane': ex.get('rules_lane'), 'reason': why} if why else (refused if ex is None and refused else None)
+    if fallback:
+        ex = None
     if ex is None:
         ex = (_v.extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type, **_ctx)
               if image is not None else _v.extract_document_fields(_otext, doc.doc_type, **_ctx))
         ex['capture'] = 'ai'
+        if fallback:
+            ex['offer_reader_inputs'] = {**(ex.get('offer_reader_inputs') or {}), 'rules_fallback': fallback}
     return ex, image
 
 
@@ -343,7 +380,7 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
     elif doc.doc_type == 'offer_letter':
         ex, image = _read_offer_letter(doc, ocr, _o, _image)
     elif doc.doc_type == 'higher_results':
-        ex = _higher_extract(doc, ocr, _image, _v.extract_document_fields)
+        ex = _read_higher_results(doc, ocr, _image)
     elif doc.doc_type == 'birth_certificate':
         ex = _read_birth_certificate(doc, ocr, _image, pre_words)
     else:

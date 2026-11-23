@@ -3,7 +3,7 @@
  *
  * Mobile M6a — the case list on a phone (owner-approved mock-up): rows that open the case as a whole, the
  * filters in the shared Sheet over the SAME state as the desktop row, a Sort select over the SAME server sort
- * the table headers drive, and the Assign control's reasons written out instead of hidden in a tooltip.
+ * the table headers drive, and the Assigned cell as plain text (F1 / I-13: no picker in the list).
  * jsdom has no media queries, so the phone block and the desktop table are both in the DOM; every query
  * here is scoped to the phone block (`application-cards`, `list-phone-tools`) or the Sheet.
  */
@@ -23,8 +23,6 @@ jest.mock('@/lib/programmeScope', () => ({ useProgrammeScope: () => ({ chosen: '
 
 const mockApi = api as jest.Mocked<typeof api>
 type Row = api.AdminScholarshipListData['applications'][number]
-// Request #75: the rows sit at Interviewing, because at Awaiting review the list offers no picker
-// (the cell is plain text; assigning or rejecting before interview happens on the case's page).
 const row = (id: number, extra: Partial<Row> = {}) => ({
   id, name: `Pelajar ${id}`, profile_id: null, cohort_code: 'c', qualification: 'spm', spm_a_count: 6,
   stpm_pngk: null, referral_source: null, merit_score: 80, call_language: '', status: 'interviewing',
@@ -49,7 +47,7 @@ const phone = async () => screen.findByTestId('application-cards')
 const lastCall = () => mockApi.getScholarshipApplications.mock.calls.at(-1)?.[0]
 
 describe('the case list on a phone (Mobile M6a)', () => {
-  it('the WHOLE row opens the case: name, status and merit are inside one link, Assign is outside it', async () => {
+  it('the WHOLE row opens the case: name, status and merit are inside one link, the Assigned text is outside it', async () => {
     render(<AdminScholarshipList />)
     const list = await phone()
     await waitFor(() => expect(within(list).getAllByText(/^Pelajar /)).toHaveLength(3))
@@ -58,70 +56,37 @@ describe('the case list on a phone (Mobile M6a)', () => {
     expect(link.textContent).toContain('admin.scholarship.merit')
     expect(link.querySelector('select')).toBeNull()
     const firstRow = link.closest('[data-app-row]') as HTMLElement
-    expect(within(firstRow).getByRole('combobox', { name: 'admin.scholarship.assigned' }).closest('a')).toBeNull()
+    expect(within(firstRow).getAllByText('—').some((d) => d.closest('a') === null)).toBe(true)
   })
 
-  it('says WHY an Assign is asleep in words, never in a hover-only title', async () => {
-    render(<AdminScholarshipList />)
-    const list = await phone()
-    await waitFor(() => expect(within(list).getAllByRole('combobox')).toHaveLength(3))
-    expect(list.querySelector('[title]')).toBeNull()
-    const reasons = Array.from(list.querySelectorAll('[data-assign-reason]')).map((n) => n.textContent)
-    expect(reasons).toEqual(['admin.scholarship.assign.error.not_assignable', 'admin.scholarship.assign.error.not_ready'])
-  })
-
-  it('an assign that fails shows its reason under the row, as the table does', async () => {
-    mockApi.assignApplication.mockRejectedValue(new Error('reviewer_paused'))
-    render(<AdminScholarshipList />)
-    const list = await phone()
-    await waitFor(() => expect(within(list).getAllByRole('combobox')).toHaveLength(3))
-    fireEvent.change(within(list).getAllByRole('combobox')[0], { target: { value: '7' } })
-    expect(await within(list).findByText('admin.scholarship.assign.error.reviewer_paused')).toBeTruthy()
-  })
-
-  it('TD-501: a gift_mismatch refusal says so in words, not the generic error', async () => {
-    mockApi.assignApplication.mockRejectedValue(new Error('gift_mismatch'))
-    render(<AdminScholarshipList />)
-    const list = await phone()
-    await waitFor(() => expect(within(list).getAllByRole('combobox')).toHaveLength(3))
-    fireEvent.change(within(list).getAllByRole('combobox')[0], { target: { value: '7' } })
-    expect(await within(list).findByText('admin.scholarship.assign.error.gift_mismatch')).toBeTruthy()
-  })
-
-  it('TD-634: a reviewer of another organisation is refused in words, not the generic error', async () => {
-    mockApi.assignApplication.mockRejectedValue(new Error('wrong_organisation'))
-    render(<AdminScholarshipList />)
-    const list = await phone()
-    await waitFor(() => expect(within(list).getAllByRole('combobox')).toHaveLength(3))
-    fireEvent.change(within(list).getAllByRole('combobox')[0], { target: { value: '7' } })
-    expect(await within(list).findByText('admin.scholarship.assign.error.wrong_organisation')).toBeTruthy()
-  })
-
-  it('M2d A1: a not_signed_in refusal names the person, in words', async () => {
-    mockApi.assignApplication.mockRejectedValue(new Error('not_signed_in'))
-    render(<AdminScholarshipList />)
-    const list = await phone()
-    await waitFor(() => expect(within(list).getAllByRole('combobox')).toHaveLength(3))
-    fireEvent.change(within(list).getAllByRole('combobox')[0], { target: { value: '7' } })
-    expect(await within(list).findByText('admin.scholarship.assign.error.not_signed_in|Balan')).toBeTruthy()
-  })
-
-  it('Request #75: at Awaiting review the cell is plain text, "Unassigned" or the reviewer, with no picker', async () => {
+  it('F1 / I-13: the Assigned cell is plain text at every stage, with no picker in the list', async () => {
     mockApi.getScholarshipApplications.mockResolvedValue({
-      count: 2, total_count: 2, total_pages: 1, page: 1, page_size: 25, next: null, previous: null,
-      applications: [row(1, { status: 'profile_complete' }),
-        row(2, { status: 'profile_complete', assigned_to_id: 7, assigned_to_name: 'Balan' })],
+      count: 5, total_count: 5, total_pages: 1, page: 1, page_size: 25, next: null, previous: null,
+      applications: [
+        row(1, { status: 'profile_complete', call_language: 'ta' }),
+        row(2, { status: 'profile_complete', assigned_to_id: 7, assigned_to_name: 'Balan' }),
+        row(3, { status: 'profile_complete', ready_for_assignment: false, ready_on: '2026-12-01T09:00:00+08:00' }),
+        row(4, { status: 'interviewing', assigned_to_id: 7, assigned_to_name: 'Balan' }),
+        row(5, { status: 'rejected' }),
+      ],
     })
     render(<AdminScholarshipList />)
     const list = await phone()
-    await waitFor(() => expect(list.querySelectorAll('[data-assigned-plain]')).toHaveLength(2))
-    expect(Array.from(list.querySelectorAll('[data-assigned-plain]')).map((n) => n.textContent))
-      .toEqual(['admin.scholarship.unassigned', 'Balan'])
+    await waitFor(() => expect(list.querySelectorAll('[data-assigned-plain]')).toHaveLength(5))
+    const texts = (root: Element) => Array.from(root.querySelectorAll('[data-assigned-plain]')).map((n) => n.textContent)
+    const want = [
+      expect.stringContaining('admin.programmeOverview.attention.unassigned'),
+      'Balan',
+      expect.stringContaining('admin.scholarship.assignedCell.notReady'),
+      'Balan',
+      '—',
+    ]
+    expect(texts(list)).toEqual(want)
     expect(within(list).queryByRole('combobox', { name: 'admin.scholarship.assigned' })).toBeNull()
     const table = screen.getByRole('table')
-    expect(Array.from(table.querySelectorAll('[data-assigned-plain]')).map((n) => n.textContent))
-      .toEqual(['admin.scholarship.unassigned', 'Balan'])
+    expect(texts(table)).toEqual(want)
     expect(table.querySelector('tbody select')).toBeNull()
+    expect(list.querySelector('select')).toBeNull()
   })
 
   it('Sort asks the SERVER for the column and direction the table headers would', async () => {

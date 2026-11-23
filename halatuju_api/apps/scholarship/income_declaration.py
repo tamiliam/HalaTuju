@@ -37,6 +37,7 @@ import re
 from datetime import timedelta
 
 from .genuineness.declaration_doc import DECLARATION
+from .read_errors import EMPTY_ANSWER
 
 _STR = {'type': 'string'}
 #: The approval fields — read from the document's IMAGE (`read_approval`), never from its OCR text.
@@ -133,7 +134,10 @@ def read_approval(doc, ex, ocr_text, image_fn):
     def failed(why):
         from django.utils import timezone
         prior = getattr(doc, 'vision_fields', None)
-        until = prior.get(APPROVAL_UNTIL) if isinstance(prior, dict) else None
+        prior = prior if isinstance(prior, dict) else {}
+        until = prior.get(APPROVAL_UNTIL)
+        if why == EMPTY_ANSWER and prior.get(APPROVAL_ERROR) == EMPTY_ANSWER:
+            until = int(timezone.now().timestamp())     # OCR-11: the ONE retry saw a white page again: stop
         return {**ex, APPROVAL_ERROR: why,
                 APPROVAL_UNTIL: until or int((timezone.now() + APPROVAL_RETRY_WINDOW).timestamp())}
     from .genuineness.declaration_doc import income_doc_genuineness
@@ -154,11 +158,71 @@ def read_approval(doc, ex, ocr_text, image_fn):
         img, mime = vision._as_image_for_gemini(data, getattr(doc, 'content_type', '')) if data else (None, '')
     if img is None:
         return failed('no image')
+    if approval_page_white(img):    # OCR-11: a white page is never sent, and never stored as a CHECKED read
+        return failed(EMPTY_ANSWER)
     got = vision._call_gemini_json(APPROVAL_PROMPT, _APPROVAL_SCHEMA, image=img, mime_type=mime)
     if not isinstance(got, dict) or got.get('_error'):
         return failed(str((got or {}).get('_error') or 'no answer')[:200] if isinstance(got, dict) else 'no answer')
     approval = {k: (got.get(k) if isinstance(got.get(k), str) else '') for k in APPROVAL_FIELDS}
     return {**ex, 'fields': {**ex['fields'], **approval}}
+
+
+#: OCR-11 round 1: a pixel darker than this grey level (0-255) is ink. Paper in a phone photo, a scanner's
+#: grey and every printed or written mark sit below it; a white render and JPEG noise on white sit above it.
+PAGE_INK_LEVEL = 200
+#: The share of ink pixels under which the image the approval read would send is a WHITE page (a blank
+#: render, or white apart from a footer "Page 1 of 1" or a thin bar). Set from the fixture measurement
+#: (CHANGELOG, OCR-11 round 1): every genuine income scan and photo sits far above it.
+WHITE_PAGE_INK_SHARE = 0.002
+#: OCR-11 round 2, a decompression-bomb guard (`staff_photo.MAX_PIXELS`'s 16 MP): an image larger than this,
+#: read from the HEADER (round 4: before any draft, every format), is never decoded here and is not white.
+WHITE_CHECK_MAX_PIXELS = 16_000_000
+#: Round 3: the only formats the white check opens. Some PIL openers decode the whole image inside `open`,
+#: before any size check (an ICO wrapping a huge PNG); any other format is not white (the read goes ahead).
+#: HEIF is added only while `pillow_heif` has registered it (`imaging.convert_heic_to_jpeg`).
+#: Round 4: TIFF dropped (a small header over one huge tile is decoded whole); a TIFF page gets the paid read.
+WHITE_CHECK_FORMATS = ('JPEG', 'PNG', 'GIF', 'BMP', 'WEBP')
+
+
+def approval_page_white(img: bytes) -> bool:
+    """OCR-11 round 1 (owner 2026-11-21): the page image itself is (nearly) all white — under
+    `WHITE_PAGE_INK_SHARE` of its pixels are ink (`PAGE_INK_LEVEL`). Then nothing on it can be read, so the
+    approval read FAILS (`read_errors.EMPTY_ANSWER`, no paid call) instead of a checked read that
+    `approval_missing` calls unapproved. Judged on the IMAGE, never on the model's answer: a genuine
+    unmarked document (an unsigned typed self-declaration, a handwritten note) answers "no header, no
+    approver" too, and must stay a checked, unapproved read. An image PIL cannot open is not white (the
+    read is made as before). One C pass over the pixels; a large JPEG is decoded at a reduced scale.
+    Round 2: an image over `WHITE_CHECK_MAX_PIXELS`, and a 16/32-bit or float one (modes I, I;16..., F —
+    PIL clips those to 8-bit instead of scaling, so dark ink would read as white), is not white either.
+    Round 3: only `WHITE_CHECK_FORMATS` are opened, and an image over the cap that is not a baseline JPEG
+    is not white BEFORE the draft (libjpeg holds a progressive JPEG's full-size buffer whatever the scale).
+    Round 4: the header-size cap applies to EVERY format before any draft or decode (a baseline JPEG with one
+    scan per colour is not marked progressive, yet libjpeg holds its full buffer too), and TIFF is no longer
+    opened (one huge tile behind a small header is decoded whole)."""
+    import io
+    from PIL import Image
+    formats = WHITE_CHECK_FORMATS + (('HEIF',) if 'HEIF' in Image.OPEN else ())
+    try:
+        with Image.open(io.BytesIO(img), formats=formats) as im:   # the header only: nothing is decoded yet
+            if im.mode in ('I', 'F') or im.mode.startswith('I;'):
+                return False
+            if im.width * im.height > WHITE_CHECK_MAX_PIXELS:   # round 4: every format, by the header size
+                return False
+            if im.format in ('JPEG', 'MPO'):
+                im.draft('L', (1600, 1600))
+            if im.width * im.height > WHITE_CHECK_MAX_PIXELS:
+                return False
+            if im.mode in ('RGBA', 'LA', 'PA') or (im.mode == 'P' and 'transparency' in im.info):
+                rgba = im.convert('RGBA')
+                page = Image.new('RGBA', rgba.size, (255, 255, 255, 255))
+                page.alpha_composite(rgba)
+                grey = page.convert('L')
+            else:
+                grey = im.convert('L')
+        counts = grey.histogram()
+        return sum(counts[:PAGE_INK_LEVEL]) < WHITE_PAGE_INK_SHARE * max(1, grey.width * grey.height)
+    except Exception:
+        return False
 
 
 #: Round 3 (TD-390's pattern): an approval image read that failed on OUR side is retried by the hourly sweep

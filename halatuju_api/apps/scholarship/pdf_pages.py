@@ -533,12 +533,14 @@ def pdf_page_count(data: bytes) -> int:
 
 def pdf_page_texts(data: bytes, max_pages: int) -> list:
     """The VISIBLE text layer of each of the first ``max_pages`` pages (`_layer_pages`' first run), one
-    string per page ([] if none / encrypted / unreadable): a page whose text is invisible or cannot be
+    string per page ([] if none / unreadable): a page whose text is invisible or cannot be
     checked is '' — decided PER PAGE (S-visible, 2026-11-18), so it reads as a scanned page, and a drawn
     page after a hidden page 1 keeps its text (only then are those pages walked again, one by one: the
     shared read stops at a hidden page 1); EVERY page is '' when the walk ran past the operation budget.
     Pass a page through `usable_text_layer` before trusting it. pypdf raises many kinds on a damaged file,
-    so any failure is no layer — the safe answer: the images are still shown."""
+    so any failure is no layer — the safe answer: the images are still shown. An encrypted PDF that opens
+    with the empty password is read like any other (`pdf_rules_pages.pdf_rules_page_texts` refuses it for a
+    rules lane)."""
     opened = []                            # one open and parse of the PDF for both reads below
     read = _layer(data, 0, opened)
     n = min(read.pages, max(0, max_pages), MAX_LAYER_PAGES - (_TAIL_PAGES if read.pages > MAX_LAYER_PAGES else 0))

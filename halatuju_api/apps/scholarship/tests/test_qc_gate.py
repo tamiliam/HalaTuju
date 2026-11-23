@@ -386,7 +386,7 @@ class TestDeclineToQc(TestCase):
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestQcGapFloor(TestCase):
     """V5 #5 (owner decision 1): QC-Accept is blocked while any verdict fact is red/'gap' —
-    400 verdict_gap_floor naming the red facts. Only a `super` passes it, and only with a
+    400 verdict_gap_floor naming the red facts. A `qc` or `super` passes it, and only with a
     recorded override reason (qc_override_reason/_by/_at). The fixture app deliberately has
     NO documents, so the REAL build_verdict is all-gaps — no mocking on the refusal paths."""
 

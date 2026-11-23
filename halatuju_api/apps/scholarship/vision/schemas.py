@@ -26,11 +26,75 @@ _STR = {'type': 'string'}
 _STR_SOURCE = {'type': 'string', 'enum': ['letter', 'semakan_status', 'dashboard', 'unknown']}
 
 
-def _doc_schema(props: dict) -> dict:
-    """An object schema with the given string fields + a shared warnings array."""
+#: OCR-first S5: the grades an SPM slip carries — exactly `academic_engine._GRADE_TOKENS` (a test
+#: asserts it). The slip read's schema allows these plus `SLIP_BLANK` (the cell could not be read).
+SLIP_GRADES = ('A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G', 'TH')
+#: Fix round 4: Gemini refuses an empty string in an enum (400 INVALID_ARGUMENT "enum[11]: cannot
+#: be empty" on every call of the paid gate), so an unreadable grade cell is this word instead.
+#: `sanitize.clean_slip_grade` turns it back into '' — it is never stored, and never a grade.
+SLIP_BLANK = 'BLANK'
+_SLIP_GRADE = {'type': 'string', 'enum': [*SLIP_GRADES, SLIP_BLANK]}
+
+
+_GEMINI_TYPES = frozenset({'string', 'number', 'integer', 'boolean', 'array', 'object'})
+#: Short-check LOW-6: the only schema keywords the check knows (and checks). Any other keyword
+#: ("additionalProperties", "$ref", "anyOf", …) is flagged, since nothing here vouches for it.
+_GEMINI_KEYWORDS = frozenset({'type', 'enum', 'properties', 'required', 'items'})
+
+
+def gemini_schema_problems(schema, path='schema') -> list:
+    """What Gemini's structured output would refuse in ``schema`` (fix round 4: the SDK sends a
+    schema unchecked, and the API answered 400 INVALID_ARGUMENT on every slip call for an empty
+    enum member). Empty when the schema is fine. Checked: only known keywords (`_GEMINI_KEYWORDS`);
+    a known type; an enum is a non-empty list of distinct non-empty strings on a string field; an
+    object has a non-empty properties object and requires only keys it has; an array has items.
+    Recurses into properties and items."""
+    if not isinstance(schema, dict):
+        return [f'{path}: not an object']
+    problems, kind = [], schema.get('type')
+    for word in sorted(set(schema) - _GEMINI_KEYWORDS, key=str):
+        problems.append(f'{path}.{word}: a keyword this check does not know')
+    if kind not in _GEMINI_TYPES:
+        problems.append(f'{path}.type: {kind!r} is not a Gemini type')
+    if 'enum' in schema:
+        enum = schema['enum']
+        if not isinstance(enum, list) or not enum:
+            problems.append(f'{path}.enum: must be a non-empty list')
+        else:
+            if kind != 'string':
+                problems.append(f'{path}.enum: only a string field may have an enum')
+            for i, v in enumerate(enum):
+                if not isinstance(v, str) or not v.strip():
+                    problems.append(f'{path}.enum[{i}]: {v!r} - each member must be a non-empty string')
+            if len(set(map(str, enum))) != len(enum):
+                problems.append(f'{path}.enum: repeats a member')
+    if kind == 'object':
+        props = schema.get('properties')
+        if not isinstance(props, dict) or not props:
+            problems.append(f'{path}.properties: an object needs at least one property')
+            props = {}
+        for name, sub in props.items():
+            problems += gemini_schema_problems(sub, f'{path}.properties[{name}]')
+        required = schema.get('required', [])
+        if not isinstance(required, list) or any(r not in props for r in required):
+            problems.append(f'{path}.required: names a key the object does not have')
+    if kind == 'array':
+        if 'items' not in schema:
+            problems.append(f'{path}.items: an array needs items')
+        else:
+            problems += gemini_schema_problems(schema['items'], f'{path}.items')
+    return problems
+
+
+def _doc_schema(props: dict, required=None) -> dict:
+    """An object schema with the given string fields + a shared warnings array; ``required``
+    (OCR-first S5) lists the keys the answer must carry."""
     out = dict(props)
     out['warnings'] = {'type': 'array', 'items': {'type': 'string'}}
-    return {'type': 'object', 'properties': out}
+    schema = {'type': 'object', 'properties': out}
+    if required:
+        schema['required'] = list(required)
+    return schema
 
 
 _FIELD_SCHEMAS = {
@@ -70,10 +134,17 @@ _FIELD_SCHEMAS = {
     # Cemerlang Tinggi / …) — a SECOND, redundant encoding of the grade printed on the
     # slip. The academic engine cross-checks letter↔band to catch row-transposition
     # misreads (e.g. Matematik A vs Sains A+ swapped) and degrades to 'check' on conflict.
+    # OCR-first S5 (2026-11-20): the slip read moves to 3.8 Flash, which wrote malformed grades on
+    # 26 of 98 slips ("Aplus", stray JSON / tab / CJK). So the GRADE is a closed enum (the
+    # academic engine's _GRADE_TOKENS plus SLIP_BLANK for an unreadable cell) and every key is required;
+    # vision/slip_read.py still checks every answer, since a schema is a request, not a promise.
     'results_slip': _doc_schema({'candidate_name': _STR, 'exam': _STR,
-                                 'results': {'type': 'array', 'items': {'type': 'object',
-                                             'properties': {'subject': _STR, 'grade': _STR,
-                                                            'band': _STR}}}}),
+                                 'results': {'type': 'array', 'items': {
+                                     'type': 'object',
+                                     'properties': {'subject': _STR, 'grade': _SLIP_GRADE,
+                                                    'band': _STR},
+                                     'required': ['subject', 'grade', 'band']}}},
+                                required=['candidate_name', 'exam', 'results']),
     # Pathway Check-1: the offer letter's facts. Its schema, prompt, inputs (up to 3 pages + the PDF
     # text layer) and version live in offer_reader.py (offer exact-read S4, 2026-11-01), where
     # extract_document_fields sends every offer read.
@@ -155,7 +226,10 @@ _DOC_HINTS = {
                      'differ, trust the BAND. Read strictly row by row: the grade and band '
                      'belong to the subject printed on the SAME line; NEVER carry a grade or '
                      'band up or down to a different subject, even if the slip is faint or '
-                     'watermarked. Ignore the "Ujian Lisan" line and any watermark text.'),
+                     'watermarked. Ignore the "Ujian Lisan" line and any watermark text. '
+                     'Write each grade as EXACTLY one of A+, A, A-, B+, B, C+, C, D, E, G, TH '
+                     '(plain characters, no words such as "plus"), or the word BLANK if the '
+                     'row\'s grade cannot be read.'),
     'str': (' This is meant to be a Malaysian STR (Sumbangan Tunai Rahmah) proof. It should be ONE '
             'of three recognised kinds — set "source_type" to: "letter" (an official Kementerian '
             'Kewangan STR APPROVAL letter — KEMENTERIAN KEWANGAN letterhead, a "No. Rujukan" + '

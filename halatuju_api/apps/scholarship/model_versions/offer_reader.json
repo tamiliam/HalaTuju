@@ -8,5 +8,20 @@
     "digest": "196cffe3cbf7cad10f278d1fd86c0a8812bb2ef1aab976706b4d962df5ca0f7e",
     "note": "2026-11-19: main's OCR-first S-visible work (owner decision 2026-11-18): the visible page judges, so a PDF page with an invisible text layer is read like a scanned page. The change sits in pdf_pages.py and the new pdf modules, which this register does not list (see the technical debt row); the digest of the listed files is the same as under 2.6.0.",
     "also_ok": []
+  },
+  "2.8.0": {
+    "digest": "196cffe3cbf7cad10f278d1fd86c0a8812bb2ef1aab976706b4d962df5ca0f7e",
+    "note": "2026-11-19: OCR-first S1: a UMS offer letter can be read by fixed rules first (switched off by default); the AI reader is the fallback and records why. The listed files' digest is unchanged (version line and comments only); prompt and schema unchanged.",
+    "also_ok": []
+  },
+  "2.9.0": {
+    "digest": "196cffe3cbf7cad10f278d1fd86c0a8812bb2ef1aab976706b4d962df5ca0f7e",
+    "note": "2026-11-19: OCR-first S1c (TD-699): the UMS rules read (offer_parse 2.2.0) refuses more letters; the page-1 layout child runs only for a UMS-family letter with the lane on. The listed files digest is unchanged (version line and comments only); prompt and schema unchanged.",
+    "also_ok": []
+  },
+  "2.10.0": {
+    "digest": "f2412f9820a4bc3934d919645da73d555140f6d818eb1d1e5c7319cdd2099fea",
+    "note": "2026-11-21: OCR-11 (owner decision 2026-11-21): an answer with every offer field blank after the second read (a white or blank page) is returned as a failed read (read_errors.EMPTY_ANSWER), stored as cannot read, never as an 'ok' offer that says nothing. Prompt, schema, inputs and calls unchanged.",
+    "also_ok": []
   }
 }

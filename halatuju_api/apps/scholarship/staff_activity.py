@@ -226,6 +226,10 @@ META_KEYS = {
     'fields': CODES, 'added': CODES, 'removed': CODES,
     # LL2b: the QC's second look on a `qc_decision` row (fact names only; see `second_look.activity_meta`)
     'qc_agreed': CODES, 'qc_disagreed': CODES, 'doubt_ai_green': CODES, 'doubt_failed_accepted': CODES,
+    # F3 review round 2: the decliner's own four facts on a reject before interview's `declined` row
+    # (fact names and Fail reason codes only; see `services/pre_interview.assessment_meta`)
+    'facts_passed': CODES, 'facts_failed': CODES, 'assessment_kept': BOOL,
+    'why_identity': CODE, 'why_academic': CODE, 'why_pathway': CODE, 'why_income': CODE,
 }
 _CODE = re.compile(r'^[a-z0-9][a-z0-9_]{0,39}$')
 #: The longest list a CODES value may hold (the permission catalogue has 8 keys).

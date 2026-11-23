@@ -233,8 +233,8 @@ class TestReportingDateIsTheDateOnly(SimpleTestCase):
 class TestConventionsAndShape(SimpleTestCase):
     def test_version_and_output_shape(self):
         r = parse_govt_offer(POLY_NOISY)
-        self.assertEqual(PARSER_VERSION, '2.0.1')
-        self.assertEqual(r['_offer_parser_version'], '2.0.1')
+        self.assertEqual(PARSER_VERSION, '2.3.0')
+        self.assertEqual(r['_offer_parser_version'], '2.3.0')
         self.assertEqual(r['campus'], '')
         self.assertEqual((r['programme'], r['programme_code']), ('DIPLOMA KEJURUTERAAN AWAM', 'DKA'))
 
@@ -284,6 +284,17 @@ class TestReviewFixes(SimpleTestCase):
             for bait in ('SESI', 'Tarikh', 'K/P', 'No. Kad Pengenalan', '2.1. Bidang', '8 HINGGA', '12'):
                 assert_linear(self, diagnose, lambda n: text + '\n' + bait + ' ' * n + 'x\n' + bait + ' ' * n,
                               3000, bait)
+
+    def test_m1_a_long_space_run_never_hangs_the_ums_reader(self):
+        """OCR-first S1 review round 1 (#13): the UMS family too, as Vision text and as layout text."""
+        from apps.scholarship.tests.test_offer_parse_university import ums
+        for bait in ('untuk mendapat', 'Tarikh Lapor Diri', 'Program :', 'Kampus :', 'Tarikh :', '28 - 29',
+                     '28 September hingga', 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA SABAH', 'UH'):
+            def make(n, b=bait):
+                return ums() + '\n' + b + ' ' * n + 'x\n' + b + ' ' * n
+            for read in (diagnose, lambda t: diagnose(t, page1_text=t, page1_layout=t)):
+                with self.subTest(bait=bait):
+                    assert_linear(self, read, make, 3000, bait)
 
     def test_m2_a_portal_page_quoting_the_title_never_locks(self):
         portal = MATRIC_SPLIT.replace(

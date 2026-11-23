@@ -209,6 +209,23 @@ class TestTheDigestHidesNothing(SimpleTestCase):
             self.assertEqual(registry.pin_imports(tmp, 'apps/x/engine.py', 'unrelated'),
                              [('apps/x/other.py', 'U')])
 
+    def test_deleting_an_ocr11_empty_read_call_moves_the_results_doc_digest(self):
+        """OCR-11 review round 2: pinning the checks alone let a deleted CALL keep the digest; the
+        callers (`read_approval`, `_read_higher_results`) are pinned now."""
+        real, base = registry._model_text, registry.model_digest(API_ROOT, 'results_doc')
+        cuts = (('apps/scholarship/income_declaration.py', 'if approval_page_white(img):', 2),
+                ('apps/scholarship/income_declaration.py', 'if why == EMPTY_ANSWER and prior.get(', 2),
+                ('apps/scholarship/vision/field_extraction.py', "return _empty_answer_failed(ex) if ex.get('capture')", 1))
+        for rel, marker, count in cuts:
+            def cut(root, path, rel=rel, marker=marker, count=count):
+                lines = real(root, path).split('\n')
+                if path != rel:
+                    return '\n'.join(lines)
+                at = next(i for i, line in enumerate(lines) if marker in line)
+                return '\n'.join(lines[:at] + (['    return ex'] if count == 1 else []) + lines[at + count:])
+            with self.subTest(marker=marker), mock.patch.object(registry, '_model_text', side_effect=cut):
+                self.assertNotEqual(registry.model_digest(API_ROOT, 'results_doc'), base)
+
     def test_the_supporting_doc_note_names_its_one_live_path(self):
         note = registry.load_version_log(API_ROOT, 'supporting_doc')['1.0.0']['note']
         self.assertIn('STR fallback', note)

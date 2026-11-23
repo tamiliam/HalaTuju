@@ -75,9 +75,10 @@ JOBS = [
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
      'module': 'apps/scholarship/vision/gemini_read.py'},   # audit A3.1: vision.py became a package
-    # Gemini Phase 2 Option A (owner, 2026-11-14): the SPM results slip stays on 2.5 Flash first —
-    # 3.8 returned malformed grades on 26 of 98 slips in the paid eval. Same file as doc_read; its
-    # own row so the screen shows the exception rather than hiding it inside "Reading a document".
+    # The SPM results slip: kept on 2.5 Flash by Gemini Phase 2 Option A (2026-11-14), moved to
+    # 3.8 Flash ONLY by OCR-first S5 (2026-11-20) — checked answers, one 3.8 retry, no 2.5 tail
+    # (vision/slip_read.py, entered from gemini_read.py). Its own row so the screen shows the
+    # difference rather than hiding it inside "Reading a document".
     {'key': 'results_slip_read', 'label': 'Reading an SPM results slip',
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'vision.doc_read_cascade(results_slip)',

@@ -23,7 +23,7 @@ jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string) => k, locale: 'en' }),
 }))
 
-const zero = { engine_wrong: 0, read_wrong: 0, new_information: 0, programme_rule: 0, other: 0 }
+const zero = { document_false: 0, documents_differ: 0, interview_differs: 0, proof_missing: 0, other: 0 }
 const withReasons = () => metrics({
   fact_counts: {
     identity: counts({ green: 50, green_failed: 0, green_agreed: 50, green_agree_rate: 1 }),
@@ -33,8 +33,8 @@ const withReasons = () => metrics({
   },
   fail_reasons: {
     identity: zero,
-    academic: { ...zero, new_information: 2, read_wrong: 1 },
-    pathway: { ...zero, programme_rule: 4 },
+    academic: { ...zero, interview_differs: 2, documents_differ: 1 },
+    pathway: { ...zero, proof_missing: 4 },
     income: { ...zero, other: 1 },
   },
   fail_reasons_not_given: { identity: 0, academic: 0, pathway: 0, income: 1 },
@@ -43,16 +43,16 @@ const withReasons = () => metrics({
 describe('reason counts on the card', () => {
   it('prints each fact\'s counts, in the fixed order, with "Not given" last', () => {
     render(<AiPredictionBlock ai={withReasons()} t={t} />)
-    expect(screen.getByTestId('ai-reasons-academic').textContent).toBe('The document was read wrong 1 · New information (interview, call) 2')
+    expect(screen.getByTestId('ai-reasons-academic').textContent).toBe('The documents show something different 1 · The interview or a call showed something different 2')
     expect(screen.getByTestId('ai-reasons-income').textContent).toBe('Other 1 · Not given 1')
   })
 
-  // LL2b fix: this asserted the bare 'A programme rule 4' while the cell ignored the served
+  // LL2b fix: this asserted the bare count line while the cell ignored the served
   // `few_green` flag. The cell now carries the same "Few cases" pill as the rest of the card.
   it('a few-cases fact shows plain counts (never a percent) and the "Few cases" pill', () => {
     render(<AiPredictionBlock ai={withReasons()} t={t} />)
     const cell = screen.getByTestId('ai-reasons-pathway')
-    expect(cell.textContent).toBe('A programme rule 4 Few cases')
+    expect(cell.textContent).toBe('Proof is missing or unclear 4 Few cases')
     expect(cell.querySelector('[data-testid="few-pill"]')).not.toBeNull()
     expect(cell.textContent).not.toMatch(/%/)
   })

@@ -8,14 +8,31 @@ from .schemas import _NAME_FIELD
 from .match import address_match
 
 
+#: OCR-11 (owner 2026-11-21): keys stored among a read's fields that say HOW it was read, never WHAT the
+#: page says, so they never make a read "filled". `candidate_nric_source` (the offer reader's IC source;
+#: `offer_ic.guard_nric` writes 'none' on every read with no IC) made an all-empty offer read 'ok'.
+#: `_slip_ocr_diag` (why a results slip fell back to the AI read, always a non-empty dict) did the same to
+#: an all-empty slip read. `results_kind_detected` / `results_kind_markers` / `results_kind_issuer` (the
+#: routing detection `higher_results.extract` stores beside a higher-results read) are ours too.
+BOOKKEEPING_FIELDS = frozenset({'candidate_nric_source', '_slip_ocr_diag', 'results_kind_detected',
+                                'results_kind_markers', 'results_kind_issuer'})
+
+
 def _any_field_filled(fields: dict) -> bool:
-    for v in fields.values():
-        if isinstance(v, str):
-            if v.strip():
-                return True
-        elif v:
-            return True
-    return False
+    return any(_value_filled(v) for k, v in fields.items() if k not in BOOKKEEPING_FIELDS)
+
+
+def _value_filled(v) -> bool:
+    """OCR-11 round 1: a value says something only if some string in it is not blank (or it is a true
+    non-string scalar). A list or dict is looked INSIDE: a results list of rows whose subject, grade and
+    band are all '' (what a blank slip answers) is not filled."""
+    if isinstance(v, str):
+        return bool(v.strip())
+    if isinstance(v, dict):
+        return any(_value_filled(x) for x in v.values())
+    if isinstance(v, (list, tuple)):
+        return any(_value_filled(x) for x in v)
+    return bool(v)
 
 
 _DOC_NAME_LABEL_RE = re.compile(r'^\s*(?:NAMA(?:\s+CALON)?|NAME|CALON)\s*[:.\-]?\s+', re.IGNORECASE)

@@ -441,6 +441,8 @@ def _cancel_pending_decline_locked(application, by_email):
                     application.id, restore_to)
         application.status = restore_to
         application.pre_decline_status = ''
+        from .pre_interview import take_back_assessment   # F3 review fix 2: before the category clears
+        fields += take_back_assessment(application)
         # Give the money back. The reject cleared award_amount; restoring the status without it
         # would hand back a funded student who is silently unpayable (payments.amount_due caps
         # at award − paid). Only ever restores FROM the snapshot, so it cannot invent an amount

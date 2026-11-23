@@ -10,6 +10,19 @@ import pytest
 from django.core.cache import cache
 
 
+def pytest_addoption(parser):
+    parser.addoption('--unpinned-cross-check', action='store_true', default=False,
+                     help='run although pypdf / pypdfium2 / Python differ from production (a deliberate '
+                          'cross-check on another version, NEVER a gate run); off by default')
+
+
+def pytest_configure(config):
+    """The session stops before any test unless it runs on what production installs: the pypdf and
+    pypdfium2 of requirements.lock, on the Dockerfile's Python (`apps/scholarship/tests/_install_pins`)."""
+    from apps.scholarship.tests._install_pins import enforce
+    enforce(config)
+
+
 @pytest.fixture(autouse=True)
 def _reset_cache_between_tests():
     cache.clear()

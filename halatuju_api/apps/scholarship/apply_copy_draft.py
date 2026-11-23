@@ -31,7 +31,7 @@ import re
 from django.conf import settings
 
 from . import apply_copy as ac
-from . import gemini
+from . import contracts, gemini
 
 logger = logging.getLogger(__name__)
 
@@ -56,20 +56,9 @@ def _model():
     return getattr(settings, 'APPLY_COPY_DRAFT_MODEL', '') or 'gemini-3.8-flash'
 
 
-def _gemini_generate(prompt, model, timeout_ms=None):
-    """The single mockable seam — patched in every test, so no CI run can make a live call.
-
-    ONE model per call; it raises on any failure. `draft` falls back through
-    `gemini.generate_with_fallback` (the configured model, then the Flash cascade) since Gemini
-    Phase 2 Option A (owner, 2026-11-14), the same runner the Phase 1 jobs use. ``timeout_ms``
-    (default None) is set only by that runner's deadline.
-
-    ⚠ THE SEAM STAYS HERE, THREE LINES LONG. Code health H7 moved the body to `gemini` (one copy
-    instead of three) and kept this name, because this is the boundary tenancy rule 6 names and
-    the string every `patch()` in the suite points at. Do not "simplify" it into a direct call.
-    """
-    return gemini.generate_text(prompt, model, exc=DraftError, timeout_ms=timeout_ms,
-                                unconfigured='ai_unconfigured', unavailable='ai_unavailable')
+#: The shared single-model seam (`contracts._gemini_generate`) raises `ContractsError` codes; this
+#: module's refusals keep their own words, so the two codes it can raise are mapped back here.
+_SEAM_CODES = {'quiz_ai_unconfigured': 'ai_unconfigured', 'quiz_ai_unavailable': 'ai_unavailable'}
 
 
 # ── The prompt ───────────────────────────────────────────────────────────────────────────────
@@ -190,9 +179,12 @@ def draft(programme, locale):
 
     prompt = build_prompt(english, locale)
     try:
-        # The seam is passed by name at call time, so every patch of `_gemini_generate` lands.
-        reply, _answered = gemini.generate_with_fallback(_gemini_generate, prompt, _model(),
-                                                         fatal=DraftError)
+        # ONE home for the call: `contracts._gemini_generate`, looked up at call time so every
+        # patch of it lands. Its two config refusals come back as DraftError codes.
+        reply, _answered = gemini.generate_with_fallback(contracts._gemini_generate, prompt,
+                                                         _model(), fatal=contracts.ContractsError)
+    except contracts.ContractsError as e:
+        raise DraftError(_SEAM_CODES.get(e.code, 'ai_failed'))
     except DraftError:
         raise
     except Exception:                                   # noqa: BLE001 — one refusal for the reader

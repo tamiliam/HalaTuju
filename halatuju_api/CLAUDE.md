@@ -187,7 +187,7 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 ### STATE AT 2026-11-12 — v3.1.0 audit CLOSED (live main 011a25fb0, api-01291-g4w, web-01115-n96)
 
 - Audit closing section: `docs/audits/2026-11-05-project-audit.md`. The final code_health reading was read-only; the Trend row is held back so no agent re-baselines a worse reading.
-- **Owner-dated readings (lapse on the date, then FAIL the close):** `std` FAIL until Fri 20 Nov (W1 page weight); `fix%` 52 WARN until Fri 27 Nov (F1 slip-check matrix); `dup` 1 (`_gemini_generate`) by Fri 4 Dec; `xapp` 107 FAIL, NOT accepted, F2 by the 11 Dec small audit. Detail: `docs/consolidation-log.md` and `docs/plans/2026-11-05-audit-fix-roadmap.md` (Catch-up follow-ons).
+- **Owner-dated readings (lapse on the date, then FAIL the close):** `std` FAIL until Fri 20 Nov (W1 page weight); `fix%` 52 WARN until Fri 27 Nov (F1 slip-check matrix); `dup` 0 (CH-07 closed 2026-11-19); `xapp` 107 FAIL, NOT accepted, F2 by the 11 Dec small audit. Detail: `docs/consolidation-log.md` and `docs/plans/2026-11-05-audit-fix-roadmap.md` (Catch-up follow-ons).
 - **NEXT, in order:** W1 (build 16-18 Nov, deploy by 20 Nov); F1 (owner approves the rule table by Wed 18 Nov; Opus build; deploy by 27 Nov); then T5d / offer S7 (S7 is paid; owner yes).
 
 ### Older state blocks and the other streams (full text in `docs/sprint-history.md`, section "Moved from halatuju_api/CLAUDE.md, 2026-11-05")
@@ -196,7 +196,7 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 - **Offer letters read exactly:** S1-S6 live. **NEXT = S7 (paid; owner yes)**, then S8. Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. New evasions go to TD for S7 unless they block a real public letter.
 - **Mobile-native arc:** COMPLETE (M0-M8). Rules `docs/mobile-standard.md`, ledger `docs/mobile-ledger.md`; every UI change runs `npm run mobile-check`.
 - **Support-email stream (SUP1 saved on main 2026-11-14, ea76dd627; Services: both, no migration; awaits a window + owner yes):** query emails name each item (private and reviewer items read "A question from our team", `services/query_item_titles.py`), Action Centre fallback line, consent page explains each blocker. NEXT after 18 Nov: Fix 3 and Fix 5 (owner rulings), Fix 4b ("ask a person" button), then the AI reply helper (Gmail drafts only, never sends).
-- **Freeze: lifts Wed 18 Nov** (owner ruling 2026-11-14, `docs/decisions.md`). Until then: post-audit work first (F2b stages 1-2, Gemini Phase 2, the `_gemini_generate` duplicate); other sessions fix bugs only. F2b stage 3 dropped. T5d and offer S7 after the lift, each with the owner's word.
+- **Freeze: lifts Wed 18 Nov** (owner ruling 2026-11-14, `docs/decisions.md`). Until then: post-audit work first (F2b stages 1-2, Gemini Phase 2, the `_gemini_generate` duplicate - done 2026-11-19); other sessions fix bugs only. F2b stage 3 dropped. T5d and offer S7 after the lift, each with the owner's word.
 
 ## Known Issues & Future Work
 

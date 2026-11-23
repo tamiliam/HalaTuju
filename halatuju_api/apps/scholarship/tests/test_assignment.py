@@ -123,6 +123,46 @@ class TestReviewerAssignment(TestCase):
         with patch('apps.scholarship.services.is_ready_for_assignment', return_value=False):
             self.assertFalse(ser.get_ready_for_assignment(self.app))
 
+    def _open_task(self):
+        from apps.scholarship.models import ResolutionItem
+        ResolutionItem.objects.create(
+            application=self.app, source='officer', kind='clarify', status='open', code='x')
+
+    def test_list_serializer_ready_on_is_null_when_ready(self):
+        # F1 / I-13: ready now -> no date to wait for.
+        from apps.scholarship.serializers_admin import AdminApplicationListSerializer
+        ser = AdminApplicationListSerializer()
+        self.assertIn('ready_on', ser.fields)
+        self.assertIsNone(ser.get_ready_on(self.app))
+
+    def test_list_serializer_ready_on_is_the_window_end_when_a_task_is_open(self):
+        from datetime import timedelta
+        from apps.scholarship.serializers_admin import AdminApplicationListSerializer
+        from apps.scholarship.services import is_ready_for_assignment, queries_sla
+        self._open_task()
+        self.assertFalse(is_ready_for_assignment(self.app))
+        got = AdminApplicationListSerializer().get_ready_on(self.app)
+        self.assertEqual(got, (self.app.profile_completed_at
+                               + timedelta(days=queries_sla.query_sla_days(self.app))).isoformat())
+
+    def test_list_serializer_ready_on_is_null_once_the_window_lapsed(self):
+        from datetime import timedelta
+        from apps.scholarship.serializers_admin import AdminApplicationListSerializer
+        self._open_task()
+        self.app.profile_completed_at = timezone.now() - timedelta(days=60)
+        self.app.save(update_fields=['profile_completed_at'])
+        self.assertIsNone(AdminApplicationListSerializer().get_ready_on(self.app))
+
+    def test_list_serializer_ready_on_is_null_when_held_or_not_awaiting_review(self):
+        from apps.scholarship.serializers_admin import AdminApplicationListSerializer
+        self._open_task()
+        ser = AdminApplicationListSerializer()
+        self.app.assigned_to = self.reviewer
+        self.assertIsNone(ser.get_ready_on(self.app))
+        self.app.assigned_to = None
+        self.app.status = 'interviewing'
+        self.assertIsNone(ser.get_ready_on(self.app))
+
     def test_student_email_body_copy(self):
         from django.core import mail
         from apps.scholarship.emails import send_student_assigned_reviewer_email

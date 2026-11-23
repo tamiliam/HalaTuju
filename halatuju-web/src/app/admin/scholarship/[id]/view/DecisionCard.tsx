@@ -21,7 +21,7 @@ import { decisionBarShows } from './DecisionBar'
 import { AlertLine, DECISION_ALERT_EVENT, DecisionMissingList } from './DecisionMissing'
 
 export function DecisionCard({
-  app, t, busy, canWrite, caseOpen, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, missing, hasAssistance, doSave, canSave, reasonMissing, verdictMsg, verdictMsgTone,
+  app, t, busy, canWrite, caseOpen, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, missing, hasAssistance, doSave, canSave, verdictMsg, verdictMsgTone,
 }: {
   app: AdminScholarshipDetail
   t: T
@@ -61,7 +61,6 @@ export function DecisionCard({
   hasAssistance: boolean
   doSave: () => void
   canSave: boolean
-  reasonMissing: boolean
   verdictMsg: string
   verdictMsgTone: 'ok' | 'warn'
 }) {
@@ -74,15 +73,25 @@ export function DecisionCard({
   const [alertKey, setAlertKey] = useState(0)
   // Same, for a ready decision that still has no bursary amount (Recommend only).
   const [amountKey, setAmountKey] = useState(0)
-  const showAlert = () => { if (missing.length > 0) setAlertKey((n) => n + 1) }
+  // F3 review round 2: was the alert raised by a press on Recommend? Then it names EVERY missing item.
+  const [alertForApprove, setAlertForApprove] = useState(false)
+  const showAlert = (forApprove = false) => {
+    if (missing.length > 0) { setAlertForApprove(forApprove); setAlertKey((n) => n + 1) }
+  }
+  const showListAlert = () => showAlert()   // Decline and the phone bar: the resting list's rule
+  // F3 review fix 4: the reporting date is a Recommend-only item, so once Decline is chosen it leaves the
+  // RESTING list. Round 2: an alert raised by a Recommend press keeps it, else that press (with only the date
+  // missing) would show nothing and Recommend would be a dead grey button.
+  const shownMissing = (alertKey > 0 && alertForApprove) || officerVerdict.overall !== 'decline'
+    ? missing : missing.filter((m) => m.kind !== 'reporting_date_missing')
   // Once the reviewer fixes an item, the list goes back to plain: a live region that kept role="alert" would be
   // announced again on every fix. The next press makes it an alert again.
   const missingSig = JSON.stringify(missing)
   useEffect(() => { setAlertKey(0) }, [missingSig])
   useEffect(() => { if (approveReady) setAmountKey(0) }, [approveReady])
   useEffect(() => {
-    document.addEventListener(DECISION_ALERT_EVENT, showAlert)
-    return () => document.removeEventListener(DECISION_ALERT_EVENT, showAlert)
+    document.addEventListener(DECISION_ALERT_EVENT, showListAlert)
+    return () => document.removeEventListener(DECISION_ALERT_EVENT, showListAlert)
   })
   return (<>
 
@@ -288,7 +297,7 @@ export function DecisionCard({
               )}
               {/* Reversible outcome selection. Approve needs an amount; Decline doesn't (and clears it). */}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => { if (!decisionReady) showAlert(); else if (!approveReady) setAmountKey((n) => n + 1); else selectApprove() }}
+                <button onClick={() => { if (missing.length > 0) showAlert(true); else if (!approveReady) setAmountKey((n) => n + 1); else selectApprove() }}
                   disabled={!!busy} aria-disabled={!approveReady || undefined}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 aria-disabled:opacity-50 ${
                     officerVerdict.overall === 'accept'
@@ -296,7 +305,7 @@ export function DecisionCard({
                       : 'border-positive-600 bg-ground-0 text-positive-700 hover:bg-positive-50'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
                   {t('admin.scholarship.recordVerdict.approve')}
                 </button>
-                <button onClick={() => { if (!decisionReady) showAlert(); else selectDecline() }}
+                <button onClick={() => { if (!decisionReady) showListAlert(); else { setAlertKey(0); selectDecline() } }}
                   disabled={!!busy} aria-disabled={!decisionReady || undefined}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 aria-disabled:opacity-50 ${
                     officerVerdict.overall === 'decline'
@@ -305,17 +314,16 @@ export function DecisionCard({
                   {t('admin.scholarship.recordVerdict.decline')}
                 </button>
               </div>
-              {/* One contextual hint: what's still missing before Save. */}
-              {!decisionReady ? (
-                <DecisionMissingList key={alertKey} t={t} items={missing} alert={alertKey > 0} />
+              {/* One contextual hint: what's still missing before Save. F3 (I-12): the list can hold a
+                  Recommend-only line (the reporting date), so it shows while Decline stays usable. */}
+              {shownMissing.length > 0 ? (
+                <DecisionMissingList key={alertKey} t={t} items={shownMissing} alert={alertKey > 0} />
               ) : amountKey > 0 && !approveReady ? (
                 <AlertLine key={amountKey}>{t(amountReasonKey)}</AlertLine>
               ) : !officerVerdict.overall ? (
                 <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
               ) : officerVerdict.overall === 'accept' && !hasAssistance ? (
                 <p className="text-xs md:text-[11px] text-caution-700">{t(amountReasonKey)}</p>
-              ) : reasonMissing ? (
-                <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.pickReason')}</p>
               ) : null}
               {/* LL2: a soft warning only (never blocks): Approve chosen while a fact is marked Fail. */}
               {officerVerdict.overall === 'accept' && ['identity', 'academic', 'pathway', 'income'].some((f) => officerVerdict[f] === 'fail') && (

@@ -127,16 +127,38 @@ def is_ready_for_assignment(application, now=None):
     DECOUPLED from a late query's own per-item deadline — so a query raised late can't push the
     review start back forever. The per-item clock (``query_sla``) governs the student REMINDER,
     not this floor."""
-    from datetime import timedelta
     if application.profile_completed_at is None:
         return False
+    if not _has_open_student_tasks(application):
+        return True
+    now = now or timezone.now()
+    return now >= assignment_window_end(application)
+
+
+def _has_open_student_tasks(application):
     has_open = getattr(application, OPEN_STUDENT_TASKS_ANNOTATION, None)   # TD-162: the list's
     if has_open is None:
         has_open = open_student_tasks(application).exists()
-    if not has_open:
-        return True
-    now = now or timezone.now()
-    return now >= application.profile_completed_at + timedelta(days=query_sla_days(application))
+    return bool(has_open)
+
+
+def assignment_window_end(application):
+    """When the submit-clock floor lapses: ``profile_completed_at`` + the organisation's
+    ``query_answer_days``. None before the profile is complete. The ONE place that sum is made:
+    ``is_ready_for_assignment`` and ``ready_on`` both read it."""
+    from datetime import timedelta
+    if application.profile_completed_at is None:
+        return None
+    return application.profile_completed_at + timedelta(days=query_sla_days(application))
+
+
+def ready_on(application, now=None):
+    """F1 / I-13: the moment the 5-day window ends, for a case that is NOT ready now because a
+    student task is still open; None when it is ready already or the profile is not complete.
+    Derived from ``is_ready_for_assignment``'s own pieces, not a second copy of the rule."""
+    if is_ready_for_assignment(application, now):
+        return None
+    return assignment_window_end(application)
 
 
 def ready_to_assign(queryset, now=None, organisation=None):

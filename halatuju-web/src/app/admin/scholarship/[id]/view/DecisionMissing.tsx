@@ -5,7 +5,7 @@
  *
  * ⚠ THE RULE LIVES IN `decisionMissing` (`@/lib/cockpitStages`), NOT HERE. This file only words and links the items it
  * returns, so the list can never disagree with the gate. Each item is a button that scrolls to and focuses the place
- * the reviewer fixes it: the interview stage, the first unrated fact in "Check the four facts", the conclusion box.
+ * the reviewer fixes it: the interview stage, the first unrated fact in "Reviewer Assessment", the conclusion box.
  *
  * The same list serves the card (under the buttons) and, through `DECISION_ALERT_EVENT`, the phone's decision bar.
  * Shown as an alert (`role="alert"`, focused) after a press on a greyed Recommend / Decline; plain otherwise.
@@ -26,6 +26,7 @@ export function missingTarget(item: DecisionMissingItem): string {
     case 'findings_unanswered': return 'interview-section'
     case 'facts_unrated': return `rate-fact-${item.facts[0]}-pass`
     case 'conclusion_empty': return 'verdict-reason'
+    case 'reporting_date_missing': return 'reporting-date-input'
   }
 }
 
@@ -70,6 +71,7 @@ function itemText(t: T, item: DecisionMissingItem, locale: string): string {
     case 'facts_unrated':
       return t(`${k}rate`, { facts: joinFacts(item.facts.map((f) => t(`admin.scholarship.verdict.fact.${f}`)), locale) })
     case 'conclusion_empty': return t(`${k}conclusion`)
+    case 'reporting_date_missing': return t(`${k}reportingDate`)
   }
 }
 

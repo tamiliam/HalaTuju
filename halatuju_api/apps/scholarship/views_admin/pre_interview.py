@@ -1,4 +1,7 @@
-"""Request #75: POST .../<pk>/reject-before-interview/ {reason, comments}.
+"""Request #75: POST .../<pk>/reject-before-interview/ {reason, comments, facts, fail_reasons}.
+
+F3 (I-4): `facts` is the four-fact assessment ({identity, academic, pathway, income}: 'pass' | 'fail'),
+all four required; `fail_reasons` is {fact: code} for the failed ones (none given -> Other).
 
 The door onto `services/pre_interview.reject_before_interview`. Its own module because
 `applications.py` sits at the 600-line standard; re-exported from `views_admin/__init__.py`.
@@ -18,6 +21,8 @@ _REFUSALS = {
     'reason_required': 'Choose the main reason.',
     'comments_required': 'Say why you are rejecting. The note stays on the file for your team.',
     'comments_too_long': 'The note can be 2,000 characters at most.',
+    'assessment_incomplete': 'Record Pass or Fail for all four facts first.',
+    'bad_fail_reasons': 'A reason for a failed fact is not one of the listed reasons.',
 }
 
 
@@ -35,7 +40,9 @@ class AdminRejectBeforeInterviewView(_AdminBase):
         comments = request.data.get('comments')
         try:
             reject_before_interview(app, admin, reason if isinstance(reason, str) else '',
-                                    comments if isinstance(comments, str) else '')
+                                    comments if isinstance(comments, str) else '',
+                                    facts=request.data.get('facts'),
+                                    fail_reasons=request.data.get('fail_reasons'))
         except ValueError as e:
             code = str(e)
             return Response({'error': _REFUSALS.get(code, _REFUSALS['bad_status']), 'code': code},

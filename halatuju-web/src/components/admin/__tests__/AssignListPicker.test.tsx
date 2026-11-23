@@ -1,24 +1,26 @@
 /**
  * @jest-environment jsdom
  *
- * T1-e (owner D7, 2026-11-09): THE CASE LIST'S ASSIGN DROPDOWN OFFERS ONLY WHO MAY TAKE THIS CASE.
+ * T1-e (owner D7, 2026-11-09): THE ASSIGN DROPDOWN (now the case page's) OFFERS ONLY WHO MAY TAKE THIS CASE.
+ * F1 / I-13: the case list holds no picker; its "Assigned" cell is plain text from `AssignedCell`.
  *
  * The server serves `assignable` per person (the Reviewers table, fenced to an org admin's own
  * organisation) and each list row serves its gifts (`gift_ids`). The list hides anyone not
  * assignable and anyone of another gift, keeps the current holder whatever they are, treats a
- * reviewer with no gifts as covering every gift, and says what ✓ and ⚠ mean.
+ * reviewer with no gifts as covering every gift.
  *
  * Synthetic names only.
  */
 import { render, screen } from '@testing-library/react'
 
-import { AssigneeOptions, AssignLangNote, AssignLegend, legendIdFor } from '../AssignListPicker'
+import { AssignedCell, AssignLangNote } from '../AssignListPicker'
 import { listAssignees, type Reviewer } from '@/lib/assignOptions'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
+import { formatDate } from '@/lib/formatDate'
 
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
+jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${Object.values(p).join(',')}` : k) }) }))
 
 const GIFT_A = 11
 const GIFT_B = 22
@@ -72,80 +74,63 @@ describe('who the list offers for one case', () => {
   it('hides a paused reviewer even when the case\'s gift is unknown', () => {
     expect(ids(listAssignees([rv(1, { paused: true }), rv(3)], row({ gift_ids: [] }), true))).toEqual([3])
   })
-
-  it('renders the holder as an option and hides the others', () => {
-    render(<select aria-label="assign"><AssigneeOptions reviewers={roster} row={row({ assigned_to_id: 5 })} isSuper /></select>)
-    const names = screen.getAllByRole('option').map((o) => o.textContent)
-    expect(names).toEqual(['admin.scholarship.unassigned', '✓ Reviewer 1', '✓ Reviewer 3', '✓ Reviewer 5'])
-  })
-
-  it('still names a holder the served list does not carry', () => {
-    render(<select aria-label="assign"><AssigneeOptions reviewers={roster} row={row({ assigned_to_id: 77, assigned_to_name: 'Former Holder' })} isSuper /></select>)
-    expect(screen.getByRole('option', { name: 'Former Holder' })).toBeTruthy()
-  })
 })
 
-describe('a case whose holder can no longer work it (TD-613)', () => {
-  const unassigned = () => screen.getByRole('option', { name: 'admin.scholarship.unassigned' }) as HTMLOptionElement
-
-  it('offers a new holder but not Unassigned when the server does not take it (may_unassign false)', () => {
-    render(<select aria-label="assign"><AssigneeOptions reviewers={roster} row={row({ assigned_to_id: 77, assigned_to_name: 'Former Holder', may_unassign: false })} isSuper /></select>)
-    expect(unassigned().disabled).toBe(true)
-    expect(screen.getByRole('option', { name: '✓ Reviewer 1' })).toBeTruthy()
-  })
-
-  it('keeps Unassigned for a stranded case the server may still unassign (review F2: interviewing)', () => {
-    render(<select aria-label="assign"><AssigneeOptions reviewers={roster} row={row({ assigned_to_id: 77, assigned_to_name: 'Former Holder', may_unassign: true })} isSuper /></select>)
-    expect(unassigned().disabled).toBe(false)
-  })
-
-  it('keeps Unassigned for an ordinary case', () => {
-    render(<select aria-label="assign"><AssigneeOptions reviewers={roster} row={row({ assigned_to_id: 1 })} isSuper /></select>)
-    expect(unassigned().disabled).toBe(false)
-  })
+const cell = (over = {}) => ({
+  status: 'profile_complete', assigned_to_id: null, assigned_to_name: null, call_language: 'ta',
+  ready_for_assignment: true, ready_on: null, ...over,
 })
+const renderCell = (over = {}) =>
+  render(<AssignedCell row={cell(over)} className="main" noteClassName="note" />).container
 
-describe('the ✓ / ⚠ legend', () => {
-  it('renders under the preferred language on a phone row, with the id its select names', () => {
-    const { container } = render(<AssignLangNote lang="ta" className="x" legendId="assign-legend-7" />)
-    const legend = container.querySelector('[data-assign-legend]')
-    expect(legend?.textContent).toBe('admin.scholarship.assignLangLegend')
-    expect(legend?.id).toBe('assign-legend-7')
-  })
-
-  it('is not repeated in a desktop row, which shows only the preferred language', () => {
-    const { container } = render(<AssignLangNote lang="ta" className="x" />)
-    expect(container.textContent).not.toBe('')
-    expect(container.querySelector('[data-assign-legend]')).toBeNull()
-  })
-
-  it('describes the select it is pointed at (one legend for the whole table)', () => {
-    render(
-      <>
-        <select aria-label="assigned" aria-describedby={legendIdFor('ta', 'assign-legend-table')}><option>x</option></select>
-        <AssignLegend id="assign-legend-table" className="x" />
-      </>,
-    )
-    const described = screen.getByRole('combobox', { name: 'assigned' }).getAttribute('aria-describedby')
-    expect(described).toBe('assign-legend-table')
-    expect(document.getElementById(described as string)?.textContent).toBe('admin.scholarship.assignLangLegend')
-  })
-
-  it('is not named by a select whose student named no single language', () => {
-    expect(legendIdFor('mixed', 'assign-legend-table')).toBeUndefined()
-    expect(legendIdFor('', 'assign-legend-table')).toBeUndefined()
-  })
-
-  it('is not shown when the student named no single language', () => {
-    const { container } = render(<AssignLangNote lang="mixed" className="x" />)
-    expect(container.textContent).toBe('')
-  })
-
-  it('is written in all three languages and keeps both marks', () => {
-    for (const m of [en, ms, ta]) {
-      const text = (m as { admin: { scholarship: { assignLangLegend: string } } }).admin.scholarship.assignLangLegend
-      expect(text).toContain('✓')
-      expect(text).toContain('⚠')
+describe('the list Assigned cell (F1 / I-13)', () => {
+  it('names the reviewer at any stage, and never renders a select', () => {
+    for (const status of ['profile_complete', 'interviewing', 'rejected', 'accepted']) {
+      const c = renderCell({ status, assigned_to_id: 4, assigned_to_name: 'Rohini' })
+      expect(c.textContent).toBe('Rohini')
+      expect(c.querySelector('select')).toBeNull()
     }
+  })
+
+  it('says Waiting for a reviewer with the language note when ready and nobody holds it', () => {
+    const c = renderCell()
+    expect(c.textContent).toContain('admin.programmeOverview.attention.unassigned')
+    expect(c.querySelector('.note')?.textContent).toContain('admin.scholarship.prefersLang')
+    expect(c.querySelector('select')).toBeNull()
+  })
+
+  it('leaves out the language note when the student named no single language', () => {
+    expect(renderCell({ call_language: 'mixed' }).querySelector('.note')).toBeNull()
+  })
+
+  it('says Not ready yet with Ready on <date> inside the 5-day window', () => {
+    const c = renderCell({ ready_for_assignment: false, ready_on: '2026-12-01T09:00:00+08:00' })
+    expect(c.textContent).toContain('admin.scholarship.assignedCell.notReady')
+    expect(c.querySelector('.note')?.textContent).toBe(`admin.scholarship.assignedCell.readyOn|${formatDate('2026-12-01T09:00:00+08:00')}`)
+  })
+
+  it('says Not ready yet without a date note when none is served', () => {
+    expect(renderCell({ ready_for_assignment: false }).textContent).toBe('admin.scholarship.assignedCell.notReady')
+  })
+
+  it('shows a dash for any other stage with nobody', () => {
+    for (const status of ['submitted', 'shortlisted', 'interviewing', 'rejected']) {
+      expect(renderCell({ status }).textContent).toBe('—')
+    }
+  })
+
+  it('has its new strings in all three languages', () => {
+    for (const m of [en, ms, ta]) {
+      const c = (m as { admin: { scholarship: { assignedCell: { notReady: string; readyOn: string } } } }).admin.scholarship.assignedCell
+      expect(c.notReady.length).toBeGreaterThan(0)
+      expect(c.readyOn).toContain('{date}')
+    }
+  })
+})
+
+describe('the Prefers note', () => {
+  it('shows the preferred language and nothing for a mixed one', () => {
+    expect(render(<AssignLangNote lang="ta" className="x" />).container.textContent).not.toBe('')
+    expect(render(<AssignLangNote lang="mixed" className="x" />).container.textContent).toBe('')
   })
 })

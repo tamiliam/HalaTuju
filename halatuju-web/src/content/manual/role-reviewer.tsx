@@ -223,14 +223,29 @@ export const roleReviewer: ManualChapter = {
       perm: 'review',
       title: 'Your decision',
       body: (
-        <>In the <strong>Check the four facts</strong> box you tap <strong>Pass</strong> or
-        <strong> Fail</strong> for each fact. <strong>Pass</strong> means the fact is true for the student;
-        <strong> Fail</strong> means it is not true, or not proven. It is separate from your recommendation.
-        If you Fail a fact the system showed as green, it asks <strong>Why is this fact not true?</strong>:
-        tap one reason (the rule is wrong, the document was read wrong, new information, a programme rule, or
-        other). You cannot save until you pick one. If you choose <strong>Approve</strong> while a fact is on
-        Fail, a warning asks if you really want to accept; it does not stop you. QC sees these facts again
-        under <strong>Facts in doubt</strong> and says whether they agree with you. In the <strong>Decision</strong>
+        <>In the <strong>Reviewer Assessment</strong> box you tap <strong>Pass</strong> or
+        <strong> Fail</strong> for each fact. <strong>Pass</strong> = yes, this is true. <strong>Fail</strong> = no,
+        or not proven. It is separate from your recommendation.
+          <span className="mt-2 block">Each fact is a statement you are asked to prove:</span>
+          <span className="mt-1 block"><strong>Identity</strong> — the student is who they say they are.</span>
+          <span className="block"><strong>Results</strong> — the results are real.</span>
+          <span className="block"><strong>Pathway</strong> — a real offer for a course this programme funds: a public
+          IPTA or ILKA, the right start year, not already funded, not abroad.</span>
+          <span className="block"><strong>Income</strong> — the family is B40.</span>
+          <span className="mt-2 block">Every Fail asks <strong>Why?</strong> The reason is about the student, never
+          about the AI. Tap one: <em>Proof is missing or unclear</em>, <em>A document looks false or altered</em>,
+          <em> The documents show something different</em>, <em>The interview or a call showed something
+          different</em>, or <em>Other</em>. <em>Other</em> is already chosen, so a Fail never stops you saving.</span>
+          <span className="mt-2 block">If you choose <strong>Approve</strong> while a fact is on
+        Fail, a warning asks if you really want to accept; it does not stop you. <strong>Approve needs the
+        reporting date</strong>: when the reporting-date box shows and no date is saved, the <strong>Still to
+        do</strong> list says <em>Record the reporting date</em> and Approve stays greyed. Decline needs no date:
+        once you choose Decline the line leaves the list, and a press on Approve shows it again.
+        QC sees a Fail on a green fact, or a Fail you still approved, again under <strong>Facts in doubt</strong>
+        and says whether they agree with you.
+        QC cannot accept a recommendation while a fact is still red or shows <em>Rule not met</em>, unless QC
+        records a reason for going ahead.</span>
+          <span className="mt-2 block">In the <strong>Decision</strong>
         card you then set a <strong>recommended assistance amount</strong>, write a short
         <strong> conclusion</strong>, select <strong>Approve</strong> or <strong>Decline</strong>, and click
         <strong> Save verdict &amp; generate final profile</strong>. You can Pass all four facts and still Decline
@@ -239,7 +254,7 @@ export const roleReviewer: ManualChapter = {
         programme for study abroad run by MARA, JPA or another sponsor, or &ldquo;Course started in &hellip;&rdquo;:
         a start year the gift does not accept, or &ldquo;Offer from a private college or university (IPTS)&rdquo;:
         HalaTuju supports public courses only, so a private college, university or private wing such as UTM
-        SPACE breaks the rule for every gift).
+        SPACE breaks the rule for every gift).</span>
           <span className="mt-2 block rounded-lg border border-caution-200 bg-caution-50 p-3"><strong>Save is a
           one-way step from your side.</strong> It records the decision and sends the case on for QC; only a
           super-admin can reopen it afterwards. Check the facts before you save.</span></>

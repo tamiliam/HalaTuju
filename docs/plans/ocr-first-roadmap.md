@@ -71,11 +71,37 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 
 ## 3. Sprints in priority order
 
+### Sprint names (owner, 21 Nov 2026)
+
+Every sprint now has one name: **OCR-** and a number. The number is the run order, done sprints included. The old names stay in old commits, notes and CHANGELOG entries; this table matches them. The sections below keep their old order and carry both names.
+
+| New | What it is | Old name | State (21 Nov) |
+|---|---|---|---|
+| OCR-1 | The dry-run harness | S0 | Live 19 Nov |
+| OCR-2 | Keep the OCR text of each new upload | S0b | Live 19 Nov |
+| OCR-3 | The SPM slip gate fix | S4 | Live 19 Nov |
+| OCR-4 | The visible page judges | S-visible | Live |
+| OCR-5 | TNB bills and EPF statements, rules first (switched off) | S6 | Live |
+| OCR-6 | PDF safety fixes: the render gate, the blank-page guard, the pdfium child timing, the pypdf 6.21.4 test fix and the install-pin check | D1 + fix-pypdf621 | main `dbf4e9d70`, publish 21 Nov 16:00 |
+| OCR-7 | Small jobs after OCR-6: the synthetic hostile PDFs saved as tests, the hidden-object TD row brought up to date, the pin check's review notes | (none) | Next |
+| OCR-8 | UMS offer letters, rules first | S1 + S1c | Built, waits for the lead's "go" |
+| OCR-9 | The ink check (a matched word must show real ink) and the Asasi rule | S-visible 2 | Built, rebased on main 21 Nov (branch ocr-9-ink), waits |
+| OCR-10 | SPM slips off 2.5 | S5 | Built; paid gate passed (owner yes 20 Nov) |
+| OCR-11 | An all-empty AI answer means "cannot read" | Blank-gap 1 | To build now (owner 21 Nov) |
+| OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | To build now (owner 21 Nov), new design |
+| OCR-13 | The next four universities | S2 | To build |
+| OCR-14 | The remaining public universities | S3 | To build |
+| OCR-15 | The parent IC | S7 | To build |
+| OCR-16 | The genuineness jobs off 2.5 | S8 | To build |
+| OCR-17 | The remaining 2.5 cascade tails | S9 | To build |
+
+**OCR-11 and OCR-12 build now, alongside OCR-8 to OCR-10 going live** (owner, 21 Nov; at most 2 builders). OCR-11 changes the verdict, so it needs an adversarial review and the owner's phone check. OCR-12 starts from the round-5 reviewer's design: refuse a file where a number used in the gate walk has more than one distinct object (one set per number, stop at 17). It gets a fresh limit of 3 review rounds. TD-689 is debt, not an OCR sprint; it keeps its TD number.
+
 **Dependency (from the coordinator, 18 Nov):** the offer-letter sprints (S1 to S3) build on the branch **`offer-course-proof`** (7fee23c0e). That branch already contains reader 2.6.0 (`reader-260`) and the new bracket-menu rule in `offer_course_match.py`: a letter that names only the course can match a catalogue "[a / b / c]" menu course, either on the base name alone or on the base name plus exactly one listed option, and a printed UPU code is extra evidence. **S1 starts only after that branch is merged to main.** If it is still on a branch when S1 begins, S1 is cut from it and rebased later.
 
 **Order:** the owner's value × sample size × feasibility. S0 comes first, because every later gate needs it. **S4 (the slip gate) touches different files from S1 to S3, so it can run alongside them** (at most 2 builders).
 
-### S0: the Phase 0 dry-run harness (free)
+### OCR-1 (was S0): the Phase 0 dry-run harness (free)
 - **Goal:** measure, per lane, how often rules alone already agree with the truth.
 - **Scope:**
   - `eval/ocr_first_dryrun.py` (new) and `eval/README.md`.
@@ -85,7 +111,7 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Stays AI:** everything (it is measurement only).
 - **Complexity:** medium.
 
-### S0b: keep the OCR text of each new upload (way C; owner's yes, 18 Nov)
+### OCR-2 (was S0b): keep the OCR text of each new upload (way C; owner's yes, 18 Nov)
 - **Why:** without the text, the learning loop cannot re-test new rules on live documents for free. With it, the dry-run set grows by itself and drift can be watched.
 - **Scope:**
   - One **additive** migration: a private OCR-text store for `applicant_documents` (a nullable column or a 1:1 side table; the builder picks the one with the smaller blast radius and says why). It is deleted with the document (cascade).
@@ -98,37 +124,59 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Stays AI:** everything (storage only).
 - **Complexity:** medium.
 
-### S1: UMS offer letters, rules first (with the catalogue match)
+### OCR-8 (was S1): UMS offer letters, rules first (with the catalogue match)
 - **Why first:** UMS is the largest group of AI-read letters (about 92). About 40 of them record a **hostel** (a "Kolej Kediaman" type name) as the institution. That is a wrong fact today, and rules fix it for free.
 - **Scope:**
   - **New `offer_parse_university.py`:** a UMS layout reader that takes name, IC, programme, faculty / campus, intake and reporting date by their printed labels.
   - **`offer_course_match.py`:** add the UMS hostel names to `letter_place`, so the issuer (UMS) stands in for a hostel line, and match on the **base name / bracket menu** (from the base branch). The UPU code is extra evidence only.
   - **`catalogue_levels.py`:** refusals for level and specialisation stay as they are.
   - **`offer_exact.py`:** route ua_offer letters from UMS through the parser before AI.
-  - **`field_extraction._read_offer_letter`:** check the gate, then use the rules or fall back to `read_offer` (2.6.0).
-- **Version:** `OFFER_READER_VERSION` 2.6.0 → **2.7.0**. Record `rules_lane='ua:UMS'`.
+  - **`field_extraction._read_offer_letter`:** check the gate, then use the rules or fall back to `read_offer` (the AI read).
+- **Version:** `OFFER_READER_VERSION` 2.7.0 → **2.8.0** (S-visible took 2.7.0). Record `rules_lane='ua:UMS'`.
 - **Tests:** a parser unit test (synthetic text), a hostel-to-issuer test, catalogue uniqueness (menu base / one option / two options → none), a gate fall-through test, and regression on the existing offer tests and the A34 golden verdicts.
 - **Gate:** the S0 harness on the UMS held-out letters passes Gate 1. `offer_parse_check` and `offer_genuineness_check` are unchanged on the other families.
 - **Stays AI:** UMS letters that fail Gate 2, and every other university.
 - **Complexity:** high (it feeds the pathway and eligibility).
 
-### S2: the next four universities (UPSI, UUM, UiTM, UM)
+### S1c: fix the S1 review round 3 notes before the UMS lane is switched on (owner option A, 19 Nov) - BUILT 19 Nov, review stopped after round 3 (20 Nov); method changed by the owner (see below)
+- **Why:** S1 ships with the `ua:UMS` lane off (with the lane off, no layout child and no `read_ums` run). Review round 3 left notes that must be fixed first (TD-699 in the CHANGELOG).
+- **Goal:** fix every TD-699 item: a reporting range wrapped across lines ('28 -' / '29 September 2031') locks the last day; missed withdrawal words (DITOLAK, ditarik semula, spaced letters; TERBATAL needs care); 'Nama Program :' / 'Program Baharu :' lines unchecked; the '@' name connector and 'NAME, KG ...' lines; `read_ums` time on 200k hostile characters.
+- **Gate:** re-run Gate 1 and the layout tests under pypdf **6.21.4** (the production pin; S1 measured under local 5.9.0).
+- **Build and review:** its own Opus build and an adversarial review (3-round cap).
+- **Version:** `OFFER_READER_VERSION` 2.8.0 → **2.9.0** and `PARSER_VERSION` 2.1.0 → **2.2.0** (minor bumps). S2 and S3 below moved up one (2.10.0, 2.11.0).
+- **Built:** every TD-699 item fixed by refusing more; Gate 1 unchanged under pypdf 5.9.0 and 6.21.4 (see the S1c CHANGELOG entry).
+- **Switch:** the `ua:UMS` lane is not switched on before S1c ships and the owner says yes.
+
+- **Review (19-20 Nov):** round 1 and round 2 fixed (da9b2ed82, b10398935). Round 3 (last) SHIP WITH FIXES: no blocker with the lane off; with the lane on, 2 blockers and 3 MED remain. The cause: a list of "withdrawn" words can never be complete. The stop rule applied, and the owner changed the method (below).
+
+### Owner method change (20 Nov): the owner's exact words decide genuineness
+- **Owner decision (20 Nov):** for every document lane still pending, use the method already used for SPM, NRIC and EPF. The owner looks at **5 sample documents per issuer** (including suspicious ones, if any) and gives the exact words a genuine document must show, plus any words that mean it is not genuine or not valid.
+- **The rule:** a document locks by rules only when it shows **all** of the owner's required words, on the visible page, and none of the owner's refusal words. Anything else goes to the AI read. This is an allow-list: we no longer try to list every way a letter can say "withdrawn".
+- **Safety rules kept:** every page is checked (a page we do not know sends the document to AI); the visible page always judges (S-visible); Gate 1 still applies per lane (20 held-out documents, 0 wrong).
+- **What stays from S1 and S1c:** the field readers (name, IC, programme, faculty, reporting date) and the course match. Only the "is it genuine and still valid" check changes to the owner's words. S1c's round 3 notes are re-checked against the new rule; most fall away.
+- **Samples:** taken from the local eval corpus first. The owner said yes (20 Nov) to downloading samples read-only from live storage where the corpus has too few. They stay on this computer, never go into git, and are deleted after.
+- **Applies to:** UMS (first), OCR-13 (was S2: UPSI, UUM, UiTM, UM), OCR-14 (was S3: the rest), OCR-5 (was S6) TNB bills, and OCR-15 (was S7) parent ICs (the owner's NRIC words are reused). OCR-10, OCR-16 and OCR-17 (was S5, S8 and S9) are model swaps and do not change.
+- **File:** `offer_parse_university.py` is at its 600-line limit. The owner-words check goes in a new module.
+
+### OCR-13 (was S2): the next four universities (UPSI, UUM, UiTM, UM)
 - **Size:** about 28, 28, 22 and 22 AI-read letters respectively.
 - **Scope:**
   - A layout reader for each university in `offer_parse_university.py`.
   - UiTM's own local course code is already handled in `offer_course_match`, and is extra evidence only.
   - Each lane is switched on only if it passes Gate 1 with at least 20 held-out letters. A lane short of 20 stays AI and is listed.
-- **Version:** 2.8.0.
+- **Version:** 2.10.0.
 - **Tests and gate:** as for S1, for each lane.
 - **Stays AI:** lanes under the threshold, private universities and the PISMP letters (deferred).
 - **Complexity:** medium.
+- **Asasi note (20 Nov):** The shared Asasi exit refuses any page-1 ASASI. 17 of 18 UiTM letters print an 'Asasi & Diploma' office line, and UTeM diploma letters name 'Sekolah Asasi Teknikal dan Pengajian Diploma'. A UiTM or UTeM lane must excuse its own letterhead phrase (per issuer) or check only the programme field and offer sentence, or the lane refuses almost every letter. An English-language lane must also treat 'Foundation in' in the programme field as Asasi (programme field only; sponsor names contain 'Foundation').
 
-### S3: the remaining public universities (UKM, UTHM, UTeM, UNIMAS, UMK and the rest of the 20)
+### OCR-14 (was S3): the remaining public universities (UKM, UTHM, UTeM, UNIMAS, UMK and the rest of the 20)
 - **Scope:** the same pattern. Most of these lanes have **fewer than 20 letters**, so the likely result is "built, measured, stays AI until enough letters arrive". The sprint ships the readers with their switches off, plus a monthly line in the dry-run report showing when each lane reaches 20.
-- **Version:** 2.9.0.
+- **Version:** 2.11.0.
 - **Complexity:** medium. **Option:** drop or postpone this sprint if S2 shows small lanes are not worth it.
+- **Asasi note (20 Nov):** The shared Asasi exit refuses any page-1 ASASI. 17 of 18 UiTM letters print an 'Asasi & Diploma' office line, and UTeM diploma letters name 'Sekolah Asasi Teknikal dan Pengajian Diploma'. A UiTM or UTeM lane must excuse its own letterhead phrase (per issuer) or check only the programme field and offer sentence, or the lane refuses almost every letter. An English-language lane must also treat 'Foundation in' in the programme field as Asasi (programme field only; sponsor names contain 'Foundation').
 
-### S4: the SPM slip gate fix (free, rules)
+### OCR-3 (was S4): the SPM slip gate fix (free, rules)
 - **Problem:** 115 of the 158 AI-read SPM slips never reach the parser. `field_extraction._extract_slip_deterministic` (lines 32-34) returns `not_spm_exam` whenever the student's profile `results_held` is not 'spm'. The **document** is an SPM slip, even when the profile says otherwise (for example, a STPM or diploma student uploading their SPM slip).
 - **Scope:**
   - Decide by what the slip itself says: the parser's own SPM markers. Use `results_held` only as a hint.
@@ -139,7 +187,7 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Stays AI:** slips the parser cannot lock (photos at an angle, partial slips).
 - **Complexity:** low to medium. **It can run in parallel with S1.**
 
-### S-visible: the visible page judges (owner decision 18 Nov)
+### OCR-4 (was S-visible): the visible page judges (owner decision 18 Nov)
 - **Rule:** a PDF page whose text is invisible (scanner-app OCR overlay, render mode 3 / 7) has no text layer; the read goes to Cloud Vision (page 1) like a scanned PDF. Drawn text keeps its free layer. Detection failure goes to Vision. Central in `pdf_pages.pdf_text_layer` / `pdf_page_texts`, so every reader follows it.
 - **Versions:** MODEL_VERSION 1.31.0, offer reader 2.7.0, SPM slip reader 1.2.0.
 - **Corpus:** 303 layered PDFs, 16 invisible (one Vision call each), 287 drawn (no new call).
@@ -153,16 +201,26 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Review fix round 8:** the cost modelling never closed (annotations 38 s, huge spaced text 11 s, clip paths 14 s, Type3 glyphs behind blank text 13.5 s), so pdfium now runs in a child process (`pdfium_run` -> `pdfium_worker`): killed after 20 s, address space capped (Linux, +640 MiB), at most 2 per web process; a timeout or crash is the safe answer (hidden / "cannot read"). The whitelists stay as a pre-filter; the load check covers blank-text pages. Added cost About 0.6 s per real document (4 children of about 0.15 s, Windows). Corpus unchanged on both pypdf versions.
 - **Review fix round 9:** a per-document pdfium budget (20 s of child time in all steps, then the safe answer with no child; corpus slowest document 4.0 s quiet, 16.1 s on a saturated machine), a 45 s bounded slot wait, the child's memory cap cut to 256 MiB (sums to about 1.9 GiB of the 2 GiB instance), capped child output, CPU limit and parent-death on Linux, one retry on a spawn error. Genuine upload behind 4 hostile ones: done in 44 s. Corpus unchanged on both pypdf versions.
 - **Review fix round 10:** an outside signal is checked first and never remembered; only a full 20 s kill marks a document for good; the child's limit is reserved before it starts (concurrent asks about one hostile file start 1 child); a thread that will not start is transient; a child MemoryError logs "out of memory". Linux corpus with the 256 MiB cap: answers identical to no cap, no MemoryError, largest child 181 MiB of address space (cap about 300). Corpus unchanged on both pypdf versions.
-- **Residuals (accepted, not new):** text under an image; transparent / white / size-0 / 0 Tz / off-page text. **Follow-up idea:** strip invisible runs inside a page during extraction (track `Tr` in pypdf's visitor).
+- **Residuals (accepted, not new):** text under an image; transparent / white / size-0 / 0 Tz / off-page text. **Follow-up idea:** strip invisible runs inside a page during extraction (track `Tr` in pypdf's visitor). For rules locks these residuals are closed by S-visible 2.
 
-### S5: SPM slips off 2.5 (the AI fallback moves to 3.8)
+### OCR-9 (was S-visible 2): a rules lock needs real ink on page 1 (owner rule 20 Nov) — MUST ship before any rules lane goes live
+- **Rule:** before a rules lane locks a text-layer letter, pdfium renders page 1 and every owner-phrase word and every value read must leave real ink everywhere it occurs; else no lock, the AI reads it (`not_inked`, labels only). Page 1: render modes 0-2 only, /Link annotations only. Thresholds and reasons: `docs/decisions.md` (2026-11-20).
+- **Code:** `pdf_ink.py` (rules), `pdfium_worker` op `ink` (asked with the layout, one child), hook in `offer_exact.exact_offer_read`, `offer_parse_university.ink_targets`. Lane off: no ink op.
+- **Version:** offer reader `PARSER_VERSION` 2.2.0 (unreleased) digest updated in place while built; on the rebase onto main (21 Nov), OCR-8 had shipped 2.2.0, so OCR-9 is **2.3.0** (a new entry; 2.2.0 kept as main recorded it). `OFFER_READER_VERSION` unchanged (2.9.0).
+- **Corpus:** 0 genuine lockable letters fail ink (UMS 33 locks, UiTM, UUM, UPSI, UM; pypdf 5.9.0 and 6.21.4). UMS PDFs 33/36, scans 11/22, Gate 1 held-out 22/33 and dev 22/29 with 0 wrong: unchanged.
+- **Tests:** `test_pdf_ink.py` (pure), `test_ink_attacks.py` (13 attacks, controls, rotations, lane off), the ink op in `test_pdfium_child.py`.
+- **Review fix round 2:** lending cap 0.08 (below the 0.10 ink floor); Type3 glyphs must stay inside their `d1` box with fill/path/state operators only (`page:type3`); a drawn space joins the overlap rules. Genuine cost unchanged on both pypdf versions; Gate 1 unchanged. **Open for S-visible 3:** the ToUnicode lie. **For S2:** 3 of 11 UiTM letters fail ink (genuine heavy overlap or a faint title).
+- **Review fix round 2b (the ring):** black glyphs touching a white value no longer lend it ink. The child counts as a character's ink only the change the other characters' exact boxes cannot explain (`pdfium_worker._ink`). Ring variants refuse (all sides, -0.1 to 1 pt gaps, six pixel phases). Genuine cost 0 on both pypdf versions; least share 0.130 against the 0.10 floor; Gate 1 unchanged.
+- **Review fix round 3 (home-made fonts):** any Type3 font reachable from page 1 refuses a UMS letter (`page:type3`, owner 20 Nov); `pdf_ink.TYPE3_LANES` stays empty until the Type3 tolerance is fixed (decisions.md). Both flat-glyph attacks refuse. Genuine cost 0 (no UMS letter carries Type3); UiTM 9 of 11 now fail (6 Type3), for S2.
+
+### OCR-10 (was S5): SPM slips off 2.5 (the AI fallback moves to 3.8) — BUILT (2026-11-20), paid gate PASSED 20 Nov (US$0.62)
 - **Problem:** `vision/gemini_read.py:86` `PINNED_25_DOC_TYPES={'results_slip'}` keeps slips on 2.5, because 3.8 returned malformed grades on **26 of 98** slips ("Aplus", stray JSON, tab or CJK characters).
 - **Fix, in three layers:**
   1. **Parser first** (S4), so fewer slips reach AI at all.
   2. **A stricter schema** for the slip in `vision/schemas.py`:
-     - each grade is an **enum**: A+, A, A-, B+, B, C+, C, D, E, G, TH, plus empty;
+     - each grade is an **enum**: A+, A, A-, B+, B, C+, C, D, E, G, TH, plus the word **BLANK** for a cell that cannot be read (Gemini refuses an empty string in an enum; the clean-up turns BLANK back into an empty grade, so it is never stored);
      - `required` on the subject list and on every grade key;
-     - an empty string is valid, a missing key is not (the 2.6.0 pattern).
+     - a BLANK grade is valid, a missing key is not (the 2.6.0 pattern).
   3. **A clean-up and one retry:**
      - `vision/sanitize.py` maps the known variants (Aplus → A+);
      - anything still outside the enum marks the slip as a failed read;
@@ -171,10 +229,11 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Version:** bump the slip read version.
 - **Tests:** enum and required-schema tests, sanitiser cases taken from the 26 failure shapes (synthetic), and the retry path.
 - **Gate (paid, owner's yes):** re-run the 98 cached slips plus the 137 answer key on 3.8 with the new schema. 3.8 must score **at least as well as 2.5** on the answer key, with **0 malformed grades**. The owner's goal is "better than 2.5, not equal".
+- **Gate result (paid, ran 20 Nov on `gemini-3.8-flash`, US$0.62): PASS.** On the 38 slips the AI read before, 3.8 equals 2.5: 37 accurate and 1 wrong row each. 0 malformed grades (it was 26 of 98 before the schema). The owner's goal was "better, not equal": the result is **equal**, not better. Across all 94 key slips: 91 accurate, 4 wrong rows, 1 "please check", 0 malformed.
 - **Stays AI:** the fallback, on 3.8 only.
 - **Complexity:** medium.
 
-### S6: TNB electricity bills and EPF statements, rules first
+### OCR-5 (was S6): TNB electricity bills and EPF statements, rules first
 - **Size:** TNB has 142 live bills, 77% read by AI. EPF has 24 AI reads that look like parser cases.
 - **Scope:**
   - `doc_parse.py` electricity format A (full bill) and format B (myTNB Express Payment): widen the markers and labels for the layouts the dry run shows failing, and add a gate per format.
@@ -185,7 +244,7 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Stays AI:** non-TNB providers (Sabah and Sarawak electricity), water bills apart from Air Selangor, and EPF photos that will not lock.
 - **Complexity:** medium.
 
-### S7: the parent IC (MyKad rules first, checked against the student)
+### OCR-15 (was S7): the parent IC (MyKad rules first, checked against the student)
 - **Size:** 506 live parent ICs, 82% read by AI. The AI second opinion fires because the free MyKad read is "shaky", and for a parent nothing typed is there to compare it with.
 - **Scope:**
   - For a parent IC, do not count "nothing to compare with" as shaky.
@@ -199,7 +258,7 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Stays AI:** the IC genuineness check (S8 moves it off 2.5), and blurred or angled cards.
 - **Complexity:** high.
 
-### S8: the genuineness jobs off 2.5
+### OCR-16 (was S8): the genuineness jobs off 2.5
 - **Scope:** four call sites move from `FLASH_25_CASCADE` to 3.8 with a `required` schema and one retry on a malformed answer:
   - `genuineness/ic.py:48`
   - `genuineness/results_doc.py:387`
@@ -210,7 +269,7 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 - **Stays AI:** all four checks (they are judgements about images, not text).
 - **Complexity:** high (it feeds verdicts).
 
-### S9: retire the remaining 2.5 cascade tails
+### OCR-17 (was S9): retire the remaining 2.5 cascade tails
 - **Scope:** the AI fallback models.
   - `profile_engine.py:58` `FLASH_25_CASCADE` and `:63` `MODEL_CASCADE` (its tail reaches about 15 jobs).
   - `reports/report_engine.py:36-37`
@@ -235,16 +294,16 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 
 | # | Where (file:line, main) | What it does | Replacement | Paid eval? | Rough cost | Sprint |
 |---|---|---|---|---|---|---|
-| 1 | `vision/gemini_read.py:86` `PINNED_25_DOC_TYPES` | Reads the SPM results slip | Parser first (S4), then 3.8 + grade enum + required + one retry | **Yes** | 235 slips × up to 2 calls ≈ 470 calls ≈ **US$2** | S4 → S5 |
-| 2 | `genuineness/ic.py:48` | IC genuineness markers | 3.8 + required + one retry | **Yes** | about 100 ICs ≈ **US$0.50** | S8 |
-| 3 | `genuineness/results_doc.py:387` | Results slip QR and crest markers | the same | **Yes** | about 100 slips ≈ **US$0.50** | S8 |
-| 4 | `genuineness/supporting_doc.py:70` | Supporting-document genuineness | the same | **Yes** | about 60 docs ≈ **US$0.30** | S8 |
-| 5 | `genuineness/sample_stamp.py:69` | The "SAMPLE" stamp check | the same | **Yes** | about 40 docs ≈ **US$0.20** | S8 |
+| 1 | `vision/gemini_read.py:86` `PINNED_25_DOC_TYPES` | Reads the SPM results slip | Parser first (S4), then 3.8 + grade enum + required + one retry | **Yes** | 235 slips × up to 2 calls ≈ 470 calls ≈ **US$2** | OCR-3 → OCR-10 |
+| 2 | `genuineness/ic.py:48` | IC genuineness markers | 3.8 + required + one retry | **Yes** | about 100 ICs ≈ **US$0.50** | OCR-16 |
+| 3 | `genuineness/results_doc.py:387` | Results slip QR and crest markers | the same | **Yes** | about 100 slips ≈ **US$0.50** | OCR-16 |
+| 4 | `genuineness/supporting_doc.py:70` | Supporting-document genuineness | the same | **Yes** | about 60 docs ≈ **US$0.30** | OCR-16 |
+| 5 | `genuineness/sample_stamp.py:69` | The "SAMPLE" stamp check | the same | **Yes** | about 40 docs ≈ **US$0.20** | OCR-16 |
 | 6 | `offer_reader.py:117` (+297-299, 306, 357) | Re-asks 2.5 for a missing reporting date | **Already replaced in 2.6.0:** a 3.8 retry, and 2.5 is refused | Done (the 2.6.0 eval) | US$0 more | Base branch |
-| 7 | `profile_engine.py:58, 63` | The 2.5 tail of `MODEL_CASCADE` (about 15 jobs) | A non-2.5 fallback model | No (fallback only) | US$0 | S9 |
-| 8 | `reports/report_engine.py:36-37` | The counsellor report's own cascade | the same | No | US$0 | S9 |
-| 9 | `courses/.../map_course_careers.py:35-36` | The career-mapping command | the same | No | US$0 | S9 |
-| 10 | `courses/.../generate_stpm_headlines.py:16` | The STPM headline command | the same | No | US$0 | S9 |
+| 7 | `profile_engine.py:58, 63` | The 2.5 tail of `MODEL_CASCADE` (about 15 jobs) | A non-2.5 fallback model | No (fallback only) | US$0 | OCR-17 |
+| 8 | `reports/report_engine.py:36-37` | The counsellor report's own cascade | the same | No | US$0 | OCR-17 |
+| 9 | `courses/.../map_course_careers.py:35-36` | The career-mapping command | the same | No | US$0 | OCR-17 |
+| 10 | `courses/.../generate_stpm_headlines.py:16` | The STPM headline command | the same | No | US$0 | OCR-17 |
 
 **Also:** the registry mirror (`ai_registry.py:49-51, 91-103`) follows uses 1-7. The 4 cosmetic mentions go in S9.
 

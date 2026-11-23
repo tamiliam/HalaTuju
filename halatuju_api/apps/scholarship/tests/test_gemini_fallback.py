@@ -216,7 +216,7 @@ class TestTheClientTimeout(TestCase):
     @patch('google.genai.Client')
     def test_the_seams_pass_the_runners_timeout_through(self, client_cls):
         client_cls.return_value.models.generate_content.return_value = MagicMock(text='ok')
-        for seam in (contracts._gemini_generate, sponsor_terms._gemini_generate):
+        for seam in (contracts._gemini_generate,):
             with self.subTest(seam=seam.__module__):
                 client_cls.reset_mock()
                 seam('p', CONFIGURED, timeout_ms=7_000)
@@ -294,7 +294,7 @@ class TestSponsorTerms(TestCase):
 
     def test_the_quiz_falls_back_and_stamps_the_model_that_answered(self):
         seam = _first_fails(QUIZ_JSON)
-        with patch('apps.scholarship.sponsor_terms._gemini_generate', side_effect=seam):
+        with patch('apps.scholarship.contracts._gemini_generate', side_effect=seam):
             sponsor_terms.generate_quiz(self.section)
         self.section.refresh_from_db()
         self.assertEqual(seam.asked, [CONFIGURED, NEXT])
@@ -302,7 +302,7 @@ class TestSponsorTerms(TestCase):
 
     def test_the_quiz_still_raises_when_every_model_fails(self):
         seam = _all_fail()
-        with patch('apps.scholarship.sponsor_terms._gemini_generate', side_effect=seam):
+        with patch('apps.scholarship.contracts._gemini_generate', side_effect=seam):
             with self.assertRaises(_NotFound):
                 sponsor_terms.generate_quiz(self.section)
         self.assertEqual(seam.asked, cascade_from(CONFIGURED))
@@ -327,8 +327,8 @@ class TestSponsorTerms(TestCase):
 
     @override_settings(GEMINI_API_KEY='')
     def test_the_quiz_still_refuses_with_no_key_after_one_try(self):
-        with patch('apps.scholarship.sponsor_terms._gemini_generate',
-                   wraps=sponsor_terms._gemini_generate) as seam:
+        with patch('apps.scholarship.contracts._gemini_generate',
+                   wraps=contracts._gemini_generate) as seam:
             with self.assertRaises(sponsor_terms.SponsorTermsError) as cm:
                 sponsor_terms.generate_quiz(self.section)
         self.assertEqual(cm.exception.code, 'quiz_ai_unconfigured')

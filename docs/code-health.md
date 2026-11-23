@@ -159,7 +159,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `159  halatuju_api/apps/courses/views_staff.py:207 post`
 
 ### Function names with 3+ homes in one app
-- _gemini_generate x3 (scholarship): apply_copy_draft.py, __init__.py, sponsor_terms.py
+- none
 
 ### Cross-app imports
 - courses -> scholarship: 1 edges (16 import statements)
@@ -221,6 +221,10 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-11-19 (0dea7e8 + CH-07) - `dup` 1 -> 0
+
+`_gemini_generate` now has ONE home, `contracts._gemini_generate` (the seam tenancy rule 6 names). `apply_copy_draft` and `sponsor_terms` dropped their own copies and call it through `gemini.generate_with_fallback`, mapping its two config refusals back to their own error class and codes (`ai_unconfigured` / `ai_unavailable`; `quiz_ai_*` as `SponsorTermsError`). Same models, timeouts, images handling and metering; the `patch()` strings in the tests now point at `apps.scholarship.contracts._gemini_generate`. The `duplicated_names` budget is empty. This overrides the 2026-09-19 "accepted permanently" note: the 5 Nov audit set the target at 0 by Fri 4 Dec, and the answer was a real shared helper, not a rename. The Trend row for this reading is written by the next `--write`.
 
 ### 2026-11-05 (227eaf7, Consolidation Review and Sprint A0.2) — 1 FAIL accepted, `fix%` +1 accepted
 
@@ -830,7 +834,7 @@ are unfinished, so a future close does not re-litigate all six every time.
 
 | WARN | Reads | Status |
 |---|---|---|
-| `dup` 4 | `_gemini_generate` ×3 and the `render`/`banned_phrases`/`unknown_placeholders` trio | **DECIDED, PERMANENT** (fifth reading, H7). The metering seams tenancy rule 6 names, and one engine with two thin per-audience adapters. **Do not chase it to zero by renaming adapters.** |
+| `dup` 4 | `_gemini_generate` ×3 and the `render`/`banned_phrases`/`unknown_placeholders` trio | **SUPERSEDED 2026-11-19 (CH-07): `_gemini_generate` now has one home and `dup` reads 0.** (Was: DECIDED, PERMANENT, fifth reading, H7.) The metering seams tenancy rule 6 names, and one engine with two thin per-audience adapters. **Do not chase it to zero by renaming adapters.** |
 | `mirror` 3 | `incomeWizard.ts` ×3 | **DECIDED, PARKED** (tenth reading, H10). A guard written today either fails on a disagreement nobody has ruled on or blesses one. Leaves the ledger when **TD-262** is settled, and whoever settles it writes the guard. |
 | `long` 15 | 15 Python functions of 150+ lines | **ACCEPTED as baseline** (2026-09-18). Never had a target; ratcheted, not chased. |
 | `big` 17 | files over 1,000 lines | **MISSED — the target was 12.** Eight left, nine remain; four nobody scoped, three a move cannot help, two are eligibility and money. The split table is empty, so **nothing is waiting**: this is a Phase 4b when somebody wants one. See the arc's closing retrospective. |
@@ -1082,7 +1086,7 @@ Plain run. No FAILs. Not a roadmap sprint.
 ### 2026-09-19 (fifth reading) — H7 closed: `dup` 10 → 4
 
 Plain run after sprint H7. No FAILs.
-- **dup 10 → 4** — *done, and the four that remain are ACCEPTED, permanently.* `_gemini_generate` ×3
+- **dup 10 → 4** — *(SUPERSEDED 2026-11-19, CH-07: `_gemini_generate` was given one home and `dup` is now 0.)* *done, and the four that remain are ACCEPTED, permanently.* `_gemini_generate` ×3
   are the metering seams tenancy rule 6 names; `render` / `banned_phrases` /
   `unknown_placeholders` ×3 are one engine and two thin per-audience adapters. The reading will
   keep WARNing at 4; that WARN is decided — do not chase it to zero by renaming adapters. The

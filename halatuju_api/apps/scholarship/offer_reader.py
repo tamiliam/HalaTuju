@@ -97,6 +97,22 @@ confidence threshold (the owner's long-term direction) can slot in front of them
 INVISIBLE (a scanner app's OCR overlay on a photo, render mode 3 / 7) has no text layer
 (`pdf_pages.pdf_page_texts`, per page): its text is never shown, and the second read of such a page 1
 is the page-1 image, as for a scanned PDF. Drawn text is shown as before. Prompt and schema unchanged.
+2.8.0 — OCR-FIRST S1 (2026-11-19). A UMS offer letter can be read by fixed rules first
+(`offer_parse_university`, lane 'ua:UMS'); the AI reader is the fallback whenever the rules do not lock,
+the lane switch (env `OCR_FIRST_LANES`) is off, or the catalogue match is not unique. Prompt and
+schema unchanged.
+
+2.9.0 - OCR-FIRST S1c (2026-11-19). The UMS rules read refuses more (TD-699), so more UMS letters may
+reach this reader: a reporting range wrapped across lines, more withdrawal words, any programme label
+line, an '@' or "NAME, KG ..." line under the name, text longer than a page 1. Prompt and schema
+unchanged; the lane stays off by default.
+
+2.10.0 — NOTHING READ IS A FAILED READ (OCR-11, owner 2026-11-21). An answer with EVERY field of `_FIELDS`
+blank after the second read (a white or blank page image; `candidate_nric_source` and the warnings say
+nothing about the page and are not counted) is returned as an error (`read_errors.EMPTY_ANSWER`), so it is
+stored "cannot read" (`unreadable`), never a stored 'ok' offer that says nothing. The check runs on the
+model's answer, before the IC guard, so a text-layer IC backstop never makes an empty read whole. Prompt,
+schema, inputs and the calls made are unchanged.
 
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in
@@ -113,7 +129,7 @@ import re
 logger = logging.getLogger(__name__)
 
 #: Semantic version of the AI offer reader — see the module docstring.
-OFFER_READER_VERSION = '2.7.0'
+OFFER_READER_VERSION = '2.10.0'
 #: Pages of a PDF shown to Gemini: an e-registration slip can sit in front of the offer and the
 #: reporting date can be on page 2 (owner notes, S1); later pages are mostly reply forms.
 MAX_PAGES = 3
@@ -524,9 +540,12 @@ def read_offer(ocr_text: str, *, image=None, content_type: str = '', profile_nri
     if '_error' in data:
         return {'fields': {}, 'warnings': [], 'error': data['_error'], **_read_stamp(inputs, read['calls'])}
     info, warnings = _second_read(data, read, ocr_text, _texts(data.pop('warnings', [])))
-    warnings = vision._drop_expected_warnings('offer_letter', warnings)
     stamp = _read_stamp(inputs, read['calls'])
     stamp['offer_reader_inputs'].update(info)
+    if all(_blank(data, f) for f in _FIELDS):        # 2.10.0: nothing read is a failed read, never 'ok'
+        from .read_errors import EMPTY_ANSWER
+        return {'fields': {}, 'warnings': [], 'error': EMPTY_ANSWER, **stamp}
+    warnings = vision._drop_expected_warnings('offer_letter', warnings)
     merged = read['merged']
     data = vision._sanitize_extracted_fields('offer_letter', data)
     raw_ic = {f: data.get(f) or '' for f in ('candidate_nric', 'candidate_nric_source')}

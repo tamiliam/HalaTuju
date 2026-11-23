@@ -196,10 +196,10 @@ function AssignControls({ app, t, busy, isSuper, card, decisionLocked, admins, d
             promoted to org_admin → was showing "Unassigned"), even paused or of another gift. Everyone
             else is offered only when active and covering THIS case's gift; the rest are not shown
             (no greying, no reason). An empty gift list (every gift) or a case of unknown gift hides
-            nobody by gift. Role suffixed so a senior assignee is distinguishable. */}
+            nobody by gift. Name only: the legacy role label was dropped (F1 / I-5). */}
         {options.map((a) => (
           <option key={a.id} value={a.id}>
-            {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
+            {a.name}
           </option>
         ))}
       </select>

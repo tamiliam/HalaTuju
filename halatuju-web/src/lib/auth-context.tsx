@@ -11,7 +11,7 @@ import {
 } from 'react'
 import { usePathname } from 'next/navigation'
 import { isAnonymousAuthSuppressed } from '@/lib/sessionPolicy'
-import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
+import { getSession, getSupabase } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import { browserMovesUp } from '@/lib/qualification'
 import type { StudentProfile } from '@/lib/api'
@@ -47,8 +47,9 @@ interface AuthContextValue {
 /**
  * Exported for ONE reason: the design sandbox mounts real signed-in screens without an identity.
  *
- * `AuthProvider` mints an anonymous Supabase user on mount, which a sandbox must never do — it
- * would create real auth rows for a design review — so the sandbox supplies this context directly
+ * `AuthProvider` reads the real Supabase session and listens to it (and, before the 2026-11-19
+ * captcha repair, minted an anonymous Supabase user on mount), which a sandbox must never do — it
+ * must not touch real auth for a design review — so the sandbox supplies this context directly
  * with a synthetic value instead. That is the sandbox's own rule applied rather than dodged: *if a
  * surface cannot be mounted without re-implementing part of it, make it mountable*. The same
  * accommodation `sponsor-portal-context` already makes.
@@ -93,16 +94,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isPrivilegedConsole) { setIsLoading(false); return }
     const claim = (s: Session | null) => { if (claimStudentData(realUserId(s))) setEpoch(n => n + 1) }
     getSession()
-      .then(async ({ session: existingSession }) => {
-        let session = existingSession
-        if (!session) {
-          // No session — sign in anonymously
-          const { data } = await signInAnonymously()
-          session = data?.session ?? null
-        }
-        // TD-458: before anything reads or syncs it, data left by another account is wiped. Only on a
-        // definite session: none at all (offline) proves nothing about whose browser this is.
+      .then(async ({ session, error }) => {
+        // ⚠ CAPTCHA REPAIR (2026-11-19): NO ANONYMOUS SESSION IS MINTED ANY MORE. This used to call
+        // Supabase's anonymous sign-in on every page load with no session — a Turnstile challenge plus a
+        // Supabase auth row per visitor, and with the captcha switch on a visible failure for anyone
+        // whose browser blocks Cloudflare. Nothing reads the anonymous session: the API ignores
+        // anonymous tokens (NRIC gate, profile, quiz signals, sponsor views), every student screen
+        // treats "no session" exactly as "anonymous" (`isAnonymous` is true for both, `status` is
+        // 'anonymous'), and the sign-in modal starts a fresh Google sign-in, never `linkIdentity`.
+        // A browser that already holds an anonymous session keeps it and is handled as before.
+        //
+        // TD-458: before anything reads or syncs it, data left by another account is wiped. On a
+        // session, it is claimed for that session. With NO session, data tagged to an account is
+        // another account's — this browser is signed out — so it is dropped, as the anonymous
+        // mint's claim used to do. Except offline: the mint could not run offline, so it never
+        // wiped there, and that is kept (`sharedPhoneOwner.test.tsx`).
+        // ⚠ AND NOT ON AN ERROR. `getSession()` also returns NO session when a token refresh failed
+        // on the network or with a 502/503/504 — auth-js keeps the session in storage on those
+        // retryable errors and refreshes it later. Wiping then would cost a student on weak data
+        // their grades, profile, quiz signals and a half-filled apply form, and TOKEN_REFRESHED does
+        // not re-fetch them (storage.ts: a refresh failure must not wipe). So: no session AND no
+        // error AND online, or nothing is dropped.
         if (session) claim(session)
+        else if (!error && (typeof navigator === 'undefined' || navigator.onLine !== false)) claim(null)
         setSession(session ?? null)
 
         // Check identity (NRIC) for non-anonymous users
