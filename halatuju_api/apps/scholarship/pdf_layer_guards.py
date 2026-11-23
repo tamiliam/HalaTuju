@@ -22,8 +22,13 @@ Fix round 6: 3 became a WHITELIST (`_doc_may_switch_off`). The layers count as a
    holds just the keys the corpus uses (/OCGs, /D: no /Configs, which pdfium may pick for viewing), /D just
    /ON /OFF /Order /RBGroups /BaseState, /BaseState absent or /ON, /OFF empty, no /AS, and every OCG only
    /Type and /Name. Anything else makes all OC-marked text and every OC form hidden.
+TD-702: `GateReader`, the reader every page check opens, caps pypdf's whole-file searches.
 """
+import io
 import re
+
+from pypdf import PdfReader
+from pypdf.generic import IndirectObject
 
 #: Fixed operand counts (ISO 32000 operator summary), for EVERY such operator — not one of the 533 corpus
 #: PDFs breaks one. ``sc``/``scn`` (variable) and inline images are not here.
@@ -113,6 +118,61 @@ def _packed_objects_check(reader) -> None:
         total += n if isinstance(n, int) and n > 0 else 0
         if total > MAX_PACKED_OBJECTS:
             raise OverBudget('objects in object streams past the cap')
+
+
+#: TD-702 (2026-11-23): pypdf copies and searches the WHOLE file when it cannot place an object (a row on the
+#: wrong bytes, a wrong generation, a comment before the header, a number with no row) and when it rebuilds a
+#: broken table: 0.1-0.3 s each on a 7.5 MB file, and nothing capped how many. Past this many whole-file reads
+#: in one reader, the PDF is refused. Genuine fixtures (870, through the gate): 7 make 1, none more (TD-702 census).
+MAX_WHOLE_FILE_READS = 4
+_HEADER = re.compile(rb'\s(\d+)\s+(\d+)\s+obj')
+
+
+class _CountedBytes(io.BytesIO):
+    """The bytes `GateReader` reads: every unsized read (the whole file, or all of it from some point) counts.
+    ``getbuffer`` is hidden, so pypdf's `get_stream_data` (each whole-file search) takes its read path, and
+    `get_stream_size` its seek/tell path (a size, not a search: not counted)."""
+    getbuffer = property()                   # no getter: AttributeError, so hasattr(stream, 'getbuffer') is False
+
+    def __init__(self, data: bytes):
+        super().__init__(data)
+        self.whole_reads = 0
+
+    def read(self, size=-1):
+        if size is None or size < 0:
+            self.whole_reads += 1
+            if self.whole_reads > MAX_WHOLE_FILE_READS:
+                raise OverBudget('pypdf whole-file reads past the cap')
+        return super().read(size)
+
+
+class GateReader(PdfReader):
+    """pypdf's reader, its whole-file reads capped (`_CountedBytes`). A lookup of an object with no cross-reference
+    row whose ``n g obj`` header the file does not hold gets pypdf's own answer for it (None) without pypdf's
+    whole-file search: the headers are found once, by one counted read, at the first such lookup. A header the
+    file DOES hold goes to pypdf, which searches (counted). The header test is a superset of pypdf's search."""
+
+    def __init__(self, data: bytes):
+        self._headers = None
+        super().__init__(_CountedBytes(data))
+
+    def get_object(self, indirect_reference):
+        ref = indirect_reference
+        if isinstance(ref, int):
+            ref = IndirectObject(ref, 0, self)
+        gen, num = ref.generation, ref.idnum
+        if ((gen, num) in self.resolved_objects or (gen == 0 and num in self.xref_objStm)
+                or num in self.xref.get(gen, ()) or min(gen, num) < 0):
+            return super().get_object(ref)
+        if self._headers is None:
+            at = self.stream.tell()
+            self.stream.seek(0)
+            self._headers = set(_HEADER.findall(self.stream.read()))      # one counted whole-file read
+            self.stream.seek(at)
+        if (b'%d' % num, b'%d' % gen) in self._headers:
+            return super().get_object(ref)
+        self.cache_indirect_object(gen, num, None)                        # what pypdf stores for a missing one
+        return None
 
 
 def page_tree_check(reader) -> None:

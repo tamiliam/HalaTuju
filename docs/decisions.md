@@ -21070,3 +21070,11 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 **Why:** the flagship is closed and the three were stuck mid-way. The owner rated this a one-off, so no move feature was built.
 **Still to do (owner):** add the Degree programme to the "Covers" list of #140's interviewer in the Team page (the one writer of `reviewer_gifts` is `staff_gift.set_gifts`); send the two student emails from the BrightPath mailbox.
 **Revisit if:** moves between programmes are asked for again; then build a proper move with a re-check of the rules and an audit event.
+
+## 2026-11-23 - The PDF gate counts pypdf's whole-file reads, not its getbuffer calls, and the fix sits on main's reader (TD-702)
+
+**Decision:** every reader the page checks open (`pdf_pages._open_pdf`) is now `pdf_layer_guards.GateReader`: pypdf over a BytesIO that counts each unsized read and refuses the PDF past `MAX_WHOLE_FILE_READS` (4), and a lookup of a number with no cross-reference row and no `n g obj` header in the file gets pypdf's own answer (None) after one counted header scan, with no search.
+**Why not getbuffer:** in pypdf 6.21.4 `getbuffer()` is also how `get_stream_size` asks the file's size, once per cross-reference subsection, so counting it would count genuine files with many subsections. The BytesIO hides `getbuffer`, so each search (`get_stream_data`) takes the read path and the size check takes seek/tell.
+**Why on main's reader:** the TD named OCR-12's `GateReader._count_repair` (`pdf_objects.py`), which is not on main (OCR-12 is parked); main opens a plain `PdfReader`, so the fix was built there, small, with the TD's own shape.
+**Cap:** genuine fixtures (870) make at most 1 whole-file read through the gate (7 make 1); the census refused the same 2 before and after.
+**Revisit if:** OCR-12 lands (its own repair count overlaps this one; keep one), or pypdf 7 changes how it searches (`_utils.get_stream_data`).

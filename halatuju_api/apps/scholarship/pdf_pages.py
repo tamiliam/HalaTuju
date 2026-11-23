@@ -12,7 +12,6 @@ for more than 2 GiB, and the hourly stuck-read sweep killed the api instance thr
 and a page box past ``MAX_PAGE_SIDE_PT`` is refused outright rather than rendered.
 """
 import hashlib
-import io
 import logging
 import re
 import threading
@@ -20,8 +19,9 @@ from collections import OrderedDict
 from typing import NamedTuple, Optional
 
 from . import pdf_pdfium_check, pdf_render_check, pdfium_run, pdfium_worker
-from .pdf_layer_guards import (_MAX_DOC_FONT_COST, OverBudget as _OverBudget, _doc_may_switch_off, bad_operands,
-                               charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check, shown_chars)
+from .pdf_layer_guards import (_MAX_DOC_FONT_COST, GateReader, OverBudget as _OverBudget, _doc_may_switch_off,
+                               bad_operands, charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check,
+                               shown_chars)
 
 logger = logging.getLogger(__name__)
 
@@ -357,9 +357,9 @@ def _layer_pages(n: int, per_page: int = 0) -> list:
 
 def _open_pdf(data: bytes):
     """A pypdf reader for ``data`` (an empty password tried on an encrypted file), its page tree checked
-    (`page_tree_check`) before pypdf flattens it. Raises on failure."""
-    from pypdf import PdfReader
-    reader = PdfReader(io.BytesIO(data))
+    (`page_tree_check`) before pypdf flattens it, its whole-file searches capped (`GateReader`, TD-702). Raises on
+    failure."""
+    reader = GateReader(data)
     if reader.is_encrypted:
         reader.decrypt('')
     page_tree_check(reader)
