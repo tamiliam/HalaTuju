@@ -178,7 +178,8 @@ def student_income_ic_check(doc):
     wrong_card = False
     if chain_verified:
         wrong_card = 'mismatch' in (name_status, proof_name_status, proof_nric_status)
-        name_status = chain_link_status(app)     # the parent row only (#78 review round 2)
+        if name_status != 'match':               # a link that already matches stays (the callers' rule)
+            name_status = chain_link_status(app)     # the parent row only (#78 review round 2)
     # TD-390: the card needed the Gemini second opinion and our outage skipped it — a mismatch read
     # off half a read is not a finding. Pending until the hourly sweep re-reads it; never a match.
     deferred = ic_second_opinion_deferred(doc)

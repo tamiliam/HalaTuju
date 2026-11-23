@@ -224,12 +224,16 @@ class TestTheChainStandsInForTheParentRowOnly(_Base):
         evidence, _ = self._income(app)
         self.assertIn('relationship_confirmed', evidence)
 
-    def test_a_red_child_row_stays_red_under_the_chain(self):
-        # Another child on the certificate (far name, far number): the chain vouches for the
-        # mother only, so the link is red in the chip and the decision alike.
+    def test_another_childs_certificate_is_red_and_the_chain_does_not_hold(self):
+        # Another child on the certificate (far name, far number). The chain needs a child name
+        # that passes (`_bc_parent_identity`), so it does not hold here and the plain mother link
+        # decides: red in the chip and the decision alike. Under the chain the child row is never
+        # red or grey (review round 3).
         app, ic, bc = self._case(FAR_IC, child='SITI NUR AISYAH BINTI AHMAD')
         self.assertEqual(student_bc_check(bc)['link'], 'red')
-        self.assertEqual(student_income_ic_check(ic)['name_status'], 'mismatch')
+        chk = student_income_ic_check(ic)
+        self.assertFalse(chk['chain_verified'])
+        self.assertEqual(chk['name_status'], 'mismatch')
         evidence, _ = self._income(app)
         self.assertNotIn('relationship_confirmed', evidence)
 
@@ -261,6 +265,37 @@ class TestTheChainStandsInForTheParentRowOnly(_Base):
                 evidence, unresolved = self._income(app)
                 self.assertEqual('relationship_confirmed' in evidence, confirmed)
                 self.assertNotIn('father_patronymic_mismatch', unresolved)
+
+
+    def test_a_patronymic_father_keeps_the_match_when_the_chain_holds(self):
+        # Review round 3: the patronymic already links the father, and the certificate's father
+        # number is the STR's / the payslip's, so the chain holds. A far child number must not
+        # pull the IC check down to pending while the decision confirms; the two agree on match,
+        # and the father's cluster stays complete.
+        from apps.scholarship.income_engine import member_cluster_complete
+        father, father_ic = 'RAMAN A/L GOPAL', '710303-10-5559'    # the patronymic agrees
+        for route in ('str', 'salary'):
+            with self.subTest(route=route):
+                app = self._app(route, earner='father',
+                                members=['father'] if route == 'salary' else ())
+                ic = _doc(app, 'parent_ic', 'father', name=father, nric=father_ic)
+                _doc(app, 'birth_certificate', fields={
+                    'bc_child_name': STUDENT, 'bc_child_nric': FAR_IC,
+                    'bc_father_name': father, 'bc_father_nric': father_ic})
+                if route == 'str':
+                    _doc(app, 'str', fields={'recipient_name': father, 'recipient_nric': father_ic,
+                                             'status': 'Lulus',
+                                             'year': str(timezone.localdate().year),
+                                             'source_type': 'semakan_status'})
+                else:
+                    _doc(app, 'salary_slip', 'father', fields={
+                        'name': father, 'nric': father_ic, 'gross_income': '2000'})
+                chk = student_income_ic_check(ic)
+                self.assertTrue(chk['chain_verified'])
+                self.assertEqual(chk['name_status'], 'match')
+                evidence, _ = self._income(app)
+                self.assertIn('relationship_confirmed', evidence)
+                self.assertTrue(member_cluster_complete(app, 'father'))
 
 
 class TestATypedOnlyNameIsAmber(_Base):
