@@ -15,7 +15,7 @@
  *      reach the screen. A refusal with NO site key (switch on, key missing from the build) logs a
  *      console warning, so the deploy mistake is visible.
  *
- * The screens turn the codes into plain words with `captchaErrorKeys()` (en/ms/ta in
+ * The screens turn the codes into plain words with `captchaErrorText()` (en/ms/ta in
  * `messages/*.json`, `admin.loginCaptcha.*` / `sponsorAuth.captcha*`). Google sign-in does not pass through here: OAuth
  * redirects carry no captcha.
  */

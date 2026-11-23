@@ -12,5 +12,5 @@ jest.mock('./TrustView', () => { throw new Error('ChunkLoadError: Loading chunk 
 
 it('says so in place and does not throw', async () => {
   render(<LazyTrustView trust={{} as never} />)
-  expect((await screen.findByRole('alert')).textContent).toBe('sponsorPortal.loadFailed')
+  expect((await screen.findByRole('alert')).textContent).toBe('sponsorPortal.partLoadFailed')
 })

@@ -136,6 +136,7 @@
   },
   "sponsorPortal": {
     "loadFailed": "Could not load your sponsor account. Please try again.",
+    "partLoadFailed": "This part could not load. Reload the page to try again.",
     "registerFailed": "Could not submit your details. Please try again.",
     "completeTitle": "Complete your details",
     "completeBody": "Just a couple more things before our team reviews your application.",

@@ -15,5 +15,5 @@ it('each part says so in place and nothing throws', async () => {
   render(<><LazyInviteFriends /><LazyGivingStatement statement={{} as never} /></>)
   const alerts = await screen.findAllByRole('alert')
   expect(alerts).toHaveLength(2)
-  for (const a of alerts) expect(a.textContent).toBe('sponsorPortal.loadFailed')
+  for (const a of alerts) expect(a.textContent).toBe('sponsorPortal.partLoadFailed')
 })

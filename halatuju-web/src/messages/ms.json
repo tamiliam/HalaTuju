@@ -136,6 +136,7 @@
   },
   "sponsorPortal": {
     "loadFailed": "Tidak dapat memuatkan akaun penaja anda. Sila cuba lagi.",
+    "partLoadFailed": "Bahagian ini tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi.",
     "registerFailed": "Tidak dapat menghantar butiran anda. Sila cuba lagi.",
     "completeTitle": "Lengkapkan butiran anda",
     "completeBody": "Hanya beberapa perkara lagi sebelum pasukan kami menyemak permohonan anda.",
