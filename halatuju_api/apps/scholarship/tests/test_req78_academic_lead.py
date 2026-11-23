@@ -16,7 +16,7 @@ from unittest import mock
 from django.test import SimpleTestCase
 
 from apps.scholarship import award, higher_owed, higher_results, verdict_ladder
-from apps.scholarship.verdict_engine import _fact, _item
+from apps.scholarship.verdict_engine import _fact
 
 _SCHOLARSHIP = Path(higher_results.__file__).resolve().parent
 
@@ -26,8 +26,10 @@ def _codes(fact):
 
 
 def _spm_card(*codes, status='review'):
-    """The SPM card's own answer, its items in the order `verdict_academic` raises them."""
-    return _fact('academic', status, [], [_item(c) for c in codes])
+    """The SPM card's own answer, its items in the order `verdict_academic` raises them. Items are
+    built as `verdict_engine._item` builds them, written out so no dynamic `_item()` call site is added
+    (`test_verdict_item_i18n`)."""
+    return _fact('academic', status, [], [{'code': c, 'params': {}} for c in codes])
 
 
 def _higher_check(**over):

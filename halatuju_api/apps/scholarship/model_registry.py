@@ -64,9 +64,7 @@ MODELS = {
             ('offer_reading', ('_PRIVATE_BODIES', '_PRIVATE_SIGNS', '_TAG', '_TIE_UP', '_public_names')),
             ('offer_signatures', ('_IIUM_EN', '_UA_NAMES')), ('offer_confirmations', ('_NO_PRIVATE_WING',
              '_POLY_DEPARTMENTS')), ('results_doc', ('_PRIVATE_ARM_PHRASES', '_norm_fold_upper_alnum')))
-            for n in names]
-        # the band's own red code, read by verdict_ladder.academic_red_first (#78, 2026-11-23)
-        + [(f'{_APP}/fact_bands.py', 'HIGHER_RESULTS_UNREADABLE')],
+            for n in names] + [(f'{_APP}/fact_bands.py', 'HIGHER_RESULTS_UNREADABLE')],  # #78 academic_red_first
     },
     'results_doc': {
         'constant': (f'{_G}/results_doc.py', 'MODEL_VERSION'),
