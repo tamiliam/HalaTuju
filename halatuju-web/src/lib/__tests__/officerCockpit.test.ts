@@ -455,7 +455,7 @@ describe('documentFacts', () => {
   })
 
   it('birth certificate → Child, Mother, Father (carries the mother relationship)', () => {
-    expect(documentFacts(doc({ doc_type: 'birth_certificate', bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status: 'match', father_name: '', father_status: 'match', bc_number: '' } })).map((f) => f.key))
+    expect(documentFacts(doc({ doc_type: 'birth_certificate', bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status: 'match', father_name: '', father_status: 'match', bc_number: '', link: 'green' } })).map((f) => f.key))
       .toEqual(['child', 'mother', 'father'])
   })
 
@@ -466,7 +466,7 @@ describe('documentFacts', () => {
   it('a differently-spelt mother with the same IC number is AMBER, not red', () => {
     const bc = (mother_status: 'check_name' | 'mismatch') => documentFacts(doc({
       doc_type: 'birth_certificate',
-      bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status, father_name: '', father_status: 'match', bc_number: '' },
+      bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status, father_name: '', father_status: 'match', bc_number: '', link: mother_status === 'mismatch' ? 'red' : 'amber' },
     })).find((f) => f.key === 'mother')?.status
     expect(bc('check_name')).toBe('partial')
     expect(bc('mismatch')).toBe('not')
@@ -478,7 +478,7 @@ describe('documentFacts', () => {
   it('a row checked on ONE cell is amber, not green', () => {
     const child = (child_status: 'match' | 'check_one') => documentFacts(doc({
       doc_type: 'birth_certificate',
-      bc_check: { child_name: '', child_status, mother_name: '', mother_nric: '', mother_status: 'match', father_name: '', father_status: 'match', bc_number: '' },
+      bc_check: { child_name: '', child_status, mother_name: '', mother_nric: '', mother_status: 'match', father_name: '', father_status: 'match', bc_number: '', link: child_status === 'match' ? 'green' : 'amber' },
     })).find((f) => f.key === 'child')?.status
     expect(child('check_one')).toBe('partial')
     expect(child('match')).toBe('verified')     // both cells agreed → still green
@@ -490,20 +490,20 @@ describe('documentFacts', () => {
   it('a certificate nothing could be read from is ONE amber row, not three greys', () => {
     const rows = documentFacts(doc({
       doc_type: 'birth_certificate',
-      bc_check: { child_name: '', child_status: 'no_ref', mother_name: '', mother_nric: '', mother_status: 'no_ref', father_name: '', father_status: 'no_ref', bc_number: '', unreadable: true },
+      bc_check: { child_name: '', child_status: 'no_ref', mother_name: '', mother_nric: '', mother_status: 'no_ref', father_name: '', father_status: 'no_ref', bc_number: '', link: 'grey', unreadable: true },
     }))
     expect(rows).toEqual([{ key: 'unreadable', status: 'partial' }])
     // Without the flag the same three `no_ref` rows still render as they always did.
     expect(documentFacts(doc({
       doc_type: 'birth_certificate',
-      bc_check: { child_name: '', child_status: 'no_ref', mother_name: '', mother_nric: '', mother_status: 'no_ref', father_name: '', father_status: 'no_ref', bc_number: '' },
+      bc_check: { child_name: '', child_status: 'no_ref', mother_name: '', mother_nric: '', mother_status: 'no_ref', father_name: '', father_status: 'no_ref', bc_number: '', link: 'grey' },
     })).map((f) => f.key)).toEqual(['child', 'mother', 'father'])
   })
 
   // TD-158: the BC was the one genuineness-scored type whose row ignored its score.
   describe('TD-158 — the birth-certificate row carries its genuineness', () => {
     const MATCHED: BcCheck = { child_name: '', child_status: 'match', mother_name: '', mother_nric: '',
-      mother_status: 'match', father_name: '', father_status: 'match', bc_number: '' }
+      mother_status: 'match', father_name: '', father_status: 'match', bc_number: '', link: 'green' }
     type Genuineness = NonNullable<AdminApplicantDocument['authenticity']>['status']
     const bc = (status?: Genuineness) => documentFacts(doc({ doc_type: 'birth_certificate', bc_check: MATCHED,
       ...(status ? { authenticity: { status, reason: 'x' } } : {}) }))
@@ -539,7 +539,7 @@ describe('documentFacts', () => {
   it('an unreadable guardianship letter is ONE amber row too', () => {
     expect(documentFacts(doc({
       doc_type: 'guardianship_letter',
-      guardianship_check: { guardian_name: '', guardian_nric: '', guardian_status: 'no_ref', ward_name: '', ward_status: 'no_ref', doc_kind: '', unreadable: true },
+      guardianship_check: { guardian_name: '', guardian_nric: '', guardian_status: 'no_ref', ward_name: '', ward_status: 'no_ref', link: 'grey', doc_kind: '', unreadable: true },
     }))).toEqual([{ key: 'unreadable', status: 'partial' }])
   })
 

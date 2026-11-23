@@ -257,8 +257,8 @@ export default function IncomeWizard({
   //            name OR IC (either identifies the same person), with no positive mismatch on the other.
   //   • IC   — genuine + readable (name + IC number read).
   //   • relationship doc — it must PROVE the relationship, and a BC ties TWO people, so BOTH ties confirm:
-  //            birth certificate → child = the student AND mother = the mother's IC; guardianship letter →
-  //            ward = the student AND guardian = the guardian's IC.
+  //            the server's `link` band is green (#78: child/ward + mother/guardian rows, scored once on the
+  //            server by name + IC number; the browser keeps no copy of the rule).
   // "Genuine" = not positively flagged suspect/not-<type> (an unscored doc doesn't block — we never gate on
   // our own missing scan).
   const strEarner = ans.income_earner
@@ -282,14 +282,10 @@ export default function IncomeWizard({
     })
     if (dt === 'parent_ic') return inSlot.some((d) => notFlaggedFake(d) && d.income_ic_check?.readable === true)
     if (dt === 'birth_certificate') return inSlot.some((d) => {
-      // A BC ties TWO people (the student AND the parent), so BOTH ties must confirm — not either.
-      const b = d.bc_check
-      return notFlaggedFake(d) && b?.child_status === 'match' && b?.mother_status === 'match'
+      // A BC ties TWO people (the student AND the parent): the server's link band says both hold (#78).
+      return notFlaggedFake(d) && d.bc_check?.link === 'green'
     })
-    if (dt === 'guardianship_letter') return inSlot.some((d) => {
-      const g = d.guardianship_check
-      return notFlaggedFake(d) && g?.ward_status === 'match' && g?.guardian_status === 'match'
-    })
+    if (dt === 'guardianship_letter') return inSlot.some((d) => notFlaggedFake(d) && d.guardianship_check?.link === 'green')
     // any other compulsory doc: present + not flagged non-genuine + not refused by the served answer (TD-410)
     return inSlot.some((d) => notFlaggedFake(d) && !servedRefuses(app.income_shown, slotMember, d.id))
   }
