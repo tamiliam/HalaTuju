@@ -10,12 +10,16 @@ has stored `organisation.admin`). Brief: `docs/plans/2026-11-23-m4b-sponsor-cred
   or a team member (never the lead tier) who opens `credits_write` (`sponsors.edit`, stored). The sponsor page reads
   the served `can_record_credit`. Why: the approver has to stay free to countersign; an organisation admin who recorded
   could never approve their own credit (`same_signer`), and a one-admin organisation would be stuck.
-- **Powers follow the groups a person sits in (owner 24 Nov): the switch decides.** Sponsors: edit is an Admins
-  switch, so only someone in the Admins group can hold it; a person in two groups holds each group's switches. The
-  server already reads it so: storing any admin page key IS the Admins seat (`staff_tables.in_admins`). Production has
-  one active reviewer also in Admins (row 9, the default admin powers by O8, stored by migration 0097); under Q-A's key
-  rule they gain record, first-sign and cancel on day one. To undo it for that person, untick their Sponsors: edit on
-  the Admins tab (no code). Pinned by `TestAReviewerStoringSponsorsEdit`.
+- **Labels come from groups; powers follow the groups a person sits in (owner 24 Nov): the switch decides.** Nobody
+  is permanently a reviewer, an admin or a mentor: a person is a reviewer because they sit in Reviewers, an admin
+  because they sit in Admins, a mentor because they sit in Mentors, and leaving a group drops its label. Sponsors: edit
+  is an Admins switch; a person in two groups holds each group's switches. For Admins the server already reads it so
+  (storing any admin page key IS the Admins seat, `staff_tables.in_admins`). Production has one active person in both
+  Reviewers and Admins (row 9, the default admin powers by O8, stored by migration 0097); under Q-A's key rule they gain
+  record, first-sign and cancel on day one. To undo it, untick their Sponsors: edit on the Admins tab (no code).
+  Pinned by `TestAPersonInReviewersAndAdmins`. ⚠ Open gap (put to the owner 24 Nov): the stored role `reviewer` / `qc`
+  still seats a person in Reviewers by itself (`staff_tables.REVIEWER_ROLES`), so for Reviewers the label still
+  makes the group.
 - **Q-B, cancel (owner 23 Nov).** Cancel stays on Sponsors: edit only (`credit_steps.may_cancel`, the `credits_write`
   door); Payments: Approve alone does not cancel.
 - **Q-C, the approver (owner 23 Nov).** The organisation admin approves through Organisation admin powers, and anyone

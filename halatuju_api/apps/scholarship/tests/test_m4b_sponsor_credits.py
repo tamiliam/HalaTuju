@@ -348,10 +348,10 @@ class TestBefore0100(_Credits):
         self.assertEqual(r.status_code, 403)
 
 
-class TestAReviewerStoringSponsorsEdit(_Credits):
-    """Owner 24 Nov: powers follow the groups a person sits in. Sponsors: edit is an Admins switch, so a
-    reviewer who holds it sits in Admins too (production: one, by O8), and records, first-signs and cancels.
-    To undo it for that person, untick Sponsors: edit on their Admins tab (no code)."""
+class TestAPersonInReviewersAndAdmins(_Credits):
+    """Owner 24 Nov: labels come from groups, and powers follow the groups a person sits in. Sponsors: edit
+    is an Admins switch, so whoever holds it sits in Admins (production: one person also in Reviewers, by
+    O8) and records, first-signs and cancels. To undo it, untick Sponsors: edit on their Admins tab."""
 
     def test_the_stored_key_decides_not_the_label(self):
         keyed = _exact(make_admin('reviewer', owning_org=self.org), ['sponsors.view', 'sponsors.edit'])
@@ -359,7 +359,7 @@ class TestAReviewerStoringSponsorsEdit(_Credits):
         self.assertEqual((_seats(keyed)['record'], _seats(keyed)['cancel']), (True, True))
         self.assertEqual((_seats(plain)['record'], _seats(plain)['cancel']), (False, False))
 
-    def test_holding_the_switch_is_sitting_in_admins(self):
+    def test_holding_an_admins_switch_seats_the_person_in_admins(self):
         from apps.courses import staff_tables
         keyed = _exact(make_admin('reviewer', owning_org=self.org), ['review', 'sponsors.view', 'sponsors.edit'])
         plain = make_admin('reviewer', owning_org=self.org)

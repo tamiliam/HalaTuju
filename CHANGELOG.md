@@ -14,8 +14,9 @@ sprint M4b (no must-fix). **S3 serves only after courses/0100 has run and its po
   (TD-NEW-credit-stale-optional).
 - **SF2:** `TestBefore0100` pins that an organisation admin without a stored `organisation.admin` cannot approve a
   credit or correct a Vircle ID. No DB-reading system check.
-- **SF3:** production counts recorded in the brief; one reviewer stores `sponsors.edit` and so records, first-signs and
-  cancels under the key rule (owner asked; either answer is a data change, `TestAReviewerStoringSponsorsEdit`).
+- **SF3:** production counts recorded in the brief; one person in both Reviewers and Admins stores `sponsors.edit` (by
+  O8) and so records, first-signs and cancels; owner 24 Nov: labels come from groups, the switch decides
+  (`TestAPersonInReviewersAndAdmins`).
 - **SF4:** sponsor emails and sponsor terms serve blank `*_by_email` fields to a caller without Sponsors: edit.
 - **SF5:** two signed-in Payments: Approve holders: the checker is refused approval (`same_signer`).
 - **SF6:** `test_m3_nobody_changes.RemapScope` pins `credits_check` as the only door the M4a remap recomputes.

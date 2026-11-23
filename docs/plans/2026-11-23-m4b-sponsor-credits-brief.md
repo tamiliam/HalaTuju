@@ -48,7 +48,7 @@ changes hands on day one.
   - owner **no**: untick Sponsors: edit on that one reviewer's card (one stored key, the People permission
     editor), a data change, no code.
   The code line that decides is `credit_steps.may_record` (`credit_steps.py` lines 39-41, the `credits_write`
-  door) and `may_cancel` (line 46). `TestAReviewerStoringSponsorsEdit` pins it: a reviewer storing
+  door) and `may_cancel` (line 46). `TestAPersonInReviewersAndAdmins` pins it: a reviewer storing
   `sponsors.edit` records and cancels; a reviewer on the preset does not.
 - **SF4, the widened reads:** a caller without Sponsors: edit reads the sponsor emails and sponsor terms with every
   `*_by_email` field blank (`updated_by_email`, `created_by_email`, `published_by_email`); the code serves no name
