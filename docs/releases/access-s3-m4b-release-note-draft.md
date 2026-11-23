@@ -22,8 +22,15 @@ Debt: closes TD-498, TD-561 and TD-664 (d) when live, and the wallet half of TD-
   for the checker.
 - **Sponsor terms and sponsor emails** can now be read by anyone with Sponsors: view (the server allows it).
   The page still shows these two tabs only to editors; that follows in a later change.
-- **Two people signing the same credit at the same moment** can no longer both act: the second waits and then
-  sees the credit's new state.
+- **Two people signing the same credit at the same moment** can no longer both act: the second waits, and if the
+  credit moved on meanwhile they see "This credit moved on while you were signing. Reload and check again."
+  instead of signing a step they did not mean to.
+- **Correcting a Vircle ID with the Payments switches** works on the server only for now; the case page does not
+  yet offer it to them.
+- **The Overview's wallet credits card** now also shows for organisation admins and for people who record
+  credits; it may read 0.
+- **People who may only view sponsors** read the terms and emails without the email address of the staff member
+  who last changed them.
 
 ## Not changed
 
@@ -33,7 +40,9 @@ Debt: closes TD-498, TD-561 and TD-664 (d) when live, and the wallet half of TD-
 
 ## Deploy
 
-Services: both. No migrate step of its own, but it must go live **with or after** sprint S2's courses 0100
+**HARD LINE: S3 serves only after courses/0100 has run and its post-checks read 0.**
+
+Services: both. No migrate step of its own, but it must go live **after** sprint S2's courses 0100
 (Organisation admin powers stored). Before 0100, an organisation admin could not approve a credit or correct a
 Vircle ID. Publish in a release window with the owner's yes.
 
@@ -46,4 +55,5 @@ sign a credit: the Approve button is not offered on it.
 ## For a native reader
 
 The Malay and Tamil lines for the two new Organisation admin powers
-(`admin.permLayout.orgAdminPowers.power.credit_approve` and `.vircle_id`) are drafts and need a native read.
+(`admin.permLayout.orgAdminPowers.power.credit_approve` and `.vircle_id`) and the "moved on" line
+(`admin.sponsors.detail.creditError.stale`) are drafts and need a native read.

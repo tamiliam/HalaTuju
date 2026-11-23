@@ -66,7 +66,7 @@ def _is_accepted_into(sponsor, programme):
 
 
 @transaction.atomic
-def sign_admin_credit(credit, admin, typed_name):
+def sign_admin_credit(credit, admin, typed_name, expected_status=None):
     """The maker→[finance]→approver sign-off for a wallet credit.
 
     **Deliberately ONE function with the same shape and the same guard names as
@@ -91,6 +91,10 @@ def sign_admin_credit(credit, admin, typed_name):
     distinctness across every signature already collected, which is what confines a
     ``super`` to one slot per credit without a special case for supers.
 
+    ``stale`` (S3 / M4b review SF1): `expected_status` is the status the signer's page drew. Read under the
+    lock, a credit that has moved on since (two checkers both saw "Check"; one checked first) is refused, so
+    the second never confirms a credit they meant to check. None (a shell, an older page) skips the test.
+
     ``finance_check_required`` is evaluated LIVE at every attempt and never stored, so
     giving someone ``payments_approve`` ARMS the check for a credit already mid-chain, and revoking
     the last holder degrades it back to two steps. ⚠ The rule is
@@ -99,6 +103,8 @@ def sign_admin_credit(credit, admin, typed_name):
     """
     from .. import credit_steps, payments, staff_activity
     _lock(credit, admin)          # TD-561: the actor's row, then the credit's, re-read under a lock
+    if expected_status and expected_status != credit.status:
+        raise CreditError('stale')    # SF1: the page drew an earlier step
     if credit.status not in credit_steps.SIGNING:
         raise CreditError('bad_state')
     if not payments._name_matches(admin, typed_name):

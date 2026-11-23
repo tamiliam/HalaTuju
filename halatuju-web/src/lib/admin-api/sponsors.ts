@@ -192,10 +192,11 @@ export async function recordSponsorCredit(
 
 /** Sign whichever step is next. The typed name must match the caller's own admin record. */
 export async function signSponsorCredit(
-  id: number, typedName: string, options?: ApiOptions,
+  id: number, typedName: string, expectedStatus: string, options?: ApiOptions,
 ): Promise<AdminSponsorCredit> {
+  // S3 / M4b review SF1: the status the page drew; a credit that moved on meanwhile answers 409 `stale`.
   return adminMutate(`/api/v1/admin/scholarship/credits/${id}/sign/`, 'POST',
-    { typed_name: typedName }, options)
+    { typed_name: typedName, expected_status: expectedStatus }, options)
 }
 
 /** Void an UNCONFIRMED credit. The row is kept — a confirmed credit is never cancelled. */

@@ -248,7 +248,7 @@ describe('signing a credit', () => {
     fireEvent.change(screen.getByLabelText(/fullName/), { target: { value: 'Poongulali Veeran' } })
     fireEvent.click(sign)
     await waitFor(() => expect(mockApi.signSponsorCredit)
-      .toHaveBeenCalledWith(11, 'Poongulali Veeran', { token: 'tok' }))
+      .toHaveBeenCalledWith(11, 'Poongulali Veeran', 'draft', { token: 'tok' }))   // SF1: the drawn status
     await waitFor(() => expect(mockApi.getSponsorDetail).toHaveBeenCalledTimes(2))
   })
 
@@ -304,6 +304,16 @@ describe('signing a credit', () => {
     fireEvent.click(screen.getByRole('button', { name: /sign\.recorded/ }))
     await waitFor(() => expect(
       screen.getByText('admin.sponsors.detail.creditError.same_signer')).toBeTruthy())
+  })
+
+  it('says the credit moved on when the server answers stale (M4b review SF1)', async () => {
+    const err = Object.assign(new Error('stale'), { code: 'stale' })
+    mockApi.signSponsorCredit.mockRejectedValue(err)
+    await open()
+    fireEvent.change(screen.getByLabelText(/fullName/), { target: { value: 'Poongulali Veeran' } })
+    fireEvent.click(screen.getByRole('button', { name: /sign\.recorded/ }))
+    await waitFor(() => expect(
+      screen.getByText('admin.sponsors.detail.creditError.stale')).toBeTruthy())
   })
 
   it('falls back to known copy for a code it has never seen', async () => {

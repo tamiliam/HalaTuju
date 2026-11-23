@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### refactor: sprint M4b review round 1 - stale-step refusal, readers see no staff emails, pre-0100 pinned (2026-11-24)
+
+Branch access-s3-m4b, not pushed. Migration: none. Services: both. From the independent Opus adversarial review of
+sprint M4b (no must-fix). **S3 serves only after courses/0100 has run and its post-checks read 0.**
+- **SF1, stale step:** the credit sign request carries `expected_status`; after the lock a mismatch is refused with
+  `stale` (409), so a second Payments: Approve holder whose "check" waited on the lock no longer confirms the credit.
+  New wording in en / ms / ta (`creditError.stale`; Malay and Tamil drafts). Optional on the server for the rollout
+  (TD-NEW-credit-stale-optional).
+- **SF2:** `TestBefore0100` pins that an organisation admin without a stored `organisation.admin` cannot approve a
+  credit or correct a Vircle ID. No DB-reading system check.
+- **SF3:** production counts recorded in the brief; one reviewer stores `sponsors.edit` and so records, first-signs and
+  cancels under the key rule (owner asked; either answer is a data change, `TestAReviewerStoringSponsorsEdit`).
+- **SF4:** sponsor emails and sponsor terms serve blank `*_by_email` fields to a caller without Sponsors: edit.
+- **SF5:** two signed-in Payments: Approve holders: the checker is refused approval (`same_signer`).
+- **SF6:** `test_m3_nobody_changes.RemapScope` pins `credits_check` as the only door the M4a remap recomputes.
+- **Nits:** `lock_actor` re-reads the email; `may_approve` and `checks_credits` refuse inactive rows; the
+  `views_admin/credits.py` header comment is corrected.
+
 ### feat: sprint M4b — sponsor credits and the Vircle ID on Payments switches (2026-11-23)
 
 Branch access-s3-m4b, not pushed. Migration: none (lands with or after S2's courses 0100: before 0100 an organisation admin cannot approve a credit or correct a Vircle ID, see the seat table in the brief). Services: both. Programme ACCESS-BY-SWITCHES S3; owner rulings 23 Nov (Q-A to Q-D) in `docs/decisions.md`. Brief: `docs/plans/2026-11-23-m4b-sponsor-credits-brief.md`.

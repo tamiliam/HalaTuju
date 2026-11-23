@@ -34,7 +34,9 @@ def _terms_section_dict(sec):
     }
 
 
-def _terms_summary_dict(terms):
+def _terms_summary_dict(terms, staff=True):
+    """`staff` False (S3 / M4b review SF4): a reader without Sponsors: edit (`sponsor_terms_read`) never sees
+    a staff email — the author and publisher addresses are blanked. The model stores no name to show."""
     return {
         'id': terms.id,
         'version': terms.version,
@@ -44,8 +46,8 @@ def _terms_summary_dict(terms):
         # walks the sections, which is why the list view prefetches them.
         'languages_available': terms.languages_available,
         'section_count': terms.sections.count(),
-        'created_by_email': terms.created_by_email,
-        'published_by_email': terms.published_by_email,
+        'created_by_email': terms.created_by_email if staff else '',
+        'published_by_email': terms.published_by_email if staff else '',
         'published_at': terms.published_at,
         'archived_at': terms.archived_at,
         'created_at': terms.created_at,
@@ -53,8 +55,8 @@ def _terms_summary_dict(terms):
     }
 
 
-def _terms_detail_dict(terms):
-    d = _terms_summary_dict(terms)
+def _terms_detail_dict(terms, staff=True):
+    d = _terms_summary_dict(terms, staff)
     d.update({
         'title_ms': terms.title_ms, 'title_ta': terms.title_ta,
         'intro_en': terms.intro_en, 'intro_ms': terms.intro_ms, 'intro_ta': terms.intro_ta,
@@ -134,7 +136,7 @@ class AdminSponsorTermsListView(_SponsorTermsBase):
         rows = SponsorTermsVersion.objects.prefetch_related('sections').all()
         active = sponsor_terms_mod.active_version()
         return Response({
-            'versions': [_terms_summary_dict(t) for t in rows],
+            'versions': [_terms_summary_dict(t, self.may_author(admin)) for t in rows],
             'active_version': active.version if active else '',
             'sponsor_count': Sponsor.objects.count(),
         })
@@ -169,7 +171,7 @@ class AdminSponsorTermsDetailView(_SponsorTermsBase):
         terms = self._version_or_404(pk)
         if not terms:
             return Response({'error': 'not_found'}, status=404)
-        return Response(_terms_detail_dict(terms))
+        return Response(_terms_detail_dict(terms, self.may_author(admin)))
 
     def patch(self, request, pk):
         admin, err = self._terms_admin(request)

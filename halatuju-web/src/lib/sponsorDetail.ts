@@ -208,7 +208,7 @@ export function membershipErrorKey(code: string | undefined): string {
 const CREDIT_ERROR_CODES = [
   'invalid_amount', 'external_reference_required', 'programme_required',
   'sponsor_not_in_programme', 'wrong_role', 'bad_state', 'name_mismatch',
-  'same_signer', 'finance_check_required',
+  'same_signer', 'finance_check_required', 'stale',
 ] as const
 
 export function creditErrorKey(code: string | undefined): string {

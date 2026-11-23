@@ -193,8 +193,9 @@ class AdminPartnerEmailDetailView(_SourcesBase):
         return Response(_partner_email_dict(tpl))
 
 
-def _sponsor_email_dict(tpl, last=None):
-    """Allowlist view of one sponsor-email template. Explicit fields — never model passthrough."""
+def _sponsor_email_dict(tpl, last=None, staff=True):
+    """Allowlist view of one sponsor-email template. Explicit fields — never model passthrough. `staff` False
+    (S3 / M4b review SF4): a reader without Sponsors: edit never sees the editor's email (no name is stored)."""
     return {
         'kind': tpl.kind,
         'label': tpl.get_kind_display(),
@@ -202,7 +203,7 @@ def _sponsor_email_dict(tpl, last=None):
         'subject': tpl.subject,
         'body': tpl.body,
         'placeholders': sorted(sponsor_comms_mod.PLACEHOLDERS.get(tpl.kind, set())),
-        'updated_by_email': tpl.updated_by_email or '',
+        'updated_by_email': (tpl.updated_by_email or '') if staff else '',
         'updated_at': tpl.updated_at.isoformat() if tpl.updated_at else None,
         'last_sent_at': last['sent_at'].isoformat() if last and last.get('sent_at') else None,
         'last_sent_count': (last or {}).get('sponsors', 0),
@@ -259,8 +260,9 @@ class AdminSponsorEmailsView(_SponsorEmailsBase):
         for row in (SponsorEmailLog.objects.filter(ok=True).values('kind')
                     .annotate(sent_at=Max('sent_at'), sponsors=Count('sponsor', distinct=True))):
             last[row['kind']] = row
+        staff = staff_tables.opens_door(admin, 'sponsor_emails')   # SF4: only an editor sees who edited
         templates = [
-            _sponsor_email_dict(by_kind[k], last.get(k))
+            _sponsor_email_dict(by_kind[k], last.get(k), staff)
             for k in sponsor_comms_mod.KINDS if k in by_kind
         ]
         return Response({

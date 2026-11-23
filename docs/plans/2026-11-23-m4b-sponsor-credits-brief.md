@@ -9,6 +9,12 @@ the owner ruled all four on 23 Nov (below) and the build followed them. Lands WI
 migrate-first step): before 0100 an organisation admin with a custom key list does not hold Organisation admin
 powers, so would lose credit approval and the Vircle ID (seat table below).
 
+**HARD LINE: S3 serves only after courses/0100 has run and its post-checks read 0.** No system or deploy check
+reads the database for this (a check that reads the database could block boot); the lead confirms it by hand
+before the publish. `test_m4b_sponsor_credits.TestBefore0100` pins the pre-0100 behaviour as known: an
+organisation admin whose stored list lacks `organisation.admin` cannot approve a credit (`wrong_role`) or correct
+a Vircle ID (403).
+
 ## Owner rulings, 23 Nov (recorded in `docs/decisions.md` as "owner 23 Nov")
 
 - **Q-A:** only Admins with Sponsors: edit stored in their own seat may record a credit and sign it first. An
@@ -22,6 +28,43 @@ powers, so would lose credit approval and the Vircle ID (seat table below).
 **Production counts (read-only, 23 Nov):** active staff 2 admin, 1 finance, 2 org_admin (all with custom key
 lists), 34 reviewers, 1 super. `sponsor_donations`: 10 rows, all confirmed, none mid-chain. So no in-flight credit
 changes hands on day one.
+
+## Review round 1 (24 Nov, independent Opus adversarial review: no must-fix)
+
+- **SF1, the stale step:** two Payments: Approve holders X and Y; X checks while Y's request waits on the lock,
+  and Y's request then read `finance_checked` and CONFIRMED though Y meant to check. The sign request now carries
+  `expected_status` (the status the page already shows); after `_lock` the service refuses a mismatch with `stale`
+  (409), before any other check. Wording (en / ms / ta, the Malay and Tamil are drafts): "This credit moved on while
+  you were signing. Reload and check again." The field is optional on the server so an older web image keeps
+  working during the rollout (TD-NEW-credit-stale-optional makes it required once the web is live). Tests:
+  `TestTwoSignedInHolders` (service and HTTP 409), the web page test "says the credit moved on".
+- **SF2, the 0100 dependency:** the hard line above; `TestBefore0100`. No DB-reading system check.
+- **SF3, day-one counts (production, read-only, by the lead 24 Nov):** active custom key lists that store
+  `sponsors.edit`: admin 2 of 2; org_admin 2 of 2; finance 0 of 1; reviewer 1 of the 2 custom lists (the other 32
+  reviewers are on the preset, which has no `sponsors.edit`). **One reviewer stores `sponsors.edit`, so under the
+  key rule they gain record, first-sign and cancel.** The owner is being asked. Either answer is a one-line change
+  and neither adds a role label:
+  - owner **yes**: nothing to do;
+  - owner **no**: untick Sponsors: edit on that one reviewer's card (one stored key, the People permission
+    editor), a data change, no code.
+  The code line that decides is `credit_steps.may_record` (`credit_steps.py` lines 39-41, the `credits_write`
+  door) and `may_cancel` (line 46). `TestAReviewerStoringSponsorsEdit` pins it: a reviewer storing
+  `sponsors.edit` records and cancels; a reviewer on the preset does not.
+- **SF4, the widened reads:** a caller without Sponsors: edit reads the sponsor emails and sponsor terms with every
+  `*_by_email` field blank (`updated_by_email`, `created_by_email`, `published_by_email`); the code serves no name
+  there, so none is shown. Test: `TestReadersSeeNoStaffEmail`.
+- **SF5, the reachable path:** `TestTwoSignedInHolders`: two signed-in Payments: Approve holders, one checks, the
+  other approves, and the checker is refused approval with `same_signer`. The older single-holder test is kept and
+  renamed as the never-signed-in edge.
+- **SF6, the expectation remap in `test_m3_nobody_changes.py`:** `_m4a()` recomputes a door's expectation only
+  when every key of that door is display-only in M4a. `RemapScope` asserts that `credits_check` is the ONLY door
+  this affects, so a later door cannot slip through the remap unseen.
+- **Nits:** `payments_chain.lock_actor` re-reads the email too; `credit_steps.may_approve` and `checks_credits`
+  refuse an inactive row on their own (`TestInactiveRowsHoldNoSeat`); the stale comment at the top of
+  `views_admin/credits.py` is rewritten.
+- **Notes for the release:** the Vircle ID gain for the Payments switches is API-only for now (the case page does
+  not yet offer the correction to them); the Overview's wallet credits card now shows for organisation admins and
+  makers too, and its count may be 0.
 
 ## Seat table as built (`test_m4b_sponsor_credits.TestTheSeatTable` pins it)
 

@@ -9437,6 +9437,14 @@ lets Sponsors: view read the sponsor terms and sponsor emails, and the server no
 read-only view of each tab adds JS to the sponsor route and the sprint added none. **Fix:** serve a `can_read` / `can_edit`
 pair for each tab and draw a read-only view for a reader, inside the route's budget. *(A - S)*
 
+### [TD-NEW-credit-stale-optional] The credit sign request's `expected_status` is optional on the server - low
+
+**Raised 2026-11-24 by the sprint M4b review round 1 (laptop session, number placeholder until the desk numbers it).**
+`sign_admin_credit` refuses `stale` (409) only when the request names the status it saw; without it the old race
+remains (a second holder's check that waited on the lock confirms instead). Optional so an older web image keeps
+signing during the rollout. **Fix:** once the web that sends it is live, make `expected_status` required (400
+when missing), with a test. *(A - S)*
+
 ### [TD-NEW-credit-maker-unstored] A credit does not store who recorded it as a seat, only the signer's email - low
 
 **Raised 2026-11-23 by sprint M4b.** The maker's step signs with `recorded_by_email`; `same_signer` compares emails, which

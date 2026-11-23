@@ -3836,6 +3836,7 @@
           "name_mismatch": "Nama itu tidak sepadan dengan nama dalam profil anda.",
           "same_signer": "Setiap langkah memerlukan orang yang berbeza. Anda telah menandatangani kredit ini.",
           "finance_check_required": "Kredit ini memerlukan pemeriksaan kewangan sebelum boleh ditandatangan balas.",
+          "stale": "Kredit ini telah bergerak ke langkah seterusnya semasa anda menandatangan. Muat semula dan semak sekali lagi.",
           "unknown": "Itu tidak berjaya. Tiada apa-apa yang diubah."
         },
         "studentsTitle": "Sejarah penajaan",

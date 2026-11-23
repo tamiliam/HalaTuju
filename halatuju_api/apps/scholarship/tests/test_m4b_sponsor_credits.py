@@ -129,7 +129,10 @@ class TestQAMaker(_Credits):
 
 
 class TestQCApprover(_Credits):
-    def test_payments_approve_countersigns_and_the_money_email_waits_for_the_commit(self):
+    def test_never_signed_in_edge_payments_approve_countersigns_and_the_money_email_waits_for_the_commit(self):
+        # THE NEVER-SIGNED-IN EDGE (review SF5): `payer` has never signed in, so it arms no check (TD-560)
+        # and the credit goes straight to approval. The reachable path, two signed-in holders, is
+        # `TestTwoSignedInHolders` below.
         credit = self._record()
         self._sign(credit, self.maker)
         with mock.patch('apps.scholarship.sponsor_notify.send_credit_confirmed') as sent:
@@ -283,3 +286,118 @@ class TestVircleIdBySwitch(TestCase):
     def test_the_case_fence_still_comes_first(self):
         self.assertTrue(surface_gates.may_correct_vircle_id(self.fenced))
         self.assertEqual(self._patch(self.fenced).status_code, 403)
+
+
+class TestTwoSignedInHolders(_Credits):
+    """Review SF1 and SF5: the path production reaches — two SIGNED-IN Payments: Approve holders, so the check
+    is armed. One checks, the other approves; neither takes two steps, and a stale page never confirms."""
+
+    def setUp(self):
+        self.x = _exact(make_admin('finance', owning_org=self.org), ['payments_approve'])
+        self.y = _exact(make_admin('finance', owning_org=self.org), ['payments_approve'])
+        self.credit = self._record()
+        self._sign(self.credit, self.maker)
+
+    def test_one_checks_the_other_approves_and_the_checker_never_approves(self):
+        self.assertEqual(self._sign(self.credit, self.x).status, Donation.STATUS_FINANCE_CHECKED)
+        self.assertEqual(self._refusal(self._sign, self.credit, self.x), 'same_signer')
+        with self.captureOnCommitCallbacks(execute=True):
+            self.assertEqual(self._sign(self.credit, self.y).status, Donation.STATUS_CONFIRMED)
+
+    def test_a_stale_check_never_confirms(self):
+        y_page = Donation.objects.get(pk=self.credit.pk)          # Y's page drew "Check" (admin_signed)
+        svc.sign_admin_credit(self.credit, self.x, self.x.name, expected_status=Donation.STATUS_ADMIN_SIGNED)
+        code = self._refusal(svc.sign_admin_credit, y_page, self.y, self.y.name, Donation.STATUS_ADMIN_SIGNED)
+        self.assertEqual(code, 'stale')
+        self.credit.refresh_from_db()
+        self.assertEqual((self.credit.status, self.credit.confirmed_by_email),
+                         (Donation.STATUS_FINANCE_CHECKED, ''))
+
+    @HTTP
+    def test_the_sign_endpoint_answers_409_stale(self):
+        def post(who):
+            return authed_client(who).post(f'{ADMIN}credits/{self.credit.pk}/sign/', {
+                'typed_name': who.name, 'expected_status': Donation.STATUS_ADMIN_SIGNED}, format='json')
+        self.assertEqual(post(self.x).status_code, 200)
+        r = post(self.y)
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'stale'))
+        self.credit.refresh_from_db()
+        self.assertEqual(self.credit.status, Donation.STATUS_FINANCE_CHECKED)
+
+
+class TestBefore0100(_Credits):
+    """Review SF2: the pre-0100 behaviour, pinned as KNOWN. An organisation admin whose stored list lacks
+    `organisation.admin` approves no credit and corrects no Vircle ID. S3 serves only after courses/0100 has
+    run and its post-checks read 0 (release note and brief); nothing at boot reads the database for it."""
+
+    def test_an_organisation_admin_before_0100_cannot_approve(self):
+        lead = make_admin('org_admin', owning_org=self.org, pre_m4a=True)
+        self.assertNotIn('organisation.admin', lead.permissions or [])
+        credit = self._record()
+        self._sign(credit, self.maker)
+        self.assertEqual(self._refusal(self._sign, credit, lead), 'wrong_role')
+
+    @HTTP
+    def test_an_organisation_admin_before_0100_cannot_correct_a_vircle_id(self):
+        from apps.scholarship.tests.factories import make_application, make_cohort
+        cohort = make_cohort()
+        app = make_application('maintenance', cohort=cohort)
+        lead = make_admin('org_admin', owning_org=cohort.owning_organisation, pre_m4a=True)
+        self.assertFalse(surface_gates.may_correct_vircle_id(lead))
+        r = authed_client(lead).patch(f'{ADMIN}applications/{app.pk}/', {'vircle_id': ''}, format='json')
+        self.assertEqual(r.status_code, 403)
+
+
+class TestAReviewerStoringSponsorsEdit(_Credits):
+    """Review SF3 (production: one reviewer's custom list stores `sponsors.edit`). Under the key rule that
+    reviewer records, first-signs and cancels; the owner is asked. Either answer is one line and no code:
+    keep it, or untick Sponsors: edit on that reviewer's card. Pinned so the answer is never a surprise."""
+
+    def test_the_stored_key_decides_not_the_label(self):
+        keyed = _exact(make_admin('reviewer', owning_org=self.org), ['sponsors.view', 'sponsors.edit'])
+        plain = make_admin('reviewer', owning_org=self.org)
+        self.assertEqual((_seats(keyed)['record'], _seats(keyed)['cancel']), (True, True))
+        self.assertEqual((_seats(plain)['record'], _seats(plain)['cancel']), (False, False))
+
+
+class TestInactiveRowsHoldNoSeat(_Credits):
+    """Review nit: `may_approve` and `checks_credits` refuse an inactive row on their own."""
+
+    def test_an_inactive_approver_neither_approves_nor_gets_the_card(self):
+        gone = make_admin('admin', owning_org=self.org, permissions=['payments_approve'])
+        self.assertTrue(credit_steps.may_approve(gone))
+        gone.is_active = False
+        self.assertEqual((credit_steps.may_approve(gone), credit_steps.checks_credits(gone)), (False, False))
+
+
+@HTTP
+class TestReadersSeeNoStaffEmail(TestCase):
+    """Review SF4: a Sponsors: view reader is shown no staff email on the terms or the sponsor emails;
+    an editor still sees who wrote what."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.scholarship.models import SponsorEmailTemplate, SponsorTermsVersion
+        org = make_org()
+        cls.viewer = _exact(make_admin('admin', owning_org=org), ['sponsors.view'])
+        cls.editor = make_admin('admin', owning_org=org)
+        cls.terms = SponsorTermsVersion.objects.create(
+            version='m4b-1', title_en='Terms', created_by_email='author@example.test',
+            published_by_email='publisher@example.test')
+        SponsorEmailTemplate.objects.create(kind='welcome', subject='Hello', body='Welcome',
+                                            updated_by_email='editor@example.test')
+
+    def _emails(self, who):
+        c = authed_client(who)
+        terms = c.get(f'{ADMIN}sponsor-terms/').json()['versions'][0]
+        one = c.get(f'{ADMIN}sponsor-terms/{self.terms.pk}/').json()
+        tpl = c.get(f'{ADMIN}sponsor-emails/').json()['templates'][0]
+        return {terms['created_by_email'], terms['published_by_email'], one['created_by_email'],
+                one['published_by_email'], tpl['updated_by_email']}
+
+    def test_a_reader_never_sees_a_staff_email(self):
+        self.assertEqual(self._emails(self.viewer), {''})
+
+    def test_an_editor_still_does(self):
+        self.assertEqual(self._emails(self.editor),
+                         {'author@example.test', 'publisher@example.test', 'editor@example.test'})

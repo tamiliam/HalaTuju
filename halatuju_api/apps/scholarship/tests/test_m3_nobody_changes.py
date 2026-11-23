@@ -91,9 +91,19 @@ def _m4a(read, a):
         # S3 / M4b: a door that reads ONLY display-only keys (`credits_check` = `sponsors.check`) follows
         # the display change; their gates read the powers instead (`credit_steps.may_approve`).
         out['doors'] = {d: (any(k in out['effective_v2'] for k in st.DOOR_KEYS[d])
-                            if set(st.DOOR_KEYS[d]) <= set(M4A_DISPLAY_ONLY) else v)
+                            if d in _DISPLAY_ONLY_DOORS else v)
                         for d, v in read['doors'].items()}
     return out
+
+
+#: The doors `_m4a` remaps: those whose every key is display-only. Pinned to EXACTLY `credits_check` (M4b review
+#: SF6) by `RemapScope`, so a later door cannot slip through the remap unseen.
+_DISPLAY_ONLY_DOORS = frozenset(d for d, keys in st.DOOR_KEYS.items() if set(keys) <= set(M4A_DISPLAY_ONLY))
+
+
+class RemapScope(TestCase):
+    def test_the_remap_touches_only_the_credit_check_door(self):
+        self.assertEqual(_DISPLAY_ONLY_DOORS, {'credits_check'})
 
 
 def _old_powers(a):

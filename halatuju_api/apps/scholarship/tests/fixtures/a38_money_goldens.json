@@ -4581,7 +4581,7 @@
    "send_award_offer_email": "(to_email, applicant_name, lang='en', guardian_note=False, branding=None)",
    "send_award_offer_sign_email": "(to_email, applicant_name, lang='en', branding=None)",
    "set_programme_membership": "(sponsor, programme, status, vetted_by='')",
-   "sign_admin_credit": "(credit, admin, typed_name)",
+   "sign_admin_credit": "(credit, admin, typed_name, expected_status=None)",
    "sponsor_available_total": "(sponsor)",
    "sponsor_balance": "(sponsor, programme)",
    "sponsor_impact": "(sponsor)",

@@ -422,7 +422,7 @@ export default function AdminSponsorDetailPage() {
                               className={`${inputCls} w-44`}
                             />
                             <button
-                              onClick={() => runCreditAction(() => signSponsorCredit(c.id, typedNames[c.id] || '', { token: token! }))}
+                              onClick={() => runCreditAction(() => signSponsorCredit(c.id, typedNames[c.id] || '', c.status, { token: token! }))}
                               disabled={busy || !(typedNames[c.id] || '').trim()}
                               className="rounded-lg bg-brand-fill px-3 py-1.5 text-xs font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50"
                             >

@@ -55,8 +55,9 @@ def holds_checker_seat(admin):
 
 def may_approve(admin):
     """COUNTERSIGN a credit (owner Q-C, 23 Nov): a super, Organisation admin powers, or the Payments
-    Approve switch. Never a credit they recorded or checked (`same_signer`, in `step_refusal`)."""
-    return bool(admin is not None and (
+    Approve switch. Never a credit they recorded or checked (`same_signer`, in `step_refusal`). An inactive
+    row never approves, whoever calls (M4b review nit: not left to the caller)."""
+    return bool(admin is not None and getattr(admin, 'is_active', True) and (
         admin.is_super or staff_permissions.holds_org_admin_powers(admin)
         or staff_permissions.holds(admin, APPROVE_KEY)))
 
@@ -111,8 +112,9 @@ def step_refusal(credit, admin, needs_finance):
 def checks_credits(admin):
     """Could a credit wait for this person (TD-503, S3 / M4b): a team member or organisation admin in the
     maker, checker or approver seat? The Overview's `wallet_credits` card is theirs (was: the checker
-    only). A super is no seat-holder here, as before: their Overview counts no credits."""
-    return bool(admin is not None and not admin.is_super
+    only). A super is no seat-holder here, as before: their Overview counts no credits. An inactive row
+    holds no seat (M4b review nit)."""
+    return bool(admin is not None and not admin.is_super and getattr(admin, 'is_active', True)
                 and (may_record(admin) or holds_checker_seat(admin) or may_approve(admin)))
 
 
