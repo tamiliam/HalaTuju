@@ -1,4 +1,5 @@
-"""LL1 — the "AI prediction" scoreboard data (server part).
+"""LL1 — the "AI prediction" scoreboard data (server part). F4: the endpoint answers in marks
+(`ai_score`), reviewers are refused, and the "For the AI team" fold is the super's only.
 
 Pure counting (`audit`), then the database reads (`prediction_metrics`), the endpoint's gates and the
 Programme Overview's `ai_prediction` section: same function, same fence, lead-only `by_reviewer`.
@@ -174,21 +175,74 @@ class TestPredictionEndpointAndOverview(TestCase):
     def get(self, who, url=METRICS):
         return authed_client(who).get(url)
 
-    # ── qc_agreement ──────────────────────────────────────────────────────────────────────────
-    def test_qc_agreement_is_fenced_and_counts_every_row(self):
-        qc = self.get(self.lead).json()['qc_agreement']
-        self.assertEqual((qc['accept'], qc['reopen'], qc['reject'], qc['total']), (2, 1, 1, 4))
-        self.assertEqual(qc['accept_rate'], 0.5)
-        self.assertEqual(list(qc['by_month']), ['2026-05', '2026-06'])
-        self.assertEqual(qc['by_month']['2026-06']['accept'], 1)    # Malaysia time, not UTC
+    def _assign(self, admin, *apps):
+        from apps.scholarship.models import ScholarshipApplication
+        ScholarshipApplication.objects.filter(pk__in=[a.pk for a in apps]).update(assigned_to=admin)
 
-    def test_qc_agreement_follows_the_cohort_narrowing(self):
-        qc = self.get(self.lead, f'{METRICS}?cohort={self.cohort2.id}').json()['qc_agreement']
-        self.assertEqual((qc['accept'], qc['reopen'], qc['reject'], qc['total']), (0, 0, 1, 1))
-        self.assertTrue(qc['few'])
+    def _both(self, who):
+        return self.get(who).json(), self.get(who, OVERVIEW).json()['ai_prediction']
+
+    # ── F4: who sees what (the server decides) ────────────────────────────────────────────────
+    def test_a_reviewer_gets_no_ai_prediction_at_all(self):
+        self._assign(self.reviewer, self.a1, self.a2)
+        self.assertEqual(self.get(self.reviewer).status_code, 403)
+        page = self.get(self.reviewer, OVERVIEW)
+        if page.status_code == 200:
+            self.assertNotIn('ai_prediction', page.json()['sections'])
+            self.assertNotIn('ai_prediction', page.json())
+
+    def test_a_finance_user_granted_review_is_refused_like_a_reviewer(self):
+        fin = make_admin('finance', owning_org=self.org, permissions=['review'])
+        self._assign(fin, self.a2)
+        self.assertEqual(self.get(fin).status_code, 403)
+
+    def test_an_org_admin_gets_score_and_reviewers_but_no_ai_team_fold(self):
+        for body in self._both(self.lead):
+            self.assertEqual(set(body), {'applications', 'score', 'by_reviewer'})
+            self.assertNotIn('by_version', body['score'])
+
+    def test_qc_and_a_view_only_admin_get_the_score_only(self):
+        viewer = make_admin('admin', owning_org=self.org)
+        for who in (self.qc, viewer):
+            for body in self._both(who):
+                self.assertEqual(set(body), {'applications', 'score'})
+                self.assertEqual(body['applications'], 3)
+
+    def test_the_super_gets_the_ai_team_fold(self):
+        for body in self._both(self.super):
+            self.assertEqual(set(body), {'applications', 'score', 'by_reviewer', 'ai_team'})
+            self.assertEqual(set(body['ai_team']), {'doubt_codes', 'by_version'})
+            self.assertEqual([v['version'] for v in body['ai_team']['by_version']], ['v1'])
+            self.assertEqual(body['ai_team']['by_version'][0]['facts'], 16)
+
+    # ── the score ─────────────────────────────────────────────────────────────────────────────
+    def test_the_score_is_fenced_and_marks_every_decided_fact(self):
+        m = self.get(self.lead).json()['score']
+        # 3 applications x 4 facts, all Certain; a1 failed identity: 11 x +2, 1 x -10
+        self.assertEqual((m['facts'], m['points'], m['best'], m['score_pct'], m['lost']), (12, 12, 24, 50, -10))
+        self.assertEqual(m['most_lost'], {'fact': 'identity', 'points': -10})
+        self.assertEqual(m['by_fact']['identity']['top_reasons'], [{'key': 'fail:not_given', 'points': -10}])
+
+    def test_a_reject_before_interview_is_never_scored(self):
+        """Its facts sit on the case WITHOUT `verdict_decided_at` (and on the `declined` row)."""
+        before = self.get(self.lead).json()
+        app = make_application('profile_complete', cohort=self.cohort)
+        r = authed_client(self.lead).post(
+            f'/api/v1/admin/scholarship/applications/{app.pk}/reject-before-interview/',
+            {'reason': 'not_b40', 'comments': 'Income above the band.', 'facts': officer(identity='fail'),
+             'fail_reasons': {'identity': 'proof_missing'}}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'rejected')
+        self.assertTrue(app.ai_verdict_snapshot)            # the facts ARE on the case...
+        self.assertIsNone(app.verdict_decided_at)           # ...without the reviewer's stamp
+        self.assertTrue(StaffActivity.objects.filter(verb='declined', subject_id=app.pk).exists())
+        after = self.get(self.lead).json()
+        self.assertEqual(after['applications'], before['applications'])
+        self.assertEqual(after['score'], before['score'])
 
     def test_a_super_reads_every_organisation(self):
-        self.assertEqual(self.get(self.super).json()['qc_agreement']['total'], 5)
+        self.assertEqual(self.get(self.super).json()['applications'], 4)
 
     # ── by_reviewer: leads only, never an email ───────────────────────────────────────────────
     def test_by_reviewer_for_the_lead_tier_without_emails(self):
@@ -201,78 +255,27 @@ class TestPredictionEndpointAndOverview(TestCase):
             self.assertEqual(named[0]['name'], 'Rita Reviewer')
             self.assertEqual(named[0]['label_key'], None)
             self.assertEqual(named[0]['green_failed'], 1)
-            self.assertIn('few', named[0])
         rows = self.get(self.lead).json()['by_reviewer']
         self.assertEqual([r['id'] for r in rows], [self.reviewer.pk, None])   # biggest green_failed first
         self.assertEqual(rows[1]['label_key'], 'unmatched_reviewer')
         self.assertEqual(rows[1]['name'], '')
 
-    def test_by_reviewer_is_absent_for_everyone_else(self):
-        for who in (self.reviewer, self.qc):
-            body = self.get(who).json()
-            self.assertNotIn('by_reviewer', body)
-            self.assertIn('overall', body)
-        # QC reads the whole organisation; a reviewer with nothing assigned reads nothing
-        self.assertEqual(self.get(self.qc).json()['applications'], 3)
-        self.assertEqual(self.get(self.reviewer).json()['applications'], 0)
+    def test_by_reviewer_counts_qc_accepted_and_sent_back(self):
+        rows = {r['id']: r for r in self.get(self.lead).json()['by_reviewer']}
+        self.assertEqual((rows[self.reviewer.pk]['qc_accepted'], rows[self.reviewer.pk]['qc_sent_back']), (2, 1))
+        self.assertEqual((rows[None]['qc_accepted'], rows[None]['qc_sent_back']), (0, 0))   # a3: a reject only
 
-    # ── LL1 review fixes: a reviewer is counted over their assigned applicants only ───────────
-    def _assign(self, admin, *apps):
-        from apps.scholarship.models import ScholarshipApplication
-        ScholarshipApplication.objects.filter(pk__in=[a.pk for a in apps]).update(assigned_to=admin)
-
-    def _both(self, who):
-        return self.get(who).json(), self.get(who, OVERVIEW).json()['ai_prediction']
-
-    def test_a_reviewer_is_counted_over_assigned_applications_only(self):
-        self._assign(self.reviewer, self.a1)
-        for body in self._both(self.reviewer):
-            self.assertEqual(body['applications'], 1)
-            self.assertEqual(body['counted_scope'], 'assigned')
-            self.assertEqual(body['overrides'], 1)
-            self.assertNotIn('by_reviewer', body)
-            # only a1's QC rows (accept + reopen); a2, a3 and the other tenant's are not here
-            qc = body['qc_agreement']
-            self.assertEqual((qc['accept'], qc['reopen'], qc['reject'], qc['total']), (1, 1, 0, 2))
-
-    def test_a_reviewer_with_nothing_assigned_gets_zero_counts(self):
-        for body in self._both(self.reviewer):
-            self.assertEqual(body['applications'], 0)
-            self.assertEqual(body['counted_scope'], 'assigned')
-            self.assertEqual(body['qc_agreement']['total'], 0)
-            self.assertEqual(body['overall']['green'], 0)
-
-    def test_a_finance_user_granted_review_is_treated_as_a_reviewer(self):
-        fin = make_admin('finance', owning_org=self.org, permissions=['review'])
-        self._assign(fin, self.a2)
-        for body in self._both(fin):
-            self.assertEqual(body['applications'], 1)
-            self.assertEqual(body['counted_scope'], 'assigned')
-            self.assertNotIn('by_reviewer', body)
-            self.assertEqual(body['qc_agreement']['total'], 1)
-
-    def test_lead_qc_and_view_only_admin_get_the_whole_organisation(self):
-        self._assign(self.reviewer, self.a1)
-        viewer = make_admin('admin', owning_org=self.org)
-        for who in (self.lead, self.qc, viewer):
-            for body in self._both(who):
-                self.assertEqual(body['applications'], 3)
-                self.assertEqual(body['counted_scope'], 'all')
-                self.assertEqual(body['qc_agreement']['total'], 4)
-                self.assertEqual('by_reviewer' in body, who is self.lead)
+    def test_by_reviewer_follows_the_cohort_narrowing(self):
+        rows = self.get(self.lead, f'{METRICS}?cohort={self.cohort2.id}').json()['by_reviewer']
+        self.assertEqual([(r['id'], r['applications']) for r in rows], [(None, 1)])
 
     # ── the other tenant ──────────────────────────────────────────────────────────────────────
-    def test_an_organisation_b_lead_and_reviewer_never_receive_organisation_a_data(self):
+    def test_an_organisation_b_lead_never_receives_organisation_a_data(self):
         lead_b = make_admin('org_admin', owning_org=self.other, name='Bea Lead')
-        rev_b = make_admin('reviewer', owning_org=self.other, name='Ravi B')
-        self._assign(rev_b, self.f1)
         for body in self._both(lead_b):
             self.assertEqual(body['applications'], 1)
-            self.assertEqual(body['qc_agreement']['total'], 1)    # f1's row only, not A's four
+            self.assertEqual(sum(r['qc_accepted'] for r in body['by_reviewer']), 1)   # f1's row only
             self.assertNotIn('Rita Reviewer', str(body))
-        for body in self._both(rev_b):
-            self.assertEqual(body['applications'], 1)
-            self.assertEqual(body['qc_agreement']['total'], 1)
 
     def test_the_staff_name_lookup_is_fenced_to_the_organisation(self):
         # a recorder email that is staff ONLY in organisation B, on an organisation A application
@@ -289,15 +292,15 @@ class TestPredictionEndpointAndOverview(TestCase):
         # an organisation-less super keeps the unfiltered lookup
         self.assertIn('Other Org Namesake', str(self.get(self.super).json()['by_reviewer']))
 
-    def test_a_scope_none_admin_is_counted_over_nothing_when_metrics_is_called_directly(self):
+    def test_a_reviewer_partner_or_finance_counts_nothing_when_metrics_is_called_directly(self):
         from apps.scholarship.models import ScholarshipApplication
         from apps.scholarship.prediction_metrics import metrics
-        for who in (self.partner, self.finance):
+        self._assign(self.reviewer, self.a1)
+        for who in (self.partner, self.finance, self.reviewer):
             body = metrics(ScholarshipApplication.objects.all(), who)
             self.assertEqual(body['applications'], 0)
-            self.assertEqual(body['overall']['green'], 0)
-            self.assertEqual(body['qc_agreement']['total'], 0)
-            self.assertEqual(body['counted_scope'], 'assigned')
+            self.assertEqual(body['score']['facts'], 0)
+            self.assertNotIn('ai_team', body)
 
     def test_an_organisationless_lead_matches_no_staff_name(self):
         from apps.scholarship.models import ScholarshipApplication
@@ -326,18 +329,9 @@ class TestPredictionEndpointAndOverview(TestCase):
         self.assertEqual(r.json()['applications'], 0)
 
     # ── the gate ──────────────────────────────────────────────────────────────────────────────
-    def test_finance_and_partner_are_refused(self):
-        self.assertEqual(self.get(self.finance).status_code, 403)
-        self.assertEqual(self.get(self.partner).status_code, 403)
-
-    def test_endpoint_without_a_cohort_carries_everything(self):
-        body = self.get(self.lead).json()
-        for key in ('applications', 'fact_decisions', 'overrides', 'override_rate', 'per_fact',
-                    'engine_versions', 'overall', 'fact_counts', 'by_version', 'by_month',
-                    'doubt_codes', 'qc_agreement', 'by_reviewer'):
-            self.assertIn(key, body)
-        self.assertEqual(body['applications'], 3)         # the other tenant's case is fenced out
-        self.assertEqual(list(body['by_month']), ['2026-05'])
+    def test_finance_partner_and_reviewer_are_refused(self):
+        for who in (self.finance, self.partner, self.reviewer):
+            self.assertEqual(self.get(who).status_code, 403)
 
     # ── the Overview section ──────────────────────────────────────────────────────────────────
     def test_overview_carries_the_same_answer_for_a_lead(self):
@@ -345,21 +339,3 @@ class TestPredictionEndpointAndOverview(TestCase):
             page = self.get(who, OVERVIEW).json()
             self.assertIn('ai_prediction', page['sections'])
             self.assertEqual(page['ai_prediction'], self.get(who).json())
-
-    def test_overview_for_a_cohort_equals_the_endpoint_for_it(self):
-        page = self.get(self.lead, f'{OVERVIEW}?intake={self.cohort2.id}').json()
-        self.assertEqual(page['ai_prediction'],
-                         self.get(self.lead, f'{METRICS}?cohort={self.cohort2.id}').json())
-
-    def test_overview_hides_by_reviewer_from_non_leads(self):
-        for who in (self.reviewer, self.qc):
-            page = self.get(who, OVERVIEW).json()
-            self.assertIn('ai_prediction', page['sections'])
-            self.assertNotIn('by_reviewer', page['ai_prediction'])
-
-    def test_overview_never_offers_the_section_to_finance_or_partner(self):
-        page = self.get(self.finance, OVERVIEW)
-        self.assertEqual(page.status_code, 200)
-        self.assertNotIn('ai_prediction', page.json())
-        self.assertNotIn('ai_prediction', page.json()['sections'])
-        self.assertEqual(self.get(self.partner, OVERVIEW).status_code, 403)

@@ -11,6 +11,14 @@ Not pushed. Migration: none. Services: web. No behaviour or text change; no key 
 - **Measured:** median 157.242 to 155.006 kB, worst route 248.994 to 247.859 kB. The ratchet then lowered the median line 157.5 to 156 (a lowering, as it asked; no line raised).
 - **Tests:** `messagesSlice.test.ts` and `sliceReach.test.ts` pin the new slice contents and reach rules.
 
+### F4 (fix plan) part 1 - AI prediction scored in marks, server only (2026-11-23)
+
+Branch f4-ai-score, not pushed. Migration: none. Services: api only. Reads and displays only: no money, eligibility or decision outcome touched. Not shippable alone: the web card (part 2, F4b) still reads the old payload.
+- **Marks** (`ai_score.py`, pure): each decided fact is scored from the band recomputed from the stored `ai_verdict_snapshot` (`fact_bands.fact_band`) and the reviewer's Pass/Fail. Certain +2/-10, Probable +1/-3, Unsure 0/0, Can't verify -1/+1, Rule not met -10/+2. The 10 cells fall into 5 outcomes (right sure, right leaning, unsure, wrong leaning, wrong sure). Score = points / (2 x facts), whole %, can go below 0. A fact with no band in its snapshot is counted as `not_scored`. Pre-interview rejects (no `verdict_decided_at`) stay out.
+- **Payload** (`prediction_metrics.metrics`): `applications` and `score` (totals, points lost, most lost fact, by fact with the top 2 reasons it lost points, by model version). `by_reviewer` (manage_team) gains `qc_accepted` and `qc_sent_back`. `ai_team` (doubts often passed, by model version) is sent ONLY to a super (`is_super`). The month trend, decision and QC-checked blocks are no longer served.
+- **Who sees it:** the `ai_prediction` overview section is now `see_all` or `qc`, and `verdict-metrics` refuses 403 unless `b40_scope` is `all`, so a reviewer gets no card.
+- **Debt:** TD-NEW-1 `second_look.qc_checked_counts` now has no caller outside tests (remove or reuse). TD-NEW-2 (web, F4b) `verdictReliability` and the override summary type will have no live caller once the card is rewritten.
+
 ### TD-711 - cockpit tests no longer flake in the cloud build (2026-11-23)
 
 Test only. Migration: none. Services: web (build gate). No behaviour change.

@@ -78,7 +78,7 @@ PAGES = ('qc', 'mine')
 MONEY_KEYS = ('spending', 'payments_prepare', 'payments_check', 'payments_approve')
 SECTION_KEYS = {'funnel': ('see_all',), 'money': MONEY_KEYS, 'attention': ('see_all',),
                 'applications_series': ('see_all',), 'money_series': MONEY_KEYS,
-                'qc': ('qc',), 'mine': ('review',), 'ai_prediction': ('see_all', 'qc', 'review')}
+                'qc': ('qc',), 'mine': ('review',), 'ai_prediction': ('see_all', 'qc')}   # F4: never `review`
 
 
 def may_customise(admin):

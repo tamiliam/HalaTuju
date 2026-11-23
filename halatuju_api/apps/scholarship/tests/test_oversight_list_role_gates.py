@@ -4,7 +4,7 @@ Each gate is the union of roles that legitimately reach the data (decisions.md 2
 
   endpoint                                  allowed (super always passes)
   /admin/sponsorships/                      org_admin, admin, finance   (the Sponsors roles)
-  /admin/scholarship/verdict-metrics/       org_admin, admin, qc, reviewer (Applications roles)
+  /admin/scholarship/verdict-metrics/       org_admin, admin, qc (F4, 2026-11-23: never a reviewer)
 
 lessons.md 2026-09-28: "for a rule keyed on role, loop EVERY role that can reach the screen" — so
 every test below walks the whole `PartnerAdmin.ROLE_CHOICES` vocabulary, not a sample.
@@ -20,8 +20,7 @@ ROLES = tuple(code for code, _ in PartnerAdmin.ROLE_CHOICES)
 
 GATES = {
     '/api/v1/admin/sponsorships/': {'super', 'org_admin', 'admin', 'finance'},
-    '/api/v1/admin/scholarship/verdict-metrics/': {'super', 'org_admin', 'admin', 'qc',
-                                                  'reviewer'},
+    '/api/v1/admin/scholarship/verdict-metrics/': {'super', 'org_admin', 'admin', 'qc'},   # F4: no reviewer
 }
 
 

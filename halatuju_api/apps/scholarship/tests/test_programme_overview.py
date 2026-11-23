@@ -261,14 +261,14 @@ class RolesAndShapeTests(_Base):
         # and the page shows the Customise button by its presence. `layout_source` travels with
         # it (request #42, 2026-10-22): whether the layout is the gift's own.
         expected = {
-            # LL1: `ai_prediction` is offered wherever the verdict-metrics door opens (see_all, qc, review);
+            # LL1: `ai_prediction` is offered wherever the verdict-metrics door opens (see_all, qc); F4: never review;
             # finance never receives it.
             'ov-su': _FULL | {'layout', 'layout_source', 'ai_prediction'},
             'ov-oa': _FULL | {'layout', 'layout_source', 'ai_prediction'},
             'ov-adm': _FULL | {'ai_prediction'},
             'ov-fin': _ALWAYS | {'money', 'money_series'},
             'ov-qc': _ALWAYS | {'qc', 'ai_prediction'},
-            'ov-rev': _ALWAYS | {'mine', 'ai_prediction'},
+            'ov-rev': _ALWAYS | {'mine'},
         }
         for uid, keys in expected.items():
             with self.subTest(uid=uid):
@@ -738,7 +738,7 @@ class LayoutTests(_Base):
         self.assertNotIn('money', fin)
         self.assertEqual(fin['sections'], ['money_series'])
         # A reviewer never had `money`; their page is untouched by a layout that hides it.
-        self.assertEqual(self._body('ov-rev')['sections'], ['ai_prediction', 'mine'])
+        self.assertEqual(self._body('ov-rev')['sections'], ['mine'])
 
     def test_sections_follow_the_stored_order(self):
         self._store(self._rows(['money_series', 'funnel', 'money', 'attention',
@@ -841,7 +841,7 @@ class GiftLayoutTests(_Base):
     def test_a_gift_layout_still_never_widens_a_role(self):
         self._store_gift(self.gift, self._rows(_WIDGETS, off=('money',)))
         self.assertEqual(self._body('ov-fin')['sections'], ['money_series'])
-        self.assertEqual(self._body('ov-rev')['sections'], ['ai_prediction', 'mine'])
+        self.assertEqual(self._body('ov-rev')['sections'], ['mine'])
         self.assertEqual(self._body('ov-qc')['sections'], ['ai_prediction', 'qc'])
         self.assertNotIn('layout_source', self._body('ov-adm'))
 

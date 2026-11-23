@@ -2,8 +2,11 @@
 
 ONE home for it: the endpoint (`verdict-metrics/`) and the Programme Overview's `ai_prediction`
 section both call `metrics(applications, admin)`, so the two can never disagree. The counting itself
-is pure and lives in `audit.py`; this module only builds the fenced row set, reads the QC rows and
-turns a recorder's email into a person.
+is pure and lives in `ai_score.py` (the marks, F4) and `audit.py`; this module only builds the fenced
+row set, reads the QC rows and turns a recorder's email into a person.
+
+⚠ F4 (2026-11-23): no AI prediction card for a reviewer; `ai_team` (the "For the AI team" fold) is a
+super's only and ABSENT for everyone else. The month trend and the QC "Decision" block are gone.
 
 ⚠ THE FENCE IS THE CALLER'S. `applications` must already be inside the organisation fence (and
 narrowed by gift / round); nothing here widens it. The QC rows are reached ONLY through that same
@@ -19,8 +22,8 @@ from django.db.models.functions import Lower
 
 from apps.courses import public as courses_public
 
+from . import ai_score
 from . import audit
-from . import second_look
 from .models import StaffActivity
 
 UNMATCHED = 'unmatched_reviewer'   # label key: a recorder with no staff row
@@ -49,14 +52,21 @@ def _staff_by_email(emails, admin):
     return {email: (pk, name or '') for email, pk, name in rows}   # oldest row wins (ordered -pk)
 
 
-def _reviewer_rows(records, admin) -> list:
-    """The four counts per recorder, as people — never an email."""
+def _reviewer_rows(records, admin, qc_by_app) -> list:
+    """The counts per recorder, as people — never an email. F4: plus `qc_accepted` / `qc_sent_back`,
+    the QC decisions (`accept` / `reopen`) on that recorder's applications (``qc_by_app``)."""
     emails = {(r[4] or '').strip().lower() for r in records} - {''}
     staff = _staff_by_email(emails, admin)
-    keyed = []
+    keyed, qc = [], {}
     for r in records:
         who = staff.get((r[4] or '').strip().lower())
-        keyed.append((*r[:4], who[0] if who else UNMATCHED))
+        key = who[0] if who else UNMATCHED
+        keyed.append((*r[:4], key))
+        if r[4]:
+            block = qc.setdefault(key, {'qc_accepted': 0, 'qc_sent_back': 0})
+            got = qc_by_app.get(r[5], {})
+            block['qc_accepted'] += got.get('accept', 0)
+            block['qc_sent_back'] += got.get('reopen', 0)
     names = dict(staff.values())
     rows = []
     for key, block in audit.decider_counts(keyed).items():
@@ -64,65 +74,61 @@ def _reviewer_rows(records, admin) -> list:
         rows.append({'id': key if known else None,
                      'name': names.get(key, ''),
                      'label_key': UNMATCHED if not known else (None if names[key] else UNNAMED),
-                     **block})
+                     **block, **qc.get(key, {'qc_accepted': 0, 'qc_sent_back': 0})})
     rows.sort(key=lambda r: (-r['green_failed'], -r['applications'], r['name'], r['id'] or 0))
     return rows
 
 
-def _qc_block():
-    return {'accept': 0, 'reopen': 0, 'reject': 0}
-
-
-def _qc_finish(block):
-    block['total'] = block['accept'] + block['reopen'] + block['reject']
-    block['accept_rate'] = round(block['accept'] / block['total'], 4) if block['total'] else 0.0
-    block['few'] = block['total'] < audit.FEW_BELOW
-    return block
-
-
-def qc_agreement(applications) -> dict:
-    """QC decisions (`qc_decision` rows) on ``applications``, overall and per month (Malaysia time).
-    Every row counts, so an application with several QC rows counts each."""
+def _qc_by_application(decided) -> dict:
+    """application id → {decision: count} over the `qc_decision` rows on ``decided`` (fenced set)."""
+    out: dict = {}
     rows = (StaffActivity.objects
-            .filter(verb='qc_decision', subject_type='application',
-                    subject_id__in=applications.values('id'))
-            .values_list('meta', 'created_at'))
-    overall, by_month = _qc_block(), {}
-    for meta, created_at in rows:
+            .filter(verb='qc_decision', subject_type='application', subject_id__in=decided.values('id'))
+            .values_list('subject_id', 'meta'))
+    for subject_id, meta in rows:
         decision = (meta or {}).get('decision')
-        if decision not in overall:
-            continue
-        overall[decision] += 1
-        month = audit.month_key(created_at)
-        by_month.setdefault(month, _qc_block())[decision] += 1
-    out = _qc_finish(overall)
-    out['by_month'] = {m: _qc_finish(by_month[m]) for m in sorted(by_month)}
+        if decision in ('accept', 'reopen', 'reject'):
+            block = out.setdefault(subject_id, {})
+            block[decision] = block.get(decision, 0) + 1
     return out
 
 
-def metrics(applications, admin) -> dict:
-    """The whole answer for ``applications`` (a FENCED queryset): `audit.override_metrics`, the QC
-    agreement, and — for the lead tier only — `by_reviewer`.
+def may_see_ai_team(admin) -> bool:
+    """F4: the "For the AI team" fold (doubts often passed, score by engine version) is a SUPER's only.
+    Asked of the platform power `is_super` (a super passes every permission key, so no key can tell a
+    super from an organisation admin who holds them all); never a role name, never a new choice."""
+    return bool(admin is not None and admin.is_super)
 
-    ONE narrowing, for both callers: a `review`-only holder (`b40_scope` 'assigned') is counted over
-    the applications assigned to them, the same rule the Applications list applies. `counted_scope`
-    says which ('all' / 'assigned') so the page never works it out. FAILS CLOSED: scope 'none'
-    (partner, finance without `review`) counts nothing, reported as 'assigned' (their share is none)."""
+
+def metrics(applications, admin) -> dict:
+    """The whole answer for ``applications`` (a FENCED queryset), F4 shape (owner design 2026-11-23):
+
+    * ``applications`` — decided applications counted; ``score`` — `ai_score.score` (the two tiles and
+      "By fact"), WITHOUT its per-version part;
+    * ``by_reviewer`` — the lead tier only (`may_see_reviewers`);
+    * ``ai_team`` — a super only (`may_see_ai_team`): ``doubt_codes`` and ``by_version``.
+
+    ⚠ WHO: the readers of the whole organisation only (`b40_scope` 'all': `see_all`, QC's implied one).
+    A reviewer (`review` alone, scope 'assigned') sees NO AI prediction card (owner, F4): the endpoint
+    refuses them and the Overview never builds the section; called directly anyway, this FAILS CLOSED
+    and counts nothing. Partner / finance (scope 'none') the same.
+
+    ⚠ Only RECORDED decisions count (`verdict_decided_at` set). A reject before interview writes its
+    facts on the case without that stamp (`services.pre_interview._assessment_fields`) and on its
+    `declined` activity row, which nothing here reads: neither teaches the learning loop."""
     from .views_admin.base import b40_scope   # in the function: the views package imports this module
-    scope = b40_scope(admin)
-    counted = 'all' if scope == 'all' else 'assigned'
-    if scope == 'none':
+    if b40_scope(admin) != 'all':
         applications = applications.none()
-    elif counted == 'assigned':
-        applications = applications.filter(assigned_to=admin)
     decided = applications.filter(verdict_decided_at__isnull=False)
     records = list(decided.values_list(
         'ai_verdict_snapshot', 'officer_verdict', 'ai_verdict_engine_version',
-        'verdict_decided_at', 'verdict_decided_by'))
-    out = audit.override_metrics(records)
-    out['qc_agreement'] = qc_agreement(decided)
-    out['qc_checked'] = second_look.qc_checked_counts(records)   # LL2b: the facts in doubt, checked by the QC
-    out['counted_scope'] = counted
+        'verdict_decided_at', 'verdict_decided_by', 'id'))
+    marks = ai_score.score(records)
+    by_version = marks.pop('by_version')
+    out = {'applications': len(records), 'score': marks}
     if may_see_reviewers(admin):
-        out['by_reviewer'] = _reviewer_rows(records, admin)
+        out['by_reviewer'] = _reviewer_rows(records, admin, _qc_by_application(decided))
+    if may_see_ai_team(admin):
+        out['ai_team'] = {'doubt_codes': audit.override_metrics(records)['doubt_codes'],
+                          'by_version': by_version}
     return out
