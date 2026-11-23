@@ -64,6 +64,9 @@
     "partnerNote": "Rakan kongsi dan penyelaras log masuk melalui jemputan."
   },
   "sponsorAuth": {
+    "captchaBlocked": "Kami tidak dapat memuatkan semakan keselamatan. Penyekat iklan, tembok api atau rangkaian anda mungkin menyekatnya. Sila matikan penyekat iklan anda, atau cuba pelayar lain atau data mudah alih.",
+    "captchaFailed": "Semakan keselamatan tidak selesai. Sila cuba lagi. Jika ini berulang, cuba pelayar lain, matikan penyekat iklan anda, atau tukar kepada data mudah alih.",
+    "captchaGoogle": "Anda juga boleh teruskan dengan Google.",
     "badge": "Penaja",
     "loginTitle": "Log masuk penaja",
     "loginSubtitle": "Selamat kembali. Log masuk ke akaun penaja anda.",
@@ -3230,10 +3233,7 @@
     "saveFailed": "Gagal menyimpan. Sila cuba lagi.",
     "tempPasswordExpired": "Kata laluan sementara anda telah tamat tempoh. Sila minta orang yang menambah anda untuk menghantar semula butiran log masuk anda.",
     "accessWithdrawn": "Akses anda telah ditarik balik. Sila hubungi orang yang menjemput anda.",
-    "invitedHint": "Jika anda dijemput dan ini tidak lagi berfungsi, sila hubungi orang yang menjemput anda.",
-    "captchaBlocked": "Kami tidak dapat memuatkan semakan keselamatan. Penyekat iklan, tembok api atau rangkaian anda mungkin menyekatnya. Sila matikan penyekat iklan anda, atau cuba pelayar lain atau data mudah alih.",
-    "captchaFailed": "Semakan keselamatan tidak selesai. Sila cuba lagi. Jika ini berulang, cuba pelayar lain, matikan penyekat iklan anda, atau tukar kepada data mudah alih.",
-    "captchaGoogle": "Anda juga boleh teruskan dengan Google."
+    "invitedHint": "Jika anda dijemput dan ini tidak lagi berfungsi, sila hubungi orang yang menjemput anda."
   },
   "stpm": {
     "searchTitle": "Layari Kursus Ijazah STPM",
@@ -3361,6 +3361,11 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "loginCaptcha": {
+      "blocked": "Kami tidak dapat memuatkan semakan keselamatan. Penyekat iklan, tembok api atau rangkaian anda mungkin menyekatnya. Sila matikan penyekat iklan anda, atau cuba pelayar lain atau data mudah alih.",
+      "failed": "Semakan keselamatan tidak selesai. Sila cuba lagi. Jika ini berulang, cuba pelayar lain, matikan penyekat iklan anda, atau tukar kepada data mudah alih.",
+      "google": "Anda juga boleh teruskan dengan Google."
+    },
     "desktopOnly": {
       "title": "Gunakan komputer untuk halaman ini",
       "body": "Halaman ini dibina untuk skrin besar. Bukanya di komputer untuk menggunakannya. Tiada apa-apa yang berubah.",

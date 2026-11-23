@@ -22,6 +22,7 @@ type Step = 'login' | 'forgot' | 'forgot-sent'
 export default function AdminLoginPage() {
   const router = useRouter()
   const { t } = useT()
+  const captchaWords = { blocked: t('admin.loginCaptcha.blocked'), failed: t('admin.loginCaptcha.failed'), google: t('admin.loginCaptcha.google') }
   const [step, setStep] = useState<Step>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -51,7 +52,7 @@ export default function AdminLoginPage() {
     if (error) {
       // A failed security check gets plain words (never Supabase's raw "captcha protection"),
       // and no "you were invited" hint — the password was never even tried.
-      const captcha = captchaErrorText(error, t, { offersGoogle: true })
+      const captcha = captchaErrorText(error, captchaWords, true)
       setError(captcha ?? error.message)
       setHint(!captcha)
       setLoading(false)
@@ -142,7 +143,7 @@ export default function AdminLoginPage() {
     const { error } = await adminResetPassword(email)
     if (error) {
       // The reset step has no Google button on screen, so no "continue with Google" line.
-      setError(captchaErrorText(error, t, { offersGoogle: false }) ?? error.message)
+      setError(captchaErrorText(error, captchaWords, false) ?? error.message)
       setLoading(false)
       return
     }

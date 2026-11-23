@@ -153,48 +153,63 @@ describe.each(DOORS)('$name', ({ run, sb, tokenOf }) => {
 })
 
 describe('the words', () => {
-  const KEYS = ['captchaBlocked', 'captchaFailed', 'captchaGoogle'] as const
-  const errorsOf = (m: unknown) => (m as { errors: Record<string, string> }).errors
+  // The words sit in the slice each door already loads, not in the core catalogue every route
+  // downloads: sponsorAuth.captcha* for the sponsor doors, admin.loginCaptcha.* for the admin doors.
+  type Bag = Record<string, string>
+  const sponsorOf = (m: unknown) => (m as { sponsorAuth: Bag }).sponsorAuth
+  const adminOf = (m: unknown) => (m as { admin: { loginCaptcha: Bag } }).admin.loginCaptcha
+  const pairs: Array<[string, (m: unknown) => Bag, readonly string[]]> = [
+    ['sponsorAuth', sponsorOf, ['captchaBlocked', 'captchaFailed', 'captchaGoogle']],
+    ['admin.loginCaptcha', adminOf, ['blocked', 'failed', 'google']],
+  ]
 
-  it.each([['en', en], ['ms', ms], ['ta', ta]])('%s holds every captcha line', (_l, m) => {
-    for (const k of KEYS) {
-      expect(typeof errorsOf(m)[k]).toBe('string')
-      expect(errorsOf(m)[k].trim().length).toBeGreaterThan(0)
-      expect(errorsOf(m)[k]).not.toMatch(/captcha/i)
+  it.each(pairs)('%s holds every captcha line in en, ms and ta', (_n, bag, keys) => {
+    for (const m of [en, ms, ta]) {
+      for (const k of keys) {
+        expect(typeof bag(m)[k]).toBe('string')
+        expect(bag(m)[k].trim().length).toBeGreaterThan(0)
+        expect(bag(m)[k]).not.toMatch(/captcha/i)
+      }
     }
   })
 
-  it('Malay and Tamil are translated, not copies of the English', () => {
-    for (const k of ['captchaBlocked', 'captchaFailed'] as const) {
-      expect(errorsOf(ms)[k]).not.toBe(errorsOf(en)[k])
-      expect(errorsOf(ta)[k]).not.toBe(errorsOf(en)[k])
+  it('the core catalogue no longer carries them', () => {
+    for (const m of [en, ms, ta]) {
+      expect((m as unknown as { errors: Bag }).errors.captchaBlocked).toBeUndefined()
     }
   })
 
-  it('the English says what to try: ad blocker, another browser, mobile data', () => {
-    for (const k of ['captchaBlocked', 'captchaFailed'] as const) {
-      expect(errorsOf(en)[k]).toMatch(/ad blocker/)
-      expect(errorsOf(en)[k]).toMatch(/another browser/)
-      expect(errorsOf(en)[k]).toMatch(/mobile data/)
+  it.each(pairs)('%s: Malay and Tamil are translated, not copies of the English', (_n, bag, keys) => {
+    for (const k of keys.slice(0, 2)) {
+      expect(bag(ms)[k]).not.toBe(bag(en)[k])
+      expect(bag(ta)[k]).not.toBe(bag(en)[k])
     }
-    expect(errorsOf(en).captchaGoogle).toMatch(/Google/)
   })
 
-  const t = (k: string) => (en as unknown as Record<string, Record<string, string>>)[k.split('.')[0]][k.split('.')[1]]
-
-  it('maps each failure to its words; the Google line only where the door offers Google', () => {
-    expect(captchaErrorText({ code: 'captcha_blocked' }, t, { offersGoogle: false })).toBe(en.errors.captchaBlocked)
-    expect(captchaErrorText({ code: 'captcha_failed' }, t, { offersGoogle: true }))
-      .toBe(`${en.errors.captchaFailed} ${en.errors.captchaGoogle}`)
+  it.each(pairs)('%s: the English says what to try: ad blocker, another browser, mobile data', (_n, bag, keys) => {
+    for (const k of keys.slice(0, 2)) {
+      expect(bag(en)[k]).toMatch(/ad blocker/)
+      expect(bag(en)[k]).toMatch(/another browser/)
+      expect(bag(en)[k]).toMatch(/mobile data/)
+    }
+    expect(bag(en)[keys[2]]).toMatch(/Google/)
   })
 
-  it('a raw Supabase captcha refusal maps to the failed words', () => {
-    expect(captchaCodeOf({ message: RAW, status: 400 })).toBe('captcha_failed')
-    expect(captchaErrorText({ message: RAW }, t, { offersGoogle: false })).toBe(en.errors.captchaFailed)
-  })
+  it.each([['admin' as const, adminOf(en)], ['sponsor' as const, sponsorOf(en)]])(
+    '%s: maps each failure to its words; the Google line only where the door offers Google', (scope, _bag) => {
+      const w = scope === 'admin'
+        ? { b: adminOf(en).blocked, f: adminOf(en).failed, g: adminOf(en).google }
+        : { b: sponsorOf(en).captchaBlocked, f: sponsorOf(en).captchaFailed, g: sponsorOf(en).captchaGoogle }
+      const words = { blocked: w.b, failed: w.f, google: w.g }
+      expect(captchaErrorText({ code: 'captcha_blocked' }, words, false)).toBe(w.b)
+      expect(captchaErrorText({ code: 'captcha_failed' }, words, true)).toBe(`${w.f} ${w.g}`)
+      expect(captchaCodeOf({ message: RAW, status: 400 })).toBe('captcha_failed')
+      expect(captchaErrorText({ message: RAW }, words, false)).toBe(w.f)
+    })
 
   it('leaves every other error to the screen', () => {
-    expect(captchaErrorText({ message: 'Invalid login credentials' }, t, { offersGoogle: true })).toBeNull()
-    expect(captchaErrorText(null, t, { offersGoogle: true })).toBeNull()
+    const words = { blocked: 'b', failed: 'f', google: 'g' }
+    expect(captchaErrorText({ message: 'Invalid login credentials' }, words, true)).toBeNull()
+    expect(captchaErrorText(null, words, true)).toBeNull()
   })
 })

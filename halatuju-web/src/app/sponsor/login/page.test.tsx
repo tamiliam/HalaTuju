@@ -35,7 +35,7 @@ it('sign-in: the blocked words plus the Google line (Google is on screen)', asyn
   fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 's@example.org' } })
   fireEvent.change(screen.getByPlaceholderText('sponsorAuth.enterPassword'), { target: { value: 'secret-pass' } })
   fireEvent.click(screen.getByRole('button', { name: 'sponsorAuth.signIn' }))
-  await waitFor(() => expect(screen.getByText('errors.captchaBlocked errors.captchaGoogle')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('sponsorAuth.captchaBlocked sponsorAuth.captchaGoogle')).toBeTruthy())
 })
 
 it('reset: the blocked words with NO Google line (no Google button on that step)', async () => {
@@ -45,7 +45,7 @@ it('reset: the blocked words with NO Google line (no Google button on that step)
   expect(screen.queryByRole('button', { name: /sponsorAuth.signInGoogle/ })).toBeNull()
   fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 's@example.org' } })
   fireEvent.click(screen.getByRole('button', { name: 'sponsorAuth.sendResetLink' }))
-  await waitFor(() => expect(screen.getByText('errors.captchaBlocked')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('sponsorAuth.captchaBlocked')).toBeTruthy())
   expect(screen.queryByText(/errors\.captchaGoogle/)).toBeNull()
   expect(screen.queryByText(/captcha protection/)).toBeNull()
 })

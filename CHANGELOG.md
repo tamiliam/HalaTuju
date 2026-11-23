@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Web first-load JS back under budget - case page and median (2026-11-23)
+
+Not pushed. Migration: none. Services: web. No behaviour or text change; no budget or ledger number touched.
+- **Cause:** the captcha repair put `captchaAuth` and the grown `turnstile` on every admin and sponsor route (via `admin-supabase` and `sponsor-supabase`), added 133 bytes of captcha words to core, and F3 made `PreInterviewReject` heavy in the case page chunk.
+- **Moved:** `captchaLazy.ts` fetches `captchaAuth` on first sign-in call; captcha words moved from core into the `admin.loginCaptcha` and `sponsorAuth` slices and `captchaErrorText` now takes the words from the screen; the pre-interview option and record are lazy on the case page; the sponsor Trust view, Invite-a-friend and Giving statement are their own chunks.
+- Case page 250.886 to 248.885 kB; median 158.243 to 157.188 kB. Tests that rendered the lazy parts now await them.
+
 ### F3 (fix plan) - reviewer assessment rules (2026-11-22)
 
 Branch fix-f3, not pushed. Migration: none. Services: api, web. No doc-recognition change (no MODEL_VERSION bump).

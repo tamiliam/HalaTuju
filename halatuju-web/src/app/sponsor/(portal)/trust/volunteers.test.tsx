@@ -7,7 +7,7 @@
  * everyone or one person) the page shows the headline and the footnote, no bars. Below five answers the
  * server sends no figures and the section is off.
  */
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import TrustPage from './page'
 import type { SponsorTrust } from '@/lib/api/sponsor'
 
@@ -27,11 +27,11 @@ const BASE = {
 } as SponsorTrust
 const V = 'sponsorPortal.trust.volunteers'
 
-it('shows the served headline, the four bars and the banded count', () => {
+it('shows the served headline, the four bars and the banded count', async () => {
   mockTrust = { ...BASE, volunteers: { count_at_least: 20, senior_pct: 39,
     shares: { c_level: 13, head: 26, manager: 30, individual: 31 } } }
   render(<TrustPage />)
-  const section = screen.getByTestId('trust-volunteers')
+  const section = await screen.findByTestId('trust-volunteers')
   expect(section.querySelector('h2')?.textContent).toBe(`${V}.title`)
   expect(section.textContent).toContain(`${V}.headline(39)`)
   expect(section.textContent).toContain(`${V}.basedOn(20)`)
@@ -43,10 +43,10 @@ it('shows the served headline, the four bars and the banded count', () => {
   }
 })
 
-it('shares withheld: the headline and the footnote, no bars', () => {
+it('shares withheld: the headline and the footnote, no bars', async () => {
   mockTrust = { ...BASE, volunteers: { count_at_least: 5, senior_pct: 43, shares: null } }
   render(<TrustPage />)
-  const section = screen.getByTestId('trust-volunteers')
+  const section = await screen.findByTestId('trust-volunteers')
   expect(section.textContent).toContain(`${V}.headline(43)`)
   expect(section.textContent).toContain(`${V}.basedOn(5)`)
   for (const k of ['c_level', 'head', 'manager', 'individual']) {
@@ -55,20 +55,22 @@ it('shares withheld: the headline and the footnote, no bars', () => {
   expect(section.querySelector('.bg-info-600')).toBeNull()
 })
 
-it('sits between Governance and Sources & uses', () => {
+it('sits between Governance and Sources & uses', async () => {
   mockTrust = { ...BASE, volunteers: { count_at_least: 5, senior_pct: 60,
     shares: { c_level: 20, head: 40, manager: 20, individual: 20 } } }
   render(<TrustPage />)
+  await screen.findByTestId('trust-volunteers')
   const titles = Array.from(document.querySelectorAll('h2')).map((h) => h.textContent)
   const at = titles.indexOf(`${V}.title`)
   expect(titles[at - 1]).toBe('sponsorPortal.trust.governance.title')
   expect(titles[at + 1]).toBe('sponsorPortal.trust.sourcesUses.title')
 })
 
-it('no figures from the server, no section', () => {
+it('no figures from the server, no section', async () => {
   for (const volunteers of [null, undefined]) {
     mockTrust = { ...BASE, volunteers }
     const { unmount } = render(<TrustPage />)
+    await waitFor(() => expect(document.querySelector('h2')).not.toBeNull())
     expect(screen.queryByTestId('trust-volunteers')).toBeNull()
     unmount()
   }

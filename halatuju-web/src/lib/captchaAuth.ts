@@ -16,7 +16,7 @@
  *      console warning, so the deploy mistake is visible.
  *
  * The screens turn the codes into plain words with `captchaErrorKeys()` (en/ms/ta in
- * `messages/*.json`, `errors.captcha*`). Google sign-in does not pass through here: OAuth
+ * `messages/*.json`, `admin.loginCaptcha.*` / `sponsorAuth.captcha*`). Google sign-in does not pass through here: OAuth
  * redirects carry no captcha.
  */
 import { getTurnstileResult } from '@/lib/turnstile'
@@ -96,13 +96,17 @@ export async function withCaptcha<R extends { error: unknown }>(
  * Google" line only where that screen offers Google. Null when `error` is not a captcha failure
  * (the screen keeps its own handling). `t` is the screen's `useT()`.
  */
+export type CaptchaWords = { blocked: string; failed: string; google: string }
+
 export function captchaErrorText(
   error: unknown,
-  t: (key: string) => string,
-  opts: { offersGoogle: boolean },
+  words: CaptchaWords,
+  offersGoogle: boolean,
 ): string | null {
   const code = captchaCodeOf(error)
   if (!code) return null
-  const main = code === 'captcha_blocked' ? t('errors.captchaBlocked') : t('errors.captchaFailed')
-  return opts.offersGoogle ? `${main} ${t('errors.captchaGoogle')}` : main
+  // The screen reads its own words (`admin.loginCaptcha.*` or `sponsorAuth.captcha*`) from the slice it
+  // already loads and hands them in; this module holds no catalogue key, so it rides no route's slice.
+  const main = code === 'captcha_blocked' ? words.blocked : words.failed
+  return offersGoogle ? `${main} ${words.google}` : main
 }

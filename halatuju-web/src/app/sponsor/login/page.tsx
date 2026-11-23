@@ -20,6 +20,7 @@ type Step = 'login' | 'forgot' | 'forgot-sent'
 export default function SponsorLoginPage() {
   const router = useRouter()
   const { t } = useT()
+  const captchaWords = { blocked: t('sponsorAuth.captchaBlocked'), failed: t('sponsorAuth.captchaFailed'), google: t('sponsorAuth.captchaGoogle') }
   const [step, setStep] = useState<Step>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -44,7 +45,7 @@ export default function SponsorLoginPage() {
     setError(null)
     const { data, error } = await sponsorSignInWithPassword(email, password)
     if (error) {
-      setError(captchaErrorText(error, t, { offersGoogle: true }) ?? error.message)
+      setError(captchaErrorText(error, captchaWords, true) ?? error.message)
       setLoading(false)
       return
     }
@@ -74,7 +75,7 @@ export default function SponsorLoginPage() {
     const { error } = await sponsorResetPassword(email)
     if (error) {
       // The reset step has no Google button on screen, so no "continue with Google" line.
-      setError(captchaErrorText(error, t, { offersGoogle: false }) ?? error.message)
+      setError(captchaErrorText(error, captchaWords, false) ?? error.message)
       setLoading(false)
       return
     }

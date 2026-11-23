@@ -1,5 +1,5 @@
 import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
-import { withCaptcha } from '@/lib/captchaAuth'
+import { withCaptcha } from '@/lib/captchaLazy'
 import { clearSignInDismissals } from '@/lib/topBanner'
 
 let _adminSupabase: AuthOnlyClient | null = null
