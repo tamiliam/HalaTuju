@@ -290,7 +290,7 @@ describe('TD-623 / A10 (web): a role name is never a permission gate', () => {
     // pattern or a directory falls through it. S3 / M4b (23 Nov): 137 hits after the sprint DELETED the four
     // money role reads in `sponsorDetail.ts` (served flags now); the floor follows a deletion, never a lost
     // read — the next test still pins every kept entry's exact count.
-    expect(HITS.length).toBeGreaterThanOrEqual(130)
+    expect(HITS.length).toBeGreaterThanOrEqual(137)
     expect(HITS.some((h) => h.file === 'lib/superRole.ts')).toBe(true)
   })
 
