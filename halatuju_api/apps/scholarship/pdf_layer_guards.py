@@ -167,7 +167,7 @@ class GateReader(PdfReader):
         if self._headers is None:
             at = self.stream.tell()
             self.stream.seek(0)
-            self._headers = set(_HEADER.findall(self.stream.read()))      # one counted whole-file read
+            self._headers = {m.groups() for m in _HEADER.finditer(self.stream.read())}   # one counted whole-file read; no findall list
             self.stream.seek(at)
         if (b'%d' % num, b'%d' % gen) in self._headers:
             return super().get_object(ref)

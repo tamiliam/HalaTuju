@@ -15,11 +15,18 @@ Not pushed. Migration: none. Services: web. No behaviour change; one new error l
 
 ### fix: TD-702 - the PDF gate caps pypdf's whole-file searches (2026-11-23)
 
-Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse digest moved, logged as also_ok under 2.3.0 (no genuine answer changed; no MODEL_VERSION bump).
+Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse digest moved; version bumped to 2.3.1 (see the review-fixes entry above).
 - **GateReader:** `pdf_pages._open_pdf` (every page check: the render gate, the text-layer read, the rules lanes) now opens `pdf_layer_guards.GateReader`: pypdf over a BytesIO that counts each whole-file read and refuses past `MAX_WHOLE_FILE_READS` (4); a number with no cross-reference row and no header in the file is answered as pypdf answers it (None) after one header scan, with no search. `getbuffer` is hidden, not counted: pypdf also uses it for the file size once per xref subsection.
 - **Measured (7.5 MB crafted files, main 61d5b4ba0 then this branch):** 100 missing numbers 7.6 s to 0.21 s (refused both times); 100 wrong-generation rows 12.4 s ACCEPTED to 0.45 s refused; 200 rows on a comment 25.0 s ACCEPTED to 0.55 s refused. Gate census over the 870 fixture PDFs: the same 2 refused before and after; worst 1.45 s before, 1.11 s after.
 - **Tests:** new `tests/test_pdf_gate_reader.py` (hostile PDFs built in code: missing, wrong generation, comment, plus the control, a few real repairs, repairs past the cap); `test_offer_reader` patches `GateReader` for its damaged-layer case.
 - **Docs:** `docs/technical-debt.md` (TD-702 fixed), `docs/decisions.md`.
+
+### fix: TD-702 review fixes - offer_parse 2.3.1, TD-710, header scan memory (2026-11-23)
+
+Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse bumped 2.3.0 to 2.3.1 (outcomes for crafted PDFs change); the earlier also_ok entry on this branch is replaced by a real 2.3.1 log entry.
+- **Wording:** TD-702 now says only the three named shapes (missing numbers, wrong generation, comment rows) are fixed; the other three crafted shapes are new row TD-710 (short /Length, huge /Length, object-stream misses; all on main too; one lookup-work budget in GateReader, follow-up sprint). The "refused in under 1 s" note names the three shapes only.
+- **Memory:** the GateReader header scan builds its set with `finditer` instead of a full `findall` list (about 181 MB less peak on a 15 MB file packed with headers); same answers.
+- **Tests:** the parser version assertions read 2.3.1; the damaged-layer test in `test_offer_reader` also asserts the mock was called.
 
 ### F3 (fix plan) - reviewer assessment rules (2026-11-22)
 
