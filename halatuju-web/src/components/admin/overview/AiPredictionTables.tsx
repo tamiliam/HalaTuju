@@ -105,7 +105,7 @@ export function FactTable({ t, facts }: { t: Translate; facts: Record<string, Fa
   const rows = FACT_CODES.filter((f) => facts[f])
   if (rows.length === 0) return null
   return (
-    <TableFrame minWidth={860} label={t(`${K}.byFact`)}>
+    <TableFrame minWidth={1100} label={t(`${K}.byFact`)}>
       <table className="w-full">
         <thead className={HEAD}>
           <tr>
@@ -154,7 +154,7 @@ function reviewerName(t: Translate, r: ReviewerRow): string {
  *  `green_failed` and `unsure_passed`; the QC columns are the served QC decisions. */
 export function ReviewerTable({ t, rows }: { t: Translate; rows: readonly ReviewerRow[] }) {
   return (
-    <TableFrame minWidth={640} label={t(`${K}.byReviewer`)}>
+    <TableFrame minWidth={900} label={t(`${K}.byReviewer`)}>
       <table className="w-full">
         <thead className={HEAD}>
           <tr>
