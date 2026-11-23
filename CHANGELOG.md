@@ -15,7 +15,7 @@ Not pushed. Migration: none. Services: web. No behaviour change; one new error l
 
 ### fix: TD-702 - the PDF gate caps pypdf's whole-file searches (2026-11-23)
 
-Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse digest moved; version bumped to 2.3.1 (see the review-fixes entry above).
+Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse digest moved; version bumped to 2.3.1 (see the review-fixes entry below).
 - **GateReader:** `pdf_pages._open_pdf` (every page check: the render gate, the text-layer read, the rules lanes) now opens `pdf_layer_guards.GateReader`: pypdf over a BytesIO that counts each whole-file read and refuses past `MAX_WHOLE_FILE_READS` (4); a number with no cross-reference row and no header in the file is answered as pypdf answers it (None) after one header scan, with no search. `getbuffer` is hidden, not counted: pypdf also uses it for the file size once per xref subsection.
 - **Measured (7.5 MB crafted files, main 61d5b4ba0 then this branch):** 100 missing numbers 7.6 s to 0.21 s (refused both times); 100 wrong-generation rows 12.4 s ACCEPTED to 0.45 s refused; 200 rows on a comment 25.0 s ACCEPTED to 0.55 s refused. Gate census over the 870 fixture PDFs: the same 2 refused before and after; worst 1.45 s before, 1.11 s after.
 - **Tests:** new `tests/test_pdf_gate_reader.py` (hostile PDFs built in code: missing, wrong generation, comment, plus the control, a few real repairs, repairs past the cap); `test_offer_reader` patches `GateReader` for its damaged-layer case.
