@@ -1,5 +1,5 @@
 import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
-import { withCaptcha } from '@/lib/captchaAuth'
+import { withCaptcha } from '@/lib/captchaLazy'
 import { KEY_SPONSOR_PENDING } from '@/lib/storage'
 
 let _sponsorSupabase: AuthOnlyClient | null = null

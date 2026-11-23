@@ -121,14 +121,14 @@ describe('a failed security check shows plain words, never Supabase raw captcha 
   it('blocked: the blocked words plus the Google line, and no invited hint', async () => {
     signIn.mockResolvedValue({ data: {}, error: { code: 'captcha_blocked', message: 'x', name: 'CaptchaError', status: 0 } })
     await submit()
-    await waitFor(() => expect(screen.getByText('errors.captchaBlocked errors.captchaGoogle')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('admin.loginCaptcha.blocked admin.loginCaptcha.google')).toBeTruthy())
     expect(screen.queryByText('errors.invitedHint')).toBeNull()
   })
 
   it('a raw Supabase captcha refusal is mapped to the failed words', async () => {
     signIn.mockResolvedValue({ data: {}, error: { message: 'captcha protection: request disallowed (timeout-or-duplicate)' } })
     await submit()
-    await waitFor(() => expect(screen.getByText('errors.captchaFailed errors.captchaGoogle')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('admin.loginCaptcha.failed admin.loginCaptcha.google')).toBeTruthy())
     expect(screen.queryByText(/captcha protection/)).toBeNull()
   })
 
@@ -139,7 +139,7 @@ describe('a failed security check shows plain words, never Supabase raw captcha 
     expect(screen.queryByRole('button', { name: /admin.signInGoogle/ })).toBeNull()
     fireEvent.change(screen.getByPlaceholderText('admin@organisation.com'), { target: { value: 'a@example.org' } })
     fireEvent.click(screen.getByRole('button', { name: 'admin.sendResetLink' }))
-    await waitFor(() => expect(screen.getByText('errors.captchaBlocked')).toBeTruthy())
-    expect(screen.queryByText(/errors\.captchaGoogle/)).toBeNull()
+    await waitFor(() => expect(screen.getByText('admin.loginCaptcha.blocked')).toBeTruthy())
+    expect(screen.queryByText(/admin\.loginCaptcha\.google/)).toBeNull()
   })
 })

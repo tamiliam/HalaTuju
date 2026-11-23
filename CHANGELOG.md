@@ -33,6 +33,15 @@ Branch access-s1b-cancel-archives, not pushed. Migration: none. Services: both. 
 - **Owner ruling, 20 Nov: a re-invite after Cancel behaves as new.** The old revoked invitation stays off the Invitations list and its totals, even with `all=1`, once the address is invited again (`invitations.without_superseded`); a restored row that never signed in starts its `created_at` ("Joined") again and drops a mentor link with no scholar or meeting on record (`staff_archive.restore`). Every audit record is kept. Tests: api `test_s1b_reinvite_as_new.py` (a re-invited person served side by side with a brand-new one).
 - **Also:** new TD placeholder `TD-NEW-reverify-card`; the cockpit test fixture serves `pre_award_end` for a pre-award close (S1 review nit). Tests: api `test_s1b_cancel_archives.py`; web `organisation/staff/page.test.tsx`.
 
+### Web first-load JS back under budget - case page and median (2026-11-23)
+
+Not pushed. Migration: none. Services: web. No behaviour change; one new error line (below); no budget or ledger number touched.
+- **Cause:** the captcha repair put `captchaAuth` and the grown `turnstile` on every admin and sponsor route (via `admin-supabase` and `sponsor-supabase`), added 133 bytes of captcha words to core, and F3 made `PreInterviewReject` heavy in the case page chunk.
+- **Moved:** `captchaLazy.ts` fetches `captchaAuth` on first sign-in call; captcha words moved from core into the `admin.loginCaptcha` and `sponsorAuth` slices and `captchaErrorText` now takes the words from the screen; the pre-interview option and record are lazy on the case page; the sponsor Trust view, Invite-a-friend and Giving statement are their own chunks.
+- Case page 250.886 to 248.885 kB; median 158.243 to 157.188 kB. Tests that rendered the lazy parts now await them.
+- **Review fixes:** if the captcha chunk cannot be fetched the sign-in, reset and sign-up doors return the plain "security check did not finish" error (never a call without a token, no endless spinner); the case page's pre-interview option has a quiet (empty) fallback, so no stray "Loading..." under the assign controls; the sponsor Account parts and Trust view use `lazySource` (say so in place if a chunk fails, never crash the page); two stale test lookups repointed; TrustView and InviteFriends moved into the full rule-15 sweep; stale comments and the turnstile rollout doc corrected.
+- **Round-2 wording fix:** a failed Trust or Invite/Giving chunk now says "This part could not load. Reload the page to try again." (new key `sponsorPortal.partLoadFailed`, en/ms/ta), not the account-level "could not load your account" words; the `captchaAuth.ts` comment names `captchaErrorText`.
+
 ### F3 (fix plan) - reviewer assessment rules (2026-11-22)
 
 Branch fix-f3, not pushed. Migration: none. Services: api, web. No doc-recognition change (no MODEL_VERSION bump).

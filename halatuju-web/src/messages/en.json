@@ -64,6 +64,9 @@
     "partnerNote": "Partners and coordinators sign in by invitation."
   },
   "sponsorAuth": {
+    "captchaBlocked": "We could not load the security check. An ad blocker, a firewall or your network may be blocking it. Please turn off your ad blocker, or try another browser or mobile data.",
+    "captchaFailed": "The security check did not finish. Please try again. If it keeps happening, try another browser, turn off your ad blocker, or switch to mobile data.",
+    "captchaGoogle": "You can also continue with Google.",
     "badge": "Sponsor",
     "loginTitle": "Sponsor sign in",
     "loginSubtitle": "Welcome back. Sign in to your sponsor account.",
@@ -133,6 +136,7 @@
   },
   "sponsorPortal": {
     "loadFailed": "Could not load your sponsor account. Please try again.",
+    "partLoadFailed": "This part could not load. Reload the page to try again.",
     "registerFailed": "Could not submit your details. Please try again.",
     "completeTitle": "Complete your details",
     "completeBody": "Just a couple more things before our team reviews your application.",
@@ -3230,10 +3234,7 @@
     "saveFailed": "Failed to save. Please try again.",
     "tempPasswordExpired": "Your temporary password has expired. Please ask whoever added you to re-send your sign-in details.",
     "accessWithdrawn": "Your access has been withdrawn. Please contact the person who invited you.",
-    "invitedHint": "If you were invited and this no longer works, please contact the person who invited you.",
-    "captchaBlocked": "We could not load the security check. An ad blocker, a firewall or your network may be blocking it. Please turn off your ad blocker, or try another browser or mobile data.",
-    "captchaFailed": "The security check did not finish. Please try again. If it keeps happening, try another browser, turn off your ad blocker, or switch to mobile data.",
-    "captchaGoogle": "You can also continue with Google."
+    "invitedHint": "If you were invited and this no longer works, please contact the person who invited you."
   },
   "stpm": {
     "searchTitle": "Browse STPM Degree Courses",
@@ -3361,6 +3362,11 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "loginCaptcha": {
+      "blocked": "We could not load the security check. An ad blocker, a firewall or your network may be blocking it. Please turn off your ad blocker, or try another browser or mobile data.",
+      "failed": "The security check did not finish. Please try again. If it keeps happening, try another browser, turn off your ad blocker, or switch to mobile data.",
+      "google": "You can also continue with Google."
+    },
     "desktopOnly": {
       "title": "Use a computer for this page",
       "body": "This page is built for a large screen. Open it on a computer to work on it. Nothing here has changed.",

@@ -40,6 +40,7 @@ import {
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
 } from '@/lib/admin-api'
+import { PRE_INTERVIEW_CATEGORY } from '@/lib/applicationStatus'
 import { nudgeButton } from '@/lib/blockers'
 import { showsNotesCard, showsDocumentsAndPredictionBoxes } from '@/lib/cockpitStages'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
@@ -58,7 +59,7 @@ import { QcPanel } from './view/QcPanel'
 import { ReverifyIcCard } from './view/ReverifyIcCard'   // TD-378
 import { OrgRejectPanel } from './view/OrgRejectPanel'
 import { AssignAndWitness } from './view/AssignAndWitness'
-import { PreInterviewOption, PreInterviewRecord } from './view/PreInterviewReject'   // request #75
+import { LazyPreInterviewOption, LazyPreInterviewRecord } from './view/LazyPreInterview'   // request #75
 import { ReviewerNotesCard } from './view/ReviewerNotesCard'
 import { PostAwardPanels } from './view/PostAwardPanels'
 import { LazyWithdrawAwardCard } from './view/LazyWithdrawAwardCard'
@@ -422,7 +423,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         rejectComments={rejectComments} setRejectComments={setRejectComments}
         rejectErr={rejectErr} closeReject={closeReject} doOrgReject={doOrgReject}
       />
-      <PreInterviewRecord app={app} t={t} />
+      {app.status === 'rejected' && app.rejection_category === PRE_INTERVIEW_CATEGORY && <LazyPreInterviewRecord app={app} t={t} />}
       {preInterviewErr && !app.pre_interview && (
         <p className="text-sm text-critical-600" role="alert" data-testid="pre-interview-refused"
           tabIndex={-1} ref={focusOnArrival}>{preInterviewErr}</p>
@@ -439,7 +440,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         doAssignWitness={doAssignWitness}
         notesCard={!showsNotesCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened }) ? undefined : <ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
-        preInterview={<PreInterviewOption key={app.id} app={app} t={t} token={token} busy={busy} canAssign={canAssign}
+        preInterview={<LazyPreInterviewOption key={app.id} app={app} t={t} token={token} busy={busy} canAssign={canAssign}
           err={preInterviewErr} setErr={setPreInterviewErr} onDone={onPreInterviewDone} onStale={() => reload(true)} />}
       />
 

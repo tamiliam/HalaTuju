@@ -249,7 +249,7 @@ describe('reject before interview, refused because a colleague got there first (
       rejection_category: 'pre_interview', rejection_reason: 'not_b40', pre_interview: undefined,
     } as never))
     const P = 'admin.scholarship.preInterview'
-    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fireEvent.click(await screen.findByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
     for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
@@ -291,7 +291,7 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
     view.api.rejectBeforeInterview.mockReturnValue(new Promise((res, rej) => {
       reply.settle = (ok, v) => (ok ? res(v as never) : rej(v))
     }))
-    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fireEvent.click(await screen.findByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
     for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
@@ -351,7 +351,7 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
     const { api } = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
     await loaded()
     api.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'boom' }))
-    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fireEvent.click(await screen.findByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
     for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
@@ -381,7 +381,7 @@ describe('nothing on the case page carries to the next case (#75 re-check 4, TD-
   const openRejectForCase7 = async () => {
     const view = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
     await loaded()
-    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fireEvent.click(await screen.findByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
     for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
@@ -401,7 +401,7 @@ describe('nothing on the case page carries to the next case (#75 re-check 4, TD-
     await toCase8(view)
     expect(screen.queryByTestId('pre-interview-confirm')).toBeNull()
     expect(screen.queryByRole('button', { name: `${P}.confirmYes` })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    fireEvent.click(await screen.findByRole('button', { name: `${P}.start` }))
     expect((screen.getByLabelText(`${P}.whyLabel`, { exact: false }) as HTMLSelectElement).value).toBe('')
     expect((screen.getByLabelText(`${P}.detailsLabel`, { exact: false }) as HTMLTextAreaElement).value).toBe('')
     expect(view.api.rejectBeforeInterview).not.toHaveBeenCalled()

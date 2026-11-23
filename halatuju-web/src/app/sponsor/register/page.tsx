@@ -18,6 +18,7 @@ const EMAIL_RE = /\S+@\S+\.\S+/
 export default function SponsorRegisterPage() {
   const router = useRouter()
   const { t } = useT()
+  const captchaWords = { blocked: t('sponsorAuth.captchaBlocked'), failed: t('sponsorAuth.captchaFailed'), google: t('sponsorAuth.captchaGoogle') }
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -53,7 +54,7 @@ export default function SponsorRegisterPage() {
 
     const { data, error } = await sponsorSignUpWithPassword(email.trim(), password, name.trim())
     if (error) {
-      setError(captchaErrorText(error, t, { offersGoogle: true }) ?? error.message)
+      setError(captchaErrorText(error, captchaWords, true) ?? error.message)
       setLoading(false)
       return
     }

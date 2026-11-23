@@ -6,13 +6,15 @@ import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
-import { createSponsorReferral, getSponsorStandingGift, putSponsorStandingGift } from '@/lib/api'
+import { getSponsorStandingGift, putSponsorStandingGift } from '@/lib/api'
 import { poolFacets } from '@/lib/sponsorFilter'
 import SponsorNotifyPrefs from '@/components/SponsorNotifyPrefs'
 import SponsorLogOut from '@/components/sponsor/SponsorLogOut'
 import { DisplayControls } from '@/components/DisplaySegments'
 import { PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 import Toggle from '@/components/Toggle'
+import { LazyInviteFriends, LazyGivingStatement } from './LazyAccountParts'
+
 
 /** Rule 15 (Mobile M5): a full-width section on a phone, the card it always was from md. */
 const CARD = PHONE_SECTION_NO_GAP
@@ -24,14 +26,8 @@ const CARD = PHONE_SECTION_NO_GAP
 export default function AccountPage() {
   const { t } = useT()
   const { account } = useSponsorAuth()
-  const { referrals, refreshReferrals, statement, gradMessages, pool } = useSponsorPortal()
+  const { statement, gradMessages, pool } = useSponsorPortal()
 
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteName, setInviteName] = useState('')
-  const [inviteNote, setInviteNote] = useState('')
-  const [inviting, setInviting] = useState(false)
-  const [inviteError, setInviteError] = useState('')
-  const [inviteSent, setInviteSent] = useState(false)
   const { token } = useSponsorAuth()
 
   // AutoSponsor (R6) — standing-gift config, fetched + saved on this page.
@@ -70,23 +66,6 @@ export default function AccountPage() {
   }
 
   const inputCls = 'w-full min-h-11 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape'
-
-  const sendInvite = async () => {
-    if (!token || !inviteEmail.trim() || inviting) return
-    setInviting(true); setInviteError(''); setInviteSent(false)
-    try {
-      await createSponsorReferral(
-        { invitee_email: inviteEmail.trim(), invitee_name: inviteName.trim(), note: inviteNote.trim() },
-        { token },
-      )
-      setInviteEmail(''); setInviteName(''); setInviteNote(''); setInviteSent(true)
-      await refreshReferrals()
-    } catch (e) {
-      const code = (e as Error & { code?: string }).code
-      setInviteError(code === 'bad_email'
-        ? t('sponsorPortal.referrals.errorEmail') : t('sponsorPortal.referrals.errorGeneric'))
-    } finally { setInviting(false) }
-  }
 
   return (
     <div className="md:space-y-6">
@@ -181,95 +160,11 @@ export default function AccountPage() {
       )}
 
       {/* Invite a friend + your invitations */}
-      <div className="md:grid lg:grid-cols-2 md:gap-4">
-        <div className={CARD}>
-          <h2 className="text-lg font-bold text-ground-900">{t('sponsorPortal.referrals.title')}</h2>
-          <p className="text-sm text-ground-600 mt-1">{t('sponsorPortal.referrals.subtitle')}</p>
-          <div className="mt-3 space-y-3">
-            <input value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteSent(false) }}
-              type="email" placeholder={t('sponsorPortal.referrals.emailPh')} className={inputCls} />
-            <input value={inviteName} onChange={(e) => setInviteName(e.target.value)}
-              placeholder={t('sponsorPortal.referrals.namePh')} className={inputCls} />
-            <textarea value={inviteNote} onChange={(e) => setInviteNote(e.target.value)} rows={3} maxLength={500}
-              placeholder={t('sponsorPortal.referrals.notePh')} className={inputCls} />
-            {inviteError && <p className="text-sm text-critical-600">{inviteError}</p>}
-            {inviteSent && <p className="text-sm text-positive-700">{t('sponsorPortal.referrals.sent')}</p>}
-            <button onClick={sendInvite} disabled={inviting || !inviteEmail.trim()}
-              className="w-full min-h-11 rounded-lg bg-brand-fill py-2.5 text-sm font-semibold text-brand-fill-ink disabled:opacity-60">
-              {inviting ? t('sponsorPortal.referrals.sending') : t('sponsorPortal.referrals.send')}
-            </button>
-            <p className="text-xs text-ground-400">{t('sponsorPortal.referrals.privacy')}</p>
-          </div>
-        </div>
-        <div className={CARD}>
-          <h2 className="text-lg font-bold text-ground-900">{t('sponsorPortal.referrals.listTitle')}</h2>
-          <p className="text-sm text-ground-600 mt-1">{t('sponsorPortal.referrals.listSubtitle')}</p>
-          {referrals.length > 0 ? (
-            <ul className="mt-3 divide-y divide-ground-100">
-              {referrals.map((r) => (
-                <li key={r.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="text-ground-700 truncate pr-2">{r.invitee_name || r.invitee_email || '—'}</span>
-                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    r.status === 'joined' ? 'bg-positive-100 text-positive-700'
-                      : r.status === 'expired' ? 'bg-caution-50 text-caution-700' : 'bg-ground-100 text-ground-600'}`}>
-                    {t(`sponsorPortal.referrals.status.${r.status}`)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-sm text-ground-400">{t('sponsorPortal.referrals.empty')}</p>
-          )}
-        </div>
-      </div>
+      <LazyInviteFriends />
 
       {/* Giving statement — two ledgers (donations in vs gifts out) */}
       {statement && (statement.donations.length > 0 || statement.gifts.length > 0) && (
-        <section className="border-b border-ground-100 py-4 md:border-0 md:py-0">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-ground-900">{t('sponsorPortal.statement.title')}</h2>
-            <button onClick={() => window.print()} className="min-h-11 px-3 py-1.5 text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl">
-              {t('sponsorPortal.statement.print')}
-            </button>
-          </div>
-          <p className="text-sm text-ground-600 mt-1">{t('sponsorPortal.statement.intro')} <span className="text-ground-400">{t('sponsorPortal.statement.taxNote')}</span></p>
-          <div className="mt-1 max-md:divide-y max-md:divide-ground-100 md:mt-3 md:grid md:grid-cols-2 md:gap-4">
-            <div className="py-3 md:rounded-2xl md:border md:bg-ground-0 md:p-5">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-ground-900">⬇ {t('sponsorPortal.statement.donations')}</h3>
-                <span className="text-xs text-ground-400">RM {statement.total_in}</span>
-              </div>
-              {statement.donations.length > 0 ? (
-                <ul className="text-sm divide-y divide-ground-100">
-                  {statement.donations.map((d, i) => (
-                    <li key={i} className="py-2 flex justify-between gap-2">
-                      <span>{formatDate(d.at)}{d.reference ? <span className="text-ground-400"> · {d.reference}</span> : null}</span>
-                      <b>RM {d.amount}</b>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="text-sm text-ground-400">—</p>}
-              <p className="text-xs text-ground-400 mt-2">{t('sponsorPortal.statement.donationsNote')}</p>
-            </div>
-            <div className="py-3 md:rounded-2xl md:border md:bg-ground-0 md:p-5">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-ground-900">⬆ {t('sponsorPortal.statement.gifts')}</h3>
-                <span className="text-xs text-ground-400">RM {statement.total_out}</span>
-              </div>
-              {statement.gifts.length > 0 ? (
-                <ul className="text-sm divide-y divide-ground-100">
-                  {statement.gifts.map((g, i) => (
-                    <li key={i} className="py-2 flex justify-between gap-2">
-                      <span>{formatDate(g.at)} <span className="text-ground-400">· {g.ref}</span></span>
-                      <b>RM {g.amount}</b>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="text-sm text-ground-400">—</p>}
-              <p className="text-xs text-ground-400 mt-2">{t('sponsorPortal.statement.giftsNote')}</p>
-            </div>
-          </div>
-        </section>
+        <LazyGivingStatement statement={statement} />
       )}
 
       {/* Phones (Mobile M5, owner): the theme, the language and Log out live HERE — the portal's phone
