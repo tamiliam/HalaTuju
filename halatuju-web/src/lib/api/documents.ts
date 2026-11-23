@@ -82,7 +82,7 @@ export interface ApplicantDocument {
   guardianship_check?: GuardianshipCheck | null
 }
 
-// The three AMBER buckets are the corroboration rules in `income_engine._combine_relationship`,
+// The three AMBER buckets are the corroboration rules in `income_engine.match_bands.chip_status`,
 // and this type had drifted behind them: `check` / `check_near` (the name agrees, the NRIC does
 // not — a misread digit off a security-printed JPN document) and, from BrightPath #19,
 // `check_name` (the NRIC matches EXACTLY, the name is spelt differently — a transliteration, not

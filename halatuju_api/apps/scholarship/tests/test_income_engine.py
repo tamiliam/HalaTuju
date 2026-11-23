@@ -1697,10 +1697,10 @@ class TestSgdSalaryConversion(SimpleTestCase):
 
 class TestFilledChildNricCanOnlyHelp(SimpleTestCase):
     """⚠ Reading the child's IC gives the child row a SECOND cell, and the safety property is
-    that filling it can never newly BLOCK a student. `_combine_relationship` treats a filled
-    number as corroboration: a disagreement is amber, and a matching number RESCUES a name
-    that is merely spelt differently (request #19). Only a row that was already red — name
-    wrong AND number wrong — stays red."""
+    that filling it can never newly BLOCK a student. The row score (`income_engine.match_bands`,
+    #78) treats a filled number as corroboration: a disagreement is amber, and a matching number
+    RESCUES a name that is merely spelt differently (request #19). Only a row that was already
+    red — name wrong AND number wrong — stays red."""
 
     def _child_status(self, *, child, child_nric):
         bc = _bc_doc(child=child)
@@ -1732,40 +1732,3 @@ class TestFilledChildNricCanOnlyHelp(SimpleTestCase):
         self.assertEqual(self._child_status(child=_STUDENT, child_nric=''), 'match')
         self.assertEqual(
             self._child_status(child='THAVAMALAR A/P VIJAYAN', child_nric=''), 'mismatch')
-
-
-from apps.scholarship.income_engine import _combine_relationship  # noqa: E402 — import kept beside the tests that use it
-
-
-class TestOneCellIsNotGreen(SimpleTestCase):
-    """⚠ BrightPath #23, owner 2026-09-08: *"Only one of the two is present at all: AMBER, not
-    green. Today a matching name alone reads as fully verified, which is how a father with no
-    Malaysian number passes on his name."* A row is green only when BOTH cells were checked and
-    both agree. Amber never blocks — only a red does — so this cannot strand anybody."""
-
-    def test_both_agree_is_the_only_green(self):
-        self.assertEqual(_combine_relationship('match', 'match'), 'match')
-
-    def test_a_name_with_no_number_is_amber(self):
-        self.assertEqual(_combine_relationship('match', 'no_ref'), 'check_one')
-
-    def test_a_number_with_no_name_is_amber(self):
-        self.assertEqual(_combine_relationship('no_ref', 'match'), 'check_one')
-
-    def test_nothing_at_all_stays_no_ref(self):
-        # Distinct from 'one cell': there is no evidence to be half-sure about. The
-        # document-level `relationship_doc_unreadable` rule is what speaks for that case.
-        self.assertEqual(_combine_relationship('no_ref', 'no_ref'), 'no_ref')
-
-    def test_the_existing_rules_are_unchanged(self):
-        self.assertEqual(_combine_relationship('match', 'mismatch'), 'check')                 # amber
-        self.assertEqual(_combine_relationship('match', 'mismatch', True), 'check_near')      # amber
-        self.assertEqual(_combine_relationship('mismatch', 'match'), 'check_name')            # #19
-        self.assertEqual(_combine_relationship('mismatch', 'mismatch'), 'mismatch')           # red
-        self.assertEqual(_combine_relationship('mismatch', 'no_ref'), 'mismatch')             # red
-
-    def test_amber_is_never_a_blocker(self):
-        # The two gates that hold a submission / a re-upload key on 'mismatch' ALONE. Every amber
-        # this rule creates is therefore visible and never blocking — the whole safety argument.
-        for amber in ('check', 'check_near', 'check_name', 'check_one', 'no_ref'):
-            self.assertNotEqual(amber, 'mismatch')

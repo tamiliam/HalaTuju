@@ -43,7 +43,7 @@ was not touched here, and it still names `income_engine` — which is this packa
 
 from __future__ import annotations
 
-from .buckets import _combine_relationship, _name_bucket, _nric_bucket
+from .buckets import _name_bucket, _nric_bucket
 from .relationships import (
     _MEMBER_ORDER, _PATRONYMIC_MEMBERS, _PATRONYMIC_RE, _RELATIONSHIP_DOC, _bc_link,
     _relationship_inputs, effective_working_members, father_link, father_name_from_ic,
