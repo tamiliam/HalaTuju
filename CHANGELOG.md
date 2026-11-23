@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Web first-load JS: the profile and course words leave core (2026-11-23)
+
+Not pushed. Migration: none. Services: web. No behaviour or text change; no key leaves any file.
+- **Moved:** the `profile` namespace (5.3 kB raw, about 1.7 kB gz) joins the `scholarship` slice and the `courses` namespace (per-course blurbs, 2.7 kB raw, about 1 kB gz) joins the `discovery` slice, both cut at build time by `scripts/messages-slice-loader.js`. Every route that reads them already loaded that slice (`sliceReach.test.ts` proves it); the other routes no longer download them.
+- **Measured:** median 157.242 to 155.006 kB, worst route 248.994 to 247.859 kB. The ratchet then lowered the median line 157.5 to 156 (a lowering, as it asked; no line raised).
+- **Tests:** `messagesSlice.test.ts` and `sliceReach.test.ts` pin the new slice contents and reach rules.
+
 ### TD-711 - cockpit tests no longer flake in the cloud build (2026-11-23)
 
 Test only. Migration: none. Services: web (build gate). No behaviour change.
