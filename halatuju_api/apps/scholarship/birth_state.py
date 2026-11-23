@@ -257,6 +257,12 @@ def stamp_verify_accept(app, admin, checklist):
     app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
 
 
+#: Every reason `check` writes carries this, and only this rule's reasons do. The case's second
+#: chip ("state", `rejection_chip.py`) reads a stored `ineligible` reason through it: the reason
+#: is what the engine decided at the time, so the chip never re-reads an IC that may have changed.
+RULE_REASON_MARK = '; this intake accepts '
+
+
 def check(nric, allowed):
     """``(ok, reason)`` for the intake's birth-state rule. An EMPTY list is the rule switched off
     and passes without reading the IC at all; otherwise only a STATE reading inside the list
@@ -264,7 +270,7 @@ def check(nric, allowed):
     if meets_rule(nric, allowed) is not False:
         return True, ''
     b = birth_state_from_nric(nric)
-    return False, f'{describe(b)}; this intake accepts {readable_list(_accepted(allowed))}'
+    return False, f'{describe(b)}{RULE_REASON_MARK}{readable_list(_accepted(allowed))}'
 
 
 def for_cockpit(nric, allowed=None):
@@ -290,5 +296,8 @@ def for_cockpit(nric, allowed=None):
     meets = meets_rule(nric, allowed)
     warning = (f"{label} — does not meet this intake's rule ({readable_list(_accepted(allowed))})"
                if meets is False else '')
+    # `name`: the state's name alone, for the header's "Born: Perak" (owner 2026-11-23); '' when
+    # the IC gives no state, and the browser then prints `label`.
     return {'kind': b.kind, 'state': b.state or None, 'code': b.code, 'label': label,
+            'name': STATE_NAMES[b.state] if b.kind == STATE else '',
             'meets_rule': meets, 'warning': warning}

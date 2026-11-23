@@ -12,7 +12,7 @@
  * pinned here, in both directions, and the funnel order stays the web's own decision.
  */
 import {
-  APPLICATION_STATUSES, SYNTHETIC_STATUSES, hasStatusTone, PRE_INTERVIEW_CATEGORY,
+  APPLICATION_STATUSES, SYNTHETIC_STATUSES, hasStatusTone, PRE_INTERVIEW_CATEGORY, REJECTION_CHIPS,
 } from '@/lib/applicationStatus'
 import { pyChoiceValues, readApi } from '@/test/apiSource'
 
@@ -56,5 +56,20 @@ describe('APPLICATION_STATUSES vs ScholarshipApplication.STATUS_CHOICES', () => 
     const kinds = pyChoiceValues(readApi(MODELS), 'REJECTION_CATEGORIES')
     expect(kinds).toContain('incomplete')   // parse sanity
     expect(kinds).toContain(PRE_INTERVIEW_CATEGORY)
+  })
+
+  test('owner 2026-11-23: no reject has a status of its own any more', () => {
+    expect([...SYNTHETIC_STATUSES]).toEqual(['reopened'])
+  })
+})
+
+describe('REJECTION_CHIPS vs the api\'s rejection_chip.CHIPS', () => {
+  test('the web labels exactly the chips the api serves', () => {
+    const src = readApi('apps/scholarship/rejection_chip.py')
+    const block = src.match(/^CHIPS = \(([^)]*)\)/m)
+    expect(block).not.toBeNull()
+    const api = Array.from(block![1].matchAll(/'([a-z_]+)'/g), (m) => m[1])
+    expect(api.length).toBeGreaterThan(5)   // parse sanity
+    expect(api).toEqual([...REJECTION_CHIPS])
   })
 })

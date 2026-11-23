@@ -4219,9 +4219,19 @@
         "rejected": "Ditolak",
         "withdrawn": "Ditarik balik",
         "expired": "Tamat tempoh",
-        "reopened": "Dibuka semula",
-        "rejected_before_interview": "Ditolak sebelum temu duga"
+        "reopened": "Dibuka semula"
       },
+      "rejectionChip": {
+        "merit": "merit",
+        "need": "keperluan",
+        "state": "negeri",
+        "shortlisted": "senarai pendek",
+        "before_interview": "sebelum temu duga",
+        "interview": "temu duga",
+        "qc": "qc",
+        "contractual": "kontrak"
+      },
+      "bornState": "Lahir: {state}",
       "reviewActions": "Semakan & tindakan",
       "assignTitle": "Tugaskan penyemak",
       "assignError": "Tidak dapat menukar tugasan.",

@@ -407,13 +407,13 @@ class TestTheCockpitLine(TestCase):
         off = {'meets_rule': None, 'warning': ''}      # this intake has no rule
         cases = (
             (ic('12'), {'kind': 'state', 'state': 'sabah', 'code': '12',
-                        'label': 'Born in: Sabah (IC code 12)', **off}),
+                        'label': 'Born in: Sabah (IC code 12)', 'name': 'Sabah', **off}),
             (ic('71'), {'kind': 'abroad', 'state': None, 'code': '71',
-                        'label': 'Born outside Malaysia (IC code 71)', **off}),
+                        'label': 'Born outside Malaysia (IC code 71)', 'name': '', **off}),
             (ic('82'), {'kind': 'unknown', 'state': None, 'code': '82',
-                        'label': 'Place of birth unknown (IC code 82)', **off}),
+                        'label': 'Place of birth unknown (IC code 82)', 'name': '', **off}),
             ('', {'kind': 'unreadable', 'state': None, 'code': '',
-                  'label': 'IC number not readable', **off}),
+                  'label': 'IC number not readable', 'name': '', **off}),
         )
         for nric, want in cases:
             with self.subTest(nric=nric):

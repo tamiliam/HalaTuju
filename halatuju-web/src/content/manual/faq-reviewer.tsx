@@ -114,12 +114,12 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>What is the <strong>place-of-birth</strong> line beside the NRIC?</>,
-      a: <>The state the student was born in, read from the place-of-birth code in her IC number (the two
-        digits in the middle). A gift can accept only students born in certain states; one born elsewhere,
-        born outside Malaysia, with &ldquo;place of birth unknown&rdquo; (code 82), or whose IC number cannot be
-        read does not pass that rule. The line is checked again every time the case opens: if the IC
-        number was changed after she applied and no longer meets the rule, it turns red, and QC can
-        accept the case only with a recorded reason. Where you are in doubt, request her birth
+      a: <>The state the student was born in (for example <em>Born: Perak</em>), read from the place-of-birth
+        code in her IC number (the two digits in the middle). A gift can accept only students born in certain
+        states; one born elsewhere, born outside Malaysia, with &ldquo;place of birth unknown&rdquo; (code 82), or
+        whose IC number cannot be read does not pass that rule. The rule is checked again every time the case
+        opens: if the IC number was changed after she applied and no longer meets it, a red <em>state</em> chip
+        shows beside her status, and QC can accept the case only with a recorded reason. Where you are in doubt, request her birth
         certificate.</>,
     },
     {

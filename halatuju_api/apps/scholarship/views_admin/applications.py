@@ -17,7 +17,7 @@ from apps.courses import public as courses_public
 from .. import award_withdrawal_chain as withdrawal_chain
 from .. import reopen as reopen_service
 from .. import staff_activity, staff_notifications
-from .. import surface_gates
+from .. import rejection_chip, surface_gates   # rejection_chip: the list's QC rejects in ONE query
 from ..document_snapshot import document_snapshot, snapshot_unless_open
 from ..models import Referee, ScholarshipApplication
 from ..serializers import RefereeSerializer
@@ -216,7 +216,7 @@ class AdminApplicationListView(_AdminBase):
             page = paginator.paginate_queryset(rows, request, view=self)
         else:
             page = paginator.paginate_queryset(qs, request, view=self)
-        data = AdminApplicationListSerializer(page, many=True).data
+        data = AdminApplicationListSerializer(page, many=True, context=rejection_chip.list_context(page)).data
         return paginator.envelope(
             data,
             results_key='applications',

@@ -149,8 +149,8 @@ export const FAQ: Record<Audience, QA[]> = {
         applicant&rsquo;s page, fill in the <strong>Reviewer Assessment</strong> box first (<strong>Pass</strong> or
         <strong> Fail</strong> for each of the four facts; every Fail asks <em>Why?</em>, with <em>Other</em> already
         chosen; Reject stays greyed until all four are rated), press <strong>Reject before interview</strong>, choose the reason under <em>Why are you
-        rejecting?</em> and add the details (confidential, not shared with the student), then confirm. It is recorded as
-        <strong> Rejected before interview</strong> and never counts against a reviewer. The decline email waits
+        rejecting?</em> and add the details (confidential, not shared with the student), then confirm. It shows as
+        <strong> Rejected</strong> with a <em>before interview</em> chip, and never counts against a reviewer. The decline email waits
         for the quality control hold, and until it goes you can press <strong>Cancel decline</strong> to put the
         student back at Awaiting review. See <em>Rejecting before interview</em> in your chapter of the Guide.</>,
     },

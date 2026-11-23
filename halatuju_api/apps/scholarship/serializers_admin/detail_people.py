@@ -36,6 +36,11 @@ class ServesTheDetailPeople:
         return for_cockpit(getattr(obj.profile, 'nric', '') if obj.profile else '',
                            getattr(obj.cohort, 'allowed_birth_states', None))
 
+    def get_rejection_chip(self, obj):
+        # The case header's second chip (owner 2026-11-23): the same rule as the list row.
+        from .. import rejection_chip
+        return rejection_chip.chip(obj)
+
     @staticmethod
     def _org_dict(org):
         return {'id': org.id, 'code': org.code, 'name': org.name} if org else None

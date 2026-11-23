@@ -4219,9 +4219,19 @@
         "rejected": "Rejected",
         "withdrawn": "Withdrawn",
         "expired": "Expired",
-        "reopened": "Reopened",
-        "rejected_before_interview": "Rejected before interview"
+        "reopened": "Reopened"
       },
+      "rejectionChip": {
+        "merit": "merit",
+        "need": "need",
+        "state": "state",
+        "shortlisted": "shortlisted",
+        "before_interview": "before interview",
+        "interview": "interview",
+        "qc": "qc",
+        "contractual": "contractual"
+      },
+      "bornState": "Born: {state}",
       "reviewActions": "Review & actions",
       "assignTitle": "Assign a reviewer",
       "assignError": "Could not change the assignment.",

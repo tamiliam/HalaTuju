@@ -422,13 +422,15 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
       />
 
 
+      {/* Owner 2026-11-23: a reject before interview shows its record FIRST, the "Rejection
+          reason" below it, and nothing else (`cockpitStages.isRejectedBeforeReview`). */}
+      {app.status === 'rejected' && app.rejection_category === PRE_INTERVIEW_CATEGORY && <LazyPreInterviewRecord app={app} t={t} />}
       <OrgRejectPanel
         app={app} t={t} busy={busy} role={role}
         rejectStep={rejectStep} setRejectStep={setRejectStep}
         rejectComments={rejectComments} setRejectComments={setRejectComments}
         rejectErr={rejectErr} closeReject={closeReject} doOrgReject={doOrgReject}
       />
-      {app.status === 'rejected' && app.rejection_category === PRE_INTERVIEW_CATEGORY && <LazyPreInterviewRecord app={app} t={t} />}
       {preInterviewErr && !app.pre_interview && (
         <p className="text-sm text-critical-600" role="alert" data-testid="pre-interview-refused"
           tabIndex={-1} ref={focusOnArrival}>{preInterviewErr}</p>
@@ -443,7 +445,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         witnessBusy={witnessBusy} witnessMsg={witnessMsg} setWitnessMsg={setWitnessMsg}
         witnessEditing={witnessEditing} setWitnessEditing={setWitnessEditing}
         doAssignWitness={doAssignWitness}
-        notesCard={!showsNotesCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened }) ? undefined : <ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
+        notesCard={!showsNotesCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, rejectionCategory: app.rejection_category }) ? undefined : <ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
         preInterview={<LazyPreInterviewOption key={app.id} app={app} t={t} token={token} busy={busy} canAssign={canAssign}
           box={verdict}

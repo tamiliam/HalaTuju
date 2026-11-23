@@ -105,7 +105,7 @@ describe('one box: the reject panel reads the Reviewer Assessment box', () => {
     expect(api.recordVerdict).not.toHaveBeenCalled()
   })
 
-  it('an assessment already on the case fills the box and is sent; the box reloads from the reject reply', async () => {
+  it('an assessment already on the case fills the box and is sent; after the reject only the record shows', async () => {
     const recorded = { identity: 'pass', academic: 'pass', pathway: 'fail', income: 'pass', overall: 'decline',
       fail_reasons: { pathway: 'documents_differ' } }
     // Back at Awaiting review with an assessment on file: the box is open (stuck after a verdict), filled in.
@@ -127,10 +127,11 @@ describe('one box: the reject panel reads the Reviewer Assessment box', () => {
       facts: { identity: 'pass', academic: 'pass', pathway: 'fail', income: 'pass' },
       fail_reasons: { pathway: 'documents_differ' },
     }, { token: 'test-token' })
-    // A rejected case with a recorded assessment shows the box locked (badges): all four are the reply's Fail.
+    // Owner 2026-11-23: a reject before interview keeps only its two record cards, so the box itself goes
+    // (the four facts live on in the "Rejected before interview" record).
     await waitFor(() => expect(pass('identity')).toBeNull())
-    expect(screen.getAllByText(`${RV}.factFail`)).toHaveLength(4)
-    expect(screen.queryByText(`${RV}.factPass`)).toBeNull()
+    expect(screen.queryByText(`${RV}.rateTitle`)).toBeNull()
+    expect(await screen.findByTestId('pre-interview-record')).toBeTruthy()
     expect(api.recordVerdict).not.toHaveBeenCalled()
   })
 

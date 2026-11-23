@@ -20,7 +20,26 @@ import {
   showsReportingDateBox,
   showsReviewerAssignedCard,
   showsWitnessCard,
+  isRejectedBeforeReview,
 } from '@/lib/officerCockpit'
+
+describe('owner 2026-11-23: a case rejected before any review keeps only its record', () => {
+  it('is a reject at Shortlisted or before interview, and not once reopened', () => {
+    expect(isRejectedBeforeReview({ status: 'rejected', rejectionCategory: 'pre_interview' })).toBe(true)
+    expect(isRejectedBeforeReview({ status: 'rejected', rejectionCategory: 'incomplete' })).toBe(true)
+    expect(isRejectedBeforeReview({ status: 'rejected', rejectionCategory: 'interview' })).toBe(false)
+    expect(isRejectedBeforeReview({ status: 'rejected', rejectionCategory: 'pre_interview', decisionReopened: true })).toBe(false)
+    expect(isRejectedBeforeReview({ status: 'shortlisted', rejectionCategory: 'pre_interview' })).toBe(false)
+  })
+
+  it('hides the estimate, notes, decision and rate cards', () => {
+    const o = { status: 'rejected', rejectionCategory: 'pre_interview', decisionRecorded: true }
+    expect(showsEstimateCard(o)).toBe(false)
+    expect(showsNotesCard(o)).toBe(false)
+    expect(showsDecisionCards(o)).toBe(false)
+    expect(showsRecommendationCard(o)).toBe(false)
+  })
+})
 
 /** Every ScholarshipApplication.STATUS_CHOICES value, in lifecycle order. */
 const ALL = [

@@ -263,8 +263,10 @@ export const roleOrgAdmin: ManualChapter = {
         <strong> Additional details</strong> (required, up to 2,000 characters). Both are confidential and are not
         shared with the student. Press <strong>Reject student</strong>, check the summary, then press
         <strong> Yes, reject</strong>.</span>
-        <span className="mt-2 block">The decision is recorded at once as <strong>Rejected before
-        interview</strong>, and it never counts against a reviewer. The student gets the same kind decline email
+        <span className="mt-2 block">The decision is recorded at once: the case shows <strong>Rejected</strong> with a
+        <em> before interview</em> chip, and it never counts against a reviewer. Its page then shows only two cards
+        on the right: <em>Rejected before interview</em> (the four facts you rated) and, below it,
+        <em> Rejection reason</em>. The student gets the same kind decline email
         as after an interview, but only when the quality control hold ends; until then they still see
         <em> Awaiting review</em>, and <strong>Cancel decline</strong> on the applicant&rsquo;s page puts them
         back at Awaiting review with no reviewer. Once the email has gone, the page says <em>Decline email sent

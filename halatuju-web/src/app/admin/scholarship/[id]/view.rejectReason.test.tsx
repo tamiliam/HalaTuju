@@ -102,20 +102,80 @@ describe('TD-227: a decline needs a reason, and says who', () => {
   })
 })
 
-describe('#75 review: the header says "Rejected before interview" once', () => {
-  const pill = (kind: string) => screen.queryAllByText(`admin.scholarship.reject.category.${kind}`)
+describe('owner 2026-11-23: "Rejected" plus ONE served second chip', () => {
+  const chips = () => screen.queryAllByTestId('rejection-chip').map((c) => c.textContent)
 
-  it('no category pill beside a status pill that already reads it', async () => {
-    renderCockpit({ role: 'super', stage: 'rejected',
-                    build: { rejection_category: 'pre_interview', rejection_reason: 'not_b40' } })
+  it.each([
+    ['merit', 'merit'], ['need', 'need'], ['state', 'state'], ['shortlisted', 'shortlisted'],
+    ['before_interview', 'before_interview'], ['interview', 'interview'], ['qc', 'qc'],
+    ['contractual', 'contractual'],
+  ])('the served %s chip reads its label beside "Rejected"', async (code, label) => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { rejection_category: 'interview', rejection_chip: code } })
     await loaded()
-    expect(screen.getAllByText('admin.scholarship.statuses.rejected_before_interview').length).toBeGreaterThan(0)
-    expect(pill('pre_interview')).toHaveLength(0)
+    expect(screen.getAllByText('admin.scholarship.statuses.rejected').length).toBeGreaterThan(0)
+    expect(chips()).toEqual([`admin.scholarship.rejectionChip.${label}`])
+    // the old category pill is gone: the chip replaces it, never beside it
+    expect(screen.queryByText('admin.scholarship.reject.category.interview')).toBeNull()
   })
 
-  it('any other decline keeps its category pill', async () => {
-    renderCockpit({ role: 'super', stage: 'rejected', build: { rejection_category: 'interview' } })
+  it('qc and interview are told apart by the served chip, not the category', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { rejection_category: 'interview', rejection_chip: 'qc' } })
     await loaded()
-    expect(pill('interview').length).toBeGreaterThan(0)
+    expect(chips()).toEqual(['admin.scholarship.rejectionChip.qc'])
+  })
+
+  it('another ineligible reason keeps the "Ineligible" label', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { rejection_category: 'ineligible', rejection_chip: 'ineligible' } })
+    await loaded()
+    expect(chips()).toEqual(['admin.scholarship.reject.category.ineligible'])
+  })
+
+  it('a blank chip shows no second chip', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { rejection_category: '', rejection_chip: '' } })
+    await loaded()
+    expect(chips()).toEqual([])
+    expect(screen.getAllByText('admin.scholarship.statuses.rejected').length).toBeGreaterThan(0)
+  })
+
+  it('a reject before interview is "Rejected", never a status of its own', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected',
+                    build: { rejection_category: 'pre_interview', rejection_reason: 'not_b40', rejection_chip: 'before_interview' } })
+    await loaded()
+    expect(screen.queryByText('admin.scholarship.statuses.rejected_before_interview')).toBeNull()
+    expect(chips()).toEqual(['admin.scholarship.rejectionChip.before_interview'])
+  })
+
+  it('owner D: a case failing the state rule but not rejected keeps its status plus "state"', async () => {
+    renderCockpit({ role: 'super', stage: 'submitted', build: { rejection_chip: 'state' } })
+    await loaded()
+    expect(screen.getAllByText('admin.scholarship.statuses.submitted').length).toBeGreaterThan(0)
+    expect(chips()).toEqual(['admin.scholarship.rejectionChip.state'])
+  })
+})
+
+describe('owner 2026-11-23: a case rejected before any review shows only its record', () => {
+  const titles = () => Array.from(document.querySelectorAll('#record-verdict-panel h2')).map((h) => h.textContent)
+  const HIDDEN = ['admin.scholarship.estimate.title', 'admin.scholarship.reviewerNotes.title']
+  const BOTH = { rejection_comments: 'Not a B40 household.', proposed_award_amount: '1200.00',
+                 assigned_to_id: 3, assigned_to_name: 'Rev' }
+
+  it('before interview: "Rejected before interview" on top, "Rejection reason" below, nothing else', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected',
+                    build: { ...BOTH, rejection_category: 'pre_interview', rejection_reason: 'not_b40' } })
+    await loaded()
+    await screen.findByTestId('pre-interview-record')
+    expect(titles()).toEqual(['admin.scholarship.preInterview.recordTitle', 'admin.scholarship.orgReject.recordTitle'])
+  })
+
+  it('by the org admin at Shortlisted: only "Rejection reason"', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { ...BOTH, rejection_category: 'incomplete' } })
+    await loaded()
+    expect(titles()).toEqual(['admin.scholarship.orgReject.recordTitle'])
+  })
+
+  it('a decline after interview still shows the estimate and notes cards', async () => {
+    renderCockpit({ role: 'super', stage: 'rejected', build: { ...BOTH, rejection_category: 'interview' } })
+    await loaded()
+    for (const hidden of HIDDEN) expect(await screen.findByText(hidden)).toBeTruthy()
   })
 })

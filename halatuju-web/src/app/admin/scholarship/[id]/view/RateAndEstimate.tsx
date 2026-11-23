@@ -51,7 +51,7 @@ export function RateAndEstimate({
            own topmost box. Both modes: buttons while deciding, badges once recorded. ───────── */}
       {/* Hidden at shortlisted (pre-submission): its rating can only be saved with the verdict.
           Hidden on a CLOSED case with no verdict, for the same reason at the other end. */}
-      {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
+      {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded, rejectionCategory: app.rejection_category }) && (
       <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
         <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.recordVerdict.rateTitle')}</h2>
         <p className="text-xs md:text-[11px] text-ground-500">{t('admin.scholarship.recordVerdict.rateHelp')}</p>
@@ -168,7 +168,7 @@ export function RateAndEstimate({
         const showBursary = app.award_amount != null || app.proposed_award_amount != null
         // Hidden at shortlisted (pre-submission): a projection with no decision attached —
         // the bursary figure is set at the verdict.
-        if (!showsEstimateCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened })) return null
+        if (!showsEstimateCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, rejectionCategory: app.rejection_category })) return null
         if (!fe && !showBursary) return null
         return (
           <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
