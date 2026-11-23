@@ -50,7 +50,10 @@ Brief: `docs/plans/2026-11-23-req78-bc-match-bands-brief.md`. Code: `income_engi
   row).** Match → pending (the officer checks by eye): exact name + far number; close name + far number; close name +
   close number; any link made of two BLUE rows. Mismatch → match: a slip-count close name (such as one letter dropped
   from a 5-letter word, the case-177 shape) beside an exact number; a child name that only the typed profile name
-  passes beside an exact child number (close name + exact number is green in the owner's table; review round 3).
+  passes beside an exact child number (close name + exact number is green in the owner's table; review round 3);
+  a child name the typed profile name matches EXACTLY while the link name fails, beside a close child number (exact
+  name + close number is green; in practice only a reversed patronymic, which TD-408 reads as another person, and with
+  the child number one digit off; short check after round 3).
   Mismatch → pending: a far name beside an exact or close number (BLUE / AMBER), or a slip-count or typed-only close
   name beside a close number (BLUE). Pending → mismatch: a name
   unread on either side (the certificate or the reference IC; for example a mother's IC with its number read but not
