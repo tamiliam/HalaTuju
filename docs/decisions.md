@@ -1,5 +1,47 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-23 — Birth-certificate and guardianship match bands; each tile leads with the reason for its band (request #78)
+
+Owner rulings, 23 Nov 2026 (BrightPath request #78, analysis 193, bug, no charge). Services: both. Migration: none.
+Brief: `docs/plans/2026-11-23-req78-bc-match-bands-brief.md`. Code: `income_engine/match_bands.py` (the one row score).
+- **The bands (slips counted, not percentages).** A row is one person on the document against their reference (child
+  vs the student, mother vs her IC, guardian vs their IC, ward vs the student). Exact number = all 12 digits; close
+  number = one digit different. Exact name = the same words, ignoring spacing, order and the connectors; close name =
+  each word within one letter (two in words of 8+ letters), or one word missing or extra. GREEN: both exact, or one
+  exact and the other close. BLUE: both close, or exact number + far name. AMBER: close + far, exact name + far number,
+  or the name missing beside an exact or close number. RED: both far (or one far and the other missing). GREY: nothing
+  read. The father row and the patronymic links stay outside the bands (#23: the father row never blocks).
+- **Only RED blocks.** RED is the only state that reaches the owed lines and asks the student to act. AMBER and BLUE go
+  to the reviewer; the officer checks by eye.
+- **The chip (the link from two rows).** Chips have no blue: BLUE shows as amber. G+G = green. B+B = green only when
+  both rows carry an exact IC number, otherwise amber. G+B, G+A, A+B, A+A = amber. RED + anything = red. GREY + GREEN =
+  grey while waiting, amber once everything is in but that part could not be read. Both GREY = grey ("send a clearer
+  copy"). The case-page chip, the decision and the student's tick read this one score; the browser keeps no copy.
+- **No number on the document means name alone (owner, later the same evening).** When the certificate or the
+  reference IC gives no IC number for a row, the name decides it, as before: exact or close is green, far is red.
+  "One value missing = amber" applies only when the NAME is missing and the number is present.
+- **The ward row is name alone (owner, later the same evening).** Guardianship letters never print the ward's number;
+  the guardian row uses name + number.
+- **This replaces BrightPath #19 (8 Sep, "exact number + differing name is amber, never green") for CLOSE names:** an
+  exact number with a close name is now green. An exact number with a FAR name is BLUE, which still shows amber. **#23
+  is kept where a number is read:** a number alone is never green. Where the document prints no number, the evening
+  ruling above lets the name decide (the chip's old "a name with no number is amber" yields to it).
+- **Effect on decisions.** Exact name + far number, close name + far number, and close + close move from a match to
+  pending (the officer checks by eye); far name + close number moves from red to amber. Nothing that passes today
+  becomes red.
+- **The owed line says which check failed.** A parent IC red only on its link to the student owes
+  `parent_link_mismatch` (mother or guardian) or `parent_name_link_mismatch` (father, brother or sister);
+  `parent_ic_person_mismatch` stays for a card that does not match the income documents and comes first when both fail.
+- **Each tile leads with the reason for its band** (following the 17 Nov Academic fix). Done on the server by item
+  order, so the tile, the AI Prediction line and every other reader agree: Income puts the STR line first when the STR
+  sets the band; Academic puts its red lines first (`verdict_ladder.ACADEMIC_RED_CODES`), with an unreadable
+  higher-results slip ahead of them.
+- **OPEN, awaiting owner ruling: an unread ward name on a guardianship letter.** Today it is neutral: the guardian row
+  decides, so the link can be green. That keeps today's behaviour but differs from the chip rule above (GREY + GREEN =
+  grey while waiting, amber once everything is in). Until the owner rules, the build keeps today's behaviour.
+- **Revisit if:** a document type starts printing the ward's number, or the A5 replay shows the pending moves swamping
+  the reviewers.
+
 ## 2026-11-19 — Payment runs on Payments switches; one key, Organisation admin powers (sprint M4a)
 
 Owner rulings, 19 Nov (programme ACCESS-BY-SWITCHES S2). Services: both. Migration: courses 0100 (additive data,
