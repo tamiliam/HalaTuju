@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### TD-711 - cockpit tests no longer flake in the cloud build (2026-11-23)
+
+Test only. Migration: none. Services: web (build gate). No behaviour change.
+- The cockpit console guard's `afterEach` awaits `settleCockpit()` (`src/test/renderCockpit.tsx`): late async updates (notes card fetch, lazy parts) finish inside `act` before the console check. Cause of the 22 Nov and 23 Nov 16:00 web build failures in `view.failReasons.test.tsx`, whose `loaded()` helper now also settles before the first click.
+
 ### Web first-load JS back under budget - case page and median (2026-11-23)
 
 Not pushed. Migration: none. Services: web. No behaviour change; one new error line (below); no budget or ledger number touched.
