@@ -184,6 +184,11 @@ class TestReviewerAssignment(TestCase):
         html, mime = msg.alternatives[0]
         self.assertEqual(mime, 'text/html')
         self.assertIn('<ul', html)                            # prep list as bullets
+        # TD-709: no need to reply, the times follow separately - both languages, text and HTML
+        for line in ("You don't need to reply to this email. Your interview times will come in a separate email.",
+                     'Anda tidak perlu membalas e-mel ini. Masa temu duga anda akan dihantar dalam e-mel yang berasingan.'):
+            self.assertIn(line, body)
+            self.assertIn(line, html)
         # english_only drops the BM mirror
         send_student_assigned_reviewer_email(
             's@example.com', student_name='Priya Devi', english_only=True)
