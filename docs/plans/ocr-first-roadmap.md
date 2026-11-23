@@ -83,11 +83,11 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 | OCR-4 | The visible page judges | S-visible | Live |
 | OCR-5 | TNB bills and EPF statements, rules first (switched off) | S6 | Live, lanes off (OCR-18 switches them on) |
 | OCR-6 | PDF safety fixes: the render gate, the blank-page guard, the pdfium child timing, the pypdf 6.21.4 test fix and the install-pin check | D1 + fix-pypdf621 | Live 21 Nov 16:00 |
-| OCR-7 | Small jobs after OCR-6: the synthetic hostile PDFs saved as tests, the hidden-object TD row brought up to date, the pin check's review notes | (none) | Live 22 Nov 11:00 |
-| OCR-8 | UMS offer letters, rules first | S1 + S1c | Live 22 Nov 11:00, lane `ua:UMS` off (OCR-18 switches it on) |
-| OCR-9 | The ink check (a matched word must show real ink) and the Asasi rule | S-visible 2 | Live 22 Nov 11:00 |
-| OCR-10 | SPM slips off 2.5 | S5 | Live 22 Nov 11:00 |
-| OCR-11 | An all-empty AI answer means "cannot read" | Blank-gap 1 | Live 22 Nov 11:00 (debt TD-701 follows) |
+| OCR-7 | Small jobs after OCR-6: the synthetic hostile PDFs saved as tests, the hidden-object TD row brought up to date, the pin check's review notes | (none) | Live 23 Nov 16:00 |
+| OCR-8 | UMS offer letters, rules first | S1 + S1c | Live 23 Nov 16:00, lane `ua:UMS` off (OCR-18 switches it on) |
+| OCR-9 | The ink check (a matched word must show real ink) and the Asasi rule | S-visible 2 | Live 23 Nov 16:00 |
+| OCR-10 | SPM slips off 2.5 | S5 | Live 23 Nov 16:00 |
+| OCR-11 | An all-empty AI answer means "cannot read" | Blank-gap 1 | Live 23 Nov 16:00 (debt TD-701 follows) |
 | OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | Parked 21 Nov after review round 4; UNPARKED 23 Nov (owner), new design, runs after TD-710 |
 | OCR-13 | The next four universities | S2 | To build |
 | OCR-14 | The remaining public universities | S3 | To build |
