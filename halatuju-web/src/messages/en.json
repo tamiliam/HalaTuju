@@ -5164,11 +5164,11 @@
         "savedNotSubmittedDecline": "Your decline was saved on {date}, but this case has not been sent to QC yet. Press Decline again to send it.",
         "missing": {
           "heading": "Still to do:",
-          "submit": "Submit your interview findings",
+          "submit": "Submit interview findings",
           "answerOne": "Answer 1 interview question in your findings",
           "answerMany": "Answer {count} interview questions in your findings",
           "rate": "Complete your assessment: {facts}",
-          "conclusion": "Write your conclusion",
+          "conclusion": "Write your recommendation",
           "reportingDate": "Record the reporting date"
         },
         "findingsIncomplete": "Answer every interview question before deciding ({count} left).",

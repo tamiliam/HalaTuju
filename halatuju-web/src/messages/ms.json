@@ -5164,11 +5164,11 @@
         "savedNotSubmittedDecline": "Penolakan anda telah disimpan pada {date}, tetapi kes ini belum dihantar ke QC. Tekan Tolak sekali lagi untuk menghantarnya.",
         "missing": {
           "heading": "Masih perlu dibuat:",
-          "submit": "Hantar penemuan temu duga anda",
+          "submit": "Hantar penemuan temu duga",
           "answerOne": "Jawab 1 soalan temu duga dalam penemuan anda",
           "answerMany": "Jawab {count} soalan temu duga dalam penemuan anda",
           "rate": "Lengkapkan penilaian anda: {facts}",
-          "conclusion": "Tulis kesimpulan anda",
+          "conclusion": "Tulis cadangan anda",
           "reportingDate": "Rekodkan tarikh pendaftaran"
         },
         "findingsIncomplete": "Jawab setiap soalan temu duga sebelum membuat keputusan ({count} lagi).",

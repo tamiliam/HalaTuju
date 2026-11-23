@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Reviewer "Still to do" list: owner wording and bullet place (2026-11-23)
+
+- Owner phone check, 23 Nov: "Submit your interview findings" now reads "Submit interview findings", and "Write your conclusion" now reads "Write your recommendation" (en; ms and ta follow, for Sol review).
+- A long item that wraps (for example "Complete your assessment: Identity, Academic, Pathway, and Income") showed its bullet beside its last line. Each item button is now a block, so the bullet sits on the first line.
+- Tests: view.decisionMissing.test.tsx pins the block class and the three-language wording.
+
 ### Web first-load JS: the profile and course words leave core (2026-11-23)
 
 Not pushed. Migration: none. Services: web. No behaviour or text change; no key leaves any file.

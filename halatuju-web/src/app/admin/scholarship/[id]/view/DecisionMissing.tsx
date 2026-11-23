@@ -86,8 +86,9 @@ export function DecisionMissingList({ t, items, alert }: { t: T; items: Decision
       <ul className="list-disc pl-4">
         {items.map((it) => (
           <li key={it.kind}>
+            {/* `block`: an inline button that wraps puts the bullet beside its LAST line, not its first. */}
             <button type="button" onClick={() => jumpTo(missingTarget(it))}
-              className="text-left underline underline-offset-2 max-md:min-h-11 max-md:py-1">
+              className="block text-left underline underline-offset-2 max-md:min-h-11 max-md:py-1">
               {itemText(t, it, locale)}
             </button>
           </li>
