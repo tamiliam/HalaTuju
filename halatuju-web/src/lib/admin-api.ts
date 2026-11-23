@@ -160,8 +160,9 @@ export type {
   VerdictMetrics, VerdictCaseSummary, AdminAnomaly, AdminAgendaEntry, AdminVerdictItem,
   AdminVerdictFact, AdminLedgerRow, AdminSubmissionReview, AdminFundingEstimate, AdminQuerySla,
   RecordVerdictPayload, RecordVerdictResult,
-  PredictionCounts, DoubtRow, QcAgreement, ReviewerRow,
-  QcCheckedCounts, SecondLook, SecondLookFact, QcDecisionPayload,
+  PredictionCounts, DoubtRow, ReviewerRow, OverrideSummary,
+  AiScore, AiOutcome, FactScore, ScoreBlock, ScoreReason, VersionScore,
+  SecondLook, SecondLookFact, QcDecisionPayload,
 } from './admin-api/verdict'
 
 // The irreversible ones: reject, decline, hold, accept, reporting date, nudge.

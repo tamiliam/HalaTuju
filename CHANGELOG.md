@@ -19,6 +19,16 @@ Branch f4-ai-score, not pushed. Migration: none. Services: api only. Reads and d
 - **Who sees it:** the `ai_prediction` overview section is now `see_all` or `qc`, and `verdict-metrics` refuses 403 unless `b40_scope` is `all`, so a reviewer gets no card.
 - **Debt:** TD-NEW-1 `second_look.qc_checked_counts` now has no caller outside tests (remove or reuse). TD-NEW-2 (web, F4b) `verdictReliability` and the override summary type will have no live caller once the card is rewritten.
 
+### F4b (fix plan) - AI prediction card rewritten to the F4 payload, web (2026-11-23)
+
+Branch f4-ai-score, not pushed. Migration: none. Services: web. Reads and displays only. Ships WITH F4 part 1 (the old card cannot read the new payload).
+- **Card** (`AiPredictionSection`, `AiPredictionTables`): header with "Counted over N decided applications"; two tiles (AI score, Points lost); legend of the five outcomes; By fact table (five outcome counts, score, points of best, lost, top 2 reasons as chips); By reviewer counts (applications, green but failed, unsure but passed, QC accepted, QC sent back) with a footnote; an open "For the AI team" fold (doubts often passed, by model version) drawn only when `ai_team` arrived. A score below 0% prints with a minus sign; a fact with no mark shows a small "not scored" count. Tables scroll sideways inside their box on a phone.
+- **No role check in the web:** every block appears by presence of its data; a reviewer gets no section and nothing renders.
+- **Removed:** the month trend, Decision, QC-checked block and footer; `AiPredictionQcChecked` test deleted; the old types (`QcAgreement`, `QcCheckedCounts`, `by_month` etc.). `verdictReliability` now takes the new `OverrideSummary` type.
+- **i18n** (`admin.programmeOverview.aiPrediction`): new keys in en, the same English in ms and ta; dropped keys removed from all three.
+- **Guide and FAQ:** reviewers no longer see the card; how the score and the five outcomes work; what 0% and below 0% mean (role-org-admin, role-qc, role-reviewer, faq, faq-reviewer).
+- **Debt:** TD-NEW-2 stays (`verdictReliability` and `OverrideSummary` still have no live caller; only `officerCockpit.test.ts` uses them).
+
 ### TD-711 - cockpit tests no longer flake in the cloud build (2026-11-23)
 
 Test only. Migration: none. Services: web (build gate). No behaviour change.

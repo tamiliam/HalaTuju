@@ -63,14 +63,18 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>What does the <strong>AI prediction</strong> block mean?</>,
-      a: <>It shows how often the AI&rsquo;s check and the reviewer&rsquo;s Pass or Fail agreed. The first big
-        number is how often the reviewer confirmed a fact the AI was sure of. The second is how often the
-        reviewer passed a fact the AI doubted. &ldquo;Few cases&rdquo; means fewer than 30 cases; the page then
-        shows the count and no percentage. A Pass or Fail tap records the student&rsquo;s fact. It does not
-        rate the AI. Only organisation admins see the <strong>By reviewer</strong> table. A reviewer sees
-        numbers for their own assigned applicants only. <strong>Decision</strong> is the funder&rsquo;s choice
-        and is counted apart from the facts. It sits on a programme&rsquo;s <strong>Overview</strong> and at
-        the foot of the <strong>Programmes</strong> page.</>,
+      a: <>It shows how good the AI&rsquo;s prediction was, in marks. Each fact a reviewer decided gets one of
+        five outcomes, from what the AI said and what the reviewer decided: <strong>Right, sure</strong> (+2),
+        <strong> Right, leaning</strong> (+1), <strong>Unsure</strong> (0), <strong>Wrong, leaning</strong>
+        (&minus;3 or &minus;1) and <strong>Wrong, sure</strong> (&minus;10). The <strong>AI score</strong> is the
+        points won out of the best possible (+2 for every fact), as a whole percentage. 100% means the AI was sure
+        and right on every fact. 0% means it did no better than saying &ldquo;Unsure&rdquo; on every fact.
+        <strong> Below 0%</strong> means its confident mistakes cost more than its right answers won. <strong>Points
+        lost</strong> adds up the negative marks, and <strong>By fact</strong> shows where. A Pass or Fail tap
+        records the student&rsquo;s fact; it does not rate the reviewer. Only organisation admins and QC see the
+        card (reviewers do not), and only organisation admins see the <strong>By reviewer</strong> counts. It
+        sits on a programme&rsquo;s <strong>Overview</strong> and at the foot of the <strong>Programmes</strong>
+        page.</>,
     },
     {
       q: <>I&rsquo;m stuck, or something looks wrong — whom do I contact?</>,
@@ -115,8 +119,8 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>What is the <strong>Facts in doubt</strong> box?</>,
       a: <>A second look at the facts where the reviewer and the AI did not agree. You agree with the reviewer
         unless you tap <strong>Disagree with the reviewer</strong> on a fact (tap again to undo). Your answer goes
-        with your decision and never holds it up. It only counts how often the QC agreed with the reviewer
-        on these facts (&ldquo;checked by the QC&rdquo;); it does not change the case.</>,
+        with your decision and never holds it up. It is counted as <strong>QC accepted</strong> or
+        <strong> QC sent back</strong> in the <strong>By reviewer</strong> table; it does not change the case.</>,
     },
     {
       q: <>Why is Accept blocked on this case?</>,

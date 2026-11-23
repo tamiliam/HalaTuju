@@ -64,49 +64,44 @@ const SCOPES: Record<string, () => unknown> = {
   }),
 }
 
-// ── LL1: the AI prediction scoreboard (what `verdict-metrics/` serves; every figure is made up) ──
+// ── F4b: the AI prediction card (what `verdict-metrics/` serves, F4 shape; every figure is made up) ──
 
-const aiCounts = (green: number, agreed: number, over: Record<string, unknown> = {}) => ({
+const aiBlock = (facts: number, points: number, over: Record<string, unknown> = {}) => ({
+  facts, points, best: 2 * facts, lost: -Math.round(facts / 8), score_pct: Math.round((points / (2 * facts)) * 100),
+  right_sure: Math.round(facts * 0.6), right_leaning: Math.round(facts * 0.2), unsure: Math.round(facts * 0.1),
+  wrong_leaning: Math.round(facts * 0.06), wrong_sure: Math.round(facts * 0.04), ...over,
+})
+const aiCounts = (green: number, agreed: number) => ({
   green, green_failed: green - agreed, green_agreed: agreed, green_agree_rate: agreed / green,
   green_fail_rate: (green - agreed) / green, unsure: 40, unsure_passed: 30, unsure_pass_rate: 0.75,
-  few_green: false, few_unsure: false, few: false, ...over,
+  few_green: false, few_unsure: false, few: false,
 })
-const aiReviewer = (id: number | null, name: string, label_key: string | null, applications: number,
-  over: Record<string, unknown> = {}) => ({
-  ...aiCounts(100, 90), id, name, label_key, applications, qc_checked: 4, qc_overturned: 1, ...over,
-})
-// LL2b: "checked by the QC" counts for one fact (in doubt, checked, disagreed).
-const qcB = (in_doubt: number, checked: number, disagreed: number) => ({
-  in_doubt, checked, not_checked: in_doubt - checked, agreed: checked - disagreed, disagreed,
-  ai_green_checked: checked, ai_wrong_checked: checked - disagreed, ai_right_reviewer_wrong_checked: disagreed,
-  few: checked < 30, few_ai_green: checked < 30,
+const aiReviewer = (id: number | null, name: string, label_key: string | null, applications: number) => ({
+  ...aiCounts(100, 90), id, name, label_key, applications, qc_accepted: 4, qc_sent_back: 1,
 })
 const LONG_DOUBT_CODE = 'document_photo_is_blurred_and_cropped_so_the_total_household_income_cannot_be_read_reliably'
 const AI_METRICS = {
-  applications: 50, fact_decisions: 200, overrides: 20, override_rate: 0.1, per_fact: {},
-  overall: aiCounts(100, 90),
-  fact_counts: { identity: aiCounts(50, 49), academic: aiCounts(30, 27), pathway: aiCounts(10, 6), income: aiCounts(10, 8) },
-  fail_reasons: {
-    identity: { document_false: 0, documents_differ: 1, interview_differs: 0, proof_missing: 0, other: 0 },
-    academic: { document_false: 0, documents_differ: 1, interview_differs: 1, proof_missing: 0, other: 0 },
-    pathway: { document_false: 1, documents_differ: 0, interview_differs: 2, proof_missing: 1, other: 0 },
-    income: { document_false: 0, documents_differ: 0, interview_differs: 1, proof_missing: 0, other: 0 },
+  applications: 187,
+  score: {
+    ...aiBlock(775, 736, { lost: -390 }), not_scored: 3, most_lost: { fact: 'pathway', points: -156 },
+    by_fact: {
+      identity: { ...aiBlock(200, 268), top_reasons: [{ key: 'fail:documents_differ', points: -30 }, { key: 'fail:not_given', points: -20 }] },
+      academic: { ...aiBlock(200, 224), top_reasons: [{ key: 'fail:interview_differs', points: -50 }, { key: 'pass:ruleNotMet', points: -28 }] },
+      pathway: { ...aiBlock(204, -20), top_reasons: [{ key: 'pass:unverifiable', points: -100 }] },   // a score below 0
+      income: { ...aiBlock(171, 136), top_reasons: [] },
+    },
   },
-  fail_reasons_not_given: { identity: 0, academic: 1, pathway: 0, income: 1 },
-  by_version: { 'v5.1': aiCounts(60, 57), '': aiCounts(40, 33) },
-  by_month: { '2026-08': aiCounts(20, 17), '2026-09': aiCounts(3, 3, { few_green: true }), '2026-10': aiCounts(40, 38) },
-  doubt_codes: [
-    { fact: 'income', code: 'income_unclear', passed: 18, failed: 2, total: 20, fail_rate: 0.1, pass_rate: 0.9, few: false },
-    { fact: 'academic', code: 'grade_blurred', passed: 3, failed: 1, total: 4, fail_rate: 0.25, pass_rate: 0.75, few: true },
-    // A long doubt label (no own sentence, so the code shows as words): it must wrap on a phone.
-    { fact: 'income', code: LONG_DOUBT_CODE, passed: 25, failed: 5, total: 30, fail_rate: 0.17, pass_rate: 0.83, few: false },
-  ],
-  qc_agreement: { accept: 17, reopen: 2, reject: 1, total: 20, accept_rate: 0.85, few: false, by_month: {} },
-  qc_checked: { total: qcB(40, 34, 5), facts: { identity: qcB(0, 0, 0), academic: qcB(6, 5, 1), pathway: qcB(4, 4, 2), income: qcB(30, 25, 2) } },
   by_reviewer: [aiReviewer(7, LONG_TAMIL, null, 12), aiReviewer(null, 'x', 'unmatched_reviewer', 3),
-    // A reviewer row with the few-cases flag: the pill shows instead of the percent.
-    aiReviewer(8, 'Devi Penyemak', null, 2, { ...aiCounts(4, 3, { few_green: true, few_unsure: true }) }),
-    aiReviewer(null, 'y', 'unnamed_reviewer', 2)],
+    aiReviewer(8, 'Devi Penyemak', null, 2), aiReviewer(null, 'y', 'unnamed_reviewer', 2)],
+  // The sandbox shows the super's view (the fold) so the phone check covers every part of the card.
+  ai_team: {
+    doubt_codes: [
+      { fact: 'income', code: 'income_unclear', passed: 18, failed: 2, total: 20, fail_rate: 0.1, pass_rate: 0.9, few: false },
+      // A long doubt label (no own sentence, so the code shows as words): it must wrap on a phone.
+      { fact: 'income', code: LONG_DOUBT_CODE, passed: 25, failed: 5, total: 30, fail_rate: 0.17, pass_rate: 0.83, few: false },
+    ],
+    by_version: [{ version: 'v5.1', ...aiBlock(260, 210) }, { version: '', ...aiBlock(290, -20) }],
+  },
 }
 
 function Console({ path, role, params, completion, children }: {
@@ -289,7 +284,7 @@ const overview = (sections: string[], extra: Record<string, unknown> = {}) => ({
 })
 const OVERVIEW_REVIEWER = overview(['mine', 'funnel', 'applications_series'])
 const OVERVIEW_ORG_ADMIN = overview(['attention', 'money', 'funnel', 'applications_series', 'money_series', 'qc', 'ai_prediction'], {
-  ai_prediction: { ...AI_METRICS, counted_scope: 'assigned' },   // LL1: counted_scope shows the assigned-only note; the AI prediction section (tables, trend chart, reviewer table)
+  ai_prediction: AI_METRICS,   // F4b: the AI prediction card (tiles, By fact, By reviewer, the AI-team fold)
   money: { students: 42, committed: '504000.00', paid: '201600.00', remaining: '302400.00', spent: '180250.50' },
   attention: { unassigned: 4, with_reviewer: 12, due_soon: 3, overdue: 1, awaiting_qc: 2 },
   money_series: MONEY_SERIES, qc: QC,

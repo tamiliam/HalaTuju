@@ -66,9 +66,9 @@ export const roleQc: ManualChapter = {
         <strong> Disagree with the reviewer</strong> on that fact; tap it again to undo. Your answer is sent with
         your Accept, Reopen or Reject. On <strong>Accept</strong>, a fact you did not touch is recorded as
         &ldquo;agreed&rdquo;. On <strong>Reopen</strong> or <strong>Reject</strong>, only a Disagree tap is
-        recorded; a fact you did not touch records nothing. It never blocks or delays your decision. The
-        answers feed the <strong> checked by the QC</strong> numbers on the AI prediction card, so the team can
-        see how often the QC agreed with the reviewer on these facts.</>
+        recorded; a fact you did not touch records nothing. It never blocks or delays your decision. Your
+        Accept and Reopen decisions are counted as <strong>QC accepted</strong> and <strong>QC sent back</strong>
+        in the <strong>By reviewer</strong> table of the AI prediction card, which organisation admins see.</>
       ),
     },
     {

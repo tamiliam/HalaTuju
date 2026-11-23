@@ -389,9 +389,17 @@ export const roleOrgAdmin: ManualChapter = {
         gift, and your other gifts are not affected. A gift with no layout of its own shows the
         <em> organisation layout</em>, which you set from Customise with no gift chosen; <strong>Use the
         organisation layout</strong> sends a gift back to it. A reviewer&rsquo;s own cases and a QC&rsquo;s
-        queue are not panels and cannot be switched off. An <strong>AI prediction</strong> block, showing how
-        often reviewers agreed with the AI, is on this page and at the foot of the <strong>Programmes</strong> page (all your
-        gifts together); its <strong>By reviewer</strong> table is for organisation admins. Platform-only tools —
+        queue are not panels and cannot be switched off. An <strong>AI prediction</strong> card, showing how good the
+        AI&rsquo;s prediction was in marks, is on this page and at the foot of the <strong>Programmes</strong> page
+        (all your gifts together). Reviewers do not see it. Each decided fact lands in one of five outcomes:
+        <strong> Right, sure</strong> (+2), <strong>Right, leaning</strong> (+1), <strong>Unsure</strong> (0),
+        <strong> Wrong, leaning</strong> (&minus;3 or &minus;1) and <strong>Wrong, sure</strong> (&minus;10). The
+        <strong> AI score</strong> is the points won out of the best possible, as a whole percentage:
+        100% means sure and right on every fact, 0% means no better than &ldquo;Unsure&rdquo; on every fact, and
+        below 0% means its confident mistakes cost more than its right answers won. <strong>Points lost</strong>
+        and the <strong>By fact</strong> table show where it lost most. <strong>By reviewer</strong> gives plain
+        counts (applications, green but failed, unsure but passed, QC accepted, QC sent back) for organisation
+        admins only. Platform-only tools —
         adding organisations or referral partners — never appear for you; those stay with the HalaTuju
         platform team.</>
       ),

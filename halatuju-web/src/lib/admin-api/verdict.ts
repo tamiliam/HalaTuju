@@ -10,33 +10,55 @@ import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
 import type { AdminScholarshipDetail } from './applications'
 
-/** Verdict metrics summary returned by GET /verdict-metrics/. */
-export interface VerdictMetrics {
+/** The old override roll-up `verdictReliability` reads (no endpoint has served it since F4). */
+export interface OverrideSummary {
   applications: number
   fact_decisions: number
   overrides: number
   override_rate: number
   per_fact: Record<string, { decided: number; overrides: number }>
-  /** Which verdict_engine generations this roll-up averaged, {version: applications}.
-   *  More than one key means the rate below BLENDS predictors — see the card. */
+  /** Which verdict_engine generations this roll-up averaged, {version: applications}. */
   engine_versions?: Record<string, number>
-  /** LL1: the AI prediction scoreboard. Every figure is counted and rounded by the server; the
-   *  browser only prints them. Absent from a payload means "this reader may not see it". */
-  overall?: PredictionCounts
-  fact_counts?: Record<string, PredictionCounts>
-  /** LL2: why reviewers failed a fact the AI was sure of, by fact (zero-filled), plus those not given. */
-  fail_reasons?: Record<string, Record<string, number>>
-  fail_reasons_not_given?: Record<string, number>
-  /** LL2b: the facts in doubt the QC checked, in total and by fact. Absent on older payloads. */
-  qc_checked?: { total: QcCheckedCounts; facts: Record<string, QcCheckedCounts> }
-  by_version?: Record<string, PredictionCounts>
-  by_month?: Record<string, PredictionCounts>
-  doubt_codes?: DoubtRow[]
-  qc_agreement?: QcAgreement
+}
+
+/** F4: the five outcomes a marked fact lands in (`ai_score.OUTCOMES`). */
+export type AiOutcome = 'right_sure' | 'right_leaning' | 'unsure' | 'wrong_leaning' | 'wrong_sure'
+
+/** F4: one block of marks (the whole set, one fact, or one engine version). `score_pct` is the
+ *  served whole percent (points / best; may be below 0), null when no fact was marked. */
+export interface ScoreBlock extends Record<AiOutcome, number> {
+  facts: number
+  points: number
+  best: number
+  lost: number
+  score_pct: number | null
+}
+
+/** F4: where a fact lost points. `key` is `fail:<reason code>` / `fail:not_given` (the reviewer
+ *  failed it) or `pass:<band>` (the reviewer passed what the AI doubted). `points` is negative. */
+export interface ScoreReason { key: string; points: number }
+
+export interface FactScore extends ScoreBlock { top_reasons: ScoreReason[] }
+
+export interface AiScore extends ScoreBlock {
+  /** Decided facts with no band in the stored snapshot: never marked. */
+  not_scored: number
+  most_lost: { fact: string; points: number } | null
+  by_fact: Record<string, FactScore>
+}
+
+export interface VersionScore extends ScoreBlock { version: string }
+
+/** Verdict metrics returned by GET /verdict-metrics/ (F4 shape). Every figure is counted and
+ *  rounded by the server; the browser only prints them. An ABSENT key = this reader may not see it. */
+export interface VerdictMetrics {
+  /** Decided applications counted. */
+  applications: number
+  score: AiScore
   /** Leads only: ABSENT (not empty) for everyone else. */
   by_reviewer?: ReviewerRow[]
-  /** Whose cases the server counted: "assigned" = the reader's own assigned applicants only. */
-  counted_scope?: 'all' | 'assigned'
+  /** "For the AI team": a super's only, ABSENT for everyone else. */
+  ai_team?: { doubt_codes: DoubtRow[]; by_version: VersionScore[] }
 }
 
 /** One block of the scoreboard. "Green" = the AI was sure; "unsure" = the AI was in doubt.
@@ -66,42 +88,15 @@ export interface DoubtRow {
   few: boolean
 }
 
-export interface QcCounts {
-  accept: number
-  reopen: number
-  reject: number
-  total: number
-  accept_rate: number
-  few: boolean
-}
-
-export interface QcAgreement extends QcCounts {
-  by_month: Record<string, QcCounts>
-}
-
-/** LL2b: one block of "checked by the QC" counts. `few` = too few checked to read much into. */
-export interface QcCheckedCounts {
-  in_doubt: number
-  checked: number
-  not_checked: number
-  agreed: number
-  disagreed: number
-  ai_green_checked: number
-  ai_wrong_checked: number
-  ai_right_reviewer_wrong_checked: number
-  few: boolean
-  few_ai_green: boolean
-}
-
 export interface ReviewerRow extends PredictionCounts {
   id: number | null
   name: string
   /** null = a named reviewer; otherwise a neutral label to translate instead of `name`. */
   label_key: 'unmatched_reviewer' | 'unnamed_reviewer' | null
   applications: number
-  /** LL2b: in-doubt facts the QC checked / disagreed with. Absent on older payloads. */
-  qc_checked?: number
-  qc_overturned?: number
+  /** F4: QC decisions on this reviewer's applications: accepted / sent back. */
+  qc_accepted: number
+  qc_sent_back: number
 }
 
 /** LL2b: a fact the reviewer and the AI did not agree on, as the server decided it. */

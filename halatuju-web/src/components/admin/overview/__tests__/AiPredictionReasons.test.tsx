@@ -1,15 +1,16 @@
 /**
  * @jest-environment jsdom
  *
- * LL2: the reason counts on the "AI prediction" card. Made-up figures, the real English messages.
- * The browser only prints what the server counted; a fact with no green -> fail case shows nothing,
- * and a payload from before LL2 (no reason keys) must draw the card exactly as it did.
+ * F4b: the "Where it lost most points" chips on the AI prediction card. The server sends a key
+ * (`fail:<code>`, `fail:not_given`, `pass:<band>`); the browser turns it into the real English
+ * words, never a raw key. A fact with no lost points shows a dash.
  */
 import { render, screen } from '@testing-library/react'
 
 import en from '@/messages/en.json'
 import { AiPredictionBlock } from '../AiPredictionSection'
-import { counts, metrics } from '@/test/aiPredictionFixture'
+import { reasonName } from '../AiPredictionTables'
+import { factScore, metrics } from '@/test/aiPredictionFixture'
 
 const lookup = (key: string): string | undefined =>
   key.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), en) as string | undefined
@@ -23,71 +24,39 @@ jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string) => k, locale: 'en' }),
 }))
 
-const zero = { document_false: 0, documents_differ: 0, interview_differs: 0, proof_missing: 0, other: 0 }
-const withReasons = () => metrics({
-  fact_counts: {
-    identity: counts({ green: 50, green_failed: 0, green_agreed: 50, green_agree_rate: 1 }),
-    academic: counts({ green: 30, green_failed: 3, green_agreed: 27, green_agree_rate: 0.9 }),
-    pathway: counts({ green: 10, green_failed: 4, green_agreed: 6, green_agree_rate: 0.6, few_green: true }),
-    income: counts({ green: 10, green_failed: 2, green_agreed: 8, green_agree_rate: 0.8 }),
-  },
-  fail_reasons: {
-    identity: zero,
-    academic: { ...zero, interview_differs: 2, documents_differ: 1 },
-    pathway: { ...zero, proof_missing: 4 },
-    income: { ...zero, other: 1 },
-  },
-  fail_reasons_not_given: { identity: 0, academic: 0, pathway: 0, income: 1 },
+describe('reason keys as words', () => {
+  it.each([
+    ['fail:proof_missing', 'Proof is missing or unclear'],
+    ['fail:interview_differs', 'The interview or a call showed something different'],
+    ['fail:other', 'Other'],
+    ['fail:not_given', 'Not given'],
+    ['pass:ruleNotMet', 'AI said Rule not met, reviewer passed'],
+    ['pass:unverifiable', 'AI said Can\'t verify, reviewer passed'],
+  ])('%s reads "%s"', (key, words) => {
+    expect(reasonName(t, key)).toBe(words)
+  })
+
+  it('shows an unknown fail code or band as plain words, never a crash', () => {
+    expect(reasonName(t, 'fail:some_new_code')).toBe('some new code')
+    expect(reasonName(t, 'pass:certain')).toBe('pass certain')
+  })
 })
 
-describe('reason counts on the card', () => {
-  it('prints each fact\'s counts, in the fixed order, with "Not given" last', () => {
-    render(<AiPredictionBlock ai={withReasons()} t={t} />)
-    expect(screen.getByTestId('ai-reasons-academic').textContent).toBe('The documents show something different 1 · The interview or a call showed something different 2')
-    expect(screen.getByTestId('ai-reasons-income').textContent).toBe('Other 1 · Not given 1')
-  })
-
-  // LL2b fix: this asserted the bare count line while the cell ignored the served
-  // `few_green` flag. The cell now carries the same "Few cases" pill as the rest of the card.
-  it('a few-cases fact shows plain counts (never a percent) and the "Few cases" pill', () => {
-    render(<AiPredictionBlock ai={withReasons()} t={t} />)
-    const cell = screen.getByTestId('ai-reasons-pathway')
-    expect(cell.textContent).toBe('Proof is missing or unclear 4 Few cases')
-    expect(cell.querySelector('[data-testid="few-pill"]')).not.toBeNull()
-    expect(cell.textContent).not.toMatch(/%/)
-  })
-
-  it('a fact with enough cases carries no "Few cases" pill in its reasons', () => {
-    render(<AiPredictionBlock ai={withReasons()} t={t} />)
-    expect(screen.getByTestId('ai-reasons-academic').querySelector('[data-testid="few-pill"]')).toBeNull()
-  })
-
-  it('a few-cases fact with no green -> fail case shows no pill in the reasons cell', () => {
-    render(<AiPredictionBlock ai={metrics({
-      fact_counts: {
-        identity: counts({ green: 5, green_failed: 0, green_agreed: 5, few_green: true }),
-        academic: counts({ green: 30, green_failed: 3, green_agreed: 27 }),
-      },
-      fail_reasons: { identity: zero, academic: { ...zero, other: 3 } },
-      fail_reasons_not_given: { identity: 0, academic: 0 } })} t={t} />)
-    expect(screen.getByTestId('ai-reasons-identity').textContent).toBe('')
-  })
-
-  it('a fact with no green -> fail case shows nothing', () => {
-    render(<AiPredictionBlock ai={withReasons()} t={t} />)
-    expect(screen.getByTestId('ai-reasons-identity').textContent).toBe('')
-  })
-
-  it('old data (no reason keys) draws no reasons column and does not crash', () => {
+describe('the chips on the card', () => {
+  it('prints the top reasons with their points, and a dash for a fact with none', () => {
     render(<AiPredictionBlock ai={metrics()} t={t} />)
-    expect(screen.queryByTestId('ai-reasons-academic')).toBeNull()
-    expect(screen.queryByText('Why it failed')).toBeNull()
+    expect(screen.getByTestId('ai-reasons-academic').textContent)
+      .toBe('The interview or a call showed something different −50AI said Rule not met, reviewer passed −28')
+    expect(screen.getByTestId('ai-reasons-income').textContent).toBe('–')
   })
 
-  it('reasons present but empty of failures draw no column either', () => {
-    render(<AiPredictionBlock ai={metrics({
-      fact_counts: { identity: counts({ green_failed: 0 }) }, fail_reasons: { identity: zero },
-      fail_reasons_not_given: { identity: 0 } })} t={t} />)
-    expect(screen.queryByTestId('ai-reasons-identity')).toBeNull()
+  it('never prints a raw key', () => {
+    const ai = metrics()
+    ai.score.by_fact.identity = factScore({
+      top_reasons: [{ key: 'fail:document_false', points: -10 }, { key: 'pass:unverifiable', points: -4 }] })
+    render(<AiPredictionBlock ai={ai} t={t} />)
+    const text = screen.getByTestId('ai-reasons-identity').textContent as string
+    expect(text).not.toMatch(/fail:|pass:/)
+    expect(text).toContain('A document looks false or altered −10')
   })
 })

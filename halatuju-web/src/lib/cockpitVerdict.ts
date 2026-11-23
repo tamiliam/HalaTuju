@@ -7,7 +7,7 @@
  */
 
 import { docTypeToFact } from '@/lib/docCategory'
-import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument, VerdictMetrics } from '@/lib/admin-api'
+import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument, OverrideSummary } from '@/lib/admin-api'
 
 // ── Verdict item i18n key ─────────────────────────────────────────────────────
 
@@ -184,7 +184,7 @@ export interface Reliability {
 /** Turn the raw override metrics (how often the human DISAGREED with the AI) into the
  *  AGREEMENT view the card renders — per fact + overall. Agreement = 1 − override rate.
  *  Pure; `pct` is a 0–1 fraction (the component formats it). */
-export function verdictReliability(m: VerdictMetrics): Reliability {
+export function verdictReliability(m: OverrideSummary): Reliability {
   const perFact = RELIABILITY_FACTS.map((fact) => {
     const f = m.per_fact?.[fact] || { decided: 0, overrides: 0 }
     const agree = Math.max(0, f.decided - f.overrides)

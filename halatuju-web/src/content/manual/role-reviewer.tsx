@@ -34,6 +34,10 @@ export const roleReviewer: ManualChapter = {
         nothing else. An <strong>intake year</strong> picker at the top narrows them to one round, if you
         want it.
         <br /><br />
+        <strong>There is no AI prediction card on your Overview.</strong> It scores the AI, not you, and it
+        is for organisation admins and QC. Your Pass or Fail tap records the student&rsquo;s fact; it never
+        marks you.
+        <br /><br />
         <em>Your organisation may have given you more than this role&rsquo;s usual set</em> &mdash; for
         example the Spending page. If it has, the parts of the Guide that describe it appear in the
         sidebar under the role they come from.</>

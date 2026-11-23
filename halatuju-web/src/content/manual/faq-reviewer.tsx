@@ -194,8 +194,8 @@ export const REVIEWER_FAQ: QA[] = [
         <em> Other</em> already chosen; change it if a better reason fits. If you Approve
         while a fact is on Fail, you see a warning, but you can still go ahead. QC then takes a second look at
         those facts (a Fail on a green fact, or a Fail you still approved) and either agrees with you or taps
-        <strong> Disagree</strong>. The answers count how often QC agreed with you; leads also see how often QC
-        disagreed with each reviewer, to support reviewers, not to rank them.</>,
+        <strong> Disagree</strong>. Your decisions are counted as QC accepted or QC sent back; leads see
+        those counts, to support reviewers, not to rank them. You do not see the AI prediction card yourself.</>,
     },
     {
       q: <>What does each of the four facts ask me to prove?</>,
