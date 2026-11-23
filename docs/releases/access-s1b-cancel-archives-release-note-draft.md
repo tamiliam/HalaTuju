@@ -23,7 +23,11 @@ Programme ACCESS-BY-SWITCHES. Owner ruling 19 Nov (`docs/decisions.md`). Debt: c
 - **Inviting the same address again works as if they were new** (owner, 20 Nov): one fresh invitation, with no old
   cancelled one beside it and none in the counts; "Joined" shows the new date; and if they had been added to
   Mentors but never had a scholar or a meeting, they are offered by "Add a staff member as mentor" again instead
-  of showing as "Mentored before". Someone who did mentor a scholar keeps that history.
+  of showing as "Mentored before".
+- **The re-invited person also starts with a clean slate** (owner, 23 Nov): their page's Changes list starts from
+  the new "Joined" date, and someone who did once mentor a scholar (or had a meeting) is offered by "Add a staff
+  member as mentor" like anyone new, not as "Mentored before". Nothing is deleted: the old permission changes stay
+  in the database, and the scholar's file still shows the past assignment and meetings under the mentor's name.
 
 ## Not changed
 
@@ -39,7 +43,8 @@ Services: both. No migrate step. Publish in a release window with the owner's ye
 
 As an org admin, invite a test reviewer into a group, then Cancel the invitation: they leave the group table, and
 the same address can be invited again. Then cancel a never-signed-in invitation and invite the same address again:
-it shows as a fresh invitation, with no old cancelled one beside it.
+it shows as a fresh invitation, with no old cancelled one beside it. Open their page: the Changes list shows
+nothing from before the cancel.
 
 ## For a native reader
 

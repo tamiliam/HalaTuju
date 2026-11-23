@@ -305,7 +305,7 @@ class AdminMentorsView(_MentorsBase):
     super / org_admin / admin; org-fenced (see `_in_scope`). Each row carries `scholars_now` (S7b)."""
 
     def get(self, request):
-        from .. import mentor_invite
+        from .. import mentor_invite, staff_mentor
         admin, err = self._reader(request)
         if err:
             return err
@@ -315,8 +315,8 @@ class AdminMentorsView(_MentorsBase):
         # S7d: a mentor record with no login (a staff member who never mentored, then deleted) is
         # nobody's row any more: it is not listed.
         # T3: the Team -> Mentors table's own columns ride on the same rows (`team=True`).
-        rows = mentor_rows(admin, list(scope.filter(users__isnull=False).select_related('organisation')
-                                       .order_by('id')), team=True)
+        rows = mentor_rows(admin, list(staff_mentor.without_mentored_before_joining(   # S1b, owner 23 Nov
+            scope.filter(users__isnull=False)).select_related('organisation').order_by('id')), team=True)
         rows.sort(key=lambda r: (r['name'] or '').lower())
         counts = {s: 0 for s in mentor_invite.STATUSES}
         for r in rows:

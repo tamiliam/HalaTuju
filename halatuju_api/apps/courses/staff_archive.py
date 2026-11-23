@@ -32,7 +32,11 @@ Invitation, as for any invite. Another organisation's archived address keeps `no
 also restarts `created_at` (the "Joined" date and the list order read it) and drops a mentor link that
 never had a scholar or a meeting (`_never_mentored`), so the person is offered by Add to Mentors again.
 The old revoked invitation stays as the record but is off the Invitations list
-(`invitations.without_superseded`).
+(`invitations.without_superseded`). Owner, 23 Nov: the reset `created_at` is also where the person page's
+Changes list starts (`views_admin/staff._since_joining_again`), and a mentor link WITH a scholar or a meeting
+is kept (the scholars' records read the name through it) but its mentor record, stopped before they
+joined again, no longer makes them "Mentored before": Add to Mentors offers them as new
+(`staff_mentor.mentored_before_joining`).
 
 ⚠ The activity verb: `staff_activity` verbs are a closed list with a database `choices`, so a
 `staff_archived` verb needs a scholarship migration M1a does not carry (TD-603). The AUDIT log line is

@@ -186,3 +186,133 @@ class TestAReInviteAfterCancelBehavesAsNew(_Base):
         inv, back = self.invite(self.lead_again, email=AGAIN, uid='uid-again-2')
         back.refresh_from_db()
         self.assertEqual(back.mentor_id, account.mentor_id)      # the history stays theirs (M1a)
+
+
+class TestOwnerRuling23NovTheChangesListAndPastMentoring(TestAReInviteAfterCancelBehavesAsNew):
+    """Owner, 23 Nov: tidy BOTH places S1b left showing earlier history. Read filters only: the
+    `staff_permission_changes` rows and every scholar-side record stay as they were."""
+
+    def change(self, account, org, by, *, role='org_admin'):
+        from apps.scholarship.models import StaffPermissionChange
+        return StaffPermissionChange.objects.create(
+            target=account, target_email=account.email, organisation=org, role=account.role,
+            before=['review'], after=['review', 'see_all'], changed_by_email=by.email if by else '',
+            changed_by_role=role)
+
+    def history(self, lead, account):
+        r = authed_client(lead).get(f'/api/v1/admin/admins/{account.pk}/permissions/')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        return r.json()['history']
+
+    def reinvited_after_a_change(self):
+        first, account = self.invite(self.lead_again, email=AGAIN, uid='uid-again-1')
+        old = self.change(account, self.org_again, self.lead_again)   # a key change before the Cancel
+        self.assertEqual(self.cancel(self.lead_again, first).status_code, 200)
+        inv, back = self.invite(self.lead_again, email=AGAIN, uid='uid-again-2')
+        self.assertEqual(back.pk, account.pk)
+        return old, inv, back
+
+    def test_the_changes_list_of_a_re_invited_person_reads_as_a_brand_new_invitees(self):
+        from apps.scholarship.models import StaffPermissionChange
+        inv_new, new = self.fresh()
+        old, inv_again, again = self.reinvited_after_a_change()
+        want = self.served(self.lead_new, self.org_new, new, inv_new)
+        got = self.served(self.lead_again, self.org_again, again, inv_again)
+        self.maxDiff = None
+        self.assertEqual(got, want)
+        self.assertEqual(got['person_page']['history'], [])
+        self.assertTrue(StaffPermissionChange.objects.filter(pk=old.pk, target=again).exists())   # kept
+        later = self.change(again, self.org_again, self.lead_again)   # a change after the re-invite shows
+        self.assertEqual([h['at'] for h in self.history(self.lead_again, again)],
+                         [later.created_at.isoformat().replace('+00:00', 'Z')])
+
+    def test_a_person_never_cancelled_keeps_their_full_changes_list(self):
+        inv, account = self.invite(self.lead_again, email=AGAIN, uid='uid-again-1')
+        self.change(account, self.org_again, None, role='migration')   # a migration's row
+        self.change(account, self.org_again, self.lead_again)
+        rows = self.history(self.lead_again, account)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual([r['by_migration'] for r in rows], [False, True])
+
+    def test_ordinary_staff_with_no_invitation_keep_their_migration_rows(self):
+        row = make_admin('reviewer', owning_org=self.org_again, first_seen_at=timezone.now())
+        self.change(row, self.org_again, None, role='migration')
+        self.assertEqual(len(self.history(self.lead_again, row)), 1)
+
+    def test_a_restored_person_who_had_signed_in_keeps_their_changes_list(self):
+        from apps.courses import staff_archive
+        inv, account = self.invite(self.lead_again, email=AGAIN, uid='uid-again-1')
+        self.change(account, self.org_again, self.lead_again)
+        PartnerAdmin.objects.filter(pk=account.pk).update(
+            first_seen_at=timezone.now(), archived_at=timezone.now(), is_active=False, supabase_user_id=None)
+        account.refresh_from_db()
+        back, _, err = staff_archive.restore(account, name=NAME, role='reviewer', org=None,
+                                             owning_org=self.org_again)
+        self.assertIsNone(err)
+        self.assertEqual(len(self.history(self.lead_again, back)), 1)
+
+    def test_a_re_invited_former_mentor_is_offered_as_new_and_the_scholars_file_keeps_the_history(self):
+        from apps.scholarship import mentoring_read
+        from apps.scholarship.models import MentorAssignment, MentoringSession
+        from apps.scholarship.tests.factories import make_application
+        inv_new, new = self.fresh()
+        first, account = self.invite(self.lead_again, email=AGAIN, uid='uid-again-1')
+        self.add_to_mentors(self.lead_again, account)
+        account.refresh_from_db()
+        mentor_id, app = account.mentor_id, make_application('submitted')
+        done = MentorAssignment.objects.create(application=app, mentor=account.mentor, ended_at=timezone.now())
+        MentoringSession.objects.create(application=app, mentor=account.mentor, assignment=done,
+                                        met_on=timezone.now().date(), mode=MentoringSession.MODE_PHONE)
+        self.assertEqual(self.cancel(self.lead_again, first).status_code, 200)
+        inv_again, again = self.invite(self.lead_again, email=AGAIN, uid='uid-again-2')
+        again.refresh_from_db()
+        self.assertEqual(again.mentor_id, mentor_id)               # the link is kept: the name lives on it
+        want = self.served(self.lead_new, self.org_new, new, inv_new)
+        got = self.served(self.lead_again, self.org_again, again, inv_again)
+        # Kept on purpose: their name is on a scholar's records, so Delete counts that work (`work`,
+        # `deletable`): it archives them instead of erasing them. Everything else reads as new.
+        work = ('work', 'deletable', 'delete_never')
+
+        def bare(rows):
+            return [{k: v for k, v in r.items() if k not in work} for r in rows]
+        self.maxDiff = None
+        for key in ('mentor_picker', 'mentors_list', 'invitations', 'invitations_all', 'team_picker'):
+            self.assertEqual(got[key], want[key], key)
+        for key in ('admins_list', 'reviewers_list'):
+            self.assertEqual(bare(got[key]), bare(want[key]), key)
+        self.assertEqual(bare([got['person_page']]), bare([want['person_page']]))
+        self.assertTrue(got['mentor_picker'])                     # Add to Mentors offers them again
+        self.assertEqual(got['mentors_list'], [])                  # never "Mentored before"
+        self.assertIsNone(got['person_page']['person']['mentor_id'])
+
+        def file():
+            return mentoring_read.file_payload(self.lead_again, app)
+        before = file()
+        self.assertEqual([(h['id'], h['name']) for h in before['history']], [(done.pk, NAME)])
+        self.assertEqual([m['mentor_name'] for m in before['meetings']], [NAME])
+        self.add_to_mentors(self.lead_again, again)                # added like anyone
+        again.refresh_from_db()
+        self.assertEqual(again.mentor_id, mentor_id)               # the same record, switched back on
+        self.assertIsNone(again.mentor.deactivated_at)
+        self.assertTrue(MentorAssignment.objects.filter(pk=done.pk, ended_at__isnull=False).exists())
+        self.assertEqual(file()['history'], before['history'])     # the scholar's file is unchanged
+        self.assertEqual(file()['meetings'], before['meetings'])
+
+    def test_a_staff_mentor_removed_while_here_is_still_mentored_before(self):
+        from apps.scholarship import staff_mentor
+        from apps.scholarship.models import MentorAssignment
+        from apps.scholarship.tests.factories import make_application
+        row = make_admin('reviewer', owning_org=self.org_again, first_seen_at=timezone.now())
+        self.add_to_mentors(self.lead_again, row)
+        row.refresh_from_db()
+        MentorAssignment.objects.create(application=make_application('submitted'), mentor=row.mentor,
+                                        ended_at=timezone.now())
+        Mentor.objects.filter(pk=row.mentor_id).update(deactivated_at=timezone.now())
+        row.refresh_from_db()
+        self.assertFalse(staff_mentor.mentored_before_joining(row))
+        self.assertNotIn(row.pk, {a.pk for a in staff_mentor.candidates([self.org_again.pk])})
+        body = authed_client(self.lead_again).get('/api/v1/admin/mentors/').json()['mentors']
+        self.assertEqual([m['status'] for m in body if m['id'] == row.mentor_id], ['inactive'])
+        r = authed_client(self.lead_again).post('/api/v1/admin/mentors/staff/', {'admin_id': row.pk},
+                                                format='json')
+        self.assertEqual(r.status_code, 409)                       # still `resume`'s, as before

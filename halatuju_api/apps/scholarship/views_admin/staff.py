@@ -190,6 +190,24 @@ class AdminStaffPermissionsView(_AdminBase):
 HISTORY_LIMIT = 20
 
 
+def _since_joining_again(target):
+    """The Changes-list filter that starts the list again at a re-invite restore (S1b owner ruling, 23 Nov).
+
+    The marker is the restore's own write: `staff_archive.restore` resets `created_at` ("Joined") to the
+    restore moment for a row that never signed in, and nothing else ever moves `created_at`. It counts
+    only when the row also holds an invitation made BEFORE that `created_at`: an invitation is always
+    written after its staff row, so an older one proves the date was moved by a restore. For everyone
+    else (never cancelled and re-invited, signed in before the archive, a migration's row) the EXISTS is
+    false and every row passes. One SQL statement with the history read (the person-page query count is
+    pinned in `test_t3_person_page.py`)."""
+    from django.db.models import Exists, Q
+    from ..models import Invitation
+    if target.created_at is None:
+        return Q()
+    restored = Exists(Invitation.objects.filter(partner_admin=target, created_at__lt=target.created_at))
+    return Q(created_at__gte=target.created_at) | Q(~restored)
+
+
 def _permission_history(target, viewer):
     """The target's `StaffPermissionChange` rows, newest first, worded-ready for the screen.
 
@@ -202,12 +220,14 @@ def _permission_history(target, viewer):
 
     ⚠ ONLY THE TARGET'S CURRENT ORGANISATION'S ROWS. A cancelled invite re-sent into ANOTHER
     organisation reuses the same staff row (`staff_reinvite.bring_back`), so `target=` alone would
-    show the new organisation the old one's changes and its admins' addresses (review, 2026-10-22)."""
+    show the new organisation the old one's changes and its admins' addresses (review, 2026-10-22).
+
+    ⚠ A RE-INVITE AFTER CANCEL READS AS NEW (owner, 23 Nov, S1b): the list starts at the restore
+    (`_since_joining_again`). A read filter only: every row stays in the table."""
     from apps.courses.models import PartnerAdmin
     from ..models import StaffPermissionChange
-    rows = list(StaffPermissionChange.objects.filter(
-        target=target, organisation_id=target.owning_organisation_id)
-        .order_by('-created_at', '-id')[:HISTORY_LIMIT])
+    qs = StaffPermissionChange.objects.filter(target=target, organisation_id=target.owning_organisation_id)
+    rows = list(qs.filter(_since_joining_again(target)).order_by('-created_at', '-id')[:HISTORY_LIMIT])
     emails = {r.changed_by_email for r in rows if r.changed_by_email and r.changed_by_role != 'super'}
     names = {}
     if emails and target.owning_organisation_id is not None:

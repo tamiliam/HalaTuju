@@ -15,6 +15,9 @@ by hand, migrate-first, after the owner's yes). Brief: `docs/plans/2026-11-19-m4
 - **Q2, the fallback approver.** **Decision:** when nobody else can approve a run, anyone with Approve may approve it,
   including the person who built it, as long as they did not sign it as maker. The maker never approves their own
   run. The organisation admin's fallback comes through the key. This is the one seat that widens on ship day.
+  **Owner, 23 Nov (direct): confirmed** that a super who BUILT a run may approve it when nobody else can (never one
+  who signed it as maker). Already built and pinned (`test_m4a_maker_checker.py`,
+  `test_a_super_who_built_it_approves_only_when_nobody_else_can`); no code change.
 - **Q3, giving (A12 for money).** **Decision:** a person gives only the Payments switches they hold. For GIVING only,
   Organisation admin powers count as holding Payments View, Prepare and Approve, never Check; only a super gives
   Check. **Why:** with Q1 an organisation admin holds no Payments switch, so A12 alone would stop them staffing
@@ -54,9 +57,22 @@ both. Migration: none.
   out of the totals (`invitations.without_superseded`); a never-signed-in row restored by the re-invite starts its
   "Joined" date again (`created_at`) and drops a mentor link that never had a scholar or a meeting
   (`staff_archive._never_mentored`), so Add to Mentors offers them again. The invitation row, its `revoked_at`, the
-  AUDIT lines, `staff_permission_changes` and `staff_activity` are kept untouched. A mentor link with a scholar or a
-  meeting on record is kept (the history stays theirs), and the person page's Changes list still shows any key change
-  made before the cancel; both are left for the owner.
+  AUDIT lines, `staff_permission_changes` and `staff_activity` are kept untouched.
+- **owner 23 Nov (direct): tidy both places left showing earlier history, so a re-invite after Cancel is "as if new".**
+  - **The Changes list** (the person page's `history`, `GET admin/admins/<id>/permissions/`) starts at the restore:
+    it leaves out every `staff_permission_changes` row from before the reset `created_at`
+    (`views_admin/staff._since_joining_again`). The cut-off counts only when the row also holds an invitation made
+    before that `created_at`; an invitation is always written after its staff row, and only the restore moves
+    `created_at`, so for anyone never cancelled and re-invited, anyone who had signed in (their "Joined" is not reset),
+    and every migration row for ordinary staff, the list is unchanged. A read filter only: no row is deleted or edited.
+  - **A mentor link with a scholar or a meeting on record** is KEPT, because the mentor's name on each scholar's
+    past assignment and meeting is read through that link (`mentoring.mentor_facts`); detaching it would blank the
+    name on the scholar's file. Instead, a staff login whose mentor record was stopped BEFORE its own `created_at`
+    (only a re-invite restore leaves that shape: `staff_mentor.mentored_before_joining`) is no longer served on the
+    Mentors page (`without_mentored_before_joining`), so it is never "Mentored before"; Add to Mentors offers it as
+    new (`candidates`), and adding switches the same mentor record back on (no assignment comes back). Kept: every
+    assignment, meeting, concern and activity row, and the scholar's file reads exactly as before. One difference
+    stays on purpose: their name is on a scholar's records, so Delete counts that work and archives instead of erasing.
 
 ## 2026-11-21 — F2 (fix plan): the AI Prediction band has one home, on the server; I-10 QC floor
 

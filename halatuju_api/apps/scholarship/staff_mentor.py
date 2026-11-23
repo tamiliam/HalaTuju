@@ -71,13 +71,39 @@ def eligible(login):
             and login.role in STAFF_MENTOR_ROLES and login.owning_organisation_id is not None)
 
 
+def mentored_before_joining(login):
+    """S1b owner ruling (23 Nov): does this STAFF login carry a mentor record that was STOPPED BEFORE the
+    login's own `created_at` ("Joined")? Only one write moves `created_at` forward: a re-invite restore of a
+    never-signed-in row (`courses.staff_archive.restore`), stamped after the archive deactivated the mentor.
+    Anyone else's mentor was stopped while they were already here, so this is False for them. Such a
+    person is offered by Add to Mentors as new (never "Mentored before"); the LINK is kept, because the
+    mentor's name on every scholar's past assignment and meeting is read through it (`mentor_facts`)."""
+    m = login.mentor if login is not None and login.mentor_id is not None else None
+    return (m is not None and login.role != PartnerAdmin.MENTOR_ROLE and m.deactivated_at is not None
+            and m.deactivated_at < login.created_at and m.organisation_id == login.owning_organisation_id)
+
+
+def without_mentored_before_joining(mentors):
+    """``mentors`` (a `Mentor` queryset) less the records `mentored_before_joining` treats as an earlier
+    life: the Mentors page never serves them, so the sheet never tags the person "Mentored before"."""
+    from django.db.models import Exists, OuterRef
+    earlier = PartnerAdmin.objects.filter(
+        mentor=OuterRef('pk'), created_at__gt=OuterRef('deactivated_at'),
+        owning_organisation_id=OuterRef('organisation_id')).exclude(role=PartnerAdmin.MENTOR_ROLE)
+    return mentors.exclude(Exists(earlier))
+
+
 def candidates(organisation_ids=None):
     """The staff the "Add a staff member as mentor" sheet may offer: eligible, not a mentor yet, of
     ``organisation_ids`` (None = every organisation, a super with no narrowing) — and (M1a) every active,
-    signed-in "No group" member, link kept or not (`add_member`). Name order."""
-    from django.db.models import Q
+    signed-in "No group" member, link kept or not (`add_member`). S1b (owner, 23 Nov): also a re-invited
+    person whose kept mentor record was stopped before they joined again (`mentored_before_joining`).
+    Name order."""
+    from django.db.models import F, Q
     qs = PartnerAdmin.objects.filter(
         Q(role__in=STAFF_MENTOR_ROLES, mentor__isnull=True)
+        | Q(role__in=STAFF_MENTOR_ROLES, mentor__deactivated_at__lt=F('created_at'),
+            mentor__organisation_id=F('owning_organisation_id'))
         | Q(role=PartnerAdmin.MEMBER_ROLE, first_seen_at__isnull=False),
         is_active=True, owning_organisation__isnull=False)
     if organisation_ids is not None:
@@ -87,20 +113,33 @@ def candidates(organisation_ids=None):
 
 def add(caller, target):
     """Make ``target`` (a staff login, already fenced by the view) a mentor of its own organisation.
-    ``(mentor, error)``: `not_eligible`, `already_mentor`. Under a row lock; nothing is emailed."""
+    ``(mentor, error)``: `not_eligible`, `already_mentor`. Under a row lock; nothing is emailed.
+
+    S1b (owner, 23 Nov): a re-invited person whose kept mentor record was stopped before they joined
+    again (`mentored_before_joining`) is added like anyone: that record is switched back on (no
+    assignment comes back), never replaced, so the scholars' past records keep their name. The Mentor is
+    locked before the login (the Mentor → PartnerAdmin order every door takes)."""
     from . import staff_contact
     from .models import ReviewerProfile
     by = (getattr(caller, 'email', '') or '')[:254]
     with transaction.atomic():
+        kept = PartnerAdmin.objects.filter(pk=target.pk).values_list('mentor_id', flat=True).first()
+        if kept is not None:
+            Mentor.objects.select_for_update().filter(pk=kept).first()
         row = PartnerAdmin.objects.select_for_update().filter(pk=target.pk).first()
         if row is None or row.is_mentor:
             return None, 'not_eligible'
-        if row.mentor_id is not None:
+        if row.mentor_id is not None and (row.mentor_id != kept or not mentored_before_joining(row)):
             return None, 'already_mentor'
         if not eligible(row):
             return None, 'not_eligible'
-        mentor = Mentor.objects.create(organisation_id=row.owning_organisation_id, created_by_email=by)
-        PartnerAdmin.objects.filter(pk=row.pk, mentor__isnull=True).update(mentor=mentor)
+        if row.mentor_id is not None:
+            mentor = row.mentor
+            Mentor.objects.filter(pk=mentor.pk).update(deactivated_at=None, deactivated_by_email='')
+            mentor.refresh_from_db()
+        else:
+            mentor = Mentor.objects.create(organisation_id=row.owning_organisation_id, created_by_email=by)
+            PartnerAdmin.objects.filter(pk=row.pk, mentor__isnull=True).update(mentor=mentor)
         if not staff_contact.reviews_cases(row):
             # They gave this number for staff use (owner ruling): their students do not see it until
             # they switch it on. A `review` holder already chose for the students they interview.

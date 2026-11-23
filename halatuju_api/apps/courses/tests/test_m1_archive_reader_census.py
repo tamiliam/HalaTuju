@@ -116,13 +116,15 @@ CENSUS = {
     S + 'staff_lifecycle.py::adoptable_login': (1, 'SHAPE', 'by login UID; the archive cleared it'),
     S + 'staff_lifecycle.py::change_role': (3, 'FENCED', 'locked re-read with archived_at=None'),
     S + 'staff_lifecycle.py::credential_was_issued': (1, 'OWN_ROW', 'a row in hand'),
-    S + 'staff_mentor.py::add': (2, 'FENCED', 'AdminStaffMentorsView.post refuses archived'),
+    S + 'staff_mentor.py::add': (3, 'FENCED', 'AdminStaffMentorsView.post refuses archived (and the lock peek)'),
     S + 'staff_mentor.py::add_member': (2, 'ACTIVE', 'an active, signed-in member'),
     S + 'staff_mentor.py::candidates': (1, 'ACTIVE', 'active staff'),
     S + 'staff_mentor.py::leave': (1, 'OWN_ROW', 'inside a delete, archive or role change'),
     S + 'staff_mentor.py::remove_mentor_login': (2, 'FENCED', 'staff_tables_admin.may_act'),
     S + 'staff_mentor.py::resume': (1, 'ACTIVE', 'eligible() needs is_active'),
     S + 'staff_mentor.py::stop': (1, 'FENCED', 'locked re-read with archived_at=None'),
+    S + 'staff_mentor.py::without_mentored_before_joining': (1, 'KEEPS', 'S1b 23 Nov: an archived '
+        'login\'s mentor was stopped after it joined, so it is never left out; the inactive row stays'),
     S + 'staff_permissions_admin.py::change_permissions': (2, 'FENCED', 'locked re-read with archived_at=None'),
     S + 'staff_tables_admin.py::candidates': (1, 'ACTIVE', 'active staff'),
     S + 'staff_tables_admin.py::change': (3, 'FENCED', 'may_act refuses archived'),
@@ -142,6 +144,8 @@ CENSUS = {
     S + 'views_admin/staff.py::AdminStaffRoleView.patch': (1, 'FENCED', 'the fence'),
     S + 'views_admin/staff.py::AdminTeamTableView.post': (1, 'FENCED', 'may_act refuses archived'),
     S + 'views_admin/staff.py::_permission_history': (1, 'KEEPS', 'names on the history'),
+    S + 'views_admin/staff.py::_since_joining_again': (1, 'OWN_ROW', 'S1b 23 Nov: the fenced target\'s '
+        'own invitations, for where its Changes list starts'),
     S + 'views_admin/verdict.py::AdminAssignReviewerView.post': (1, 'ACTIVE', 'an active assignee'),
     S + 'views_sponsor.py::_close_admin_invitation': (1, 'NOT_STAFF', 'sponsor invitations'),
 }
