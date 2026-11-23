@@ -183,7 +183,6 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
     setApp(d)
   }
   const refreshApp = () => reload(false)
-  const onPreInterviewDone = (next: AdminScholarshipDetail) => { setPreInterviewRefusal(null); setApp(next) }
   // The hooks' handlers keep the ctx of the render they were made in, so these drop what a request
   // for an earlier case brings back (busy is never guarded: it must always clear).
   const forThisCase = <A,>(set: (a: A) => void) => (a: A) => { if (id === liveId.current) set(a) }
@@ -195,8 +194,12 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   const interview = useInterview(ctx)
   const requests = useRequests(ctx)
   const postAward = usePostAward(ctx, canManageSources)
-  const actions = useCaseActions(ctx, admins)
   const { officerVerdict, loadVerdictState } = verdict
+  // A reply that may change the assessment (a reject before interview, a Cancel decline, an IC
+  // re-check): put it on the page AND reload the ONE assessment box from it (owner 23 Nov). The
+  // reject's refusal needs no clearing here: the panel clears it (`setErr('')`) before it sends.
+  const showReply = (a: AdminScholarshipDetail) => { setApp(a); loadVerdictState(a) }
+  const actions = useCaseActions(ctx, admins, showReply)
   const { findings, loadInterviewState } = interview
   // The load below needs the CURRENT hooks' handlers and `t`, but must fire on `token`/`id` alone: the
   // hook objects are new every render, so listing them would re-read the case on every keystroke.
@@ -406,7 +409,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
       />
 
 
-      <ReverifyIcCard app={app} t={t} token={token} busy={busy} canQc={canQc} onDone={(a) => { setApp(a); loadVerdictState(a) }} />
+      <ReverifyIcCard app={app} t={t} token={token} busy={busy} canQc={canQc} onDone={showReply} />
       <QcPanel
         app={app} t={t} busy={busy} canQc={canQc} doQcDecision={doQcDecision}
         qcReopenOpen={qcReopenOpen} setQcReopenOpen={setQcReopenOpen}
@@ -441,7 +444,8 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         notesCard={!showsNotesCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened }) ? undefined : <ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
         preInterview={<LazyPreInterviewOption key={app.id} app={app} t={t} token={token} busy={busy} canAssign={canAssign}
-          err={preInterviewErr} setErr={setPreInterviewErr} onDone={onPreInterviewDone} onStale={() => reload(true)} />}
+          box={verdict}
+          err={preInterviewErr} setErr={setPreInterviewErr} onDone={showReply} onStale={() => reload(true)} />}
       />
 
 

@@ -5517,7 +5517,6 @@
       },
       "preInterview": {
         "title": "Reject before interview",
-        "factsTitle": "The four facts",
         "factsNeeded": "Record Pass or Fail for all four facts before you reject.",
         "start": "Reject before interview",
         "help": "For a student whose documents already show they don't qualify. No interview is held.",

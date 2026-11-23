@@ -7,6 +7,8 @@
  * served limit), then an "Are you sure?" step names the student, the reason and the date the email
  * goes (or that it goes at once with no hold). Focus moves with each step (#75 review). The record card
  * shows the held date (the header's cool-off banner carries "Cancel decline"), or the sent date.
+ * ONE BOX (owner, 23 Nov): the four facts are the Reviewer Assessment box's, passed in as props; the
+ * panel draws no Pass/Fail of its own (the page-level pins are in `view.preInterviewOneBox.test.tsx`).
  * Dummy data only.
  */
 import { useState } from 'react'
@@ -28,25 +30,26 @@ const OFFER = {
 const caseOf = (over: Record<string, unknown> = {}) =>
   ({ id: 7, name: 'Dummy Student', status: 'profile_complete', assigned_to_id: null, pre_interview: OFFER, ...over }) as unknown as api.AdminScholarshipDetail
 
+type Marks = Record<string, string>
+/** The Reviewer Assessment box, all four rated Pass (its `overall` rides along, as in `useVerdict`). */
+const ALL_PASS: Marks = { identity: 'pass', academic: 'pass', pathway: 'pass', income: 'pass', overall: '' }
+
 let onStale: jest.Mock
-/** The page holds the refusal (#75 re-check); this stands in for it. */
-function Page({ app, canAssign, onDone }: { app: api.AdminScholarshipDetail; canAssign: boolean; onDone: jest.Mock }) {
+/** The page holds the refusal (#75 re-check) and the box's state; this stands in for it. */
+function Page({ app, canAssign, onDone, facts = ALL_PASS, why = {} }: {
+  app: api.AdminScholarshipDetail; canAssign: boolean; onDone: jest.Mock; facts?: Marks; why?: Marks
+}) {
   const [err, setErr] = useState('')
   return <PreInterviewOption app={app} t={t} token="tok" busy="" canAssign={canAssign}
-    err={err} setErr={setErr} onDone={onDone} onStale={onStale} />
+    box={{ officerVerdict: facts, failReasons: why }} err={err} setErr={setErr} onDone={onDone} onStale={onStale} />
 }
-const draw = (app: api.AdminScholarshipDetail, canAssign = true) => {
+const draw = (app: api.AdminScholarshipDetail, canAssign = true, facts: Marks = ALL_PASS, why: Marks = {}) => {
   const onDone = jest.fn()
   onStale = jest.fn()
-  render(<Page app={app} canAssign={canAssign} onDone={onDone} />)
-  return onDone
+  const view = render(<Page app={app} canAssign={canAssign} onDone={onDone} facts={facts} why={why} />)
+  return Object.assign(onDone, { view })
 }
-const FACTS = ['identity', 'academic', 'pathway', 'income']
-const rate = (v: 'pass' | 'fail' = 'pass') => {
-  for (const f of FACTS) fireEvent.click(screen.getByTestId(`pre-interview-${f}-${v}`))
-}
-const fill = (reason: string, note: string, facts = true) => {
-  if (facts) rate()
+const fill = (reason: string, note: string) => {
   fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: reason } })
   fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: note } })
 }
@@ -123,39 +126,52 @@ describe('the panel', () => {
   })
 })
 
-describe('the four facts first (F3, I-4)', () => {
-  const open = (over: Record<string, unknown> = {}) => {
-    draw(caseOf(over))
+describe('the four facts come from the ONE box (F3, I-4; owner 23 Nov)', () => {
+  const THREE: Marks = { identity: 'pass', academic: 'pass', pathway: 'pass', income: '', overall: '' }
+  const open = (facts: Marks = ALL_PASS, why: Marks = {}) => {
+    const onDone = draw(caseOf(), true, facts, why)
     fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
+    return onDone
   }
   const submit = () => screen.getByRole('button', { name: `${P}.submit` }) as HTMLButtonElement
+  const line = () => screen.queryByTestId('pre-interview-facts-needed')
 
-  it('shows the four facts with the Pass/Fail help line', () => {
-    open()
-    expect(screen.getByText('admin.scholarship.recordVerdict.rateHelp')).toBeTruthy()
-    for (const f of FACTS) expect(screen.getByTestId(`pre-interview-${f}-pass`)).toBeTruthy()
+  it('draws no Pass/Fail of its own: no facts block, no Pass, Fail or Why buttons', () => {
+    open(THREE)
+    expect(screen.queryByTestId('pre-interview-facts')).toBeNull()
+    expect(screen.queryByText('admin.scholarship.recordVerdict.factPass')).toBeNull()
+    expect(screen.queryByText('admin.scholarship.recordVerdict.factFail')).toBeNull()
+    expect(screen.queryByRole('group')).toBeNull()
   })
 
-  it('Reject stays greyed, with a visible line, until every fact is recorded', () => {
-    open()
-    fill('not_b40', 'Dummy note', false)
-    expect(submit().disabled).toBe(true)
-    expect(screen.getByTestId('pre-interview-facts-needed').textContent).toBe(`${P}.factsNeeded`)
-    for (const f of FACTS.slice(0, 3)) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
-    expect(submit().disabled).toBe(true)
-    fireEvent.click(screen.getByTestId('pre-interview-income-fail'))
-    expect(submit().disabled).toBe(false)
-    expect(screen.queryByTestId('pre-interview-facts-needed')).toBeNull()
-  })
-
-  it('a Fail asks Why with Other already chosen; the chosen reason is sent; a Pass sends none', async () => {
-    mockApi.rejectBeforeInterview.mockResolvedValue(caseOf() as never)
-    open()
+  it('a fact unrated in the box: the plain red line shows and Reject stays greyed', () => {
+    open(THREE)
     fill('not_b40', 'Dummy note')
-    fireEvent.click(screen.getByTestId('pre-interview-income-fail'))
-    fireEvent.click(screen.getByTestId('pre-interview-academic-fail'))
-    expect(screen.getByTestId('pre-interview-income-why-other').getAttribute('aria-pressed')).toBe('true')
-    fireEvent.click(screen.getByTestId('pre-interview-income-why-proof_missing'))
+    expect(submit().disabled).toBe(true)
+    expect(line()?.textContent).toBe(`${P}.factsNeeded`)
+    // Plain words: not a link, not a button, nothing to press.
+    expect(line()?.tagName).toBe('P')
+    expect(line()?.querySelector('a, button')).toBeNull()
+  })
+
+  it('all four rated in the box: the line goes and Reject is live; un-rate one and both come back', () => {
+    const onDone = open(THREE)
+    fill('not_b40', 'Dummy note')
+    const box = (facts: Marks) => onDone.view.rerender(
+      <Page app={caseOf()} canAssign onDone={onDone} facts={facts} />)
+    box({ ...THREE, income: 'fail' })
+    expect(line()).toBeNull()
+    expect(submit().disabled).toBe(false)
+    box({ ...THREE, income: 'fail', identity: '' })
+    expect(line()).toBeTruthy()
+    expect(submit().disabled).toBe(true)
+  })
+
+  it('"Yes, reject" sends the box as it stands: four facts only, the chosen Why, Other for a Fail without one', async () => {
+    mockApi.rejectBeforeInterview.mockResolvedValue(caseOf() as never)
+    open({ identity: 'pass', academic: 'fail', pathway: 'pass', income: 'fail', overall: 'decline' },
+      { income: 'proof_missing', identity: 'document_false' })
+    fill('not_b40', 'Dummy note')
     fireEvent.click(submit())
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     await waitFor(() => expect(mockApi.rejectBeforeInterview).toHaveBeenCalled())
@@ -165,12 +181,17 @@ describe('the four facts first (F3, I-4)', () => {
     })
   })
 
-  it('an assessment already on the case is pre-filled', () => {
-    open({ officer_verdict: { identity: 'pass', academic: 'pass', pathway: 'pass', income: 'fail',
-      fail_reasons: { income: 'documents_differ' } } })
-    expect(screen.getByTestId('pre-interview-income-fail').getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByTestId('pre-interview-income-why-documents_differ').getAttribute('aria-pressed')).toBe('true')
-    expect(screen.queryByTestId('pre-interview-facts-needed')).toBeNull()
+  it('a fact un-rated in the box while "Are you sure?" shows greys "Yes, reject" and shows the line', () => {
+    const onDone = open()
+    fill('not_b40', 'Dummy note')
+    fireEvent.click(submit())
+    const yes = () => screen.getByRole('button', { name: `${P}.confirmYes` }) as HTMLButtonElement
+    expect(yes().disabled).toBe(false)
+    onDone.view.rerender(<Page app={caseOf()} canAssign onDone={onDone} facts={THREE} />)
+    expect(yes().disabled).toBe(true)
+    expect(line()).toBeTruthy()
+    fireEvent.click(yes())
+    expect(mockApi.rejectBeforeInterview).not.toHaveBeenCalled()
   })
 
   it('the server refusal for unrecorded facts is shown in words', async () => {

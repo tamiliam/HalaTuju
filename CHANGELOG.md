@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Reject before interview uses the Reviewer Assessment box (2026-11-23)
+
+- Owner phone check, 23 Nov: the reject panel no longer draws its own four-fact Pass/Fail (a second copy of the box on the same page). It reads the ONE Reviewer Assessment box. While any fact there is unrated, the panel shows the plain red line "Record Pass or Fail for all four facts before you reject." and Reject (and "Yes, reject") stay greyed; once all four are rated the line goes and Reject is live.
+- Taps in the box save nothing; only "Yes, reject" sends the box's facts and Why reasons, in the same payload as before. The reject path never records a verdict. After a reject, and after Cancel decline, the box reloads from the server's reply.
+- No API change, no migration. The unused "factsTitle" words go from en, ms and ta. The org-admin Guide chapter "Rejecting before interview" and the FAQ follow.
+- Tests: PreInterviewReject.test.tsx, view.actions.test.tsx and AssignAndWitness.preInterviewSlot.test.tsx follow; new view.preInterviewOneBox.test.tsx pins one set of Pass/Fail, the red line and Reject following the box, the payload equal to the box, no recordVerdict, and the reloads.
+
 ### Reviewer "Still to do" list: owner wording and bullet place (2026-11-23)
 
 - Owner phone check, 23 Nov: "Submit your interview findings" now reads "Submit interview findings", and "Write your conclusion" now reads "Write your recommendation" (en; ms and ta follow, for Sol review).

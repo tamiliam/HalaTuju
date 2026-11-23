@@ -146,9 +146,9 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>Can I reject a student <strong>before an interview</strong>?</>,
       a: <>Yes, while the student is at <strong>Awaiting review</strong> and has no reviewer. On the
-        applicant&rsquo;s page, press <strong>Reject before interview</strong>, record <strong>Pass</strong> or
-        <strong> Fail</strong> for each of the four facts first (every Fail asks <em>Why?</em>, with <em>Other</em>
-        already chosen), choose the reason under <em>Why are you
+        applicant&rsquo;s page, fill in the <strong>Reviewer Assessment</strong> box first (<strong>Pass</strong> or
+        <strong> Fail</strong> for each of the four facts; every Fail asks <em>Why?</em>, with <em>Other</em> already
+        chosen; Reject stays greyed until all four are rated), press <strong>Reject before interview</strong>, choose the reason under <em>Why are you
         rejecting?</em> and add the details (confidential, not shared with the student), then confirm. It is recorded as
         <strong> Rejected before interview</strong> and never counts against a reviewer. The decline email waits
         for the quality control hold, and until it goes you can press <strong>Cancel decline</strong> to put the
