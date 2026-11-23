@@ -31,8 +31,8 @@ A row is one person on the document compared with that person's reference:
 
 Definitions (owner: slips are counted, not percentages):
 - Exact number: all 12 digits equal (`nric_match`).
-- Close number: exactly one digit different (substitution); reuse `nric_close` if it means exactly this,
-  otherwise say what it accepts and pin the owner's definition.
+- Close number: exactly one digit changed, dropped or added (owner ruling, 23 Nov 2026, review round 1; this is
+  what `nric_close` accepts, so it is reused).
 - Exact name: the same words, ignoring spacing, word order and the connectors A/P, A/L, BIN, BINTI (and their
   spelled variants already handled in `vision/names.py`).
 - Close name: each word within one letter (two in words of 8+ letters), or one word missing or extra. This
@@ -54,14 +54,16 @@ Row bands:
 
 **Owner rulings, 23 Nov 2026 (later the same evening), which override the table above:**
 - **No number on the document = name alone, as today.** When the certificate (or the reference IC) gives no IC number for a row, the name decides the row: an exact or close name is GREEN and a far name is RED, exactly as the name-only check does now. In production on 23 Nov, 11 of 246 certificates had no child number and 12 had no mother number. The "one value missing = AMBER" line now applies only when the NAME is missing and the number is present.
-- **The ward row on a guardianship letter is always judged on the name alone**, because letters never print the ward's number. The guardian row uses name + IC number.
+- **The ward row on a guardianship letter is always judged on the name alone**, because letters never print the ward's number. The guardian row uses name + IC number. An unread ward name has no say: the guardian row decides (RULED, owner, 23 Nov 2026).
+- **The mononym father fallback's child row** (`relationships._bc_link`) uses the same row score (name + child IC vs the student; no number = the name alone, as today). The father row and the patronymic links are unchanged (owner ruling, 23 Nov 2026, review round 1).
 
 ## Part B: the relationship verdict from two rows (the chip)
 
 The link "this parent is the student's parent" combines the child row and the parent row:
 - Chips have no blue: BLUE shows as AMBER.
 - G+G = G.
-- B+B = G only when both rows carry an exact IC number; otherwise AMBER.
+- B+B = AMBER, always (owner ruling, 23 Nov 2026, review round 1: both names far with both numbers exact is never
+  confirmed; the officer checks).
 - G+B, G+A, A+B, A+A = AMBER.
 - RED + anything = RED.
 - GREY + GREEN = GREY while waiting (the other document is not uploaded, or the read has not run), and AMBER
