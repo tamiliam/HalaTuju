@@ -31,8 +31,9 @@ Brief: `docs/plans/2026-11-23-req78-bc-match-bands-brief.md`. Code: `income_engi
   father's IC number on the certificate equals the number on the income proof (`chain_verified_earner`, #9), that
   proves the parent row, never the child row. The link is the child row scored against a green parent row
   (`match_bands.chained_link`, `identity_checks.chain_link_status`), the same in the chip, the parent IC check and the
-  verdict, including the father fallback and with the TD-390 deferral: a green child row confirms; an amber, blue or
-  grey child row is pending; a red child row stays red.
+  verdict, including the father fallback and with the TD-390 deferral: a green child row confirms; an amber or blue
+  child row is pending (the chain needs a child name that passes, so the child row is never red or grey under it). A
+  link that already matches without the chain (a patronymic father, say) stays a match (review round 3).
 - **The ward row is name alone (owner, later the same evening).** Guardianship letters never print the ward's number;
   the guardian row uses name + number. The ward row uses today's matcher, as above.
 - **An unread ward name: RULED (owner, 23 Nov 2026, review round 1).** Keep as built: an unread ward name has no say and
@@ -48,16 +49,17 @@ Brief: `docs/plans/2026-11-23-req78-bc-match-bands-brief.md`. Code: `income_engi
 - **Effect on decisions (against the name-only decision before #78; mother, guardian and the father fallback's child
   row).** Match → pending (the officer checks by eye): exact name + far number; close name + far number; close name +
   close number; any link made of two BLUE rows. Mismatch → match: a slip-count close name (such as one letter dropped
-  from a 5-letter word, the case-177 shape) beside an exact number. Mismatch → pending: a far name beside an exact or
-  close number (BLUE / AMBER), or a slip-count close name beside a close number (BLUE). Pending → mismatch: a name
+  from a 5-letter word, the case-177 shape) beside an exact number; a child name that only the typed profile name
+  passes beside an exact child number (close name + exact number is green in the owner's table; review round 3).
+  Mismatch → pending: a far name beside an exact or close number (BLUE / AMBER), or a slip-count or typed-only close
+  name beside a close number (BLUE). Pending → mismatch: a name
   unread on either side (the certificate or the reference IC; for example a mother's IC with its number read but not
   its name) beside a far number (the chip already showed red). No number: the link name passes → match and both names
   fail → mismatch, as before; only the typed profile name passes → pending (before: mismatch). The IC-number chain
-  (before: match whatever the child row said): a green child row → match, as before; an amber, blue or grey child row
-  → pending; a red child row → mismatch. That last move is the one place a link that passed before #78 becomes red:
-  the certificate's child is another person (far name and far number; far on one with the other unread; or, with no
-  number printed, a name that neither the link name nor the typed name passes). Nothing else that passes today becomes
-  red.
+  (before: match whatever the child row said): a green child row → match, as before; an amber or blue child row →
+  pending. Under the chain the child row is never red or grey: the chain needs a child name that passes
+  `relationship_name_match` (`_bc_parent_identity`), so that name is never far or unread. Nothing that passes today
+  becomes red.
 - **The owed line says which check failed.** A parent IC red only on its link to the student owes
   `parent_link_mismatch` (mother or guardian) or `parent_name_link_mismatch` (father, brother or sister);
   `parent_ic_person_mismatch` stays for a card that does not match the income documents and comes first when both fail.
