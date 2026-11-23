@@ -61,6 +61,47 @@ Branch f4-ai-score, not pushed. Migration: none. Services: web. Reads and displa
 - **Guide and FAQ:** reviewers no longer see the card; how the score and the five outcomes work; what 0% and below 0% mean (role-org-admin, role-qc, role-reviewer, faq, faq-reviewer).
 - **Debt:** TD-NEW-2 stays (`verdictReliability` and `OverrideSummary` still have no live caller; only `officerCockpit.test.ts` uses them).
 
+### fix: TD-710 review round 3 - lookup work charged while the file opens (2026-11-23)
+
+Branch td710-budget, not pushed. Migration: none. Services: api. offer_parse stays 2.3.2 (unshipped): digest and note updated in place.
+- **Fix (HIGH):** rows walked were charged through `reader.stream`, which pypdf sets only once the file is open, so a broken table size (`0 (x)`) that makes pypdf rebuild the table on open, with every stream saying /Length 1, walked n x n rows for free (16,000 streams: 60.6 s to open at 41 % of the cap; the gate ACCEPTED 8,000). `GateReader` now holds its counted bytes from before the open and charges every row, read and parse through them; an `OverBudget` that pypdf's recovery catches as it opens is raised again when pypdf returns. Gate, this machine, one run: 2,000 streams accepted in 0.23 s (25 % of the cap); 8,000 refused in 1.25 s; 16,000 refused in 1.40 s.
+- **Wording:** the packed-file headroom is restated from measurement: a genuine-shaped file is refused somewhere around 3,500-6,000 packed objects, by shape (`_packed_pdf`: 20 pages, 1,083 objects, 29 %; 40 pages, 2,163, 58 %; 70 pages, 3,783, refused), not at 6,000 annotations or 10,000+ parts. Accepted (finding 3): the nested-object-stream refusal may hit a rare damaged incremental file that reuses a number.
+- **Tests:** a 2,000-stream rebuild file is refused while it opens after fewer than 500 walks (was all 2,000, then opened), and the real gate refuses it; a refusal pypdf swallows as it opens still refuses; a 5-stream rebuild still opens as pypdf opens it.
+
+### fix: TD-710 - cap raised 3x, owner decision 23 Nov (2026-11-23)
+
+Branch td710-budget, rebased on main b95d91a45, not pushed. Migration: none. Services: api. offer_parse stays 2.3.2 (unshipped): digest and note updated in place.
+- **Cap:** `LOOKUP_WORK_BASE` 2e9 to 6e9 and `LOOKUP_WORK_PER_BYTE` 100 to 300; no charge weight changed. Genuine-shaped packed files get 3x the room (20 pages, 1.1k packed objects: 74 % of the first cap, 25 % now); genuine-shaped files from about 3,500-6,000 packed objects, by shape, may be refused (review round 3; 500 pages x 38 links: 3.5x). The owner accepts that a crafted file now holds a reader about 3x longer (this machine, one run: short /Length 1.06 to 3.63 s, huge /Length 0.94 to 2.68 s; token files 0.9-4.9 s over two runs).
+- **Census:** the same 2 of 870 fixture PDFs refused; every page-check output hash identical to round 2 over 848 files; the most any genuine fixture reader used is 2.8 % of the 3x cap (round 2 metering).
+- **Tests:** a 20-page genuine-shaped file packed 100 to an object stream, built in code, is accepted with every reader under 40 % of the cap (29 % measured). The short /Length test now builds 2,000 streams, so the file opens inside the small base and the refusal comes from row walks (at 4,000 it was refused while opening, before any walk); the one-offset test has 120 entries (30 parses under the 3x cap).
+
+### fix: TD-710 review round 2 - object-stream parse metered as it reads, nested object streams refused (2026-11-23)
+
+Branch td710-budget, not pushed. offer_parse stays 2.3.2 (unshipped): digest updated in place.
+- **Metered parse:** every read pypdf makes of an object stream's decoded data is charged as it is made (12,000 a call plus its bytes), through `pypdf._reader.BytesIO`; the round 1 up-front charges (15,000 an entry, 3,000 a decoded byte) are gone. Entries at one offset, or at each bracket of nested arrays, now pay for each re-parse.
+- **Nested object streams** are refused before pypdf parses the outer one.
+- **Not charged:** filter decoding (TD-712) and the cross-reference stream parsed on open.
+- **Open:** synthetic genuine-shaped files with many packed objects (500 pages x 38 links, 15.6 MB) use 10.6x the cap and are refused; owner decision. Round 2 census rerun pending.
+- **Tests:** 4 new in `tests/test_pdf_gate_lookup_work.py` (each fails on 834154f7b); the up-front charge tests removed.
+
+### fix: TD-710 review round 1 - object-stream parse charged by decoded size, OverBudget never swallowed (2026-11-23)
+
+Branch td710-budget, not pushed. Migration: none. Services: api. offer_parse stays 2.3.2 (unshipped): its digest is updated in place.
+- **Object streams:** each decoded byte is charged (3,000 units) before pypdf parses the stream, a /Type given by reference too. Reviewer's probe: 3.6 MB decoded from a 4 KB file, 3.3 s ACCEPTED to 0.02 s refused; 10.8 MB from 11 KB (reviewer: 48.4 s ACCEPTED) to 0.04 s refused.
+- **OverBudget** is a pypdf `LimitReachedError`, so pypdf's non-strict dictionary parser re-raises it instead of swallowing it and keeping a half-read dictionary.
+- **Rename:** `_charge` is `_charge_lookup_work` (one name may not have three homes: test_code_standards).
+- **Census:** the same 2 of 870 fixture PDFs refused before and after; every page-check output hash unchanged over 848 files; the most any genuine reader used is still 156 M units, 7.7 % of its cap (3151 readers over 848 fixture files).
+- **Docs:** decisions.md and TD-710 state the measured time to reach the cap (0.6 s to 3.2 s, by token kind, for crafted 3.6-10.8 MB files (the reviewer's tokens.py; this machine at rest, CPU load 6-8 %, three runs); the slowest are hex strings in a 7.2 MB file, 2.3-3.2 s. One unit is about 0.3 ns of copying but up to about 1 ns of dense parsing, so the earlier 'about 0.6 s' was wrong), the per-upload bound, and that decoding is not charged; new row TD-712 (predictor decode bomb, not fixed).
+- **Tests:** `tests/test_pdf_gate_lookup_work.py` pins the decoded-byte charge, refuses an object-stream parse bomb before any parse (direct and by-reference /Type), and checks OverBudget propagates out of a dictionary value.
+
+### fix: TD-710 - the PDF gate caps pypdf's lookup work (2026-11-23)
+
+Branch td710-budget (first built on TD-702's 90e8768a1), not pushed. Migration: none. Services: api. offer_parse 2.3.1 to 2.3.2 (outcomes for crafted PDFs change; version log entry added).
+- **GateReader:** one lookup-work budget per reader: each byte read (sized or unsized), each read call, each cross-reference row pypdf walks to find a stream's end, each object-stream entry parsed. Cap `LOOKUP_WORK_BASE` (2e9) + `LOOKUP_WORK_PER_BYTE` (100) x the file size, about 0.6 s plus 30 ns a byte; past it, refused. An object stream is parsed once: a number it does not hold is a null at once, as pypdf answers it.
+- **Measured (TD-702 review repro, base 90e8768a1 then this branch):** short /Length x20000 44.8 s ACCEPTED to 0.44 s refused; huge /Length x5000 14.3 s ACCEPTED to 0.57 s refused; object-stream misses x2000 257.6 s to 0.29 s (refused both times). Census over the 870 fixture PDFs: the same 2 refused; worst 2.07 s before, 2.05 s after (back to back, same file); every page-check output hash unchanged. Most lookup work by any genuine reader: 7.7 % of its cap.
+- **Tests:** new `tests/test_pdf_gate_lookup_work.py` (the three shapes built in code, pinned by rows walked, large reads and object-stream parses; genuine-shape controls); parser version assertions read 2.3.2.
+- **Docs:** `docs/technical-debt.md` (TD-710 fixed), `docs/decisions.md`.
+
 ### TD-711 - cockpit tests no longer flake in the cloud build (2026-11-23)
 
 Test only. Migration: none. Services: web (build gate). No behaviour change.
