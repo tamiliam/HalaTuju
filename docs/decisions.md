@@ -10,20 +10,22 @@ has stored `organisation.admin`). Brief: `docs/plans/2026-11-23-m4b-sponsor-cred
   or a team member (never the lead tier) who opens `credits_write` (`sponsors.edit`, stored). The sponsor page reads
   the served `can_record_credit`. Why: the approver has to stay free to countersign; an organisation admin who recorded
   could never approve their own credit (`same_signer`), and a one-admin organisation would be stuck.
-- **Labels come from groups; powers follow the groups a person sits in (owner 24 Nov): the switch decides.** Nobody
-  is permanently a reviewer, an admin or a mentor: a person is a reviewer because they sit in Reviewers, an admin
-  because they sit in Admins, a mentor because they sit in Mentors, and leaving a group drops its label. Sponsors: edit
-  is an Admins switch; a person in two groups holds each group's switches. For Admins the server already reads it so
-  (storing any admin page key IS the Admins seat, `staff_tables.in_admins`). Production has one active person in both
-  Reviewers and Admins (row 9, the default admin powers by O8, stored by migration 0097); under Q-A's key rule they gain
-  record, first-sign and cancel on day one. To undo it, untick their Sponsors: edit on the Admins tab (no code).
-  Pinned by `TestAPersonInReviewersAndAdmins`. ⚠ Open gap, fixed in S6: the stored role `reviewer` / `qc` still
-  seats a person in Reviewers by itself (`staff_tables.REVIEWER_ROLES`), so for Reviewers the label still makes the
-  group, and `would_leave_people` refuses unticking both Review and QC.
-- **A person in no group stays a team member (owner 24 Nov, for S6).** Leaving every group takes away every power
-  but not the membership: the person stays on the Team list, with no access, until they are deleted from it. A
-  delete of someone with past records archives them instead (today's delete-or-archive rule). So the
-  `would_leave_people` refusal goes in S6.
+- **Groups first, switches second (owner 24 Nov).** A person becomes a reviewer, an admin or a mentor by JOINING that
+  group (invited to it or added to it), and stops being one only by LEAVING it. The switches are the powers a group's
+  members may be given: they come after joining, the group's defaults start on (Review, for Reviewers), and any of them
+  may be switched off without the person leaving the group. So membership is never worked out from the switches, and
+  never from the stored role. A person in two groups holds each group's switches; Sponsors: edit is an Admins switch.
+  - **S3 (sponsor credits) is unaffected:** the credit steps read the switches. Production has one active person in
+    both Reviewers and Admins (row 9, the default admin powers by O8, stored by migration 0097); under Q-A's key rule
+    they gain record, first-sign and cancel on day one; to undo it, untick their Sponsors: edit on the Admins tab.
+    Pinned by `TestAPersonInReviewersAndAdmins`.
+  - **Where the code stands:** Mentors already follows the rule (the person's mentor record, on or off,
+    `PartnerAdmin.mentors_now`). Admins and Reviewers do not: `staff_tables.in_admins` seats a person by holding an
+    admin key, and `in_reviewers` by the stored role `reviewer` / `qc` or the Review / QC switch; `would_leave_people`
+    refuses unticking both Review and QC. Stored Admins and Reviewers membership is planned work (programme plan, S6).
+- **A person in no group stays a team member (owner 24 Nov).** Leaving every group takes away every power but not the
+  membership: the person stays on the Team list, with no access, until they are deleted from it. A delete of someone
+  with past records archives them instead (today's delete-or-archive rule).
 - **Q-B, cancel (owner 23 Nov).** Cancel stays on Sponsors: edit only (`credit_steps.may_cancel`, the `credits_write`
   door); Payments: Approve alone does not cancel.
 - **Q-C, the approver (owner 23 Nov).** The organisation admin approves through Organisation admin powers, and anyone
