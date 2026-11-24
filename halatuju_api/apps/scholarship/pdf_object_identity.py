@@ -17,6 +17,7 @@ comments, a SUPERSET of every place either reader could find an object:
    anywhere refuses the file: no one can say which number pdfium gives it.
 3. An /ObjStm stream the cross-reference does not name (pdfium parses it; pypdf never looks) refuses the file.
 4. Every cross-reference row in every section (`pdf_xref_rows`), the rows pypdf ignores or overrides too.
+5. Every /Root and /Encrypt in the raw file names what pypdf's trailer names (`_trailer_key`, round 3).
 Then each lookup pypdf makes, at open and after, is checked (`check`): its number has at most ONE candidate; a
 row-based object sits exactly on that header (only white space or comments before it, as both read it), of
 the same generation; a packed object is in exactly one stream, at the row's own index, and has no raw header;
@@ -40,6 +41,8 @@ _CLEAN_NUM = re.compile(rb'0|[1-9]\d{0,8}')
 _CLEAN_GEN = re.compile(rb'0|[1-9]\d{0,4}')
 _LEAD = re.compile(rb'(?:[' + _WS + rb']|%[^\r\n]*)*')          # what pypdf skips before a header
 _NAME = re.compile(rb'/' + _BARE + rb'*')
+_WATCHED = frozenset((b'/ObjStm', b'/Root', b'/Encrypt'))
+_REF = re.compile(rb'(\d{1,10})[' + _WS + rb']+(\d{1,5})[' + _WS + rb']+R(?!' + _BARE + rb')')
 _BREAK = re.compile(rb'[\r\n]')
 _NUMBERISH = frozenset(b'0123456789+-.')
 _WHITE = frozenset(b'\x00\t\n\x0c\r ')
@@ -92,8 +95,8 @@ class Identity:
                 if _odd_header(data, m.start(), self.breaks, meter):
                     self._refuse('an object header the gate cannot read')
 
-    def _objstm_names(self):
-        """Offsets of every /ObjStm name in the raw file, a #-escaped spelling included."""
+    def _names(self):
+        """(offset, end, name) of every /ObjStm, /Root and /Encrypt name in the raw file, #-escaped spellings too."""
         data, meter = self.data, self.reader._counted
         meter.charge(len(data))
         for m in _NAME.finditer(data):
@@ -104,17 +107,34 @@ class Identity:
                     name = re.sub(rb'#([0-9A-Fa-f]{2})', lambda e: bytes([int(e.group(1), 16)]), name)
                 except ValueError:
                     continue
-            if name == b'/ObjStm':
-                yield m.start()
+            if name in _WATCHED:
+                yield m.start(), m.end(), name
+
+    def _trailer_key(self, end: int, key: bytes) -> None:
+        """Round 3: pdfium, rebuilding, merges EVERY trailer and /XRef stream dictionary it meets, the last in the
+        file winning (probe: a later trailer's /Root is the one it draws), which need not be the one pypdf's chain
+        ends at. So every /Root and /Encrypt in the raw file (strings and streams too) must name what pypdf's
+        trailer names (the same number and generation), and neither may appear where pypdf's trailer has none."""
+        meter, trailer = self.reader._counted, self.reader.trailer
+        want = trailer.raw_get(key.decode()) if key.decode() in trailer else None
+        q = _LEAD.match(self.data, end).end()
+        meter.charge(q - end + _PAIR_WORK)
+        m = _REF.match(self.data, q)
+        if not (m and hasattr(want, 'idnum') and (int(m.group(1)), int(m.group(2))) == (want.idnum, want.generation)):
+            self._refuse('a trailer names another document root' if key == b'/Root'
+                         else 'a trailer names an encryption the gate did not read')
 
     def _build_packed(self) -> None:
         reader, meter = self.reader, self.reader._counted
         self.packed = {}
         self.walk = Walk(self.data, meter)
-        self.walk.run()
+        self.walk.run(reader._startxref)           # the whole chain, from the start both readers take, or refused
         streams = {stm for stm, _ in reader.xref_objStm.values()}
         starts = [at for at, _ in self.owners]
-        for at in self._objstm_names():
+        for at, end, name in self._names():
+            if name != b'/ObjStm':
+                self._trailer_key(end, name)
+                continue
             meter.charge(_WORD_WORK)               # finding 4: the owning header by bisect, not a scan of all
             k = bisect.bisect_right(starts, at) - 1
             if k < 0 or self.owners[k][1] not in streams:
@@ -145,8 +165,9 @@ class Identity:
         and pypdf ignores or overrides included (pdfium keys rows by number, newest wins, any type but 'f' in
         use). Refused: a row type other than n/f (0/1/2 in a stream); rows in use in two generations; a row in
         use not on the one header (or, packed, not the one place the object streams hold it); a free row as new
-        as every row in use; an object pypdf read for a number with no row in use when the whole chain was read
-        (a cross-reference stream's own header excepted)."""
+        as every row in use; an object pypdf read (from a row or packed) for a number the chain has no row in
+        use for, a cross-reference stream's own header excepted (review round 2: the walk always reads the whole
+        chain now; pdfium, following it, finds nothing there)."""
         rows = self.walk.rows.get(num, [])
         self.reader._counted.charge(_PAIR_WORK * (len(rows) + 1))
         if any(kind == '?' for _, kind, _, _ in rows):
@@ -162,7 +183,7 @@ class Identity:
         frees = [rank for rank, kind, _, _ in rows if kind == 'f']
         if used and frees and min(frees) <= min(r[0] for r in used):
             self._refuse('object %d is free in a newer cross-reference row' % num)
-        if not used and not missing and self.walk.complete and num not in self.reader.xref_objStm:
+        if not used and not missing:
             raw = self.headers.get(num, {})
             if not (len(raw) == 1 and next(iter(raw)) in self.walk.heads):
                 self._refuse('object %d has no cross-reference row' % num)
@@ -185,10 +206,12 @@ class Identity:
         if len(raw) + len(packed) > 1:
             self._refuse('object %d has more than one copy' % num)
         if gen == 0 and num in reader.xref_objStm:       # a miss is fine only when no copy exists anywhere
-            # finding 2: the stream AND the row's index. pypdf's rebuild (no chain read) stores a byte offset
-            # there, which pypdf ignores; the walk's rows are then none, and pdfium's rebuild takes the index.
+            # finding 2: the stream AND the row's index. pypdf finds the member by number (it ignores the index);
+            # pdfium follows the chain's row. A (stream, index) that is no row of the chain is pypdf's REBUILT
+            # table's (a byte offset there): the chain's rows, each the one place (`_rows_check`, at least one, in
+            # use), are then what pdfium follows, so the index compared is the one place's (review round 2).
             stm, idx = reader.xref_objStm[num]
-            if not self.walk.complete and packed:
+            if packed and ('p', stm, idx) not in {(k, a, b) for _, k, a, b in self.walk.rows.get(num, [])}:
                 idx = packed[0][1]
             if raw or (packed and packed != [(stm, idx)]) or (not packed) != missing:
                 self._refuse('object %d is not where the cross-reference packs it' % num)   # finding 2: index too

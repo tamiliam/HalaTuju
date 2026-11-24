@@ -616,14 +616,15 @@ class GenuineShapesAreUnchanged(SimpleTestCase):
 
     def test_a_rebuilt_table_with_a_small_object_stream_is_refused_and_its_open_is_metered(self):
         """Gap 2 control: the index scan of a table rebuilt on open is metered and charged well under the cap
-        (pinned with the row walk off); with it on, the first lookup refuses the unreadable table (round 1)."""
+        (pinned with the row walk and its row check off); with them on, the first lookup refuses the unreadable table (round 1)."""
         data = _rebuild_objstm_pdf(b'100 0 101 4 102 8\n(a) (b) (c)', n=3)
         self.assertEqual(_gate(data), (0, 'OverBudget: a cross-reference section the gate cannot read'))
         gate, reads = _metered_reads(lambda: GateReader(data))
         self.assertGreater(len(reads), 0)                             # the index scan is metered, as it opens
         with self.assertRaisesRegex(OverBudget, 'a cross-reference section the gate cannot read'):
             gate.get_object(100)
-        with mock.patch.object(pdf_xref_rows.Walk, 'run', lambda walk: setattr(walk, 'complete', False)):
+        with mock.patch.object(pdf_xref_rows.Walk, 'run', lambda walk, start: None), \
+                mock.patch('apps.scholarship.pdf_object_identity.Identity._rows_check'):
             gate, plain = GateReader(data), PdfReader(io.BytesIO(data))
             self.assertEqual(gate.xref_objStm, plain.xref_objStm)
             self.assertEqual(len(gate.xref_objStm), 3)
