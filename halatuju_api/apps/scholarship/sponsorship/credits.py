@@ -3,10 +3,14 @@ admin-recorded credit is minted.
 
 Moved unchanged out of ``sponsorship.py`` when audit A3.8 (2026-11-10) made it a package.
 """
+import logging
+
 from django.db import transaction
 from django.utils import timezone
 
 from ..models import Donation
+
+logger = logging.getLogger(__name__)
 
 
 class CreditError(Exception):
@@ -148,9 +152,18 @@ def sign_admin_credit(credit, admin, typed_name, expected_status=None):
     # from the SERVICE rather than the endpoint so a shell-driven confirmation notifies too, and
     # imported locally to keep this money module free of a hard dependency on the sending layer.
     # TD-561: the email leaves only after the signature is committed, never while the row lock is held.
-    from .. import sponsor_notify
-    transaction.on_commit(lambda: sponsor_notify.send_credit_confirmed(credit))
+    transaction.on_commit(lambda: _tell_the_donor(credit))
     return credit
+
+
+def _tell_the_donor(credit):
+    """After commit: the confirmation email. The money is already confirmed, so a failure here (the balance
+    read, the send) is logged and never turns the signer's answer into a 500 (adversarial round)."""
+    from .. import sponsor_notify
+    try:
+        sponsor_notify.send_credit_confirmed(credit)
+    except Exception:
+        logger.exception('credit_confirmed email failed for credit %s', credit.pk)
 
 
 #: The credit fields a signature reads and writes, re-read under the row lock (TD-561).
@@ -169,6 +182,9 @@ def _lock(credit, admin):
         lock_actor(admin)
     except PaymentsError as e:
         raise CreditError(e.code) from e
+    org = credit.programme.organisation_id if credit.programme_id else None
+    if org is not None and not admin.is_super and admin.owning_organisation_id != org:
+        raise CreditError('wrong_role')   # adversarial round: moved to another organisation mid-request
     row = Donation.objects.select_for_update().filter(pk=credit.pk).values(*_LOCKED).first()
     if row is None:
         raise CreditError('bad_state')
