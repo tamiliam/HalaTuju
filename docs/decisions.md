@@ -1,5 +1,15 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-24 — LL5 phase A: the coach grade rule, the two floors and the "documents only" switch
+
+Branch ll5, not pushed. Server only; nothing calls it yet.
+
+- **Player and coach.** The player is the model (engine) version, scored in `ai_score` marks. The coach is the learning loop, graded on NEW cases only: each version against the version before it (ordered by each version's first decided instant), each on its own decided cases.
+- **The rule, in this order:** (1) `not_enough` when either side has fewer than 40 marked facts; (2) guard 1, coverage (share of marked facts not shown Unsure) must not drop; (3) guard 2, generous-wrong (share of marked facts shown Certain or Probable that the reviewer failed) must not rise; either guard broken = `fail` whatever the score, naming the guard(s); (4) else `pass` only if the score went up (a tie is not up). The score and both guards are compared as exact fractions (integer cross-multiplication), never as rounded percents; the % shown is still `ai_score.percent`.
+- **Two floors.** A monthly cell (one version, one month in Malaysia time) under 5 marked facts shows only `too_few`: owner ruling, request #69 ("nothing below 5 answers"). The coach floor of 40 is PROVISIONAL, awaiting the owner; it is one constant (`COACH_MIN_FACTS`).
+- **"Documents only" is a parameter, off by default, awaiting the owner.** `leave_out_reasons` (for example `DOCUMENTS_ONLY` = `interview_differs`) leaves each such Fail out of points and best, in the monthly score and the coach grade alike. Off, the result is the plain score.
+- **Where it lives.** A pure module beside `ai_score.py` (`coach_grade.py`): no ORM, no AI call; it imports `ai_score` and `fact_bands` and copies no points table or band rule. A record with no engine version is reported under "unknown version" and never graded. The replay job will import it lazily in a later phase.
+
 ## 2026-11-21 — F2 (fix plan): the AI Prediction band has one home, on the server; I-10 QC floor
 
 Branch fix-f2, not pushed.

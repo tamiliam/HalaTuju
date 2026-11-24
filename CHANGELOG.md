@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### LL5 phase A - monthly score and coach grade, server only (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. Services: api only. Not wired to any page or job yet; reads nothing and changes no outcome.
+- **New pure module** `apps/scholarship/coach_grade.py` (`coach_report`), beside `ai_score.py`. Every mark goes through `ai_score.score_marks`, every % through `ai_score.percent`; no points table or band rule copied. Only decided records count (the module drops any record with no `verdict_decided_at` itself).
+- **Monthly score:** per engine version and month in Malaysia time: points, best, score %, marked facts, not scored, outcome split. A cell under 5 marked facts shows only `too_few`. A record with no engine version goes to an "unknown version" bucket and is never graded.
+- **Coach grade:** each pair of consecutive versions, each on its own decided cases: `not_enough` under 40 marked facts on either side (provisional); `fail` if coverage dropped or generous-wrong rose, whatever the score; else `pass` only if the score went up. Exact fractions, no rounded percents.
+- **"Documents only"** (`leave_out_reasons`, off by default): leaves out each Fail whose reason is `interview_differs`, from points and best alike.
+- **Tests:** `test_coach_grade.py` (27): Malaysian month boundary, both floors at their edges, each guard both ways, exact-fraction ties, order independence, no decider or row id in the output, equality with `ai_score.score_marks`.
+
 ### Degree funding estimate: living costs RM900 a study month (TD-719, 2026-11-24)
 
 Not pushed. Migration: none. Services: api, web.
@@ -43,6 +52,7 @@ Not pushed. Migration: none. Services: api, web.
 - The owner saw Q2 skipped on the STPM quiz: its dot stayed grey and "See My Results" stayed off. After the Q2 answer the page fetches Q3/Q4, then rebuilt the answer list from the render before the tap, which had no Q2 answer, so Q2 was wiped every time. It now keeps Q1/Q2 from the latest answers.
 - Same path: a second quick tap no longer starts a second Q3/Q4 lookup; Next on a phone waits for the lookup; Previous during the lookup is no longer undone by the auto-advance.
 - 4 new tests in `stpm/quiz/page.test.tsx`; all 4 fail on the old page.
+
 ### STR reader accepts "Kekal Kelulusan Asal" as an approval (2026-11-24)
 
 - Case #945: a MySTR Semakan Status page showing "Status Permohonan Semasa: Kekal Kelulusan Asal" (the original approval stays) read no status, so it counted as unreadable and a thinner "Lulus Rayuan" dashboard stayed live over it. The rules reader (`doc_parse._STR_APPROVED`) now knows that exact phrase, in any case and spacing. "Kelulusan" alone (Menunggu, Dalam Proses, Tarikh Kelulusan) is still not an approval; rejections, the engine, the surface ceiling and the keep-better ranking are unchanged. No version bump: the STR reader sits in no registered model's digest (the model-version guard stays green).
