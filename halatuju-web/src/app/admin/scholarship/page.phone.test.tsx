@@ -89,7 +89,7 @@ describe('the case list on a phone (Mobile M6a)', () => {
     expect(list.querySelector('select')).toBeNull()
   })
 
-  it('owner 2026-11-23: "Rejected" plus ONE served chip, on the phone rows and in the table', async () => {
+  it('owner 2026-11-24: a rejected row shows only "Rejected" (no chip); a live row failing the state rule keeps its chip', async () => {
     mockApi.getScholarshipApplications.mockResolvedValue({
       count: 4, total_count: 4, total_pages: 1, page: 1, page_size: 25, next: null, previous: null,
       applications: [
@@ -103,11 +103,11 @@ describe('the case list on a phone (Mobile M6a)', () => {
     const list = await phone()
     await waitFor(() => expect(within(list).getAllByText(/^Pelajar /)).toHaveLength(4))
     const chips = (root: HTMLElement) => within(root).queryAllByTestId('rejection-chip').map((c) => c.textContent)
-    const want = ['admin.scholarship.rejectionChip.before_interview', 'admin.scholarship.rejectionChip.qc',
-                  'admin.scholarship.rejectionChip.state']
+    const want = ['admin.scholarship.rejectionChip.state']
     expect(chips(list)).toEqual(want)
     expect(chips(screen.getByRole('table'))).toEqual(want)
     expect(screen.queryByText('admin.scholarship.statuses.rejected_before_interview')).toBeNull()
+    expect(within(list).getAllByText('admin.scholarship.statuses.rejected')).toHaveLength(3)
   })
 
   it('Sort asks the SERVER for the column and direction the table headers would', async () => {

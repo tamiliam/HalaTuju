@@ -360,7 +360,9 @@ function StaffScholarshipList() {
         <div className="divide-y divide-ground-100 border-y border-ground-100 md:hidden" data-testid="application-cards">
           {apps.map((a) => {
             const s = displayStatus(a)
-            const chip = rejectionChip(a)
+            // owner 2026-11-24: the list shows only "Rejected" on a rejected case; the chip stays on the
+            // case page and on a live case failing the state rule (a warning).
+            const chip = s === 'rejected' ? '' : rejectionChip(a)
             return (
               <div key={a.id} data-app-row>
                 <Link href={`/admin/scholarship/${a.id}`} data-row-link
@@ -470,7 +472,9 @@ function StaffScholarshipList() {
                     {(() => {
                       // A super-reopened decision shows "Reopened", overriding the stored accepted/rejected.
                       const s = displayStatus(a)
-                      const chip = rejectionChip(a)   // owner 2026-11-23: the ONE second chip
+                      // owner 2026-11-24: only "Rejected" on a rejected case; the chip stays on the case page and on a live
+                      // case failing the state rule (a warning).
+                      const chip = s === 'rejected' ? '' : rejectionChip(a)
                       return <span className="inline-flex flex-wrap gap-1">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone(s)}`}>{t(statusLabelKey(s))}</span>
                         {chip && <span data-testid="rejection-chip" className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone('rejected')}`}>{t(chip)}</span>}

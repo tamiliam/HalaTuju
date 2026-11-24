@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: case list shows only Rejected, no second chip (TD-715, 2026-11-24)
+
+- The admin case list (phone cards and desktop table) now shows only "Rejected" on a rejected case; the second red chip (need, merit, before interview and so on) is gone from the list.
+- The chip stays on the case page header, and on a live case failing the state rule (a warning). Tests in `page.phone.test.tsx` pin both.
+
 ### Academic box: standard slots for every route (2026-11-24)
 
 - The admin case page's Academic card now uses one slot layout for SPM, STPM, Matriculation, Asasi and Diploma: Secondary school (renamed from School) and Merit score, with the exam and its year in a grey line under the merit (SPM year from the slip, STPM year from the higher-results document, Matriculation/Asasi/Diploma the name only); a Pre-U institution row for Matriculation/Asasi/Diploma; one CGPA slot and MUET after SPM; STPM grades (STPM only) and SPM grades / SPM prerequisites; then Chosen programme, Reporting date and Institution, with a grey "Stated by student" line when no offer letter confirms the value. A required slot with no value reads N/A in a muted colour; the reporting date always shows. "Diploma from", "Results held", "CGPA as printed" and the co-curriculum line are gone (their i18n keys removed). One column on phones, two from the small breakpoint.
