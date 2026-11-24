@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Case page: Estimated need moves above Reviewer Assessment (2026-11-24, TD-720)
+
+- Owner ask: the Estimated need & proposed bursary card now sits ABOVE the Reviewer Assessment
+  card at every stage, so the assessment sits right next to the Recommendation box.
+- One component renders both cards (`RateAndEstimate.tsx`), so one move covers every stage.
+  No show/hide rule changed. New test `view.cardOrder.test.tsx` pins the order.
+
 ### fix: locked notes card says No notes recorded (TD-717, 2026-11-24)
 
 - When the review is finished and there are no notes, the Org admin and reviewer notes card now says "No notes recorded."; while notes can still be added it keeps "No notes yet.". New key `reviewerNotes.emptyClosed` (ms and ta are best-effort, awaiting translation review).

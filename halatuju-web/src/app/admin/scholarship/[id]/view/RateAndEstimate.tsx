@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * THE RIGHT COLUMN ABOVE THE DECISION — the officer's Pass/Fail over the AI's four-fact read,
- * the estimated need and proposed bursary, and the by-hand reporting date for an offer letter
- * that carries none.
+ * THE RIGHT COLUMN ABOVE THE DECISION — the estimated need and proposed bursary, then the
+ * officer's Pass/Fail over the AI's four-fact read, and the by-hand reporting date for an offer
+ * letter that carries none. (Estimate moved above the Pass/Fail box: owner 2026-11-24, TD-720.)
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was. The
  * Decision / Recommendation panel BELOW these did NOT move: untangling it is design work, not a
@@ -45,6 +45,70 @@ export function RateAndEstimate({
   doSetReportingDate: () => void
 }) {
   return (<>
+
+      {/* Estimated need sits ABOVE Reviewer Assessment at every stage (owner 2026-11-24,
+          TD-720), so the assessment sits next to the Recommendation below it. */}
+      {/* ── Estimated need & proposed bursary — per-pathway estimated GAP after government
+           coverage, PLUS the proposed bursary amount (moved out of the old Decision card). ── */}
+      {(() => {
+        const fe = app.funding_estimate
+        const showBursary = app.award_amount != null || app.proposed_award_amount != null
+        // Hidden at shortlisted (pre-submission): a projection with no decision attached —
+        // the bursary figure is set at the verdict.
+        if (!showsEstimateCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, rejectionCategory: app.rejection_category })) return null
+        if (!fe && !showBursary) return null
+        return (
+          <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
+            <h2 className="font-semibold">{t('admin.scholarship.estimate.title')}</h2>
+            {fe ? (fe.known ? (
+              <>
+                {/* Total + its monthly breakdown are one tight unit — grouped so the card's
+                    space-y doesn't push them apart. */}
+                <div>
+                  <p className="text-2xl font-semibold text-ground-900">
+                    ≈ RM {fe.total.toLocaleString('en-US')}
+                  </p>
+                  <p className="text-xs text-ground-500">
+                    {/* A degree counts STUDY months (10 a year), not calendar months. */}
+                    ~RM {fe.monthly.toLocaleString('en-US')}/{t('admin.scholarship.estimate.month')} × {fe.months} {t(fe.study_months ? 'admin.scholarship.estimate.studyMonths' : 'admin.scholarship.estimate.months')}
+                  </p>
+                </div>
+                <p className="text-sm text-ground-600">
+                  {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
+                </p>
+                {fe.continuing && (
+                  <p className="text-xs text-ground-500">{t('admin.scholarship.estimate.continuingNote')}</p>
+                )}
+                {fe.variable && (
+                  <p className="mt-2 text-xs text-caution-700">{t('admin.scholarship.estimate.variableNote')}</p>
+                )}
+                {fe.practical && (
+                  <p className="mt-1 text-xs text-ground-500">{t('admin.scholarship.estimate.practicalNote')}</p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-ground-500">{t('admin.scholarship.estimate.none')}</p>
+            )) : null}
+            {/* Standard bursary — FIXED by pathway type (RM2k · RM3k STPM · RM1k continuing STPM),
+                the same figure for everyone incl. a likely-declined student. No slider: the amount
+                is not a reviewer choice (award.py). Prefer the committed award_amount, else the
+                pathway figure. A confident disqualifier no longer zeroes it — it shows as a red
+                fact in Rate AI verification instead. */}
+            {(() => {
+              const amt = app.award_amount != null
+                ? Math.round(Number(app.award_amount))
+                : (app.proposed_award_amount != null ? Math.round(Number(app.proposed_award_amount)) : null)
+              if (amt == null) return null
+              return (
+                <div className="flex items-center justify-between border-t pt-3 text-sm">
+                  <span className="font-medium text-ground-600">{t('admin.scholarship.recordVerdict.assistanceLabel')}</span>
+                  <span className="font-semibold text-ground-900">RM{amt.toLocaleString()}</span>
+                </div>
+              )
+            })()}
+          </div>
+        )
+      })()}
 
       {/* ── Rate AI verification — the officer's Pass/Fail over the AI's four-fact read +
            the AI's suggested verdict. Split out of the old Decision card (2026-07-04) into its
@@ -160,68 +224,6 @@ export function RateAndEstimate({
         })()}
       </div>
       )}
-
-      {/* ── Estimated need & proposed bursary — per-pathway estimated GAP after government
-           coverage, PLUS the proposed bursary amount (moved out of the old Decision card). ── */}
-      {(() => {
-        const fe = app.funding_estimate
-        const showBursary = app.award_amount != null || app.proposed_award_amount != null
-        // Hidden at shortlisted (pre-submission): a projection with no decision attached —
-        // the bursary figure is set at the verdict.
-        if (!showsEstimateCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, rejectionCategory: app.rejection_category })) return null
-        if (!fe && !showBursary) return null
-        return (
-          <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
-            <h2 className="font-semibold">{t('admin.scholarship.estimate.title')}</h2>
-            {fe ? (fe.known ? (
-              <>
-                {/* Total + its monthly breakdown are one tight unit — grouped so the card's
-                    space-y doesn't push them apart. */}
-                <div>
-                  <p className="text-2xl font-semibold text-ground-900">
-                    ≈ RM {fe.total.toLocaleString('en-US')}
-                  </p>
-                  <p className="text-xs text-ground-500">
-                    {/* A degree counts STUDY months (10 a year), not calendar months. */}
-                    ~RM {fe.monthly.toLocaleString('en-US')}/{t('admin.scholarship.estimate.month')} × {fe.months} {t(fe.study_months ? 'admin.scholarship.estimate.studyMonths' : 'admin.scholarship.estimate.months')}
-                  </p>
-                </div>
-                <p className="text-sm text-ground-600">
-                  {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
-                </p>
-                {fe.continuing && (
-                  <p className="text-xs text-ground-500">{t('admin.scholarship.estimate.continuingNote')}</p>
-                )}
-                {fe.variable && (
-                  <p className="mt-2 text-xs text-caution-700">{t('admin.scholarship.estimate.variableNote')}</p>
-                )}
-                {fe.practical && (
-                  <p className="mt-1 text-xs text-ground-500">{t('admin.scholarship.estimate.practicalNote')}</p>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-ground-500">{t('admin.scholarship.estimate.none')}</p>
-            )) : null}
-            {/* Standard bursary — FIXED by pathway type (RM2k · RM3k STPM · RM1k continuing STPM),
-                the same figure for everyone incl. a likely-declined student. No slider: the amount
-                is not a reviewer choice (award.py). Prefer the committed award_amount, else the
-                pathway figure. A confident disqualifier no longer zeroes it — it shows as a red
-                fact in Rate AI verification instead. */}
-            {(() => {
-              const amt = app.award_amount != null
-                ? Math.round(Number(app.award_amount))
-                : (app.proposed_award_amount != null ? Math.round(Number(app.proposed_award_amount)) : null)
-              if (amt == null) return null
-              return (
-                <div className="flex items-center justify-between border-t pt-3 text-sm">
-                  <span className="font-medium text-ground-600">{t('admin.scholarship.recordVerdict.assistanceLabel')}</span>
-                  <span className="font-semibold text-ground-900">RM{amt.toLocaleString()}</span>
-                </div>
-              )
-            })()}
-          </div>
-        )
-      })()}
 
       {/* ── Reporting date — directly ABOVE Recommendation (owner 2026-07-23) so the reviewer
             meets the empty field while deciding, and most cases are settled before they ever
