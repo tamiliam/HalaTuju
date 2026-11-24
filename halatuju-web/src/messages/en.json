@@ -4302,6 +4302,7 @@
       "reviewerNotes": {
         "title": "Org admin and reviewer notes",
         "empty": "No notes yet.",
+        "emptyClosed": "No notes recorded.",
         "addLabel": "Add a note",
         "placeholder": "What should the reviewer look into?",
         "counter": "{count} / {max}",

@@ -4302,6 +4302,7 @@
       "reviewerNotes": {
         "title": "Nota pentadbir organisasi dan penyemak",
         "empty": "Belum ada nota.",
+        "emptyClosed": "Tiada nota direkodkan.",
         "addLabel": "Tambah nota",
         "placeholder": "Apakah yang patut diteliti oleh penyemak?",
         "counter": "{count} / {max}",

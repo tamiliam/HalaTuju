@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: locked notes card says No notes recorded (TD-717, 2026-11-24)
+
+- When the review is finished and there are no notes, the Org admin and reviewer notes card now says "No notes recorded."; while notes can still be added it keeps "No notes yet.". New key `reviewerNotes.emptyClosed` (ms and ta are best-effort, awaiting translation review).
+
 ### fix: case page hides the estimated need box after an interview rejection (TD-716, 2026-11-24)
 
 - The "Estimated need & proposed bursary" card no longer shows on a case rejected after an interview (`interview` or `contractual` category, from served data). A reopened case and every live case keep it. Display only; no money calculation changed.

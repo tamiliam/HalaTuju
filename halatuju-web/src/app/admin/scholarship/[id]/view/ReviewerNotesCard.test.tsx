@@ -147,6 +147,18 @@ describe('QC (a reader)', () => {
     expect(screen.getByText(`${P}.empty`)).toBeTruthy()
   })
 
+  it('TD-717: locked (finished) with no notes says No notes recorded; open says No notes yet', async () => {
+    get.mockResolvedValue(payload({ notes: [], window_open: false, reason: 'finished', can_add: false }))
+    const { unmount } = mount()
+    expect(await screen.findByText(`${P}.emptyClosed`)).toBeTruthy()
+    expect(screen.queryByText(`${P}.empty`)).toBeNull()
+    unmount()
+    get.mockResolvedValue(payload({ notes: [], window_open: false, reason: 'not_yet', can_add: false }))
+    mount()
+    expect(await screen.findByText(`${P}.empty`)).toBeTruthy()
+    expect(screen.queryByText(`${P}.emptyClosed`)).toBeNull()
+  })
+
   it('the box follows the server, not the role', async () => {
     get.mockResolvedValue(payload({ can_add: false }))
     mount()
