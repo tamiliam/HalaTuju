@@ -414,10 +414,11 @@ class TheOtherLayerReaders(SimpleTestCase):
         self.assertTrue(layered(DRAWN))
 
     def test_spm_cert_reader_never_reads_a_hidden_page_1s_own_characters(self):
-        # No pre_words (e.g. the Vision read failed): pdfium's text page would hold the invisible text.
+        # No pre_words (e.g. the Vision read failed): pdfium's text page holds the invisible text, but since
+        # OCR-20 review round 1 the words op runs the paint check on its own page and refuses it (two locks).
         from apps.scholarship import spm_cert_parse
         real = spm_cert_parse._pdf_words
-        self.assertTrue(real(HIDDEN))          # the premise: pdfium does see the hidden characters
+        self.assertEqual(real(HIDDEN), [])
         with patch.object(spm_cert_parse, '_pdf_words', wraps=real) as spy:
             self.assertIsNone(spm_cert_parse.parse_spm_cert('', None, HIDDEN))
             self.assertIsNone(spm_cert_parse.parse_spm_cert('', None, HIDDEN_FIRST))

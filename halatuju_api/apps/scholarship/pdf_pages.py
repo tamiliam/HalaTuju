@@ -403,13 +403,16 @@ def _layer_read(data: bytes, per_page: int = 0, opened: Optional[list] = None) -
         texts = tuple((reader.pages[i].extract_text() or '') if v == DRAWN else '' for i, v in zip(pages, seen))
     except Exception as e:  # noqa: BLE001 — a corrupt PDF has no text layer; logged, the caller falls back to OCR
         logger.warning('PDF text-layer extraction failed: %s', e)
-        return _LayerRead(n, visible, seen, None)
+        return _LayerRead(n, visible and not reader._counted.refused, seen, None)
     try:
         oc_off = _doc_may_switch_off(reader)
     except Exception:  # an unreadable optional-content dictionary may switch anything off
         oc_off = True
     flipped = pdf_pdfium_check.hidden_pages(data, n, {i: t for i, t, v in zip(pages, texts, seen) if v == DRAWN},
                                             oc_off, reader)
+    if reader._counted.refused:           # OCR-20 r1: refused by the gate's meter (a pypdf path may have swallowed it)
+        logger.warning('PDF text layer refused: %s', reader._counted.refused)
+        return _LayerRead(n, False, seen, ('',) * len(seen))
     if flipped:
         logger.warning('PDF text that pdfium does not paint: %d page(s)', len(flipped))
         seen = tuple(HIDDEN if i in flipped else v for i, v in zip(pages, seen))
@@ -455,8 +458,9 @@ def _layer_memo_clear() -> None:
 
 def first_page_drawn(data: bytes) -> bool:
     """True only when the PDF's text is usable at all (`_LayerRead.visible`: page 1 drawn, the walk within
-    budget) — exactly when `pdf_text_layer` may return text. The one case where a reader of page 1's own
-    characters (`spm_cert_parse._pdf_words`) sees what the page shows."""
+    budget, pdfium agreeing, the gate's meter never refused) — exactly when `pdf_text_layer` may return text. Then
+    a reader of page 1's own characters (`spm_cert_parse._pdf_words`) may read them; the ``words`` op checks the page
+    again on its own (`pdfium_worker._op_words`, OCR-20 r1)."""
     return _layer(data).visible
 
 

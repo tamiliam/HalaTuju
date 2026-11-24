@@ -14,7 +14,11 @@ b. any TEXT object, or a form object holding it, carries a marked-content mark n
    its free layer. An /OCMD, a /Usage, an unreadable mark: hidden;
 c. pypdf extracted letters or digits from the page but pdfium finds NO text object on it at all;
 d. pdfium cannot open the PDF, sees another page count, fails on the page, or the document's pages hold
-   more than `MAX_OBJECTS` page objects between them.
+   more than `MAX_OBJECTS` page objects between them;
+OCR-20: e. pdfium lists an annotation that is not a /Link with no /AP (`pdfium_worker._plain_link`);
+OCR-20 review round 1: f. pypdf's text of the page is blank but pdfium places a text object on it (the two read
+   different /Contents). Every judged page is asked, a blank one too: before round 1 a blank page was skipped, so a
+   page that pypdf read as blank with one plain /Link was never checked by pdfium at all.
 
 Fix round 8: the pdfium part runs in `pdfium_worker` (a child process, killed at its time limit: `pdfium_run.TIMEOUT_S`
 and, round 9, the document's `pdfium_run.DOC_BUDGET_S` left).
@@ -39,8 +43,8 @@ def hidden_pages(data: bytes, page_count: int, judged: dict, oc_may_be_off: bool
     their text (a-d above; e, fix round 6: a page outside `pdf_pdfium_load`'s whitelist). ``reader`` (fix round
     6): pypdf's reader of ``data``; EVERY judged page must first pass `pdf_pdfium_load.load_check` (its resources
     whitelisted and charged) or it is hidden and pdfium never loads it — fix round 8: a page whose pypdf text is
-    blank too, since a later reader (the SPM word boxes) may still load it. Only a page with text is then given to
-    pdfium (a blank page has nothing to use). ALL of those are hidden when pdfium cannot open the PDF, sees another
+    blank too, since a later reader (the SPM word boxes) may still load it. Every page that passes is then given to
+    pdfium (OCR-20 r1: a blank one too, rule f). ALL of those are hidden when pdfium cannot open the PDF, sees another
     page count, or its child process fails or runs past its time limit, or the document has spent its pdfium budget
     (`pdfium_run`) — never the hidden text.
     ``oc_may_be_off``: the document's optional-content configuration may switch a layer off
@@ -52,11 +56,13 @@ def hidden_pages(data: bytes, page_count: int, judged: dict, oc_may_be_off: bool
             load_check(reader.pages[i], reader, state)
         except Exception:  # outside the whitelist or past the load budget: hidden, never loaded
             hidden.add(i)
-    wanted = {i: any(c.isalnum() for c in t) for i, t in judged.items()
-              if t and not t.isspace() and i not in hidden}
+    # OCR-20 r1: EVERY judged page goes to pdfium, a blank one too (pypdf and pdfium may read different /Contents
+    # or /Annots); a page whose pypdf text is blank is hidden when pdfium places any text object on it (rule f).
+    wanted = {i: (any(c.isalnum() for c in t or ''), not (t or '').strip()) for i, t in judged.items()
+              if i not in hidden}
     if not wanted:
         return hidden
-    answer = pdfium_run.ask(data, [{'op': 'paints', 'pages': [[i, a] for i, a in sorted(wanted.items())],
+    answer = pdfium_run.ask(data, [{'op': 'paints', 'pages': [[i, *a] for i, a in sorted(wanted.items())],
                                     'count': page_count, 'oc_off': bool(oc_may_be_off), 'max_objects': MAX_OBJECTS,
                                     'plain': _PLAIN_OCG_PARAMS}])
     if answer is None:                      # the child failed or was killed: undecidable is hidden

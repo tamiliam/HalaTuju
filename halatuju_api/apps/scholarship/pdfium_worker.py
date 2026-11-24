@@ -57,10 +57,12 @@ class _OverObjects(Exception):
     pass
 
 
-def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list, plain: frozenset) -> bool:
+def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list, plain: frozenset,
+            blank: bool = False) -> bool:
     """True when every text object pdfium places on the page paints, outside optional content, and (when pypdf
     found letters or digits there) pdfium places at least one text object. OCR-20: and every annotation pdfium
-    lists on the page is a /Link with no /AP (`_plain_link`; each charged one object)."""
+    lists on the page is a /Link with no /AP (`_plain_link`; each charged one object). Review round 1: ``blank``
+    (pypdf's text of the page is blank): pdfium must place NO text object at all."""
     import pypdfium2.raw as raw
     page = pdf[index]
     try:
@@ -86,7 +88,7 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
                 kind = raw.FPDFPageObj_GetType(obj)
                 if kind == raw.FPDF_PAGEOBJ_TEXT:
                     texts += 1
-                    if (under_oc or _oc_marked(obj, oc_may_be_off, plain)
+                    if (blank or under_oc or _oc_marked(obj, oc_may_be_off, plain)
                             or raw.FPDFTextObj_GetTextRenderMode(obj) not in DRAWN_MODES):
                         return False
                 elif kind == raw.FPDF_PAGEOBJ_FORM:
@@ -137,13 +139,13 @@ def _mark_text(call, mark, *index):
 
 def _op_paints(pdf, req, blobs):
     """{hidden: [page index, ...]}: every judged page pdfium does not paint in full, or cannot judge."""
-    pages = [(int(i), bool(a)) for i, a in req['pages']]
+    pages = [(int(p[0]), bool(p[1]), len(p) > 2 and bool(p[2])) for p in req['pages']]   # [index, has_alnum, blank]
     if len(pdf) != req['count']:
-        return {'hidden': [i for i, _ in pages]}
+        return {'hidden': [p[0] for p in pages]}
     budget, hidden, plain = [int(req['max_objects'])], [], frozenset(req['plain'])
-    for i, has_alnum in pages:
+    for i, has_alnum, blank in pages:
         try:
-            if not _paints(pdf, i, has_alnum, bool(req['oc_off']), budget, plain):
+            if not _paints(pdf, i, has_alnum, bool(req['oc_off']), budget, plain, blank):
                 hidden.append(i)
         except MemoryError:  # the whole child stops (`OUT_OF_MEMORY`): every judged page is then hidden
             raise
@@ -289,8 +291,24 @@ def _op_stack(pdf, req, blobs):
     return {'png': len(blobs) - 1}
 
 
+#: Page objects the ``words`` op walks on page 1 (forms included) before it reads a word (as `_op_paints`' cap).
+WORDS_MAX_OBJECTS = 20_000
+
+
 def _op_words(pdf, req, blobs):
-    """{words: [...]}: page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points)."""
+    """{words: [...]}: page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points).
+    OCR-20 review round 1, its own backstop: NO words (``refused``) unless page 1 passes `_paints` strictly — every
+    annotation a /Link with no /AP, every text object (forms' too) in a mode that paints (never 3 / 7) and under no
+    optional-content mark at all (any OC mark may be off), within `WORDS_MAX_OBJECTS`. The whole page is refused,
+    not its hidden characters dropped: pdfium's text page (pypdfium2 4.30) does not say which object drew a character."""
+    try:
+        drawn = len(pdf) > 0 and _paints(pdf, 0, True, True, [WORDS_MAX_OBJECTS], frozenset())
+    except MemoryError:
+        raise
+    except Exception:            # a page pdfium cannot judge gives no words
+        drawn = False
+    if not drawn:
+        return {'words': [], 'refused': True}
     page = pdf[0]
     height, tp = page.get_height(), page.get_textpage()
     out, cur = [], []

@@ -116,13 +116,13 @@ def _xref_stream_pdf(n: int) -> bytes:
     return bytes(out)
 
 
-def _clamped_index_pdf(pairs: int, dup_keys: int = 0) -> bytes:
+def _clamped_index_pdf(pairs: int) -> bytes:
     """Gap 3: one cross-reference stream whose /Index adds ``pairs`` pairs ``0 9`` past its 5 rows, each of which
-    pypdf clamps with a logger warning (_reader.py:1385); the catalog repeats a key ``dup_keys`` times, a warning
-    each (generic/_data_structures.py:704)."""
+    pypdf clamps with a logger warning (_reader.py:1385). (A catalog key named twice once added a warning each; since
+    OCR-20 review round 1 the gate refuses the file at the first one, test_ocr20_dup_keys.)"""
     out = bytearray(b'%PDF-1.5\n')
     offs = []
-    for body in (b'<< /Type /Catalog /Pages 2 0 R' + b' /X 1' * dup_keys + b' >>',
+    for body in (b'<< /Type /Catalog /Pages 2 0 R >>',
                  b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
                  b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>'):
         offs.append(len(out))
@@ -527,7 +527,7 @@ class HostileLookupsAreBounded(SimpleTestCase):
                 return real(*args, **kwargs)
             return warn
 
-        data = _clamped_index_pdf(500, dup_keys=200)
+        data = _clamped_index_pdf(700)
         keep = Keep(logging.DEBUG)
         log = logging.getLogger('pypdf')
         log.addHandler(keep)

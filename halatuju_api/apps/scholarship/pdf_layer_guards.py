@@ -254,6 +254,8 @@ class GateReader(PdfReader):
         """The budget covers file reads, rows walked and pypdf's BytesIO copies while it opens the file (round 3,
         gap 2; `_PARSING` names this reader for the open). pypdf catches broad exceptions in some recovery paths
         (_reader.py:1237, :1339), so an `OverBudget` raised in there is raised again here, whatever pypdf did."""
+        from .pdf_dict_keys import install
+        install()                                   # OCR-20 r1: a dictionary key named twice refuses the file
         self._headers = self._identity = None
         self._objstm_done = set()
         self._counted = _CountedBytes(data)

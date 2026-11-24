@@ -13,7 +13,10 @@ annotation it lists is a /Link with no /AP — the one kind that paints nothing.
 or non-dictionary entry, /Annots that is not an array (direct or indirect), and /Annots on any /Parent of the
 page (neither reader inherits it today; a viewer may). The /Annots read goes through the `GateReader` (metered),
 and the number of annotations is charged to the document budget BEFORE any entry is read. pdfium checks the same
-rule on its own reading of each judged page (`pdfium_worker._plain_link`), so a disagreement is hidden too.
+rule on its own reading of each judged page (`pdfium_worker._plain_link`), a page pypdf reads as blank too
+(review round 1, 25 Nov: blank pages were skipped, so a page naming /Annots twice — pypdf keeps the first, pdfium
+the last — kept a plain /Link to the gate and a sticker to pdfium). A key named twice now refuses the whole file
+(`pdf_dict_keys`).
 """
 from pypdf.generic import ArrayObject, DictionaryObject, NameObject, NullObject
 
