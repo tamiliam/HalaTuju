@@ -151,9 +151,12 @@ class TheLaneOn(SimpleTestCase):
                     self.assertEqual(why.get('reason'), 'not_inked')
 
     def test_a_note_annotation_refuses_the_page(self):
-        ex, why = _read(build('note'))
-        self.assertIsNone(ex)
-        self.assertEqual(why['ink_missing'], ['page:annots'])
+        """OCR-20: the note hides the page's text layer before any lane runs; the ink check still flags it."""
+        data = build('note')
+        self.assertEqual(pdf_pages.pdf_text_layer(data), '')
+        self.assertIsNone(_read(data)[0])
+        from apps.scholarship import pdf_ink
+        self.assertIs(pdf_ink.page1_ink(data)['annots_ok'], False)
 
     def test_no_answer_from_the_child_is_no_lock(self):
         real = pdfium_run.ask
@@ -328,7 +331,13 @@ class TheReviewRound1Attacks(SimpleTestCase):
                     self.assertIn(label, why.get('ink_missing') or [], why)
 
     def test_a_link_drawing_its_own_appearance(self):
-        self._refused(build_r1('linkap'), 'p9')        # pdfium draws the white box: no ink under it
+        """pdfium draws the link's white box. OCR-20: a /Link with /AP hides the text layer before the lane; the
+        ink check flags the annotation too."""
+        data = build_r1('linkap')
+        self.assertEqual(pdf_pages.pdf_text_layer(data), '')
+        self.assertIsNone(_read(data)[0])
+        from apps.scholarship import pdf_ink
+        self.assertIs(pdf_ink.page1_ink(data)['annots_ok'], False)
 
     def test_optional_content_and_xfa(self):
         for mode, label in (('ocimage', 'page:optional'), ('xfa', 'page:xfa')):

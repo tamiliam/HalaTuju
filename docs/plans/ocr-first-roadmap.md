@@ -88,7 +88,7 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 | OCR-9 | The ink check (a matched word must show real ink) and the Asasi rule | S-visible 2 | Live 23 Nov 21:00 |
 | OCR-10 | SPM slips off 2.5 | S5 | Live 23 Nov 21:00 |
 | OCR-11 | An all-empty AI answer means "cannot read" | Blank-gap 1 | Live 23 Nov 21:00 (debt TD-701 follows) |
-| OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | Parked 21 Nov after review round 4; UNPARKED 23 Nov (owner), new design; BUILT 24 Nov on branch ocr-12-gate (one object per number, owner: strict; census refuses 7 of 870, the 5 new ones go to Vision); awaits review round 1 |
+| OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | BUILT 24 Nov; 3 review rounds + owner-chosen fixes (0x80/0xff white space, '#' name escapes); census 12 of 870 to Vision; head 289953f4b, awaits landing |
 | OCR-13 | The next four universities | S2 | To build |
 | OCR-14 | The remaining public universities | S3 | To build |
 | OCR-15 | The parent IC | S7 | To build |
@@ -96,20 +96,22 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 | OCR-17 | The remaining 2.5 cascade tails | S9 | To build |
 | OCR-18 | Switch on the rules lanes that pass Gate 1 (UMS first, then TNB and EPF) | (lane switch) | Added 23 Nov (owner: unpause); runs after OCR-12 |
 | OCR-19 | PISMP offer letters, rules first | (deferred in S2) | Added 23 Nov (owner: unpark); runs after OCR-14 |
+| OCR-20 | Annotations painting over text (the "sticker" gap) | OCR-12 review round 2 | Added 24 Nov (owner: new item, after OCR-12, before OCR-18 step 1) |
 
-OCR-18 and OCR-19 were added on 23 Nov, so their numbers do not show their run order. The run order below does.
+OCR-18 and OCR-19 were added on 23 Nov, and OCR-20 on 24 Nov, so their numbers do not show their run order. The run order below does.
 
 ### Run order from 23 Nov (owner: unpark and unpause everything, 23 Nov)
 
 1. **TD-702** (the PDF gate counts pypdf's whole-file searches). Built, reviewed twice, full suite green. Live 23 Nov 21:00 (owner yes).
 2. **TD-710** (three more crafted PDF shapes: one lookup-work budget in `GateReader`). Building. Adversarial review and a census before and after. Same code and same risk as TD-702, so it goes first (lead, 23 Nov).
 3. **OCR-12** (unparked). The new design builds on TD-702 and TD-710's `GateReader`, not on the round-4 rebuild walk: a number the gate uses must resolve to one object only, and that rule is charged against the same lookup budget. Round 4's repros (B1 shapes) are its first tests. A fresh limit of 3 review rounds. It must land before any lane goes on, because a hidden object is how a doctored letter could pass a rules lane.
-4. **OCR-18, step 1: the UMS lane on.** Gate 1 is already met on held-out letters (22 of 33 locked, 100% agreement, 0 wrong; the threshold is 20 letters). Re-run the dry run on main first. Then `OCR_FIRST_LANES=ua:UMS` on the api (`--update-env-vars`) in its own release-train batch, with the owner's yes and a phone check: one UMS offer reads "Exact" with the right course, one non-UMS letter is unchanged. The lead sets the variable; the OCR lane never does.
-5. **TD-701 and the OCR-9 spacing notes** (small; one builder; they can run beside OCR-18).
-6. **OCR-18, step 2: the TNB and EPF lanes.** Each lane goes on only if its dry run passes Gate 1 (at least 20 held-out documents, 98% agreement, 0 wrong). A lane short of 20 stays off and is listed with its count.
-7. **OCR-13**, then **OCR-14**. Each new lane goes on at the end of its sprint if it passes Gate 1, in the same way as step 4.
-8. **OCR-19** (PISMP offer letters). The same method as the universities: the owner's exact words from 5 sample letters, then the layout reader, then Gate 1. If fewer than 20 letters exist, it ships with the lane off and a monthly count line.
-9. **OCR-15**, **OCR-16**, **OCR-17**, as planned.
+4. **OCR-20** (the "sticker" gap, found in OCR-12 review round 2). An annotation is drawn over the page, so text under it may not be what the reader sees. Owner's strict rule: a page whose `/Annots` holds anything but a `/Link` with no `/AP` has no exact text layer, so it goes to the pictures (Vision). Read through the metered `GateReader`. Adversarial review before landing. It must land before any lane goes on, for the same reason as OCR-12.
+5. **OCR-18, step 1: the UMS lane on.** Gate 1 is already met on held-out letters (22 of 33 locked, 100% agreement, 0 wrong; the threshold is 20 letters). Re-run the dry run on main first. Then `OCR_FIRST_LANES=ua:UMS` on the api (`--update-env-vars`) in its own release-train batch, with the owner's yes and a phone check: one UMS offer reads "Exact" with the right course, one non-UMS letter is unchanged. The lead sets the variable; the OCR lane never does.
+6. **TD-701 and the OCR-9 spacing notes** (small; one builder; they can run beside OCR-18).
+7. **OCR-18, step 2: the TNB and EPF lanes.** Each lane goes on only if its dry run passes Gate 1 (at least 20 held-out documents, 98% agreement, 0 wrong). A lane short of 20 stays off and is listed with its count.
+8. **OCR-13**, then **OCR-14**. Each new lane goes on at the end of its sprint if it passes Gate 1, in the same way as step 5.
+9. **OCR-19** (PISMP offer letters). The same method as the universities: the owner's exact words from 5 sample letters, then the layout reader, then Gate 1. If fewer than 20 letters exist, it ships with the lane off and a monthly count line.
+10. **OCR-15**, **OCR-16**, **OCR-17**, as planned.
 
 A lane is still switched off again if reviewers overturn more than 2% of its facts in a month (section 2).
 

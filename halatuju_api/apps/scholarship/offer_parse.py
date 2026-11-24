@@ -339,7 +339,7 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # (pdf_object_identity): a second copy anywhere in the raw bytes or an object stream, a header pdfium may read
 # differently, or an object stream no entry names refuses the file. 5 genuine incremental-update fixtures are now
 # refused by the layer gate (owner: strict) and go to the Vision route; every other letter reads as before.
-PARSER_VERSION = '2.3.4'
+PARSER_VERSION = '2.3.5'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)

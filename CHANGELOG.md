@@ -375,6 +375,17 @@ Not pushed. Migration: none. Services: api, web.
 - Case #945: a MySTR Semakan Status page showing "Status Permohonan Semasa: Kekal Kelulusan Asal" (the original approval stays) read no status, so it counted as unreadable and a thinner "Lulus Rayuan" dashboard stayed live over it. The rules reader (`doc_parse._STR_APPROVED`) now knows that exact phrase, in any case and spacing. "Kelulusan" alone (Menunggu, Dalam Proses, Tarikh Kelulusan) is still not an approval; rejections, the engine, the surface ceiling and the keep-better ranking are unchanged. No version bump: the STR reader sits in no registered model's digest (the model-version guard stays green).
 - Tests: `test_doc_parse.py` pins the phrase in both OCR orders, the near misses, the rejections, the engine reading the page `current` and ranking it above an approved dashboard, and (pinned, not designed) a page with "Rayuan: Ditolak" above the phrase: approval in label-then-value order, rejected in the labels-then-values order.
 
+### PDF gate: annotations painting over text, the "sticker" gap (OCR-20, 2026-11-24)
+
+Not pushed. Migration: none. Services: api. Phone-check: owner.
+
+- The gap (OCR-12 review round 2): an annotation (a /Stamp, /FreeText or /Square with its own picture, a /Link that draws a box, a note icon) is drawn over the page, but pypdf still reads the text under it, and that read counted as exact. A doctored letter could show one thing and be read as another.
+- Owner's strict rule, as built: a page whose /Annots holds anything but a /Link with no /AP has no exact text layer. A /Parent that carries /Annots, an /Annots that is not an array, an entry that is not a dictionary, and a missing or odd /Subtype all count against it. New module `pdf_annots.py`; `pdf_pages._page_visibility` checks it first, so the text layer, the page texts, `first_page_drawn` and the rules lane (`pdf_rules_page_texts`, `pdf_page1_layout`) all lose that page, which goes to the pictures (Vision). /Annots is read through the metered `GateReader`, and its entries are charged to the per-document budget (`MAX_DOC_ANNOTS` 2,000, past it the page is over budget).
+- pdfium agrees: the worker's paint check and the ink check now fail a page with any annotation but a /Link with no AP key (`_plain_link`).
+- Probes (pdfium as the worker renders, no form environment): pdfium draws stamps, squares and free text with /AP, a /Link with /AP, a white-filled /Square with no /AP (pdfium makes its own picture), a /Text note icon, entries with no or odd /Subtype, and ignores /OC on annotations. It does not draw widgets, popups, hidden-flag annotations or /Annots on a /Parent; the strict rule refuses those too.
+- Fixtures: 7 extra genuine files lose their exact layer (6 /Link with /AP, 1 /Stamp with /AP); 1 more changed (a /FreeText with /AP) but the render gate already refuses it. Census 870: refused 12, unchanged. The other 41 fixture files with such annotations had no text layer already (scans). Max genuine reader 2.96 % of the work cap (unchanged).
+- Tests: new `test_ocr20_annots.py` (22 hostile kinds, each read by pypdf and refused by the gate, the rules lane and the pdfium check alone; controls; the budget). `test_ink_attacks.py`: the note and the link-with-a-picture attacks are now refused before the lane, and the ink check still flags them. Parser version 2.3.5.
+
 ### PDF gate: one object per number (OCR-12 new design, 2026-11-24)
 
 Not pushed. Migration: none. Services: api. Phone-check: none.

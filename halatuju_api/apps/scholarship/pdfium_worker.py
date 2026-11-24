@@ -59,10 +59,17 @@ class _OverObjects(Exception):
 
 def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list, plain: frozenset) -> bool:
     """True when every text object pdfium places on the page paints, outside optional content, and (when pypdf
-    found letters or digits there) pdfium places at least one text object."""
+    found letters or digits there) pdfium places at least one text object. OCR-20: and every annotation pdfium
+    lists on the page is a /Link with no /AP (`_plain_link`; each charged one object)."""
     import pypdfium2.raw as raw
     page = pdf[index]
     try:
+        annots = raw.FPDFPage_GetAnnotCount(page.raw)
+        budget[0] -= max(annots, 0)
+        if budget[0] < 0:
+            raise _OverObjects('past the pdfium page-object cap')
+        if annots < 0 or not all(_plain_link(page.raw, k) for k in range(annots)):
+            return False
         texts, todo = 0, [(page.raw, False, False)]          # (page or form object, is a form, under an OC mark)
         while todo:
             holder, is_form, under_oc = todo.pop()
@@ -87,6 +94,18 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
         return texts > 0 or not has_alnum
     finally:
         page.close()
+
+
+def _plain_link(page, k: int) -> bool:
+    """True when the page's annotation ``k`` is a /Link with no /AP: the one kind that paints nothing (OCR-20)."""
+    import pypdfium2.raw as raw
+    annot = raw.FPDFPage_GetAnnot(page, k)
+    try:
+        return (bool(annot) and raw.FPDFAnnot_GetSubtype(annot) == raw.FPDF_ANNOT_LINK
+                and not raw.FPDFAnnot_HasKey(annot, b'AP'))
+    finally:
+        if annot:
+            raw.FPDFPage_CloseAnnot(annot)
 
 
 def _oc_marked(obj, oc_may_be_off: bool, plain: frozenset) -> bool:
@@ -333,7 +352,7 @@ def _op_ink(pdf, req, blobs):
     can explain is taken off (review round 2b, the ring attack; a space: its own box, as is), ``area_px`` the
     box's pixels, ``inside`` the box within the rendered page, ``cover_h`` / ``cover_w`` the share of the box's
     height / width its ink's bounding box spans (review round 1, B2: a strip left uncovered). ``modes_ok``: every text object
-    fills (`INK_MODES`); ``annots_ok``: every annotation is a /Link; ``stray_px``: ink pixels more than
+    fills (`INK_MODES`); ``annots_ok``: every annotation is a /Link with no /AP; ``stray_px``: ink pixels more than
     `STRAY_PAD` from every character's box; ``optional``: page content in optional content (an OC mark, or an
     XObject with /OC: a viewer may show what pdfium hides, or hide what it shows); ``xfa``: an XFA form;
     ``type3_ok``: every Type3 glyph page 1 can draw paints only inside its own box (`_type3_ok`, review round 2);
@@ -423,14 +442,7 @@ def _ink(pdf, req):
     if not _own.own_ink(delta, seen, chars, width, height, int(req['delta']), turned):
         return {'error': 'cells'}
     stray =ImageChops.subtract(mask, near).histogram()[255]
-    annots_ok = True
-    for k in range(raw.FPDFPage_GetAnnotCount(page.raw)):
-        annot = raw.FPDFPage_GetAnnot(page.raw, k)
-        try:
-            annots_ok = annots_ok and bool(annot) and raw.FPDFAnnot_GetSubtype(annot) == raw.FPDF_ANNOT_LINK
-        finally:
-            if annot:
-                raw.FPDFPage_CloseAnnot(annot)
+    annots_ok = all(_plain_link(page.raw, k) for k in range(raw.FPDFPage_GetAnnotCount(page.raw)))   # OCR-20: no /AP
     oc_xobject, xfa, type3_ok, type3 = _t3.page_flags(_DATA[0], int(req['page']))
     return {'chars': chars, 'modes_ok': modes_ok, 'annots_ok': annots_ok, 'stray_px': stray,
             'optional': bool(optional or oc_xobject), 'xfa': xfa, 'type3_ok': bool(type3_ok), 'type3': bool(type3),

@@ -19,6 +19,7 @@ from collections import OrderedDict
 from typing import NamedTuple, Optional
 
 from . import pdf_pdfium_check, pdf_render_check, pdfium_run, pdfium_worker
+from .pdf_annots import MAX_DOC_ANNOTS, annots_hide
 from .pdf_layer_guards import (_MAX_DOC_FONT_COST, GateReader, OverBudget as _OverBudget, _doc_may_switch_off,
                                bad_operands, charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check,
                                shown_chars)
@@ -140,6 +141,7 @@ def _scale_args() -> list:
 # /Contents and from every XObject a `Do` names that is not an /Image (resources inherited up /Parent), out of
 # the string operands of Tj, ', " and TJ. Annotations, Type3 CharProcs, ActualText, patterns: never extracted.
 # Fix round 4 (`pdf_layer_guards`): exact operand counts, every font's maps charged, optional content judged.
+# OCR-20 (`pdf_annots`): annotations are DRAWN over the page, so a page listing any but a /Link with no /AP is hidden.
 #: Text render modes that paint: 0-2 and 4-6. 3 (invisible), 7 (clip only) and any other value hide the text.
 _DRAWN_MODES = frozenset((0, 1, 2, 4, 5, 6))
 _SHOW_OPS = frozenset((b'Tj', b'TJ', b"'", b'"'))
@@ -190,7 +192,8 @@ class _Budget:
 
     def __init__(self):
         self.left = {'operations': _MAX_DOC_OPS, 'bytes': _MAX_DOC_BYTES, 'tokens': _MAX_DOC_TOKENS,
-                     'shown characters': _MAX_DOC_SHOWN_CHARS, 'font maps': _MAX_DOC_FONT_COST}
+                     'shown characters': _MAX_DOC_SHOWN_CHARS, 'font maps': _MAX_DOC_FONT_COST,
+                     'annotations': MAX_DOC_ANNOTS}
 
     def spend(self, what: str, n: int) -> None:
         self.left[what] -= n
@@ -303,10 +306,12 @@ DRAWN, HIDDEN, OVER_BUDGET = 'drawn', 'hidden', 'over_budget'
 
 def _page_visibility(page, reader, budget: _Budget, cache: dict) -> str:
     """`DRAWN` when every character on the page is painted (or there is no text at all); `HIDDEN` when it
-    places ANY hidden text (render mode not 0-2 / 4-6, or text in a non-Form XObject) or that cannot be
-    decided; `OVER_BUDGET` when one of the document's budgets runs out on it (the whole PDF is then never
-    text-extracted)."""
+    places ANY hidden text (render mode not 0-2 / 4-6, or text in a non-Form XObject), lists an annotation
+    that may paint over it (`annots_hide`, OCR-20), or that cannot be decided; `OVER_BUDGET` when one of the
+    document's budgets runs out on it (the whole PDF is then never text-extracted)."""
     try:
+        if annots_hide(page, budget):
+            return HIDDEN
         contents = page.get('/Contents')
         contents = contents.get_object() if contents is not None else None
         if _is_null(contents):
