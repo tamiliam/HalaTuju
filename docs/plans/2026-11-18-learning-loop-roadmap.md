@@ -208,6 +208,38 @@ The replay runs with "today" set to `verdict_decided_at` and the stage as at the
 
 **Complexity.** Medium. About 10 files. Opus builds.
 
+**What changed while building (24 Nov 2026).** The plan above is kept as written. These are the
+differences. The detail is in `docs/decisions.md` (the LL5 entries) and the reading guide is
+`docs/replay-human-lens.md`.
+- **The scope grew.** Beside the exam lens, LL5 added a coach grade (each engine version against the
+  gradeable version before it, on its own decided cases), a monthly score line per version, a points
+  score (`ai_score` marks), a noise margin (owner ruling R1: a guard level of 1 in 20 and a score
+  margin of 2 standard errors) and a count of malformed records by kind (`malformed_by_error`).
+- **More phases than planned.** The work was split into phases A (coach grade), B1 (derived key),
+  B2a and B2b (exam set and lens), C1 (wiring), C1b and C1c (safety), C2 to C2d (coach grade in the
+  replay, and the report) and C3 (these words).
+- **A floor of 5 facts** guards small numbers in a monthly cell (and a side). It is a small-number
+  guard, not a privacy rule. A version needs 40 facts to be graded (owner ruling R3, final).
+- **A derived key.** The replay holds a one-way DERIVED key (`REPLAY_FINGERPRINT_KEY`), never the
+  master key `SECRET_KEY`. The job refuses to start if it is given a `SECRET_KEY` that is not empty.
+- **Interview Fails stay in.** Owner ruling R2: the AI also asks questions through Check 2, so
+  interview Fails STAY in the grade and in both guards. The optional extra line is named "score without
+  interview Fails".
+- **The exam file** holds plain application ids and one decision time per id (allowed by the release
+  lead on 24 Nov), plus the exam's own fields (name, format, size, freeze time, key check, digest).
+- **Freezing happens only on request** (`--human-lens-freeze`). A lost exam file is never replaced
+  without a person asking.
+- **A too-short record** (fewer than 4 fields) counts as malformed (`too_short`), not as undecided.
+- **The stage is not stored at the decision.** So recovery is by an in-review twin only. Past-award
+  cases and decided-group twins are not scored; they are counted by reason.
+- **The two result files are not scrubbed.** `human_lens.json` and `coach_grade.json` skip the
+  scrubber. Allow-lists guard them on both sides: in the child before writing, and in the parent when
+  reading.
+- **The exam-file home in production is still OPEN.** See "Where the exam file lives in production" in
+  [2026-11-13-a5-replay-owner-steps.md](2026-11-13-a5-replay-owner-steps.md). Until the owner decides,
+  the lens does not run on real data.
+- **Acceptance.** "The owner runs the job once" still stands and is NOT done. It needs the owner's yes.
+
 ---
 
 ## Models for the build (house standard: `Settings/_workflows/credit-discipline.md`)

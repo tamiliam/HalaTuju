@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### LL5 phase C3 - how to read the lens report, owner steps, exam-home options (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. Docs only, plus docstrings in `coach_grade.py` (no code change). New note `docs/replay-human-lens.md`: how to run the human lens, where to find its block, how to read it part by part, which lines block the next release (exit code 0 does not mean pass; a block with no end marker is a failure), and what the numbers cannot tell you. The owner-steps doc now says step 2b is the owner's alone, gives its order, and has a new section 5b with the two options for where the exam file lives in production (OPEN: the owner decides; until then the lens does not run on real data). The roadmap has a dated "What changed while building" block under Sprint LL5. `decisions.md` and the `coach_grade` docstrings now say who calls `coach_report` and that `leave_out_reasons` takes any iterable.
+
 ### LL5 phase C2d - the replay prints the lens report between two marker lines (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. With `--human-lens` on, `python -m replay.parent` now prints the human lens and coach grade sections after its JSON lines, between `=== LL5 lens report start ===` and `=== LL5 lens report end ===`, in one print to stdout. The text comes only from `report_lens` (new `lens_coach_report`, the one path the markdown report also uses), with the same allow-list re-check and label tables. A result that fails its check, or a render that raises one of a narrow set of errors (then only one fixed BLOCKING line is printed, with no data and no message), makes the job exit 4 even when it would have exited 0. With the lens off, with `--counts-only`, on a fatal error (exit 3) or an argument error (exit 2) no block is printed and the output is as before. New tests in `test_replay_lens_report_block.py` (22); two `main` tests in `test_replay_human_lens_wiring.py` now pass realistic results.

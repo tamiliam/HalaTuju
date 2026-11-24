@@ -1,6 +1,7 @@
 """LL5 phase A - the monthly score and the coach grade. Pure, beside `ai_score.py`: no ORM, no AI call,
-no settings read. Server only: no page and no job calls it yet (the replay's human lens reads only its
-constant ``CELL_MIN_FACTS``; the replay job will import it lazily in a later phase).
+no settings read. Server only: no page calls it. Since LL5 phase C2 the replay's coach reader
+(`eval/replay/coach_rows.py`) imports it lazily and calls `coach_report` with ``INTERVIEW_FAILS``; the
+replay's human lens reads its constant ``CELL_MIN_FACTS``.
 
 The PLAYER is the model (engine) version, scored in marks. The COACH is the learning loop, graded on
 NEW cases only: each version is compared with the gradeable version before it, each on its OWN decided
@@ -432,14 +433,19 @@ def coach_report(records, leave_out_reasons=()) -> dict:
     months: [cell], coach: [{previous: side,
     new: side, grade, reasons: [code], skipped_versions}], waiting: [side]}``.
 
+    The first four keys echo the constants: ``cell_min_facts`` is ``CELL_MIN_FACTS``,
+    ``coach_min_facts`` is ``COACH_MIN_FACTS``, ``guard_alpha`` is ``GUARD_ALPHA`` as its numerator and
+    denominator, and ``score_z`` is ``SCORE_Z``. Each ``score_pct`` is the ``score_pct`` of
+    `ai_score.score_marks` over the same facts.
+
     A cell is ``{version, unknown_version, month, too_few}`` plus, when not too_few, ``facts, points,
     best, score_pct, not_scored, outcomes: {outcome: count}`` and (only when ``leave_out_reasons`` is not
     empty) ``without_left_out``. A side is ``{version, too_few}`` plus, when not too_few, ``facts,
     score_pct, coverage: {count, of}, generous_wrong: {count, of}`` and the same ``without_left_out``. A
     ``without_left_out`` line is ``{too_few: True}`` or ``{too_few: False, facts, points, best,
     score_pct, left_out}``. ``months`` runs version by version in version order (unknown versions last),
-    then month. ``leave_out_reasons`` that is not None and not an iterable of known codes (one text
-    counts as not) raises ValueError."""
+    then month. ``leave_out_reasons`` may be any iterable of known codes (a generator is accepted); one
+    that is not None and not an iterable of known codes (one text counts as not) raises ValueError."""
     leave_out = _left_out_codes(leave_out_reasons)
     rows, malformed = _decided_rows(records)
     first_seen, months_of = {}, {}

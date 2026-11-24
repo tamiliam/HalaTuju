@@ -47,6 +47,15 @@ gcloud secrets add-iam-policy-binding halatuju-replay-db-url --member serviceAcc
 
 ## 2b. The derived fingerprint key (LL5; an owner step, the value in words only, no script)
 
+**Who runs this.** These are the OWNER's steps. No agent runs them. Nothing creates or grants a secret
+without the owner's yes at that time. The key value is never printed, never pasted in a chat, and never
+put in a file that git tracks.
+
+**The order.** (1) Make the derived key value and pipe it straight into the create command below.
+(2) Give the replay's service account read access to that one secret. (3) Once the job exists (step 4),
+give it to the job as `REPLAY_FINGERPRINT_KEY`. No tool in this repository makes the value yet: step
+(1) is described in words only, below.
+
 Make the derived key once: read the production SECRET_KEY, compute sha256(salt + SECRET_KEY) as hex,
 write it straight into Secret Manager as the replay job's REPLAY_FINGERPRINT_KEY. Needs the Secret
 Manager API and the owner's yes at that time, given for this step when it is run.
@@ -88,8 +97,10 @@ run the job with the lens until the home of the exam file is decided.
   spaces alone included), the replay refuses to start. Absent or empty, it runs key-free and every
   fingerprint mismatches.
 - **A wrong but well-shaped key** (64 hex characters made from a wrong input) is not caught here. The
-  replay's human lens (a later phase) compares the key with the `key_check` stored on the recorded
-  verdicts and refuses to score on a mismatch, so it is caught there.
+  replay's human lens (built in LL5) compares the key's 8-character key check with the `key_check`
+  stored on the recorded verdicts and refuses to freeze or score exam-1 on a mismatch, so it is caught
+  there (`candidate_key_check_not_current` or `candidate_key_checks_differ` before a freeze,
+  `key_check_differs_from_exam` or `key_check_differs_from_cases` after it).
 - **Who can read it.** The replay's service account is given access to this one secret, but project
   Owners, Editors and Secret Manager admins can read it too.
 - **Never `SECRET_KEY` on the job.** The job must never be given `SECRET_KEY` (not as a variable, not
@@ -167,7 +178,67 @@ gcloud run jobs execute halatuju-replay --region asia-southeast1 --wait --args "
 
 The output is in Cloud Logging under the job; it holds only codes, amounts, hashes and case ids.
 
-Only when the lens switch (`--human-lens`) is on, the lens and coach-grade report comes after the JSON lines, between the lines `=== LL5 lens report start ===` and `=== LL5 lens report end ===`; exit code 4 means a lens or coach error, or a report that could not be shown.
+Only when the lens switch (`--human-lens`) is on, the lens and coach-grade report comes after the JSON lines, between the lines `=== LL5 lens report start ===` and `=== LL5 lens report end ===`; exit code 4 means a lens or coach error, or a report that could not be shown. How to read the block:
+`docs/replay-human-lens.md`.
+
+## 5b. Where the exam file lives in production (OPEN: the owner decides)
+
+The human lens keeps its frozen exams in two files, `exam-1.json` and `exam-old.json`, in one exam
+folder. The folder must survive from one run to the next, or "frozen" means nothing. Where that folder
+lives in production is not decided and not built. There are two options. This section gives the facts
+of each. It does not choose.
+
+**Facts that hold for both options.**
+
+- The replay job's work folder is `/tmp/replay` (the default `--workdir` in `parent.py`). On the Cloud
+  Run job it is in memory and is lost after each run.
+- The job's output goes to Cloud Logging only. The job writes no report file.
+- The job's service account has no project role (step 2), so it has no Storage access.
+- How the freeze writes its file: it writes the exam to a temp file in the same folder (Python's
+  `tempfile.mkstemp`), then makes a HARD LINK from that temp file to the exam's name (`os.link`), then
+  removes the temp file. A hard link never replaces a file that already exists. It is not an exclusive
+  create of the final name. Before the link, the freeze also checks that the name does not exist.
+- A mounted bucket (gcsfuse) has no hard links. So the freeze code as it is today cannot write there:
+  it answers `folder_not_writable`.
+- The folder must be a full path, outside every git repository, and on a filesystem with hard links.
+- If an exam file is lost, a normal run does not make a new one. It reports `exam_missing` and the
+  number of cases that could enter, and gives no score for that exam. Only a run with
+  `--human-lens-freeze` writes a new exam file, and it may hold other cases than the lost one.
+- An exam file that exists is never overwritten. When it exists, every run loads it and scores it, a
+  freeze run too. The freeze itself also refuses a name that exists (`already_frozen`).
+
+**Option A: the station.**
+
+- What it is: the lens runs on the owner's station against production, read-only. The exam folder is
+  a local folder outside every repository.
+- What must be granted: the owner's yes to read production from the station.
+- Where the file sits: in that local folder on the station.
+- If the station or the folder is lost: the exam files are lost with it. The next normal run reports
+  `exam_missing`. This tool makes no backup copy.
+- What stops a second freeze from replacing the first: a run loads the existing file and does not
+  freeze again. The freeze checks that the name does not exist, and the hard link refuses a name that
+  exists (`already_frozen`).
+- Also a fact: the learning-loop roadmap (Sprint LL5, "When it runs") says production data cannot be
+  copied to a home machine. The exam files hold plain application ids and one decision time per id.
+  The owner's yes would need to cover that.
+- Also a fact: these owner steps describe the Cloud Run job only. Steps to run the replay on the
+  station are not written.
+
+**Option B: a bucket object.**
+
+- What it is: each exam file is one object in a Cloud Storage bucket. It is written with a
+  must-not-exist precondition, so a frozen exam can never be overwritten.
+- What must be granted: the owner's yes to give the replay job's service account Storage access.
+- Where the file sits: as an object in that bucket.
+- If the object or the bucket is lost: the exam file is lost. The next normal run reports
+  `exam_missing`. Step 6 ("remove everything") lists no bucket today.
+- What stops a second freeze from replacing the first: the must-not-exist precondition refuses the
+  write when the object exists.
+- Also a fact: this option is not built. The freeze code today writes only to a local folder, by hard
+  link. The lens runs inside the replay's network refusal, which lets only the database address
+  through, so a Storage call from there would be refused today. Option B needs new code.
+
+Until the owner decides, the lens does not run on real data.
 
 ## 6. Afterwards: remove everything
 
