@@ -277,3 +277,100 @@ class Work(SimpleTestCase):
         one.reader._counted.getvalue = lambda: body
         one.build()
         self.assertEqual(len(one.headers[7]), identity.MAX_CANDIDATES)
+
+
+class HighByteWhiteSpace(SimpleTestCase):
+    """Review round 3, finding 1: pdfium reads 0x80 and 0xff as white space; the scans did not. Each file: pypdf
+    reads the light page, pdfium (rebuilding, or after one bad row for an unused number, I5) the heavy one. The
+    old gate accepted every one of them; the plain-space twins were already refused."""
+
+    def test_a_header_split_or_ended_by_a_high_byte_is_a_second_copy(self):
+        cases = {'I1': {'sep': b'\x80'}, 'I2': {'sep': b'\xff'}, 'I6': {'sep': b' ', 'after': b'\x80'},
+                 'I6f': {'sep': b' ', 'after': b'\xff'}, 'I5': {'sep': b'\x80', 'rebuild': False},
+                 'I5_ff': {'sep': b'\xff', 'rebuild': False},
+                 'I5_after': {'sep': b' ', 'after': b'\x80', 'rebuild': False},
+                 'I1_vt': {'sep': b'\x0b'}, 'I1_control': {'sep': b' '}}
+        for name, kw in cases.items():
+            with self.subTest(case=name):
+                self.assertEqual(_verdict(gen.high_byte_header(**kw)), (0, 'OverBudget: ' + TWO))
+
+    def test_a_good_row_does_not_make_it_pass(self):
+        """I5g: no bad row, so pdfium does not rebuild and draws the light page too. Refused all the same (one
+        number, two headers): an over-refusal kept on purpose."""
+        pdf = gen.high_byte_header(b'\x80', rebuild=False, row6=b'0000000000 65535 f \n')
+        self.assertEqual(_verdict(pdf), (0, 'OverBudget: ' + TWO))
+
+    def test_a_trailer_key_ended_by_a_high_byte_is_read(self):
+        for sep in (b'\x80', b'\xff', b'\x0b', b' '):
+            with self.subTest(key='/Root', sep=sep):
+                self.assertEqual(_verdict(gen.high_byte_trailer(b'/Root', sep)),
+                                 (0, 'OverBudget: a trailer names another document root'))
+            with self.subTest(key='/Encrypt', sep=sep):
+                self.assertEqual(_verdict(gen.high_byte_trailer(b'/Encrypt', sep)),
+                                 (0, 'OverBudget: a trailer names an encryption the gate did not read'))
+
+    def test_an_object_stream_type_ended_by_a_high_byte_is_read(self):
+        for type_name in (b'/ObjStm\x80', b'/ObjStm\xff', b'/Obj#53tm\x80', b'/ObjStm'):
+            with self.subTest(type_name=type_name):
+                self.assertEqual(_verdict(gen.orphan_object_stream(type_name) + gen.LONG_TAIL),
+                                 (0, 'OverBudget: an object stream the cross-reference does not name'))
+
+    def test_a_lone_header_with_high_byte_gaps_is_never_used(self):
+        for sep in (b'\x80', b'\xff'):
+            with self.subTest(sep=sep):
+                self.assertEqual(_verdict(gen.gap_only_copy(sep))[0], 0)
+        self.assertEqual(identity._PLAIN.match(b'\n5\x800 obj\n', 1), None)
+        self.assertEqual(identity._PLAIN.match(b'\n5 0 obj\x80', 1), None)
+        self.assertEqual(identity._PLAIN.match(b'\x0b5 0 obj\n', 1), None)
+        self.assertEqual(identity._PLAIN.match(b'\x805 0 obj\n', 1).end(), 8)
+
+    def test_light_controls_still_pass(self):
+        """High bytes where no header, 'obj' word or watched name can form: inside stream data, after a word."""
+        self.assertEqual(_verdict(gen.junk_in_stream(b'\x80\xff\x0b obj\x80 /Rootx\x80 ' * 500)), (1, None))
+        self.assertEqual(_verdict(gen.names_in_comment(b'/Root 1 0 R \x80', 50)), (1, None))
+        self.assertEqual(_verdict(gen.many_headers(1)), (1, None))
+
+    def test_a_reference_ended_by_a_high_byte_is_refused(self):
+        """`_REF` and `_LEAD` accept, so they stay strict: 'R<80>' and '/Root<80>1 0 R' are over-refused."""
+        for name in (b'/Root 1 0 R\x80', b'/Root\x801 0 R'):
+            with self.subTest(name=name):
+                self.assertEqual(_verdict(gen.names_in_comment(name, 1)),
+                                 (0, 'OverBudget: a trailer names another document root'))
+
+
+class NameWork(SimpleTestCase):
+    """Review round 3, finding 2: each watched name, and each '#' name, is charged about one judged word; each
+    escape decoded about two more. Measured (probe J): a 8.8 MB file of 800,000 '/Root 1 0 R' took ~1.7 s and was
+    charged ~2.6e8 units (~0.08 s); it is now charged ~4.8e9 (~1.4 s at ~0.3 ns a unit)."""
+
+    @staticmethod
+    def _work(pdf):
+        reader = guards.GateReader(pdf)
+        reader.pages[0].get_contents()               # the first lookup after open runs the name scan
+        return reader._counted.work
+
+    def _extra(self, name, n=1000):
+        return self._work(gen.names_in_comment(name, n)) - self._work(gen.names_in_comment(name, 0))
+
+    def test_a_watched_name_costs_two_judged_words(self):
+        self.assertGreaterEqual(self._extra(b'/Root 1 0 R'), 1000 * 2 * identity._WORD_WORK)
+
+    def test_an_escaped_name_costs_its_escapes(self):
+        self.assertGreaterEqual(self._extra(b'/R#6f#6ft 1 0 R'), 1000 * (2 + 2 * 2) * identity._WORD_WORK)
+        self.assertGreaterEqual(self._extra(b'/R#6f#6f#74#41 '), 1000 * (1 + 2 * 4) * identity._WORD_WORK)
+
+    def test_a_long_escaped_name_is_charged_but_not_decoded(self):
+        extra = self._extra(b'/#41#41#41#41#41#41#41#41#41 ')
+        self.assertGreaterEqual(extra, 1000 * identity._WORD_WORK)
+        self.assertLess(extra, 1000 * 2 * identity._WORD_WORK)
+
+    def test_other_names_cost_only_their_bytes(self):
+        self.assertLess(self._extra(b'/Rooty /A /ObjStmX '), 1000 * identity._WORD_WORK)
+
+    def test_a_file_of_watched_names_is_refused_past_the_budget(self):
+        """Without the base allowance, each '/Root 1 0 R' (11 bytes: 3,300 units of budget) costs more than it
+        brings, so such a file is refused near the budget, whatever its size."""
+        with mock.patch.object(guards, 'LOOKUP_WORK_BASE', 0):
+            n, why = _verdict(gen.names_in_comment(b'/Root 1 0 R', 20_000))
+        self.assertEqual(n, 0)
+        self.assertIn('OverBudget', why)

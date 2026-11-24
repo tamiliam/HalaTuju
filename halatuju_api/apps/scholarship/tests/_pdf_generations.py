@@ -329,3 +329,53 @@ def junk_in_update(junk):
     d.out += junk
     d.obj(5, 0, gen_stream(LIGHT)).table(ents(1, 2, 3, 5))
     return d.obj(5, 0, gen_stream(LIGHT)).table([(5, 'n', 0, (5, 0))]).bytes()
+
+
+#: Review round 3: a tail longer than pdfium's 4096-byte search for 'startxref' (pdfium rebuilds the table).
+LONG_TAIL = b'%' + b'x' * 5000 + b'\n'
+
+
+def high_byte_header(sep=b'\x80', after=b'\n', rebuild=True, row6=b'         0 00000 n \n'):
+    """Review round 3 (I1, I2, I5, I6): page 3 draws light 4; a second page 3 drawing heavy 5 is written with
+    ``sep`` between its words and ``after`` after 'obj' (pdfium reads 0x80 and 0xff as white space, so it is a
+    header to pdfium only). ``rebuild``: it follows the table, with a tail pdfium cannot search. Else it comes
+    before the table, whose row 6 (no object uses 6) is ``row6``: a row pdfium cannot read (I5) makes it rebuild
+    quietly; a free row (I5g) does not, and the file is refused anyway."""
+    d = _base(GenDoc(), page(contents=b'4 0 R')).obj(4, 0, gen_stream(LIGHT)).obj(5, 0, gen_stream(HEAVY))
+    forged = b'3' + sep + b'0' + sep + b'obj' + after + page(contents=b'5 0 R') + b'\nendobj\n'
+    if rebuild:
+        return d.table(ents(1, 2, 3, 4, 5)).bytes() + forged + LONG_TAIL
+    d.out += forged
+    at = len(d.out)
+    rows = b''.join(b'%010d 00000 n \n' % d.off[(n, 0)] for n in range(1, 6))
+    d.out += b'xref\n0 7\n0000000000 65535 f \n' + rows + row6
+    return bytes(d.out + b'trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n' % at)
+
+
+def high_byte_trailer(key=b'/Root', sep=b'\x80'):
+    """Review round 3 (I3): a light document; after its table (tail too long: pdfium rebuilds and merges every
+    trailer) a second trailer whose ``key`` is followed by ``sep`` then '6 0 R'. As /Root, 6 is another catalogue
+    whose page draws heavy 9; as /Encrypt, 6 is an encryption dictionary pypdf's trailer does not have."""
+    d = _base(GenDoc(), page(contents=b'4 0 R')).obj(4, 0, gen_stream(LIGHT))
+    d.obj(6, 0, b'<< /Type /Catalog /Pages 7 0 R >>').obj(7, 0, b'<< /Type /Pages /Kids [8 0 R] /Count 1 >>')
+    d.obj(8, 0, page(contents=b'9 0 R').replace(b'/Parent 2 0 R', b'/Parent 7 0 R'))
+    d.obj(9, 0, gen_stream(HEAVY))
+    pdf = d.table(ents(1, 2, 3, 4, 6, 7, 8, 9)).bytes()
+    return pdf + b'trailer\n<< /Size 10 ' + key + sep + b'6 0 R >>\n' + LONG_TAIL
+
+
+def gap_only_copy(sep=b'\x80'):
+    """Review round 3: object 5 (the page's contents) has ONE header, its words split by ``sep`` (white space to
+    pdfium only). Not two copies, but no lookup may use it (`pdf_object_identity._PLAIN`)."""
+    d = _base(GenDoc(), page())
+    d.off[(5, 0)] = len(d.out)
+    d.out += b'5' + sep + b'0' + sep + b'obj\n' + gen_stream(LIGHT) + b'\nendobj\n'
+    return d.table(ents(1, 2, 3, 5)).bytes()
+
+
+def names_in_comment(name, n):
+    """A light, valid page after one comment line holding ``name`` ``n`` times (review round 3, finding 2: the
+    name scan's cost)."""
+    d = GenDoc()
+    d.out += b'%' + name * n + b'\n'
+    return _base(d, page()).obj(5, 0, gen_stream(LIGHT)).table(ents(1, 2, 3, 5)).bytes()

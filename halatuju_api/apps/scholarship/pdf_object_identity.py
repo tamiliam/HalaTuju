@@ -12,6 +12,8 @@ This design does not model pdfium's parser. It takes evidence that does not depe
 comments, a SUPERSET of every place either reader could find an object:
 1. Every ``N G obj`` header in the raw file (`_STRICT`), inside strings, streams and comments too, keyed by N
    alone (pdfium ignores the generation), and every member of every object stream the cross-reference names.
+   Review round 3: words end at ANY reader's white space (pdfium's 0x80 and 0xff, pypdf's 0x0b); a header
+   whose gaps or end only some reader reads as white space is a candidate no lookup may use (`_PLAIN`).
 2. Any other ``obj`` word that a number word, a comment or odd white space could turn into a header for
    pdfium (`_odd_header`): '3.', '+3', '0003', a 256-byte number pdfium cuts short, '3 0 %x<EOL>obj'. One
    anywhere refuses the file: no one can say which number pdfium gives it.
@@ -33,19 +35,38 @@ from pypdf.generic import NullObject
 
 from .pdf_xref_rows import Walk
 
+#: Review round 3, finding 1: the byte classes. pdfium's table (fpdf_parser_utility.cpp) counts 0x80 and
+#: 0xff as white space too; pypdf's searches and name reads count 0x0b (\s) too. A scan that FINDS (a header, an
+#: 'obj' word, a name's end, the white space `_odd_header` skips) ends a word at ANY reader's white space
+#: (`_ANY_WS`), so it finds a superset; a match that ACCEPTS (`_PLAIN`, `_LEAD`, `_REF`) takes only the white
+#: space both readers share (`_WS`), so '3<80>0<80>obj', 'obj<80>' and '/Root<80>7 0 R' are found and refused.
 _WS = rb'\x00\t\n\x0c\r '
-_BARE = rb'[^\x00\t\n\x0c\r ()<>\[\]{}/%]'
+_ANY_WS = _WS + rb'\x0b\x80\xff'
+_DELIMS = rb'()<>\[\]{}/%'
+_BARE = rb'[^' + _ANY_WS + _DELIMS + rb']'          # a regular byte to every reader (finding)
+_STRICT_BARE = rb'[^' + _WS + _DELIMS + rb']'      # not white space or a delimiter to both readers (accepting)
+_P_REGULAR = rb'[^' + _WS + rb'\x80\xff' + _DELIMS + rb']'   # a byte pdfium reads as part of a word
 _OBJ_WORD = re.compile(rb'(?<!' + _BARE + rb')obj(?!' + _BARE + rb')')
-_STRICT = re.compile(rb'(?<!' + _BARE + rb')(\d+)[' + _WS + rb']+(\d+)[' + _WS + rb']+obj(?!' + _BARE + rb')')
+_STRICT = re.compile(rb'(?<!' + _BARE + rb')(\d+)[' + _ANY_WS + rb']+(\d+)[' + _ANY_WS + rb']+obj'
+                     rb'(?!' + _BARE + rb')')
+#: A header both readers read the same way, from its number: pdfium's word starts at the number, the gaps are
+#: shared white space, and 'obj' ends where both end it. A `_STRICT` header that is not `_PLAIN` is a candidate
+#: no lookup may use (generation -1): it still makes a second copy of its number.
+_PLAIN = re.compile(rb'(?<!' + _P_REGULAR + rb')\d+[' + _WS + rb']+\d+[' + _WS + rb']+obj'
+                    rb'(?!' + _STRICT_BARE + rb')')
 _CLEAN_NUM = re.compile(rb'0|[1-9]\d{0,8}')
 _CLEAN_GEN = re.compile(rb'0|[1-9]\d{0,4}')
 _LEAD = re.compile(rb'(?:[' + _WS + rb']|%[^\r\n]*)*')          # what pypdf skips before a header
-_NAME = re.compile(rb'/' + _BARE + rb'*')
+#: Only the names the scan acts on (review round 3, finding 2: a Python step per name cost far more than it was
+#: charged): a watched name spelled plainly, and any name with a '#' (it may decode to one).
+_NAME = re.compile(rb'/(?:ObjStm|Root|Encrypt)(?!' + _BARE + rb')'
+                   rb'|/[^' + _ANY_WS + _DELIMS + rb'#]*#' + _BARE + rb'*')
 _WATCHED = frozenset((b'/ObjStm', b'/Root', b'/Encrypt'))
-_REF = re.compile(rb'(\d{1,10})[' + _WS + rb']+(\d{1,5})[' + _WS + rb']+R(?!' + _BARE + rb')')
+_ESCAPE = re.compile(rb'#([0-9A-Fa-f]{2})')
+_REF = re.compile(rb'(\d{1,10})[' + _WS + rb']+(\d{1,5})[' + _WS + rb']+R(?!' + _STRICT_BARE + rb')')
 _BREAK = re.compile(rb'[\r\n]')
 _NUMBERISH = frozenset(b'0123456789+-.')
-_WHITE = frozenset(b'\x00\t\n\x0c\r ')
+_WHITE = frozenset(b'\x00\t\n\x0b\x0c\r \x80\xff')
 #: A number keeps at most this many candidates (memory bound): two already refuse a lookup. 17, the bound the
 #: round-5 review suggested, also caps the work one number's evidence costs to record.
 MAX_CANDIDATES = 17
@@ -85,7 +106,8 @@ class Identity:
             self.owners.append((m.start(), int(num)))
             seen = self.headers.setdefault(int(num), {})
             if len(seen) < MAX_CANDIDATES:
-                seen[m.start()] = int(gen)
+                plain = _PLAIN.match(data, m.start())
+                seen[m.start()] = int(gen) if plain and plain.end() == m.end() else -1
         for m in _OBJ_WORD.finditer(data):
             if m.end() not in ends:
                 meter.charge(_WORD_WORK)
@@ -96,17 +118,19 @@ class Identity:
                     self._refuse('an object header the gate cannot read')
 
     def _names(self):
-        """(offset, end, name) of every /ObjStm, /Root and /Encrypt name in the raw file, #-escaped spellings too."""
+        """(offset, end, name) of every /ObjStm, /Root and /Encrypt name in the raw file, #-escaped spellings too.
+        Review round 3, finding 2: each name the scan stops at is charged about one judged word (`_WORD_WORK`), its
+        bytes too; one whose shortest decoding is longer than any watched name is not decoded."""
         data, meter = self.data, self.reader._counted
         meter.charge(len(data))
         for m in _NAME.finditer(data):
             name = m.group()
+            meter.charge(_WORD_WORK + len(name))
             if b'#' in name:
-                meter.charge(len(name))
-                try:
-                    name = re.sub(rb'#([0-9A-Fa-f]{2})', lambda e: bytes([int(e.group(1), 16)]), name)
-                except ValueError:
+                if len(name) - 2 * name.count(b'#') > 8:          # '/Encrypt', the longest watched name
                     continue
+                meter.charge(2 * _WORD_WORK * name.count(b'#'))   # measured: ~4,000-5,000 units an escape
+                name = _ESCAPE.sub(_unescape, name)
             if name in _WATCHED:
                 yield m.start(), m.end(), name
 
@@ -118,7 +142,7 @@ class Identity:
         meter, trailer = self.reader._counted, self.reader.trailer
         want = trailer.raw_get(key.decode()) if key.decode() in trailer else None
         q = _LEAD.match(self.data, end).end()
-        meter.charge(q - end + _PAIR_WORK)
+        meter.charge(q - end + _WORD_WORK)          # review round 3, finding 2: was _PAIR_WORK, ~60x under its time
         m = _REF.match(self.data, q)
         if not (m and hasattr(want, 'idnum') and (int(m.group(1)), int(m.group(2))) == (want.idnum, want.generation)):
             self._refuse('a trailer names another document root' if key == b'/Root'
@@ -258,3 +282,8 @@ def _odd_header(data: bytes, at: int, breaks, meter) -> bool:
             pct = data.find(b'%', pct + 1, q)
         meter.charge(end - line + 1)
     return False
+
+
+def _unescape(m):
+    """One '#xx' escape of a name, decoded (both readers decode a '#' and two hex digits)."""
+    return bytes.fromhex(m.group(1).decode())
