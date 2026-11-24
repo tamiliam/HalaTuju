@@ -27,14 +27,14 @@ TD-702: `GateReader`, the reader every page check opens, caps pypdf's whole-file
 import io
 import logging
 import re
-import threading
 
 import pypdf._reader
 from pypdf import PdfReader
 from pypdf.errors import LimitReachedError
-from pypdf.generic import IndirectObject, NullObject
+from pypdf.generic import IndirectObject, NameObject, NullObject
 
-from .pdf_object_identity import Identity
+from .pdf_metered_io import _PARSE_CALL_WORK, _PARSING, _bytes_io, _MeteredData
+from .pdf_object_identity import NAME_READ_WORK, Identity, name_disagrees
 
 #: Fixed operand counts (ISO 32000 operator summary), for EVERY such operator — not one of the 533 corpus
 #: PDFs breaks one. ``sc``/``scn`` (variable) and inline images are not here.
@@ -152,10 +152,9 @@ _HEADER = re.compile(rb'\s(\d+)\s+(\d+)\s+obj')
 #: genuine file with about 3,500-6,000 packed objects or more, by shape, may still be refused.
 _READ_CALL_WORK = 3_000
 _ROW_WORK = 300
-_PARSE_CALL_WORK = 12_000
+_MOVED = (_PARSE_CALL_WORK, _bytes_io, _MeteredData)    # kept importable from here (pdf_metered_io)
 LOOKUP_WORK_PER_BYTE = 300
 LOOKUP_WORK_BASE = 6_000_000_000
-_PARSING = threading.local()                 # .meter: the `_CountedBytes` of the reader opening or parsing here
 
 
 class _CountedBytes(io.BytesIO):
@@ -193,28 +192,26 @@ class _CountedBytes(io.BytesIO):
         return data
 
 
-class _MeteredData(io.BytesIO):
-    """Data pypdf parses for a `GateReader` (object streams; as it opens, xref stream entries and rebuilt object-
-    stream indexes): each read is charged to that reader's budget as made (the call, its parsing, and each byte)."""
-
-    def __init__(self, meter, *args):
-        super().__init__(*args)
-        self.meter = meter
-
-    def read(self, size=-1):
-        data = super().read(size)
-        self.meter.charge(_PARSE_CALL_WORK + len(data))
-        return data
+_pypdf_read_name = NameObject.read_from_stream
 
 
-def _bytes_io(*args):
-    """``pypdf._reader.BytesIO``: `_MeteredData` while this thread's `GateReader` opens the file (_reader.py:1430,
-    :1583) or parses an object stream (:407), else a plain BytesIO: pypdf with no `GateReader` is never charged."""
-    meter = getattr(_PARSING, 'meter', None)
-    return io.BytesIO(*args) if meter is None else _MeteredData(meter, *args)
+def _read_name(stream, pdf):
+    """OCR-12 R8: pypdf's name read; a name a `GateReader` parses from its file or an object stream that pdfium may
+    decode differently (`pdf_object_identity.name_disagrees`) refuses the file, as it is read (pypdf's lenient
+    dictionary parser can drop it afterwards). Charged a counted read. Other pypdf readers: unchanged."""
+    name = _pypdf_read_name(stream, pdf)
+    meter = stream if isinstance(stream, _CountedBytes) else getattr(stream, 'meter', None)
+    if isinstance(meter, _CountedBytes):
+        meter.charge(NAME_READ_WORK + len(name))
+        at = io.BytesIO.tell(stream)
+        after = io.BytesIO.read(stream, 1)
+        io.BytesIO.seek(stream, at)
+        if name_disagrees(name, after):
+            meter._refuse('a name the gate and the renderer may decode differently')
+    return name
 
 
-pypdf._reader.BytesIO = _bytes_io
+NameObject.read_from_stream = staticmethod(_read_name)
 # Gap 3: a file can repeat a pypdf repair warning (or a per-font error) at will, uncharged; ~20 s, 240k log lines.
 # pypdf never logs at CRITICAL, so no record is made, process-wide; nothing reads them (docs/decisions.md, TD-710).
 logging.getLogger('pypdf').setLevel(logging.CRITICAL)

@@ -20,6 +20,12 @@ comments, a SUPERSET of every place either reader could find an object:
 3. An /ObjStm stream the cross-reference does not name (pdfium parses it; pypdf never looks) refuses the file.
 4. Every cross-reference row in every section (`pdf_xref_rows`), the rows pypdf ignores or overrides too.
 5. Every /Root and /Encrypt in the raw file names what pypdf's trailer names (`_trailer_key`, round 3).
+6. R8: a '#' not followed by two hex digits in a name (pdfium decodes a '#' and ANY two bytes, a non-hex byte
+   as 0: '/Encry#7Gt' is '/Encrypt' to pdfium only) refuses the file wherever any reader may read a watched name
+   from it (raw bytes, `_names`), and in every name pypdf parses from the file or an object stream, as it
+   parses it (`name_disagrees`, called by `pdf_layer_guards`: pypdf's lenient parser can drop a name after
+   reading it, probe D1). Not in raw stream data otherwise: it is full of such bytes (866 of 870 genuine
+   census files would be refused).
 Then each lookup pypdf makes, at open and after, is checked (`check`): its number has at most ONE candidate; a
 row-based object sits exactly on that header (only white space or comments before it, as both read it), of
 the same generation; a packed object is in exactly one stream, at the row's own index, and has no raw header;
@@ -58,11 +64,22 @@ _CLEAN_NUM = re.compile(rb'0|[1-9]\d{0,8}')
 _CLEAN_GEN = re.compile(rb'0|[1-9]\d{0,4}')
 _LEAD = re.compile(rb'(?:[' + _WS + rb']|%[^\r\n]*)*')          # what pypdf skips before a header
 #: Only the names the scan acts on (review round 3, finding 2: a Python step per name cost far more than it was
-#: charged): a watched name spelled plainly, and any name with a '#' (it may decode to one).
-_NAME = re.compile(rb'/(?:ObjStm|Root|Encrypt)(?!' + _BARE + rb')'
-                   rb'|/[^' + _ANY_WS + _DELIMS + rb'#]*#' + _BARE + rb'*')
+#: charged): any name with a '#' (it may decode to a watched one), and a watched name spelled plainly. R8: a '#'
+#: name runs to the white space both readers share (`_STRICT_BARE`), so it holds pdfium's word (which goes on
+#: through 0x0b: '/Encry#7<0b>t' is '/Encrypt' to pdfium, probe D1) and pypdf's (on through 0x80 and 0xff).
+_NAME = re.compile(rb'/[^' + _WS + _DELIMS + rb'#]*#' + _STRICT_BARE + rb'*'
+                   rb'|/(?:ObjStm|Root|Encrypt)(?!' + _BARE + rb')')
 _WATCHED = frozenset((b'/ObjStm', b'/Root', b'/Encrypt'))
+#: A '#' and two hex digits: the one escape every reader decodes alike. R8: pdfium decodes a '#' and ANY two more
+#: bytes of its word, a byte that is not a hex digit counting as 0 ('#7G' is 'p': '/Encry#7Gt' is '/Encrypt' to
+#: pdfium only); pypdf, through int(), also reads '#+4', '#-0' and a lone digit at a word's end as one byte under
+#: 0x10. A '#' not followed by two hex digits (`_BAD_ESCAPE`) is read differently by some pair of readers.
 _ESCAPE = re.compile(rb'#([0-9A-Fa-f]{2})')
+_BAD_ESCAPE = re.compile(rb'#(?![0-9A-Fa-f]{2})')
+_P_END = re.compile(rb'[\x80\xff]')     # in a '#' name: where pdfium's word ends (white space to pdfium only)
+_PY_END = re.compile(rb'\x0b')          # where pypdf's word ends (white space to pypdf only)
+#: One name pypdf parsed, judged by `name_disagrees` (`pdf_layer_guards`): about one counted read.
+NAME_READ_WORK = 3_000
 _REF = re.compile(rb'(\d{1,10})[' + _WS + rb']+(\d{1,5})[' + _WS + rb']+R(?!' + _STRICT_BARE + rb')')
 _BREAK = re.compile(rb'[\r\n]')
 _NUMBERISH = frozenset(b'0123456789+-.')
@@ -124,15 +141,28 @@ class Identity:
         data, meter = self.data, self.reader._counted
         meter.charge(len(data))
         for m in _NAME.finditer(data):
-            name = m.group()
-            meter.charge(_WORD_WORK + len(name))
-            if b'#' in name:
-                if len(name) - 2 * name.count(b'#') > 8:          # '/Encrypt', the longest watched name
+            word, at = m.group(), m.start()
+            meter.charge(_WORD_WORK + len(word))
+            if b'#' not in word:
+                yield at, m.end(), word
+                continue
+            # R8: each reader's word (pdfium's ends at 0x80 or 0xff, pypdf's at 0x0b) decoded its own way. A watched
+            # name any reader may read from a word holding a '#' not followed by two hex digits refuses the file.
+            bad = _BAD_ESCAPE.search(word) is not None
+            found = {}
+            for cut, decode in ((_P_END, _pdfium_name), (_PY_END, _gate_name)):
+                end = cut.search(word)
+                part = word if end is None else word[:end.start()]
+                if len(part) - 2 * part.count(b'#') > 8:          # '/Encrypt', the longest watched name
                     continue
-                meter.charge(2 * _WORD_WORK * name.count(b'#'))   # measured: ~4,000-5,000 units an escape
-                name = _ESCAPE.sub(_unescape, name)
-            if name in _WATCHED:
-                yield m.start(), m.end(), name
+                meter.charge(2 * _WORD_WORK * part.count(b'#'))   # measured: ~4,000-5,000 units an escape
+                name = decode(part)
+                if name in _WATCHED:
+                    if bad:
+                        self._refuse('a name the renderer may read as %s' % name.decode())
+                    found.setdefault(name, at + len(part))
+            for name, end in found.items():
+                yield at, end, name
 
     def _trailer_key(self, end: int, key: bytes) -> None:
         """Round 3: pdfium, rebuilding, merges EVERY trailer and /XRef stream dictionary it meets, the last in the
@@ -285,5 +315,41 @@ def _odd_header(data: bytes, at: int, breaks, meter) -> bool:
 
 
 def _unescape(m):
-    """One '#xx' escape of a name, decoded (both readers decode a '#' and two hex digits)."""
+    """One '#xx' escape of a name (a '#' and two hex digits), decoded: the one escape every reader decodes alike.
+    Any other '#' is left as it is here, as pypdf leaves most of them; pdfium decodes a '#' and ANY two bytes
+    (`_pdfium_name`), so a name holding one is judged by `Identity._names` and `name_disagrees`."""
     return bytes.fromhex(m.group(1).decode())
+
+
+def name_disagrees(name: str, after: bytes) -> bool:
+    """R8: may pdfium read the name pypdf just parsed (``name``, decoded; ``after``, the byte after its word)
+    differently? True when a '#' or a character under 0x10 is left in it (a '#' not followed by two hex digits:
+    pypdf keeps most as they are, and reads '#+4', '#-0' and a lone '#4' as a byte under 0x10, while pdfium
+    decodes a '#' and ANY two bytes of its word), or when 0x0b follows it (pypdf's word ends there; pdfium's
+    goes on, '#' escapes and all: '/X#3<0b>' is '/X0' to pdfium, probe D1). Strict: a valid '#23' or '#0A'
+    is refused too."""
+    return '#' in name or min(name, default='/') < '\x10' or after == b'\x0b'
+
+
+def _gate_name(word: bytes) -> bytes:
+    """A name word as pypdf decodes it, but for the '#' escapes `_BAD_ESCAPE` finds (refused wherever they matter)."""
+    return _ESCAPE.sub(_unescape, word)
+
+
+def _hex(c: int) -> int:
+    """pdfium's FXSYS_HexCharToInt: a hex digit's value, 0 for any other byte."""
+    return int(chr(c), 16) if chr(c) in '0123456789abcdefABCDEF' else 0
+
+
+def _pdfium_name(word: bytes) -> bytes:
+    """A name word ('/' first) as pdfium's PDF_NameDecode reads it (R8, probes B and D): a '#' with two more bytes
+    in the word takes them, each byte that is not a hex digit as 0; a '#' with fewer is kept as it is."""
+    out, i, n = bytearray(), 0, len(word)
+    while i < n:
+        if word[i] == 0x23 and i + 2 < n:
+            out.append(_hex(word[i + 1]) * 16 + _hex(word[i + 2]))
+            i += 3
+        else:
+            out.append(word[i])
+            i += 1
+    return bytes(out)

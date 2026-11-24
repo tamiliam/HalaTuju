@@ -379,3 +379,26 @@ def names_in_comment(name, n):
     d = GenDoc()
     d.out += b'%' + name * n + b'\n'
     return _base(d, page()).obj(5, 0, gen_stream(LIGHT)).table(ents(1, 2, 3, 5)).bytes()
+
+
+#: Review round 4 (R8): an RC4-40 Standard encryption dictionary (any one: no reader of these tests decrypts).
+ENCRYPT = (b'<< /Filter /Standard /V 1 /R 2 /O <' + b'11' * 32 + b'> /U <' + b'22' * 32 + b'> /P -4 >>')
+
+
+def named_trailer(key, tail=b''):
+    """Review round 4 (R8, probe C): a light document whose ONE trailer holds ``key`` '9 0 R', 9 an encryption
+    dictionary. pdfium decodes '#' and ANY two bytes (a non-hex byte counts as 0): '/Encry#7Gt' is '/Encrypt' to
+    pdfium only, which then decrypts every stream pypdf and the gate read as plain. ``tail``: bytes after %%EOF."""
+    d = _base(GenDoc(), page()).obj(5, 0, gen_stream(LIGHT)).obj(9, 0, ENCRYPT)
+    at = len(d.out)
+    d.out += b'xref\n0 10\n0000000000 65535 f \n'
+    for n in range(1, 10):
+        d.out += b'%010d 00000 n \n' % d.off[(n, 0)] if (n, 0) in d.off else b'0000000000 65535 f \n'
+    d.out += b'trailer\n<< /Size 10 /Root 1 0 R ' + key + b' 9 0 R >>\nstartxref\n%d\n%%%%EOF\n' % at
+    return bytes(d.out) + tail
+
+
+def page_key(key):
+    """Review round 4 (R8): a light page whose '/Type' key is written as ``key``."""
+    d = _base(GenDoc(), page().replace(b'/Type /Page ', key + b' /Page '))
+    return d.obj(5, 0, gen_stream(LIGHT)).table(ents(1, 2, 3, 5)).bytes()

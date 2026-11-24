@@ -7,10 +7,14 @@ the same file WITHOUT the walk desync, which the old design refused): all are re
 hides (T1 a cut number word, T2 a '%' in a string or stream, T3 an object stream no entry names) and the
 generation sites. Every file is built here: filled rectangles only, no personal data.
 """
+import io
+import threading
 import zlib
 from unittest import mock
 
 from django.test import SimpleTestCase
+from pypdf import PdfReader
+from pypdf.generic import NameObject
 
 from apps.scholarship import pdf_layer_guards as guards, pdf_object_identity as identity, pdf_render_check
 from apps.scholarship.tests import _pdf_generations as gen
@@ -374,3 +378,114 @@ class NameWork(SimpleTestCase):
             n, why = _verdict(gen.names_in_comment(b'/Root 1 0 R', 20_000))
         self.assertEqual(n, 0)
         self.assertIn('OverBudget', why)
+
+
+class NameEscapes(SimpleTestCase):
+    """Review round 4 (R8, probe C): pdfium decodes '#' and ANY two bytes, a non-hex byte counting as 0, so
+    '/Encry#7Gt' is '/Encrypt' to pdfium only. The old gate accepted that RC4 forge (pypdf drew GENUINE, pdfium
+    FORGED). A name with a '#' that is not two hex digits is now refused: as pypdf parses it (any object, the
+    trailer too), or, in raw bytes, where some reader would read it as a watched name."""
+
+    BAD_NAME = 'OverBudget: a name the gate and the renderer may decode differently'
+
+    def test_a_trailer_key_with_a_non_hex_escape_is_refused(self):
+        """The regression: the old gate accepted it as a plain light file, (1, None)."""
+        self.assertEqual(_verdict(gen.named_trailer(b'/Encry#7Gt')), (0, self.BAD_NAME))
+
+    def test_one_hex_digit_then_a_non_hex_byte_in_a_page_key_is_refused(self):
+        for key in (b'/Ty#7Ge', b'/Ty#7\x0be', b'/X#7G'):
+            with self.subTest(key=key):
+                pdf = gen.page_key(key) if key.startswith(b'/Ty') else gen.named_trailer(key)
+                self.assertEqual(_verdict(pdf), (0, self.BAD_NAME))
+
+    def test_a_hash_at_the_end_of_a_token_is_refused(self):
+        """pdfium keeps a '#' with fewer than two bytes after it; pypdf decodes '#7' as 0x07. Strict: refused."""
+        for key in (b'/Ty#7', b'/Type#'):
+            with self.subTest(key=key):
+                self.assertEqual(_verdict(gen.page_key(key)), (0, self.BAD_NAME))
+        for key in (b'/Encry#7', b'/Encry#7\x80t'):
+            with self.subTest(key=key):
+                self.assertEqual(_verdict(gen.named_trailer(key)), (0, self.BAD_NAME))
+
+    def test_raw_bytes_a_reader_reads_as_a_watched_name_are_refused(self):
+        """A stray trailer (pdfium rebuilds and merges it) and the file's last bytes: no parse reaches them."""
+        for key in (b'/Encry#7Gt', b'/Encry#7\x0bt'):
+            with self.subTest(stray=key):
+                self.assertEqual(_verdict(gen.high_byte_trailer(key, b' ')),
+                                 (0, 'OverBudget: a name the renderer may read as /Encrypt'))
+        self.assertEqual(_verdict(gen.named_trailer(b'/X', b'%/Encry#7Gt')),
+                         (0, 'OverBudget: a name the renderer may read as /Encrypt'))
+
+    def test_a_hash_at_the_end_of_the_file_that_no_reader_reads_as_watched_passes(self):
+        for tail in (b'%/Encrypt#7', b'%/Encrypt#', b'%/Encry#7G'):
+            with self.subTest(tail=tail):
+                self.assertEqual(_verdict(gen.named_trailer(b'/X', tail)), (1, None))
+
+    def test_valid_escapes_behave_as_before(self):
+        for key in (b'/Ty#70e', b'/T#79pe', b'/Type'):
+            with self.subTest(key=key):
+                self.assertEqual(_verdict(gen.page_key(key)), (1, None))
+        for key in (b'/Encry#70t', b'/Encrypt'):
+            with self.subTest(key=key):
+                self.assertEqual(_verdict(gen.named_trailer(key)),
+                                 (0, 'FileNotDecryptedError: File has not been decrypted'))
+        self.assertEqual(_verdict(gen.high_byte_trailer(b'/Encry#70t', b' ')),
+                         (0, 'OverBudget: a trailer names an encryption the gate did not read'))
+
+    def test_the_two_decoders(self):
+        self.assertEqual(identity._pdfium_name(b'/Encry#7Gt'), b'/Encrypt')
+        self.assertEqual(identity._pdfium_name(b'/Encry#70t'), b'/Encrypt')
+        self.assertEqual(identity._pdfium_name(b'/X#3\x0b'), b'/X0')
+        self.assertEqual(identity._pdfium_name(b'/Ty#7'), b'/Ty#7')          # fewer than two bytes: kept
+        self.assertEqual(identity._pdfium_name(b'/Type#'), b'/Type#')
+        self.assertEqual(identity._gate_name(b'/Encry#7Gt'), b'/Encry#7Gt')
+        self.assertEqual(identity._gate_name(b'/Encry#70t'), b'/Encrypt')
+
+    def test_name_disagrees(self):
+        for name, after in (('/Encry#7Gt', b' '), ('/Ty\x07', b' '), ('/X', b'\x0b'), ('/A#', b' '), ('/\n', b'')):
+            with self.subTest(name=name, after=after):
+                self.assertTrue(identity.name_disagrees(name, after))
+        for name, after in (('/Type', b' '), ('/Type', b'/'), ('/Type', b''), ('/', b' ')):
+            with self.subTest(name=name, after=after):
+                self.assertFalse(identity.name_disagrees(name, after))
+
+    def test_the_name_check_is_the_gate_s_own(self):
+        """The hook on pypdf's name read is installed once, process-wide (as `_bytes_io` is), and holds no state:
+        it acts only on a `GateReader`'s own bytes (`_CountedBytes`, or `_MeteredData` charged to one), so no thread
+        can switch it on or off for another. A plain PdfReader reads '/Ty#7Ge' as pypdf always did: after a gate
+        read, and in another thread while a gate read is held inside its check of that very name."""
+        bad = gen.page_key(b'/Ty#7Ge')
+
+        def plain_keys():
+            return set(PdfReader(io.BytesIO(bad)).pages[0].keys())
+
+        hook = NameObject.read_from_stream
+        self.assertEqual(_verdict(bad), (0, self.BAD_NAME))
+        self.assertIn('/Ty#7Ge', plain_keys())                     # after a gate read
+        self.assertIs(NameObject.read_from_stream, hook)          # nothing installed or removed per read
+
+        inside, done, seen, real = threading.Event(), threading.Event(), [], identity.name_disagrees
+
+        def held(name, after):                                    # the gate thread waits here, mid-check
+            if name == '/Ty#7Ge' and not inside.is_set():
+                inside.set()
+                done.wait(10)
+            return real(name, after)
+
+        def gate():
+            try:
+                guards.GateReader(bad).pages[0].keys()
+            except guards.OverBudget as e:
+                seen.append(str(e))
+
+        with mock.patch.object(guards, 'name_disagrees', held):
+            t = threading.Thread(target=gate)
+            t.start()
+            try:
+                self.assertTrue(inside.wait(10))
+                self.assertIn('/Ty#7Ge', plain_keys())             # another thread, during the gate read
+            finally:
+                done.set()
+                t.join(10)
+        self.assertEqual(seen, ['a name the gate and the renderer may decode differently'])
+        self.assertIn('/Ty#7Ge', plain_keys())
