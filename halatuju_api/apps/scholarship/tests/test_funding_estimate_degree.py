@@ -6,6 +6,7 @@ Applications come from `test_funding_estimate._Base._app` (one fresh cohort per 
 from datetime import date
 
 from apps.courses.models import FieldTaxonomy, Institution, StpmCourse
+from apps.scholarship import funding_estimate as fe
 from apps.scholarship.funding_estimate import classify_pathway, estimate_funding
 from apps.scholarship.tests.test_funding_estimate import _Base
 
@@ -30,27 +31,27 @@ class TestDegreeEstimate(_Base):
                          chosen_programme=_degree(cid, name, stream), **kw)
 
     def test_278_education_degree(self):
-        # Arts: 1,200 x 10 + 2,900 - 6,180 = 8,720/yr; Pendidikan = 4 years.
+        # Arts: 900 x 10 + 2,900 - 6,180 = 5,720/yr; Pendidikan = 4 years.
         est = estimate_funding(self._degree_app(*EDU))
-        self.assertEqual(est, {'pathway': 'degree', 'known': True, 'monthly': 872, 'months': 40,
-                               'total': 34900, 'variable': True, 'practical': False,
+        self.assertEqual(est, {'pathway': 'degree', 'known': True, 'monthly': 572, 'months': 40,
+                               'total': 22900, 'variable': True, 'practical': False,
                                'study_months': True, 'continuing': False})
 
     def test_science_degree_is_four_years_at_the_science_loan(self):
-        # 12,000 + 2,900 - 6,650 = 8,250/yr x 4.
+        # 9,000 + 2,900 - 6,650 = 5,250/yr x 4.
         est = estimate_funding(self._degree_app('UK0001', 'Ijazah Sarjana Muda Sains Kimia',
                                                 'science'))
-        self.assertEqual((est['monthly'], est['months'], est['total']), (825, 40, 33000))
+        self.assertEqual((est['monthly'], est['months'], est['total']), (525, 40, 21000))
 
     def test_arts_degree_is_three_years(self):
         est = estimate_funding(self._degree_app('UK0002', 'Ijazah Sarjana Muda Sejarah', 'arts'))
-        self.assertEqual((est['monthly'], est['months'], est['total']), (872, 30, 26200))
+        self.assertEqual((est['monthly'], est['months'], est['total']), (572, 30, 17200))
 
     def test_both_stream_reads_as_unknown(self):
         # stpm_courses.stream also holds 'both' (331 courses): the arts loan, the default 4 years.
         est = estimate_funding(self._degree_app('UK0003', 'Ijazah Sarjana Muda Pengurusan',
                                                 'both'))
-        self.assertEqual((est['monthly'], est['months'], est['total']), (872, 40, 34900))
+        self.assertEqual((est['monthly'], est['months'], est['total']), (572, 40, 22900))
 
     def test_medicine_and_dentistry_are_five_years(self):
         for cid, name in (('UK0004', 'Doktor Perubatan'),
@@ -72,7 +73,7 @@ class TestDegreeEstimate(_Base):
                                                          'ASLI) DENGAN KEPUJIAN'})
         self.assertEqual(classify_pathway(app), 'degree')
         est = estimate_funding(app)
-        self.assertEqual((est['monthly'], est['months'], est['total']), (872, 40, 34900))
+        self.assertEqual((est['monthly'], est['months'], est['total']), (572, 40, 22900))
 
     def test_133_named_degree_with_blank_code(self):
         app = self._app(chosen_pathway='', pathway_certainty='sure', pathways_considered=['stpm'],
@@ -103,7 +104,7 @@ class TestContinuingDegree(_Base):
 
     def test_continuing_student_is_estimated_for_the_years_left(self):
         est = estimate_funding(self._started(1))
-        self.assertEqual((est['months'], est['total'], est['continuing']), (30, 26200, True))
+        self.assertEqual((est['months'], est['total'], est['continuing']), (30, 17200, True))
 
     def test_started_this_year_is_full_length(self):
         est = estimate_funding(self._started(0))
@@ -116,4 +117,32 @@ class TestContinuingDegree(_Base):
 
     def test_years_left_floor_at_one(self):
         est = estimate_funding(self._started(9))
-        self.assertEqual((est['months'], est['total'], est['continuing']), (10, 8700, True))
+        self.assertEqual((est['months'], est['total'], est['continuing']), (10, 5700, True))
+
+
+class TestTd719DegreeLiving900(_Base):
+    """TD-719 (owner 2026-11-24): degree living costs are RM900 a study month, not RM1,200."""
+
+    def test_living_cost_is_900_a_study_month(self):
+        self.assertEqual(fe.DEGREE_LIVING_MONTHLY, 900)
+
+    def test_annual_shortfall_science_5250_arts_5720(self):
+        def annual(stream):
+            return (fe.DEGREE_LIVING_MONTHLY * fe.DEGREE_STUDY_MONTHS_PER_YEAR
+                    + fe.DEGREE_FEE_PER_YEAR - fe.DEGREE_PTPTN_BY_STREAM[stream])
+        self.assertEqual((annual('science'), annual('arts')), (5250, 5720))
+        sci = estimate_funding(self._app(
+            chosen_pathway='university', pathway_certainty='sure',
+            chosen_programme=_degree('UK0719', 'Ijazah Sarjana Muda Sains Fizik', 'science')))
+        arts = estimate_funding(self._app(chosen_pathway='university', pathway_certainty='sure',
+                                          chosen_programme=_degree(*EDU)))
+        self.assertEqual((sci['monthly'] * 10, arts['monthly'] * 10), (5250, 5720))
+
+    def test_non_degree_pathways_keep_their_estimates(self):
+        # Owner 2026-11-24: RM900 is for degree-level students only. The f0631426a figures stand.
+        for pw, (monthly, months, total) in {'stpm': (500, 18, 9000), 'matric': (200, 10, 2000),
+                                             'asasi': (700, 10, 7000), 'university': (220, 30, 6600),
+                                             'poly': (120, 36, 4300)}.items():
+            est = estimate_funding(self._app(chosen_pathway=pw, pathway_certainty='sure'))
+            self.assertEqual((est['pathway'], est['monthly'], est['months'], est['total']),
+                             (pw, monthly, months, total), pw)

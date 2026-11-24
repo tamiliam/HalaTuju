@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Degree funding estimate: living costs RM900 a study month (TD-719, 2026-11-24)
+
+Not pushed. Migration: none. Services: api, web.
+- Owner decision, 24 Nov: `funding_estimate.DEGREE_LIVING_MONTHLY` 1,200 -> 900. Annual shortfall now science RM5,250 (was 8,250) and arts RM5,720 (was 8,720); #278's example (arts, 4 years) RM22,900 (was 34,900). Display only: the Estimated need card and the replay adapter read it; the award, stored fields and emails do not.
+- Words: the cockpit's degree line says "RM900 x 10" in en, ms and ta (number only). `docs/scholarship/funding-estimate-basis.md` and `docs/decisions.md` (new entry) follow; the 2026-11-07 records keep RM1,200 as history.
+- Tests: `test_funding_estimate_degree.py` re-pins the degree figures and adds `TestTd719DegreeLiving900` (the constant is 900; science 5,250 and arts 5,720 a year).
+
 ### Case page: Estimated need moves above Reviewer Assessment (2026-11-24, TD-720)
 
 - Owner ask: the Estimated need & proposed bursary card now sits ABOVE the Reviewer Assessment

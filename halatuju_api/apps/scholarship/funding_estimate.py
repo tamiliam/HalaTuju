@@ -4,8 +4,8 @@ Check 2 — deterministic per-pathway funding-need ESTIMATE for a B40 student.
 Pre-college students can't reliably self-report what they'll need, so we estimate the
 realistic **monthly shortfall a top-up assistance would fill, AFTER government coverage
 (allowance) and any PTPTN loan**, keyed on the student's pathway, times the typical
-programme length. The student's funding checkboxes stay a *signal*; this estimate is the
-baseline for award sizing + the officer cockpit.
+programme length. The student's funding checkboxes stay a *signal*; this estimate is shown
+on the officer cockpit only. It does NOT size the award (``award.py`` sizes it by funded period).
 
 Figures (RM) are owner-validated and live in ``docs/scholarship/funding-estimate-basis.md``
 — keep the two in sync. Pure + no LLM.
@@ -18,8 +18,9 @@ teacher-training programme and has its own category). So the post-SPM pathway "u
 Degree scope (owner decisions 2-6, 2026-11-07): the Sabah / Ipoh gifts admit STPM-level students, and
 the offer realignment stores an STPM degree as 'university'. A DEGREE-BOUND student
 (`results_route.degree_bound`, checked FIRST in `classify_pathway`) is estimated as 'degree': living
-RM1,200 x 10 study months a year, plus a flat RM2,900/yr fee, less the PTPTN IPTA bachelor maximum
-for the course's stream, times the years LEFT. Figures: owner's SLS Model.xlsx.
+RM900 x 10 study months a year (owner 2026-11-24, TD-719; was RM1,200), plus a flat RM2,900/yr fee,
+less the PTPTN IPTA bachelor maximum for the course's stream, times the years LEFT. Figures: owner's
+SLS Model.xlsx.
 
 MARA diplomas (decision 9): Kolej Profesional MARA (`OP4...` ids, the MARA-BPT division pick) and the
 MARA skills campuses' TVET Diplomas take the UA-diploma figures under their own key 'mara_diploma'
@@ -85,7 +86,8 @@ MONTHS_PER_SEMESTER = 6
 
 # ── Degree (owner decisions 2-6, 2026-11-07; source: owner's SLS Model.xlsx) ─────────────────────
 #: Decision 2: living costs at university, RM per study month, and study months per year.
-DEGREE_LIVING_MONTHLY = 1200
+#: RM900 since owner decision 2026-11-24 (TD-719; was RM1,200). Display only: award.py never reads it.
+DEGREE_LIVING_MONTHLY = 900
 DEGREE_STUDY_MONTHS_PER_YEAR = 10
 #: Decision 3: one flat fee, RM/yr (the SLS UM IPTA bachelor mean of RM2,100-3,400). `variable` caveat.
 DEGREE_FEE_PER_YEAR = 2900
@@ -291,8 +293,8 @@ def _years_done(application) -> int:
 
 
 def _estimate_degree(application) -> dict:
-    """Decisions 2-6: annual shortfall = living (1,200 x 10) + fee (2,900) − PTPTN (by stream),
-    for the years LEFT (at least 1). Arts 8,720/yr (≈872 per study month), science 8,250."""
+    """Decisions 2-6: annual shortfall = living (900 x 10) + fee (2,900) − PTPTN (by stream),
+    for the years LEFT (at least 1). Arts 5,720/yr (≈572 per study month), science 5,250."""
     stream = _degree_stream(application)
     loan_stream = stream if stream in DEGREE_PTPTN_BY_STREAM else DEGREE_DEFAULT_STREAM
     annual = (DEGREE_LIVING_MONTHLY * DEGREE_STUDY_MONTHS_PER_YEAR + DEGREE_FEE_PER_YEAR
@@ -326,7 +328,7 @@ def _semester_months(application, default: int) -> int:
 
 def estimate_funding(application) -> dict:
     """The funding-need estimate for an application: the monthly shortfall, the typical
-    programme length in months, and the rounded whole-programme total for award sizing,
+    programme length in months, and the rounded whole-programme total (display only),
     plus 'variable' (cost swings by institution) and 'practical' (an internship term may
     add travel) flags. The duration is the per-pathway figure from the basis table — NOT
     the student's stated programme_months, which is rounded to whole years and so is less
