@@ -90,7 +90,7 @@ def validate(tree):
             if mode != 'any' or any(s not in STATE_KEYS for s in items) or len(set(items)) != len(items):
                 errs.append('born_in must be any: [distinct state keys]')
         elif name == 'results':
-            errs += _validate_groups(items)
+            errs += _validate_groups(items, mode)
         else:
             errs += _validate_tests(items, INCOME_TESTS, 'income')
     flags = tree.get('flag', [])
@@ -106,8 +106,25 @@ def validate(tree):
     return errs
 
 
-def _validate_groups(groups):
+def spm_can_fail(tests):
+    """True when an SPM group holds a test that can fail someone who gave SPM grades: a grade count
+    above 0 or a UPU merit above 0. A 0 count or a 0 merit only asks that SPM grades be given."""
+    return any((t.get('test') == 'grade_count' and _num(t.get('at_least')) and t['at_least'] > 0)
+               or (t.get('test') == 'min_upu_merit' and _num(t.get('value')) and t['value'] > 0)
+               for t in tests if isinstance(t, dict))
+
+
+#: Owner ruling 2026-11-25 (review round 2, c): a void SPM door beside a PNGK floor is refused.
+VOID_SPM_DOOR = ('results: an SPM group with no rule that can fail, beside a post-SPM group under "any", '
+                 'would let every SPM holder through - add a rule to the SPM group or switch it off')
+
+
+def _validate_groups(groups, mode='any'):
     errs, seen = [], set()
+    by_route = {g.get('route'): g for g in groups if isinstance(g, dict)}
+    if (mode == 'any' and 'post_spm' in by_route and isinstance(by_route.get('spm', {}).get('all'), list)
+            and not spm_can_fail(by_route['spm']['all'])):
+        errs.append(VOID_SPM_DOOR)
     for g in groups:
         route = g.get('route') if isinstance(g, dict) else None
         if route not in GROUPS or set(g) != {'route', 'all'} or not isinstance(g['all'], list):
@@ -197,16 +214,23 @@ def _cgpa_test(profile, held, floor, cgpa_of):
     return False, f'{label} CGPA {overall:.2f} below {floor:.2f}'
 
 
-def _spm_group(profile, held, tests):
-    """The SPM group on `spm_grades_for` (a post-SPM holder's SPM block only). A post-SPM holder
-    may pass here too (owner, 2026-11-25: 'any' is a real any) on the GRADE tests only - the UPU
-    merit stays SPM holders only (D3). No tests = passes."""
+def _spm_group(profile, held, tests, door=False):
+    """The SPM group on `spm_grades_for` (a post-SPM holder's SPM block only). No tests = passes.
+
+    A post-SPM holder is tested here in two shapes (owner, 2026-11-25):
+    * NO post-SPM group (``door`` False, D16c's SPM-only intake): the GRADE tests only - the UPU
+      merit stays SPM holders only (D3). Today's meaning, unchanged.
+    * BESIDE a post-SPM group (``door`` True - the SPM group is an alternative door): EVERY test,
+      the UPU merit included, on the merit `spm_merit` computes from their SPM grades; when it
+      cannot be computed the merit test fails. Otherwise a merit-only door would pass every
+      post-SPM holder and void the floor (review round 2, F1)."""
     grades = courses_public.spm_grades_for(profile)
     spm_held = not courses_public.is_tertiary(held)
-    grade_tests = [t for t in tests if t['test'] == 'grade_count']
-    if not spm_held and not grades and grade_tests:
+    merit_applies = spm_held or door
+    asked = [t for t in tests if t['test'] == 'grade_count' or merit_applies]
+    if not spm_held and not grades and asked:
         return False, 'SPM grades not provided'
-    a_rule = next((t['at_least'] for t in grade_tests if t['grade_or_better'] == 'A-'), None)
+    a_rule = next((t['at_least'] for t in tests if t['test'] == 'grade_count' and t['grade_or_better'] == 'A-'), None)
     failures = []
     for t in tests:
         if t['test'] == 'grade_count':
@@ -214,7 +238,7 @@ def _spm_group(profile, held, tests):
             have = at_or_better(grades, g)
             if have < n:
                 failures.append(_grade_reason(have, g, n, a_rule))
-        elif spm_held:
+        elif merit_applies:
             m, v = spm_merit(profile), t['value']
             if m is None:
                 failures.append(f'merit point not available (need {v})')
@@ -246,13 +270,14 @@ def results_ok(profile, section, cgpa_of=courses_public.stpm_cgpa_of):
         return True, ''
     mode, groups = _mode(section)
     held = _held(profile)
+    door = any(x['route'] == 'post_spm' for x in groups)
     out = {}
     for g in groups:
         if g['route'] == 'post_spm':
             out['post_spm'] = _post_spm_group(profile, held, g['all'], cgpa_of)
         else:
-            ok, why = _spm_group(profile, held, g['all'])
-            if not ok and courses_public.is_tertiary(held) and not any(x['route'] == 'post_spm' for x in groups):
+            ok, why = _spm_group(profile, held, g['all'], door=door)
+            if not ok and courses_public.is_tertiary(held) and not door:
                 why = 'SPM-only intake: ' + why
             out['spm'] = (ok, why)
     if not out:
@@ -375,7 +400,8 @@ def evaluate(application, tree, cgpa_of=courses_public.stpm_cgpa_of):
 
 def has_spm_bar(cohort):
     """True when the intake sets an SPM bar that can fail a student who gave SPM grades: a grade
-    count or the UPU merit above 0. A bar stored as 0 only asks that SPM grades be given."""
+    count or the UPU merit above 0 (owner ruling 2026-11-25, b). A bar stored as 0 only asks that
+    SPM grades be given, so it does not count. The same test as `spm_can_fail` on the tree."""
     return any((getattr(cohort, name, None) or 0) > 0 for name in (
         'min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count', 'min_merit_score'))
 
@@ -387,14 +413,17 @@ def from_legacy(cohort, keep_empty_spm=False):
     * ``min_stpm_pngk`` set (0 included) -> a post-SPM group with min_pngk; NULL -> no post-SPM
       group (D16c: the intake is SPM-only and a post-SPM holder is tested on the SPM GRADE bars).
     * A-, B+ (a TOTAL), credit (C) counts -> grade_count rules; ``min_merit_score`` ->
-      min_upu_merit (SPM holders only, D3). NULL = no rule. A 0 is KEPT as a rule, exactly as
+      min_upu_merit (SPM holders only on a blank floor, D3; beside a floor it binds a post-SPM
+      holder who uses the SPM door too - `_spm_group`). NULL = no rule. A 0 is KEPT as a rule, exactly as
       today: it never fails a count, but a post-SPM holder on a blank-floor intake with no SPM
       grades fails "SPM grades not provided", an SPM holder with no merit fails a merit 0, and
       the B+ wording reads "0 at A- plus N more at B+".
     * THE CGPA TRAP, BY SHAPE (owner ruling 2026-11-25: the trap = SPM group OFF): a PNGK floor
       with no SPM bar (`has_spm_bar` false) has NO SPM group, so SPM-only students do not qualify.
       Today such an intake passes them (#921); intake 5 (bpb-deg-dip-2026) is the one live case.
-      ``keep_empty_spm=True`` keeps the group (the replay's ``--plain`` view) for comparison.
+      So `validate(from_legacy(c))` never meets `VOID_SPM_DOOR`. ``keep_empty_spm=True`` keeps the
+      group (the replay's ``--plain`` view) for COMPARISON ONLY: that tree is the trap left on, and
+      `validate` refuses it.
     * Otherwise the SPM group is present whenever the results section is. No academic value at
       all -> no section.
     * income_ceiling / per_capita_ceiling -> income, 'any' (today's rescue rule); neither -> none.
@@ -435,3 +464,16 @@ def from_legacy(cohort, keep_empty_spm=False):
 
 #: Sprint 2's data migration stores exactly `from_legacy` (the CGPA trap is decided by shape).
 tree_for_migration = from_legacy
+
+
+def refused_trees(cohorts):
+    """``[(id, code, [problems])]`` for every intake whose `from_legacy` tree `validate` refuses -
+    a stored birth state that is not a known key (a wrong case such as 'Sabah'), a start-year
+    list of junk only. Sprint 2's migration must stop on these rather than store them. Ids, codes
+    and the generic problem texts only."""
+    out = []
+    for c in cohorts:
+        errs = validate(from_legacy(c))
+        if errs:
+            out.append((getattr(c, 'id', None), getattr(c, 'code', ''), errs))
+    return out
