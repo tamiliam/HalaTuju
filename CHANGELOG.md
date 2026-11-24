@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### LL5 phase B2b fix - a case now past the award is not called valid (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. Review round 1 (B1): the fingerprint's stage facts do not cover the past-award split the engine reads, so a case decided at Recommended (or a reopened Rejected) and later awarded, funded, or closed after funding could be called valid while its fresh snapshot was built under a stage the decision never had. Now such a case gets no fingerprint and no snapshot: could not recompute, not scored. The rule (`at_past_award_stage`) is written from `closure.POST_AWARD_STATUSES` and a drift test holds it to the engine's own. No past-award status is used as a stage twin. Exam-old cases are unchanged (a written known limit). New tests: the B1 shape through the live door, the end-to-end count, a normal run never freezes, the twins are copies (decisions.md).
+
 ### LL5 phase B2b - the human lens's database half (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. New module `eval/replay/lens_human_rows.py` (nothing calls it yet): it reads every application through the ORM with SELECTs only, builds the lens's case rows, and hands them to `lens_human.run_human_lens` unchanged. For each decided case it recomputes the fingerprint and a fresh engine snapshot with the same public functions the live decision uses (`verdict_context.build_verdict_context`, `verdict_engine.build_verdict`), under the clock pinned to that case's decision time. It never guesses the stage at the decision: when the same evidence under another status gives the stored fingerprint, the case gets no fingerprint (could not recompute). The key counts as blank unless the derived-key setting is exactly 64 hex characters. No write, no file, no log line, no network; no id, name or key in its output (decisions.md).

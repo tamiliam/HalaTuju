@@ -7,6 +7,7 @@ import logging
 import os
 import pathlib
 import re
+import types
 
 import pytest
 from django.db import connection
@@ -14,13 +15,15 @@ from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.courses.models import StudentProfile
-from apps.scholarship import second_look, verdict_context, verdict_engine
+from apps.scholarship import income_declaration, second_look, verdict_context, verdict_engine
 from apps.scholarship.eval.replay import clock, lens_human, netguard
 from apps.scholarship.eval.replay import lens_human_rows as R
-from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import (
+    ApplicantDocument, InterviewSession, ScholarshipApplication, ScholarshipCohort,
+)
 from apps.scholarship.tests.factories import (
-    RECOMMEND_VERDICT, TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
-    make_student,
+    RECOMMEND_VERDICT, TEST_JWT_SECRET, answered_findings, authed_client, create_document, make_admin,
+    make_application, make_cohort, make_student,
 )
 
 KEY = '9f3a5c7e' * 8                      # 64 made-up hex characters: a derived key for these tests only
@@ -50,7 +53,13 @@ def desk(keyed):
 def decide(desk, **overrides):
     """A case awaiting QC, its verdict recorded (again) through the live door, re-read from the database."""
     cohort, reviewer = desk
-    app = make_application('awaiting_qc', outcome='recommend', cohort=cohort, reviewer=reviewer, **overrides)
+    return record(desk, make_application('awaiting_qc', outcome='recommend', cohort=cohort, reviewer=reviewer,
+                                         **overrides))
+
+
+def record(desk, app):
+    """``app``'s verdict recorded through the live door, re-read from the database."""
+    _cohort, reviewer = desk
     response = authed_client(reviewer).post(
         f'/api/v1/admin/scholarship/applications/{app.pk}/record-verdict/',
         {'officer_verdict': dict(RECOMMEND_VERDICT), 'reason': 'Made-up reason.'}, format='json')
@@ -345,3 +354,130 @@ def test_a_naive_decision_time_is_refused_by_the_pin_not_swallowed():
     with pytest.raises(ValueError):
         with clock.pinned_clock(datetime.datetime(2026, 1, 1)):
             pass
+
+
+# ── B1 (review round 1): a case now past the award is never called valid ──────────────────────────
+PAST_AWARD_LATER = [('awarded', False), ('active', True), ('maintenance', True), ('closed', True)]
+KEPT_LATER = [('recommended', False), ('rejected', False), ('closed', False)]
+
+
+@pytest.fixture
+def award_desk(desk, settings):
+    settings.DOC_GENUINENESS_CHECK_ENABLED = True     # the made-up slip's genuineness band is read
+    return desk
+
+
+def stamp_at(desk, status):
+    """A made-up salary case whose income fact reads the past-award split, its verdict recorded through
+    the live door AT ``status`` (a rejected case only once a super reopened it, as the door demands)."""
+    cohort, reviewer = desk
+    app = make_application('awaiting_qc', outcome='recommend', cohort=cohort, reviewer=reviewer,
+                           income_route='salary', income_working_members=['father'], income_earner='',
+                           mother_occupation='homemaker', father_name='Made Up', father_occupation='fisherman',
+                           other_family_members=[])
+    fields = {'gross_income': 'RM800', 'issuer_header': 'MADE-UP OFFICE', 'approver_name': '',
+              'approver_title': 'KETUA KAMPUNG', 'has_stamp_or_signature': 'stamp'}
+    create_document(application=app, doc_type='salary_slip', household_member='father',
+                    storage_path=f'test/slip/{app.pk}', vision_run_at=timezone.now(),
+                    vision_fields={'fields': fields, 'student_verdict': 'ok', 'error': '',
+                                   'authenticity': {'status': 'genuine', 'doc_seen': 'declaration',
+                                                    'probability': 0.97}})
+    InterviewSession.objects.create(application=app, status='submitted', findings=answered_findings(app),
+                                    started_at=timezone.now(), submitted_at=timezone.now())
+    ScholarshipApplication.objects.filter(pk=app.pk).update(
+        status=status, decision_reopened_at=timezone.now() if status == 'rejected' else None)
+    app = record(desk, ScholarshipApplication.objects.get(pk=app.pk))
+    assert app.status == status and app.ai_verdict_context.get('fingerprint')
+    return app
+
+
+def move(app, status, funded):
+    ScholarshipApplication.objects.filter(pk=app.pk).update(
+        status=status, decision_reopened_at=None, active_at=timezone.now() if funded else None)
+
+
+def built_today(pk, when):
+    fresh = ScholarshipApplication.objects.select_related('profile', 'cohort').get(pk=pk)
+    with clock.pinned_clock(when):
+        return json.loads(json.dumps(verdict_engine.build_verdict(fresh)))
+
+
+@pytest.mark.parametrize('stamped', ['recommended', 'rejected'])
+def test_a_case_stamped_in_the_decided_group_and_now_past_the_award_is_not_recomputed(award_desk, stamped):
+    app = stamp_at(award_desk, stamped)
+    seen_a_moved_snapshot = False
+    for later, funded in PAST_AWARD_LATER:
+        move(app, later, funded)
+        row = rows_by_id()[app.pk]
+        assert (row['recomputed_fingerprint'], row['fresh_snapshot']) == (None, None), later
+        seen_a_moved_snapshot |= built_today(app.pk, app.verdict_decided_at) != app.ai_verdict_snapshot
+    assert seen_a_moved_snapshot          # the shape is the one B1 found: the stage facts alone hid it
+    for later, funded in KEPT_LATER:
+        move(app, later, funded)
+        row = rows_by_id()[app.pk]
+        assert row['recomputed_fingerprint'] == app.ai_verdict_context['fingerprint'], later
+        assert row['fresh_snapshot'] == app.ai_verdict_snapshot, later
+
+
+def test_the_past_award_rule_matches_the_engines_own_split():
+    for status, _label in ScholarshipApplication.STATUS_CHOICES:
+        for active_at in (None, NOW):
+            doc = types.SimpleNamespace(application_id=1,
+                                        application=types.SimpleNamespace(status=status, active_at=active_at))
+            assert R.at_past_award_stage(status, active_at) is income_declaration._past_award(doc), status
+
+
+def test_the_exam_old_path_still_builds_a_snapshot_past_the_award(desk):
+    old = make_application('awaiting_qc', outcome='recommend', cohort=desk[0])    # decided before LL4: {}
+    ScholarshipApplication.objects.filter(pk=old.pk).update(status='awarded')
+    row = rows_by_id()[old.pk]
+    assert row['recomputed_fingerprint'] is None and isinstance(row['fresh_snapshot'], list)
+
+
+def test_a_normal_run_never_freezes_then_a_past_award_case_is_not_scored(award_desk, tmp_path):
+    folder = tmp_path / 'exams'
+    folder.mkdir()
+    moved = stamp_at(award_desk, 'recommended')
+    others = [decide(award_desk) for _ in range(49)]
+    first = R.run_human_lens_on_database(str(folder), NOW)                      # R11: freeze is OFF by default
+    assert first['exams']['exam-1']['refusal'] == lens_human.EXAM_MISSING and os.listdir(folder) == []
+    frozen = R.run_human_lens_on_database(str(folder), NOW, freeze=True)
+    assert frozen['exams']['exam-1']['still_valid'] == '50 of 50 still valid'
+    move(moved, 'awarded', False)
+    rows = rows_by_id()
+    after = R.run_human_lens_on_database(str(folder), NOW)['exams']['exam-1']
+    assert after['validity']['could_not_recompute'] == 1 and after['validity']['valid'] == 49
+    assert len(others) == 49 and after['still_valid'] == '49 of 50 still valid'
+    without = lens_human.run_human_lens([r for pk, r in rows.items() if pk != moved.pk], exam_folder=str(folder),
+                                        key_is_blank=False, current_key_check=verdict_context.key_check(),
+                                        now=NOW)['exams']['exam-1']
+    assert without['validity']['missing'] == 1
+    for key in ('score', 'score_without_interview_fails', 'fails', 'qc_turned_to_pass'):
+        assert after[key] == without[key], key        # the refused case adds nothing to the score
+
+
+def test_the_stage_twins_are_copies_and_the_snapshot_reads_todays_real_status(desk, monkeypatch):
+    app = decide(desk)
+    ScholarshipApplication.objects.filter(pk=app.pk).update(status='recommended')   # the stage twins run
+    before = ScholarshipApplication.objects.filter(pk=app.pk).values().get()
+    seen = {'context': [], 'snapshot': []}
+    real_context, real_verdict = verdict_context.build_verdict_context, verdict_engine.build_verdict
+
+    def spy_context(case):
+        seen['context'].append((case, case.status))
+        return real_context(case)
+
+    def spy_verdict(case):
+        seen['snapshot'].append((case, case.status))
+        return real_verdict(case)
+
+    monkeypatch.setattr(verdict_context, 'build_verdict_context', spy_context)
+    monkeypatch.setattr(verdict_engine, 'build_verdict', spy_verdict)
+    assert rows_by_id()[app.pk]['recomputed_fingerprint'] is None
+    (real, status_at_snapshot), = [s for s in seen['snapshot'] if s[0].pk == app.pk]
+    assert status_at_snapshot == real.status == 'recommended'
+    calls = [c for c in seen['context'] if c[0].pk == app.pk]
+    assert calls[0][0] is real and len(calls) > 1
+    assert all(case is not real for case, _status in calls[1:])
+    assert not any(R.at_past_award_stage(status, case.active_at) for case, status in calls)
+    assert ScholarshipApplication.objects.filter(pk=app.pk).values().get() == before

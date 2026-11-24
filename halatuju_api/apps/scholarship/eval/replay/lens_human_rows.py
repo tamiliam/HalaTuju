@@ -19,6 +19,14 @@ three status buckets), and the stage at the decision is not stored. The status m
   recompute). If none does, today's fingerprint is used (the evidence or the Submit year moved).
 * only a FULL stored context (text ``fingerprint`` and ``key_check``) whose key check is the current one is
   recomputed. Without a stored fingerprint, or under another key, the stage cannot be checked: None.
+* PAST THE AWARD (review round 1, B1). The stage facts do not cover the past-award split the engine reads
+  (`income_declaration`: status in `closure.POST_AWARD_STATUSES`, or closed with ``active_at`` set), and
+  the live door never stamps a decision there (`_require_open_case` refuses `case_stage` PAST_AWARD). So a
+  case that WOULD be recomputed and is past the award today gets None and no fresh snapshot (it is not
+  scored, and a snapshot under a stage the decision never had would be wrong). No past-award status is
+  hashed as a twin either: a twin only ever proves "another stage", never validity.
+  The exam-old cases (no stored fingerprint) are NOT refused: their snapshot is built under today's stage,
+  past-award split included; that is their written known limit.
 
 THE KEY (F3). `verdict_context` uses ``VERDICT_FINGERPRINT_DERIVED_KEY`` only when it is text of exactly 64
 hex characters; blank or absent, it falls back to ``SECRET_KEY``. So the key counts as blank unless the
@@ -75,9 +83,23 @@ def _full_context(context) -> bool:
             and isinstance(context.get('key_check'), str))
 
 
+def at_past_award_stage(status, active_at) -> bool:
+    """The past-award split as `income_declaration` reads it for a document's case: the status is in
+    `closure.POST_AWARD_STATUSES`, or it is closed with ``active_at`` set (`closure.ever_awarded_q`).
+    A drift test holds it to the engine's own private rule."""
+    from apps.scholarship import closure
+    return status in closure.POST_AWARD_STATUSES or (status == 'closed' and active_at is not None)
+
+
+def _recomputable(app, current_key_check) -> bool:
+    """A FULL stored context under the current key check: the only case whose fingerprint is recomputed."""
+    stored = app.ai_verdict_context
+    return current_key_check is not None and _full_context(stored) and stored['key_check'] == current_key_check
+
+
 def _other_stage_twins(app, status_codes):
     """Copies of ``app`` in memory, one per status whose stage facts differ from today's and from each
-    other's. Nothing is saved: only the copy's ``status`` attribute is set."""
+    other's, never a past-award status. Nothing is saved: only the copy's ``status`` attribute is set."""
     from apps.scholarship import verdict_context
 
     def facts(status):
@@ -87,7 +109,7 @@ def _other_stage_twins(app, status_codes):
     seen = {facts(app.status)}
     for status in status_codes:
         key = facts(status)
-        if key in seen:
+        if key in seen or at_past_award_stage(status, app.active_at):
             continue
         seen.add(key)
         twin = copy.copy(app)
@@ -99,7 +121,7 @@ def _lens_fingerprint(app, current_key_check, status_codes):
     """The recomputed fingerprint (see THE STAGE in the module docstring), or None."""
     from apps.scholarship import verdict_context
     stored = app.ai_verdict_context
-    if current_key_check is None or not _full_context(stored) or stored['key_check'] != current_key_check:
+    if not _recomputable(app, current_key_check):
         return None
     try:
         today = verdict_context.build_verdict_context(app)['fingerprint']
@@ -137,6 +159,8 @@ def _lens_row(app, current_key_check, version, build_verdict, status_codes) -> d
            'qc_answers': second_look.stored(verdict), 'fresh_snapshot': None, 'engine_version': version}
     if when is None:
         return row
+    if _recomputable(app, current_key_check) and at_past_award_stage(app.status, app.active_at):
+        return row   # B1: could not recompute; no snapshot under a stage the decision never had
     with clock.pinned_clock(when):
         row['recomputed_fingerprint'] = _lens_fingerprint(app, current_key_check, status_codes)
         row['fresh_snapshot'] = _lens_snapshot(app, build_verdict)
