@@ -20,14 +20,34 @@ export const REVIEWER_FAQ: QA[] = [
         shows none.</>,
     },
     {
+      q: <>What does each slot of the <strong>Academic card</strong> show, and what does <strong>N/A</strong> mean?</>,
+      a: <>Every student&rsquo;s Academic card has the same slots, in the same order, whatever her route (since
+        24 November 2026). <strong>Secondary school</strong> is the school she attended (always in capitals, as her
+        documents print it). <strong>Merit score</strong> has a small grey line under it naming the exam that produced
+        it and, where we have read it, the year &mdash; <em>SPM 2025</em> from her SPM slip, <em>STPM 2025</em> from her
+        STPM results; a year off the expected sitting is shown in amber. Matriculation, Asasi and Diploma students show
+        just the name of the qualification, as no year is read for them yet. A Matriculation, Asasi or Diploma student
+        also has a <strong>Pre-U institution</strong> row (an STPM student does not: her STPM school is her secondary
+        school). After SPM there is one <strong>CGPA</strong> slot and her <strong>MUET</strong> band, then her STPM
+        grades (STPM only) and her <strong>SPM grades</strong> (<strong>SPM prerequisites</strong> after SPM). Last come
+        <strong> Chosen programme</strong>, <strong>Reporting date</strong> and <strong>Institution</strong>. A grey
+        <strong> Stated by student</strong> line under the programme or institution means no offer letter confirms it
+        yet. <strong>N/A</strong> in a muted colour means the slot is required but empty: nothing was entered or read.
+        It is not a mismatch. The reporting date always shows, and reads N/A until a date is stored or read from her
+        offer letter.</>,
+    },
+    {
       q: <>What is a <strong>Matriculation, Asasi or Diploma</strong> student on the Academic card?</>,
       a: <>Since 26 October 2026 a student may enter Matriculation, Asasi (Foundation) or Diploma results
         instead of STPM. They count as <strong>STPM-equivalent</strong>: the gift&rsquo;s minimum CGPA is
         tested on her overall CGPA, and her merit is that CGPA ÷ 4 × 100, as for an STPM student. The card
-        shows the qualification with her overall CGPA (for example <strong>Matriculation · CGPA 3.47</strong>),
-        the CGPA as printed on her results, her co-curriculum score (Matriculation and Asasi: the overall CGPA
-        is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall CGPA is its CGPA as it is), her MUET band
-        and the SPM grades she entered, under <strong>SPM prerequisites</strong> (as on an STPM card). Only a diploma from a <strong>public</strong> institution counts; a
+        uses the same slots as every other student (see the next question): the qualification
+        (<strong>Matriculation</strong>, <strong>Asasi</strong> or <strong>Diploma</strong>) sits under her merit score,
+        with a <strong>Pre-U institution</strong> row, her <strong>CGPA</strong> as printed on her results
+        (Matriculation and Asasi: her overall CGPA is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall
+        CGPA is its CGPA as it is &mdash; the co-curriculum score no longer has a line of its own), her
+        <strong> MUET</strong> band and the SPM grades she entered, under <strong>SPM prerequisites</strong>
+        (as on an STPM card). Only a diploma from a <strong>public</strong> institution counts; a
         private-college diploma does not qualify. Her results document is the separate
         <strong> STPM / Matriculation / Asasi / Diploma results</strong> upload (see the next question).</>,
     },
@@ -90,7 +110,7 @@ export const REVIEWER_FAQ: QA[] = [
         worked out from her SPM grades and co-curriculum, exactly as before. An STPM student&rsquo;s used to be
         her CGPA as it stands (for example 3.70), so every STPM student sorted below every SPM student; it is
         now her overall CGPA ÷ 4 × 100 (3.70 shows as 92.5), the same conversion the course guide uses. Her
-        CGPA itself has not changed: it now has its own <strong>CGPA</strong> line on the Academic card. A dash means there are no
+        CGPA itself has not changed: it has its own <strong>CGPA</strong> slot on the Academic card. A dash means there are no
         results to score yet &mdash; it is not a zero, and it always sorts last.</>,
     },
     {

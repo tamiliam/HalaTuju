@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Academic box: standard slots for every route (2026-11-24)
+
+- The admin case page's Academic card now uses one slot layout for SPM, STPM, Matriculation, Asasi and Diploma: Secondary school (renamed from School) and Merit score, with the exam and its year in a grey line under the merit (SPM year from the slip, STPM year from the higher-results document, Matriculation/Asasi/Diploma the name only); a Pre-U institution row for Matriculation/Asasi/Diploma; one CGPA slot and MUET after SPM; STPM grades (STPM only) and SPM grades / SPM prerequisites; then Chosen programme, Reporting date and Institution, with a grey "Stated by student" line when no offer letter confirms the value. A required slot with no value reads N/A in a muted colour; the reporting date always shows. "Diploma from", "Results held", "CGPA as printed" and the co-curriculum line are gone (their i18n keys removed). One column on phones, two from the small breakpoint.
+- New keys (en/ms/ta): admin.scholarship.cgpa, preUInstitution, na, statedByStudent, examName.spm/stpm; school reworded to Secondary school. Web only: reuses served data and the existing tick rules; no api change. New helper `higherExamYear` beside `spmExamYear`.
+- Tests: new `ApplicantCards.academicSlots.test.tsx`; the merit and third-route card tests updated. Reviewer FAQ gains a slot-by-slot answer.
+- Not pushed. Migration: none. Services: web.
+
 ### fix: STPM quiz keeps the Q2 answer (TD-714, 2026-11-24)
 
 - The owner saw Q2 skipped on the STPM quiz: its dot stayed grey and "See My Results" stayed off. After the Q2 answer the page fetches Q3/Q4, then rebuilt the answer list from the render before the tap, which had no Q2 answer, so Q2 was wiped every time. It now keeps Q1/Q2 from the latest answers.

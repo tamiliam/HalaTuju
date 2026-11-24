@@ -4462,7 +4462,7 @@
       "bucket": "Kategori",
       "submitted": "Dihantar",
       "back": "Kembali ke permohonan",
-      "school": "Sekolah",
+      "school": "Sekolah menengah",
       "income": "Pendapatan isi rumah",
       "aspirations": "Cita-cita",
       "justification": "Mengapa bantuan diperlukan",
@@ -4809,21 +4809,16 @@
         }
       },
       "meritScore": "Skor merit (daripada 100)",
-      "stpmCgpa": "PNGK (daripada 4.00)",
+      "cgpa": "PNGK",
+      "preUInstitution": "Institusi pra-U",
+      "na": "T/B",
+      "statedByStudent": "Dinyatakan oleh pelajar",
+      "examName": { "spm": "SPM", "stpm": "STPM" },
       "stpmCgpaNotCalculated": "tidak dikira",
       "qualificationLabel": {
         "matric": "Matrikulasi",
         "asasi": "Asasi",
         "diploma": "Diploma"
-      },
-      "heldResults": "Keputusan yang dimiliki",
-      "higherCgpaEntered": "PNGK seperti tercetak",
-      "higherKoko": "Kokurikulum (daripada 10)",
-      "diplomaFrom": "Diploma dari",
-      "diplomaInst": {
-        "public": "Institusi awam",
-        "private": "Kolej swasta (tidak layak)",
-        "unstated": "Tidak dinyatakan"
       },
       "ownWords": {
         "toggle": "Tunjukkan kata-kata pelajar sendiri",

@@ -4462,7 +4462,7 @@
       "bucket": "வகை",
       "submitted": "சமர்ப்பிக்கப்பட்டது",
       "back": "விண்ணப்பங்களுக்குத் திரும்பு",
-      "school": "பள்ளி",
+      "school": "இடைநிலைப் பள்ளி",
       "income": "குடும்ப வருமானம்",
       "aspirations": "இலக்குகள்",
       "justification": "உதவி ஏன் தேவை",
@@ -4809,21 +4809,16 @@
         }
       },
       "meritScore": "தகுதி மதிப்பெண் (100-க்கு)",
-      "stpmCgpa": "CGPA (4.00-க்கு)",
+      "cgpa": "CGPA",
+      "preUInstitution": "முன்-பல்கலை நிறுவனம்",
+      "na": "இல்லை",
+      "statedByStudent": "மாணவர் குறிப்பிட்டது",
+      "examName": { "spm": "SPM", "stpm": "STPM" },
       "stpmCgpaNotCalculated": "கணக்கிடப்படவில்லை",
       "qualificationLabel": {
         "matric": "மெட்ரிகுலேஷன்",
         "asasi": "அசாசி",
         "diploma": "டிப்ளோமா"
-      },
-      "heldResults": "பெற்றுள்ள தேர்வு முடிவுகள்",
-      "higherCgpaEntered": "அச்சிடப்பட்ட CGPA",
-      "higherKoko": "கூட்டுப் பாடநெறி (10-க்கு)",
-      "diplomaFrom": "டிப்ளோமா பெற்ற நிறுவனம்",
-      "diplomaInst": {
-        "public": "அரசு நிறுவனம்",
-        "private": "தனியார் கல்லூரி (தகுதியற்றது)",
-        "unstated": "குறிப்பிடப்படவில்லை"
       },
       "ownWords": {
         "toggle": "மாணவரின் சொந்த வார்த்தைகளைக் காட்டு",

@@ -413,6 +413,23 @@ export function spmExamYear(documents: AdminApplicantDocument[] | undefined): Sp
   return { year: check.exam_year.trim(), status: check.exam_year_status || '' }
 }
 
+/**
+ * The STPM sitting year, read off the live higher-results document (`higher_check.exam_year`, which
+ * the api already serves with its route-aware currency). The twin of `spmExamYear`: it qualifies
+ * the merit score of an STPM student, whose merit comes from STPM, never from an SPM slip. Null
+ * when there is no live higher-results document or it prints no year.
+ */
+export function higherExamYear(documents: AdminApplicantDocument[] | undefined): SpmExamYear | null {
+  const doc = (documents || []).find(
+    (d) => d.doc_type === 'higher_results'
+      && !d.superseded_at
+      && !!(d.higher_check?.exam_year || '').trim(),
+  )
+  const check = doc?.higher_check
+  if (!check) return null
+  return { year: (check.exam_year || '').trim(), status: check.exam_year_status || '' }
+}
+
 // ── Utility-bill key values (at-a-glance, so the reviewer needn't open the document) ─────────
 
 export interface UtilityValue {

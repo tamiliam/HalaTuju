@@ -7,7 +7,7 @@
  * from, instead), the MUET band, the served 0-100 merit, and her SPM grades under "SPM prerequisites".
  * Never "MATRIC", never an STPM grade list, never the SPM exam year on a merit SPM did not produce.
  */
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { ApplicantCards } from './ApplicantCards'
@@ -36,21 +36,32 @@ function renderWith(extra: Partial<AdminScholarshipDetail> & Record<string, unkn
 
 const value = (label: string) =>
   screen.getByText(label).parentElement?.querySelector('dd')?.textContent
+const sub = (label: string) =>
+  screen.getByText(label).parentElement?.querySelector('p')?.textContent
 
 const MATRIC = {
   qualification: 'matric', merit_score: 86.75, overall_cgpa: 3.47, higher_cgpa: 3.5, higher_koko: 8,
   higher_institution_type: '', muet_band: 4, spm_prereq_grades: { bm: 'A', math: 'B+' },
 }
 
-it('names the qualification with the overall CGPA, and shows the merit as served', () => {
+it('names the exam under the merit (no year yet), with ONE CGPA slot and the MUET band', () => {
   renderWith(MATRIC)
-  expect(value('admin.scholarship.heldResults')).toBe('admin.scholarship.qualificationLabel.matric · CGPA 3.47')
   expect(value('admin.scholarship.meritScore')).toBe('86.75')
-  expect(value('admin.scholarship.higherCgpaEntered')).toBe('3.50')
-  expect(value('admin.scholarship.higherKoko')).toBe('8')
+  expect(sub('admin.scholarship.meritScore')).toBe('admin.scholarship.qualificationLabel.matric')
+  expect(screen.getAllByText('admin.scholarship.cgpa')).toHaveLength(1)
+  expect(value('admin.scholarship.cgpa')).toBe('3.50')
   expect(value('MUET')).toBe('4')
-  expect(screen.queryByText('admin.scholarship.stpmCgpa')).toBeNull()
-  expect(screen.queryByText('admin.scholarship.stpmGrades')).toBeNull()
+  for (const gone of ['admin.scholarship.heldResults', 'admin.scholarship.higherCgpaEntered',
+    'admin.scholarship.higherKoko', 'admin.scholarship.diplomaFrom', 'admin.scholarship.stpmCgpa',
+    'admin.scholarship.stpmGrades']) expect(screen.queryByText(gone)).toBeNull()
+})
+
+it('a Matriculation card has a Pre-U institution row: the value, or N/A when empty', () => {
+  renderWith({ ...MATRIC, pre_u_institution: 'KM Selangor' } as never)
+  expect(value('admin.scholarship.preUInstitution')).toBe('KM Selangor')
+  cleanup()
+  renderWith(MATRIC)
+  expect(value('admin.scholarship.preUInstitution')).toBe('admin.scholarship.na')
 })
 
 it('shows her SPM grades (the block) under "SPM prerequisites", as an STPM card names them (owner, 2026-11-16)', () => {
@@ -83,24 +94,28 @@ it('her SPM chips carry the slip tick, as an SPM student\'s do (owner, 2026-10-3
   expect(screen.getAllByRole('img').map((i) => i.getAttribute('title'))).toEqual(['slip'])
 })
 
-it('a Diploma shows where it is from and no co-curriculum score', () => {
+it('a Diploma: its name under the merit, no year, no "Diploma from" or co-curriculum line', () => {
   renderWith({ ...MATRIC, qualification: 'diploma', overall_cgpa: 2.8, higher_cgpa: 2.8,
     higher_koko: null, higher_institution_type: 'public', merit_score: 70 })
-  expect(value('admin.scholarship.heldResults')).toBe('admin.scholarship.qualificationLabel.diploma · CGPA 2.80')
-  expect(value('admin.scholarship.diplomaFrom')).toBe('admin.scholarship.diplomaInst.public')
+  expect(sub('admin.scholarship.meritScore')).toBe('admin.scholarship.qualificationLabel.diploma')
+  expect(value('admin.scholarship.cgpa')).toBe('2.80')
+  expect(screen.getByText('admin.scholarship.preUInstitution')).toBeTruthy()
+  expect(screen.queryByText('admin.scholarship.diplomaFrom')).toBeNull()
   expect(screen.queryByText('admin.scholarship.higherKoko')).toBeNull()
 })
 
-it('an unusable CGPA shows the bare name, never a made-up figure', () => {
-  renderWith({ ...MATRIC, qualification: 'asasi', overall_cgpa: null, merit_score: null })
-  expect(value('admin.scholarship.heldResults')).toBe('admin.scholarship.qualificationLabel.asasi')
-  expect(value('admin.scholarship.meritScore')).toBe('—')
+it('an unusable merit and CGPA read N/A, never a made-up figure', () => {
+  renderWith({ ...MATRIC, qualification: 'asasi', overall_cgpa: null, merit_score: null, higher_cgpa: null })
+  expect(sub('admin.scholarship.meritScore')).toBe('admin.scholarship.qualificationLabel.asasi')
+  expect(value('admin.scholarship.meritScore')).toBe('admin.scholarship.na')
+  expect(value('admin.scholarship.cgpa')).toBe('admin.scholarship.na')
 })
 
-it('SPM and STPM cards are untouched: no third-route lines', () => {
+it('an STPM card has one CGPA slot, the MUET band and no Pre-U institution row', () => {
   renderWith({ qualification: 'stpm', merit_score: 92.5, stpm_pngk: 3.7 })
-  expect(screen.queryByText('admin.scholarship.heldResults')).toBeNull()
-  expect(screen.getByText('admin.scholarship.stpmCgpa')).toBeTruthy()
+  expect(screen.getAllByText('admin.scholarship.cgpa')).toHaveLength(1)
+  expect(screen.queryByText('admin.scholarship.preUInstitution')).toBeNull()
+  expect(screen.getByText('admin.scholarship.stpmGrades')).toBeTruthy()
 })
 
 // Request #62, owner 2026-11-06: three exclusive routes. A third-route student's SPM chips are her
@@ -134,12 +149,12 @@ it("draws the student's results notes and never the team's (owner 2026-11-06)", 
 
 it('ticks the CGPA entered when the uploaded results read the same CGPA, and only it (owner 2026-11-06)', () => {
   renderWith(MATRIC, (f) => (f === 'higherCgpa' ? 'Matches the uploaded results' : undefined))
-  const cgpa = screen.getByText('admin.scholarship.higherCgpaEntered').parentElement as HTMLElement
+  const cgpa = screen.getByText('admin.scholarship.cgpa').parentElement as HTMLElement
   expect(cgpa.querySelector('[title="Matches the uploaded results"]')).not.toBeNull()
 })
 
 it('no CGPA tick without a matching read', () => {
   renderWith(MATRIC)
-  const cgpa = screen.getByText('admin.scholarship.higherCgpaEntered').parentElement as HTMLElement
+  const cgpa = screen.getByText('admin.scholarship.cgpa').parentElement as HTMLElement
   expect(cgpa.querySelector('[title]')).toBeNull()
 })

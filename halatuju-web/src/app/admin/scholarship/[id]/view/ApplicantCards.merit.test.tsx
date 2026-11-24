@@ -52,18 +52,18 @@ describe('ApplicantCards — merit on one 0-100 scale', () => {
 
   it('keeps the STPM CGPA on its own line, since the merit no longer carries it', () => {
     renderWith({ qualification: 'stpm', merit_score: 92.5, stpm_pngk: 3.7 })
-    const dt = screen.getByText('admin.scholarship.stpmCgpa')
+    const dt = screen.getByText('admin.scholarship.cgpa')
     expect(dt.parentElement?.querySelector('dd')?.textContent).toBe('3.70')
   })
 
   it('shows no CGPA line for an SPM holder', () => {
     renderWith({ qualification: 'spm', merit_score: 54.2 })
-    expect(screen.queryByText('admin.scholarship.stpmCgpa')).toBeNull()
+    expect(screen.queryByText('admin.scholarship.cgpa')).toBeNull()
   })
 
-  it('shows an absent merit as a dash, never 0 (#106)', () => {
+  it('shows an absent merit as N/A, never 0 (#106)', () => {
     renderWith({ qualification: 'stpm', merit_score: null, stpm_pngk: null })
-    expect(meritValue()).toBe('—')
+    expect(meritValue()).toBe('admin.scholarship.na')
   })
 })
 

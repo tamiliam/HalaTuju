@@ -4462,7 +4462,7 @@
       "bucket": "Bucket",
       "submitted": "Submitted",
       "back": "Back to applications",
-      "school": "School",
+      "school": "Secondary school",
       "income": "Household income",
       "aspirations": "Aspirations",
       "justification": "Why assistance is needed",
@@ -4809,21 +4809,16 @@
         }
       },
       "meritScore": "Merit score (out of 100)",
-      "stpmCgpa": "CGPA (out of 4.00)",
+      "cgpa": "CGPA",
+      "preUInstitution": "Pre-U institution",
+      "na": "N/A",
+      "statedByStudent": "Stated by student",
+      "examName": { "spm": "SPM", "stpm": "STPM" },
       "stpmCgpaNotCalculated": "not calculated",
       "qualificationLabel": {
         "matric": "Matriculation",
         "asasi": "Asasi",
         "diploma": "Diploma"
-      },
-      "heldResults": "Results held",
-      "higherCgpaEntered": "CGPA as printed",
-      "higherKoko": "Co-curriculum (out of 10)",
-      "diplomaFrom": "Diploma from",
-      "diplomaInst": {
-        "public": "Public institution",
-        "private": "Private college (does not qualify)",
-        "unstated": "Not stated"
       },
       "ownWords": {
         "toggle": "Show the student's own words",
