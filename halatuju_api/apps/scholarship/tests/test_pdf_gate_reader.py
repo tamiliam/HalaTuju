@@ -95,10 +95,11 @@ class HostileLookupsAreBounded(SimpleTestCase):
         self.assertIsNotNone(why)                                     # a content stream that is not a stream
         self.assertEqual(searches, 0)                                 # was one whole-file search per number
 
-    def test_rows_of_the_wrong_generation_are_refused_at_the_cap(self):
+    def test_rows_of_the_wrong_generation_are_refused_at_the_first(self):
         _n, why, searches = _gate(_pdf('gen', 200))
-        self.assertIn('whole-file reads past the cap', why or '')     # was ACCEPTED after one search per row
-        self.assertEqual(searches, MAX_WHOLE_FILE_READS + 1)          # the search that crosses the cap, then stop
+        # OCR-12: the object pypdf's search finds is not the header the row names (generation 1, not 0)
+        self.assertEqual(why, 'OverBudget: object 10 was read from bytes that are not its header')
+        self.assertEqual(searches, 1)                                 # was ACCEPTED after one search per row
 
     def test_rows_on_a_comment_before_the_header_are_refused_at_the_cap(self):
         _n, why, searches = _gate(_pdf('comment', 200))
@@ -106,7 +107,8 @@ class HostileLookupsAreBounded(SimpleTestCase):
         self.assertEqual(searches, MAX_WHOLE_FILE_READS)              # one header scan, then searches to the cap
 
     def test_each_unplaceable_row_is_one_counted_search(self):
-        self.assertEqual(_whole_reads(_pdf('gen', 7)), 7)
+        with self.assertRaisesRegex(pdf_layer_guards.OverBudget, 'object 10 was read'):   # OCR-12: at the first
+            _whole_reads(_pdf('gen', 7))
         # pypdf drops a row on a comment when it opens the file ("wrong pointing object"), so these numbers have
         # no row: one header scan, then one search each (their headers are there)
         self.assertEqual(_whole_reads(_pdf('comment', 7)), 1 + 7)

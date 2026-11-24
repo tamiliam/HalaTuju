@@ -32,7 +32,9 @@ import threading
 import pypdf._reader
 from pypdf import PdfReader
 from pypdf.errors import LimitReachedError
-from pypdf.generic import IndirectObject
+from pypdf.generic import IndirectObject, NullObject
+
+from .pdf_object_identity import Identity
 
 #: Fixed operand counts (ISO 32000 operator summary), for EVERY such operator — not one of the 533 corpus
 #: PDFs breaks one. ``sc``/``scn`` (variable) and inline images are not here.
@@ -112,7 +114,6 @@ MAX_PACKED_OBJECTS = 20_000
 def _packed_objects_check(reader) -> None:
     """Raise `OverBudget` when the object streams the cross-reference names declare more than
     `MAX_PACKED_OBJECTS` objects between them (pypdf reads each stream's /N objects)."""
-    from pypdf.generic import IndirectObject
     streams = {num for num, _ in reader.xref_objStm.values()}
     if len(streams) > MAX_PACKED_OBJECTS:
         raise OverBudget('object streams past the cap')
@@ -220,15 +221,12 @@ logging.getLogger('pypdf').setLevel(logging.CRITICAL)
 
 
 def _charge_lookup_work(reader, units: int) -> None:
-    """Review round 3 (HIGH): charged to the counted bytes the reader holds from BEFORE pypdf opens the file.
-    pypdf sets ``reader.stream`` only once ``read()`` returns, so rows walked while it opened the file (a
-    rebuilt cross-reference reads every object; each short /Length walks every row) went uncharged."""
+    """Round 3: charged to the reader's counted bytes, held from BEFORE pypdf opens (``reader.stream`` is not)."""
     reader._counted.charge(units)
 
 
 class _Rows(dict):
-    """One generation's cross-reference rows. pypdf walks all of them (``values()``, only in
-    `_get_next_object_position`) each time a stream's /Length does not end at 'endstream': each walk is charged."""
+    """One generation's rows: pypdf walks them all (``values()``) at each /Length short of 'endstream': charged."""
     __slots__ = ('owner',)
 
     def values(self):
@@ -237,8 +235,7 @@ class _Rows(dict):
 
 
 class _Xref(dict):
-    """A `GateReader`'s cross-reference table: each generation's rows held as `_Rows` (also one pypdf adds
-    later, ``xref[gen] = {}``)."""
+    """A `GateReader`'s cross-reference table: each generation's rows held as `_Rows` (one added later too)."""
     __slots__ = ('owner',)
 
     def __setitem__(self, gen, rows):
@@ -253,16 +250,14 @@ class GateReader(PdfReader):
     row whose ``n g obj`` header the file does not hold gets pypdf's own answer for it (None) without pypdf's
     whole-file search: the headers are found once, by one counted read, at the first such lookup. A header the
     file DOES hold goes to pypdf, which searches (counted). The header test is a superset of pypdf's search.
-    TD-710: its lookup work is capped (`LOOKUP_WORK_BASE`), each read of an object stream's decoded data
-    included, and an object stream is parsed once: a number it does not hold then gets pypdf's NullObject."""
+    TD-710: its lookup work is capped (`LOOKUP_WORK_BASE`) and an object stream is parsed once. OCR-12: every
+    object it looks up must be the ONE object any reader finds under that number (`pdf_object_identity`)."""
 
     def __init__(self, data: bytes):
-        """Review round 3: the budget covers file reads and rows walked while pypdf opens the file; gap 2: and
-        every read of the BytesIO copies pypdf makes as it opens it (`_PARSING` names this reader for the open,
-        restored after, also on a refusal; only filter decoding stays uncounted). pypdf catches broad
-        exceptions in some recovery paths as it opens (a failed rebuild, _reader.py:1237, or one it rewraps as
-        PdfReadError, :1339), so an `OverBudget` raised in there is raised again here, whatever pypdf did."""
-        self._headers = None
+        """The budget covers file reads, rows walked and pypdf's BytesIO copies while it opens the file (round 3,
+        gap 2; `_PARSING` names this reader for the open). pypdf catches broad exceptions in some recovery paths
+        (_reader.py:1237, :1339), so an `OverBudget` raised in there is raised again here, whatever pypdf did."""
+        self._headers = self._identity = None
         self._objstm_done = set()
         self._counted = _CountedBytes(data)
         outer = getattr(_PARSING, 'meter', None)
@@ -277,6 +272,10 @@ class GateReader(PdfReader):
             _PARSING.meter = outer
         if self._counted.refused:
             raise OverBudget(self._counted.refused)
+        self._identity = Identity(self)             # OCR-12: one object per number used (pdf_object_identity)
+        self._identity.build()
+        for (gen, num), found in list(self.resolved_objects.items()):   # the lookups pypdf made as it opened
+            self._identity.check(num, gen, found)
 
     @property
     def xref(self):
@@ -291,13 +290,9 @@ class GateReader(PdfReader):
         self._xref = table
 
     def _get_object_from_stream(self, indirect_reference):
-        """pypdf parses the WHOLE object stream (its index, then every entry from that entry's own offset, each
-        cached) on any lookup in it, and caches nothing for a number the stream does not hold. Here every read
-        of the decoded data is charged as pypdf makes it (`_MeteredData`): entries at one offset, or at each
-        ``[`` of nested arrays, pay for each parse. Once a stream is parsed, a number it did not hold gets pypdf's
-        own answer (NullObject) at once. Review round 2: an object stream inside an object stream (never valid)
-        is refused here, before pypdf parses anything to reach it."""
-        from pypdf.generic import NullObject
+        """pypdf parses the WHOLE object stream on any lookup in it; each read of its decoded data is charged
+        (`_MeteredData`). Once parsed, a number it did not hold gets pypdf's own answer (NullObject) at once. An
+        object stream inside an object stream (never valid) is refused before pypdf parses anything (round 2)."""
         stm = self.xref_objStm[indirect_reference.idnum][0]
         if stm in self._objstm_done:
             return NullObject()
@@ -313,9 +308,13 @@ class GateReader(PdfReader):
         return found
 
     def get_object(self, indirect_reference):
-        ref = indirect_reference
-        if isinstance(ref, int):
-            ref = IndirectObject(ref, 0, self)
+        ref = IndirectObject(indirect_reference, 0, self) if isinstance(indirect_reference, int) else indirect_reference
+        found = self._get_object(ref)
+        if self._identity is not None:
+            self._identity.check(ref.idnum, ref.generation, found)
+        return found
+
+    def _get_object(self, ref):
         gen, num = ref.generation, ref.idnum
         if ((gen, num) in self.resolved_objects or (gen == 0 and num in self.xref_objStm)
                 or num in self.xref.get(gen, ()) or min(gen, num) < 0):

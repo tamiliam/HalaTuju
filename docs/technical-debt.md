@@ -9661,3 +9661,13 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 ### [TD-712] PDF gate: a predictor decode bomb holds a web worker (decoded before any charge) - medium
 
 **Raised 2026-11-23 by the TD-710 adversarial review round 1. Not fixed: out of TD-710's scope.** An object stream with `/Filter /FlateDecode /DecodeParms << /Predictor 12 /Columns 1 >>` decodes 5 MB from a 10 KB file. On TD-710 round 0 (73cb012c6) that file was ACCEPTED after 6.3 s, and 75 MB would take about 95 s. The time is spent in pypdf's decoder (`get_data`, the PNG predictor undone row by row) before any lookup-work charge can be made, and cross-reference streams use the same decoder. Since TD-710 round 1 the object stream is refused once decoded (its decoded bytes are charged), but the decoding time has already been spent: 5 MB, refused after 2.6 s (this machine, under load); under the 3x cap (23 Nov) still refused, after 3.0 s. Repro (local scratchpad, not in git): `scratchpad/td710_review/pred.py MB <api_dir>`. Cheapest fix to weigh: in GateReader, bound a stream's predictor rows (decoded length / columns) against its compressed length before decoding, for object and cross-reference streams alike. **Decision:** the lead and the owner set the order.
+
+### [TD-713] PDF gate: known gaps left by OCR-12's one-object-per-number rule - medium
+
+**Raised 2026-11-24 by the OCR-12 builder (new design, branch ocr-12-gate). Not fixed: listed for review round 1.** The rule checks every number the gate looks up against a raw scan and every object stream's index. What it does not yet cover:
+1. **Losing-section rows.** Only the row pypdf uses for a number is checked. A row in an older cross-reference section that pypdf overrides (and pdfium might follow when its table check fails a different way) is not compared with the header it points at.
+2. **The object stream itself.** An object stream's own data extent is read by /Length; a disagreement between pypdf and pdfium on where that stream ends is not checked.
+3. **Filter decoding is uncharged** (TD-712): the decode happens before any charge.
+4. **No comparison with pdfium's own object set.** The scan is a superset by design (it ignores /Length, strings and comments), not a read of what pdfium actually found.
+5. **Packed index words use isdigit, not the clean-number rule.** A long zero-led packed number is refused today only by pypdf's own length limit.
+6. **Strict costs 5 genuine letters** (census 90, 174, 281, 531, 849: incremental updates). They go to the Vision route. An exception for a last-section rewrite that pypdf and pdfium both read the same was offered and declined (owner, 24 Nov).

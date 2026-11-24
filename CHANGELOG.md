@@ -48,6 +48,14 @@ Not pushed. Migration: none. Services: api, web.
 - Case #945: a MySTR Semakan Status page showing "Status Permohonan Semasa: Kekal Kelulusan Asal" (the original approval stays) read no status, so it counted as unreadable and a thinner "Lulus Rayuan" dashboard stayed live over it. The rules reader (`doc_parse._STR_APPROVED`) now knows that exact phrase, in any case and spacing. "Kelulusan" alone (Menunggu, Dalam Proses, Tarikh Kelulusan) is still not an approval; rejections, the engine, the surface ceiling and the keep-better ranking are unchanged. No version bump: the STR reader sits in no registered model's digest (the model-version guard stays green).
 - Tests: `test_doc_parse.py` pins the phrase in both OCR orders, the near misses, the rejections, the engine reading the page `current` and ranking it above an approved dashboard, and (pinned, not designed) a page with "Rayuan: Ditolak" above the phrase: approval in label-then-value order, rejected in the labels-then-values order.
 
+### PDF gate: one object per number (OCR-12 new design, 2026-11-24)
+
+Not pushed. Migration: none. Services: api. Phone-check: none.
+
+- The hidden-object fix. The gate reads a letter with pypdf; pdfium, which draws it, can rebuild the table and find a different object under the same number (round 4 of the old design hid a full-page box this way). Every object number the gate looks up must now resolve to ONE object: a second copy anywhere in the raw bytes or an object stream, an object header pdfium may read differently (a dotted, signed, cut or zero-led number), an object stream no cross-reference entry names, or a lookup that lands anywhere but its own header refuses the file. The scan does not trust /Length, strings or comments, and is charged to the lookup budget. New module `pdf_object_identity.py`.
+- Owner chose strict (24 Nov): no exception for incremental updates. The genuine census now refuses 7 of 870 (305 and 668 as before, plus 90, 174, 281, 531 and 849: each is a two-section incremental update that rewrites an object the gate uses, so that number has two copies; in 281 and 531 the copies also differ in generation). A layer-gate refusal sends the letter to the Vision route, so these 5 are still read.
+- A /Type given by reference on an object stream, and a row of the wrong generation, are now refused at the first lookup (tests updated). Parser version 2.3.4.
+
 ### PDF gate: two open-time scans now charged (TD-710 gap 2, 2026-11-24)
 
 - As pypdf opens a file it reads a cross-reference stream's entries and, when it rebuilds a broken table, each object stream's index through its own copies, which the lookup-work budget did not see. A 68 KB crafted file held a reader 70 s and was accepted. `GateReader` now charges every read of those copies (same weights as object-stream parse reads); that file is refused in about 1.3 s. pypdf used outside the gate is unchanged. Parser version 2.3.3.

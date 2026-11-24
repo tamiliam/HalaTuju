@@ -335,7 +335,11 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # 2.3.3 (TD-710 gap 2, 2026-11-24) — the two open-time scans pypdf read through its own uncounted copies (a
 # cross-reference stream's entries; the object-stream indexes a rebuilt table scans) are charged to the same
 # budget; only filter decoding stays uncounted. Gap 3: pypdf's log records are off. Genuine letters as before.
-PARSER_VERSION = '2.3.3'
+# 2.3.4 (OCR-12 new design, 2026-11-24) — every object number the PDF gate looks up must resolve to ONE object
+# (pdf_object_identity): a second copy anywhere in the raw bytes or an object stream, a header pdfium may read
+# differently, or an object stream no entry names refuses the file. 5 genuine incremental-update fixtures are now
+# refused by the layer gate (owner: strict) and go to the Vision route; every other letter reads as before.
+PARSER_VERSION = '2.3.4'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)

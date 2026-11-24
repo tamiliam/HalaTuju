@@ -417,15 +417,18 @@ class HostileLookupsAreBounded(SimpleTestCase):
 
     def test_a_parse_bomb_inside_an_object_stream_is_refused(self):
         bomb = b'[' + (b'[' + b'0 ' * 50_000 + b']') * 10 + b']'      # 1 MB decoded from about 1 KB
-        for type_ref in (False, True):                                # a /Type by reference is charged too
-            with self.subTest(type_ref=type_ref):
-                data = _objstm_pdf(3, [100, 101], first=bomb, type_ref=type_ref)
-                self.assertLess(len(data), 10_000)
-                self.assertIn(CAP, _gate(data)[1] or '')              # the real cap: was ACCEPTED after the parse
-        small = _objstm_pdf(3, [100, 101], type_ref=True)              # which pypdf reads as an object stream
-        plain = PdfReader(io.BytesIO(small)).get_object(101)
-        self.assertEqual(_same(GateReader(small).get_object(101)), _same(plain))
-        self.assertEqual(plain, 1)
+        data = _objstm_pdf(3, [100, 101], first=bomb)
+        self.assertLess(len(data), 10_000)
+        self.assertIn(CAP, _gate(data)[1] or '')                      # the real cap: was ACCEPTED after the parse
+        # OCR-12 (2026-11-24): a /Type by reference (object 7 is the name /ObjStm, which pypdf accepts) puts an
+        # /ObjStm name outside any stream the cross-reference names, so the identity check refuses it at open,
+        # before any parse, bomb or not
+        orphan = 'an object stream the cross-reference does not name'
+        for first in (bomb, b'1'):
+            with self.subTest(bomb=first == bomb):
+                self.assertEqual(_gate(_objstm_pdf(3, [100, 101], first=first, type_ref=True))[1],
+                                 'OverBudget: ' + orphan)
+        self.assertEqual(PdfReader(io.BytesIO(_objstm_pdf(3, [100, 101], type_ref=True))).get_object(101), 1)
 
     def test_rows_walked_while_the_file_opens_are_charged(self):
         """Review round 3 (HIGH): the rows were charged through ``reader.stream``, which pypdf sets only once the

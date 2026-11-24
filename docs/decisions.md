@@ -1,5 +1,15 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-24 — OCR-12 new design: one object per number the PDF gate uses (owner: strict)
+
+Branch ocr-12-gate, not pushed. Parser version 2.3.4.
+
+- **The problem.** The gate reads a letter with pypdf; pdfium draws it. When pdfium thinks the table is broken it rebuilds it from the raw bytes and keeps the LAST copy of each number, so a file can show the gate a light page 3 while pdfium draws a heavy one. The old design tried to copy pdfium's rebuild walk and lost round 4 to /Length and comment tricks.
+- **The new rule.** Do not copy the walk; ask a question that does not depend on it. Every number the gate looks up must resolve to ONE object. `pdf_object_identity.py` scans the raw bytes for every `N G obj` header (ignoring /Length, strings and comments, so it sees at least what pdfium can) and reads every object stream's index. It refuses when a used number has a second copy (raw or packed), when an `obj` word could be read as a header pdfium reads differently (dotted, signed, cut or zero-led numbers), when an /ObjStm name is outside every object stream the cross-reference names, or when pypdf's answer is not the one header there is. Each scan is charged to the lookup budget; candidates per number stop at 17 (two are enough to refuse; the cap only bounds memory).
+- **Owner chose A, strict (24 Nov).** No exception for incremental updates, even where pypdf's row is on the last copy. The genuine census now refuses 7 of 870: 305 (empty file) and 668 as before, plus 5 new. Each of the 5 is a two-section incremental update (two startxref, two %%EOF) whose second section rewrites an object the gate walks, so that number has two copies: 90 and 174 (one or two rewritten objects, reached by the gate's walk), 281 and 531 (the copies also differ in generation), 849 (22 numbers rewritten, 4 of them used). A layer-gate refusal makes `pdf_pages._layer_read` return no layer, so the letter goes to the Vision route (owner rule 18 Nov) and is still read.
+- **Also refused now:** an object stream whose /Type is a reference (pypdf accepts it; its /ObjStm name sits outside the stream) and a row whose header has another generation, both at the first lookup. Neither occurs in the census.
+- **Known gaps** are in technical-debt.md (TD-713).
+
 ## 2026-11-21 — F2 (fix plan): the AI Prediction band has one home, on the server; I-10 QC floor
 
 Branch fix-f2, not pushed.
