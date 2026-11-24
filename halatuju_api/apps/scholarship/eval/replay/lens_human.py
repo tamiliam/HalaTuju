@@ -73,6 +73,7 @@ ID_BELOW_ONE, EMPTY_EXAM, BAD_DECIDED_AT = 'id_below_one', 'empty_exam', 'bad_de
 BAD_FROZEN_AT, BAD_KEY_CHECK, EXAM_MISSING = 'bad_frozen_at', 'bad_key_check', 'exam_missing'
 FOLDER_MISSING, INSIDE_GIT_REPO, ALREADY_FROZEN = 'folder_missing', 'inside_git_repo', 'already_frozen'
 FOLDER_NOT_WRITABLE, FOLDER_NOT_ABSOLUTE = 'folder_not_writable', 'folder_not_absolute'
+DEBUG_ON = 'debug_on'   # the database door refuses the whole run: Django DEBUG logs SQL with case ids
 KEY_BLANK, KEY_CHECKS_MIXED = 'key_blank', 'candidate_key_checks_differ'
 KEY_CHECK_MISSING, CANDIDATES_NOT_CURRENT = 'current_key_check_missing', 'candidate_key_check_not_current'
 KEY_CHECK_DIFFERS_EXAM, KEY_CHECK_DIFFERS_CASES = 'key_check_differs_from_exam', 'key_check_differs_from_cases'

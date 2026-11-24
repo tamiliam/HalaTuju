@@ -10,14 +10,17 @@ import re
 import types
 
 import pytest
+from django.conf import settings as django_settings
 from django.db import connection
+from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.courses.models import StudentProfile
-from apps.scholarship import income_declaration, second_look, verdict_context, verdict_engine
-from apps.scholarship.eval.replay import clock, lens_human, netguard
+from apps.scholarship import document_snapshot, income_declaration, second_look, verdict_context, verdict_engine
+from apps.scholarship.eval.replay import child, clock, lens_human, netguard
 from apps.scholarship.eval.replay import lens_human_rows as R
+from apps.scholarship.eval.replay.scrub import error_record
 from apps.scholarship.models import (
     ApplicantDocument, InterviewSession, ScholarshipApplication, ScholarshipCohort,
 )
@@ -350,6 +353,7 @@ def test_no_id_name_or_key_reaches_a_log_stdout_or_stderr(desk, tmp_path, caplog
         monkeypatch.setattr(logging.getLogger(name), 'handlers', [*logging.getLogger(name).handlers, caplog.handler])
     caplog.clear()
     capfd.readouterr()                       # only what the lens run itself writes is checked
+    assert django_settings.DEBUG is False    # the normal run (DEBUG on is refused, see C1b below)
     out = R.run_human_lens_on_database(str(tmp_path), NOW)
     captured = capfd.readouterr()
     text = '\n'.join([caplog.text, captured.out, captured.err, json.dumps(out, default=str)])
@@ -732,3 +736,96 @@ def test_end_to_end_a_mix_gives_exactly_the_expected_counts(award_desk, tmp_path
     assert sum(e['valid_split'].values()) == e['validity']['valid']
     assert sum(e['could_not_recompute_reasons'].values()) == e['validity']['could_not_recompute']
     assert e['still_valid'] == '46 of 50 still valid'
+
+
+# ── LL5 C1b, A: Django DEBUG on refuses the run before any query or file ───────────────────────────
+@pytest.mark.parametrize('freeze', [False, True])
+def test_debug_on_refuses_before_any_query_or_file(desk, tmp_path, freeze):
+    folder = tmp_path / 'exams'
+    folder.mkdir()
+    make_application('awaiting_qc', outcome='recommend', cohort=desk[0])   # exam-old candidate: a freeze writes
+    decide(desk)
+    with override_settings(DEBUG=True), CaptureQueriesContext(connection) as queries:
+        out = R.run_human_lens_on_database(str(folder), NOW, freeze=freeze)
+    assert queries.captured_queries == [] and os.listdir(folder) == []
+    assert out['cases_read'] is None and out['engine_version'] is None
+    for name in lens_human.EXAM_NAMES:
+        exam = out['exams'][name]
+        assert (exam['exam'], exam['refusal'], exam['status']) == (name, 'debug_on', 'refused: debug_on')
+    assert lens_human.DEBUG_ON == 'debug_on'
+    control = R.run_human_lens_on_database(str(folder), NOW, freeze=freeze)    # DEBUG off: the same call runs
+    assert set(control) == set(out) and set(control['exams']) == set(out['exams']) and control['cases_read'] == 2
+    assert os.listdir(folder) == (['exam-old.json'] if freeze else [])
+
+
+# ── LL5 C1b, B: an open document snapshot stops the rows loudly ────────────────────────────────────
+def test_an_open_document_snapshot_for_any_case_raises_before_any_engine_work_or_twin(desk, monkeypatch):
+    first, second = decide(desk), decide(desk)
+    for app in (first, second):
+        move(app, 'recommended', False)                  # with no snapshot both would be recovered by a twin
+    calls = []
+    monkeypatch.setattr(verdict_context, 'build_verdict_context', lambda case: calls.append('fingerprint'))
+    monkeypatch.setattr(verdict_engine, 'build_verdict', lambda case: calls.append('snapshot'))
+    monkeypatch.setattr(R, '_other_stage_twins', lambda *_args: calls.append('twins') or iter(()))
+    opened = ScholarshipApplication.objects.get(pk=second.pk)
+    with document_snapshot.document_snapshot(opened):
+        assert document_snapshot.is_open_for(opened)
+        with pytest.raises(R.OpenSnapshotError) as raised:
+            rows_by_id()
+    assert calls == []                                    # checked for every case before the first one is built
+    assert not isinstance(raised.value, (TypeError, ValueError, KeyError, OSError))   # no catch here or in the child
+    monkeypatch.undo()
+    rows = rows_by_id()                                   # outside the snapshot: the same cases build
+    assert [rows[a.pk]['recompute_note'] for a in (first, second)] == [lens_human.RECOVERED_BY_TWIN] * 2
+
+
+def test_the_open_snapshot_error_holds_no_case_data(desk, tmp_path):
+    app = decide(desk, id=ID_CANARY, student=make_student(name=NAME_CANARY))
+    with document_snapshot.document_snapshot(app):
+        with pytest.raises(R.OpenSnapshotError) as raised:
+            R.run_human_lens_on_database(str(tmp_path), NOW)
+    text = ' '.join([str(raised.value), repr(raised.value), *map(str, raised.value.args)])
+    assert 'document snapshot is open' in text
+    for secret in (str(ID_CANARY), NAME_CANARY, KEY, KEY.upper()):
+        assert secret not in text
+
+
+def test_the_child_lets_the_open_snapshot_error_through_and_writes_no_lens_file(desk, tmp_path):
+    app = decide(desk)
+    folder, path = tmp_path / 'exams', tmp_path / child.HUMAN_LENS_FILE
+    folder.mkdir()
+    with document_snapshot.document_snapshot(app):
+        with pytest.raises(R.OpenSnapshotError):
+            child.write_human_lens((str(folder), True), now=NOW, path=str(path))
+    assert not path.exists() and os.listdir(folder) == []
+    assert error_record(R.OpenSnapshotError()) == {'error': 'OpenSnapshotError'}   # the child's fatal line
+
+
+# ── LL5 C1b, C: a twin never writes to the profile it shares with the real case ────────────────────
+def _profile_values(profile):
+    return {field.attname: getattr(profile, field.attname) for field in profile._meta.concrete_fields}
+
+
+def test_a_twin_recovery_leaves_the_shared_profile_and_the_real_status_as_they_were(desk, monkeypatch):
+    app = decide(desk)
+    move(app, 'recommended', False)
+    seen = []
+    real_context = verdict_context.build_verdict_context
+
+    def spy(case):
+        if case.pk == app.pk:
+            seen.append((case, case.status, _profile_values(case.profile)))
+        return real_context(case)
+
+    monkeypatch.setattr(verdict_context, 'build_verdict_context', spy)
+    with CaptureQueriesContext(connection) as queries:
+        row = rows_by_id()[app.pk]
+    assert row['recompute_note'] == lens_human.RECOVERED_BY_TWIN
+    (real, real_status, before), (twin, twin_status, _twin_saw) = seen
+    assert (real_status, twin_status) == ('recommended', 'submitted') and twin is not real
+    assert twin.profile is real.profile                   # the shared object the rule is about
+    assert _profile_values(real.profile) == before == StudentProfile.objects.filter(pk=real.profile_id).values().get()
+    assert real.status == 'recommended'
+    assert ScholarshipApplication.objects.get(pk=app.pk).status == 'recommended'
+    statements = [q['sql'].lstrip().upper() for q in queries.captured_queries]
+    assert statements and all(s.startswith('SELECT') for s in statements), statements[:3]

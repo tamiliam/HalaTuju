@@ -43,6 +43,16 @@ only `income_declaration`'s approval-window checks read it, and what they feed i
 engine work.
 The caller (phase C) runs it inside `guards.read_only_session` and `netguard.refuse_network`, after
 `clock.preload()`.
+
+SAFETY (LL5 phase C1b).
+* DEBUG: with Django ``DEBUG`` on, Django keeps and logs each SQL statement, case ids included. So
+  `run_human_lens_on_database` refuses the whole run with `lens_human.DEBUG_ON` before any query or file.
+* AN OPEN DOCUMENT SNAPSHOT: a twin is a copy with the same model and id, so a `document_snapshot` open for
+  the case would serve the twin the case's photographed rows. `human_lens_rows` asks
+  `document_snapshot.is_open_for` for every case before any engine work or twin, and raises
+  `OpenSnapshotError` (no case data in it). It is a RuntimeError, so no catch here turns it into a note.
+* PROFILES: a twin shares the real case's profile object. Nothing here writes to a profile, on a twin or
+  not; only the twin's ``status`` attribute is set (a test holds the profile's values and the SQL).
 """
 from __future__ import annotations
 
@@ -60,6 +70,15 @@ _FINGERPRINT_ERRORS = (TypeError, ValueError)
 _SNAPSHOT_ERRORS = (TypeError, ValueError, KeyError)
 _DERIVED_KEY_LENGTH = 64
 _HEX_DIGITS = frozenset(string.hexdigits)
+
+
+class OpenSnapshotError(RuntimeError):
+    """The rows were asked for while a document snapshot is open for a case. Its twins would read that
+    case's photographed document rows, so the whole run stops. The message holds no case data."""
+
+    def __init__(self):
+        super().__init__('human lens rows: a document snapshot is open for a case; '
+                         'run the lens outside every document snapshot')
 
 
 def human_lens_key_facts() -> tuple:
@@ -200,19 +219,37 @@ def _lens_row(app, current_key_check, version, build_verdict, status_codes) -> d
 def human_lens_rows(*, current_key_check) -> list:
     """One case row per application (EVERY one, decided or not, drafts included), by id. With
     ``current_key_check`` None (a blank key) no fingerprint is recomputed. The rows stay in memory: the
-    caller hands them to the lens and keeps them nowhere."""
+    caller hands them to the lens and keeps them nowhere. Raises `OpenSnapshotError` before any engine
+    work or twin when a document snapshot is open for any case."""
+    from apps.scholarship import document_snapshot
     from apps.scholarship.models import ScholarshipApplication
     from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION, build_verdict
     status_codes = [code for code, _label in ScholarshipApplication.STATUS_CHOICES]
     cases = list(ScholarshipApplication.objects.select_related('profile', 'cohort').order_by('pk'))
+    if any(document_snapshot.is_open_for(app) for app in cases):
+        raise OpenSnapshotError()
     return [_lens_row(app, current_key_check, VERDICT_ENGINE_VERSION, build_verdict, status_codes)
             for app in cases]
+
+
+def _debug_refusal() -> dict:
+    """The lens output's top-level keys with nothing read (no count, no engine version), and each exam
+    refused with `lens_human.DEBUG_ON` the way the lens refuses an exam (``refusal`` and ``status``)."""
+    status = f'refused: {lens_human.DEBUG_ON}'
+    return {'engine_version': None, 'cases_read': None, 'not_decided': None, 'no_human_verdict': None,
+            'context_failed': None, 'context_failed_line': None,
+            'exams': {name: {'exam': name, 'refusal': lens_human.DEBUG_ON, 'status': status}
+                      for name in lens_human.EXAM_NAMES}}
 
 
 def run_human_lens_on_database(exam_folder, now, freeze=False) -> dict:
     """Read the key facts and every case, then return `lens_human.run_human_lens`'s output unchanged
     (counts, codes and labels only). ``now`` (an aware datetime) and ``exam_folder`` (an absolute path
-    outside every repository) are handed in; only ``freeze=True`` may write a missing exam file."""
+    outside every repository) are handed in; only ``freeze=True`` may write a missing exam file.
+    With Django ``DEBUG`` on: `_debug_refusal`, before any query and any file, in both modes."""
+    from django.conf import settings
+    if settings.DEBUG:
+        return _debug_refusal()
     key_is_blank, current_key_check = human_lens_key_facts()
     rows = human_lens_rows(current_key_check=current_key_check)
     return lens_human.run_human_lens(rows, exam_folder=exam_folder, key_is_blank=key_is_blank,
