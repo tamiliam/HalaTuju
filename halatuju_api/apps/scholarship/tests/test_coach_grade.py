@@ -1,6 +1,12 @@
-"""LL5 phase A - the monthly score and the coach grade (`coach_grade`, pure). Synthetic records only."""
+"""LL5 phase A - the monthly score and the coach grade (`coach_grade`, pure). Synthetic records only.
+
+Every expected value is worked out by hand in the comments (points: Certain +2 / -10, Probable +1 / -3,
+Unsure 0, Can't verify -1 / +1, Rule not met -10 / +2 for pass / fail). The score margin: clear when
+(m2 - m1)^2 > 4 x (v1/n1 + v2/n2), v = (sum of squares - n m^2) / (n - 1)."""
 import datetime
 import json
+import random
+from fractions import Fraction
 
 from django.test import SimpleTestCase
 
@@ -62,11 +68,24 @@ class TestTheConstants(SimpleTestCase):
         self.assertEqual(coach_grade.COACH_MIN_FACTS, 40)
         self.assertGreaterEqual(coach_grade.COACH_MIN_FACTS, coach_grade.CELL_MIN_FACTS)
 
+    def test_the_margin(self):
+        self.assertEqual(coach_grade.GUARD_ALPHA, Fraction(1, 20))
+        self.assertEqual(coach_grade.SCORE_Z, 2)
+
+    def test_the_report_names_the_floors_and_the_margin(self):
+        report = coach_grade.coach_report([])
+        self.assertEqual((report['cell_min_facts'], report['coach_min_facts'], report['guard_alpha'],
+                          report['score_z'], report['malformed_records']),
+                         (5, 40, {'count': 1, 'of': 20}, 2, 0))
+        json.dumps(report)   # JSON-safe
+
     def test_the_closed_sets(self):
         self.assertEqual(coach_grade.GRADES, ('pass', 'fail', 'no_change'))
         self.assertEqual(coach_grade.REASON_CODES, ('coverage_dropped', 'generous_wrong_rose', 'score_up',
-                                                    'score_same', 'score_down'))
-        self.assertEqual(coach_grade.DOCUMENTS_ONLY, ('interview_differs',))
+                                                    'no_clear_change', 'score_down'))
+        self.assertEqual(coach_grade.INTERVIEW_FAILS, ('interview_differs',))
+        self.assertFalse(hasattr(coach_grade, 'DOCUMENTS_ONLY'))
+        self.assertFalse(hasattr(coach_grade, 'SCORE_SAME'))
 
 
 class TestTheMonthlyScore(SimpleTestCase):
@@ -160,7 +179,7 @@ class TestTheMonthlyScore(SimpleTestCase):
     def test_no_decider_and_no_row_id_in_the_output(self):
         records = (many([(CERTAIN, 'pass', 45)], 'a', EARLY) + many([(CERTAIN, 'pass', 45)], 'b', LATER)
                    + [one(CERTAIN, 'pass', 'b', LATER, row_id=INT_ID) for _ in range(5)])
-        for leave_out in ((), coach_grade.DOCUMENTS_ONLY):
+        for leave_out in ((), coach_grade.INTERVIEW_FAILS):
             dump = json.dumps(coach_grade.coach_report(records, leave_out_reasons=leave_out))
             self.assertNotIn(BY, dump)
             self.assertNotIn(ROW_ID, dump)
@@ -178,12 +197,12 @@ class TestTheCoachGrade(SimpleTestCase):
                                             'generous_wrong': {'count': 0, 'of': 40}})
         self.assertEqual((pair['new']['version'], pair['new']['score_pct']), ('next', 100))
 
-    def test_an_exact_tie_is_no_change(self):
+    def test_an_exact_tie_is_no_clear_change(self):
         pair = first_pair([(CERTAIN, 'pass', 40)], [(CERTAIN, 'pass', 40)])
-        self.assertEqual((pair['grade'], pair['reasons']), ('no_change', ['score_same']))
-        # 40/80 against 80/160: the same fraction at a different size
+        self.assertEqual((pair['grade'], pair['reasons']), ('no_change', ['no_clear_change']))
+        # 40/80 against 80/160: the same mean (1) at a different size
         pair = first_pair([(PROBABLE, 'pass', 40)], [(PROBABLE, 'pass', 80)])
-        self.assertEqual((pair['grade'], pair['reasons']), ('no_change', ['score_same']))
+        self.assertEqual((pair['grade'], pair['reasons']), ('no_change', ['no_clear_change']))
 
     def test_two_negative_scores_less_negative_is_up(self):
         old = [(CERTAIN, 'fail', 40)]                            # -400 / 80 = -500%
@@ -194,15 +213,54 @@ class TestTheCoachGrade(SimpleTestCase):
         self.assertEqual((first_pair(new, old)['grade'], first_pair(new, old)['reasons']),
                          ('fail', ['score_down']))
 
-    def test_the_score_is_compared_as_an_exact_fraction(self):
-        # old 39/80 = 48.75% and next 41/84 = 48.81%: both show 49%, and next IS higher
+    def test_a_small_difference_inside_two_standard_errors_is_no_clear_change(self):
+        # old 39/80 = 48.75% and next 41/84 = 48.81%: next is higher by a hair, far inside the margin
+        # (means 39/40 = 0.975 and 41/42 = 0.976; v/n is about 0.0032 and 0.0029, so 4 x (v1/n1 + v2/n2)
+        # is about 0.024 against a squared difference of about 0.0000014)
         old = [(CERTAIN, 'pass', 1), (PROBABLE, 'pass', 38), (UNVERIFIABLE, 'pass', 1)]
         new = [(CERTAIN, 'pass', 1), (PROBABLE, 'pass', 40), (UNVERIFIABLE, 'pass', 1)]
         up = first_pair(old, new)
         self.assertEqual((up['previous']['score_pct'], up['new']['score_pct']), (49, 49))
-        self.assertEqual((up['grade'], up['reasons']), ('pass', ['score_up']))
+        self.assertEqual((up['grade'], up['reasons']), ('no_change', ['no_clear_change']))
         down = first_pair(new, old)
-        self.assertEqual((down['grade'], down['reasons']), ('fail', ['score_down']))
+        self.assertEqual((down['grade'], down['reasons']), ('no_change', ['no_clear_change']))
+
+    def test_the_score_margin_edge_is_exact(self):
+        # old: 40 Probable passes, every fact +1: mean 1, variance 0. next: k Certain passes (+2) and
+        # 40 - k Probable passes (+1): mean 1 + k/40, variance (k (40 - k) / 40) / 39.
+        # Clear  <=>  (k/40)^2 > 4 k (40 - k) / (40^2 x 39)  <=>  39 k > 4 (40 - k)  <=>  k > 160/43 = 3.72.
+        old = [(PROBABLE, 'pass', 40)]
+        three = [(CERTAIN, 'pass', 3), (PROBABLE, 'pass', 37)]   # 43/80 = 54% against 50%: not clear
+        four = [(CERTAIN, 'pass', 4), (PROBABLE, 'pass', 36)]    # 44/80 = 55%: clear
+        self.assertEqual(first_pair(old, three)['reasons'], ['no_clear_change'])
+        self.assertEqual((first_pair(old, four)['grade'], first_pair(old, four)['reasons']),
+                         ('pass', ['score_up']))
+        # the mirror: the same spread on the OLD side, the score falls
+        self.assertEqual(first_pair(three, old)['reasons'], ['no_clear_change'])
+        self.assertEqual((first_pair(four, old)['grade'], first_pair(four, old)['reasons']),
+                         ('fail', ['score_down']))
+
+    def test_both_variances_zero_any_difference_is_clear(self):
+        # every fact on a side scores the same, so 4 x (v1/n1 + v2/n2) = 0: Can't verify Fails (+1 each)
+        # against Rule not met Fails (+2 each); coverage 40 of 40 and generous-wrong 0 on both sides
+        low, high = [(UNVERIFIABLE, 'fail', 40)], [(RULE_NOT_MET, 'fail', 40)]
+        self.assertEqual((first_pair(low, high)['grade'], first_pair(low, high)['reasons']),
+                         ('pass', ['score_up']))
+        self.assertEqual((first_pair(high, low)['grade'], first_pair(high, low)['reasons']),
+                         ('fail', ['score_down']))
+        # Probable passes (+1 each) against Can't verify Fails (+1 each): the same mean, no clear change
+        same = first_pair([(PROBABLE, 'pass', 40)], low)
+        self.assertEqual((same['grade'], same['reasons']), ('no_change', ['no_clear_change']))
+
+    def test_a_version_that_firms_up_its_answers_is_not_punished(self):
+        # old: 40 Probable passes, +40, mean 1, variance 0, generous-wrong 0 of 40.
+        # next: 39 Certain passes and 1 Certain Fail: 78 - 10 = 68, mean 17/10; squares 39 x 4 + 100 = 256;
+        # variance (256 - 40 x (17/10)^2) / 39 = (256 - 115.6) / 39 = 18/5; v/n = 9/100;
+        # 4 x 9/100 = 36/100 < (7/10)^2 = 49/100: score up.
+        # generous-wrong 0 of 40 against 1 of 40: chance C(40,1)/C(80,1) = 1/2, not broken.
+        pair = first_pair([(PROBABLE, 'pass', 40)], [(CERTAIN, 'pass', 39), (CERTAIN, 'fail', 1)])
+        self.assertEqual(pair['new']['generous_wrong'], {'count': 1, 'of': 40})
+        self.assertEqual((pair['grade'], pair['reasons']), ('pass', ['score_up']))
 
     def test_the_coach_floor_is_forty_on_either_side(self):
         for prev, new, waiting in ((39, 40, ['old']), (40, 39, ['next']), (39, 39, ['old', 'next'])):
@@ -219,30 +277,70 @@ class TestTheCoachGrade(SimpleTestCase):
         self.assertEqual(report['coach'], [])
         self.assertEqual(report['waiting'], [{'version': 'old', 'too_few': True}])
 
-    def test_guard_one_coverage_drop_fails_even_when_the_score_rose(self):
-        old = [(UNVERIFIABLE, 'pass', 40)]                       # -50%, coverage 40/40
-        new = [(CERTAIN, 'pass', 39), (UNSURE, 'pass', 1)]       # 98%, coverage 39/40
-        pair = first_pair(old, new)
-        self.assertGreater(pair['new']['score_pct'], pair['previous']['score_pct'])
-        self.assertEqual(pair['new']['coverage'], {'count': 39, 'of': 40})
-        self.assertEqual((pair['grade'], pair['reasons']), ('fail', ['coverage_dropped']))
-        # the Unsure turned Certain: coverage holds and the grade passes
-        self.assertEqual(first_pair(old, [(CERTAIN, 'pass', 40)])['grade'], 'pass')
+    def test_the_fisher_tail_hand_checks(self):
+        # previous 0 of 40, new k of 40, generous-wrong: with k in all, the new side holds all k only
+        # one way in C(80,k)/C(40,k): k = 4 is C(40,4)/C(80,4) = 91390/1581580, about 0.058 (not below
+        # 1 in 20); k = 5 is C(40,5)/C(80,5) = 658008/24040016, about 0.027 (below)
+        self.assertEqual(coach_grade._new_side_tail(0, 40, 4, 40, low=False), Fraction(91390, 1581580))
+        self.assertEqual(coach_grade._new_side_tail(0, 40, 5, 40, low=False), Fraction(658008, 24040016))
+        # the coverage mirror: covered 40 of 40 then 36 (or 35) of 40 is the same count of Unsure
+        self.assertEqual(coach_grade._new_side_tail(40, 40, 36, 40, low=True), Fraction(91390, 1581580))
+        self.assertEqual(coach_grade._new_side_tail(40, 40, 35, 40, low=True), Fraction(658008, 24040016))
+        # one of 40 against none: C(40,1)/C(80,1) = 1/2
+        self.assertEqual(coach_grade._new_side_tail(0, 40, 1, 40, low=False), Fraction(1, 2))
 
-    def test_guard_one_an_equal_share_is_not_a_drop(self):
-        old = [(PROBABLE, 'pass', 39), (UNSURE, 'pass', 1)]      # 39/40 covered
+    def test_guard_one_coverage_drop_fails_even_when_the_score_rose(self):
+        old = [(UNVERIFIABLE, 'pass', 40)]                       # -50%, coverage 40/40, mean -1
+        # 35 Certain passes, 5 Unsure: 70/80 = 88%, coverage 35/40, chance 0.027: broken
+        pair = first_pair(old, [(CERTAIN, 'pass', 35), (UNSURE, 'pass', 5)])
+        self.assertGreater(pair['new']['score_pct'], pair['previous']['score_pct'])
+        self.assertEqual(pair['new']['coverage'], {'count': 35, 'of': 40})
+        self.assertEqual((pair['grade'], pair['reasons']), ('fail', ['coverage_dropped']))
+        # 36 and 4: coverage 36/40, chance 0.058, inside the margin; mean 1.8 against -1, variance
+        # (144 - 129.6)/39 = 0.369, 4 x 0.369/40 = 0.037 < 2.8^2: score up
+        pair = first_pair(old, [(CERTAIN, 'pass', 36), (UNSURE, 'pass', 4)])
+        self.assertEqual((pair['grade'], pair['reasons']), ('pass', ['score_up']))
+        # one Unsure (39/40, chance 1/2) is far inside the margin
+        self.assertEqual(first_pair(old, [(CERTAIN, 'pass', 39), (UNSURE, 'pass', 1)])['reasons'], ['score_up'])
+
+    def test_guard_one_a_small_drop_is_inside_the_margin(self):
+        old = [(PROBABLE, 'pass', 39), (UNSURE, 'pass', 1)]      # 39/40 covered, mean 0.975
         new = [(CERTAIN, 'pass', 78), (UNSURE, 'pass', 2)]       # 78/80, the same share
-        self.assertEqual(first_pair(old, new)['grade'], 'pass')
-        self.assertEqual(first_pair(old, [(CERTAIN, 'pass', 77), (UNSURE, 'pass', 3)])['reasons'],
-                         ['coverage_dropped'])
+        self.assertEqual(first_pair(old, new)['reasons'], ['score_up'])
+        # 77/80 is a lower share, but by chance: (C(80,4) + C(80,3) x C(40,1)) / C(120,4)
+        # = (1581580 + 3286400) / 8214570, about 0.59; mean 1.925 against 0.975, clearly up
+        pair = first_pair(old, [(CERTAIN, 'pass', 77), (UNSURE, 'pass', 3)])
+        self.assertEqual(pair['new']['coverage'], {'count': 77, 'of': 80})
+        self.assertEqual((pair['grade'], pair['reasons']), ('pass', ['score_up']))
+
+    def test_a_guard_that_moves_the_right_way_never_breaks(self):
+        # generous-wrong 40 of 40 (all Certain Fails, mean -10) to 0 of 40 (all Certain passes, mean 2)
+        pair = first_pair([(CERTAIN, 'fail', 40)], [(CERTAIN, 'pass', 40)])
+        self.assertEqual((pair['grade'], pair['reasons']), ('pass', ['score_up']))
+        # coverage 0 of 40 (all Unsure, mean 0) to 40 of 40 (all Certain passes, mean 2)
+        pair = first_pair([(UNSURE, 'pass', 40)], [(CERTAIN, 'pass', 40)])
+        self.assertEqual((pair['grade'], pair['reasons']), ('pass', ['score_up']))
 
     def test_guard_two_generous_wrong_rise_fails_even_when_the_score_rose(self):
-        old = [(PROBABLE, 'pass', 40)]                           # 50%, generous-wrong 0/40
+        old = [(UNVERIFIABLE, 'pass', 40)]                       # -50%, generous-wrong 0/40, mean -1
         for wrong_band in (CERTAIN, PROBABLE):
-            pair = first_pair(old, [(CERTAIN, 'pass', 39), (wrong_band, 'fail', 1)])
+            # 5 of 40: chance 0.027, broken. The score still rose: with Certain Fails mean
+            # (70 - 50)/40 = 0.5, variance (640 - 10)/39 = 16.15, 4 x 16.15/40 = 1.62 < 1.5^2 = 2.25
+            pair = first_pair(old, [(CERTAIN, 'pass', 35), (wrong_band, 'fail', 5)])
             self.assertGreater(pair['new']['score_pct'], pair['previous']['score_pct'])
-            self.assertEqual(pair['new']['generous_wrong'], {'count': 1, 'of': 40})
-            self.assertEqual((pair['grade'], pair['reasons']), ('fail', ['generous_wrong_rose']))
+            self.assertEqual(pair['new']['generous_wrong'], {'count': 5, 'of': 40})
+            self.assertEqual((pair['grade'], pair['reasons']), ('fail', ['generous_wrong_rose']), wrong_band)
+            # 4 of 40: chance 0.058, inside the margin; with Certain Fails mean 0.8, variance
+            # (544 - 25.6)/39 = 13.29, 4 x 13.29/40 = 1.33 < 1.8^2 = 3.24: score up
+            pair = first_pair(old, [(CERTAIN, 'pass', 36), (wrong_band, 'fail', 4)])
+            self.assertEqual((pair['grade'], pair['reasons']), ('pass', ['score_up']), wrong_band)
+
+    def test_a_clear_worsening_is_caught(self):
+        # generous-wrong 1 of 100 against 15 of 100: chance (C(100,15) x 100 + C(100,16)) / C(200,16),
+        # about 0.00016, far below 1 in 20
+        pair = first_pair([(CERTAIN, 'pass', 99), (CERTAIN, 'fail', 1)],
+                          [(CERTAIN, 'pass', 85), (CERTAIN, 'fail', 15)])
+        self.assertEqual((pair['grade'], pair['reasons']), ('fail', ['generous_wrong_rose']))
 
     def test_guard_two_counts_only_a_generous_band_the_reviewer_failed(self):
         old = [(PROBABLE, 'pass', 40)]
@@ -251,19 +349,25 @@ class TestTheCoachGrade(SimpleTestCase):
             self.assertEqual(pair['new']['generous_wrong'], {'count': 0, 'of': 40}, (band, says))
             self.assertEqual(pair['grade'], 'pass', (band, says))
 
-    def test_guard_two_an_equal_non_zero_share_is_not_a_rise(self):
-        old = [(CERTAIN, 'pass', 39), (CERTAIN, 'fail', 1)]             # 1 of 40, 68/80
-        same = first_pair(old, [(CERTAIN, 'pass', 78), (CERTAIN, 'fail', 2)])   # 2 of 80, 136/160
+    def test_guard_two_from_a_non_zero_share_small_moves_are_no_clear_change(self):
+        old = [(CERTAIN, 'pass', 39), (CERTAIN, 'fail', 1)]   # 1 of 40, mean 17/10, v/n 9/100 (see above)
+        # 2 of 80: the same share and the same mean 136/80 = 17/10
+        same = first_pair(old, [(CERTAIN, 'pass', 78), (CERTAIN, 'fail', 2)])
         self.assertEqual(same['new']['generous_wrong'], {'count': 2, 'of': 80})
-        self.assertEqual((same['grade'], same['reasons']), ('no_change', ['score_same']))
-        lower = first_pair(old, [(CERTAIN, 'pass', 79), (CERTAIN, 'fail', 1)])  # 1 of 80, 148/160
-        self.assertEqual((lower['grade'], lower['reasons']), ('pass', ['score_up']))
-        rose = first_pair(old, [(CERTAIN, 'pass', 77), (CERTAIN, 'fail', 3)])   # 3 of 80
-        self.assertEqual((rose['grade'], rose['reasons']), ('fail', ['generous_wrong_rose']))
+        self.assertEqual((same['grade'], same['reasons']), ('no_change', ['no_clear_change']))
+        # 1 of 80: mean 148/80 = 1.85; v = (416 - 273.8)/79 = 1.8, v/n = 0.0225;
+        # 4 x (0.09 + 0.0225) = 0.45 > 0.15^2 = 0.0225: not clear
+        lower = first_pair(old, [(CERTAIN, 'pass', 79), (CERTAIN, 'fail', 1)])
+        self.assertEqual((lower['grade'], lower['reasons']), ('no_change', ['no_clear_change']))
+        # 3 of 80: a higher share, chance (C(80,3) x C(40,1) + C(80,4)) / C(120,4), about 0.59: not
+        # broken; mean 1.55, v = (608 - 192.2)/79 = 5.26, 4 x (0.09 + 0.066) = 0.62 > 0.0225: not clear
+        rose = first_pair(old, [(CERTAIN, 'pass', 77), (CERTAIN, 'fail', 3)])
+        self.assertEqual((rose['grade'], rose['reasons']), ('no_change', ['no_clear_change']))
 
     def test_both_guards_are_named(self):
         old = [(PROBABLE, 'pass', 40)]
-        new = [(CERTAIN, 'pass', 38), (UNSURE, 'pass', 1), (CERTAIN, 'fail', 1)]
+        # coverage 35 of 40 and generous-wrong 5 of 40: each chance 0.027
+        new = [(CERTAIN, 'pass', 30), (UNSURE, 'pass', 5), (CERTAIN, 'fail', 5)]
         pair = first_pair(old, new)
         self.assertEqual((pair['grade'], pair['reasons']), ('fail', ['coverage_dropped', 'generous_wrong_rose']))
 
@@ -283,11 +387,17 @@ class TestTheCoachGrade(SimpleTestCase):
         self.assertEqual((pair['previous']['facts'], pair['new']['facts']), (40, 40))
         self.assertEqual((pair['previous']['score_pct'], pair['new']['score_pct']), (50, 100))
         self.assertEqual((pair['grade'], pair['reasons']), ('pass', ['score_up']))
-        # one record of the new version shows Identity Unsure: coverage 39 of 40 drops
-        new[0] = ([band_fact('identity', UNSURE)] + [band_fact(f, CERTAIN) for f in FACTS[1:]],
-                  {f: 'pass' for f in FACTS}, 'next', LATER, BY, ROW_ID)
+        # one record of the new version shows Identity Unsure: coverage 39 of 40, inside the margin
+        unsure_identity = ([band_fact('identity', UNSURE)] + [band_fact(f, CERTAIN) for f in FACTS[1:]],
+                           {f: 'pass' for f in FACTS}, 'next', LATER, BY, ROW_ID)
+        new[0] = unsure_identity
         pair = coach_grade.coach_report(old + new)['coach'][0]
         self.assertEqual(pair['new']['coverage'], {'count': 39, 'of': 40})
+        self.assertEqual((pair['grade'], pair['reasons']), ('pass', ['score_up']))
+        # five such records: coverage 35 of 40, chance 0.027, broken
+        new[:5] = [unsure_identity] * 5
+        pair = coach_grade.coach_report(old + new)['coach'][0]
+        self.assertEqual(pair['new']['coverage'], {'count': 35, 'of': 40})
         self.assertEqual((pair['grade'], pair['reasons']), ('fail', ['coverage_dropped']))
 
 
@@ -360,8 +470,81 @@ class TestVersions(SimpleTestCase):
         months = coach_grade.coach_report(records)['months']
         self.assertEqual([(m['month'], m['facts']) for m in months], [('2026-10', 6), ('2026-11', 5)])
 
+    def test_the_display_label_itself_is_the_unknown_version(self):
+        records = (many([(CERTAIN, 'pass', 50)], '(unknown version)', EARLY)
+                   + many([(CERTAIN, 'pass', 10)], ' (unknown version) ', EARLY)
+                   + many([(PROBABLE, 'pass', 50)], 'v2', LATER) + many([(CERTAIN, 'pass', 50)], '', LATEST))
+        report = coach_grade.coach_report(records)
+        self.assertEqual([(m['version'], m['unknown_version'], m['month'], m['facts']) for m in report['months']],
+                         [('v2', False, '2026-04', 50), ('(unknown version)', True, '2026-03', 60),
+                          ('(unknown version)', True, '2026-05', 50)])
+        self.assertEqual((report['coach'], report['waiting']), ([], []))
+
+    def test_a_very_long_digit_run_does_not_raise(self):
+        # int() refuses more than 4,300 digits; the order reads a run by its length, then its text
+        long_small, long_big = 'v' + '9' * 4400, 'v' + '1' * 5000
+        records = (many([(CERTAIN, 'pass', 45)], long_big, EARLY) + many([(PROBABLE, 'pass', 45)], long_small, EARLY)
+                   + many([(PROBABLE, 'pass', 5)], 'v8', LATER) + many([(PROBABLE, 'pass', 5)], 'v007', LATER))
+        report = coach_grade.coach_report(records)
+        self.assertEqual([m['version'] for m in report['months']], [long_small, long_big, 'v007', 'v8'])
+        self.assertEqual(report['coach'][0]['grade'], 'pass')
+
+    def test_leading_zeros_do_not_change_the_order(self):
+        records = (many([(CERTAIN, 'pass', 5)], 'r10', EARLY) + many([(CERTAIN, 'pass', 5)], 'r009', EARLY)
+                   + many([(CERTAIN, 'pass', 5)], 'r9', EARLY))
+        months = coach_grade.coach_report(records)['months']
+        # 009 and 9 are the same number, then the label text decides; 10 comes last
+        self.assertEqual([m['version'] for m in months], ['r009', 'r9', 'r10'])
+
+
+class TestMalformedRecords(SimpleTestCase):
+
+    def test_a_malformed_record_is_left_out_and_counted(self):
+        good = many([(CERTAIN, 'pass', 45)], 'v1', EARLY) + many([(PROBABLE, 'pass', 45)], 'v2', LATER)
+        bad_evidence = ([{'fact': 'identity', 'status': 'review', 'evidence': 5, 'unresolved': [],
+                          'note': 'SENTINEL-NOTE-M4P2'}], {'identity': 'pass'}, 'SENTINEL-VERSION-M4P2', LATER,
+                        BY, ROW_ID)
+        bad_unresolved = ([{'fact': 'identity', 'status': 'review', 'evidence': [], 'unresolved': 7}],
+                          {'identity': 'fail'}, 'v2', LATER, BY, ROW_ID)
+        bad_snapshot = (5, {'identity': 'pass'}, 'v2', LATER, BY, ROW_ID)
+        bad_instant = one(CERTAIN, 'pass', 'v2', '2026-04-06')
+        bad_date = one(CERTAIN, 'pass', 'v2', datetime.date(2026, 4, 6))
+        not_a_record = None
+        records = good + [bad_evidence, bad_unresolved, bad_snapshot, bad_instant, bad_date, not_a_record]
+        report = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
+        self.assertEqual((report['malformed_records'], report['decided_records']), (6, 90))
+        clean = coach_grade.coach_report(good, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
+        report.pop('malformed_records')
+        self.assertEqual(clean.pop('malformed_records'), 0)
+        self.assertEqual(report, clean)   # nothing of a malformed record reaches any figure
+        dump = json.dumps(report)
+        self.assertNotIn('SENTINEL', dump)
+        self.assertIn('"v2"', dump)
+
+    def test_an_undecided_record_is_not_malformed(self):
+        report = coach_grade.coach_report([one(CERTAIN, 'pass', when=None), (5, 'x', 'v1')])
+        self.assertEqual((report['malformed_records'], report['decided_records']), (0, 0))
+
 
 class TestTheChain(SimpleTestCase):
+
+    def test_the_chain_runs_by_first_decided_instant_not_input_place(self):
+        records = (many([(PROBABLE, 'pass', 40)], 'listed-first', LATEST)
+                   + many([(PROBABLE, 'pass', 40)], 'listed-second', EARLY)
+                   + many([(CERTAIN, 'pass', 40)], 'listed-third', LATER))
+        coach = coach_grade.coach_report(records)['coach']
+        self.assertEqual([(p['previous']['version'], p['new']['version'], p['grade']) for p in coach],
+                         [('listed-second', 'listed-third', 'pass'), ('listed-third', 'listed-first', 'fail')])
+
+    def test_an_unknown_version_between_two_known_ones_neither_breaks_nor_joins_the_chain(self):
+        for label in ('', None, 'pre-versioning', '(unknown version)'):
+            records = (many([(PROBABLE, 'pass', 50)], 'v1', EARLY)
+                       + many([(CERTAIN, 'fail', 50)], label, LATER)
+                       + many([(CERTAIN, 'pass', 50)], 'v2', LATEST))
+            report = coach_grade.coach_report(records)
+            self.assertEqual([(p['previous']['version'], p['new']['version'], p['grade'], p['skipped_versions'])
+                              for p in report['coach']], [('v1', 'v2', 'pass', 0)], label)
+            self.assertEqual(report['waiting'], [], label)
 
     def test_a_small_middle_version_is_skipped_and_waits(self):
         middle = ([band_fact(f, CERTAIN) for f in FACTS], {'identity': 'pass', 'academic': 'pass',
@@ -412,11 +595,11 @@ def mixed_records():
             + many([(CERTAIN, 'fail', 1, 'proof_missing')], 'd', at(4)))
 
 
-def without_documents_only(report):
-    """A deep copy of ``report`` with every ``documents_only`` key and ``left_out_reasons`` taken out."""
+def without_extra_lines(report):
+    """A deep copy of ``report`` with every ``without_left_out`` key and ``left_out_reasons`` taken out."""
     def strip(value):
         if isinstance(value, dict):
-            return {k: strip(v) for k, v in value.items() if k != 'documents_only'}
+            return {k: strip(v) for k, v in value.items() if k != 'without_left_out'}
         if isinstance(value, list):
             return [strip(v) for v in value]
         return value
@@ -426,12 +609,12 @@ def without_documents_only(report):
 
 
 def lines(report):
-    """Every ``documents_only`` value in a report, in order."""
+    """Every ``without_left_out`` value in a report, in order."""
     found = []
     sides = report['waiting'] + [s for p in report['coach'] for s in (p['previous'], p['new'])]
     for item in report['months'] + sides:
-        if 'documents_only' in item:
-            found.append((item['version'], item.get('month'), item['documents_only']))
+        if 'without_left_out' in item:
+            found.append((item['version'], item.get('month'), item['without_left_out']))
     return found
 
 
@@ -466,12 +649,12 @@ class TestOneMonthOneCell(SimpleTestCase):
 
 class TestLeaveOutChangesNothingButItsLine(SimpleTestCase):
 
-    def test_the_documents_only_report_is_the_plain_report_plus_lines(self):
+    def test_the_report_with_a_leave_out_is_the_plain_report_plus_lines(self):
         plain = coach_grade.coach_report(mixed_records())
         docs = coach_grade.coach_report(mixed_records(), leave_out_reasons=('interview_differs',))
-        self.assertEqual(without_documents_only(docs), without_documents_only(plain))
+        self.assertEqual(without_extra_lines(docs), without_extra_lines(plain))
         self.assertEqual((plain['left_out_reasons'], docs['left_out_reasons']), ([], ['interview_differs']))
-        self.assertNotIn('documents_only', json.dumps(plain))
+        self.assertNotIn('without_left_out', json.dumps(plain))
         self.assertEqual(lines(docs), [
             ('a', '2026-03', {'too_few': False, 'facts': 6, 'points': 12, 'best': 12, 'score_pct': 100,
                               'left_out': 0}),
@@ -492,26 +675,26 @@ class TestLeaveOutChangesNothingButItsLine(SimpleTestCase):
                    + [one(RULE_NOT_MET, 'pass', 'v1', at(2)), one(PROBABLE, 'fail', 'v1', at(2), 'proof_missing')]
                    + many([(CERTAIN, 'pass', 5)], 'v1', at(3)))
         plain = coach_grade.coach_report(records)
-        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)
+        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
         want = [('2026-01', False, 5, -2), ('2026-02', True, None, None), ('2026-03', False, 5, 10)]
         for report in (plain, docs):
             self.assertEqual([(m['month'], m['too_few'], m.get('facts'), m.get('points'))
                               for m in report['months']], want)
-        self.assertEqual(without_documents_only(docs), without_documents_only(plain))
-        self.assertEqual([m.get('documents_only') for m in docs['months']],
+        self.assertEqual(without_extra_lines(docs), without_extra_lines(plain))
+        self.assertEqual([m.get('without_left_out') for m in docs['months']],
                          [{'too_few': True}, None, {'too_few': False, 'facts': 5, 'points': 10, 'best': 10,
                                                     'score_pct': 100, 'left_out': 0}])
         self.assertEqual(docs['waiting'], [{'version': 'v1', 'too_few': False, 'facts': 12, 'score_pct': -21,
                                             'coverage': {'count': 12, 'of': 12},
                                             'generous_wrong': {'count': 2, 'of': 12},
-                                            'documents_only': {'too_few': False, 'facts': 11, 'points': 5,
+                                            'without_left_out': {'too_few': False, 'facts': 11, 'points': 5,
                                                                'best': 22, 'score_pct': 23, 'left_out': 1}}])
 
     def test_reviewer_case_p2_a_middle_version_of_interview_fails_keeps_its_place(self):
         records = (many([(PROBABLE, 'pass', 50)], 'v1', at(1))
                    + many([(CERTAIN, 'fail', 3, 'interview_differs')], 'v1.1', at(2))
                    + many([(CERTAIN, 'pass', 50)], 'v2', at(3)))
-        for leave_out in ((), coach_grade.DOCUMENTS_ONLY):
+        for leave_out in ((), coach_grade.INTERVIEW_FAILS):
             report = coach_grade.coach_report(records, leave_out_reasons=leave_out)
             self.assertEqual([m for m in report['months'] if m['version'] == 'v1.1'],
                              [{'version': 'v1.1', 'unknown_version': False, 'month': '2026-02', 'too_few': True}])
@@ -530,7 +713,9 @@ class TestLeaveOutChangesNothingButItsLine(SimpleTestCase):
                          [('2026-01', False), ('2026-02', True), ('2026-03', False)])
 
 
-class TestDocumentsOnly(SimpleTestCase):
+class TestTheExtraLine(SimpleTestCase):
+    """``without_left_out``: the same figures with the left-out Fails taken out, to see the score both
+    ways. The grade and the guards always count every Fail."""
 
     def records(self):
         return many([(CERTAIN, 'pass', 5), (CERTAIN, 'fail', 1, 'interview_differs'),
@@ -542,46 +727,50 @@ class TestDocumentsOnly(SimpleTestCase):
         cell = coach_grade.coach_report(records)['months'][0]
         self.assertEqual((cell['facts'], cell['points'], cell['best']), (7, -10, 14))
         self.assertNotIn('left_out', cell)
-        self.assertNotIn('documents_only', cell)
+        self.assertNotIn('without_left_out', cell)
 
     def test_an_interview_fail_is_left_out_of_points_and_best_in_its_line(self):
-        cell = coach_grade.coach_report(self.records(), leave_out_reasons=coach_grade.DOCUMENTS_ONLY)['months'][0]
+        cell = coach_grade.coach_report(self.records(), leave_out_reasons=coach_grade.INTERVIEW_FAILS)['months'][0]
         self.assertEqual((cell['facts'], cell['points'], cell['best'], cell['score_pct']), (7, -10, 14, -71))
         self.assertEqual(cell['outcomes']['wrong_sure'], 2)   # the plain cell keeps both Fails
         # the proof_missing Fail still costs in the line; the interview Fail does not
-        self.assertEqual(cell['documents_only'], {'too_few': False, 'facts': 6, 'points': 0, 'best': 12,
+        self.assertEqual(cell['without_left_out'], {'too_few': False, 'facts': 6, 'points': 0, 'best': 12,
                                                   'score_pct': 0, 'left_out': 1})
 
-    def test_the_grade_stays_plain_and_each_side_gains_its_line(self):
+    def test_interview_fails_count_in_the_grade_and_each_side_gains_its_line(self):
+        # R2: the AI also asks the student questions (Check 2), so an interview Fail is a Fail like any
+        # other in the grade and both guards. Generous-wrong 0 of 40 against 5 of 45: the chance is
+        # C(45,5)/C(85,5) = 1221759/32801517, about 0.037, below 1 in 20: broken.
         old = [(PROBABLE, 'pass', 40)]
-        new = [(CERTAIN, 'pass', 40), (CERTAIN, 'fail', 1, 'interview_differs')]
+        new = [(CERTAIN, 'pass', 40), (CERTAIN, 'fail', 5, 'interview_differs')]
         records = many(old, 'old', EARLY) + many(new, 'next', LATER)
         plain = coach_grade.coach_report(records)['coach'][0]
         self.assertEqual((plain['grade'], plain['reasons']), ('fail', ['generous_wrong_rose']))
-        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)
+        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
         pair = docs['coach'][0]
         self.assertEqual((pair['grade'], pair['reasons'], pair['new']['facts'], pair['new']['generous_wrong']),
-                         ('fail', ['generous_wrong_rose'], 41, {'count': 1, 'of': 41}))
-        self.assertEqual(pair['new']['documents_only'], {'too_few': False, 'facts': 40, 'points': 80, 'best': 80,
-                                                         'score_pct': 100, 'left_out': 1})
-        self.assertEqual(pair['previous']['documents_only'], {'too_few': False, 'facts': 40, 'points': 40,
+                         ('fail', ['generous_wrong_rose'], 45, {'count': 5, 'of': 45}))
+        # the line shows the score both ways: without the five interview Fails it is 80/80
+        self.assertEqual(pair['new']['without_left_out'], {'too_few': False, 'facts': 40, 'points': 80, 'best': 80,
+                                                         'score_pct': 100, 'left_out': 5})
+        self.assertEqual(pair['previous']['without_left_out'], {'too_few': False, 'facts': 40, 'points': 40,
                                                               'best': 80, 'score_pct': 50, 'left_out': 0})
 
     def test_a_side_under_five_left_shows_a_too_few_line(self):
         records = many([(CERTAIN, 'pass', 3), (CERTAIN, 'fail', 3, 'interview_differs')], 'v1', EARLY)
-        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)
+        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
         self.assertEqual(docs['waiting'], [{'version': 'v1', 'too_few': False, 'facts': 6, 'score_pct': -200,
                                             'coverage': {'count': 6, 'of': 6},
                                             'generous_wrong': {'count': 3, 'of': 6},
-                                            'documents_only': {'too_few': True}}])
+                                            'without_left_out': {'too_few': True}}])
 
     def test_a_left_out_candidate_with_no_band_stays_not_scored(self):
         no_band = ([], {'identity': 'fail', 'fail_reasons': {'identity': 'interview_differs'}}, 'v1', EARLY, BY,
                    ROW_ID)
         records = many([(CERTAIN, 'pass', 6)]) + [no_band]
-        cell = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)['months'][0]
+        cell = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)['months'][0]
         self.assertEqual((cell['facts'], cell['not_scored']), (6, 1))
-        self.assertEqual(cell['documents_only'], {'too_few': False, 'facts': 6, 'points': 12, 'best': 12,
+        self.assertEqual(cell['without_left_out'], {'too_few': False, 'facts': 6, 'points': 12, 'best': 12,
                                                   'score_pct': 100, 'left_out': 0})
 
     def test_an_unknown_code_is_refused(self):
@@ -589,6 +778,12 @@ class TestDocumentsOnly(SimpleTestCase):
             coach_grade.coach_report(self.records(), leave_out_reasons=('not_a_code',))
         with self.assertRaises(ValueError):   # a bare string is not a set of codes
             coach_grade.coach_report(self.records(), leave_out_reasons='interview_differs')
+        for bad in (5, [['interview_differs']], [5], [None], b'interview_differs', object()):
+            with self.assertRaises(ValueError, msg=repr(bad)):
+                coach_grade.coach_report(self.records(), leave_out_reasons=bad)
+        # None and an empty set are the plain report
+        self.assertEqual(coach_grade.coach_report(self.records(), leave_out_reasons=None),
+                         coach_grade.coach_report(self.records()))
 
     def test_a_record_with_all_four_facts_loses_only_the_interview_fail(self):
         verdict = {f: 'pass' for f in FACTS}
@@ -597,9 +792,38 @@ class TestDocumentsOnly(SimpleTestCase):
         snapshot = [band_fact(f, CERTAIN) for f in FACTS]
         records = [(snapshot, verdict, 'v1', EARLY, BY, ROW_ID)] * 2
         plain = coach_grade.coach_report(records)['months'][0]
-        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)['months'][0]
+        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)['months'][0]
         self.assertEqual((plain['facts'], plain['points'], plain['best']), (8, -32, 16))
         self.assertEqual((docs['facts'], docs['points'], docs['best']), (8, -32, 16))
-        self.assertEqual(docs['documents_only'], {'too_few': False, 'facts': 6, 'points': -12, 'best': 12,
+        self.assertEqual(docs['without_left_out'], {'too_few': False, 'facts': 6, 'points': -12, 'best': 12,
                                                   'score_pct': -100, 'left_out': 2})
         self.assertEqual(verdict['identity'], 'fail')   # the caller's record is not changed
+
+
+#: One fixed AI's answers, (band, reviewer, weight out of 100): mostly Certain and right, some Unsure,
+#: and rare Certain Fails so that the -10 tail is present.
+NULL_BEHAVIOUR = ((CERTAIN, 'pass', 70), (CERTAIN, 'fail', 3), (PROBABLE, 'pass', 10), (PROBABLE, 'fail', 2),
+                  (UNSURE, 'pass', 8), (UNSURE, 'fail', 3), (UNVERIFIABLE, 'pass', 2), (UNVERIFIABLE, 'fail', 2))
+NULL_SEED = 20261124
+NULL_TRIALS = 300
+
+
+class TestAnUnchangedAiIsRarelyGraded(SimpleTestCase):
+
+    def test_both_sides_drawn_from_the_same_ai(self):
+        """The reviewer's finding: zero tolerance graded an UNCHANGED AI ``fail`` about 3 times in 4.
+        With the margin, an unchanged AI is graded ``fail`` under 15 in 100 and ``pass`` under 10 in 100
+        at 40, 100 and 400 facts a side."""
+        population = [(band, says) for band, says, weight in NULL_BEHAVIOUR for _ in range(weight)]
+        rng = random.Random(NULL_SEED)
+
+        def draw(version, when, n):
+            return [one(*rng.choice(population), version=version, when=when) for _ in range(n)]
+
+        for n in (40, 100, 400):
+            grades = {'pass': 0, 'fail': 0, 'no_change': 0}
+            for _ in range(NULL_TRIALS):
+                pair = coach_grade.coach_report(draw('old', EARLY, n) + draw('next', LATER, n))['coach'][0]
+                grades[pair['grade']] += 1
+            self.assertLess(grades['fail'] * 100, 15 * NULL_TRIALS, (n, grades))
+            self.assertLess(grades['pass'] * 100, 10 * NULL_TRIALS, (n, grades))
