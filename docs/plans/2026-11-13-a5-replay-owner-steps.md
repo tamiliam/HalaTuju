@@ -45,11 +45,37 @@ gcloud iam service-accounts create halatuju-replay --display-name "A5 replay (re
 gcloud secrets add-iam-policy-binding halatuju-replay-db-url --member serviceAccount:halatuju-replay@gen-lang-client-0871147736.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --account tamiliam@gmail.com --project gen-lang-client-0871147736
 ```
 
-## 2b. The derived fingerprint key (LL5; words only, no script)
+## 2b. The derived fingerprint key (LL5; an owner step, the value in words only, no script)
 
 Make the derived key once: read the production SECRET_KEY, compute sha256(salt + SECRET_KEY) as hex,
 write it straight into Secret Manager as the replay job's REPLAY_FINGERPRINT_KEY. Needs the Secret
 Manager API and the owner's yes at that time, given for this step when it is run.
+
+The wiring is now built (LL5 phase C1): the replay passes `REPLAY_FINGERPRINT_KEY` on to its `new`
+child ONLY when it is started with `--human-lens`. Without that flag the key stays in the parent and no
+child sees it. The secret's name is fixed: `halatuju-replay-fingerprint-key`. Create it with the value
+coming in on standard input (`--data-file=-`) straight from the step that computes it, never typed,
+shown or saved:
+
+```
+gcloud secrets create halatuju-replay-fingerprint-key --replication-policy=automatic --data-file=- --account tamiliam@gmail.com --project gen-lang-client-0871147736
+```
+
+Give the replay's service account read access to this one secret:
+
+```
+gcloud secrets add-iam-policy-binding halatuju-replay-fingerprint-key --member serviceAccount:halatuju-replay@gen-lang-client-0871147736.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --account tamiliam@gmail.com --project gen-lang-client-0871147736
+```
+
+Once the job exists (step 4), mount it as the variable the replay reads:
+
+```
+gcloud run jobs update halatuju-replay --update-secrets REPLAY_FINGERPRINT_KEY=halatuju-replay-fingerprint-key:latest --region asia-southeast1 --account tamiliam@gmail.com --project gen-lang-client-0871147736
+```
+
+The lens itself runs only with `--human-lens` and an absolute `--human-lens-exam-folder` outside any
+git repository; `--human-lens-freeze` (off by default) is the only way to write an exam file. Do not
+run the job with the lens until the home of the exam file is decided.
 
 - **Never seen.** Neither `SECRET_KEY` nor the derived value may reach a terminal, a shell history or
   a file (not even a temporary one), and neither goes into the image.
@@ -146,6 +172,7 @@ The output is in Cloud Logging under the job; it holds only codes, amounts, hash
 ```
 gcloud run jobs delete halatuju-replay --region asia-southeast1 --quiet --account tamiliam@gmail.com --project gen-lang-client-0871147736
 gcloud secrets delete halatuju-replay-db-url --quiet --account tamiliam@gmail.com --project gen-lang-client-0871147736
+gcloud secrets delete halatuju-replay-fingerprint-key --quiet --account tamiliam@gmail.com --project gen-lang-client-0871147736
 gcloud iam service-accounts delete halatuju-replay@gen-lang-client-0871147736.iam.gserviceaccount.com --quiet --account tamiliam@gmail.com --project gen-lang-client-0871147736
 gcloud artifacts docker images delete asia-southeast1-docker.pkg.dev/gen-lang-client-0871147736/cloud-run-source-deploy/halatuju-replay --delete-tags --quiet --account tamiliam@gmail.com --project gen-lang-client-0871147736
 ```

@@ -17,7 +17,15 @@
 5. Compares: per record `same`, `differs` (old against new), `could_not_run` (either side raised) or
    `noise` (new against new_again differ: the engine is not deterministic; left out of A/B). The A/B
    split by the ruling catalogue is R2.
-Everything printed goes through the scrubber; an error is printed by class name only.
+Everything printed goes through the scrubber; an error is printed by class name only. One exception:
+the fixed line `HUMAN_LENS_ON_LINE` (a constant, no data in it; the scrubber has no code for it).
+
+THE HUMAN LENS (LL5 phase C1), OFF by default. Only `--human-lens` turns it on; then ONLY the `new` child
+gets the lens names (`human_lens_env`: the switch, the exam folder, the freeze flag, and
+`REPLAY_FINGERPRINT_KEY` copied from this process's environment). Off, every child's environment is
+exactly as before and the result has no new key. The `new` child writes the lens's counts and codes to
+`human_lens.json` in the workdir; `run_replay` returns them under the one key ``human_lens``. They are
+not printed in this phase.
 """
 import argparse
 import importlib
@@ -30,11 +38,20 @@ from collections import Counter, defaultdict
 
 from . import guards, netguard
 from . import scrub as scrub_module
-from .child import parse_instant, setup_django
+from .child import (HUMAN_LENS_ENV, HUMAN_LENS_FILE, HUMAN_LENS_FOLDER_ENV, HUMAN_LENS_FREEZE_ENV,
+                    parse_instant, setup_django)
 from .scrub import count_dropped, error_record, scrub
 
 RUN_SIDES = ('old', 'new', 'new_again')
 TREE_OF = {'old': 'old', 'new': 'new', 'new_again': 'new'}
+#: The derived fingerprint key's variable (`replay.settings`); it reaches a child only with the lens on.
+FINGERPRINT_KEY_ENV = 'REPLAY_FINGERPRINT_KEY'
+#: The one side that runs the human lens: one freeze at most, and the key reaches one child only.
+HUMAN_LENS_SIDE = 'new'
+#: The result's one new key, present only with the lens on.
+HUMAN_LENS_KEY = 'human_lens'
+#: The run's one line saying the lens is on: a fixed text, never the key or a folder.
+HUMAN_LENS_ON_LINE = '{"event": "human_lens_on"}'
 CHILD_TIMEOUT_S = 3 * 60 * 60
 #: How long the parent waits for every child to join; below the parent's idle-in-transaction limit.
 JOIN_TIMEOUT_S = 10 * 60
@@ -60,10 +77,11 @@ def case_counts():
     }
 
 
-def child_env(env, side_root, harness_dir):
+def child_env(env, side_root, harness_dir, lens=None):
     """The child's WHOLE environment: nothing from the parent but the replay URL, the path and the run's
-    scrub salt (so every side hashes alike)."""
-    return {
+    scrub salt (so every side hashes alike). ``lens`` (`human_lens_env`, the lens side only) adds the
+    lens names; None (the default) adds nothing."""
+    out = {
         'PATH': env.get('PATH', '/usr/bin:/bin'),
         guards.DB_ENV: env.get(guards.DB_ENV, ''),
         scrub_module.SALT_ENV: env.get(scrub_module.SALT_ENV, ''),
@@ -72,6 +90,19 @@ def child_env(env, side_root, harness_dir):
         'PYTHONDONTWRITEBYTECODE': '1',
         'TZ': 'UTC',
     }
+    if lens is not None:
+        out.update(lens)
+    return out
+
+
+def human_lens_env(args, env, side):
+    """The lens names for ``side``'s child, or None: the lens is off (no `--human-lens`), or this is not
+    the lens side. The key is copied from ``env`` ('' when absent: the lens then answers `key_blank`)."""
+    if not getattr(args, 'human_lens', False) or side != HUMAN_LENS_SIDE:
+        return None
+    return {HUMAN_LENS_ENV: '1', HUMAN_LENS_FOLDER_ENV: args.human_lens_exam_folder,
+            HUMAN_LENS_FREEZE_ENV: '1' if args.human_lens_freeze else '0',
+            FINGERPRINT_KEY_ENV: env.get(FINGERPRINT_KEY_ENV, '')}
 
 
 def child_command(args, side, snapshot, out_path):
@@ -89,7 +120,8 @@ def spawn_child(args, side, snapshot, out_path, env):
     """Start one child; its stdout and stderr are discarded (it writes only to ``out_path``)."""
     root = getattr(args, f'{TREE_OF[side]}_root')
     return subprocess.Popen(child_command(args, side, snapshot, out_path), cwd=os.path.join(root, 'halatuju_api'),
-                            env=child_env(env, root, args.harness_dir), stdin=subprocess.DEVNULL,
+                            env=child_env(env, root, args.harness_dir, human_lens_env(args, env, side)),
+                            stdin=subprocess.DEVNULL,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
@@ -203,10 +235,15 @@ def parse_args(argv):
     ap.add_argument('--workdir', default='/tmp/replay')
     ap.add_argument('--engines', default='')
     ap.add_argument('--counts-only', action='store_true')
+    ap.add_argument('--human-lens', action='store_true', help='run the human lens (off by default)')
+    ap.add_argument('--human-lens-exam-folder', default='', help='the exam folder: absolute, outside git')
+    ap.add_argument('--human-lens-freeze', action='store_true', help='freeze a missing exam file')
     args = ap.parse_args(argv)
     parse_instant(args.instant)
     if len(args.months.split(',')) != 2:
         ap.error('--months takes exactly two months')
+    if (args.human_lens_freeze or args.human_lens_exam_folder) and not args.human_lens:
+        ap.error('--human-lens-freeze and --human-lens-exam-folder need --human-lens')
     return args
 
 
@@ -251,6 +288,23 @@ def clear_side_files(workdir):
     return paths
 
 
+def clear_human_lens_file(workdir):
+    """The lens file's path, after deleting the one an earlier run left, so a lens side that writes nothing
+    is never read as an old run's result."""
+    path = os.path.join(workdir, HUMAN_LENS_FILE)
+    if os.path.lexists(path):
+        os.remove(path)
+    return path
+
+
+def read_human_lens(path):
+    """The lens side's counts and codes, or ``{"error": "no_output"}`` when it wrote none."""
+    if not os.path.exists(path):
+        return {'error': 'no_output'}
+    with open(path, encoding='utf-8') as fh:
+        return json.load(fh)
+
+
 def stop_children(procs):
     """Kill every child still running (its `poll()` is None)."""
     for proc in procs.values():
@@ -262,7 +316,9 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
     """The exporting transaction reads no table while it waits for every child to join its snapshot
     (`joins`), so the wait holds no table lock; the case counts run AFTER the joins, in the same snapshot,
     and the transaction is rolled back BEFORE the children run their engines (`--counts-only`: the counts
-    and stop). Whatever goes wrong once a child has started, every child still running is killed."""
+    and stop). Whatever goes wrong once a child has started, every child still running is killed.
+    With `--human-lens` only: one fixed line says so, and the totals come back with ``human_lens``."""
+    lens_on = bool(getattr(args, 'human_lens', False))
     guards.check_environment(env)
     host, port = guards.check_database_url(env.get(guards.DB_ENV))
     sess = session or (lambda: guards.read_only_session(export=True))
@@ -279,6 +335,9 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
                     emit({'event': 'counts', **counts()}, out)
                     return {}
                 paths = clear_side_files(args.workdir)
+                if lens_on:
+                    lens_path = clear_human_lens_file(args.workdir)
+                    out(HUMAN_LENS_ON_LINE)
                 for s in RUN_SIDES:
                     procs[s] = spawn(args, s, snapshot, paths[s], child_vars)
                 emit({'event': 'joins', **wait_for_joins(paths, procs)}, out)
@@ -292,7 +351,10 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
         emit({'event': 'side', 'side': s, 'exit': codes[s], 'records': len(sides[s]),
               'fatal': [{'error': e.get('error')} for e in events if e.get('event') == 'fatal'],
               'dropped': count_dropped(list(sides[s].values()))}, out)
-    return report(compare_sides(sides), out)
+    totals = report(compare_sides(sides), out)
+    if lens_on:
+        return {**totals, HUMAN_LENS_KEY: read_human_lens(lens_path)}
+    return totals
 
 
 def main(argv=None):

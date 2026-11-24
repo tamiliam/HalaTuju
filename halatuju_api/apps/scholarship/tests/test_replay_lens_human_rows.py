@@ -117,6 +117,31 @@ def test_a_status_moved_past_the_decision_is_recovered_by_its_in_review_twin(des
     assert row['fresh_snapshot'] == app.ai_verdict_snapshot
 
 
+def test_a_past_award_status_listed_before_recommended_still_makes_no_twin(desk, monkeypatch):
+    from apps.scholarship import closure
+    codes = [code for code, _label in ScholarshipApplication.STATUS_CHOICES]
+    past = [code for code in codes if code in closure.POST_AWARD_STATUSES]
+    assert past and codes.index(past[0]) > codes.index('recommended')   # the order this test turns round
+    ordered = [c for c in ScholarshipApplication.STATUS_CHOICES if c[0] in past] + [
+        c for c in ScholarshipApplication.STATUS_CHOICES if c[0] not in past]
+    monkeypatch.setattr(ScholarshipApplication, 'STATUS_CHOICES', ordered)
+    app = decide(desk)
+    ScholarshipApplication.objects.filter(pk=app.pk).update(status='recommended')
+    made = []
+    real = R._other_stage_twins
+
+    def spy(case, status_codes):
+        assert list(status_codes)[:len(past)] == past                    # the past-award codes come first
+        for twin in real(case, status_codes):
+            made.append(twin.status)
+            yield twin
+    monkeypatch.setattr(R, '_other_stage_twins', spy)
+    row = rows_by_id()[app.pk]
+    assert made and not set(made) & set(closure.POST_AWARD_STATUSES)
+    assert (row['recomputed_fingerprint'], row['recompute_note']) == (
+        app.ai_verdict_context['fingerprint'], lens_human.RECOVERED_BY_TWIN)
+
+
 def test_a_status_change_inside_the_same_stage_facts_still_recomputes(desk):
     app = decide(desk)
     ScholarshipApplication.objects.filter(pk=app.pk).update(status='interviewing')   # both "in review"
@@ -181,7 +206,7 @@ def test_a_blank_key_recomputes_nothing(keyed, desk):
 
 
 # ── T5: the row contract ──────────────────────────────────────────────────────────────────────────
-def test_every_row_has_the_eight_fields_and_the_stored_values(desk):
+def test_every_row_has_the_nine_fields_and_the_stored_values(desk):
     qc = {'identity': 'disagreed', 'income': 'agreed', 'academic': 'shrug', 'not_a_fact': 'agreed'}
     full = decide(desk)
     ScholarshipApplication.objects.filter(pk=full.pk).update(
