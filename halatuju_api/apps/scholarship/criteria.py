@@ -15,7 +15,7 @@ The stored shape (the owner-approved v9 design; internal keys only, never admin 
                                     {'test': 'min_upu_merit', 'value': 70}]}]},
         {'section': 'income', 'any' | 'all': [{'test': 'household_income_max', 'rm': 5860},
                                               {'test': 'income_per_person_under', 'rm': 1584}]},
-        {'section': 'born_in', 'any': ['sabah', 'labuan']}],
+        {'section': 'born_in', 'any': ['sabah', 'wp_labuan']}],
      'flag': [{'test': 'course_start_year', 'allowed': [2025, 2026]}]}
 
 A section that is absent is not checked; a group that is absent is switched off. Everything
@@ -23,14 +23,14 @@ outside the tree (consent, intent, IPTS, the D5 public-diploma gate) is unchange
 order: consent, intent, IPTS, born in, D5, results, income - exactly `shortlisting.evaluate`'s.
 
 ⚠ Reasons and categories are byte-identical to `shortlisting.evaluate` for every legacy shape
-(`from_legacy`), because a reviewer and the decline email read them. The formatting therefore
+(`from_legacy`), outside the two owner-ruled differences (decisions.md 2026-11-25), because a reviewer and the decline email read them. The formatting therefore
 keeps today's quirks on purpose ("3 at A- (need 4)" has no "or better"; "RMNone" when only the
 per-person ceiling is set). Sprint 2 removes the duplication by making `shortlisting` call this.
 """
 from apps.courses import public as courses_public
 
 from . import start_year as _start_year
-from .birth_state import STATE_KEYS
+from .birth_state import STATE_KEYS, stored_keys
 from .birth_state import check as check_birth_state
 from .shortlisting import ShortlistResult, _count, spm_merit
 
@@ -44,10 +44,6 @@ GROUP_TESTS = {'post_spm': ('min_pngk', 'min_merit'), 'spm': ('grade_count', 'mi
 INCOME_TESTS = ('household_income_max', 'income_per_person_under')
 FLAG_TESTS = ('course_start_year',)
 
-#: Owner ruling 2026-11-25: the degree intake migrates with the SPM group OFF (closes the #921
-#: gap: an SPM-only student there met no bar). Kept OUT of `from_legacy` on purpose, so the
-#: converter stays a plain reading of the columns and the exception is named where it is used.
-SPM_OFF_AT_MIGRATION = frozenset({'bpb-deg-dip-2026'})
 
 
 def at_or_better(grades, grade):
@@ -140,8 +136,9 @@ def _validate_tests(tests, allowed, where, allow_empty=False):
         if kind == 'grade_count':
             n = t.get('at_least')
             if (set(t) != {'test', 'at_least', 'grade_or_better'} or t.get('grade_or_better') not in GRADES
-                    or not isinstance(n, int) or isinstance(n, bool) or n < 1):
-                errs.append(f'{where}: grade_count needs at_least >= 1 and a grade A+ to C')
+                    or not isinstance(n, int) or isinstance(n, bool) or n < 0):
+                # 0 is allowed: today's "0 set" bar, which only asks that SPM grades be given
+                errs.append(f'{where}: grade_count needs at_least >= 0 and a grade A+ to C')
         else:
             field = 'rm' if kind in INCOME_TESTS else 'value'
             v = t.get(field)
@@ -323,18 +320,23 @@ def birth_states(tree):
     return list(s['any']) if s else []
 
 
+def _year_flag(tree):
+    return next((f for f in (tree or {}).get('flag', []) if f.get('test') == 'course_start_year'), None)
+
+
 def start_years(tree):
     """The course-start years of the flag ([] = no flag)."""
-    f = next((f for f in (tree or {}).get('flag', []) if f.get('test') == 'course_start_year'), None)
+    f = _year_flag(tree)
     return _start_year.stored_years(f['allowed']) if f else []
 
 
 def start_year_flag(application, tree):
-    """`start_year.reading` on the tree: None when no years are set, else
-    ``{state, start_year, years}``. A flag for a person, never a decline."""
-    years = start_years(tree)
-    if not years:
+    """`start_year.reading` on the tree: None when there is no flag, else
+    ``{state, start_year, years}``. A flag for a person, never a decline. A flag whose stored
+    years are all junk stays ON with no years (`start_year.rule_on`), read exactly as `reading` reads it."""
+    if _year_flag(tree) is None:
         return None
+    years = start_years(tree)
     year = _start_year.possible_start_years(application).year
     state = _start_year.decide(year, years)
     return {'state': state, 'start_year': str(year) if state != 'unknown' else None, 'years': years}
@@ -371,71 +373,65 @@ def evaluate(application, tree, cgpa_of=courses_public.stpm_cgpa_of):
 
 # ── From today's columns ────────────────────────────────────────────────────────────────────
 
-def _rule(v):
-    """A count / merit column: NULL or 0 = no rule."""
-    return None if v is None or v == 0 else v
+def has_spm_bar(cohort):
+    """True when the intake sets an SPM bar that can fail a student who gave SPM grades: a grade
+    count or the UPU merit above 0. A bar stored as 0 only asks that SPM grades be given."""
+    return any((getattr(cohort, name, None) or 0) > 0 for name in (
+        'min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count', 'min_merit_score'))
 
 
-def from_legacy(cohort):
+def from_legacy(cohort, keep_empty_spm=False):
     """The tree that today's cohort columns mean. Results are joined by 'any' (owner ruling
     2026-11-25), so a post-SPM holder below the PNGK floor who meets the SPM group now passes.
 
     * ``min_stpm_pngk`` set (0 included) -> a post-SPM group with min_pngk; NULL -> no post-SPM
       group (D16c: the intake is SPM-only and a post-SPM holder is tested on the SPM GRADE bars).
     * A-, B+ (a TOTAL), credit (C) counts -> grade_count rules; ``min_merit_score`` ->
-      min_upu_merit (SPM holders only, D3). NULL or 0 = no rule.
-    * The SPM group is present whenever the results section is - with no tests it passes any
-      student, which is what a blank SPM bar does today. No academic value at all -> no section.
+      min_upu_merit (SPM holders only, D3). NULL = no rule. A 0 is KEPT as a rule, exactly as
+      today: it never fails a count, but a post-SPM holder on a blank-floor intake with no SPM
+      grades fails "SPM grades not provided", an SPM holder with no merit fails a merit 0, and
+      the B+ wording reads "0 at A- plus N more at B+".
+    * THE CGPA TRAP, BY SHAPE (owner ruling 2026-11-25: the trap = SPM group OFF): a PNGK floor
+      with no SPM bar (`has_spm_bar` false) has NO SPM group, so SPM-only students do not qualify.
+      Today such an intake passes them (#921); intake 5 (bpb-deg-dip-2026) is the one live case.
+      ``keep_empty_spm=True`` keeps the group (the replay's ``--plain`` view) for comparison.
+    * Otherwise the SPM group is present whenever the results section is. No academic value at
+      all -> no section.
     * income_ceiling / per_capita_ceiling -> income, 'any' (today's rescue rule); neither -> none.
-    * allowed_birth_states -> born_in; allowed_start_years -> the flag. Empty -> none.
-    The degree-intake exception lives in `tree_for_migration`, not here."""
+    * allowed_birth_states (`birth_state.stored_keys`) -> born_in; allowed_start_years
+      (`start_year.rule_on` / `stored_years`) -> the flag. Empty -> none.
+
+    ⚠ A CONVERTER FOR THE MIGRATION AND THE REPLAY ONLY. Once Sprint 2 stores the tree, the tree
+    is the source of truth: a save must never rebuild it from the old columns (that would undo
+    an all/any choice or switch the SPM group back on)."""
     def g(name):
         return getattr(cohort, name, None)
 
-    spm =[{'test': 'grade_count', 'at_least': int(v), 'grade_or_better': grade}
-           for v, grade in ((_rule(g('min_spm_a_count')), 'A-'), (_rule(g('min_spm_bplus_count')), 'B+'),
-                            (_rule(g('min_spm_credit_count')), 'C')) if v is not None]
-    if _rule(g('min_merit_score')) is not None:
+    spm = [{'test': 'grade_count', 'at_least': int(v), 'grade_or_better': grade}
+           for v, grade in ((g('min_spm_a_count'), 'A-'), (g('min_spm_bplus_count'), 'B+'),
+                            (g('min_spm_credit_count'), 'C')) if v is not None]
+    if g('min_merit_score') is not None:
         spm.append({'test': 'min_upu_merit', 'value': g('min_merit_score')})
     pngk = g('min_stpm_pngk')
     sections = []
     if pngk is not None or spm:
         groups = [{'route': 'post_spm', 'all': [{'test': 'min_pngk', 'value': pngk}]}] if pngk is not None else []
-        groups.append({'route': 'spm', 'all': spm})
+        if pngk is None or has_spm_bar(cohort) or keep_empty_spm:
+            groups.append({'route': 'spm', 'all': spm})
         sections.append({'section': 'results', 'any': groups})
     income = [{'test': t, 'rm': g(col)} for t, col in (('household_income_max', 'income_ceiling'),
                                                        ('income_per_person_under', 'per_capita_ceiling'))
               if g(col) is not None]
     if income:
         sections.append({'section': 'income', 'any': income})
-    states = list(g('allowed_birth_states') or [])
+    states = stored_keys(g('allowed_birth_states'))
     if states:
         sections.append({'section': 'born_in', 'any': states})
     tree = {'all': sections}
-    years = _start_year.stored_years(g('allowed_start_years'))
-    if years:
-        tree['flag'] = [{'test': 'course_start_year', 'allowed': years}]
+    if _start_year.rule_on(g('allowed_start_years')):
+        tree['flag'] = [{'test': 'course_start_year', 'allowed': _start_year.stored_years(g('allowed_start_years'))}]
     return tree
 
 
-def without_spm_group(tree):
-    """A copy of ``tree`` with the SPM results group switched OFF (the "CGPA trap": SPM-only
-    students are not eligible). Refuses to leave a results section with no group."""
-    out = {'all': [dict(s) for s in tree.get('all', [])], **({'flag': tree['flag']} if 'flag' in tree else {})}
-    for s in out['all']:
-        if s['section'] == 'results':
-            mode, groups = _mode(s)
-            kept = [x for x in groups if x['route'] != 'spm']
-            if not kept:
-                raise ValueError('switching the SPM group off would leave no results group')
-            s[mode] = kept
-    return out
-
-
-def tree_for_migration(cohort):
-    """What Sprint 2's data migration will store: `from_legacy`, plus the owner's one named
-    exception - the degree intake (``SPM_OFF_AT_MIGRATION``) loses its SPM group."""
-    tree = from_legacy(cohort)
-    if getattr(cohort, 'code', None) in SPM_OFF_AT_MIGRATION:
-        tree = without_spm_group(tree)
-    return tree
+#: Sprint 2's data migration stores exactly `from_legacy` (the CGPA trap is decided by shape).
+tree_for_migration = from_legacy

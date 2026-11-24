@@ -5,13 +5,13 @@ application ids and class names only (no name, NRIC, email, grade or income); an
 writes nothing - no INSERT / UPDATE / DELETE is sent and no row changes."""
 from io import StringIO
 
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
 from apps.courses.models import StudentProfile
-from apps.scholarship.management.commands.replay_criteria import CLASS_A, CLASS_B
+from apps.scholarship.management.commands.replay_criteria import CLASS_A1, CLASS_B
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 
@@ -36,8 +36,8 @@ class TestReplayCommand(TestCase):
                                  results_exam_type='stpm', completed_qualifications=['spm', 'stpm'],
                                  contact_email='hidden@example.test')
         cls.spm_ok = _apply(cls.loose, exam_type='spm', grades=STRONG)
-        # The degree intake: floor set, SPM group OFF at migration.
-        cls.degree = make_cohort(code='bpb-deg-dip-2026', min_stpm_pngk=3.0, min_spm_a_count=None,
+        # The degree intake's shape: a floor and no SPM bar, so no SPM group (the CGPA trap).
+        cls.degree = make_cohort(code='deg-shape', min_stpm_pngk=3.0, min_spm_a_count=None,
                                  min_spm_bplus_count=None, income_ceiling=5860, per_capita_ceiling=1584)
         cls.spm_only = _apply(cls.degree, exam_type='spm', grades=STRONG)
 
@@ -48,13 +48,27 @@ class TestReplayCommand(TestCase):
 
     def test_finds_and_names_both_classes(self):
         out = self._run()
-        self.assertIn(f'{CLASS_A}: {self.below_floor.id}', out)
-        self.assertIn(f'{CLASS_B}: {self.spm_only.id}', out)
-        self.assertIn(f'cohort {self.loose.id} ({self.loose.code}): total=2; {CLASS_A}=1, same=1', out)
+        self.assertIn(f'cohort {self.loose.id} ({self.loose.code}): total=2; {CLASS_A1}=1, same=1', out)
+        self.assertIn(f'  {CLASS_A1}: pending (submitted, undecided)=1, decided=0 [submitted=1]\n'
+                      f'    pending: {self.below_floor.id}\n', out)
+        self.assertIn(f'  {CLASS_B}: pending (submitted, undecided)=1, decided=0 [submitted=1]\n'
+                      f'    pending: {self.spm_only.id}\n', out)
+        self.assertIn('start_year_flag_differs=0', out)
         self.assertIn('RESULT: only expected classes', out)
 
+    def test_a_decided_application_is_counted_apart(self):
+        decided = _apply(self.degree, exam_type='spm', grades=STRONG)
+        ScholarshipApplication.objects.filter(pk=decided.pk).update(status='rejected')
+        out = self._run('--cohort', 'deg-shape')
+        self.assertIn(f'  {CLASS_B}: pending (submitted, undecided)=1, decided=1 [rejected=1, submitted=1]', out)
+        self.assertIn(f'    decided: {decided.id}', out)
+
+    def test_an_unknown_intake_code_is_an_error(self):
+        with self.assertRaisesMessage(CommandError, 'unknown intake code(s): no-such-intake'):
+            self._run('--cohort', 'deg-shape', '--cohort', 'no-such-intake')
+
     def test_plain_keeps_the_degree_spm_group(self):
-        out = self._run('--plain', '--cohort', 'bpb-deg-dip-2026')
+        out = self._run('--plain', '--cohort', 'deg-shape')
         self.assertNotIn(CLASS_B, out)
         self.assertNotIn(self.loose.code, out)
         self.assertIn('total=1; same=1', out)

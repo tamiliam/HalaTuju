@@ -13,7 +13,7 @@ from django.test import SimpleTestCase
 
 from apps.courses.models import StudentProfile
 from apps.scholarship import criteria, shortlisting
-from apps.scholarship.management.commands.replay_criteria import CLASS_A, CLASS_B, REASON_ONLY, classify
+from apps.scholarship.management.commands.replay_criteria import CLASS_A1, CLASS_A2, CLASS_B, classify
 from apps.scholarship.tests.test_criteria import COHORT_1, COHORT_3, COHORT_4, COHORT_5, DEFAULTS, cohort
 
 STRONG = {'bm': 'A+', 'eng': 'A', 'math': 'A', 'hist': 'A-', 'moral': 'B+', 'sci': 'B', 'geo': 'C'}
@@ -76,41 +76,40 @@ def _app(results, income, nric, **gates):
                            upu_status='', **gates)
 
 
-def _run(tree_of):
+def _run(**opts):
     found = {}
     for (cname, c), r, i, n in itertools.product(COHORTS.items(), RESULTS, INCOME, NRICS):
         a = _app(r, i, n)
-        tree = tree_of(c)
-        cls = classify(a, shortlisting.evaluate(a, c), criteria.evaluate(a, tree), tree)
+        tree = criteria.from_legacy(c, **opts)
+        cls = classify(a, c, shortlisting.evaluate(a, c), criteria.evaluate(a, tree), tree)
         found.setdefault(cls, []).append((cname, r, i, n))
     return found
 
 
 class TestEquivalence(SimpleTestCase):
-    def test_from_legacy_differs_only_by_class_a(self):
-        found = _run(criteria.from_legacy)
-        self.assertEqual(set(found) - {'same', CLASS_A, REASON_ONLY}, set(), found.get('unexpected'))
-        self.assertGreater(len(found['same']), 3000)
-        # Class (a): a post-SPM holder below the floor who meets the SPM group.
-        self.assertIn(('cohort_3', 'stpm_19_mid', 'b40', '050101-12-1234'), found[CLASS_A])
-        self.assertIn(('cohort_5', 'asasi_low', 'str', '050101-10-1234'), found[CLASS_A])
-        # Reason-only: "0 = no rule" for a stored merit 0 (cohorts 3 / 4) drops today's
-        # "merit point not available (need 0)" beside a credit failure - same verdict, same category.
-        self.assertEqual({(c, r) for c, r, _, _ in found.get(REASON_ONLY, [])},
-                         {('cohort_3', 'spm_none'), ('cohort_3', 'blank'), ('cohort_4', 'spm_none'),
-                          ('cohort_4', 'blank')})
-
-    def test_cohort_5_with_its_spm_group_off_differs_only_by_class_b(self):
-        def tree_of(c):
-            return criteria.tree_for_migration(c) if c is COHORT_5 else criteria.from_legacy(c)
-        found = _run(tree_of)
-        b = found.get(CLASS_B, [])
-        self.assertTrue(b)
+    def test_from_legacy_differs_only_by_the_owner_classes(self):
+        found = _run()
+        self.assertEqual(set(found) - {'same', CLASS_A1, CLASS_A2, CLASS_B}, set(),
+                         {k: v[:5] for k, v in found.items() if k != 'same'})
+        self.assertGreater(len(found['same']), 4000)
+        # (a1) below the floor, meets today's SPM bars; (a2) CGPA missing (here: no co-curriculum).
+        self.assertIn(('cohort_3', 'stpm_19_mid', 'b40', '050101-12-1234'), found[CLASS_A1])
+        self.assertIn(('cohort_4', 'asasi_low', 'str', '050101-10-1234'), found[CLASS_A1])
+        self.assertIn(('cohort_4', 'matric_nokoko', 'b40', '050101-10-1234'), found[CLASS_A2])
+        # (b) only where a floor stands with no SPM bar - intake 5 among these shapes - and only
+        # for students with no final post-SPM result.
+        b = found[CLASS_B]
         self.assertEqual({c for c, *_ in b}, {'cohort_5'})
         self.assertTrue({r for _, r, _, _ in b} <= {'spm_strong', 'spm_mid', 'spm_weak', 'spm_none', 'blank',
                                                      'still_stpm', 'still_matric'})
-        self.assertNotIn(('cohort_5', 'asasi_low', 'str', '050101-10-1234'), found.get(CLASS_A, []))
-        self.assertEqual(set(found) - {'same', CLASS_A, CLASS_B, REASON_ONLY}, set(), found.get('unexpected'))
+        # Intake 5 has no SPM group, so its post-SPM holders below the floor are NOT loosened.
+        self.assertFalse([x for x in found[CLASS_A1] + found.get(CLASS_A2, []) if x[0] == 'cohort_5'])
+
+    def test_plain_keeps_the_spm_group_and_never_shows_class_b(self):
+        found = _run(keep_empty_spm=True)
+        self.assertEqual(set(found) - {'same', CLASS_A1, CLASS_A2}, set(),
+                         {k: v[:5] for k, v in found.items() if k != 'same'})
+        self.assertIn(('cohort_5', 'asasi_low', 'str', '050101-10-1234'), found[CLASS_A1])
 
     def test_the_hard_gates_agree(self):
         for gates in (dict(consent_to_contact=False), dict(intends_tertiary_2026=False), dict(upu_status='ipts')):
