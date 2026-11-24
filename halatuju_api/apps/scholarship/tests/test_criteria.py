@@ -82,6 +82,8 @@ class TestValidate(SimpleTestCase):
         self.assertEqual(criteria.validate(good), [])
         self.assertEqual(criteria.validate({'all': []}), [])
         self.assertEqual(criteria.validate({'all': [results('any', post(), spm())]}), [])
+        # a 0 count is today's "0 set" bar (asks only that SPM grades be given)
+        self.assertEqual(criteria.validate({'all': [results('any', spm(gc(0, 'A-')))]}), [])
 
     def test_bad_trees_are_refused_not_repaired(self):
         bad = [
@@ -89,7 +91,7 @@ class TestValidate(SimpleTestCase):
             {'all': [results('any', spm()), results('all', spm())]},
             {'all': [{'section': 'results', 'any': []}]},
             {'all': [{'section': 'results', 'any': [spm()], 'all': [spm()]}]},
-            {'all': [results('any', spm(gc(0, 'C')))]},
+            {'all': [results('any', spm(gc(-1, 'C')))]},
             {'all': [results('any', spm(gc(3, 'D')))]},
             {'all': [results('any', spm(gc(3, 'C'), gc(4, 'C')))]},
             {'all': [results('any', spm({'test': 'min_pngk', 'value': 3}))]},
@@ -287,44 +289,59 @@ def cohort(**f):
     return SimpleNamespace(**base)
 
 
-#: Live shapes as the brief states them (Sprint 2 checks every live row against its columns).
-COHORT_1 = cohort(code='bpb-2026', min_spm_a_count=4, min_spm_bplus_count=5, income_ceiling=5860,
+PNGK2 = {'test': 'min_pngk', 'value': 2.0}
+#: The live intakes' settings exactly as the lead read them on 25 Nov (review round 1).
+PENINSULA = ['johor', 'kedah', 'kelantan', 'melaka', 'negeri_sembilan', 'pahang', 'perak', 'perlis',
+             'pulau_pinang', 'selangor', 'terengganu', 'wp_kuala_lumpur', 'wp_putrajaya']
+COHORT_1 = cohort(code='b40-2026', min_spm_a_count=4, min_spm_bplus_count=5, income_ceiling=5860,
                   per_capita_ceiling=1584)
-COHORT_3 = cohort(code='sabah', min_stpm_pngk=2.0, min_spm_credit_count=3, min_spm_a_count=0,
-                  min_spm_bplus_count=0, min_merit_score=0, income_ceiling=5860, allowed_birth_states=['sabah'])
-COHORT_4 = cohort(code='gss-ipoh', min_stpm_pngk=2.0, min_spm_credit_count=3, min_spm_a_count=0,
-                  min_spm_bplus_count=0, min_merit_score=0, per_capita_ceiling=1584,
-                  allowed_start_years=[2025, 2026])
-COHORT_5 = cohort(code='bpb-deg-dip-2026', min_stpm_pngk=3.0, income_ceiling=5860, per_capita_ceiling=1584)
+COHORT_3 = cohort(code='2026-bpb-s', min_spm_a_count=0, min_spm_bplus_count=0, min_spm_credit_count=3,
+                  min_stpm_pngk=2.0, min_merit_score=0, income_ceiling=5860, per_capita_ceiling=1180,
+                  allowed_birth_states=['sabah', 'wp_labuan'])
+COHORT_4 = cohort(code='bpb-gss-ipoh-2026', min_spm_credit_count=3, min_stpm_pngk=2.0, income_ceiling=5860,
+                  per_capita_ceiling=1000)
+COHORT_5 = cohort(code='bpb-deg-dip-2026', min_stpm_pngk=3.0, income_ceiling=5860, per_capita_ceiling=900,
+                  allowed_birth_states=PENINSULA, allowed_start_years=[2025, 2026])
 DEFAULTS = cohort(min_spm_a_count=4, min_spm_bplus_count=5, min_stpm_pngk=2.9, per_capita_ceiling=1584)
+
+
+def income(ceiling, pc):
+    return {'section': 'income', 'any': [{'test': 'household_income_max', 'rm': ceiling},
+                                         {'test': 'income_per_person_under', 'rm': pc}]}
 
 
 class TestFromLegacy(SimpleTestCase):
     def test_cohort_1_no_floor_is_spm_only(self):
         self.assertEqual(criteria.from_legacy(COHORT_1), {'all': [
-            results('any', spm(gc(4, 'A-'), gc(5, 'B+'))),
-            {'section': 'income', 'any': [{'test': 'household_income_max', 'rm': 5860},
-                                          {'test': 'income_per_person_under', 'rm': 1584}]}]})
+            results('any', spm(gc(4, 'A-'), gc(5, 'B+'))), income(5860, 1584)]})
 
-    def test_cohorts_3_and_4_zero_is_no_rule(self):
+    def test_cohort_3_keeps_its_zero_bars(self):
         self.assertEqual(criteria.from_legacy(COHORT_3), {'all': [
-            results('any', post({'test': 'min_pngk', 'value': 2.0}), spm(gc(3, 'C'))),
-            {'section': 'income', 'any': [{'test': 'household_income_max', 'rm': 5860}]},
-            {'section': 'born_in', 'any': ['sabah']}]})
-        self.assertEqual(criteria.from_legacy(COHORT_4), {'all': [
-            results('any', post({'test': 'min_pngk', 'value': 2.0}), spm(gc(3, 'C'))),
-            {'section': 'income', 'any': [{'test': 'income_per_person_under', 'rm': 1584}]}],
-            'flag': [{'test': 'course_start_year', 'allowed': [2025, 2026]}]})
+            results('any', post(PNGK2), spm(gc(0, 'A-'), gc(0, 'B+'), gc(3, 'C'),
+                                            {'test': 'min_upu_merit', 'value': 0})),
+            income(5860, 1180), {'section': 'born_in', 'any': ['sabah', 'wp_labuan']}]})
 
-    def test_cohort_5_and_its_migration_exception(self):
-        legacy = criteria.from_legacy(COHORT_5)
-        self.assertEqual(legacy['all'][0], results('any', post({'test': 'min_pngk', 'value': 3.0}), spm()))
-        moved = criteria.tree_for_migration(COHORT_5)
-        self.assertEqual(moved['all'][0], results('any', post({'test': 'min_pngk', 'value': 3.0})))
-        self.assertEqual(moved['all'][1:], legacy['all'][1:])
-        self.assertEqual(criteria.from_legacy(COHORT_5)['all'][0]['any'][1], spm())   # not mutated
-        for c in (COHORT_1, COHORT_3, COHORT_4, DEFAULTS):
-            self.assertEqual(criteria.tree_for_migration(c), criteria.from_legacy(c))
+    def test_cohort_4(self):
+        self.assertEqual(criteria.from_legacy(COHORT_4), {'all': [
+            results('any', post(PNGK2), spm(gc(3, 'C'))), income(5860, 1000)]})
+
+    def test_cohort_5_floor_with_no_spm_bar_is_the_cgpa_trap(self):
+        self.assertEqual(criteria.from_legacy(COHORT_5), {'all': [
+            results('any', post(PNGK3)), income(5860, 900), {'section': 'born_in', 'any': PENINSULA}],
+            'flag': [{'test': 'course_start_year', 'allowed': [2025, 2026]}]})
+        plain = criteria.from_legacy(COHORT_5, keep_empty_spm=True)
+        self.assertEqual(plain['all'][0], results('any', post(PNGK3), spm()))
+        self.assertIs(criteria.tree_for_migration, criteria.from_legacy)
+
+    def test_the_trap_is_decided_by_shape_not_by_code(self):
+        for c, has_spm in ((cohort(code='other', min_stpm_pngk=2.5), False),
+                           (cohort(min_stpm_pngk=2.5, min_spm_a_count=0, min_merit_score=0), False),
+                           (cohort(min_stpm_pngk=2.5, min_merit_score=50.0), True),
+                           (cohort(min_stpm_pngk=2.5, min_spm_credit_count=1), True),
+                           (cohort(code='bpb-deg-dip-2026', min_stpm_pngk=3.0, min_spm_credit_count=5), True)):
+            with self.subTest(c=c):
+                groups = criteria.from_legacy(c)['all'][0]['any']
+                self.assertEqual([g['route'] for g in groups], ['post_spm', 'spm'] if has_spm else ['post_spm'])
 
     def test_model_defaults(self):
         self.assertEqual(criteria.from_legacy(DEFAULTS), {'all': [
@@ -337,8 +354,28 @@ class TestFromLegacy(SimpleTestCase):
                          results('any', spm({'test': 'min_upu_merit', 'value': 80.0})))
         for c in (COHORT_1, COHORT_3, COHORT_4, COHORT_5, DEFAULTS, cohort()):
             self.assertEqual(criteria.validate(criteria.from_legacy(c)), [])
-            self.assertEqual(criteria.validate(criteria.tree_for_migration(c)), [])
+            self.assertEqual(criteria.validate(criteria.from_legacy(c, keep_empty_spm=True)), [])
 
-    def test_spm_off_needs_another_group(self):
-        with self.assertRaises(ValueError):
-            criteria.without_spm_group(criteria.from_legacy(COHORT_1))
+    def test_a_zero_bar_on_a_blank_floor_still_asks_for_spm_grades(self):
+        from apps.scholarship import shortlisting
+        c = cohort(min_spm_a_count=0, min_spm_bplus_count=5)
+        for p in (stpm(3.5, spm_prereq_grades={}), prof(grades=WEAK)):
+            a = app(p)
+            with self.subTest(p=p.exam_type):
+                self.assertEqual(criteria.evaluate(a, criteria.from_legacy(c)), shortlisting.evaluate(a, c))
+        self.assertEqual(criteria.evaluate(app(stpm(3.5, spm_prereq_grades={})), criteria.from_legacy(c)).reason,
+                         'academic floor: SPM-only intake: SPM grades not provided')
+        self.assertIn('need 0 at A- plus 5 more at B+',
+                      criteria.evaluate(app(prof(grades=WEAK)), criteria.from_legacy(c)).reason)
+
+    def test_birth_states_and_years_go_through_their_readers(self):
+        tree = criteria.from_legacy(cohort(allowed_birth_states='sabah', allowed_start_years=['soon']))
+        self.assertEqual(criteria.birth_states(tree), ['sabah'])
+        self.assertEqual(tree['flag'], [{'test': 'course_start_year', 'allowed': []}])
+        a = app()
+        a.cohort = cohort(allowed_start_years=['soon'])
+        from apps.scholarship import start_year
+        with mock.patch('apps.scholarship.start_year.possible_start_years',
+                        return_value=SimpleNamespace(year=2026)):
+            self.assertEqual(criteria.start_year_flag(a, tree), start_year.reading(a))
+            self.assertIsNotNone(criteria.start_year_flag(a, tree))   # junk years: the rule stays ON

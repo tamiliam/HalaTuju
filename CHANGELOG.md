@@ -269,8 +269,8 @@ Not pushed. Migration: none. Services: api, web.
 
 ### Criteria editor S1: the criteria-tree engine and a read-only replay (2026-11-25)
 
-- New pure engine `apps/scholarship/criteria.py`: judges an application against an AND/OR criteria tree (results groups post-SPM and SPM, income, born in, course-start flag), with `validate`, `from_legacy(cohort)` and `tree_for_migration` (the degree intake `bpb-deg-dip-2026` gets its SPM group OFF, owner ruling 25 Nov). Nothing live reads it yet; Sprint 2 stores the tree and switches the gate. Semantics and worked examples: decisions.md, 2026-11-25.
-- New read-only command `replay_criteria`: today's gate against the tree, per intake; prints ids, counts and difference classes only, inside a rolled-back READ ONLY transaction.
+- New pure engine `apps/scholarship/criteria.py`: judges an application against an AND/OR criteria tree (results groups post-SPM and SPM, income, born in, course-start flag), with `validate` and `from_legacy(cohort)`. The CGPA trap (owner ruling 25 Nov: SPM group OFF) is read from the shape, a PNGK floor with no SPM bar, not from an intake code; intake 5 is the one live case. Bars stored as 0 are kept as rules, as today. Nothing live reads it yet; Sprint 2 stores the tree and switches the gate. Semantics and worked examples: decisions.md, 2026-11-25.
+- New read-only command `replay_criteria`: today's gate against the tree, per intake; prints ids, counts, statuses and difference classes (a1 below the floor, a2 CGPA missing, b SPM-only on a trap intake) only, split into pending and decided, and compares the course-start flag; an unknown intake code is an error; all inside a rolled-back READ ONLY transaction.
 - Tests: `test_criteria.py` (per test type, all/any, validate, from_legacy for intakes 1, 3, 4, 5), `test_criteria_equivalence.py` (4,752 synthetic student x intake pairs, twice; only the two owner-ruled classes differ), `test_replay_criteria.py` (both classes found, no personal data printed, no writes). `test_third_route.py` declares the replay as a read-only caller of the gate.
 
 ### STR reader accepts "Kekal Kelulusan Asal" as an approval (2026-11-24)
