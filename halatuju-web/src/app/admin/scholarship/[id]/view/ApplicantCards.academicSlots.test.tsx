@@ -102,4 +102,10 @@ describe('Plans rows', () => {
     renderWith({ chosen_programme: { course_name: 'Diploma Akaun' }, documents: [offer] })
     expect(screen.getAllByText('admin.scholarship.statedByStudent')).toHaveLength(1) // the programme only
   })
+
+  it('a third-route student: her college shows under Pre-U institution, Institution stays N/A', () => {
+    renderWith({ qualification: 'diploma', pre_u_institution: 'Politeknik Z', chosen_programme: {} })
+    expect(dd('admin.scholarship.preUInstitution')).toBe('Politeknik Z')
+    expect(dd('admin.scholarship.institution')).toBe(NA)
+  })
 })

@@ -385,12 +385,14 @@ export function ApplicantCards({
                       <div className="sm:col-span-2">
                         {(() => {
                           const tick = isInstitutionPathway ? vtip('preUInstitution') : vtip('institution')
-                          const own = ((app.chosen_programme?.institution as string) || app.pre_u_institution || '').trim()
+                          // The CHOSEN programme's institution only (owner mock): never her pre-U college, which has its own row.
+                          const chosenApp = { documents: app.documents, chosen_programme: app.chosen_programme }
+                          const own = ((app.chosen_programme?.institution as string) || '').trim()
                           return (
                             <Field
                               label={t('admin.scholarship.institution')}
                               na={na}
-                              value={expandMatricInstitution(shownInstitution(app)) || null}
+                              value={expandMatricInstitution(shownInstitution(chosenApp)) || null}
                               verifiedLabel={tick}
                               noteTone="muted"
                               note={own && !tick ? t('admin.scholarship.statedByStudent') : undefined}
