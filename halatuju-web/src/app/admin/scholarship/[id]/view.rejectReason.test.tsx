@@ -188,9 +188,12 @@ describe('owner 2026-11-23: a case rejected before any review shows only its rec
     expectNoReviewCards()
   })
 
-  it('a decline after interview still shows the estimate and notes cards', async () => {
+  // Owner 2026-11-24 (TD-716): a decline after interview hides the Estimated need card; the
+  // notes card still shows.
+  it('a decline after interview hides the estimate card but still shows the notes card', async () => {
     renderCockpit({ role: 'super', stage: 'rejected', build: { ...BOTH, rejection_category: 'interview' } })
     await loaded()
-    for (const hidden of HIDDEN) expect(await screen.findByText(hidden)).toBeTruthy()
+    expect(await screen.findByText('admin.scholarship.reviewerNotes.title')).toBeTruthy()
+    expect(screen.queryByText('admin.scholarship.estimate.title')).toBeNull()
   })
 })
