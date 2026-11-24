@@ -11,22 +11,25 @@ helper, so `evidence_fingerprint` is not called directly.
 
 THE STAGE (F2). The fingerprint hashes the stage facts (`verdict_context.stage_facts`: the Submit year and
 three status buckets), and the stage at the decision is not stored. The status moves after a decision
-(the QC, the award, a reopen), so today's row may not show it. The rule, which never guesses a stage:
-* today's fingerprint equals the stored one: the stage facts are the same as at the decision; it is used.
-* else, today's row is hashed again with each other status (`ScholarshipApplication.STATUS_CHOICES`) that
-  gives other stage facts. If one of those equals the stored fingerprint, the evidence is the same but
-  the stage moved, and the decision's stage cannot be rebuilt from today's row: None (could not
-  recompute). If none does, today's fingerprint is used (the evidence or the Submit year moved).
+(the QC, the award, a reopen), so today's row may not show it. The rule (narrow B), which never guesses a
+stage; ``recompute_note`` (`lens_human.RECOMPUTE_REASONS`) says why a FULL case has no fingerprint:
 * only a FULL stored context (text ``fingerprint`` and ``key_check``) whose key check is the current one is
-  recomputed. Without a stored fingerprint, or under another key, the stage cannot be checked: None.
-* PAST THE AWARD (review round 1, B1). The stage facts do not cover the past-award split the engine reads
-  (`income_declaration`: status in `closure.POST_AWARD_STATUSES`, or closed with ``active_at`` set), and
-  the live door never stamps a decision there (`_require_open_case` refuses `case_stage` PAST_AWARD). So a
-  case that WOULD be recomputed and is past the award today gets None and no fresh snapshot (it is not
-  scored, and a snapshot under a stage the decision never had would be wrong). No past-award status is
-  hashed as a twin either: a twin only ever proves "another stage", never validity.
-  The exam-old cases (no stored fingerprint) are NOT refused: their snapshot is built under today's stage,
-  past-award split included; that is their written known limit.
+  recomputed; under another key (or none): None, ``key_not_current``. A caught error: ``recompute_error``.
+* today's fingerprint equals the stored one: used (matched directly), the snapshot built on today's row.
+  But PAST THE AWARD today (review round 1, B1: `at_past_award_stage`, a split the stage facts do not
+  cover, where the live door never stamps): None, ``past_award_stage``, no snapshot.
+* else each TWIN (`_other_stage_twins`: an in-memory copy per other stage-facts group, never past the
+  award) is hashed. A match means the same evidence under another stage. Valid (note ``twin``) only when
+  every matching twin is IN REVIEW (`verdict_context.stage_facts`'s own ``in_review_status``, asked per
+  copy) and their snapshots, built on the COPIES, are byte-identical: the fingerprint is the stored one
+  and the snapshot is the twin's. A lone match in the decided group: ``decided_group_twin``; any other
+  match set: ``twin_not_unique``. In review is safe: there every stage-linked input the engine reads is
+  hashed in the stage facts or pinned (the clock), and no status there is past the award. A decided-group
+  twin is never recovered (release-lead rule).
+* no twin matches: today's fingerprint (the evidence or the Submit year moved; not valid), with no
+  snapshot past the award (B1) and today's snapshot otherwise.
+The exam-old cases (no stored fingerprint) are NOT refused: their snapshot is built under today's stage,
+past-award split included; that is their written known limit.
 
 THE KEY (F3). `verdict_context` uses ``VERDICT_FINGERPRINT_DERIVED_KEY`` only when it is text of exactly 64
 hex characters; blank or absent, it falls back to ``SECRET_KEY``. So the key counts as blank unless the
@@ -34,7 +37,10 @@ setting is exactly that form AND `verdict_context.key_check()` answers. A blank 
 
 READ ONLY. One SELECT for the cases (with their profile and intake), then per DECIDED case only the reads
 the two public functions make. No save, no write, no file, no log line, no clock read of its own: per case
-both calls run inside `clock.pinned_clock(verdict_decided_at)`. An undecided case gets no engine work.
+both calls run inside `clock.pinned_clock(verdict_decided_at)`. `time.time` is left unpinned: on this path
+only `income_declaration`'s approval-window checks read it, and what they feed into the verdict
+(`approval_counts`) is the same either side of the window (a test holds it). An undecided case gets no
+engine work.
 The caller (phase C) runs it inside `guards.read_only_session` and `netguard.refuse_network`, after
 `clock.preload()`.
 """
@@ -117,26 +123,51 @@ def _other_stage_twins(app, status_codes):
         yield twin
 
 
-def _lens_fingerprint(app, current_key_check, status_codes):
-    """The recomputed fingerprint (see THE STAGE in the module docstring), or None."""
+def _fingerprint(app):
     from apps.scholarship import verdict_context
+    return verdict_context.build_verdict_context(app)['fingerprint']
+
+
+def _in_review(twin) -> bool:
+    """The stage facts' own in-review bucket for this copy (public `verdict_context.stage_facts`)."""
+    from apps.scholarship import verdict_context
+    return verdict_context.stage_facts(twin)['in_review_status'] is True
+
+
+def _by_twin(app, stored_fingerprint, status_codes, build_verdict):
+    """``(fingerprint, note, snapshot)`` from the twins once today's fingerprint differs from the stored
+    one, or None when no twin matches (see THE STAGE). Snapshots are built on the copies only."""
+    matches = [twin for twin in _other_stage_twins(app, status_codes) if _fingerprint(twin) == stored_fingerprint]
+    if not matches:
+        return None
+    if not all(_in_review(twin) for twin in matches):
+        return None, 'decided_group_twin' if len(matches) == 1 else 'twin_not_unique', None
+    snapshots = [_lens_snapshot(twin, build_verdict) for twin in matches]
+    if len({json.dumps(snapshot, sort_keys=True) for snapshot in snapshots}) > 1:
+        return None, 'twin_not_unique', None
+    return stored_fingerprint, lens_human.RECOVERED_BY_TWIN, snapshots[0]
+
+
+def _recompute(app, current_key_check, status_codes, build_verdict):
+    """``(recomputed_fingerprint, recompute_note, fresh_snapshot)`` for a decided case (THE STAGE)."""
     stored = app.ai_verdict_context
+    if not _full_context(stored):
+        return None, None, _lens_snapshot(app, build_verdict)
     if not _recomputable(app, current_key_check):
-        return None
+        return None, 'key_not_current', _lens_snapshot(app, build_verdict)
+    past_award = at_past_award_stage(app.status, app.active_at)
+    note = None
     try:
-        today = verdict_context.build_verdict_context(app)['fingerprint']
+        today = _fingerprint(app)
+        if today == stored['fingerprint']:
+            return (None, 'past_award_stage', None) if past_award else (today, None, _lens_snapshot(app, build_verdict))
+        by_twin = _by_twin(app, stored['fingerprint'], status_codes, build_verdict)
     except _FINGERPRINT_ERRORS:
-        return None
-    if today == stored['fingerprint']:
-        return today
-    for twin in _other_stage_twins(app, status_codes):
-        try:
-            other = verdict_context.build_verdict_context(twin)['fingerprint']
-        except _FINGERPRINT_ERRORS:
-            return None
-        if other == stored['fingerprint']:
-            return None   # same evidence, another stage: the decision's stage is not today's
-    return today
+        today, by_twin, note = None, None, 'recompute_error'
+    if by_twin is not None:
+        return by_twin
+    # evidence changed, or a caught error: today's snapshot as before, none past the award (B1)
+    return today, note, None if past_award else _lens_snapshot(app, build_verdict)
 
 
 def _lens_snapshot(app, build_verdict):
@@ -156,14 +187,13 @@ def _lens_row(app, current_key_check, version, build_verdict, status_codes) -> d
     row = {'application_id': app.pk, 'verdict_decided_at': when,
            'stored_context': app.ai_verdict_context, 'recomputed_fingerprint': None,
            'human_verdict': verdict if isinstance(verdict, dict) else None,
-           'qc_answers': second_look.stored(verdict), 'fresh_snapshot': None, 'engine_version': version}
+           'qc_answers': second_look.stored(verdict), 'fresh_snapshot': None, 'engine_version': version,
+           'recompute_note': None}
     if when is None:
         return row
-    if _recomputable(app, current_key_check) and at_past_award_stage(app.status, app.active_at):
-        return row   # B1: could not recompute; no snapshot under a stage the decision never had
     with clock.pinned_clock(when):
-        row['recomputed_fingerprint'] = _lens_fingerprint(app, current_key_check, status_codes)
-        row['fresh_snapshot'] = _lens_snapshot(app, build_verdict)
+        recomputed = _recompute(app, current_key_check, status_codes, build_verdict)
+    row['recomputed_fingerprint'], row['recompute_note'], row['fresh_snapshot'] = recomputed
     return row
 
 

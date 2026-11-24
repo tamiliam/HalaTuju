@@ -108,10 +108,13 @@ def test_evidence_changed_after_the_stamp_gives_another_fingerprint(desk, change
 
 
 # ── F2: a stage that moved since the decision is never guessed ──────────────────────────────────────
-def test_a_status_moved_past_the_decision_gives_no_fingerprint(desk):
+def test_a_status_moved_past_the_decision_is_recovered_by_its_in_review_twin(desk):
     app = decide(desk)
     ScholarshipApplication.objects.filter(pk=app.pk).update(status='recommended')
-    assert rows_by_id()[app.pk]['recomputed_fingerprint'] is None
+    row = rows_by_id()[app.pk]
+    assert (row['recomputed_fingerprint'], row['recompute_note']) == (
+        app.ai_verdict_context['fingerprint'], lens_human.RECOVERED_BY_TWIN)
+    assert row['fresh_snapshot'] == app.ai_verdict_snapshot
 
 
 def test_a_status_change_inside_the_same_stage_facts_still_recomputes(desk):
@@ -456,7 +459,7 @@ def test_a_normal_run_never_freezes_then_a_past_award_case_is_not_scored(award_d
         assert after[key] == without[key], key        # the refused case adds nothing to the score
 
 
-def test_the_stage_twins_are_copies_and_the_snapshot_reads_todays_real_status(desk, monkeypatch):
+def test_the_stage_twins_are_copies_and_a_recovered_snapshot_is_built_on_the_twin(desk, monkeypatch):
     app = decide(desk)
     ScholarshipApplication.objects.filter(pk=app.pk).update(status='recommended')   # the stage twins run
     before = ScholarshipApplication.objects.filter(pk=app.pk).values().get()
@@ -473,11 +476,234 @@ def test_the_stage_twins_are_copies_and_the_snapshot_reads_todays_real_status(de
 
     monkeypatch.setattr(verdict_context, 'build_verdict_context', spy_context)
     monkeypatch.setattr(verdict_engine, 'build_verdict', spy_verdict)
-    assert rows_by_id()[app.pk]['recomputed_fingerprint'] is None
-    (real, status_at_snapshot), = [s for s in seen['snapshot'] if s[0].pk == app.pk]
-    assert status_at_snapshot == real.status == 'recommended'
+    with CaptureQueriesContext(connection) as queries:
+        row = rows_by_id()[app.pk]
+    assert row['recompute_note'] == lens_human.RECOVERED_BY_TWIN
     calls = [c for c in seen['context'] if c[0].pk == app.pk]
-    assert calls[0][0] is real and len(calls) > 1
+    real = calls[0][0]
+    assert real.status == 'recommended' and [s for _c, s in calls] == ['recommended', 'submitted']
     assert all(case is not real for case, _status in calls[1:])
+    (twin, status_at_snapshot), = [s for s in seen['snapshot'] if s[0].pk == app.pk]
+    assert twin is calls[1][0] and twin is not real and status_at_snapshot == 'submitted'
+    assert real.status == 'recommended'                                     # the real instance untouched
     assert not any(R.at_past_award_stage(status, case.active_at) for case, status in calls)
     assert ScholarshipApplication.objects.filter(pk=app.pk).values().get() == before
+    statements = [q['sql'].lstrip().upper() for q in queries.captured_queries]
+    assert statements and all(s.startswith(SQL_ALLOWED) for s in statements)
+
+
+# ── LL5 B2b, task 1: time.time cannot move a row (finding (a)) ─────────────────────────────────────
+def informal_slip(desk, vision_extra, extra_fields=None):
+    """A made-up salary case whose only proof is a declaration slip the AI doubts, stamped live."""
+    cohort, reviewer = desk
+    app = make_application('awaiting_qc', outcome='recommend', cohort=cohort, reviewer=reviewer,
+                           income_route='salary', income_working_members=['father'], income_earner='',
+                           mother_occupation='homemaker', father_name='Made Up', father_occupation='fisherman',
+                           other_family_members=[])
+    vision = {'fields': {'gross_income': 'RM800', **(extra_fields or {})}, 'student_verdict': 'ok', 'error': '',
+              'authenticity': {'status': 'suspect', 'doc_seen': 'declaration', 'probability': 0.5}, **vision_extra}
+    create_document(application=app, doc_type='salary_slip', household_member='father', vision_fields=vision,
+                    storage_path=f'test/slip/{app.pk}', vision_run_at=timezone.now())
+    return record(desk, app)
+
+
+def test_time_time_far_from_the_stamp_moves_no_byte_of_a_row(award_desk, monkeypatch):
+    import time
+    real = time.time()
+    open_window = informal_slip(award_desk, {income_declaration.APPROVAL_ERROR: 'made-up',
+                                             income_declaration.APPROVAL_UNTIL: int(real) + 3600})
+    tried = informal_slip(award_desk, {income_declaration.APPROVAL_TRIED: int(real) - 60},
+                          {'issuer_header': 'MADE UP', 'approver_title': 'KETUA', 'has_stamp_or_signature': 'stamp'})
+    recovered = stamp_at(award_desk, 'interviewed')
+    move(recovered, 'awarded', False)
+    seen = []
+    real_expired = income_declaration.approval_expired
+
+    def spy(doc):
+        seen.append(real_expired(doc))
+        return seen[-1]
+
+    monkeypatch.setattr(income_declaration, 'approval_expired', spy)
+    texts = []
+    for now in (real, real + 30 * 24 * 3600, real - 365 * 24 * 3600):
+        with monkeypatch.context() as pinned:
+            pinned.setattr(time, 'time', lambda now=now: now)
+            rows = rows_by_id()
+            texts.append(json.dumps([rows[a.pk] for a in (open_window, tried, recovered)], sort_keys=True, default=str))
+    assert texts[0] == texts[1] == texts[2]
+    assert True in seen and False in seen                 # the window really was read open AND shut
+    for app in (open_window, tried, recovered):
+        assert rows[app.pk]['recomputed_fingerprint'] == app.ai_verdict_context['fingerprint']
+        assert rows[app.pk]['fresh_snapshot'] == app.ai_verdict_snapshot
+
+
+# ── LL5 B2b narrow B: a moved-on case recovered by an in-review twin ───────────────────────────────
+def note_of(row):
+    return row['recomputed_fingerprint'], row['recompute_note']
+
+
+@pytest.mark.parametrize('later,funded', PAST_AWARD_LATER + KEPT_LATER)
+def test_decided_in_review_then_moved_on_is_recovered_with_the_stamped_snapshot(award_desk, later, funded):
+    app = stamp_at(award_desk, 'interviewed')
+    move(app, later, funded)
+    moved = ScholarshipApplication.objects.filter(pk=app.pk).values().get()
+    row = rows_by_id()[app.pk]
+    assert note_of(row) == (app.ai_verdict_context['fingerprint'], lens_human.RECOVERED_BY_TWIN)
+    assert row['fresh_snapshot'] == app.ai_verdict_snapshot
+    assert ScholarshipApplication.objects.filter(pk=app.pk).values().get() == moved
+
+
+def test_every_in_review_status_builds_the_same_snapshot_bytes(award_desk):
+    """The twin list keeps ONE in-review status per stage-facts group (the first); this holds that any
+    other in-review status would have built the same bytes."""
+    cases = [decide(award_desk), stamp_at(award_desk, 'interviewed'),
+             informal_slip(award_desk, {income_declaration.APPROVAL_ERROR: 'made-up',
+                                        income_declaration.APPROVAL_UNTIL: 2_000_000_000})]
+    in_review = [code for code, _label in ScholarshipApplication.STATUS_CHOICES
+                 if verdict_context.stage_facts(types.SimpleNamespace(profile_completed_at=NOW, status=code))[
+                     'in_review_status']]
+    assert in_review == ['submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed']
+    for app in cases:
+        texts = set()
+        for status in in_review:
+            ScholarshipApplication.objects.filter(pk=app.pk).update(status=status)
+            texts.add(json.dumps(built_today(app.pk, app.verdict_decided_at), sort_keys=True))
+        assert len(texts) == 1 and json.loads(texts.pop()) == app.ai_verdict_snapshot
+
+
+def test_a_twin_in_the_decided_group_is_never_recovered(award_desk):
+    app = stamp_at(award_desk, 'recommended')
+    move(app, 'interviewing', False)                     # back in review (a database move)
+    row = rows_by_id()[app.pk]
+    assert note_of(row) == (None, 'decided_group_twin') and row['fresh_snapshot'] is None
+
+
+def test_past_the_award_with_a_direct_match_is_not_recomputed(award_desk):
+    app = stamp_at(award_desk, 'recommended')
+    move(app, 'awarded', False)
+    row = rows_by_id()[app.pk]
+    assert note_of(row) == (None, 'past_award_stage') and row['fresh_snapshot'] is None
+
+
+@pytest.mark.parametrize('stamped', ['interviewed', 'recommended'])
+def test_no_twin_match_is_evidence_changed(award_desk, stamped):
+    app = stamp_at(award_desk, stamped)
+    move(app, 'interviewing' if stamped == 'recommended' else 'recommended', False)
+    _changed_document(app)
+    row = rows_by_id()[app.pk]
+    assert row['recomputed_fingerprint'] not in (None, app.ai_verdict_context['fingerprint'])
+    assert row['recompute_note'] is None and row['fresh_snapshot'] is not None
+
+
+@pytest.mark.parametrize('later,funded', [('recommended', False), ('awarded', False), ('active', True)])
+def test_moved_on_and_evidence_changed_is_evidence_changed_never_valid(award_desk, later, funded):
+    app = stamp_at(award_desk, 'interviewed')
+    move(app, later, funded)
+    _changed_document(app)
+    row = rows_by_id()[app.pk]
+    assert row['recomputed_fingerprint'] not in (None, app.ai_verdict_context['fingerprint'])
+    assert row['recompute_note'] is None
+    assert (row['fresh_snapshot'] is None) == (later != 'recommended')     # B1: no snapshot past the award
+
+
+def _twins_at(*statuses):
+    def twins(app, _codes):
+        for status in statuses:
+            twin = R.copy.copy(app)
+            twin.status = status
+            yield twin
+    return twins
+
+
+@pytest.mark.parametrize('statuses,differ,note', [
+    (('submitted', 'interviewed'), True, 'twin_not_unique'),
+    (('submitted', 'interviewed'), False, lens_human.RECOVERED_BY_TWIN),
+    (('submitted', 'recommended'), False, 'twin_not_unique'),
+    (('recommended',), False, 'decided_group_twin'),
+])
+def test_matching_twins_must_all_be_in_review_with_the_same_snapshot_bytes(desk, monkeypatch, statuses, differ, note):
+    """Two twins never match with the real list (other stage facts hash apart), so the list is patched."""
+    app = decide(desk)
+    move(app, 'closed', False)
+    stored = app.ai_verdict_context['fingerprint']
+    real_context, real_verdict = verdict_context.build_verdict_context, verdict_engine.build_verdict
+    monkeypatch.setattr(R, '_other_stage_twins', _twins_at(*statuses))
+    monkeypatch.setattr(verdict_context, 'build_verdict_context', lambda case: dict(
+        real_context(case), fingerprint=stored if case.status != 'closed' else 'today'))
+    monkeypatch.setattr(verdict_engine, 'build_verdict', lambda case: real_verdict(case) + (
+        [{'fact': case.status}] if differ else []))
+    row = rows_by_id()[app.pk]
+    recovered = note == lens_human.RECOVERED_BY_TWIN
+    assert note_of(row) == (stored if recovered else None, note)
+    assert row['fresh_snapshot'] == (app.ai_verdict_snapshot if recovered else None)
+
+
+def test_a_twin_whose_fingerprint_differs_is_not_recovered(desk, monkeypatch):
+    app = decide(desk)
+    move(app, 'closed', False)
+    real_context = verdict_context.build_verdict_context
+    monkeypatch.setattr(R, '_other_stage_twins', _twins_at('submitted'))
+    monkeypatch.setattr(verdict_context, 'build_verdict_context', lambda case: dict(
+        real_context(case), fingerprint='today' if case.status == 'closed' else 'neither'))
+    assert note_of(rows_by_id()[app.pk]) == ('today', None)
+
+
+def test_a_caught_recompute_error_and_another_key_carry_their_reason(desk, monkeypatch):
+    bad, other_key, blank_later = decide(desk), decide(desk), decide(desk)
+    ScholarshipApplication.objects.filter(pk=other_key.pk).update(
+        ai_verdict_context=dict(other_key.ai_verdict_context, key_check='00000000'))
+    monkeypatch.setattr(verdict_context, 'build_verdict_context',
+                        _breaks_for(bad.pk, ValueError('x'), verdict_context.build_verdict_context))
+    rows = rows_by_id()
+    assert note_of(rows[bad.pk]) == (None, 'recompute_error') and rows[bad.pk]['fresh_snapshot'] is not None
+    assert note_of(rows[other_key.pk]) == (None, 'key_not_current')
+    blank = {row['application_id']: row for row in R.human_lens_rows(current_key_check=None)}
+    assert note_of(blank[blank_later.pk]) == (None, 'key_not_current')
+
+
+def test_the_query_cost_of_a_direct_and_a_recovered_case(award_desk):
+    direct = decide(award_desk)
+    base = _queries()
+    recovered = decide(award_desk)
+    with_direct = _queries()
+    move(recovered, 'recommended', False)
+    with_recovered = _queries()
+    assert note_of(rows_by_id()[direct.pk])[1] is None
+    # one SELECT for the cases; a recovered case costs a direct one plus one: the twin's fingerprint read
+    assert with_recovered - base == (with_direct - base) + 1 == (base - 1) + 1
+    assert note_of(rows_by_id()[recovered.pk])[1] == lens_human.RECOVERED_BY_TWIN
+
+
+def _queries():
+    with CaptureQueriesContext(connection) as queries:
+        rows_by_id()
+    return len(queries.captured_queries)
+
+
+def test_end_to_end_a_mix_gives_exactly_the_expected_counts(award_desk, tmp_path, monkeypatch):
+    folder = tmp_path / 'exams'
+    folder.mkdir()
+    direct = [decide(award_desk) for _ in range(44)]
+    twin_award, twin_qc = stamp_at(award_desk, 'interviewed'), stamp_at(award_desk, 'interviewed')
+    decided_twin, past_award = stamp_at(award_desk, 'recommended'), stamp_at(award_desk, 'recommended')
+    changed, broken = stamp_at(award_desk, 'interviewed'), decide(award_desk)
+    frozen = R.run_human_lens_on_database(str(folder), NOW, freeze=True)['exams']['exam-1']
+    assert frozen['valid_split'] == {'matched_directly': 50, 'recovered_by_twin': 0}
+    assert set(frozen['could_not_recompute_reasons'].values()) == {0}
+    move(twin_award, 'awarded', False)
+    move(twin_qc, 'recommended', False)
+    move(decided_twin, 'interviewing', False)
+    move(past_award, 'awarded', False)
+    move(changed, 'recommended', False)
+    _changed_document(changed)
+    monkeypatch.setattr(verdict_context, 'build_verdict_context',
+                        _breaks_for(broken.pk, ValueError('x'), verdict_context.build_verdict_context))
+    e = R.run_human_lens_on_database(str(folder), NOW)['exams']['exam-1']
+    assert e['validity'] == {'valid': 46, 'evidence_changed': 1, 'could_not_recompute': 3, 'missing': 0,
+                             'context_changed': 0, 'no_longer_decided': 0, 'decided_again': 0}
+    assert e['valid_split'] == {'matched_directly': 44, 'recovered_by_twin': 2} and len(direct) == 44
+    assert e['could_not_recompute_reasons'] == {'past_award_stage': 1, 'decided_group_twin': 1,
+                                                'twin_not_unique': 0, 'recompute_error': 1, 'key_not_current': 0}
+    assert sum(e['valid_split'].values()) == e['validity']['valid']
+    assert sum(e['could_not_recompute_reasons'].values()) == e['validity']['could_not_recompute']
+    assert e['still_valid'] == '46 of 50 still valid'

@@ -45,13 +45,13 @@ def snap(**bands):
 
 
 def case(aid, minute=None, ctx=None, recomputed='fp', verdict=None, qc=None, snapshot=None,
-         version='v-test', decided=True):
+         version='v-test', decided=True, note=None):
     when = T0 + datetime.timedelta(minutes=aid if minute is None else minute) if decided else None
     return {'application_id': aid, 'verdict_decided_at': when,
             'stored_context': full_ctx() if ctx is None else ctx, 'recomputed_fingerprint': recomputed,
             'human_verdict': {'identity': 'pass'} if verdict is None else verdict, 'qc_answers': qc,
             'fresh_snapshot': snap(identity='certain') if snapshot is None else snapshot,
-            'engine_version': version}
+            'engine_version': version, 'recompute_note': note}
 
 
 def run(cases, folder, blank=False, kc=KC, freeze=True):
@@ -305,7 +305,7 @@ def test_a_link_is_resolved_first_and_a_missing_folder_is_refused(tmp_path):
 def test_each_validity_count(folder):
     run([case(i) for i in range(1, 51)], folder)
     now = [case(i) for i in range(7, 51)]
-    now += [case(1, recomputed='moved'), case(2, recomputed=None), case(4, ctx=FAILED_CTX),
+    now += [case(1, recomputed='moved'), case(2, recomputed=None, note='recompute_error'), case(4, ctx=FAILED_CTX),
             case(5, ctx={}), case(6, decided=False)]                                   # 3 is missing
     e = ex1(run(now, folder))
     assert e['validity'] == {'valid': 44, 'evidence_changed': 1, 'could_not_recompute': 1, 'missing': 1,
@@ -683,8 +683,8 @@ def test_the_same_instant_in_another_zone_is_still_valid(folder):
 def test_every_validity_state_at_once_adds_up_to_the_size(folder):
     run([case(i) for i in range(1, 51)], folder)
     now = [case(i) for i in range(10, 51)]
-    now += [case(1, recomputed='moved'), case(2, recomputed=None), case(4, ctx=FAILED_CTX), case(5, ctx={}),
-            case(6, decided=False), _moved(case(7), datetime.timedelta(seconds=1)),
+    now += [case(1, recomputed='moved'), case(2, recomputed=None, note='recompute_error'), case(4, ctx=FAILED_CTX),
+            case(5, ctx={}), case(6, decided=False), _moved(case(7), datetime.timedelta(seconds=1)),
             _moved(case(8, recomputed='moved'), datetime.timedelta(seconds=1)),   # decided again comes first
             _moved(case(9, verdict={}), datetime.timedelta(seconds=1))]          # no longer decided comes first
     e = ex1(run(now, folder))                                                    # 3 is missing
@@ -951,3 +951,45 @@ def test_decided_again_is_checked_before_context_changed(folder):
     moved = _moved(case(1, ctx={}), datetime.timedelta(seconds=1))      # decided again AND context changed
     e = ex1(run([moved, case(2, ctx={})] + [case(i) for i in range(3, 51)], folder, freeze=False))
     assert (e['validity']['decided_again'], e['validity']['context_changed'], e['validity']['valid']) == (1, 1, 48)
+
+
+# --- LL5 B2b narrow B: the recompute note splits the counts, never decides validity --------------------
+
+def test_the_valid_split_and_the_reasons_add_up_and_the_note_never_makes_a_case_valid(folder):
+    run([case(i) for i in range(1, 51)], folder)
+    now = [case(i) for i in range(12, 51)]
+    now += [case(1, note=L.RECOVERED_BY_TWIN), case(2, note=L.RECOVERED_BY_TWIN),
+            case(3, recomputed='moved', note=L.RECOVERED_BY_TWIN),          # says twin, fingerprint differs
+            case(4, recomputed='moved')]
+    now += [case(5 + i, recomputed=None, note=reason) for i, reason in enumerate(L.RECOMPUTE_REASONS)]
+    now += [case(10, recomputed=None, note='past_award_stage'), case(11, ctx={})]
+    e = ex1(run(now, folder, freeze=False))
+    assert e['validity'] == {'valid': 41, 'evidence_changed': 2, 'could_not_recompute': 6, 'missing': 0,
+                             'context_changed': 1, 'no_longer_decided': 0, 'decided_again': 0}
+    assert e['valid_split'] == {'matched_directly': 39, 'recovered_by_twin': 2}
+    assert e['could_not_recompute_reasons'] == {'past_award_stage': 2, 'decided_group_twin': 1,
+                                                'twin_not_unique': 1, 'recompute_error': 1, 'key_not_current': 1}
+    assert sum(e['valid_split'].values()) == e['validity']['valid']
+    assert sum(e['could_not_recompute_reasons'].values()) == e['validity']['could_not_recompute']
+    assert sum(e['validity'].values()) == e['size'] == 50 and e['still_valid'] == '41 of 50 still valid'
+
+
+def test_exam_old_and_a_refused_exam_have_no_split(folder):
+    out = run([case(1, ctx={})], folder, blank=True)
+    assert (exold(out)['valid_split'], exold(out)['could_not_recompute_reasons']) == (None, None)
+    assert (ex1(out)['valid_split'], ex1(out)['could_not_recompute_reasons']) == (None, None)
+
+
+@pytest.mark.parametrize('row', [
+    case(1, note='twins'), case(1, note=5), case(1, note=''),
+    case(1, note='recompute_error'),                                # a reason with a fingerprint
+    case(1, recomputed=None),                                       # no fingerprint and no reason
+    case(1, recomputed=None, note=L.RECOVERED_BY_TWIN),             # twin with no fingerprint
+    case(1, ctx={}, note=L.RECOVERED_BY_TWIN), case(1, ctx=FAILED_CTX, note='recompute_error'),
+    case(1, decided=False, note='key_not_current'),
+])
+def test_a_wrong_or_misfitting_note_raises_naming_the_field_only(folder, row):
+    with pytest.raises(L.BadCaseRow) as caught:
+        run([row], folder, freeze=False)
+    assert caught.value.field == 'recompute_note'
+    assert str(caught.value).startswith('case row: recompute_note ') and 'twins' not in str(caught.value)

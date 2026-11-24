@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### LL5 phase B2b - recover a moved-on case by an in-review twin, with reason counts (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. A case decided in review whose status later moved on (QC, award, funding, closure) was counted could not recompute. Now, when its in-review twin (an in-memory copy, never saved) reproduces the stored fingerprint exactly, it is valid and its fresh snapshot is built on that twin. A decided-group twin is never recovered. The case row gains one field, `recompute_note` (closed vocabulary; a wrong or misfitting value is refused), and exam-1 gains two additive output keys: `valid_split` (matched directly / recovered by twin) and `could_not_recompute_reasons` (past_award_stage, decided_group_twin, twin_not_unique, recompute_error, key_not_current). Validity still comes from the fingerprint compare alone. `time.time` was checked and cannot change a row; a test holds it (decisions.md).
+
 ### LL5 phase B2b fix - a case now past the award is not called valid (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Review round 1 (B1): the fingerprint's stage facts do not cover the past-award split the engine reads, so a case decided at Recommended (or a reopened Rejected) and later awarded, funded, or closed after funding could be called valid while its fresh snapshot was built under a stage the decision never had. Now such a case gets no fingerprint and no snapshot: could not recompute, not scored. The rule (`at_past_award_stage`) is written from `closure.POST_AWARD_STATUSES` and a drift test holds it to the engine's own. No past-award status is used as a stage twin. Exam-old cases are unchanged (a written known limit). New tests: the B1 shape through the live door, the end-to-end count, a normal run never freezes, the twins are copies (decisions.md).

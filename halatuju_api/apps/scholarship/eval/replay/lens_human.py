@@ -14,6 +14,8 @@ THE CASE ROW (one plain dict per case, built by phase B2b). Exactly these keys:
   It judges the reviewer's Fails only: ``disagreed`` turns that Fail to Pass (its reason dropped),
   ``agreed`` keeps it; an answer on any other fact is not read.
 * ``fresh_snapshot`` the replayed verdict list, or None. ``engine_version`` text, the same in every row.
+* ``recompute_note`` on a decided FULL row only: `RECOVERED_BY_TWIN` with a fingerprint, else None; a
+  `RECOMPUTE_REASONS` code when the fingerprint is None (it must be). It only splits the counts.
 A wrong-shaped row raises `BadCaseRow` naming the field, never its value, and the whole run stops.
 
 THE TWO EXAMS, chosen by the stored context's shape, never by a date: ``exam-1`` (FULL context) is the
@@ -54,7 +56,7 @@ FAILED_CONTEXT_LINE = 'decided cases whose context record failed (in neither exa
 
 FULL, EMPTY, FAILED = 'full', 'empty', 'failed'
 CASE_FIELDS = ('application_id', 'verdict_decided_at', 'stored_context', 'recomputed_fingerprint',
-               'human_verdict', 'qc_answers', 'fresh_snapshot', 'engine_version')
+               'human_verdict', 'qc_answers', 'fresh_snapshot', 'engine_version', 'recompute_note')
 _BASE_FIELDS = {'exam', 'format', 'application_ids', 'decided_at', 'size', 'frozen_at', 'digest'}
 _ALLOWED = {EXAM_1: _BASE_FIELDS | {'key_check'}, EXAM_OLD: _BASE_FIELDS}
 NOT_GIVEN = 'not_given'   # a Fail with no stored reason (old rows)
@@ -76,6 +78,9 @@ KEY_CHECK_MISSING, CANDIDATES_NOT_CURRENT = 'current_key_check_missing', 'candid
 KEY_CHECK_DIFFERS_EXAM, KEY_CHECK_DIFFERS_CASES = 'key_check_differs_from_exam', 'key_check_differs_from_cases'
 VALIDITY = ('valid', 'evidence_changed', 'could_not_recompute', 'missing', 'context_changed',
             'no_longer_decided', 'decided_again')
+RECOVERED_BY_TWIN = 'twin'   # the case row's ``recompute_note`` vocabulary: this, or a reason below
+RECOMPUTE_REASONS = ('past_award_stage', 'decided_group_twin', 'twin_not_unique', 'recompute_error',
+                     'key_not_current')
 
 
 class BadCaseRow(ValueError):
@@ -135,9 +140,14 @@ def _read_case(row) -> dict:
     answer, turned = _human_answer(verdict, qc)
     if _typed(row, 'application_id', int, False) < 1:
         raise BadCaseRow('application_id', 'is below 1')
-    return {'id': row['application_id'], 'when': when, 'context': context,
-            'shape': exam_context_shape(context),
-            'recomputed': _typed(row, 'recomputed_fingerprint', str, True),
+    shape, recomputed = exam_context_shape(context), _typed(row, 'recomputed_fingerprint', str, True)
+    note = _typed(row, 'recompute_note', str, True)
+    fits = ((None,) if when is None or shape != FULL else (None, RECOVERED_BY_TWIN) if recomputed is not None
+            else RECOMPUTE_REASONS)
+    if note not in fits:
+        raise BadCaseRow('recompute_note', 'is not a known note or does not fit the fingerprint')
+    return {'id': row['application_id'], 'when': when, 'context': context, 'shape': shape,
+            'recomputed': recomputed, 'note': note,
             'has_verdict': bool(verdict and ai_score.decided_facts(None, verdict)),
             'answer': answer, 'qc_turned': turned,
             'snapshot': _typed(row, 'fresh_snapshot', list, True),
@@ -421,7 +431,8 @@ def _blank_exam(name: str, version: str) -> dict:
     return {'exam': name, 'label': WEAK_LABEL if name == EXAM_OLD else EXAM_1_LABEL, 'frozen': False,
             'status': '', 'size': None, 'digest': None, 'frozen_at': None, 'key_check': None,
             'engine_version': version, 'refusal': None, 'cases_with_other_key_check': None,
-            'validity': None, 'still_valid': None, 'qc_turned_to_pass': None, 'score': None,
+            'validity': None, 'still_valid': None, 'valid_split': None, 'could_not_recompute_reasons': None,
+            'qc_turned_to_pass': None, 'score': None,
             'score_without_interview_fails': None, 'fails': None, 'candidates': None,
             'known_limits': [WEAK_LABEL] if name == EXAM_OLD else []}
 
@@ -440,8 +451,9 @@ def _exam_missing(out: dict, pool: list, of: str) -> dict:
 def _validity(exam: dict, by_id: dict, shape: str):
     """``(counts, valid rows)`` of the listed cases for THIS run (E4), in the exam's order. First match
     wins: missing, no longer decided, decided again (another UTC instant than the stored one), context
-    changed, could not recompute, evidence changed, else valid."""
-    counts, valid = dict.fromkeys(VALIDITY, 0), []
+    changed, could not recompute, evidence changed, else valid. Also the could-not-recompute count by the
+    row's reason: validity comes from the fingerprint compare alone, never from the row's note."""
+    counts, valid, reasons = dict.fromkeys(VALIDITY, 0), [], dict.fromkeys(RECOMPUTE_REASONS, 0)
     for application_id, stored in zip(exam['application_ids'], exam['decided_at']):
         row = by_id.get(application_id)
         if row is None:
@@ -454,21 +466,27 @@ def _validity(exam: dict, by_id: dict, shape: str):
             state = 'context_changed'
         elif shape == FULL and row['recomputed'] is None:
             state = 'could_not_recompute'
+            reasons[row['note']] += 1
         elif shape == FULL and row['recomputed'] != row['context']['fingerprint']:
             state = 'evidence_changed'
         else:
             state = 'valid'
             valid.append(row)
         counts[state] += 1
-    return counts, valid
+    return counts, valid, reasons
 
 
 def _sit_exam(out: dict, exam: dict, by_id: dict, shape: str) -> dict:
-    """Fill ``out`` with a frozen exam's header, its validity counts and the score of its valid cases."""
+    """Fill ``out`` with a frozen exam's header, its validity counts and the score of its valid cases.
+    exam-1 only: the valid split (matched directly / recovered by twin) and the reasons counted."""
     out.update(frozen=True, status='frozen', size=exam['size'], digest=exam['digest'][:12],
                frozen_at=exam['frozen_at'], key_check=exam.get('key_check'))
-    counts, valid = _validity(exam, by_id, shape)
+    counts, valid, reasons = _validity(exam, by_id, shape)
     out.update(validity=counts, still_valid=f'{counts["valid"]} of {exam["size"]} still valid')
+    if shape == FULL:
+        twin = sum(1 for row in valid if row['note'] == RECOVERED_BY_TWIN)
+        out.update(valid_split={'matched_directly': len(valid) - twin, 'recovered_by_twin': twin},
+                   could_not_recompute_reasons=reasons)
     out['qc_turned_to_pass'] = sum(row['qc_turned'] for row in valid)
     scored = _exam_score(valid)
     out.update({k: scored[k] for k in ('score', 'score_without_interview_fails', 'fails')})
