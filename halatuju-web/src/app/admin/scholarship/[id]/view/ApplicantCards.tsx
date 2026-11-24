@@ -278,9 +278,11 @@ export function ApplicantCards({
                         </>
                       )
                     })()} />
-                  {/* Matriculation / Asasi / Diploma: where she did the pre-U course. An STPM student
-                      has no such row — her STPM school IS her secondary school. */}
-                  {third && <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} verifiedLabel={vtip('preUInstitution')} na={na} />}
+                  {/* Matriculation / Asasi / Diploma: where they did the pre-U course. An STPM student
+                      has no such row — their STPM school IS their secondary school. No tick yet:
+                      the only preUInstitution check today is the OFFER letter's institution, which
+                      is the destination, not this past college (the results-document tick is a TD). */}
+                  {third && <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} na={na} />}
                   {/* ONE CGPA slot (STPM: the PNGK with its STPM-results mark; the third route: the
                       CGPA entered, with its results tick) beside the MUET band. */}
                   {(isStpm || third) && <>
@@ -385,8 +387,8 @@ export function ApplicantCards({
                       <div className="sm:col-span-2">
                         {(() => {
                           const tick = isInstitutionPathway ? vtip('preUInstitution') : vtip('institution')
-                                                    // An SPM-route student's pre_u_institution is her DESTINATION, so it still falls back; on the
-                          // post-SPM routes it is her past college (own row above) and never does.
+                          // An SPM-route student's pre_u_institution is their DESTINATION, so it still falls back; on the
+                          // post-SPM routes it is their past college (own row above) and never does.
                           const spmRoute = !isStpm && !third
                           const chosenApp = { documents: app.documents, chosen_programme: app.chosen_programme,
                             pre_u_institution: spmRoute ? app.pre_u_institution : undefined }
