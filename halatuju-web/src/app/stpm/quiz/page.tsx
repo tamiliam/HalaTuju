@@ -89,11 +89,12 @@ export default function StpmQuizPage() {
     if (advanceTimer.current !== null) { clearTimeout(advanceTimer.current); advanceTimer.current = null }
   }, [])
   function goToStep(step: number) { cancelAdvance(); setCurrentStep(step) }
-  const advanceTo = useCallback((step: number, delay: number) => {
+  // `fromStep`: move only if the student is still on that step when the timer fires.
+  const advanceTo = useCallback((step: number, delay: number, fromStep?: number) => {
     cancelAdvance()
     advanceTimer.current = setTimeout(() => {
       advanceTimer.current = null
-      setCurrentStep(step)
+      setCurrentStep(prev => (fromStep === undefined || prev === fromStep ? step : prev))
     }, delay)
   }, [cancelAdvance])
   useEffect(() => cancelAdvance, [cancelAdvance])
@@ -104,6 +105,9 @@ export default function StpmQuizPage() {
 
   // Track Q2 field signal → Q3/Q4 resolution
   const [q2Resolved, setQ2Resolved] = useState(false)
+  // Q2 lookup in flight: a second tap must not start a second lookup, and Next waits for it.
+  const q2Pending = useRef(false)
+  const [q2Waiting, setQ2Waiting] = useState(false)
 
   // Load questions on mount
   useEffect(() => {
@@ -153,7 +157,7 @@ export default function StpmQuizPage() {
 
   // After Q2 is answered, resolve Q3 and Q4 from the backend
   const handleQ2Answered = useCallback(async (q2OptionIndex: number) => {
-    if (q2Resolved || allQuestions.length < 2) return
+    if (q2Resolved || q2Pending.current || allQuestions.length < 2) return
 
     const q2 = allQuestions[1] // Q2 is always index 1
     const chosenOption = q2.options[q2OptionIndex]
@@ -164,6 +168,8 @@ export default function StpmQuizPage() {
     if (!fieldSignal) return
 
     const lang = locale === 'ms' ? 'bm' : locale
+    q2Pending.current = true
+    setQ2Waiting(true)
     try {
       const resolved = await resolveStpmQuizQ3Q4(fieldSignal, branch, apiGrades, lang)
 
@@ -177,21 +183,22 @@ export default function StpmQuizPage() {
       newQuestions.push(...rest)
 
       setAllQuestions(newQuestions)
-      setAnswers(new Array(newQuestions.length).fill(null).map((_, i) => {
-        // Preserve existing answers for Q1 and Q2
-        if (i < 2) return answers[i]
-        return null
-      }))
+      // Keep Q1 and Q2 from the LATEST answers. This callback's own `answers` is from the render
+      // before the Q2 tap, so it has no Q2 answer; using it wiped Q2 every time.
+      setAnswers(prev => new Array(newQuestions.length).fill(null).map((_, i) => (i < 2 ? prev[i] ?? null : null)))
       setQ2Resolved(true)
 
-      // Auto-advance to Q3
-      advanceTo(2, 300)
+      // Auto-advance to Q3, only if the student is still on Q2
+      advanceTo(2, 300, 1)
     } catch {
       // If resolve fails, continue with remaining questions (skip Q3/Q4)
       setQ2Resolved(true)
-      advanceTo(2, 300)
+      advanceTo(2, 300, 1)
+    } finally {
+      q2Pending.current = false
+      setQ2Waiting(false)
     }
-  }, [q2Resolved, allQuestions, branch, apiGrades, locale, answers, advanceTo])
+  }, [q2Resolved, allQuestions, branch, apiGrades, locale, advanceTo])
 
   const question = currentStep < allQuestions.length ? allQuestions[currentStep] : null
   const currentAnswer = currentStep < answers.length ? answers[currentStep] : null
@@ -413,7 +420,7 @@ export default function StpmQuizPage() {
               {/* Phones (owner, 2026-11-02): no dot row, so Next moves on — once this question has an answer. */}
               <button
                 onClick={() => goToStep(currentStep + 1)}
-                disabled={!currentAnswered}
+                disabled={!currentAnswered || q2Waiting}
                 className="btn-primary min-h-11 md:hidden disabled:opacity-40"
                 data-testid="quiz-next"
               >

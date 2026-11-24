@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: STPM quiz keeps the Q2 answer (TD-714, 2026-11-24)
+
+- The owner saw Q2 skipped on the STPM quiz: its dot stayed grey and "See My Results" stayed off. After the Q2 answer the page fetches Q3/Q4, then rebuilt the answer list from the render before the tap, which had no Q2 answer, so Q2 was wiped every time. It now keeps Q1/Q2 from the latest answers.
+- Same path: a second quick tap no longer starts a second Q3/Q4 lookup; Next on a phone waits for the lookup; Previous during the lookup is no longer undone by the auto-advance.
+- 4 new tests in `stpm/quiz/page.test.tsx`; all 4 fail on the old page.
 ### STR reader accepts "Kekal Kelulusan Asal" as an approval (2026-11-24)
 
 - Case #945: a MySTR Semakan Status page showing "Status Permohonan Semasa: Kekal Kelulusan Asal" (the original approval stays) read no status, so it counted as unreadable and a thinner "Lulus Rayuan" dashboard stayed live over it. The rules reader (`doc_parse._STR_APPROVED`) now knows that exact phrase, in any case and spacing. "Kelulusan" alone (Menunggu, Dalam Proses, Tarikh Kelulusan) is still not an approval; rejections, the engine, the surface ceiling and the keep-better ranking are unchanged. No version bump: the STR reader sits in no registered model's digest (the model-version guard stays green).

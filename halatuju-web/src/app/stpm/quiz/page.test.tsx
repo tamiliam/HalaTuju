@@ -76,3 +76,58 @@ describe('STPM quiz: one step per answer (TD-708)', () => {
     expect(screen.queryByText('First?')).not.toBeNull()
   })
 })
+
+// The Q2 answer used to vanish once Q3/Q4 came back: the lookup kept Q1/Q2 answers from the render
+// before the Q2 tap, which had no Q2 answer. So the last page's "See results" stayed grey.
+describe('STPM quiz: the Q2 answer survives the Q3/Q4 lookup', () => {
+  async function flush() {
+    await act(async () => { for (let i = 0; i < 5; i++) await Promise.resolve() })
+  }
+  async function toQ2() {
+    await open()
+    fireEvent.click(screen.getByText('A1'))
+    act(() => { jest.advanceTimersByTime(300) })
+    expect(screen.queryByText('Second?')).not.toBeNull()
+  }
+  beforeEach(() => {
+    mockApi.resolveStpmQuizQ3Q4.mockResolvedValue({ q3: q('q3', 'Third?', 'E1', 'E2'), q4: null } as never)
+  })
+
+  it('keeps the Q2 answer and moves on to Q3', async () => {
+    await toQ2()
+    fireEvent.click(screen.getByText('B1'))
+    await flush()
+    act(() => { jest.advanceTimersByTime(300) })
+    expect(screen.queryByText('Third?')).not.toBeNull()
+    expect(screen.queryByText('quiz.answered|{"count":"2"}')).not.toBeNull()
+  })
+
+  it('two quick taps on Q2 start one lookup and keep the last answer', async () => {
+    await toQ2()
+    fireEvent.click(screen.getByText('B1'))
+    fireEvent.click(screen.getByText('B2'))
+    await flush()
+    expect(mockApi.resolveStpmQuizQ3Q4).toHaveBeenCalledTimes(1)
+    act(() => { jest.advanceTimersByTime(300) })
+    expect(screen.queryByText('quiz.answered|{"count":"2"}')).not.toBeNull()
+    fireEvent.click(screen.getByText('quiz.previous'))
+    expect(screen.getByText('B2').closest('button')!.className).toContain('border-info-500')
+  })
+
+  it('Previous during the lookup is not undone by the auto-advance', async () => {
+    await toQ2()
+    fireEvent.click(screen.getByText('B1'))
+    fireEvent.click(screen.getByText('quiz.previous'))
+    await flush()
+    act(() => { jest.advanceTimersByTime(2000) })
+    expect(screen.queryByText('First?')).not.toBeNull()
+  })
+
+  it('Next waits on a phone while the lookup runs', async () => {
+    await toQ2()
+    fireEvent.click(screen.getByText('B1'))
+    expect((screen.getByTestId('quiz-next') as HTMLButtonElement).disabled).toBe(true)
+    await flush()
+    expect((screen.getByTestId('quiz-next') as HTMLButtonElement).disabled).toBe(false)
+  })
+})
