@@ -34,7 +34,7 @@ class GenDoc:
         at = len(self.out)
         body = b'xref\n0 1\n0000000000 65535 f \n'
         for num, kind, gen, key in sorted(entries):
-            body += b'%d 1\n%010d %05d %s \n' % (num, self.off[key] if kind == 'n' else 0, gen, kind.encode())
+            body += b'%d 1\n%010d %05d %s \n' % (num, self.off[key] if key is not None else 0, gen, kind.encode())
         prev = b'' if self.prev is None else b' /Prev %d' % self.prev
         self.out += body + b'trailer\n<< /Size %d /Root %d 0 R%s >>\nstartxref\n%d\n%%%%EOF\n' % (
             self.size + 10, root, prev, at)

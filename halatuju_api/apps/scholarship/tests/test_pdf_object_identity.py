@@ -21,7 +21,10 @@ LIGHT = b'0 g 72 700 300 1 re f'
 PAGE = b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << >> /Contents %d 0 R >>'
 LONG = b'0' * 255 + b'3000'          # pdfium keeps 255 zeros and '3': object 3; pypdf reads 3000
 ODD = 'an object header the gate cannot read'
-TWO = 'object 3 has more than one copy'
+ROW1 = 'object 1 has a cross-reference row that is not its one copy'     # round 1: a first entry that is wrong
+#: Round 1: a number with two headers is now met first by its row (a row cannot sit on the ONE header of a
+#: number that has two); before, 'object 3 has more than one copy'.
+TWO = 'object 3 has a cross-reference row that is not its one copy'
 
 
 def _verdict(pdf):
@@ -58,12 +61,14 @@ def _base(heavy=HEAVY):
 R4_ENTRIES = {1: '1', 2: '2', 3: 'light3', 6: '6', 7: '7', 8: '8'}
 
 
-def r4(tail=b'\n%c\nendstream', head=b'(%) 3. 0 obj', data=b'xendobj ( ', dict_=None, heavy=HEAVY):
+def r4(tail=b'\n%c\nendstream', head=b'(%) 3. 0 obj', data=b'xendobj ( ', dict_=None, heavy=HEAVY,
+       first_wrong=True):
     """Round 4: stream 8 (``dict_``, else a right /Length) holds ``data`` then ``tail``; a second page 3 after
-    it (contents 7: ``heavy``)."""
+    it (contents 7: ``heavy``). ``first_wrong``: the first entry is wrong (pdfium rebuilds); since review round 1
+    that row alone refuses (`ROW1`), so the checks after it are pinned with ``first_wrong=False``."""
     d = dict_ or b'<< /Length %d >>' % len(data)
     parts = _base(heavy) + [('8', b'8 0 obj\n' + d + b'\nstream\n' + data + tail), ('heavy3', head + b'\n' + PAGE % 7)]
-    return _table_file(parts, R4_ENTRIES, first_wrong=True)
+    return _table_file(parts, R4_ENTRIES, first_wrong=first_wrong)
 
 
 R4 = {'r4_comment_before_endstream': {}, 'r4_ff_before_endstream': {'tail': b'\n\x0c\nendstream'},
@@ -89,15 +94,17 @@ class RoundFourRepros(SimpleTestCase):
     def test_a_plain_second_header_is_refused_as_a_second_copy(self):
         for name, kw in {**R4, **R4_CONTROLS}.items():
             with self.subTest(name):
-                self.assertEqual(_verdict(r4(head=b'(%) 3 0 obj', **kw)), (0, 'OverBudget: ' + TWO))
+                self.assertEqual(_verdict(r4(head=b'(%) 3 0 obj', first_wrong=False, **kw)), (0, 'OverBudget: ' + TWO))
+                self.assertEqual(_verdict(r4(head=b'(%) 3 0 obj', **kw)), (0, 'OverBudget: ' + ROW1))
 
     def test_light_twins_are_decided_by_the_identity_check_both_ways(self):
         """Contents 7 light: no other check refuses. The control (second header names 9) passes; each twin
         (a second page 3) is refused by the identity check alone."""
         for name, kw in {**R4, **R4_CONTROLS}.items():
             with self.subTest(name):
-                self.assertEqual(_verdict(r4(head=b'(%) 9 0 obj', heavy=LIGHT, **kw)), (1, None))
-                self.assertEqual(_verdict(r4(head=b'(%) 3 0 obj', heavy=LIGHT, **kw)), (0, 'OverBudget: ' + TWO))
+                self.assertEqual(_verdict(r4(head=b'(%) 9 0 obj', heavy=LIGHT, first_wrong=False, **kw)), (1, None))
+                self.assertEqual(_verdict(r4(head=b'(%) 3 0 obj', heavy=LIGHT, first_wrong=False, **kw)),
+                                 (0, 'OverBudget: ' + TWO))
                 self.assertEqual(_verdict(r4(heavy=LIGHT, **kw)), (0, 'OverBudget: ' + ODD))
                 with mock.patch.object(identity.Identity, 'build'), mock.patch.object(identity.Identity, 'check'):
                     for head in (b'(%) 3 0 obj', b'(%) 3. 0 obj'):     # identity off: nothing else refuses
@@ -106,24 +113,25 @@ class RoundFourRepros(SimpleTestCase):
     def test_the_same_file_without_a_second_page_passes(self):
         for name, kw in {**R4, **R4_CONTROLS}.items():
             with self.subTest(name):
-                self.assertEqual(_verdict(r4(head=b'(%) 9 0 obj', **kw)), (1, None))
+                self.assertEqual(_verdict(r4(head=b'(%) 9 0 obj', first_wrong=False, **kw)), (1, None))
+                self.assertEqual(_verdict(r4(head=b'(%) 9 0 obj', **kw)), (0, 'OverBudget: ' + ROW1))
 
 
-def long_number(num=LONG, gen_word=b'0'):
-    """T1: a second page 3 (heavy) whose header is ``num gen_word obj``; the entry for 3 points at it."""
+def long_number(num=LONG, gen_word=b'0', row='heavy3'):
+    """T1: a second page 3 (heavy) whose header is ``num gen_word obj``; the entry for 3 points at ``row``."""
     parts = _base() + [('heavy3', num + b' ' + gen_word + b' obj\n' + PAGE % 7)]
-    return _table_file(parts, {1: '1', 2: '2', 3: 'heavy3', 6: '6', 7: '7'})
+    return _table_file(parts, {1: '1', 2: '2', 3: row, 6: '6', 7: '7'})
 
 
-def string_percent(lead=b'(%)', num=b'3.'):
+def string_percent(lead=b'(%)', num=b'3.', first_wrong=True):
     parts = _base() + [('heavy3', lead + b' ' + num + b' 0 obj\n' + PAGE % 7)]
-    return _table_file(parts, {1: '1', 2: '2', 3: 'light3', 6: '6', 7: '7'}, first_wrong=True)
+    return _table_file(parts, {1: '1', 2: '2', 3: 'light3', 6: '6', 7: '7'}, first_wrong=first_wrong)
 
 
 def stream_percent(data=b'%X'):
     parts = _base() + [('8', b'8 0 obj\n<< /Length %d >>\nstream\n' % len(data) + data
                         + b'endstream endobj 3 0 obj\n' + PAGE % 7)]
-    return _table_file(parts, {1: '1', 2: '2', 3: 'light3', 6: '6', 7: '7', 8: '8'}, first_wrong=True)
+    return _table_file(parts, {1: '1', 2: '2', 3: 'light3', 6: '6', 7: '7', 8: '8'})
 
 
 def hidden_object_stream(decoy=b'/X (%) ', name=b'/ObjStm'):
@@ -133,8 +141,8 @@ def hidden_object_stream(decoy=b'/X (%) ', name=b'/ObjStm'):
     return _table_file(parts, {1: '1', 2: '2', 3: 'light3', 6: '6', 7: '7'})
 
 
-def packed_member(word=LONG, wrong1=True):
-    """Object stream 9 packs '3' (light page) then ``word`` (heavy); the entry for 3 says (9, 0)."""
+def packed_member(word=LONG, wrong1=True, index=0):
+    """Object stream 9 packs '3' (light page) then ``word`` (heavy); the entry for 3 says (9, ``index``)."""
     a, b = PAGE % 6 + b'\n', PAGE % 7 + b'\n'
     head = b'3 0 ' + word + b' %d ' % len(a)
     comp = zlib.compress(head + a + b)
@@ -147,7 +155,7 @@ def packed_member(word=LONG, wrong1=True):
     out += (b'9 0 obj\n<< /Type /ObjStm /N 2 /First %d /Filter /FlateDecode /Length %d >>\nstream\n'
             % (len(head), len(comp)) + comp + b'\nendstream\nendobj\n')
     x = len(out)
-    ent = {0: (0, 0, 255), 1: (1, off[2] if wrong1 else off[1], 0), 2: (1, off[2], 0), 3: (2, 9, 0),
+    ent = {0: (0, 0, 255), 1: (1, off[2] if wrong1 else off[1], 0), 2: (1, off[2], 0), 3: (2, 9, index),
            6: (1, off[6], 0), 7: (1, off[7], 0), 9: (1, off[9], 0), 10: (1, x, 0)}
     rows = b''.join(bytes([t]) + v.to_bytes(4, 'big') + bytes([g]) for t, v, g in (ent.get(n, (0, 0, 0))
                                                                                    for n in range(11)))
@@ -166,7 +174,11 @@ class T1NumberCut(SimpleTestCase):
                 self.assertIn('may read differently', why)
 
     def test_control_a_plain_3000_passes(self):
-        self.assertEqual(_verdict(long_number(b'3000')), (1, None))
+        self.assertEqual(_verdict(long_number(b'3000', row='light3')), (1, None))
+
+    def test_a_row_on_another_numbers_header_is_refused(self):
+        """Round 1: pypdf repairs a row for 3 that sits on '3000 0 obj' by searching; pdfium follows the row."""
+        self.assertEqual(_verdict(long_number(b'3000')), (0, 'OverBudget: ' + TWO))
 
     def test_a_second_generation_is_a_second_copy(self):
         self.assertEqual(_verdict(long_number(b'3', b'1')), (0, 'OverBudget: ' + TWO))
@@ -175,8 +187,9 @@ class T1NumberCut(SimpleTestCase):
         for wrong1 in (True, False):
             with self.subTest(rebuilds=wrong1):
                 self.assertEqual(_verdict(packed_member(LONG, wrong1))[0], 0)     # pypdf's own word limit, or ours
-        self.assertEqual(_verdict(packed_member(b'3')), (0, 'OverBudget: ' + TWO))
-        self.assertEqual(_verdict(packed_member(b'4')), (1, None))
+        self.assertEqual(_verdict(packed_member(b'3', wrong1=False)), (0, 'OverBudget: ' + TWO))
+        self.assertEqual(_verdict(packed_member(b'4', wrong1=False)), (1, None))
+        self.assertEqual(_verdict(packed_member(b'4')), (0, 'OverBudget: ' + ROW1))
 
 
 class T2PercentInAString(SimpleTestCase):
@@ -184,10 +197,10 @@ class T2PercentInAString(SimpleTestCase):
         for lead in (b'(%)', b'<%>', b'(a\\) %)', b'(x)', b'<ab>'):
             with self.subTest(lead=lead):
                 self.assertEqual(_verdict(string_percent(lead)), (0, 'OverBudget: ' + ODD))
-                self.assertEqual(_verdict(string_percent(lead, b'3')), (0, 'OverBudget: ' + TWO))
+                self.assertEqual(_verdict(string_percent(lead, b'3', first_wrong=False)), (0, 'OverBudget: ' + TWO))
 
     def test_a_percent_in_a_string_before_a_unique_number_still_passes(self):
-        self.assertEqual(_verdict(string_percent(b'(100%)', b'8')), (1, None))
+        self.assertEqual(_verdict(string_percent(b'(100%)', b'8', first_wrong=False)), (1, None))
 
     def test_a_header_in_stream_data_is_a_copy(self):
         for data in (b'%X', b'XX'):
@@ -260,7 +273,7 @@ class Work(SimpleTestCase):
         body = b''.join(b'7 0 obj null endobj\n' for _ in range(100))
         one = identity.Identity.__new__(identity.Identity)
         one.reader = guards.GateReader(gen.many_headers(1))
-        one.headers, one.reader._counted.refused = {}, None
+        one.headers, one.owners, one.breaks, one.reader._counted.refused = {}, [], None, None
         one.reader._counted.getvalue = lambda: body
         one.build()
         self.assertEqual(len(one.headers[7]), identity.MAX_CANDIDATES)

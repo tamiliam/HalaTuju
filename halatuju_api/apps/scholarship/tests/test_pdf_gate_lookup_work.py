@@ -18,7 +18,7 @@ from pypdf import PdfReader
 from pypdf.errors import LimitReachedError
 from pypdf.generic import ArrayObject, DictionaryObject, NullObject
 
-from apps.scholarship import pdf_layer_guards, pdf_render_check
+from apps.scholarship import pdf_layer_guards, pdf_render_check, pdf_xref_rows
 from apps.scholarship.pdf_layer_guards import GateReader, OverBudget, _CountedBytes
 
 FIRST = 10                          # the first content stream's object number
@@ -364,7 +364,7 @@ class HostileLookupsAreBounded(SimpleTestCase):
         data = _objstm_pdf(5000, [90000] * 300)
         (_n, why), parses = _stream_parses(lambda: _gate(data))
         self.assertEqual(parses, 1)                                   # was one whole parse per lookup
-        self.assertIn('not a stream', why or '')                      # the miss is a null, as pypdf reads it
+        self.assertIn('object 90000 has a cross-reference row that is not its one copy', why or '')   # round 1
 
     def test_distinct_misses_in_one_stream_parse_it_once(self):
         data = _objstm_pdf(5000, list(range(90000, 90300)))
@@ -605,27 +605,31 @@ class GenuineShapesAreUnchanged(SimpleTestCase):
             self.assertEqual(a.get_object().get_data(), b.get_object().get_data())
         self.assertEqual(gate.pages[0]['/Contents'][0].get_object().get_data(), b'0 g')
 
-    def test_a_small_rebuilt_table_still_opens_as_pypdf_opens_it(self):
+    def test_a_small_rebuilt_table_is_refused_at_the_first_lookup(self):
+        """OCR-12 round 1: a table that starts but cannot be read ('0 (x)') may still give pdfium rows the gate
+        never saw, so the gate refuses it (no genuine letter in the corpus has one). pypdf's rebuild on open is
+        still the reader's own and still metered."""
         data = _rebuild_pdf(5)
-        self.assertEqual(_gate(data), (1, None))
-        gate, plain = GateReader(data), PdfReader(io.BytesIO(data))
-        self.assertEqual(gate.xref, plain.xref)
-        self.assertEqual(gate.pages[0]['/Contents'].get_object().get_data(), b'0 g')
+        self.assertEqual(_gate(data), (0, 'OverBudget: a cross-reference section the gate cannot read'))
+        with self.assertRaisesRegex(OverBudget, 'a cross-reference section the gate cannot read'):
+            GateReader(data).pages[0]['/Contents'].get_object()
 
-    def test_a_rebuilt_table_with_a_small_object_stream_opens_as_pypdf_opens_it(self):
-        """Gap 2 control: a broken table rebuilt on open, with a normal small object stream, still opens, finds the
-        same packed objects as pypdf, and its index scan is charged well under the cap."""
+    def test_a_rebuilt_table_with_a_small_object_stream_is_refused_and_its_open_is_metered(self):
+        """Gap 2 control: the index scan of a table rebuilt on open is metered and charged well under the cap
+        (pinned with the row walk off); with it on, the first lookup refuses the unreadable table (round 1)."""
         data = _rebuild_objstm_pdf(b'100 0 101 4 102 8\n(a) (b) (c)', n=3)
-        self.assertEqual(_gate(data), (1, None))
-        (gate, reads), plain = _metered_reads(lambda: GateReader(data)), PdfReader(io.BytesIO(data))
-        self.assertIsInstance(gate, GateReader)
+        self.assertEqual(_gate(data), (0, 'OverBudget: a cross-reference section the gate cannot read'))
+        gate, reads = _metered_reads(lambda: GateReader(data))
         self.assertGreater(len(reads), 0)                             # the index scan is metered, as it opens
-        self.assertEqual(gate.xref_objStm, plain.xref_objStm)
-        self.assertEqual(len(gate.xref_objStm), 3)
-        for num in (100, 101, 102):
-            self.assertEqual(_same(gate.get_object(num)), _same(plain.get_object(num)))
-        self.assertEqual(str(gate.get_object(102)), 'c')
-        work, cap = _work(data)
+        with self.assertRaisesRegex(OverBudget, 'a cross-reference section the gate cannot read'):
+            gate.get_object(100)
+        with mock.patch.object(pdf_xref_rows.Walk, 'run', lambda walk: setattr(walk, 'complete', False)):
+            gate, plain = GateReader(data), PdfReader(io.BytesIO(data))
+            self.assertEqual(gate.xref_objStm, plain.xref_objStm)
+            self.assertEqual(len(gate.xref_objStm), 3)
+            for num in (100, 101, 102):
+                self.assertEqual(_same(gate.get_object(num)), _same(plain.get_object(num)))
+            work, cap = _work(data)
         self.assertLess(work * 100, cap)
 
     def test_a_length_past_the_end_reads_as_pypdf_reads_it(self):
@@ -643,11 +647,13 @@ class GenuineShapesAreUnchanged(SimpleTestCase):
             self.assertEqual(_same(gate.get_object(num)), _same(plain.get_object(num)))
         self.assertIsInstance(gate.get_object(140), int)
 
-    def test_a_miss_after_the_parse_is_pypdfs_null(self):
+    def test_a_row_into_a_stream_that_lacks_it_is_refused(self):
+        """pypdf reads null for a number its row packs in a stream that lacks it; pdfium takes whatever sits at
+        the row's index. OCR-12 round 1 refuses the row (it is not the one place the streams hold that number)."""
         gate, plain = GateReader(_objstm_pdf(50, [90000, 90001])), PdfReader(io.BytesIO(_objstm_pdf(50, [90000, 90001])))
-        for num in (90000, 90001, 90000):
-            self.assertIsInstance(gate.get_object(num), NullObject)
-            self.assertIsInstance(plain.get_object(num), NullObject)
+        self.assertIsInstance(plain.get_object(90000), NullObject)
+        with self.assertRaisesRegex(OverBudget, 'object 90000 has a cross-reference row that is not its one copy'):
+            gate.get_object(90000)
 
     def test_the_rows_are_pypdfs_and_a_generation_added_later_is_counted_too(self):
         data = _pdf('plain', 20)
