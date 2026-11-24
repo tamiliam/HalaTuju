@@ -48,6 +48,79 @@ has stored `organisation.admin`). Brief: `docs/plans/2026-11-23-m4b-sponsor-cred
 - **Lock (TD-561).** Signing and cancelling a credit lock its row (`select_for_update`), re-read the status under the
   lock, and send the confirmation email after commit.
 
+## 2026-11-23 — Birth-certificate and guardianship match bands; each tile leads with the reason for its band (request #78)
+
+Owner rulings, 23 Nov 2026 (BrightPath request #78, analysis 193, bug, no charge). Services: both. Migration: none.
+Brief: `docs/plans/2026-11-23-req78-bc-match-bands-brief.md`. Code: `income_engine/match_bands.py` (the one row score).
+- **The bands (slips counted, not percentages).** A row is one person on the document against their reference (child
+  vs the student, mother vs her IC, guardian vs their IC, ward vs the student). Exact number = all 12 digits; close
+  number = one digit changed, dropped or added (owner, review round 1; `vision.nric_close`). Exact name = the same
+  words, ignoring spacing, order and the connectors; close name = each word within one letter (two in words of 8+
+  letters), or one word missing or extra, OR anything today's tolerant matcher (`relationship_name_match`) accepts,
+  so no name that passes today scores far. The slip-count close name counts only where a number stands beside it. GREEN: both exact, or one
+  exact and the other close. BLUE: both close, or exact number + far name. AMBER: close + far, exact name + far number,
+  or the name missing beside an exact or close number. RED: both far (or one far and the other missing). GREY: nothing
+  read. The father row and the patronymic links stay outside the bands (#23: the father row never blocks).
+- **Only RED blocks.** RED is the only state that reaches the owed lines and asks the student to act. AMBER and BLUE go
+  to the reviewer; the officer checks by eye.
+- **The chip (the link from two rows).** Chips have no blue: BLUE shows as amber. G+G = green. B+B = amber, always
+  (owner, review round 1: both names far with both numbers exact is never confirmed; the officer checks). G+B, G+A, A+B, A+A = amber. RED + anything = red. GREY + GREEN =
+  grey while waiting, amber once everything is in but that part could not be read. Both GREY = grey ("send a clearer
+  copy"). The case-page chip, the decision and the student's tick read this one score; the browser keeps no copy.
+- **No number on the document means name alone (owner, later the same evening).** When the certificate or the
+  reference IC gives no IC number for a row, the name decides it by today's matcher (`relationship_name_match`).
+  Review round 2 (lead, 24 Nov): the student's LINK name (`student_name_for_link`, the name the decision always used)
+  decides first: it passes → green; it fails but the typed profile name passes → amber (the officer looks; before, the
+  decision said red and the chip trusted the typed name); both fail → red. The ward row follows the same rule. The
+  wider slip count does not apply here (review round 1: it would have merged short words the 5-letter floor keeps
+  apart, such as K RAJAN and M RAJAN). "One value missing = amber" applies only when the NAME is missing and the
+  number is present.
+- **The IC-number chain stands in for the PARENT row only (review round 2, lead, 24 Nov).** When the mother's or
+  father's IC number on the certificate equals the number on the income proof (`chain_verified_earner`, #9), that
+  proves the parent row, never the child row. The link is the child row scored against a green parent row
+  (`match_bands.chained_link`, `identity_checks.chain_link_status`), the same in the chip, the parent IC check and the
+  verdict, including the father fallback and with the TD-390 deferral: a green child row confirms; an amber or blue
+  child row is pending (the chain needs a child name that passes, so the child row is never red or grey under it). A
+  link that already matches without the chain (a patronymic father, say) stays a match (review round 3).
+- **The ward row is name alone (owner, later the same evening).** Guardianship letters never print the ward's number;
+  the guardian row uses name + number. The ward row uses today's matcher, as above.
+- **An unread ward name: RULED (owner, 23 Nov 2026, review round 1).** Keep as built: an unread ward name has no say and
+  the guardian row decides the link (a BLUE guardian row shows amber).
+- **The mononym father fallback's child row is on the shared score (owner, review round 1).** When the father link
+  falls back to the birth certificate (`relationships._bc_link`), its CHILD row is scored like every other row: child
+  name + child IC vs the student; no number = the name alone, as today. The certificate's father row and the
+  patronymic links are unchanged.
+- **This replaces BrightPath #19 (8 Sep, "exact number + differing name is amber, never green") for CLOSE names:** an
+  exact number with a close name is now green. An exact number with a FAR name is BLUE, which still shows amber. **#23
+  is kept where a number is read:** a number alone is never green. Where the document prints no number, the evening
+  ruling above lets the name decide (the chip's old "a name with no number is amber" yields to it).
+- **Effect on decisions (against the name-only decision before #78; mother, guardian and the father fallback's child
+  row).** Match → pending (the officer checks by eye): exact name + far number; close name + far number; close name +
+  close number; any link made of two BLUE rows. Mismatch → match: a slip-count close name (such as one letter dropped
+  from a 5-letter word, the case-177 shape) beside an exact number; a child name that only the typed profile name
+  passes beside an exact child number (close name + exact number is green in the owner's table; review round 3);
+  a child name the typed profile name matches EXACTLY while the link name fails, beside a close child number (exact
+  name + close number is green; in practice only a reversed patronymic, which TD-408 reads as another person, and with
+  the child number one digit off; short check after round 3).
+  Mismatch → pending: a far name beside an exact or close number (BLUE / AMBER), or a slip-count or typed-only close
+  name beside a close number (BLUE). Pending → mismatch: a name
+  unread on either side (the certificate or the reference IC; for example a mother's IC with its number read but not
+  its name) beside a far number (the chip already showed red). No number: the link name passes → match and both names
+  fail → mismatch, as before; only the typed profile name passes → pending (before: mismatch). The IC-number chain
+  (before: match whatever the child row said): a green child row → match, as before; an amber or blue child row →
+  pending. Under the chain the child row is never red or grey: the chain needs a child name that passes
+  `relationship_name_match` (`_bc_parent_identity`), so that name is never far or unread. Nothing that passes today
+  becomes red.
+- **The owed line says which check failed.** A parent IC red only on its link to the student owes
+  `parent_link_mismatch` (mother or guardian) or `parent_name_link_mismatch` (father, brother or sister);
+  `parent_ic_person_mismatch` stays for a card that does not match the income documents and comes first when both fail.
+- **Each tile leads with the reason for its band** (following the 17 Nov Academic fix). Done on the server by item
+  order, so the tile, the AI Prediction line and every other reader agree: Income puts the STR line first when the STR
+  sets the band; Academic puts its red lines first (`verdict_ladder.ACADEMIC_RED_CODES`), with an unreadable
+  higher-results slip ahead of them.
+- **Revisit if:** a document type starts printing the ward's number, or the A5 replay shows the pending moves swamping
+  the reviewers.
+
 ## 2026-11-19 — Payment runs on Payments switches; one key, Organisation admin powers (sprint M4a)
 
 Owner rulings, 19 Nov (programme ACCESS-BY-SWITCHES S2). Services: both. Migration: courses 0100 (additive data,

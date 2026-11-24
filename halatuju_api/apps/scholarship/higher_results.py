@@ -413,12 +413,17 @@ def anchors_on_higher(application) -> bool:
 def academic_fact(application, spm_fact):
     """`verdict_engine._verdict_academic`'s card choice. `spm_fact()` builds the SPM card's own
     answer (called once). The higher card when it anchors (S3); else the SPM card — capped at
-    Probable with the reason named while the higher results are owed and none is on file (#388)."""
+    Probable with the reason named while the higher results are owed and none is on file (#388).
+    Every card leaves here with the reason for its band first (#78, `verdict_ladder.academic_red_first`)."""
     from . import higher_owed
+    from .verdict_ladder import academic_red_first
     if anchors_on_higher(application):     # SPM only + an undeclared upload: at best Unsure (2026-11-07)
-        return higher_owed.cap_undeclared(application, verdict_academic(application, spm_fact()))
-    kind = higher_owed.owed_kind(application)
-    return higher_owed.cap(spm_fact(), kind) if kind else spm_fact()
+        fact = higher_owed.cap_undeclared(application, verdict_academic(application, spm_fact()))
+    else:
+        kind = higher_owed.owed_kind(application)
+        fact = higher_owed.cap(spm_fact(), kind) if kind else spm_fact()
+    fact['unresolved'] = academic_red_first(fact['unresolved'])
+    return fact
 
 
 def verdict_academic(application, spm_fact):

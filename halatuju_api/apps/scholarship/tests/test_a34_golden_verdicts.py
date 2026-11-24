@@ -183,6 +183,7 @@ def _sc(current='current', name='match', nric='match'):
 
 
 #: name → (earner, {knob: value}). Knobs: ic, link (father/mother/guardian answer), chain,
+#: chain_link (the link once the chain holds: `chain_link_status`, #78 review round 2),
 #: satisfied, str (a STR letter on file), sc (student_str_check answer), bc / letter
 #: ('ok' | 'wrong' | 'unreadable'), stands, salary (status, has-proof), tested.
 INCOME_CASES = {
@@ -206,6 +207,9 @@ INCOME_CASES = {
     'i17_unknown_not_means_tested':     ('father', {'str': True, 'link': 'unknown', 'tested': False}),
     'i18_father_chain_upgrade':         ('father', {'str': True, 'link': 'mismatch', 'chain': True}),
     'i18b_father_verified':             ('father', {'str': True}),
+    # #78 review round 2: the chain stands in for the parent row only; an amber child row holds it.
+    'i18c_mother_chain_child_amber':    ('mother', {'str': True, 'bc': 'ok', 'link': 'mismatch',
+                                                    'chain': True, 'chain_link': 'pending'}),
     'i19_mother_no_bc':                 ('mother', {'str': True}),
     'i20_mother_bc_unreadable':         ('mother', {'str': True, 'bc': 'unreadable'}),
     'i21_mother_bc_wrong_type':         ('mother', {'str': True, 'bc': 'wrong'}),
@@ -289,6 +293,7 @@ class TestGoldenIncome(_GoldenBase):
             f'{IE}.mother_relationship': calls.fake('mother_relationship', link, skip_first=False),
             f'{IE}.guardian_link': calls.fake('guardian_link', link, skip_first=True),
             f'{IE}.chain_verified_earner': calls.fake('chain_verified_earner', knobs.get('chain', False)),
+            f'{IE}.chain_link_status': calls.fake('chain_link_status', knobs.get('chain_link', 'match')),
             f'{IE}.relationship_doc_unreadable': lambda d: unreadable[
                 'bc' if d.doc_type == 'birth_certificate' else 'letter'],
             f'{IE}.student_str_check': calls.fake('student_str_check', knobs.get('sc', _sc()),

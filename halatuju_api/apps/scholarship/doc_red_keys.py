@@ -34,8 +34,20 @@ PERSON_RED_KEYS = {
 }
 
 
+#: Request #78 (2026-11-23). On a `parent_ic` check `name_status` is the LINK to the student (the birth
+#: certificate, the guardianship letter, or the father's name in the student's own name); the two
+#: `proof_*` keys compare the card with the income proof. Both readers still count all three as red;
+#: the gate names a card red on the link ALONE in its own words (`services.blockers`).
+PARENT_IC_LINK_KEY = 'name_status'
+
+
+def red_keys(doc_type, check):
+    """The person keys for `doc_type` on which `check` (a `student_*_check` dict, or None) reads
+    'mismatch', in table order. A type not in the table has none."""
+    return tuple(k for k in PERSON_RED_KEYS.get(doc_type, ()) if (check or {}).get(k) == 'mismatch')
+
+
 def person_red(doc_type, check):
     """True when `check` (a `student_*_check` dict, or None) carries 'mismatch' on any of the
     person keys for `doc_type`. A type not in the table is never red here."""
-    keys = PERSON_RED_KEYS.get(doc_type, ())
-    return any((check or {}).get(k) == 'mismatch' for k in keys)
+    return bool(red_keys(doc_type, check))

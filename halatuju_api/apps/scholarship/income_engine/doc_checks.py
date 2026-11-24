@@ -6,10 +6,10 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 from __future__ import annotations
 
 from ..read_errors import ic_second_opinion_deferred
-from ..vision import nric_close
-from .buckets import _combine_relationship, _name_bucket, _nric_bucket
+from .buckets import _name_bucket
 from .identity_checks import _member_ic_doc, chain_verified_earner
-from .relationships import _newly_derived, father_name_from_ic
+from .match_bands import GREY, RED, chained_link, chip_status, guardian_link_rows, mother_link
+from .relationships import _newly_derived, father_name_from_ic, student_name_for_link
 from .salary_figures import _doc_fields
 
 
@@ -57,25 +57,28 @@ def student_bc_check(doc):
     student = getattr(getattr(app, 'profile', None), 'name', '') or ''
     student_nric = getattr(getattr(app, 'profile', None), 'nric', '') or ''
     child_name = (f.get('bc_child_name', '') or '').strip()
-    child_nric = (f.get('bc_child_nric', '') or '').strip()
-    child_status = _combine_relationship(_name_bucket(child_name, student),
-                                         _nric_bucket(child_nric, student_nric),
-                                         nric_close(child_nric, student_nric))
     mother_name = (f.get('bc_mother_name', '') or '').strip()
     mother_nric = (f.get('bc_mother_nric', '') or '').strip()
     mic = _member_ic_doc(app, 'mother')
-    mic_name = getattr(mic, 'vision_name', '') if mic else ''
-    mic_nric = getattr(mic, 'vision_nric', '') if mic else ''
-    mother_status = _combine_relationship(_name_bucket(mother_name, mic_name),
-                                          _nric_bucket(mother_nric, mic_nric),
-                                          nric_close(mother_nric, mic_nric))
+    # Request #78: ONE scoring for the chips and the decision (`match_bands`), never two. The
+    # link name first, the typed name second, exactly as the decision passes them (review round 2).
+    rows = mother_link(child_name, f.get('bc_child_nric', ''), mother_name, mother_nric,
+                       (student_name_for_link(app), student), student_nric,
+                       getattr(mic, 'vision_name', '') if mic else '',
+                       getattr(mic, 'vision_nric', '') if mic else '')
+    child_status, mother_status = chip_status(rows['child']), chip_status(rows['parent'])
+    link = rows['link']
     # IC-NUMBER chain (#9): the mother's IC NUMBER appears on the income proof → she is the
     # confirmed earner, regardless of a wrong card uploaded in her slot. The BC mother row is
-    # exactly what the chain is built on, so it is verified (never red on the wrong card).
+    # exactly what the chain is built on, so it is verified (never red on the wrong card). The
+    # chain stands in for the MOTHER row only, never the child row (review round 2): the link is
+    # the child row with a green parent row, as the decision reads it (`chain_link_status`).
     if mother_status != 'match' and chain_verified_earner(app, 'mother'):
-        mother_status = 'match'
-    if mother_status == 'mismatch' and mic is not None and ic_second_opinion_deferred(mic):
-        mother_status = 'no_ref'         # TD-390: a card our outage left half-read proves no clash
+        mother_status, link = 'match', chained_link(rows['child'])
+    if mic is not None and ic_second_opinion_deferred(mic):
+        if mother_status == 'mismatch':
+            mother_status = 'no_ref'     # TD-390: a card our outage left half-read proves no clash
+        link = GREY if link == RED else link
     father_name = (f.get('bc_father_name', '') or '').strip()
     father_status = _name_bucket(father_name, father_name_from_ic(student))
     if father_status != 'match' and _newly_derived(student):
@@ -83,6 +86,7 @@ def student_bc_check(doc):
     return {
         'child_name': child_name, 'child_status': child_status,
         'mother_name': mother_name, 'mother_nric': mother_nric, 'mother_status': mother_status,
+        'link': link,                    # #78: the child + mother link (green/amber/red/grey)
         'father_name': father_name, 'father_status': father_status,
         'bc_number': (f.get('bc_number', '') or '').strip(),
         # Nothing read at all → the officer must see ONE amber, not three greys that look like
@@ -103,18 +107,20 @@ def student_guardianship_check(doc):
     student = getattr(getattr(app, 'profile', None), 'name', '') or ''
     g_name = (f.get('guardian_name', '') or '').strip()
     g_nric = (f.get('guardian_nric', '') or '').strip()
-    gic = _member_ic_doc(app, 'guardian')
-    gic_name = getattr(gic, 'vision_name', '') if gic else ''
-    gic_nric = getattr(gic, 'vision_nric', '') if gic else ''
-    guardian_status = _combine_relationship(_name_bucket(g_name, gic_name),
-                                            _nric_bucket(g_nric, gic_nric),
-                                            nric_close(g_nric, gic_nric))
-    if guardian_status == 'mismatch' and gic is not None and ic_second_opinion_deferred(gic):
-        guardian_status = 'no_ref'       # TD-390: as for the mother row above
     ward_name = (f.get('ward_name', '') or '').strip()
+    gic = _member_ic_doc(app, 'guardian')
+    rows = guardian_link_rows(g_name, g_nric, ward_name, (student_name_for_link(app), student),
+                              getattr(gic, 'vision_name', '') if gic else '',
+                              getattr(gic, 'vision_nric', '') if gic else '')
+    guardian_status, link = chip_status(rows['parent']), rows['link']
+    if gic is not None and ic_second_opinion_deferred(gic):
+        if guardian_status == 'mismatch':
+            guardian_status = 'no_ref'   # TD-390: as for the mother row above
+        link = GREY if link == RED else link
     return {
         'guardian_name': g_name, 'guardian_nric': g_nric, 'guardian_status': guardian_status,
-        'ward_name': ward_name, 'ward_status': _name_bucket(ward_name, student),
+        'ward_name': ward_name, 'ward_status': chip_status(rows['child']),
+        'link': link,                    # #78: the ward + guardian link
         'doc_kind': (f.get('doc_kind', '') or '').strip(),
         'unreadable': relationship_doc_unreadable(doc),   # nothing read ≠ nothing wrong (#23)
     }

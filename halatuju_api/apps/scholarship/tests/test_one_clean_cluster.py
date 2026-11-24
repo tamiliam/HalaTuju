@@ -157,19 +157,20 @@ class TestGateSuppression(_Base):
         app = self._app('f')
         # A misread father IC that fails the person check (the NATHIYAA case).
         self._doc(app, 'parent_ic', 'father', vision_name='RAJAANMALAYS')
+        # #78: red on the LINK alone (a father's card) owes the father's-name line, not the income one.
         mismatch = {'name_status': 'mismatch', 'proof_name_status': 'no_ref',
-                    'proof_nric_status': 'no_ref'}
+                    'proof_nric_status': 'no_ref', 'member': 'father'}
         with patch_engine(income_engine, 'student_income_ic_check',
                         return_value=mismatch):
             # No clean cluster → the mismatch BLOCKS.
             with patch_engine(income_engine, 'member_cluster_complete',
                             return_value=False):
-                self.assertIn('parent_ic_person_mismatch', services.document_red_blockers(app))
+                self.assertIn('parent_name_link_mismatch', services.document_red_blockers(app))
             # One clean cluster → the same mismatch is a soft Check-2 item, NOT a blocker.
             with patch_engine(income_engine, 'member_cluster_complete',
                               side_effect=lambda a, m: m == 'mother'), \
                     patch_engine(income_engine, 'cluster_income_matched', return_value=True):
-                self.assertNotIn('parent_ic_person_mismatch', services.document_red_blockers(app))
+                self.assertNotIn('parent_name_link_mismatch', services.document_red_blockers(app))
 
     def test_str_route_dispositive_str_suppresses_extraneous_ic_mismatch(self):
         # #28: a valid father's STR + an extraneous MOTHER IC, whose cross-check against the
@@ -243,16 +244,17 @@ class TestProvingIncomeDoesNotSettleParentage(_Base):
         # this with it.
         app = self._app('rel-d', income_route='str', income_earner='mother')
         self._doc(app, 'parent_ic', 'father', vision_name='RAJAANMALAYS')
+        # #78: red on the LINK alone (a father's card) owes the father's-name line, not the income one.
         mismatch = {'name_status': 'mismatch', 'proof_name_status': 'no_ref',
-                    'proof_nric_status': 'no_ref'}
+                    'proof_nric_status': 'no_ref', 'member': 'father'}
         with patch_engine(income_engine, 'student_income_ic_check',
                         return_value=mismatch):
             with self._established():
-                self.assertNotIn('parent_ic_person_mismatch',
+                self.assertNotIn('parent_name_link_mismatch',
                                  services.document_red_blockers(app))
             with patch_engine(income_engine, 'household_str_status',
                             return_value=(None, None)):
-                self.assertIn('parent_ic_person_mismatch', services.document_red_blockers(app))
+                self.assertIn('parent_name_link_mismatch', services.document_red_blockers(app))
 
 
 class TestOcrNameGuard(TestCase):

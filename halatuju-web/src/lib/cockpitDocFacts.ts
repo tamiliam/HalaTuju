@@ -39,6 +39,8 @@ function factStatus(s: string | undefined | null): FactStatus {
     // `check_one` (#23): we held only ONE of the name/number pair, so only half the row was
     // checked. Green would claim a corroboration we do not have.
     case 'check_name': case 'check_one':
+    // `check_both` (#78): both cells read — a name spelt differently and a number one digit off.
+    case 'check_both':
       return 'partial'
     case 'mismatch': case 'unreadable': case 'not_found': case 'rejected':
       return 'not'

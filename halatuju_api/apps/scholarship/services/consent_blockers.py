@@ -140,6 +140,9 @@ def consent_blocking_slots(application):
         for d, c in document_unreadable_blockers(application, per_doc=True):
             if c in codes:
                 tie(c, [d])
+        for c in codes.intersection(('parent_link_mismatch', 'parent_name_link_mismatch')):
+            # Request #78: a broken link may be the certificate's or the letter's fault, not the card's.
+            tie(c, live_docs(application, doc_types=('birth_certificate', 'guardianship_letter')))
         if 'offer_not_official' in codes:
             tie('offer_not_official', [latest_doc(application, 'offer_letter')])
         for c in codes.intersection(_OWN_IC_REDO):

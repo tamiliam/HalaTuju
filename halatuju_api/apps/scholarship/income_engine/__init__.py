@@ -43,12 +43,12 @@ was not touched here, and it still names `income_engine` — which is this packa
 
 from __future__ import annotations
 
-from .buckets import _combine_relationship, _name_bucket, _nric_bucket
+from .buckets import _name_bucket, _nric_bucket
 from .relationships import (
     _MEMBER_ORDER, _PATRONYMIC_MEMBERS, _PATRONYMIC_RE, _RELATIONSHIP_DOC, _bc_link,
-    _relationship_inputs, effective_working_members, father_link, father_name_from_ic,
+    effective_working_members, father_link, father_name_from_ic,
     father_relationship, father_via_bc, guardian_link, guardian_relationship, letter_names,
-    member_relationship_status, mother_relationship, relationship_doc_for,
+    link_numbers, member_relationship_status, mother_relationship, relationship_doc_for,
     student_name_for_link, working_members
 )
 from .salary_figures import (
@@ -59,7 +59,7 @@ from .salary_figures import (
 from .identity_checks import (
     _RESOLVABLE_INCOME_DOCS, _bc_anchorable, _bc_doc, _bc_parent_identity, _cluster_docs,
     _cluster_proof_identity, _doc_person_name, _member_ic_doc, _name_matched_members,
-    _proof_member, _roster_candidates, chain_verified_earner, implied_single_member,
+    _proof_member, _roster_candidates, chain_link_status, chain_verified_earner, implied_single_member,
     name_contradicts_tag, parent_ic_reference, resolved_member_for, student_income_ic_check,
     student_income_proof_check
 )

@@ -82,14 +82,19 @@ export interface ApplicantDocument {
   guardianship_check?: GuardianshipCheck | null
 }
 
-// The three AMBER buckets are the corroboration rules in `income_engine._combine_relationship`,
+// The three AMBER buckets are the corroboration rules in `income_engine.match_bands.chip_status`,
 // and this type had drifted behind them: `check` / `check_near` (the name agrees, the NRIC does
 // not — a misread digit off a security-printed JPN document) and, from BrightPath #19,
 // `check_name` (the NRIC matches EXACTLY, the name is spelt differently — a transliteration, not
 // a different person). All three render partial, never green and never red.
 // `check_one` (#23): only ONE of the two cells was present at all, so half the row was
 // checked. Amber — never green off a single piece of evidence, never red either.
-type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'check_name' | 'check_one'
+// `check_both` (#78): both cells read — the name spelt differently AND the number one digit off.
+type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'check_name' | 'check_one' | 'check_both'
+// #78 (owner 23 Nov 2026): the server's verdict on the LINK the two rows make ("this parent is the
+// student's parent"): green confirms it, red asks the student to act, amber / grey go to a person.
+// The same scoring the income decision reads (`income_engine.match_bands`); never re-derived here.
+type LinkBand = 'green' | 'amber' | 'red' | 'grey'
 
 export interface BcCheck {
   child_name: string
@@ -97,6 +102,7 @@ export interface BcCheck {
   mother_name: string
   mother_nric: string
   mother_status: RelStatus    // vs the mother's IC
+  link: LinkBand              // #78: the child + mother link
   father_name: string
   father_status: RelStatus    // vs your IC patronymic
   bc_number: string
@@ -112,6 +118,7 @@ export interface GuardianshipCheck {
   guardian_status: RelStatus  // vs the guardian's IC
   ward_name: string
   ward_status: RelStatus      // vs the student (you)
+  link: LinkBand              // #78: the ward + guardian link
   doc_kind: string
   unreadable?: boolean        // #23 — nothing read ≠ nothing wrong
 }
