@@ -11,7 +11,7 @@ from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
 from apps.courses.models import StudentProfile
-from apps.scholarship.management.commands.replay_criteria import CLASS_A1, CLASS_B
+from apps.scholarship.management.commands.replay_criteria import CLASS_A1, CLASS_B, UNEXPECTED
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 
@@ -72,6 +72,37 @@ class TestReplayCommand(TestCase):
         self.assertNotIn(CLASS_B, out)
         self.assertNotIn(self.loose.code, out)
         self.assertIn('total=1; same=1', out)
+
+    def test_plain_files_an_automatic_pass_as_needing_a_look(self):
+        # --plain leaves the trap on (an SPM group that cannot fail beside the floor), so a
+        # post-SPM holder below the floor passes automatically: never an expected class.
+        auto = _apply(self.degree, exam_type='stpm', stpm_cgpa=1.0, spm_prereq_grades=MID,
+                      results_exam_type='stpm', completed_qualifications=['spm', 'stpm'])
+        out = self._run('--plain', '--cohort', 'deg-shape')
+        self.assertIn(f'  {UNEXPECTED}: pending (submitted, undecided)=1', out)
+        self.assertIn(f'    pending: {auto.id}', out)
+        self.assertNotIn(CLASS_A1, out)
+        self.assertIn('RESULT: 1 need a look', out)
+
+    def test_a_floor_beside_a_merit_only_bar_is_not_an_open_door(self):
+        c = make_cohort(code='merit-door', min_stpm_pngk=3.0, min_spm_a_count=None, min_spm_bplus_count=None,
+                        min_merit_score=80, income_ceiling=5860, per_capita_ceiling=None)
+        _apply(c, exam_type='stpm', stpm_cgpa=1.0, spm_prereq_grades={}, results_exam_type='stpm',
+               completed_qualifications=['spm', 'stpm'])
+        out = self._run('--cohort', 'merit-door')
+        self.assertIn('total=1; same=1', out)
+        self.assertIn('RESULT: only expected classes', out)
+
+    def test_a_tree_validate_refuses_is_listed_by_id_and_code(self):
+        bad = make_cohort(code='bad-tree', min_stpm_pngk=None, min_spm_a_count=None, min_spm_bplus_count=None)
+        ScholarshipCohort.objects.filter(pk=bad.pk).update(allowed_birth_states=['Sabah'])
+        out = self._run('--cohort', 'bad-tree')
+        self.assertIn(f'cohort {bad.id} (bad-tree): total=0; no applications\n'
+                      '  TREE REFUSED by validate: born_in must be any: [distinct state keys]\n', out)
+        self.assertIn('trees_refused=1', out)
+        self.assertIn('RESULT: 1 need a look', out)
+        self.assertNotIn('Sabah', out)
+        self.assertIn('trees_refused=0', self._run('--cohort', 'deg-shape'))
 
     def test_prints_no_personal_data(self):
         out = self._run()
