@@ -14,7 +14,7 @@ from unittest import mock
 import pytest
 
 from apps.scholarship import verdict_context
-from apps.scholarship.eval.replay import child, guards, lens_human, parent, scrub
+from apps.scholarship.eval.replay import child, guards, lens_human, lens_result_schema, parent, scrub
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.tests.factories import make_application
 from apps.scholarship.tests.test_replay_harness import (
@@ -95,7 +95,7 @@ def test_off_by_default_the_child_env_and_the_output_are_as_before(harness, tmp_
 
 def test_spawn_child_passes_the_lens_names_to_the_new_side_only_and_only_when_on(tmp_path):
     env = {**_parent_env(), 'OTHER_NAME': 'x'}
-    for extra, lens_side in ((), None), (('--human-lens',), 'new'):
+    for extra, lens_side in ((), None), (('--human-lens', '--human-lens-exam-folder', str(tmp_path)), 'new'):
         args = _args(tmp_path, *extra)
         for side in parent.RUN_SIDES:
             with mock.patch.object(parent.subprocess, 'Popen') as popen:
@@ -136,17 +136,18 @@ def test_env_names_are_compared_upper_case_against_the_forbidden_names():
 
 # ── refusals stay refusals ─────────────────────────────────────────────────────────────────────────
 @pytest.mark.parametrize('folder, code', [
-    (None, lens_human.FOLDER_MISSING), ('exams', lens_human.FOLDER_NOT_ABSOLUTE),
+    ('exams', lens_human.FOLDER_NOT_ABSOLUTE),
     ('/nonexistent-exam-folder', lens_human.FOLDER_MISSING), (REPO_FOLDER, lens_human.INSIDE_GIT_REPO)])
 def test_a_bad_folder_is_the_lens_refusal_even_with_the_freeze_flag(harness, tmp_path, folder, code):
     make_application('submitted')
-    extra = ('--human-lens', '--human-lens-freeze') + (() if folder is None else ('--human-lens-exam-folder', folder))
+    extra = ('--human-lens', '--human-lens-freeze', '--human-lens-exam-folder', folder)
     before = sorted(os.listdir(REPO_FOLDER))
     result, lines, _seen = harness(_args(tmp_path / 'work', *extra), _parent_env())
     lens = result[parent.HUMAN_LENS_KEY]
     assert {exam['refusal'] for exam in lens['exams'].values()} == {code}
     assert dict(result['same']) == {'same': 1}                     # the other lenses still report
     assert lines.count(parent.HUMAN_LENS_ON_LINE) == 1 and sorted(os.listdir(REPO_FOLDER)) == before
+    assert parent.replay_exit_code(result) == 0                     # a refusal is a result, not an error
 
 
 def test_a_normal_run_with_no_exam_file_answers_exam_missing_and_writes_nothing(harness, desk, tmp_path):
@@ -167,10 +168,12 @@ def test_a_caught_lens_error_is_reported_by_class_name_and_the_side_finishes(har
     def broken(*_a, **_k):
         raise lens_human.BadCaseRow('application_id', 'repeats')
     monkeypatch.setattr(lens_human_rows, 'run_human_lens_on_database', broken)
-    result, lines, _seen = harness(_args(tmp_path / 'work', '--human-lens'), _parent_env())
+    result, lines, _seen = harness(_args(tmp_path / 'work', '--human-lens', '--human-lens-exam-folder',
+                                         str(tmp_path)), _parent_env())
     assert result[parent.HUMAN_LENS_KEY] == {'error': 'BadCaseRow'}
     new_side = next(json.loads(x) for x in lines if '"side": "new"' in x and '"event": "side"' in x)
     assert new_side['exit'] == 0 and new_side['fatal'] == []
+    assert parent.replay_exit_code(result) == parent.HUMAN_LENS_FAILED_EXIT
 
 
 # ── a dry run: freeze, then a normal run, then a blank key; the canary key never leaves ───────────
@@ -224,9 +227,91 @@ def test_dry_run_freeze_then_score_then_a_blank_key(harness, desk, tmp_path, cap
     assert blank_exams['exam-1']['refusal'] == lens_human.KEY_BLANK and blank_exams['exam-1']['score'] is None
     assert blank_exams['exam-old']['still_valid'] == '2 of 2 still valid'
     assert dict(blank['same']) == {'same': lens_human.EXAM_1_SIZE + 2}   # the other lenses still report
+    for run in (frozen, scored, blank):                            # real shapes pass the allow-list as they are
+        assert lens_result_schema.human_lens_result_allowed(run[parent.HUMAN_LENS_KEY])
+        assert parent.replay_exit_code(run) == 0
 
     captured = capfd.readouterr()                                  # fd level: the whole run's stdout, stderr
     text = '\n'.join([captured.out, captured.err, *lines_1, *lines_2, *lines_3,
                       json.dumps([frozen, scored, blank], default=str), _everything_written(work, folder)])
     for secret in (KEY, KEY.upper()):
         assert secret not in text
+
+
+# ── C1c: fail fast, and a lens error never looks like a result ───────────────────────────────────────
+PLANTED_NAME = 'Siti Aminah binti Ahmad'
+
+
+def test_the_lens_without_an_exam_folder_is_an_argument_error_before_any_run(tmp_path):
+    for extra in (('--human-lens',), ('--human-lens', '--human-lens-freeze'),
+                  ('--human-lens', '--human-lens-exam-folder', '')):
+        with pytest.raises(SystemExit) as caught:
+            _args(tmp_path, *extra)
+        assert caught.value.code == 2
+    assert _args(tmp_path, '--human-lens', '--human-lens-exam-folder', str(tmp_path)).human_lens
+
+
+def _writes_no_file(lens, *, now, path):
+    return None
+
+
+def _writes_a_broken_file(lens, *, now, path):
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write('{"exams": ')
+
+
+def _plants_a_name(*_a, **_k):
+    return {'error': PLANTED_NAME}
+
+
+@pytest.mark.parametrize('where, name, value, error', [
+    ('child', 'write_human_lens', _writes_no_file, lens_result_schema.NO_OUTPUT),
+    ('child', 'write_human_lens', _writes_a_broken_file, lens_result_schema.BAD_OUTPUT),
+    ('rows', 'run_human_lens_on_database', _plants_a_name, lens_result_schema.SCHEMA)])
+def test_each_lens_error_kind_exits_non_zero(harness, tmp_path, monkeypatch, where, name, value, error):
+    from apps.scholarship.eval.replay import lens_human_rows
+    make_application('submitted')
+    monkeypatch.setattr(child if where == 'child' else lens_human_rows, name, value)
+    work = tmp_path / 'work'
+    result, lines, _seen = harness(_args(work, '--human-lens', '--human-lens-exam-folder', str(tmp_path)),
+                                   _parent_env())
+    assert result[parent.HUMAN_LENS_KEY] == {'error': error}
+    assert dict(result['same']) == {'same': 1}                     # the engines still report
+    assert parent.replay_exit_code(result) == parent.HUMAN_LENS_FAILED_EXIT
+    assert PLANTED_NAME not in _everything_written(work) + '\n'.join(lines)
+
+
+@pytest.fixture
+def main_stubbed(monkeypatch, request):
+    """``main`` with the preflight and Django set-up stubbed, and ``run_replay`` answering ``result``."""
+    import logging
+    request.addfinalizer(lambda level=logging.root.manager.disable: logging.disable(level))
+    monkeypatch.setattr(guards, 'check_environment', lambda env: True)
+    monkeypatch.setattr(guards, 'check_database_url', lambda url: ('localhost', 5432))
+    monkeypatch.setattr(parent, 'setup_django', lambda: None)
+
+    def run(result, argv):
+        monkeypatch.setattr(parent, 'run_replay', lambda args, env: result)
+        return parent.main(['--instant', INSTANT, '--months', '2026-11,2026-12', *argv])
+    return run
+
+
+@pytest.mark.parametrize('error', [lens_result_schema.NO_OUTPUT, lens_result_schema.BAD_OUTPUT,
+                                   lens_result_schema.SCHEMA, 'BadCaseRow', 'ValueError', 'TypeError', 'OSError'])
+def test_main_exits_4_on_every_lens_error(main_stubbed, tmp_path, error):
+    lens_flags = ['--human-lens', '--human-lens-exam-folder', str(tmp_path)]
+    assert main_stubbed({'same': {'same': 1}, parent.HUMAN_LENS_KEY: {'error': error}}, lens_flags) == 4
+    assert parent.HUMAN_LENS_FAILED_EXIT == 4
+
+
+def test_main_exits_0_on_a_clean_lens_run_a_refusal_and_with_the_lens_off(main_stubbed, tmp_path):
+    from django.test import override_settings
+
+    from apps.scholarship.eval.replay import lens_human_rows
+    with override_settings(DEBUG=True):                            # every exam refused: debug_on
+        refused = lens_human_rows.run_human_lens_on_database(str(tmp_path), child.parse_instant(INSTANT))
+    lens_flags = ['--human-lens', '--human-lens-exam-folder', str(tmp_path)]
+    assert lens_result_schema.human_lens_result_allowed(refused)
+    assert main_stubbed({'same': {'same': 1}, parent.HUMAN_LENS_KEY: refused}, lens_flags) == 0
+    assert main_stubbed({'same': {'same': 1}}, []) == 0             # the lens off: as before
+    assert main_stubbed({}, []) == 0                                # --counts-only returns {}

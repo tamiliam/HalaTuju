@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### LL5 phase C1c - lens result allow-list, fail fast, errors exit non-zero (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. Four safety items in the replay's human-lens wiring. `--human-lens` without an exam folder is now an argument error. The new `eval/replay/lens_result_schema.py` checks the lens result against a fixed allow-list (known keys per level, whole numbers, codes from the lens's constants, and strictly shaped text) before the child writes it, and again when the parent reads it; anything else becomes exactly `{"error": "schema"}`. A broken result file (not JSON, not a dict, a repeated key, NaN, over 1 MiB) reads as `{"error": "bad_output"}` with no crash and no echo. `python -m replay.parent` exits 4 when the lens result is an error; a refusal and a clean run keep exit 0. New tests in `test_replay_lens_result_schema.py` (82) and `test_replay_human_lens_wiring.py`.
+
 ### LL5 phase C1b - the lens refuses under DEBUG and inside an open snapshot (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Three safety items in the human lens's database door (`lens_human_rows.py`). With Django `DEBUG` on (Django then keeps and logs SQL with case ids), `run_human_lens_on_database` refuses the whole run with the new code `debug_on` before any query or file, with or without a freeze. When a document snapshot is open for any case, `human_lens_rows` raises the new `OpenSnapshotError` (its message holds no case data) before any engine work or twin; it is a RuntimeError, so no per-case catch turns it into a note, and the replay child lets it through as a fatal line and writes no lens file. Tests hold that a twin recovery leaves the shared profile's values and the real case's status as they were, with SELECT statements only. New tests in `test_replay_lens_human_rows.py` (6).

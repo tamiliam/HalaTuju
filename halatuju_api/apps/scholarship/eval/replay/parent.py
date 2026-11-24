@@ -25,7 +25,9 @@ gets the lens names (`human_lens_env`: the switch, the exam folder, the freeze f
 `REPLAY_FINGERPRINT_KEY` copied from this process's environment). Off, every child's environment is
 exactly as before and the result has no new key. The `new` child writes the lens's counts and codes to
 `human_lens.json` in the workdir; `run_replay` returns them under the one key ``human_lens``. They are
-not printed in this phase.
+not printed in this phase. SAFETY (phase C1c): `--human-lens` without `--human-lens-exam-folder` is an
+argument error; the file is checked again here against the allow-list (`lens_result_schema`); a lens
+result that is an error (``{"error": ...}``) makes `main` exit `HUMAN_LENS_FAILED_EXIT` (4), never 0.
 """
 import argparse
 import importlib
@@ -36,7 +38,7 @@ import sys
 import time
 from collections import Counter, defaultdict
 
-from . import guards, netguard
+from . import guards, lens_result_schema, netguard
 from . import scrub as scrub_module
 from .child import (HUMAN_LENS_ENV, HUMAN_LENS_FILE, HUMAN_LENS_FOLDER_ENV, HUMAN_LENS_FREEZE_ENV,
                     parse_instant, setup_django)
@@ -52,6 +54,9 @@ HUMAN_LENS_SIDE = 'new'
 HUMAN_LENS_KEY = 'human_lens'
 #: The run's one line saying the lens is on: a fixed text, never the key or a folder.
 HUMAN_LENS_ON_LINE = '{"event": "human_lens_on"}'
+#: ``main``'s exit code when the lens result is an error. 0 is a finished run, 2 an argument error
+#: (argparse), 3 a fatal error; 4 is new and means only this.
+HUMAN_LENS_FAILED_EXIT = 4
 CHILD_TIMEOUT_S = 3 * 60 * 60
 #: How long the parent waits for every child to join; below the parent's idle-in-transaction limit.
 JOIN_TIMEOUT_S = 10 * 60
@@ -244,6 +249,8 @@ def parse_args(argv):
         ap.error('--months takes exactly two months')
     if (args.human_lens_freeze or args.human_lens_exam_folder) and not args.human_lens:
         ap.error('--human-lens-freeze and --human-lens-exam-folder need --human-lens')
+    if args.human_lens and not args.human_lens_exam_folder:     # fail fast, not after hours of engines
+        ap.error('--human-lens needs --human-lens-exam-folder')
     return args
 
 
@@ -298,11 +305,26 @@ def clear_human_lens_file(workdir):
 
 
 def read_human_lens(path):
-    """The lens side's counts and codes, or ``{"error": "no_output"}`` when it wrote none."""
+    """The lens side's counts and codes, checked again against the allow-list (`lens_result_schema`):
+    ``{"error": "no_output"}`` when it wrote none, ``{"error": "bad_output"}`` when the file cannot be
+    read or is not a JSON object, ``{"error": "schema"}`` when the object fails the allow-list. Never
+    raises on the file and never echoes its content."""
     if not os.path.exists(path):
-        return {'error': 'no_output'}
-    with open(path, encoding='utf-8') as fh:
-        return json.load(fh)
+        return {'error': lens_result_schema.NO_OUTPUT}
+    try:
+        with open(path, 'rb') as fh:
+            raw = fh.read(lens_result_schema.MAX_RESULT_BYTES + 1)
+    except OSError:                                     # a folder, or no read permission
+        return {'error': lens_result_schema.BAD_OUTPUT}
+    return lens_result_schema.parse_human_lens_bytes(raw)
+
+
+def replay_exit_code(result):
+    """``main``'s exit code for a finished run: `HUMAN_LENS_FAILED_EXIT` when the lens was on and its
+    result is an error (``{"error": ...}``: no output, a bad file, the allow-list, a caught lens error),
+    else 0. A lens REFUSAL (a code inside an exam) is a result, not an error: 0."""
+    lens = result.get(HUMAN_LENS_KEY) if isinstance(result, dict) else None
+    return HUMAN_LENS_FAILED_EXIT if isinstance(lens, dict) and 'error' in lens else 0
 
 
 def stop_children(procs):
@@ -365,13 +387,13 @@ def main(argv=None):
         guards.check_environment(os.environ)            # the checks come BEFORE Django: its setup queries
         guards.check_database_url(os.environ.get(guards.DB_ENV))
         setup_django()
-        run_replay(args, env=os.environ)
+        result = run_replay(args, env=os.environ)
     except SystemExit:
         raise
     except BaseException as exc:                        # by class name only, never the message
         emit({'event': 'fatal', **error_record(exc)})
         return 3
-    return 0
+    return replay_exit_code(result)
 
 
 if __name__ == '__main__':

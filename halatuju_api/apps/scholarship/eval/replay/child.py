@@ -13,7 +13,8 @@ THE HUMAN LENS (LL5 phase C1), only when the parent set `HUMAN_LENS_ENV` (the `n
 the engines, still inside the session and the network refusal, after `clock.preload()`, outside the
 engines' pinned clock (the lens pins its own per case) and outside any document snapshot, it runs
 `lens_human_rows.run_human_lens_on_database` with the run's instant as ``now``. Its counts and codes
-(never scrubbed: the scrubber has no codes for them) go to `HUMAN_LENS_FILE` beside ``--out``.
+(never scrubbed: the scrubber has no codes for them) go to `HUMAN_LENS_FILE` beside ``--out``, only after
+they pass the allow-list (`lens_result_schema`); else that file holds exactly ``{"error": "schema"}``.
 """
 import argparse
 import datetime
@@ -21,7 +22,7 @@ import json
 import os
 import sys
 
-from . import clock, guards, netguard
+from . import clock, guards, lens_result_schema, netguard
 from .scrub import error_record, scrub, use_salt
 
 TREE_OF = {'old': 'old', 'new': 'new', 'new_again': 'new'}
@@ -107,13 +108,17 @@ def human_lens_settings(env, side):
 
 def write_human_lens(lens, *, now, path):
     """The lens's counts and codes as one JSON file at ``path`` (``{"error": "<ClassName>"}`` if it
-    raised a caught error). Call inside the session, outside any pinned clock or document snapshot."""
+    raised a caught error, by the nearest of `lens_result_schema.LENS_ERROR_CLASSES`). The file skips the
+    scrubber, so what is written must first pass the allow-list (`lens_result_schema`); anything that
+    does not is written as exactly ``{"error": "schema"}``. Call inside the session, outside any pinned
+    clock or document snapshot."""
     from .lens_human_rows import run_human_lens_on_database
     folder, freeze = lens
     try:
-        text = json.dumps(run_human_lens_on_database(folder, now, freeze=freeze), sort_keys=True)
+        result = run_human_lens_on_database(folder, now, freeze=freeze)
     except _LENS_ERRORS as exc:
-        text = json.dumps({'error': type(exc).__name__})
+        result = {'error': lens_result_schema.lens_error_name(exc)}
+    text = lens_result_schema.checked_result_text(result)
     with open(path, 'w', encoding='utf-8') as fh:
         fh.write(text)
 
