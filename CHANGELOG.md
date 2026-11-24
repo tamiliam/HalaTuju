@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### LL5 phase B2a - the replay's human lens: two frozen exams and their score (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. New pure module `eval/replay/lens_human.py` (nothing calls it yet): exam-1 (50 full-context cases, frozen) and exam-old (cases decided before LL4, labelled weaker), a write-once exam file outside any git repository, key-check refusals, and the score through `ai_score` with the extra line "score without interview Fails"; counts only, never an id or a key (decisions.md).
+
 ### LL5 phase B1 - the replay's fingerprint key: one-way derived, never SECRET_KEY (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Services: api (no change in behaviour) and the replay job only.
