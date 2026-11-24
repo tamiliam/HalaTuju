@@ -72,6 +72,8 @@ shown or saved:
 gcloud secrets create halatuju-replay-fingerprint-key --replication-policy=automatic --data-file=- --account tamiliam@gmail.com --project gen-lang-client-0871147736
 ```
 
+> **Never run this command on its own. It waits for typed input. If you type or paste the key, the key shows on the screen. The Enter key then adds a new line, and that stored value stops every run (exit 3). The value must come in through a pipe, from the helper. The helper is not built.**
+
 Give the replay's service account read access to this one secret:
 
 ```
@@ -100,7 +102,10 @@ run the job with the lens until the home of the exam file is decided.
   settings, before any child starts, prints one fatal line (`ImproperlyConfigured`, the class name
   only) and exits with code 3. This happens with the lens off too, because the parent loads the
   variable on every run once the secret is mounted. Absent or empty, it runs key-free and every
-  fingerprint mismatches; with the lens on, exam-1 is then refused with `key_blank` and the job exits 0.
+  fingerprint mismatches; with the lens on, exam-1 gets no score and the job still exits 0. If an
+  exam-1 file exists (or a freeze run has enough candidate cases), the block says "not run:
+  key_blank". Otherwise it says "not run: exam_missing" or "the exam is not frozen yet". Read the
+  block, not the exit code.
 - **A second create fails.** Running the `gcloud secrets create` command above a second time fails
   with "already exists". To replace a wrong value, the owner adds a new version, with the value again
   coming in on standard input:
@@ -108,6 +113,8 @@ run the job with the lens until the home of the exam file is decided.
 ```
 gcloud secrets versions add halatuju-replay-fingerprint-key --data-file=- --account tamiliam@gmail.com --project gen-lang-client-0871147736
 ```
+
+> **Never run this command on its own. It waits for typed input. If you type or paste the key, the key shows on the screen. The Enter key then adds a new line, and that stored value stops every run (exit 3). The value must come in through a pipe, from the helper. The helper is not built.**
 
 - **A wrong but well-shaped key** (64 hex characters made from a wrong input) is not caught here. The
   replay's human lens (built in LL5) compares the key's 8-character key check with the `key_check`

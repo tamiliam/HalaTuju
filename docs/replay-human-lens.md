@@ -79,7 +79,7 @@ The job's exit codes:
 
 | Exit code | Meaning |
 |-----------|---------|
-| 0 | The run finished. This does NOT mean pass. Read the block. A refusal also exits 0. For example, a missing or blank fingerprint key gives exam-1 the refusal `key_blank`: exit 0, but the exam did not run. |
+| 0 | The run finished. This does NOT mean pass. Read the block. A refusal also exits 0. For example, with a missing or blank fingerprint key exam-1 gets no score, and the exit code is still 0. The block says "not run: key_blank" if an exam-1 file exists (or a freeze run has enough candidate cases). Otherwise it says "not run: exam_missing" or "the exam is not frozen yet". |
 | 2 | An argument error. Nothing ran. |
 | 3 | A fatal error. There is no block. A fingerprint key that is set but is not 64 hex characters (a newline or a space in it, for example) is one: the job stops at its set-up, before any child starts. |
 | 4 | A lens or coach-grade error, or a report that could not be shown. |
@@ -208,7 +208,7 @@ The three lines, word for word:
 
 ## When a result blocks the next release
 
-**A missing key is a refusal, and a refusal exits 0; read the block, not the exit code.**
+**With no key there is no exam-1 score, and the exit code is still 0; read the block, not the exit code.** The block says "not run: key_blank" if an exam-1 file exists (or a freeze run has enough candidate cases). Otherwise it says "not run: exam_missing" or "the exam is not frozen yet".
 
 These lines carry the word BLOCKING:
 
