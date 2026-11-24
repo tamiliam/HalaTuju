@@ -557,17 +557,29 @@ class TestMalformedRecords(SimpleTestCase):
         records = good + [bad_evidence, bad_unresolved, bad_snapshot, bad_instant, bad_date, not_a_record]
         report = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
         self.assertEqual((report['malformed_records'], report['decided_records']), (6, 90))
+        self.assertEqual(report['malformed_by_error'], {'TypeError': 4, 'not_a_datetime': 2})
         clean = coach_grade.coach_report(good, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
         report.pop('malformed_records')
-        self.assertEqual(clean.pop('malformed_records'), 0)
+        report.pop('malformed_by_error')
+        self.assertEqual((clean.pop('malformed_records'), clean.pop('malformed_by_error')), (0, {}))
         self.assertEqual(report, clean)   # nothing of a malformed record reaches any figure
         dump = json.dumps(report)
         self.assertNotIn('SENTINEL', dump)
         self.assertIn('"v2"', dump)
 
     def test_an_undecided_record_is_not_malformed(self):
-        report = coach_grade.coach_report([one(CERTAIN, 'pass', when=None), (5, 'x', 'v1')])
-        self.assertEqual((report['malformed_records'], report['decided_records']), (0, 0))
+        report = coach_grade.coach_report([one(CERTAIN, 'pass', when=None), one(CERTAIN, 'pass', when=None)[:4]])
+        self.assertEqual((report['malformed_records'], report['decided_records'], report['malformed_by_error']),
+                         (0, 0, {}))
+
+    def test_a_record_of_fewer_than_four_fields_is_malformed(self):
+        good = many([(CERTAIN, 'pass', 5)])
+        short = [(), (5, 'x', 'v1'), 'abc', {}, one(CERTAIN, 'pass')[:3]]
+        report = coach_grade.coach_report(good + short)
+        self.assertEqual((report['malformed_records'], report['decided_records'], report['malformed_by_error']),
+                         (5, 5, {'too_short': 5}))
+        self.assertEqual(report, dict(coach_grade.coach_report(good), malformed_records=5,
+                                      malformed_by_error={'too_short': 5}))
 
     def test_a_record_of_four_or_five_fields_is_read_like_a_full_one(self):
         full = many([(CERTAIN, 'pass', 5)])
@@ -583,7 +595,8 @@ class TestMalformedRecords(SimpleTestCase):
         records = good + [one(CERTAIN, 'pass', 'SENTINEL-EDGE', when) for when in edges]
         for leave_out in ((), coach_grade.INTERVIEW_FAILS):
             report = coach_grade.coach_report(records, leave_out_reasons=leave_out)
-            self.assertEqual((report['malformed_records'], report['decided_records']), (4, 5), leave_out)
+            self.assertEqual((report['malformed_records'], report['decided_records'], report['malformed_by_error']),
+                             (4, 5, {'OverflowError': 4}), leave_out)
             self.assertEqual([(m['version'], m['month'], m['facts']) for m in report['months']],
                              [('v1', '2026-03', 5)])
             self.assertNotIn('SENTINEL', json.dumps(report))
@@ -609,8 +622,89 @@ class TestMalformedRecords(SimpleTestCase):
         odd = [one(CERTAIN, 'pass', when=datetime.datetime(2026, 3, 2, 3, tzinfo=zone()))
                for zone in (NoOffset, RaisingOffset, TextOffset, DayLongOffset)]
         report = coach_grade.coach_report(good + odd)
-        self.assertEqual((report['malformed_records'], report['decided_records']), (4, 5))
-        self.assertEqual(report, dict(coach_grade.coach_report(good), malformed_records=4))
+        kinds = {'TypeError': 1, 'ValueError': 2, 'no_offset': 1}
+        self.assertEqual((report['malformed_records'], report['decided_records'], report['malformed_by_error']),
+                         (4, 5, kinds))
+        self.assertEqual(report, dict(coach_grade.coach_report(good), malformed_records=4,
+                                      malformed_by_error=kinds))
+
+    def test_any_ordinary_error_from_a_zone_is_malformed(self):
+        class Raising(datetime.tzinfo):
+            def __init__(self, error):
+                self.error = error
+
+            def utcoffset(self, dt):
+                raise self.error
+
+        good = many([(CERTAIN, 'pass', 5)])
+        zones = (datetime.tzinfo(),   # the base class: its utcoffset raises NotImplementedError
+                 Raising(RuntimeError('CANARY-ZONE-R7')), Raising(ZeroDivisionError('CANARY-ZONE-Z8')))
+        odd = [one(CERTAIN, 'pass', when=datetime.datetime(2026, 3, 2, 3, tzinfo=zone)) for zone in zones]
+        kinds = {'NotImplementedError': 1, 'RuntimeError': 1, 'ZeroDivisionError': 1}
+        report = coach_grade.coach_report(good + odd)
+        self.assertEqual(report, dict(coach_grade.coach_report(good), malformed_records=3,
+                                      malformed_by_error=kinds))
+        self.assertNotIn('CANARY', repr(report))
+
+    def test_a_record_whose_length_or_fields_raise_is_malformed(self):
+        class SixThatRaise:
+            def __len__(self):
+                return 6
+
+            def __getitem__(self, i):
+                raise IndexError('CANARY-ITEM-I4')
+
+        class NoLength:
+            def __len__(self):
+                raise RuntimeError('CANARY-LEN-L2')
+
+        good = many([(CERTAIN, 'pass', 5)])
+        report = coach_grade.coach_report(good + [SixThatRaise(), NoLength(), None])
+        kinds = {'IndexError': 1, 'RuntimeError': 1, 'TypeError': 1}
+        self.assertEqual(report, dict(coach_grade.coach_report(good), malformed_records=3,
+                                      malformed_by_error=kinds))
+        self.assertNotIn('CANARY', repr(report))
+
+    def test_a_datetime_subclass_cannot_break_the_order(self):
+        class Hostile(datetime.datetime):
+            def __lt__(self, other):
+                raise RuntimeError('CANARY-LT')
+
+            __gt__ = __le__ = __ge__ = __lt__
+
+        # two rows of one version: the first-instant comparison runs on rebuilt PLAIN times
+        records = (many([(CERTAIN, 'pass', 7)], 'v2', Hostile(2026, 3, 15, 3, 0))
+                   + many([(CERTAIN, 'pass', 5)], 'v1', Hostile(2026, 3, 31, 17, 0, tzinfo=UTC))
+                   + many([(CERTAIN, 'pass', 6)], 'v1', Hostile(2026, 3, 1, 3, 0, tzinfo=UTC)))
+        report = coach_grade.coach_report(records)
+        # 31 Mar 17:00 UTC is 1 Apr in Malaysia; v1 first decided 1 Mar, before v2 (15 Mar)
+        self.assertEqual([(m['version'], m['month'], m['facts']) for m in report['months']],
+                         [('v1', '2026-03', 6), ('v1', '2026-04', 5), ('v2', '2026-03', 7)])
+        self.assertEqual((report['malformed_records'], report['malformed_by_error']), (0, {}))
+
+    def test_malformed_kinds_add_up_and_never_carry_a_message(self):
+        class Canary(Exception):
+            pass
+
+        class RaisingZone(datetime.tzinfo):
+            def utcoffset(self, dt):
+                raise Canary('CANARY-MESSAGE-K5')
+
+        good = many([(CERTAIN, 'pass', 45)], 'v1', EARLY) + many([(PROBABLE, 'pass', 45)], 'v2', LATER)
+        bad = [(), 'ab', one(CERTAIN, 'pass', 'v2', '2026-04-06'),
+               one(CERTAIN, 'pass', 'v2', datetime.datetime(2026, 4, 6, tzinfo=RaisingZone())),
+               one(CERTAIN, 'pass', 'v2', datetime.datetime.max),
+               (5, {'identity': 'pass'}, 'v2', LATER, BY, ROW_ID)]
+        kinds = {'Canary': 1, 'OverflowError': 1, 'TypeError': 1, 'not_a_datetime': 1, 'too_short': 2}
+        plain = coach_grade.coach_report(good + bad)
+        lined = coach_grade.coach_report(good + bad, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
+        for report in (plain, lined):
+            self.assertEqual(report['malformed_by_error'], kinds)
+            self.assertEqual(list(report['malformed_by_error']), sorted(kinds))
+            self.assertEqual(sum(report['malformed_by_error'].values()), report['malformed_records'])
+            self.assertNotIn('CANARY', repr(report))
+            json.dumps(report)
+        self.assertEqual(coach_grade.coach_report(good)['malformed_by_error'], {})
 
     def test_a_bug_in_a_helper_is_not_swallowed(self):
         # The catch wraps only the reads of a record's own values: a helper that breaks must RAISE,
@@ -621,6 +715,18 @@ class TestMalformedRecords(SimpleTestCase):
                 with self.assertRaises(TypeError, msg=helper):
                     coach_grade.coach_report(records)
         self.assertEqual(coach_grade.coach_report(records)['malformed_records'], 0)
+
+    def test_any_error_after_the_row_is_built_raises(self):
+        # Only the read block is wide: an ordinary error in the tally or the grade maths is a bug.
+        # Coverage 45/45 then 43/45 moves the wrong way, so the Fisher test runs; its chance (990/4005)
+        # is over 1/20, so the score comparison runs too.
+        records = (many([(CERTAIN, 'pass', 45)], 'v1', EARLY)
+                   + many([(PROBABLE, 'pass', 43), (UNSURE, 'pass', 2)], 'v2', LATER))
+        for helper in ('_plain_tally', '_new_side_tail', '_score_change', '_coach_verdict'):
+            with mock.patch.object(coach_grade, helper, side_effect=RuntimeError('a helper bug')):
+                with self.assertRaises(RuntimeError, msg=helper):
+                    coach_grade.coach_report(records)
+        self.assertEqual(len(coach_grade.coach_report(records)['coach']), 1)
 
     def test_odd_version_labels_never_raise(self):
         class OddText(str):
@@ -768,11 +874,11 @@ class TestLeaveOutChangesNothingButItsLine(SimpleTestCase):
 
     def test_the_report_with_a_leave_out_is_the_plain_report_plus_lines(self):
         plain = coach_grade.coach_report(mixed_records())
-        docs = coach_grade.coach_report(mixed_records(), leave_out_reasons=('interview_differs',))
-        self.assertEqual(without_extra_lines(docs), without_extra_lines(plain))
-        self.assertEqual((plain['left_out_reasons'], docs['left_out_reasons']), ([], ['interview_differs']))
+        left_out = coach_grade.coach_report(mixed_records(), leave_out_reasons=('interview_differs',))
+        self.assertEqual(without_extra_lines(left_out), without_extra_lines(plain))
+        self.assertEqual((plain['left_out_reasons'], left_out['left_out_reasons']), ([], ['interview_differs']))
         self.assertNotIn('without_left_out', json.dumps(plain))
-        self.assertEqual(lines(docs), [
+        self.assertEqual(lines(left_out), [
             ('a', '2026-03', {'too_few': False, 'facts': 6, 'points': 12, 'best': 12, 'score_pct': 100,
                               'left_out': 0}),
             ('b', '2026-03', {'too_few': False, 'facts': 43, 'points': 43, 'best': 86, 'score_pct': 50,
@@ -792,16 +898,16 @@ class TestLeaveOutChangesNothingButItsLine(SimpleTestCase):
                    + [one(RULE_NOT_MET, 'pass', 'v1', at(2)), one(PROBABLE, 'fail', 'v1', at(2), 'proof_missing')]
                    + many([(CERTAIN, 'pass', 5)], 'v1', at(3)))
         plain = coach_grade.coach_report(records)
-        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
+        left_out = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
         want = [('2026-01', False, 5, -2), ('2026-02', True, None, None), ('2026-03', False, 5, 10)]
-        for report in (plain, docs):
+        for report in (plain, left_out):
             self.assertEqual([(m['month'], m['too_few'], m.get('facts'), m.get('points'))
                               for m in report['months']], want)
-        self.assertEqual(without_extra_lines(docs), without_extra_lines(plain))
-        self.assertEqual([m.get('without_left_out') for m in docs['months']],
+        self.assertEqual(without_extra_lines(left_out), without_extra_lines(plain))
+        self.assertEqual([m.get('without_left_out') for m in left_out['months']],
                          [{'too_few': True}, None, {'too_few': False, 'facts': 5, 'points': 10, 'best': 10,
                                                     'score_pct': 100, 'left_out': 0}])
-        self.assertEqual(docs['waiting'], [{'version': 'v1', 'too_few': False, 'facts': 12, 'score_pct': -21,
+        self.assertEqual(left_out['waiting'], [{'version': 'v1', 'too_few': False, 'facts': 12, 'score_pct': -21,
                                             'coverage': {'count': 12, 'of': 12},
                                             'generous_wrong': {'count': 2, 'of': 12},
                                             'without_left_out': {'too_few': False, 'facts': 11, 'points': 5,
@@ -863,8 +969,8 @@ class TestTheExtraLine(SimpleTestCase):
         records = many(old, 'old', EARLY) + many(new, 'next', LATER)
         plain = coach_grade.coach_report(records)['coach'][0]
         self.assertEqual((plain['grade'], plain['reasons']), ('fail', ['generous_wrong_rose']))
-        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
-        pair = docs['coach'][0]
+        left_out = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
+        pair = left_out['coach'][0]
         self.assertEqual((pair['grade'], pair['reasons'], pair['new']['facts'], pair['new']['generous_wrong']),
                          ('fail', ['generous_wrong_rose'], 45, {'count': 5, 'of': 45}))
         # the line shows the score both ways: without the five interview Fails it is 80/80
@@ -875,8 +981,8 @@ class TestTheExtraLine(SimpleTestCase):
 
     def test_a_side_under_five_left_shows_a_too_few_line(self):
         records = many([(CERTAIN, 'pass', 3), (CERTAIN, 'fail', 3, 'interview_differs')], 'v1', EARLY)
-        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
-        self.assertEqual(docs['waiting'], [{'version': 'v1', 'too_few': False, 'facts': 6, 'score_pct': -200,
+        left_out = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
+        self.assertEqual(left_out['waiting'], [{'version': 'v1', 'too_few': False, 'facts': 6, 'score_pct': -200,
                                             'coverage': {'count': 6, 'of': 6},
                                             'generous_wrong': {'count': 3, 'of': 6},
                                             'without_left_out': {'too_few': True}}])
@@ -909,10 +1015,10 @@ class TestTheExtraLine(SimpleTestCase):
         snapshot = [band_fact(f, CERTAIN) for f in FACTS]
         records = [(snapshot, verdict, 'v1', EARLY, BY, ROW_ID)] * 2
         plain = coach_grade.coach_report(records)['months'][0]
-        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)['months'][0]
+        left_out = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)['months'][0]
         self.assertEqual((plain['facts'], plain['points'], plain['best']), (8, -32, 16))
-        self.assertEqual((docs['facts'], docs['points'], docs['best']), (8, -32, 16))
-        self.assertEqual(docs['without_left_out'], {'too_few': False, 'facts': 6, 'points': -12, 'best': 12,
+        self.assertEqual((left_out['facts'], left_out['points'], left_out['best']), (8, -32, 16))
+        self.assertEqual(left_out['without_left_out'], {'too_few': False, 'facts': 6, 'points': -12, 'best': 12,
                                                   'score_pct': -100, 'left_out': 2})
         self.assertEqual(verdict['identity'], 'fail')   # the caller's record is not changed
 

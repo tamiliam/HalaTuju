@@ -24,16 +24,27 @@ THE MIRROR CLAIM, in three parts:
   `ai_score`.
 
 INPUT RULES. A ``verdict_decided_at`` with no zone is read as UTC (what Django stores). A record with
-fewer than four fields has no decided time, so it is NOT decided (dropped, not counted as malformed); a
-record of four or five fields is read like a full one (fields five and six are never read).
+fewer than four fields is MALFORMED (``too_short``). A record of four or five fields is read like a full
+one (fields five and six are never read). A record whose ``verdict_decided_at`` is None is NOT decided:
+dropped, not malformed.
 
-MALFORMED RECORDS never raise. A record that has no length or whose fields cannot be read, a decided
-time that cannot be placed in a Malaysia month (not a datetime; a zone whose offset is None or raises;
-the edge of the calendar, where the move to UTC or to Malaysia time overflows), or a record whose facts
-the shared reader cannot read (for example a number where the snapshot or its evidence should be) is
-left out and only counted, in ``malformed_records``: no id, no text. The catch wraps only those reads of
-the record's own values (TypeError, ValueError, AttributeError, KeyError, and OverflowError for the
-time), never the module's own helpers: a bug in a helper raises.
+MALFORMED RECORDS. Any ordinary error (`Exception`) while reading a record's fields or its decided time
+means the record is left out and counted in ``malformed_records``; an error anywhere else in the report
+(apart from the four error types of the shared facts reader, below) is a bug and is raised. Left out and
+counted: a record with fewer than four fields, with no length, or with a field that cannot be read; a
+decided time that is not a datetime, or that cannot be placed on the calendar (its zone gives no offset
+or raises; the move to UTC or to Malaysia time overflows at the edge of the calendar); a record whose
+facts the shared reader cannot read (TypeError, ValueError, AttributeError or KeyError from `ai_score.decided_facts`,
+for example a number where the snapshot or its evidence should be; any other error there raises). The
+decided time is rebuilt as a plain UTC datetime inside the read, so a datetime subclass never reaches a
+comparison or a sort. Not caught anywhere: errors that are not `Exception` (KeyboardInterrupt,
+SystemExit).
+
+``malformed_by_error`` counts the same records by KIND, ``{kind: count}`` sorted by kind, empty when
+none; the counts add up to ``malformed_records``. A kind is a fixed label when no error was raised
+(``too_short``, ``not_a_datetime``, ``no_offset``) or the caught error's CLASS NAME (never its message,
+never a value of the record). A kind you do not expect (for example ``NameError``) means a bug, not bad
+data.
 
 THE FLOOR OF 5 (``CELL_MIN_FACTS``) IS A SMALL-NUMBER GUARD, NOT A SECRECY RULE. A month cell or a side
 with fewer than 5 marked facts shows ``too_few`` and no figures, so that nobody reads a percent off a
@@ -141,12 +152,28 @@ _SCORE_GRADE = {SCORE_UP: PASS, NO_CLEAR_CHANGE: NO_CHANGE, SCORE_DOWN: FAIL}
 
 _GENEROUS_BANDS = frozenset({CERTAIN, PROBABLE})
 _DIGITS = re.compile(r'(\d+)')
-#: What the shared reader can raise on a malformed record; caught around ONE record's reads only.
+_UTC = datetime.timezone.utc
+#: What the shared facts reader can raise on a malformed record; caught around that ONE call only.
 _READ_ERRORS = (TypeError, ValueError, AttributeError, KeyError)
-#: What reading and placing a record's decided time can raise: the same, plus OverflowError at the
-#: edge of the calendar (year 1 or 9999 pushed past the edge by the move to UTC or to Malaysia time).
-_TIME_ERRORS = _READ_ERRORS + (OverflowError,)
-_MALFORMED = object()
+#: The fixed ``malformed_by_error`` kinds of a record left out with no error raised (lower_snake_case,
+#: never an error class name): fewer than four fields; a decided time that is not a datetime; a zone
+#: whose offset is None.
+TOO_SHORT, NOT_A_DATETIME, NO_OFFSET = 'too_short', 'not_a_datetime', 'no_offset'
+MALFORMED_LABELS = (TOO_SHORT, NOT_A_DATETIME, NO_OFFSET)
+
+
+class _Malformed:
+    """A record left out: ``kind`` is a fixed label or an error's class name, never a record value."""
+    __slots__ = ('kind',)
+
+    def __init__(self, kind: str):
+        self.kind = kind
+
+
+def _error_kind(exc) -> str:
+    """The class name of a caught error as plain text: never its message, never a value of the record.
+    `type`'s own ``__name__`` (a metaclass cannot dress it up) and `str`'s own copy (no text subclass)."""
+    return str.__str__(type.__dict__['__name__'].__get__(type(exc)))
 
 
 def _left_out_codes(leave_out_reasons) -> frozenset:
@@ -206,43 +233,49 @@ def _natural(label: str) -> tuple:
 
 
 def _decided_row(record):
-    """One record as a row, None when undecided, ``_MALFORMED`` when its fields, its decided time or its
-    facts cannot be read. Only TWO blocks sit inside a catch, and both read the record's own values: (i)
-    its fields and its decided time, checked and placed in UTC and in Malaysia time; (ii) the shared
-    facts reader. The version key and everything after it work on values this module made, outside any
-    catch, so a bug there raises instead of marking every record malformed."""
+    """One record as a row, None when undecided, a `_Malformed` when its fields, its decided time or its
+    facts cannot be read. Only TWO blocks sit inside a catch: (i) the reads of the caller's objects (the
+    length, the fields, the datetime check, the zone's offset, the moves to UTC and to Malaysia time),
+    where ANY ordinary error (`Exception`) means malformed; (ii) the shared facts reader, its four error
+    types only. The decided time leaves block (i) rebuilt as a PLAIN UTC datetime, so no datetime
+    subclass reaches a comparison or a sort. The version key and everything after it work on values this
+    module made, outside any catch, so a bug there raises instead of marking every record malformed."""
     try:
-        instant = record[3] if len(record) > 3 else None
-        if instant is None:
+        if len(record) < 4:
+            return _Malformed(TOO_SHORT)
+        when = record[3]
+        if when is None:
             return None
-        if not isinstance(instant, datetime.datetime):
-            return _MALFORMED
-        if instant.tzinfo is None:   # a naive instant is read as UTC (what Django stores)
-            instant = instant.replace(tzinfo=datetime.timezone.utc)
-        elif instant.utcoffset() is None:   # a zone that cannot say its offset: not a placeable time
-            return _MALFORMED
-        instant = instant.astimezone(datetime.timezone.utc)   # the edge of the calendar overflows here
-        local = instant.astimezone(MALAYSIA)                  # ... or here
+        if not isinstance(when, datetime.datetime):
+            return _Malformed(NOT_A_DATETIME)
+        if when.tzinfo is None:   # a naive time is read as UTC (what Django stores)
+            when = when.replace(tzinfo=_UTC)
+        elif when.utcoffset() is None:   # a zone that does not say its offset: not a placeable time
+            return _Malformed(NO_OFFSET)
+        when = when.astimezone(_UTC)   # the edge of the calendar overflows here
+        instant = datetime.datetime(when.year, when.month, when.day, when.hour, when.minute, when.second,
+                                    when.microsecond, tzinfo=_UTC)
+        local = instant.astimezone(MALAYSIA)   # ... or here
         snapshot, verdict, raw_version = record[0], record[1], record[2]
-    except _TIME_ERRORS:
-        return _MALFORMED
+    except Exception as exc:   # wide on purpose: only the caller's objects are read in this block
+        return _Malformed(_error_kind(exc))
     try:
         ai_score.decided_facts(snapshot, verdict)
-    except _READ_ERRORS:
-        return _MALFORMED
+    except _READ_ERRORS as exc:
+        return _Malformed(_error_kind(exc))
     key = _version_key(raw_version)
     return instant, key, f'{local.year:04d}-{local.month:02d}', (snapshot, verdict, key[0])
 
 
 def _decided_rows(records):
-    """``([(UTC instant, (label, unknown), month, (snapshot, verdict, label))], malformed count)``, one
-    row per DECIDED record. Only the first three fields of a record go on; who decided and the row id
-    stop here."""
-    rows, malformed = [], 0
+    """``([(UTC instant, (label, unknown), month, (snapshot, verdict, label))], {malformed kind:
+    count})``, one row per DECIDED record. Only the first three fields of a record go on; who decided and
+    the row id stop here."""
+    rows, malformed = [], {}
     for record in records:
         row = _decided_row(record)
-        if row is _MALFORMED:
-            malformed += 1
+        if isinstance(row, _Malformed):
+            malformed[row.kind] = malformed.get(row.kind, 0) + 1
         elif row is not None:
             rows.append(row)
     return rows, malformed
@@ -385,7 +418,8 @@ def coach_report(records, leave_out_reasons=()) -> dict:
     """The monthly score and the coach grade over ``records`` (F4's 6-tuples), JSON-safe, counts only:
 
     ``{cell_min_facts, coach_min_facts, guard_alpha: {count, of}, score_z, left_out_reasons: [code],
-    decided_records, malformed_records, versions_without_marks, months: [cell], coach: [{previous: side,
+    decided_records, malformed_records, malformed_by_error: {kind: count}, versions_without_marks,
+    months: [cell], coach: [{previous: side,
     new: side, grade, reasons: [code], skipped_versions}], waiting: [side]}``.
 
     A cell is ``{version, unknown_version, month, too_few}`` plus, when not too_few, ``facts, points,
@@ -415,5 +449,6 @@ def coach_report(records, leave_out_reasons=()) -> dict:
     return {'cell_min_facts': CELL_MIN_FACTS, 'coach_min_facts': COACH_MIN_FACTS,
             'guard_alpha': {'count': GUARD_ALPHA.numerator, 'of': GUARD_ALPHA.denominator},
             'score_z': SCORE_Z, 'left_out_reasons': sorted(leave_out), 'decided_records': len(rows),
-            'malformed_records': malformed, 'versions_without_marks': len(first_seen) - len(marked),
+            'malformed_records': sum(malformed.values()), 'malformed_by_error': dict(sorted(malformed.items())),
+            'versions_without_marks': len(first_seen) - len(marked),
             'months': months, 'coach': coach, 'waiting': waiting}
