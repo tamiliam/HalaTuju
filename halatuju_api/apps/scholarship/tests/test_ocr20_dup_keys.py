@@ -101,10 +101,10 @@ class AKeyNamedTwiceRefusesTheFile(SimpleTestCase):
         from apps.scholarship import pdf_dict_keys
         from apps.scholarship.pdf_layer_guards import OverBudget
         pdf = PROBES['e1_d2_sticker']
-        with self.assertRaisesRegex(OverBudget, 'a key named twice'):
+        with self.assertRaisesRegex(OverBudget, 'may read differently'):
             pdf_pages._open_pdf(pdf)
         self.assertEqual(PdfReader(io.BytesIO(pdf)).pages[0].extract_text().strip(), '')  # pypdf: the FIRST /Contents
-        self.assertEqual(pdf_dict_keys.DUPLICATE_KEY_WARNING, 'Multiple definitions in dictionary')
+        self.assertIs(pdf_dict_keys.CHECKS_ON, True)
 
     def test_anywhere_in_the_file_and_identical_values_too(self):
         cases = {
@@ -148,12 +148,12 @@ class AKeyNamedTwiceRefusesTheFile(SimpleTestCase):
 
 
 class PdfiumJudgesABlankPageToo(SimpleTestCase):
-    """Fix 2 on its own: the repeated-key refusal is switched off (its warning text never matches)."""
+    """Fix 2 on its own: the gate's dictionary checks are switched off (`pdf_dict_keys.CHECKS_ON`)."""
 
     def test_the_probes_are_hidden_by_pdfium(self):
         from apps.scholarship import pdf_dict_keys
         for name, pdf in PROBES.items():
-            with self.subTest(name), patch.object(pdf_dict_keys, 'DUPLICATE_KEY_WARNING', '\x00never'):
+            with self.subTest(name), patch.object(pdf_dict_keys, 'CHECKS_ON', False):
                 self.assertFalse(_drawn(pdf))
                 self.assertEqual(_texts(pdf), ['', PAGE_TWO])
 

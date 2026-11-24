@@ -20,6 +20,7 @@ from typing import NamedTuple, Optional
 
 from . import pdf_pdfium_check, pdf_render_check, pdfium_run, pdfium_worker
 from .pdf_annots import MAX_DOC_ANNOTS, annots_hide
+from .pdf_dict_keys import content_meter
 from .pdf_layer_guards import (_MAX_DOC_FONT_COST, GateReader, OverBudget as _OverBudget, _doc_may_switch_off,
                                bad_operands, charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check,
                                shown_chars)
@@ -219,7 +220,8 @@ def _parsed_ops(content, reader, cache: dict, budget: _Budget):
         if _LONG_BARE.search(data) or _LONG_ANGLED.search(data) or longest_literal(data) > _MAX_TOKEN_BYTES:
             raise _OverBudget('a token past the size limit of one PDF')
         raw_state_check(data, len(_INLINE_IMAGE.findall(data)))      # fix round 5: raises (hidden), unparsed
-        hit[3] = stream.operations
+        with content_meter(reader):       # OCR-20 r2: its dictionaries, arrays and names checked as read
+            hit[3] = stream.operations
         cache[id(content)] = hit
     else:
         _charge(budget, hit[2])

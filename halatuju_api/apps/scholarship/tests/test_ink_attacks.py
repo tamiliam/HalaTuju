@@ -340,13 +340,13 @@ class TheReviewRound1Attacks(SimpleTestCase):
         self.assertIs(pdf_ink.page1_ink(data)['annots_ok'], False)
 
     def test_optional_content_and_xfa(self):
-        for mode, label in (('ocimage', 'page:optional'), ('xfa', 'page:xfa')):
-            with self.subTest(mode=mode):
-                self._refused(build_r1(mode), label)
-        data = build_r1('ocmark')                   # S-visible 1 may refuse it first; the child flags it too
-        self.assertIsNone(_read(data)[0])
         from apps.scholarship import pdf_ink
-        self.assertIs(pdf_ink.page1_ink(data)['optional'], True)
+        self._refused(build_r1('xfa'), 'page:xfa')
+        for mode in ('ocimage', 'ocmark'):     # OCR-20 r2: pdfium's paint check refuses an /OC image before the lane;
+            data = build_r1(mode)              # S-visible 1 may refuse ocmark first; the child flags both too
+            with self.subTest(mode=mode):
+                self.assertIsNone(_read(data)[0])
+                self.assertIs(pdf_ink.page1_ink(data)['optional'], True)
 
 
 def _with_type3(data, glyph: bytes, shown=b'BT /T3 9 Tf 30 30 Td (a) Tj ET'):

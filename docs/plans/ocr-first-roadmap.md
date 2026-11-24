@@ -96,7 +96,7 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 | OCR-17 | The remaining 2.5 cascade tails | S9 | To build |
 | OCR-18 | Switch on the rules lanes that pass Gate 1 (UMS first, then TNB and EPF) | (lane switch) | Added 23 Nov (owner: unpause); runs after OCR-12 |
 | OCR-19 | PISMP offer letters, rules first | (deferred in S2) | Added 23 Nov (owner: unpark); runs after OCR-14 |
-| OCR-20 | Annotations painting over text (the "sticker" gap) | OCR-12 review round 2 | Added 24 Nov (owner: new item, after OCR-12, before OCR-18 step 1); BUILT 24 Nov (d6b6e0ea9); review round 1 (25 Nov) fixed: a key named twice let pypdf and pdfium read different /Contents or /Annots (the file is now refused), pdfium now judges blank pages too, and the SPM `words` op checks its own page; awaits review round 2 |
+| OCR-20 | Annotations painting over text (the "sticker" gap) | OCR-12 review round 2 | Added 24 Nov (owner: new item, after OCR-12, before OCR-18 step 1); BUILT 24 Nov (d6b6e0ea9); review round 1 (25 Nov) fixed: a key named twice let pypdf and pdfium read different /Contents or /Annots (the file is now refused), pdfium now judges blank pages too, and the SPM `words` op checks its own page; review round 2 (25 Nov) fixed: pypdf's lenient dictionary, array and name reads (null key, skipped key, partial read, unclosed array, names of 128+ bytes) now refuse the file, and an XObject with /OC fails pdfium's paint check and the `words` op; awaits review round 3 |
 
 OCR-18 and OCR-19 were added on 23 Nov, and OCR-20 on 24 Nov, so their numbers do not show their run order. The run order below does.
 

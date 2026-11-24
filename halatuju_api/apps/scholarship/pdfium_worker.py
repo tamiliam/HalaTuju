@@ -62,7 +62,8 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
     """True when every text object pdfium places on the page paints, outside optional content, and (when pypdf
     found letters or digits there) pdfium places at least one text object. OCR-20: and every annotation pdfium
     lists on the page is a /Link with no /AP (`_plain_link`; each charged one object). Review round 1: ``blank``
-    (pypdf's text of the page is blank): pdfium must place NO text object at all."""
+    (pypdf's text of the page is blank): pdfium must place NO text object at all. Review round 2: and no XObject
+    the page draws carries /OC (`pdfium_type3.page_flags`, as `_op_ink`): an OC mark is not all optional content."""
     import pypdfium2.raw as raw
     page = pdf[index]
     try:
@@ -71,6 +72,8 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
         if budget[0] < 0:
             raise _OverObjects('past the pdfium page-object cap')
         if annots < 0 or not all(_plain_link(page.raw, k) for k in range(annots)):
+            return False
+        if _t3.page_flags(_DATA[0], index)[0]:     # OCR-20 r2: an XObject with /OC (an OCMD too), as `_op_ink`
             return False
         texts, todo = 0, [(page.raw, False, False)]          # (page or form object, is a form, under an OC mark)
         while todo:
@@ -299,7 +302,8 @@ def _op_words(pdf, req, blobs):
     """{words: [...]}: page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points).
     OCR-20 review round 1, its own backstop: NO words (``refused``) unless page 1 passes `_paints` strictly — every
     annotation a /Link with no /AP, every text object (forms' too) in a mode that paints (never 3 / 7) and under no
-    optional-content mark at all (any OC mark may be off), within `WORDS_MAX_OBJECTS`. The whole page is refused,
+    optional-content mark at all (any OC mark may be off) and no XObject with /OC (review round 2), within
+    `WORDS_MAX_OBJECTS`. The whole page is refused,
     not its hidden characters dropped: pdfium's text page (pypdfium2 4.30) does not say which object drew a character."""
     try:
         drawn = len(pdf) > 0 and _paints(pdf, 0, True, True, [WORDS_MAX_OBJECTS], frozenset())
@@ -539,7 +543,7 @@ def _main() -> int:
     from PIL import Image
     Image.preinit()                        # Pillow's PNG writer loaded before the memory cap is set
     import pypdfium2 as pdfium
-    if any(op.get('op') in ('layout', 'ink') for op in request['ops']):
+    if any(op.get('op') in ('layout', 'ink', 'paints', 'words') for op in request['ops']):   # OCR-20 r2: page_flags
         import pypdf  # noqa: F401  (loaded before the memory cap, like Pillow)
         _DATA[0] = data
     _limit_memory(int(request.get('memory') or 0))
