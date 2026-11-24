@@ -3,7 +3,8 @@ no settings read. Server only: no page and no job calls it yet (the replay job i
 later phase).
 
 The PLAYER is the model (engine) version, scored in marks. The COACH is the learning loop, graded on
-NEW cases only: each version is compared with the version before it, each on its OWN decided cases.
+NEW cases only: each version is compared with the gradeable version before it, each on its OWN decided
+cases.
 
 INPUT: the record shape F4's `prediction_metrics.metrics` sends `ai_score.score_marks`, a 6-tuple
 ``(ai_verdict_snapshot, officer_verdict, ai_verdict_engine_version, verdict_decided_at,
@@ -13,42 +14,61 @@ appear in an output: the output holds version labels, month labels, counts and f
 THE MIRROR CLAIM, in three parts:
 
 * VALUES - every mark is `ai_score`'s: each group of records goes through `ai_score.score_marks`, the
-  percent is `ai_score.percent`, and a band is read by `ai_score`'s own band reader (which is
-  `fact_bands.fact_band`). No points table, no band rule and no rounding is written here.
+  percent is `ai_score.percent`, and which facts count (with their band) is read by
+  `ai_score.decided_facts`, the reader `score_marks` itself uses. No points table, no band rule and no
+  rounding is written here.
 * ROWS - decided records only. This module itself drops any record whose ``verdict_decided_at`` is
   None, whatever the caller sent. A reject before interview carries no ``verdict_decided_at``, so it is
   out here exactly as it is out of F4's score.
-* EDGE - a cell (one version, one Malaysian month) with fewer than ``CELL_MIN_FACTS`` marked facts shows
-  only ``too_few`` (no %, no points, no outcome split). A record with no engine version goes to the
-  ``UNKNOWN_VERSION`` bucket: it gets a monthly line but is never graded. A decided fact with no band in
-  its snapshot is ``not_scored`` (counted, never marked), as in `ai_score`.
+* EDGE - nothing below ``CELL_MIN_FACTS`` marked facts is shown (owner ruling, request #69), and no
+  hidden figure can be worked out by subtraction: see MONTH CELLS. A decided fact with no band in its
+  snapshot is ``not_scored`` (counted, never marked), as in `ai_score`.
 
-THE COACH GRADE, per pair of consecutive versions (ordered by each version's first decided instant), in
-this order:
+VERSIONS. A label is stripped of whitespace. A blank label is ``UNKNOWN_VERSION``; the back-fill stamp
+`verdict_engine.PRE_VERSIONING` keeps its own label. Both are UNKNOWN: they get month cells with
+``unknown_version: True``, sort after the known versions, and are never graded nor waiting. Versions
+run by their first decided instant over all their decided records, ties by the NATURAL order of the
+label ('2026-11-15.9' before '2026-11-15.10'). A version with no marked fact at all gets no cell, no
+side and no place in the chain; it is counted in ``versions_without_marks``.
 
-1. ``not_enough`` when either side has fewer than ``COACH_MIN_FACTS`` marked facts.
-2. Guard 1, coverage must not drop: coverage = marked facts whose band is not Unsure / marked facts.
-3. Guard 2, generous-wrong must not rise: generous-wrong = marked facts the AI showed Certain or
+MONTH CELLS (one version): its Malaysian months, in order, are gathered into runs. Each month joins the
+current run; a run closes as soon as it holds ``CELL_MIN_FACTS`` or more marked facts. A last run that
+ends under the floor merges into the run before it. A cell carries ``month`` (the run's first month)
+and ``month_to`` (its last). If the whole version is under the floor it has ONE ``too_few`` cell with no
+figures. So a version's cells either all show figures, adding up exactly to its side, or are one
+``too_few`` cell beside a side with no figures.
+
+THE COACH CHAIN: the KNOWN versions with at least ``COACH_MIN_FACTS`` marked facts ("gradeable"), in
+version order. Each consecutive pair is graded, in this order:
+
+1. Guard 1, coverage must not drop: coverage = marked facts whose band is not Unsure / marked facts.
+2. Guard 2, generous-wrong must not rise: generous-wrong = marked facts the AI showed Certain or
    Probable that the reviewer failed / marked facts.
    Either guard broken = ``fail`` whatever the score, naming the guard(s).
-4. Else ``pass`` if the score went up, ``fail`` with ``score_not_up`` if not (a tie is not up).
+3. Else the score: up = ``pass`` (``score_up``), exactly equal = ``no_change`` (``score_same``), down =
+   ``fail`` (``score_down``).
 
 Every comparison is an exact fraction (integer cross-multiplication); the % shown is `ai_score.percent`.
+A pair's ``skipped_versions`` counts the known versions with marks, under the coach floor, that lie
+between its two sides. Every known version with marks under the floor is listed in ``waiting``.
 
 "DOCUMENTS ONLY" (``leave_out_reasons``, default empty = the plain score): a Fail whose recorded reason
-(`fail_reasons.given`) is in the set is left out entirely, counting in neither points nor best, in the
-monthly score and the coach grade alike. ``DOCUMENTS_ONLY`` leaves out ``interview_differs`` (the AI
-could not know it from documents). The owner has not yet decided whether the report shows that line.
+(`fail_reasons.given`) is in the set, on a fact that has a band (one that would have been scored), is
+left out entirely, counting in neither points nor best, in the month cells and the coach grade alike,
+and is counted in ``left_out``. A Fail with such a reason on a fact with NO band stays ``not_scored``
+and is not counted in ``left_out``. The variant builds its own runs from its own facts.
+``DOCUMENTS_ONLY`` leaves out ``interview_differs`` (the AI could not know it from documents). The
+owner has not yet decided whether the report shows that line.
 
 drift-test: halatuju_api/apps/scholarship/tests/test_coach_grade.py
 """
 from __future__ import annotations
 
 import datetime
+import re
 from zoneinfo import ZoneInfo
 
 from . import ai_score
-from .audit import FACTS
 from .fact_bands import CERTAIN, PROBABLE, UNSURE
 from .fail_reasons import CODES as FAIL_REASON_CODES
 from .fail_reasons import INTERVIEW_DIFFERS, given
@@ -63,19 +83,18 @@ COACH_MIN_FACTS = 40
 UNKNOWN_VERSION = '(unknown version)'
 DOCUMENTS_ONLY = (INTERVIEW_DIFFERS,)
 
-PASS, FAIL, NOT_ENOUGH = 'pass', 'fail', 'not_enough'
-GRADES = (PASS, FAIL, NOT_ENOUGH)
-PREVIOUS_TOO_FEW = 'previous_too_few'
-NEW_TOO_FEW = 'new_too_few'
+PASS, FAIL, NO_CHANGE = 'pass', 'fail', 'no_change'
+GRADES = (PASS, FAIL, NO_CHANGE)
 COVERAGE_DROPPED = 'coverage_dropped'
 GENEROUS_WRONG_ROSE = 'generous_wrong_rose'
 SCORE_UP = 'score_up'
-SCORE_NOT_UP = 'score_not_up'
+SCORE_SAME = 'score_same'
+SCORE_DOWN = 'score_down'
 #: The closed set of reason codes a coach grade can carry.
-REASON_CODES = (PREVIOUS_TOO_FEW, NEW_TOO_FEW, COVERAGE_DROPPED, GENEROUS_WRONG_ROSE, SCORE_UP,
-                SCORE_NOT_UP)
+REASON_CODES = (COVERAGE_DROPPED, GENEROUS_WRONG_ROSE, SCORE_UP, SCORE_SAME, SCORE_DOWN)
 
 _GENEROUS_BANDS = frozenset({CERTAIN, PROBABLE})
+_DIGITS = re.compile(r'(\d+)')
 
 
 def _left_out_codes(leave_out_reasons) -> frozenset:
@@ -86,16 +105,34 @@ def _left_out_codes(leave_out_reasons) -> frozenset:
     return codes
 
 
-def _without_left_out(verdict, leave_out: frozenset):
-    """``(verdict, facts left out)``: a copy without each Fail whose recorded reason is left out."""
+def _without_left_out(snapshot, verdict, leave_out: frozenset):
+    """``(verdict, facts left out)``: a copy without each Fail whose recorded reason is left out, on a
+    fact that has a band. A Fail with no band stays (it is ``not_scored``, never left out)."""
     if not leave_out or not isinstance(verdict, dict):
         return verdict, 0
     kept, dropped = dict(verdict), 0
-    for fact in FACTS:
-        if kept.get(fact) == 'fail' and given(verdict, fact) in leave_out:
+    for fact, band, officer in ai_score.decided_facts(snapshot, verdict):
+        if officer == 'fail' and band is not None and given(verdict, fact) in leave_out:
             del kept[fact]
             dropped += 1
     return kept, dropped
+
+
+def _version_key(raw):
+    """``(label, unknown)`` of a stored engine version."""
+    # In the function: `verdict_engine` imports the genuineness package; this module stays light.
+    from .verdict_engine import PRE_VERSIONING
+    label = raw.strip() if isinstance(raw, str) else ''
+    if not label:
+        return UNKNOWN_VERSION, True
+    return label, label == PRE_VERSIONING
+
+
+def _natural(label: str) -> tuple:
+    """A sort key reading each run of digits as a number: '.9' before '.10'."""
+    # split() with one group: the odd places are the digit runs, the even places the text between
+    parts = tuple((0, int(p), '') if i % 2 else (1, 0, p) for i, p in enumerate(_DIGITS.split(label)))
+    return parts, label
 
 
 def _malaysia_month(instant) -> str:
@@ -105,7 +142,7 @@ def _malaysia_month(instant) -> str:
 
 
 def _decided_rows(records, leave_out: frozenset) -> list:
-    """``(instant, version or None, month, (snapshot, verdict, version), left out)`` per DECIDED record.
+    """``(instant, (label, unknown), month, (snapshot, verdict, label), left out)`` per DECIDED record.
     Only the first three fields of a record go on; who decided and the row id stop here."""
     rows = []
     for record in records:
@@ -114,10 +151,9 @@ def _decided_rows(records, leave_out: frozenset) -> list:
             continue
         if instant.tzinfo is None:   # a naive instant is read as UTC (what Django stores)
             instant = instant.replace(tzinfo=datetime.timezone.utc)
-        version = record[2] or None
-        verdict, dropped = _without_left_out(record[1], leave_out)
-        rows.append((instant, version, _malaysia_month(instant), (record[0], verdict, version or ''),
-                     dropped))
+        key = _version_key(record[2])
+        verdict, dropped = _without_left_out(record[0], record[1], leave_out)
+        rows.append((instant, key, _malaysia_month(instant), (record[0], verdict, key[0]), dropped))
     return rows
 
 
@@ -127,11 +163,8 @@ def _tally_cell(group: list) -> dict:
     marks = ai_score.score_marks(marked)
     covered = generous_wrong = 0
     for snapshot, verdict, _version in marked:
-        bands = ai_score._bands(snapshot)
-        verdict = verdict if isinstance(verdict, dict) else {}
-        for fact in FACTS:
-            officer, band = verdict.get(fact), bands.get(fact)
-            if officer not in ('pass', 'fail') or band is None:
+        for _fact, band, officer in ai_score.decided_facts(snapshot, verdict):
+            if band is None:
                 continue
             covered += band != UNSURE
             generous_wrong += officer == 'fail' and band in _GENEROUS_BANDS
@@ -142,15 +175,37 @@ def _tally_cell(group: list) -> dict:
             'covered': covered, 'generous_wrong': generous_wrong}
 
 
-def _month_view(version, month: str, tally: dict) -> dict:
-    cell = {'version': version or UNKNOWN_VERSION, 'unknown_version': version is None, 'month': month}
-    if tally['facts'] < CELL_MIN_FACTS:
-        cell['too_few'] = True
-        return cell
-    cell['too_few'] = False
-    for key in ('facts', 'points', 'best', 'score_pct', 'not_scored', 'left_out', 'outcomes'):
-        cell[key] = tally[key]
-    return cell
+def _month_runs(by_month: dict) -> list:
+    """The months of one version (``{month: rows}``) as runs of months, by the MONTH CELLS rule."""
+    runs, current, held = [], [], 0
+    for month in sorted(by_month):
+        current.append(month)
+        held += ai_score.score_marks([row[3] for row in by_month[month]])['facts']
+        if held >= CELL_MIN_FACTS:
+            runs.append(current)
+            current, held = [], 0
+    if current:
+        if runs:
+            runs[-1].extend(current)
+        else:
+            runs.append(current)
+    return runs
+
+
+def _month_cells(key, by_month: dict) -> list:
+    label, unknown = key
+    cells = []
+    for run in _month_runs(by_month):
+        tally = _tally_cell([row for month in run for row in by_month[month]])
+        cell = {'version': label, 'unknown_version': unknown, 'month': run[0], 'month_to': run[-1]}
+        if tally['facts'] < CELL_MIN_FACTS:
+            cell['too_few'] = True
+        else:
+            cell['too_few'] = False
+            for name in ('facts', 'points', 'best', 'score_pct', 'not_scored', 'left_out', 'outcomes'):
+                cell[name] = tally[name]
+        cells.append(cell)
+    return cells
 
 
 def _side_view(version: str, tally: dict) -> dict:
@@ -165,57 +220,69 @@ def _side_view(version: str, tally: dict) -> dict:
 
 
 def _coach_verdict(prev: dict, new: dict):
-    """``(grade, reason codes)`` for one pair of version tallies, checks in the docstring's order."""
+    """``(grade, reason codes)`` for one pair of GRADEABLE version tallies, checks in the docstring's
+    order. a/b < c/d  <=>  a*d < c*b, all denominators positive (both sides are gradeable)."""
     reasons = []
-    if prev['facts'] < COACH_MIN_FACTS:
-        reasons.append(PREVIOUS_TOO_FEW)
-    if new['facts'] < COACH_MIN_FACTS:
-        reasons.append(NEW_TOO_FEW)
-    if reasons:
-        return NOT_ENOUGH, reasons
-    # a/b < c/d  <=>  a*d < c*b, all denominators positive (both sides have >= COACH_MIN_FACTS facts)
     if new['covered'] * prev['facts'] < prev['covered'] * new['facts']:
         reasons.append(COVERAGE_DROPPED)
     if new['generous_wrong'] * prev['facts'] > prev['generous_wrong'] * new['facts']:
         reasons.append(GENEROUS_WRONG_ROSE)
     if reasons:
         return FAIL, reasons
-    if new['points'] * prev['best'] > prev['points'] * new['best']:
+    new_score, prev_score = new['points'] * prev['best'], prev['points'] * new['best']
+    if new_score > prev_score:
         return PASS, [SCORE_UP]
-    return FAIL, [SCORE_NOT_UP]
+    if new_score == prev_score:
+        return NO_CHANGE, [SCORE_SAME]
+    return FAIL, [SCORE_DOWN]
+
+
+def _coach_chain(known: list, tallies: dict):
+    """``(coach pairs, waiting sides)`` over the known versions with marks, in version order."""
+    coach, waiting, previous, skipped = [], [], None, 0
+    for label in known:
+        tally = tallies[label]
+        if tally['facts'] < COACH_MIN_FACTS:
+            waiting.append(_side_view(label, tally))
+            skipped += 1
+            continue
+        if previous is not None:
+            grade, reasons = _coach_verdict(tallies[previous], tally)
+            coach.append({'previous': _side_view(previous, tallies[previous]),
+                          'new': _side_view(label, tally), 'grade': grade, 'reasons': reasons,
+                          'skipped_versions': skipped})
+        previous, skipped = label, 0
+    return coach, waiting
 
 
 def coach_report(records, leave_out_reasons=()) -> dict:
     """The monthly score and the coach grade over ``records`` (F4's 6-tuples), JSON-safe, counts only:
 
     ``{cell_min_facts, coach_min_facts, left_out_reasons: [code], decided_records,
-    months: [{version, unknown_version, month, too_few, (facts, points, best, score_pct, not_scored,
-    left_out, outcomes: {outcome: count}) when not too_few}],
-    coach: [{previous: side, new: side, grade, reasons: [code]}]}`` where a side is
-    ``{version, too_few, (facts, score_pct, coverage: {count, of}, generous_wrong: {count, of}) when not
-    too_few}``. ``months`` runs version by first decided instant (unknown version last), then month;
-    ``coach`` pairs consecutive KNOWN versions in that order. ``leave_out_reasons`` - see the docstring
-    ("documents only"); an unknown code raises ValueError."""
+    versions_without_marks, months: [{version, unknown_version, month, month_to, too_few, (facts,
+    points, best, score_pct, not_scored, left_out, outcomes: {outcome: count}) when not too_few}],
+    coach: [{previous: side, new: side, grade, reasons: [code], skipped_versions}],
+    waiting: [side]}`` where a side is ``{version, too_few, (facts, score_pct, coverage: {count, of},
+    generous_wrong: {count, of}) when not too_few}``. ``months`` runs version by version in version
+    order (unknown versions last), then month. ``leave_out_reasons`` - see the module docstring
+    ("documents only"); a left-out count covers only facts that would have been scored; an unknown code
+    raises ValueError."""
     leave_out = _left_out_codes(leave_out_reasons)
     rows = _decided_rows(records, leave_out)
-    first_seen, cells, by_version = {}, {}, {}
+    first_seen, months_of = {}, {}
     for row in rows:
-        instant, version, month = row[0], row[1], row[2]
-        if version not in first_seen or instant < first_seen[version]:
-            first_seen[version] = instant
-        cells.setdefault((version, month), []).append(row)
-        by_version.setdefault(version, []).append(row)
-    order = sorted(first_seen, key=lambda v: (v is None, first_seen[v], v or ''))
-    months = [_month_view(version, month, _tally_cell(cells[(version, month)]))
-              for version in order
-              for month in sorted(m for v, m in cells if v == version)]
-    known = [v for v in order if v is not None]
-    tallies = {v: _tally_cell(by_version[v]) for v in known}
-    coach = []
-    for prev, new in zip(known, known[1:]):
-        grade, reasons = _coach_verdict(tallies[prev], tallies[new])
-        coach.append({'previous': _side_view(prev, tallies[prev]), 'new': _side_view(new, tallies[new]),
-                      'grade': grade, 'reasons': reasons})
+        instant, key, month = row[0], row[1], row[2]
+        if key not in first_seen or instant < first_seen[key]:
+            first_seen[key] = instant
+        months_of.setdefault(key, {}).setdefault(month, []).append(row)
+    tallies = {key: _tally_cell([row for group in months_of[key].values() for row in group])
+               for key in first_seen}
+    marked = [key for key in first_seen if tallies[key]['facts'] > 0]
+    order = sorted(marked, key=lambda k: (k[1], first_seen[k], _natural(k[0])))
+    months = [cell for key in order for cell in _month_cells(key, months_of[key])]
+    known = [key for key in order if not key[1]]
+    coach, waiting = _coach_chain([key[0] for key in known], {key[0]: tallies[key] for key in known})
     return {'cell_min_facts': CELL_MIN_FACTS, 'coach_min_facts': COACH_MIN_FACTS,
             'left_out_reasons': sorted(leave_out), 'decided_records': len(rows),
-            'months': months, 'coach': coach}
+            'versions_without_marks': len(first_seen) - len(marked),
+            'months': months, 'coach': coach, 'waiting': waiting}

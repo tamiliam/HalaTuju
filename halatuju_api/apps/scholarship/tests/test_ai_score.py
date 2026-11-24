@@ -140,6 +140,23 @@ class TestWhatIsNotScored(SimpleTestCase):
         m = ai_score.score_marks([([{'fact': ['x']}, 'odd', fact('income', CERTAIN)], officer(), 'v1')])
         self.assertEqual((m['facts'], m['not_scored']), (1, 3))
 
+    def test_the_public_reader_and_score_marks_agree_on_malformed_input(self):
+        junk = {'identity': 'fail', 'academic': 'PASS', 'pathway': 'pass', 'income': 'pass',
+                'fail_reasons': 'junk'}
+        snapshot = [None, 'x', {'fact': 3}, {'fact': ['x']}, fact('identity', CERTAIN), fact('income', UNSURE)]
+        records = [(snapshot, junk, 'v1'),
+                   ([fact('income', CERTAIN)], 'not a dict', 'v1'),
+                   (None, {'identity': 'pass'}, 'v1')]
+        read = [ai_score.decided_facts(r[0], r[1]) for r in records]
+        self.assertEqual(read, [[('identity', CERTAIN, 'fail'), ('pathway', None, 'pass'),
+                                 ('income', UNSURE, 'pass')],
+                                [], [('identity', None, 'pass')]])
+        m = ai_score.score_marks(records)
+        self.assertEqual((m['facts'], m['points'], m['best'], m['score_pct'], m['not_scored']),
+                         (2, -10, 4, -250, 2))
+        self.assertEqual((m['wrong_sure'], m['unsure']), (1, 1))
+        self.assertEqual(m['by_fact']['identity']['top_reasons'], [{'key': 'fail:not_given', 'points': -10}])
+
 
 class TestByVersion(SimpleTestCase):
 

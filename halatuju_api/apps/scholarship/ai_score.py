@@ -89,6 +89,16 @@ def _bands(snapshot) -> dict:
             if isinstance(f, dict) and isinstance(f.get('fact'), str) and f['fact']}
 
 
+def decided_facts(snapshot, officer_verdict) -> list:
+    """``[(fact, band or None, 'pass' | 'fail')]`` for each fact of ONE record the reviewer passed or
+    failed, in `FACTS` order; band None = not scored (no snapshot entry). The one reader of which facts
+    count: `score_marks` reads it, and so does `coach_grade`, so the two cannot drift."""
+    verdict = officer_verdict if isinstance(officer_verdict, dict) else {}
+    bands = _bands(snapshot)
+    return [(fact, bands.get(fact), verdict[fact])
+            for fact in FACTS if verdict.get(fact) in ('pass', 'fail')]
+
+
 def score_marks(records) -> dict:
     """The marks over ``records``: ``(ai_verdict_snapshot, officer_verdict, engine_version, …)``
     tuples of RECORDED decisions. Returns ``{facts, points, best, score_pct, lost, outcomes counts,
@@ -101,13 +111,7 @@ def score_marks(records) -> dict:
     for record in records:
         snapshot, verdict = record[0], record[1]
         version = (record[2] if len(record) > 2 else '') or ''
-        verdict = verdict if isinstance(verdict, dict) else {}
-        bands = _bands(snapshot)
-        for fact in FACTS:
-            officer = verdict.get(fact)
-            if officer not in ('pass', 'fail'):
-                continue
-            band = bands.get(fact)
+        for fact, band, officer in decided_facts(snapshot, verdict):
             if band is None:
                 not_scored += 1
                 continue
