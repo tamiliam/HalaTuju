@@ -297,6 +297,20 @@ export function isRejectedBeforeReview(
     && REJECTED_BEFORE_REVIEW.includes(opts.rejectionCategory || '')
 }
 
+/** The decline kinds of a case rejected AFTER an interview (TD-716, owner 2026-11-24): the
+ *  post-shortlist decline (`interview`, "Reviewed but not selected") and the post-award one
+ *  (`contractual`). Served data: `rejection_category`, never text matching. */
+const REJECTED_AFTER_INTERVIEW = ['interview', 'contractual']
+
+/** Rejected after an interview, decision not reopened (a reopened case is `displayStatus`
+ *  'reopened' and keeps its cards, since it is back in review). */
+export function isRejectedAfterInterview(
+  opts: { status: string | null | undefined; rejectionCategory?: string | null; decisionReopened?: boolean | null },
+): boolean {
+  return opts.status === 'rejected' && !opts.decisionReopened
+    && REJECTED_AFTER_INTERVIEW.includes(opts.rejectionCategory || '')
+}
+
 type CardOpts = {
   status: string | null | undefined
   assignedToId?: number | null
@@ -304,10 +318,11 @@ type CardOpts = {
   rejectionCategory?: string | null
 }
 
-/** Estimated need & proposed bursary: hidden pre-submission, while waiting for a reviewer, and on
- *  a case rejected before any review. */
+/** Estimated need & proposed bursary: hidden pre-submission, while waiting for a reviewer, on
+ *  a case rejected before any review, and on a case rejected after an interview (TD-716). */
 export function showsEstimateCard(opts: CardOpts): boolean {
   return showsPostSubmissionCards(opts.status) && !isWaitingForReviewer(opts) && !isRejectedBeforeReview(opts)
+    && !isRejectedAfterInterview(opts)
 }
 
 /** Org admin and reviewer notes: not before Awaiting review, not while waiting for a reviewer, and

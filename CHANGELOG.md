@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: case page hides the estimated need box after an interview rejection (TD-716, 2026-11-24)
+
+- The "Estimated need & proposed bursary" card no longer shows on a case rejected after an interview (`interview` or `contractual` category, from served data). A reopened case and every live case keep it. Display only; no money calculation changed.
+
 ### fix: case list shows only Rejected, no second chip (TD-715, 2026-11-24)
 
 - The admin case list (phone cards and desktop table) now shows only "Rejected" on a rejected case; the second red chip (need, merit, before interview and so on) is gone from the list.
