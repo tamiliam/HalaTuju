@@ -45,7 +45,10 @@ export const basicsFourChecks: ManualChapter = {
       title: 'The documents behind each check',
       body: (
         <>The documents the student uploaded sit under those same four facts, each with the system&rsquo;s
-        reading and a status. Click to view a document, or <strong>Re-run</strong> to read it again. The
+        reading and a status. Click to view a document, or <strong>Re-run</strong> to read it again. Re-run on a
+        copy under <strong>Old / Replaced</strong> also compares it with the live copy for the same person and
+        request, and keeps the better one (not for an offer letter, a salary slip or a copy marked as a sample:
+        ask for those again). The
         system&rsquo;s reading is a <em>starting point, not the last word</em> — a person always decides.</>
       ),
       img: '/reviewer-guide/step4-documents.png',

@@ -133,6 +133,18 @@ export const REVIEWER_FAQ: QA[] = [
         institution, the card shows the one on her offer letter.</>,
     },
     {
+      q: <>I pressed <strong>Re-run</strong> on an old copy and it became the live one. Why?</>,
+      a: <>Re-run on a copy under <strong>Old / Replaced</strong> reads it again and then compares it with the live
+        copy for the same person and the same request, using the same rule as a new upload. If the old copy now
+        reads better, it takes the live copy&rsquo;s place; if not, nothing changes. No other document moves.
+        It does not compare offer letters, salary slips (an upload may file a salary slip as an EPF statement
+        once it reads it), bank statements, income support documents or other documents, nor a copy the system
+        marked as a sample: for those, ask the student to upload again, as before. It never brings back a copy older than the live one or an STR in
+        a stranger&rsquo;s name, and does nothing once the case is decided. It also leaves a copy where it is when
+        the copy names a different family member from the one it is filed under (say, an EPF statement filed
+        under the father that reads the mother&rsquo;s name): check whose document it is.</>,
+    },
+    {
       q: <>What is the <strong>place-of-birth</strong> line beside the NRIC?</>,
       a: <>The state the student was born in (for example <em>Born: Perak</em>), read from the place-of-birth
         code in her IC number (the two digits in the middle). A gift can accept only students born in certain

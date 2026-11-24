@@ -184,6 +184,37 @@ def _align_name_after_promotion(doc):
         logger.exception('ic lock after promotion failed for document %s', doc.id)
 
 
+def _usable(doc):
+    """USABLE = the read did not CONFIRM a problem: 'ok' (clean) or 'pending' (not scanned yet —
+    newest still wins, the task stays open, and the quality proxy keeps a pending doc from burying
+    an 'ok' one). Only a CONFIRMED 'mismatch'/'unreadable' is not-usable → stays staged so a
+    wrong/blurry re-upload can't displace a good live proof. S4: a higher result never displaces
+    an SPM slip. The one test both ``judge`` and the officer Re-run (``rejudge_after_rerun``) ask."""
+    from . import wrong_slip as _ws
+    from .resolution import doc_match_verdict
+    return doc_match_verdict(doc) not in ('mismatch', 'unreadable') and _ws.fills_spm_slot(doc)
+
+
+def _tag_guard_member(app, doc):
+    """The member the tag guard files this income doc under when that is NOT its tag now, else ''.
+    The one rule ``judge`` writes with and the officer Re-run skips on (``_rerun_rejudge_in_slot``).
+    (c) LAST RESORT, blank tag only — the name could not be read at all, but the household admits
+    exactly one candidate (the STR route's declared earner), so the document cannot belong to anyone
+    else. BrightPath #20: WITHOUT this, an unreadable untagged income doc keeps its blank tag, and a
+    blank tag is a slot of its own — permanently empty, so the doc wins it by default and sits in the
+    live documents beside the good copy it was meant to replace. Deliberately last: a readable name
+    always decides first, and the salary route (where several members may each hold documents)
+    returns '' and leaves the blank alone. Safe by construction — the re-tagged doc still goes
+    through STAGE → JUDGE → PROMOTE, and an unreadable doc is not `usable`, so it lands in Replaced."""
+    if doc.doc_type not in ('parent_ic', 'salary_slip', 'epf', 'str'):
+        return ''
+    from .income_engine import implied_single_member, name_contradicts_tag, resolved_member_for
+    tag = (doc.household_member or '').strip()
+    derived = (name_contradicts_tag(app, doc) if tag
+               else (resolved_member_for(app, doc) or implied_single_member(app)))
+    return derived if derived and derived != tag else ''
+
+
 def judge(app, doc, *, staged, stale_ids, existing_live):
     """Decide the slot of a document that HAS been read: the tag guard, JUDGE → PROMOTE, the dedupe,
     the resolution sync, the offer autofill and the re-ask notes. Returns the upload's response body."""
@@ -206,46 +237,32 @@ def judge(app, doc, *, staged, stale_ids, existing_live):
     # Either way the doc is never PERSISTED under the wrong person where the name is determinable;
     # the verdict then reads it under the right member. A genuinely-unresolvable name leaves the
     # tag untouched (the cockpit catch-all still shows a blank — never hidden).
-    if doc.doc_type in ('parent_ic', 'salary_slip', 'epf', 'str'):
-        from .income_engine import (resolved_member_for, name_contradicts_tag,
-                                    implied_single_member)
-        has_tag = bool((doc.household_member or '').strip())
-        # (c) LAST RESORT, blank tag only — the name could not be read at all, but the household
-        #     admits exactly one candidate (the STR route's declared earner), so the document
-        #     cannot belong to anyone else. BrightPath #20: WITHOUT this, an unreadable untagged
-        #     income doc keeps its blank tag, and a blank tag is a slot of its own — permanently
-        #     empty, so the doc wins it by default and sits in the live documents beside the good
-        #     copy it was meant to replace. The worst-read documents were the ones that lingered.
-        #     Deliberately last: a readable name always decides first, and the salary route (where
-        #     several members may each hold documents) returns '' and leaves the blank alone.
-        #     Safe by construction — the re-tagged doc still goes through STAGE → JUDGE → PROMOTE
-        #     below, and an unreadable doc is not `usable`, so it can only land in Replaced.
-        derived = (name_contradicts_tag(app, doc) if has_tag
-                   else (resolved_member_for(app, doc) or implied_single_member(app)))
-        if derived and derived != (doc.household_member or '').strip():
-            doc.household_member = derived
-            doc.save(update_fields=['household_member'])
-            # The create-time replace ran with the OLD (blank or wrong) member and couldn't match
-            # this person's slot, so now that the correct member is known, supersede any prior live
-            # copy in the (doc_type, member, request_code) slot — the re-attributed doc REPLACES
-            # that member's existing doc instead of duplicating it. Retained as history (Phase 2),
-            # never hard-deleted.
-            prior = list(ApplicantDocument.objects.filter(
-                application=app, doc_type=doc.doc_type, household_member=derived,
-                request_code=doc.request_code, superseded_at__isnull=True,
-            ).exclude(id=doc.id).values_list('id', flat=True))
-            if staged:
-                # The member changed → the promote decision must also supersede the DERIVED
-                # member's live slot (e.g. a mother-tagged STR replacing a blank-tagged legacy
-                # copy). Fold it into the staged-against set + recompute the doc to protect.
-                stale_ids = list(dict.fromkeys(list(stale_ids) + list(prior)))
-                existing_live = (ApplicantDocument.objects.filter(
-                    id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id)
-                    .order_by(*SNAPSHOT_ORDER).first())
-            elif prior:
-                from django.utils import timezone as _tz2
-                ApplicantDocument.objects.filter(id__in=prior).update(
-                    superseded_at=_tz2.now(), superseded_by=doc)
+    #   (c) the LAST RESORT for a blank tag (``_tag_guard_member``).
+    derived = _tag_guard_member(app, doc)
+    if derived:
+        doc.household_member = derived
+        doc.save(update_fields=['household_member'])
+        # The create-time replace ran with the OLD (blank or wrong) member and couldn't match
+        # this person's slot, so now that the correct member is known, supersede any prior live
+        # copy in the (doc_type, member, request_code) slot — the re-attributed doc REPLACES
+        # that member's existing doc instead of duplicating it. Retained as history (Phase 2),
+        # never hard-deleted.
+        prior = list(ApplicantDocument.objects.filter(
+            application=app, doc_type=doc.doc_type, household_member=derived,
+            request_code=doc.request_code, superseded_at__isnull=True,
+        ).exclude(id=doc.id).values_list('id', flat=True))
+        if staged:
+            # The member changed → the promote decision must also supersede the DERIVED
+            # member's live slot (e.g. a mother-tagged STR replacing a blank-tagged legacy
+            # copy). Fold it into the staged-against set + recompute the doc to protect.
+            stale_ids = list(dict.fromkeys(list(stale_ids) + list(prior)))
+            existing_live = (ApplicantDocument.objects.filter(
+                id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id)
+                .order_by(*SNAPSHOT_ORDER).first())
+        elif prior:
+            from django.utils import timezone as _tz2
+            ApplicantDocument.objects.filter(id__in=prior).update(
+                superseded_at=_tz2.now(), superseded_by=doc)
     # JUDGE → PROMOTE (owner 2026-07-09): the staged doc has now been read. Decide whether it takes
     # the prime slot. USABLE = doc_match_verdict 'ok' (not-fake ∧ right-type ∧ readable ∧ right-
     # person); promote iff it is at least as good as the existing live doc (promotion.should_promote
@@ -258,14 +275,8 @@ def judge(app, doc, *, staged, stale_ids, existing_live):
     #     newer Lulus dashboard over a weaker semakan → currency dominates → replaces.
     kept_previous = False
     if staged:
-        from . import promotion, wrong_slip as _ws   # S4: a higher result never displaces an SPM slip
-        from .resolution import doc_match_verdict
-        # USABLE = the read did not CONFIRM a problem: 'ok' (clean) or 'pending' (not scanned yet —
-        # newest still wins, the task stays open, and the quality proxy keeps a pending doc from
-        # burying an 'ok' one). Only a CONFIRMED 'mismatch'/'unreadable' is not-usable → stays
-        # staged so a wrong/blurry re-upload can't displace a good live proof.
-        usable = doc_match_verdict(doc) not in ('mismatch', 'unreadable') and _ws.fills_spm_slot(doc)
-        if promotion.should_promote(doc, existing_live, usable=usable):
+        from . import promotion
+        if promotion.should_promote(doc, existing_live, usable=_usable(doc)):
             # Promote: supersede everything this upload replaces — the staged-against set (the
             # slot sweep, incl. any blank-tagged legacy copy) PLUS any other live copy in this
             # doc's exact slot — then unstage this one into the prime slot.
@@ -426,6 +437,92 @@ def judge_reread_copy(doc):
     stale_ids, existing_live = _slot_now(doc, plan.get('stale_ids') or [])
     logger.info('AUDIT upload_rejudged doc=%s app=%s', doc.id, doc.application_id)
     return judge(doc.application, doc, staged=True, stale_ids=stale_ids, existing_live=existing_live)
+
+
+def _str_names_a_stranger(doc):
+    """Defect-4 guard of the Re-run only: an STR whose recipient the match verdict calls a person-red
+    clash (``resolution_doc_match._str``'s person clause, without its currency half). Only an STR
+    needs it: a rejected STR is 'news' (``doc_quality`` None), which ``should_promote`` promotes
+    BEFORE the usable and TD-409 checks; every other type's mismatch is already refused as not usable."""
+    if doc.doc_type != 'str':
+        return False
+    from . import income_engine
+    from .doc_red_keys import person_red
+    from .income_str_ownership import str_check_names_a_stranger
+    chk = income_engine.student_str_check(doc) or {}
+    matched = 'match' in (chk.get('name_status'), chk.get('nric_status'))
+    return person_red('str', chk) and (matched or str_check_names_a_stranger(chk, doc.application))
+
+
+# The types the upload may move to ANOTHER slot by their content (``views._reslot_income_doc``:
+# salary_slip → epf, one way only). A Re-run reads without the OCR text that step asks, so it skips them.
+_RESLOT_FROM_TYPES = ('salary_slip',)
+
+
+def _rerun_rejudge_in_slot(pk):
+    """``(row, promoted)``: the decision and the swap, on a FRESH row, inside the caller's atomic block."""
+    from . import promotion, slot_writes
+    from .family import DECIDED_STATUSES
+    from .genuineness.sample_stamp import is_sample_flagged
+    from .imaging import is_heic
+    from .views.document_rules import _BYPASS_JUDGE_TYPES
+    doc = ApplicantDocument.objects.select_related('application', 'superseded_by').get(pk=pk)
+    if doc.superseded_at is None:
+        return doc, False
+    app, keeper = doc.application, doc.superseded_by
+    # The EXACT slot only (application, doc type, member, request code): the stored read_plan
+    # stale_ids are the upload's and may name another member's, request's or form's copy.
+    stale_ids, live = _slot_now(doc, [])
+    promoted = not (
+        (doc.read_plan or {}).get('was_sample') or is_sample_flagged(doc) or is_heic(doc)  # not repeated
+        or app.status in DECIDED_STATUSES or doc.read_state == PENDING
+        or doc.doc_type in _BYPASS_JUDGE_TYPES or doc.doc_type in ('offer_letter', *_RESLOT_FROM_TYPES)
+        or live is None or live.id > doc.id
+        or (_newer_upload_decided_in_either_slot(doc, keeper) if keeper else _newer_upload_decided(doc))
+        or _tag_guard_member(app, doc) or _str_names_a_stranger(doc)
+        or not promotion.should_promote(doc, live, usable=_usable(doc))
+        or not slot_writes.promote_into_slot(app, doc, stale_ids))
+    if promoted:
+        doc.refresh_from_db()
+    return doc, promoted
+
+
+def rejudge_after_rerun(doc):
+    """Owner 2026-11-24 (#945): an officer's Re-run on a REPLACED copy judges again which copy is live.
+    Called by ``AdminRunVisionView`` only, after ``reextract.reextract_document`` succeeded (the bulk
+    command and the hourly sweep share that read and are unchanged). Returns True when it promoted.
+
+    The upload's own rule: ``_usable`` and ``promotion.should_promote`` against the live copy of the
+    copy's OWN exact slot as it is NOW (``_slot_now(doc, [])``; the stored ``read_plan`` stale ids are
+    ignored), then ``slot_writes.promote_into_slot`` with that slot's ids only (one transaction; a
+    clash keeps the live copy). Left alone: a live copy; a decided case (``family.DECIDED_STATUSES``,
+    open owner question); a read still queued; a type the upload never judges (``_BYPASS_JUDGE_TYPES``);
+    an offer letter (the read already ran the pathway autofill against the old live letter); a salary
+    slip (``_RESLOT_FROM_TYPES``: the upload may re-file it as an EPF by OCR text a Re-run lacks); a slot
+    with no live copy; a NEWER upload already decided, or a newer live copy; a copy the upload's tag guard
+    would file under ANOTHER member (``_tag_guard_member``: the upload judges it in that member's slot,
+    not this one, and a Re-run never re-tags); an STR the match verdict says names a stranger
+    (``_str_names_a_stranger``: stricter than the upload, never looser); a copy the upload's sample check
+    marked, now or at ANY earlier Re-run (``read_plan['was_sample']``, kept by the view: a fresh read
+    drops the mark), and a copy still in HEIC (the upload's sample check and HEIC fix are read steps a Re-run never runs).
+    Only the slot write and the IC name alignment an upload promotion does: no request closing, no
+    attempt notes, no circuit-breaker, no dedupe and no ticket sync. Never raises: a failure is one
+    ``AUDIT rerun_rejudge_failed`` line and the slot as it was. Exactly one AUDIT line per call."""
+    from django.db import transaction
+    pk, app_id = doc.pk, doc.application_id
+    try:
+        with transaction.atomic():
+            row, promoted = _rerun_rejudge_in_slot(pk)
+    except Exception:      # a paid, successful Re-run must never become a 500 over the re-judge
+        logger.exception('AUDIT rerun_rejudge_failed doc=%s app=%s', pk, app_id)
+        return False
+    if not promoted:
+        logger.info('AUDIT rerun_rejudge_skipped doc=%s app=%s', pk, app_id)
+        return False
+    logger.info('AUDIT rerun_rejudge_promoted doc=%s app=%s', pk, app_id)
+    if row.doc_type == 'ic':
+        _align_name_after_promotion(row)
+    return True
 
 
 def run_read(doc_id):

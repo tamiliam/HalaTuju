@@ -38,10 +38,26 @@ class AdminRunVisionView(_AdminBase):
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         # Shared with the bulk reextract command so the per-doc + batch reads can't drift.
+        from ..genuineness.sample_stamp import is_sample_flagged
         from ..reextract import reextract_document
+        # The upload's sample check (H9) marked this REPLACED copy a sample? Asked BEFORE the re-read
+        # (it never repeats that check and its fresh read drops the mark) and kept on the row, so the
+        # re-judge skips it on this and every later Re-run. A live copy writes nothing.
+        plan = doc.read_plan or {}
+        if doc.superseded_at is not None and not plan.get('was_sample') and is_sample_flagged(doc):
+            doc.read_plan = {**plan, 'was_sample': True}
+            doc.save(update_fields=['read_plan'])
         if not reextract_document(doc):
             return Response({'error': 'This document type has no automatic check to re-run.'},
                             status=status.HTTP_400_BAD_REQUEST)
+        # Owner 2026-11-24 (#945): a REPLACED copy that now reads better than the live copy is judged
+        # again with the upload's own keep-better rule (here only — never in the shared read). A live
+        # copy is answered exactly as before. The re-judge never raises (a failure is logged and the
+        # slot left as it was); only a swap changes the row this answers with.
+        if doc.superseded_at is not None:
+            from ..upload_read import rejudge_after_rerun
+            if rejudge_after_rerun(doc):
+                doc.refresh_from_db()
         return Response(ApplicantDocumentSerializer(doc).data)
 
 
