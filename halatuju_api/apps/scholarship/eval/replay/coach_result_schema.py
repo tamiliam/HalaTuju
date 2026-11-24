@@ -5,7 +5,7 @@ a name, a reason text or any free text in it.
 
 THE RULE. Every dict has exactly one of a few fixed key sets for its level (a key that is unknown OR
 missing fails). The result is one of three shapes: the report (`TOP_KEYS`), the DEBUG refusal
-(``{"refusal": "debug_on"}``) or an error (``{"error": <code in FILE_ERROR_CODES>}``). Anything else: the
+(``{"refusal": "debug_on"}``) or an error (``{"error": <code in COACH_FILE_ERROR_CODES>}``). Anything else: the
 whole result becomes exactly ``{"error": "schema"}``, with nothing of the bad result in it. The checker
 walks only known keys of a fixed depth, so it never recurses into what it does not know.
 
@@ -15,7 +15,7 @@ None here), ``left_out``, ``skipped_versions`` and the ``count`` / ``of`` pairs.
 `coach_grade`'s and `fail_reasons`'s public constants: ``grade`` (`coach_grade.GRADES`), ``reasons``
 (`coach_grade.REASON_CODES`, one or more, no repeat), ``left_out_reasons`` (`fail_reasons.CODES`, sorted,
 no repeat), the ``outcomes`` keys (exactly `ai_score.OUTCOMES`), ``refusal`` (`lens_human.DEBUG_ON`) and
-``error`` (`FILE_ERROR_CODES`).
+``error`` (`COACH_FILE_ERROR_CODES`).
 
 EVERY VALUE THAT IS NOT AN INT OR A FIXED CODE, with its rule:
 * ``version`` of a month cell: with ``unknown_version`` False, the verdict engine's version shape
