@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### STR reader accepts "Kekal Kelulusan Asal" as an approval (2026-11-24)
+
+- Case #945: a MySTR Semakan Status page showing "Status Permohonan Semasa: Kekal Kelulusan Asal" (the original approval stays) read no status, so it counted as unreadable and a thinner "Lulus Rayuan" dashboard stayed live over it. The rules reader (`doc_parse._STR_APPROVED`) now knows that exact phrase, in any case and spacing. "Kelulusan" alone (Menunggu, Dalam Proses, Tarikh Kelulusan) is still not an approval; rejections, the engine, the surface ceiling and the keep-better ranking are unchanged. No version bump: the STR reader sits in no registered model's digest (the model-version guard stays green).
+- Tests: `test_doc_parse.py` pins the phrase in both OCR orders, the near misses, the rejections, the engine reading the page `current` and ranking it above an approved dashboard, and (pinned, not designed) a page with "Rayuan: Ditolak" above the phrase: approval in label-then-value order, rejected in the labels-then-values order.
+
 ### Reject before interview uses the Reviewer Assessment box (2026-11-23)
 
 - Owner phone check, 23 Nov: the reject panel no longer draws its own four-fact Pass/Fail (a second copy of the box on the same page). It reads the ONE Reviewer Assessment box. While any fact there is unrated, the panel shows the plain red line "Record Pass or Fail for all four facts before you reject." and Reject (and "Yes, reject") stay greyed; once all four are rated the line goes and Reject is live.
