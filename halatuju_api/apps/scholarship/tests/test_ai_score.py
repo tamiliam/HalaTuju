@@ -166,3 +166,142 @@ class TestByVersion(SimpleTestCase):
         self.assertEqual([(v['version'], v['facts'], v['points'], v['best'], v['score_pct'])
                           for v in m['by_version']],
                          [('', 4, 8, 8, 100), ('v1', 4, -4, 8, -50), ('v2', 4, 8, 8, 100)])
+
+
+SURE = {'status': 'verified', 'evidence': [{'code': 'ic_match'}], 'unresolved': []}
+ODD_CASES = [
+    ('empty', []),
+    ('snapshot is text', [('identity', {'identity': 'pass'}, 'v1')]),
+    ('snapshot is one dict', [(fact('identity', CERTAIN), {'identity': 'pass'}, 'v1')]),
+    ('snapshot is a number', [(7, {'identity': 'pass'}, 'v1')]),
+    ('snapshot is None', [(None, {'identity': 'fail'}, 'v1')]),
+    ('items that are not dicts', [([None, 'x', 7, [], fact('income', CERTAIN)],
+                                   {'identity': 'pass', 'income': 'pass'}, 'v1')]),
+    ('fact is a number', [([{'fact': 3, **SURE}], {'identity': 'pass'}, 'v1')]),
+    ('fact is a list', [([{'fact': ['identity'], **SURE}], {'identity': 'pass'}, 'v1')]),
+    ('fact is empty text', [([{'fact': '', **SURE}], {'identity': 'pass'}, 'v1')]),
+    ('fact not in FACTS', [([{'fact': 'nonfact', **SURE}], {'nonfact': 'pass', 'identity': 'pass'}, 'v1')]),
+    ('duplicate facts, the last wins', [([fact('identity', CERTAIN), fact('identity', RULE_NOT_MET)],
+                                         {'identity': 'pass'}, 'v1')]),
+    ('a fact marked twice (the same record twice)', [(snap(), officer(identity='fail'), 'v1')] * 2),
+    ('verdicts in odd case or with spaces', [(snap(), {'identity': 'PASS', 'academic': 'Fail',
+                                                       'pathway': ' pass', 'income': 'fail '}, 'v1')]),
+    ('verdicts None, numbers, True', [(snap(), {'identity': None, 'academic': 1, 'pathway': 0,
+                                                'income': True}, 'v1')]),
+    ('verdicts a list or a dict', [(snap(), {'identity': ['pass'], 'academic': {'a': 1},
+                                             'pathway': 'pass', 'income': 'fail'}, 'v1')]),
+    ('verdict is text', [(snap(), 'pass', 'v1')]),
+    ('verdict is a list', [(snap(), ['identity'], 'v1')]),
+    ('verdict is None', [(snap(), None, 'v1')]),
+    ('fail_reasons is text', [(snap(), officer(identity='fail', reasons='junk'), 'v1')]),
+    ('fail_reasons is a number', [(snap(), officer(identity='fail', reasons=3), 'v1')]),
+    ('fail_reasons odd values', [(snap(), officer(identity='fail', academic='fail', income='fail',
+                                                  reasons={'identity': ['x'], 'academic': 'not_a_code',
+                                                           'income': 'engine_wrong'}), 'v1')]),
+    ('empty strings', [([{'fact': 'identity', 'status': '', 'evidence': '', 'unresolved': ''}],
+                        {'identity': 'pass', 'academic': ''}, '')]),
+    ('odd status and junk evidence', [([{'fact': 'identity', 'status': 'odd', 'evidence': 'x',
+                                         'unresolved': None}], {'identity': 'pass'}, 'v1')]),
+    ('empty and None versions share one bucket', [(snap(), officer(), ''),
+                                                  (snap(), officer(identity='fail'), None),
+                                                  (snap(), officer(), 0)]),
+    ('a label with spaces is its own bucket', [(snap(), officer(), ' v1'), (snap(), officer(), 'v1')]),
+    ('no version (two fields)', [(snap(), officer())]),
+    ('a missing date', [(snap(pathway=UNVERIFIABLE), officer(), 'v1', None, 'BY', 1)]),
+    ('a number and a text version', [(snap(), officer(), 7), (snap(), officer(), 'v1')]),
+    ('an unhashable version', [(snap(), officer(), ['v1'])]),
+    ('a record with one field', [(snap(),)]),
+]
+
+# Captured by running `score_marks` as it was at a68a36ca8 (before `decided_facts` was split out) over
+# ODD_CASES. Each value is `marks_shape` of the output, or the exception class the old code raised.
+OLD_SCORE_MARKS = {
+    'empty': (0, 0, 0, None, 0, 0, (0, 0, 0, 0, 0), None, {}, []),
+    'snapshot is text': (0, 0, 0, None, 0, 1, (0, 0, 0, 0, 0), None, {}, []),
+    'snapshot is one dict': (0, 0, 0, None, 0, 1, (0, 0, 0, 0, 0), None, {}, []),
+    'snapshot is a number': TypeError,
+    'snapshot is None': (0, 0, 0, None, 0, 1, (0, 0, 0, 0, 0), None, {}, []),
+    'items that are not dicts': (1, 2, 2, 100, 0, 1, (1, 0, 0, 0, 0), None, {'income': (1, 2, 0, [])},
+                                 [('v1', 1, 2, 0)]),
+    'fact is a number': (0, 0, 0, None, 0, 1, (0, 0, 0, 0, 0), None, {}, []),
+    'fact is a list': (0, 0, 0, None, 0, 1, (0, 0, 0, 0, 0), None, {}, []),
+    'fact is empty text': (0, 0, 0, None, 0, 1, (0, 0, 0, 0, 0), None, {}, []),
+    'fact not in FACTS': (0, 0, 0, None, 0, 1, (0, 0, 0, 0, 0), None, {}, []),
+    'duplicate facts, the last wins': (1, -10, 2, -500, -10, 0, (0, 0, 0, 0, 1),
+                                       {'fact': 'identity', 'points': -10},
+                                       {'identity': (1, -10, -10, [('pass:ruleNotMet', -10)])},
+                                       [('v1', 1, -10, -10)]),
+    'a fact marked twice (the same record twice)': (
+        8, -8, 16, -50, -20, 0, (6, 0, 0, 0, 2), {'fact': 'identity', 'points': -20},
+        {'identity': (2, -20, -20, [('fail:not_given', -20)]), 'academic': (2, 4, 0, []),
+         'pathway': (2, 4, 0, []), 'income': (2, 4, 0, [])}, [('v1', 8, -8, -20)]),
+    'verdicts in odd case or with spaces': (0, 0, 0, None, 0, 0, (0, 0, 0, 0, 0), None, {}, []),
+    'verdicts None, numbers, True': (0, 0, 0, None, 0, 0, (0, 0, 0, 0, 0), None, {}, []),
+    'verdicts a list or a dict': (2, -8, 4, -200, -10, 0, (1, 0, 0, 0, 1), {'fact': 'income', 'points': -10},
+                                  {'pathway': (1, 2, 0, []), 'income': (1, -10, -10, [('fail:not_given', -10)])},
+                                  [('v1', 2, -8, -10)]),
+    'verdict is text': (0, 0, 0, None, 0, 0, (0, 0, 0, 0, 0), None, {}, []),
+    'verdict is a list': (0, 0, 0, None, 0, 0, (0, 0, 0, 0, 0), None, {}, []),
+    'verdict is None': (0, 0, 0, None, 0, 0, (0, 0, 0, 0, 0), None, {}, []),
+    'fail_reasons is text': (4, -4, 8, -50, -10, 0, (3, 0, 0, 0, 1), {'fact': 'identity', 'points': -10},
+                             {'identity': (1, -10, -10, [('fail:not_given', -10)]), 'academic': (1, 2, 0, []),
+                              'pathway': (1, 2, 0, []), 'income': (1, 2, 0, [])}, [('v1', 4, -4, -10)]),
+    'fail_reasons is a number': (4, -4, 8, -50, -10, 0, (3, 0, 0, 0, 1), {'fact': 'identity', 'points': -10},
+                                 {'identity': (1, -10, -10, [('fail:not_given', -10)]),
+                                  'academic': (1, 2, 0, []), 'pathway': (1, 2, 0, []),
+                                  'income': (1, 2, 0, [])}, [('v1', 4, -4, -10)]),
+    'fail_reasons odd values': (4, -28, 8, -350, -30, 0, (1, 0, 0, 0, 3), {'fact': 'identity', 'points': -10},
+                                {'identity': (1, -10, -10, [('fail:not_given', -10)]),
+                                 'academic': (1, -10, -10, [('fail:not_given', -10)]),
+                                 'pathway': (1, 2, 0, []),
+                                 'income': (1, -10, -10, [('fail:not_given', -10)])}, [('v1', 4, -28, -30)]),
+    'empty strings': (1, -1, 2, -50, -1, 0, (0, 0, 0, 1, 0), {'fact': 'identity', 'points': -1},
+                      {'identity': (1, -1, -1, [('pass:unverifiable', -1)])}, [('', 1, -1, -1)]),
+    'odd status and junk evidence': (1, -1, 2, -50, -1, 0, (0, 0, 0, 1, 0), {'fact': 'identity', 'points': -1},
+                                     {'identity': (1, -1, -1, [('pass:unverifiable', -1)])},
+                                     [('v1', 1, -1, -1)]),
+    'empty and None versions share one bucket': (
+        12, 12, 24, 50, -10, 0, (11, 0, 0, 0, 1), {'fact': 'identity', 'points': -10},
+        {'identity': (3, -6, -10, [('fail:not_given', -10)]), 'academic': (3, 6, 0, []),
+         'pathway': (3, 6, 0, []), 'income': (3, 6, 0, [])}, [('', 12, 12, -10)]),
+    'a label with spaces is its own bucket': (
+        8, 16, 16, 100, 0, 0, (8, 0, 0, 0, 0), None,
+        {'identity': (2, 4, 0, []), 'academic': (2, 4, 0, []), 'pathway': (2, 4, 0, []),
+         'income': (2, 4, 0, [])}, [(' v1', 4, 8, 0), ('v1', 4, 8, 0)]),
+    'no version (two fields)': (4, 8, 8, 100, 0, 0, (4, 0, 0, 0, 0), None,
+                                {'identity': (1, 2, 0, []), 'academic': (1, 2, 0, []), 'pathway': (1, 2, 0, []),
+                                 'income': (1, 2, 0, [])}, [('', 4, 8, 0)]),
+    'a missing date': (4, 5, 8, 63, -1, 0, (3, 0, 0, 1, 0), {'fact': 'pathway', 'points': -1},
+                       {'identity': (1, 2, 0, []), 'academic': (1, 2, 0, []),
+                        'pathway': (1, -1, -1, [('pass:unverifiable', -1)]), 'income': (1, 2, 0, [])},
+                       [('v1', 4, 5, -1)]),
+    'a number and a text version': TypeError,
+    'an unhashable version': TypeError,
+    'a record with one field': IndexError,
+}
+
+
+def marks_shape(m):
+    """Every figure of a `score_marks` output (a fact's best and percent follow from its facts and points)."""
+    return (m['facts'], m['points'], m['best'], m['score_pct'], m['lost'], m['not_scored'],
+            tuple(m[o] for o in ai_score.OUTCOMES), m['most_lost'],
+            {f: (b['facts'], b['points'], b['lost'], [(r['key'], r['points']) for r in b['top_reasons']])
+             for f, b in m['by_fact'].items() if b['facts']},
+            [(v['version'], v['facts'], v['points'], v['lost']) for v in m['by_version']])
+
+
+class TestScoreMarksIsUnchangedOnOddInput(SimpleTestCase):
+
+    def test_odd_inputs_give_what_the_old_code_gave(self):
+        self.assertEqual([name for name, _records in ODD_CASES], list(OLD_SCORE_MARKS))
+        for name, records in ODD_CASES:
+            want = OLD_SCORE_MARKS[name]
+            if isinstance(want, type):
+                with self.assertRaises(want, msg=name):
+                    ai_score.score_marks(records)
+                continue
+            out = ai_score.score_marks(records)
+            self.assertEqual(sorted(out), ['best', 'by_fact', 'by_version', 'facts', 'lost', 'most_lost',
+                                           'not_scored', 'points', 'right_leaning', 'right_sure', 'score_pct',
+                                           'unsure', 'wrong_leaning', 'wrong_sure'], name)
+            self.assertEqual(marks_shape(out), want, name)

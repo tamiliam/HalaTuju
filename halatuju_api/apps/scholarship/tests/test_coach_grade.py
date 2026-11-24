@@ -95,11 +95,30 @@ class TestTheMonthlyScore(SimpleTestCase):
 
     def test_the_floor_is_five_marked_facts(self):
         four = coach_grade.coach_report(many([(CERTAIN, 'pass', 4)]))['months'][0]
-        self.assertEqual(four, {'version': 'v1', 'unknown_version': False, 'month': '2026-03',
-                                'month_to': '2026-03', 'too_few': True})
+        self.assertEqual(four, {'version': 'v1', 'unknown_version': False, 'month': '2026-03', 'too_few': True})
         five = coach_grade.coach_report(many([(CERTAIN, 'pass', 5)]))['months'][0]
-        self.assertFalse(five['too_few'])
-        self.assertEqual((five['facts'], five['points'], five['best'], five['score_pct']), (5, 10, 10, 100))
+        self.assertEqual(five, {'version': 'v1', 'unknown_version': False, 'month': '2026-03', 'too_few': False,
+                                'facts': 5, 'points': 10, 'best': 10, 'score_pct': 100, 'not_scored': 0,
+                                'outcomes': {'right_sure': 5, 'right_leaning': 0, 'unsure': 0,
+                                             'wrong_leaning': 0, 'wrong_sure': 0}})
+
+    def test_a_month_with_no_marked_fact_has_no_cell(self):
+        records = many([(CERTAIN, 'pass', 5)], when=EARLY) + [([], {'identity': 'pass'}, 'v1', LATER, BY, ROW_ID)]
+        report = coach_grade.coach_report(records)
+        self.assertEqual([(m['month'], m['too_few']) for m in report['months']], [('2026-03', False)])
+        self.assertEqual(report['decided_records'], 6)
+
+    def test_a_short_first_month_is_its_own_too_few_cell(self):
+        records = many([(CERTAIN, 'pass', 2)], when=EARLY) + many([(PROBABLE, 'pass', 6)], when=LATER)
+        months = coach_grade.coach_report(records)['months']
+        self.assertEqual([(m['month'], m['too_few'], m.get('facts'), m.get('points')) for m in months],
+                         [('2026-03', True, None, None), ('2026-04', False, 6, 6)])
+
+    def test_a_version_across_a_year_change(self):
+        records = (many([(CERTAIN, 'pass', 6)], when=datetime.datetime(2027, 1, 10, 3, 0, tzinfo=UTC))
+                   + many([(CERTAIN, 'pass', 5)], when=datetime.datetime(2026, 12, 10, 3, 0, tzinfo=UTC)))
+        months = coach_grade.coach_report(records)['months']
+        self.assertEqual([(m['month'], m['facts']) for m in months], [('2026-12', 5), ('2027-01', 6)])
 
     def test_not_scored_facts_do_not_lift_a_cell_over_the_floor(self):
         records = many([(CERTAIN, 'pass', 4)]) + [([], {'identity': 'pass'}, 'v1', EARLY, BY, ROW_ID)]
@@ -290,11 +309,9 @@ class TestVersions(SimpleTestCase):
         records = (many([(CERTAIN, 'pass', 45)], 'v1', EARLY) + many([(CERTAIN, 'pass', 45)], '  ', LATER)
                    + many([(PROBABLE, 'pass', 45)], ' v1 ', LATEST) + many([(CERTAIN, 'pass', 45)], 'v2', LATEST))
         report = coach_grade.coach_report(records)
-        self.assertEqual([(m['version'], m['unknown_version'], m['month'], m['month_to'], m['facts'])
-                          for m in report['months']],
-                         [('v1', False, '2026-03', '2026-03', 45), ('v1', False, '2026-05', '2026-05', 45),
-                          ('v2', False, '2026-05', '2026-05', 45),
-                          ('(unknown version)', True, '2026-04', '2026-04', 45)])
+        self.assertEqual([(m['version'], m['unknown_version'], m['month'], m['facts']) for m in report['months']],
+                         [('v1', False, '2026-03', 45), ('v1', False, '2026-05', 45), ('v2', False, '2026-05', 45),
+                          ('(unknown version)', True, '2026-04', 45)])
         self.assertEqual([(p['previous']['version'], p['new']['version'], p['previous']['facts'])
                           for p in report['coach']], [('v1', 'v2', 90)])
 
@@ -314,6 +331,28 @@ class TestVersions(SimpleTestCase):
         pair = coach_grade.coach_report(records)['coach'][0]
         self.assertEqual((pair['previous']['version'], pair['new']['version'], pair['grade']),
                          ('2026-11-15.9', '2026-11-15.10', 'pass'))
+
+    def test_a_label_that_is_not_text_is_unknown(self):
+        records = many([(CERTAIN, 'pass', 45)], 7, EARLY) + many([(CERTAIN, 'pass', 45)], 'v2', LATER)
+        report = coach_grade.coach_report(records)
+        self.assertEqual([(m['version'], m['unknown_version'], m['facts']) for m in report['months']],
+                         [('v2', False, 45), ('(unknown version)', True, 45)])
+        self.assertEqual((report['coach'], report['waiting']), ([], []))
+
+    def test_pre_versioning_is_matched_exactly_after_the_strip(self):
+        records = many([(CERTAIN, 'pass', 5)], ' pre-versioning ', EARLY) + many([(CERTAIN, 'pass', 5)],
+                                                                                 'PRE-VERSIONING', LATER)
+        months = coach_grade.coach_report(records)['months']
+        self.assertEqual([(m['version'], m['unknown_version']) for m in months],
+                         [('PRE-VERSIONING', False), ('pre-versioning', True)])
+
+    def test_a_small_unknown_version_does_not_wait(self):
+        records = (many([(CERTAIN, 'pass', 3)], 'pre-versioning', EARLY)
+                   + many([(CERTAIN, 'pass', 10)], 'v1', LATER))
+        report = coach_grade.coach_report(records)
+        self.assertEqual(report['months'][-1], {'version': 'pre-versioning', 'unknown_version': True,
+                                                'month': '2026-03', 'too_few': True})
+        self.assertEqual([w['version'] for w in report['waiting']], ['v1'])
 
     def test_a_naive_instant_is_read_as_utc(self):
         records = (many([(CERTAIN, 'pass', 5)], when=datetime.datetime(2026, 10, 31, 16, 30))
@@ -373,52 +412,122 @@ def mixed_records():
             + many([(CERTAIN, 'fail', 1, 'proof_missing')], 'd', at(4)))
 
 
-class TestMonthCellsCannotBeSubtracted(SimpleTestCase):
+def without_documents_only(report):
+    """A deep copy of ``report`` with every ``documents_only`` key and ``left_out_reasons`` taken out."""
+    def strip(value):
+        if isinstance(value, dict):
+            return {k: strip(v) for k, v in value.items() if k != 'documents_only'}
+        if isinstance(value, list):
+            return [strip(v) for v in value]
+        return value
+    out = strip(json.loads(json.dumps(report)))
+    out.pop('left_out_reasons')
+    return out
 
-    def test_the_leak_case_folds_the_small_month(self):
+
+def lines(report):
+    """Every ``documents_only`` value in a report, in order."""
+    found = []
+    sides = report['waiting'] + [s for p in report['coach'] for s in (p['previous'], p['new'])]
+    for item in report['months'] + sides:
+        if 'documents_only' in item:
+            found.append((item['version'], item.get('month'), item['documents_only']))
+    return found
+
+
+class TestOneMonthOneCell(SimpleTestCase):
+
+    def test_a_small_month_is_its_own_too_few_cell(self):
         records = (many([(CERTAIN, 'pass', 50)], 'v1', EARLY) + many([(CERTAIN, 'fail', 3)], 'v1', LATER)
                    + many([(CERTAIN, 'pass', 50)], 'v2', LATEST))
         report = coach_grade.coach_report(records)
-        v1 = [m for m in report['months'] if m['version'] == 'v1']
-        self.assertEqual(len(v1), 1)
-        self.assertEqual((v1[0]['month'], v1[0]['month_to'], v1[0]['facts'], v1[0]['points'], v1[0]['best']),
-                         ('2026-03', '2026-04', 53, 70, 106))
-        self.assertEqual(v1[0]['outcomes']['wrong_sure'], 3)
-        self.assertEqual(report['coach'][0]['previous']['facts'], 53)
+        self.assertEqual([(m['version'], m['month'], m['too_few'], m.get('facts')) for m in report['months']],
+                         [('v1', '2026-03', False, 50), ('v1', '2026-04', True, None),
+                          ('v2', '2026-05', False, 50)])
+        self.assertEqual(report['coach'][0]['previous']['facts'], 53)   # the side is the whole version
 
     def test_the_mixed_cells_are_exact(self):
         report = coach_grade.coach_report(mixed_records())
-        self.assertEqual([(m['version'], m['month'], m['month_to'], m['too_few'], m.get('facts'))
+        self.assertEqual([(m['version'], m['month'], m['too_few'], m.get('facts'), m.get('points'))
                           for m in report['months']],
-                         [('a', '2026-03', '2026-03', False, 6), ('a', '2026-04', '2026-06', False, 6),
-                          ('b', '2026-03', '2026-03', False, 45), ('d', '2026-03', '2026-04', False, 41),
-                          ('c', '2026-04', '2026-05', True, None)])
-        self.assertEqual([(p['previous']['version'], p['new']['version'], p['skipped_versions'])
-                          for p in report['coach']], [('b', 'd', 0)])
-        self.assertEqual([w['version'] for w in report['waiting']], ['a', 'c'])
+                         [('a', '2026-03', False, 6, 12), ('a', '2026-04', True, None, None),
+                          ('a', '2026-05', True, None, None), ('a', '2026-06', True, None, None),
+                          ('b', '2026-03', False, 45, 37), ('d', '2026-03', False, 40, 80),
+                          ('d', '2026-04', True, None, None), ('c', '2026-04', True, None, None),
+                          ('c', '2026-05', True, None, None)])
+        self.assertEqual([(p['previous']['version'], p['new']['version'], p['grade'], p['skipped_versions'])
+                          for p in report['coach']], [('b', 'd', 'pass', 0)])
+        self.assertEqual(report['waiting'], [{'version': 'a', 'too_few': False, 'facts': 12, 'score_pct': -50,
+                                              'coverage': {'count': 12, 'of': 12},
+                                              'generous_wrong': {'count': 3, 'of': 12}},
+                                             {'version': 'c', 'too_few': True}])
+        self.assertEqual(lines(report), [])
 
-    def test_every_version_s_cells_add_up_to_its_side_or_show_nothing(self):
+
+class TestLeaveOutChangesNothingButItsLine(SimpleTestCase):
+
+    def test_the_documents_only_report_is_the_plain_report_plus_lines(self):
+        plain = coach_grade.coach_report(mixed_records())
+        docs = coach_grade.coach_report(mixed_records(), leave_out_reasons=('interview_differs',))
+        self.assertEqual(without_documents_only(docs), without_documents_only(plain))
+        self.assertEqual((plain['left_out_reasons'], docs['left_out_reasons']), ([], ['interview_differs']))
+        self.assertNotIn('documents_only', json.dumps(plain))
+        self.assertEqual(lines(docs), [
+            ('a', '2026-03', {'too_few': False, 'facts': 6, 'points': 12, 'best': 12, 'score_pct': 100,
+                              'left_out': 0}),
+            ('b', '2026-03', {'too_few': False, 'facts': 43, 'points': 43, 'best': 86, 'score_pct': 50,
+                              'left_out': 2}),
+            ('d', '2026-03', {'too_few': False, 'facts': 40, 'points': 80, 'best': 80, 'score_pct': 100,
+                              'left_out': 0}),
+            ('a', None, {'too_few': False, 'facts': 9, 'points': 18, 'best': 18, 'score_pct': 100,
+                         'left_out': 3}),
+            ('b', None, {'too_few': False, 'facts': 43, 'points': 43, 'best': 86, 'score_pct': 50,
+                         'left_out': 2}),
+            ('d', None, {'too_few': False, 'facts': 41, 'points': 70, 'best': 82, 'score_pct': 85,
+                         'left_out': 0}),
+        ])
+
+    def test_reviewer_case_p1_cells_hold_with_and_without_the_leave_out(self):
+        records = (many([(CERTAIN, 'pass', 4), (CERTAIN, 'fail', 1, 'interview_differs')], 'v1', at(1))
+                   + [one(RULE_NOT_MET, 'pass', 'v1', at(2)), one(PROBABLE, 'fail', 'v1', at(2), 'proof_missing')]
+                   + many([(CERTAIN, 'pass', 5)], 'v1', at(3)))
+        plain = coach_grade.coach_report(records)
+        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)
+        want = [('2026-01', False, 5, -2), ('2026-02', True, None, None), ('2026-03', False, 5, 10)]
+        for report in (plain, docs):
+            self.assertEqual([(m['month'], m['too_few'], m.get('facts'), m.get('points'))
+                              for m in report['months']], want)
+        self.assertEqual(without_documents_only(docs), without_documents_only(plain))
+        self.assertEqual([m.get('documents_only') for m in docs['months']],
+                         [{'too_few': True}, None, {'too_few': False, 'facts': 5, 'points': 10, 'best': 10,
+                                                    'score_pct': 100, 'left_out': 0}])
+        self.assertEqual(docs['waiting'], [{'version': 'v1', 'too_few': False, 'facts': 12, 'score_pct': -21,
+                                            'coverage': {'count': 12, 'of': 12},
+                                            'generous_wrong': {'count': 2, 'of': 12},
+                                            'documents_only': {'too_few': False, 'facts': 11, 'points': 5,
+                                                               'best': 22, 'score_pct': 23, 'left_out': 1}}])
+
+    def test_reviewer_case_p2_a_middle_version_of_interview_fails_keeps_its_place(self):
+        records = (many([(PROBABLE, 'pass', 50)], 'v1', at(1))
+                   + many([(CERTAIN, 'fail', 3, 'interview_differs')], 'v1.1', at(2))
+                   + many([(CERTAIN, 'pass', 50)], 'v2', at(3)))
         for leave_out in ((), coach_grade.DOCUMENTS_ONLY):
-            report = coach_grade.coach_report(mixed_records(), leave_out_reasons=leave_out)
-            sides = {w['version']: w for w in report['waiting']}
-            for pair in report['coach']:
-                sides[pair['previous']['version']] = pair['previous']
-                sides[pair['new']['version']] = pair['new']
-            self.assertEqual(sorted(sides), ['a', 'b', 'c', 'd'], leave_out)
-            for version, side in sides.items():
-                cells = [m for m in report['months'] if m['version'] == version]
-                if side['too_few']:
-                    self.assertEqual([c['too_few'] for c in cells], [True], (leave_out, version))
-                else:
-                    self.assertTrue(all(not c['too_few'] for c in cells), (leave_out, version))
-                    self.assertEqual(sum(c['facts'] for c in cells), side['facts'], (leave_out, version))
+            report = coach_grade.coach_report(records, leave_out_reasons=leave_out)
+            self.assertEqual([m for m in report['months'] if m['version'] == 'v1.1'],
+                             [{'version': 'v1.1', 'unknown_version': False, 'month': '2026-02', 'too_few': True}])
+            self.assertEqual(report['waiting'], [{'version': 'v1.1', 'too_few': True}], leave_out)
+            self.assertEqual([(p['previous']['version'], p['new']['version'], p['grade'], p['skipped_versions'])
+                              for p in report['coach']], [('v1', 'v2', 'pass', 1)], leave_out)
+            self.assertEqual(report['versions_without_marks'], 0, leave_out)
 
-    def test_documents_only_builds_its_own_runs(self):
-        report = coach_grade.coach_report(mixed_records(), leave_out_reasons=coach_grade.DOCUMENTS_ONLY)
-        # April to June keep only 3 facts once May's interview Fails go, so they fold into March
-        a = [(m['month'], m['month_to'], m['facts'], m['left_out']) for m in report['months']
-             if m['version'] == 'a']
-        self.assertEqual(a, [('2026-03', '2026-06', 9, 3)])
+    def test_the_same_records_a_month_later_show_the_same_old_cells(self):
+        base = many([(CERTAIN, 'pass', 5)], 'v1', at(1)) + [one(CERTAIN, 'fail', 'v1', at(2)),
+                                                            one(UNVERIFIABLE, 'pass', 'v1', at(2))]
+        before = coach_grade.coach_report(base)['months']
+        after = coach_grade.coach_report(base + many([(CERTAIN, 'pass', 5)], 'v1', at(3)))['months']
+        self.assertEqual(after[:2], before)   # no cell is re-cut when a later month arrives
+        self.assertEqual([(m['month'], m['too_few']) for m in after],
+                         [('2026-01', False), ('2026-02', True), ('2026-03', False)])
 
 
 class TestDocumentsOnly(SimpleTestCase):
@@ -431,32 +540,49 @@ class TestDocumentsOnly(SimpleTestCase):
         records = self.records() + many([(PROBABLE, 'pass', 40)], 'v2', LATER)
         self.assertEqual(coach_grade.coach_report(records), coach_grade.coach_report(records, ()))
         cell = coach_grade.coach_report(records)['months'][0]
-        self.assertEqual((cell['facts'], cell['points'], cell['best'], cell['left_out']), (7, -10, 14, 0))
+        self.assertEqual((cell['facts'], cell['points'], cell['best']), (7, -10, 14))
+        self.assertNotIn('left_out', cell)
+        self.assertNotIn('documents_only', cell)
 
-    def test_an_interview_fail_is_left_out_of_points_and_best(self):
+    def test_an_interview_fail_is_left_out_of_points_and_best_in_its_line(self):
         cell = coach_grade.coach_report(self.records(), leave_out_reasons=coach_grade.DOCUMENTS_ONLY)['months'][0]
-        self.assertEqual((cell['facts'], cell['points'], cell['best'], cell['left_out']), (6, 0, 12, 1))
-        self.assertEqual(cell['outcomes']['wrong_sure'], 1)   # the proof_missing Fail still costs
+        self.assertEqual((cell['facts'], cell['points'], cell['best'], cell['score_pct']), (7, -10, 14, -71))
+        self.assertEqual(cell['outcomes']['wrong_sure'], 2)   # the plain cell keeps both Fails
+        # the proof_missing Fail still costs in the line; the interview Fail does not
+        self.assertEqual(cell['documents_only'], {'too_few': False, 'facts': 6, 'points': 0, 'best': 12,
+                                                  'score_pct': 0, 'left_out': 1})
 
-    def test_it_applies_to_the_coach_grade_too(self):
+    def test_the_grade_stays_plain_and_each_side_gains_its_line(self):
         old = [(PROBABLE, 'pass', 40)]
         new = [(CERTAIN, 'pass', 40), (CERTAIN, 'fail', 1, 'interview_differs')]
         records = many(old, 'old', EARLY) + many(new, 'next', LATER)
         plain = coach_grade.coach_report(records)['coach'][0]
         self.assertEqual((plain['grade'], plain['reasons']), ('fail', ['generous_wrong_rose']))
         docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)
-        self.assertEqual(docs['left_out_reasons'], ['interview_differs'])
         pair = docs['coach'][0]
-        self.assertEqual((pair['grade'], pair['new']['facts'], pair['new']['generous_wrong']),
-                         ('pass', 40, {'count': 0, 'of': 40}))
+        self.assertEqual((pair['grade'], pair['reasons'], pair['new']['facts'], pair['new']['generous_wrong']),
+                         ('fail', ['generous_wrong_rose'], 41, {'count': 1, 'of': 41}))
+        self.assertEqual(pair['new']['documents_only'], {'too_few': False, 'facts': 40, 'points': 80, 'best': 80,
+                                                         'score_pct': 100, 'left_out': 1})
+        self.assertEqual(pair['previous']['documents_only'], {'too_few': False, 'facts': 40, 'points': 40,
+                                                              'best': 80, 'score_pct': 50, 'left_out': 0})
+
+    def test_a_side_under_five_left_shows_a_too_few_line(self):
+        records = many([(CERTAIN, 'pass', 3), (CERTAIN, 'fail', 3, 'interview_differs')], 'v1', EARLY)
+        docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)
+        self.assertEqual(docs['waiting'], [{'version': 'v1', 'too_few': False, 'facts': 6, 'score_pct': -200,
+                                            'coverage': {'count': 6, 'of': 6},
+                                            'generous_wrong': {'count': 3, 'of': 6},
+                                            'documents_only': {'too_few': True}}])
 
     def test_a_left_out_candidate_with_no_band_stays_not_scored(self):
         no_band = ([], {'identity': 'fail', 'fail_reasons': {'identity': 'interview_differs'}}, 'v1', EARLY, BY,
                    ROW_ID)
         records = many([(CERTAIN, 'pass', 6)]) + [no_band]
-        for leave_out in ((), coach_grade.DOCUMENTS_ONLY):
-            cell = coach_grade.coach_report(records, leave_out_reasons=leave_out)['months'][0]
-            self.assertEqual((cell['facts'], cell['not_scored'], cell['left_out']), (6, 1, 0), leave_out)
+        cell = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)['months'][0]
+        self.assertEqual((cell['facts'], cell['not_scored']), (6, 1))
+        self.assertEqual(cell['documents_only'], {'too_few': False, 'facts': 6, 'points': 12, 'best': 12,
+                                                  'score_pct': 100, 'left_out': 0})
 
     def test_an_unknown_code_is_refused(self):
         with self.assertRaises(ValueError):
@@ -473,5 +599,7 @@ class TestDocumentsOnly(SimpleTestCase):
         plain = coach_grade.coach_report(records)['months'][0]
         docs = coach_grade.coach_report(records, leave_out_reasons=coach_grade.DOCUMENTS_ONLY)['months'][0]
         self.assertEqual((plain['facts'], plain['points'], plain['best']), (8, -32, 16))
-        self.assertEqual((docs['facts'], docs['points'], docs['best'], docs['left_out']), (6, -12, 12, 2))
+        self.assertEqual((docs['facts'], docs['points'], docs['best']), (8, -32, 16))
+        self.assertEqual(docs['documents_only'], {'too_few': False, 'facts': 6, 'points': -12, 'best': 12,
+                                                  'score_pct': -100, 'left_out': 2})
         self.assertEqual(verdict['identity'], 'fail')   # the caller's record is not changed
