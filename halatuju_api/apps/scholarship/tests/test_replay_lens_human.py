@@ -2,6 +2,7 @@
 database, no production fixture. Every exam folder is a fresh temp folder outside any git repository."""
 import ast
 import datetime
+import errno
 import hashlib
 import json
 import logging
@@ -156,8 +157,11 @@ def test_undecided_and_unverdicted_cases_never_enter(folder):
 def test_the_exam_file_holds_exactly_the_allowed_fields_and_the_digest_recipe(folder):
     run([case(i) for i in range(1, 51)] + [case(99, ctx={})], folder)
     one, old = read_exam(folder), read_exam(folder, L.EXAM_OLD)
-    assert set(one) == {'exam', 'format', 'application_ids', 'size', 'frozen_at', 'key_check', 'digest'}
-    assert set(old) == {'exam', 'format', 'application_ids', 'size', 'frozen_at', 'digest'}
+    assert set(one) == {'exam', 'format', 'application_ids', 'decided_at', 'size', 'frozen_at', 'key_check',
+                        'digest'}
+    assert set(old) == {'exam', 'format', 'application_ids', 'decided_at', 'size', 'frozen_at', 'digest'}
+    assert one['decided_at'][:2] == ['2026-11-01T00:01:00.000000+00:00', '2026-11-01T00:02:00.000000+00:00']
+    assert old['decided_at'] == ['2026-11-01T01:39:00.000000+00:00'] and len(one['decided_at']) == 50
     for exam in (one, old):
         body = {k: v for k, v in exam.items() if k != 'digest'}
         canon = json.dumps(body, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
@@ -192,6 +196,20 @@ def _tamper(exam, field=None, value=None, drop=None, add=None, redigest=True):
     (dict(field='format', value=2), 'wrong_format_version'),
     (dict(field='format', value=True), 'wrong_format_version'),
     (dict(field='frozen_at', value=5), 'bad_field_type'),
+    (dict(field='application_ids', value=[0] + list(range(2, 51))), 'id_below_one'),
+    (dict(field='application_ids', value=[-3] + list(range(2, 51))), 'id_below_one'),
+    (dict(field='application_ids', value=[]), 'empty_exam'),
+    (dict(drop='decided_at'), 'missing_field'),
+    (dict(field='decided_at', value='2026-11-01T00:01:00.000000+00:00'), 'bad_field_type'),
+    (dict(field='decided_at', value=['2026-11-01T00:01:00.000000+00:00'] * 49), 'bad_decided_at'),
+    (dict(field='decided_at', value=[5] * 50), 'bad_decided_at'),
+    (dict(field='decided_at', value=['2026-11-01T00:01:00.000000+00:00'] * 49 + ['yesterday']), 'bad_decided_at'),
+    (dict(field='decided_at', value=['2026-11-01T00:01:00+00:00'] * 50), 'bad_decided_at'),        # no microseconds
+    (dict(field='decided_at', value=['2026-11-01T00:01:00.000000Z'] * 50), 'bad_decided_at'),      # not the one form
+    (dict(field='decided_at', value=['2026-11-01 00:01:00.000000+00:00'] * 50), 'bad_decided_at'),
+    (dict(field='decided_at', value=['2026-11-01T00:01:00.000000'] * 50), 'bad_decided_at'),       # no zone
+    (dict(field='decided_at', value=['2026-11-01T08:01:00.000000+08:00'] * 50), 'bad_decided_at'),  # not UTC
+    (dict(field='decided_at', value=['2026-02-30T00:01:00.000000+00:00'] * 50), 'bad_decided_at'),
 ])
 def test_every_load_refusal(folder, change, code):
     run([case(i) for i in range(1, 51)], folder)
@@ -214,10 +232,10 @@ def test_a_key_check_field_in_exam_old_is_refused(folder):
 
 
 def test_a_freeze_never_overwrites_and_leaves_no_temp_file(folder):
-    exam, refusal = L.freeze_exam(folder, L.EXAM_OLD, [3, 1, 2], NOW)
+    exam, refusal = L.freeze_exam(folder, L.EXAM_OLD, [3, 1, 2], [T0] * 3, NOW)
     assert refusal is None and exam['application_ids'] == [3, 1, 2]
     before = (folder / 'exam-old.json').read_bytes()
-    assert L.freeze_exam(folder, L.EXAM_OLD, [9], NOW) == (None, 'already_frozen')
+    assert L.freeze_exam(folder, L.EXAM_OLD, [9], [T0], NOW) == (None, 'already_frozen')
     assert (folder / 'exam-old.json').read_bytes() == before
     assert sorted(os.listdir(folder)) == ['exam-old.json']
 
@@ -228,7 +246,7 @@ def test_a_name_taken_between_the_check_and_the_link_is_refused_not_replaced(fol
             fh.write('someone else')
         raise FileExistsError
     with mock.patch.object(L.os, 'link', side_effect=taken):
-        assert L.freeze_exam(folder, L.EXAM_OLD, [1], NOW) == (None, 'already_frozen')
+        assert L.freeze_exam(folder, L.EXAM_OLD, [1], [T0], NOW) == (None, 'already_frozen')
     assert (folder / 'exam-old.json').read_text(encoding='utf-8') == 'someone else'
     assert sorted(os.listdir(folder)) == ['exam-old.json']
 
@@ -241,7 +259,7 @@ def test_a_folder_inside_a_git_repository_is_refused(tmp_path, kind):
     inner = tmp_path / 'a' / 'b'
     inner.mkdir(parents=True)
     for place in (tmp_path, inner):
-        assert L.freeze_exam(place, L.EXAM_OLD, [1], NOW) == (None, 'inside_git_repo')
+        assert L.freeze_exam(place, L.EXAM_OLD, [1], [T0], NOW) == (None, 'inside_git_repo')
         assert not os.path.exists(place / 'exam-old.json')
     out = run([case(1, ctx={})], inner)
     assert exold(out)['refusal'] == 'inside_git_repo'
@@ -250,7 +268,7 @@ def test_a_folder_inside_a_git_repository_is_refused(tmp_path, kind):
 def test_the_real_repository_is_refused():
     here = os.path.dirname(os.path.abspath(__file__))
     assert L.exam_folder_refusal(here) == 'inside_git_repo'
-    assert L.freeze_exam(here, L.EXAM_OLD, [1], NOW) == (None, 'inside_git_repo')
+    assert L.freeze_exam(here, L.EXAM_OLD, [1], [T0], NOW) == (None, 'inside_git_repo')
     assert not os.path.exists(os.path.join(here, 'exam-old.json'))
 
 
@@ -276,7 +294,7 @@ def test_each_validity_count(folder):
             case(5, ctx={}), case(6, decided=False)]                                   # 3 is missing
     e = ex1(run(now, folder))
     assert e['validity'] == {'valid': 44, 'evidence_changed': 1, 'could_not_recompute': 1, 'missing': 1,
-                             'context_changed': 2, 'no_longer_decided': 1}
+                             'context_changed': 2, 'no_longer_decided': 1, 'decided_again': 0}
     assert e['still_valid'] == '44 of 50 still valid' and e['size'] == 50
     assert e['score']['facts'] == 44
     assert 'drop-outs shrink the exam' in e['known_limits'] and 'a score on 44 facts' in e['known_limits']
@@ -311,7 +329,22 @@ def test_the_freeze_is_refused_on_a_blank_key_or_mixed_key_checks(folder):
     mixed = [case(i) for i in range(1, 50)] + [case(50, ctx=full_ctx(kc='ffffffff'))]
     e = ex1(run(mixed, folder))
     assert (e['refusal'], e['cases_with_other_key_check']) == ('candidate_key_checks_differ', 1)
-    assert ex1(run([case(i) for i in range(1, 51)], folder, kc=None))['refusal'] == 'candidate_key_checks_differ'
+    assert not os.path.exists(folder / 'exam-1.json')
+
+
+@pytest.mark.parametrize('kc', [None, '', '   '])
+def test_the_freeze_is_refused_when_the_current_key_check_is_missing(folder, kc):
+    e = ex1(run([case(i) for i in range(1, 51)], folder, kc=kc))
+    assert (e['refusal'], e['cases_with_other_key_check'], e['score']) == ('current_key_check_missing', None, None)
+    assert not os.path.exists(folder / 'exam-1.json')
+
+
+def test_the_freeze_is_refused_when_the_50_agree_but_not_with_the_current_key_check(folder):
+    same = [case(i, ctx=full_ctx(kc='ffffffff')) for i in range(1, 51)]
+    e = ex1(run(same, folder))
+    assert (e['refusal'], e['cases_with_other_key_check']) == ('candidate_key_check_not_current', 50)
+    half = [case(i, ctx=full_ctx(kc='ffffffff' if i % 2 else 'eeeeeeee')) for i in range(1, 51)]
+    assert ex1(run(half, folder))['refusal'] == 'candidate_key_checks_differ'   # mixed, none current
     assert not os.path.exists(folder / 'exam-1.json')
 
 
@@ -458,6 +491,191 @@ def test_now_must_carry_a_zone(folder):
     with pytest.raises(ValueError):
         L.run_human_lens([], exam_folder=str(folder), key_is_blank=False, current_key_check=KC,
                          now=datetime.datetime(2026, 11, 24))
+
+
+# --- Round 1 fixes: bad files, bad folders, the split key codes, the decision times -----------------
+
+def _rewrite(folder, name, **fields):
+    exam = dict(read_exam(folder, name), **fields)
+    exam['digest'] = L.exam_digest(exam)
+    write_raw(folder, exam, name)
+
+
+def test_an_exam_1_file_of_49_with_a_valid_digest_is_refused_on_size(folder):
+    run([case(i) for i in range(1, 51)], folder)
+    exam = read_exam(folder)
+    _rewrite(folder, L.EXAM_1, application_ids=exam['application_ids'][:49], decided_at=exam['decided_at'][:49],
+             size=49)
+    assert L.load_exam(folder, L.EXAM_1) == (None, 'size_mismatch')
+
+
+def test_an_exam_old_file_with_no_ids_is_refused(folder):
+    run([case(1, ctx={})], folder)
+    _rewrite(folder, L.EXAM_OLD, application_ids=[], decided_at=[], size=0)
+    assert L.load_exam(folder, L.EXAM_OLD) == (None, 'empty_exam')
+    e = exold(run([case(1, ctx={})], folder))
+    assert (e['refusal'], e['score']) == ('empty_exam', None)
+
+
+def test_an_id_below_one_is_never_written(folder):
+    for aid in (0, -4):
+        with pytest.raises(L.BadCaseRow) as err:
+            run([case(aid, ctx={}, minute=1)], folder)
+        assert err.value.field == 'application_id'
+        with pytest.raises(ValueError):
+            L.freeze_exam(folder, L.EXAM_OLD, [aid], [T0], NOW)
+    with pytest.raises(ValueError):
+        L.freeze_exam(folder, L.EXAM_OLD, [1, 2], [T0], NOW)   # one time per id
+    assert os.listdir(folder) == []
+
+
+@pytest.mark.parametrize('depth', [5_000, 100_000])
+def test_a_deeply_nested_exam_file_is_refused_not_crashed(folder, depth):
+    old = [case(i, ctx={}) for i in range(60, 66)]
+    run(old, folder)
+    write_raw(folder, '{"exam": "exam-1", "application_ids": ' + '[' * depth + ']' * depth + '}')
+    assert L.load_exam(folder, L.EXAM_1) == (None, 'file_unreadable')
+    out = run(old, folder)
+    assert ex1(out)['refusal'] == 'file_unreadable' and exold(out)['score']['facts'] == 6
+
+
+@pytest.mark.parametrize('code', [errno.EPERM, errno.ENOTSUP, errno.ENOSYS, errno.EXDEV])
+def test_a_folder_without_hard_links_refuses_that_exam_with_a_code(folder, code):
+    old = [case(i, ctx={}) for i in range(60, 66)]
+    run(old, folder)                                                  # exam-old frozen first
+    before = (folder / 'exam-old.json').read_bytes()
+    with mock.patch.object(L.os, 'link', side_effect=OSError(code, 'canary-message')):
+        assert L.freeze_exam(folder, L.EXAM_1, list(range(1, 51)), [T0] * 50, NOW, KC) == (None, 'folder_not_writable')
+        assert L.freeze_exam(folder, L.EXAM_OLD, [1], [T0], NOW) == (None, 'already_frozen')
+        out = run([case(i) for i in range(1, 51)] + old, folder)
+    e = ex1(out)
+    assert (e['refusal'], e['status'], e['score'], e['frozen']) == ('folder_not_writable', 'refused: folder_not_writable',
+                                                                    None, False)
+    assert exold(out)['refusal'] is None and exold(out)['score']['facts'] == 6 and out['cases_read'] == 56
+    assert sorted(os.listdir(folder)) == ['exam-old.json'] and (folder / 'exam-old.json').read_bytes() == before
+    assert 'canary' not in json.dumps(out, default=str)
+
+
+def test_a_read_only_folder_refuses_both_freezes_with_a_code(folder):
+    with mock.patch.object(L.tempfile, 'mkstemp', side_effect=PermissionError(errno.EACCES, 'canary-message')):
+        out = run([case(i) for i in range(1, 51)] + [case(60, ctx={})], folder)
+    assert ex1(out)['refusal'] == exold(out)['refusal'] == 'folder_not_writable'
+    assert (ex1(out)['score'], exold(out)['score'], out['cases_read']) == (None, None, 51)
+    assert os.listdir(folder) == [] and 'canary' not in json.dumps(out, default=str)
+
+
+def test_a_failed_write_leaves_no_temp_file(folder):
+    with mock.patch.object(L.os, 'fsync', side_effect=OSError(errno.ENOSPC, 'full')):
+        assert L.freeze_exam(folder, L.EXAM_OLD, [1], [T0], NOW) == (None, 'folder_not_writable')
+    assert os.listdir(folder) == []
+
+
+def _no_load(*_args):
+    raise AssertionError('an exam file was loaded')
+
+
+@pytest.mark.parametrize('cases', [[], [case(i) for i in range(1, 50)], [case(i, ctx={}) for i in range(1, 4)]],
+                         ids=['no-cases', '49-full', 'old'])
+def test_a_missing_folder_refuses_both_exams_and_still_counts(tmp_path, cases):
+    with mock.patch.object(L, 'load_exam', side_effect=_no_load):
+        out = run(cases + [case(90, decided=False)], tmp_path / 'nowhere')
+    for e in (ex1(out), exold(out)):
+        assert (e['refusal'], e['status'], e['score'], e['validity']) == ('folder_missing', 'refused: folder_missing',
+                                                                          None, None)
+    assert (out['cases_read'], out['not_decided'], out['context_failed']) == (len(cases) + 1, 1, 0)
+    assert not os.path.exists(tmp_path / 'nowhere')
+
+
+def test_a_folder_inside_a_repository_is_refused_even_with_a_valid_exam_file(folder):
+    cases = [case(i) for i in range(1, 51)] + [case(60, ctx={})]
+    run(cases, folder)
+    before = {p.name: p.read_bytes() for p in folder.iterdir()}
+    (folder / '.git').mkdir()
+    with mock.patch.object(L, 'load_exam', side_effect=_no_load):
+        out = run(cases, folder)
+    for e in (ex1(out), exold(out)):
+        assert (e['refusal'], e['score'], e['frozen'], e['size']) == ('inside_git_repo', None, False, None)
+    assert {p.name: p.read_bytes() for p in folder.iterdir() if p.name != '.git'} == before
+
+
+class _PathOf:
+    def __init__(self, value):
+        self.value = value
+
+    def __fspath__(self):
+        return self.value
+
+
+@pytest.mark.parametrize('bad', ['', b'/tmp', None, 5, _PathOf(b'/tmp'), _PathOf(5), 'a\0b'],
+                         ids=['empty', 'bytes', 'none', 'int', 'bytes-pathlike', 'int-pathlike', 'nul'])
+def test_an_empty_or_non_path_folder_is_refused_not_raised(tmp_path, monkeypatch, bad):
+    monkeypatch.chdir(tmp_path)                    # an empty text must never mean "here"
+    assert L.exam_folder_refusal(bad) == 'folder_missing'
+    out = L.run_human_lens([case(1, ctx={})], exam_folder=bad, key_is_blank=False, current_key_check=KC, now=NOW)
+    assert (ex1(out)['refusal'], exold(out)['refusal']) == ('folder_missing', 'folder_missing')
+    assert L.freeze_exam(bad, L.EXAM_OLD, [1], [T0], NOW) == (None, 'folder_missing')
+    assert os.listdir(tmp_path) == []
+
+
+def test_a_disagreed_qc_alone_turns_the_fail_and_an_agreed_qc_alone_keeps_it(folder):
+    passes = [case(i, ctx={}) for i in range(2, 6)]
+    turned = exold(run([case(1, ctx={}, verdict=_fail('other'), qc={'identity': 'disagreed'})] + passes, folder))
+    assert (turned['score']['points'], turned['qc_turned_to_pass'], turned['fails']['fails']) == (10, 1, 0)
+    other = folder / 'b'
+    other.mkdir()
+    kept = exold(run([case(1, ctx={}, verdict=_fail('other'), qc={'identity': 'agreed'})] + passes, other))
+    assert (kept['score']['points'], kept['qc_turned_to_pass'], kept['fails']['fails']) == (-10 + 8, 0, 1)
+
+
+def test_generous_wrong_is_a_certain_or_probable_fail_as_coach_grade_defines_it(folder):
+    plan = [('certain', 'fail'), ('probable', 'fail'), ('unsure', 'fail'), ('ruleNotMet', 'fail'),
+            ('probable', 'pass'), ('certain', 'pass')]
+    cases = [case(i, ctx={}, verdict=_fail('other') if mark == 'fail' else {'identity': 'pass'},
+                  snapshot=snap(identity=band)) for i, (band, mark) in enumerate(plan, start=1)]
+    assert exold(run(cases, folder))['score']['generous_wrong'] == {'count': 2, 'of': 6}
+
+
+def _moved(row, shift):
+    return dict(row, verdict_decided_at=row['verdict_decided_at'] + shift)
+
+
+@pytest.mark.parametrize('shift', [datetime.timedelta(days=3), -datetime.timedelta(hours=1),
+                                   datetime.timedelta(microseconds=1)], ids=['later', 'earlier', 'one-microsecond'])
+def test_a_case_decided_again_after_the_freeze_is_out_of_the_score(folder, shift):
+    run([case(i) for i in range(1, 51)] + [case(i, ctx={}) for i in range(60, 66)], folder)
+    frozen = read_exam(folder)['decided_at']
+    now = [_moved(case(1), shift), _moved(case(2), shift)] + [case(i) for i in range(3, 51)]
+    now += [_moved(case(60, ctx={}), shift)] + [case(i, ctx={}) for i in range(61, 66)]
+    out = run(now, folder)
+    one, old = ex1(out), exold(out)
+    assert (one['validity']['decided_again'], one['still_valid'], one['score']['facts'], one['size']) == (
+        2, '48 of 50 still valid', 48, 50)
+    assert (old['validity']['decided_again'], old['score']['facts'], old['size']) == (1, 5, 6)
+    assert read_exam(folder)['decided_at'] == frozen
+    assert '2026-11-01' not in json.dumps(out, default=str)
+
+
+def test_the_same_instant_in_another_zone_is_still_valid(folder):
+    run([case(i, ctx={}) for i in range(1, 6)], folder)
+    myt = datetime.timezone(datetime.timedelta(hours=8))
+    for convert in (lambda t: t.astimezone(myt), lambda t: t.replace(tzinfo=None)):
+        rows = [dict(c, verdict_decided_at=convert(c['verdict_decided_at'])) for c in
+                (case(i, ctx={}) for i in range(1, 6))]
+        e = exold(run(rows, folder))
+        assert (e['validity']['valid'], e['validity']['decided_again']) == (5, 0)
+
+
+def test_every_validity_state_at_once_adds_up_to_the_size(folder):
+    run([case(i) for i in range(1, 51)], folder)
+    now = [case(i) for i in range(10, 51)]
+    now += [case(1, recomputed='moved'), case(2, recomputed=None), case(4, ctx=FAILED_CTX), case(5, ctx={}),
+            case(6, decided=False), _moved(case(7), datetime.timedelta(seconds=1)),
+            _moved(case(8, recomputed='moved'), datetime.timedelta(seconds=1)),   # decided again comes first
+            _moved(case(9, verdict={}), datetime.timedelta(seconds=1))]          # no longer decided comes first
+    e = ex1(run(now, folder))                                                    # 3 is missing
+    assert e['validity'] == {'valid': 41, 'evidence_changed': 1, 'could_not_recompute': 1, 'missing': 1,
+                             'context_changed': 2, 'no_longer_decided': 2, 'decided_again': 2}
+    assert sum(e['validity'].values()) == e['size'] == 50 and e['still_valid'] == '41 of 50 still valid'
 
 
 # --- E10: pure, light imports; words ----------------------------------------------------------------

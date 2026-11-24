@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 Branch ll5, not pushed. Migration: none. New pure module `eval/replay/lens_human.py` (nothing calls it yet): exam-1 (50 full-context cases, frozen) and exam-old (cases decided before LL4, labelled weaker), a write-once exam file outside any git repository, key-check refusals, and the score through `ai_score` with the extra line "score without interview Fails"; counts only, never an id or a key (decisions.md).
 
+Round-1 review fixes: the folder is checked once per run, and a missing, non-folder, empty or non-path folder (`folder_missing`) or one inside a git repository (`inside_git_repo`) refuses both exams with nothing loaded or written; a folder that cannot take the write gives `folder_not_writable` instead of a crash. An exam file nested too deep to read gives `file_unreadable`; new load codes `empty_exam`, `id_below_one` and `bad_decided_at`. The freeze refusals for exam-1 now have one name each: `current_key_check_missing`, `candidate_key_checks_differ`, `candidate_key_check_not_current`. The exam file stores each case's decision time (`decided_at`, UTC, inside the digest; format stays 1, as no exam file exists yet), and a listed case decided again after the freeze is counted as `decided_again` and left out of that run's score. Where the exam file lives in production is still open (owner, phase C); until then the lens must not run on real data.
+
 ### LL5 phase B1 - the replay's fingerprint key: one-way derived, never SECRET_KEY (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Services: api (no change in behaviour) and the replay job only.
