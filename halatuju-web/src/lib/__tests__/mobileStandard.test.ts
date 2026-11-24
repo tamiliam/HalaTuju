@@ -462,7 +462,8 @@ describe('rule 3 — the quizzes trade the dot row for Next on a phone', () => {
       const src = readWeb(rel, 'a quiz page')
       expect(src).toMatch(/<div className="hidden md:flex justify-center gap-2 mb-6" data-testid="quiz-dots">/)
       expect(src).toMatch(/className="btn-primary min-h-11 md:hidden[^"]*"\s+data-testid="quiz-next"/)
-      expect(src).toMatch(/disabled=\{!currentAnswered\}/)
+      // TD-714: the STPM quiz's Next also waits for the Q2 lookup (`|| q2Waiting`).
+      expect(src).toMatch(/disabled=\{!currentAnswered( \|\| q2Waiting)?\}/)
       expect(src).toContain("t('discovery.quizNext')")
       expect(src).toContain("import '@/lib/messagesDiscovery'")
       expect(src).toMatch(/t\('quiz\.questionOf'/)
