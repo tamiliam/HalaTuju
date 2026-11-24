@@ -6,7 +6,8 @@ The tree's own `halatuju.settings.base`, then:
   * every setting whose name says KEY / SECRET / TOKEN / PASSWORD / DSN blanked (SECRET_KEY gets a random
     throwaway), so even a key that slipped into the environment is not used;
   * ONE named exception, set after the blanking: `VERDICT_FINGERPRINT_DERIVED_KEY`, from the environment
-    variable `REPLAY_FINGERPRINT_KEY` (64 hex characters, else the settings refuse to load). It is the
+    variable `REPLAY_FINGERPRINT_KEY` (64 hex characters; any other non-empty value, whitespace only
+    included, and the settings refuse to load). It is the
     one-way derived key `sha256(salt + SECRET_KEY)` of `verdict_context`, so the replay recomputes the
     stored evidence fingerprints without ever holding `SECRET_KEY`. Absent = blank, and every fingerprint
     then mismatches (the key-free default). Never printed, logged or quoted in an error;
@@ -33,10 +34,11 @@ SECRET_KEY = secrets.token_hex(32)
 
 
 def _derived_fingerprint_key():
-    """`REPLAY_FINGERPRINT_KEY`: blank when absent or blank, else exactly 64 hex characters, else the
-    settings refuse to load. The message names the variable, never its value."""
+    """`REPLAY_FINGERPRINT_KEY`: blank when absent or exactly the empty string; any other value must be
+    exactly 64 hex characters (whitespace only, or a key with a newline, is a mangled key: loud, never
+    blank), else the settings refuse to load. The message names the variable, never its value."""
     given = os.environ.get('REPLAY_FINGERPRINT_KEY', '')
-    if not given.strip():
+    if given == '':
         return ''
     if not re.fullmatch(r'[0-9a-fA-F]{64}', given):
         raise ImproperlyConfigured('replay: REPLAY_FINGERPRINT_KEY must be 64 hex characters')

@@ -48,13 +48,28 @@ gcloud secrets add-iam-policy-binding halatuju-replay-db-url --member serviceAcc
 ## 2b. The derived fingerprint key (LL5; words only, no script)
 
 Make the derived key once: read the production SECRET_KEY, compute sha256(salt + SECRET_KEY) as hex,
-write it straight into Secret Manager as the replay job's REPLAY_FINGERPRINT_KEY, never print it, never
-put it in a file or the image. Needs the Secret Manager API and the owner's yes at that time.
+write it straight into Secret Manager as the replay job's REPLAY_FINGERPRINT_KEY. Needs the Secret
+Manager API and the owner's yes at that time, given for this step when it is run.
 
-The salt is the fixed `_KEY_SALT` in `halatuju_api/apps/scholarship/verdict_context.py`. The value is
-exactly 64 hex characters with no newline at the end (anything else makes the replay refuse to start).
-It is the derived key, never `SECRET_KEY` itself. Only the replay's service account may read that one
-secret. Delete it with the rest in step 6.
+- **Never seen.** Neither `SECRET_KEY` nor the derived value may reach a terminal, a shell history or
+  a file (not even a temporary one), and neither goes into the image.
+- **The input.** The hash is over the salt followed by the exact characters of `SECRET_KEY`, with
+  nothing added: no newline, no space. Tools that print or read a value often add a newline at the end;
+  a newline in the input gives a different, wrong key. The salt is the fixed `_KEY_SALT` in
+  `halatuju_api/apps/scholarship/verdict_context.py`.
+- **The value stored** is the derived key, never `SECRET_KEY` itself: exactly 64 hex characters with
+  no newline at the end. If the variable is set to anything else that is not empty (a newline or
+  spaces alone included), the replay refuses to start. Absent or empty, it runs key-free and every
+  fingerprint mismatches.
+- **A wrong but well-shaped key** (64 hex characters made from a wrong input) is not caught here. The
+  replay's human lens (a later phase) compares the key with the `key_check` stored on the recorded
+  verdicts and refuses to score on a mismatch, so it is caught there.
+- **Who can read it.** The replay's service account is given access to this one secret, but project
+  Owners, Editors and Secret Manager admins can read it too.
+- **Never `SECRET_KEY` on the job.** The job must never be given `SECRET_KEY` (not as a variable, not
+  as a secret). The replay refuses to start if its environment holds a `SECRET_KEY` that is not empty.
+
+Delete the secret with the rest in step 6.
 
 ## 3. Build the image (Cloud Build, by hand; no trigger)
 
