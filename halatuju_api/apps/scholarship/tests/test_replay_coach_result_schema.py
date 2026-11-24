@@ -183,3 +183,47 @@ def test_a_class_name_kind_passes_and_an_error_name_is_the_nearest_known_class()
     assert S.coach_error_name(KeyError('x')) == 'LookupError'
     assert S.coach_error_name(UnicodeDecodeError('utf-8', b'', 0, 1, 'x')) == 'ValueError'
     assert S.coach_error_name(RuntimeError('x')) == S.SCHEMA
+
+
+# ── the malformed kinds: three forms only ─────────────────────────────────────────────────────────
+ALLOWED_KINDS = ('too_short', 'not_a_datetime', 'no_offset', 'other_error', 'KeyError', 'ValidationError',
+                 'Error', 'Exception', 'DoesNotExistException', 'X' * 55 + 'Error', 'Http404Error')
+BAD_KINDS = ('maria', 'Maria', 'SitiAminah', 'keyerror', 'TOO_SHORT', 'Other_error', 'X' * 56 + 'Error',
+             'Key_Error', 'Key.Error', 'keyError', '1Error', 'Key Error', 'KeyError\n', ' KeyError',
+             'KeyErrorx', 'Errors', 'ÄError', 'KeyErroré', '', PLANT)
+
+
+def test_the_predicate_is_the_three_forms():
+    assert S.ERROR_NAME_ENDINGS == ('Error', 'Exception')
+    assert set(coach_grade.MALFORMED_LABELS) == {'too_short', 'not_a_datetime', 'no_offset'}
+    for kind in ALLOWED_KINDS:
+        assert S.malformed_kind_ok(kind), kind
+    for kind in BAD_KINDS + (None, 1, b'KeyError'):
+        assert not S.malformed_kind_ok(kind), kind
+
+    class Text(str):
+        pass
+    assert not S.malformed_kind_ok(Text('KeyError'))
+    assert coach_rows.malformed_kind_ok is S.malformed_kind_ok      # one definition, both sides
+
+
+@pytest.mark.parametrize('kind', ALLOWED_KINDS)
+def test_each_allowed_kind_passes(kind):
+    _passes(_planted(('malformed_by_error',), {kind: 1}))
+
+
+@pytest.mark.parametrize('kind', BAD_KINDS)
+def test_each_bad_kind_fails_whole_and_never_reaches_the_text(kind):
+    report = _planted(('malformed_by_error',), {kind: 1})
+    _fails(report)
+    assert S.coach_result_allowed(coach_rows.fold_odd_kinds(report))
+    if kind.strip():
+        assert kind not in S.checked_coach_text(report)
+        assert kind not in json.dumps(_round_trip(report))
+
+
+def test_a_planted_word_kind_beside_good_ones_fails_whole():
+    report = _planted(('malformed_by_error',), {'KeyError': 1, 'SitiAminah': 2, 'too_short': 3})
+    report['malformed_records'] = 6
+    _fails(report)
+    assert 'Aminah' not in S.checked_coach_text(report)

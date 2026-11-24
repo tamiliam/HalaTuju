@@ -25,10 +25,13 @@ EVERY VALUE THAT IS NOT AN INT OR A FIXED CODE, with its rule:
 * ``month``: `MONTH_SHAPE`, ``YYYY-MM`` with a real month (01 to 12).
 * ``cell_min_facts``, ``coach_min_facts``, ``score_z``: ints that must EQUAL `coach_grade`'s constants;
   ``guard_alpha``: ``{count, of}`` that must equal `coach_grade.GUARD_ALPHA`'s numerator and denominator.
-* the KEYS of ``malformed_by_error``: one of `coach_grade.MALFORMED_LABELS` or `coach_grade.OTHER_ERROR`,
-  or a plain ASCII identifier of at most 60 characters (an error class name); the values are ints that
-  add up to ``malformed_records``. Known limit: an identifier is a word, so this one key could spell a
-  short word; `coach_grade` only ever puts a class name there.
+* the KEYS of ``malformed_by_error`` (`malformed_kind_ok`, the ONE predicate; `coach_rows` uses it too):
+  one of `coach_grade.MALFORMED_LABELS`, or `coach_grade.OTHER_ERROR`, or an error class name: `ERROR_NAME_SHAPE`
+  (``[A-Z][A-Za-z0-9]{0,59}``: a capital, then ASCII letters and digits, at most 60 characters) that ends
+  in ``Error`` or ``Exception``. Any other key fails the whole result. The values are ints that add up to
+  ``malformed_records``. Before this check, the reader (`coach_rows.fold_odd_kinds`) moves the count of
+  any key of another form into ``other_error``, so a real but oddly named class never fails the run.
+  Known limit: a class name could still spell a short word ending in ``Error``.
 * true / false: ``unknown_version`` (a cell) and ``too_few`` (a cell, a side, a ``without_left_out``
   line), each tied to its block's own shape (too few = the short key set).
 * None: nowhere. The report never holds None; a field it does not fill is simply absent from the short
@@ -68,12 +71,26 @@ PAIR_KEYS = frozenset({'previous', 'new', 'grade', 'reasons', 'skipped_versions'
 COUNT_OF_KEYS = frozenset({'count', 'of'})
 EXTRA_LINE = 'without_left_out'
 MONTH_SHAPE = re.compile(r'[0-9]{4}-(0[1-9]|1[0-2])', re.ASCII)
-KIND_MAX_LENGTH = 60
+#: An error class name kind of ``malformed_by_error``: this shape (whole text) and one of these endings.
+ERROR_NAME_SHAPE = re.compile(r'[A-Z][A-Za-z0-9]{0,59}', re.ASCII)
+ERROR_NAME_ENDINGS = ('Error', 'Exception')
 
 
 def coach_error_name(exc) -> str:
     """The nearest `COACH_ERROR_CLASSES` name of a caught coach-reader error (`SCHEMA` for any other)."""
     return next((k.__name__ for k in type(exc).__mro__ if k in COACH_ERROR_CLASSES), SCHEMA)
+
+
+def malformed_kind_ok(kind) -> bool:
+    """True only for a ``malformed_by_error`` key of the three allowed forms: one of
+    `coach_grade.MALFORMED_LABELS`, `coach_grade.OTHER_ERROR`, or an error class name (the whole text
+    matches `ERROR_NAME_SHAPE` and ends in one of `ERROR_NAME_ENDINGS`). Only real text counts."""
+    from apps.scholarship import coach_grade
+    if type(kind) is not str:
+        return False
+    if kind in coach_grade.MALFORMED_LABELS or kind == coach_grade.OTHER_ERROR:
+        return True
+    return ERROR_NAME_SHAPE.fullmatch(kind) is not None and kind.endswith(ERROR_NAME_ENDINGS)
 
 
 def _is_whole(value) -> bool:
@@ -95,17 +112,10 @@ def _codes():
     return {'outcomes': frozenset(ai_score.OUTCOMES), 'grades': frozenset(coach_grade.GRADES),
             'reasons': frozenset(coach_grade.REASON_CODES), 'fail_reasons': frozenset(fail_reasons.CODES),
             'unknown': frozenset({coach_grade.UNKNOWN_VERSION, PRE_VERSIONING}),
-            'kinds': frozenset({*coach_grade.MALFORMED_LABELS, coach_grade.OTHER_ERROR}),
             'constants': {'cell_min_facts': coach_grade.CELL_MIN_FACTS,
                           'coach_min_facts': coach_grade.COACH_MIN_FACTS, 'score_z': coach_grade.SCORE_Z},
             'guard_alpha': {'count': coach_grade.GUARD_ALPHA.numerator,
                             'of': coach_grade.GUARD_ALPHA.denominator}}
-
-
-def _kind_ok(kind, codes) -> bool:
-    if type(kind) is not str:
-        return False
-    return kind in codes['kinds'] or (len(kind) <= KIND_MAX_LENGTH and kind.isascii() and kind.isidentifier())
 
 
 def _code_list(value, allowed, *, empty_ok, in_order) -> bool:
@@ -174,7 +184,7 @@ def _report_ok(report, codes) -> bool:
     if not all(_is_whole(report[k]) for k in ('decided_records', 'malformed_records', 'versions_without_marks')):
         return False
     by_error = report['malformed_by_error']
-    if type(by_error) is not dict or not all(_kind_ok(k, codes) and _is_whole(v) for k, v in by_error.items()):
+    if type(by_error) is not dict or not all(malformed_kind_ok(k) and _is_whole(v) for k, v in by_error.items()):
         return False
     if sum(by_error.values()) != report['malformed_records']:
         return False

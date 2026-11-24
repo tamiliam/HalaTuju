@@ -352,7 +352,7 @@ def test_a_planted_coach_text_prints_the_schema_failure(clean_lens, path, value)
 
 
 def test_a_word_kind_that_passes_the_allow_list_is_never_printed(clean_lens):
-    coach = _planted(coach_clean(), ('malformed_by_error',), {PLANT_WORD: 2, 'too_short': 1})
+    coach = _planted(coach_clean(), ('malformed_by_error',), {PLANT_WORD + 'Error': 2, 'too_short': 1})
     coach['malformed_records'] = 3
     assert CS.coach_result_allowed(coach)
     text = text_of(clean_lens, coach)

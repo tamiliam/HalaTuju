@@ -137,3 +137,92 @@ def test_dry_run_counts_select_only_and_no_case_data(capfd, caplog):
     everything = '\n'.join([text, captured.out, captured.err, caplog.text])
     for canary in (PLANTED_LABEL, NAME_CANARY, REASON_CANARY, DECIDER_CANARY, str(ID_CANARY), 'Aminah'):
         assert canary not in everything
+
+
+# ── the fold of odd malformed kinds into other_error ─────────────────────────────────────────────
+GOOD_KINDS = {'KeyError': 7, 'ValidationError': 8, 'too_short': 9}
+ODD_KINDS = {'maria': 1, 'keyerror': 2, 'A' * 56 + 'Error': 3, 'Key_Error': 4, 'Key.Error': 5, 'SitiAminah': 6}
+
+
+def _with_kinds(kinds):
+    report = coach_grade.coach_report([])
+    report['malformed_by_error'] = dict(kinds)
+    report['malformed_records'] = sum(kinds.values())
+    return report
+
+
+def test_the_fold_moves_each_odd_kind_into_other_error_and_keeps_the_good_ones():
+    report = _with_kinds({**ODD_KINDS, **GOOD_KINDS})
+    before = json.loads(json.dumps(report))
+    assert not coach_result_schema.coach_result_allowed(report)
+    folded = coach_rows.fold_odd_kinds(report)
+    assert folded['malformed_by_error'] == {**GOOD_KINDS, coach_grade.OTHER_ERROR: 21}
+    assert list(folded['malformed_by_error']) == sorted(folded['malformed_by_error'])
+    assert sum(folded['malformed_by_error'].values()) == folded['malformed_records'] == 45
+    assert coach_result_schema.coach_result_allowed(folded)
+    assert {k: v for k, v in folded.items() if k != 'malformed_by_error'} == {
+        k: v for k, v in report.items() if k != 'malformed_by_error'}
+    assert report == before and folded is not report     # a copy: the given report is never changed
+    text = coach_result_schema.checked_coach_text(folded)
+    for kind in ODD_KINDS:
+        assert kind not in text
+    assert 'Aminah' not in text and 'maria' not in text
+
+
+def test_the_fold_adds_to_an_other_error_already_there_and_makes_one_when_absent():
+    folded = coach_rows.fold_odd_kinds(_with_kinds({coach_grade.OTHER_ERROR: 5, 'maria': 2, 'TypeError': 1}))
+    assert folded['malformed_by_error'] == {coach_grade.OTHER_ERROR: 7, 'TypeError': 1}
+    folded = coach_rows.fold_odd_kinds(_with_kinds({'maria': 2}))
+    assert folded['malformed_by_error'] == {coach_grade.OTHER_ERROR: 2} and folded['malformed_records'] == 2
+    for folded in (coach_rows.fold_odd_kinds(_with_kinds({coach_grade.OTHER_ERROR: 5, 'maria': 2})),
+                   coach_rows.fold_odd_kinds(_with_kinds({'maria': 2}))):
+        assert coach_result_schema.coach_result_allowed(folded)
+
+
+def test_the_fold_leaves_a_clean_report_and_odd_shapes_alone():
+    clean = _with_kinds(GOOD_KINDS)
+    assert coach_rows.fold_odd_kinds(clean) is clean
+    bad_count = _with_kinds({'maria': 1})
+    bad_count['malformed_by_error']['maria'] = 1.0       # not an int: left for the allow-list to fail
+    assert coach_rows.fold_odd_kinds(bad_count) is bad_count
+    assert not coach_result_schema.coach_result_allowed(bad_count)
+    for odd in ({'refusal': 'debug_on'}, {'error': 'schema'}, [], None):
+        assert coach_rows.fold_odd_kinds(odd) is odd
+
+
+class Maria(Exception):
+    """A real error class whose name is a word, not an error class name."""
+
+
+class OddRecordProblem(ValueError):
+    pass
+
+
+class RecordReadError(Exception):
+    pass
+
+
+def _raises(error_class):
+    class Record:
+        def __len__(self):
+            raise error_class('the message never leaves')
+    return Record()
+
+
+def test_end_to_end_an_odd_class_name_from_coach_report_is_folded(monkeypatch):
+    """Real `coach_report` code: a record whose length raises is filed under the error's class name."""
+    _case(V1, OCT)
+    real = coach_rows.coach_records()
+    planted = [_raises(Maria), _raises(Maria), _raises(OddRecordProblem), _raises(RecordReadError)]
+    raw = coach_grade.coach_report(real + planted, leave_out_reasons=coach_grade.INTERVIEW_FAILS)
+    assert raw['malformed_by_error'] == {'Maria': 2, 'OddRecordProblem': 1, 'RecordReadError': 1}
+    monkeypatch.setattr(coach_rows, 'coach_records', lambda: real + planted)
+    report = coach_rows.coach_grade_on_database()
+    assert report['malformed_by_error'] == {'RecordReadError': 1, coach_grade.OTHER_ERROR: 3}
+    assert report['malformed_records'] == 4
+    assert {k: v for k, v in report.items() if k != 'malformed_by_error'} == {
+        k: v for k, v in raw.items() if k != 'malformed_by_error'}
+    text = coach_result_schema.checked_coach_text(report)
+    assert json.loads(text) == report
+    for word in ('Maria', 'OddRecordProblem', 'the message never leaves'):
+        assert word not in text

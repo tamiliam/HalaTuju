@@ -21,12 +21,19 @@ READ ONLY. One SELECT of four columns, no save, no update, no delete, no raw SQL
 The records stay in memory. The caller (`child.write_coach_grade`) runs it inside
 `guards.read_only_session` and `netguard.refuse_network`.
 
+THE FOLD of ``malformed_by_error`` (`fold_odd_kinds`), after `coach_report` returns and before the
+allow-list: a key that `coach_result_schema.malformed_kind_ok` refuses (not a fixed label, not
+``other_error``, not an error class name) has its count ADDED to ``other_error`` and is dropped, so a real
+error class with an odd name never fails the run, and its name never leaves. A shallow COPY is returned
+with only ``malformed_by_error`` replaced; the report `coach_report` gave is never changed.
+
 DEBUG: with Django ``DEBUG`` on, Django keeps and logs each SQL statement. `coach_grade_on_database` then
 refuses with `coach_debug_refusal` (``{"refusal": "debug_on"}``) before any query.
 """
 from __future__ import annotations
 
 from . import lens_human
+from .coach_result_schema import malformed_kind_ok
 from .lens_result_schema import engine_version_ok
 
 #: The columns read, in `coach_grade`'s record order. Nothing else is selected.
@@ -58,12 +65,30 @@ def coach_records() -> list:
     return [(snapshot, verdict, stored_version_label(version), when) for snapshot, verdict, version, when in rows]
 
 
+def fold_odd_kinds(report):
+    """``report`` with each ``malformed_by_error`` key that `malformed_kind_ok` refuses folded into
+    `coach_grade.OTHER_ERROR` (its count added, the key dropped; the kinds stay sorted). A shallow copy
+    with only that one value replaced; ``report`` itself is never changed. Returned as it is when nothing
+    is odd, or when ``report`` or that value is not a dict or a count is not an int (the allow-list then
+    decides)."""
+    from apps.scholarship.coach_grade import OTHER_ERROR
+    by_error = report.get('malformed_by_error') if type(report) is dict else None
+    if type(by_error) is not dict or not all(type(count) is int for count in by_error.values()):
+        return report
+    odd = [kind for kind in by_error if not malformed_kind_ok(kind)]
+    if not odd:
+        return report
+    kept = {kind: count for kind, count in by_error.items() if malformed_kind_ok(kind)}
+    kept[OTHER_ERROR] = kept.get(OTHER_ERROR, 0) + sum(by_error[kind] for kind in odd)
+    return {**report, 'malformed_by_error': dict(sorted(kept.items()))}
+
+
 def coach_grade_on_database() -> dict:
     """`coach_grade.coach_report` over every decided case, with the extra line that leaves out the
-    interview Fails (`coach_grade.INTERVIEW_FAILS`). Under Django ``DEBUG``: `coach_debug_refusal`,
-    before any query."""
+    interview Fails (`coach_grade.INTERVIEW_FAILS`), then `fold_odd_kinds`. Under Django ``DEBUG``:
+    `coach_debug_refusal`, before any query."""
     from django.conf import settings
     if settings.DEBUG:
         return coach_debug_refusal()
     from apps.scholarship import coach_grade
-    return coach_grade.coach_report(coach_records(), leave_out_reasons=coach_grade.INTERVIEW_FAILS)
+    return fold_odd_kinds(coach_grade.coach_report(coach_records(), leave_out_reasons=coach_grade.INTERVIEW_FAILS))
