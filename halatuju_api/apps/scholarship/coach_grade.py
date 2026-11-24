@@ -1,6 +1,6 @@
 """LL5 phase A - the monthly score and the coach grade. Pure, beside `ai_score.py`: no ORM, no AI call,
-no settings read. Server only: no page and no job calls it yet (the replay job imports it lazily in a
-later phase).
+no settings read. Server only: no page and no job calls it yet (the replay's human lens reads only its
+constant ``CELL_MIN_FACTS``; the replay job will import it lazily in a later phase).
 
 The PLAYER is the model (engine) version, scored in marks. The COACH is the learning loop, graded on
 NEW cases only: each version is compared with the gradeable version before it, each on its OWN decided
@@ -9,7 +9,8 @@ cases.
 INPUT: the record shape F4's `prediction_metrics.metrics` sends `ai_score.score_marks`, a 6-tuple
 ``(ai_verdict_snapshot, officer_verdict, ai_verdict_engine_version, verdict_decided_at,
 verdict_decided_by, id)``. ``verdict_decided_by`` and ``id`` are never read past the door and never
-appear in an output: the output holds version labels, month labels, counts and fixed codes only.
+appear in an output: the output holds version labels, month labels, counts, fixed codes and error
+class names (the kinds of ``malformed_by_error``) only.
 
 THE MIRROR CLAIM, in three parts:
 
@@ -43,7 +44,8 @@ SystemExit).
 ``malformed_by_error`` counts the same records by KIND, ``{kind: count}`` sorted by kind, empty when
 none; the counts add up to ``malformed_records``. A kind is a fixed label when no error was raised
 (``too_short``, ``not_a_datetime``, ``no_offset``) or the caught error's CLASS NAME (never its message,
-never a value of the record). A kind you do not expect (for example ``NameError``) means a bug, not bad
+never a value of the record); a class name that is not a plain ASCII identifier of at most 60
+characters is ``other_error``. A kind you do not expect (for example ``NameError``) means a bug, not bad
 data.
 
 THE FLOOR OF 5 (``CELL_MIN_FACTS``) IS A SMALL-NUMBER GUARD, NOT A SECRECY RULE. A month cell or a side
@@ -56,8 +58,9 @@ figures for groups of 1 to 4 to a WIDER set of readers (every org-wide admin). R
 volunteer figures, "nothing below 5 answers") is the model for the number 5 only. If this report is ever
 shown to a wider audience, the floor must be redone as a privacy rule first.
 
-VERSIONS. A label is text stripped of whitespace. A label that is not text, is blank, or is exactly the
-display label ``UNKNOWN_VERSION`` is the unknown version; the back-fill stamp
+VERSIONS. A label is a value whose real type is text (``str`` or a subclass), stripped of whitespace by
+``str``'s own strip and shown as plain text. A value that is not text, or a label that after the strip
+is blank or exactly the display label ``UNKNOWN_VERSION``, is the unknown version; the back-fill stamp
 `verdict_engine.PRE_VERSIONING` (matched exactly after the strip: labels are stamped by server code, so
 no case folding) keeps its own label. Both are UNKNOWN: they get month cells with ``unknown_version:
 True``, sort after the known versions, and are never graded nor waiting. Versions run by their first
@@ -160,6 +163,8 @@ _READ_ERRORS = (TypeError, ValueError, AttributeError, KeyError)
 #: whose offset is None.
 TOO_SHORT, NOT_A_DATETIME, NO_OFFSET = 'too_short', 'not_a_datetime', 'no_offset'
 MALFORMED_LABELS = (TOO_SHORT, NOT_A_DATETIME, NO_OFFSET)
+#: The kind of a caught error whose class name is not a plain ASCII identifier of at most 60 characters.
+OTHER_ERROR = 'other_error'
 
 
 class _Malformed:
@@ -172,12 +177,15 @@ class _Malformed:
 
 def _error_kind(exc) -> str:
     """The class name of a caught error as plain text: never its message, never a value of the record.
-    `type`'s own ``__name__`` (a metaclass cannot dress it up) and `str`'s own copy (no text subclass)."""
-    return str.__str__(type.__dict__['__name__'].__get__(type(exc)))
+    `type`'s own ``__name__`` (a metaclass cannot dress it up) and `str`'s own copy (no text subclass).
+    A name that is not a plain ASCII identifier of at most 60 characters is ``OTHER_ERROR``."""
+    name = str.__str__(type.__dict__['__name__'].__get__(type(exc)))
+    return name if len(name) <= 60 and name.isascii() and name.isidentifier() else OTHER_ERROR
 
 
 def _left_out_codes(leave_out_reasons) -> frozenset:
-    """The left-out Fail reasons. Anything that is not an iterable of known codes raises ValueError."""
+    """The left-out Fail reasons (None is none). Anything else that is not an iterable of known codes, one
+    text included, raises ValueError."""
     if leave_out_reasons is None:
         return frozenset()
     if isinstance(leave_out_reasons, (str, bytes)):
@@ -208,13 +216,14 @@ def _verdict_without_left_out(snapshot, verdict, leave_out: frozenset):
 
 
 def _version_key(raw):
-    """``(label, unknown)`` of a stored engine version. Not text, blank, or exactly the display label
-    ``UNKNOWN_VERSION`` is the unknown version."""
+    """``(label, unknown)`` of a stored engine version. Not text, or after the strip blank or exactly the
+    display label ``UNKNOWN_VERSION``, is the unknown version."""
     # In the function: `verdict_engine` imports the genuineness package; this module stays light.
     from .verdict_engine import PRE_VERSIONING
-    # No catch here: an explicit type check, and str's OWN strip, so even a text subclass with an odd
-    # strip cannot raise; the label is plain text from here on (safe to compare, hash and sort).
-    label = str.strip(raw) if isinstance(raw, str) else ''
+    # No catch here: a check of the value's REAL type (`type()`; `isinstance` would believe a faked
+    # `__class__`), and str's OWN strip, so a text subclass with its own strip or __eq__ runs no code of
+    # its own here; the label is plain text from here on (safe to compare, hash and sort).
+    label = str.strip(raw) if issubclass(type(raw), str) else ''
     if not label or label == UNKNOWN_VERSION:
         return UNKNOWN_VERSION, True
     return label, label == PRE_VERSIONING
@@ -238,8 +247,9 @@ def _decided_row(record):
     length, the fields, the datetime check, the zone's offset, the moves to UTC and to Malaysia time),
     where ANY ordinary error (`Exception`) means malformed; (ii) the shared facts reader, its four error
     types only. The decided time leaves block (i) rebuilt as a PLAIN UTC datetime, so no datetime
-    subclass reaches a comparison or a sort. The version key and everything after it work on values this
-    module made, outside any catch, so a bug there raises instead of marking every record malformed."""
+    subclass reaches a comparison or a sort. The version key (it reads only the label's real type and
+    uses str's own strip) and everything after it run outside any catch, so a bug there raises instead
+    of marking every record malformed."""
     try:
         if len(record) < 4:
             return _Malformed(TOO_SHORT)
@@ -428,7 +438,8 @@ def coach_report(records, leave_out_reasons=()) -> dict:
     score_pct, coverage: {count, of}, generous_wrong: {count, of}`` and the same ``without_left_out``. A
     ``without_left_out`` line is ``{too_few: True}`` or ``{too_few: False, facts, points, best,
     score_pct, left_out}``. ``months`` runs version by version in version order (unknown versions last),
-    then month. ``leave_out_reasons`` that is not an iterable of known codes raises ValueError."""
+    then month. ``leave_out_reasons`` that is not None and not an iterable of known codes (one text
+    counts as not) raises ValueError."""
     leave_out = _left_out_codes(leave_out_reasons)
     rows, malformed = _decided_rows(records)
     first_seen, months_of = {}, {}

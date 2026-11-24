@@ -321,6 +321,13 @@ class TestTheCoachGrade(SimpleTestCase):
         self.assertEqual(report['coach'], [])
         self.assertEqual(report['waiting'], [{'version': 'old', 'too_few': True}])
 
+    def test_a_waiting_side_of_exactly_five_shows_its_figures(self):
+        report = coach_grade.coach_report(many([(PROBABLE, 'pass', 5)], 'old', EARLY)
+                                          + many([(CERTAIN, 'pass', 40)], 'next', LATER))
+        self.assertEqual(report['waiting'], [{'version': 'old', 'too_few': False, 'facts': 5, 'score_pct': 50,
+                                              'coverage': {'count': 5, 'of': 5},
+                                              'generous_wrong': {'count': 0, 'of': 5}}])
+
     def test_the_fisher_tail_hand_checks(self):
         # previous 0 of 40, new k of 40, generous-wrong: with k in all, the new side holds all k only
         # one way in C(80,k)/C(40,k): k = 4 is C(40,4)/C(80,4) = 91390/1581580, about 0.058 (not below
@@ -332,6 +339,19 @@ class TestTheCoachGrade(SimpleTestCase):
         self.assertEqual(coach_grade._new_side_tail(40, 40, 35, 40, low=True), Fraction(658008, 24040016))
         # one of 40 against none: C(40,1)/C(80,1) = 1/2
         self.assertEqual(coach_grade._new_side_tail(0, 40, 1, 40, low=False), Fraction(1, 2))
+
+    def test_a_guard_breaks_only_when_its_chance_is_strictly_below_the_alpha(self):
+        # No pair of sides of 40 to 100 facts has a tail of exactly 1/20 (searched), so the alpha is moved
+        # to a tail the test can hit: one Unsure (coverage 39 of 40 against 40 of 40) and one Certain Fail
+        # (generous-wrong 1 of 40 against 0 of 40) each have a chance of exactly 1/2 (hand-checked above).
+        old = [(CERTAIN, 'pass', 40)]
+        cases = (([(CERTAIN, 'pass', 39), (UNSURE, 'pass', 1)], 'coverage_dropped'),
+                 ([(CERTAIN, 'pass', 39), (CERTAIN, 'fail', 1)], 'generous_wrong_rose'))
+        for new, guard in cases:
+            with mock.patch.object(coach_grade, 'GUARD_ALPHA', Fraction(1, 2)):
+                self.assertNotIn(guard, first_pair(old, new)['reasons'])   # a tail equal to the alpha holds
+            with mock.patch.object(coach_grade, 'GUARD_ALPHA', Fraction(1, 2) + Fraction(1, 10 ** 9)):
+                self.assertEqual(first_pair(old, new)['reasons'], [guard])   # just above it: broken
 
     def test_guard_one_coverage_drop_fails_even_when_the_score_rose(self):
         old = [(UNVERIFIABLE, 'pass', 40)]                       # -50%, coverage 40/40, mean -1
@@ -748,6 +768,126 @@ class TestMalformedRecords(SimpleTestCase):
         self.assertEqual([(m['version'], type(m['version']), m['unknown_version']) for m in report['months']],
                          [('v9', str, False)])
 
+    def test_the_facts_reader_catch_is_its_four_error_types_only(self):
+        # Each of the four is a malformed record, counted under its own class name ...
+        records = many([(CERTAIN, 'pass', 5)])
+        for error in (TypeError, ValueError, AttributeError, KeyError):
+            with mock.patch.object(ai_score, 'decided_facts', side_effect=error('CANARY-READ')):
+                report = coach_grade.coach_report(records)
+            self.assertEqual((report['decided_records'], report['malformed_by_error']),
+                             (0, {error.__name__: 5}), error)
+        # ... and any other error there is a bug: it raises, it is never counted as malformed
+        for error in (RuntimeError, ZeroDivisionError, LookupError):
+            with mock.patch.object(ai_score, 'decided_facts', side_effect=error('a reader bug')):
+                with self.assertRaises(error):
+                    coach_grade.coach_report(records)
+
+
+def raised_by_a_zone(error):
+    """A decided record whose zone raises ``error`` (so the record-read catch meets it)."""
+    class Raising(datetime.tzinfo):
+        def utcoffset(self, dt):
+            raise error
+
+    return one(CERTAIN, 'pass', when=datetime.datetime(2026, 3, 2, 3, tzinfo=Raising()))
+
+
+class TestTheVersionKey(SimpleTestCase):
+    """The label is read from a value whose REAL type is text, with str's own strip."""
+
+    def test_real_text_is_stripped_exactly_as_before(self):
+        labels = ('v1', '2026-11-15.10', 'pre-versioning', 'PRE-VERSIONING', '(unknown version)', 'பதிப்பு 1',
+                  '  v1  ', '\tv1\n', ' v1 ', ' pre-versioning ', ' (unknown version) ', '', '   ')
+        for raw in labels:
+            label, unknown = coach_grade._version_key(raw)
+            stripped = raw.strip()
+            if not stripped or stripped == coach_grade.UNKNOWN_VERSION:
+                self.assertEqual((label, unknown), (coach_grade.UNKNOWN_VERSION, True), repr(raw))
+            else:
+                self.assertEqual((label, unknown), (stripped, stripped == 'pre-versioning'), repr(raw))
+            self.assertIs(type(label), str, repr(raw))
+
+    def test_a_text_subclass_uses_str_s_own_strip(self):
+        class OddText(str):
+            def strip(self, *args):
+                raise RuntimeError('odd strip')
+
+            def __eq__(self, other):
+                raise RuntimeError('odd eq')
+
+            __hash__ = str.__hash__
+
+        for raw, want in ((' v9 ', ('v9', False)), ('v9', ('v9', False)), ('  ', (coach_grade.UNKNOWN_VERSION, True)),
+                          (' pre-versioning ', ('pre-versioning', True)),
+                          ('(unknown version)', (coach_grade.UNKNOWN_VERSION, True))):
+            label, unknown = coach_grade._version_key(OddText(raw))
+            self.assertEqual((label, unknown), want, repr(raw))
+            self.assertIs(type(label), str, repr(raw))
+
+    def test_a_value_that_is_not_text_is_the_unknown_version(self):
+        class FakeText:   # isinstance would believe this __class__; the real type is not text
+            @property
+            def __class__(self):
+                return str
+
+        class ClassRaises:
+            @property
+            def __class__(self):
+                raise RuntimeError('class')
+
+        for raw in (None, 7, 7.5, b'v1', ['v1'], ('v1',), {'v': 1}, True, FakeText(), ClassRaises()):
+            self.assertEqual(coach_grade._version_key(raw), (coach_grade.UNKNOWN_VERSION, True), type(raw))
+        report = coach_grade.coach_report(many([(CERTAIN, 'pass', 5)], FakeText())
+                                          + many([(CERTAIN, 'pass', 5)], ClassRaises()))
+        self.assertEqual([(m['version'], m['unknown_version'], m['facts']) for m in report['months']],
+                         [(coach_grade.UNKNOWN_VERSION, True, 10)])
+
+
+class TestErrorKinds(SimpleTestCase):
+
+    def test_the_kind_is_the_class_s_own_name_whatever_its_metaclass_says(self):
+        class Dressed(type):
+            @property
+            def __name__(cls):
+                return 'DressedUp'
+
+        class RealName(Exception, metaclass=Dressed):
+            pass
+
+        report = coach_grade.coach_report(many([(CERTAIN, 'pass', 5)]) + [raised_by_a_zone(RealName('CANARY'))])
+        self.assertEqual(report['malformed_by_error'], {'RealName': 1})
+
+    def test_a_class_name_that_is_not_a_plain_identifier_is_other_error(self):
+        odd = ('<canary>\nSTUDENT-NAME-X', 'E' * 61, 'பிழை', 'has space', '1Error', '')
+        plain = ('E' * 60, 'Error_2', 'TypeError')
+        records = many([(CERTAIN, 'pass', 5)])
+        records += [raised_by_a_zone(type(name, (Exception,), {})('CANARY')) for name in odd + plain]
+        report = coach_grade.coach_report(records)
+        self.assertEqual(report['malformed_by_error'],
+                         {'E' * 60: 1, 'Error_2': 1, 'TypeError': 1, coach_grade.OTHER_ERROR: len(odd)})
+        self.assertEqual(report['malformed_records'], len(odd) + len(plain))
+        self.assertNotIn('CANARY', repr(report))
+        self.assertNotIn('STUDENT', repr(report))
+        # real errors keep their own names (the existing tests above pin many more)
+        self.assertEqual(coach_grade._error_kind(OverflowError()), 'OverflowError')
+        self.assertEqual(coach_grade._error_kind(NotImplementedError()), 'NotImplementedError')
+
+
+class TestTheFirstInstantIsExact(SimpleTestCase):
+
+    def test_versions_first_decided_a_second_or_a_microsecond_apart_keep_their_order(self):
+        # The rebuilt plain time keeps seconds and microseconds: the earlier version runs first even
+        # when its label sorts last.
+        start = datetime.datetime(2026, 3, 2, 3, 0, 0, 500000, tzinfo=UTC)
+        for gap in (datetime.timedelta(microseconds=1), datetime.timedelta(seconds=1)):
+            records = (many([(CERTAIN, 'pass', 41)], 'zz-first', start)
+                       + many([(PROBABLE, 'pass', 41)], 'aa-second', start + gap))
+            report = coach_grade.coach_report(records)
+            self.assertEqual([m['version'] for m in report['months']], ['zz-first', 'aa-second'], gap)
+            pair = report['coach'][0]
+            self.assertEqual((pair['previous']['version'], pair['new']['version'], pair['grade']),
+                             ('zz-first', 'aa-second', 'fail'), gap)
+
 
 class TestTheChain(SimpleTestCase):
 
@@ -994,6 +1134,13 @@ class TestTheExtraLine(SimpleTestCase):
         cell = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)['months'][0]
         self.assertEqual((cell['facts'], cell['not_scored']), (6, 1))
         self.assertEqual(cell['without_left_out'], {'too_few': False, 'facts': 6, 'points': 12, 'best': 12,
+                                                  'score_pct': 100, 'left_out': 0})
+
+    def test_a_pass_that_still_holds_a_left_out_reason_is_kept(self):
+        # a Fail changed to a Pass can keep its stored reason code; only a Fail is ever left out
+        records = many([(CERTAIN, 'pass', 5, 'interview_differs')])
+        cell = coach_grade.coach_report(records, leave_out_reasons=coach_grade.INTERVIEW_FAILS)['months'][0]
+        self.assertEqual(cell['without_left_out'], {'too_few': False, 'facts': 5, 'points': 10, 'best': 10,
                                                   'score_pct': 100, 'left_out': 0})
 
     def test_an_unknown_code_is_refused(self):
