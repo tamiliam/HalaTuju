@@ -23,10 +23,17 @@ THE MIRROR CLAIM, in three parts:
 * EDGE - a decided fact with no band in its snapshot is ``not_scored`` (counted, never marked), as in
   `ai_score`.
 
-MALFORMED RECORDS never raise. A record whose ``verdict_decided_at`` is set but is not a datetime, or
-whose facts the shared reader cannot read (TypeError, ValueError, AttributeError or KeyError, for
-example a number where the snapshot or its evidence should be), is left out and only counted, in
-``malformed_records``: no id, no text.
+INPUT RULES. A ``verdict_decided_at`` with no zone is read as UTC (what Django stores). A record with
+fewer than four fields has no decided time, so it is NOT decided (dropped, not counted as malformed); a
+record of four or five fields is read like a full one (fields five and six are never read).
+
+MALFORMED RECORDS never raise. A record that has no length or whose fields cannot be read, a decided
+time that cannot be placed in a Malaysia month (not a datetime; a zone whose offset is None or raises;
+the edge of the calendar, where the move to UTC or to Malaysia time overflows), or a record whose facts
+the shared reader cannot read (for example a number where the snapshot or its evidence should be) is
+left out and only counted, in ``malformed_records``: no id, no text. The catch wraps only those reads of
+the record's own values (TypeError, ValueError, AttributeError, KeyError, and OverflowError for the
+time), never the module's own helpers: a bug in a helper raises.
 
 THE FLOOR OF 5 (``CELL_MIN_FACTS``) IS A SMALL-NUMBER GUARD, NOT A SECRECY RULE. A month cell or a side
 with fewer than 5 marked facts shows ``too_few`` and no figures, so that nobody reads a percent off a
@@ -134,8 +141,11 @@ _SCORE_GRADE = {SCORE_UP: PASS, NO_CLEAR_CHANGE: NO_CHANGE, SCORE_DOWN: FAIL}
 
 _GENEROUS_BANDS = frozenset({CERTAIN, PROBABLE})
 _DIGITS = re.compile(r'(\d+)')
-#: What the shared reader can raise on a malformed record; caught around ONE record only.
+#: What the shared reader can raise on a malformed record; caught around ONE record's reads only.
 _READ_ERRORS = (TypeError, ValueError, AttributeError, KeyError)
+#: What reading and placing a record's decided time can raise: the same, plus OverflowError at the
+#: edge of the calendar (year 1 or 9999 pushed past the edge by the move to UTC or to Malaysia time).
+_TIME_ERRORS = _READ_ERRORS + (OverflowError,)
 _MALFORMED = object()
 
 
@@ -175,7 +185,9 @@ def _version_key(raw):
     ``UNKNOWN_VERSION`` is the unknown version."""
     # In the function: `verdict_engine` imports the genuineness package; this module stays light.
     from .verdict_engine import PRE_VERSIONING
-    label = raw.strip() if isinstance(raw, str) else ''
+    # No catch here: an explicit type check, and str's OWN strip, so even a text subclass with an odd
+    # strip cannot raise; the label is plain text from here on (safe to compare, hash and sort).
+    label = str.strip(raw) if isinstance(raw, str) else ''
     if not label or label == UNKNOWN_VERSION:
         return UNKNOWN_VERSION, True
     return label, label == PRE_VERSIONING
@@ -193,38 +205,42 @@ def _natural(label: str) -> tuple:
     return tuple(part(i, p) for i, p in enumerate(_DIGITS.split(label))), label
 
 
-def _malaysia_month(instant) -> str:
-    """``YYYY-MM`` of an aware instant in Malaysia time."""
-    local = instant.astimezone(MALAYSIA)
-    return f'{local.year:04d}-{local.month:02d}'
-
-
 def _decided_row(record):
-    """One record as a row, None when undecided, ``_MALFORMED`` when its instant is not a datetime. The
-    shared reader runs once here, so a record whose facts cannot be read raises here and only here."""
-    instant = record[3] if len(record) > 3 else None
-    if instant is None:
-        return None
-    if not isinstance(instant, datetime.datetime):
+    """One record as a row, None when undecided, ``_MALFORMED`` when its fields, its decided time or its
+    facts cannot be read. Only TWO blocks sit inside a catch, and both read the record's own values: (i)
+    its fields and its decided time, checked and placed in UTC and in Malaysia time; (ii) the shared
+    facts reader. The version key and everything after it work on values this module made, outside any
+    catch, so a bug there raises instead of marking every record malformed."""
+    try:
+        instant = record[3] if len(record) > 3 else None
+        if instant is None:
+            return None
+        if not isinstance(instant, datetime.datetime):
+            return _MALFORMED
+        if instant.tzinfo is None:   # a naive instant is read as UTC (what Django stores)
+            instant = instant.replace(tzinfo=datetime.timezone.utc)
+        elif instant.utcoffset() is None:   # a zone that cannot say its offset: not a placeable time
+            return _MALFORMED
+        instant = instant.astimezone(datetime.timezone.utc)   # the edge of the calendar overflows here
+        local = instant.astimezone(MALAYSIA)                  # ... or here
+        snapshot, verdict, raw_version = record[0], record[1], record[2]
+    except _TIME_ERRORS:
         return _MALFORMED
-    if instant.tzinfo is None:   # a naive instant is read as UTC (what Django stores)
-        instant = instant.replace(tzinfo=datetime.timezone.utc)
-    snapshot, verdict = record[0], record[1]
-    ai_score.decided_facts(snapshot, verdict)
-    key = _version_key(record[2])
-    return instant, key, _malaysia_month(instant), (snapshot, verdict, key[0])
+    try:
+        ai_score.decided_facts(snapshot, verdict)
+    except _READ_ERRORS:
+        return _MALFORMED
+    key = _version_key(raw_version)
+    return instant, key, f'{local.year:04d}-{local.month:02d}', (snapshot, verdict, key[0])
 
 
 def _decided_rows(records):
-    """``([(instant, (label, unknown), month, (snapshot, verdict, label))], malformed count)``, one row
-    per DECIDED record. Only the first three fields of a record go on; who decided and the row id stop
-    here."""
+    """``([(UTC instant, (label, unknown), month, (snapshot, verdict, label))], malformed count)``, one
+    row per DECIDED record. Only the first three fields of a record go on; who decided and the row id
+    stop here."""
     rows, malformed = [], 0
     for record in records:
-        try:
-            row = _decided_row(record)
-        except _READ_ERRORS:
-            row = _MALFORMED
+        row = _decided_row(record)
         if row is _MALFORMED:
             malformed += 1
         elif row is not None:

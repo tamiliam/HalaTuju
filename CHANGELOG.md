@@ -15,6 +15,12 @@ Branch ll5, not pushed. Migration: none. Services: api (no change in behaviour) 
 - **Owner step written, not run:** making the derived key into Secret Manager (`docs/plans/2026-11-13-a5-replay-owner-steps.md`, step 2b). No script.
 - **Tests:** `test_fingerprint_derived_key.py` (equivalence with Django's `salted_hmac` over several secrets and messages, the HEAD pins, the key-free mismatch, bad values, the replay settings, the scrub).
 
+### LL5 phase A - fix round after the margin review (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. No rule, constant, floor or grade changed.
+- **Fixes:** a decision time at the edge of the calendar (year 9999 late, `datetime.max`, year 1 in a +14 zone) or with a zone that cannot give its offset no longer crashes or misplaces the report: it is counted in `malformed_records`. The catch now wraps only the reads of a record's own values, so a bug in a helper raises (tested). New tests pin separate variances (40 against 400 facts) and the sample variance (n - 1).
+- **Known limit recorded:** the false-alarm shares assume independent facts; one case's ~4 facts move together, and then an unchanged AI is graded `fail` about 11 to 28 in 100 (a reviewer's simulation). One grade is a prompt to look, not proof; widening the margin needs the owner's word.
+
 ### LL5 phase A - the coach grade's noise margin and owner rulings R1 to R3 (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Services: api only; still not wired to any page or job.

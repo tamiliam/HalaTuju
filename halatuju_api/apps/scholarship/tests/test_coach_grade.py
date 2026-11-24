@@ -7,6 +7,7 @@ import datetime
 import json
 import random
 from fractions import Fraction
+from unittest import mock
 
 from django.test import SimpleTestCase
 
@@ -239,6 +240,49 @@ class TestTheCoachGrade(SimpleTestCase):
         self.assertEqual(first_pair(three, old)['reasons'], ['no_clear_change'])
         self.assertEqual((first_pair(four, old)['grade'], first_pair(four, old)['reasons']),
                          ('fail', ['score_down']))
+
+    def test_unequal_sides_use_separate_variances_not_a_pooled_one(self):
+        # wide (40 facts): 38 Certain passes (+2) and 2 Rule-not-met passes (-10): points 76 - 20 = 56,
+        #   mean 7/5; squares 38 x 4 + 2 x 100 = 352; v1 = (352 - 40 x 49/25) / 39 = (1368/5) / 39
+        #   = 456/65 (about 7.02); v1/n1 = 57/325.
+        # narrow (400 facts): 380 Probable passes (+1) and 20 Certain passes (+2): points 420, mean 21/20;
+        #   squares 380 + 80 = 460; v2 = (460 - 441) / 399 = 1/21 (about 0.048); v2/n2 = 1/8400.
+        # Difference 7/5 - 21/20 = 7/20, squared 49/400 (0.1225).
+        # SEPARATE (the rule): 4 x (57/325 + 1/8400) = 4 x 19165/109200 = 3833/5460 (about 0.702)
+        #   > 49/400: NOT clear.
+        # POOLED (a wrong rule): vp = (39 v1 + 399 v2) / 438 = (1368/5 + 19) / 438 = 1463/2190;
+        #   4 x vp x (1/40 + 1/400) = 4 x 1463/2190 x 11/400 = 16093/219000 (about 0.073) < 49/400: clear.
+        # Neither guard moves: every fact on both sides is covered and none is generous-wrong.
+        wide = [(CERTAIN, 'pass', 38), (RULE_NOT_MET, 'pass', 2)]
+        narrow = [(PROBABLE, 'pass', 380), (CERTAIN, 'pass', 20)]
+        self.assertGreater(Fraction(3833, 5460), Fraction(49, 400))
+        self.assertLess(Fraction(16093, 219000), Fraction(49, 400))
+        for prev, new in ((narrow, wide), (wide, narrow)):
+            pair = first_pair(prev, new)
+            self.assertEqual((pair['previous']['generous_wrong']['count'], pair['new']['generous_wrong']['count'],
+                              pair['previous']['coverage']['count'] == pair['previous']['facts'],
+                              pair['new']['coverage']['count'] == pair['new']['facts']), (0, 0, True, True))
+            self.assertEqual((pair['grade'], pair['reasons']), ('no_change', ['no_clear_change']))
+        self.assertEqual(first_pair(narrow, wide)['new']['facts'], 40)
+        self.assertEqual(first_pair(wide, narrow)['new']['facts'], 400)
+
+    def test_the_variance_is_the_sample_variance(self):
+        # wide (40 facts): 39 Certain passes (+2) and 1 Rule-not-met pass (-10): points 68, mean 17/10;
+        #   squares 39 x 4 + 100 = 256; 256 - 40 x 289/100 = 702/5.
+        # narrow (400 facts): 360 Probable passes (+1) and 40 Certain passes (+2): points 440, mean
+        #   11/10; squares 360 + 160 = 520; 520 - 400 x 121/100 = 36.
+        # Difference 6/10, squared 9/25 = 3600/10000.
+        # SAMPLE (divisor n - 1, the rule): v1 = 702/195 = 18/5, v1/n1 = 9/100; v2 = 36/399 = 12/133,
+        #   v2/n2 = 3/13300; 4 x (9/100 + 3/13300) = 4 x 12/133 = 48/133 (about 0.3609) > 9/25: NOT clear.
+        # POPULATION (divisor n, a wrong rule): v1 = 702/200, v1/n1 = 351/4000; v2 = 36/400, v2/n2 =
+        #   9/40000; 4 x 3519/40000 = 3519/10000 < 3600/10000: clear.
+        wide = [(CERTAIN, 'pass', 39), (RULE_NOT_MET, 'pass', 1)]
+        narrow = [(PROBABLE, 'pass', 360), (CERTAIN, 'pass', 40)]
+        self.assertGreater(Fraction(48, 133), Fraction(9, 25))
+        self.assertLess(Fraction(3519, 10000), Fraction(9, 25))
+        for prev, new in ((narrow, wide), (wide, narrow)):
+            pair = first_pair(prev, new)
+            self.assertEqual((pair['grade'], pair['reasons']), ('no_change', ['no_clear_change']))
 
     def test_both_variances_zero_any_difference_is_clear(self):
         # every fact on a side scores the same, so 4 x (v1/n1 + v2/n2) = 0: Can't verify Fails (+1 each)
@@ -524,6 +568,79 @@ class TestMalformedRecords(SimpleTestCase):
     def test_an_undecided_record_is_not_malformed(self):
         report = coach_grade.coach_report([one(CERTAIN, 'pass', when=None), (5, 'x', 'v1')])
         self.assertEqual((report['malformed_records'], report['decided_records']), (0, 0))
+
+    def test_a_record_of_four_or_five_fields_is_read_like_a_full_one(self):
+        full = many([(CERTAIN, 'pass', 5)])
+        short = [record[:4] for record in full[:2]] + [record[:5] for record in full[2:]]
+        self.assertEqual(coach_grade.coach_report(short), coach_grade.coach_report(full))
+
+    def test_a_decided_time_at_the_edge_of_the_calendar_is_left_out_and_counted(self):
+        # The reviewer's four: each overflows on the move to UTC or to Malaysia time (UTC+8).
+        edges = (datetime.datetime(9999, 12, 31, 20, tzinfo=UTC), datetime.datetime(9999, 12, 31, 20),
+                 datetime.datetime.max,
+                 datetime.datetime(1, 1, 1, tzinfo=datetime.timezone(datetime.timedelta(hours=14))))
+        good = many([(CERTAIN, 'pass', 5)])
+        records = good + [one(CERTAIN, 'pass', 'SENTINEL-EDGE', when) for when in edges]
+        for leave_out in ((), coach_grade.INTERVIEW_FAILS):
+            report = coach_grade.coach_report(records, leave_out_reasons=leave_out)
+            self.assertEqual((report['malformed_records'], report['decided_records']), (4, 5), leave_out)
+            self.assertEqual([(m['version'], m['month'], m['facts']) for m in report['months']],
+                             [('v1', '2026-03', 5)])
+            self.assertNotIn('SENTINEL', json.dumps(report))
+
+    def test_a_zone_that_cannot_say_its_offset_is_malformed(self):
+        class NoOffset(datetime.tzinfo):
+            def utcoffset(self, dt):
+                return None
+
+        class RaisingOffset(datetime.tzinfo):
+            def utcoffset(self, dt):
+                raise ValueError('no offset')
+
+        class TextOffset(datetime.tzinfo):        # datetime itself refuses it (TypeError)
+            def utcoffset(self, dt):
+                return '+08:00'
+
+        class DayLongOffset(datetime.tzinfo):     # datetime itself refuses 24 hours or more (ValueError)
+            def utcoffset(self, dt):
+                return datetime.timedelta(hours=25)
+
+        good = many([(CERTAIN, 'pass', 5)])
+        odd = [one(CERTAIN, 'pass', when=datetime.datetime(2026, 3, 2, 3, tzinfo=zone()))
+               for zone in (NoOffset, RaisingOffset, TextOffset, DayLongOffset)]
+        report = coach_grade.coach_report(good + odd)
+        self.assertEqual((report['malformed_records'], report['decided_records']), (4, 5))
+        self.assertEqual(report, dict(coach_grade.coach_report(good), malformed_records=4))
+
+    def test_a_bug_in_a_helper_is_not_swallowed(self):
+        # The catch wraps only the reads of a record's own values: a helper that breaks must RAISE,
+        # never turn every record into a "malformed" one.
+        records = many([(CERTAIN, 'pass', 5)])
+        for helper in ('_version_key', '_natural', '_plain_tally'):
+            with mock.patch.object(coach_grade, helper, side_effect=TypeError('a helper bug')):
+                with self.assertRaises(TypeError, msg=helper):
+                    coach_grade.coach_report(records)
+        self.assertEqual(coach_grade.coach_report(records)['malformed_records'], 0)
+
+    def test_odd_version_labels_never_raise(self):
+        class OddText(str):
+            def strip(self, *args):
+                raise TypeError('odd strip')
+
+            def __eq__(self, other):
+                raise TypeError('odd eq')
+
+            __hash__ = str.__hash__
+
+        odd_labels = (b'v1', 7.5, float('nan'), ['v1'], {'v': 1}, ('v1',), object(), True, Fraction(1, 3))
+        for label in odd_labels:
+            report = coach_grade.coach_report(many([(CERTAIN, 'pass', 5)], label))
+            self.assertEqual([(m['version'], m['unknown_version']) for m in report['months']],
+                             [(coach_grade.UNKNOWN_VERSION, True)], repr(label))
+        # a text subclass is text: str's own strip is used, and the label shown is plain text
+        report = coach_grade.coach_report(many([(CERTAIN, 'pass', 5)], OddText(' v9 ')))
+        self.assertEqual([(m['version'], type(m['version']), m['unknown_version']) for m in report['months']],
+                         [('v9', str, False)])
 
 
 class TestTheChain(SimpleTestCase):
