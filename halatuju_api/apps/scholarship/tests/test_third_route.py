@@ -326,7 +326,9 @@ class TestTheGateIsNotReRunElsewhere(SimpleTestCase):
         callers = []
         for path in (_API / 'apps').rglob('*.py'):
             rel = path.relative_to(_API).as_posix()
-            if '/tests/' in rel or '/migrations/' in rel or rel.endswith('shortlisting.py'):
+            # criteria.py is the criteria-editor engine itself (S1), the successor of shortlisting.py
+            if ('/tests/' in rel or '/migrations/' in rel or rel.endswith('shortlisting.py')
+                    or rel == 'apps/scholarship/criteria.py'):
                 continue
             src = path.read_text(encoding='utf-8')
             # a CALL with an argument (prose mentions read "evaluate()"); `page.evaluate(` is
@@ -335,8 +337,11 @@ class TestTheGateIsNotReRunElsewhere(SimpleTestCase):
                          r'_academic_ok\(\s*\w', src):
                 callers.append(rel)
         # STPM CGPA sprint C2: the backfill PREVIEW asks the gate before/after for the owner's list
-        # and writes no verdict — a declared read-only caller, not a re-run.
+        # and writes no verdict — a declared read-only caller, not a re-run. Criteria editor S1:
+        # `replay_criteria` compares the gate with the tree inside a rolled-back READ ONLY
+        # transaction — also a declared read-only caller.
         self.assertEqual(sorted(callers), ['apps/scholarship/management/commands/backfill_stpm_cgpa.py',
+                                           'apps/scholarship/management/commands/replay_criteria.py',
                                            'apps/scholarship/services/intake.py'])
 
 
