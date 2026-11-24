@@ -329,11 +329,13 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # 2.3.1 (TD-702, 2026-11-23) — the PDF gate (pdf_pages._open_pdf -> pdf_layer_guards.GateReader) refuses a crafted
 # PDF past 4 whole-file pypdf reads; genuine letters read as before, only the three named crafted shapes change.
 # 2.3.2 (TD-710, 2026-11-23) — the PDF gate's GateReader also caps pypdf's lookup work (bytes read, read calls,
-# cross-reference rows walked, object-stream entries parsed), also while it opens the file (two open-time scans
-# stay uncounted: docs/decisions.md TD-710), and
+# cross-reference rows walked, object-stream entries parsed), also while it opens the file, and
 # parses an object stream once; genuine letters read as before, only crafted files past the cap change (and a
 # genuine file with about 3,500-6,000 packed objects or more, by shape, which no fixture comes near).
-PARSER_VERSION = '2.3.2'
+# 2.3.3 (TD-710 gap 2, 2026-11-24) — the two open-time scans pypdf read through its own uncounted copies (a
+# cross-reference stream's entries; the object-stream indexes a rebuilt table scans) are charged to the same
+# budget; only filter decoding stays uncounted. Gap 3: pypdf's log records are off. Genuine letters as before.
+PARSER_VERSION = '2.3.3'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)

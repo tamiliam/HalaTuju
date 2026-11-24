@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 - Case #945: a MySTR Semakan Status page showing "Status Permohonan Semasa: Kekal Kelulusan Asal" (the original approval stays) read no status, so it counted as unreadable and a thinner "Lulus Rayuan" dashboard stayed live over it. The rules reader (`doc_parse._STR_APPROVED`) now knows that exact phrase, in any case and spacing. "Kelulusan" alone (Menunggu, Dalam Proses, Tarikh Kelulusan) is still not an approval; rejections, the engine, the surface ceiling and the keep-better ranking are unchanged. No version bump: the STR reader sits in no registered model's digest (the model-version guard stays green).
 - Tests: `test_doc_parse.py` pins the phrase in both OCR orders, the near misses, the rejections, the engine reading the page `current` and ranking it above an approved dashboard, and (pinned, not designed) a page with "Rayuan: Ditolak" above the phrase: approval in label-then-value order, rejected in the labels-then-values order.
 
+### PDF gate: two open-time scans now charged (TD-710 gap 2, 2026-11-24)
+
+- As pypdf opens a file it reads a cross-reference stream's entries and, when it rebuilds a broken table, each object stream's index through its own copies, which the lookup-work budget did not see. A 68 KB crafted file held a reader 70 s and was accepted. `GateReader` now charges every read of those copies (same weights as object-stream parse reads); that file is refused in about 1.3 s. pypdf used outside the gate is unchanged. Parser version 2.3.3.
+- Gap 3 (folded in by the owner, same day): pypdf writes a log warning for every repair it makes, and a crafted file can ask for hundreds of thousands. That cost about 20 s per upload, uncharged, and about 240k log lines. pypdf's logger is now silenced (set to CRITICAL, a level pypdf never uses); the same file takes about 1.6 s and writes nothing. The four offline eval tools that set it back to ERROR now set CRITICAL too (the full suite caught the undo), and a test fails if any module sets a lower level. Parser version stays 2.3.3.
+
 ### Reject chips: one "Rejected" status plus a chip saying where (2026-11-23)
 
 Not pushed. Migration: none. Services: api, web.

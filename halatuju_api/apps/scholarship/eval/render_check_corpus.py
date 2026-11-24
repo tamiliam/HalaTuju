@@ -59,7 +59,7 @@ def census(root: str) -> dict:
 
 def main(argv) -> int:
     root = argv[1] if len(argv) > 1 else fixtures_root()
-    logging.getLogger('pypdf').setLevel(logging.ERROR)     # its repair notes name nothing, but are noise
+    logging.getLogger('pypdf').setLevel(logging.CRITICAL)     # its repair notes name nothing, but are noise
     c = census(root)
     print(f"{c['files']} PDFs ({c['empty']} empty), {c['pages']} pages cleared, "
           f"{sum(c['refused'].values())} refused, {sum(c['refused_not_empty'].values())} of them not empty")

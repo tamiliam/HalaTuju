@@ -78,6 +78,80 @@ def _rebuild_pdf(n: int) -> bytes:
     return bytes(out)
 
 
+def _rebuild_objstm_pdf(index: bytes, streams: int = 1, n: int = 1) -> bytes:
+    """Gap 2: ``streams`` Flate object streams whose decoded data is ``index``, behind a table whose size is not a
+    number, so pypdf rebuilds the table as it opens the file and scans each stream's index through its own
+    BytesIO copy (_reader.py:1583), a byte at a time. A long index of ``9 1 `` compresses to almost nothing."""
+    out = bytearray(b'%PDF-1.5\n')
+    out += b'1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n'
+    out += b'2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n'
+    out += b'3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents %d 0 R >>\nendobj\n' % FIRST
+    out += b'%d 0 obj\n<< /Length 3 >>\nstream\n0 g\nendstream\nendobj\n' % FIRST
+    body = zlib.compress(index, 9)
+    for j in range(streams):
+        out += b'%d 0 obj\n<< /Type /ObjStm /N %d /First %d /Filter /FlateDecode /Length %d >>\nstream\n' % (
+            20 + j, n, index.index(b'\n') + 1 if b'\n' in index else 4, len(body))
+        out += body + b'\nendstream\nendobj\n'
+    xref = len(out)
+    out += b'xref\n0 (x)\ntrailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n' % (20 + streams, xref)
+    return bytes(out)
+
+
+def _xref_stream_pdf(n: int) -> bytes:
+    """Gap 2: one cross-reference stream of ``n`` entries (W [1 2 1]); pypdf reads each field through its own
+    BytesIO copy as it opens the file (_reader.py:1430). Entries past the first five name an absent object stream."""
+    import struct
+    out, offs = bytearray(b'%PDF-1.5\n'), []
+    for body in (b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+                 b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>'):
+        offs.append(len(out))
+        out += b'%d 0 obj\n%s\nendobj\n' % (len(offs), body)
+    xref = len(out)
+    rows = struct.pack('>BHB', 0, 0, 255) + b''.join(struct.pack('>BHB', 1, o, 0) for o in offs + [xref])
+    rows += struct.pack('>BHB', 2, 999, 0) * (n - 5)
+    raw = zlib.compress(rows, 9)
+    out += b'4 0 obj\n<< /Type /XRef /Size %d /W [1 2 1] /Root 1 0 R /Filter /FlateDecode /Length %d >>\nstream\n' % (
+        n, len(raw))
+    out += raw + b'\nendstream\nendobj\nstartxref\n%d\n%%%%EOF\n' % xref
+    return bytes(out)
+
+
+def _clamped_index_pdf(pairs: int, dup_keys: int = 0) -> bytes:
+    """Gap 3: one cross-reference stream whose /Index adds ``pairs`` pairs ``0 9`` past its 5 rows, each of which
+    pypdf clamps with a logger warning (_reader.py:1385); the catalog repeats a key ``dup_keys`` times, a warning
+    each (generic/_data_structures.py:704)."""
+    out = bytearray(b'%PDF-1.5\n')
+    offs = []
+    for body in (b'<< /Type /Catalog /Pages 2 0 R' + b' /X 1' * dup_keys + b' >>',
+                 b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+                 b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>'):
+        offs.append(len(out))
+        out += b'%d 0 obj\n%s\nendobj\n' % (len(offs), body)
+    xref = len(out)
+    rows = bytes([0, 0, 0, 255]) + b''.join(bytes([1, o >> 8, o & 255, 0]) for o in offs + [xref])
+    out += b'4 0 obj\n<< /Type /XRef /Size 5 /W [1 2 1] /Root 1 0 R /Index [0 5%s] /Length %d >>\nstream\n' % (
+        b' 0 9' * pairs, len(rows))
+    out += rows + b'\nendstream\nendobj\nstartxref\n%d\n%%%%EOF\n' % xref
+    return bytes(out)
+
+
+def _metered_reads(fn):
+    """(what ``fn`` returned or raised, reads made through `_MeteredData`)."""
+    real, reads = pdf_layer_guards._MeteredData.read, []
+
+    def read(self, size=-1):
+        got = real(self, size)
+        reads.append(len(got))
+        return got
+
+    with mock.patch.object(pdf_layer_guards._MeteredData, 'read', read):
+        try:
+            got = fn()
+        except Exception as e:  # noqa: BLE001 - the test reads which
+            got = e
+    return got, reads
+
+
 def _objstm_pdf(entries: int, contents: list, page_in_stream: bool = False, first: bytes = b'1',
                 type_ref: bool = False, at=None, extra=None) -> bytes:
     """An object stream (object 5) holding ``entries`` small objects numbered 100 on; the cross-reference stream
@@ -391,6 +465,96 @@ class HostileLookupsAreBounded(SimpleTestCase):
             with self.assertRaisesRegex(OverBudget, CAP):
                 GateReader(_rebuild_pdf(2000))
 
+    def test_a_rebuilt_tables_object_stream_index_is_charged_as_it_opens(self):
+        """Gap 2 (review round 4, MAIN): a rebuilt table scans each object stream's index through pypdf's own
+        BytesIO copy, a byte at a time, uncounted: 70 MB of ``9 1 `` in a 68 KB file held a reader 70 s and was
+        ACCEPTED. Each read is now charged as `_MeteredData`'s are, so the open is refused after a fraction."""
+        size = 1_000_000                    # 250,000 index entries, about a million one-byte reads
+        data = _rebuild_objstm_pdf(b'9 1 ' * (size // 4))
+        self.assertLess(len(data), 5_000)
+        with _small_base():
+            got, reads = _metered_reads(lambda: GateReader(data))
+        self.assertIsInstance(got, OverBudget)                        # was opened, every read free
+        self.assertIn(CAP, str(got))
+        self.assertGreater(len(reads), 0)
+        self.assertLess(len(reads), size // 20)                       # about 16,700 under the small base
+        self.assertIsNone(getattr(pdf_layer_guards._PARSING, 'meter', None))   # restored after the refusal
+        with _small_base():
+            self.assertIn(CAP, _gate(data)[1] or '')                  # the real gate refuses it
+
+    def test_a_cross_reference_streams_entries_are_charged_as_it_opens(self):
+        """Gap 2 (SMALL): pypdf reads each field of a cross-reference stream through its own BytesIO copy (it caps
+        the entries at 2M; 2M in an 8 KB file held a reader 9.8 s before the gate refused it). Charged now."""
+        n = 100_000                         # 300,000 field reads
+        data = _xref_stream_pdf(n)
+        self.assertLess(len(data), 5_000)
+        with _small_base():
+            got, reads = _metered_reads(lambda: GateReader(data))
+        self.assertIsInstance(got, OverBudget)                        # was opened, every read free
+        self.assertIn(CAP, str(got))
+        self.assertGreater(len(reads), 0)
+        self.assertLess(len(reads), n // 5)                           # about 16,700 under the small base
+
+    def test_pypdf_copies_outside_a_gate_reader_are_plain_and_free(self):
+        """The patched name serves all of pypdf: with no `GateReader` opening or parsing on this thread, it is a
+        plain BytesIO, so pypdf used directly (invoices, splitting results) is never charged or refused."""
+        self.assertIs(type(pdf_layer_guards._bytes_io(b'abc')), io.BytesIO)
+        data = _xref_stream_pdf(50_000)
+        with _small_base():
+            got, reads = _metered_reads(lambda: PdfReader(io.BytesIO(data)))
+        self.assertIsInstance(got, PdfReader)
+        self.assertEqual(reads, [])
+
+    def test_pypdf_repair_warnings_make_no_log_records(self):
+        """Gap 3: pypdf logs a warning for every repair, and a file can repeat one at will (48,000 clamped /Index
+        pairs x 5 streams took 18.7 s under production logging, 92 % of the cap, ACCEPTED, ~240k log lines).
+        The "pypdf" logger now sits at CRITICAL, which pypdf never uses: the repairs still happen, no record is made."""
+        import logging
+        import pypdf._reader
+        import pypdf.generic._data_structures as ds
+        records, calls = [], []
+
+        class Keep(logging.Handler):
+            def emit(self, record):
+                records.append(record)
+
+        def counted(real):
+            def warn(*args, **kwargs):
+                calls.append(1)
+                return real(*args, **kwargs)
+            return warn
+
+        data = _clamped_index_pdf(500, dup_keys=200)
+        keep = Keep(logging.DEBUG)
+        log = logging.getLogger('pypdf')
+        log.addHandler(keep)
+        try:
+            with mock.patch.object(pypdf._reader, 'logger_warning', counted(pypdf._reader.logger_warning)), \
+                    mock.patch.object(ds, 'logger_warning', counted(ds.logger_warning)):
+                reader = GateReader(data)
+                self.assertEqual(len(reader.pages), 1)
+                self.assertEqual(_gate(data), (1, None))
+        finally:
+            log.removeHandler(keep)
+        self.assertGreaterEqual(len(calls), 700)                       # pypdf still made every repair
+        self.assertEqual(sum(r.levelno >= logging.WARNING for r in records), 0)   # was one record per repair
+        self.assertFalse(log.isEnabledFor(logging.ERROR))             # _cmap's per-font logger_error too
+
+    def test_no_module_lowers_the_pypdf_logger_below_critical(self):
+        """Gap 3 guard: four eval tools once set the "pypdf" logger to ERROR, which undid the gate's CRITICAL in
+        any process that imported them (the full suite caught it). Only CRITICAL may ever be set."""
+        import pathlib
+        apps = pathlib.Path(pdf_layer_guards.__file__).resolve().parents[1]
+        found = []
+        for path in apps.rglob('*.py'):
+            if 'tests' in path.parts:
+                continue
+            for n, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+                m = re.search(r"getLogger\(\s*['\"]pypdf[\w.]*['\"]\s*\)\.setLevel\(([^)]*)\)", line)
+                if m and m.group(1).strip() != 'logging.CRITICAL':
+                    found.append('%s:%d' % (path.relative_to(apps), n))
+        self.assertEqual(found, [])
+
     def test_over_budget_is_never_swallowed_inside_a_dictionary_value(self):
         self.assertTrue(issubclass(OverBudget, LimitReachedError))
 
@@ -444,6 +608,22 @@ class GenuineShapesAreUnchanged(SimpleTestCase):
         gate, plain = GateReader(data), PdfReader(io.BytesIO(data))
         self.assertEqual(gate.xref, plain.xref)
         self.assertEqual(gate.pages[0]['/Contents'].get_object().get_data(), b'0 g')
+
+    def test_a_rebuilt_table_with_a_small_object_stream_opens_as_pypdf_opens_it(self):
+        """Gap 2 control: a broken table rebuilt on open, with a normal small object stream, still opens, finds the
+        same packed objects as pypdf, and its index scan is charged well under the cap."""
+        data = _rebuild_objstm_pdf(b'100 0 101 4 102 8\n(a) (b) (c)', n=3)
+        self.assertEqual(_gate(data), (1, None))
+        (gate, reads), plain = _metered_reads(lambda: GateReader(data)), PdfReader(io.BytesIO(data))
+        self.assertIsInstance(gate, GateReader)
+        self.assertGreater(len(reads), 0)                             # the index scan is metered, as it opens
+        self.assertEqual(gate.xref_objStm, plain.xref_objStm)
+        self.assertEqual(len(gate.xref_objStm), 3)
+        for num in (100, 101, 102):
+            self.assertEqual(_same(gate.get_object(num)), _same(plain.get_object(num)))
+        self.assertEqual(str(gate.get_object(102)), 'c')
+        work, cap = _work(data)
+        self.assertLess(work * 100, cap)
 
     def test_a_length_past_the_end_reads_as_pypdf_reads_it(self):
         data = _pdf('overlen', 3, 10_000)

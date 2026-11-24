@@ -25,6 +25,7 @@ Fix round 6: 3 became a WHITELIST (`_doc_may_switch_off`). The layers count as a
 TD-702: `GateReader`, the reader every page check opens, caps pypdf's whole-file searches.
 """
 import io
+import logging
 import re
 import threading
 
@@ -142,11 +143,9 @@ _HEADER = re.compile(rb'\s(\d+)\s+(\d+)\s+obj')
 #: any re-parse cost what they read. Weights from measured time per operation (pypdf 6.21.4; one unit is ~0.3 ns
 #: of copying): a byte ~0.3 ns, a file read with the parsing around it ~1 us, a row ~100 ns, a read of decoded
 #: object-stream data with the parsing around it up to ~4 us. Review round 3: file reads and rows walked are charged
-#: while pypdf OPENS the file too (rows walked while a broken table is rebuilt were free). NOT charged: a stream's
-#: filters decoding it (TD-712), and two open-time scans pypdf reads through its own uncounted copies: the entries
-#: of a cross-reference stream (pypdf caps them at 2M) and the object-stream indexes a rebuilt table scans. Review
-#: round 4: the second held a reader ~70 s on a 68 KB file, accepted (already so before TD-710); owner decision
-#: 24 Nov: its own follow-up item, fixed next. Measured headroom (fixtures and large
+#: while pypdf OPENS the file too (rows walked while a broken table is rebuilt were free). Gap 2 (24 Nov): pypdf's
+#: open-time BytesIO copies (_reader.py:1430, :1583) are `_MeteredData` too (one held a reader ~70 s, accepted).
+#: NOT charged: filter decoding (TD-712), pure-Python work between reads. Measured headroom (fixtures and large
 #: genuine-shaped files): docs/decisions.md (TD-710). Owner decision 23 Nov: the cap is 3x the first one (6e9 +
 #: 300 per byte, was 2e9 + 100), weights unchanged, so a hostile file holds a reader ~3x longer (seconds); a
 #: genuine file with about 3,500-6,000 packed objects or more, by shape, may still be refused.
@@ -155,7 +154,7 @@ _ROW_WORK = 300
 _PARSE_CALL_WORK = 12_000
 LOOKUP_WORK_PER_BYTE = 300
 LOOKUP_WORK_BASE = 6_000_000_000
-_PARSING = threading.local()                 # .meter: the `_CountedBytes` of the reader parsing an object stream
+_PARSING = threading.local()                 # .meter: the `_CountedBytes` of the reader opening or parsing here
 
 
 class _CountedBytes(io.BytesIO):
@@ -194,8 +193,8 @@ class _CountedBytes(io.BytesIO):
 
 
 class _MeteredData(io.BytesIO):
-    """The decoded object-stream data pypdf parses for a `GateReader`: each read is charged to that reader's
-    lookup budget as pypdf makes it (the call, with the parsing around it, and each byte it returns)."""
+    """Data pypdf parses for a `GateReader` (object streams; as it opens, xref stream entries and rebuilt object-
+    stream indexes): each read is charged to that reader's budget as made (the call, its parsing, and each byte)."""
 
     def __init__(self, meter, *args):
         super().__init__(*args)
@@ -208,13 +207,16 @@ class _MeteredData(io.BytesIO):
 
 
 def _bytes_io(*args):
-    """``pypdf._reader.BytesIO``: `_MeteredData` while this thread's `GateReader` parses an object stream (pypdf
-    wraps the decoded data by this name, _reader.py:407), else a plain BytesIO, as before."""
+    """``pypdf._reader.BytesIO``: `_MeteredData` while this thread's `GateReader` opens the file (_reader.py:1430,
+    :1583) or parses an object stream (:407), else a plain BytesIO: pypdf with no `GateReader` is never charged."""
     meter = getattr(_PARSING, 'meter', None)
     return io.BytesIO(*args) if meter is None else _MeteredData(meter, *args)
 
 
 pypdf._reader.BytesIO = _bytes_io
+# Gap 3: a file can repeat a pypdf repair warning (or a per-font error) at will, uncharged; ~20 s, 240k log lines.
+# pypdf never logs at CRITICAL, so no record is made, process-wide; nothing reads them (docs/decisions.md, TD-710).
+logging.getLogger('pypdf').setLevel(logging.CRITICAL)
 
 
 def _charge_lookup_work(reader, units: int) -> None:
@@ -255,19 +257,24 @@ class GateReader(PdfReader):
     included, and an object stream is parsed once: a number it does not hold then gets pypdf's NullObject."""
 
     def __init__(self, data: bytes):
-        """Review round 3: the budget covers file reads and rows walked while pypdf opens the file (not the two
-        uncounted open-time scans named at LOOKUP_WORK_BASE). pypdf catches broad
+        """Review round 3: the budget covers file reads and rows walked while pypdf opens the file; gap 2: and
+        every read of the BytesIO copies pypdf makes as it opens it (`_PARSING` names this reader for the open,
+        restored after, also on a refusal; only filter decoding stays uncounted). pypdf catches broad
         exceptions in some recovery paths as it opens (a failed rebuild, _reader.py:1237, or one it rewraps as
         PdfReadError, :1339), so an `OverBudget` raised in there is raised again here, whatever pypdf did."""
         self._headers = None
         self._objstm_done = set()
         self._counted = _CountedBytes(data)
+        outer = getattr(_PARSING, 'meter', None)
+        _PARSING.meter = self._counted              # gap 2: pypdf's open-time BytesIO copies are metered too
         try:
             super().__init__(self._counted)
         except Exception as e:
             if self._counted.refused and not isinstance(e, OverBudget):
                 raise OverBudget(self._counted.refused) from e
             raise
+        finally:
+            _PARSING.meter = outer
         if self._counted.refused:
             raise OverBudget(self._counted.refused)
 

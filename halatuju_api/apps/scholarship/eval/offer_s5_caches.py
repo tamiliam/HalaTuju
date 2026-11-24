@@ -79,7 +79,7 @@ def main(argv=None, out=print):
     ap.add_argument('--eval-dir', default=orc.DEFAULT_EVAL_DIR)
     ap.add_argument('--write', action='store_true')
     args = ap.parse_args(argv)
-    logging.getLogger('pypdf').setLevel(logging.ERROR)
+    logging.getLogger('pypdf').setLevel(logging.CRITICAL)
     if not orc.offer_keys(args.eval_dir):
         out(f'No offer letters in {args.eval_dir} - this step needs the local corpus.')
         return 2
