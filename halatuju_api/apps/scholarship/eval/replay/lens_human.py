@@ -16,19 +16,24 @@ THE CASE ROW (one plain dict per case, built by phase B2b). Exactly these keys:
 * ``fresh_snapshot`` the replayed verdict list, or None. ``engine_version`` text, the same in every row.
 A wrong-shaped row raises `BadCaseRow` naming the field, never its value, and the whole run stops.
 
-THE TWO EXAMS, chosen by the stored context's shape, never by a date: ``exam-1`` (FULL context) freezes
-when 50 exist, the first 50 by decision time, ties by id; ``exam-old`` (``{}``) freezes on its first run
-with all of them. A FAILED context is in neither exam and has its own count.
+THE TWO EXAMS, chosen by the stored context's shape, never by a date: ``exam-1`` (FULL context) is the
+first 50 by decision time, ties by id; ``exam-old`` (``{}``) is all of them. A FAILED context is in
+neither exam and has its own count. A FREEZE IS ASKED FOR, never automatic: only ``freeze=True`` writes
+a missing exam file (exam-1 once 50 exist, exam-old once one exists). A normal run (``freeze=False``)
+never writes: a missing file is EXAM_MISSING with the candidate count, so a deleted or lost exam file is
+never replaced by a new exam unless a person asks for it.
 
 THE EXAM FILE ``<folder>/<exam>.json``: exactly ``exam, format, application_ids, decided_at, size,
-frozen_at`` (+ ``key_check``, exam-1 only) and ``digest`` = sha256 hex of the canonical JSON (sorted
-keys, no spaces, ASCII) of the other fields. ``decided_at`` holds each listed case's decision time at the
-freeze, in the same order, as UTC ISO 8601 text with microseconds and ``+00:00``. Written to a temp file,
-then hard-linked to its name (a link, unlike a POSIX rename, never replaces a file). Never overwritten.
+frozen_at`` (+ ``key_check``, exam-1 only: `KEY_CHECK_LENGTH` lower-case hex characters) and ``digest``
+= sha256 hex of the canonical JSON (sorted keys, no spaces, ASCII) of the other fields. ``decided_at``
+holds each listed case's decision time at the freeze, in the same order; it and ``frozen_at`` are UTC
+ISO 8601 text with microseconds and ``+00:00``. Written to a temp file, then hard-linked to its name (a
+link, unlike a POSIX rename, never replaces a file). Never overwritten.
 
 THE FOLDER is checked once per run, before any load: missing, not a folder, an empty or non-path
-argument (all ``folder_missing``) or inside a git repository after resolving links (``.git`` in it or
-any parent) refuses both exams. A folder that cannot take the write gives ``folder_not_writable``.
+argument (all ``folder_missing``), a relative path (``folder_not_absolute``) or inside a git repository
+after resolving links (``.git`` in it or any parent) refuses both exams. A folder that cannot take the
+write gives ``folder_not_writable``.
 """
 from __future__ import annotations
 
@@ -53,6 +58,9 @@ CASE_FIELDS = ('application_id', 'verdict_decided_at', 'stored_context', 'recomp
 _BASE_FIELDS = {'exam', 'format', 'application_ids', 'decided_at', 'size', 'frozen_at', 'digest'}
 _ALLOWED = {EXAM_1: _BASE_FIELDS | {'key_check'}, EXAM_OLD: _BASE_FIELDS}
 NOT_GIVEN = 'not_given'   # a Fail with no stored reason (old rows)
+# A key check's one form, restated from `verdict_context.key_check` (the first 8 characters of an
+# HMAC-SHA256 ``hexdigest()``, so lower-case hex); that module defines no public pattern for it.
+KEY_CHECK_LENGTH, KEY_CHECK_ALPHABET = 8, frozenset('0123456789abcdef')
 
 # Reason codes: loading an exam file; freezing (writing) one; the key check (exam-1).
 UNREADABLE, UNKNOWN_FIELD, MISSING_FIELD = 'file_unreadable', 'unknown_field', 'missing_field'
@@ -60,8 +68,9 @@ WRONG_EXAM_NAME, WRONG_FORMAT = 'wrong_exam_name', 'wrong_format_version'
 BAD_FIELD_TYPE, NON_INTEGER_ID, DUPLICATE_ID = 'bad_field_type', 'non_integer_id', 'duplicate_id'
 SIZE_MISMATCH, DIGEST_MISMATCH = 'size_mismatch', 'digest_mismatch'
 ID_BELOW_ONE, EMPTY_EXAM, BAD_DECIDED_AT = 'id_below_one', 'empty_exam', 'bad_decided_at'
+BAD_FROZEN_AT, BAD_KEY_CHECK, EXAM_MISSING = 'bad_frozen_at', 'bad_key_check', 'exam_missing'
 FOLDER_MISSING, INSIDE_GIT_REPO, ALREADY_FROZEN = 'folder_missing', 'inside_git_repo', 'already_frozen'
-FOLDER_NOT_WRITABLE = 'folder_not_writable'
+FOLDER_NOT_WRITABLE, FOLDER_NOT_ABSOLUTE = 'folder_not_writable', 'folder_not_absolute'
 KEY_BLANK, KEY_CHECKS_MIXED = 'key_blank', 'candidate_key_checks_differ'
 KEY_CHECK_MISSING, CANDIDATES_NOT_CURRENT = 'current_key_check_missing', 'candidate_key_check_not_current'
 KEY_CHECK_DIFFERS_EXAM, KEY_CHECK_DIFFERS_CASES = 'key_check_differs_from_exam', 'key_check_differs_from_cases'
@@ -114,8 +123,10 @@ def _read_case(row) -> dict:
         raise BadCaseRow('row', 'has an unknown field')
     when = _typed(row, 'verdict_decided_at', datetime.datetime, True)
     if when is not None:
-        when = (when.replace(tzinfo=datetime.timezone.utc) if when.tzinfo is None
-                else when.astimezone(datetime.timezone.utc))
+        try:
+            when = _as_utc(when)
+        except (OverflowError, ValueError):   # an aware year-1 / year-9999 time off UTC; a bad zone
+            raise BadCaseRow('verdict_decided_at', 'cannot be read as a UTC instant') from None
     verdict = _typed(row, 'human_verdict', dict, True)
     qc = _typed(row, 'qc_answers', dict, True)
     if qc is not None and not all(isinstance(a, str) and a in second_look.ANSWERS for a in qc.values()):
@@ -196,18 +207,36 @@ def _exam_file_refusal(name: str, data) -> str | None:
         return SIZE_MISMATCH
     if len(times) != len(ids) or not all(_stored_time(t) is not None for t in times):
         return BAD_DECIDED_AT
+    if _stored_time(data['frozen_at']) is None:
+        return BAD_FROZEN_AT
+    if name == EXAM_1 and not is_key_check(data['key_check']):
+        return BAD_KEY_CHECK
     if data['digest'] != exam_digest(data):
         return DIGEST_MISMATCH
     return None
 
 
+def is_key_check(value) -> bool:
+    """True only for a key check's one form: `KEY_CHECK_LENGTH` characters of `KEY_CHECK_ALPHABET`."""
+    return isinstance(value, str) and len(value) == KEY_CHECK_LENGTH and set(value) <= KEY_CHECK_ALPHABET
+
+
+def _as_utc(when: datetime.datetime) -> datetime.datetime:
+    """The same instant in UTC; no zone (or a zone with no offset) = UTC. Raises OverflowError when the
+    instant does not fit in UTC (an aware year-1 or year-9999 time off UTC), ValueError on a bad zone."""
+    if when.utcoffset() is None:
+        return when.replace(tzinfo=datetime.timezone.utc)
+    return when.astimezone(datetime.timezone.utc)
+
+
 def _decided_text(when) -> str:
-    """The one stored form of a decision time: UTC, microseconds, ``+00:00`` (no zone = UTC)."""
+    """The one stored form of a decision time or freeze time: UTC, microseconds, ``+00:00``."""
     if not isinstance(when, datetime.datetime):
         raise ValueError('a decision time must be a datetime')
-    when = (when.replace(tzinfo=datetime.timezone.utc) if when.tzinfo is None
-            else when.astimezone(datetime.timezone.utc))
-    return when.isoformat(timespec='microseconds')
+    try:
+        return _as_utc(when).isoformat(timespec='microseconds')
+    except OverflowError:
+        raise ValueError('a decision time does not fit in UTC') from None
 
 
 def _stored_time(text):
@@ -241,15 +270,18 @@ def load_exam(folder, name: str):
 
 
 def exam_folder_refusal(folder) -> str | None:
-    """FOLDER_MISSING (missing, not a folder, an empty text or not a text path), INSIDE_GIT_REPO or
-    None. Links are resolved first; then the folder and every parent up to the root is checked for a
-    ``.git`` entry (a folder or a file)."""
+    """FOLDER_MISSING (an empty text or not a text path), FOLDER_NOT_ABSOLUTE (a relative path, such as
+    ``.``), FOLDER_MISSING (missing or not a folder), INSIDE_GIT_REPO or None, checked in that order.
+    Links are resolved first; then the folder and every parent up to the root is checked for a ``.git``
+    entry (a folder or a file)."""
     try:
         text = os.fspath(folder) if isinstance(folder, (str, os.PathLike)) else None
     except TypeError:   # a path-like object that gives neither text nor bytes
         return FOLDER_MISSING
     if not isinstance(text, str) or not text:
         return FOLDER_MISSING
+    if not os.path.isabs(text):   # a relative path would depend on where the process happens to run
+        return FOLDER_NOT_ABSOLUTE
     try:
         real = pathlib.Path(text).resolve(strict=True)
     except (OSError, RuntimeError, ValueError):   # ValueError: a NUL in the path
@@ -260,15 +292,21 @@ def exam_folder_refusal(folder) -> str | None:
 
 
 def _utc_text(now) -> str:
-    if not isinstance(now, datetime.datetime) or now.tzinfo is None or now.utcoffset() is None:
-        raise ValueError('now must be a datetime with a time zone')
-    return now.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    """``now`` as a freeze time (`_decided_text`'s form); ValueError naming ``now`` unless it is an aware
+    datetime that fits in UTC."""
+    try:
+        if isinstance(now, datetime.datetime) and now.utcoffset() is not None:
+            return _decided_text(now)
+    except ValueError:   # does not fit in UTC, or a zone whose offset is out of range
+        pass
+    raise ValueError('now must be a datetime with a time zone that fits in UTC')
 
 
 def freeze_exam(folder, name: str, application_ids, decided_at, now, key_check=None):
     """Write a NEW exam file and return ``(exam, None)``, or ``(None, reason code)``. ``decided_at``: one
-    decision time per id, same order. ``key_check`` is required for exam-1 and refused for exam-old.
-    Never overwrites: an existing file = ALREADY_FROZEN; a folder that cannot take it = FOLDER_NOT_WRITABLE."""
+    decision time per id, same order. ``key_check`` (`is_key_check`) is required for exam-1 and refused
+    for exam-old. Never overwrites: an existing file = ALREADY_FROZEN; a folder that cannot take it =
+    FOLDER_NOT_WRITABLE."""
     if name not in EXAM_NAMES:
         raise ValueError('unknown exam name')
     ids = list(application_ids)
@@ -277,8 +315,8 @@ def freeze_exam(folder, name: str, application_ids, decided_at, now, key_check=N
     times = [_decided_text(when) for when in decided_at]
     if len(times) != len(ids):
         raise ValueError('decided_at needs one time per application id')
-    if (name == EXAM_1) != isinstance(key_check, str):
-        raise ValueError('key_check is text for exam-1 and absent for exam-old')
+    if not (is_key_check(key_check) if name == EXAM_1 else key_check is None):
+        raise ValueError('key_check is 8 lower-case hex characters for exam-1 and absent for exam-old')
     exam = {'exam': name, 'format': FORMAT_VERSION, 'application_ids': ids, 'decided_at': times,
             'size': len(ids), 'frozen_at': _utc_text(now)}
     if name == EXAM_1:
@@ -306,7 +344,10 @@ def freeze_exam(folder, name: str, application_ids, decided_at, now, key_check=N
     except OSError:   # a full disk, or no hard links (a mounted bucket, FAT/exFAT, another device)
         return None, FOLDER_NOT_WRITABLE
     finally:
-        os.unlink(temp)
+        try:
+            os.unlink(temp)
+        except OSError:   # clean-up only: a good link stands; a failed one keeps its reason code
+            pass
     return exam, None
 
 
@@ -381,12 +422,18 @@ def _blank_exam(name: str, version: str) -> dict:
             'status': '', 'size': None, 'digest': None, 'frozen_at': None, 'key_check': None,
             'engine_version': version, 'refusal': None, 'cases_with_other_key_check': None,
             'validity': None, 'still_valid': None, 'qc_turned_to_pass': None, 'score': None,
-            'score_without_interview_fails': None, 'fails': None,
+            'score_without_interview_fails': None, 'fails': None, 'candidates': None,
             'known_limits': [WEAK_LABEL] if name == EXAM_OLD else []}
 
 
 def _exam_refused(out: dict, code: str) -> dict:
     out.update(refusal=code, status=f'refused: {code}')
+    return out
+
+
+def _exam_missing(out: dict, pool: list, of: str) -> dict:
+    """A normal run with no exam file: refused, never frozen; the candidate count says if a freeze could be."""
+    out.update(refusal=EXAM_MISSING, candidates=len(pool), status=f'refused: {EXAM_MISSING} ({len(pool)}{of})')
     return out
 
 
@@ -429,18 +476,20 @@ def _sit_exam(out: dict, exam: dict, by_id: dict, shape: str) -> dict:
     return out
 
 
-def _exam_1(pool, by_id, folder, key_is_blank, current_key_check, now, version) -> dict:
+def _exam_1(pool, by_id, folder, key_is_blank, current_key_check, now, version, freeze) -> dict:
     out = _blank_exam(EXAM_1, version)
     exam, refusal = load_exam(folder, EXAM_1)
     if refusal:
         return _exam_refused(out, refusal)
+    if exam is None and not freeze:
+        return _exam_missing(out, pool, f' of {EXAM_1_SIZE} candidates')
     if exam is None and len(pool) < EXAM_1_SIZE:
         out['status'] = f'not frozen yet: {len(pool)} of {EXAM_1_SIZE}'
         return out
     if key_is_blank:
         return _exam_refused(out, KEY_BLANK)
     if exam is None:
-        if not (current_key_check or '').strip():
+        if current_key_check is None:
             return _exam_refused(out, KEY_CHECK_MISSING)
         chosen = sorted(pool, key=lambda r: (r['when'], r['id']))[:EXAM_1_SIZE]
         differ = sum(1 for r in chosen if r['context']['key_check'] != current_key_check)
@@ -462,11 +511,13 @@ def _exam_1(pool, by_id, folder, key_is_blank, current_key_check, now, version) 
     return _sit_exam(out, exam, by_id, FULL)
 
 
-def _exam_old(pool, by_id, folder, now, version) -> dict:
+def _exam_old(pool, by_id, folder, now, version, freeze) -> dict:
     out = _blank_exam(EXAM_OLD, version)
     exam, refusal = load_exam(folder, EXAM_OLD)
     if refusal:
         return _exam_refused(out, refusal)
+    if exam is None and not freeze:
+        return _exam_missing(out, pool, ' candidate cases')
     if exam is None:
         if not pool:
             out['status'] = 'not frozen yet: 0 cases'
@@ -479,14 +530,20 @@ def _exam_old(pool, by_id, folder, now, version) -> dict:
     return _sit_exam(out, exam, by_id, EMPTY)
 
 
-def run_human_lens(cases, *, exam_folder, key_is_blank: bool, current_key_check, now) -> dict:
-    """Freeze an exam whose time has come (the only write), then score each frozen exam. Counts only:
-    ``{engine_version, cases_read, not_decided, no_human_verdict, context_failed, context_failed_line,
-    exams: {name: `_blank_exam` keys filled}}``. A refused exam-1 has no score; exam-old needs no key."""
+def run_human_lens(cases, *, exam_folder, key_is_blank: bool, current_key_check, now,
+                   freeze: bool = False) -> dict:
+    """Score each frozen exam. Only with ``freeze=True`` is a missing exam file frozen first (the only
+    write); with ``freeze=False`` a missing file is EXAM_MISSING. Counts only: ``{engine_version,
+    cases_read, not_decided, no_human_verdict, context_failed, context_failed_line, exams: {name:
+    `_blank_exam` keys filled}}``. A refused exam-1 has no score; exam-old needs no key. A
+    ``current_key_check`` text not of the one form (`is_key_check`) counts as none (None)."""
     if not isinstance(key_is_blank, bool):
         raise ValueError('key_is_blank must be True or False')
+    if not isinstance(freeze, bool):
+        raise ValueError('freeze must be True or False')
     if current_key_check is not None and not isinstance(current_key_check, str):
         raise ValueError('current_key_check must be text or None')
+    current_key_check = current_key_check if is_key_check(current_key_check) else None
     _utc_text(now)
     rows = [_read_case(case) for case in cases]
     by_id = {}
@@ -505,9 +562,9 @@ def run_human_lens(cases, *, exam_folder, key_is_blank: bool, current_key_check,
         exams = {name: _exam_refused(_blank_exam(name, version), folder_refusal) for name in EXAM_NAMES}
     else:
         exams = {EXAM_1: _exam_1([r for r in entered if r['shape'] == FULL], by_id, exam_folder,
-                                 key_is_blank, current_key_check, now, version),
+                                 key_is_blank, current_key_check, now, version, freeze),
                  EXAM_OLD: _exam_old([r for r in entered if r['shape'] == EMPTY], by_id, exam_folder, now,
-                                     version)}
+                                     version, freeze)}
     return {'engine_version': version, 'cases_read': len(rows),
             'not_decided': sum(1 for r in rows if r['when'] is None),
             'no_human_verdict': sum(1 for r in rows if r['when'] is not None and not r['has_verdict']),
