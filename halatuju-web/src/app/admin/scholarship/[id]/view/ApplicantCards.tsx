@@ -385,9 +385,13 @@ export function ApplicantCards({
                       <div className="sm:col-span-2">
                         {(() => {
                           const tick = isInstitutionPathway ? vtip('preUInstitution') : vtip('institution')
-                          // The CHOSEN programme's institution only (owner mock): never her pre-U college, which has its own row.
-                          const chosenApp = { documents: app.documents, chosen_programme: app.chosen_programme }
-                          const own = ((app.chosen_programme?.institution as string) || '').trim()
+                                                    // An SPM-route student's pre_u_institution is her DESTINATION, so it still falls back; on the
+                          // post-SPM routes it is her past college (own row above) and never does.
+                          const spmRoute = !isStpm && !third
+                          const chosenApp = { documents: app.documents, chosen_programme: app.chosen_programme,
+                            pre_u_institution: spmRoute ? app.pre_u_institution : undefined }
+                          const own = ((app.chosen_programme?.institution as string)
+                            || (spmRoute ? app.pre_u_institution : '') || '').trim()
                           return (
                             <Field
                               label={t('admin.scholarship.institution')}

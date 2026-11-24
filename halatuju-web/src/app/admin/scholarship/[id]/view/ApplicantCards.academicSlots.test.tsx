@@ -108,4 +108,10 @@ describe('Plans rows', () => {
     expect(dd('admin.scholarship.preUInstitution')).toBe('Politeknik Z')
     expect(dd('admin.scholarship.institution')).toBe(NA)
   })
+
+  it('an SPM student on the matriculation pathway: pre_u_institution is her destination, so Institution shows it', () => {
+    renderWith({ qualification: 'spm', chosen_pathway: 'matric', pre_u_institution: 'KM Pahang', chosen_programme: {} })
+    expect(dd('admin.scholarship.institution')).toBe('KM Pahang')
+    expect(screen.getAllByText('admin.scholarship.statedByStudent').length).toBeGreaterThan(0)
+  })
 })
