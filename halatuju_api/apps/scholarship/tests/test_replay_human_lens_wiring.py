@@ -140,9 +140,13 @@ def test_env_names_are_compared_upper_case_against_the_forbidden_names():
     ('/nonexistent-exam-folder', lens_human.FOLDER_MISSING), (REPO_FOLDER, lens_human.INSIDE_GIT_REPO)])
 def test_a_bad_folder_is_the_lens_refusal_even_with_the_freeze_flag(harness, tmp_path, folder, code):
     make_application('submitted')
-    extra = ('--human-lens', '--human-lens-freeze', '--human-lens-exam-folder', folder)
+    extra = ('--human-lens', '--human-lens-freeze', '--human-lens-exam-folder', str(tmp_path))
     before = sorted(os.listdir(REPO_FOLDER))
-    result, lines, _seen = harness(_args(tmp_path / 'work', *extra), _parent_env())
+    args = _args(tmp_path / 'work', *extra)
+    # set after parsing: the parent refuses a relative folder itself (an argument error); this checks
+    # the child's own refusal, the second lock, as if a folder got past the parent
+    args.human_lens_exam_folder = folder
+    result, lines, _seen = harness(args, _parent_env())
     lens = result[parent.HUMAN_LENS_KEY]
     assert {exam['refusal'] for exam in lens['exams'].values()} == {code}
     assert dict(result['same']) == {'same': 1}                     # the other lenses still report
@@ -249,6 +253,89 @@ def test_the_lens_without_an_exam_folder_is_an_argument_error_before_any_run(tmp
             _args(tmp_path, *extra)
         assert caught.value.code == 2
     assert _args(tmp_path, '--human-lens', '--human-lens-exam-folder', str(tmp_path)).human_lens
+
+
+# ── fix round: counts-only with the lens, and a relative exam folder, are argument errors ─────────────
+@pytest.fixture
+def main_recorded(monkeypatch, request, capsys):
+    """``run(*argv)`` -> (exit code, stdout, stderr, calls): the real ``main`` and ``parse_args``, with the
+    preflight and Django set-up stubbed and ``run_replay`` / ``spawn_child`` recording any call."""
+    import logging
+    request.addfinalizer(lambda level=logging.root.manager.disable: logging.disable(level))
+    monkeypatch.setattr(guards, 'check_environment', lambda env: True)
+    monkeypatch.setattr(guards, 'check_database_url', lambda url: ('localhost', 5432))
+    monkeypatch.setattr(parent, 'setup_django', lambda: None)
+    calls = []
+    monkeypatch.setattr(parent, 'spawn_child', lambda *a, **k: calls.append('spawn'))
+
+    def run_replay(args, env):
+        calls.append('run_replay')
+        return {}
+    monkeypatch.setattr(parent, 'run_replay', run_replay)
+
+    def run(*argv):
+        capsys.readouterr()
+        try:
+            code = parent.main(['--instant', INSTANT, '--months', '2026-11,2026-12', *argv])
+        except SystemExit as stop:                                  # main lets argparse's exit through
+            code = stop.code
+        out, err = capsys.readouterr()
+        return code, out, err, calls
+    return run
+
+
+def test_counts_only_with_the_lens_is_an_argument_error_before_any_child_or_file(main_recorded, tmp_path):
+    work = tmp_path / 'work'
+    work.mkdir()
+    old = work / child.HUMAN_LENS_FILE
+    old.write_text('{"error": "schema"}', encoding='utf-8')        # an earlier run's file stays untouched
+    for flags in (('--counts-only', '--human-lens', '--human-lens-exam-folder', str(tmp_path)),
+                  ('--human-lens', '--human-lens-exam-folder', str(tmp_path), '--counts-only')):
+        code, out, err, calls = main_recorded('--workdir', str(work), *flags)
+        assert code == 2 and calls == [] and out == ''
+        assert parent.LENS_REPORT_START not in out + err and parent.LENS_REPORT_END not in out + err
+        assert '--counts-only and --human-lens cannot be used together' in err
+    assert old.read_text(encoding='utf-8') == '{"error": "schema"}'
+
+
+def test_counts_only_alone_runs_as_before(harness, tmp_path):
+    make_application('submitted')
+    args = _args(tmp_path / 'work', '--counts-only')
+    assert (args.counts_only, args.human_lens) == (True, False)
+    result, lines, seen = harness(args, _parent_env())
+    assert result == {} and seen == {} and [json.loads(x)['event'] for x in lines] == ['start', 'counts']
+    before = types.SimpleNamespace(**{k: v for k, v in vars(args).items() if not k.startswith('human_lens')})
+    assert harness(before, _parent_env()) == (result, lines, seen)     # the args as before this phase
+
+
+def test_main_with_counts_only_alone_runs_and_exits_0(main_recorded):
+    code, out, err, calls = main_recorded('--counts-only')
+    assert (code, out, err, calls) == (0, '', '', ['run_replay'])
+
+
+RELATIVE_FOLDERS = ('exams', '.', './exams', '../exams', '~/exams', 'Siti_Aminah_exams', 'exams/')
+
+
+@pytest.mark.parametrize('folder', RELATIVE_FOLDERS)
+def test_a_relative_exam_folder_is_an_argument_error_with_fixed_words(main_recorded, tmp_path, folder):
+    code, out, err, calls = main_recorded('--workdir', str(tmp_path / 'work'), '--human-lens',
+                                          '--human-lens-exam-folder', folder)
+    assert code == 2 and calls == [] and out == ''
+    assert err.rstrip('\n').endswith('error: --human-lens-exam-folder must be an absolute path')
+    assert 'Siti_Aminah' not in err and not (tmp_path / 'work').exists()
+
+
+def test_the_parent_and_the_child_agree_on_absolute(tmp_path):
+    for folder in (*RELATIVE_FOLDERS, str(tmp_path), '/nonexistent-exam-folder', REPO_FOLDER, '/'):
+        child_says_relative = lens_human.exam_folder_refusal(folder) == lens_human.FOLDER_NOT_ABSOLUTE
+        try:
+            _args(tmp_path, '--human-lens', '--human-lens-exam-folder', folder)
+            parent_refused = False
+        except SystemExit as stop:
+            parent_refused = stop.code == 2
+        assert parent_refused is child_says_relative, folder
+    args = _args(tmp_path, '--human-lens', '--human-lens-exam-folder', str(tmp_path))   # absolute: as today
+    assert (args.human_lens, args.human_lens_exam_folder) == (True, str(tmp_path))
 
 
 def _writes_no_file(lens, *, now, path):

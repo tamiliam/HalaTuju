@@ -23,7 +23,18 @@ The lens is OFF by default. Three flags control it. They come from `parse_args` 
 | `--human-lens-exam-folder <folder>` | The folder that holds the exam files. It must be a full (absolute) path. It must not be inside a git repository. `--human-lens` without this flag is an argument error (exit code 2). |
 | `--human-lens-freeze` | Allows the lens to write a missing exam file. Off by default. Without it, nothing is ever written to the exam folder. |
 
-The folder flag or the freeze flag without `--human-lens` is also an argument error (exit code 2).
+These are argument errors (exit code 2). The job stops before any child starts and before any file is
+touched:
+
+- `--human-lens` without `--human-lens-exam-folder`;
+- the folder flag or the freeze flag without `--human-lens`;
+- `--counts-only` together with `--human-lens`. They cannot be used together. Run the counts first
+  without the lens, then the lens run on its own;
+- a folder that is not a full (absolute) path, for example `exams` or `./exams`. The parent uses the
+  same rule as the `new` child (Python's `os.path.isabs`). The message does not repeat the folder.
+  The child still refuses such a folder too (`folder_not_absolute`), as a second lock.
+
+`--counts-only` without the lens works exactly as before.
 
 A freeze happens only with `--human-lens-freeze`. A normal run never writes an exam file.
 An exam file that already exists is never replaced.
@@ -61,16 +72,16 @@ entry between them, in order.
 A block with a start line but no end line is NOT a result. The output may have broken while the block
 was printing, and a fatal line could follow half a block. Treat a block with no end line as a failure.
 
-There is no block when the lens is off, with `--counts-only`, after an argument error (exit code 2),
-or after a fatal error (exit code 3).
+There is no block when the lens is off, after an argument error (exit code 2; `--counts-only` with
+`--human-lens` is one), or after a fatal error (exit code 3).
 
 The job's exit codes:
 
 | Exit code | Meaning |
 |-----------|---------|
-| 0 | The run finished. This does NOT mean pass. Read the block. |
+| 0 | The run finished. This does NOT mean pass. Read the block. A refusal also exits 0. For example, a missing or blank fingerprint key gives exam-1 the refusal `key_blank`: exit 0, but the exam did not run. |
 | 2 | An argument error. Nothing ran. |
-| 3 | A fatal error. There is no block. |
+| 3 | A fatal error. There is no block. A fingerprint key that is set but is not 64 hex characters (a newline or a space in it, for example) is one: the job stops at its set-up, before any child starts. |
 | 4 | A lens or coach-grade error, or a report that could not be shown. |
 
 ## How to read it
@@ -182,15 +193,22 @@ How a pair is graded, in this order:
 
 ### 4. Read with care
 
-The block ends with three fixed lines:
+When at least one of the two results is clean, the block ends with the heading "Read with care" and
+three fixed lines. A refusal counts as clean here. When BOTH results failed, these lines do not print.
+When the report could not be shown, the block holds only the line "lens report failed. BLOCKING.
+There is no result, so this is not a pass.", and these lines do not print either.
 
-- The exam lens turns a Fail the QC disagreed with into a Pass. The coach grade keeps the reviewer's
-  stored answer. So the two can differ on those facts.
-- A coach grade moves from run to run on small numbers. "No clear change" means the difference is not
-  bigger than luck.
-- Counts only: the block holds no case id and no name.
+The three lines, word for word:
+
+- "The exam lens turns a Fail the QC disagreed with into a Pass. The coach grade keeps the reviewer's
+  stored answer. So the two can differ on those facts."
+- "A coach grade moves from run to run on small numbers. "No clear change" means the difference is not
+  bigger than luck."
+- "Counts only: this section holds no case id and no name."
 
 ## When a result blocks the next release
+
+**A missing key is a refusal, and a refusal exits 0; read the block, not the exit code.**
 
 These lines carry the word BLOCKING:
 
@@ -241,6 +259,12 @@ release goes ahead. This tool only reports.
 - The allow-list checks that each number is a whole number. It cannot check what a number means.
 - Each coach-grade version is scored on its own cases. A change in which students applied can look
   like a change in the AI. The frozen exam (the same cases for every version) is the answer to that.
+- The exam lens catches only some errors (a bad case row, a value or type error, a file error). If it
+  meets an error it does not catch (for example a database error, or a document snapshot left open),
+  the whole `new` child stops. Then the coach grade does not run either. Both parts show `no_output`
+  and the job exits with code 4.
+- Two runs that share one work folder (the default is `/tmp/replay`) can read each other's result
+  files. Never run two at once in one folder.
 
 ## Safety
 

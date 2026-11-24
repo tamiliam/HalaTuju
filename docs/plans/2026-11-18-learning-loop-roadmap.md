@@ -238,6 +238,17 @@ differences. The detail is in `docs/decisions.md` (the LL5 entries) and the read
 - **The exam-file home in production is still OPEN.** See "Where the exam file lives in production" in
   [2026-11-13-a5-replay-owner-steps.md](2026-11-13-a5-replay-owner-steps.md). Until the owner decides,
   the lens does not run on real data.
+- **One exam score, not two.** The plan said "The report shows both scores." What was built is ONE
+  exam score. In it, a Fail that the QC overturned counts as a Pass. Beside it is one count,
+  `qc_turned_to_pass`. The coach grade keeps the reviewer's stored answer, and it scores different
+  cases. Which answer is the truth for a Fail the QC overturned is an open owner decision.
+- **No QC activity count.** The plan said the report counts QC activity from the `qc_decision` meta
+  (lines 141 and 193). That was not built. The report has no QC activity count.
+- **`read_wrong` is an old code now.** The plan names the LL2 reason `read_wrong` (line 107). It is no
+  longer offered. For one release, a request that still sends it is saved as Other (removal is
+  tracked as TD-704).
+- **Nothing runs the lens on a timetable.** The plan said it runs after a release that changes a model
+  version, and once a week. Nothing schedules it. It runs only when the owner starts the job.
 - **Acceptance.** "The owner runs the job once" still stands and is NOT done. It needs the owner's yes.
 
 ---

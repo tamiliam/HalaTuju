@@ -26,7 +26,9 @@ gets the lens names (`human_lens_env`: the switch, the exam folder, the freeze f
 exactly as before and the result has no new key. The `new` child writes the lens's counts and codes to
 `human_lens.json` in the workdir; `run_replay` returns them under the one key ``human_lens``. They are
 not printed in this phase. SAFETY (phase C1c): `--human-lens` without `--human-lens-exam-folder` is an
-argument error; the file is checked again here against the allow-list (`lens_result_schema`); a lens
+argument error; so are `--human-lens` with `--counts-only`, and a relative exam folder (the child's own
+`os.path.isabs` rule; the child still refuses it too, as `folder_not_absolute`); the file is checked
+again here against the allow-list (`lens_result_schema`); a lens
 result that is an error (``{"error": ...}``) makes `main` exit `HUMAN_LENS_FAILED_EXIT` (4), never 0.
 
 THE COACH GRADE (LL5 phase C2), under the SAME switch, with no new environment name (`child_env` is
@@ -43,8 +45,9 @@ label tables as the markdown report; this file formats nothing from them) betwee
 that holds a failure (either result failed its check), or a render that raised one of
 `report_lens.RENDER_ERRORS` (then the block is only `report_lens.RENDER_FAILED_LINE`), makes `main` exit 4
 even when the run would exit 0: a report that cannot be shown is not a pass. No block with the lens off
-(the output is as before), with `--counts-only` (no lens ran), on the fatal path (exit 3) or on an
-argument error (exit 2): there is no result to show. Any other error in the render is the fatal path.
+(the output is as before), on the fatal path (exit 3) or on an argument error (exit 2, which
+`--counts-only` with `--human-lens` is): there is no result to show. Any other error in the render is
+the fatal path.
 """
 import argparse
 import importlib
@@ -273,6 +276,10 @@ def parse_args(argv):
         ap.error('--human-lens-freeze and --human-lens-exam-folder need --human-lens')
     if args.human_lens and not args.human_lens_exam_folder:     # fail fast, not after hours of engines
         ap.error('--human-lens needs --human-lens-exam-folder')
+    if args.human_lens and args.counts_only:                    # no lens would run: refuse, not a silent 0
+        ap.error('--counts-only and --human-lens cannot be used together')
+    if args.human_lens and not os.path.isabs(args.human_lens_exam_folder):  # the child's own rule (isabs)
+        ap.error('--human-lens-exam-folder must be an absolute path')       # fixed words: never the value
     return args
 
 

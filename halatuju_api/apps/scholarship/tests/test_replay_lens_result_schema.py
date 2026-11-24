@@ -254,3 +254,24 @@ def test_a_missing_file_a_folder_and_a_good_file(tmp_path, rich):
     assert parent.read_human_lens(str(target)) == rich
     target.write_text(json.dumps({'error': 'no_output'}), encoding='utf-8')   # a code only the parent makes
     assert parent.read_human_lens(str(target)) == {'error': 'schema'}
+
+
+# ── fix round: a JSON true or false is never a count, even deep inside ───────────────────────────────
+NESTED_COUNTS = [(*EO, 'fails', 'by_band_and_reason', 'certain', 'other'),
+                 (*EO, 'fails', 'by_band_and_reason', 'unverifiable', 'other'),
+                 (*E1, 'score', 'outcomes', 'wrong_sure')]
+
+
+@pytest.mark.parametrize('path', NESTED_COUNTS)
+def test_a_json_bool_in_a_nested_count_slot_is_refused(rich, tmp_path, path):
+    """A bool equal to the count it replaces (true for 1, false for 0), so only the int rule can catch it."""
+    target = rich
+    for key in path:
+        target = target[key]
+    assert type(target) is int and target in (0, 1)                # the precondition: a real 0 or 1 count
+    planted = _plant(rich, path, bool(target))
+    assert not S.human_lens_result_allowed(planted)
+    raw = json.dumps(planted).encode('utf-8')
+    assert b'true' in raw or b'false' in raw
+    assert S.parse_human_lens_bytes(raw) == {'error': 'schema'}
+    assert S.checked_result_text(planted) == S.SCHEMA_TEXT

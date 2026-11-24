@@ -222,6 +222,29 @@ def test_each_bad_kind_fails_whole_and_never_reaches_the_text(kind):
         assert kind not in json.dumps(_round_trip(report))
 
 
+def test_the_parent_reader_applies_the_allow_list(tmp_path):
+    """`parent.read_coach_grade` checks the file against the allow-list, not only that it is a JSON
+    object: a code only the parent makes, and a planted name, become the schema error."""
+    from apps.scholarship.eval.replay import child, parent
+    target = tmp_path / child.COACH_GRADE_FILE
+    target.write_text(S.checked_coach_text(_full()), encoding='utf-8')
+    assert parent.read_coach_grade(str(target)) == json.loads(json.dumps(_full()))
+    for bad in ({'error': S.NO_OUTPUT}, {'error': S.BAD_OUTPUT}, {'refusal': PLANT},
+                _planted(('months', 0, 'version'), PLANT)):
+        target.write_text(json.dumps(bad), encoding='utf-8')
+        assert parent.read_coach_grade(str(target)) == SCHEMA_ERROR
+
+
+def test_left_out_reasons_must_be_in_sorted_order():
+    """Today only `interview_differs` is left out; the allow-list takes any `fail_reasons` code, so the
+    order rule is shown with two real codes (no made-up code): sorted passes, the same two reversed fail."""
+    report = _full()
+    assert report['left_out_reasons'] == ['interview_differs']
+    _passes(_planted(('left_out_reasons',), ['interview_differs', 'other']))
+    _fails(_planted(('left_out_reasons',), ['other', 'interview_differs']))
+    _fails(_planted(('left_out_reasons',), ['interview_differs', 'interview_differs']))
+
+
 def test_a_planted_word_kind_beside_good_ones_fails_whole():
     report = _planted(('malformed_by_error',), {'KeyError': 1, 'SitiAminah': 2, 'too_short': 3})
     report['malformed_records'] = 6

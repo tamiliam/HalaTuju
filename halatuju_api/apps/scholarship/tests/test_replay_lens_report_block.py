@@ -116,9 +116,11 @@ def test_lens_off_is_byte_identical_and_prints_no_marker(main_run):
     assert (code, out, err) == (0, TODAY, '')
 
 
-def test_counts_only_with_the_lens_on_prints_no_block(main_run, tmp_path):
+def test_counts_only_with_the_lens_on_is_an_argument_error_and_prints_no_block(main_run, tmp_path):
     code, out, err = main_run({}, '--counts-only', *lens_on(tmp_path))
-    assert (code, out, err) == (0, TODAY, '')
+    assert code == ('SystemExit', 2) and out == ''                  # refused before the run: no JSON lines
+    assert_no_block(out, err)
+    assert '--counts-only and --human-lens cannot be used together' in err
 
 
 # ── failures never look like results ──────────────────────────────────────────────────────────────────
