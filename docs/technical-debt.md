@@ -9452,6 +9452,14 @@ is the rule (two admins share a display name). Nothing records which seat (switc
 audit cannot tell later whether a credit was recorded under Sponsors: edit or by a super. **Fix:** log the seat in an
 `AUDIT` line when a credit is signed, or store it beside the email (a migration; owner's call). *(A - S)*
 
+### [TD-NEW-credit-signer-row] Two staff rows for one person can sign two steps of one credit - low
+
+**Raised 2026-11-24 by the sprint M4b adversarial review (F4; laptop session, number placeholder until the desk numbers it).**
+`same_signer` compares the email on each signature. One person with two staff rows (two emails, e.g. a personal and a
+work address, each holding a switch) can record a credit on one and check or approve it on the other. Not seen live
+(read-only count before the fix). **Fix:** store the signer's staff row id beside each signature and compare the
+person behind it (a migration, migrate-first; owner's call, pairs with TD-NEW-credit-maker-unstored). *(A - S)*
+
 ### [TD-NEW-run-lock-gaps] Editing a run's item and cancelling a run do not lock the actor's row first - low
 
 **Raised 2026-11-19 by the sprint M4a review (nit; laptop session, number placeholder until the desk numbers it).**
