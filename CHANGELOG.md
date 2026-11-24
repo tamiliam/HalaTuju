@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### LL5 phase C2 - the coach grade reads decided cases in the replay (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. Under the same `--human-lens` switch, the replay's `new` child now runs the coach grade right after the exam lens, in the same read-only session and network refusal, with no key, no exam folder and no new environment name. The new `eval/replay/coach_rows.py` reads every decided case in one SELECT of four columns and passes a version label on only when it is `pre-versioning` or has the engine version shape; under Django `DEBUG` it refuses before any query. The report goes to `coach_grade.json` after its own allow-list (`eval/replay/coach_result_schema.py`), and the parent returns it under the one new key `coach_grade`; any error there makes the replay exit 4. The header of `lens_result_schema.py` now lists every field that is not a whole number or a fixed code, with its rule (comment only). New tests in `test_replay_coach_result_schema.py` (45), `test_replay_coach_rows.py` (18, with a dry run) and `test_replay_human_lens_wiring.py` (11 more).
+
 ### LL5 phase C1c - lens result allow-list, fail fast, errors exit non-zero (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Four safety items in the replay's human-lens wiring. `--human-lens` without an exam folder is now an argument error. The new `eval/replay/lens_result_schema.py` checks the lens result against a fixed allow-list (known keys per level, whole numbers, codes from the lens's constants, and strictly shaped text) before the child writes it, and again when the parent reads it; anything else becomes exactly `{"error": "schema"}`. A broken result file (not JSON, not a dict, a repeated key, NaN, over 1 MiB) reads as `{"error": "bad_output"}` with no crash and no echo. `python -m replay.parent` exits 4 when the lens result is an error; a refusal and a clean run keep exit 0. New tests in `test_replay_lens_result_schema.py` (82) and `test_replay_human_lens_wiring.py`.

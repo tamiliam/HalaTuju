@@ -315,3 +315,100 @@ def test_main_exits_0_on_a_clean_lens_run_a_refusal_and_with_the_lens_off(main_s
     assert main_stubbed({'same': {'same': 1}, parent.HUMAN_LENS_KEY: refused}, lens_flags) == 0
     assert main_stubbed({'same': {'same': 1}}, []) == 0             # the lens off: as before
     assert main_stubbed({}, []) == 0                                # --counts-only returns {}
+
+
+# ── C2: the coach grade under the same switch, its own file and allow-list ──────────────────────────
+def _lens_on(tmp_path):
+    return _args(tmp_path / 'work', '--human-lens', '--human-lens-exam-folder', str(tmp_path))
+
+
+def test_the_coach_grade_runs_under_the_same_switch_with_no_new_env_name(harness, desk, tmp_path):
+    from apps.scholarship.eval.replay import coach_result_schema
+    decide(desk)
+    result, _lines, seen = harness(_lens_on(tmp_path), _parent_env())
+    coach = result[parent.COACH_GRADE_KEY]
+    assert coach_result_schema.coach_result_allowed(coach) and coach['decided_records'] == 1
+    assert coach['left_out_reasons'] == ['interview_differs']
+    assert set(seen['new']) - BEFORE == LENS_NAMES and set(seen['old']) == BEFORE
+    assert (tmp_path / 'work' / child.COACH_GRADE_FILE).exists()
+    assert parent.HUMAN_LENS_KEY in result and parent.replay_exit_code(result) == 0
+
+
+def test_with_the_switch_off_there_is_no_coach_file_and_no_key(harness, tmp_path):
+    make_application('submitted')
+    result, _lines, _seen = harness(_args(tmp_path / 'work'), _parent_env())
+    assert parent.COACH_GRADE_KEY not in result
+    assert not (tmp_path / 'work' / child.COACH_GRADE_FILE).exists()
+
+
+def test_a_lens_error_does_not_stop_the_coach_grade_and_the_other_way_round(harness, tmp_path, monkeypatch):
+    from apps.scholarship.eval.replay import coach_rows, lens_human_rows
+    make_application('submitted')
+    real = lens_human_rows.run_human_lens_on_database
+
+    def broken(*_a, **_k):
+        raise lens_human.BadCaseRow('application_id', 'repeats')
+    monkeypatch.setattr(lens_human_rows, 'run_human_lens_on_database', broken)
+    result, _lines, _seen = harness(_lens_on(tmp_path), _parent_env())
+    assert result[parent.HUMAN_LENS_KEY] == {'error': 'BadCaseRow'}
+    assert result[parent.COACH_GRADE_KEY]['decided_records'] == 0
+    monkeypatch.setattr(lens_human_rows, 'run_human_lens_on_database', real)
+
+    def broken_coach():
+        raise KeyError(PLANTED_NAME)
+    monkeypatch.setattr(coach_rows, 'coach_grade_on_database', broken_coach)
+    result, lines, _seen = harness(_lens_on(tmp_path), _parent_env())
+    assert result[parent.COACH_GRADE_KEY] == {'error': 'LookupError'}
+    assert 'exams' in result[parent.HUMAN_LENS_KEY] and dict(result['same']) == {'same': 1}
+    new_side = next(json.loads(x) for x in lines if '"side": "new"' in x and '"event": "side"' in x)
+    assert new_side['exit'] == 0 and new_side['fatal'] == []
+    assert parent.replay_exit_code(result) == parent.HUMAN_LENS_FAILED_EXIT
+    assert PLANTED_NAME not in _everything_written(tmp_path / 'work') + '\n'.join(lines)
+
+
+def _coach_writes_no_file(*, path):
+    return None
+
+
+def _coach_writes_a_broken_file(*, path):
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write('{"months": ')
+
+
+def _coach_plants_a_name():
+    return {'refusal': PLANTED_NAME}
+
+
+@pytest.mark.parametrize('where, name, value, error', [
+    ('child', 'write_coach_grade', _coach_writes_no_file, lens_result_schema.NO_OUTPUT),
+    ('child', 'write_coach_grade', _coach_writes_a_broken_file, lens_result_schema.BAD_OUTPUT),
+    ('rows', 'coach_grade_on_database', _coach_plants_a_name, lens_result_schema.SCHEMA)])
+def test_each_coach_error_kind_exits_non_zero(harness, tmp_path, monkeypatch, where, name, value, error):
+    from apps.scholarship.eval.replay import coach_rows
+    make_application('submitted')
+    monkeypatch.setattr(child if where == 'child' else coach_rows, name, value)
+    result, lines, _seen = harness(_lens_on(tmp_path), _parent_env())
+    assert result[parent.COACH_GRADE_KEY] == {'error': error}
+    assert 'exams' in result[parent.HUMAN_LENS_KEY] and dict(result['same']) == {'same': 1}
+    assert parent.replay_exit_code(result) == parent.HUMAN_LENS_FAILED_EXIT
+    assert PLANTED_NAME not in _everything_written(tmp_path / 'work') + '\n'.join(lines)
+
+
+def test_an_old_coach_file_is_deleted_before_the_run(harness, tmp_path, monkeypatch):
+    make_application('submitted')
+    work = tmp_path / 'work'
+    work.mkdir()
+    (work / child.COACH_GRADE_FILE).write_text('{"refusal": "debug_on"}', encoding='utf-8')
+    monkeypatch.setattr(child, 'write_coach_grade', _coach_writes_no_file)
+    result, _lines, _seen = harness(_lens_on(tmp_path), _parent_env())
+    assert result[parent.COACH_GRADE_KEY] == {'error': lens_result_schema.NO_OUTPUT}
+
+
+@pytest.mark.parametrize('coach, code', [
+    ({'error': 'schema'}, 4), ({'error': 'no_output'}, 4), ({'error': 'LookupError'}, 4),
+    ({'refusal': 'debug_on'}, 0)])
+def test_main_exits_4_on_a_coach_error_and_0_on_its_refusal(main_stubbed, tmp_path, coach, code):
+    lens_flags = ['--human-lens', '--human-lens-exam-folder', str(tmp_path)]
+    clean_lens = {'engine_version': None}                          # main reads only the error key
+    result = {'same': {'same': 1}, parent.HUMAN_LENS_KEY: clean_lens, parent.COACH_GRADE_KEY: coach}
+    assert main_stubbed(result, lens_flags) == code

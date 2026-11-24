@@ -28,6 +28,12 @@ exactly as before and the result has no new key. The `new` child writes the lens
 not printed in this phase. SAFETY (phase C1c): `--human-lens` without `--human-lens-exam-folder` is an
 argument error; the file is checked again here against the allow-list (`lens_result_schema`); a lens
 result that is an error (``{"error": ...}``) makes `main` exit `HUMAN_LENS_FAILED_EXIT` (4), never 0.
+
+THE COACH GRADE (LL5 phase C2), under the SAME switch, with no new environment name (`child_env` is
+unchanged). The `new` child also writes the coach grade's report to `coach_grade.json` in the workdir.
+This process deletes an old copy before the run, reads it after the children exit, checks it again
+against its own allow-list (`coach_result_schema`) and returns it under the one more key ``coach_grade``.
+The same error rules as the lens; an error in either result makes `main` exit 4. Not printed here.
 """
 import argparse
 import importlib
@@ -38,10 +44,10 @@ import sys
 import time
 from collections import Counter, defaultdict
 
-from . import guards, lens_result_schema, netguard
+from . import coach_result_schema, guards, lens_result_schema, netguard
 from . import scrub as scrub_module
-from .child import (HUMAN_LENS_ENV, HUMAN_LENS_FILE, HUMAN_LENS_FOLDER_ENV, HUMAN_LENS_FREEZE_ENV,
-                    parse_instant, setup_django)
+from .child import (COACH_GRADE_FILE, HUMAN_LENS_ENV, HUMAN_LENS_FILE, HUMAN_LENS_FOLDER_ENV,
+                    HUMAN_LENS_FREEZE_ENV, parse_instant, setup_django)
 from .scrub import count_dropped, error_record, scrub
 
 RUN_SIDES = ('old', 'new', 'new_again')
@@ -52,6 +58,8 @@ FINGERPRINT_KEY_ENV = 'REPLAY_FINGERPRINT_KEY'
 HUMAN_LENS_SIDE = 'new'
 #: The result's one new key, present only with the lens on.
 HUMAN_LENS_KEY = 'human_lens'
+#: The coach grade's key (LL5 phase C2), present only with the lens switch on.
+COACH_GRADE_KEY = 'coach_grade'
 #: The run's one line saying the lens is on: a fixed text, never the key or a folder.
 HUMAN_LENS_ON_LINE = '{"event": "human_lens_on"}'
 #: ``main``'s exit code when the lens result is an error. 0 is a finished run, 2 an argument error
@@ -295,10 +303,10 @@ def clear_side_files(workdir):
     return paths
 
 
-def clear_human_lens_file(workdir):
-    """The lens file's path, after deleting the one an earlier run left, so a lens side that writes nothing
-    is never read as an old run's result."""
-    path = os.path.join(workdir, HUMAN_LENS_FILE)
+def clear_human_lens_file(workdir, name=HUMAN_LENS_FILE):
+    """The lens file's path (or the coach file's, by ``name``), after deleting the one an earlier run
+    left, so a side that writes nothing is never read as an old run's result."""
+    path = os.path.join(workdir, name)
     if os.path.lexists(path):
         os.remove(path)
     return path
@@ -319,12 +327,30 @@ def read_human_lens(path):
     return lens_result_schema.parse_human_lens_bytes(raw)
 
 
+def read_coach_grade(path):
+    """The coach grade's report, checked again against its allow-list (`coach_result_schema`), with the
+    lens's error rules: ``no_output``, ``bad_output``, ``schema``. Never raises on the file, never echoes."""
+    if not os.path.exists(path):
+        return {'error': coach_result_schema.NO_OUTPUT}
+    try:
+        with open(path, 'rb') as fh:
+            raw = fh.read(coach_result_schema.MAX_RESULT_BYTES + 1)
+    except OSError:                                     # a folder, or no read permission
+        return {'error': coach_result_schema.BAD_OUTPUT}
+    return coach_result_schema.parse_coach_grade_bytes(raw)
+
+
 def replay_exit_code(result):
     """``main``'s exit code for a finished run: `HUMAN_LENS_FAILED_EXIT` when the lens was on and its
-    result is an error (``{"error": ...}``: no output, a bad file, the allow-list, a caught lens error),
-    else 0. A lens REFUSAL (a code inside an exam) is a result, not an error: 0."""
-    lens = result.get(HUMAN_LENS_KEY) if isinstance(result, dict) else None
-    return HUMAN_LENS_FAILED_EXIT if isinstance(lens, dict) and 'error' in lens else 0
+    result or the coach grade's is an error (``{"error": ...}``: no output, a bad file, the allow-list, a
+    caught error), else 0. A REFUSAL (a code inside an exam, the coach's ``refusal``) is a result: 0."""
+    if not isinstance(result, dict):
+        return 0
+    for key in (HUMAN_LENS_KEY, COACH_GRADE_KEY):
+        value = result.get(key)
+        if isinstance(value, dict) and 'error' in value:
+            return HUMAN_LENS_FAILED_EXIT
+    return 0
 
 
 def stop_children(procs):
@@ -359,6 +385,7 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
                 paths = clear_side_files(args.workdir)
                 if lens_on:
                     lens_path = clear_human_lens_file(args.workdir)
+                    coach_path = clear_human_lens_file(args.workdir, COACH_GRADE_FILE)
                     out(HUMAN_LENS_ON_LINE)
                 for s in RUN_SIDES:
                     procs[s] = spawn(args, s, snapshot, paths[s], child_vars)
@@ -375,7 +402,7 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
               'dropped': count_dropped(list(sides[s].values()))}, out)
     totals = report(compare_sides(sides), out)
     if lens_on:
-        return {**totals, HUMAN_LENS_KEY: read_human_lens(lens_path)}
+        return {**totals, HUMAN_LENS_KEY: read_human_lens(lens_path), COACH_GRADE_KEY: read_coach_grade(coach_path)}
     return totals
 
 

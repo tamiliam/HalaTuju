@@ -24,6 +24,28 @@ Anything else: the whole result becomes exactly ``{"error": "schema"}``, with no
 in it (not a value, not a key name). The checker only walks known keys of a fixed depth, so it never
 recurses into what it does not know, and never raises on a JSON value.
 
+EVERY FIELD THAT IS NOT AN INT OR A FIXED CODE, with its rule (taken from the checks below):
+* ``engine_version`` (top and each exam block): `engine_version_ok`, or None at the top; each exam's must
+  equal the top one (so None in an exam only when the top is None).
+* ``digest``: exactly 12 lower-case hex characters (`DIGEST_SHAPE`); None until the exam is frozen.
+* ``key_check``: 8 lower-case hex (`lens_human.is_key_check`), exam-1 once frozen only; else None.
+* ``frozen_at``: `FROZEN_AT_SHAPE` and it parses back to the same text; None until frozen.
+* ``status``: rebuilt from the block: ``refused: <refusal code>``; for exam_missing ``refused: exam_missing
+  (N of 50 candidates)`` (exam-1) or ``(N candidate cases)`` (exam-old); ``frozen``; ``not frozen yet: N of
+  50`` with N from 0 to 49 (exam-1) or ``not frozen yet: 0 cases`` (exam-old).
+* ``still_valid``: ``V of S still valid``, V the valid count and S the size; None until frozen.
+* ``context_failed_line``: ``<lens_human.FAILED_CONTEXT_LINE>: N`` with N = ``context_failed``; None
+  exactly when ``context_failed`` is None.
+* ``known_limits``: a list, exactly the weak label (exam-old only), then, when there is a score,
+  ``a score on N facts`` (N = the score's facts) and `lens_human.DROP_OUTS_LIMIT`.
+* ``frozen`` (bool): True exactly when ``status`` is ``frozen``; False with any refusal.
+* ``too_few`` (bool): True exactly when the score line has the small key set, or the share of Other has
+  no ``pct``.
+* None is allowed only at: the top ``engine_version`` and the four top counts (the DEBUG refusal or
+  nothing read) and ``context_failed_line`` as above; an exam's ``refusal``; ``candidates`` (except with
+  exam_missing); ``cases_with_other_key_check``; the fields of `_SAT_FIELDS` until frozen; ``key_check``,
+  ``valid_split`` and ``could_not_recompute_reasons`` until frozen and always for exam-old.
+
 The code sets come from the lens's own public constants (and `ai_score`, `fail_reasons`, `fact_bands`,
 imported inside a function); a new KEY needs a deliberate change here and in the test that pins the keys.
 """
