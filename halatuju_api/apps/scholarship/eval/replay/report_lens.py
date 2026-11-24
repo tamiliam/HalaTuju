@@ -404,13 +404,28 @@ def _coach_lines(error, coach) -> list:
     return out
 
 
-def lens_coach_section_lines(human_lens, coach_grade) -> list:
-    """The two sections as markdown lines: the summary line first, then the human lens, the coach grade
-    and (when either is clean) the fixed caveats. A None result is the ``no_output`` failure."""
+#: The error classes a render can raise on a result its checks let through (a key or item missing, a
+#: value of the wrong type or shape). `parent.main` catches ONLY these and then prints `RENDER_FAILED_LINE`.
+RENDER_ERRORS = (LookupError, TypeError, ValueError, AttributeError)
+#: The one line `parent.main` prints in place of the two sections when the render raised: fixed words only,
+#: nothing from either result and no error message.
+RENDER_FAILED_LINE = f'lens report failed. {BLOCKING}. There is no result, so this is not a pass.'
+
+
+def lens_coach_report(human_lens, coach_grade) -> tuple:
+    """(lines, failed): the two sections as markdown lines - the summary line first, then the human lens,
+    the coach grade and (when either is clean) the fixed caveats - and True when either result failed
+    its check (a refusal is a result, not a failure). A None result is the ``no_output`` failure. The
+    one path for both callers: `lens_coach_section_lines` (the markdown report) and `parent.main`."""
     lens_error, lens = lens_result_checked(human_lens)
     coach_error, coach = coach_result_checked(coach_grade)
     out = [HEADING, '', _summary_line(lens_error, lens, coach_error, coach), '']
     out += _lens_lines(lens_error, lens) + [''] + _coach_lines(coach_error, coach)
     if lens_error is None or coach_error is None:
         out += ['', '### Read with care', ''] + [f'- {line}' for line in CAVEATS]
-    return out
+    return out, lens_error is not None or coach_error is not None
+
+
+def lens_coach_section_lines(human_lens, coach_grade) -> list:
+    """The two sections as markdown lines (`lens_coach_report`, without the failed flag)."""
+    return lens_coach_report(human_lens, coach_grade)[0]

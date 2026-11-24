@@ -307,12 +307,15 @@ def test_main_exits_4_on_every_lens_error(main_stubbed, tmp_path, error):
 def test_main_exits_0_on_a_clean_lens_run_a_refusal_and_with_the_lens_off(main_stubbed, tmp_path):
     from django.test import override_settings
 
-    from apps.scholarship.eval.replay import lens_human_rows
+    from apps.scholarship.eval.replay import coach_rows, lens_human_rows
     with override_settings(DEBUG=True):                            # every exam refused: debug_on
         refused = lens_human_rows.run_human_lens_on_database(str(tmp_path), child.parse_instant(INSTANT))
     lens_flags = ['--human-lens', '--human-lens-exam-folder', str(tmp_path)]
     assert lens_result_schema.human_lens_result_allowed(refused)
-    assert main_stubbed({'same': {'same': 1}, parent.HUMAN_LENS_KEY: refused}, lens_flags) == 0
+    # C2d: with the lens on, a run returns both keys; a missing coach grade is a no_output failure (exit 4).
+    coach_refused = coach_rows.coach_debug_refusal()
+    assert main_stubbed({'same': {'same': 1}, parent.HUMAN_LENS_KEY: refused,
+                         parent.COACH_GRADE_KEY: coach_refused}, lens_flags) == 0
     assert main_stubbed({'same': {'same': 1}}, []) == 0             # the lens off: as before
     assert main_stubbed({}, []) == 0                                # --counts-only returns {}
 
@@ -408,7 +411,11 @@ def test_an_old_coach_file_is_deleted_before_the_run(harness, tmp_path, monkeypa
     ({'error': 'schema'}, 4), ({'error': 'no_output'}, 4), ({'error': 'LookupError'}, 4),
     ({'refusal': 'debug_on'}, 0)])
 def test_main_exits_4_on_a_coach_error_and_0_on_its_refusal(main_stubbed, tmp_path, coach, code):
+    from django.test import override_settings
+
+    from apps.scholarship.eval.replay import lens_human_rows
     lens_flags = ['--human-lens', '--human-lens-exam-folder', str(tmp_path)]
-    clean_lens = {'engine_version': None}                          # main reads only the error key
+    with override_settings(DEBUG=True):     # C2d: main renders the lens, so it must pass the allow-list
+        clean_lens = lens_human_rows.run_human_lens_on_database(str(tmp_path), child.parse_instant(INSTANT))
     result = {'same': {'same': 1}, parent.HUMAN_LENS_KEY: clean_lens, parent.COACH_GRADE_KEY: coach}
     assert main_stubbed(result, lens_flags) == code

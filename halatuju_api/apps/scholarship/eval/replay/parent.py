@@ -33,7 +33,18 @@ THE COACH GRADE (LL5 phase C2), under the SAME switch, with no new environment n
 unchanged). The `new` child also writes the coach grade's report to `coach_grade.json` in the workdir.
 This process deletes an old copy before the run, reads it after the children exit, checks it again
 against its own allow-list (`coach_result_schema`) and returns it under the one more key ``coach_grade``.
-The same error rules as the lens; an error in either result makes `main` exit 4. Not printed here.
+The same error rules as the lens; an error in either result makes `main` exit 4. `run_replay` prints
+neither result.
+
+THE LL5 BLOCK (LL5 phase C2d). With `--human-lens` only, once `run_replay` has printed its JSON lines and
+returned, `main` prints the two results as `report_lens` renders them (the same allow-list re-check and
+label tables as the markdown report; this file formats nothing from them) between the fixed lines
+`LENS_REPORT_START` and `LENS_REPORT_END`, in ONE print to stdout, the stream of the JSON lines. A block
+that holds a failure (either result failed its check), or a render that raised one of
+`report_lens.RENDER_ERRORS` (then the block is only `report_lens.RENDER_FAILED_LINE`), makes `main` exit 4
+even when the run would exit 0: a report that cannot be shown is not a pass. No block with the lens off
+(the output is as before), with `--counts-only` (no lens ran), on the fatal path (exit 3) or on an
+argument error (exit 2): there is no result to show. Any other error in the render is the fatal path.
 """
 import argparse
 import importlib
@@ -44,7 +55,7 @@ import sys
 import time
 from collections import Counter, defaultdict
 
-from . import coach_result_schema, guards, lens_result_schema, netguard
+from . import coach_result_schema, guards, lens_result_schema, netguard, report_lens
 from . import scrub as scrub_module
 from .child import (COACH_GRADE_FILE, HUMAN_LENS_ENV, HUMAN_LENS_FILE, HUMAN_LENS_FOLDER_ENV,
                     HUMAN_LENS_FREEZE_ENV, parse_instant, setup_django)
@@ -65,6 +76,9 @@ HUMAN_LENS_ON_LINE = '{"event": "human_lens_on"}'
 #: ``main``'s exit code when the lens result is an error. 0 is a finished run, 2 an argument error
 #: (argparse), 3 a fatal error; 4 is new and means only this.
 HUMAN_LENS_FAILED_EXIT = 4
+#: The two fixed lines around the LL5 block (`lens_report_block`); nothing else is printed between them.
+LENS_REPORT_START = '=== LL5 lens report start ==='
+LENS_REPORT_END = '=== LL5 lens report end ==='
 CHILD_TIMEOUT_S = 3 * 60 * 60
 #: How long the parent waits for every child to join; below the parent's idle-in-transaction limit.
 JOIN_TIMEOUT_S = 10 * 60
@@ -406,6 +420,17 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
     return totals
 
 
+def lens_report_block(result):
+    """(text, failed): the LL5 block - `LENS_REPORT_START`, the lines `report_lens` renders from the two
+    results, `LENS_REPORT_END` - and True when it shows a failure. When the render raises one of
+    `report_lens.RENDER_ERRORS`, the lines are only `report_lens.RENDER_FAILED_LINE` (failed: True)."""
+    try:
+        lines, failed = report_lens.lens_coach_report(result.get(HUMAN_LENS_KEY), result.get(COACH_GRADE_KEY))
+    except report_lens.RENDER_ERRORS:                   # never the message, never the result
+        lines, failed = [report_lens.RENDER_FAILED_LINE], True
+    return '\n'.join([LENS_REPORT_START, *lines, LENS_REPORT_END]), failed
+
+
 def main(argv=None):
     import logging
     logging.disable(logging.CRITICAL)
@@ -415,12 +440,18 @@ def main(argv=None):
         guards.check_database_url(os.environ.get(guards.DB_ENV))
         setup_django()
         result = run_replay(args, env=os.environ)
+        code = replay_exit_code(result)
+        if args.human_lens and not args.counts_only:    # after the JSON lines; built whole, then one print
+            block, failed = lens_report_block(result)
+            print(block)
+            if failed:
+                code = HUMAN_LENS_FAILED_EXIT
     except SystemExit:
         raise
     except BaseException as exc:                        # by class name only, never the message
         emit({'event': 'fatal', **error_record(exc)})
         return 3
-    return replay_exit_code(result)
+    return code
 
 
 if __name__ == '__main__':

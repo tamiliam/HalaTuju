@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### LL5 phase C2d - the replay prints the lens report between two marker lines (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. With `--human-lens` on, `python -m replay.parent` now prints the human lens and coach grade sections after its JSON lines, between `=== LL5 lens report start ===` and `=== LL5 lens report end ===`, in one print to stdout. The text comes only from `report_lens` (new `lens_coach_report`, the one path the markdown report also uses), with the same allow-list re-check and label tables. A result that fails its check, or a render that raises one of a narrow set of errors (then only one fixed BLOCKING line is printed, with no data and no message), makes the job exit 4 even when it would have exited 0. With the lens off, with `--counts-only`, on a fatal error (exit 3) or an argument error (exit 2) no block is printed and the output is as before. New tests in `test_replay_lens_report_block.py` (22); two `main` tests in `test_replay_human_lens_wiring.py` now pass realistic results.
+
 ### LL5 phase C2c - only error class names pass as malformed kinds (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. The coach grade allow-list now accepts a `malformed_by_error` kind only when it is a fixed label, `other_error`, or an error class name (`[A-Z][A-Za-z0-9]{0,59}` ending in `Error` or `Exception`); any other kind fails the result as `{"error": "schema"}`. The reader (`coach_rows.fold_odd_kinds`) first moves the count of any other kind into `other_error` on a shallow copy, so a real error class with an odd name still gives a report. One predicate, `coach_result_schema.malformed_kind_ok`, serves both. `coach_grade.py` is unchanged. New tests in `test_replay_coach_rows.py` and `test_replay_coach_result_schema.py`.

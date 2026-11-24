@@ -167,6 +167,8 @@ gcloud run jobs execute halatuju-replay --region asia-southeast1 --wait --args "
 
 The output is in Cloud Logging under the job; it holds only codes, amounts, hashes and case ids.
 
+Only when the lens switch (`--human-lens`) is on, the lens and coach-grade report comes after the JSON lines, between the lines `=== LL5 lens report start ===` and `=== LL5 lens report end ===`; exit code 4 means a lens or coach error, or a report that could not be shown.
+
 ## 6. Afterwards: remove everything
 
 ```
