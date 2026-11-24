@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### LL5 phase B1 - the replay's fingerprint key: one-way derived, never SECRET_KEY (2026-11-24)
+
+Branch ll5, not pushed. Migration: none. Services: api (no change in behaviour) and the replay job only.
+- **Why:** the read-only replay must recompute the stored evidence fingerprints to tell "same evidence" from "the evidence moved", but it must never hold `SECRET_KEY` (sessions, signing, password resets). Owner: one key, read only, never printed. Release lead: the replay gets the ONE-WAY DERIVED key `sha256(salt + SECRET_KEY)` that `salted_hmac` already computes inside; it gives the same fingerprints and `SECRET_KEY` cannot be got back from it.
+- **`verdict_context.py`:** the keyed hash now goes through `_fingerprint_key`. The setting `VERDICT_FINGERPRINT_DERIVED_KEY`, when not blank, must be exactly 64 hex characters (else `ImproperlyConfigured`, never quoting the value, never falling back to `SECRET_KEY`); blank or absent (the live service, which never sets it), the key is derived from `SECRET_KEY` exactly as Django's `salted_hmac` does. Every live fingerprint and `key_check` is byte for byte what it was (pinned against values captured at 26bbc39c5). Salt, message, output and every public name unchanged; the setting is not in the main settings.
+- **`eval/replay/settings.py`:** reads `REPLAY_FINGERPRINT_KEY` (64 hex, else the settings refuse to load without quoting it) into `VERDICT_FINGERPRINT_DERIVED_KEY`, set by exact name AFTER the loop that blanks every secret-like setting. Absent = blank (every fingerprint mismatches, the key-free default). `SECRET_KEY` stays the random throwaway; every other secret-like setting stays blank.
+- **The key never leaves:** no change to `scrub.py` was needed. Its allow-list hashes any text it does not know (a 64-hex string is no code, hash, month, amount, course code or commit) and drops bytes; errors leave as a class name only. Tested in every slot, both cases, whole and raw bytes.
+- **Owner step written, not run:** making the derived key into Secret Manager (`docs/plans/2026-11-13-a5-replay-owner-steps.md`, step 2b). No script.
+- **Tests:** `test_fingerprint_derived_key.py` (equivalence with Django's `salted_hmac` over several secrets and messages, the HEAD pins, the key-free mismatch, bad values, the replay settings, the scrub).
+
 ### LL5 phase A - monthly score and coach grade, server only (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Services: api only. Not wired to any page or job yet; reads nothing and changes no outcome.

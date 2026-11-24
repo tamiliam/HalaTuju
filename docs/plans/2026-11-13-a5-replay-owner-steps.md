@@ -45,6 +45,17 @@ gcloud iam service-accounts create halatuju-replay --display-name "A5 replay (re
 gcloud secrets add-iam-policy-binding halatuju-replay-db-url --member serviceAccount:halatuju-replay@gen-lang-client-0871147736.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --account tamiliam@gmail.com --project gen-lang-client-0871147736
 ```
 
+## 2b. The derived fingerprint key (LL5; words only, no script)
+
+Make the derived key once: read the production SECRET_KEY, compute sha256(salt + SECRET_KEY) as hex,
+write it straight into Secret Manager as the replay job's REPLAY_FINGERPRINT_KEY, never print it, never
+put it in a file or the image. Needs the Secret Manager API and the owner's yes at that time.
+
+The salt is the fixed `_KEY_SALT` in `halatuju_api/apps/scholarship/verdict_context.py`. The value is
+exactly 64 hex characters with no newline at the end (anything else makes the replay refuse to start).
+It is the derived key, never `SECRET_KEY` itself. Only the replay's service account may read that one
+secret. Delete it with the rest in step 6.
+
 ## 3. Build the image (Cloud Build, by hand; no trigger)
 
 From the HalaTuju repo root, in Git Bash, with `<LIVE_MAIN_SHA>` the commit of the live api revision.

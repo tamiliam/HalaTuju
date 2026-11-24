@@ -5,11 +5,19 @@ The tree's own `halatuju.settings.base`, then:
     connection;
   * every setting whose name says KEY / SECRET / TOKEN / PASSWORD / DSN blanked (SECRET_KEY gets a random
     throwaway), so even a key that slipped into the environment is not used;
+  * ONE named exception, set after the blanking: `VERDICT_FINGERPRINT_DERIVED_KEY`, from the environment
+    variable `REPLAY_FINGERPRINT_KEY` (64 hex characters, else the settings refuse to load). It is the
+    one-way derived key `sha256(salt + SECRET_KEY)` of `verdict_context`, so the replay recomputes the
+    stored evidence fingerprints without ever holding `SECRET_KEY`. Absent = blank, and every fingerprint
+    then mismatches (the key-free default). Never printed, logged or quoted in an error;
   * a refusing email backend; DEBUG off; logging off (the harness prints only scrubbed lines).
 Not used by the tests or the live service.
 """
 import os
+import re
 import secrets
+
+from django.core.exceptions import ImproperlyConfigured
 
 from halatuju.settings import base as _base
 
@@ -22,6 +30,22 @@ for _name in [k for k in list(globals()) if k.isupper() and any(w in k for w in 
     elif isinstance(globals()[_name], dict):
         globals()[_name] = {k: '' for k in globals()[_name]}
 SECRET_KEY = secrets.token_hex(32)
+
+
+def _derived_fingerprint_key():
+    """`REPLAY_FINGERPRINT_KEY`: blank when absent or blank, else exactly 64 hex characters, else the
+    settings refuse to load. The message names the variable, never its value."""
+    given = os.environ.get('REPLAY_FINGERPRINT_KEY', '')
+    if not given.strip():
+        return ''
+    if not re.fullmatch(r'[0-9a-fA-F]{64}', given):
+        raise ImproperlyConfigured('replay: REPLAY_FINGERPRINT_KEY must be 64 hex characters')
+    return given
+
+
+# THE ONE EXCEPTION to the blanking above, by exact name (never by a pattern), set AFTER the loop: its
+# name holds KEY, so the loop would blank it. It is the derived key only; SECRET_KEY stays the throwaway.
+VERDICT_FINGERPRINT_DERIVED_KEY = _derived_fingerprint_key()
 
 DEBUG = False
 ALLOWED_HOSTS = []

@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-24 — LL5 phase B1: the replay recomputes fingerprints with a one-way derived key, never SECRET_KEY
+
+Branch ll5, not pushed.
+
+- **The need.** Each recorded verdict carries an evidence fingerprint: an HMAC-SHA256 keyed from `SECRET_KEY` with a fixed salt (`verdict_context`). The read-only replay must recompute it to tell "same evidence, new engine" from "the evidence moved". Its settings blank every secret and give it a random `SECRET_KEY`, so today every fingerprint mismatches there.
+- **The ruling.** The owner approved "one key, read only, never printed". The release lead ruled how: the replay never holds `SECRET_KEY` (the site's master key: sessions, signing, password resets). It gets the DERIVED key, `sha256(salt + SECRET_KEY)`, which is the key `salted_hmac` itself computes before its plain HMAC. The same key gives the same fingerprints; a SHA-256 output cannot be turned back into `SECRET_KEY`, and the derived key signs nothing else (its salt is used only here). The worst a leak of it allows is to recompute or forge evidence fingerprints, which decide nothing.
+- **How.** `verdict_context._fingerprint_key`: the setting `VERDICT_FINGERPRINT_DERIVED_KEY` when not blank (exactly 64 hex characters, else `ImproperlyConfigured`; no fall back to `SECRET_KEY`, so a broken key is loud, not a silent mismatch); blank or absent, derived from `SECRET_KEY` exactly as Django 5.2's `salted_hmac` (`force_bytes` of salt and secret). The live service never sets it, so its fingerprints and `key_check` are unchanged byte for byte (pinned). The replay's settings read `REPLAY_FINGERPRINT_KEY` into it, by exact name, after the blanking loop; absent, it is blank and every fingerprint mismatches (the key-free default).
+- **Never printed.** The scrubber is an allow-list: a 64-hex string is not a known code and is hashed; bytes are dropped; errors leave as class names. No change to `scrub.py`. Neither settings module nor the helper quotes the value in an error.
+- **The owner makes the key** once, straight into Secret Manager, never printed, never in a file or the image (owner steps, step 2b). Not done yet; needs the owner's yes at that time.
+- **Not in this phase.** The replay parent hands each child a minimal environment (`parent.child_env`) that does not yet pass `REPLAY_FINGERPRINT_KEY`, and the job does not yet mount the secret. Wiring both is a later phase.
+
 ## 2026-11-24 — LL5 phase A: the coach grade rule, the two floors and the "documents only" switch
 
 Branch ll5, not pushed. Server only; nothing calls it yet.
