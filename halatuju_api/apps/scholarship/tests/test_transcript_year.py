@@ -50,6 +50,13 @@ class TestTheReader(SimpleTestCase):
                 self.assertEqual(transcript_year(text), ('', ''))
         self.assertEqual(transcript_year(None), ('', ''))
 
+    def test_a_span_of_two_session_pairs_is_no_year(self):
+        self.assertEqual(transcript_year('SESI 2023/2024 - 2024/2025'), ('', ''))
+        self.assertEqual(transcript_year('SESI 2023/2024 – 2024/2025'), ('', ''))
+        self.assertEqual(title_year('MATRIKULASI 2024/2025 - 2025/2026'), ('', ''))
+        self.assertEqual(transcript_year('SESI 2024/2025'), ('2025', 'session'))      # a single pair still reads
+        self.assertEqual(title_year('MATRIKULASI 2024/2025'), ('2025', 'title'))
+
     def test_the_title_reads_a_session_pair_only(self):
         self.assertEqual(title_year('KEPUTUSAN PROGRAM MATRIKULASI SESI 2024/2025'), ('2025', 'title'))
         self.assertEqual(title_year('ASASI SAINS 2023/24'), ('2024', 'title'))
@@ -197,3 +204,16 @@ class TestTheServe(TestCase):
         app = _app('stpm')
         doc = _doc(app, 'stpm', {'exam': 'SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025'}, **_read('2019'))
         self.assertEqual(_year(doc), ('2025', 'current'))     # the stored transcript read is never consulted
+
+
+class TestTheServeNeedsTheHeldKind(TestCase):
+    def test_a_different_detected_kind_serves_no_year(self):
+        for held, detected in (('matric', 'stpm'), ('stpm', 'matric'), ('stpm', 'diploma'), ('matric', 'diploma')):
+            with self.subTest(held=held, detected=detected):
+                doc = _doc(_app(held), held, {'results_kind_detected': detected}, **_read('2026'))
+                self.assertEqual(_year(doc)[0], '')
+
+    def test_matching_kinds_serve_the_year(self):
+        for kind in ('matric', 'asasi', 'diploma'):
+            with self.subTest(kind=kind):
+                self.assertEqual(_year(_doc(_app(kind), kind, **_read('2026')))[0], '2026')

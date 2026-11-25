@@ -373,7 +373,8 @@ def student_higher_check(doc) -> dict:
     from .exam_years import stored_transcript_year, year_status
     kind = detected or kind_held
     exam_year = (_stpm_exam_year(f) if kind == 'stpm' else stored_transcript_year(vf, f)
-                 if readable and kind in ('matric', 'asasi', 'diploma') else '')
+                 if readable and kind in ('matric', 'asasi', 'diploma') and (not kind_held or kind == kind_held)
+                 else '')
     return {
         'exam_year': exam_year,
         'exam_year_status': year_status(getattr(doc, 'application', None), kind, exam_year),

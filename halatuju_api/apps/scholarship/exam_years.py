@@ -39,6 +39,11 @@ _PAIR = re.compile(r'\b(20\d\d)[ \t]*/[ \t]*(20\d\d|\d\d)\b')
 #: A line that names an intake, not a result ("INTAKE SESSION 2022/2023", "Ambilan Sesi 2024/2025").
 _INTAKE = re.compile(r'INTAKE|AMBILAN|KEMASUKAN|ENROL', re.IGNORECASE)
 _YEAR = re.compile(r'20\d\d')
+#: A pair run into another by a dash ("2024/2025 - 2025/2026"): a SPAN of sessions, not one session.
+_DASH = r'[ \t]*[-–][ \t]*'
+_PAIR_TXT = r'20\d\d[ \t]*/[ \t]*(?:20\d\d|\d\d)\b'
+_SPAN_AFTER = re.compile(rf'{_DASH}{_PAIR_TXT}')
+_SPAN_BEFORE = re.compile(rf'\b{_PAIR_TXT}{_DASH}$')
 
 
 def _session_end(m, text) -> str:
@@ -47,6 +52,8 @@ def _session_end(m, text) -> str:
     start, tail = m.group(1), m.group(2)
     end = int(start[:2] + tail if len(tail) == 2 else tail)
     line = text[text.rfind('\n', 0, m.start()) + 1:m.start()]
+    if _SPAN_AFTER.match(text, m.end()) or _SPAN_BEFORE.search(text[:m.start()]):
+        return ''                                  # a span written as two session pairs: no one year
     return str(end) if end == int(start) + 1 and not _INTAKE.search(line) else ''
 
 

@@ -21,12 +21,12 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>What does each slot of the <strong>Academic card</strong> show, and what does <strong>N/A</strong> mean?</>,
-      a: <>Every student&rsquo;s Academic card is a set of rows in the same order for her route, each with a thin
+      a: <>Every student&rsquo;s Academic card is a set of rows in the same order for their route, each with a thin
         line above it; two slots share a row on a wider screen and stack on a phone. <strong>SPM:</strong>
-        <strong> Secondary school</strong> and <strong>Merit score</strong>; her <strong>SPM grades</strong>;
+        <strong> Secondary school</strong> and <strong>Merit score</strong>; their <strong>SPM grades</strong>;
         <strong> Chosen programme</strong> and <strong>Reporting date</strong>; <strong>Institution</strong>.
         <strong> STPM:</strong> Secondary school and Merit score; <strong>CGPA</strong> and <strong>MUET</strong>;
-        her <strong>STPM grades</strong>; her <strong>SPM prerequisites</strong>; then the programme, reporting date
+        their <strong>STPM grades</strong>; their <strong>SPM prerequisites</strong>; then the programme, reporting date
         and institution rows. <strong>Matriculation, Asasi or Diploma:</strong> Secondary school alone; then
         <strong> Pre-U college</strong> (read from their uploaded results, with a grey note and no tick: the college
         they attended is not asked) and Merit score; CGPA and MUET; SPM prerequisites; then the programme,
@@ -40,14 +40,14 @@ export const REVIEWER_FAQ: QA[] = [
         <strong> Stated by student</strong> line under the programme or institution means no offer letter confirms it
         yet. For a Matriculation, Asasi or Diploma student, the college they typed is the next one they plan to attend,
         so it appears on the institution row as <strong>Stated by student</strong>. <strong>N/A</strong> in a muted colour means the slot is required but empty: nothing was entered or read.
-        It is not a mismatch. The reporting date always shows, and reads N/A until a date is stored or read from her
+        It is not a mismatch. The reporting date always shows, and reads N/A until a date is stored or read from their
         offer letter.</>,
     },
     {
       q: <>What is a <strong>Matriculation, Asasi or Diploma</strong> student on the Academic card?</>,
       a: <>Since 26 October 2026 a student may enter Matriculation, Asasi (Foundation) or Diploma results
         instead of STPM. They count as <strong>STPM-equivalent</strong>: the gift&rsquo;s minimum CGPA is
-        tested on her overall CGPA, and her merit is that CGPA ÷ 4 × 100, as for an STPM student. The card
+        tested on their overall CGPA, and their merit is that CGPA ÷ 4 × 100, as for an STPM student. The card
         uses the same slots as every other student (see the next question): their merit score, with their qualification
         and transcript year in brackets where we can read it, a <strong>Pre-U college</strong> row (read from their
         uploaded results, no tick), their <strong>CGPA</strong> as printed on their results
@@ -55,7 +55,7 @@ export const REVIEWER_FAQ: QA[] = [
         CGPA is its CGPA as it is &mdash; the co-curriculum score no longer has a line of its own), their
         <strong> MUET</strong> band and the SPM grades they entered, under <strong>SPM prerequisites</strong>
         (as on an STPM card). Only a diploma from a <strong>public</strong> institution counts; a
-        private-college diploma does not qualify. Her results document is the separate
+        private-college diploma does not qualify. Their results document is the separate
         <strong> STPM / Matriculation / Asasi / Diploma results</strong> upload (see the next question).</>,
     },
     {

@@ -226,6 +226,7 @@ Not pushed. Migration: none. Services: api, web. No new AI call, no `MODEL_VERSI
 - B1 review nits: `_ISSUER` also blanks the examination councils / syndicates, a word-bounded KPM and JABATAN PENDIDIKAN; the reviewer FAQ's tick answer and merit sentences use they/them.
 - Owner, 25 Nov ("a tick only"): the slip School chip B1 added to the Documents drawer is removed; the school still ticks on the Academic card from the certificate, then the slip (`slipSchoolVerified`). The certificate's own school chip is unchanged.
 - `verdict_engine.json` gets an `also_ok` digest (display only); `decisions.md` entry. Tests: new `test_transcript_year.py`; extended `test_slip_school`, `fieldVerification`, `officerCockpit`, `ApplicantCards.academicSlots` and `ApplicantCards.thirdRoute`.
+- Review nits: a span written as two session pairs ("SESI 2023/2024 - 2024/2025", a title "2024/2025 - 2025/2026") reads no year; a Matriculation / Asasi / Diploma year is served only when the detected kind equals the held kind (or none is held); the FAQ's Academic card and third-route answers use they/them throughout. Second `also_ok` digest (display only).
 
 ### Academic reads, phase B1: school from the SPM slip, college read off higher results (TD-733, TD-734, 2026-11-25)
 
