@@ -17,6 +17,7 @@ parse, so their streams are charged and whitelisted like a form's.
 import re
 import zlib
 
+from .pdf_content_bytes import INLINE_IMAGE as _INLINE_IMAGE
 from .pdf_layer_guards import OverBudget, _get, ascii_hex
 
 #: Decompressed bytes of font programs, Type3 glyph procedures, forms, ICC profiles, Indexed tables, function
@@ -47,7 +48,6 @@ FUNCTION_TYPES = frozenset((2, 3))
 EXTGSTATE_KEYS = frozenset(('/Type', '/ca', '/CA', '/BM', '/SMask', '/SA', '/LC', '/LJ', '/LW', '/ML', '/AIS',
                             '/SM', '/OPM', '/OP', '/op', '/D', '/RI', '/FL', '/TK'))
 SMASK_KEYS = frozenset(('/Type', '/S', '/G', '/BC'))
-_INLINE_IMAGE = re.compile(rb'(?<![^\s\x00)\]>}])BI(?![^\s\x00/])')
 #: A Type3 glyph procedure: numbers and path operators only — no name, string or array, so it can call no
 #: resource (pdfium lends a glyph the PAGE's). The corpus's 4,366 glyphs (17 PDFs, at most 9,040 bytes each) use
 #: d1 m l c h f re and nothing else; d0 v y f* n q Q cm W W* (+) draw nothing more.

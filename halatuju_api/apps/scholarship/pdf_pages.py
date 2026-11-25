@@ -19,6 +19,7 @@ from collections import OrderedDict
 from typing import NamedTuple, Optional
 
 from . import pdf_pdfium_check, pdf_render_check, pdfium_run, pdfium_worker
+from .pdf_content_bytes import INLINE_IMAGE as _INLINE_IMAGE, content_bytes_check, unknown_operator
 from .pdf_annots import MAX_DOC_ANNOTS, annots_hide
 from .pdf_dict_keys import content_meter
 from .pdf_layer_guards import (_MAX_DOC_FONT_COST, GateReader, OverBudget as _OverBudget, _doc_may_switch_off,
@@ -172,7 +173,6 @@ _MAX_STREAM_TOKENS = 400_000
 #: Characters handed to text-showing operators per document (pypdf decodes each). Real max: 7,373.
 _MAX_DOC_SHOWN_CHARS = 200_000
 _TOKEN_BOUNDARIES = bytes((0, 9, 10, 12, 13, 32)) + b'()<>[]{}/%'
-_INLINE_IMAGE = re.compile(rb'(?<![^\s\x00)\]>}])BI(?![^\s\x00/])')
 #: One string or ``<...>`` longer than this (raw, so never under its decoded length) is refused unparsed: pdfium
 #: keeps only a string's first 32,767 bytes (fix round 6), and pypdf parses a huge one in worse than linear time.
 #: Real max: 1,893 bytes. A bare token (name, number, operator) is quadratic in pypdf 5.9: 1,024 bytes. Real: 692.
@@ -219,9 +219,12 @@ def _parsed_ops(content, reader, cache: dict, budget: _Budget):
             raise _OverBudget('a content stream past the token limit')
         if _LONG_BARE.search(data) or _LONG_ANGLED.search(data) or longest_literal(data) > _MAX_TOKEN_BYTES:
             raise _OverBudget('a token past the size limit of one PDF')
+        content_bytes_check(content, data)    # OCR-20 r3: bytes pypdf and pdfium tokenise differently: raises
         raw_state_check(data, len(_INLINE_IMAGE.findall(data)))      # fix round 5: raises (hidden), unparsed
         with content_meter(reader):       # OCR-20 r2: its dictionaries, arrays and names checked as read
             hit[3] = stream.operations
+        if unknown_operator(hit[3]):      # OCR-20 r3: a word that is no PDF operator (`pdf_content_bytes`)
+            raise ValueError('an unknown operator')
         cache[id(content)] = hit
     else:
         _charge(budget, hit[2])
