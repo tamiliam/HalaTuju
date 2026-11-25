@@ -30,7 +30,7 @@ import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import { holdsDoor, mayOpen } from '@/lib/pageGuard'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
-import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
+import { LazyInterviewScheduleCard } from './view/LazyInterviewSchedule'   // first-load budget, 25 Nov
 import RecordState from '@/components/admin/RecordState'
 import {
   getScholarshipApplication,
@@ -348,7 +348,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
       {/* Interview scheduling — the assigned reviewer proposes times (dark behind the flag) */}
       {app.interview_schedule?.enabled && app.assigned_to_id != null &&
         ['profile_complete', 'interviewing'].includes(app.status) && (
-        <InterviewScheduleCard
+        <LazyInterviewScheduleCard
           appId={id} token={token || ''} schedule={app.interview_schedule}
           onChange={(s) => setApp((prev) => (prev?.id === app.id ? { ...prev, interview_schedule: s } : prev))}
         />
