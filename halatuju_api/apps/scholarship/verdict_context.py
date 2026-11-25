@@ -22,7 +22,12 @@ closes that gap. It holds, for one application at decision time:
   which is a key rotation, NOT evidence that moved.
 * ``schema``: the shape of this record (`RECORD_SCHEMA`), so later readers can tell shapes apart.
 
-THE KEY is derived from Django's ``SECRET_KEY`` with a fixed salt (`salted_hmac`): no new setting.
+THE KEY is derived from Django's ``SECRET_KEY`` with a fixed salt, exactly as `salted_hmac` does
+(``sha256(salt + SECRET_KEY)``, then a plain HMAC-SHA256 with that key: `_fingerprint_key`). The
+live service sets nothing new. The read-only replay (LL5) must never hold ``SECRET_KEY``, so it may
+instead be handed that one-way DERIVED key as 64 hex characters in the setting
+``VERDICT_FINGERPRINT_DERIVED_KEY``: the same fingerprints, and ``SECRET_KEY`` cannot be got back
+from it. A set but malformed value refuses (never a fall back to ``SECRET_KEY``).
 The fingerprint reads canonical JSON (sorted keys, ASCII, instants in UTC), so it is the same for
 the same evidence in any process, on any machine, under any time zone or Python version, as long
 as the key is the same.
@@ -37,13 +42,17 @@ path calls, because a record that cannot be built must never stop a decision bei
 """
 import datetime
 import decimal
+import hashlib
+import hmac
 import importlib
 import json
 import logging
 import re
 import uuid
 
-from django.utils.crypto import salted_hmac
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from django.utils.encoding import force_bytes
 
 from .genuineness.bands import stored_authenticity, stored_status
 from .model_registry import MODELS
@@ -150,6 +159,8 @@ BUILD_FAILED = 'build_failed'
 
 _KEY_SALT = 'halatuju.scholarship.verdict_context.evidence_fingerprint'
 _KEY_CHECK_MESSAGE = 'verdict_context key check'
+#: The derived key, when it is given: exactly 64 hex characters (32 bytes), nothing around them.
+_DERIVED_KEY_HEX = re.compile(r'[0-9a-fA-F]{64}')
 #: A plain code. It lets one word of up to 40 characters through, so it is a backstop, not the
 #: protection: every slot it guards is filled from a fixed choice list or written by the engine.
 _CODE = re.compile(r'[A-Za-z0-9_-]{1,40}')
@@ -207,12 +218,29 @@ def canonical_json(value):
 
 # --- the parts ----------------------------------------------------------------------------------
 
+def _fingerprint_key():
+    """The HMAC key bytes. The setting ``VERDICT_FINGERPRINT_DERIVED_KEY`` when it is not blank: 64
+    hex characters, else ImproperlyConfigured (the message never holds the value, and there is no
+    fall back to ``SECRET_KEY``). Blank or absent (the live service): the key `salted_hmac` derives,
+    ``sha256(salt + SECRET_KEY)``, each turned into bytes the way Django does (`force_bytes`)."""
+    given = getattr(settings, 'VERDICT_FINGERPRINT_DERIVED_KEY', '')
+    if given is None or (isinstance(given, str) and not given.strip()):
+        return hashlib.sha256(force_bytes(_KEY_SALT) + force_bytes(settings.SECRET_KEY)).digest()
+    if isinstance(given, str) and _DERIVED_KEY_HEX.fullmatch(given):
+        return bytes.fromhex(given)
+    raise ImproperlyConfigured(
+        'verdict_context: VERDICT_FINGERPRINT_DERIVED_KEY must be 64 hex characters')
+
+
 def _keyed_hash(message):
-    return salted_hmac(_KEY_SALT, message, algorithm='sha256').hexdigest()
+    """HMAC-SHA256 (hex) of ``message`` under `_fingerprint_key`: byte for byte what
+    ``salted_hmac(_KEY_SALT, message, algorithm='sha256')`` gives when no derived key is set."""
+    return hmac.new(_fingerprint_key(), msg=force_bytes(message), digestmod=hashlib.sha256).hexdigest()
 
 
 def key_check():
-    """8 hex characters that change when the key (``SECRET_KEY``) changes, and only then."""
+    """8 hex characters that change when the key (``SECRET_KEY``, or the derived key) changes, and
+    only then."""
     return _keyed_hash(_KEY_CHECK_MESSAGE)[:8]
 
 

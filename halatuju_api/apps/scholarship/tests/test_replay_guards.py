@@ -700,9 +700,17 @@ class ReplaySettingsTest(SimpleTestCase):
     """The job's settings: the replay URL only, keys blanked, mail refused, logging off."""
 
     def test_settings_blank_every_key_and_refuse_mail(self):
-        env = {guards.DB_ENV: GOOD_URL, 'GEMINI_API_KEY': 'should-not-survive'}
+        base = importlib.import_module('halatuju.settings.base')
+        name = 'apps.scholarship.eval.replay.settings'
+        self.addCleanup(importlib.reload, importlib.import_module(name))   # runs last: the ambient values
+        self.addCleanup(importlib.reload, base)
+        env = {guards.DB_ENV: GOOD_URL, 'GEMINI_API_KEY': 'should-not-survive',
+               'SUPABASE_SERVICE_ROLE_KEY': 'should-not-survive-either'}
         with mock.patch.dict(os.environ, env):
-            mod = importlib.reload(importlib.import_module('apps.scholarship.eval.replay.settings'))
+            importlib.reload(base)                  # so the made-up keys really arrive in the base settings
+            self.assertEqual((base.GEMINI_API_KEY, base.SUPABASE_SERVICE_ROLE_KEY),
+                             ('should-not-survive', 'should-not-survive-either'))
+            mod = importlib.reload(importlib.import_module(name))
         self.assertEqual((mod.GEMINI_API_KEY, mod.SUPABASE_SERVICE_ROLE_KEY), ('', ''))
         self.assertTrue(mod.EMAIL_BACKEND.endswith('guards.RefusingEmailBackend'))
         self.assertFalse(mod.DEBUG)

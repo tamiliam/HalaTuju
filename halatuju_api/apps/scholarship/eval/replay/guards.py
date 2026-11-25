@@ -41,6 +41,11 @@ FORBIDDEN_ENV_PREFIXES = (
     'BREVO', 'ANYMAIL', 'EMAIL_HOST', 'SENDGRID', 'MAILGUN', 'TWILIO_', 'VIRCLE_', 'CRON_SECRET',
     'SENTRY', 'AIRTABLE', 'DOCUMENT_BACKUP', 'SPONSOR_MOCK',
 )
+#: Exact names refused on top of the prefixes. `SECRET_KEY` is the site's master key (sessions, signing,
+#: password resets): `halatuju.settings.base` reads it from this name, so present it would stay reachable
+#: in the process even though the replay's settings replace it. The replay is never given it; it gets
+#: only the one-way derived fingerprint key (`REPLAY_FINGERPRINT_KEY`).
+FORBIDDEN_ENV_NAMES = frozenset({'SECRET_KEY'})
 #: The ONLY URL query parameter allowed, and its only values (an encrypted connection, never off).
 ALLOWED_SSLMODES = ('require', 'verify-ca', 'verify-full')
 #: The one host the URL may name, once URL-decoded: a DNS name or an IPv4 address (dot-separated labels of
@@ -110,7 +115,8 @@ class RefusingEmailBackend:
 def check_environment(env):
     """Refuse (WriteRefused, naming the variables, never their values) when a forbidden key is present."""
     bad = sorted(k for k, v in env.items()
-                 if v and k != DB_ENV and k.upper().startswith(FORBIDDEN_ENV_PREFIXES))
+                 if v and k != DB_ENV and (k.upper().startswith(FORBIDDEN_ENV_PREFIXES)
+                                           or k.upper() in FORBIDDEN_ENV_NAMES))
     if bad:
         raise WriteRefused('replay: forbidden variables in the environment: ' + ', '.join(bad))
     return True

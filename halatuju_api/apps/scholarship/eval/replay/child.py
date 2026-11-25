@@ -8,6 +8,19 @@ course data from the snapshot, pin the clock, refuse the network, and run every 
 its own savepoint. It writes one
 scrubbed JSON line per record to ``--out``; its own stdout and stderr go to /dev/null, so nothing an
 engine prints or logs (or a traceback) leaves the process.
+
+THE HUMAN LENS (LL5 phase C1), only when the parent set `HUMAN_LENS_ENV` (the `new` side only): after
+the engines, still inside the session and the network refusal, after `clock.preload()`, outside the
+engines' pinned clock (the lens pins its own per case) and outside any document snapshot, it runs
+`lens_human_rows.run_human_lens_on_database` with the run's instant as ``now``. Its counts and codes
+(never scrubbed: the scrubber has no codes for them) go to `HUMAN_LENS_FILE` beside ``--out``, only after
+they pass the allow-list (`lens_result_schema`); else that file holds exactly ``{"error": "schema"}``.
+
+THE COACH GRADE (LL5 phase C2), under the SAME switch and no new name: right after the exam lens, in the
+same session and network refusal, `coach_rows.coach_grade_on_database` runs (no key, no exam folder) and
+its report goes to `COACH_GRADE_FILE` beside ``--out``, only after it passes its own allow-list
+(`coach_result_schema`). Each of the two catches its own known errors, so a caught error in one never
+stops the other; an error neither catches is the fatal path as before.
 """
 import argparse
 import datetime
@@ -15,10 +28,19 @@ import json
 import os
 import sys
 
-from . import clock, guards, netguard
+from . import clock, coach_result_schema, guards, lens_result_schema, netguard
 from .scrub import error_record, scrub, use_salt
 
 TREE_OF = {'old': 'old', 'new': 'new', 'new_again': 'new'}
+#: The parent's lens names: the switch ('1' = on), the exam folder, the freeze flag ('1' = freeze).
+HUMAN_LENS_ENV = 'REPLAY_HUMAN_LENS'
+HUMAN_LENS_FOLDER_ENV = 'REPLAY_HUMAN_LENS_FOLDER'
+HUMAN_LENS_FREEZE_ENV = 'REPLAY_HUMAN_LENS_FREEZE'
+HUMAN_LENS_FILE = 'human_lens.json'
+#: The coach grade's result file (LL5 phase C2), written beside the lens file under the same switch.
+COACH_GRADE_FILE = 'coach_grade.json'
+#: What a lens run may raise and still be reported, by class name (a bad case row is a ValueError).
+_LENS_ERRORS = (ValueError, TypeError, OSError)
 
 
 def parse_instant(value):
@@ -84,18 +106,63 @@ def load_course_data():
     cfg._load_data()
 
 
+def human_lens_settings(env, side):
+    """``(exam_folder, freeze)`` when the parent turned the lens on for this side, else None (the
+    default). The folder is handed on as given: the lens itself refuses a missing or bad one."""
+    if env.get(HUMAN_LENS_ENV) != '1' or side != 'new':
+        return None
+    return env.get(HUMAN_LENS_FOLDER_ENV, ''), env.get(HUMAN_LENS_FREEZE_ENV) == '1'
+
+
+def write_human_lens(lens, *, now, path):
+    """The lens's counts and codes as one JSON file at ``path`` (``{"error": "<ClassName>"}`` if it
+    raised a caught error, by the nearest of `lens_result_schema.LENS_ERROR_CLASSES`). The file skips the
+    scrubber, so what is written must first pass the allow-list (`lens_result_schema`); anything that
+    does not is written as exactly ``{"error": "schema"}``. Call inside the session, outside any pinned
+    clock or document snapshot."""
+    from .lens_human_rows import run_human_lens_on_database
+    folder, freeze = lens
+    try:
+        result = run_human_lens_on_database(folder, now, freeze=freeze)
+    except _LENS_ERRORS as exc:
+        result = {'error': lens_result_schema.lens_error_name(exc)}
+    text = lens_result_schema.checked_result_text(result)
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write(text)
+
+
+def write_coach_grade(*, path):
+    """The coach grade's report as one JSON file at ``path`` (``{"error": "<ClassName>"}`` if it raised a
+    caught error, by the nearest of `coach_result_schema.COACH_ERROR_CLASSES`). The file skips the
+    scrubber, so what is written must first pass `coach_result_schema`'s allow-list; anything that does
+    not is written as exactly ``{"error": "schema"}``. Call inside the session."""
+    from .coach_rows import coach_grade_on_database
+    try:
+        result = coach_grade_on_database()
+    except coach_result_schema.COACH_ERROR_CLASSES as exc:
+        result = {'error': coach_result_schema.coach_error_name(exc)}
+    text = coach_result_schema.checked_coach_text(result)
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write(text)
+
+
 def run_side(*, side, engines, instant, months, write, snapshot=None, session=None, allow=(),
-             load=load_course_data):
+             load=load_course_data, lens=None, lens_path=None, coach_path=None):
     """One side's run inside every guard. ``session`` is for the tests (the SQLite test database).
 
     The first line written inside the session is `joined`: the parent waits for it from every child and
-    then ends its own (exporting) transaction. The course data is loaded only after the join."""
+    then ends its own (exporting) transaction. The course data is loaded only after the join. ``lens``
+    (`human_lens_settings`) runs the human lens after the engines, out of their pinned clock, then the
+    coach grade (to ``coach_path``; by default `COACH_GRADE_FILE` beside ``lens_path``)."""
     sess = session or (lambda: guards.read_only_session(snapshot=snapshot))
     with netguard.refuse_network(allow), sess():
         write({'side': side, 'event': 'joined'})
         load()
         with clock.pinned_clock(instant):
             n = run_engines(engines, months=months, write=write)
+        if lens is not None:
+            write_human_lens(lens, now=instant, path=lens_path)
+            write_coach_grade(path=coach_path or os.path.join(os.path.dirname(lens_path), COACH_GRADE_FILE))
         write({'side': side, 'event': 'done', 'records': n})
     return n
 
@@ -131,9 +198,11 @@ def main(argv=None, env=None):
             names = [n for n in args.engines.split(',') if n] or sorted(engine_map.ADAPTERS)
             engines = [engine_map.ADAPTERS[n](resolved) for n in names]
             write({'side': args.side, 'event': 'preload', 'failed_modules': len(failed)})
+            out_dir = os.path.dirname(os.path.abspath(args.out))
             run_side(side=args.side, engines=engines, instant=parse_instant(args.instant),
                 months=args.months.split(','), write=write, snapshot=args.snapshot or None,
-                allow=netguard.db_addresses(host, port))
+                allow=netguard.db_addresses(host, port), lens=human_lens_settings(env, args.side),
+                lens_path=os.path.join(out_dir, HUMAN_LENS_FILE), coach_path=os.path.join(out_dir, COACH_GRADE_FILE))
         except BaseException as exc:                    # by class name only, never the message
             write({'side': args.side, 'event': 'fatal', **error_record(exc)})
             return 3
