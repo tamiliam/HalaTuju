@@ -98,6 +98,21 @@ class TestCollegeRead(SimpleTestCase):
             with self.subTest(issuer=issuer):
                 self.assertEqual(_college_read({'institution': issuer}, True), '')
 
+    def test_an_exam_council_kpm_or_education_department_is_not_a_college(self):
+        """B1 review nit: the examination councils, a word-bounded KPM and a Jabatan Pendidikan blank to N/A."""
+        for issuer in ('MALAYSIAN EXAMINATIONS COUNCIL', 'Malaysian Examination Council',
+                       'CAMBRIDGE EXAMINATIONS SYNDICATE', 'KPM', 'BAHAGIAN MATRIKULASI KPM', 'Matrikulasi (KPM)',
+                       'JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI', 'Jabatan  Pendidikan Negeri Perak'):
+            with self.subTest(issuer=issuer):
+                self.assertEqual(_college_read({'institution': issuer}, True), '')
+
+    def test_a_real_college_still_shows(self):
+        """KPM only as a whole word: a college whose name merely holds the letters is shown."""
+        for college in ('KOLEJ MATRIKULASI PERAK', 'POLITEKNIK SULTAN IDRIS SHAH', 'UNIVERSITI TEKNOLOGI MARA',
+                        'KOLEJ KPMB SAINS', 'Kolej Komuniti Kepala Batas'):
+            with self.subTest(college=college):
+                self.assertEqual(_college_read({'institution': college}, True), college)
+
     def test_blank_or_unread_is_nothing(self):
         self.assertEqual(_college_read({'institution': ''}, True), '')
         self.assertEqual(_college_read({}, True), '')

@@ -221,10 +221,8 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
       { key: 'subjects', status: st(c.subjects) },
       { key: 'results', status: st(c.results) },
     ]
-    // TD-733: the school the SPM slip prints, against the student's own. Only when the slip's text was
-    // kept and a school was read (no read = no chip, never a grey one on four slips in five). A
-    // mismatch is drawn exactly as the school-leaving certificate's school chip is.
-    if (!c.higher_kind && (c.school || '').trim()) facts.push({ key: 'school', status: st(c.school_status) })
+    // TD-733: the school the slip prints is NOT a chip here (owner 25 Nov: "a tick only") — it shows only
+    // as the tick on the Academic card's school row (`slipSchoolVerified`, read by fieldVerification.ts).
     if (gf) facts.push(gf)
     return facts
   }
@@ -429,10 +427,22 @@ export function spmExamYear(documents: AdminApplicantDocument[] | undefined): Sp
 }
 
 /**
+ * TD-733: does this SPM slip back the student's school? Its `SEKOLAH :` row was read and matches,
+ * on an SPM slip (never a higher result in the slot) the genuineness check has not called the wrong
+ * document. A tick only, never a drawer chip (owner, 25 Nov).
+ */
+export function slipSchoolVerified(doc: AdminApplicantDocument): boolean {
+  const c = doc.academic_check
+  if (doc.doc_type !== 'results_slip' || !c || c.higher_kind || !(c.school || '').trim()) return false
+  return !genuinenessCaps(genuinenessFact(doc)) && factStatus(c.school_status) === 'verified'
+}
+
+/**
  * The STPM sitting year, read off the live higher-results document (`higher_check.exam_year`, which
  * the api already serves with its route-aware currency). The twin of `spmExamYear`: it qualifies
- * the merit score of an STPM student, whose merit comes from STPM, never from an SPM slip. Null
- * when there is no live higher-results document or it prints no year.
+ * the merit score of an STPM student, whose merit comes from STPM, never from an SPM slip. Since
+ * TD-735 it also serves a Matriculation / Asasi / Diploma transcript's year (the end year of its
+ * session). Null when there is no live higher-results document or no year was read.
  */
 export function higherExamYear(documents: AdminApplicantDocument[] | undefined): SpmExamYear | null {
   const doc = (documents || []).find(

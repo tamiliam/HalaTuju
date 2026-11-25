@@ -208,6 +208,9 @@ def extract(doc, ocr, image_fn, extract_fn):
             fields['results_kind_issuer'] = issuer
         if ex['capture'] == 'ai' and fields['results_kind_detected'] == 'stpm':   # STPM prints none
             ex['warnings'] = [w for w in ex.get('warnings') or [] if not _is_institution_noise(w)]
+        if fields['results_kind_detected'] != 'stpm' and not _exact_stpm(ex):     # TD-735: display only,
+            from .exam_years import read_transcript_year                          # beside capture, never a field
+            ex['exam_year_read'] = read_transcript_year(text, fields.get('exam'))
     return ex
 
 
@@ -279,7 +282,8 @@ def _exact_stpm(vf) -> bool:
 
 
 #: An issuer printed where a college should be (TD-734, Q5): never shown as the college.
-_ISSUER = re.compile(r'KEMENTERIAN|MINISTRY|MAJLIS PEPERIKSAAN|LEMBAGA PEPERIKSAAN|BAHAGIAN', re.IGNORECASE)
+_ISSUER = re.compile(r'KEMENTERIAN|MINISTRY|MAJLIS\s+PEPERIKSAAN|LEMBAGA\s+PEPERIKSAAN|BAHAGIAN|JABATAN\s+PENDIDIKAN'
+                     r'|EXAMINATIONS?\s+(?:COUNCIL|SYNDICATE)|\bKPM\b', re.IGNORECASE)
 
 
 def _college_read(fields, read) -> str:
@@ -363,14 +367,16 @@ def student_higher_check(doc) -> dict:
         note, note_kind = 'grades_differ', kind_held
     else:
         note, note_kind = '', ''
-    # The exam YEAR, route-aware (owner 2026-11-01, `exam_years`): only STPM results carry a readable
-    # year (the exact read's `exam_year`, else the year in "SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025");
-    # a matriculation, asasi or diploma transcript stores none, so it stays uncoloured.
-    exam_year = _stpm_exam_year(f) if (detected or kind_held) == 'stpm' else ''
-    from .exam_years import year_status
+    # The exam YEAR, route-aware (owner 2026-11-01, `exam_years`): STPM — the exact read's `exam_year`,
+    # else the year in "SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025"; Matriculation / Asasi / Diploma (TD-735)
+    # — the session END year stored beside a readable read, else its title's; none read -> '' (bare merit).
+    from .exam_years import stored_transcript_year, year_status
+    kind = detected or kind_held
+    exam_year = (_stpm_exam_year(f) if kind == 'stpm' else stored_transcript_year(vf, f)
+                 if readable and kind in ('matric', 'asasi', 'diploma') else '')
     return {
         'exam_year': exam_year,
-        'exam_year_status': year_status(getattr(doc, 'application', None), 'stpm', exam_year),
+        'exam_year_status': year_status(getattr(doc, 'application', None), kind, exam_year),
         'name': _slip_name_status(doc), 'candidate_name': f.get('candidate_name') or '',
         'exam': (f.get('exam') or '').strip(), 'institution': _college_read(f, read),
         'kind_held': kind_held, 'kind_detected': detected,

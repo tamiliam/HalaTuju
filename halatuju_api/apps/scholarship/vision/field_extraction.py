@@ -180,9 +180,11 @@ def _offer_context(doc, page1_text):
     return {'profile_nric': getattr(profile, 'nric', '') or '', 'page1_ocr': page1_text or ''}
 
 
-#: Keys of a read kept on the stored record beside its fields (S4: the offer reader's version + inputs).
+#: Keys of a read kept on the stored record beside its fields (S4: the offer reader's version + inputs;
+#: TD-735: a transcript's display-only year, `exam_year_read`, which no score or empty-read check sees).
 _EX_KEPT = ('parser_version', 'stpm_rows_from_entry', 'stpm_rows_sign_from_point', 'approval_read_error',
-            'approval_read_until', 'offer_reader_version', 'offer_reader_inputs', '_slip_ocr_diag')
+            'approval_read_until', 'offer_reader_version', 'offer_reader_inputs', '_slip_ocr_diag',
+            'exam_year_read')
 
 
 

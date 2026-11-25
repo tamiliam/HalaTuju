@@ -218,10 +218,19 @@ Branch ll5, not pushed. Migration: none. Services: api only. Not wired to any pa
 
 - fix: STPM quiz shows Question 1 of 9 and nine dots from the start (owner 2026-11-25). Not pushed. Migration: none. Services: web.
 
+### Academic reads, phase B2: the transcript year on a third-route merit (TD-735, 2026-11-25)
+
+Not pushed. Migration: none. Services: api, web. No new AI call, no `MODEL_VERSION` bump, no backfill.
+- TD-735: a Matriculation, Asasi or Diploma student's merit shows its qualification and year, e.g. "85.4 (Matriculation 2025)", tinted amber off the expected sitting (matric/asasi C, diploma C-1 or C); no year read, the number alone. The year is the END year of the latest labelled session or polytechnic semester ("2024/2025" gives 2025), off the upload's OCR text, else the document's own title. An intake session, a print date, a course span or a bare 20xx is never read (no guess).
+- `exam_years.transcript_year` / `read_transcript_year` (reader `TRANSCRIPT_YEAR_READER` 1.0.0); `higher_results.extract` stores it as `vision_fields.exam_year_read` (kept by `_EX_KEPT`, never in the fields) for every non-STPM read; `student_higher_check` serves it, falling back to the stored title for documents read before today. STPM and SPM unchanged.
+- B1 review nits: `_ISSUER` also blanks the examination councils / syndicates, a word-bounded KPM and JABATAN PENDIDIKAN; the reviewer FAQ's tick answer and merit sentences use they/them.
+- Owner, 25 Nov ("a tick only"): the slip School chip B1 added to the Documents drawer is removed; the school still ticks on the Academic card from the certificate, then the slip (`slipSchoolVerified`). The certificate's own school chip is unchanged.
+- `verdict_engine.json` gets an `also_ok` digest (display only); `decisions.md` entry. Tests: new `test_transcript_year.py`; extended `test_slip_school`, `fieldVerification`, `officerCockpit`, `ApplicantCards.academicSlots` and `ApplicantCards.thirdRoute`.
+
 ### Academic reads, phase B1: school from the SPM slip, college read off higher results (TD-733, TD-734, 2026-11-25)
 
 Not pushed. Migration: none. Services: api, web. No new AI call, no `MODEL_VERSION` bump.
-- TD-733: the Secondary school tick also comes from the SPM results slip (the `SEKOLAH :` row of the stored page text), compared through `_school_match`; the school-leaving certificate wins when both match. `academic_compare.slip_school`, merged in the document serializer; a slip with no stored school draws no School chip. About one slip in five today (live, 25 Nov); a mismatch behaves as the certificate chip does.
+- TD-733: the Secondary school tick also comes from the SPM results slip (the `SEKOLAH :` row of the stored page text), compared through `_school_match`; the school-leaving certificate wins when both match. `academic_compare.slip_school`, merged in the document serializer. About one slip in five today (live, 25 Nov). A tick only (owner, 25 Nov): the slip's school draws no chip in the Documents drawer; a mismatch gives no tick.
 - TD-734: a Matriculation, Asasi or Diploma student's card shows "Pre-U college" read off the higher-results document, with a muted "Read from the uploaded results" note and no tick; an issuer (KEMENTERIAN and the like) shows N/A. The typed college moves to the Institution row, Stated by student. STPM unchanged. New keys `preUCollegeRead` and `readFromResults` (en, ms, ta) replace `preUInstitution`.
 - FAQ (`faq-reviewer.tsx`) and `decisions.md` updated; `verdict_engine.json` gets an `also_ok` digest (display only).
 - Tests: new `test_slip_school.py`; extended `fieldVerification`, `officerCockpit`, `ApplicantCards.thirdRoute` and `academicSlots` tests.

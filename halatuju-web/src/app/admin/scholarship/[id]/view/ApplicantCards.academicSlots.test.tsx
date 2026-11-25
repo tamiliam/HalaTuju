@@ -106,6 +106,23 @@ describe('Academic box slots', () => {
     expect(dd(MERIT)).toBe('80')
   })
 
+  // TD-735: a Matriculation / Asasi / Diploma transcript year, named by the qualification, never "SPM".
+  it.each(['matric', 'asasi', 'diploma'])('%s with a transcript year read: "(<qualification> 2025)"', (q) => {
+    renderWith({ qualification: q, merit_score: 80, documents: [higher, slip] })
+    expect(dd(MERIT)).toBe(`80 (admin.scholarship.qualificationLabel.${q} 2025)`)
+  })
+
+  it('a third-route year off the expected sitting keeps the caution tint', () => {
+    const off = { doc_type: 'higher_results', higher_check: { exam_year: '2023', exam_year_status: 'off' } }
+    renderWith({ qualification: 'diploma', merit_score: 70, documents: [off] })
+    expect(screen.getByText('(admin.scholarship.qualificationLabel.diploma 2023)').className).toContain('caution')
+  })
+
+  it('a third-route student never borrows the SPM slip year', () => {
+    renderWith({ qualification: 'matric', merit_score: 80, documents: [slip] })
+    expect(dd(MERIT)).toBe('80')
+  })
+
   it('STPM without a read year shows the bare merit, no bracket', () => {
     renderWith({ qualification: 'stpm', merit_score: 92.5, stpm_pngk: 3.7, documents: [slip] })
     expect(dd(MERIT)).toBe('92.5')

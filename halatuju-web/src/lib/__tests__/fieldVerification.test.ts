@@ -66,6 +66,11 @@ describe('fieldVerifications', () => {
       { doc_type: 'results_slip', academic_check: { name: 'match', subjects: 'not_spm', results: 'not_spm', higher_kind: 'stpm', school: 'SMK X', school_status: 'match' } },
     ]))
     expect(higher.school).toBeUndefined()
+    const wrongType = fieldVerifications(app([
+      { doc_type: 'results_slip', authenticity: { status: 'not_results_slip', reason: '', doc_seen: 'x' },
+        academic_check: { name: 'match', subjects: 'match', results: 'match', school: 'SMK X', school_status: 'match' } },
+    ]))
+    expect(wrongType.school).toBeUndefined()                 // a wrong-type upload backs nothing
   })
 
   it('ticks grades from a matched results slip', () => {

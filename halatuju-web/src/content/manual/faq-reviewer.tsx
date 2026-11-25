@@ -30,11 +30,13 @@ export const REVIEWER_FAQ: QA[] = [
         and institution rows. <strong>Matriculation, Asasi or Diploma:</strong> Secondary school alone; then
         <strong> Pre-U college</strong> (read from their uploaded results, with a grey note and no tick: the college
         they attended is not asked) and Merit score; CGPA and MUET; SPM prerequisites; then the programme,
-        reporting date and institution rows. Secondary school is always in capitals, as her documents print it. The
+        reporting date and institution rows. Secondary school is always in capitals, as their documents print it. The
         merit score carries its exam and, where we have read it, the year in brackets on the same line &mdash;
-        <em>85.4 (SPM 2024)</em> from her SPM slip, <em>92.1 (STPM 2025)</em> from her STPM results; a year off the
-        expected sitting is shown in amber. When no year has been read yet, the merit shows as the number alone, with no
-        bracket (and Matriculation, Asasi and Diploma students show the number alone, as no year is read for them yet). A grey
+        <em>85.4 (SPM 2024)</em> from their SPM slip, <em>92.1 (STPM 2025)</em> from their STPM results, and for a
+        Matriculation, Asasi or Diploma student their qualification and the year their transcript&rsquo;s session ends,
+        e.g. <em>85.4 (Matriculation 2025)</em> for a 2024/2025 session; a year off the expected sitting is shown in amber.
+        When no year has been read, the merit shows as the number alone, with no bracket; documents read before
+        25 November 2026 show a Matriculation, Asasi or Diploma year only when their title prints the session. A grey
         <strong> Stated by student</strong> line under the programme or institution means no offer letter confirms it
         yet. For a Matriculation, Asasi or Diploma student, the college they typed is the next one they plan to attend,
         so it appears on the institution row as <strong>Stated by student</strong>. <strong>N/A</strong> in a muted colour means the slot is required but empty: nothing was entered or read.
@@ -46,11 +48,12 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>Since 26 October 2026 a student may enter Matriculation, Asasi (Foundation) or Diploma results
         instead of STPM. They count as <strong>STPM-equivalent</strong>: the gift&rsquo;s minimum CGPA is
         tested on her overall CGPA, and her merit is that CGPA ÷ 4 × 100, as for an STPM student. The card
-        uses the same slots as every other student (see the next question): her merit score shows as the number alone,
-        with a <strong>Pre-U college</strong> row (read from their uploaded results, no tick), her <strong>CGPA</strong> as printed on her results
-        (Matriculation and Asasi: her overall CGPA is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall
-        CGPA is its CGPA as it is &mdash; the co-curriculum score no longer has a line of its own), her
-        <strong> MUET</strong> band and the SPM grades she entered, under <strong>SPM prerequisites</strong>
+        uses the same slots as every other student (see the next question): their merit score, with their qualification
+        and transcript year in brackets where we can read it, a <strong>Pre-U college</strong> row (read from their
+        uploaded results, no tick), their <strong>CGPA</strong> as printed on their results
+        (Matriculation and Asasi: their overall CGPA is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall
+        CGPA is its CGPA as it is &mdash; the co-curriculum score no longer has a line of its own), their
+        <strong> MUET</strong> band and the SPM grades they entered, under <strong>SPM prerequisites</strong>
         (as on an STPM card). Only a diploma from a <strong>public</strong> institution counts; a
         private-college diploma does not qualify. Her results document is the separate
         <strong> STPM / Matriculation / Asasi / Diploma results</strong> upload (see the next question).</>,
@@ -128,14 +131,15 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>What does the small blue <strong>tick</strong> beside a value mean?</>,
-      a: <>That the value is backed by a document she uploaded. The <strong>school</strong> is ticked from her
+      a: <>That the value is backed by a document they uploaded. The <strong>school</strong> is ticked from their
         school-leaving certificate <strong>or their SPM results slip</strong> (the school where they sat SPM; the
-        certificate is used first when both match); her <strong>SPM grades</strong> from her SPM results slip (one tick after the
-        subjects); her <strong>programme</strong>, <strong>institution</strong> and <strong>reporting date</strong> from
-        her own offer letter &mdash; including when we filled them in from that letter for her. No tick means
+        certificate is used first when both match); the slip&rsquo;s school is a tick only, never a chip in the
+        Documents drawer. Their <strong>SPM grades</strong> are ticked from their SPM results slip (one tick after the
+        subjects); their <strong>programme</strong>, <strong>institution</strong> and <strong>reporting date</strong> from
+        their own offer letter &mdash; including when we filled them in from that letter for them. No tick means
         no such document has been read yet, or it shows something different; it is never a sign of a problem on
-        its own. The school is always shown in capitals, as the documents print it. When she named no
-        institution, the card shows the one on her offer letter.</>,
+        its own. The school is always shown in capitals, as the documents print it. When they named no
+        institution, the card shows the one on their offer letter.</>,
     },
     {
       q: <>I pressed <strong>Re-run</strong> on an old copy and it became the live one. Why?</>,

@@ -62,6 +62,12 @@ it('shows the bare merit, no exam bracket (no year read), with ONE CGPA slot and
     'admin.scholarship.stpmGrades']) expect(screen.queryByText(gone)).toBeNull()
 })
 
+it('with a transcript year read, the merit names the qualification and year, e.g. "(Matriculation 2025)" (TD-735)', () => {
+  renderWith({ ...MATRIC, documents: [{ doc_type: 'higher_results', superseded_at: null,
+    higher_check: { institution: '', exam_year: '2025', exam_year_status: 'current' } }] } as never)
+  expect(value('admin.scholarship.meritScore')).toBe('86.75 (admin.scholarship.qualificationLabel.matric 2025)')
+})
+
 const READ_DOC = (institution: string) => ({
   doc_type: 'higher_results', superseded_at: null, higher_check: { institution },
 })

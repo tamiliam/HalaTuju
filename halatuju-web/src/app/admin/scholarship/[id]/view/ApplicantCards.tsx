@@ -272,10 +272,12 @@ export function ApplicantCards({
                   // once the year has been read off the results document (owner 2026-11-25):
                   // "85.4 (SPM 2024)". No year read -> the number alone, never "(SPM)". SPM: the
                   // slip's year. STPM: the higher-results document's year. Matriculation / Asasi /
-                  // Diploma: no year is served (the api only reads one off STPM results), so the
-                  // bare number. The bracket is tinted only when the year is off the expected sitting.
-                  const ey = third ? null : isStpm ? higherExamYear(app.documents) : spmExamYear(app.documents)
-                  const examName = t(`admin.scholarship.examName.${isStpm ? 'stpm' : 'spm'}`)
+                  // Diploma (TD-735): the higher-results document's transcript year, the END year of
+                  // its session ("2024/2025" -> 2025), named by the qualification: "85.4 (Matriculation
+                  // 2025)". The bracket is tinted only when the year is off the expected sitting.
+                  const ey = third || isStpm ? higherExamYear(app.documents) : spmExamYear(app.documents)
+                  const examName = third ? t(`admin.scholarship.qualificationLabel.${third}`)
+                    : t(`admin.scholarship.examName.${isStpm ? 'stpm' : 'spm'}`)
                   const meritValue = app.merit_score == null || (app.merit_score as unknown) === '' ? null : (
                     <>
                       {app.merit_score}

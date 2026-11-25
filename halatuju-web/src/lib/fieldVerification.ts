@@ -1,4 +1,4 @@
-import { documentFacts } from './officerCockpit'
+import { documentFacts, slipSchoolVerified } from './officerCockpit'
 import type { AdminApplicantDocument, AdminScholarshipDetail } from './admin-api'
 
 /**
@@ -101,9 +101,10 @@ export function fieldVerifications(
 
   // Academic.
   // TD-733: the school ticks from the school-leaving certificate OR the SPM slip (the school where they
-  // sat SPM, owner 2026-11-25). `set` stops at the first document that backs it, so the SLC wins.
-  if (!set('school', 'school_leaving_cert', 'school', 'schoolLeavingCert')) {
-    set('school', 'results_slip', 'school', 'resultsSlip')
+  // sat SPM, owner 2026-11-25). The certificate is tried first, so it wins. The slip's school is a tick
+  // only, never a drawer chip (owner, 25 Nov), so it is read by `slipSchoolVerified`, not a fact.
+  if (!set('school', 'school_leaving_cert', 'school', 'schoolLeavingCert') && docs.some(slipSchoolVerified)) {
+    out.school = { source: 'resultsSlip' }
   }
   // The grades tick vouches for the whole chip row — which subjects AND their grades (owner,
   // 2026-11-06, app 262: a typed subject not on the slip was flagged, yet the grades still ticked).

@@ -346,15 +346,12 @@ describe('documentFacts', () => {
       .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'partial' }, { key: 'results', status: 'verified' }])
   })
 
-  it('TD-733: a slip whose school was read adds a School chip (a mismatch drawn as the certificate does); none read adds none', () => {
+  it('TD-733: a slip school is a tick only, never a chip (owner 25 Nov), whether it matches or not', () => {
     const base = { name: 'match', subjects: 'match', results: 'match' } as const
-    expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ ...base, school: 'SMK X', school_status: 'match' }) })))
-      .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'verified' }, { key: 'results', status: 'verified' },
-        { key: 'school', status: 'verified' }])
-    expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ ...base, school: 'SMK X', school_status: 'mismatch' }) }))
-      .find((f) => f.key === 'school')?.status).toBe('not')
-    expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ ...base, school: '', school_status: 'no_ref' }) }))
-      .map((f) => f.key)).toEqual(['name', 'subjects', 'results'])
+    for (const school_status of ['match', 'mismatch', 'no_ref'] as const) {
+      expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ ...base, school: 'SMK X', school_status }) }))
+        .map((f) => f.key)).toEqual(['name', 'subjects', 'results'])
+    }
   })
 
   it('TD-734: higherCollegeRead gives the live higher-results college, or empty', () => {
