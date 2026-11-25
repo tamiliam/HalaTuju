@@ -21,7 +21,7 @@ import json
 import sys
 
 try:                                           # imported as part of the app (the web process, the tests)
-    from . import pdfium_ink_own as _own, pdfium_type3 as _t3
+    from . import pdfium_ink_own as _own, pdfium_place as _pl, pdfium_type3 as _t3
 except ImportError:                            # run as a script by `python -I`: load the siblings by path
     import importlib.util
     import os
@@ -32,8 +32,11 @@ except ImportError:                            # run as a script by `python -I`:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
-    _t3, _own = _sibling('pdfium_type3'), _sibling('pdfium_ink_own')
+    _t3, _own, _pl = _sibling('pdfium_type3'), _sibling('pdfium_ink_own'), _sibling('pdfium_place')
 T3_TOLERANCE, T3_MAX_BYTES, _type3_ok = _t3.T3_TOLERANCE, _t3.T3_MAX_BYTES, _t3.type3_ok
+# TD-740: where pdfium places each text object (`pdfium_place`)
+EDGE_PT, _IDENTITY, _page_box, _bounds, _matrix = _pl.EDGE_PT, _pl.IDENTITY, _pl.page_box, _pl.bounds, _pl.matrix
+_times, _through, _outside = _pl.times, _pl.through, _pl.outside
 
 #: Text render modes that paint (as ``pdf_pages._DRAWN_MODES``).
 DRAWN_MODES = frozenset((0, 1, 2, 4, 5, 6))
@@ -65,7 +68,7 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
     (pypdf's text of the page is blank): pdfium must place NO text object at all. Review round 2: and no XObject
     the page draws carries /OC (`pdfium_type3.page_flags`, as `_op_ink`): an OC mark is not all optional content.
     Review round 3 part 2 (``words``, the SPM words op): and no text or form object under a mark carrying
-    /ActualText (`_own_text`)."""
+    /ActualText (`_own_text`). TD-740: and every text object lies on the page box pdfium draws (`_outside`)."""
     import pypdfium2.raw as raw
     page = pdf[index]
     try:
@@ -77,9 +80,11 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
             return False
         if _t3.page_flags(_DATA[0], index)[0]:     # OCR-20 r2: an XObject with /OC (an OCMD too), as `_op_ink`
             return False
-        texts, todo = 0, [(page.raw, False, False)]          # (page or form object, is a form, under an OC mark)
+        area = _page_box(raw, page.raw)                            # TD-740: where pdfium draws the page
+        # (page or form object, is a form, under an OC mark, the holder's space to page space)
+        texts, todo = 0, [(page.raw, False, False, _IDENTITY)]
         while todo:
-            holder, is_form, under_oc = todo.pop()
+            holder, is_form, under_oc, to_page = todo.pop()
             count = raw.FPDFFormObj_CountObjects(holder) if is_form else raw.FPDFPage_CountObjects(holder)
             if count < 0:
                 raise ValueError('pdfium cannot count the objects')
@@ -94,12 +99,14 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
                 if kind == raw.FPDF_PAGEOBJ_TEXT:
                     texts += 1
                     if (blank or under_oc or _oc_marked(obj, oc_may_be_off, plain)
-                            or raw.FPDFTextObj_GetTextRenderMode(obj) not in DRAWN_MODES or (words and _own_text(obj))):
+                            or raw.FPDFTextObj_GetTextRenderMode(obj) not in DRAWN_MODES or (words and _own_text(obj))
+                            or _outside(_through(_bounds(raw, obj), to_page), area)):
                         return False
                 elif kind == raw.FPDF_PAGEOBJ_FORM:
                     if words and _own_text(obj):
                         return False
-                    todo.append((obj, True, under_oc or _oc_marked(obj, oc_may_be_off, plain)))
+                    todo.append((obj, True, under_oc or _oc_marked(obj, oc_may_be_off, plain),
+                                 _times(_matrix(raw, obj), to_page)))
         return texts > 0 or not has_alnum
     finally:
         page.close()
@@ -321,7 +328,8 @@ def _op_words(pdf, req, blobs):
     OCR-20 review round 1, its own backstop: NO words (``refused``) unless page 1 passes `_paints` strictly — every
     annotation a /Link with no /AP, every text object (forms' too) in a mode that paints (never 3 / 7) and under no
     optional-content mark at all (any OC mark may be off) and no XObject with /OC (review round 2), within
-    `WORDS_MAX_OBJECTS`; and no text under /ActualText (`_own_text`, review round 3 part 2). The whole page is
+    `WORDS_MAX_OBJECTS`; and no text under /ActualText (`_own_text`, review round 3 part 2); and no text object off
+    the page box (`_outside`, TD-740: pdfium's text page lists a word placed off the page too). The whole page is
     refused, not its hidden characters dropped: pdfium's text page (pypdfium2 4.30) does not say which object drew a character."""
     try:
         drawn = len(pdf) > 0 and _paints(pdf, 0, True, True, [WORDS_MAX_OBJECTS], frozenset(), words=True)

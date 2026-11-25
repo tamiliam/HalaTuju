@@ -73,8 +73,13 @@ class TheRound3ProbesLoseTheExactRead(SimpleTestCase):
                 self.assertEqual(_read(_pdf(*streams)), (False, '', ['']))
 
     def test_pdfium_draws_what_the_gate_would_have_read_differently(self):
-        """The disagreement is real: pdfium drew TIDAK where pypdf read only LAYAK (probe p1b)."""
-        self.assertIn('TIDAK', _words(_pdf(*PROBES['H2_p1b_x80_after_Tj'])))
+        """The disagreement is real: pdfium drew TIDAK where pypdf read only LAYAK (probe p1b). TD-740: in p1b
+        itself pdfium's relative Td puts LAYAK at y 1350, off the page, so pdfium's words op now refuses it as
+        well; this copy moves LAYAK down instead, so both stay on the page."""
+        self.assertEqual(_words(_pdf(*PROBES['H2_p1b_x80_after_Tj'])), [])
+        on_page = b'BT /F1 24 Tf 72 700 Td (TIDAK) Tj\x80 0 -50 Td (LAYAK) Tj ET'
+        self.assertEqual(_read(_pdf(on_page)), (False, '', ['']))
+        self.assertIn('TIDAK', _words(_pdf(on_page)))
 
 
 class GenuineShapesKeepTheExactRead(SimpleTestCase):

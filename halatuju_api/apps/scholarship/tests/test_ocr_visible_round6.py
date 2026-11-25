@@ -201,13 +201,14 @@ class TheStringLength(SimpleTestCase):
         # spaced, so no run of 1,024 bare bytes (a cap of its own) is what refuses them
         for show in (b'(' + b'A ' * 16_384 + b') Tj', b'<' + b'41 ' * 32_768 + b'> Tj'):
             with self.subTest(show=show[:3]):
-                self.assertFalse(_reads(_doc(b'BT /F1 12 Tf 20 150 Td ' + show + b' ET ' + TEXT, filtered=True)))
+                self.assertFalse(_reads(_doc(b'BT /F1 12 Tf 0.01 Tz 20 150 Td ' + show + b' ET ' + TEXT, filtered=True)))
 
     def test_a_string_under_the_cap_keeps_the_layer(self):
-        # the cap is on the RAW string (never shorter than its decoded bytes): 32,000 bytes pass
+        # the cap is on the RAW string (never shorter than its decoded bytes): 32,000 bytes pass (squeezed by Tz
+        # onto the page: text past the page box hides it, TD-740)
         for show in (b'(' + b'A ' * 16_000 + b') Tj', b'<' + b'41 ' * 10_000 + b'> Tj'):
             with self.subTest(show=show[:3]):
-                self.assertTrue(_reads(_doc(b'BT /F1 12 Tf 20 150 Td ' + show + b' ET ' + TEXT, filtered=True)))
+                self.assertTrue(_reads(_doc(b'BT /F1 12 Tf 0.01 Tz 20 150 Td ' + show + b' ET ' + TEXT, filtered=True)))
 
 
 class PdfiumOnlyInTheChild(SimpleTestCase):

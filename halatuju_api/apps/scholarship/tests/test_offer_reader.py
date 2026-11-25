@@ -24,14 +24,15 @@ NAME, NRIC = 'ZORBEX A/L QUENTARO', '010203-14-5678'
 
 def text_pdf(pages, size=(595, 842)):
     """A valid PDF with ONE page per string in ``pages``, each carrying that string as real text
-    (a text layer pypdf reads back)."""
+    (a text layer pypdf reads back), squeezed (Tz) to sit on the page: text past the page box hides it (TD-740)."""
     n = len(pages)
     objs = [b'<< /Type /Catalog /Pages 2 0 R >>',
             b'<< /Type /Pages /Kids [%s] /Count %d >>' % (
                 b' '.join(b'%d 0 R' % (4 + 2 * i) for i in range(n)), n),
             b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
     for i, text in enumerate(pages):
-        stream = b'BT /F1 11 Tf 40 780 Td (%s) Tj ET' % text.encode('latin-1')
+        squeeze = max(1e-3, min(100.0, 100.0 * (size[0] - 60) / (11 * 0.8 * max(1, len(text)))))
+        stream = b'BT /F1 11 Tf %.3f Tz 40 780 Td (%s) Tj ET' % (squeeze, text.encode('latin-1'))
         objs.append(b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %d %d] /Resources << /Font << /F1 3 0 R '
                     b'>> >> /Contents %d 0 R >>' % (size[0], size[1], 5 + 2 * i))
         objs.append(b'<< /Length %d >>\nstream\n%s\nendstream' % (len(stream), stream))

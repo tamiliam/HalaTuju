@@ -19,6 +19,9 @@ OCR-20: e. pdfium lists an annotation that is not a /Link with no /AP (`pdfium_w
 OCR-20 review round 1: f. pypdf's text of the page is blank but pdfium places a text object on it (the two read
    different /Contents). Every judged page is asked, a blank one too: before round 1 a blank page was skipped, so a
    page that pypdf read as blank with one plain /Link was never checked by pdfium at all.
+TD-740: g. a text object reaches past the page box pdfium draws (CropBox cut to the MediaBox) by more than
+   `pdfium_place.EDGE_PT`, or its centre lies off that box, judged in page space through every form's matrix (`pdfium_place.outside`): pypdf
+   reads text wherever it is placed, pdfium draws only the page box.
 
 Fix round 8: the pdfium part runs in `pdfium_worker` (a child process, killed at its time limit: `pdfium_run.TIMEOUT_S`
 and, round 9, the document's `pdfium_run.DOC_BUDGET_S` left).

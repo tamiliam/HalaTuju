@@ -25,8 +25,10 @@ VISION_TEXT = 'MAJLIS PEPERIKSAAN MALAYSIA SIJIL TINGGI PERSEKOLAHAN MALAYSIA TA
 
 
 def _show(text, mode=0, prefix=b''):
-    """One text object showing ``text`` in render mode ``mode``."""
-    return prefix + b'BT /F1 12 Tf ' + str(mode).encode() + b' Tr 20 150 Td (' + text.encode() + b') Tj ET'
+    """One text object showing ``text`` in render mode ``mode``, squeezed (Tz) to sit on the 300 pt page: text
+    past the page box hides the page (TD-740)."""
+    squeeze = b'%d Tz ' % max(1, min(100, 2800 // max(1, len(text))))
+    return prefix + b'BT /F1 12 Tf ' + squeeze + str(mode).encode() + b' Tr 20 150 Td (' + text.encode() + b') Tj ET'
 
 
 def _stream(dict_head, data):
@@ -120,7 +122,7 @@ class TheDetectionRule(SimpleTestCase):
         self.assertEqual(pdf_pages.pdf_text_layer(_pdf([_show(STPM_TEXT, mode=7)])), '')
 
     def test_a_mode_set_inside_q_is_restored_by_Q(self):
-        pdf = _pdf([b'q BT 3 Tr ET Q ' + b'BT /F1 12 Tf 20 150 Td (' + SPM_TEXT.encode() + b') Tj ET'])
+        pdf = _pdf([b'q BT 3 Tr ET Q ' + b'BT /F1 12 Tf 20 Tz 20 150 Td (' + SPM_TEXT.encode() + b') Tj ET'])
         self.assertIn('SIJIL PELAJARAN', pdf_pages.pdf_text_layer(pdf))
 
     def test_a_mode_left_set_after_ET_still_hides_the_next_text(self):

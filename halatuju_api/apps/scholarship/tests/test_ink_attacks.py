@@ -104,8 +104,10 @@ def _rotated(data, degrees):
     return out.getvalue()
 
 
-ATTACKS = ('white', 'grey', 'alpha', 'covered', 'image', 'clip', 'tiny', 'offpage', 'cropbox', 'samecolour',
-           'fullimage', 'undertext', 'squeeze')
+ATTACKS = ('white', 'grey', 'alpha', 'covered', 'image', 'clip', 'tiny', 'samecolour', 'fullimage', 'undertext',
+           'squeeze')
+#: TD-740: text past the page box pdfium draws hides the page's text layer before any lane runs.
+OFF_THE_PAGE = ('offpage', 'cropbox')
 
 
 def _read(data):
@@ -134,6 +136,15 @@ class TheLaneOn(SimpleTestCase):
                 self.assertEqual((why.get('lane'), why.get('reason')), (LANE, 'not_inked'), why)
                 self.assertTrue(why['ink_missing'])
                 self.assertTrue(all(lab.startswith(('p', 'v:', 'page:')) for lab in why['ink_missing']))
+
+    def test_text_off_the_drawn_page_never_reaches_the_lock(self):
+        """TD-740: a line below the MediaBox or outside the CropBox is not drawn by pdfium, so the page has no text
+        layer at all (before TD-740 the lane's ink check caught it as 'not_inked')."""
+        for mode in OFF_THE_PAGE:
+            with self.subTest(mode=mode):
+                data = build(mode)
+                self.assertEqual(pdf_pages.pdf_text_layer(data), '')
+                self.assertIsNone(_read(data)[0])
 
     def test_text_inside_a_form_never_reaches_the_lock(self):
         """A line drawn inside a form XObject, white or black: S-visible 1 already refuses the text layer (the
@@ -221,8 +232,8 @@ def _r1_line(c, mode, ln, y, strip):
 def _r1_over(c, mode, y, strip):
     if mode == 'squares':                            # a row of 60 pt black squares, text glyphs, over the line
         c.setFont('ZapfDingbats', 60)
-        for k in range(14):
-            c.drawString(24 + 42 * k, y - 15, 'n')
+        for k in range(14):                          # TD-740: all on the page (the row used to end 20 pt past
+            c.drawString(20 + 40 * k, y - 15, 'n')   # the right edge, which the layer gate now refuses first)
     elif mode == 'hyphens':                          # stroked hyphens, 16 pt wide, over the line
         t = c.beginText(26, y + 9)
         t.setFont('Courier', 9)
