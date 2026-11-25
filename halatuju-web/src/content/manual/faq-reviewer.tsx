@@ -215,8 +215,9 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>A row on an STR, payslip or EPF statement says <strong>Not read</strong>. And when does a parent&rsquo;s IC say <strong>Wrong card</strong>?</>,
-      a: <><strong>Not read</strong> (grey) means the document itself gave us nothing usable for that row &mdash; a
-        blank, or a stray mark such as a colon or a form label in place of a name. Nothing was compared, so there is no
+      a: <><strong>Not read</strong> (grey) means we could not read one side of that check: either this document
+        gave us nothing usable for that row, or the parent&rsquo;s IC it is checked against did not &mdash; a blank,
+        or a stray mark such as a colon or a form label in place of a name. Nothing was compared, so there is no
         tick, and it never turns another document amber or red. If the family&rsquo;s IC numbers already link the
         documents (the birth certificate, the parent&rsquo;s IC and the income proof), the case is unaffected; read the
         name on the page yourself if you want to be sure. When a parent&rsquo;s IC and an income document really

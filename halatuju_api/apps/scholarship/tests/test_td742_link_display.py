@@ -140,6 +140,16 @@ class TestNameGuard(SimpleTestCase):
                      'NAMA PENERIMA :'):
             self.assertEqual(clean_person_name(junk), '', junk)
 
+    def test_joining_words_alone_are_not_read(self):
+        for junk in ('BINTI', 'BIN', 'A/L', 'A/P', 'ANAK', 'S/O', 'D/O', 'NAMA : BINTI', 'NO KP A/P',
+                     'BIN BINTI'):
+            self.assertEqual(clean_person_name(junk), '', junk)
+
+    def test_real_names_with_joining_words_inside_still_pass(self):
+        for real in ('SITI BINTI ALI', 'ALI BIN AHMAD', 'KAVI A/L RAMAN', _MOTHER, 'JANET ANAK JUGAH',
+                     'MUTHU S/O RAMAN', 'DEVI D/O KRISHNAN'):
+            self.assertEqual(clean_person_name(real), real)
+
     def test_a_leading_nama_label_is_dropped_before_judging(self):
         self.assertEqual(clean_person_name('NAMA : LIM AH KOW'), 'LIM AH KOW')
         self.assertEqual(clean_person_name('nama: NG MEI LING'), 'NG MEI LING')

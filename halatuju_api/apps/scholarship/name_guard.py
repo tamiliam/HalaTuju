@@ -19,7 +19,8 @@ Rules (each is a reason the value is "not read"):
 
 * fewer than ``MIN_LETTERS`` letters (request #66 precedent: the school-leaving reader's 4-letter
   floor);
-* every word a known label word (``LABEL_WORDS``), after a leading "NAMA :" label is dropped;
+* every word a known label word (``LABEL_WORDS``) or a name-joining word (``JOINING_WORDS``:
+  BIN, BINTI, A/L, A/P, ANAK, S/O, D/O), after a leading "NAMA :" label is dropped;
 * an IC number inside the value is split off and the rest judged on its own.
 
 Pure: no Django, no I/O, so the readers can import it at module level.
@@ -42,6 +43,10 @@ LABEL_WORDS = frozenset({
     'TIDAK', 'BERKENAAN',
 })
 
+#: Words that JOIN a person's name to a parent's (split into letters where printed with a slash).
+#: Inside a real name they are kept; a value made only of these (and label words) is not a name.
+JOINING_WORDS = frozenset({'BIN', 'BINTI', 'ANAK', 'A', 'L', 'P', 'S', 'O', 'D'})
+
 #: An IC number as printed (12 digits, dashes or spaces optional).
 _NRIC_RE = re.compile(r'\d{6}\s*-?\s*\d{2}\s*-?\s*\d{4}')
 _LEAD_JUNK = re.compile(r'^[\W\d_]+')
@@ -61,7 +66,7 @@ def clean_person_name(raw) -> str:
     if sum(ch.isalpha() for ch in s) < MIN_LETTERS:
         return ''
     words = _LATIN_WORD.findall(s.upper())
-    if words and all(w in LABEL_WORDS for w in words):
+    if words and all(w in LABEL_WORDS or w in JOINING_WORDS for w in words):
         return ''
     return s
 

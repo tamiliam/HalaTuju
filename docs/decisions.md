@@ -67,9 +67,9 @@ parent IC show amber "Wrong card" and a red Name row, while the STR itself showe
   green; a value not read shows grey. The BC father row stays outside the bands (#23); the student's own IC stays strict.
 - **Review round 1 (25 Nov), how the display draws the rulings.** A reference whose name is blank or junk gives no say on
   another document (no amber, no red); while the chain holds the chain only ever upgrades to green, never paints amber.
-  A card whose own number is far from the chained number is the wrong card: it gives no say elsewhere, and the student
-  and officer both see it red on the card ("does not fit the birth certificate: wrong card, or the number was
-  misread"). A row left uncompared because the card itself was not read shows "not read", not "add their IC".
+  A card whose own number is far from the chained number is the wrong card: it gives no say elsewhere. The student sees
+  it red on the card's own rows ("does not fit the birth certificate: wrong card, or the number was misread"); the
+  officer sees the amber "Wrong card" fact (`cockpitDocFacts.ts`, unchanged). A row left uncompared because the card itself was not read shows "not read", not "add their IC".
 - **Stranger second slip (lead ruling, 25 Nov): this IS ruling 3.** When the chain is held by the first slip and a second
   slip in the group is someone else's, the red shows on THAT slip in the display. The decision stays as today (the
   chain's forced match covers the group) until Phase 2 moves decisions to the bands.
