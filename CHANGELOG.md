@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint S4a - View scholars reads a scholar's file, Manage scholar files writes it (2026-11-25)
+
+Branch access-s4-scholars, not pushed. Migration: courses 0101_grant_scholars_manage (additive data step, run in the
+publish window; release note `docs/releases/access-s4-scholars-release-note-draft.md`). Services: api. The web half is S4b.
+- **Owner Q3:** every write on a scholar's file and every letter asks Manage scholar files (`scholars.approve`); View
+  scholars reads. 0101 gives Manage to every team member holding View scholars (4 live) and removes nothing.
+- **Q-B:** tranches, disbursement actions and on hold past the award ask View scholars + Payments: Prepare
+  (`views_admin/base.py` `may_act_on_money`, `may_hold`); the file serves `can_hold` from the same rule.
+- **Q-E:** the admin preset does not gain the key; a member newly invited to Admins reads the file and changes nothing.
+- **Q-F:** letters issue and preview refuse 403 to View alone; with Manage every kind, Resend and Withdraw.
+- `scholars.approve` is no longer flagged lead-only (data only). TD-597 closed (accepted, Q-A); TD-598 closed.
+- Tests: the access matrix gains `admin_invited_a`, `scholars_viewer_a`, `scholars_manager_a`, `manage_only_a` and
+  `test_scholar_files_open_by_switch` (no existing cell changed); `test_s4_nobody_changes.py` (no group seat, key or
+  door moves but the grant); the factory applies 0101 (`pre_s4=True` stops before it).
+
 ### refactor: sprint M4b review round 1 - stale-step refusal, readers see no staff emails, pre-0100 pinned (2026-11-24)
 
 Branch access-s3-m4b, not pushed. Migration: none. Services: both. From the independent Opus adversarial review of

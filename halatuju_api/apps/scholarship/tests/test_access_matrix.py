@@ -469,3 +469,100 @@ def test_a_case_stage_decides_who_writes(world, stage, method, route):
             if (role in allow) == (code in HIDE) or broke:
                 wrong.append(f'{seed["status"]} {role}: {code}')
     assert not wrong, f'{stage} {method} {route}: allowed {sorted(allow)}, but ' + ', '.join(wrong)
+
+
+# ── S4 (owner Q3, Q-B, Q-E, 25 Nov): a scholar's file by switches, not labels ───────────────────────────
+#: Reading a file is View scholars (`scholars`); every change to it is Manage scholar files (`scholars.approve`).
+#: app_a is ACTIVE with a file, so every scholars/ POST and the past-award case writes below are file writes.
+SCHOLARS_ROUTES = 'api/v1/admin/scholarship/scholars/'
+SCHOLAR_CASE_WRITES = {(f'api/v1/admin/scholarship/applications/<int:pk>/{tail}', 'post')
+                       for tail in ('reporting-date/', 'maintenance/', 'close/', 'cancel-decline/')}
+SCHOLAR_WRITE_PAIRS = sorted({p for p in PAIRS if p[0].startswith(SCHOLARS_ROUTES) and p[1] != 'get'
+                              and '/mentoring/' not in p[0]} | SCHOLAR_CASE_WRITES)
+SCHOLAR_READ_PAIRS = sorted({(f'{SCHOLARS_ROUTES}<int:pk>/{tail}', 'get')
+                             for tail in ('', 'results/', 'letters/', 'activity/')} & set(PAIRS))
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('route,method', SCHOLAR_WRITE_PAIRS, ids=lambda v: v if isinstance(v, str) else None)
+def test_scholar_files_open_by_switch(world, route, method):
+    """Manage scholar files writes, as org admin A does; View scholars alone, and a member newly invited to
+    Admins (the admin preset only: View on, Manage off, owner Q-E), are refused."""
+    got = {role: _passes(world, role, route, method)
+           for role in ('org_admin_a', 'admin_a', 'scholars_manager_a', 'scholars_viewer_a', 'admin_invited_a')}
+    assert got == {'org_admin_a': True, 'admin_a': True, 'scholars_manager_a': True,
+                   'scholars_viewer_a': False, 'admin_invited_a': False}, f'{method.upper()} {route}: {got}'
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('route,method', SCHOLAR_READ_PAIRS, ids=lambda v: v if isinstance(v, str) else None)
+def test_scholar_files_read_by_view(world, route, method):
+    got = {role: _passes(world, role, route, method) for role in (*access_world.SCHOLAR_CALLERS, 'manage_only_a')}
+    assert all(got.values()), f'{method.upper()} {route}: View scholars (or Manage, which brings it) reads; {got}'
+
+
+def test_the_scholar_routes_are_served():
+    assert len(SCHOLAR_WRITE_PAIRS) >= 8 and SCHOLAR_CASE_WRITES <= set(PAIRS), SCHOLAR_WRITE_PAIRS
+    assert len(SCHOLAR_READ_PAIRS) >= 3, SCHOLAR_READ_PAIRS
+
+
+#: Where the newly invited member (admin preset only, owner Q-E) and `admin_a` (the preset after 0101) differ:
+#: every past-award write on app_a's case and file, and nothing else (every read the same; money per Q-B).
+INVITED, INVITED_LIKE = 'admin_invited_a', 'admin_a'
+_PAST_AWARD_WRITES = {*SCHOLAR_WRITE_PAIRS, *(
+    (f'api/v1/admin/scholarship/applications/<int:pk>/{tail}', method) for tail, method in (
+        ('', 'patch'), ('hold-award/', 'post'), ('finalise-profile/', 'post'), ('verify-accept/', 'post'),
+        ('suggest-gaps/', 'post'), ('interview-slots/', 'post'), ('reject/', 'post'), ('profile/', 'put'),
+        ('request-info/', 'post'), ('publish/', 'post'), ('referees/', 'post'), ('anon-profile/publish/', 'post'),
+        ('referees/<int:ref_id>/', 'delete'), ('resolution-items/', 'post'),
+        ('documents/<int:doc_id>/re-run-vision/', 'post'), ('generate-profile/', 'post'), ('interview/', 'post'),
+        ('record-verdict/', 'post'), ('interview/submit/', 'post'), ('interview/reopen/', 'post'),
+        ('submit-decline/', 'post'))),
+    ('api/v1/admin/scholarship/resolution-items/<int:item_id>/<str:action>/', 'post')}
+INVITED_DIFFERS = {**{p: 'a past-award write on the scholar file or case: Manage scholar files'
+                      for p in _PAST_AWARD_WRITES},
+                   ('api/v1/admin/scholarship/withdrawal-requests/<int:pk>/cancel/', 'post'):
+                       'only the maker cancels a withdrawal request (the seeded one is admin_a\'s)'}
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('route,method', [p for p in PAIRS if p[0] not in INTERNAL_ROUTES],
+                         ids=lambda v: v if isinstance(v, str) else None)
+def test_a_newly_invited_admin_reads_and_never_changes_a_scholar_file(world, route, method):
+    lead, invited = _passes(world, INVITED_LIKE, route, method), _passes(world, INVITED, route, method)
+    differs = (route, method) in INVITED_DIFFERS
+    assert invited == (lead and not differs), (
+        f'{method.upper()} {route}: admin_a {"passes" if lead else "is refused"}, the newly invited member '
+        f'{"passes" if invited else "is refused"}' + (f' (listed: {INVITED_DIFFERS[(route, method)]})'
+                                                      if differs else ''))
+
+
+def test_the_invited_differences_are_still_served():
+    assert set(INVITED_DIFFERS) <= set(PAIRS), sorted(set(INVITED_DIFFERS) - set(PAIRS))
+
+
+@pytest.mark.django_db
+def test_money_on_a_scholar_file_is_view_plus_prepare(world):
+    """Owner Q-B: a tranche, release, withhold, return or hold past the award = View scholars + Payments:
+    Prepare; Manage scholar files is never a second key to money (and never enough without Prepare)."""
+    routes = [('api/v1/admin/scholarship/applications/<int:pk>/disbursements/', 'post'),
+              ('api/v1/admin/scholarship/disbursements/<int:pk>/<str:action>/', 'post')]
+    got = {role: [_passes(world, role, r, m) for r, m in routes]
+           for role in ('admin_invited_a', 'scholars_viewer_a', 'scholars_manager_a', 'payments_holder_a')}
+    assert got == {'admin_invited_a': [True, True], 'scholars_viewer_a': [False, False],
+                   'scholars_manager_a': [False, False], 'payments_holder_a': [False, False]}, got
+    url = f'/api/v1/admin/scholarship/applications/{world.app_a.pk}/maintenance/'
+    hold = {}
+    for role in ('admin_invited_a', 'scholars_viewer_a', 'scholars_manager_a'):
+        cache.clear()
+        with transaction.atomic():
+            hold[role] = world.clients[role].post(url, {'substate': 'on_hold'}, format='json').status_code
+            transaction.set_rollback(True)
+    assert hold['admin_invited_a'] not in HIDE and hold['scholars_viewer_a'] in HIDE \
+        and hold['scholars_manager_a'] in HIDE, hold
+
+
+@pytest.mark.django_db
+def test_manage_alone_reads_a_scholar_file(world):
+    """Manage scholar files brings View scholars on the server too (`holds_scholars_key` reads the v2 view)."""
+    assert _passes(world, 'manage_only_a', 'api/v1/admin/scholarship/scholars/<int:pk>/', 'get')

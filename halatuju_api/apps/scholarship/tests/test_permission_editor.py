@@ -503,7 +503,7 @@ class TestPeopleChipsAndPause(TestCase):
         cls.fin = make_admin('finance', owning_org=cls.org,
                              permissions=['review', 'payments_approve'])
         cls.checker = make_admin('reviewer', owning_org=cls.org, permissions=['see_all', 'qc'])
-        cls.plain = make_admin('admin', owning_org=cls.org)
+        cls.plain = make_admin('admin', owning_org=cls.org, pre_s4=True)   # S4: the admin preset (Q-E), not 0101's grant
 
     def test_the_staff_list_serves_the_chips(self):
         rows = {a['id']: a for a in
@@ -673,7 +673,7 @@ class TestPersonPageReadsTheHistory(TestCase):
         cls.org, cls.other = make_org(), make_org()
         cls.org_admin = make_admin('org_admin', owning_org=cls.org, name='Priya Lead')
         cls.super = make_admin('super', super_admin=True)
-        cls.target = make_admin('admin', owning_org=cls.org, first_seen_at=SEEN)
+        cls.target = make_admin('admin', owning_org=cls.org, first_seen_at=SEEN, pre_s4=True)   # S4: the admin preset (Q-E), not 0101's grant
 
     def _get(self, who, target=None):
         return authed_client(who).get(_url(target or self.target))

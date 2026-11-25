@@ -12,11 +12,12 @@ it read by the Applications rule (`_b40_scope`; decisions.md 2026-10-29, superse
   * anyone else — 403: `review`, `qc` and `see_all` (Applications) alone open nothing here.
 Across organisations the answer is 404, never 403.
 WRITES on a scholar file (accepting or querying a result, letters, activity notes — `_may_write_file`)
-are for `scholars` holders across their own organisation, no longer only the assignee, and no longer
-`qc`; a closed file is read-only (409 `file_closed`). Placing a hold stays on the cockpit door
-(`AdminMaintenanceSubstateView`, payments rights), as do the sub-state and Close (`_can_review_app`,
-shared with Applications — past the award it asks this same `scholars` test, POST-AWARD-CUT 2026-11-17;
-`_may_write_file` now lives on `_AdminBase`). Nothing here is ever served to a student.
+are for "Manage scholar files" holders (`scholars.approve`, S4 owner Q3) across their own organisation,
+no longer only the assignee, and no longer `qc`; View scholars alone reads; a closed file is read-only
+(409 `file_closed`). Placing a hold stays on the cockpit door (`AdminMaintenanceSubstateView`: View
+scholars + Payments: Prepare, owner Q-B, `base.may_hold`), as do the sub-state and Close
+(`_can_review_app`, shared with Applications — past the award it asks this same write test,
+POST-AWARD-CUT 2026-11-17; `_may_write_file` now lives on `_AdminBase`). Nothing here is ever served to a student.
 """
 from django.db.models import Q
 from rest_framework import status
@@ -28,7 +29,7 @@ from apps.courses import public as courses_public
 from .. import activity, activity_people, mentor_desk, mentoring, scholars
 from ..maintenance_scope import has_file, is_in_maintenance
 from ..models import SemesterResult, StudentActivity
-from .base import _AdminBase, scholars_scope
+from .base import _AdminBase, may_hold, scholars_scope
 
 
 def _staff_names(emails):
@@ -163,7 +164,6 @@ class AdminScholarFileView(_ScholarsBase):
         app, admin, err = self._file_for(request, pk)
         if err:
             return err
-        from .. import payments
         as_mentor = self._as_mentor(admin)
         body = scholars.file_payload(app, with_internal=not as_mentor)
         if not (as_mentor or mentoring.may_read_mentoring(admin)):  # S7b: the Mentoring tab's readers' only
@@ -171,7 +171,7 @@ class AdminScholarFileView(_ScholarsBase):
         writes = not as_mentor
         return Response({**body, 'mentor_view': as_mentor, 'controls': scholars.controls(
             app, can_write=writes and self._can_review_app(admin, app),
-            can_hold=writes and payments.may_prepare(admin),
+            can_hold=writes and may_hold(admin, app),            # S4: the offer equals the door
             can_review_results=writes and self._may_write_file(admin, app),
             can_write_activity=writes and self._may_write_file(admin, app))})
 

@@ -124,8 +124,9 @@ class AddToReviewers(_Base):
         self.assertEqual(r.status_code, 200, r.content[:300])
         adm = self.fresh(adm)
         self.assertEqual(adm.role, 'admin')
+        # M2b: the v2 part is untouched. S4: courses 0101 gave the admin row Manage scholar files; it stays.
         self.assertEqual(adm.permissions, ['review', 'see_all', 'scholars', 'spending', 'payments_prepare',
-                                           *v2.ADMIN_PRESET_V2])   # M2b: the v2 part is untouched
+                                           *v2.v2_order((*v2.ADMIN_PRESET_V2, 'scholars.approve'))])
         self.assertEqual(st.tables(adm), ('admins', 'reviewers'))
 
     def test_a_finance_person_gets_review_and_keeps_approving(self):
@@ -448,9 +449,11 @@ class Invitations(TestCase):
             self.assertEqual(r.status_code, 200, role)
             account.refresh_from_db()
             self.assertIsNotNone(account.first_seen_at, role)
-            # M2b: an admin row is the shape 0097 left it in (preset materialised + ADMIN_PRESET_V2).
+            # M2b: an admin row is the shape 0097 left it in (preset materialised + ADMIN_PRESET_V2); S4: then
+            # 0101 appended Manage scholar files (pending rows alike, so a Restore gives back what was held).
             self.assertEqual(account.permissions,
-                             [*sp.preset_for(role), *v2.ADMIN_PRESET_V2] if role == 'admin' else None, role)
+                             [*sp.preset_for(role), *v2.ADMIN_PRESET_V2, 'scholars.approve'] if role == 'admin'
+                             else None, role)
             self.assertEqual(sp.resolve(account), sp.preset_for(role), role)
             self.assertEqual(r.json()['permissions'], list(sp.preset_for(role)), role)
             inv.refresh_from_db()
@@ -532,7 +535,7 @@ class ChangeRoleUnderT2(TestCase):
 
     def test_a_switch_out_equal_to_the_new_preset_is_the_preset_on_both_parts(self):
         # M2b (D7): NULL needs an empty v2 part, so an Admin on its preset stores both parts, not Custom.
-        fin = make_admin('finance', owning_org=self.org,
+        fin = make_admin('finance', owning_org=self.org, pre_s4=True,      # S4: the list as the preset holds it
                          permissions=['see_all', 'scholars', 'spending', 'payments_prepare'])
         self.assertEqual(self.switch(fin, 'admin').status_code, 200)
         fin.refresh_from_db()

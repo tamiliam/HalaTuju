@@ -51,7 +51,7 @@ class _Base(TestCase):
         self.org_admin = make_admin('org_admin', owning_org=self.org)
         self.reviewer = make_admin('reviewer', owning_org=self.org)
         type(self.app).objects.filter(pk=self.app.pk).update(assigned_to=self.reviewer)
-        self.officer = make_admin('admin', owning_org=self.org)    # holds `scholars`, not the assignee
+        self.officer = make_admin('admin', owning_org=self.org)    # View + Manage (0101), not the assignee
         self.app.refresh_from_db()
         patcher = patch(UPLOAD, return_value=True)
         self.upload = patcher.start()
@@ -65,16 +65,21 @@ class _Base(TestCase):
 
 
 class TestWhoMayIssue(_Base):
-    def test_org_admin_issues_every_kind_and_a_scholars_holder_only_the_ordinary_ones(self):
-        for kind in ('general', 'discipline', 'suspension', 'termination', 'close_out'):
-            with self.subTest(kind=kind):
-                r = self._issue(self.org_admin, kind=kind, clause='9', confirm_name=self.name)
-                self.assertEqual(r.status_code, 201, r.content)
-        for kind, code in (('general', 201), ('discipline', 201), ('close_out', 201),
-                           ('suspension', 403), ('termination', 403)):
-            with self.subTest(officer=kind):
-                r = self._issue(self.officer, kind=kind, clause='5', confirm_name=self.name)
-                self.assertEqual(r.status_code, code, r.content)
+    def test_manage_scholar_files_issues_every_kind_and_view_scholars_none(self):
+        """S4 (owner Q3, Q-F): one rule. The organisation admin and a team member holding Manage scholar files
+        (the admin preset after courses 0101) issue every kind, suspension and termination included (the
+        day-one gain); a member newly invited to Admins holds View scholars only (owner Q-E) and issues none."""
+        for who in (self.org_admin, self.officer):
+            for kind in ('general', 'discipline', 'suspension', 'termination', 'close_out'):
+                with self.subTest(who=who.role, kind=kind):
+                    r = self._issue(who, kind=kind, clause='9', confirm_name=self.name)
+                    self.assertEqual(r.status_code, 201, r.content)
+        invited = make_admin('admin', owning_org=self.org, pre_s4=True)
+        self.assertNotIn('scholars.approve', invited.permissions)
+        for kind in ('general', 'suspension'):
+            with self.subTest(invited=kind):
+                self.assertEqual(self._issue(invited, kind=kind, clause='5', confirm_name=self.name).status_code,
+                                 403)
 
     def test_others_are_refused(self):
         unassigned = make_admin('reviewer', owning_org=self.org)
@@ -90,12 +95,15 @@ class TestWhoMayIssue(_Base):
         self.assertFalse(Letter.objects.exists())
 
     def test_the_tab_says_what_this_admin_may_issue(self):
-        body = authed_client(self.officer).get(API.format(self.app.id)).json()
-        self.assertEqual(body['can_issue'], ['general', 'discipline', 'close_out'])
-        self.assertFalse(body['can_withdraw'])
-        body = authed_client(self.org_admin).get(API.format(self.app.id)).json()
-        self.assertEqual(body['can_issue'], list(svc.KINDS))
-        self.assertEqual(body['response_days'], 14)
+        for who in (self.officer, self.org_admin):
+            body = authed_client(who).get(API.format(self.app.id)).json()
+            self.assertEqual(body['can_issue'], list(svc.KINDS))
+            self.assertEqual(body['can_resend'], list(svc.KINDS))          # S4: served, never derived
+            self.assertTrue(body['can_withdraw'])
+            self.assertEqual(body['response_days'], 14)
+        invited = make_admin('admin', owning_org=self.org, pre_s4=True)   # View scholars only (Q-E)
+        body = authed_client(invited).get(API.format(self.app.id)).json()
+        self.assertEqual((body['can_issue'], body['can_resend'], body['can_withdraw']), ([], [], False))
 
 
 class TestTheTypedConfirm(_Base):

@@ -290,6 +290,7 @@ _M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')
 _M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
 _M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')
 _M0100 = import_module('apps.courses.migrations.0100_store_org_admin_powers')
+_M0101 = import_module('apps.courses.migrations.0101_grant_scholars_manage')
 #: M3c: the list a live organisation admin row stored after 0098 then 0099 (0099 APPENDS
 #: `scholars.approve`, so it sits last, not in catalogue order). `make_admin(..., pre_m4a=True)` makes it.
 ORG_ADMIN_PRE_M4A = (*_M0098.PLANNED[0], _M0099.KEY)
@@ -309,7 +310,7 @@ def m4a_display(keys):
 
 
 def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False, uid=None, pre_m2b=False,
-               pre_m3=False, pre_m4a=False, **kw):
+               pre_m3=False, pre_m4a=False, pre_s4=False, **kw):
     """A ``PartnerAdmin``. ``role`` is any of ``PartnerAdmin.ROLE_CHOICES``; ``super_admin=True``
     sets the platform-super flag (which most permission code reads instead of the role).
 
@@ -335,6 +336,11 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
 
     ⚠ M4a: then 0100 adds `organisation.admin` (`0100.plan_row`), as every live stored list holds it after
     the data step. ``pre_m4a=True`` stops after 0099 (``pre_m3`` / ``pre_m2b`` imply it).
+
+    ⚠ S4: then 0101 gives "Manage scholar files" (`scholars.approve`) to every team row holding View scholars
+    (`0101.plan_row`), as every live stored list holds it after the data step. ``pre_s4=True`` stops after 0100
+    (``pre_m4a`` implies it): the row as it stood before 0101, which is ALSO the shape of a team member newly
+    invited to Admins after it (owner Q-E: the admin preset brings View scholars on and Manage off).
     """
     if role not in dict(PartnerAdmin.ROLE_CHOICES):
         raise _StageError(
@@ -368,11 +374,13 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
             PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[1])
             admin.permissions = plan[1]
     if not (pre_m2b or pre_m3) and not super_admin:
-        for step in ((_M0098, _M0099) if pre_m4a else (_M0098, _M0099, _M0100)):
+        steps = (_M0098, _M0099) if pre_m4a else (_M0098, _M0099, _M0100) if pre_s4 \
+            else (_M0098, _M0099, _M0100, _M0101)
+        for step in steps:
             plan = step.plan_row(admin.role, admin.permissions)
-            if plan is not None:
-                PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[1])
-                admin.permissions = plan[1]
+            if plan is not None:            # 0098-0100: (before, after); 0101: (kind, before, after)
+                PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[-1])
+                admin.permissions = plan[-1]
     if gifts:
         from apps.courses import staff_gift
         staff_gift.set_gifts(admin, gifts)

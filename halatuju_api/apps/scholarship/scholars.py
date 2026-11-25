@@ -379,7 +379,8 @@ def controls(app, *, can_write, can_hold, can_review_results=None, can_write_act
         `file_closed`). Its own key (sprint S1): S4 moves the file write key, S5 gives mentors notes;
       * `can_set_substate` — may write this case (`_can_review_app`) and the case takes a sub-state
         (`maintenance.can_set_substate`);
-      * `can_hold` — may move it to or from `on_hold`: payments rights (`payments.may_prepare`, S1 M1);
+      * `can_hold` — may move it to or from `on_hold`: the door's own rule (`views_admin.base.may_hold`: the
+        case half and Payments: Prepare, owner Q-B; S4 served it as the door, not the payments key alone);
       * `close_reasons` — the closure table for this status (`closure.reasons_for`), empty when the
         close would be refused;
       * `close_refusal` — `sponsorship_open` for an AWARDED case still holding the sponsor's offer or

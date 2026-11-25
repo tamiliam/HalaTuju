@@ -71,7 +71,7 @@ class Served(TestCase):
         self.assertNotIn(spa.SCHOLARS_NEEDED, gone['consequences'])
 
     def test_taking_scholars_from_an_admin_names_the_engagement_pages(self):
-        admin = make_admin('admin', owning_org=self.org)
+        admin = make_admin('admin', owning_org=self.org, pre_s4=True)   # S4: the admin preset (Q-E), not 0101's grant
         asked = [k for k in spa.held_set(admin) if k != 'scholars']
         dry = _patch(self.lead, admin, asked, dry_run=True).json()
         self.assertEqual(dry['v2_gaps'], ['announcements', 'surveys', 'development', 'mentoring'])

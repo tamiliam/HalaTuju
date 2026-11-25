@@ -15,12 +15,12 @@ from .. import surface_gates
 from ..models import Disbursement, Programme, ScholarshipApplication
 
 from .applications import _detail_payload
-from .base import _AdminBase, _id_or_no_match, tranche_key_held
+from .base import _AdminBase, _id_or_no_match, may_act_on_money, may_write_case, tranche_key_held
 
 
 def _tranche_refusal(admin, app):
-    """POST-AWARD-CUT. The case rule has already opened the file (past the award: the Scholars key,
-    which grants no tranche step). Past an open case a tranche write (schedule, release, withhold,
+    """POST-AWARD-CUT. The case half has already opened the file (`may_act_on_money`; past the award View
+    scholars, owner Q-B, which grants no tranche step). Past an open case a tranche write (schedule, release, withhold,
     return, mark_due) is DECIDED by the payments key, `payments.may_prepare` (owner 18 Nov: "Payments
     is a separate page. So the permissions are separate."), via `base.tranche_key_held`, the same
     predicate the detail serves as `can_tranche`. Not `payments_approve`: that is a payment run's final
@@ -105,7 +105,7 @@ class AdminDisbursementScheduleView(_AdminBase):
     `_tranche_refusal`. Returns the refreshed application detail (the cockpit re-renders its
     disbursement panel)."""
     def post(self, request, pk):
-        app, admin, err = self._require_app_write(request, pk)
+        app, admin, err = self._require_app_write(request, pk, judge=may_act_on_money)   # S4 Q-B
         if err:
             return err
         refusal = _tranche_refusal(admin, app)
@@ -146,8 +146,8 @@ class AdminDisbursementActionView(_AdminBase):
                 .filter(pk=pk).first())
         if disb is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        # The case rule (`_can_review_app`), then the payments key past the open case.
-        if not self._can_review_app(admin, disb.application):
+        # The case half of a money act (S4 Q-B: past the award, the read), then the payments key.
+        if not may_act_on_money(admin, disb.application):
             return self._deny_role()
         refusal = _tranche_refusal(admin, disb.application)
         if refusal:
@@ -198,10 +198,14 @@ class AdminMaintenanceSubstateView(_AdminBase):
     ⚠ A move TO or FROM `on_hold` is a MONEY act (adversarial review M1): placing a hold takes the
     student out of open payment runs and clears a signed run's signatures. So it needs what
     preparing a run needs — `payments.may_prepare` (super, the organisation admin, or a
-    `payments_prepare` holder) — on top of `_require_app_write`; anyone else is 403
-    `hold_needs_payments`. probation / on_track / ready_to_close stay with the app-write gate."""
+    `payments_prepare` holder) — on top of the case half; anyone else is 403 `hold_needs_payments`.
+    S4 (owner Q-B, 25 Nov): that case half is `may_act_on_money` (past the award: View scholars, never
+    "Manage scholar files"); probation / on_track / ready_to_close stay with the app-write gate (Manage)."""
     def post(self, request, pk):
-        app, admin, err = self._require_app_write(request, pk)
+        def judge(admin, app):
+            moves_hold = 'on_hold' in (request.data.get('substate'), app.maintenance_substate)
+            return (may_act_on_money if moves_hold else may_write_case)(admin, app)
+        app, admin, err = self._require_app_write(request, pk, judge=judge)
         if err:
             return err
         from .. import payments

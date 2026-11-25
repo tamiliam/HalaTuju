@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-25 — View scholars and Manage scholar files (sprint S4a, server half)
+
+Owner rulings, 25 Nov (programme ACCESS-BY-SWITCHES S4, brief `docs/plans/2026-11-24-s4-scholars-split-brief.md`).
+Services: api. Migration: courses 0101 (additive data step, run in the publish window).
+- **Q3, the split.** View scholars (`scholars`, v2 `scholars.view`) reads a scholar's file; every write on it, every
+  letter included, asks Manage scholar files (`scholars.approve`, door `scholar_files`, `views_admin.base.may_write_file`).
+  Manage implies View. **0101** appends the key to every team row holding `scholars` (4 live), whatever its stored
+  label, so today's file writers keep their write power; it removes nothing.
+- **Q-B, money past the award.** A tranche, a disbursement action and putting a scholar on hold (or lifting it) ask
+  View scholars + Payments: Prepare (`base.may_act_on_money`, `may_tranche`, `may_hold`), never Manage as a second key.
+  `may_tranche` no longer asks `may_write_case` past the award (it did through Manage); before the award it still
+  does. The file's `can_hold` is served from `may_hold`, the same rule as the door.
+- **Q-E, the preset.** `ADMIN_PRESET_V2` does not gain the key: a team member newly invited to Admins starts with View
+  on and Manage off; an organisation admin switches Manage on.
+- **Q-F, letters.** With Manage the letters tab offers every kind (suspension and termination included), Resend and
+  Withdraw; View alone reads the letters and sends none (the issue and preview POSTs refuse 403 before reading the
+  body).
+- **`scholars.approve` is no longer flagged lead-only** in `CATALOGUE_V2` (data only since M3c; no behaviour moves):
+  0101 stores it on team rows.
+- **Q-A:** Surveys and Development keep their own keys (TD-597 closed, accepted). TD-598 closed (M3c + S4a).
+- Groups are unchanged: holding a switch never places anyone in a group (`in_admins` deriving from keys is a stopgap
+  until S6). `test_s4_nobody_changes.py` pins that no group seat, old key or door moves but the 0101 grant.
+
 ## 2026-11-23 — Sponsor credits and the Vircle ID on Payments switches (sprint M4b)
 
 Owner rulings, 23 Nov (programme ACCESS-BY-SWITCHES S3). Services: both. Migration: none, but the sprint lands WITH or
@@ -21269,6 +21292,6 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 ## 2026-11-25 - Scholars switches split: owner rulings on the S4 brief (owner, 2026-11-25)
 
 **Decision:** the four Scholars switches stay four. Switch 1 ("The scholars page and every scholar's file", `scholars`) becomes VIEW ONLY; switch 4 (`scholars.approve`) is renamed "Manage scholar files", moves to second place and carries every everyday file write plus suspension and termination letters (Q3, 19 Nov). Rulings on the brief (`docs/plans/2026-11-24-s4-scholars-split-brief.md`): Q-A Surveys and Development keep their own keys (TD-597 accepted); Q-B money on a scholar's file = View scholars + Payments: Prepare; Q-C mentoring and lesson work stay on their own switches; Q-E a new Admin starts with View ON and Manage OFF (the admin preset does not gain `scholars.approve`).
-**Reviewers (owner):** "Reviewers have nothing to do with scholars. Only admins do, based on permissions given them." The data step (courses 0101) gives Manage only to `scholars` holders who sit in Admins, and takes the Scholars keys off any team row that holds them outside Admins (live: one reviewer, carried over by 0095 from `see_all`). The editor draws the Scholars row only for Admins members and the org admin; the server rule waits for S6 (groups first).
+**Team members, not roles (owner, corrected 25 Nov):** "There are NO permanent reviewers or admins. There are team members who could be added to admins, reviewers and mentors groups." 0101 grants Manage to every `scholars` holder whatever the stored label (live: the 4 team members in Admins who hold View scholars) and removes nothing. A group offers switches and a member holds some of them; a switch never places anyone in a group (`staff_tables.in_admins` reading keys is today's stopgap until S6 / S6b). Phone-check count: 4. The editor keeps the Scholars row as today; stored group membership is S6 / S6b.
 **Why:** Q3 (one admin switch for file upkeep); groups first, switches second (24 Nov).
-**Revisit if:** a non-admin role is ever meant to keep scholar files.
+**Revisit if:** scholar files are ever meant to be kept outside Admins.

@@ -84,7 +84,7 @@ class Save(TestCase):
         self.assertIsNone(self.fresh(a).permissions)
 
     def test_the_admin_preset_on_both_parts_is_not_custom_and_an_unchanged_save_writes_nothing(self):
-        a = make_admin('admin', owning_org=self.org)                        # the post-0097 shape
+        a = make_admin('admin', owning_org=self.org, pre_s4=True)           # the post-0097 shape; S4: the preset (Q-E)
         self.assertFalse(sp.is_custom(a))
         self.assertEqual(sp.preset_diff(a), ([], []))
         r = _patch(self.lead, a, [*ADMIN, *v2.ADMIN_PRESET_V2], v2=True)
@@ -100,7 +100,7 @@ class Save(TestCase):
         self.assertEqual(self.fresh(rev).permissions, ['review', 'team.view', 'mentoring.view', 'mentoring.edit'])
 
     def test_a_tab_without_the_v2_flag_keeps_the_stored_v2_keys(self):
-        a = make_admin('admin', owning_org=self.org)
+        a = make_admin('admin', owning_org=self.org, pre_s4=True)   # S4: the admin preset (Q-E), not 0101's grant
         r = _patch(self.lead, a, ['see_all', 'scholars', 'payments_prepare'])          # Spending off
         self.assertEqual(r.status_code, 200, r.content[:300])
         self.assertEqual(r.json()['permissions'], ['see_all', 'scholars', 'payments_prepare'])
@@ -128,7 +128,7 @@ class Get(TestCase):
     def test_the_v2_keys_by_group_with_reasons(self):
         org = make_org()
         lead = make_admin('org_admin', owning_org=org)
-        a = make_admin('admin', owning_org=org, first_seen_at=None)
+        a = make_admin('admin', owning_org=org, first_seen_at=None, pre_s4=True)   # S4: the admin preset (Q-E), not 0101's grant
         body = authed_client(lead).get(_url(a)).json()
         self.assertEqual([g['group'] for g in body['v2_keys']], list(v2.GROUPS))
         keys = {k['key']: k for g in body['v2_keys'] for k in g['keys']}
@@ -181,7 +181,7 @@ class TableMoves(TestCase):
         self.assertEqual((target.permissions, st.tables(target)), (None, ('reviewers',)))
 
     def test_add_to_reviewers_keeps_the_v2_part(self):
-        a = make_admin('admin', owning_org=self.org)
+        a = make_admin('admin', owning_org=self.org, pre_s4=True)   # S4: the admin preset (Q-E), not 0101's grant
         target, plan = sta.change(a.pk, sta.REVIEWERS, 'add', by=self.lead)
         target.refresh_from_db()
         self.assertEqual(target.permissions, ['review', *ADMIN, *v2.ADMIN_PRESET_V2])
