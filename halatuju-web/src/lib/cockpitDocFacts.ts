@@ -221,6 +221,10 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
       { key: 'subjects', status: st(c.subjects) },
       { key: 'results', status: st(c.results) },
     ]
+    // TD-733: the school the SPM slip prints, against the student's own. Only when the slip's text was
+    // kept and a school was read (no read = no chip, never a grey one on four slips in five). A
+    // mismatch is drawn exactly as the school-leaving certificate's school chip is.
+    if (!c.higher_kind && (c.school || '').trim()) facts.push({ key: 'school', status: st(c.school_status) })
     if (gf) facts.push(gf)
     return facts
   }
@@ -439,6 +443,18 @@ export function higherExamYear(documents: AdminApplicantDocument[] | undefined):
   const check = doc?.higher_check
   if (!check) return null
   return { year: (check.exam_year || '').trim(), status: check.exam_year_status || '' }
+}
+
+/**
+ * The college a Matriculation / Asasi / Diploma student's higher-results document PRINTS
+ * (`higher_check.institution`, TD-734): shown as read, with no tick. '' when none is read (the api
+ * already blanks an issuer such as KEMENTERIAN in place of a college).
+ */
+export function higherCollegeRead(documents: AdminApplicantDocument[] | undefined): string {
+  const doc = (documents || []).find(
+    (d) => d.doc_type === 'higher_results' && !d.superseded_at && !!(d.higher_check?.institution || '').trim(),
+  )
+  return (doc?.higher_check?.institution || '').trim()
 }
 
 // ── Utility-bill key values (at-a-glance, so the reviewer needn't open the document) ─────────

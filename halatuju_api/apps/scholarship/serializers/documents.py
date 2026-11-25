@@ -159,7 +159,23 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         if obj.doc_type != 'results_slip':
             return None
         from ..academic_engine import student_slip_check
-        return student_slip_check(obj)
+        chk = student_slip_check(obj)
+        if isinstance(chk, dict) and not chk.get('higher_kind'):
+            chk = {**chk, **self._slip_school(obj)}      # TD-733: the school the SPM slip prints
+        return chk
+
+    @staticmethod
+    def _slip_school(obj) -> dict:
+        """``{school, school_status}`` of a real SPM slip against the student's profile school, read
+        from the slip text already stored (no re-read). '' / 'no_ref' when none is stored."""
+        from ..academic_compare import slip_school
+        from ..academic_engine import _school_match
+        vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
+        f = vf.get('fields') if isinstance(vf.get('fields'), dict) else {}
+        school = slip_school(f)
+        profile = getattr(getattr(obj, 'application', None), 'profile', None)
+        return {'school': school,
+                'school_status': _school_match(school, (getattr(profile, 'school', '') or '').strip())}
 
     def get_higher_check(self, obj):
         if obj.doc_type != 'higher_results':          # S3b: `higher_results.student_higher_check`

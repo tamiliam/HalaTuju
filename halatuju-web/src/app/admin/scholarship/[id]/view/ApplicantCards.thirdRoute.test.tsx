@@ -62,12 +62,28 @@ it('shows the bare merit, no exam bracket (no year read), with ONE CGPA slot and
     'admin.scholarship.stpmGrades']) expect(screen.queryByText(gone)).toBeNull()
 })
 
-it('a Matriculation card has a Pre-U institution row: the value, or N/A when empty', () => {
+const READ_DOC = (institution: string) => ({
+  doc_type: 'higher_results', superseded_at: null, higher_check: { institution },
+})
+
+it('a Matriculation card shows the college read off the results, with the muted note and no tick (TD-734)', () => {
+  renderWith({ ...MATRIC, documents: [READ_DOC('KOLEJ MATRIKULASI PAHANG')] } as never)
+  expect(value('admin.scholarship.preUCollegeRead')).toBe('KOLEJ MATRIKULASI PAHANG')
+  expect(screen.getByText('admin.scholarship.readFromResults')).toBeTruthy()
+  expect(screen.queryByText('admin.scholarship.preUInstitution')).toBeNull()
+  expect(screen.queryAllByRole('img')).toHaveLength(0)
+})
+
+it('with no college read, the slot says N/A and shows no note (the typed college is not shown there)', () => {
   renderWith({ ...MATRIC, pre_u_institution: 'KM Selangor' } as never)
-  expect(value('admin.scholarship.preUInstitution')).toBe('KM Selangor')
-  cleanup()
-  renderWith(MATRIC)
-  expect(value('admin.scholarship.preUInstitution')).toBe('admin.scholarship.na')
+  expect(value('admin.scholarship.preUCollegeRead')).toBe('admin.scholarship.na')
+  expect(screen.queryByText('admin.scholarship.readFromResults')).toBeNull()
+})
+
+it('the typed college (the NEXT one) moves to the Institution row, Stated by student', () => {
+  renderWith({ ...MATRIC, pre_u_institution: 'KM Selangor' } as never)
+  expect(value('admin.scholarship.institution')).toBe('Kolej Matrikulasi Selangor')   // via expandMatricInstitution
+  expect(screen.getAllByText('admin.scholarship.statedByStudent').length).toBeGreaterThan(0)
 })
 
 it('shows her SPM grades (the block) under "SPM prerequisites", as an STPM card names them (owner, 2026-11-16)', () => {
@@ -105,7 +121,7 @@ it('a Diploma: the bare merit, no bracket, no year, no "Diploma from" or co-curr
     higher_koko: null, higher_institution_type: 'public', merit_score: 70 })
   expect(value('admin.scholarship.meritScore')).toBe('70')
   expect(value('admin.scholarship.cgpa')).toBe('2.80')
-  expect(screen.getByText('admin.scholarship.preUInstitution')).toBeTruthy()
+  expect(screen.getByText('admin.scholarship.preUCollegeRead')).toBeTruthy()
   expect(screen.queryByText('admin.scholarship.diplomaFrom')).toBeNull()
   expect(screen.queryByText('admin.scholarship.higherKoko')).toBeNull()
 })

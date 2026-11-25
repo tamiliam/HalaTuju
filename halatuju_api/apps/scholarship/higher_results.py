@@ -278,6 +278,17 @@ def _exact_stpm(vf) -> bool:
     return vf.get('capture') == 'deterministic' and str(vf.get('parser_version') or '').startswith('stpm_parse')
 
 
+#: An issuer printed where a college should be (TD-734, Q5): never shown as the college.
+_ISSUER = re.compile(r'KEMENTERIAN|MINISTRY|MAJLIS PEPERIKSAAN|LEMBAGA PEPERIKSAAN|BAHAGIAN', re.IGNORECASE)
+
+
+def _college_read(fields, read) -> str:
+    """The college the higher-results document PRINTS (``fields.institution``), shown as read, no tick
+    (TD-734). '' when unread, blank, or an issuer (Kementerian, Majlis Peperiksaan...)."""
+    inst = str(fields.get('institution') or '').strip() if read else ''
+    return '' if _ISSUER.search(inst) else inst
+
+
 def _stpm_exam_year(fields) -> str:
     """The STPM sitting year off a read: the exact read's ``exam_year``, else a year in an STPM title."""
     import re
@@ -361,7 +372,8 @@ def student_higher_check(doc) -> dict:
         'exam_year': exam_year,
         'exam_year_status': year_status(getattr(doc, 'application', None), 'stpm', exam_year),
         'name': _slip_name_status(doc), 'candidate_name': f.get('candidate_name') or '',
-        'exam': (f.get('exam') or '').strip(), 'kind_held': kind_held, 'kind_detected': detected,
+        'exam': (f.get('exam') or '').strip(), 'institution': _college_read(f, read),
+        'kind_held': kind_held, 'kind_detected': detected,
         'kind_status': kind_status, 'cgpa_slip': slip_cgpa, 'cgpa_entered': entered,
         'cgpa_status': cgpa_status, 'grades_status': grades_status, 'missing': missing,
         'mismatched': mismatched, 'unrecognised': unrecognised, 'uncertain': uncertain, 'extra': extra,

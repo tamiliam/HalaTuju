@@ -275,6 +275,10 @@ export interface AcademicCheck {
   /** S4 (D15 + D12): "Move it to … results" is on offer (the higher card is shown, not submitted). */
   move_offered?: boolean
   actions_open?: boolean
+  /** TD-733: the school the SPM slip prints ('' when its text was not kept) and its match against
+   *  the student's own school. Absent on an old api and on a higher result in the SPM card. */
+  school?: string
+  school_status?: 'match' | 'partial' | 'mismatch' | 'no_ref'
 }
 
 /** Third results route S3b — a higher-results document against the results page (server-built). */
@@ -284,6 +288,8 @@ export interface HigherCheck {
   exam: string
   kind_held: string
   kind_detected: string
+  /** TD-734: the college the document prints ('' when none, or an issuer). Shown as read, no tick. */
+  institution?: string
   /** '' = we cannot tell (never a disagreement). */
   kind_status: '' | 'match' | 'different' | 'spm'
   cgpa_slip: number | null

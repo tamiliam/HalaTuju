@@ -100,7 +100,11 @@ export function fieldVerifications(
   set('nric', 'ic', 'ic_no', 'mykad')
 
   // Academic.
-  set('school', 'school_leaving_cert', 'school', 'schoolLeavingCert')
+  // TD-733: the school ticks from the school-leaving certificate OR the SPM slip (the school where they
+  // sat SPM, owner 2026-11-25). `set` stops at the first document that backs it, so the SLC wins.
+  if (!set('school', 'school_leaving_cert', 'school', 'schoolLeavingCert')) {
+    set('school', 'results_slip', 'school', 'resultsSlip')
+  }
   // The grades tick vouches for the whole chip row — which subjects AND their grades (owner,
   // 2026-11-06, app 262: a typed subject not on the slip was flagged, yet the grades still ticked).
   set('grades', 'results_slip', ['subjects', 'results'], 'resultsSlip')

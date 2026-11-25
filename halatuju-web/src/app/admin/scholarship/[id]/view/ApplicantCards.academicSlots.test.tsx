@@ -52,7 +52,7 @@ const GRADES = 'admin.scholarship.spmGrades'
 const PREREQ = 'admin.scholarship.spmPrereq'
 const STPMG = 'admin.scholarship.stpmGrades'
 const CGPA = 'admin.scholarship.cgpa'
-const PRE_U = 'admin.scholarship.preUInstitution'
+const PRE_U = 'admin.scholarship.preUCollegeRead'
 const PLANS = ['admin.scholarship.chosenProgramme', 'admin.scholarship.reportingDate', 'admin.scholarship.institution']
 const slotOrder = () => labels().slice(labels().indexOf(SCHOOL), labels().indexOf(PLANS[2]) + 1)
 
@@ -88,7 +88,7 @@ describe('Academic box slots', () => {
     expect(screen.queryByText(PRE_U)).toBeNull()
   })
 
-  it('Diploma: [school | empty] / [pre-U institution | merit] / [CGPA | MUET] / SPM prerequisites / plans; bare 96.5, no bracket', () => {
+  it('Diploma: [school | empty] / [pre-U college | merit] / [CGPA | MUET] / SPM prerequisites / plans; bare 96.5, no bracket', () => {
     renderWith({ qualification: 'diploma', merit_score: 96.5, higher_cgpa: 3.86, muet_band: 3,
       pre_u_institution: 'Politeknik Z', spm_prereq_grades: { bm: 'A' } })
     expect(slotOrder()).toEqual([SCHOOL, PRE_U, MERIT, CGPA, 'MUET', PREREQ, PLANS[0], PLANS[1], PLANS[2]])
@@ -97,7 +97,7 @@ describe('Academic box slots', () => {
     expect(rowOf(SCHOOL)?.children).toHaveLength(2)
     expect(rowOf(PRE_U)).toBe(rowOf(MERIT))
     expect(rowOf(CGPA)).toBe(rowOf('MUET'))
-    expect(dd(PRE_U)).toBe('Politeknik Z')
+    expect(dd(PRE_U)).toBe(NA)                          // read off the results only; the typed one is the next college
   })
 
   it.each(['matric', 'asasi'])('%s has the same rows as Diploma, a bare merit (no year read)', (q) => {
@@ -150,10 +150,10 @@ describe('Plans rows', () => {
     expect(screen.getAllByText('admin.scholarship.statedByStudent')).toHaveLength(1) // the programme only
   })
 
-  it('a third-route student: her college shows under Pre-U institution, Institution stays N/A', () => {
+  it('a third-route student: the typed (next) college shows under Institution, the Pre-U college row is N/A until read', () => {
     renderWith({ qualification: 'diploma', pre_u_institution: 'Politeknik Z', chosen_programme: {} })
-    expect(dd('admin.scholarship.preUInstitution')).toBe('Politeknik Z')
-    expect(dd('admin.scholarship.institution')).toBe(NA)
+    expect(dd('admin.scholarship.preUCollegeRead')).toBe(NA)
+    expect(dd('admin.scholarship.institution')).toBe('Politeknik Z')
   })
 
   it('an SPM student on the matriculation pathway: pre_u_institution is her destination, so Institution shows it', () => {

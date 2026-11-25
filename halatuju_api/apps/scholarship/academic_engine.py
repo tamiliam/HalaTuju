@@ -755,9 +755,8 @@ def _school_match(cert: str, profile: str) -> str:
     Kebangsaan). Pure; never raises.
 
     Both sides go through ``school_name_core`` (owner, 2026-10-31): the NAME is compared, never the
-    ", TOWN" our lists add to a same-name school ("SMK CONVENT, TAIPING" is "SMK CONVENT" here). ⚠ The
-    SPM slip's school tick is PAUSED (decisions.md 2026-10-30) and has no code yet; when it is built,
-    compare through THIS function so the same rule holds."""
+    ", TOWN" our lists add to a same-name school ("SMK CONVENT, TAIPING" is "SMK CONVENT" here). The
+    SPM slip's school (TD-733, `academic_compare.slip_school`) is compared through THIS function too."""
     a, b = _school_tokens(school_name_core(cert)), _school_tokens(school_name_core(profile))
     if not a or not b:
         return 'no_ref'

@@ -26,6 +26,7 @@ import {
   showsPostSubmissionCards,
   rejectionTrail,
   spmExamYear,
+  higherCollegeRead,
   type TimelineSource,
   type DecisionTrailInput,
 } from '@/lib/officerCockpit'
@@ -343,6 +344,25 @@ describe('documentFacts', () => {
   it('results slip → Name, Subjects, Results from the 3-check', () => {
     expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ name: 'match', subjects: 'partial', results: 'match' }) })))
       .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'partial' }, { key: 'results', status: 'verified' }])
+  })
+
+  it('TD-733: a slip whose school was read adds a School chip (a mismatch drawn as the certificate does); none read adds none', () => {
+    const base = { name: 'match', subjects: 'match', results: 'match' } as const
+    expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ ...base, school: 'SMK X', school_status: 'match' }) })))
+      .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'verified' }, { key: 'results', status: 'verified' },
+        { key: 'school', status: 'verified' }])
+    expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ ...base, school: 'SMK X', school_status: 'mismatch' }) }))
+      .find((f) => f.key === 'school')?.status).toBe('not')
+    expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ ...base, school: '', school_status: 'no_ref' }) }))
+      .map((f) => f.key)).toEqual(['name', 'subjects', 'results'])
+  })
+
+  it('TD-734: higherCollegeRead gives the live higher-results college, or empty', () => {
+    const hd = (institution: string, rest = {}) => doc({ doc_type: 'higher_results', higher_check: { institution } as HigherCheck, ...rest })
+    expect(higherCollegeRead([hd(' KOLEJ MATRIKULASI PAHANG ')])).toBe('KOLEJ MATRIKULASI PAHANG')
+    expect(higherCollegeRead([hd('X', { superseded_at: '2026-11-01' })])).toBe('')
+    expect(higherCollegeRead([hd('')])).toBe('')
+    expect(higherCollegeRead(undefined)).toBe('')
   })
 
   it('higher results (STPM exact-read S3) → its own facts, plus the Genuine chip once an STPM page is scored', () => {

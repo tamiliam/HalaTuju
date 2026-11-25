@@ -8,7 +8,9 @@ The subject-name normalisers it reads stay in ``academic_engine`` (their one hom
 """
 from __future__ import annotations
 
-from .academic_engine import (_CELL_NOISE, _GRADE_TO_BAND, _SUBJECT_BM, _base_letter,
+import re
+
+from .academic_engine import (_CELL_NOISE, _GRADE_TO_BAND, _SUBJECT_BM, _base_letter, _group_rows,
                               _declared_subject_count, _is_char_loss, _match_known_subject, _norm_grade,
                               _norm_lower_alnum, _slip_key)
 from .slip_subject_aliases import ENGLISH_NAMES
@@ -35,6 +37,32 @@ def printed_subject_count(fields: dict):
         rows = [w.get('text') for w in cap if isinstance(w, dict)] if isinstance(cap, list) else []
     text = ' '.join(r for r in rows if isinstance(r, str))
     return _declared_subject_count(text.upper()) if text else None
+
+
+_SLIP_SCHOOL = re.compile(r'^\s*SEKOLAH\s*:\s*(\S.*?)\s*$', re.IGNORECASE)
+
+
+def slip_school(fields: dict) -> str:
+    """The school the SPM slip PRINTS ("SEKOLAH : SMK CONVENT"), or '' — read from what the stored
+    record kept of the page, the same two sources as ``printed_subject_count``: a local read's
+    grouped lines (``_debug_rows``), else a Gemini fallback's word capture, regrouped into rows with
+    ``academic_engine._group_rows`` (TD-733). Anchored on ``SEKOLAH :`` at the START of a row, never a
+    bare substring ("PERSEKOLAHAN" on STPM pages and "ALIRAN SEKOLAH" are not it).
+    Nothing is re-read; no stored text, or a certificate read (no rows), gives ''."""
+    rows = fields.get('_debug_rows')
+    if not isinstance(rows, list):
+        diag = fields.get('_slip_ocr_diag')
+        cap = diag.get('capture') if isinstance(diag, dict) else None
+        words = [w for w in cap if isinstance(w, dict) and 'cx' in w and 'cy' in w] if isinstance(cap, list) else []
+        try:
+            rows = [' '.join(str(w.get('text') or '') for w in row) for row in _group_rows(words)]
+        except (KeyError, TypeError, ValueError):
+            rows = []
+    for r in rows:
+        m = _SLIP_SCHOOL.match(r) if isinstance(r, str) else None
+        if m:
+            return m.group(1)
+    return ''
 
 
 def _short_read(slip_norm: dict, slip: dict) -> bool:

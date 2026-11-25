@@ -218,6 +218,15 @@ Branch ll5, not pushed. Migration: none. Services: api only. Not wired to any pa
 
 - fix: STPM quiz shows Question 1 of 9 and nine dots from the start (owner 2026-11-25). Not pushed. Migration: none. Services: web.
 
+### Academic reads, phase B1: school from the SPM slip, college read off higher results (TD-733, TD-734, 2026-11-25)
+
+Not pushed. Migration: none. Services: api, web. No new AI call, no `MODEL_VERSION` bump.
+- TD-733: the Secondary school tick also comes from the SPM results slip (the `SEKOLAH :` row of the stored page text), compared through `_school_match`; the school-leaving certificate wins when both match. `academic_compare.slip_school`, merged in the document serializer; a slip with no stored school draws no School chip. About one slip in five today (live, 25 Nov); a mismatch behaves as the certificate chip does.
+- TD-734: a Matriculation, Asasi or Diploma student's card shows "Pre-U college" read off the higher-results document, with a muted "Read from the uploaded results" note and no tick; an issuer (KEMENTERIAN and the like) shows N/A. The typed college moves to the Institution row, Stated by student. STPM unchanged. New keys `preUCollegeRead` and `readFromResults` (en, ms, ta) replace `preUInstitution`.
+- FAQ (`faq-reviewer.tsx`) and `decisions.md` updated; `verdict_engine.json` gets an `also_ok` digest (display only).
+- Tests: new `test_slip_school.py`; extended `fieldVerification`, `officerCockpit`, `ApplicantCards.thirdRoute` and `academicSlots` tests.
+
+
 ### Academic box matches the approved slot layout (owner phone check, 2026-11-25)
 
 - fix: Academic box matches the approved slot layout; merit shows its exam and year in brackets; label Merit score (owner phone check 2026-11-25). Not pushed. Migration: none. Services: web.

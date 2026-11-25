@@ -28,14 +28,16 @@ export const REVIEWER_FAQ: QA[] = [
         <strong> STPM:</strong> Secondary school and Merit score; <strong>CGPA</strong> and <strong>MUET</strong>;
         her <strong>STPM grades</strong>; her <strong>SPM prerequisites</strong>; then the programme, reporting date
         and institution rows. <strong>Matriculation, Asasi or Diploma:</strong> Secondary school alone; then
-        <strong> Pre-U institution</strong> and Merit score; CGPA and MUET; SPM prerequisites; then the programme,
+        <strong> Pre-U college</strong> (read from their uploaded results, with a grey note and no tick: the college
+        they attended is not asked) and Merit score; CGPA and MUET; SPM prerequisites; then the programme,
         reporting date and institution rows. Secondary school is always in capitals, as her documents print it. The
         merit score carries its exam and, where we have read it, the year in brackets on the same line &mdash;
         <em>85.4 (SPM 2024)</em> from her SPM slip, <em>92.1 (STPM 2025)</em> from her STPM results; a year off the
         expected sitting is shown in amber. When no year has been read yet, the merit shows as the number alone, with no
         bracket (and Matriculation, Asasi and Diploma students show the number alone, as no year is read for them yet). A grey
         <strong> Stated by student</strong> line under the programme or institution means no offer letter confirms it
-        yet. <strong>N/A</strong> in a muted colour means the slot is required but empty: nothing was entered or read.
+        yet. For a Matriculation, Asasi or Diploma student, the college they typed is the next one they plan to attend,
+        so it appears on the institution row as <strong>Stated by student</strong>. <strong>N/A</strong> in a muted colour means the slot is required but empty: nothing was entered or read.
         It is not a mismatch. The reporting date always shows, and reads N/A until a date is stored or read from her
         offer letter.</>,
     },
@@ -45,7 +47,7 @@ export const REVIEWER_FAQ: QA[] = [
         instead of STPM. They count as <strong>STPM-equivalent</strong>: the gift&rsquo;s minimum CGPA is
         tested on her overall CGPA, and her merit is that CGPA ÷ 4 × 100, as for an STPM student. The card
         uses the same slots as every other student (see the next question): her merit score shows as the number alone,
-        with a <strong>Pre-U institution</strong> row, her <strong>CGPA</strong> as printed on her results
+        with a <strong>Pre-U college</strong> row (read from their uploaded results, no tick), her <strong>CGPA</strong> as printed on her results
         (Matriculation and Asasi: her overall CGPA is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall
         CGPA is its CGPA as it is &mdash; the co-curriculum score no longer has a line of its own), her
         <strong> MUET</strong> band and the SPM grades she entered, under <strong>SPM prerequisites</strong>
@@ -127,7 +129,8 @@ export const REVIEWER_FAQ: QA[] = [
     {
       q: <>What does the small blue <strong>tick</strong> beside a value mean?</>,
       a: <>That the value is backed by a document she uploaded. The <strong>school</strong> is ticked from her
-        school-leaving certificate; her <strong>SPM grades</strong> from her SPM results slip (one tick after the
+        school-leaving certificate <strong>or their SPM results slip</strong> (the school where they sat SPM; the
+        certificate is used first when both match); her <strong>SPM grades</strong> from her SPM results slip (one tick after the
         subjects); her <strong>programme</strong>, <strong>institution</strong> and <strong>reporting date</strong> from
         her own offer letter &mdash; including when we filled them in from that letter for her. No tick means
         no such document has been read yet, or it shows something different; it is never a sign of a problem on

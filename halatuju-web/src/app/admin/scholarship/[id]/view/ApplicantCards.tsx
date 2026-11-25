@@ -15,7 +15,7 @@ import {
   formatAddress,
   expandMatricInstitution,
 } from '@/lib/scholarship'
-import { higherExamYear, spmExamYear } from '@/lib/officerCockpit'
+import { higherCollegeRead, higherExamYear, spmExamYear } from '@/lib/officerCockpit'
 import { formatDate } from '@/lib/formatDate'
 import { isApplyStage } from '@/lib/applicationStatus'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
@@ -307,21 +307,24 @@ export function ApplicantCards({
                   // "Stated by student" only when the institution is HER OWN entry that no offer
                   // letter confirms - one copied off the letter itself is not hers to state.
                   const instTick = isInstitutionPathway ? vtip('preUInstitution') : vtip('institution')
-                  // An SPM-route student's pre_u_institution is their DESTINATION, so it still falls
-                  // back; on the post-SPM routes it is their past college (own row above), never.
-                  const spmRoute = !isStpm && !third
+                  // The typed pre_u_institution is the NEXT college (the destination) on every route but
+                  // STPM, where it is the Form 6 school they attended (owner ruling 2026-11-25, TD-734).
+                  // So it falls back to the Institution row on the SPM and the third routes alike.
+                  const destRoute = !isStpm
                   const chosenApp = { documents: app.documents, chosen_programme: app.chosen_programme,
-                    pre_u_institution: spmRoute ? app.pre_u_institution : undefined }
+                    pre_u_institution: destRoute ? app.pre_u_institution : undefined }
                   const ownInst = ((app.chosen_programme?.institution as string)
-                    || (spmRoute ? app.pre_u_institution : '') || '').trim()
+                    || (destRoute ? app.pre_u_institution : '') || '').trim()
+                  // TD-734: the college the higher-results document prints, shown as read, no tick.
+                  const collegeRead = third ? higherCollegeRead(app.documents) : ''
                   return (
                     <dl className="flex flex-col gap-2.5">
                       {third ? (<>
                         <div className={row}>{schoolField}<div /></div>
-                        {/* Where they did the pre-U course. No tick yet: the only preUInstitution check
-                            today is the OFFER letter's institution, the destination, not this college. */}
+                        {/* The college the uploaded results print (TD-734). Read, not asked: no tick. */}
                         <div className={row}>
-                          <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} na={na} />
+                          <Field label={t('admin.scholarship.preUCollegeRead')} value={collegeRead || null} na={na}
+                            noteTone="muted" note={collegeRead ? t('admin.scholarship.readFromResults') : undefined} />
                           {meritField}
                         </div>
                       </>) : (

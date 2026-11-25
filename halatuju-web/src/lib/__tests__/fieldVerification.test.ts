@@ -40,6 +40,34 @@ describe('fieldVerifications', () => {
     expect(fv.school).toBeUndefined()
   })
 
+  it('ticks school from a matched SPM results slip (TD-733), sourced to the slip', () => {
+    const fv = fieldVerifications(app([
+      { doc_type: 'results_slip', academic_check: { name: 'match', subjects: 'match', results: 'match', school: 'SMK X', school_status: 'match' } },
+    ]))
+    expect(fv.school).toEqual({ source: 'resultsSlip' })
+  })
+
+  it('prefers the school-leaving certificate when the certificate and the slip both match', () => {
+    const fv = fieldVerifications(app([
+      { doc_type: 'results_slip', academic_check: { name: 'match', subjects: 'match', results: 'match', school: 'SMK X', school_status: 'match' } },
+      { doc_type: 'school_leaving_cert', school_leaving_check: { school_status: 'match', name_status: 'match', nric_status: 'match', kelakuan_status: 'good' } },
+    ]))
+    expect(fv.school).toEqual({ source: 'schoolLeavingCert' })
+  })
+
+  it('does NOT tick school from a slip on partial, mismatch or no school read, nor from a higher result in the slot', () => {
+    for (const school_status of ['partial', 'mismatch', 'no_ref'] as const) {
+      const fv = fieldVerifications(app([
+        { doc_type: 'results_slip', academic_check: { name: 'match', subjects: 'match', results: 'match', school: 'SMK X', school_status } },
+      ]))
+      expect(fv.school).toBeUndefined()
+    }
+    const higher = fieldVerifications(app([
+      { doc_type: 'results_slip', academic_check: { name: 'match', subjects: 'not_spm', results: 'not_spm', higher_kind: 'stpm', school: 'SMK X', school_status: 'match' } },
+    ]))
+    expect(higher.school).toBeUndefined()
+  })
+
   it('ticks grades from a matched results slip', () => {
     const fv = fieldVerifications(app([
       { doc_type: 'results_slip', academic_check: { name: 'match', subjects: 'match', results: 'match' } },
