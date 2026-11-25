@@ -48,13 +48,21 @@ round-2 word check, so '[5 0 R nulltrue 6 0 R]' was two content streams to pypdf
 word 'nulltrue' ends its array). Each array element whose first byte is a regular one must follow white space or
 a delimiter, and the shortcut's 'null' must be followed by one.
 
+Round 3 part 3 (H5, the short check): pypdf's reference pattern (regex white space) and array loop
+(bytes.isspace) take 0x0b as white space, pdfium as a regular byte: '[5 0 R 6<0b>0<0b>R]', '[5 0 R 6 0 R<0b>]'
+and '/X1 6<0b>0<0b>R' were a second content stream or form to pypdf, nothing to pdfium. So (`_read_object`) a reference must hold no
+`_DISAGREE` byte (0x00 0x0b 0x80 0xff: where any of pypdf's white-space tests and pdfium's differ) between its
+parts, and its 'R' must be followed by white space or a delimiter both agree on; a number must not end on one.
+
 pypdf with no `GateReader` (other readers, the pdfium child's layout op and `page_flags`) is unchanged.
 """
 import io
+import re
 import threading
 from contextlib import contextmanager
 
-from pypdf.generic import ArrayObject, BooleanObject, DictionaryObject, IndirectObject, NameObject, NullObject
+from pypdf.generic import (ArrayObject, BooleanObject, DictionaryObject, FloatObject, IndirectObject, NameObject,
+                           NullObject, NumberObject)
 from pypdf.generic import _data_structures as _pypdf_dicts
 
 from .pdf_layer_guards import OverBudget, _CountedBytes
@@ -72,6 +80,15 @@ _DELIMITERS = frozenset(b'\x00\t\n\x0c\r ()<>[]{}/%')
 _PYPDF_SPACE = frozenset(b'\x00\t\n\x0c\r ')            # pypdf's WHITESPACES (6.21.4); pdfium skips all of them
 _PDFIUM_SPACE = _PYPDF_SPACE | frozenset(b'\x80\xff')    # pdfium's word-ending white space
 _SPACE = frozenset(b' ')
+#: Round 3 part 3: a byte one of pypdf's white-space tests (WHITESPACES; bytes.isspace in its array and reference
+#: loops; regex white space in its reference pattern) and pdfium's disagree on: 0x00 (not \s), 0x0b (not pdfium's), 0x80,
+#: 0xff (pdfium's only). Inside a reference or right after a number or a reference: refused.
+_DISAGREE = frozenset().union(*(frozenset(b for b in range(256) if test(bytes([b]))) ^ _PDFIUM_SPACE for test in (
+    lambda c: c[0] in _PYPDF_SPACE, bytes.isspace, re.compile(rb'\s').fullmatch)))
+#: A reference's 'R' ends its word for pdfium only on white space or a delimiter both readers agree on.
+_REF_ENDS = _DELIMITERS - _DISAGREE
+_REF_TAIL = re.compile(rb'[+-]?\d+(\s+)\d+(\s+)R\Z')
+_CHECKED = (IndirectObject, NumberObject, FloatObject, NullObject, BooleanObject)
 #: How far past a dictionary or a stream's data the keyword checks look (uncharged; first 64 bytes): white
 #: space or comments running past it refuse.
 _PEEK = 4096
@@ -274,18 +291,29 @@ def _array_item(*, remaining_elements, parsing_budget):
 
 def _read_object(stream, pdf, forced_encoding=None, **kwargs):
     """pypdf's object read inside a dictionary, array or content stream: counted for the dictionary it is read in;
-    a null or boolean must be its whole word."""
+    a null or boolean must be its whole word; a number or a reference must not hold or end on a `_DISAGREE` byte,
+    and a reference's 'R' must end its word for pdfium too (round 3 part 3)."""
     frames = _frames()
     if frames and frames[-1].is_dict:
         frames[-1].reads += 1
     result = _pypdf_read_object(stream, pdf, forced_encoding, **kwargs)
-    if isinstance(result, (NullObject, BooleanObject)):
-        meter = _meter(stream)
-        if meter is not None:
-            word = b'null' if isinstance(result, NullObject) else b'true' if result.value else b'false'
-            before, after = _around(stream, len(word), 1)
-            if before != word or (after and after[0] not in _DELIMITERS):
-                meter._refuse(WORD_REFUSAL)
+    meter = _meter(stream) if isinstance(result, _CHECKED) else None
+    if meter is None:
+        return result
+    if isinstance(result, IndirectObject):
+        before, after = _around(stream, 20, 1)     # pypdf matched the reference in 20 bytes, one after its 'R'
+        ref = _REF_TAIL.search(before)
+        if ref is None or _DISAGREE.intersection(ref[1] + ref[2]) or (after and after[0] not in _REF_ENDS):
+            meter._refuse(WORD_REFUSAL)
+    elif isinstance(result, (NumberObject, FloatObject)):
+        after = _around(stream, 0, 1)[1]
+        if after and after[0] in _DISAGREE:
+            meter._refuse(WORD_REFUSAL)
+    else:
+        word = b'null' if isinstance(result, NullObject) else b'true' if result.value else b'false'
+        before, after = _around(stream, len(word), 1)
+        if before != word or (after and after[0] not in _DELIMITERS):
+            meter._refuse(WORD_REFUSAL)
     return result
 
 
