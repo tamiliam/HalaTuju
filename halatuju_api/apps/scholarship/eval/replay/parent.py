@@ -261,8 +261,32 @@ def _commit(root):
         return 'unknown'
 
 
+#: ``parse_args``'s own refusals: fixed words, never a value. The ONLY texts `_QuietParser` lets through.
+MONTHS_NOT_TWO = '--months takes exactly two months'
+LENS_FLAGS_NEED_SWITCH = '--human-lens-freeze, --human-lens-exam-folder and --human-lens-exam-bucket need --human-lens'
+ONE_EXAM_HOME = 'use one of --human-lens-exam-folder or --human-lens-exam-bucket'
+SWITCH_NEEDS_EXAM_HOME = '--human-lens needs --human-lens-exam-folder or --human-lens-exam-bucket'
+COUNTS_ONLY_WITH_LENS = '--counts-only and --human-lens cannot be used together'
+FOLDER_ARG_NOT_ABSOLUTE = '--human-lens-exam-folder must be an absolute path'
+BUCKET_NOT_PLAIN = '--human-lens-exam-bucket is not a plain bucket name'
+OWN_ARG_ERRORS = frozenset({MONTHS_NOT_TWO, LENS_FLAGS_NEED_SWITCH, ONE_EXAM_HOME, SWITCH_NEEDS_EXAM_HOME,
+                            COUNTS_ONLY_WITH_LENS, FOLDER_ARG_NOT_ABSOLUTE, BUCKET_NOT_PLAIN})
+#: Every other argument error (argparse's own: unrecognized arguments, ambiguous option, expected one
+#: argument, invalid value, missing required ones, and whatever a later Python adds) can carry what was
+#: typed, so it is replaced by these fixed words.
+ARGS_WITHHELD = 'bad arguments (details withheld)'
+
+
+class _QuietParser(argparse.ArgumentParser):
+    """An allow-list on argument errors: one of `OWN_ARG_ERRORS` passes unchanged, anything else becomes
+    `ARGS_WITHHELD`. Then as argparse: the usage line and ``prog: error: <words>`` on stderr, exit 2."""
+
+    def error(self, message):
+        super().error(message if message in OWN_ARG_ERRORS else ARGS_WITHHELD)
+
+
 def parse_args(argv):
-    ap = argparse.ArgumentParser(description='The A5 replay: old engines against new, on one snapshot.')
+    ap = _QuietParser(description='The A5 replay: old engines against new, on one snapshot.')
     ap.add_argument('--instant', required=True, help='the pinned clock, ISO with a timezone')
     ap.add_argument('--months', required=True, help='two pinned payment months, YYYY-MM,YYYY-MM')
     ap.add_argument('--old-root', default='/replay/old')
@@ -281,20 +305,20 @@ def parse_args(argv):
     args = ap.parse_args(argv)
     parse_instant(args.instant)
     if len(args.months.split(',')) != 2:
-        ap.error('--months takes exactly two months')
+        ap.error(MONTHS_NOT_TWO)
     folder, bucket = args.human_lens_exam_folder, args.human_lens_exam_bucket   # bucket: None = not given
     if (args.human_lens_freeze or folder or bucket is not None) and not args.human_lens:
-        ap.error('--human-lens-freeze, --human-lens-exam-folder and --human-lens-exam-bucket need --human-lens')
+        ap.error(LENS_FLAGS_NEED_SWITCH)
     if folder and bucket is not None:                           # one exam home, never two
-        ap.error('use one of --human-lens-exam-folder or --human-lens-exam-bucket')
+        ap.error(ONE_EXAM_HOME)
     if args.human_lens and not (folder or bucket is not None):  # fail fast, not after hours of engines
-        ap.error('--human-lens needs --human-lens-exam-folder or --human-lens-exam-bucket')
+        ap.error(SWITCH_NEEDS_EXAM_HOME)
     if args.human_lens and args.counts_only:                    # no lens would run: refuse, not a silent 0
-        ap.error('--counts-only and --human-lens cannot be used together')
+        ap.error(COUNTS_ONLY_WITH_LENS)
     if args.human_lens and folder and not os.path.isabs(folder):    # the child's own rule (isabs)
-        ap.error('--human-lens-exam-folder must be an absolute path')       # fixed words: never the value
+        ap.error(FOLDER_ARG_NOT_ABSOLUTE)                       # fixed words: never the value
     if bucket is not None and not exam_home.bucket_name_ok(bucket):
-        ap.error('--human-lens-exam-bucket is not a plain bucket name')     # fixed words: never the value
+        ap.error(BUCKET_NOT_PLAIN)                              # fixed words: never the value
     return args
 
 

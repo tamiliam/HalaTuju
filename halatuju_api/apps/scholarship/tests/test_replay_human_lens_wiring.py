@@ -550,6 +550,52 @@ def test_the_bucket_comes_from_the_command_line_only(tmp_path, monkeypatch):
     assert _args(tmp_path, '--human-lens', '--human-lens-exam-folder', str(tmp_path)).human_lens_exam_bucket is None
 
 
+# ── LL6 P2 review round 1 (B1): argparse's OWN errors never echo a typed value ─────────────────────────
+PROBE_BUCKET = 'zz-probe-bucket-0001'               # a valid-shaped name, typed into a bad flag
+
+
+def _no_echo(err, out, *typed):
+    for value in typed:
+        assert value not in out and value not in err and value.lower() not in err.lower(), value
+
+
+@pytest.mark.parametrize('flags', [
+    ('--human-lens', f'--human-lens-exam={PROBE_BUCKET}'),            # ambiguous: the folder or the bucket
+    ('--human-lens', f'--human-lens-exam-buckt={PROBE_BUCKET}'),      # unrecognized, one word
+    ('--human-lens', '--human-lens-exam-buckt', PROBE_BUCKET)])       # unrecognized, two words
+def test_argparse_errors_on_a_mistyped_bucket_flag_never_echo_the_value(main_recorded, tmp_path, flags):
+    code, out, err, calls = main_recorded('--workdir', str(tmp_path / 'work'), *flags)
+    assert code == 2 and calls == [] and out == ''
+    assert err.rstrip('\n').endswith('error: ' + parent.ARGS_WITHHELD)
+    _no_echo(err, out, PROBE_BUCKET, 'zz-probe', 'buckt')
+    assert 'ambiguous' not in err and 'unrecognized' not in err
+
+
+@pytest.mark.parametrize('flags, words', [
+    (('--human-lens', '--human-lens-exam-bucket', '-' + PROBE_BUCKET), parent.ARGS_WITHHELD),   # expected one
+    (('--human-lens', '--human-lens-exam-bucket', PROBE_BUCKET, '--human-lens-exam-bucket', 'ZZ_Probe_Bad'),
+     parent.BUCKET_NOT_PLAIN),                                         # twice: the last one wins, and is refused
+    (('--human-lens', '--human-lens-exam-b=ZZ_Probe_Bad'), parent.BUCKET_NOT_PLAIN)])          # a unique prefix
+def test_the_other_bad_bucket_forms_stay_without_an_echo(main_recorded, tmp_path, flags, words):
+    code, out, err, calls = main_recorded('--workdir', str(tmp_path / 'work'), *flags)
+    assert code == 2 and calls == [] and out == ''
+    assert err.rstrip('\n').endswith('error: ' + words), flags
+    _no_echo(err, out, PROBE_BUCKET, 'zz-probe', 'ZZ_Probe_Bad')
+
+
+def test_the_modules_own_refusals_pass_the_quiet_parser_unchanged(main_recorded, tmp_path, capsys):
+    code, out, err, _calls = main_recorded('--workdir', str(tmp_path / 'work'), '--human-lens',
+                                           '--human-lens-exam-bucket=Not_A_Bucket')
+    assert code == 2 and err.splitlines()[-1].endswith(
+        ': error: --human-lens-exam-bucket is not a plain bucket name')      # byte for byte, as before
+    assert parent.ARGS_WITHHELD not in err and 'Not_A_Bucket' not in err
+    assert parent.BUCKET_NOT_PLAIN in parent.OWN_ARG_ERRORS and parent.ARGS_WITHHELD not in parent.OWN_ARG_ERRORS
+    with pytest.raises(SystemExit) as stop:                    # argparse's own text for an old flag: withheld
+        parent.parse_args(['--months', '2026-11,2026-12'])
+    assert stop.value.code == 2
+    assert capsys.readouterr().err.rstrip('\n').endswith('error: ' + parent.ARGS_WITHHELD)
+
+
 @pytest.fixture
 def main_bucket(monkeypatch, request, capsys, caplog, tmp_path):
     """``run(*flags, replay=None)`` -> (exit code, stdout, stderr, calls, store): the real ``main`` on a
@@ -683,5 +729,30 @@ def test_main_a_normal_bucket_run_scores_the_stored_exams_and_uploads_nothing(ma
 
 
 def test_main_a_normal_run_on_an_empty_bucket_uploads_nothing(main_bucket):
-    code, out, err = main_bucket()
+    from apps.scholarship.tests.test_replay_exam_home import coach
+    from apps.scholarship.tests.test_replay_lens_result_schema import cases_rich, run as lens_run
+    seen = []
+
+    def replay(args):                                       # the fixture's default, its lens result kept
+        seen.append(lens_run(cases_rich(), args.human_lens_exam_folder, freeze=args.human_lens_freeze))
+        return {'same': {'same': 1}, parent.HUMAN_LENS_KEY: seen[-1], parent.COACH_GRADE_KEY: coach()}
+    code, out, err = main_bucket(replay=replay)
     assert _home_lines(out) == [] and main_bucket.store.asked('put') == [] and err == ''
+    assert code == 0 and len(seen) == 1 and lens_human.EXAM_MISSING in out
+    assert {exam['refusal'] for exam in seen[0]['exams'].values()} == {lens_human.EXAM_MISSING}
+
+
+def test_main_a_coach_fail_grade_on_a_freeze_run_still_keeps_the_exams_and_exits_0(main_bucket):
+    from apps.scholarship.fact_bands import CERTAIN, UNSURE
+    from apps.scholarship.tests.test_replay_lens_result_schema import cases_rich, run as lens_run
+    from apps.scholarship.tests.test_replay_report_lens import coach_one_pair
+    coach_fail = coach_one_pair([(CERTAIN, 'pass', 40)], [(UNSURE, 'pass', 40)])     # a grade, not an error
+
+    def replay(args):
+        lens = lens_run(cases_rich(), args.human_lens_exam_folder, freeze=True)
+        return {'same': {'same': 1}, parent.HUMAN_LENS_KEY: lens, parent.COACH_GRADE_KEY: coach_fail}
+    code, out, err = main_bucket('--human-lens-freeze', replay=replay)
+    assert code == 0 and err == '' and ': fail. BLOCKING.' in out
+    assert main_bucket.store.asked('put') == [('put', n) for n in lens_human.EXAM_NAMES]
+    assert _home_lines(out) == ['exam home: exam-1 frozen and kept in the bucket',
+                                'exam home: exam-old frozen and kept in the bucket']
