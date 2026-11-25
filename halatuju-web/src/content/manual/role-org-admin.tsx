@@ -150,7 +150,8 @@ export const roleOrgAdmin: ManualChapter = {
           <span className="mt-2 block">On Team you can also <strong>Resend</strong> a sign-in invite or
           <strong> Revoke</strong> (and later restore) access &mdash; each asks you first. One safeguard: you
           can&rsquo;t revoke the <strong>last</strong> organisation admin &mdash; the Revoke option simply isn&rsquo;t
-          offered on the sole admin, so your organisation is never left without one.</span>
+          offered on the sole admin, so your organisation is never left without one. An invited admin counts
+          only once they have signed in.</span>
           <span className="mt-2 block"><strong>Delete</strong> sits next to Revoke on every Team table and on
           each person&rsquo;s own page. It works for anybody who has done no work yet: an admin, a reviewer, QC
           or a mentor. You type their email address to confirm, and it removes their sign-in and their

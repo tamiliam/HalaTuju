@@ -178,8 +178,8 @@ class TheEditor(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.org = make_org()
-        cls.lead = make_admin('org_admin', owning_org=cls.org)
-        cls.second = make_admin('org_admin', owning_org=cls.org)
+        cls.lead = make_admin('org_admin', owning_org=cls.org, first_seen_at=timezone.now())
+        cls.second = make_admin('org_admin', owning_org=cls.org, first_seen_at=timezone.now())
         cls.boss = make_admin('super', super_admin=True)
         cls.member = make_admin('admin', owning_org=cls.org)
 
@@ -338,3 +338,110 @@ class TheLastHolderIsKept(TestCase):
                                            format='json')
         self.assertEqual(r.status_code, 200, r.content[:300])
         self.assertFalse(_fresh(self.y).is_active)
+
+
+@override_settings(**SUPABASE)
+class AnInviteeIsNotAnOrgAdmin(TestCase):
+    """Owner ruling, 25 Nov (review gap): an invitee who has not accepted (never signed in: `first_seen_at`
+    NULL) is not a member, so never counts as the organisation's admin, whatever powers the invite
+    pre-granted. A (signed in) and B (invited as org admin, powers held, never signed in): every door that
+    removes A, or takes A's powers, refuses as for the last admin; Cancel of B needs no such check."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.scholarship import invitations
+        cls.org = make_org()
+        cls.a = make_admin('org_admin', owning_org=cls.org, first_seen_at=timezone.now())
+        cls.b = make_admin('org_admin', owning_org=cls.org, uid='uid-invitee-b')      # never signed in
+        cls.boss = make_admin('super', super_admin=True)
+        cls.inv = invitations.create_or_refresh(
+            audience='staff', email=cls.b.email, role='org_admin', organisation=cls.org, invited_by=cls.boss,
+            partner_admin=cls.b, credential_issued=True, ttl_days=7)
+
+    def setUp(self):
+        self.assertTrue(sp.holds_org_admin_powers(_fresh(self.b)))   # the invite pre-granted the powers
+
+    def _delete(self, target, body=None):
+        with patch(READ, side_effect=_unused), patch(DELETE, return_value='deleted'):
+            return authed_client(self.boss).delete(f'/api/v1/admin/admins/{target.pk}/', body, format='json')
+
+    def _revoke(self, target):
+        return authed_client(self.boss).patch(f'/api/v1/admin/admins/{target.pk}/revoke/', {'action': 'revoke'},
+                                              format='json')
+
+    def _untick(self, target):
+        return _patch(self.boss, target, [k for k in _stored(target) if k != KEY])
+
+    def _refused(self, r):
+        self.assertEqual((r.status_code, r.json()), (400, {'error': 'last_org_admin', 'code': 'last_org_admin'}),
+                         r.content[:300])
+        a = _fresh(self.a)
+        self.assertTrue(a.is_active)
+        self.assertIsNone(a.archived_at)
+        self.assertIn(KEY, a.permissions)
+
+    def _b_signs_in(self):
+        PartnerAdmin.objects.filter(pk=self.b.pk).update(first_seen_at=timezone.now())
+
+    def test_archive_of_the_signed_in_admin_is_refused(self):
+        _reviewed(self.a)
+        self._refused(self._delete(self.a, ARCHIVE))
+
+    def test_revoke_of_the_signed_in_admin_is_refused(self):
+        self._refused(self._revoke(self.a))
+
+    def test_delete_of_the_signed_in_admin_is_refused(self):
+        self._refused(self._delete(self.a))
+        self.assertTrue(PartnerAdmin.objects.filter(pk=self.a.pk).exists())
+
+    def test_unticking_the_signed_in_admins_powers_is_refused(self):
+        r = self._untick(self.a)
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'last_org_admin_powers'), r.content[:300])
+        self.assertIn(KEY, _stored(self.a))
+
+    def test_the_team_table_marks_the_signed_in_admin_as_the_sole_one(self):
+        self.assertEqual(sole_org_admin_ids(self.boss, [_fresh(self.a), _fresh(self.b)]), {self.a.pk})
+
+    def test_once_b_has_signed_in_a_may_be_revoked(self):
+        self._b_signs_in()
+        self.assertEqual(sole_org_admin_ids(self.boss, [_fresh(self.a), _fresh(self.b)]), set())
+        r = self._revoke(self.a)
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertFalse(_fresh(self.a).is_active)
+
+    def test_once_b_has_signed_in_as_powers_may_be_unticked(self):
+        self._b_signs_in()
+        self.assertEqual(self._untick(self.a).status_code, 200)
+        self.assertNotIn(KEY, _stored(self.a))
+
+    def test_cancel_of_b_is_allowed_and_leaves_a_untouched(self):
+        with patch(READ, side_effect=_unused), patch(DELETE, return_value='deleted') as gone:
+            r = authed_client(self.boss).post(f'/api/v1/admin/invitations/{self.inv.pk}/cancel/', {}, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertEqual(r.json()['status'], 'revoked')
+        b = _fresh(self.b)
+        self.assertIsNotNone(b.archived_at)
+        self.assertFalse(b.is_active)
+        gone.assert_called_once_with('uid-invitee-b')
+        a = _fresh(self.a)
+        self.assertTrue(a.is_active)
+        self.assertIsNone(a.archived_at)
+        self.assertIn(KEY, a.permissions)
+
+    def test_an_invitee_with_null_permissions_still_does_not_count(self):
+        PartnerAdmin.objects.filter(pk=self.b.pk).update(permissions=None)   # NULL reads as holding the powers
+        self.assertTrue(sp.holds_org_admin_powers(_fresh(self.b)))
+        self._refused(self._revoke(self.a))
+
+    def test_a_signed_in_holder_with_null_permissions_still_counts(self):
+        c = make_admin('org_admin', owning_org=self.org, first_seen_at=timezone.now())
+        PartnerAdmin.objects.filter(pk=c.pk).update(permissions=None)   # unchanged meaning: NULL holds them
+        self.assertEqual(self._revoke(self.a).status_code, 200)
+
+    def test_an_inactive_or_archived_signed_in_holder_does_not_count(self):
+        for archived in (False, True):
+            with self.subTest(archived=archived):
+                c = make_admin('org_admin', owning_org=self.org, first_seen_at=timezone.now())
+                PartnerAdmin.objects.filter(pk=c.pk).update(
+                    is_active=False, archived_at=timezone.now() if archived else None)
+                self._refused(self._revoke(self.a))

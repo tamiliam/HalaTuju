@@ -23,12 +23,19 @@ from .models import PartnerAdmin
 
 
 def _live_org_admin(target):
-    return target.role == 'org_admin' and target.is_active and target.owning_organisation_id is not None
+    return (target.role == 'org_admin' and target.is_active and target.first_seen_at is not None
+            and target.owning_organisation_id is not None)
 
 
 def _org_admins(**where):
-    """The active org admins matching ``where`` (the one place this module reads the role)."""
-    return PartnerAdmin.objects.filter(role='org_admin', is_active=True, **where)
+    """The COUNTED org admins matching ``where`` (the one place this module reads the role): active AND
+    signed in at least once. Owner ruling, 25 Nov: an invitee who has not accepted (never signed in) is not
+    a member, so never an organisation's admin here, whatever powers the invite pre-granted. Acceptance is
+    `first_seen_at` (set once, by the first console visit's conditional UPDATE in `views_admin._touch_seen`,
+    "the invitation-acceptance hook"; never cleared on an active row). That UPDATE takes no other lock, so
+    the lock order below is unchanged; a sign-in landing mid-count can only make a removal refuse, never
+    allow one it should not."""
+    return PartnerAdmin.objects.filter(role='org_admin', is_active=True, first_seen_at__isnull=False, **where)
 
 
 def lock_org_admins_of(admin_id):
@@ -50,7 +57,7 @@ def lock_org_admins_of(admin_id):
 
 def powers_holder_ids(organisation_id, lock=False):
     """S2 / M4a review: THE ONE COUNTING RULE for Organisation admin powers' last holder, as a set of
-    ids: the organisation's active org admins for whom `staff_permissions.holds_org_admin_powers` is
+    ids: the organisation's counted (active, signed-in: `_org_admins`) org admins for whom `staff_permissions.holds_org_admin_powers` is
     true. The editor's untick (`staff_permissions_admin._refuse_last_powers`), Archive, Revoke and Delete
     (`is_sole_org_admin`) and the tables (`sole_org_admin_ids`) all count through it. ``lock=True``
     (inside a transaction) counts with the rows locked, in id order."""
@@ -68,7 +75,8 @@ def _last_holder(target, holders):
 
 def is_sole_org_admin(target, lock=False):
     """Whether removing ``target`` would leave their organisation with no administrator: they are its
-    ONLY active org admin (matrix 2026-07-15; N4), or the last active one holding Organisation admin
+    ONLY counted org admin (active and signed in, `_org_admins`; an invitee never counts, nor is ever
+    refused here) (matrix 2026-07-15; N4), or the last counted one holding Organisation admin
     powers (S2 / M4a review: an org admin whose powers a super unticked does not count). Archive, Revoke
     and Delete all refuse it. ``lock=True`` (inside a transaction: those doors) counts with the rows
     locked."""

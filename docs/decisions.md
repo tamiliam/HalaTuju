@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-25 — Membership comes first: an invitee who has not signed in is not an org admin (owner ruling)
+
+Owner ruling, 25 Nov: "A person becomes an admin, reviewer or mentor by being a member first. Even if the invitation
+is for admin, the person must first become a member, then be added as admin." Services: api, web (manual text only). Migration: none.
+- **First application (this fix).** An invitee who has not signed in is not a member, so they do not count as an
+  organisation admin. `staff_delete_rules._org_admins` (and `_live_org_admin`) count only org admins who are active AND
+  have signed in (`first_seen_at` set: the first console visit's conditional UPDATE, `views_admin._touch_seen`, the
+  invitation-acceptance hook). So Archive, Revoke, Delete and unticking Organisation admin powers refuse the last
+  SIGNED-IN org admin (400 `last_org_admin` / 409 `last_org_admin_powers`, wording unchanged), even when an invitee
+  holds pre-granted powers; Cancel invitation needs no last-admin check, because an invitee never counts.
+- **Why:** two reviewers found a super could revoke the signed-in org admin, then cancel the invitee who held the
+  only powers left. Counting invitees was the root cause, so the count changed rather than adding a guard to Cancel.
+- **Not yet applied** to reviewers or mentors (a separate audit).
+
 ## 2026-11-23 — Sponsor credits and the Vircle ID on Payments switches (sprint M4b)
 
 Owner rulings, 23 Nov (programme ACCESS-BY-SWITCHES S3). Services: both. Migration: none, but the sprint lands WITH or

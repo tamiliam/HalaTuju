@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### An invite not yet accepted does not count as an org admin (owner ruling, 2026-11-25)
+
+Not pushed. Migration: none. Services: api, web (manual text only).
+- Review gap: a super could revoke the signed-in org admin, then cancel the invitee who held the only org-admin powers left. Owner ruling: an invitee who has not signed in is not a member, so never an org admin. The last-admin count (`staff_delete_rules._org_admins` / `_live_org_admin`, read by `is_sole_org_admin`, `powers_holder_ids`, `sole_org_admin_ids` and `lock_org_admins_of`) now counts only active org admins who have signed in (`first_seen_at` set). Archive, Revoke, Delete and unticking Organisation admin powers refuse the last signed-in org admin with today's responses (400 `last_org_admin`, 409 `last_org_admin_powers`), even when an invitee holds pre-granted powers; the Team table marks them the same way. Cancel invitation is unchanged and needs no check. NULL stored permissions keep their meaning (holding the powers); inactive and archived org admins still do not count; lock order unchanged. `docs/decisions.md` records the ruling. Tests: 11 new in `test_m4a_org_admin_powers.py` (`AnInviteeIsNotAnOrgAdmin`); existing last-admin fixtures in `test_m4a_org_admin_powers.py`, `test_t2_review.py`, `test_org_admin_role.py` and `test_m1a_archive_restore.py` now stamp `first_seen_at` so their org admins count. Manual FAQ and org-admin guide: an invited admin counts only once signed in.
+
 ### Degree funding estimate: living costs RM900 a study month (TD-719, 2026-11-24)
 
 Not pushed. Migration: none. Services: api, web.

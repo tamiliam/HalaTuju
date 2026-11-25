@@ -12,6 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import jwt
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses import staff_permissions_v2 as v2
@@ -229,7 +230,8 @@ class TestOrgAdminStaffManagement(_Base):
 class TestLastOrgAdminGuard(_Base):
     """The sole active org_admin of a tenant cannot be revoked (matrix; backend enforces)."""
     def test_super_cannot_revoke_sole_org_admin(self):
-        # Suresh (oa-uid) is BrightPath's only org_admin.
+        # Suresh (oa-uid) is BrightPath's only org_admin, and has signed in (so counts).
+        PartnerAdmin.objects.filter(pk=self.org_admin.pk).update(first_seen_at=timezone.now())
         self._auth('super-uid')
         r = self.client.patch(f'/api/v1/admin/admins/{self.org_admin.id}/revoke/',
                               {'action': 'revoke'}, format='json')
@@ -241,7 +243,9 @@ class TestLastOrgAdminGuard(_Base):
     def test_super_can_revoke_when_another_org_admin_exists(self):
         PartnerAdmin.objects.create(
             supabase_user_id='oa2-uid', role='org_admin', is_active=True,
-            owning_organisation=self.bp, name='Second', email='oa2@x.com')
+            owning_organisation=self.bp, name='Second', email='oa2@x.com',
+            first_seen_at=timezone.now())
+        PartnerAdmin.objects.filter(pk=self.org_admin.pk).update(first_seen_at=timezone.now())
         self._auth('super-uid')
         r = self.client.patch(f'/api/v1/admin/admins/{self.org_admin.id}/revoke/',
                               {'action': 'revoke'}, format='json')

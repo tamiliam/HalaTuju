@@ -334,7 +334,8 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>Why can&rsquo;t I revoke my other organisation admin?</>,
       a: <>You can&rsquo;t revoke the <strong>last</strong> organisation admin — the Revoke option isn&rsquo;t
         offered on the sole admin, so your organisation is never left without one. Invite or appoint another admin
-        first (adding an org admin is a platform action — ask the HalaTuju team).</>,
+        first (adding an org admin is a platform action — ask the HalaTuju team); an invited admin counts only once
+        they have signed in.</>,
     },
     {
       q: <>Why was my QC refused on a case I reviewed?</>,
