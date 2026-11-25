@@ -31,7 +31,7 @@ def _salary_relationship_docs(application):
     A WRONG-TYPE doc in either slot is UNUSABLE (#27) — its fields are blanked so no relationship
     can read off it — and the two ``*_unusable`` REASON strings ('' / 'wrong_type' / 'unreadable')
     travel with the reading so the caller can ask for the re-upload in the words that fit (#23)."""
-    from .income_engine import letter_names
+    from .income_engine import letter_names, link_numbers
     _, bcf, bc_unusable = _usable_relationship_fields(application, 'birth_certificate')
     g_doc, _, letter_unusable = _usable_relationship_fields(application, 'guardianship_letter')
     # TD-089 + review F1: the letter's guardian AND ward, through the one reading.
@@ -44,6 +44,8 @@ def _salary_relationship_docs(application):
         'letter_name': letter_name,
         'letter_ward': letter_ward,
         'letter_unusable': letter_unusable,
+        # #78: the IC numbers the mother / guardian rows are scored on (each member adds their IC's).
+        'nums': link_numbers(application, bcf, None if letter_unusable else g_doc),
     }
 
 
@@ -56,7 +58,8 @@ def _salary_member_scan(application, members, student_name, present, rel_docs):
     twice would collide, so ``_salary_unresolved`` aggregates each kind into ONE item that lists
     everyone."""
     from .income_engine import (member_relationship_status, relationship_doc_for,
-                                chain_verified_earner, earner_monthly_income)
+                                chain_verified_earner, earner_monthly_income,
+                                chain_link_status)
     from .income_shown import income_shown
     from .read_errors import ic_second_opinion_deferred
     evidence = []
@@ -92,13 +95,16 @@ def _salary_member_scan(application, members, student_name, present, rel_docs):
 
         # Relationship verdict (father/brother/sister share the patronymic; father also has
         # the #55 BC fallback for a mononym student).
+        ic_nric = (getattr(ic_doc, 'vision_nric', '') or '').strip() if ic_doc else ''
         rel = member_relationship_status(m, student_name, ic_name, rel_docs['bc_child'],
                                          rel_docs['bc_mother'], rel_docs['letter_name'],
-                                         rel_docs['bc_father'], rel_docs['letter_ward'])
+                                         rel_docs['bc_father'], rel_docs['letter_ward'],
+                                         nums=dict(rel_docs['nums'], ic=ic_nric))
         # IC-number chain: BC parent number == income-proof number confirms a mother/father earner
-        # even when the IC uploaded in their slot is the wrong card or absent (#9).
+        # even when the IC uploaded in their slot is the wrong card or absent (#9). The parent row
+        # only: the certificate's child row still decides (#78 review round 2).
         if rel != 'match' and m in ('mother', 'father') and chain_verified_earner(application, m):
-            rel = 'match'
+            rel = chain_link_status(application)
         if rel == 'match':
             evidence.append(_item('relationship_confirmed', member=m))
         elif rel == 'mismatch' and not deferred:

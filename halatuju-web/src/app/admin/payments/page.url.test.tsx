@@ -38,8 +38,9 @@ const run = (id: number, reference: string) => ({
   id, reference, payment_date: '2026-10-01', period_month: '2026-10-01', status: 'draft',
   students: 1, total: '100',
 }) as unknown as api.PaymentRunSummary
+// S2 / M4a: "New payment run" follows the served `can_prepare` only (an organisation admin's powers bring it).
 const runs = (...r: api.PaymentRunSummary[]) =>
-  ({ runs: r }) as unknown as Awaited<ReturnType<typeof api.getPaymentRuns>>
+  ({ runs: r, can_prepare: true }) as unknown as Awaited<ReturnType<typeof api.getPaymentRuns>>
 const NO_FUNDING = { rows: [], totals: {} } as unknown as api.FundingSummary
 
 beforeEach(() => {

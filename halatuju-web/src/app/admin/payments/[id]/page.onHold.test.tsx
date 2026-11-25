@@ -16,7 +16,9 @@ jest.mock('@/lib/i18n', () => ({
   }),
 }))
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin', owning_org_id: 11 } }),
+  // S2 / M4a: the page opens by the served door (`payments.view`), never by the role.
+  useAdminAuth: () => ({ token: 'tok', role: jest.requireActual('@/test/staffPresets')
+    .withServedKeys({ role: 'org_admin', owning_org_id: 11 }) }),
 }))
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn() }),
@@ -37,7 +39,7 @@ const run = (over: Partial<api.PaymentRunDetail> = {}): api.PaymentRunDetail => 
   status: 'admin_signed', note: '', drive_file_url: '', created_by: 'k@x.com', created_at: '',
   admin_signed: SIG, finance_signed: null, org_admin_signed: null,
   finance_check_required: false, check_step_required: false,
-  your_step: 'approve', approver_fallback: false, can_prepare: true,
+  your_step: 'approve', approver_fallback: false, can_prepare: true, can_open_applicant: true,
   items: [{ ...ITEM, on_hold: true }], skipped: [], students: 1, total: '200.00',
   ...over,
 } as api.PaymentRunDetail)

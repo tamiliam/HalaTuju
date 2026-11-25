@@ -31,16 +31,17 @@ def str_route_income_fact(application, earner, str_doc, student_name, present, e
     prove the earner is the student's family, read the STR document, and place the verdict.
     ``evidence`` is the caller's list (the bills' soft context), appended to in place."""
     gap, review = [], []
-    earner_ic_name, ic_deferred = _earner_ic(application, earner, evidence, gap, review)
+    earner_ic_name, ic_deferred, ic_nric = _earner_ic(application, earner, evidence, gap, review)
     rel = _earner_relationship(application, earner, student_name, earner_ic_name, ic_deferred,
-                               present, evidence, gap, review)
+                               present, evidence, gap, review, ic_nric=ic_nric)
     reading = _str_reading(str_doc, earner, evidence, gap, review)
     return _place_income_verdict(application, earner, str_doc, student_name, present, utility,
                                  rel, reading, evidence, gap, review)
 
 
 def _earner_ic(application, earner, evidence, gap, review):
-    """── Earner IC (the income docs are issued in their name) ──"""
+    """── Earner IC (the income docs are issued in their name) ── Returns ``(name, deferred,
+    nric)``; the IC number scores the earner's relationship row (request #78)."""
     # `members=[earner]` keeps the IC/relationship reason-code copy uniform with the
     # salary route (which lists several) — both render "… for {members}".
     # Code-health S4 #17: select the EARNER'S IC (member-tagged, with the earner-only
@@ -59,14 +60,18 @@ def _earner_ic(application, earner, evidence, gap, review):
         review.append(_item('earner_ic_unreadable', members=[earner]))
     else:
         evidence.append(_item('earner_ic_present', name=earner_ic_name))
-    return earner_ic_name, ic_deferred
+    ic_nric = (getattr(ic_doc, 'vision_nric', '') or '').strip() if ic_doc else ''
+    return earner_ic_name, ic_deferred, ic_nric
 
 
 def _earner_relationship(application, earner, student_name, earner_ic_name, ic_deferred, present,
-                         evidence, gap, review):
-    """── Relationship: prove the earner is the student's family ── Returns ``rel``."""
+                         evidence, gap, review, ic_nric=''):
+    """── Relationship: prove the earner is the student's family ── Returns ``rel``. The mother /
+    guardian rows, and the certificate's child row on the father fallback, are scored on name +
+    IC number (`link_numbers`, request #78)."""
     from .income_engine import (father_link, mother_relationship,
-                                guardian_link, chain_verified_earner)
+                                guardian_link, chain_verified_earner, link_numbers,
+                                chain_link_status)
     # A WRONG-TYPE relationship doc (#27: a non-BC in the birth-certificate slot) is UNUSABLE —
     # its fields prove nothing, and the student gets a specific re-upload ticket (gap, like a
     # missing doc) instead of the officer-only generic genuineness caveat.
@@ -75,7 +80,8 @@ def _earner_relationship(application, earner, student_name, earner_ic_name, ic_d
         # Patronymic, with a BC fallback for a mononym student (#55) when a BC is uploaded.
         _, bcf, _ = _usable_relationship_fields(application, 'birth_certificate')
         rel = father_link(student_name, earner_ic_name,
-                          bcf.get('bc_child_name', ''), bcf.get('bc_father_name', ''))
+                          bcf.get('bc_child_name', ''), bcf.get('bc_father_name', ''),
+                          link_numbers(application, bcf, ic_nric=ic_nric))   # #78: the child row
     elif earner == 'mother':
         if 'birth_certificate' not in present:
             gap.append(_item('birth_cert_missing'))
@@ -87,7 +93,8 @@ def _earner_relationship(application, earner, student_name, earner_ic_name, ic_d
                 gap.append(_item('birth_cert_not_genuine'))
             else:
                 rel = mother_relationship(bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', ''),
-                                          student_name, earner_ic_name)
+                                          student_name, earner_ic_name,
+                                          link_numbers(application, bcf, ic_nric=ic_nric))
     elif earner == 'guardian':
         if 'guardianship_letter' not in present:
             gap.append(_item('guardianship_letter_missing'))
@@ -98,11 +105,13 @@ def _earner_relationship(application, earner, student_name, earner_ic_name, ic_d
             elif g_unusable:
                 gap.append(_item('guardianship_letter_not_genuine'))
             else:
-                rel = guardian_link(g, earner_ic_name, student_name)   # TD-089 + review F1
+                rel = guardian_link(g, earner_ic_name, student_name,   # TD-089 + review F1
+                                    link_numbers(application, letter=g, ic_nric=ic_nric))
     # IC-number chain: the BC's parent number matching the income proof's number confirms a
-    # mother/father earner even when the IC uploaded in their slot is the wrong card (#9).
+    # mother/father earner even when the IC uploaded in their slot is the wrong card (#9). It stands
+    # in for the parent row only; the certificate's child row still decides (#78 review round 2).
     if rel != 'match' and earner in ('mother', 'father') and chain_verified_earner(application, earner):
-        rel = 'match'
+        rel = chain_link_status(application)
     rel = 'pending' if (rel == 'mismatch' and ic_deferred) else rel   # TD-390: half a read, no clash
     if rel == 'match':
         evidence.append(_item('relationship_confirmed'))
@@ -164,6 +173,10 @@ def _str_reading(str_doc, earner, evidence, gap, review):
     return str_verified, str_failed, str_unsure, str_mismatch
 
 
+#: The items `_str_reading` raises; one of them is what sets the Unsure band in `_place_income_verdict`.
+_STR_BAND_CODES = ('str_not_current', 'str_recipient_mismatch', 'str_present_unverified')
+
+
 def _place_income_verdict(application, earner, str_doc, student_name, present, utility, rel,
                           reading, evidence, gap, review):
     """── Place the verdict ──"""
@@ -195,6 +208,10 @@ def _place_income_verdict(application, earner, str_doc, student_name, present, u
     # looked at. They now offer the salary reading too and keep whichever is stronger — see
     # `_stronger_income_fact`, which can only ever RAISE a household.
     if str_unsure or str_mismatch:
+        # Request #78, Part D (the owner's rule, after the 17 Nov Academic fix and #804): the item that
+        # decides the band leads the tile (`unresolved[0]`). The STR's own item was appended AFTER the
+        # earner-IC / relationship items, so it moves to the front; the rest keep their order.
+        review = sorted(review, key=lambda i: i['code'] not in _STR_BAND_CODES)
         return _ve._stronger_income_fact(_fact('income', 'recommend', evidence, review),
                                          application, student_name, present, utility)
     if review:

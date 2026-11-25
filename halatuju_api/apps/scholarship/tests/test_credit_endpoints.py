@@ -13,6 +13,7 @@ from decimal import Decimal
 
 import jwt
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerOrganisation
@@ -70,7 +71,8 @@ class _Base(TestCase):
 
     def _arm_finance(self):
         self.finance.is_active = True
-        self.finance.save(update_fields=['is_active'])
+        self.finance.first_seen_at = timezone.now()    # TD-560 (S2 / M4a): only a signed-in checker arms it
+        self.finance.save(update_fields=['is_active', 'first_seen_at'])
         return self.finance
 
     def client_for(self, admin):

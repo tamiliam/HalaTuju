@@ -7,12 +7,15 @@
  */
 export const ORG_ADMIN_PAGE_KEYS: readonly string[] = [
   'invitations.view', 'invitations.edit', 'team.view', 'sources.view', 'sources.edit',
-  'sponsors.view', 'sponsors.edit', 'sponsors.check', 'sponsors.approve', 'billing.view', 'billing.edit',
+  'sponsors.view', 'sponsors.edit', 'sponsors.approve', 'billing.view', 'billing.edit',
   'requests.view', 'requests.edit', 'requests.approve', 'settings.edit',
   'students.view', 'students.edit', 'students.approve', 'contracts.view', 'contracts.edit', 'programmes.edit',
   'announcements.view', 'announcements.edit', 'surveys.view', 'surveys.edit',
   'development.view', 'development.edit', 'mentoring.view', 'mentoring.edit',
-  'payments.view', 'payments.prepare', 'payments.check', 'payments.approve', 'spending.view', 'spending.edit', 'qc',
+  'payments.view', 'spending.view', 'spending.edit', 'qc',
+  // S2 / M4a: the server serves Organisation admin powers in an organisation admin's `page_keys`, and no
+  // longer the lead tier's money keys (`payments.prepare` / `.check` / `.approve`, `sponsors.check`).
+  'organisation.admin',
 ]
 
 export const REVIEWER_PAGE_KEYS: readonly string[] = ['review']

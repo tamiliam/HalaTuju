@@ -146,7 +146,7 @@ def nric_dob_agrees(nric: str, dob: str) -> bool:
     stained, creased barcode block read ``080306-07-0923`` against a MyKad of ``080306-07-0398``,
     the printed ``06 MAC 2008`` agreed, so the read was kept — and the last four digits still
     disagreed. That is WHY a number that survives this guard is compared row-wise and lands AMBER
-    rather than green (`_combine_relationship`): the guard is what stops a misread creating a
+    rather than green (`income_engine.match_bands`): the guard is what stops a misread creating a
     confident RED, not what makes the number trustworthy. Widening it is impossible — nothing on
     the certificate corroborates the last four digits — so the amber is the answer, and a person
     reads it. (Owner reviewed #83 on 2026-09-08 and confirmed the behaviour is correct.)

@@ -86,8 +86,10 @@ export interface PaymentRunDetail {
   your_step?: PaymentStep | null
   /** #39 S2: nobody else may approve this run, so the organisation admin does (the page says so). */
   approver_fallback?: boolean
-  /** #39 S2: may the caller edit items and cancel (Prepare, or the organisation admin)? */
+  /** #39 S2: may the caller edit items and cancel (Prepare, or Organisation admin powers)? */
   can_prepare?: boolean
+  /** Sprint M4a: may the caller open a student's file from a run row (`b40_scope` 'all')? Absent = no. */
+  can_open_applicant?: boolean
   /** The APPROVER's signature (Finance since #39 S2); the field name is a kept misnomer. */
   org_admin_signed: PaymentSignature | null
   items: PaymentRunItem[]

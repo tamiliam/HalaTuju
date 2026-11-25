@@ -58,6 +58,10 @@ class _Case(TestCase):
         cls.admin_a = _admin('gift-admin-a', cls.org_a)
         cls.admin_b = _admin('gift-admin-b', cls.org_b)
         cls.plain_admin = _admin('gift-plain', cls.org_a, role='admin')
+        # S3 / M4b (owner Q-A): the maker's seat is Sponsors: edit stored, as every live Admin row holds it.
+        from apps.courses import staff_tables
+        PartnerAdmin.objects.filter(pk=cls.plain_admin.pk).update(permissions=staff_tables.invite_permissions('admin'))
+        cls.plain_admin.refresh_from_db()
 
     def setUp(self):
         self.client = APIClient()
@@ -147,8 +151,8 @@ class TestAcceptingIntoAGift(_Case):
         sabah = self._second_gift()
         s = _sponsor()
 
-        # ⚠ THE MAKER IS A PLAIN `admin`, NOT THE ORG_ADMIN. P4b's chain is maker `admin` ->
-        # [finance] -> approver `org_admin`, so recording with the org_admin refuses `wrong_role`
+        # ⚠ THE MAKER IS A PLAIN `admin` (Sponsors: edit), NOT THE ORG_ADMIN. The chain is maker ->
+        # [checker] -> approver (S3 / M4b: by switch; the organisation admin never records), so recording with the org_admin refuses `wrong_role`
         # long before the membership is looked at — and the test would then pass for the wrong
         # reason, asserting a role refusal while claiming to assert a membership one.
         #

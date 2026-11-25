@@ -310,6 +310,9 @@ export interface StaffPermissionsView {
   v2_gaps?: string[]
   /** M3c (A12): today's keys this viewer may not give (they do not hold them); the v2 ones say `not_held`. */
   keys_not_held?: string[]
+  /** S2 / M4a: an organisation admin's card only (null otherwise): does the row hold Organisation admin
+   *  powers (`organisation.admin`), and the powers it brings, in the server's order. Only a super edits it. */
+  org_admin_powers?: { held: boolean; powers: string[] } | null
 }
 
 /** M2b: one v2 page key. `grantable` false = not tickable here, with `reason`: `never_grantable` (the lead
@@ -364,6 +367,8 @@ export interface StaffPermissionsPlan {
   v2_held?: string[]
   /** M2d (D7): the pages the set would leave short of Scholars (`consequences` then ends `scholars_needed`). */
   v2_gaps?: string[]
+  /** S2 / M4a: would the set hold Organisation admin powers (an organisation admin's card). */
+  org_admin_powers_held?: boolean
 }
 
 export async function getStaffPermissions(adminId: number, options?: ApiOptions) {
@@ -373,11 +378,12 @@ export async function getStaffPermissions(adminId: number, options?: ApiOptions)
 /** Save a set, or with `dryRun` ask what saving it would do. A refusal throws with the server's
  *  sentence and its `code` (`has_open_cases`, `would_leave_people`, `never_grantable`, …).
  *  M2b: `permissions` is the WHOLE set, today's keys and the v2 page keys together, so it says `v2: true`
- *  (a tab without the flag keeps the stored v2 keys untouched). */
+ *  (a tab without the flag keeps the stored v2 keys untouched). S2 / M4a: `powers: true` says the set carries
+ *  `organisation.admin` as the screen means it (a tab without the flag keeps a held key). */
 export async function saveStaffPermissions(adminId: number, permissions: string[], dryRun: boolean,
                                            options?: ApiOptions) {
   return adminMutate<StaffPermissionsPlan>(`/api/v1/admin/admins/${adminId}/permissions/`, 'PATCH',
-    { permissions, dry_run: dryRun, v2: true }, options)
+    { permissions, dry_run: dryRun, v2: true, powers: true }, options)
 }
 
 /** Suspend (`revoke`) or restore a staff sign-in. A refusal throws with `code` and the whole body

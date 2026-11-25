@@ -56,6 +56,11 @@ export interface AdminSponsorCredit {
   /** Sponsor detail only (A1.10a): is the check step armed for THIS credit — a holder of
    *  `payments_approve` who has not signed it exists. Read verbatim (`sponsorDetail.creditArmed`). */
   check_required?: boolean
+  /** Sponsor detail only (S3 / M4b): what THIS caller may do with the credit, served by
+   *  `credit_steps.served` and drawn verbatim — the screen derives none of it. */
+  can_sign?: boolean
+  blocked?: 'awaiting_finance' | null
+  can_void?: boolean
 }
 
 export interface AdminSponsorStudent {
@@ -93,6 +98,8 @@ export interface AdminSponsorDetail {
   notify_frequency: 'realtime' | 'weekly' | 'off'
   last_digest_sent_at: string | null
   programmes: AdminSponsorWallet[]
+  /** S3 / M4b: may this caller record a credit (`credit_steps.may_record`: Sponsors: edit in their own seat). */
+  can_record_credit?: boolean
   credits: AdminSponsorCredit[]
   sponsorships: AdminSponsorStudent[]
   referrals: Array<{
@@ -185,10 +192,11 @@ export async function recordSponsorCredit(
 
 /** Sign whichever step is next. The typed name must match the caller's own admin record. */
 export async function signSponsorCredit(
-  id: number, typedName: string, options?: ApiOptions,
+  id: number, typedName: string, expectedStatus: string, options?: ApiOptions,
 ): Promise<AdminSponsorCredit> {
+  // S3 / M4b review SF1: the status the page drew; a credit that moved on meanwhile answers 409 `stale`.
   return adminMutate(`/api/v1/admin/scholarship/credits/${id}/sign/`, 'POST',
-    { typed_name: typedName }, options)
+    { typed_name: typedName, expected_status: expectedStatus }, options)
 }
 
 /** Void an UNCONFIRMED credit. The row is kept — a confirmed credit is never cancelled. */

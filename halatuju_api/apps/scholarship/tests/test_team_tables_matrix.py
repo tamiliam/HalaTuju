@@ -196,6 +196,24 @@ def a110a_moved_cells(shape, before):
     return {p: 403 for p in A110A_CREDIT_WRITES} if shape in A110A_SHUT_AT_THE_DOOR else {}
 
 
+#: S3 / M4b (TD-498 remainder, owner Q-D, 23 Nov): reading the sponsor terms and the sponsor emails asks
+#: `sponsors.view` (`sponsor_terms_read` / `sponsor_emails_read`); writing still asks `sponsors.edit`. Every
+#: shape that reads Sponsors but could not author the terms now READS them: the lists answer 200 and the
+#: per-version reads 404 (the probe names no version). Derived in `test_the_declared_changes_are_what_staff_
+#: tables_says`, never trusted. Nobody gains a write.
+M4B_READS = {'GET api/v1/admin/scholarship/sponsor-emails/': 200,
+             'GET api/v1/admin/scholarship/sponsor-terms/': 200,
+             'GET api/v1/admin/scholarship/sponsor-terms/<int:pk>/': 404,
+             'GET api/v1/admin/scholarship/sponsor-terms/<int:pk>/preview/': 404,
+             'GET api/v1/admin/scholarship/sponsor-terms/<int:pk>/validate/': 404}
+M4B_NOW_READ = ('finance', 'finance_custom', 'qc_spending', 'reviewer_admin_keys', 'reviewer_admin_keys_other_org',
+                'reviewer_payments_check')
+
+
+def m4b_moved_cells(shape):
+    return dict(M4B_READS) if shape in M4B_NOW_READ else {}
+
+
 #: F4 (2026-11-23, owner design): the AI prediction card follows `b40_scope == 'all'` (`see_all`, QC's implied
 #: one), never `review` alone. These shapes hold `review` and no `see_all`, so `verdict-metrics` was 200 in the
 #: BEFORE fixtures and is now 403. The fixtures are never regenerated; the moved cell is declared here.
@@ -415,6 +433,11 @@ class AccessMatrix(TestCase):
                 if person.is_active and before[shape][A110A_CREDIT_WRITES[0]] != 403
                 and not st.opens_door(person, 'credits_write')}
         self.assertEqual(shut, set(A110A_SHUT_AT_THE_DOOR))
+        # S3 / M4b: the sponsor reads opened to Sponsors: view, derived the same way.
+        reads = {shape for shape, person in self.people.items()
+                 if person.is_active and before[shape][next(iter(M4B_READS))] == 403
+                 and st.opens_door(person, 'sponsor_emails_read') and st.opens_door(person, 'sponsor_terms_read')}
+        self.assertEqual(reads, set(M4B_NOW_READ))
         # …and the mixed shapes sit where the derivation says.
         self.assertEqual(st.tables(self.people['qc_spending']), ('admins', 'reviewers'))
         self.assertEqual(st.tables(self.people['reviewer_payments_check']), ('admins', 'reviewers'))
@@ -486,7 +509,7 @@ def _expected_row(shape):
     before = _before()[shape]
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
-           **a110a_moved_cells(shape, before), **r55_added_cells(shape, before),
+           **a110a_moved_cells(shape, before), **m4b_moved_cells(shape), **r55_added_cells(shape, before),
            **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before), **thanks_cells(shape, before),
            **r75_added_cells(shape), **r73_added_cells(shape), **f4_moved_cells(shape, before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
@@ -585,7 +608,7 @@ class CreditDoors(TestCase):
         self.assertEqual(credit.status, Donation.STATUS_ADMIN_SIGNED)
         self._refused_sign(credit)
         # finance_checked (an active finance admin arms the check): the next step is the countersign.
-        finance = make_admin('finance', owning_org=self.org)
+        finance = make_admin('finance', owning_org=self.org, first_seen_at=timezone.now())   # TD-560: signed in
         credit = credit_service.record_admin_credit(sponsor=self.sponsor, programme=self.programme,
                                                     amount=Decimal('100'), external_reference='T1-4',
                                                     admin=self.maker)

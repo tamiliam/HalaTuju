@@ -87,22 +87,21 @@ def _invitations(admin):
     return sum(counts.values())
 
 
-def _payment_runs(admin):
+def _payment_runs(admin, cache):
     from .models import PaymentRun
     # org-fence: the Payments list's own fence — a super is global, everybody else their organisation.
     runs = PaymentRun.objects.filter(status__in=payments_chain._IN_FLIGHT)
     runs = runs if admin.is_super else runs.filter(organisation_id=admin.owning_organisation_id)
-    cache = {}                                  # one holders() read per organisation, as on the list
     return sum(1 for r in runs if payments_chain.next_step_for(r, admin, cache) is not None)
 
 
-def _wallet_credits(admin):
+def _wallet_credits(admin, cache):
     from .models import Donation
     # org-fence: the Credits page's own fence (`_credit_qs`, on the gift's organisation).
     credits = Donation.objects.filter(status__in=credit_steps.SIGNING).select_related('programme__organisation')
     credits = credits if admin.is_super else credits.filter(
         programme__organisation_id=admin.owning_organisation_id)
-    return credit_steps.waiting_for(admin, credits)
+    return credit_steps.waiting_for(admin, credits, cache)
 
 
 def _requests(admin):
@@ -131,6 +130,7 @@ def pending_for(admin, *, b40_scope, now=None):
     from . import spend_report
     now = now or timezone.now()
     cards = {}
+    staff_cache = {}        # one staff read per organisation, shared by the payment-run and credit cards
     org = _org(admin)
     reviews = staff_tables.in_reviewers(admin)
     if org is not None:
@@ -147,9 +147,9 @@ def pending_for(admin, *, b40_scope, now=None):
     if surface_gates.may_read_team(admin):     # TD-504 (A1.10a): the Invitations page's own door
         cards['invitations'] = {'count': _invitations(admin)}
     if payments_chain.may_read(admin):
-        cards['payment_runs'] = {'count': _payment_runs(admin)}
+        cards['payment_runs'] = {'count': _payment_runs(admin, staff_cache)}
     if credit_steps.checks_credits(admin):
-        cards['wallet_credits'] = {'count': _wallet_credits(admin)}
+        cards['wallet_credits'] = {'count': _wallet_credits(admin, staff_cache)}
     if award_withdrawal_chain.holds_decide_seat(admin):     # the seat incl. read scope 'all'
         # A1.13b: the award withdrawals waiting for THIS checker (web link /admin/scholarship?withdrawal=pending).
         cards['award_withdrawals'] = {'count': award_withdrawal_chain.waiting_for(admin, now)}

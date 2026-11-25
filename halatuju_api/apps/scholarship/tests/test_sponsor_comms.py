@@ -78,9 +78,12 @@ def _token(uid):
 
 
 def _admin(org, role, name, email):
+    # S3 / M4b: an Admin row in its production shape (Sponsors: edit stored), the credit maker's seat.
+    from apps.courses import staff_tables
     return PartnerAdmin.objects.create(
         supabase_user_id=f'sc-{email}', role=role, is_active=True,
-        owning_organisation=org, name=name, email=email)
+        owning_organisation=org, name=name, email=email,
+        permissions=staff_tables.invite_permissions(role) if role == 'admin' else None)
 
 
 def _template(kind, *, enabled=True, subject=None, body=None):
@@ -273,7 +276,9 @@ class TestCreditChainNotifies(CommsBase):
         svc.sign_admin_credit(credit, maker, maker.name)      # maker signs — still not ours
         self.assertEqual(len(mail.outbox), 0)
 
-        svc.sign_admin_credit(credit, approver, approver.name)   # countersigned → confirmed
+        # TD-561 (S3 / M4b): the email goes once the countersignature has committed.
+        with self.captureOnCommitCallbacks(execute=True):
+            svc.sign_admin_credit(credit, approver, approver.name)   # countersigned → confirmed
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(SponsorEmailLog.objects.filter(ok=True, kind='credit_confirmed').count(), 1)
 
@@ -454,11 +459,14 @@ class TestEndpoints(CommsBase):
         c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(admin.supabase_user_id)}')
         return c
 
-    def test_finance_and_reviewer_are_refused(self):
-        """Finance reads sponsors because money is its business; deciding what every donor is
-        told is editorial, and deliberately a narrower gate than the sponsor list."""
-        for admin in (self.finance, self.reviewer):
-            self.assertEqual(self._client(admin).get(EMAILS).status_code, 403)
+    def test_finance_reads_but_never_writes_and_a_reviewer_is_refused(self):
+        """Deciding what every donor is told is editorial: writing stays on Sponsors: edit. Reading
+        the emails follows Sponsors: view (S3 / M4b, owner Q-D, 23 Nov), which finance holds."""
+        _template('welcome', enabled=False)
+        self.assertEqual(self._client(self.finance).get(EMAILS).status_code, 200)
+        self.assertEqual(self._client(self.finance).patch(
+            f'{EMAILS}welcome/', {'enabled': True}, format='json').status_code, 403)
+        self.assertEqual(self._client(self.reviewer).get(EMAILS).status_code, 403)
 
     def test_an_org_admin_sees_the_templates_and_the_platform_gate(self):
         _template('welcome', enabled=False)

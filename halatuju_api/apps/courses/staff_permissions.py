@@ -156,13 +156,29 @@ def is_lead_tier(admin):
     return admin is not None and not admin.is_super and admin.role == LEAD_ROLE
 
 
+#: Sprint S2 / M4a (owner Q1, 19 Nov): "Organisation admin powers", ONE key stored on every org admin row
+#: (migration 0100) and set only by a super. Its powers: `staff_permissions_v2.ORG_ADMIN_POWERS`.
+ORG_ADMIN_KEY = 'organisation.admin'
+
+
+def holds_org_admin_powers(admin):
+    """THE ONE READER of `ORG_ADMIN_KEY`: a non-super org admin whose stored list holds it, or whose row
+    is NULL / not a list (fail-safe, as `org_admin_v2`: a role change writes NULL). Any other row: False,
+    even one that somehow stores the key."""
+    if not is_lead_tier(admin):
+        return False
+    stored = getattr(admin, 'permissions', None)
+    return not isinstance(stored, (list, tuple)) or ORG_ADMIN_KEY in stored
+
+
 def resolve(admin):
     """THE ONE DOOR: the keys `admin` holds, as a tuple in catalogue order.
 
       super        → every key (a super passes every check; payments still lets them fill ONE slot)
       org_admin    → M3a (A2): `permissions` cleaned, STRICTLY (as a team member's, `review` included
                      when Team -> Reviewers added it), or `ORG_ADMIN_KEYS` when it is NULL or not a
-                     list (fail-safe: never a lock-out); plus `manage_team` BY ROLE (`LEAD_BY_ROLE`)
+                     list (fail-safe: never a lock-out); plus `manage_team` (`LEAD_BY_ROLE`) through
+                     `organisation.admin` (S2: `holds_org_admin_powers`)
       team member  → `permissions` cleaned, or the preset of `role` when it is NULL
       anyone else  → nothing (a referral partner, a SOURCE user — source sign-in S1 —, an unknown
                      role, None). A source user is never a team member, whatever `permissions` says.
@@ -174,7 +190,7 @@ def resolve(admin):
     if admin.role == LEAD_ROLE:
         stored = getattr(admin, 'permissions', None)
         held = clean(stored) if isinstance(stored, (list, tuple)) else ORG_ADMIN_KEYS
-        return _ordered((*held, *LEAD_BY_ROLE))
+        return _ordered((*held, *LEAD_BY_ROLE) if holds_org_admin_powers(admin) else held)
     if admin.role not in PRESETS:
         return ()
     stored = getattr(admin, 'permissions', None)

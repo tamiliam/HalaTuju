@@ -272,9 +272,11 @@ def test_access(world, route, method, role):
 # ── M3c: a team member GRANTED the organisation admin's keys ────────────────────────────────────
 #: `access_world` seeds `admin_granted_a`: an `admin` of organisation A given, through the real editor,
 #: every key of `ORG_ADMIN_SET` (A9 / A12). It is held to org admin A's answer on every route: it gets
-#: through exactly where org admin A does, except the routes below — each one a power the ROLE still
-#: holds (`manage_team`, D4; the payment seats, E1, until M4) or a platform-wide power fenced to
-#: organisation admins and supers (the sponsor account and the sponsor terms, the M3c fence).
+#: through exactly where org admin A does, except the routes below — each one a power that comes with
+#: Organisation admin powers (`manage_team`, D4; S2 / M4a: through the key, no longer the role) or a
+#: platform-wide power fenced to organisation admins and supers (the sponsor account and the sponsor
+#: terms, the M3c fence). The payment seats (E1, by role until M4) never differed at the route: the
+#: `admin` preset holds `payments_prepare`; who signs what is `test_m4a_maker_checker`'s.
 GRANTED, GRANTED_LIKE = 'admin_granted_a', 'org_admin_a'
 GRANTED_DIFFERS = {
     ('api/v1/admin/invite/', 'post'): 'manage_team: team changes stay with the organisation admin (D4)',
@@ -319,6 +321,96 @@ def test_a_granted_team_member_opens_what_an_org_admin_does(world, route, method
 
 def test_the_granted_differences_are_still_served():
     assert set(GRANTED_DIFFERS) <= set(PAIRS)
+
+
+# ── S2 / M4a: Payments by switches, not labels ─────────────────────────────────────────────────────
+#: The payment routes, and who passes their gate (`payments.may_read` / `may_prepare`), by KEY: an admin
+#: with Approve only and one with View only pass exactly where `finance_a` does (the reads, and the sign
+#: route, whose step the chain refuses after the gate); an organisation admin whose Organisation admin
+#: powers are off passes none, where org admin A passes them all.
+PAYMENT_PAIRS = [p for p in PAIRS if p[0].startswith(('api/v1/admin/scholarship/payment-runs/',
+                                                      'api/v1/admin/scholarship/payments/'))]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('route,method', PAYMENT_PAIRS, ids=lambda v: v if isinstance(v, str) else None)
+def test_payments_open_by_switch(world, route, method):
+    def passes(role):
+        cache.clear()
+        with transaction.atomic():
+            code = world.call(role, route, method).status_code
+            transaction.set_rollback(True)
+        return code not in HIDE
+    finance, lead = passes('finance_a'), passes('org_admin_a')
+    assert lead, f'{method.upper()} {route}: org admin A (the powers on) is refused'
+    got = {role: passes(role) for role in access_world.PAYMENT_CALLERS}
+    assert got == {'payments_holder_a': finance, 'payments_viewer_a': finance, 'oa_unkeyed_a': False}, (
+        f'{method.upper()} {route}: finance_a {"passes" if finance else "is refused"}; {got}')
+
+
+def test_the_payment_routes_are_served():
+    assert len(PAYMENT_PAIRS) >= 4, PAYMENT_PAIRS
+
+
+# ── S3 / M4b: wallet credits by switches, not labels ─────────────────────────────────────────────────
+#: The credit routes, and who passes their doors by KEY: Sponsors: edit opens the ledger, record, sign and
+#: cancel; Payments Approve (`payments_holder_a`, which reads Sponsors: view through its check) opens the
+#: ledger and sign, whose step is the chain's, and never record or cancel (owner Q-A, Q-B).
+CREDIT_PAIRS = [p for p in PAIRS if p[0].startswith('api/v1/admin/scholarship/credits/')]
+CREDIT_READ_OR_SIGN = {('api/v1/admin/scholarship/credits/', 'get'),
+                       ('api/v1/admin/scholarship/credits/<int:pk>/sign/', 'post')}
+
+
+def _passes(world, role, route, method):
+    cache.clear()
+    with transaction.atomic():
+        code = world.call(role, route, method).status_code
+        transaction.set_rollback(True)
+    return code not in HIDE
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('route,method', CREDIT_PAIRS, ids=lambda v: v if isinstance(v, str) else None)
+def test_credits_open_by_switch(world, route, method):
+    got = {role: _passes(world, role, route, method)
+           for role in (*access_world.CREDIT_CALLERS, 'payments_holder_a')}
+    assert got == {'sponsors_editor_a': True,
+                   'payments_holder_a': (route, method) in CREDIT_READ_OR_SIGN}, f'{method.upper()} {route}: {got}'
+
+
+def test_the_credit_routes_are_served():
+    assert len(CREDIT_PAIRS) == 4 and CREDIT_READ_OR_SIGN <= set(CREDIT_PAIRS), CREDIT_PAIRS
+
+
+@pytest.mark.django_db
+def test_a_credit_runs_by_switch(world):
+    """The maker-checker chain through the HTTP routes, every seat a switch (owner Q-A to Q-C, 23 Nov): the
+    Sponsors: edit holder records and signs first; an organisation admin may not record; the check is armed
+    (finance A and the Payments Approve holders), so the organisation admin waits; the Payments Approve
+    holder checks and may not approve their own check; the organisation admin approves."""
+    base = '/api/v1/admin/scholarship/credits/'
+
+    def post(role, url, body):
+        cache.clear()
+        return world.clients[role].post(url, body, format='json')
+
+    def sign(role, pk):
+        return post(role, f'{base}{pk}/sign/', {'typed_name': getattr(world, role).name})
+
+    with transaction.atomic():
+        body = access_world.BODIES['api/v1/admin/scholarship/credits/'](world)
+        refused = post('org_admin_a', base, body)
+        assert (refused.status_code, refused.data['code']) == (400, 'wrong_role')       # Q-A
+        made = post('sponsors_editor_a', base, body)
+        assert made.status_code == 201, made.data
+        pk = made.data['id']
+        assert sign('sponsors_editor_a', pk).data['status'] == 'admin_signed'
+        assert sign('sponsors_editor_a', pk).data['code'] == 'wrong_role'              # not an approver
+        assert sign('org_admin_a', pk).data['code'] == 'finance_check_required'
+        assert sign('payments_holder_a', pk).data['status'] == 'finance_checked'
+        assert sign('payments_holder_a', pk).data['code'] == 'same_signer'             # Q-C: never twice
+        assert sign('org_admin_a', pk).data['status'] == 'confirmed'
+        transaction.set_rollback(True)
 
 
 # ── POST-AWARD-CUT review (18 Nov): the per-case writes in every case stage ───────────────────────────

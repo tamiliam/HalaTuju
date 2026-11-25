@@ -7,7 +7,8 @@
  * them, so every credit on production was keyed in by a developer. What these tests protect
  * is the WIRING: that the right endpoint is called with the typed signature, that the record
  * re-reads after a mutation (so the tiles cannot disagree with the database), and that a
- * control is never drawn for a step this viewer's role cannot take.
+ * control is never drawn for a step the server did not serve (S3 / M4b, 23 Nov: `can_record_credit`,
+ * and per credit `can_sign`, `blocked`, `can_void` — the page reads no role for credits).
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AdminSponsorDetailPage from './page'
@@ -45,6 +46,10 @@ const credit = (over: Partial<api.AdminSponsorCredit> = {}): api.AdminSponsorCre
   confirmed_by: '',
   confirmed_at: null,
   created_at: '2026-07-27T02:00:00Z',
+  // S3 / M4b: served by `credit_steps.served` — the default is the maker's view of a draft.
+  can_sign: true,
+  blocked: null,
+  can_void: true,
   ...over,
 })
 
@@ -85,6 +90,7 @@ const detail = (over: Partial<api.AdminSponsorDetail> = {}): api.AdminSponsorDet
   ],
   finance_check_required: false,
   fenced: false,
+  can_record_credit: true,   // S3 / M4b: served by `credit_steps.may_record`
   ...over,
 })
 
@@ -105,14 +111,14 @@ describe('recording a credit', () => {
     expect(screen.getByRole('button', { name: /recordCredit/ })).toBeTruthy()
   })
 
-  it('never offers it to the approver — they have to stay free to countersign', async () => {
-    viewerRole = { role: 'org_admin' }
+  it('never offers it when the server does not serve it (the approver stays free to countersign)', async () => {
+    mockApi.getSponsorDetail.mockResolvedValue(detail({ can_record_credit: false }))
     await open()
     expect(screen.queryByRole('button', { name: /recordCredit/ })).toBeNull()
   })
 
-  it('offers it to a super', async () => {
-    viewerRole = { role: 'reviewer', is_super_admin: true }
+  it('reads the served flag, never the role (S3 / M4b)', async () => {
+    viewerRole = { role: 'org_admin' }   // a label that once meant "never" — the flag decides now
     await open()
     expect(screen.getByRole('button', { name: /recordCredit/ })).toBeTruthy()
   })
@@ -242,14 +248,14 @@ describe('signing a credit', () => {
     fireEvent.change(screen.getByLabelText(/fullName/), { target: { value: 'Poongulali Veeran' } })
     fireEvent.click(sign)
     await waitFor(() => expect(mockApi.signSponsorCredit)
-      .toHaveBeenCalledWith(11, 'Poongulali Veeran', { token: 'tok' }))
+      .toHaveBeenCalledWith(11, 'Poongulali Veeran', 'draft', { token: 'tok' }))   // SF1: the drawn status
     await waitFor(() => expect(mockApi.getSponsorDetail).toHaveBeenCalledTimes(2))
   })
 
   it('shows the approver WHY they cannot countersign while finance is outstanding', async () => {
-    viewerRole = { role: 'org_admin' }
     mockApi.getSponsorDetail.mockResolvedValue(detail({
-      credits: [credit({ status: 'admin_signed', recorded_by: 'Poongulali Veeran', recorded_at: '2026-07-27T02:30:00Z' })],
+      credits: [credit({ status: 'admin_signed', recorded_by: 'Poongulali Veeran', recorded_at: '2026-07-27T02:30:00Z',
+                         can_sign: false, blocked: 'awaiting_finance' })],
       finance_check_required: true,
     }))
     await open()
@@ -257,8 +263,7 @@ describe('signing a credit', () => {
     expect(screen.queryByRole('button', { name: /sign\./ })).toBeNull()
   })
 
-  it('offers the CHECK to an Admin holding payments_approve (TD-475: the key, not the label)', async () => {
-    viewerRole = { role: 'admin', permissions: ['see_all', 'payments_approve'] }
+  it('offers the CHECK when the server serves can_sign on an armed credit (TD-475: the key, not the label)', async () => {
     mockApi.getSponsorDetail.mockResolvedValue(detail({
       credits: [credit({ status: 'admin_signed', recorded_by: 'Poongulali Veeran', recorded_at: '2026-07-27T02:30:00Z' })],
       finance_check_required: true,
@@ -267,10 +272,11 @@ describe('signing a credit', () => {
     expect(screen.getByRole('button', { name: /sign\.checked/ })).toBeTruthy()
   })
 
-  it('offers no CHECK to a Finance label without the key', async () => {
-    viewerRole = { role: 'finance', permissions: ['see_all'] }
+  it('offers no CHECK when the server does not serve can_sign, whatever the label', async () => {
+    viewerRole = { role: 'finance', permissions: ['see_all', 'payments_approve'] }
     mockApi.getSponsorDetail.mockResolvedValue(detail({
-      credits: [credit({ status: 'admin_signed', recorded_by: 'Poongulali Veeran', recorded_at: '2026-07-27T02:30:00Z' })],
+      credits: [credit({ status: 'admin_signed', recorded_by: 'Poongulali Veeran', recorded_at: '2026-07-27T02:30:00Z',
+                         can_sign: false })],
       finance_check_required: true,
     }))
     await open()
@@ -280,7 +286,6 @@ describe('signing a credit', () => {
   it('lets the approver countersign a credit whose only key holder signed it as maker', async () => {
     // A1.10a review fix: the server arms the check PER CREDIT (`check_required`), so the screen-wide
     // flag can be true while this credit goes straight to the organisation admin.
-    viewerRole = { role: 'org_admin' }
     mockApi.getSponsorDetail.mockResolvedValue(detail({
       credits: [credit({ status: 'admin_signed', recorded_by: 'Keyed Admin',
                          recorded_at: '2026-07-27T02:30:00Z', check_required: false })],
@@ -301,6 +306,16 @@ describe('signing a credit', () => {
       screen.getByText('admin.sponsors.detail.creditError.same_signer')).toBeTruthy())
   })
 
+  it('says the credit moved on when the server answers stale (M4b review SF1)', async () => {
+    const err = Object.assign(new Error('stale'), { code: 'stale' })
+    mockApi.signSponsorCredit.mockRejectedValue(err)
+    await open()
+    fireEvent.change(screen.getByLabelText(/fullName/), { target: { value: 'Poongulali Veeran' } })
+    fireEvent.click(screen.getByRole('button', { name: /sign\.recorded/ }))
+    await waitFor(() => expect(
+      screen.getByText('admin.sponsors.detail.creditError.stale')).toBeTruthy())
+  })
+
   it('falls back to known copy for a code it has never seen', async () => {
     const err = Object.assign(new Error('nope'), { code: 'a_brand_new_code' })
     mockApi.signSponsorCredit.mockRejectedValue(err)
@@ -313,6 +328,12 @@ describe('signing a credit', () => {
 })
 
 describe('voiding a credit', () => {
+  it('is not offered when the server does not serve can_void', async () => {
+    mockApi.getSponsorDetail.mockResolvedValue(detail({ credits: [credit({ can_void: false })] }))
+    await open()
+    expect(screen.queryByRole('button', { name: /detail\.void/ })).toBeNull()
+  })
+
   it('voids an unconfirmed credit and re-reads', async () => {
     mockApi.voidSponsorCredit.mockResolvedValue(credit({ status: 'cancelled' }))
     await open()

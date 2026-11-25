@@ -273,12 +273,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // rows the organisation fence already allowed.
       // ⚠ `needsProgramme` on BOTH (2026-09-28) — you enter a gift first. See that field's note.
       { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title', chord: 'Y',
-        // ⚠ NAVKEYS: MONEY IS FROZEN UNTIL M4 (TD-620). The payment keys answer every staff login (a super holds
-        // them all); an organisation admin holds NONE in its lead tier and is paid in by its role on the server
-        // (`staff_permissions_v2.LEAD_MONEY_UNTIL_M4`), so this row keeps that one role until M4 moves it.
-        scope: 'programme', roles: ['org_admin'],
-        perms: ['payments_prepare', 'payments_check', 'payments_approve'],
-        gate: { mode: 'always' }, needsProgramme: true, badge: 'paymentsWaiting' },
+        // S2 / M4a (TD-620): by the Payments View switch, which every Payments switch and Organisation admin
+        // powers bring (`payments_chain.may_read`), never by role.
+        scope: 'programme', door: 'payments_read', gate: { mode: 'always' }, needsProgramme: true,
+        badge: 'paymentsWaiting' },
       // ⚠ `finance` is DELIBERATELY ABSENT, unlike its neighbour. The backend refuses it for
       // the same reason: `_b40_scope` promises a finance admin never sees student data beyond
       // the Payments allowlist, and this screen carries names beside purchases. This row and

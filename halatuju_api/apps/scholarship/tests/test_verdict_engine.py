@@ -1812,10 +1812,10 @@ class TestRelationshipChecklists(TestCase):
                               'bc_mother_name': 'VANITHA A/P MOHAN', 'bc_mother_nric': '760820-02-5230',
                               'bc_father_name': 'ELANJELIAN A/L VENUGOPAL'})
         chk = student_bc_check(bc)
-        # ⚠ CHANGED BY #23 (2026-09-08), deliberately: this fixture gives the child a NAME and no
-        # number, and one cell alone no longer reads as fully verified. Amber, not green — the
-        # mother row below, which carries BOTH a name and a matching number, is still green.
-        self.assertEqual(chk['child_status'], 'check_one')  # child name matches; no number to check
+        # ⚠ CHANGED TWICE, deliberately. #23 (2026-09-08) made a name with no number amber; the
+        # owner's #78 ruling (23 Nov 2026) puts it back: NO NUMBER ON THE DOCUMENT = THE NAME
+        # ALONE, as the decision has always read it. The child name matches → green.
+        self.assertEqual(chk['child_status'], 'match')      # child name matches; no number read
         self.assertEqual(chk['mother_status'], 'match')     # mother name+NRIC = the mother IC
         # father vs the student's patronymic (A/L ELANJELIAN → ELANJELIAN). Name-only by
         # construction — there is no father NRIC reference — so it is untouched by the one-cell
@@ -1874,16 +1874,17 @@ class TestRelationshipChecklists(TestCase):
         self.assertEqual(student_bc_check(bc)['mother_status'], 'mismatch')
 
     def test_a_NEAR_nric_never_vouches_for_a_differing_name(self):
-        """⚠ EXACT MATCHES ONLY, and `nric_close` is deliberately not consulted here. Its whole
-        meaning is "these digits are NOT the same"; letting a near number forgive a differing name
-        would forgive both halves of the identity at once."""
+        """⚠ A near number never VOUCHES for a differing name: it is not green, and not the #19
+        'check_name' that an exact number earns. ⚠ CHANGED BY #78 (owner's table, 23 Nov 2026):
+        close number + far name is AMBER ('check_both': both cells read, a person reads the row),
+        no longer red — only both far, or far + missing, blocks."""
         from apps.scholarship.income_engine import student_bc_check
         _parent_ic(self.app, 'VANITHA A/P MOHAN', member='mother', nric='760820-02-5230')
         bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
                       fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
                               'bc_mother_name': 'STRANGER WOMAN',
                               'bc_mother_nric': '760920-02-5230'})   # one digit out
-        self.assertEqual(student_bc_check(bc)['mother_status'], 'mismatch')
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'check_both')
 
     def test_a_differing_name_with_NO_nric_read_stays_red(self):
         """Nothing to vouch with. An unread number must not be treated as agreement."""
@@ -1894,18 +1895,18 @@ class TestRelationshipChecklists(TestCase):
                               'bc_mother_name': 'STRANGER WOMAN', 'bc_mother_nric': ''})
         self.assertEqual(student_bc_check(bc)['mother_status'], 'mismatch')
 
-    def test_bc_mother_name_match_one_digit_misread_is_check_near(self):
+    def test_bc_mother_name_match_one_digit_misread_is_green(self):
         # POVIENTHIRAN case: the BC mother NAME matches the verified mother IC, but the AI
         # misread ONE digit of her NRIC off the green JPN security paper (76-08 → 76-09).
-        # Proven by the name + the verified IC → amber 'check_near' ("differs by one digit"),
-        # NOT a red 'mismatch'.
+        # ⚠ CHANGED BY #78 (owner's table, 23 Nov 2026): exact name + close number is GREEN
+        # ("one exact and the other close"); it was the amber 'check_near'. Never red.
         from apps.scholarship.income_engine import student_bc_check
         _parent_ic(self.app, 'MAGESWARY A/P RAJAGOPAL', member='mother', nric='760824-10-5692')
         bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
                       fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
                               'bc_mother_name': 'MAGESWARY A/P RAJAGOPAL',
                               'bc_mother_nric': '760924-10-5692'})  # AI misread: 08 → 09
-        self.assertEqual(student_bc_check(bc)['mother_status'], 'check_near')
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'match')
 
     def test_bc_mother_name_match_far_nric_is_plain_check(self):
         # Same name, but the NRIC differs by more than one digit → the plainer amber 'check'

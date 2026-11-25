@@ -209,3 +209,86 @@ describe('salary route — only the father ticked', () => {
     expect(screen.queryByText(MOTHER_IC, { exact: false })).toBeNull()
   })
 })
+
+describe('#78 — the birth certificate ticks the cluster only on the served green link', () => {
+  // The mother's STR route: her STR (hers, current), her IC (read) and the birth certificate are
+  // the compulsory three. With all three verified the income section folds into its "satisfied"
+  // view; the birth certificate counts as verified only on `bc_check.link === 'green'`, the server's
+  // one score of the child + mother rows. The browser never re-combines the row statuses.
+  const SATISFIED = `${W}.satisfiedTitle`
+  const DONE = `${W}.clusterDone`
+  const ownStr = doc(3, 'str', 'mother', {
+    str_check: { name: 'A NAME', nric: '', status: 'Lulus', year: '2026', member: 'mother',
+                 name_status: 'match', nric_status: 'match', current_status: 'current', ic_present: true,
+                 ic_slots: { missing: [], unreadable: [] } },
+  })
+  const herIc = doc(1, 'parent_ic', 'mother', {
+    income_ic_check: { nric: '', name: '', address: '', member: 'mother', name_status: 'match', readable: true },
+  })
+  const bc = (link: string, rows = 'match') => doc(2, 'birth_certificate', '', {
+    bc_check: { child_name: '', child_status: rows, mother_name: '', mother_nric: '', mother_status: rows,
+                link, father_name: '', father_status: 'no_ref', bc_number: '' },
+  })
+  const mothersCluster = async (certificate: api.ApplicantDocument) => {
+    mockApi.listDocuments.mockResolvedValue({ documents: [herIc, certificate, ownStr] })
+    render(<ScholarshipDocuments token="sandbox-token" app={{
+      ...sandboxApplication, requirements: FULL, income_route: 'str',
+      income_earner: 'mother', income_working_members: ['mother'],
+    } as unknown as ScholarshipApplication} />)
+    // Await the DATA, not the frame (the harness note above).
+    await waitFor(() => expect(screen.getByText('scholarship.docs.section.identity.title')).toBeTruthy())
+  }
+
+  it('green link → the income section is satisfied, even when a row reads amber on its own', async () => {
+    await mothersCluster(bc('green', 'check_near'))
+    await waitFor(() => expect(screen.getByText(SATISFIED)).toBeTruthy())
+  })
+
+  it.each(['amber', 'grey', 'red'])('%s link → no tick, even with both rows reading match', async (link) => {
+    await mothersCluster(bc(link))
+    // The certificate's file is drawn (the documents have arrived), and the cluster is not complete.
+    await waitFor(() => expect(screen.getByText('birth_certificate-household.pdf')).toBeTruthy())
+    expect(screen.queryByText(SATISFIED)).toBeNull()
+    expect(screen.queryByText(DONE)).toBeNull()
+  })
+})
+
+describe('#78 — the guardianship letter ticks the cluster only on the served green link', () => {
+  // The guardian's STR route: their STR, their IC and the guardianship letter are the compulsory
+  // three. The letter counts as verified only on `guardianship_check.link === 'green'`, the server's
+  // one score of the ward + guardian rows (review round 1). The browser never re-combines the rows.
+  const SATISFIED = `${W}.satisfiedTitle`
+  const DONE = `${W}.clusterDone`
+  const ownStr = doc(3, 'str', 'guardian', {
+    str_check: { name: 'A NAME', nric: '', status: 'Lulus', year: '2026', member: 'guardian',
+                 name_status: 'match', nric_status: 'match', current_status: 'current', ic_present: true,
+                 ic_slots: { missing: [], unreadable: [] } },
+  })
+  const theirIc = doc(1, 'parent_ic', 'guardian', {
+    income_ic_check: { nric: '', name: '', address: '', member: 'guardian', name_status: 'match', readable: true },
+  })
+  const letter = (link: string) => doc(2, 'guardianship_letter', '', {
+    guardianship_check: { guardian_name: '', guardian_nric: '', guardian_status: 'match', ward_name: '',
+                          ward_status: 'match', link },
+  })
+  const guardiansCluster = async (gl: api.ApplicantDocument) => {
+    mockApi.listDocuments.mockResolvedValue({ documents: [theirIc, gl, ownStr] })
+    render(<ScholarshipDocuments token="sandbox-token" app={{
+      ...sandboxApplication, requirements: FULL, income_route: 'str',
+      income_earner: 'guardian', income_working_members: ['guardian'],
+    } as unknown as ScholarshipApplication} />)
+    await waitFor(() => expect(screen.getByText('scholarship.docs.section.identity.title')).toBeTruthy())
+  }
+
+  it('green link → the income section is satisfied', async () => {
+    await guardiansCluster(letter('green'))
+    await waitFor(() => expect(screen.getByText(SATISFIED)).toBeTruthy())
+  })
+
+  it.each(['amber', 'grey', 'red'])('%s link → no tick, even with both rows reading match', async (link) => {
+    await guardiansCluster(letter(link))
+    await waitFor(() => expect(screen.getByText('guardianship_letter-household.pdf')).toBeTruthy())
+    expect(screen.queryByText(SATISFIED)).toBeNull()
+    expect(screen.queryByText(DONE)).toBeNull()
+  })
+})

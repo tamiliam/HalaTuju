@@ -74,7 +74,8 @@ const scopes = (...programmes: ReturnType<typeof programme>[]) =>
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockApi.getPaymentRuns.mockResolvedValue({ runs: [] } as unknown as Awaited<ReturnType<typeof api.getPaymentRuns>>)
+  // S2 / M4a: "New payment run" follows the served `can_prepare` only, never the role.
+  mockApi.getPaymentRuns.mockResolvedValue({ runs: [], can_prepare: true } as unknown as Awaited<ReturnType<typeof api.getPaymentRuns>>)
   mockApi.getFundingSummary.mockResolvedValue(FUNDING)
   // One gift, which is BrightPath's world today.
   mockApi.getAdminScopes.mockResolvedValue(scopes(programme(1, 'brightpath-flagship', 'BrightPath Bursary')))
@@ -449,6 +450,18 @@ describe('#39 S2: waiting for you, and who may create', () => {
     render(<PaymentsLandingPage />)
     await screen.findByText(/admin.payments.newRun/)
     expect(screen.queryByTestId('waiting-for-you')).toBeNull()
+  })
+
+  it('S2 / M4a: a role string alone opens nothing — no served `payments.view`, no page and no reads', async () => {
+    for (const role of ['org_admin', 'finance']) {
+      mockRole = { role, owning_org_id: 11, permissions: ['payments_prepare'], page_keys: [] }
+      mockApi.getPaymentRuns.mockClear()
+      const { unmount } = render(<PaymentsLandingPage />)
+      expect(await screen.findByText('apiErrors.superAdminRequired')).toBeTruthy()
+      expect(screen.queryByText(/admin.payments.newRun/)).toBeNull()
+      expect(mockApi.getPaymentRuns).not.toHaveBeenCalled()
+      unmount()
+    }
   })
 })
 

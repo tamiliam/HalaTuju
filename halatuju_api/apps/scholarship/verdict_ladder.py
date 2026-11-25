@@ -99,6 +99,27 @@ def spm_red_chips(slip) -> int:
     return sum(1 for k in ('name', 'subjects', 'results') if chk[k] == 'mismatch')
 
 
+# The unresolved codes the Academic card raises for each RED chip counted above, ONE home: SPM Name ·
+# Subjects (missing or extra) · Results (a grade mismatch, band-confirmed or not); higher Name · Kind ·
+# Results (CGPA, a grade, a missing or an extra subject: F1 Q3). Request #78 (owner 2026-11-23): the
+# tile leads with the reason for its band, so `higher_results.academic_fact` sorts these first, after
+# an unreadable higher-results slip, which `fact_bands` reads as red whatever the chips say.
+ACADEMIC_RED_CODES = frozenset({
+    'results_slip_name_mismatch', 'academic_missing_subjects', 'academic_extra_subjects',
+    'academic_grade_mismatch', 'academic_grade_band_mismatch',
+    'higher_results_name_mismatch', 'higher_results_is_spm', 'higher_results_kind_differs',
+    'higher_results_cgpa_mismatch', 'higher_results_subjects_missing', 'higher_results_grade_mismatch',
+})
+
+
+def academic_red_first(items):
+    """``items`` with the band's reason first: an unreadable higher-results slip, then the red-chip
+    codes, then the rest. A stable sort, so each group keeps the order the card raised it in."""
+    from .fact_bands import HIGHER_RESULTS_UNREADABLE
+    return sorted(items, key=lambda it: (0 if it.get('code') == HIGHER_RESULTS_UNREADABLE
+                                         else 1 if it.get('code') in ACADEMIC_RED_CODES else 2))
+
+
 # A pathway identity chip (Name / IC) is RED only when its value MISMATCHES — another person (the owner's
 # chip table, 2026-11-02, offer exact-read S6: green fine, yellow look, red WRONG). An unreadable / blank
 # field is YELLOW: many universities print no IC at all, so a blank is often the correct read

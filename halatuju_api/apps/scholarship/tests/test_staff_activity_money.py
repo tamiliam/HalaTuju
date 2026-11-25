@@ -175,7 +175,8 @@ class TestCredits(_Asserts, TestCase):
         SponsorProgrammeMembership.objects.create(sponsor=self.sponsor, programme=self.programme,
                                                   status='approved')
         self.maker = make_admin('admin', owning_org=self.org, name='Maker One')
-        self.finance = make_admin('finance', owning_org=self.org, name='Fin One')
+        self.finance = make_admin('finance', owning_org=self.org, name='Fin One',
+                                  first_seen_at=timezone.now())        # TD-560: a signed-in checker
         self.approver = make_admin('org_admin', owning_org=self.org, name='Approver One')
 
     def _credit(self):

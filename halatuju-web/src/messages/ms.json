@@ -1700,7 +1700,8 @@
         "checkNumber": "Nama sepadan — semak nombor KP",
         "checkNumberOneDigit": "Nama sepadan — nombor KP berbeza satu digit (mungkin salah baca imbasan)",
         "reviewing": "Kami akan semak ini",
-        "checkName": "Ejaan berbeza — nombor KP yang sama"
+        "checkName": "Ejaan berbeza — nombor KP yang sama",
+        "checkBoth": "Ejaan berbeza — nombor KP berbeza satu digit"
       },
       "strCheck": {
         "recipient": "Nama",
@@ -1825,6 +1826,8 @@
         "birth_cert_person_mismatch": "Nama pada sijil kelahiran anda tidak sepadan (ditunjukkan merah dalam langkah Dokumen) — sila muat naik yang betul.",
         "guardianship_person_mismatch": "Nama pada surat penjagaan anda tidak sepadan (ditunjukkan merah dalam langkah Dokumen) — sila muat naik yang betul.",
         "parent_ic_person_mismatch": "IC ibu bapa atau penjaga anda tidak sepadan dengan dokumen pendapatan anda (ditunjukkan merah dalam langkah Dokumen) — sila semak dan muat naik semula.",
+        "parent_link_mismatch": "Sijil kelahiran (atau surat penjagaan) anda tidak mengaitkan anda dengan ibu bapa atau penjaga ini — nama atau nombor IC padanya tidak sepadan dengan maklumat anda atau mereka (ditunjukkan merah dalam langkah Dokumen). Sila pastikan ia sijil anda sendiri dan IC orang yang betul, dan muat naik semula yang salah.",
+        "parent_name_link_mismatch": "Nama pada IC bapa atau adik-beradik anda tidak sepadan dengan nama bapa anda seperti yang tertera dalam nama anda sendiri (selepas A/L, A/P, bin atau binti) atau pada sijil kelahiran anda (ditunjukkan merah dalam langkah Dokumen) — sila semak sama ada anda memuat naik IC orang yang betul.",
         "results_slip_unreadable": "Kami tidak dapat membaca slip keputusan anda — sila muat naik semula salinan yang lebih jelas dan lurus dalam langkah Dokumen.",
         "offer_letter_unreadable": "Kami tidak dapat membaca surat tawaran anda — sila muat naik semula salinan yang lebih jelas dalam langkah Dokumen.",
         "income_document_unreadable": "Kami tidak dapat membaca salah satu dokumen pendapatan anda — sila muat naik semula foto yang lebih jelas dalam langkah Dokumen.",
@@ -3836,6 +3839,7 @@
           "name_mismatch": "Nama itu tidak sepadan dengan nama dalam profil anda.",
           "same_signer": "Setiap langkah memerlukan orang yang berbeza. Anda telah menandatangani kredit ini.",
           "finance_check_required": "Kredit ini memerlukan pemeriksaan kewangan sebelum boleh ditandatangan balas.",
+          "stale": "Kredit ini telah bergerak ke langkah seterusnya semasa anda menandatangan. Muat semula dan semak sekali lagi.",
           "unknown": "Itu tidak berjaya. Tiada apa-apa yang diubah."
         },
         "studentsTitle": "Sejarah penajaan",
@@ -5071,6 +5075,8 @@
           "birth_cert_person_mismatch": "Sijil kelahiran yang betul — nama padanya tidak sepadan",
           "guardianship_person_mismatch": "Surat penjagaan yang betul — nama padanya tidak sepadan",
           "parent_ic_person_mismatch": "IC ibu bapa atau penjaga yang sepadan — ia tidak sepadan dengan dokumen pendapatan mereka",
+          "parent_link_mismatch": "Sijil kelahiran (atau surat penjagaan) yang mengaitkan mereka dengan ibu bapa ini — nama atau nombor IC padanya tidak sepadan dengan pelajar atau dengan IC ibu bapa tersebut",
+          "parent_name_link_mismatch": "IC yang betul untuk bapa atau adik-beradik mereka — ia tidak sepadan dengan nama bapa dalam nama mereka sendiri atau pada sijil kelahiran mereka",
           "results_slip_unreadable": "Slip keputusan yang lebih jelas — kami tidak dapat membaca yang dimuat naik",
           "offer_letter_unreadable": "Surat tawaran yang lebih jelas — kami tidak dapat membaca yang dimuat naik",
           "income_document_unreadable": "Dokumen pendapatan yang lebih jelas — kami tidak dapat membaca yang dimuat naik",
@@ -7864,9 +7870,11 @@
       "resent": "Jemputan dihantar semula.",
       "resendFailed": "Kami tidak dapat menghantarnya. Baris di bawah menunjukkan apa yang berlaku.",
       "cancel": "Batalkan jemputan",
-      "cancelConfirm": "Batalkan jemputan kepada {email}? Pautannya tidak akan berfungsi lagi. Jika ia memberi mereka akaun yang belum pernah digunakan, akaun itu juga dimatikan.",
+      "cancelConfirm": "Batalkan jemputan kepada {email}? Pautannya tidak akan berfungsi lagi. Jika mereka dijemput ke dalam kumpulan, mereka dikeluarkan daripadanya, dan anda boleh menjemput alamat yang sama sekali lagi kemudian.",
       "cancelled": "Jemputan dibatalkan.",
       "cancelFailed": "Kami tidak dapat membatalkannya. Muat semula halaman dan cuba lagi.",
+      "cancelHasWork": "Masih ada kerja yang menunggu mereka, seperti kes atau penerima biasiswa, jadi jemputan tidak dibatalkan. Serahkan kerja itu kepada orang lain dahulu.",
+      "cancelledLoginFailed": "Dibatalkan, tetapi log masuk mereka tidak dapat dibuang. Beritahu pasukan sokongan.",
       "waitingHeading": "Menunggu jawapan",
       "allAccepted": "Tiada sesiapa menunggu — semua yang dijemput telah menerima.",
       "seePeople": "Lihat siapa yang ada",
@@ -8705,11 +8713,11 @@
       },
       "payments_check": {
         "name": "Semak larian pembayaran",
-        "desc": "Semakan pertengahan pilihan sebelum kelulusan."
+        "desc": "Semakan pertengahan pilihan sebelum kelulusan. Menghidupkannya untuk sesiapa yang telah log masuk menambah langkah ini pada setiap larian."
       },
       "payments_approve": {
         "name": "Luluskan larian pembayaran",
-        "desc": "Melepaskan bayaran daripada Vircle kepada pelajar. Tidak sekali-kali bagi larian yang disediakannya. Juga menyemak kredit penaja."
+        "desc": "Melepaskan bayaran daripada Vircle kepada pelajar. Tidak sekali-kali bagi larian yang ditandatanganinya sebagai penyedia. Juga menyemak kredit penaja."
       },
       "award_withdraw_request": {
         "name": "Minta tarik balik anugerah",
@@ -8748,8 +8756,9 @@
       "effect": {
         "check_on": "Larian pembayaran mendapat langkah semakan: {name} menyemak setiap larian sebelum diluluskan.",
         "check_off": "{name} satu-satunya penyemak: larian terus daripada penyediaan kepada kelulusan semula.",
-        "approver_fallback_off": "{name} menjadi pelulus larian pembayaran; pentadbir organisasi berhenti meluluskannya, kecuali larian yang {name} sediakan atau telah tandatangani.",
-        "approver_fallback_on": "{name} satu-satunya pelulus: pentadbir organisasi meluluskan larian pembayaran semula.",
+        "approver_fallback_off": "{name} menjadi pelulus larian pembayaran. Sandaran (pentadbir organisasi) kemudian hanya meluluskan larian yang {name} sediakan atau telah tandatangani.",
+        "approver_fallback_on": "{name} satu-satunya pelulus: tiada orang lain boleh meluluskan larian pembayaran, jadi pentadbir organisasi meluluskannya sebagai sandaran.",
+        "org_admin_powers_off": "{name} kehilangan Kuasa pentadbir organisasi: mengurus pasukan, membayar bil, meluluskan permintaan, larian pembayaran, meluluskan larian apabila tiada orang lain boleh, dan meluluskan penaja platform.",
         "not_signed_in": "{name} belum pernah log masuk, jadi perubahan pembayaran berkuat kuasa pada log masuk pertamanya.",
         "files_widened_all": "{name} akan dapat membaca setiap permohonan dalam organisasi ini.",
         "files_widened_assigned": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
@@ -8809,8 +8818,26 @@
         "desc": "Tab bimbingan mentor pada setiap penerima biasiswa."
       },
       "payments": {
-        "desc": "Dibuka dengan mana-mana satu daripada tiga di bawah.",
-        "byRole": "Datang bersama peranan sehingga pembayaran beralih kepada kebenaran: mereka memulakan larian pembayaran dan meluluskannya apabila tiada orang lain boleh, tetapi tidak sekali-kali menyediakannya."
+        "desc": "Dibuka dengan mana-mana satu daripada empat di bawah.",
+        "withPowers": "Datang bersama Kuasa pentadbir organisasi."
+      },
+      "paymentsView": {
+        "name": "Lihat larian pembayaran",
+        "desc": "Lihat larian dan pembiayaannya. Tidak boleh mengubahnya."
+      },
+      "orgAdminPowers": {
+        "name": "Kuasa pentadbir organisasi",
+        "desc": "Ditetapkan oleh HalaTuju untuk pentadbir organisasi. Hanya HalaTuju boleh mengubahnya.",
+        "power": {
+          "manage_team": "Mengurus pasukan: menjemput orang, mengubah apa yang mereka boleh buat, mengeluarkan mereka",
+          "pay_bill": "Membayar bil HalaTuju",
+          "approve_requests": "Meluluskan permintaan kepada pasukan HalaTuju",
+          "payment_runs": "Melihat larian pembayaran dan membina larian baharu",
+          "payment_fallback": "Meluluskan larian pembayaran apabila tiada orang lain boleh (tidak sekali-kali larian yang ditandatanganinya sebagai penyedia)",
+          "platform_sponsors": "Meluluskan penaja daripada platform HalaTuju",
+          "credit_approve": "Menandatangani balas kredit dompet penaja (tidak sekali-kali kredit yang direkod atau diperiksanya)",
+          "vircle_id": "Membetulkan ID Vircle pelajar"
+        }
       },
       "spending": {
         "desc": "Lihat dan susun cara penerima biasiswa membelanjakan wang mereka."
@@ -10089,8 +10116,8 @@
       "qc_sees_all": "Mereka sudah melihat semua pelajar melalui Kawalan mutu, jadi mereka tidak ditambah ke Pentadbir. Keluarkan mereka daripada Penilai dahulu.",
       "not_arrived": "Mereka belum log masuk, jadi mereka tidak boleh dibiarkan dalam Tiada kumpulan. Tarik balik jemputan mereka di Jemputan.",
       "self": "Anda tidak boleh melakukan ini pada akaun anda sendiri.",
-      "last_org_admin": "Mereka satu-satunya pentadbir organisasi. Lantik orang lain sebagai pentadbir organisasi dahulu.",
-      "sole_org_admin": "Mereka satu-satunya pentadbir organisasi ini, jadi mereka tidak boleh digantung atau dipadam.",
+      "last_org_admin": "Mereka satu-satunya pentadbir dengan kebenaran penuh. Pentadbir lain mesti mempunyai kebenaran penuh dahulu.",
+      "sole_org_admin": "Mereka satu-satunya pentadbir dengan kebenaran penuh, jadi mereka tidak boleh digantung atau dipadam.",
       "in_a_group": "Keluarkan mereka daripada setiap kumpulan dahulu.",
       "has_unfinished_work": "Mereka masih ada kerja yang belum selesai. Serahkan kepada orang lain dahulu.",
       "has_work": "Kini terdapat rekod kerja mereka, jadi mereka tidak boleh dihapuskan. Senarai telah dimuat semula: semak apa yang akan dilakukan oleh Padam sekarang dan cuba lagi.",

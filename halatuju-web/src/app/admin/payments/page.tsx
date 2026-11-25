@@ -2,8 +2,8 @@
 // Payments landing (P2) — the run list, a "New payment run" date dialog, and the funding
 // summary. A Programme-scope row since TD-241, offered by the rail only INSIDE a gift since
 // 2026-09-28; reached by URL with several gifts and none chosen, it sends you to the gifts.
-// Access: admin / org_admin / finance / super. Finance may READ everything here and APPROVES runs
-// (#39 S2) but creates nothing — "New payment run" follows the served `can_prepare` (the backend
+// Access: the Payments View switch (the door `payments_read`; every Payments switch and Organisation
+// admin powers bring it — S2 / M4a). "New payment run" follows the served `can_prepare` (the backend
 // 403s it anyway). "Waiting for you" lists the runs whose served `your_step` is this person's.
 
 import { useEffect, useState } from 'react'
@@ -42,13 +42,12 @@ export default function PaymentsLandingPage() {
   const { t, locale } = useT()
   const router = useRouter()
   const r = effectiveRole(role)
-  const allowed = canAccess('/admin/payments', r, role?.permissions)
+  const allowed = canAccess('/admin/payments', r, role?.permissions, undefined, role?.page_keys)
   const [runs, setRuns] = useState<PaymentRunSummary[]>([])
   // Finer than the route: who may create a run is the SERVER's answer (`can_prepare`: Prepare, or
-  // the organisation admin). Before it arrives, or from a server older than #39 S2, the old
-  // reading stands (everyone but finance) — the endpoint refuses regardless.
+  // Organisation admin powers). Until it arrives nobody is offered it (S2 / M4a: never by role).
   const [canPrepare, setCanPrepare] = useState<boolean | undefined>(undefined)
-  const canCreate = allowed && (canPrepare ?? r !== 'finance')
+  const canCreate = allowed && canPrepare === true
   const [funding, setFunding] = useState<FundingSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -309,8 +308,8 @@ export default function PaymentsLandingPage() {
 
       {/* Funding summary — the funding-side view of the same cohort the runs pay. Server-side
           allowlist (FundingSummaryRowSerializer); names are plain text, never links into an
-          applicant page (finance has no B40 route, and a role-dependent link is worse than
-          none for everyone). */}
+          applicant page (a viewer without the B40 route would meet a 403, and a per-viewer link
+          is worse than none for everyone). */}
       {funding && funding.rows.length > 0 && (
         <div className="mt-8">
           <h2 className="text-lg font-bold text-ground-900">{t('admin.payments.funding.title')}</h2>

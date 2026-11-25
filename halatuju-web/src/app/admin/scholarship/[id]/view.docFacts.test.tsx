@@ -79,7 +79,7 @@ describe('TD-158 — a wrong-type birth certificate shows no green row', () => {
       buildDocument('birth_certificate', { id: 405,
         authenticity: { status: 'not_birth_certificate', reason: 'x' },
         bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '',
-          mother_status: 'match', father_name: '', father_status: 'match', bc_number: '' } }),
+          mother_status: 'match', father_name: '', father_status: 'match', bc_number: '', link: 'green' } }),
     ] } })
     await loaded()
     for (const k of ['child', 'mother', 'father', 'wrongType']) {

@@ -8,7 +8,8 @@ The tables, the v2 page keys and every door in `staff_tables.DOOR_KEYS` must ans
 
 M3a: the organisation admin's rows are read before with a copy of the lead tier's rule as it stood before
 M3a (`_old_resolve`, `_old_lead_v2`), and `migrate` also applies migration 0098 (`test_m3_nobody_changes`
-holds the M3a shapes themselves).
+holds the M3a shapes themselves). M4a: `migrate` applies 0100 too, and an organisation admin's old v2 read
+gets only the owner-ruled display change (`factories.m4a_display`).
 """
 import copy
 from importlib import import_module
@@ -19,11 +20,12 @@ from apps.courses import staff_permissions as sp
 from apps.courses import staff_permissions_v2 as v2
 from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
-from apps.scholarship.tests.factories import make_admin, make_org
+from apps.scholarship.tests.factories import m4a_display, make_admin, make_org
 
 M = import_module('apps.courses.migrations.0097_store_admin_v2_keys')
 M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
 M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')
+M0100 = import_module('apps.courses.migrations.0100_store_org_admin_powers')
 
 
 def _old_resolve(a):
@@ -54,7 +56,7 @@ def _old_effective(a):
     """`staff_permissions_v2.effective_v2` as it stood before M2b: the `admin` label granted the admin work
     pages (`LABEL_GRANTS`) and the label-or-key Admins seat granted the organisation read pages."""
     if a.role == sp.LEAD_ROLE and a.is_active and not a.is_super:
-        return _old_lead_v2(a)                     # unchanged by M2b (the M3a copy of the lead rule)
+        return m4a_display(_old_lead_v2(a))        # unchanged by M2b (the M3a copy; M4a's display change)
     if a.is_super or not a.is_active or a.role not in sp.TEAM_ROLES:
         return v2.effective_v2(a)                  # unchanged by M2b: no stored-key branch reached
     held = set(v2.through_aliases(sp.resolve(a)))
@@ -107,7 +109,7 @@ class NobodyChanges(TestCase):
         plan = M.plan_row(a.pk, a.role, a.is_active, a.permissions, row_id=row_id)
         if plan is not None:
             PartnerAdmin.objects.filter(pk=a.pk).update(permissions=plan[1])
-        for step in (M0098, M0099):                            # M3a, M3c: the next data steps, in order
+        for step in (M0098, M0099, M0100):                     # M3a, M3c, M4a: the next data steps, in order
             a = PartnerAdmin.objects.get(pk=a.pk)
             plan = step.plan_row(a.role, a.permissions)
             if plan is not None:

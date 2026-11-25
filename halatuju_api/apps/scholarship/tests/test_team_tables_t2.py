@@ -246,7 +246,8 @@ class Remove(_Base):
         self.assertEqual(self.act(self.lead, 'admins', self.lead, 'remove').status_code, 404)
 
     def test_a_finance_person_leaving_admins_says_the_credit_check_goes(self):
-        fin = make_admin('finance', owning_org=self.org, permissions=['review', 'payments_approve'])
+        fin = make_admin('finance', owning_org=self.org, permissions=['review', 'payments_approve'],
+                         first_seen_at=timezone.now())                  # TD-560: a signed-in checker
         dry = self.act(self.lead, 'admins', fin, 'remove', dry_run=True).json()
         self.assertTrue(dry['finance_check_off'])
         self.assertEqual(self.act(self.lead, 'admins', fin, 'remove').status_code, 200)
@@ -258,13 +259,21 @@ class Remove(_Base):
         # TD-475 (A1.10a): the KEY, not the finance label — an Admin given payments_approve on Team arms
         # the credit check, and taking it from the last holder says so.
         from apps.scholarship import payments
-        adm = make_admin('admin', owning_org=self.org, permissions=['review', 'see_all', 'payments_approve'])
+        adm = make_admin('admin', owning_org=self.org, permissions=['review', 'see_all', 'payments_approve'],
+                         first_seen_at=timezone.now())
         self.assertTrue(payments.credit_check_required(self.org))
         self.assertTrue(self.act(self.lead, 'admins', adm, 'remove', dry_run=True).json()['finance_check_off'])
 
+    def test_td560_a_holder_who_never_signed_in_takes_no_check_away(self):
+        # TD-560 (S2 / M4a): they never armed it, so their leaving says nothing about it.
+        never = make_admin('admin', owning_org=self.org, permissions=['review', 'see_all', 'payments_approve'])
+        self.assertFalse(self.act(self.lead, 'admins', never, 'remove', dry_run=True).json()['finance_check_off'])
+
     def test_td475_with_another_holder_the_credit_check_stays(self):
-        make_admin('admin', owning_org=self.org, permissions=['see_all', 'payments_approve'])
-        fin = make_admin('finance', owning_org=self.org, permissions=['review', 'payments_approve'])
+        now = timezone.now()                                            # TD-560: both signed in
+        make_admin('admin', owning_org=self.org, permissions=['see_all', 'payments_approve'], first_seen_at=now)
+        fin = make_admin('finance', owning_org=self.org, permissions=['review', 'payments_approve'],
+                         first_seen_at=now)
         self.assertFalse(self.act(self.lead, 'admins', fin, 'remove', dry_run=True).json()['finance_check_off'])
 
     def test_the_list_serves_where_remove_is_accepted(self):
@@ -298,8 +307,13 @@ class OrgAdminJoinsReviewers(_Base):
         self.assertEqual(st.tables(lead), ('admins', 'reviewers'))
 
     def test_an_org_admin_row_is_read_strictly_since_m3a(self):
-        # M3a A1: the stored list is read (0098 replaced every leftover key); manage_team is by role (O15).
+        # M3a A1: the stored list is read (0098 replaced every leftover key); manage_team (O15) comes with
+        # Organisation admin powers (S2 / M4a: the stored `organisation.admin`, no longer the role).
         PartnerAdmin.objects.filter(pk=self.lead.pk).update(permissions=['payments_approve', 'payments_check'])
+        lead = self.fresh(self.lead)
+        self.assertEqual(sp.resolve(lead), ('payments_check', 'payments_approve'))
+        PartnerAdmin.objects.filter(pk=self.lead.pk).update(
+            permissions=['payments_approve', 'payments_check', sp.ORG_ADMIN_KEY])
         lead = self.fresh(self.lead)
         self.assertEqual(sp.resolve(lead), ('payments_check', 'payments_approve', 'manage_team'))
         self.assertFalse(st.in_reviewers(lead))

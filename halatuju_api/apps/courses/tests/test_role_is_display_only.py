@@ -23,6 +23,15 @@ stay (a TARGET read, or M4 / TD-613 / M3c) carry list K's reason, and `GATE_LEFT
 
 M3c (2026-11-15): `letters._senior` reads `scholars.approve` (D5) and its GATE-LEFT entry is gone; the
 platform-level sponsor fence is the one PLATFORM lead read (see LEAD_CLASSES).
+
+S2 / M4a (2026-11-19): the payment chain reads the Payments keys and Organisation admin powers
+(`holds_org_admin_powers`, the one new DEFINITION). DELETED: the GATE-LEFT `fallback_approvers` entry (and its
+pin), the five M4 lead reads in `payments_chain` and the PLATFORM sponsor fence (it reads the powers now).
+
+S3 / M4b (2026-11-23): wallet credits and the Vircle ID correction read switches (owner Q-A to Q-C). DELETED: the
+four money GATE-LEFT entries and their pins (record, cancel, the credit steps, the Vircle ID); 10 stay, all
+TARGET. One new SEPARATION lead read: the maker's seat (`credit_steps.may_record`) keeps the organisation admin
+out, so the approver stays free to countersign (owner Q-A).
 """
 import ast
 import os
@@ -144,8 +153,6 @@ ALLOWLIST = {
     'courses/staff_delete_rules.py::_org_admins': ('GATE-LEFT', 'target rule',
         'T2 review N4: the active org admins of an organisation, counted (and locked) by the sole-org-admin '
         'guard; a TARGET read, list K, M3b'),
-    'courses/staff_delete_rules.py::sole_org_admin_ids': ('GATE-LEFT', 'target rule',
-        'T2 review N4: the same guard for a whole table in one query; a TARGET read, list K, M3b'),
     'courses/staff_gift.py::for_invite': ('DISPLAY', 'account kind',
         'TD-501 A1.3: the invited kind says which fields the invite asks for (a reviewer names a gift); '
         'it grants or refuses no action'),
@@ -200,8 +207,6 @@ ALLOWLIST = {
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'scholarship/management/commands/send_review_nudges.py::Command.handle.escalation_recipients': ('DISPLAY', 'account kind',
         'recipient routing: nudges escalate to the org admin'),
-    'scholarship/payments_chain.py::fallback_approvers': ('GATE-LEFT', 'T5d',
-        'money: fallback approvers are org admins by label (payments fallback rule)'),
     'scholarship/reviewer_onboarding.py::reviewer_profile_complete': ('DISPLAY', 'account kind',
         'first-login landing: the label says which kind of account this is, not what it may do'),
     'scholarship/volunteer_positions.py::asked': ('DISPLAY', 'account kind',
@@ -218,16 +223,8 @@ ALLOWLIST = {
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'scholarship/source_invite.py::sign_in_states': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
-    'scholarship/sponsorship/credits.py::cancel_admin_credit': ('GATE-LEFT', 'T5d',
-        'money: cancelling a credit is gated by the label (getattr role)'),
-    'scholarship/sponsorship/credits.py::record_admin_credit': ('GATE-LEFT', 'T5d',
-        'money: recording a credit is gated by the label (getattr role)'),
-    'scholarship/credit_steps.py::step_refusal': ('GATE-LEFT', 'T5d',
-        'money: credit signing by label (maker admin / approver org_admin); moved out of '
-        'sponsorship.sign_admin_credit at T5c P5b so the Overview counts with the same rule. '
-        'A1.10a (TD-475): the CHECKER step is the key payments_approve now, so finance is no label here'),
-    # A1.10a (TD-475): credit_check_required, checks_credits and the last-checker guard
-    # (staff_lifecycle.other_active_checker) read the key payments_approve now, not the finance label.
+    # S3 / M4b (2026-11-23): record, cancel and every credit step read switches (`credit_steps`); their three
+    # GATE-LEFT entries are DELETED, never reclassified.
     'scholarship/staff_lifecycle.py::change_role': ('DISPLAY', 'T5a tables',
         'the role change itself (guards the row it rewrites)'),
     'scholarship/staff_mentor.py::add_member': ('DISPLAY', 'M1a account kind',
@@ -236,6 +233,10 @@ ALLOWLIST = {
         'who can be made a staff mentor (table rule)'),
     'scholarship/staff_mentor.py::eligible': ('DISPLAY', 'T5a tables',
         'who can be made a staff mentor (table rule)'),
+    'scholarship/staff_mentor.py::mentored_before_joining': ('DISPLAY', 'T5a tables',
+        'S1b 23 Nov: a staff login\'s mentor record stopped before a re-invite reads as new'),
+    'scholarship/staff_mentor.py::without_mentored_before_joining': ('DISPLAY', 'T5a tables',
+        'S1b 23 Nov: the Mentors list leaves out a staff login\'s record stopped before a re-invite'),
     'scholarship/staff_permissions_admin.py::_refuse_target': ('DISPLAY', 'T5a tables',
         'which rows the Permissions editor can edit (team labels)'),
     'scholarship/staff_permissions_admin.py::may_edit': ('DISPLAY', 'T5a tables',
@@ -263,8 +264,6 @@ ALLOWLIST = {
         'table rule'),
     'scholarship/staff_tables_admin.py::plan_table_change': ('DISPLAY', 'T5a tables',
         'table move plan: label before / after'),
-    'scholarship/views_admin/applications.py::AdminApplicationDetailView.patch': ('GATE-LEFT', 'M4',
-        'the Vircle ID correction (money): stays by label until M4 (list K)'),
     'scholarship/views_admin/base.py::_AdminBase._intake_narrowing': ('OVERRIDE', 'owner override',
         'super-only action (has_role super): a super holds every key; the override stays'),
     'scholarship/views_admin/base.py::_AdminBase._org_narrowing': ('OVERRIDE', 'owner override',
@@ -393,7 +392,9 @@ LEAD_NAMES = {'is_lead_tier', '_is_lead_tier', 'lead_reviews', 'LEAD_ROLE'}
 #: PLATFORM (M3c): a key's power over a PLATFORM-level object (one with no organisation, so the organisation
 #: fence cannot narrow it) stays with a super or an organisation admin; a granted team member's key opens it
 #: only inside their organisation. An open call in decisions.md (M3c), never a quiet gate.
-LEAD_CLASSES = {'DEFINITION', 'DISPLAY', 'TARGET', 'O15', 'M4', 'TD-613', 'GATE-LEFT', 'PLATFORM'}
+#: SEPARATION (S3 / M4b): the organisation admin is kept OUT of a seat by an owner ruling on separation of
+#: duties, so a key they hold by role cannot put them on both sides of one sign-off (decisions.md, 23 Nov).
+LEAD_CLASSES = {'DEFINITION', 'DISPLAY', 'TARGET', 'O15', 'M4', 'TD-613', 'GATE-LEFT', 'PLATFORM', 'SEPARATION'}
 
 
 class _LeadScan(_Scan):
@@ -433,6 +434,8 @@ LEAD_READS = {
     'courses/staff_permissions.py::is_lead_tier': (1, 'DEFINITION', 'O15', 'defines the lead tier'),
     'courses/staff_permissions.py::lead_reviews': (1, 'DEFINITION', 'T2 Q1',
         'the organisation admin joins Reviewers by a stored `review`'),
+    'courses/staff_permissions.py::holds_org_admin_powers': (1, 'DEFINITION', 'M4a',
+        'the ONE home of "Organisation admin powers": the lead tier holding the stored organisation.admin key'),
     'courses/staff_permissions.py::preset_for': (1, 'DEFINITION', 'M3a A2',
         'the organisation admin\'s preset: ORG_ADMIN_KEYS plus manage_team by role'),
     'courses/staff_permissions.py::resolve': (1, 'O15', 'M3a A2',
@@ -442,7 +445,8 @@ LEAD_READS = {
     'courses/staff_permissions_v2.py::stored_v2': (1, 'DISPLAY', 'M3c',
         'the editor reads no stored v2 key for an organisation admin until M3c makes the row editable'),
     'courses/staff_permissions_v2.py::effective_v2': (1, 'O15', 'M3a A2 / A3, TD-620',
-        'billing.edit and requests.approve by role (O15); the money keys by role until M4 (TD-620)'),
+        'billing.edit and requests.approve with the organisation admin powers (O15); the money keys are '
+        'stored since M4a (TD-620)'),
     'courses/staff_tables.py::invite_permissions': (1, 'DISPLAY', 'M3c D3',
         'an organisation admin\'s invitation writes the organisation admin\'s full set (a write, not a gate)'),
     'courses/staff_tables.py::in_reviewers': (1, 'DISPLAY', 'T5a tables',
@@ -451,12 +455,6 @@ LEAD_READS = {
         'the organisation admin always sits in Admins, by role'),
     'courses/staff_tables.py::groups_to_leave': (1, 'TARGET', 'M3a A4',
         'the Admins seat is held by role, so it is never a group to leave'),
-    'scholarship/payments_chain.py::_is_lead_tier': (1, 'M4', 'T5d / TD-620',
-        'the payment chain\'s lead-tier helper'),
-    'scholarship/payments_chain.py::_may_approve': (1, 'M4', 'T5d / TD-620', 'the fallback approver'),
-    'scholarship/payments_chain.py::may_read': (1, 'M4', 'T5d / TD-620', 'who opens Payments'),
-    'scholarship/payments_chain.py::may_prepare': (1, 'M4', 'T5d / TD-620', 'who creates a run'),
-    'scholarship/payments_chain.py::_refusal': (1, 'M4', 'T5d / TD-620', 'why a step is refused'),
     'scholarship/staff_permissions_admin.py::stored_page_keys': (1, 'DISPLAY', 'M3c D1',
         'an organisation admin\'s stored page keys are read strictly (NULL -> the full set), a team member\'s '
         'through stored_v2'),
@@ -467,14 +465,12 @@ LEAD_READS = {
     'scholarship/staff_permissions_admin.py::_refuse_target': (1, 'TARGET', 'target rule',
         'the TARGET is an organisation admin: only a super may save that card (M3c D1)'),
     'scholarship/staff_permissions_admin.py::plan_change': (1, 'TARGET', 'target rule',
-        'the TARGET is an organisation admin: manage_team stays by role, the money keys by role until M4'),
+        'the TARGET is an organisation admin: manage_team comes with the powers, the money keys are refused '
+        '(money_through_org_admin, M4a)'),
     'scholarship/staff_person.py::on_reviewer_route': (2, 'DISPLAY', 'T3',
         'which route lists the target (an organisation admin only when they joined Reviewers)'),
     'scholarship/staff_person.py::person': (1, 'DISPLAY', 'served flag', 'the `lead` badge on the person page'),
     'scholarship/staff_list.py::list_rows': (1, 'DISPLAY', 'served flag', 'the `lead` badge on the Staff list'),
-    'scholarship/surface_gates.py::may_approve_platform_sponsors': (1, 'PLATFORM', 'M3c D6 fence',
-        'sponsor accounts and sponsor terms are PLATFORM-level (no organisation): a granted team member\'s '
-        'sponsors.approve may not vet them for every organisation, so the caller is a super or an org admin'),
     'scholarship/staff_tables_admin.py::may_act': (1, 'TARGET', 'target rule',
         'the TARGET is an organisation admin (Q4); the caller arms read manage_team since M3b G1'),
     'scholarship/staff_tables_admin.py::_refuse_basic': (1, 'TARGET', 'target rule',
@@ -492,6 +488,8 @@ LEAD_READS = {
         'the `lead` badge on a candidate'),
     'scholarship/views_admin/mentors.py::mentor_rows': (1, 'DISPLAY', 'served flag',
         'the `lead` badge on a mentor\'s login'),
+    'scholarship/credit_steps.py::may_record': (1, 'SEPARATION', 'M4b Q-A',
+        'an organisation admin never records or first-signs a credit (they approve it); owner 23 Nov'),
 }
 
 
@@ -509,10 +507,11 @@ def test_every_lead_tier_read_is_allowlisted_with_its_exact_count():
 
 #: M3b (A10): every label gate still standing, by owner. M3b converted the 37 T5e gates and DELETED their
 #: entries; the 14 left read a TARGET, or wait for M4 / TD-613 / M3c (list K), and were re-labelled.
+#: S3 / M4b (2026-11-23): the four money gates (credit record / cancel / steps, the Vircle ID) read switches;
+#: their entries are DELETED. The 10 left all read a TARGET: no money gate stands on a label.
 GATE_LEFT_PINNED = {
     'courses/staff_delete_rules.py::_live_org_admin': 'target rule',
     'courses/staff_delete_rules.py::_org_admins': 'target rule',
-    'courses/staff_delete_rules.py::sole_org_admin_ids': 'target rule',
     'courses/staff_fence.py::_deletable_now': 'target rule',
     'courses/staff_fence.py::manageable_if_restored': 'target rule',
     'courses/staff_fence.py::staff_target_readable': 'target rule',
@@ -521,11 +520,6 @@ GATE_LEFT_PINNED = {
     'courses/views_staff.py::AdminRevokeView._revoke_locked': 'target rule',
     'scholarship/staff_tables_admin.py::may_act': 'target rule',
     'scholarship/views_admin/invitations.py::AdminInvitationCancelView.post': 'target rule',
-    'scholarship/views_admin/applications.py::AdminApplicationDetailView.patch': 'M4',
-    'scholarship/credit_steps.py::step_refusal': 'T5d',
-    'scholarship/payments_chain.py::fallback_approvers': 'T5d',
-    'scholarship/sponsorship/credits.py::cancel_admin_credit': 'T5d',
-    'scholarship/sponsorship/credits.py::record_admin_credit': 'T5d',
 }
 
 

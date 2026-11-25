@@ -147,7 +147,8 @@ class MyPending(TestCase):
         self.assertEqual(cards['invitations'], {'count': 1})
         self.assertEqual(cards['payment_runs'], {'count': 0})            # finance checks it, not the lead
         self.assertEqual(cards['requests'], {'count': 1})
-        self.assertNotIn('wallet_credits', cards)
+        # TD-503 (S3 / M4b): the approver gets the card too; the credit waits for the armed check first.
+        self.assertEqual(cards['wallet_credits'], {'count': 0})
         self.assertFalse({'my_open', 'qc_awaiting', 'mentees'} & set(cards))
 
     def test_finance_gets_the_money_cards_and_no_application_keys(self):

@@ -8,10 +8,6 @@
  * keep honest.
  */
 import type { AdminSponsorCredit, AdminSponsorDetail } from './admin-api'
-import { hasPerm } from './staffPermissions'
-
-/** The credit chain's CHECKER seat — the server's `credit_steps.CHECKER_KEY` (TD-475, A1.10a). */
-export const CREDIT_CHECKER_KEY = 'payments_approve' as const
 
 /**
  * Is the check step armed for THIS credit? The server answers it per credit (`check_required`:
@@ -84,94 +80,50 @@ export function creditChain(credit: AdminSponsorCredit, financeArmed: boolean): 
   return steps
 }
 
-/**
- * Whether this credit's STATE allows a void.
- *
- * A confirmed credit can never be cancelled — it is reversed by a compensating entry
- * (decisions.md, 2026-07-26). Offering a Void button on one would promise something the
- * service refuses. The role half of the question lives in `creditActions`, which calls
- * this rather than re-testing the status, so the two can never disagree.
- */
-export function canVoid(credit: AdminSponsorCredit): boolean {
-  return credit.status !== 'confirmed' && credit.status !== 'cancelled'
-}
-
 /** Which step of the chain a credit is waiting on, and what this viewer may do about it. */
 export interface CreditActions {
   /** The step awaiting a signature, or null once the credit is settled. */
   nextStep: 'recorded' | 'checked' | 'approved' | null
-  /** True when this viewer's role owns `nextStep`. */
+  /** True when the next step is this viewer's (served `can_sign`). */
   canSign: boolean
   /**
-   * Set when the viewer cannot sign for a reason worth SAYING rather than hiding: an
-   * org_admin looking at a credit that is waiting on the finance check sees nothing amiss
-   * from their seat, so the service answers `finance_check_required` rather than a bare
-   * wrong_role — and the screen should say the same thing.
+   * Set when the viewer cannot sign for a reason worth SAYING rather than hiding: an approver
+   * looking at a credit that waits on the check is told so (served `blocked`), as the service
+   * answers `finance_check_required` rather than a bare wrong_role.
    */
   blocked: 'awaiting_finance' | null
   canVoid: boolean
 }
 
 /**
- * The per-credit action set, mirroring `sponsorship.sign_admin_credit` step for step.
- *
- * **The service is the authority** — every rule here is enforced there, and this mirror
- * exists only so the screen doesn't draw a control the endpoint would refuse (the same
- * relationship `paymentStatus.signOffView` has with `payments.sign`). Two rules are
- * deliberately NOT mirrored:
- *
- * - **`same_signer`** — the payload carries signer NAMES, not emails, and the service keys
- *   distinctness on email precisely because production has two active admins sharing the
- *   name "Ve. Elanjelian". A name comparison here would be wrong in both directions, so the
- *   button is offered and the server's refusal is rendered.
- * - **`name_mismatch`** — the typed name is checked against `PartnerAdmin.name` server-side.
- *
- * `financeArmed` is read from the payload (`creditArmed`), never derived, because appointing a
- * finance admin arms the middle step for a credit already in flight.
- *
- * A1.10a (TD-475): the CHECK step belongs to a holder of `payments_approve` (the server's
- * `credit_steps.CHECKER_KEY`), read from the served `/admin/role/` `permissions` — not the retired
- * `finance` label. An Admin given the key gets the button; a label without the key does not.
+ * The per-credit action set. S3 / M4b (owner rulings Q-A to Q-C, 23 Nov): every seat is a switch,
+ * and the server SERVES the answer per credit (`credit_steps.served`: `can_sign`, `blocked`,
+ * `can_void`) — `same_signer` included, which the screen could never check from names. The screen
+ * derives only WHICH step is next (a label), from the status and `financeArmed` (`creditArmed`).
+ * A payload without the served flags offers nothing.
  */
-export function creditActions(
-  credit: AdminSponsorCredit,
-  financeArmed: boolean,
-  viewerRole: string,
-  permissions?: readonly string[] | null,
-): CreditActions {
-  const isSuper = viewerRole === 'super'
-  const may = (role: string) => isSuper || viewerRole === role
-  const holdsChecker = isSuper || hasPerm({ permissions }, CREDIT_CHECKER_KEY)
-  // Void is the maker's or the approver's power, and only before the money is spendable.
-  const voidable = canVoid(credit) && (may('admin') || may('org_admin'))
-
-  if (credit.status === 'draft') {
-    return { nextStep: 'recorded', canSign: may('admin'), blocked: null, canVoid: voidable }
+export function creditActions(credit: AdminSponsorCredit, financeArmed: boolean): CreditActions {
+  const settled = { nextStep: null, canSign: false, blocked: null, canVoid: false } as const
+  let nextStep: CreditActions['nextStep']
+  if (credit.status === 'draft') nextStep = 'recorded'
+  else if (credit.status === 'admin_signed') nextStep = financeArmed ? 'checked' : 'approved'
+  else if (credit.status === 'finance_checked') nextStep = 'approved'
+  else return settled
+  return {
+    nextStep,
+    canSign: credit.can_sign === true,
+    blocked: credit.blocked ?? null,
+    canVoid: credit.can_void === true,
   }
-  if (credit.status === 'admin_signed' && financeArmed) {
-    return {
-      nextStep: 'checked',
-      canSign: holdsChecker,
-      // The server says `finance_check_required` to the organisation admin (who never holds the key).
-      blocked: viewerRole === 'org_admin' && !holdsChecker ? 'awaiting_finance' : null,
-      canVoid: voidable,
-    }
-  }
-  if (credit.status === 'admin_signed' || credit.status === 'finance_checked') {
-    return { nextStep: 'approved', canSign: may('org_admin'), blocked: null, canVoid: voidable }
-  }
-  return { nextStep: null, canSign: false, blocked: null, canVoid: false }
 }
 
 /**
- * Who may RECORD a credit: the maker (`admin`) or a super.
- *
- * `org_admin` is deliberately excluded, matching `record_admin_credit`. On production the
- * person who does this work is a plain `admin`, and the approver has to stay free to
- * countersign — a maker who is also the approver cannot complete their own chain.
+ * Who may RECORD a credit — served (`can_record_credit`, `credit_steps.may_record`): Sponsors: edit
+ * stored in the person's own seat, or a super. An organisation admin never records (owner Q-A,
+ * 23 Nov): the approver has to stay free to countersign.
  */
-export function canRecordCredit(viewerRole: string): boolean {
-  return viewerRole === 'super' || viewerRole === 'admin'
+export function canRecordCredit(detail: Pick<AdminSponsorDetail, 'can_record_credit'>): boolean {
+  return detail.can_record_credit === true
 }
 
 /**
@@ -256,7 +208,7 @@ export function membershipErrorKey(code: string | undefined): string {
 const CREDIT_ERROR_CODES = [
   'invalid_amount', 'external_reference_required', 'programme_required',
   'sponsor_not_in_programme', 'wrong_role', 'bad_state', 'name_mismatch',
-  'same_signer', 'finance_check_required',
+  'same_signer', 'finance_check_required', 'stale',
 ] as const
 
 export function creditErrorKey(code: string | undefined): string {

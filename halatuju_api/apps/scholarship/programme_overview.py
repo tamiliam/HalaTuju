@@ -51,7 +51,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.db.models import Q
+from django.db.models import BooleanField, Case, Q, Value, When
 from django.utils import timezone
 
 from apps.courses.public import staff_tables
@@ -70,11 +70,11 @@ PAGES = ('qc', 'mine')
 #: ⚠⚠ **THE SERVER DECIDES WHAT A PERSON RECEIVES, FROM THEIR KEYS** (TD-621, sprint LABELS: the role is
 #: only a label). A section absent from the answer is never built, so it is not in the payload at all —
 #: absent, never zeroed ("committed RM0" is still an answer about money). Each section opens on ANY of
-#: its keys. The money opens on the keys of the two screens it reconciles with (Spending, Payments):
-#: aggregate money, never a person (module docstring). The applicant widgets open on `see_all` worn as an
-#: Admins hat (`_admins_see_all`): QC's implied `see_all` opens the QC page, never the funnel, whatever
-#: seats QC at Admins (as `staff_tables.admin_keys`). Without those keys, reviewer and QC get no money and
-#: no programme-wide funnel: an Overview that handed over what the menu withholds would make it decorative.
+#: its keys. The money opens on the keys of the two screens it reconciles with (Spending, Payments; S2:
+#: and whoever opens Payments, `payments.may_read`): aggregate money, never a person (module docstring).
+#: The applicant widgets open on `see_all` worn as an Admins hat (`_admins_see_all`): QC's implied
+#: `see_all` opens the QC page, never the funnel, whatever seats QC at Admins. Without those keys, reviewer
+#: and QC get no money and no programme-wide funnel: an Overview handing over what the menu withholds is decorative.
 MONEY_KEYS = ('spending', 'payments_prepare', 'payments_check', 'payments_approve')
 SECTION_KEYS = {'funnel': ('see_all',), 'money': MONEY_KEYS, 'attention': ('see_all',),
                 'applications_series': ('see_all',), 'money_series': MONEY_KEYS,
@@ -96,7 +96,7 @@ def _admins_see_all(admin):
 def _opens(admin, section):
     if SECTION_KEYS[section] == ('see_all',):
         return _admins_see_all(admin)
-    return any(admin.has_perm(k) for k in SECTION_KEYS[section])
+    return any(admin.has_perm(k) for k in SECTION_KEYS[section]) or (SECTION_KEYS[section] is MONEY_KEYS and payments.may_read(admin))
 
 
 def sections_for(admin):
@@ -341,21 +341,18 @@ def attention(scope, *, now, clocks, organisation=None):
     from .services.queries_sla import assignable_now
 
     unassigned = assignable_now(scope, now, organisation).count()
-    with_reviewer = due_soon = overdue = 0
-    for assigned_at in scope.filter(AWAITING_VERDICT).values_list('assigned_at', flat=True):
-        with_reviewer += 1
-        band = review_band(assigned_at, now=now, clocks=clocks)
-        if band == 'overdue':
-            overdue += 1
-        elif band == 'due_soon':
-            due_soon += 1
-    return {
-        'unassigned': unassigned,
-        'with_reviewer': with_reviewer,
-        'due_soon': due_soon,
-        'overdue': overdue,
-        'awaiting_qc': scope.filter(status='interviewed').count(),
-    }
+    with_reviewer = due_soon = overdue = awaiting_qc = 0     # S3 / M4b: ONE read for both (the Overview's query budget)
+    waiting = Case(When(AWAITING_VERDICT, then=Value(True)), default=Value(False), output_field=BooleanField())
+    for assigned_at, status, is_waiting in scope.filter(AWAITING_VERDICT | Q(status='interviewed')).values_list(
+            'assigned_at', 'status', waiting):
+        awaiting_qc += status == 'interviewed'
+        if is_waiting:
+            with_reviewer += 1
+            band = review_band(assigned_at, now=now, clocks=clocks)
+            overdue += band == 'overdue'
+            due_soon += band == 'due_soon'
+    return {'unassigned': unassigned, 'with_reviewer': with_reviewer, 'due_soon': due_soon, 'overdue': overdue,
+            'awaiting_qc': awaiting_qc}
 
 
 def applications_per_week(scope, *, today):

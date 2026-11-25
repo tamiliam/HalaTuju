@@ -10,7 +10,7 @@ from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
-from .. import birth_state
+from .. import birth_state, credit_steps
 from .. import pool
 from ..models import Donation, ScholarshipApplication, Sponsor, Sponsorship
 from ..services.decline import held_decline_restore_target
@@ -320,14 +320,12 @@ def _credits_armed(credit_rows):
     sign service's own question)? A1.10a review fix: a keyed Admin who signed a credit as maker is not
     its checker, so with nobody else holding the key it goes straight to the organisation admin, and the
     screen must draw it that way. Holders are read once per organisation."""
-    from apps.courses import staff_permissions
     from .. import payments as payments_service
-    from ..credit_steps import CHECKER_KEY
     held, out = {}, []
     for c in credit_rows:
         org = c.programme.organisation if c.programme_id else None
         if org is not None and org.pk not in held:
-            held[org.pk] = staff_permissions.holders(org, CHECKER_KEY)
+            held[org.pk] = credit_steps.checker_holders(org)
         out.append(payments_service.credit_check_required(
             org, c, held[org.pk]) if org is not None else False)
     return out
@@ -374,7 +372,8 @@ def _sponsor_detail_dict(sponsor, admin, base):
     # added to only one.
     # org-fence: fenced on programme→organisation via base.credits(), never all donations.
     credit_rows = list(base.credits())
-    credits = [{**_credit_dict(d), 'check_required': armed}
+    # S3 / M4b: what this caller may do with each credit is SERVED (`credit_steps.served`), never derived.
+    credits = [{**_credit_dict(d), 'check_required': armed, **credit_steps.served(d, admin, armed)}
                for d, armed in zip(credit_rows, _credits_armed(credit_rows))]
 
     membership_rows = [
@@ -473,6 +472,8 @@ def _sponsor_detail_dict(sponsor, admin, base):
         # True when this caller sees only their own organisation's share of the account, so
         # the screen can say so rather than implying it is the sponsor's whole giving record.
         'fenced': base.is_fenced,
+        # S3 / M4b: may this caller record a credit (`credit_steps.may_record`, owner Q-A)? Served.
+        'can_record_credit': credit_steps.may_record(admin),
     }
 
 

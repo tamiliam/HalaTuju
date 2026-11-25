@@ -98,7 +98,7 @@ class TestChangeRole(TestCase):
         # TD-475 (A1.10a): the credit check turns on the KEY payments_approve, which the switch KEEPS (T2),
         # so the person stays the checker, exactly as they stay the payment-run approver. (While the
         # finance ROLE was the rule, this switch disarmed the credit check but not the run approval.)
-        target = make_admin('finance', owning_org=self.org)
+        target = make_admin('finance', owning_org=self.org, first_seen_at=timezone.now())   # TD-560: signed in
         r = _role(self.org_admin, target, 'admin')
         self.assertIsNone(r.json()['consequence'])
         target.refresh_from_db()
@@ -106,7 +106,7 @@ class TestChangeRole(TestCase):
         self.assertTrue(payments.credit_check_required(self.org))
 
     def test_with_another_finance_admin_there_is_no_consequence(self):
-        make_admin('finance', owning_org=self.org)
+        make_admin('finance', owning_org=self.org, first_seen_at=timezone.now())     # TD-560: signed in
         target = make_admin('finance', owning_org=self.org)
         self.assertIsNone(_role(self.org_admin, target, 'admin').json()['consequence'])
         self.assertTrue(payments.credit_check_required(self.org))
@@ -233,29 +233,59 @@ class TestCancelKillsThePassword(TestCase):
     def _cancel(self, inv):
         return authed_client(self.org_admin).post(f'/api/v1/admin/invitations/{inv.pk}/cancel/')
 
-    def test_the_emailed_password_is_rotated_dead(self):
+    def test_the_unused_login_is_retired_with_the_archive(self):
+        # S1b (owner, 2026-11-19): Cancel archives the never-signed-in invitee, and their login is retired
+        # exactly as an archive retires it (`retire_login`): ours and unused, so it is removed outright —
+        # the emailed password dies with it — and a re-invite makes a fresh one.
         inv, account = self._staff_inv()
-        with patch(f'{REQ}.get', return_value=_resp(
-                body=_auth_user(account.supabase_user_id, account.email))), \
-                patch(f'{REQ}.put', return_value=_resp()) as put, \
+        uid = account.supabase_user_id
+        with patch(f'{REQ}.get', return_value=_resp(body=_auth_user(uid, account.email))), \
+                patch(f'{REQ}.delete', return_value=_resp()) as gone, patch(f'{REQ}.put') as put, \
                 self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
             r = self._cancel(inv)
         self.assertEqual(r.status_code, 200, r.content[:300])
-        self.assertTrue(put.call_args[0][0].endswith(f'/auth/v1/admin/users/{account.supabase_user_id}'))
-        body = put.call_args[1]['json']
-        self.assertGreater(len(body['password']), 30)                 # long, random, never sent
-        self.assertTrue(body['app_metadata']['temp_password_expired'])
-        self.assertIsNone(body['app_metadata']['temp_password_issued_at'])
-        self.assertIn('login=killed', ' '.join(logs.output))
+        self.assertTrue(gone.call_args[0][0].endswith(f'/auth/v1/admin/users/{uid}'))
+        put.assert_not_called()
+        self.assertIn('login=deleted', ' '.join(logs.output))
+        account.refresh_from_db()
+        self.assertIsNotNone(account.archived_at)
+        self.assertIsNone(account.supabase_user_id)
         self.assertEqual(len(mail.outbox), 0)
 
     def test_a_password_they_chose_is_never_touched(self):
+        # S1b review round: the honest case. The invited address already had its own login (the letter said
+        # "sign in as you always do"): signed in elsewhere, no temporary password owed, but never in the
+        # console, so Cancel still archives them. Their login is theirs: `plan_login_retirement` says 'kept'.
         inv, account = self._staff_inv()
         with patch(f'{REQ}.get', return_value=_resp(body=_auth_user(
-                account.supabase_user_id, account.email, owes=False))), \
-                patch(f'{REQ}.put') as put:
-            self.assertEqual(self._cancel(inv).status_code, 200)
+                account.supabase_user_id, account.email, owes=False, signed_in=True))), \
+                patch(f'{REQ}.put') as put, patch(f'{REQ}.delete') as gone, \
+                self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
+            r = self._cancel(inv)
+        self.assertEqual(r.status_code, 200, r.content[:300])
         put.assert_not_called()
+        gone.assert_not_called()
+        self.assertEqual(r.json()['login'], 'kept')
+        self.assertIn('login=kept', ' '.join(logs.output))
+        account.refresh_from_db()
+        self.assertIsNotNone(account.archived_at)
+
+    def test_a_failed_login_removal_after_the_cancel_is_reported(self):
+        # S1b review round (mirrors Delete, `staff_archive` ~170): the read worked, so the archive committed,
+        # but the Supabase delete failed. The row stays archived; the reply says `login: 'failed'` so the
+        # page can tell the admin to contact support (the temporary password may still work).
+        inv, account = self._staff_inv()
+        with patch(f'{REQ}.get', return_value=_resp(body=_auth_user(account.supabase_user_id, account.email))), \
+                patch(f'{REQ}.delete', return_value=_resp(500)), patch(f'{REQ}.put'), \
+                self.assertLogs('apps.scholarship', level='INFO') as logs:
+            r = self._cancel(inv)
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertEqual(r.json()['login'], 'failed')
+        self.assertIn('STAFF_LOGIN_ORPHANED', ' '.join(logs.output))
+        account.refresh_from_db()
+        inv.refresh_from_db()
+        self.assertIsNotNone(account.archived_at)
+        self.assertIsNotNone(inv.revoked_at)
 
     def test_a_login_that_is_also_a_student_is_left_alone(self):
         inv, account = self._staff_inv()
@@ -265,14 +295,21 @@ class TestCancelKillsThePassword(TestCase):
         get.assert_not_called()
         put.assert_not_called()
 
-    def test_a_supabase_failure_does_not_undo_the_cancel(self):
+    def test_a_supabase_failure_refuses_the_cancel_and_changes_nothing(self):
+        # S1b: the archive must know what to do with the login before it clears the link, so a failed read
+        # refuses (502 `login_cleanup_failed`, the archive's own answer) and nothing is written: try again.
         inv, account = self._staff_inv()
-        with patch(f'{REQ}.get', return_value=_resp(500)), patch(f'{REQ}.put') as put:
+        with patch(f'{REQ}.get', return_value=_resp(500)), patch(f'{REQ}.put') as put, \
+                patch(f'{REQ}.delete') as gone:
             r = self._cancel(inv)
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual((r.status_code, r.json()['code']), (502, 'login_cleanup_failed'))
         put.assert_not_called()
+        gone.assert_not_called()
         account.refresh_from_db()
-        self.assertFalse(account.is_active)
+        inv.refresh_from_db()
+        self.assertTrue(account.is_active)
+        self.assertIsNone(account.archived_at)
+        self.assertIsNone(inv.revoked_at)
 
     def test_a_revoked_login_with_a_stale_temp_password_is_now_swept(self):
         # The daily job used to read active accounts only.

@@ -10,6 +10,7 @@ from importlib import import_module
 from django.apps import apps as live_apps
 from django.test import TestCase, override_settings
 
+from apps.courses import staff_permissions as sp
 from apps.courses.models import PartnerAdmin
 from apps.scholarship.models import StaffPermissionChange
 from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, make_admin, make_org
@@ -44,8 +45,9 @@ class GrantScholarsKey(TestCase):
             'lead': person('org_admin'),
             'super': make_admin('super', super_admin=True),
         }
-        # the lead is never stored or read from `permissions`: a stray list on that row is not touched
-        PartnerAdmin.objects.filter(pk=cls.keep['lead'].pk).update(permissions=['see_all'])
+        # the lead's stray list on that row is not touched (S2 / M4a: it keeps Organisation admin powers, as
+        # courses 0100 stores them, so the lead still opens the team's cards)
+        PartnerAdmin.objects.filter(pk=cls.keep['lead'].pk).update(permissions=['see_all', sp.ORG_ADMIN_KEY])
 
     def _stored(self):
         return dict(PartnerAdmin.objects.values_list('pk', 'permissions'))

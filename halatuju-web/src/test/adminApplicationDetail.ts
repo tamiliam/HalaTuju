@@ -507,9 +507,15 @@ export function buildApplicationDetail(
   }
 
   // Access S1: the server's `case_stage` for the stage (`staff_lifecycle.case_stage`) — a fixture states it,
-  // as the server serves it; a test that reopens a decision passes its own.
+  // as the server serves it; a test that reopens a decision passes its own. The ladder's `closed` comes
+  // after maintenance (a graduated file: `past_award`); S1b review nit: a test that closes a case BEFORE
+  // the award (`status: 'closed'` over an earlier stage, no `awarded_at`) reads `pre_award_end`, as the
+  // server serves it, unless it passes its own `case_stage`.
   app.case_stage = (['awarded', 'active', 'maintenance', 'closed'] as Stage[]).includes(stage) ? 'past_award'
     : stage === 'rejected' || stage === 'expired' ? 'pre_award_end' : 'open'
-
-  return { ...app, ...fieldOverrides }
+  const built = { ...app, ...fieldOverrides }
+  if (built.status === 'closed' && !built.awarded_at && !('case_stage' in fieldOverrides)) {
+    built.case_stage = 'pre_award_end'
+  }
+  return built
 }

@@ -199,12 +199,28 @@ DOOR_KEYS = {
     'contracts_write':    ('contracts.edit',),                  # contract templates, writes (G9)
     # ── M3c (D5): the senior letters on a scholar's file (`letters._senior`). ──
     'senior_letters':     ('scholars.approve',),
+    # ── S2 / M4a: Payments (the View switch, or Organisation admin powers; `payments_chain.may_read`). ──
+    'payments_read':      ('payments.view',),
+    # ── S3 / M4b: the credit's CHECK seat (Payments Approve means it), and the TD-498 remainder (owner
+    # Q-D, 23 Nov): sponsor terms and sponsor emails READ on `sponsors.view`; writing stays above. ──
+    'credits_check':       ('sponsors.check',),                 # credit_steps.holds_checker_seat
+    'sponsor_terms_read':  ('sponsors.view',),                  # _SponsorTermsBase GETs
+    'sponsor_emails_read': ('sponsors.view',),                  # AdminSponsorEmailsView.get
 }
 
 
 def opens_door(admin, door):
     """`opens(admin, *DOOR_KEYS[door])`. ⚠ An unknown door name RAISES (KeyError), never stays shut."""
     return opens(admin, *DOOR_KEYS[door])
+
+
+def old_keys_open(keys, door):
+    """Would the OLD keys `keys` alone (an editor's before / after list, read as `clean` reads a stored
+    list) open `door` through `ALIASES`? For a reader that compares two lists, so it never names the key
+    that means a door (S3: the credit check, `credit_steps.opens_check`)."""
+    from . import staff_permissions_v2 as v2
+    held = set(v2.with_implied_views(v2.through_aliases(sp.clean(keys))))
+    return all(k in held for k in DOOR_KEYS[door])
 
 
 def page_keys(admin):
@@ -253,10 +269,10 @@ def invite_permissions(role):
     """The `permissions` value a NEW invitation's row is written with: a list, or None (the preset).
 
     M3c (D3): a new organisation admin starts with the full set (`ORG_ADMIN_SET`, what migrations 0098
-    and 0099 store), never NULL."""
+    and 0099 store), never NULL; S2 / M4a: plus Organisation admin powers (`ORG_ADMIN_FULL`, as 0100)."""
     from . import staff_permissions_v2 as v2
     if role == sp.LEAD_ROLE:
-        return list(v2.ORG_ADMIN_SET)
+        return list(v2.ORG_ADMIN_FULL)
     start = INVITE_START.get(role)
     if start is None:
         return None

@@ -1,5 +1,200 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-23 — Sponsor credits and the Vircle ID on Payments switches (sprint M4b)
+
+Owner rulings, 23 Nov (programme ACCESS-BY-SWITCHES S3). Services: both. Migration: none, but the sprint lands WITH or
+AFTER S2's courses 0100 (an organisation admin with a custom key list holds Organisation admin powers only once 0100
+has stored `organisation.admin`). Brief: `docs/plans/2026-11-23-m4b-sponsor-credits-brief.md`.
+- **Q-A, the maker (owner 23 Nov).** Only Admins with Sponsors: edit stored in their own seat may record a credit and
+  sign it first; an organisation admin never records or first-signs. **Decision:** `credit_steps.may_record` = a super,
+  or a team member (never the lead tier) who opens `credits_write` (`sponsors.edit`, stored). The sponsor page reads
+  the served `can_record_credit`. Why: the approver has to stay free to countersign; an organisation admin who recorded
+  could never approve their own credit (`same_signer`), and a one-admin organisation would be stuck.
+- **Groups first, switches second (owner 24 Nov).** A person becomes a reviewer, an admin or a mentor by JOINING that
+  group (invited to it or added to it), and stops being one only by LEAVING it. The switches are the powers a group's
+  members may be given: they come after joining, the group's defaults start on (Review, for Reviewers), and any of them
+  may be switched off without the person leaving the group. So membership is never worked out from the switches, and
+  never from the stored role. A person in two groups holds each group's switches; Sponsors: edit is an Admins switch.
+  - **S3 (sponsor credits) is unaffected:** the credit steps read the switches. Production has one active person in
+    both Reviewers and Admins (row 9, the default admin powers by O8, stored by migration 0097); under Q-A's key rule
+    they gain record, first-sign and cancel on day one; to undo it, untick their Sponsors: edit on the Admins tab.
+    Pinned by `TestAPersonInReviewersAndAdmins`.
+  - **Where the code stands:** Mentors already follows the rule (the person's mentor record, on or off,
+    `PartnerAdmin.mentors_now`). Admins and Reviewers do not: `staff_tables.in_admins` seats a person by holding an
+    admin key, and `in_reviewers` by the stored role `reviewer` / `qc` or the Review / QC switch; `would_leave_people`
+    refuses unticking both Review and QC. Stored Admins and Reviewers membership is planned work (programme plan, S6).
+- **A person in no group stays a team member (owner 24 Nov).** Leaving every group takes away every power but not the
+  membership: the person stays on the Team list, with no access, until they are deleted from it. A delete of someone
+  with past records archives them instead (today's delete-or-archive rule).
+- **Q-B, cancel (owner 23 Nov).** Cancel stays on Sponsors: edit only (`credit_steps.may_cancel`, the `credits_write`
+  door); Payments: Approve alone does not cancel.
+- **Q-C, the approver (owner 23 Nov).** The organisation admin approves through Organisation admin powers, and anyone
+  with Payments: Approve also approves; nobody approves a credit they recorded or checked. **Decision:**
+  `credit_steps.may_approve` (super, `holds_org_admin_powers`, or `payments_approve`); `same_signer` by email in
+  `step_refusal`. No fallback rule (unlike payment runs). The checker seat is `sponsors.check` (the `credits_check`
+  door), which Payments: Approve brings through the alias; `CHECKER_KEY` is gone. The Vircle ID correction reads the
+  same pair (`surface_gates.may_correct_vircle_id`), after the case's own write fence.
+- **Q-D, sponsor terms and emails (owner 23 Nov).** Readable with Sponsors: view; writing stays on Sponsors: edit.
+  **Decision:** two read doors, `sponsor_terms_read` and `sponsor_emails_read` (`sponsors.view`); every GET on the terms
+  and the emails reads them, every write keeps `sponsor_terms` / `sponsor_emails`. Closes the TD-498 remainder when
+  live. The web still shows the Emails and Terms tabs to editors only (TD-NEW-sponsor-reads-web).
+- **Served, never derived (web).** The sponsor page draws each credit's `can_sign`, `blocked` and `can_void` from
+  `credit_steps.served`; the screen derives only which step is next (a label). The four money role reads in
+  `sponsorDetail.ts` are deleted, and the four money GATE-LEFT entries on the server (14 to 10, 4 money to 0).
+- **The Overview card (TD-503).** The wallet-credits card shows to anyone in the maker, checker or approver seat, each
+  counting only the credits waiting for them. To keep the Overview inside its query budget (org admin 11), the card
+  shares the payment-run card's staff read, and `programme_overview.attention` reads the with-reviewer and awaiting-QC
+  populations in one query (same answers).
+- **Lock (TD-561).** Signing and cancelling a credit lock its row (`select_for_update`), re-read the status under the
+  lock, and send the confirmation email after commit.
+
+## 2026-11-23 — Birth-certificate and guardianship match bands; each tile leads with the reason for its band (request #78)
+
+Owner rulings, 23 Nov 2026 (BrightPath request #78, analysis 193, bug, no charge). Services: both. Migration: none.
+Brief: `docs/plans/2026-11-23-req78-bc-match-bands-brief.md`. Code: `income_engine/match_bands.py` (the one row score).
+- **The bands (slips counted, not percentages).** A row is one person on the document against their reference (child
+  vs the student, mother vs her IC, guardian vs their IC, ward vs the student). Exact number = all 12 digits; close
+  number = one digit changed, dropped or added (owner, review round 1; `vision.nric_close`). Exact name = the same
+  words, ignoring spacing, order and the connectors; close name = each word within one letter (two in words of 8+
+  letters), or one word missing or extra, OR anything today's tolerant matcher (`relationship_name_match`) accepts,
+  so no name that passes today scores far. The slip-count close name counts only where a number stands beside it. GREEN: both exact, or one
+  exact and the other close. BLUE: both close, or exact number + far name. AMBER: close + far, exact name + far number,
+  or the name missing beside an exact or close number. RED: both far (or one far and the other missing). GREY: nothing
+  read. The father row and the patronymic links stay outside the bands (#23: the father row never blocks).
+- **Only RED blocks.** RED is the only state that reaches the owed lines and asks the student to act. AMBER and BLUE go
+  to the reviewer; the officer checks by eye.
+- **The chip (the link from two rows).** Chips have no blue: BLUE shows as amber. G+G = green. B+B = amber, always
+  (owner, review round 1: both names far with both numbers exact is never confirmed; the officer checks). G+B, G+A, A+B, A+A = amber. RED + anything = red. GREY + GREEN =
+  grey while waiting, amber once everything is in but that part could not be read. Both GREY = grey ("send a clearer
+  copy"). The case-page chip, the decision and the student's tick read this one score; the browser keeps no copy.
+- **No number on the document means name alone (owner, later the same evening).** When the certificate or the
+  reference IC gives no IC number for a row, the name decides it by today's matcher (`relationship_name_match`).
+  Review round 2 (lead, 24 Nov): the student's LINK name (`student_name_for_link`, the name the decision always used)
+  decides first: it passes → green; it fails but the typed profile name passes → amber (the officer looks; before, the
+  decision said red and the chip trusted the typed name); both fail → red. The ward row follows the same rule. The
+  wider slip count does not apply here (review round 1: it would have merged short words the 5-letter floor keeps
+  apart, such as K RAJAN and M RAJAN). "One value missing = amber" applies only when the NAME is missing and the
+  number is present.
+- **The IC-number chain stands in for the PARENT row only (review round 2, lead, 24 Nov).** When the mother's or
+  father's IC number on the certificate equals the number on the income proof (`chain_verified_earner`, #9), that
+  proves the parent row, never the child row. The link is the child row scored against a green parent row
+  (`match_bands.chained_link`, `identity_checks.chain_link_status`), the same in the chip, the parent IC check and the
+  verdict, including the father fallback and with the TD-390 deferral: a green child row confirms; an amber or blue
+  child row is pending (the chain needs a child name that passes, so the child row is never red or grey under it). A
+  link that already matches without the chain (a patronymic father, say) stays a match (review round 3).
+- **The ward row is name alone (owner, later the same evening).** Guardianship letters never print the ward's number;
+  the guardian row uses name + number. The ward row uses today's matcher, as above.
+- **An unread ward name: RULED (owner, 23 Nov 2026, review round 1).** Keep as built: an unread ward name has no say and
+  the guardian row decides the link (a BLUE guardian row shows amber).
+- **The mononym father fallback's child row is on the shared score (owner, review round 1).** When the father link
+  falls back to the birth certificate (`relationships._bc_link`), its CHILD row is scored like every other row: child
+  name + child IC vs the student; no number = the name alone, as today. The certificate's father row and the
+  patronymic links are unchanged.
+- **This replaces BrightPath #19 (8 Sep, "exact number + differing name is amber, never green") for CLOSE names:** an
+  exact number with a close name is now green. An exact number with a FAR name is BLUE, which still shows amber. **#23
+  is kept where a number is read:** a number alone is never green. Where the document prints no number, the evening
+  ruling above lets the name decide (the chip's old "a name with no number is amber" yields to it).
+- **Effect on decisions (against the name-only decision before #78; mother, guardian and the father fallback's child
+  row).** Match → pending (the officer checks by eye): exact name + far number; close name + far number; close name +
+  close number; any link made of two BLUE rows. Mismatch → match: a slip-count close name (such as one letter dropped
+  from a 5-letter word, the case-177 shape) beside an exact number; a child name that only the typed profile name
+  passes beside an exact child number (close name + exact number is green in the owner's table; review round 3);
+  a child name the typed profile name matches EXACTLY while the link name fails, beside a close child number (exact
+  name + close number is green; in practice only a reversed patronymic, which TD-408 reads as another person, and with
+  the child number one digit off; short check after round 3).
+  Mismatch → pending: a far name beside an exact or close number (BLUE / AMBER), or a slip-count or typed-only close
+  name beside a close number (BLUE). Pending → mismatch: a name
+  unread on either side (the certificate or the reference IC; for example a mother's IC with its number read but not
+  its name) beside a far number (the chip already showed red). No number: the link name passes → match and both names
+  fail → mismatch, as before; only the typed profile name passes → pending (before: mismatch). The IC-number chain
+  (before: match whatever the child row said): a green child row → match, as before; an amber or blue child row →
+  pending. Under the chain the child row is never red or grey: the chain needs a child name that passes
+  `relationship_name_match` (`_bc_parent_identity`), so that name is never far or unread. Nothing that passes today
+  becomes red.
+- **The owed line says which check failed.** A parent IC red only on its link to the student owes
+  `parent_link_mismatch` (mother or guardian) or `parent_name_link_mismatch` (father, brother or sister);
+  `parent_ic_person_mismatch` stays for a card that does not match the income documents and comes first when both fail.
+- **Each tile leads with the reason for its band** (following the 17 Nov Academic fix). Done on the server by item
+  order, so the tile, the AI Prediction line and every other reader agree: Income puts the STR line first when the STR
+  sets the band; Academic puts its red lines first (`verdict_ladder.ACADEMIC_RED_CODES`), with an unreadable
+  higher-results slip ahead of them.
+- **Revisit if:** a document type starts printing the ward's number, or the A5 replay shows the pending moves swamping
+  the reviewers.
+
+## 2026-11-19 — Payment runs on Payments switches; one key, Organisation admin powers (sprint M4a)
+
+Owner rulings, 19 Nov (programme ACCESS-BY-SWITCHES S2). Services: both. Migration: courses 0100 (additive data,
+by hand, migrate-first, after the owner's yes). Brief: `docs/plans/2026-11-19-m4a-payment-runs-brief.md`.
+- **Q1, organisation admins.** Owner, verbatim: "Org admins are not invited like other members of Team. They are added
+  by Super Admin in the HalaTuju platform. They are special, but their powers must be documented and visible somewhere
+  so that they do not fall in a crack, taken for granted. It could be a single Org Admin power switch that is on only
+  for org admins." **Decision:** one key, `organisation.admin` ("Organisation admin powers"), stored on organisation
+  admin rows only, read by one helper (`staff_permissions.holds_org_admin_powers`), shown on the person's card with
+  the plain list of what it brings. Only a super changes it; the last holder in an organisation keeps it. The only
+  role read left is the one that confines the key to organisation admin rows. No Payments switch is stored on an
+  organisation admin.
+- **Q2, the fallback approver.** **Decision:** when nobody else can approve a run, anyone with Approve may approve it,
+  including the person who built it, as long as they did not sign it as maker. The maker never approves their own
+  run. The organisation admin's fallback comes through the key. This is the one seat that widens on ship day.
+  **Owner, 23 Nov (direct): confirmed** that a super who BUILT a run may approve it when nobody else can (never one
+  who signed it as maker). Already built and pinned (`test_m4a_maker_checker.py`,
+  `test_a_super_who_built_it_approves_only_when_nobody_else_can`); no code change.
+- **Q3, giving (A12 for money).** **Decision:** a person gives only the Payments switches they hold. For GIVING only,
+  Organisation admin powers count as holding Payments View, Prepare and Approve, never Check; only a super gives
+  Check. **Why:** with Q1 an organisation admin holds no Payments switch, so A12 alone would stop them staffing
+  Payments at all.
+- **Q4, wording.** English approved as written in the brief; Malay follows it. The Approve help text is "Releases
+  payments from Vircle to students. Never on a run they signed as maker. Also checks sponsor credits." (owner, 19 Nov).
+- **The last holder's refusal, wording (owner, 20 Nov).** It says "only admin with full permissions": "{name} is
+  the only admin with full permissions. Another admin must have full permissions first." (`last_org_admin_powers`),
+  and the same words in `last_org_admin` and `sole_org_admin` (Archive, Revoke and Delete count the same holders).
+  The ta and ms lines go to Sol.
+- **Payments View** (`payments.view`) is the one page key that may be stored by itself; Prepare, Check and Approve
+  bring it. The card shows View on and locked while one of them is on (drawn, not stored).
+- **Tamil needs a native read.** The new Tamil strings (the powers switch, its list, the Payments row, View and the
+  Approve text) were written by the builder, not a native speaker, and are flagged for a native read. The repo has no convention for marking a string
+  for a native read, so the flag lives here and in the CHANGELOG entry.
+- **Revisit if:** a second kind of lead-tier row appears (the key is confined to `org_admin` rows), or the owner wants
+  an organisation admin to give Check.
+
+## 2026-11-19 — Cancel invitation archives the never-signed-in invitee (TD-615, sprint S1b)
+
+Owner ruling, 19 Nov 2026, in the owner's words: "a person invited into a group who never accepts and never signs in
+is removed by Cancel invitation alone; the system removes them from the group and cancels the invitation; they need
+not be deleted from Members, because they are not listed there." Programme ACCESS-BY-SWITCHES, sprint S1b. Services:
+both. Migration: none.
+- **Cancel archives in one step:** a STAFF invitation's Cancel (`POST admin/invitations/<id>/cancel/`) archives the
+  never-signed-in account with the archive Delete uses (`staff_archive.archive_locked`): off the group tables and
+  pickers, the login retired (`staff_lifecycle.retire_login`), the address free to be invited again (the re-invite
+  restores the same row). The invitation itself still only gets `revoked_at` (a status, never a delete).
+- **Refused while they hold open cases:** 409 `has_unfinished_work`, the archive's own rule (`staff_work.unfinished`), so
+  scholars they mentor also count; nothing is changed. Someone who has signed in keeps today's refusal (400 `not_open`; they are revoked on People).
+- **TD-615's original fix (Delete needs no group) is not needed** and the item closes when S1b is live.
+- **Not archived:** a source invitation (an archived source row has no way back, so its address would stay taken; it
+  is switched off as before) and a sponsor invitation (no account). A mentor invitation stays the Mentors page's.
+- **owner 20 Nov: the cancelled invitation need not stay visible; a re-invite behaves as new.** So a cancelled staff
+  invitation stays off the Invitations list, even with `all=1` (archived people's invitations are hidden, M1a), and a
+  re-invite of the address now reads exactly as a brand-new invitee: the old revoked invitation stays off the list and
+  out of the totals (`invitations.without_superseded`); a never-signed-in row restored by the re-invite starts its
+  "Joined" date again (`created_at`) and drops a mentor link that never had a scholar or a meeting
+  (`staff_archive._never_mentored`), so Add to Mentors offers them again. The invitation row, its `revoked_at`, the
+  AUDIT lines, `staff_permission_changes` and `staff_activity` are kept untouched.
+- **owner 23 Nov (direct): tidy both places left showing earlier history, so a re-invite after Cancel is "as if new".**
+  - **The Changes list** (the person page's `history`, `GET admin/admins/<id>/permissions/`) starts at the restore:
+    it leaves out every `staff_permission_changes` row from before the reset `created_at`
+    (`views_admin/staff._since_joining_again`). The cut-off counts only when the row also holds an invitation made
+    before that `created_at`; an invitation is always written after its staff row, and only the restore moves
+    `created_at`, so for anyone never cancelled and re-invited, anyone who had signed in (their "Joined" is not reset),
+    and every migration row for ordinary staff, the list is unchanged. A read filter only: no row is deleted or edited.
+  - **A mentor link with a scholar or a meeting on record** is KEPT, because the mentor's name on each scholar's
+    past assignment and meeting is read through that link (`mentoring.mentor_facts`); detaching it would blank the
+    name on the scholar's file. Instead, a staff login whose mentor record was stopped BEFORE its own `created_at`
+    (only a re-invite restore leaves that shape: `staff_mentor.mentored_before_joining`) is no longer served on the
+    Mentors page (`without_mentored_before_joining`), so it is never "Mentored before"; Add to Mentors offers it as
+    new (`candidates`), and adding switches the same mentor record back on (no assignment comes back). Kept: every
+    assignment, meeting, concern and activity row, and the scholar's file reads exactly as before. One difference
+    stays on purpose: their name is on a scholar's records, so Delete counts that work and archives instead of erasing.
+
 ## 2026-11-21 — F2 (fix plan): the AI Prediction band has one home, on the server; I-10 QC floor
 
 Branch fix-f2, not pushed.

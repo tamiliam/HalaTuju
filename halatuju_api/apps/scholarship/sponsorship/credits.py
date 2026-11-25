@@ -3,10 +3,14 @@ admin-recorded credit is minted.
 
 Moved unchanged out of ``sponsorship.py`` when audit A3.8 (2026-11-10) made it a package.
 """
+import logging
+
 from django.db import transaction
 from django.utils import timezone
 
 from ..models import Donation
+
+logger = logging.getLogger(__name__)
 
 
 class CreditError(Exception):
@@ -34,12 +38,12 @@ def record_admin_credit(*, sponsor, programme, amount, external_reference, admin
     separate acts, exactly as ``payments.create_run`` is separate from ``payments.sign``.
     The maker's signature is collected by ``sign_admin_credit`` with a typed name.
 
-    Role gate: the MAKER's role (``admin``) or a super — the same gate that opens the
-    chain. ``org_admin`` is deliberately NOT admitted here: on prod the person who does
-    this work is Poongulali Veeran, a plain ``admin`` (verified against live roles,
-    2026-07-26), and the approver must stay free to countersign.
+    The MAKER's gate (S3 / M4b, owner Q-A, 23 Nov): `credit_steps.may_record` — Sponsors: edit stored in
+    the person's own seat, or a super; the same gate that opens the chain. The organisation admin is
+    deliberately NOT admitted: the approver must stay free to countersign.
     """
-    if not (getattr(admin, 'is_super', False) or getattr(admin, 'role', '') == 'admin'):
+    from .. import credit_steps
+    if not credit_steps.may_record(admin):
         raise CreditError('wrong_role')
     if amount is None or amount <= 0:
         raise CreditError('invalid_amount')
@@ -66,20 +70,21 @@ def _is_accepted_into(sponsor, programme):
 
 
 @transaction.atomic
-def sign_admin_credit(credit, admin, typed_name):
+def sign_admin_credit(credit, admin, typed_name, expected_status=None):
     """The maker→[finance]→approver sign-off for a wallet credit.
 
     **Deliberately ONE function with the same shape and the same guard names as
     ``payments.sign``** — the two chains are one design (decisions.md), and a single
     mirrored function is what stops them drifting into two subtly different controls.
 
-      * DRAFT → the MAKER (role ``admin``, or super) signs → ``admin_signed``.
-      * ADMIN_SIGNED, finance ACTIVE → only the CHECKER (``payments_approve``, TD-475; or super) may
-        sign → ``finance_checked``. An org_admin trying to countersign here gets
-        ``finance_check_required`` (told WHY, not a bare wrong_role — from their seat
-        nothing looks amiss).
-      * ADMIN_SIGNED, finance DORMANT → the APPROVER (``org_admin``, or super)
-        countersigns → ``confirmed``. This is BrightPath's live path today.
+      * DRAFT → the MAKER (`credit_steps.may_record`: Sponsors: edit stored, or super) signs →
+        ``admin_signed``.
+      * ADMIN_SIGNED, finance ACTIVE → only the CHECKER (``sponsors.check``, which Payments Approve
+        brings; or super) may sign → ``finance_checked``. An approver who is not a checker gets
+        ``finance_check_required`` (told WHY, not a bare wrong_role — from their seat nothing
+        looks amiss).
+      * ADMIN_SIGNED, finance DORMANT → the APPROVER (`credit_steps.may_approve`: Organisation
+        admin powers or Payments Approve, or super; S3 / M4b, owner Q-C) countersigns → ``confirmed``.
       * FINANCE_CHECKED → the APPROVER countersigns → ``confirmed``.
 
     ``confirmed`` is the step that makes the money spendable (``Donation.is_spendable``).
@@ -90,6 +95,10 @@ def sign_admin_credit(credit, admin, typed_name):
     distinctness across every signature already collected, which is what confines a
     ``super`` to one slot per credit without a special case for supers.
 
+    ``stale`` (S3 / M4b review SF1): `expected_status` is the status the signer's page drew. Read under the
+    lock, a credit that has moved on since (two checkers both saw "Check"; one checked first) is refused, so
+    the second never confirms a credit they meant to check. None (a shell, an older page) skips the test.
+
     ``finance_check_required`` is evaluated LIVE at every attempt and never stored, so
     giving someone ``payments_approve`` ARMS the check for a credit already mid-chain, and revoking
     the last holder degrades it back to two steps. ⚠ The rule is
@@ -97,6 +106,9 @@ def sign_admin_credit(credit, admin, typed_name):
     which step is `credit_steps.step_refusal` since T5c P5b (the Overview counts with it). Returns the credit.
     """
     from .. import credit_steps, payments, staff_activity
+    _lock(credit, admin)          # TD-561: the actor's row, then the credit's, re-read under a lock
+    if expected_status and expected_status != credit.status:
+        raise CreditError('stale')    # SF1: the page drew an earlier step
     if credit.status not in credit_steps.SIGNING:
         raise CreditError('bad_state')
     if not payments._name_matches(admin, typed_name):
@@ -139,9 +151,45 @@ def sign_admin_credit(credit, admin, typed_name):
     # becomes spendable, and it is the only point at which saying "we hold it" is true. Fired
     # from the SERVICE rather than the endpoint so a shell-driven confirmation notifies too, and
     # imported locally to keep this money module free of a hard dependency on the sending layer.
-    from .. import sponsor_notify
-    sponsor_notify.send_credit_confirmed(credit)
+    # TD-561: the email leaves only after the signature is committed, never while the row lock is held.
+    transaction.on_commit(lambda: _tell_the_donor(credit))
     return credit
+
+
+def _tell_the_donor(credit):
+    """After commit: the confirmation email. The money is already confirmed, so a failure here (the balance
+    read, the send) is logged and never turns the signer's answer into a 500 (adversarial round)."""
+    from .. import sponsor_notify
+    try:
+        sponsor_notify.send_credit_confirmed(credit)
+    except Exception:
+        logger.exception('credit_confirmed email failed for credit %s', credit.pk)
+
+
+#: The credit fields a signature reads and writes, re-read under the row lock (TD-561).
+_LOCKED = ('status', 'recorded_by', 'recorded_by_email', 'recorded_at', 'finance_checked_by',
+           'finance_checked_by_email', 'finance_checked_at', 'confirmed_by', 'confirmed_by_email',
+           'confirmed_at')
+
+
+def _lock(credit, admin):
+    """TD-561 (S3 / M4b): lock the ACTOR's row first (`payments_chain.lock_actor`, the run's own order, so
+    a switch taken away mid-request is seen), then the credit's row, and copy the locked state onto
+    `credit`, so two people signing at once cannot both take one step. A credit gone raises ``bad_state``."""
+    from ..payments import PaymentsError
+    from ..payments_chain import lock_actor
+    try:
+        lock_actor(admin)
+    except PaymentsError as e:
+        raise CreditError(e.code) from e
+    org = credit.programme.organisation_id if credit.programme_id else None
+    if org is not None and not admin.is_super and admin.owning_organisation_id != org:
+        raise CreditError('wrong_role')   # adversarial round: moved to another organisation mid-request
+    row = Donation.objects.select_for_update().filter(pk=credit.pk).values(*_LOCKED).first()
+    if row is None:
+        raise CreditError('bad_state')
+    for k, v in row.items():
+        setattr(credit, k, v)
 
 
 @transaction.atomic
@@ -149,10 +197,12 @@ def cancel_admin_credit(credit, admin):
     """Void a credit that has not yet been confirmed — a mis-keyed amount or bank reference
     would otherwise be permanent (the row is never deleted; the audit trail is the point).
 
-    Maker's role or super, and only before ``confirmed``: once money is spendable it is
-    reversed by a compensating entry, never by editing history."""
-    if not (getattr(admin, 'is_super', False) or getattr(admin, 'role', '') in
-            ('admin', 'org_admin')):
+    Sponsors: edit (`credit_steps.may_cancel`; S3 / M4b, owner Q-B: as the door asks), and only before
+    ``confirmed``: once money is spendable it is reversed by a compensating entry, never by editing
+    history."""
+    from .. import credit_steps
+    _lock(credit, admin)          # TD-561: never void a credit somebody is signing at the same moment
+    if not credit_steps.may_cancel(admin):
         raise CreditError('wrong_role')
     if credit.status not in (Donation.STATUS_DRAFT, Donation.STATUS_ADMIN_SIGNED,
                              Donation.STATUS_FINANCE_CHECKED):

@@ -49,7 +49,6 @@ CENSUS = {
     C + 'staff_archive.py::lock_mentor_of': (1, 'OWN_ROW', "a lock peek by id; the door's fence refuses archived"),
     C + 'staff_archive.py::restore': (2, 'ARCHIVE', 'the restore; the address check'),
     C + 'staff_delete_rules.py::_org_admins': (1, 'ACTIVE', 'active org admins'),
-    C + 'staff_delete_rules.py::sole_org_admin_ids': (1, 'ACTIVE', 'active org admins'),
     C + 'staff_gift.py::unchosen_rows': (1, 'FILTERED', 'the gift report'),
     C + 'staff_permissions.py::org_staff': (1, 'ACTIVE', 'active staff'),
     C + 'staff_permissions.py::team_holding': (1, 'OWN_ROW', 'a Q builder; each caller is classified'),
@@ -75,6 +74,8 @@ CENSUS = {
     S + 'invitations.py::create_or_refresh': (1, 'OWN_ROW', 'the caller passes the row'),
     S + 'invitations.py::open_invitation': (1, 'SHAPE', 'open ones only; the archive cancelled them'),
     S + 'invitations.py::purge_expired': (1, 'SHAPE', 'housekeeping by age'),
+    S + 'invitations.py::without_superseded': (1, 'OWN_ROW', 'S1b: a later invitation of the row the '
+                                                         'list holds; the list leaves archived rows out'),
     S + 'management/commands/backfill_invitations.py::Command.handle': (3, 'FILTERED', 'staff not archived'),
     S + 'management/commands/bursary_e2e.py::Command._walk': (1, 'OWN_ROW', 'a seed it creates'),
     S + 'management/commands/send_review_nudges.py::Command.handle.escalation_recipients':
@@ -92,7 +93,7 @@ CENSUS = {
     S + 'mentoring.py::mentor_facts': (2, 'KEEPS', "facts of mentors in hand; a past mentor's are history"),
     S + 'mentoring_read.py::_people': (1, 'KEEPS', 'names on mentoring records'),
     S + 'my_pending.py::_invitations': (1, 'SHAPE', 'waiting counts; the archive cancelled them'),
-    S + 'payments_chain.py::fallback_approvers': (1, 'ACTIVE', 'active org admins'),
+    S + 'payments_chain.py::lock_actor': (1, 'OWN_ROW', "the actor's own row, active, locked (TD-605, S2 / M4a)"),
     S + 'prediction_metrics.py::_staff_by_email': (1, 'KEEPS', 'names a past decision recorder; archived keeps its name'),
     S + 'scholars.py::_mentor_name': (1, 'KEEPS', "the current mentor's name (an archived one has none)"),
     S + 'serializers_admin/names.py::_admin_name_by_email': (1, 'KEEPS', 'a name on a record'),
@@ -115,13 +116,15 @@ CENSUS = {
     S + 'staff_lifecycle.py::adoptable_login': (1, 'SHAPE', 'by login UID; the archive cleared it'),
     S + 'staff_lifecycle.py::change_role': (3, 'FENCED', 'locked re-read with archived_at=None'),
     S + 'staff_lifecycle.py::credential_was_issued': (1, 'OWN_ROW', 'a row in hand'),
-    S + 'staff_mentor.py::add': (2, 'FENCED', 'AdminStaffMentorsView.post refuses archived'),
+    S + 'staff_mentor.py::add': (3, 'FENCED', 'AdminStaffMentorsView.post refuses archived (and the lock peek)'),
     S + 'staff_mentor.py::add_member': (2, 'ACTIVE', 'an active, signed-in member'),
     S + 'staff_mentor.py::candidates': (1, 'ACTIVE', 'active staff'),
     S + 'staff_mentor.py::leave': (1, 'OWN_ROW', 'inside a delete, archive or role change'),
     S + 'staff_mentor.py::remove_mentor_login': (2, 'FENCED', 'staff_tables_admin.may_act'),
     S + 'staff_mentor.py::resume': (1, 'ACTIVE', 'eligible() needs is_active'),
     S + 'staff_mentor.py::stop': (1, 'FENCED', 'locked re-read with archived_at=None'),
+    S + 'staff_mentor.py::without_mentored_before_joining': (1, 'KEEPS', 'S1b 23 Nov: an archived '
+        'login\'s mentor was stopped after it joined, so it is never left out; the inactive row stays'),
     S + 'staff_permissions_admin.py::change_permissions': (2, 'FENCED', 'locked re-read with archived_at=None'),
     S + 'staff_tables_admin.py::candidates': (1, 'ACTIVE', 'active staff'),
     S + 'staff_tables_admin.py::change': (3, 'FENCED', 'may_act refuses archived'),
@@ -141,6 +144,8 @@ CENSUS = {
     S + 'views_admin/staff.py::AdminStaffRoleView.patch': (1, 'FENCED', 'the fence'),
     S + 'views_admin/staff.py::AdminTeamTableView.post': (1, 'FENCED', 'may_act refuses archived'),
     S + 'views_admin/staff.py::_permission_history': (1, 'KEEPS', 'names on the history'),
+    S + 'views_admin/staff.py::_since_joining_again': (1, 'OWN_ROW', 'S1b 23 Nov: the fenced target\'s '
+        'own invitations, for where its Changes list starts'),
     S + 'views_admin/verdict.py::AdminAssignReviewerView.post': (1, 'ACTIVE', 'an active assignee'),
     S + 'views_sponsor.py::_close_admin_invitation': (1, 'NOT_STAFF', 'sponsor invitations'),
 }

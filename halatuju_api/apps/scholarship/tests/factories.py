@@ -289,13 +289,27 @@ def make_cohort(*, programme=_UNSET, **kw):
 _M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')
 _M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
 _M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')
-#: M3c: the list a live organisation admin row stores after 0098 then 0099 (0099 APPENDS
-#: `scholars.approve`, so it sits last, not in catalogue order). `make_admin('org_admin')` makes it.
-ORG_ADMIN_MIGRATED = (*_M0098.PLANNED[0], _M0099.KEY)
+_M0100 = import_module('apps.courses.migrations.0100_store_org_admin_powers')
+#: M3c: the list a live organisation admin row stored after 0098 then 0099 (0099 APPENDS
+#: `scholars.approve`, so it sits last, not in catalogue order). `make_admin(..., pre_m4a=True)` makes it.
+ORG_ADMIN_PRE_M4A = (*_M0098.PLANNED[0], _M0099.KEY)
+#: M4a: the list a live organisation admin row stores after 0100 too (0100 APPENDS `organisation.admin`
+#: last). `make_admin('org_admin')` makes it.
+ORG_ADMIN_MIGRATED = (*ORG_ADMIN_PRE_M4A, _M0100.KEY)
+#: M4a (owner 2026-11-19): the ONE owner-ruled change to what an organisation admin's v2 keys READ. The four
+#: money switches become display-only for them (their gates read the old `payments_*` keys and the powers)
+#: and the powers key itself is read. The "nobody changes" tests apply it to the old read and to nothing else.
+M4A_DISPLAY_ONLY = ('payments.prepare', 'payments.check', 'payments.approve', 'sponsors.check')
+
+
+def m4a_display(keys):
+    """An organisation admin's old v2 read with only the M4a display change applied."""
+    from apps.courses import staff_permissions_v2 as v2
+    return v2.v2_order((*(k for k in keys if k not in M4A_DISPLAY_ONLY), _M0100.KEY))
 
 
 def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False, uid=None, pre_m2b=False,
-               pre_m3=False, **kw):
+               pre_m3=False, pre_m4a=False, **kw):
     """A ``PartnerAdmin``. ``role`` is any of ``PartnerAdmin.ROLE_CHOICES``; ``super_admin=True``
     sets the platform-super flag (which most permission code reads instead of the role).
 
@@ -318,6 +332,9 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
     admin's keys stored (`0098.plan_row`; `review` kept when ``permissions`` names it). ``pre_m3=True``
     (or ``pre_m2b=True``) makes the row as it stood before that data step. M3c: then 0099 adds
     `scholars.approve` (`0099.plan_row`), as every live stored list holds it.
+
+    ⚠ M4a: then 0100 adds `organisation.admin` (`0100.plan_row`), as every live stored list holds it after
+    the data step. ``pre_m4a=True`` stops after 0099 (``pre_m3`` / ``pre_m2b`` imply it).
     """
     if role not in dict(PartnerAdmin.ROLE_CHOICES):
         raise _StageError(
@@ -351,7 +368,7 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
             PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[1])
             admin.permissions = plan[1]
     if not (pre_m2b or pre_m3) and not super_admin:
-        for step in (_M0098, _M0099):
+        for step in ((_M0098, _M0099) if pre_m4a else (_M0098, _M0099, _M0100)):
             plan = step.plan_row(admin.role, admin.permissions)
             if plan is not None:
                 PartnerAdmin.objects.filter(pk=admin.pk).update(permissions=plan[1])

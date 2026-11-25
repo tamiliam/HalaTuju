@@ -7,6 +7,7 @@ views. The alias is the original one and is kept exactly so the moved bodies are
 Part of the `views_admin` package. Every name below is re-exported from
 `views_admin/__init__.py`, so `urls.py` and every importer are unchanged.
 """
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
 from .. import sponsor_terms as sponsor_terms_mod
@@ -33,7 +34,9 @@ def _terms_section_dict(sec):
     }
 
 
-def _terms_summary_dict(terms):
+def _terms_summary_dict(terms, staff=True):
+    """`staff` False (S3 / M4b review SF4): a reader without Sponsors: edit (`sponsor_terms_read`) never sees
+    a staff email — the author and publisher addresses are blanked. The model stores no name to show."""
     return {
         'id': terms.id,
         'version': terms.version,
@@ -43,8 +46,8 @@ def _terms_summary_dict(terms):
         # walks the sections, which is why the list view prefetches them.
         'languages_available': terms.languages_available,
         'section_count': terms.sections.count(),
-        'created_by_email': terms.created_by_email,
-        'published_by_email': terms.published_by_email,
+        'created_by_email': terms.created_by_email if staff else '',
+        'published_by_email': terms.published_by_email if staff else '',
         'published_at': terms.published_at,
         'archived_at': terms.archived_at,
         'created_at': terms.created_at,
@@ -52,8 +55,8 @@ def _terms_summary_dict(terms):
     }
 
 
-def _terms_detail_dict(terms):
-    d = _terms_summary_dict(terms)
+def _terms_detail_dict(terms, staff=True):
+    d = _terms_summary_dict(terms, staff)
     d.update({
         'title_ms': terms.title_ms, 'title_ta': terms.title_ta,
         'intro_en': terms.intro_en, 'intro_ms': terms.intro_ms, 'intro_ta': terms.intro_ta,
@@ -91,16 +94,25 @@ class _SponsorTermsBase(_AdminBase):
     reason: authoring what every donor is bound by is an editorial power, not a reading one.
     Finance reads the sponsor list because money is its business; it does not write the terms.
     Team tables T5c: the v2 key `sponsors.edit` (finance holds `sponsors.view` / `.check`, never `.edit`).
+
+    S3 / M4b (TD-498 remainder, owner Q-D, 23 Nov): a READ (GET / HEAD / OPTIONS: the list, a version,
+    its validation and its preview) asks `sponsors.view` (`may_read`); every write still asks
+    `sponsors.edit` (`may_author`), and publishing also asks `may_approve_platform_sponsors`.
     """
     @staticmethod
     def may_author(admin):
         return staff_tables.opens_door(admin, 'sponsor_terms')
 
+    @staticmethod
+    def may_read(admin):
+        return staff_tables.opens_door(admin, 'sponsor_terms_read')
+
     def _terms_admin(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not self.may_author(admin):
+        door = _SponsorTermsBase.may_read if request.method in SAFE_METHODS else _SponsorTermsBase.may_author
+        if not door(admin):
             return None, self._deny_role()
         return admin, None
 
@@ -124,7 +136,7 @@ class AdminSponsorTermsListView(_SponsorTermsBase):
         rows = SponsorTermsVersion.objects.prefetch_related('sections').all()
         active = sponsor_terms_mod.active_version()
         return Response({
-            'versions': [_terms_summary_dict(t) for t in rows],
+            'versions': [_terms_summary_dict(t, self.may_author(admin)) for t in rows],
             'active_version': active.version if active else '',
             'sponsor_count': Sponsor.objects.count(),
         })
@@ -159,7 +171,7 @@ class AdminSponsorTermsDetailView(_SponsorTermsBase):
         terms = self._version_or_404(pk)
         if not terms:
             return Response({'error': 'not_found'}, status=404)
-        return Response(_terms_detail_dict(terms))
+        return Response(_terms_detail_dict(terms, self.may_author(admin)))
 
     def patch(self, request, pk):
         admin, err = self._terms_admin(request)

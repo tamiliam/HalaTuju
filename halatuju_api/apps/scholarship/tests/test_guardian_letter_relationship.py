@@ -7,7 +7,8 @@ letter stayed `pending` for ever. `vision_name` is still read for old rows.
 """
 from django.test import TestCase
 
-from apps.scholarship.income_engine import _relationship_inputs, student_income_ic_check
+from apps.scholarship.income_engine import student_income_ic_check
+from apps.scholarship.income_engine.relationships import relationship_inputs_and_numbers
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 from apps.scholarship.tests.test_income_evidence_homes import _doc
 
@@ -127,5 +128,5 @@ class TestTheGuardianshipLetterIsRead(TestCase):
             'bc_child_name': WARD, 'bc_mother_name': 'Kamala A/P Suppiah',
             'bc_father_name': 'Murugan A/L Rajan'})
         _doc(self.app, 'guardianship_letter', fields={'guardian_name': GUARDIAN})
-        self.assertEqual(_relationship_inputs(self.app, 'mother', 'Kamala A/P Suppiah'),
+        self.assertEqual(relationship_inputs_and_numbers(self.app, 'mother', 'Kamala A/P Suppiah')[:5],
                          (WARD, 'Kamala A/P Suppiah', 'Murugan A/L Rajan', '', ''))

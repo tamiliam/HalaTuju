@@ -62,8 +62,8 @@ class Refusals(TestCase):
                 reason = v2.refusal_reason(key)
                 if key in v2.NEVER_GRANTABLE:
                     self.assertEqual(reason, 'never_grantable')
-                elif key in v2.ALIAS_V2:
-                    self.assertEqual(reason, 'alias')
+                elif key in v2.ALIAS_V2 and key != 'payments.view':
+                    self.assertEqual(reason, 'alias')     # M4a: the team View switch is stored
                 else:
                     self.assertIsNone(reason)
                     self.assertIn(key, v2.GRANTABLE_V2)
@@ -107,15 +107,20 @@ class OrgAdminVocabulary(TestCase):
     def test_what_the_role_gives(self):
         self.assertEqual(sp.LEAD_BY_ROLE, ('manage_team',))
         self.assertEqual(v2.LEAD_BY_ROLE_V2, tuple(v2.NEVER_GRANTABLE))
-        self.assertEqual(v2.LEAD_MONEY_UNTIL_M4, ('payments.view', 'payments.prepare', 'payments.check',
-                                                  'payments.approve', 'sponsors.check'))      # TD-620
-        for key in (*v2.LEAD_BY_ROLE_V2, *v2.LEAD_MONEY_UNTIL_M4):
+        for key in v2.LEAD_BY_ROLE_V2:
             self.assertIn(key, v2.CATALOGUE_V2)
             self.assertNotIn(key, v2.ORG_ADMIN_V2)
+        # M4a (TD-620): the five money keys by role are gone; the Payments reach comes with the key.
+        self.assertFalse(hasattr(v2, 'LEAD_MONEY_UNTIL_M4'))
+        self.assertEqual(v2.ORG_ADMIN_KEY, sp.ORG_ADMIN_KEY)
+        self.assertNotIn(v2.ORG_ADMIN_KEY, v2.CATALOGUE_V2)
 
-    def test_the_grantable_set_is_the_org_admin_set(self):
-        # M3c (A9): an org admin may give every key they store (A12 asks that they hold it).
-        self.assertEqual(tuple(v2.GRANTABLE_V2), tuple(v2.ORG_ADMIN_V2))
+    def test_the_grantable_set_is_the_org_admin_set_plus_payments_view(self):
+        # M3c (A9): an org admin may give every key they store (A12 asks that they hold it). M4a: plus the
+        # team View switch `payments.view` (an org admin stores no Payments switch; Q3).
+        self.assertEqual(set(v2.GRANTABLE_V2), {*v2.ORG_ADMIN_V2, 'payments.view'})
+        self.assertEqual(len(v2.GRANTABLE_V2), 27)
+        self.assertEqual(tuple(k for k in v2.GRANTABLE_V2 if k != 'payments.view'), tuple(v2.ORG_ADMIN_V2))
 
     def test_stored_v2_reads_nothing_for_an_org_admin(self):
         row = PartnerAdmin(role='org_admin', permissions=list(v2.ORG_ADMIN_SET), is_active=True)
@@ -127,8 +132,9 @@ class OrgAdminVocabulary(TestCase):
         self.assertEqual(v2.org_admin_list(row, review=True), ['review', 'see_all', 'team.view'])
         self.assertEqual(v2.org_admin_list(row, review=False), ['see_all', 'team.view'])
         null = PartnerAdmin(role='org_admin', permissions=None)
-        self.assertEqual(v2.org_admin_list(null, review=True), ['review', *v2.ORG_ADMIN_SET])
-        self.assertEqual(v2.org_admin_list(null, review=False), list(v2.ORG_ADMIN_SET))
+        # M4a: a NULL row reads as holding Organisation admin powers, so its written list keeps the key.
+        self.assertEqual(v2.org_admin_list(null, review=True), ['review', *v2.ORG_ADMIN_FULL])
+        self.assertEqual(v2.org_admin_list(null, review=False), list(v2.ORG_ADMIN_FULL))
 
 
 class OldReadersIgnoreV2(TestCase):

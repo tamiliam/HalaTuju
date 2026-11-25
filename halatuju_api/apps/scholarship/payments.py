@@ -388,6 +388,8 @@ def create_run(organisation, programme, payment_date, period_month, by_email='',
     """
     if programme is None:
         raise PaymentsError('programme_required')
+    if actor is not None and not may_prepare(lock_actor(actor)):   # TD-605: the actor's row, locked, first
+        raise PaymentsError('wrong_role')
     if programme.organisation_id != organisation.id:
         raise PaymentsError('programme_not_in_org')
     if payment_date < timezone.localdate():
@@ -584,5 +586,5 @@ def complete(run):
 from .payments_chain import (
     STEP_APPROVE, STEP_CHECK, STEP_SIGN, _collected_signer_emails, approver_fallback, cancel,
     check_required_for, check_step_required, credit_check_required, eligible_approvers, eligible_checkers,
-    fallback_approvers, finance_check_required, may_prepare, may_read, next_step_for, sign,
+    fallback_approvers, finance_check_required, lock_actor, may_prepare, may_read, next_step_for, sign,
 )

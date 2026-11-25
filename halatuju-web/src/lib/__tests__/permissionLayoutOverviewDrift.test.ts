@@ -29,8 +29,10 @@ const V2_BLOCK = V2.slice(V2.indexOf('CATALOGUE_V2 = {'), V2.indexOf('\n}', V2.i
 const CATALOGUE = [...V2_BLOCK.matchAll(/^\s+'([a-z0-9_]+\.[a-z0-9_]+)':/gm)].map((m) => m[1])
 const NEVER = pySeq(V2, 'NEVER_GRANTABLE')
 const ALIAS = new Set(Object.values(pyDictOfSeqs(V2, 'ALIASES')).flat())
-/** `staff_permissions_v2.GRANTABLE_V2`, recomputed from its parts (its own definition is pinned below). */
-const GRANTABLE = CATALOGUE.filter((k) => !NEVER.includes(k) && !ALIAS.has(k))
+/** `staff_permissions_v2.GRANTABLE_V2`, recomputed from its parts (its own definition is pinned below).
+ *  S2 / M4a: `payments.view` (`PAYMENTS_VIEW`) is grantable although it is an alias. */
+const PAYMENTS_VIEW = 'payments.view'
+const GRANTABLE = CATALOGUE.filter((k) => k === PAYMENTS_VIEW || (!NEVER.includes(k) && !ALIAS.has(k)))
 const ADMIN_KEYS = pySeq(TABLES, 'ADMIN_KEYS')
 
 /** The body of a top-level `def name(` in `src`, up to the next top-level line. Throws if absent. */
@@ -52,8 +54,9 @@ it('reads the api (parse sanity)', () => {
   expect(GRANTABLE.length).toBeGreaterThanOrEqual(20)
   expect(LAYOUT_KEYS.length).toBeGreaterThanOrEqual(30)
   // The recomputed set is the server's: its definition is exactly these three parts.
-  expect(V2).toContain(
-    'GRANTABLE_V2 = tuple(k for k in CATALOGUE_V2 if k not in NEVER_GRANTABLE and k not in ALIAS_V2)')
+  expect(V2).toContain(`PAYMENTS_VIEW = '${PAYMENTS_VIEW}'`)
+  expect(V2.replace(/\s+/g, ' ')).toContain('GRANTABLE_V2 = tuple(k for k in CATALOGUE_V2 '
+    + 'if k == PAYMENTS_VIEW or (k not in NEVER_GRANTABLE and k not in ALIAS_V2))')
 })
 
 describe('the two rows say what the server does', () => {

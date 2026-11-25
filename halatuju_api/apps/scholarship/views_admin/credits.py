@@ -27,23 +27,17 @@ from .base import _AdminBase
 class _CreditsBase(_AdminBase):
     """Shared gate + org-fenced credit lookup for the wallet-credit endpoints."""
 
-    # Who may OPEN a credit screen. Mirrors the payments read gate: finance is admitted
-    # because checking is its job; the per-step role logic lives in the service, so this
-    # gate is deliberately broad and `sponsorship.sign_admin_credit` refuses the wrong step.
-    # Team tables T1: `staff_tables.may_read_org` — super / org_admin / admin / finance, or the Admins table
-    # by an admin key (a READ: recording, signing and voiding stay on the role, in `sponsorship`).
+    # Who may OPEN a credit screen. The doors are deliberately broad; WHO takes which step is
+    # `credit_steps` (switches, never a role label, since S3 / M4b), asked by the service.
     #
-    # Team tables T5c (P2): the READ screen (the ledger, GET) asks the v2 key `sponsors.view` (`may_read`;
-    # same holders, parity test `test_team_tables_t5c_doors`).
+    # The READ screen (the ledger, GET) asks `credits_read` = `sponsors.view` (T5c P2).
     #
-    # A1.10a (TD-497, RD-03): the three WRITE doors leave the org-read union door. Record and cancel ask
-    # `credits_write` = `sponsors.edit` — exactly who the service admits (record: the `admin` label or a
-    # super; cancel: also the org admin; the lead tier holds every key). Sign asks `credits_sign` =
-    # `sponsors.view`: it admits every signer (maker, checker, approver) and `sponsorship.sign_admin_credit`
-    # refuses the wrong step, as before; `sponsors.view` has the same holders as the old union door (the
-    # Admins table, the lead, a super). Nobody who could act before is refused. Finance and a person at
-    # Admins by a key, whom the service always refused on record / cancel, now get 403 at the door
-    # instead of 400 `wrong_role`.
+    # The WRITE doors (A1.10a, TD-497): record and cancel ask `credits_write` = `sponsors.edit`; the
+    # service then asks `credit_steps.may_record` (Sponsors: edit stored in the person's own seat, or a
+    # super; never the organisation admin, owner Q-A) and `may_cancel` (Sponsors: edit, owner Q-B). Sign
+    # asks `credits_sign` = `sponsors.view`, which admits every signer (maker, checker, approver), and
+    # `sponsorship.sign_admin_credit` refuses the wrong step (`credit_steps.step_refusal`), a step the
+    # page drew that has moved on (409 `stale`, review SF1) and a second signature by one person.
 
     @staticmethod
     def may_read(admin):
@@ -169,8 +163,9 @@ class AdminWalletCreditSignView(_CreditsBase):
     """POST .../admin/scholarship/credits/<pk>/sign/ {typed_name} — maker sign, finance
     check (when the org's chain includes that step), or approver countersign, whichever is
     this credit's next step. The per-step role logic + typed-name match + pairwise
-    distinctness live in `sponsorship.sign_admin_credit`; this view admits every credit role
-    and lets the service refuse the wrong step (exactly as AdminPaymentRunSignView does)."""
+    distinctness live in `sponsorship.sign_admin_credit`; this view admits every signer and lets the
+    service refuse the wrong step (exactly as AdminPaymentRunSignView does). `expected_status` is the
+    status the page drew: a credit that moved on meanwhile answers 409 `stale` (S3 / M4b review SF1)."""
 
     def post(self, request, pk):
         admin, err = self._credits_signer(request)
@@ -182,10 +177,11 @@ class AdminWalletCreditSignView(_CreditsBase):
         from .. import sponsorship as sponsorship_service
         try:
             sponsorship_service.sign_admin_credit(
-                credit, admin, request.data.get('typed_name') or '')
+                credit, admin, request.data.get('typed_name') or '',
+                expected_status=request.data.get('expected_status') or None)
         except sponsorship_service.CreditError as e:
-            return Response({'error': e.code, 'code': e.code},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': e.code, 'code': e.code},     # `stale`: the step moved on (SF1)
+                            status=status.HTTP_409_CONFLICT if e.code == 'stale' else status.HTTP_400_BAD_REQUEST)
         credit.refresh_from_db()
         return Response(_credit_dict(credit))
 

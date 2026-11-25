@@ -147,7 +147,7 @@ function StaffScholarFile() {
   const viewer = effectiveRole(role)
   const giftQuery = file.gift ? `?programme=${encodeURIComponent(file.gift.code)}` : ''
   const moneyLinks = (['payments', 'spending'] as const)
-    .filter((page) => canAccess(`/admin/${page}`, viewer, role?.permissions))
+    .filter((page) => canAccess(`/admin/${page}`, viewer, role?.permissions, undefined, role?.page_keys))   // S2: served door
   const fundedSince = file.vircle_activated_at || file.awarded_at
   const sub = [file.gift?.name, [file.course, file.institution].filter(Boolean).join(', '),
     t('admin.scholars.file.applicationNo', { id: String(file.id) })].filter(Boolean).join(' · ')
