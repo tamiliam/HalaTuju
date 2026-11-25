@@ -106,6 +106,10 @@ Branch ll5, not pushed. Migration: none. Services: api only. Not wired to any pa
 - **`ai_score`:** `coach_grade` reads facts through the public `ai_score.decided_facts`, which `score_marks` now uses too. A regression test pins `score_marks` on 30 odd inputs against values captured from the code before that change (a68a36ca8).
 - **Tests:** `test_coach_grade.py` and `test_ai_score.py`: Malaysian month boundary and year change, both floors at their edges, short months, each guard both ways, exact-fraction ties, order independence, odd labels, no decider or row id in the output, the report with the extra line equal to the plain report once its lines are taken out, the reviewer's cases P1 and P2.
 
+### STPM quiz total (2026-11-25)
+
+- fix: STPM quiz shows Question 1 of 9 and nine dots from the start (owner 2026-11-25). Not pushed. Migration: none. Services: web.
+
 ### Degree funding estimate: living costs RM900 a study month (TD-719, 2026-11-24)
 
 Not pushed. Migration: none. Services: api, web.

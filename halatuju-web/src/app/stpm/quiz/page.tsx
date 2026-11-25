@@ -249,6 +249,15 @@ export default function StpmQuizPage() {
 
   const answeredCount = answers.filter(a => a !== null).length
 
+  // Owner 2026-11-25: show the real total from the start. Q3 and Q4 are fetched after Q2, but their two
+  // slots are known (every Q2 answer has a Q3, and Q4 is always built), so pad until Q2 resolves.
+  const total = allQuestions.length + (q2Resolved ? 0 : 2)
+  // Dots: real questions, with two grey placeholders after Q2 until Q3/Q4 arrive (`real` = index in allQuestions).
+  const dots: { key: string; real: number | null }[] = allQuestions.map((q, i) => ({ key: q.id, real: i }))
+  if (!q2Resolved && allQuestions.length >= 2) {
+    dots.splice(2, 0, { key: 'pending-q3', real: null }, { key: 'pending-q4', real: null })
+  }
+
   // Auth gate
   if (!authLoading && !isAuthenticated) {
     return (
@@ -315,7 +324,7 @@ export default function StpmQuizPage() {
         <div className={`${PHONE_GUTTER} pb-4`}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-brand-fill-ink/90">
-              {t('quiz.questionOf', { current: String(currentStep + 1), total: String(allQuestions.length) })}
+              {t('quiz.questionOf', { current: String(currentStep + 1), total: String(total) })}
             </span>
             <span className="text-sm text-brand-fill-ink/60">
               {t('quiz.answered', { count: String(answeredCount) })}
@@ -324,7 +333,7 @@ export default function StpmQuizPage() {
           <div className="w-full bg-ground-0/20 rounded-full h-1.5">
             <div
               className="bg-ground-0 h-1.5 rounded-full transition-all duration-300"
-              style={{ width: `${((currentStep + 1) / allQuestions.length) * 100}%` }}
+              style={{ width: `${((currentStep + 1) / total) * 100}%` }}
             />
           </div>
         </div>
@@ -334,11 +343,22 @@ export default function StpmQuizPage() {
         {/* Step dots — md and up only (owner, 2026-11-02): ten 10 px dots cannot be 44 px targets on a phone,
             so a phone shows the header's progress bar and "Question n of N" and moves with Next / Previous. */}
         <div className="hidden md:flex justify-center gap-2 mb-6" data-testid="quiz-dots">
-          {allQuestions.map((q, i) => {
+          {dots.map((dot, d) => {
+            if (dot.real === null) {
+              return (
+                <span
+                  key={dot.key}
+                  data-testid="quiz-dot-pending"
+                  className="w-2.5 h-2.5 rounded-full bg-ground-300"
+                  aria-hidden="true"
+                />
+              )
+            }
+            const i = dot.real
             const hasAnswer = answers[i] !== null
             return (
               <button
-                key={q.id}
+                key={dot.key}
                 onClick={() => {
                   // Only allow navigating to answered questions or the current one
                   if (i <= currentStep || hasAnswer) goToStep(i)
@@ -350,7 +370,7 @@ export default function StpmQuizPage() {
                       ? 'bg-info-300'
                       : 'bg-ground-300'
                 }`}
-                aria-label={t('quiz.goToQuestion', { n: String(i + 1) })}
+                aria-label={t('quiz.goToQuestion', { n: String(d + 1) })}
               />
             )
           })}

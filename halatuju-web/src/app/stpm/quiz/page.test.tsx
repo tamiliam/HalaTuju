@@ -131,3 +131,64 @@ describe('STPM quiz: the Q2 answer survives the Q3/Q4 lookup', () => {
     expect((screen.getByTestId('quiz-next') as HTMLButtonElement).disabled).toBe(false)
   })
 })
+
+// Owner 2026-11-25: the quiz starts at "Question 1 of 9" with nine dots. Q3 and Q4 arrive after Q2, but
+// their two slots are counted from the start. The mock set has the real 7 questions before Q3/Q4.
+describe('STPM quiz: the total is nine from the first question', () => {
+  async function flush() {
+    await act(async () => { for (let i = 0; i < 5; i++) await Promise.resolve() })
+  }
+  const dotCount = () => screen.getByTestId('quiz-dots').children.length
+  const ofText = (cur: number, total: number) => `quiz.questionOf|${JSON.stringify({ current: String(cur), total: String(total) })}`
+  beforeEach(() => {
+    mockApi.getStpmQuizQuestions.mockResolvedValue({
+      branch: 'science',
+      questions: [q('q1', 'First?', 'A1', 'A2'), q('q2', 'Second?', 'B1', 'B2')],
+      q5: q('q5', 'Fifth?', 'C1', 'C2'),
+      trunk_remaining: [q('q7', 'Seventh?', 'D1', 'D2'), q('q8', 'Eighth?', 'F1', 'F2'), q('q9', 'Ninth?', 'G1', 'G2'), q('q10', 'Tenth?', 'H1', 'H2')],
+    } as never)
+  })
+
+  it('shows 1 of 9 and nine dots before Q2 is answered', async () => {
+    await open()
+    expect(screen.queryByText(ofText(1, 9))).not.toBeNull()
+    expect(dotCount()).toBe(9)
+    expect(screen.getAllByTestId('quiz-dot-pending')).toHaveLength(2)
+  })
+
+  it('stays at nine after Q2 resolves with Q3 and Q4', async () => {
+    mockApi.resolveStpmQuizQ3Q4.mockResolvedValue({ q3: q('q3', 'Third?', 'E1', 'E2'), q4: q('q4', 'Fourth?', 'E3', 'E4') } as never)
+    await open()
+    fireEvent.click(screen.getByText('A1'))
+    act(() => { jest.advanceTimersByTime(300) })
+    fireEvent.click(screen.getByText('B1'))
+    await flush()
+    act(() => { jest.advanceTimersByTime(300) })
+    expect(screen.queryByText('Third?')).not.toBeNull()
+    expect(screen.queryByText(ofText(3, 9))).not.toBeNull()
+    expect(dotCount()).toBe(9)
+    expect(screen.queryAllByTestId('quiz-dot-pending')).toHaveLength(0)
+  })
+
+  it('becomes seven when the lookup fails, and the quiz can still finish', async () => {
+    mockApi.resolveStpmQuizQ3Q4.mockRejectedValue(new Error('down'))
+    mockApi.submitStpmQuiz.mockResolvedValue({ student_signals: {}, branch: 'science' } as never)
+    await open()
+    fireEvent.click(screen.getByText('A1'))
+    act(() => { jest.advanceTimersByTime(300) })
+    fireEvent.click(screen.getByText('B1'))
+    await flush()
+    act(() => { jest.advanceTimersByTime(300) })
+    expect(screen.queryByText(ofText(3, 7))).not.toBeNull()
+    expect(dotCount()).toBe(7)
+    for (const text of ['C1', 'D1', 'F1', 'G1', 'H1']) {
+      fireEvent.click(screen.getByText(text))
+      act(() => { jest.advanceTimersByTime(300) })
+    }
+    const done = screen.getByText('quiz.seeResults') as HTMLButtonElement
+    expect(done.disabled).toBe(false)
+    fireEvent.click(done)
+    await flush()
+    expect(mockApi.submitStpmQuiz).toHaveBeenCalledTimes(1)
+  })
+})
