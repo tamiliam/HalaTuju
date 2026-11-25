@@ -88,7 +88,7 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 | OCR-9 | The ink check (a matched word must show real ink) and the Asasi rule | S-visible 2 | Live 23 Nov 21:00 |
 | OCR-10 | SPM slips off 2.5 | S5 | Live 23 Nov 21:00 |
 | OCR-11 | An all-empty AI answer means "cannot read" | Blank-gap 1 | Live 23 Nov 21:00 (debt TD-701 follows) |
-| OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | Parked 21 Nov after review round 4; UNPARKED 23 Nov (owner), new design, runs after TD-710 |
+| OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | Parked 21 Nov after review round 4; UNPARKED 23 Nov (owner), new design; BUILT 24 Nov on branch ocr-12-gate (one object per number, owner: strict; census refuses 7 of 870, the 5 new ones go to Vision); awaits review round 1 |
 | OCR-13 | The next four universities | S2 | To build |
 | OCR-14 | The remaining public universities | S3 | To build |
 | OCR-15 | The parent IC | S7 | To build |

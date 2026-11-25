@@ -179,12 +179,15 @@ class AJpeg2000Image(SimpleTestCase):
                 self.assertIsNone(pdf_pages.pdf_first_page_png(pdf))
 
     def test_an_unlisted_filter_name_is_logged_safely(self):
-        """Fix 3: the attacker's filter name (pypdf turns #0A into a newline) is quoted and cut short."""
+        """Fix 3: the attacker's filter name (pypdf turns #0A into a newline) never reaches the log raw. OCR-12 (owner's
+        strict rule): a name keeping a byte below 0x10 is refused earlier, before the filter whitelist is read."""
         img = _image(10, 10).replace(b'/FlateDecode', b'/Foo#0Aforged#20line' + b'X' * 200)
         reason = _refusal(_jpx_page(img))
+        self.assertIsNotNone(reason)
         self.assertNotIn('\n', reason)
-        self.assertTrue(reason.startswith("Refused: an image filter outside the whitelist ('/Foo\\nforged line"))
-        self.assertLess(len(reason), 100)
+        self.assertIn('a name the gate and the renderer may decode differently', reason)
+        self.assertNotIn('forged', reason)
+        self.assertLess(len(reason), 200)
 
     def test_a_jpx_in_an_annotation_is_charged(self):
         stamp = {6: b'<< /Type /Annot /Subtype /Stamp /Rect [100 100 300 200] /AP << /N 7 0 R >> >>',

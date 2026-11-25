@@ -7,8 +7,10 @@ Every PDF here is built in code: one page whose /Contents lists N small content 
 that makes each whole-file search cost something. The guard is pinned by the searches it counts, not by time
 (TD-693): a spy counts pypdf's whole-file searches (`get_stream_data`, the helper each search calls).
 """
+import io
 from unittest import mock
 
+import pypdf
 import pypdf._reader
 from django.test import SimpleTestCase
 
@@ -95,10 +97,11 @@ class HostileLookupsAreBounded(SimpleTestCase):
         self.assertIsNotNone(why)                                     # a content stream that is not a stream
         self.assertEqual(searches, 0)                                 # was one whole-file search per number
 
-    def test_rows_of_the_wrong_generation_are_refused_at_the_cap(self):
+    def test_rows_of_the_wrong_generation_are_refused_at_the_first(self):
         _n, why, searches = _gate(_pdf('gen', 200))
-        self.assertIn('whole-file reads past the cap', why or '')     # was ACCEPTED after one search per row
-        self.assertEqual(searches, MAX_WHOLE_FILE_READS + 1)          # the search that crosses the cap, then stop
+        # OCR-12 round 1: the row (generation 0) is not on the number's one header (generation 1)
+        self.assertEqual(why, 'OverBudget: object 10 has a cross-reference row that is not its one copy')
+        self.assertEqual(searches, 1)                                 # was ACCEPTED after one search per row
 
     def test_rows_on_a_comment_before_the_header_are_refused_at_the_cap(self):
         _n, why, searches = _gate(_pdf('comment', 200))
@@ -106,7 +109,8 @@ class HostileLookupsAreBounded(SimpleTestCase):
         self.assertEqual(searches, MAX_WHOLE_FILE_READS)              # one header scan, then searches to the cap
 
     def test_each_unplaceable_row_is_one_counted_search(self):
-        self.assertEqual(_whole_reads(_pdf('gen', 7)), 7)
+        with self.assertRaisesRegex(pdf_layer_guards.OverBudget, 'object 10 has a cross-reference row'):   # first
+            _whole_reads(_pdf('gen', 7))
         # pypdf drops a row on a comment when it opens the file ("wrong pointing object"), so these numbers have
         # no row: one header scan, then one search each (their headers are there)
         self.assertEqual(_whole_reads(_pdf('comment', 7)), 1 + 7)
@@ -119,20 +123,23 @@ class GenuineFilesAreUnchanged(SimpleTestCase):
         self.assertEqual(_gate(data), (1, None, 0))
         self.assertEqual(_whole_reads(data), 0)
 
-    def test_a_few_real_repairs_are_accepted_as_before(self):
-        for mode, count in (('shifted', MAX_WHOLE_FILE_READS), ('unlisted', MAX_WHOLE_FILE_READS - 1)):
-            with self.subTest(mode=mode):
-                data = _pdf(mode, count)
-                self.assertEqual(_gate(data)[:2], (1, None))
-                self.assertLessEqual(_whole_reads(data), MAX_WHOLE_FILE_READS)
+    def test_repairs_pypdf_makes_by_searching_are_refused_at_the_first(self):
+        """OCR-12 round 1: pypdf repairs a row one byte into its header, or a number with no row, by searching;
+        pdfium follows the row as written (or finds no row). The gate may not use a row that is not on the one
+        header, nor an object pdfium has no row for: both are refused at the first lookup, one search at most
+        (no genuine letter in the corpus has either shape)."""
+        for mode, why in (('shifted', 'object 10 has a cross-reference row that is not its one copy'),
+                          ('unlisted', 'object 10 has no cross-reference row')):
+            for count in (1, MAX_WHOLE_FILE_READS + 1):
+                with self.subTest(mode=mode, count=count):
+                    self.assertEqual(_gate(_pdf(mode, count)), (0, 'OverBudget: ' + why, 1))
 
-    def test_repairs_past_the_cap_are_refused(self):
-        _n, why, _searches = _gate(_pdf('shifted', MAX_WHOLE_FILE_READS + 1))
-        self.assertIn('whole-file reads past the cap', why or '')
-
-    def test_an_object_with_no_row_is_still_found_by_pypdf(self):
-        reader = GateReader(_pdf('unlisted', 1))
-        self.assertEqual(reader.pages[0]['/Contents'][0].get_object().get_data(), b'0 g')
+    def test_an_object_with_no_row_is_found_by_pypdf_but_refused_by_the_gate(self):
+        data = _pdf('unlisted', 1)
+        plain = pypdf.PdfReader(io.BytesIO(data))
+        self.assertEqual(plain.pages[0]['/Contents'][0].get_object().get_data(), b'0 g')
+        with self.assertRaisesRegex(pdf_layer_guards.OverBudget, 'object 10 has no cross-reference row'):
+            GateReader(data).pages[0]['/Contents'][0].get_object()
 
     def test_a_number_with_no_header_reads_as_pypdf_reads_it(self):
         reader = GateReader(_pdf('missing', 3))
