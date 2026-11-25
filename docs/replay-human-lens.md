@@ -22,13 +22,18 @@ The lens is OFF by default. Four flags control it. They come from `parse_args` i
 | `--human-lens` | Turns the lens and the coach grade on. Without it, the output is exactly as before. |
 | `--human-lens-exam-folder <folder>` | One of the two exam homes: a folder that holds the exam files. It must be a full (absolute) path. It must not be inside a git repository. |
 | `--human-lens-exam-bucket NAME` | The other exam home (LL6), the one for production: a private Cloud Storage bucket. A command-line argument only, never an environment variable. NAME must be a plain bucket name: 3 to 63 characters, lower-case letters, digits, `-` and `_`, starting and ending with a letter or digit, no dots. |
-| `--human-lens-freeze` | Allows the lens to freeze a missing exam. Off by default. Without it, nothing is ever written to the exam folder, and nothing is ever uploaded to the bucket. |
+| `--human-lens-freeze` | Allows the lens to freeze a missing exam. Off by default. Without it, nothing is frozen and nothing is uploaded to the bucket. (A bucket run still writes the exams it fetches into the run's private temp folder.) |
 
 `--human-lens` needs exactly ONE exam home: the folder or the bucket, never both.
 
-These are the parent's own argument errors (exit code 2), checked in this order. The job stops before
-any child starts and before any file is touched. The error text is fixed; it never repeats a folder or
-a bucket name:
+Before these rules, as before LL6, come Python's own argument errors (see "Argument errors" below) and
+then the older checks on `--instant` and `--months`. An `--instant` that is not an ISO time with a
+timezone stops the job as a fatal error: exit code 3 and a `fatal` line naming `ValueError`. A
+`--months` that is not exactly two months gives "--months takes exactly two months" (exit code 2).
+
+Then come the parent's own argument errors for the lens (exit code 2), checked in this order. The job
+stops before any child starts and before any file is touched. The error text is fixed; it never repeats
+a folder or a bucket name:
 
 1. The freeze, folder or bucket flag without `--human-lens`:
    "--human-lens-freeze, --human-lens-exam-folder and --human-lens-exam-bucket need --human-lens".
@@ -63,8 +68,8 @@ only `bad arguments (details withheld)`, with exit code 2. It never repeats what
 
 ### Freezing
 
-A freeze happens only with `--human-lens-freeze`. A normal run never writes an exam file and never
-uploads anything. An exam file that already exists is never replaced.
+A freeze happens only with `--human-lens-freeze`. A normal run never freezes an exam and never uploads
+anything. (A bucket run still writes the exams it fetches into its private temp folder.) An exam file that already exists is never replaced.
 If an exam file is lost, a normal run says so (`exam_missing`). It does not make a new one.
 
 ### The bucket (LL6)
@@ -84,23 +89,28 @@ With `--human-lens-exam-bucket`, the parent:
    that this run froze (its file is there, or its block says frozen); see "The exam home lines";
 5. removes the temp folder, whatever happened.
 
-The network work is done by a separate store child (`python -m replay.exam_store fetch|put`), never by
-the parent or the lens.
+The Cloud Storage work is done by a separate store child (`python -m replay.exam_store fetch|put`),
+never by the parent or the lens. It is the only part that talks to Cloud Storage; the replay itself
+still talks to the database.
 
 With the lens on, only the `new` child gets the fingerprint key (`REPLAY_FINGERPRINT_KEY`).
 With the lens off, no child gets it.
 
 The standing rules:
 
-- The first run on live data needs the owner's yes. The first freeze is part of that run.
+- The first lens run on live data is the proof-first run (owner steps, step 4c). It needs the owner's
+  yes. It has no freeze. The first freeze run comes later, on a fresh yes.
 - The run time is agreed with the release lead.
 - Never run it in a release slot (11:00, 16:00 or 21:00 MYT).
 - Never run it beside a migration or a deploy (see the hard rule in step 5 of
   `docs/plans/2026-11-13-a5-replay-owner-steps.md`).
 - Never run it on an R3 run day.
 - The owner decided where the exam file lives in production: a private Cloud Storage bucket (LL6;
-  owner-steps doc, step 5b). The lens must not run on real data until the bucket exists (step 4b), the
-  proof-first run (step 4c) has passed, and the owner says yes to the run.
+  owner-steps doc, step 5b). The proof-first run (step 4c) is the first lens run on real data. It has
+  no freeze, so it freezes and uploads nothing. It needs the bucket (step 4b), a job image that holds
+  LL6 (step 4c, first box) and the owner's yes, and is never on a release slot (11:00, 16:00, 21:00 MYT)
+  or an R3 run day. No other lens run, and no freeze run, happens until step 4c has passed and the owner
+  says yes again.
 
 ## Where to find the result
 
@@ -355,9 +365,13 @@ release goes ahead. This tool only reports.
 
 ## Accepted limits of the bucket (LL6)
 
-- An upload that lands but whose answer is lost (a network error, or the store child's 120 s limit)
-  reads as "NOT kept", exit code 4. The next run finds the exam in the bucket, fetches it and scores
-  it.
+- An upload whose answer is lost (a network error, a request timeout, a 429 or a 5xx) is tried ONE
+  more time. If the first try had in fact landed, the second gets 412 ("it exists"); the store child
+  then reads the stored object's size and md5, finds them equal to its own, and reports it kept. The
+  run still ends as "NOT kept" (exit code 4) when that cannot finish: both tries lose their answer; the
+  read of the stored size and md5 (after a 412, or after an answer that lacks them) fails; or the store
+  child runs past its 120 s limit and the parent stops it. If the upload had in fact landed, the next
+  run finds the exam in the bucket, fetches it and scores it.
 - When two freeze runs race, the one that loses gets `frozen_elsewhere` for that exam. Its coach grade
   is still printed as normal.
 - The size and md5 check is made after the upload. If an object lands but does not match, it stays in
@@ -365,7 +379,8 @@ release goes ahead. This tool only reports.
   run fetches it and the lens checks it as it checks any exam file. Only the owner can remove it, after
   releasing its hold (owner steps, step 6).
 - The exams hold plain application ids and one decision time per id. The bucket is private. A deleted
-  object stays in soft delete for 7 days (to be proven in the proof-first run).
+  object stays in soft delete for 7 days. That is a bucket setting the owner can see in the console; it
+  is not proven by the job.
 - If the SECRET_KEY is changed after exam-1 is frozen, the old derived-key version must be kept, or the
   stored fingerprints no longer match (owner steps, step 2b).
 - The temp folder is removed at the end of every run. If the removal fails, nothing is said; the
@@ -379,7 +394,7 @@ release goes ahead. This tool only reports.
 - A run with `--human-lens-exam-folder` works as before, apart from the argument changes in "Argument
   errors" (withheld error texts; `--human-lens-exam=...` is now ambiguous).
 - No change to the network guard, the Django settings, the read-only guards or the Dockerfile.
-- The lens and the replay children still have no network.
+- The lens and the replay children still reach only the database, as before; never Cloud Storage.
 - The store child holds no database url, no fingerprint key and no salt.
 - No token, bucket name or application id is printed. The exam home lines name only `exam-1` or
   `exam-old`.

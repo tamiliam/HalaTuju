@@ -168,8 +168,10 @@ gcloud run jobs update halatuju-replay --update-secrets REPLAY_FINGERPRINT_KEY=h
 
 The lens itself runs only with `--human-lens` and ONE exam home: in production, the bucket
 (`--human-lens-exam-bucket`, steps 4b and 5). `--human-lens-freeze` (off by default) is the only way to
-freeze an exam. Do not run the job with the lens until the bucket exists (step 4b) and the proof-first
-run (step 4c) has passed.
+freeze an exam. The proof-first run (step 4c) is the first lens run on real data. It has no freeze, so
+it freezes and uploads nothing. It needs the bucket (step 4b), an image that holds LL6 (step 4c, first
+box) and the owner's yes, and is never on a release slot (11:00, 16:00, 21:00 MYT) or an R3 run day. No
+other lens run, and no freeze run, happens until step 4c has passed and the owner says yes again.
 
 ### 2b.4 Facts to keep in mind
 
@@ -252,6 +254,10 @@ gcloud storage buckets create gs://halatuju-replay-exams-0871147736 --location a
 gcloud storage buckets update gs://halatuju-replay-exams-0871147736 --default-event-based-hold --account tamiliam@gmail.com --project gen-lang-client-0871147736
 ```
 
+**If the name is already taken.** Bucket names are shared by everyone on Google Cloud. If the create
+command reports a conflict (the name is not available), STOP: run nothing more here and ask the release
+lead. Never run the job against a bucket that this step 4b did not make.
+
 The replay's service account `halatuju-replay@gen-lang-client-0871147736.iam.gserviceaccount.com` gets
 two roles ON THIS ONE BUCKET ONLY:
 
@@ -266,9 +272,12 @@ gcloud storage buckets add-iam-policy-binding gs://halatuju-replay-exams-0871147
   from "no such bucket" (it does not). Without the list right, every fetch on an empty bucket fails
   (exit 3).
 - **The job must run as this dedicated replay service account** (step 4, `--service-account`), with
-  these bucket-level roles only and NO project-level role. A wrong bucket name that happens to exist is
-  harmless only because of this: the account has no right on any other bucket, so the fetch fails
-  (exit 3) and nothing is read or written there.
+  these bucket-level roles only and NO project-level role. A wrong bucket name is harmless only under
+  that condition. The code does not know the right name; it relies on the account's rights. Because the
+  account has rights on this ONE bucket only, any other bucket name answers "no access" (or "not found"
+  when no such bucket exists). The fetch then fails and the run stops (exit 3) before any replay child
+  starts, so nothing is read from or written to that bucket. (A bucket that lets everyone read it would
+  not refuse. Never type any bucket name but the one made here.)
 - The bucket name is given to the job as a command-line argument (step 5), never as an environment
   variable. No environment variable and no secret is added to the job for the bucket.
 - The bucket will hold application ids and decision times (the exam files). It stays private. It is
@@ -280,9 +289,31 @@ Nothing in LL6 has run against real Cloud Storage. Before any real exam exists, 
 plumbing on the real, EMPTY bucket. Any object written for the proof is a DUMMY that holds no student
 data.
 
+This run is the first lens run on real data: it reads real cases. It has no freeze, so it freezes
+nothing and uploads nothing.
+
+- [ ] **FIRST: the job's image holds LL6.** An image built before LL6 does not know the bucket flag.
+      (1) The release lead says LL6 is landed on main and live. (2) Build the image AGAIN from that
+      commit: repeat step 3 with `<LIVE_MAIN_SHA>` = the live commit that holds LL6, the tag `r2` in
+      place of `r1`, and a new, empty context folder (`../replay-ctx-r2` in place of every
+      `../replay-ctx` in the block). (3) Point the job at the new image. Step 4 has only a create
+      command, so use this line. It is not in the design plan: **check before use** (it uses the job,
+      region and image path of steps 3 and 4, so if step 3 used another repository, use that one here
+      too; it changes the image only):
+
+      ```
+      gcloud run jobs update halatuju-replay --image asia-southeast1-docker.pkg.dev/gen-lang-client-0871147736/cloud-run-source-deploy/halatuju-replay:r2 --region asia-southeast1 --account tamiliam@gmail.com --project gen-lang-client-0871147736
+      ```
+
+      How to recognise an image older than LL6: a lens run with the bucket flag stops at once with exit
+      code 2 and an `unrecognized arguments:` line (that older image repeats what was typed, the bucket
+      name included). Stop, do not retry, tell the release lead. (On an image that holds LL6, a typing
+      slip in a flag gives `bad arguments (details withheld)`, exit code 2, instead: stop and tell the
+      release lead too.)
 - [ ] The owner's direct yes for this run, at the time.
 - [ ] A time agreed with the release lead. Never on a release slot (11:00, 16:00 or 21:00 MYT). The
       hard rule of step 5 holds (no deploy, no migration while the job runs).
+- [ ] Not on an R3 run day.
 - [ ] The bucket is made (step 4b) and empty.
 - [ ] A dummy object is never named `exam-1.json` or `exam-old.json`. A dummy under one of those names
       would be fetched by the next lens run, refused by the lens as an exam, and never replaced by the
@@ -382,8 +413,11 @@ Only when the lens switch (`--human-lens`) is on, the lens and coach-grade repor
 and nothing runs. Run the counts without the lens. A relative `--human-lens-exam-folder` is an
 argument error too (exit code 2).
 
-**The lens runs (LL6: the exam home is the bucket).** Only after step 4b and the proof-first run (step
-4c), and each on a fresh yes from the owner. The bucket name goes in as a job ARGUMENT,
+**The lens runs (LL6: the exam home is the bucket).** First, the job's image must hold LL6 (step 4c,
+first box). If a lens run stops at once with exit code 2 and an `unrecognized arguments:` line, the
+image is older than LL6: stop, do not retry, tell the release lead. The first lens run is the
+proof-first run (step 4c), after step 4b. Every other lens run, and every freeze run, comes only after
+step 4c has passed, each on a fresh yes from the owner. The bucket name goes in as a job ARGUMENT,
 `--human-lens-exam-bucket=<the bucket name>`, never as an environment variable. Type every flag name in
 full (see `docs/replay-human-lens.md`, "Argument errors").
 
@@ -437,7 +471,8 @@ were not chosen. The bucket and its access are step 4b. How it works (code in
   was frozen in this run is kept in the bucket with one create-only upload (`ifGenerationMatch=0`).
   An exam that was fetched is never uploaded.
 - **The temp folder is removed** at the end of every run.
-- **The network work** is done by a separate small child process (`python -m replay.exam_store`), started
+- **The Cloud Storage work** is done by a separate small child process (`python -m replay.exam_store`),
+  the only part that talks to Cloud Storage (the replay itself still talks to the database), started
   with only PATH, PYTHONPATH and LANG in its environment: no database url, no fingerprint key, no salt.
   It may reach only the metadata server (for the access token) and Cloud Storage.
 - **What stops a second freeze from replacing the first:** a run that finds the exam in the bucket loads
@@ -446,8 +481,10 @@ were not chosen. The bucket and its access are step 4b. How it works (code in
 - **If an exam object is lost**, a normal run reports `exam_missing` and gives no score for that exam. Only
   a run with `--human-lens-freeze` makes a new one, and it may hold other cases than the lost one.
 
-The lens still does not run on real data until the bucket exists (step 4b), the proof-first run (step
-4c) has passed, and the owner says yes to the run.
+The proof-first run (step 4c) is the first lens run on real data. It has no freeze, so it freezes and
+uploads nothing. It needs the bucket (step 4b) and the owner's yes, and is never on a release slot
+(11:00, 16:00, 21:00 MYT) or an R3 run day. No other lens run, and no freeze run, happens until step 4c
+has passed and the owner says yes again.
 
 ## 6. Afterwards: remove everything
 

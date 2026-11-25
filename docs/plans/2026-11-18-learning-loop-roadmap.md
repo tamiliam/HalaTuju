@@ -215,7 +215,7 @@ Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C
 **Goal.** The frozen exam file lives in one private Cloud Storage bucket, not on a home machine, so the lens can run on real data from the replay job and a lost file is never silently replaced. Why: the lens scores the AI on a frozen exam file, and a local folder dies with the Cloud Run job's container, so a frozen exam could not survive between runs (owner decision, 24-25 Nov 2026).
 
 **What was built (a "store child").**
-- The replay parent and the replay child keep their network guard and their settings unchanged. A separate small child, `python -m replay.exam_store fetch|put` (`eval/replay/exam_store.py`), is the ONLY part that talks to the network. It holds no database url, no key and no salt, and answers with one fixed code. `exam_home.py` is the parent glue.
+- The replay parent and the replay child keep their network guard and their settings unchanged. A separate small child, `python -m replay.exam_store fetch|put` (`eval/replay/exam_store.py`), is the ONLY part that talks to Cloud Storage (the replay itself still talks to the database). It holds no database url, no key and no salt, and answers with one fixed code. `exam_home.py` is the parent glue.
 - New flag: `--human-lens-exam-bucket NAME`. A command-line argument, never an environment variable; its value is never printed. Argument errors never echo a typed value.
 - Two new refusal codes with words: `frozen_elsewhere` and `not_kept`.
 - Safety rules: nothing is uploaded without `--human-lens-freeze`; only a NEW exam is uploaded; a kept exam is never replaced (create-only upload plus a default hold on the bucket); a failed fetch stops the run (exit 3) and is never read as "no exam yet"; an upload that failed or could not be verified is `not_kept` (exit 4); a lost race is `frozen_elsewhere` (that score is withheld, exit 0); the temp folder is always removed.
@@ -229,12 +229,12 @@ Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C
 **Needs the owner, in order** (all in `docs/plans/2026-11-13-a5-replay-owner-steps.md`):
 1. Step 2b: make the derived key once, by hand. No helper tool exists and none will be built (owner decision).
 2. Step 4b: make the bucket and give the replay service account its two bucket-level roles.
-3. Step 4c: the proof-first run on the EMPTY bucket, with a dummy object. It needs the owner's direct yes and a time agreed with the release lead; never on a release slot.
-4. Then the first lens run on real data: it needs the owner's yes; never on a release slot (11:00, 16:00, 21:00 MYT) and never on an R3 run day.
+3. Step 4c: the proof-first run on the EMPTY bucket, with a dummy object. First, the job's image is built again with LL6 in it (step 4c, first box). It needs the owner's direct yes and a time agreed with the release lead; never on a release slot and never on an R3 run day.
+4. The proof-first run (4c) is itself a full lens run on production data, with no freeze. It needs the owner's yes, never on a release slot (11:00, 16:00, 21:00 MYT) or an R3 run day. After it passes, the first FREEZE run follows on a fresh yes from the owner.
 
-**Not in this sprint.** The first lens run on live data.
+**Not in this sprint.** The proof-first run and the first freeze run.
 
-**Done when.** The proof run has passed, the first lens run has the owner's yes, and the owner steps doc matches what was done.
+**Done when.** P1 to P3 are reviewed, and landed by the release lead; the owner steps doc is ready for the owner. The proof-first run and the first freeze run come after this sprint (items 3 and 4 above).
 
 ---
 
