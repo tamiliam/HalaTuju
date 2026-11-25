@@ -130,7 +130,7 @@ def page1_of(eval_dir, key, route):
 
 def page1_layout_of(eval_dir, key, route):
     """Page 1's LAYOUT text (`pdf_rules_pages.pdf_page1_layout`) for a text-layer letter whose page-1 layer carries
-    the UMS title (`is_ums`); '' otherwise (OCR-first S1). This matches `offer_exact.exact_offer_read` only
+    the UMS title (`is_ums`) or whose whole text `offer_parse.family_of` reads as UiTM (OCR-13); '' otherwise (OCR-first S1). This matches `offer_exact.exact_offer_read` only
     as if the ua:UMS lane were ON: production derives the layout only with the lane on, and only when the
     whole text is the UMS family (`offer_parse.family_of`; S1c). `diagnose` reads the layout only for that
     family, so a government letter carrying the UMS title is still read as before here."""
@@ -140,11 +140,15 @@ def page1_layout_of(eval_dir, key, route):
     if not os.path.exists(path):
         return ''
     from apps.scholarship.offer_parse_university import is_ums
+    from apps.scholarship.pdf_pages import pdf_text_layer
     from apps.scholarship.pdf_rules_pages import pdf_page1_layout
     with open(path, 'rb') as fh:
         data = fh.read()
     page1 = page1_text_layer(data, 'application/pdf')
-    return pdf_page1_layout(data) if page1.strip() and is_ums(page1.upper()) else ''
+    if not page1.strip():
+        return ''
+    uitm = offer_parse.family_of(pdf_text_layer(data)) == 'uitm'     # as `offer_exact`: the whole text's family
+    return pdf_page1_layout(data) if is_ums(page1.upper()) or uitm else ''
 
 
 def page_texts_of(eval_dir, key, route):

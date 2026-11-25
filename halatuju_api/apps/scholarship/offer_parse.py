@@ -445,6 +445,49 @@ def _diagnose_ums(out: dict, text: str, page1_text: str, page1_layout: str, page
     return out
 
 
+def _diagnose_uitm(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
+    """The UiTM branch of `diagnose` (OCR-13 phase 2): ONLY a digital letter's page-1 layout can lock, so a scan
+    (no layout) refuses with guard ``no_layout``. In this order: the drawn page texts (`page_texts_refusal`);
+    `read_uitm`; the owner phrases on page 1's layout (``owner_words_missing``); the whole letter's status and
+    withdrawal words (`offer_parse_uitm.letter_refusal`); a letter outside Latin (``foreign_letters``); the name
+    standing as its own words in the plain layer (``name_not_plain``); last, the later pages
+    (`offer_parse_uitm.later_pages_refusal`). `diagnose` passes the result through `_rules_exit` (Asasi)."""
+    from .offer_owner_words import missing
+    from .offer_parse_uitm import LANE, later_pages_refusal, letter_refusal, read_uitm
+    from .offer_parse_university import name_in_plain
+    from .offer_ums_refusal import foreign_letters, page_texts_refusal
+    if out['portal']:
+        return out
+    if not page1_layout.strip():
+        out['guard'] = 'no_layout'
+        return out
+    if not page1_text.strip():
+        out['guard'] = 'no_plain_layer'
+        return out
+    pages = [_SPACES.sub(' ', _ZERO_WIDTH.sub('', t or '')) for t in (page_texts or ())]
+    fields, reason = read_uitm(page1_layout)
+    out['fields'], out['titled'] = fields, fields is not None
+    early = page_texts_refusal(pages)
+    if not early and not reason:
+        out['owner_words_missing'] = missing(LANE, page1_layout, text_pdf=True)
+        early = 'owner_words_missing' if out['owner_words_missing'] else ''
+    reason = early or reason or letter_refusal(text)
+    if not reason and foreign_letters(text, page1_text, page1_layout, *pages):
+        reason = 'foreign_letters'
+    if not reason and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
+        reason = 'name_not_plain'
+    if not reason:
+        from .offer_parse_uitm import printed_date
+        reason = later_pages_refusal(pages[1:], fields['candidate_nric'], printed_date(page1_layout))
+    if reason.startswith('empty:'):
+        out['empty_required'] = reason[len('empty:'):].split(',')
+    elif reason:
+        out['guard'] = reason
+    else:
+        out['locked'] = {**fields, '_family': 'uitm', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
+    return out
+
+
 def _rules_exit(out: dict, shown: str) -> dict:
     """EVERY rules lane's last step — the university lanes (UMS now; S2 / S3 pass through it too) AND the three
     government families (STPM, matriculation, polytechnic): a lock whose page-1 text ``shown`` (a university
@@ -471,11 +514,12 @@ def _rules_exit(out: dict, shown: str) -> dict:
 
 def family_of(text: str) -> str:
     """The family `diagnose` reads ``text`` as: a government family ('stpm', 'matriculation', 'polytechnic'),
-    else 'ums' for the UMS offer title, else ''. ONE helper for `diagnose` and `offer_exact._ums_family`
+    else 'ums' for the UMS offer title, else 'uitm' for a UiTM offer (OCR-13), else ''. ONE helper for `diagnose` and `offer_exact._ums_family`
     (S1c), so the lane switch and the parser never disagree on which letter is a UMS letter."""
+    from .offer_parse_uitm import is_uitm
     from .offer_parse_university import is_ums
     up = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or '')).upper()
-    return _detect(up) or ('ums' if is_ums(up) else '')
+    return _detect(up) or ('ums' if is_ums(up) else 'uitm' if is_uitm(up) else '')
 
 
 def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_texts=None) -> dict:
@@ -497,6 +541,10 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
     if fam == 'ums':                             # a university lane: S2 / S3 add theirs here, through the same exit
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
         return _rules_exit(_diagnose_ums(out, text, page1_text, layout, page_texts),
+                           layout if layout.strip() else text)
+    if fam == 'uitm':
+        layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
+        return _rules_exit(_diagnose_uitm(out, text, page1_text, layout, page_texts),
                            layout if layout.strip() else text)
     if not fam:
         return out

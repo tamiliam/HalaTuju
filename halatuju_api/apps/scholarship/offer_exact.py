@@ -76,14 +76,37 @@ def merge_over(prior_fields, govt: dict) -> dict:
     return out
 
 
+def _lane_module(family: str):
+    """The rules-lane reader module for a university family (`offer_parse.family_of`): 'ums' or 'uitm'
+    (OCR-13); None for any other family. Each module gives LANE, ``ink_targets`` and its reader."""
+    if family == 'ums':
+        from . import offer_parse_university as mod
+        return mod
+    if family == 'uitm':
+        from . import offer_parse_uitm as mod
+        return mod
+    return None
+
+
+def _rules_family(text) -> str:
+    """The university rules family `offer_parse.diagnose` reads ``text`` as ('ums', 'uitm'), else ''."""
+    from .offer_parse import family_of
+    fam = family_of(text)
+    return fam if _lane_module(fam) is not None else ''
+
+
 def _note_ums_refusal(why, text, reason: str) -> None:
-    """Fill ``why`` (the caller's dict, or None) with the UMS rules read's refusal (review round 2): the
-    lane and ``read_<reason>`` ('read_no_layout', 'read_not_an_offer', 'read_empty:programme', ...), the
-    same shape as `rules_lane_verdict`'s ``rules_fallback``. Only a letter with the UMS title: a letter no
-    rules lane exists for records nothing."""
+    """Fill ``why`` (the caller's dict, or None) with a rules read's refusal (review round 2): the lane and
+    ``read_<reason>`` ('read_no_layout', 'read_not_an_offer', 'read_empty:programme', ...), the same shape as
+    `rules_lane_verdict`'s ``rules_fallback``. A letter with the UMS title (as before), or one `family_of` reads
+    as UiTM (OCR-13); a letter no rules lane exists for records nothing."""
     from .offer_parse_university import LANE, is_ums
-    if isinstance(why, dict) and is_ums((text or '').upper()):
+    if not isinstance(why, dict):
+        return
+    if is_ums((text or '').upper()):
         why.update(lane=LANE, reason=f'read_{reason}')
+    elif _rules_family(text) == 'uitm':
+        why.update(lane=_lane_module('uitm').LANE, reason=f'read_{reason}')
 
 
 def _guard_reason(d: dict) -> str:
@@ -192,14 +215,14 @@ def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_n
         return None                              # a PDF whose bytes are not here: no page 1 to read (H2)
     layer, page1 = pdf_layers(image, content_type)
     from_layer = bool(layer.strip()) and layer.strip() == (text or '').strip()
-    from .offer_parse_university import LANE
-    lane_on, ums = LANE in ocr_first_lanes(), _ums_family(text)
-    if not lane_on and ums:                      # review round 3 (option A): no layout child, no read_ums
+    mod = _lane_module(_rules_family(text))     # OCR-13: each university lane switched on by its own name
+    lane_on = mod is not None and mod.LANE in ocr_first_lanes()
+    if mod is not None and not lane_on:          # review round 3 (option A): no layout child, no reader
         if isinstance(why, dict):
-            why.update(lane=LANE, reason='lane_off')
+            why.update(lane=mod.LANE, reason='lane_off')
         return None
     layout, page_texts = '', None
-    if lane_on and ums and from_layer and page1.strip():
+    if lane_on and from_layer and page1.strip():
         from .pdf_pages import MAX_LAYER_PAGES
         from .pdf_rules_pages import pdf_page1_layout, pdf_rules_page_texts
         layout, page_texts = pdf_page1_layout(image), pdf_rules_page_texts(image, MAX_LAYER_PAGES)
@@ -219,12 +242,12 @@ def _not_inked(ex, image, layout, lane) -> list:
     """S-visible 2 (owner rule, 20 Nov: "the visible page always judges"): the labels (`pdf_ink.ink_missing`)
     of the owner phrases and values a rules lock on a TEXT-LAYER PDF relied on that leave no real ink on the
     rendered page 1; [] when every one does. A lane with no `ink_targets` reader, or any fault, refuses."""
-    try:
-        from .offer_parse_university import LANE, ink_targets
+    try:                                         # each lane's own `ink_targets` (OCR-13)
         from .pdf_ink import ink_missing, page1_ink
-        if lane != LANE:
+        mod = next((m for m in (_lane_module('ums'), _lane_module('uitm')) if m.LANE == lane), None)
+        if mod is None:
             return ['no_targets']
-        phrases, values = ink_targets(ex.get('fields'), layout)
+        phrases, values = mod.ink_targets(ex.get('fields'), layout)
         return ink_missing(page1_ink(image), phrases, values, lane=lane)   # a Type3 font: `TYPE3_LANES`
     except Exception:  # fail closed: the AI reads the letter, as it always could
         logger.exception('rules lane %s: the ink check failed; the AI reads the letter', lane)
