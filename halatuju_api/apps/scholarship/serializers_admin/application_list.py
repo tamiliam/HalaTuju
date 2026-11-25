@@ -93,6 +93,10 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
     # #73: the caller has a note from the other side here they have not seen (the list's EXISTS column,
     # `staff_notifications.with_new_note`); False wherever the column was not asked for.
     new_note = serializers.SerializerMethodField()
+    # Owner 2026-11-23: the ONE second chip beside the status (`rejection_chip.py`). The list view
+    # puts the page's QC-rejected ids in the context (`qc_rejected_ids`, one query for the page);
+    # without them this row is looked up alone.
+    rejection_chip = serializers.SerializerMethodField()
 
     class Meta:
         model = ScholarshipApplication
@@ -106,10 +110,14 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
             'ready_for_assignment', 'ready_on',
             # When set, the list pill shows "Reopened" (overriding accepted/rejected).
             'decision_reopened_at',
-            # #75: 'pre_interview' shows "Rejected before interview" in the list's status pill.
             'rejection_category',
             'new_note',
+            'rejection_chip',
         ]
+
+    def get_rejection_chip(self, obj):
+        from .. import rejection_chip
+        return rejection_chip.chip(obj, self.context.get('qc_rejected_ids'))
 
     def get_new_note(self, obj):
         return bool(getattr(obj, 'new_note', False))

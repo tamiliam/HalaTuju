@@ -13,6 +13,7 @@ import {
   getScholarshipApplication, cancelPendingDecline, holdPendingAward, assignApplication,
   nudgeStudent, setReportingDate,
 } from '@/lib/admin-api'
+import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import type { CockpitCtx } from './cockpitCtx'
 
 export type CockpitAsk = 'nudge' | 'cancelDecline' | 'holdAward'
@@ -28,8 +29,10 @@ export function askCopy(ask: CockpitAsk, nudgeLabel: string) {
     : { title: `${s}.cooloff.holdAward`, question: `${s}.cooloff.holdConfirm`, dismissible: false }
 }
 
-/** `admins` = the picker's list, to NAME somebody the server refused as `not_signed_in` (M2d A1). */
-export function useCaseActions(ctx: CockpitCtx, admins: ReadonlyArray<{ id: number; name: string }> = []) {
+/** `admins` = the picker's list, to NAME somebody the server refused as `not_signed_in` (M2d A1).
+ *  `showReply` = put a reply on the page AND reload the assessment box from it (owner 23 Nov). */
+export function useCaseActions(ctx: CockpitCtx, admins: ReadonlyArray<{ id: number; name: string }>,
+  showReply: (a: AdminScholarshipDetail) => void) {
   const { id, token, t, setApp, setBusy, setError } = ctx
   const [ask, setAsk] = useState<CockpitAsk | null>(null)
 
@@ -65,7 +68,8 @@ export function useCaseActions(ctx: CockpitCtx, admins: ReadonlyArray<{ id: numb
   // Cool-off controls: cancel a scheduled decline / hold a pending award before it reveals.
   const runCancelDecline = async () => {
     setBusy('cooloff'); setError('')
-    try { setApp(await cancelPendingDecline(id, { token: token! })) }
+    // The reply may take the assessment back (owner 23 Nov): the box reloads from it.
+    try { showReply(await cancelPendingDecline(id, { token: token! })) }
     catch { setError(t('admin.scholarship.cooloff.error')) } finally { setBusy('') }
   }
   const runHoldAward = async () => {

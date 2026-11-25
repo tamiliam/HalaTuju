@@ -33,6 +33,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
                'so you can pick the one that suits you best. Once you choose, we’ll send a '
                'Google Meet link and, if necessary, reminders before the call — there’s nothing you '
                'need to arrange yourself in the meantime.')
+    en_note = ("You don't need to reply to this email. Your interview times will come in a separate email.")
     en_points = [
         'Please join by video, with your camera on, as this helps us verify your application.',
         'If you are under 18, please have a parent or guardian with you for the call. If they’re '
@@ -53,6 +54,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
                'paling sesuai. Setelah anda memilih, kami akan menghantar pautan Google Meet dan, '
                'jika perlu, peringatan sebelum panggilan — tiada apa-apa yang perlu anda uruskan '
                'sendiri buat masa ini.')
+    bm_note = ('Anda tidak perlu membalas e-mel ini. Masa temu duga anda akan dihantar dalam e-mel yang berasingan.')
     bm_points = [
         'Sila sertai melalui video, dengan kamera dibuka, kerana ini membantu kami mengesahkan '
         'permohonan anda.',
@@ -68,27 +70,28 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
                  f'beritahu kami di {_P.email_support}.')
 
     # ── Plain text ────────────────────────────────────────────────────────────
-    def text_block(greeting, intro, what, points_label, points, safety, closing, signoff):
+    def text_block(greeting, intro, what, note, points_label, points, safety, closing, signoff):
         bullets = '\n'.join(f'• {p}' for p in points)
-        return (f'{greeting}\n\n{intro}\n\n{what}\n\n{points_label}\n{bullets}\n\n'
+        return (f'{greeting}\n\n{intro}\n\n{what}\n\n{note}\n\n{points_label}\n{bullets}\n\n'
                 f'{safety}\n\n{closing}\n\n{signoff}')
     en_text = text_block(
-        f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
+        f'Hi {en_name},', en_intro, en_what, en_note, 'A few things to know beforehand:', en_points,
         en_safety, 'We look forward to speaking with you.',
         'Warm regards,\n' + _TEAM_EN)
     bm_text = text_block(
-        f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
+        f'Salam {bm_name},', bm_intro, bm_what, bm_note, 'Beberapa perkara untuk diketahui:', bm_points,
         bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
         'Salam hormat,\n' + _TEAM_MS)
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
     # ── HTML ──────────────────────────────────────────────────────────────────
-    def html_block(greeting, intro, what, points_label, points, safety, closing, signoff):
+    def html_block(greeting, intro, what, note, points_label, points, safety, closing, signoff):
         lis = ''.join(f'<li style="margin:0 0 8px;">{p}</li>' for p in points)
         return (
             f'<p style="margin:0 0 14px;">{greeting}</p>'
             f'<p style="margin:0 0 14px;">{intro}</p>'
             f'<p style="margin:0 0 14px;">{what}</p>'
+            f'<p style="margin:0 0 14px;">{note}</p>'
             f'<p style="margin:0 0 6px;">{points_label}</p>'
             f'<ul style="margin:0 0 16px;padding-left:20px;">{lis}</ul>'
             f'<p style="margin:0 0 16px;color:#6b7280;font-size:13px;">{safety}</p>'
@@ -96,11 +99,11 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
             f'<p style="margin:0;">{signoff}</p>'
         )
     en_html = html_block(
-        f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
+        f'Hi {en_name},', en_intro, en_what, en_note, 'A few things to know beforehand:', en_points,
         en_safety, 'We look forward to speaking with you.',
         'Warm regards,<br>' + _TEAM_EN)
     bm_html = html_block(
-        f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
+        f'Salam {bm_name},', bm_intro, bm_what, bm_note, 'Beberapa perkara untuk diketahui:', bm_points,
         bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
         'Salam hormat,<br>' + _TEAM_MS)
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)

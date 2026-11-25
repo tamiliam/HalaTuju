@@ -23,6 +23,8 @@ const noop = () => undefined
 const OFFER = { hold_hours: 24, reasons: ['not_b40'], note_max: 2000 }
 const app = { id: 7, name: 'Dummy Student', status: 'profile_complete', assigned_to_id: null, programme_id: null,
   query_sla: { ready_for_assignment: true }, pre_interview: OFFER } as unknown as api.AdminScholarshipDetail
+/** The ONE Reviewer Assessment box, already filled in (the page passes its state down). */
+const ALL_PASS = { identity: 'pass', academic: 'pass', pathway: 'pass', income: 'pass' }
 
 /** The page: holds the refusal, as `view.tsx` does, and draws the card with or without the assign door. */
 function Page({ canAssign, onDone }: { canAssign: boolean; onDone: jest.Mock }) {
@@ -38,7 +40,7 @@ function Page({ canAssign, onDone }: { canAssign: boolean; onDone: jest.Mock }) 
       // match it across two different card layouts. This test pins the slot itself (without the key and
       // without the fix, all four tests fail).
       preInterview={<PreInterviewOption app={app} t={t} token="tok" busy="" canAssign={canAssign}
-        err={err} setErr={setErr} onDone={onDone} onStale={noop} />}
+        err={err} setErr={setErr} onDone={onDone} onStale={noop} box={{ officerVerdict: ALL_PASS, failReasons: {} }} />}
     />
   )
 }
@@ -55,7 +57,6 @@ const rejectThenFlip = (from: boolean) => {
   fireEvent.click(screen.getByRole('button', { name: `${P}.start` }))
   fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
   fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
-  for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
   fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
   fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
   expect(screen.getByRole('button', { name: `${P}.running` })).toBeTruthy()

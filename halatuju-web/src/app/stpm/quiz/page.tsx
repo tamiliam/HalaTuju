@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -22,29 +22,30 @@ import {
 } from '@/lib/storage'
 
 const ICON_EMOJI: Record<string, string> = {
-  wrench_gears: '\u{1f527}', laptop_code: '\u{1f4bb}', handshake_chart: '\u{1f91d}',
-  heart_stethoscope: '\u{2764}\ufe0f', question_sparkle: '\u{2728}', paintbrush_ruler: '\u{1f3a8}',
-  chef_suitcase: '\u{1f468}\u200d\u{1f373}', leaf_tractor: '\u{1f33f}', bolt_ship: '\u{26a1}',
-  lightning_bolt: '\u{26a1}', hardhat_crane: '\u{1f3d7}\ufe0f', airplane_ship: '\u{2708}\ufe0f',
-  oil_rig_flame: '\u{1f6e2}\ufe0f', hands_tools: '\u{1f6e0}\ufe0f', brain_lightbulb: '\u{1f9e0}',
-  people_bubbles: '\u{1f465}', pencil_star: '\u{270f}\ufe0f', workshop_garage: '\u{1f3ed}',
-  desk_monitor: '\u{1f5a5}\ufe0f', trees_sun: '\u{1f333}', building_people: '\u{1f3e2}',
-  hammer_check: '\u{1f528}', book_magnifier: '\u{1f4d6}', clipboard_group: '\u{1f4cb}',
-  loop_arrows: '\u{1f504}', shield_check: '\u{1f6e1}\ufe0f', money_rocket: '\u{1f4b0}',
-  gradcap_arrow: '\u{1f393}', lightning_briefcase: '\u{26a1}', crowd_sweat: '\u{1f630}',
-  brain_weight: '\u{1f9e0}', arm_weight: '\u{1f4aa}', flexed_arm_star: '\u{1f4aa}',
-  wallet_coins: '\u{1f45b}', house_heart: '\u{1f3e0}', handshake_door: '\u{1f91d}',
-  trophy_star: '\u{1f3c6}',
-  // STPM-specific icons
-  microscope: '\u{1f52c}', stethoscope: '\u{1fa7a}', gear: '\u{2699}\ufe0f',
-  computer: '\u{1f4bb}', test_tube: '\u{1f9ea}', dna: '\u{1f9ec}',
-  scales: '\u{2696}\ufe0f', briefcase: '\u{1f4bc}', palette: '\u{1f3a8}',
-  books: '\u{1f4da}', globe: '\u{1f30d}', chart: '\u{1f4c8}',
-  calculator: '\u{1f5a9}', megaphone: '\u{1f4e3}', handshake: '\u{1f91d}',
-  graduation: '\u{1f393}', rocket: '\u{1f680}', target: '\u{1f3af}',
-  lightbulb: '\u{1f4a1}', compass: '\u{1f9ed}', thumbs_up: '\u{1f44d}',
-  thinking: '\u{1f914}', shrug: '\u{1f937}', muscle: '\u{1f4aa}',
-  family: '\u{1f46a}', star: '\u{2b50}', seedling: '\u{1f331}',
+  laptop_code: '\u{1f4bb}', handshake_chart: '\u{1f91d}',
+  heart_stethoscope: '\u{2764}\ufe0f', paintbrush_ruler: '\u{1f3a8}',
+  leaf_tractor: '\u{1f33f}', lightning_bolt: '\u{26a1}', hardhat_crane: '\u{1f3d7}\ufe0f', airplane_ship: '\u{2708}\ufe0f',
+  gradcap_arrow: '\u{1f393}', flexed_arm_star: '\u{1f4aa}',
+    // STPM icons: exactly the names stpm_quiz_data.py uses (quizIconMaps.test.ts keeps it so)
+  arrow_turn: '\u21aa\ufe0f', atom_formula: '\u269b\ufe0f', atom_laptop: '\u269b\ufe0f',
+  atom_microscope: '\u{1f52c}', brain_chart: '\u{1f4ca}', brain_heart: '\u{1f49e}',
+  briefcase_star: '\u{1f4bc}', building_flag: '\u{1f3db}\ufe0f', calculator_chart: '\u{1f9ee}',
+  calculator_check: '\u{1f9ee}', camera_sparkle: '\u{1f4f7}', certificate_crown: '\u{1f4dc}',
+  chalkboard_apple: '\u{1f34e}', chart_money: '\u{1f4c8}', clipboard_heart: '\u{1f4cb}',
+  compass_arrow: '\u{1f9ed}', dna_leaf: '\u{1f9ec}', family_heart: '\u{1f46a}', family_star: '\u{1f46a}',
+  flask_bubbles: '\u2697\ufe0f', flask_fire: '\u{1f9ea}', flexed_arm_fire: '\u{1f4aa}',
+  gear_blueprint: '\u2699\ufe0f', gear_wrench: '\u{1f527}', globe_handshake: '\u{1f30d}',
+  gradcap_heart: '\u{1f393}', gradcap_people: '\u{1f393}', graph_shield: '\u{1f6e1}\ufe0f',
+  hands_heart: '\u{1f932}', hands_up: '\u{1f64c}', heart_book: '\u{1f4d6}', heart_dna: '\u{1f9ec}',
+  heart_shield: '\u{1f6e1}\ufe0f', laptop_gear: '\u{1f4bb}', leaf_globe: '\u{1f30d}',
+  magnifying_question: '\u{1f50d}', megaphone_chart: '\u{1f4e3}', megaphone_star: '\u{1f4e3}',
+  money_briefcase: '\u{1f4bc}', newspaper_mic: '\u{1f4f0}', paintbrush_mic: '\u{1f399}\ufe0f',
+  paintbrush_screen: '\u{1f58c}\ufe0f', paintbrush_star: '\u{1f3a8}', people_gear: '\u2699\ufe0f',
+  people_scale: '\u2696\ufe0f', people_tree: '\u{1f333}', person_arrow: '\u{1f6b6}',
+  pill_microscope: '\u{1f48a}', rocket_chart: '\u{1f680}', rocket_star: '\u{1f680}',
+  scales_document: '\u2696\ufe0f', scales_gavel: '\u2696\ufe0f', shield_money: '\u{1f4b0}',
+  shield_network: '\u{1f310}', stethoscope: '\u{1fa7a}', target_bullseye: '\u{1f3af}',
+  wallet_people: '\u{1f45b}',
 }
 
 /**
@@ -81,6 +82,21 @@ export default function StpmQuizPage() {
   const [apiSubjects, setApiSubjects] = useState<string[]>([])
   const [apiGrades, setApiGrades] = useState<Record<string, string>>({})
   const [currentStep, setCurrentStep] = useState(0)
+  // TD-708: the one pending auto-advance. Next, Previous and the dots cancel it; it moves on from the
+  // step the answer was given on, so an answer then Next is one step, not two.
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelAdvance = useCallback(() => {
+    if (advanceTimer.current !== null) { clearTimeout(advanceTimer.current); advanceTimer.current = null }
+  }, [])
+  function goToStep(step: number) { cancelAdvance(); setCurrentStep(step) }
+  const advanceTo = useCallback((step: number, delay: number) => {
+    cancelAdvance()
+    advanceTimer.current = setTimeout(() => {
+      advanceTimer.current = null
+      setCurrentStep(step)
+    }, delay)
+  }, [cancelAdvance])
+  useEffect(() => cancelAdvance, [cancelAdvance])
   const [answers, setAnswers] = useState<(number | null)[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -169,13 +185,13 @@ export default function StpmQuizPage() {
       setQ2Resolved(true)
 
       // Auto-advance to Q3
-      setTimeout(() => setCurrentStep(2), 300)
+      advanceTo(2, 300)
     } catch {
       // If resolve fails, continue with remaining questions (skip Q3/Q4)
       setQ2Resolved(true)
-      setTimeout(() => setCurrentStep(2), 300)
+      advanceTo(2, 300)
     }
-  }, [q2Resolved, allQuestions, branch, apiGrades, locale, answers])
+  }, [q2Resolved, allQuestions, branch, apiGrades, locale, answers, advanceTo])
 
   const question = currentStep < allQuestions.length ? allQuestions[currentStep] : null
   const currentAnswer = currentStep < answers.length ? answers[currentStep] : null
@@ -196,7 +212,7 @@ export default function StpmQuizPage() {
 
     // Auto-advance after 300ms
     if (currentStep < allQuestions.length - 1) {
-      setTimeout(() => setCurrentStep(prev => prev + 1), 300)
+      advanceTo(currentStep + 1, 300)
     }
   }
 
@@ -318,7 +334,7 @@ export default function StpmQuizPage() {
                 key={q.id}
                 onClick={() => {
                   // Only allow navigating to answered questions or the current one
-                  if (i <= currentStep || hasAnswer) setCurrentStep(i)
+                  if (i <= currentStep || hasAnswer) goToStep(i)
                 }}
                 className={`w-2.5 h-2.5 rounded-full transition-all ${
                   i === currentStep
@@ -377,7 +393,7 @@ export default function StpmQuizPage() {
         {/* Navigation */}
         <div className="flex items-center justify-between mt-4">
           <button
-            onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+            onClick={() => goToStep(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
             className="-ml-2 inline-flex min-h-11 items-center px-2 md:ml-0 md:min-h-0 md:px-0 text-ground-400 hover:text-ground-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
           >
@@ -396,7 +412,7 @@ export default function StpmQuizPage() {
             <>
               {/* Phones (owner, 2026-11-02): no dot row, so Next moves on — once this question has an answer. */}
               <button
-                onClick={() => setCurrentStep(currentStep + 1)}
+                onClick={() => goToStep(currentStep + 1)}
                 disabled={!currentAnswered}
                 className="btn-primary min-h-11 md:hidden disabled:opacity-40"
                 data-testid="quiz-next"

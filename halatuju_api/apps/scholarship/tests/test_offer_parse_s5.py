@@ -233,8 +233,8 @@ class TestReportingDateIsTheDateOnly(SimpleTestCase):
 class TestConventionsAndShape(SimpleTestCase):
     def test_version_and_output_shape(self):
         r = parse_govt_offer(POLY_NOISY)
-        self.assertEqual(PARSER_VERSION, '2.3.0')
-        self.assertEqual(r['_offer_parser_version'], '2.3.0')
+        self.assertEqual(PARSER_VERSION, '2.3.2')
+        self.assertEqual(r['_offer_parser_version'], '2.3.2')
         self.assertEqual(r['campus'], '')
         self.assertEqual((r['programme'], r['programme_code']), ('DIPLOMA KEJURUTERAAN AWAM', 'DKA'))
 

@@ -149,15 +149,15 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields, Served
   school: string
   nric: string
   nric_verified: boolean
-  /** Request #31: the place of birth the IC's code states, read on the server. `label` and
-   *  `warning` are served in English (to keep `en.json` flat, TD-360) and printed as is — never
-   *  re-derived here. `meets_rule` is re-read on every load against the CURRENT IC and the
-   *  intake's CURRENT rule: null = the intake has no rule; false = the QC accept floor holds it. */
+  /** Request #31: the IC's place of birth, read on the server. `label`, `warning` and `name` (the state
+   *  alone, '' if none: the header's "Born: Perak", owner 2026-11-23) are served in English (TD-360), never
+   *  re-derived. `meets_rule` is re-read every load: null = no rule; false = the QC accept floor holds it. */
   birth_state: {
     kind: 'state' | 'abroad' | 'unknown' | 'unreadable'
     state: string | null
     code: string
     label: string
+    name?: string
     meets_rule: boolean | null
     warning: string
   }

@@ -25,6 +25,12 @@ import { AdminScholarshipDetailView } from './view'
 installCockpitConsoleGuard()
 
 const loaded = () => screen.findByText('Test Student 07')
+/** Rate the four facts Pass in the ONE Reviewer Assessment box (the reject panel draws none of its own). */
+const rateAllPass = () => {
+  for (const f of ['identity', 'academic', 'pathway', 'income']) {
+    fireEvent.click(document.getElementById(`rate-fact-${f}-pass`) as HTMLElement)
+  }
+}
 
 /** The date box, addressed by the accessible name the heading gives it. */
 const dateBox = () =>
@@ -242,7 +248,7 @@ describe('reject before interview, refused because a colleague got there first (
   it('a bad_status refusal stays in view after the reload takes the door away', async () => {
     const offer = { hold_hours: 24, reasons: ['not_b40'], note_max: 2000 }
     const { api, rerender } = renderCockpit({
-      role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+      role: 'org_admin', writes: { can_write: true }, stage: 'profile_complete', build: { pre_interview: offer } as never })
     await loaded()
     api.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_status' }))
     api.getScholarshipApplication.mockResolvedValue(buildApplicationDetail('rejected', {
@@ -252,7 +258,7 @@ describe('reject before interview, refused because a colleague got there first (
     fireEvent.click(await screen.findByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
-    for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
+    rateAllPass()
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     // The reload shows the colleague's decline, and the officer still reads why theirs was refused.
@@ -285,7 +291,8 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
 
   /** Open case 7's reject, press "Yes, reject" with the reply held, then move to case 8. */
   const rejectThenNext = async () => {
-    const view = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+    const view = renderCockpit({ role: 'org_admin', writes: { can_write: true }, stage: 'profile_complete',
+      build: { pre_interview: offer } as never })
     await loaded()
     const reply: { settle: (ok: boolean, v: unknown) => void } = { settle: () => {} }
     view.api.rejectBeforeInterview.mockReturnValue(new Promise((res, rej) => {
@@ -294,7 +301,7 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
     fireEvent.click(await screen.findByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
-    for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
+    rateAllPass()
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     view.api.getScholarshipApplication.mockImplementation(async (id: number) => (id === 8 ? case8() : case7Rejected()))
@@ -348,13 +355,14 @@ describe('a request still in flight when the officer presses Next (#75 re-check 
   })
 
   it('a refusal left standing never takes focus when a later reload moves the door away (L-a)', async () => {
-    const { api } = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+    const { api } = renderCockpit({ role: 'org_admin', writes: { can_write: true }, stage: 'profile_complete',
+      build: { pre_interview: offer } as never })
     await loaded()
     api.rejectBeforeInterview.mockRejectedValue(Object.assign(new Error('x'), { code: 'boom' }))
     fireEvent.click(await screen.findByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
-    for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
+    rateAllPass()
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     fireEvent.click(screen.getByRole('button', { name: `${P}.confirmYes` }))
     expect(await screen.findByText(`${P}.error.generic`)).toBeTruthy()   // the door stays; the words in it
@@ -379,12 +387,13 @@ describe('nothing on the case page carries to the next case (#75 re-check 4, TD-
     buildApplicationDetail(stage as never, { id: 8, name: 'Test Student 08', pre_interview: offer } as never)
   const land = (fn: () => void) => act(async () => { fn(); await new Promise((r) => setTimeout(r, 30)) })
   const openRejectForCase7 = async () => {
-    const view = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+    const view = renderCockpit({ role: 'org_admin', writes: { can_write: true }, stage: 'profile_complete',
+      build: { pre_interview: offer } as never })
     await loaded()
     fireEvent.click(await screen.findByRole('button', { name: `${P}.start` }))
     fireEvent.change(screen.getByLabelText(`${P}.whyLabel`, { exact: false }), { target: { value: 'not_b40' } })
     fireEvent.change(screen.getByLabelText(`${P}.detailsLabel`, { exact: false }), { target: { value: 'Dummy note' } })
-    for (const f of ['identity', 'academic', 'pathway', 'income']) fireEvent.click(screen.getByTestId(`pre-interview-${f}-pass`))
+    rateAllPass()
     fireEvent.click(screen.getByRole('button', { name: `${P}.submit` }))
     return view
   }
@@ -423,7 +432,8 @@ describe('nothing on the case page carries to the next case (#75 re-check 4, TD-
   })
 
   it('the page shows its loading state, never case 7, while case 8 loads', async () => {
-    const view = renderCockpit({ role: 'org_admin', stage: 'profile_complete', build: { pre_interview: offer } as never })
+    const view = renderCockpit({ role: 'org_admin', writes: { can_write: true }, stage: 'profile_complete',
+      build: { pre_interview: offer } as never })
     await loaded()
     let arrive: (v: unknown) => void = () => {}
     view.api.getScholarshipApplication.mockReturnValue(new Promise((res) => { arrive = res as (v: unknown) => void }))

@@ -69,7 +69,7 @@ describe.each(FILES)('the %s file, cut into slices', (_name, file) => {
     expect(Object.keys(discovery).filter((ns) => ns in admin || ns in documents || ns in scholarship || ns in sponsor || ns in bursary)).toEqual([])
     expect(Object.keys(admin).filter((ns) => ns in documents || ns in scholarship || ns in sponsor)).toEqual([])
     expect(Object.keys(sponsor).filter((ns) => ns in documents || ns in scholarship)).toEqual([])
-    expect(Object.keys(scholarship)).toEqual(['scholarship'])
+    expect(Object.keys(scholarship)).toEqual(['scholarship', 'profile'])  // Slim: the profile page's words ride along
     const coreChildren = Object.keys((core as Cat).scholarship)
     expect(coreChildren.filter((c) => c in scholarship.scholarship)).toEqual([])
   })
@@ -97,7 +97,7 @@ describe.each(FILES)('the %s file, cut into slices', (_name, file) => {
     expect(Object.keys(bursary)).toEqual(['bursaryTabs'])          // S5b
     expect(bursary.bursaryTabs).toBe(file.bursaryTabs)
     // Mobile M3; G13 added the unkept courseDetail / saved children (file order).
-    expect(Object.keys(discovery)).toEqual(['courseDetail', 'saved', 'discovery'])
+    expect(Object.keys(discovery)).toEqual(['courseDetail', 'saved', 'discovery', 'courses'])  // Slim: plus the course blurbs
     expect(discovery.discovery).toBe(file.discovery)
     for (const ns of ['courseDetail', 'saved']) {
       const all = file[ns] as Record<string, unknown>
@@ -106,9 +106,9 @@ describe.each(FILES)('the %s file, cut into slices', (_name, file) => {
     }
     expect(Object.keys(core)).toEqual(Object.keys(file)
       .filter((ns) => ns !== 'admin' && ns !== 'documentsTab' && ns !== 'bursaryTabs' && ns !== 'discovery'
-        && !SPONSOR_NS.includes(ns)))
+        && ns !== 'profile' && ns !== 'courses' && !SPONSOR_NS.includes(ns)))
     // A floor, so a file that lost its namespaces cannot pass the identity checks above on {}.
-    expect(Object.keys(core).length).toBeGreaterThanOrEqual(30)
+    expect(Object.keys(core).length).toBeGreaterThanOrEqual(26)
   })
 })
 

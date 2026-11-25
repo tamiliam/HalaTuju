@@ -52,9 +52,28 @@ export function isApplyStage(status: string | null | undefined): boolean {
 }
 
 /** Synthetic statuses — rendered from application state, not stored as a DB value.
- *  `reopened` is shown when `decision_reopened_at` is set; `rejected_before_interview` (request #75)
- *  when a rejected case's SERVED decline kind is `PRE_INTERVIEW_CATEGORY` (see `displayStatus`). */
-export const SYNTHETIC_STATUSES = ['reopened', 'rejected_before_interview'] as const
+ *  `reopened` is shown when `decision_reopened_at` is set. (Owner 2026-11-23: a reject before
+ *  interview is no longer a status of its own — it reads "Rejected" plus its `rejectionChip`.) */
+export const SYNTHETIC_STATUSES = ['reopened'] as const
+
+/** The second chip's codes, as the api serves them in `rejection_chip` (`rejection_chip.py`,
+ *  owner 2026-11-23). `ineligible` reuses the existing "Ineligible" label.
+ *  drift-test: halatuju-web/src/lib/__tests__/applicationStatusDrift.test.ts */
+export const REJECTION_CHIPS = [
+  'merit', 'need', 'state', 'ineligible', 'shortlisted', 'before_interview', 'interview', 'qc',
+  'contractual',
+] as const
+
+/** The i18n key of the ONE chip shown beside a case's status (case header, list table, phone
+ *  rows), or null for none. Every rejected case reads "Rejected" plus where it was turned down; a
+ *  case failing its intake's "Born in" rule reads its own status plus "state" (owner D). The api
+ *  decides the code — a QC outright reject needs the case's activity rows — so this only labels it. */
+export function rejectionChip(app: { rejection_chip?: string | null }): string | null {
+  const code = app.rejection_chip
+  if (!code || !(REJECTION_CHIPS as readonly string[]).includes(code)) return null
+  return code === 'ineligible' ? 'admin.scholarship.reject.category.ineligible'
+    : `admin.scholarship.rejectionChip.${code}`
+}
 
 /** Request #75: the decline kind of a reject before interview, as the api stores it in
  *  `rejection_category` (`REJECTION_CATEGORIES`, models/applications.py).
@@ -81,7 +100,6 @@ const STATUS_TONE: Record<string, string> = {
   expired: 'bg-ground-100 text-ground-600',
   // Rejected — red.
   rejected: 'bg-critical-100 text-critical-700',
-  rejected_before_interview: 'bg-critical-100 text-critical-700',
   // Needs attention — amber (reserved).
   reopened: 'bg-caution-100 text-caution-700',
 }
@@ -107,12 +125,8 @@ export function hasStatusTone(status: string): boolean {
 }
 
 /** The status to DISPLAY for an application: a super-reopened decision shows "Reopened",
- *  overriding the stored accepted/rejected. Previously duplicated in both admin pages. A reject
- *  before interview (request #75) shows "Rejected before interview", in the same red. */
-export function displayStatus(app: {
-  status: string; decision_reopened_at?: string | null; rejection_category?: string | null
-}): string {
+ *  overriding the stored accepted/rejected. Previously duplicated in both admin pages. */
+export function displayStatus(app: { status: string; decision_reopened_at?: string | null }): string {
   if (app.decision_reopened_at) return 'reopened'
-  return app.status === 'rejected' && app.rejection_category === PRE_INTERVIEW_CATEGORY
-    ? 'rejected_before_interview' : app.status
+  return app.status
 }

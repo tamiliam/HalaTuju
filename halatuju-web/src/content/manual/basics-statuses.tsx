@@ -23,7 +23,10 @@ export const basicsStatuses: ManualChapter = {
             <li><strong>Recommended</strong> — QC has accepted it; the student is now visible to sponsors.</li>
             <li><strong>Awarded → Active → Maintenance → Closed</strong> — the post-award lifecycle once a
             sponsor funds the student.</li>
-            <li><strong>Rejected</strong> / <strong>Expired</strong> — declined, or lapsed without completing.</li>
+            <li><strong>Rejected</strong> / <strong>Expired</strong> — declined, or lapsed without completing. A
+            rejected case carries one small chip saying where it was turned down: <em>merit</em>, <em>need</em>,
+            <em> state</em>, <em>shortlisted</em>, <em>before interview</em>, <em>interview</em>, <em>qc</em> or
+            <em> contractual</em>.</li>
           </ul>
           <span className="mt-2 block">Most review work happens on <em>Awaiting review</em> and
           <em> Interviewing</em>; QC work is on <em>Interviewed</em> (awaiting QC).</span></>

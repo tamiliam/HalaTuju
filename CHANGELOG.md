@@ -84,6 +84,116 @@ Branch access-s1b-cancel-archives, not pushed. Migration: none. Services: both. 
 - **Owner ruling, 23 Nov: a re-invite also tidies the Changes list and past mentor standing.** The person page's Changes list starts at the restore (rows before the reset `created_at` are left out, only when the row holds an invitation older than it: `views_admin/staff._since_joining_again`); a kept mentor link with a scholar or a meeting no longer reads "Mentored before": the Mentors page leaves out a mentor record stopped before the person joined again and Add to Mentors offers them as new, switching that same record back on (`staff_mentor.mentored_before_joining`). Read filters only: every permission-change, activity and scholar-side row is kept and the scholar's file reads as before. Tests: api `test_s1b_reinvite_as_new.py`.
 - **Also:** new TD placeholder `TD-NEW-reverify-card`; the cockpit test fixture serves `pre_award_end` for a pre-award close (S1 review nit). Tests: api `test_s1b_cancel_archives.py`; web `organisation/staff/page.test.tsx`.
 
+### STR reader accepts "Kekal Kelulusan Asal" as an approval (2026-11-24)
+
+- Case #945: a MySTR Semakan Status page showing "Status Permohonan Semasa: Kekal Kelulusan Asal" (the original approval stays) read no status, so it counted as unreadable and a thinner "Lulus Rayuan" dashboard stayed live over it. The rules reader (`doc_parse._STR_APPROVED`) now knows that exact phrase, in any case and spacing. "Kelulusan" alone (Menunggu, Dalam Proses, Tarikh Kelulusan) is still not an approval; rejections, the engine, the surface ceiling and the keep-better ranking are unchanged. No version bump: the STR reader sits in no registered model's digest (the model-version guard stays green).
+- Tests: `test_doc_parse.py` pins the phrase in both OCR orders, the near misses, the rejections, the engine reading the page `current` and ranking it above an approved dashboard, and (pinned, not designed) a page with "Rayuan: Ditolak" above the phrase: approval in label-then-value order, rejected in the labels-then-values order.
+
+### Reject chips: one "Rejected" status plus a chip saying where (2026-11-23)
+
+Not pushed. Migration: none. Services: api, web.
+- Owner rules, 23 Nov: the synthetic "Rejected before interview" status is gone. Every rejected case reads **Rejected** plus ONE chip, served by the api as `rejection_chip` (list and detail): merit, need, state, shortlisted (org-admin reject at Shortlisted), before interview, interview, qc (QC turned it down; the latest `qc_decision` activity row says reject), contractual. Other ineligible reasons keep "Ineligible"; a blank category gets no chip. The old category pill is replaced, never shown twice. The chip shows in the case header, the list table and the phone rows.
+- Owner D: a case that fails its intake's birth-state rule but is not rejected keeps its own status plus a red "state" chip.
+- Birth state: the red banner is gone. The line beside the NRIC reads "Born: <state>" for every case, pass or fail (api serves `birth_state.name`; other kinds keep the served label). QC's accept floor still shows the full warning.
+- Right column: a reject before interview shows only "Rejected before interview" on top and "Rejection reason" below; a reject at Shortlisted shows only "Rejection reason". The estimate, notes, rate and decision cards are hidden (`isRejectedBeforeReview`).
+- The list reads QC decisions in ONE query per page (pinned: the query count does not grow with the rows). The birth-state chip reads the stored engine reason through one marker, `birth_state.RULE_REASON_MARK`. Case-list status filter, prediction metrics and the decline email (keyed on `pre_interview`) are unchanged.
+- Words: `rejectionChip.*` and `bornState` in en, ms and ta (ms and ta for Sol review); `statuses.rejected_before_interview` removed. Guide (statuses, org-admin "Rejecting before interview") and FAQ follow.
+- Tests: new test_rejection_chip.py; test_birth_state.py and a37_pins.json follow. Web: applicationStatus, applicationStatusDrift (web chips equal the api's CHIPS), view.rejectReason (every chip, the 2-card and 1-card layouts, owner D), view.birthState, view.s1Flags, cockpitCardStages and page.phone (list chips) follow.
+
+### Reject before interview uses the Reviewer Assessment box (2026-11-23)
+
+- Owner phone check, 23 Nov: the reject panel no longer draws its own four-fact Pass/Fail (a second copy of the box on the same page). It reads the ONE Reviewer Assessment box. While any fact there is unrated, the panel shows the plain red line "Record Pass or Fail for all four facts before you reject." and Reject (and "Yes, reject") stay greyed; once all four are rated the line goes and Reject is live.
+- Taps in the box save nothing; only "Yes, reject" sends the box's facts and Why reasons, in the same payload as before. The reject path never records a verdict. After a reject, and after Cancel decline, the box reloads from the server's reply.
+- No API change, no migration. The unused "factsTitle" words go from en, ms and ta. The org-admin Guide chapter "Rejecting before interview" and the FAQ follow.
+- Tests: PreInterviewReject.test.tsx, view.actions.test.tsx and AssignAndWitness.preInterviewSlot.test.tsx follow; new view.preInterviewOneBox.test.tsx pins one set of Pass/Fail, the red line and Reject following the box, the payload equal to the box, no recordVerdict, and the reloads.
+- Review fixes: the line is now the red error colour (it was amber). A stale refusal (a reviewer or a new status got there first) reloads the box as well as the case, so no unsaved taps sit beside a recommendation. The Guide says "Academic", as the box does, and says the facts can change until someone submits (Yes, reject, or a reviewer's recommendation).
+
+### Reviewer "Still to do" list: owner wording and bullet place (2026-11-23)
+
+- Owner phone check, 23 Nov: "Submit your interview findings" now reads "Submit interview findings", and "Write your conclusion" now reads "Write your recommendation" (en; ms and ta follow, for Sol review).
+- A long item that wraps (for example "Complete your assessment: Identity, Academic, Pathway, and Income") showed its bullet beside its last line. Each item button is now a block, so the bullet sits on the first line.
+- Tests: view.decisionMissing.test.tsx pins the block class and the three-language wording.
+- Fail "Why?" chips, owner wording 23 Nov (en only; ms and ta unchanged, for Sol): "Proof is missing/unclear", "Document looks false/altered", "Document(s) show something different", "Interview revealed something different". The reviewer Guide and FAQ, the AI card tests and the fail_reasons.py comments follow. Codes are unchanged.
+
+### Web first-load JS: the profile and course words leave core (2026-11-23)
+
+Not pushed. Migration: none. Services: web. No behaviour or text change; no key leaves any file.
+- **Moved:** the `profile` namespace (5.3 kB raw, about 1.7 kB gz) joins the `scholarship` slice and the `courses` namespace (per-course blurbs, 2.7 kB raw, about 1 kB gz) joins the `discovery` slice, both cut at build time by `scripts/messages-slice-loader.js`. Every route that reads them already loaded that slice (`sliceReach.test.ts` proves it); the other routes no longer download them.
+- **Measured:** median 157.242 to 155.006 kB, worst route 248.994 to 247.859 kB. The ratchet then lowered the median line 157.5 to 156 (a lowering, as it asked; no line raised).
+- **Tests:** `messagesSlice.test.ts` and `sliceReach.test.ts` pin the new slice contents and reach rules.
+
+### F4 (fix plan) part 1 - AI prediction scored in marks, server only (2026-11-23)
+
+Branch f4-ai-score, not pushed. Migration: none. Services: api only. Reads and displays only: no money, eligibility or decision outcome touched. Not shippable alone: the web card (part 2, F4b) still reads the old payload.
+- **Marks** (`ai_score.py`, pure): each decided fact is scored from the band recomputed from the stored `ai_verdict_snapshot` (`fact_bands.fact_band`) and the reviewer's Pass/Fail. Certain +2/-10, Probable +1/-3, Unsure 0/0, Can't verify -1/+1, Rule not met -10/+2. The 10 cells fall into 5 outcomes (right sure, right leaning, unsure, wrong leaning, wrong sure). Score = points / (2 x facts), whole %, can go below 0. A fact with no band in its snapshot is counted as `not_scored`. Pre-interview rejects (no `verdict_decided_at`) stay out.
+- **Payload** (`prediction_metrics.metrics`): `applications` and `score` (totals, points lost, most lost fact, by fact with the top 2 reasons it lost points, by model version). `by_reviewer` (manage_team) gains `qc_accepted` and `qc_sent_back`. `ai_team` (doubts often passed, by model version) is sent ONLY to a super (`is_super`). The month trend, decision and QC-checked blocks are no longer served.
+- **Who sees it:** the `ai_prediction` overview section is now `see_all` or `qc`, and `verdict-metrics` refuses 403 unless `b40_scope` is `all`, so a reviewer gets no card.
+- **Access tables follow the rule:** the permission golden table and overview pins drop the reviewer from the AI card; the access manifest drops reviewer_a and reviewer_a2 from `verdict-metrics`; the team-tables matrix declares that cell moved 200 to 403 for the shapes holding `review` without `see_all` (reviewer, reviewer_payments_check, finance_custom, reviewer_mentor). New test: `ai_team` is on the overview payload for a super (also one holding `qc`) and absent for org admin, admin and QC. Duplicate names in `ai_score.py` renamed (`score_marks`, `_mark_tally`, `_close_tally`) to keep one home per rule.
+- **Debt:** TD-NEW-1 `second_look.qc_checked_counts` now has no caller outside tests (remove or reuse). TD-NEW-2 (web, F4b) `verdictReliability` and the override summary type will have no live caller once the card is rewritten.
+
+### F4b (fix plan) - AI prediction card rewritten to the F4 payload, web (2026-11-23)
+
+Branch f4-ai-score, not pushed. Migration: none. Services: web. Reads and displays only. Ships WITH F4 part 1 (the old card cannot read the new payload).
+- **Card** (`AiPredictionSection`, `AiPredictionTables`): header with "Counted over N decided applications"; two tiles (AI score, Points lost); legend of the five outcomes; By fact table (five outcome counts, score, points of best, lost, top 2 reasons as chips); By reviewer counts (applications, green but failed, unsure but passed, QC accepted, QC sent back) with a footnote; an open "For the AI team" fold (doubts often passed, by model version) drawn only when `ai_team` arrived. A score below 0% prints with a minus sign; a fact with no mark shows a small "not scored" count. Tables scroll sideways inside their box on a phone.
+- **No role check in the web:** every block appears by presence of its data; a reviewer gets no section and nothing renders.
+- **Removed:** the month trend, Decision, QC-checked block and footer; `AiPredictionQcChecked` test deleted; the old types (`QcAgreement`, `QcCheckedCounts`, `by_month` etc.). `verdictReliability` now takes the new `OverrideSummary` type.
+- **i18n** (`admin.programmeOverview.aiPrediction`): new keys in en, the same English in ms and ta; dropped keys removed from all three.
+- **Guide and FAQ:** reviewers no longer see the card; how the score and the five outcomes work; what 0% and below 0% mean (role-org-admin, role-qc, role-reviewer, faq, faq-reviewer).
+- **Debt:** TD-NEW-2 stays (`verdictReliability` and `OverrideSummary` still have no live caller; only `officerCockpit.test.ts` uses them).
+
+### fix: TD-710 review round 3 - lookup work charged while the file opens (2026-11-23)
+
+Branch td710-budget, not pushed. Migration: none. Services: api. offer_parse stays 2.3.2 (unshipped): digest and note updated in place.
+- **Fix (HIGH):** rows walked were charged through `reader.stream`, which pypdf sets only once the file is open, so a broken table size (`0 (x)`) that makes pypdf rebuild the table on open, with every stream saying /Length 1, walked n x n rows for free (16,000 streams: 60.6 s to open at 41 % of the cap; the gate ACCEPTED 8,000). `GateReader` now holds its counted bytes from before the open and charges every row, read and parse through them; an `OverBudget` that pypdf's recovery catches as it opens is raised again when pypdf returns. Gate, this machine, one run: 2,000 streams accepted in 0.23 s (25 % of the cap); 8,000 refused in 1.25 s; 16,000 refused in 1.40 s.
+- **Wording:** the packed-file headroom is restated from measurement: a genuine-shaped file is refused somewhere around 3,500-6,000 packed objects, by shape (`_packed_pdf`: 20 pages, 1,083 objects, 29 %; 40 pages, 2,163, 58 %; 70 pages, 3,783, refused), not at 6,000 annotations or 10,000+ parts. Accepted (finding 3): the nested-object-stream refusal may hit a rare damaged incremental file that reuses a number.
+- **Tests:** a 2,000-stream rebuild file is refused while it opens after fewer than 500 walks (was all 2,000, then opened), and the real gate refuses it; a refusal pypdf swallows as it opens still refuses; a 5-stream rebuild still opens as pypdf opens it.
+
+### fix: TD-710 - cap raised 3x, owner decision 23 Nov (2026-11-23)
+
+Branch td710-budget, rebased on main b95d91a45, not pushed. Migration: none. Services: api. offer_parse stays 2.3.2 (unshipped): digest and note updated in place.
+- **Cap:** `LOOKUP_WORK_BASE` 2e9 to 6e9 and `LOOKUP_WORK_PER_BYTE` 100 to 300; no charge weight changed. Genuine-shaped packed files get 3x the room (20 pages, 1.1k packed objects: 74 % of the first cap, 25 % now); genuine-shaped files from about 3,500-6,000 packed objects, by shape, may be refused (review round 3; 500 pages x 38 links: 3.5x). The owner accepts that a crafted file now holds a reader about 3x longer (this machine, one run: short /Length 1.06 to 3.63 s, huge /Length 0.94 to 2.68 s; token files 0.9-4.9 s over two runs).
+- **Census:** the same 2 of 870 fixture PDFs refused; every page-check output hash identical to round 2 over 848 files; the most any genuine fixture reader used is 2.8 % of the 3x cap (round 2 metering).
+- **Tests:** a 20-page genuine-shaped file packed 100 to an object stream, built in code, is accepted with every reader under 40 % of the cap (29 % measured). The short /Length test now builds 2,000 streams, so the file opens inside the small base and the refusal comes from row walks (at 4,000 it was refused while opening, before any walk); the one-offset test has 120 entries (30 parses under the 3x cap).
+
+### fix: TD-710 review round 2 - object-stream parse metered as it reads, nested object streams refused (2026-11-23)
+
+Branch td710-budget, not pushed. offer_parse stays 2.3.2 (unshipped): digest updated in place.
+- **Metered parse:** every read pypdf makes of an object stream's decoded data is charged as it is made (12,000 a call plus its bytes), through `pypdf._reader.BytesIO`; the round 1 up-front charges (15,000 an entry, 3,000 a decoded byte) are gone. Entries at one offset, or at each bracket of nested arrays, now pay for each re-parse.
+- **Nested object streams** are refused before pypdf parses the outer one.
+- **Not charged:** filter decoding (TD-712) and the cross-reference stream parsed on open.
+- **Open:** synthetic genuine-shaped files with many packed objects (500 pages x 38 links, 15.6 MB) use 10.6x the cap and are refused; owner decision. Round 2 census rerun pending.
+- **Tests:** 4 new in `tests/test_pdf_gate_lookup_work.py` (each fails on 834154f7b); the up-front charge tests removed.
+
+### fix: TD-710 review round 1 - object-stream parse charged by decoded size, OverBudget never swallowed (2026-11-23)
+
+Branch td710-budget, not pushed. Migration: none. Services: api. offer_parse stays 2.3.2 (unshipped): its digest is updated in place.
+- **Object streams:** each decoded byte is charged (3,000 units) before pypdf parses the stream, a /Type given by reference too. Reviewer's probe: 3.6 MB decoded from a 4 KB file, 3.3 s ACCEPTED to 0.02 s refused; 10.8 MB from 11 KB (reviewer: 48.4 s ACCEPTED) to 0.04 s refused.
+- **OverBudget** is a pypdf `LimitReachedError`, so pypdf's non-strict dictionary parser re-raises it instead of swallowing it and keeping a half-read dictionary.
+- **Rename:** `_charge` is `_charge_lookup_work` (one name may not have three homes: test_code_standards).
+- **Census:** the same 2 of 870 fixture PDFs refused before and after; every page-check output hash unchanged over 848 files; the most any genuine reader used is still 156 M units, 7.7 % of its cap (3151 readers over 848 fixture files).
+- **Docs:** decisions.md and TD-710 state the measured time to reach the cap (0.6 s to 3.2 s, by token kind, for crafted 3.6-10.8 MB files (the reviewer's tokens.py; this machine at rest, CPU load 6-8 %, three runs); the slowest are hex strings in a 7.2 MB file, 2.3-3.2 s. One unit is about 0.3 ns of copying but up to about 1 ns of dense parsing, so the earlier 'about 0.6 s' was wrong), the per-upload bound, and that decoding is not charged; new row TD-712 (predictor decode bomb, not fixed).
+- **Tests:** `tests/test_pdf_gate_lookup_work.py` pins the decoded-byte charge, refuses an object-stream parse bomb before any parse (direct and by-reference /Type), and checks OverBudget propagates out of a dictionary value.
+
+### fix: TD-710 - the PDF gate caps pypdf's lookup work (2026-11-23)
+
+Branch td710-budget (first built on TD-702's 90e8768a1), not pushed. Migration: none. Services: api. offer_parse 2.3.1 to 2.3.2 (outcomes for crafted PDFs change; version log entry added).
+- **GateReader:** one lookup-work budget per reader: each byte read (sized or unsized), each read call, each cross-reference row pypdf walks to find a stream's end, each object-stream entry parsed. Cap `LOOKUP_WORK_BASE` (2e9) + `LOOKUP_WORK_PER_BYTE` (100) x the file size, about 0.6 s plus 30 ns a byte; past it, refused. An object stream is parsed once: a number it does not hold is a null at once, as pypdf answers it.
+- **Measured (TD-702 review repro, base 90e8768a1 then this branch):** short /Length x20000 44.8 s ACCEPTED to 0.44 s refused; huge /Length x5000 14.3 s ACCEPTED to 0.57 s refused; object-stream misses x2000 257.6 s to 0.29 s (refused both times). Census over the 870 fixture PDFs: the same 2 refused; worst 2.07 s before, 2.05 s after (back to back, same file); every page-check output hash unchanged. Most lookup work by any genuine reader: 7.7 % of its cap.
+- **Tests:** new `tests/test_pdf_gate_lookup_work.py` (the three shapes built in code, pinned by rows walked, large reads and object-stream parses; genuine-shape controls); parser version assertions read 2.3.2.
+- **Docs:** `docs/technical-debt.md` (TD-710 fixed), `docs/decisions.md`.
+
+### TD-711 - cockpit tests no longer flake in the cloud build (2026-11-23)
+
+Test only. Migration: none. Services: web (build gate). No behaviour change.
+- The cockpit console guard's `afterEach` awaits `settleCockpit()` (`src/test/renderCockpit.tsx`): late async updates (notes card fetch, lazy parts) finish inside `act` before the console check. Cause of the 22 Nov and 23 Nov 16:00 web build failures in `view.failReasons.test.tsx`, whose `loaded()` helper now also settles before the first click.
+
+### Quiz fixes (TD-705, TD-708, TD-709) (2026-11-23)
+
+Branch quiz-fixes, not pushed. Migration: none.
+- TD-709: the interviewer-assigned student email says no reply is needed and the interview times follow in a separate email.
+- TD-705: the STPM quiz showed a question mark for 56 of its 67 answer icons; the map now covers every icon name, and a test keeps the main and STPM maps in step with the data (missing and unused names both fail).
+- TD-708: on a phone, answering then tapping Next no longer skips a question (main and STPM quiz); one pending auto-advance, cancelled by Next, Previous and the dots.
+
 ### Web first-load JS back under budget - case page and median (2026-11-23)
 
 Not pushed. Migration: none. Services: web. No behaviour change; one new error line (below); no budget or ledger number touched.
@@ -92,6 +202,21 @@ Not pushed. Migration: none. Services: web. No behaviour change; one new error l
 - Case page 250.886 to 248.885 kB; median 158.243 to 157.188 kB. Tests that rendered the lazy parts now await them.
 - **Review fixes:** if the captcha chunk cannot be fetched the sign-in, reset and sign-up doors return the plain "security check did not finish" error (never a call without a token, no endless spinner); the case page's pre-interview option has a quiet (empty) fallback, so no stray "Loading..." under the assign controls; the sponsor Account parts and Trust view use `lazySource` (say so in place if a chunk fails, never crash the page); two stale test lookups repointed; TrustView and InviteFriends moved into the full rule-15 sweep; stale comments and the turnstile rollout doc corrected.
 - **Round-2 wording fix:** a failed Trust or Invite/Giving chunk now says "This part could not load. Reload the page to try again." (new key `sponsorPortal.partLoadFailed`, en/ms/ta), not the account-level "could not load your account" words; the `captchaAuth.ts` comment names `captchaErrorText`.
+
+### fix: TD-702 - the PDF gate caps pypdf's whole-file searches (2026-11-23)
+
+Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse digest moved; version bumped to 2.3.1 (see the review-fixes entry below).
+- **GateReader:** `pdf_pages._open_pdf` (every page check: the render gate, the text-layer read, the rules lanes) now opens `pdf_layer_guards.GateReader`: pypdf over a BytesIO that counts each whole-file read and refuses past `MAX_WHOLE_FILE_READS` (4); a number with no cross-reference row and no header in the file is answered as pypdf answers it (None) after one header scan, with no search. `getbuffer` is hidden, not counted: pypdf also uses it for the file size once per xref subsection.
+- **Measured (7.5 MB crafted files, main 61d5b4ba0 then this branch):** 100 missing numbers 7.6 s to 0.21 s (refused both times); 100 wrong-generation rows 12.4 s ACCEPTED to 0.45 s refused; 200 rows on a comment 25.0 s ACCEPTED to 0.55 s refused. Gate census over the 870 fixture PDFs: the same 2 refused before and after; worst 1.45 s before, 1.11 s after.
+- **Tests:** new `tests/test_pdf_gate_reader.py` (hostile PDFs built in code: missing, wrong generation, comment, plus the control, a few real repairs, repairs past the cap); `test_offer_reader` patches `GateReader` for its damaged-layer case.
+- **Docs:** `docs/technical-debt.md` (TD-702 fixed), `docs/decisions.md`.
+
+### fix: TD-702 review fixes - offer_parse 2.3.1, TD-710, header scan memory (2026-11-23)
+
+Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse bumped 2.3.0 to 2.3.1 (outcomes for crafted PDFs change); the earlier also_ok entry on this branch is replaced by a real 2.3.1 log entry.
+- **Wording:** TD-702 now says only the three named shapes (missing numbers, wrong generation, comment rows) are fixed; the other three crafted shapes are new row TD-710 (short /Length, huge /Length, object-stream misses; all on main too; one lookup-work budget in GateReader, follow-up sprint). The "refused in under 1 s" note names the three shapes only.
+- **Memory:** the GateReader header scan builds its set with `finditer` instead of a full `findall` list (about 181 MB less peak on a 15 MB file packed with headers); same answers.
+- **Tests:** the parser version assertions read 2.3.1; the damaged-layer test in `test_offer_reader` also asserts the mock was called.
 
 ### F3 (fix plan) - reviewer assessment rules (2026-11-22)
 

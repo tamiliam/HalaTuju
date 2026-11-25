@@ -2,7 +2,7 @@
 
 Per-doc-type parsers (STR, TNB, KWSP, …) get their own real-file-validated tests as they
 land; this covers the shared infrastructure they all build on."""
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 
 from apps.scholarship import doc_parse
 from apps.scholarship.doc_parse import (find_value, has, first_nric, first_amount,
@@ -234,6 +234,109 @@ class TestStrParser(SimpleTestCase):
     def test_str_marked_but_no_recipient_falls_to_gemini(self):
         # An STR mention with no name + no NRIC → don't trust a deterministic read.
         self.assertIsNone(parse_by_labels('str', 'Sumbangan Tunai Rahmah STR 2026 portal'))
+
+
+# #945: a MySTR Semakan Status page whose current status is "Kekal Kelulusan Asal" (the original
+# approval stands), with a dated Maklumat Pembayaran line. Invented person. Built in BOTH OCR orders
+# the file models: label-then-value on adjacent lines, and the labels column then the values column.
+_KK_NAME, _KK_NRIC = 'KAVITHA A/P TESTRAJ', '910415105123'
+
+
+def _semakan_page(status, *, columns=False, appeal=''):
+    pairs = [('Nama', _KK_NAME), ('No. MyKad', _KK_NRIC)]
+    if appeal:
+        pairs.append(('Rayuan', appeal))
+    pairs += [('Status Pedalaman', 'Tidak'), ('Status Permohonan Semasa', status),
+              ('Fasa Bayaran', 'Fasa 1')]
+    if columns:
+        body = [label for label, _ in pairs] + [value for _, value in pairs]
+    else:
+        body = [line for pair in pairs for line in pair]
+    tail = ['Maklumat Pembayaran', '15/03/2026', 'RM 150', 'Jumlah Bayaran Keseluruhan STR', 'RM 700']
+    return '\n'.join(['Semakan Status', 'Maklumat Pemohon'] + body + tail) + '\n'
+
+
+_BOTH_ORDERS = (False, True)
+
+
+def _currency(r):
+    from apps.scholarship.income_engine import _str_currency
+    return _str_currency(r['status'], r['year'], 2026, r['source_type'])
+
+
+class TestStrKekalKelulusanAsal(SimpleTestCase):
+    def test_the_945_page_reads_the_phrase_in_both_orders(self):
+        for columns in _BOTH_ORDERS:
+            with self.subTest(columns=columns):
+                r = parse_by_labels('str', _semakan_page('Kekal Kelulusan Asal', columns=columns))
+                self.assertEqual(r['source_type'], 'semakan_status')
+                self.assertEqual(r['status'], 'Kekal Kelulusan Asal')
+                self.assertEqual(r['year'], '2026')
+                self.assertEqual(r['recipient_name'], _KK_NAME)
+                self.assertEqual(r['recipient_nric'], '910415-10-5123')
+                self.assertEqual(_currency(r), 'current')      # was '' → 'unreadable' before the fix
+
+    def test_case_and_spacing_do_not_matter(self):
+        for phrase in ('KEKAL  KELULUSAN ASAL', 'kekal kelulusan\tasal'):
+            for columns in _BOTH_ORDERS:
+                with self.subTest(phrase=phrase, columns=columns):
+                    r = parse_by_labels('str', _semakan_page(phrase, columns=columns))
+                    self.assertEqual(r['status'].lower().split(), ['kekal', 'kelulusan', 'asal'])
+                    self.assertEqual(_currency(r), 'current')
+
+    def test_near_misses_are_not_approvals(self):
+        # "Kelulusan" alone is not the phrase: waiting, in process, an appeal, half the phrase.
+        for status in ('Menunggu Kelulusan', 'Dalam Proses Kelulusan', 'Dalam Proses Rayuan',
+                       'Kekal Kelulusan', 'Kelulusan Asal', 'Tarikh Kelulusan'):
+            for columns in _BOTH_ORDERS:
+                with self.subTest(status=status, columns=columns):
+                    r = parse_by_labels('str', _semakan_page(status, columns=columns))
+                    self.assertEqual(r['status'], '')
+                    self.assertEqual(_currency(r), 'unreadable')
+
+    def test_a_page_with_only_tarikh_kelulusan_is_not_an_approval(self):
+        page = ('Semakan Status\nNama\n' + _KK_NAME + '\nNo. MyKad\n' + _KK_NRIC +
+                '\nTarikh Kelulusan\n15/01/2026\nJumlah Bayaran Keseluruhan STR\nRM 700\n')
+        r = parse_by_labels('str', page)
+        self.assertEqual(r['status'], '')
+        self.assertEqual(_currency(r), 'unreadable')
+
+    def test_rejections_still_win(self):
+        for status in ('Ditolak', 'Tidak Layak'):
+            for columns in _BOTH_ORDERS:
+                with self.subTest(status=status, columns=columns):
+                    r = parse_by_labels('str', _semakan_page(status, columns=columns))
+                    self.assertEqual(r['status'], status)
+                    self.assertEqual(_currency(r), 'rejected')
+
+    def test_a_rejected_appeal_above_the_phrase_is_pinned_not_designed(self):
+        # PINNED for the owner, not a design: an appeal "Rayuan: Ditolak" above the phrase. Adjacent
+        # order: the label read takes the status line → approval. Columns: the label read misses, the
+        # body scan takes the FIRST status word, the appeal's "Ditolak" → rejected.
+        adjacent = parse_by_labels('str', _semakan_page('Kekal Kelulusan Asal', appeal='Ditolak'))
+        self.assertEqual((adjacent['status'], _currency(adjacent)), ('Kekal Kelulusan Asal', 'current'))
+        columns = parse_by_labels('str', _semakan_page('Kekal Kelulusan Asal', columns=True,
+                                                       appeal='Ditolak'))
+        self.assertEqual((columns['status'], _currency(columns)), ('Ditolak', 'rejected'))
+
+
+class TestKekalKelulusanAsalKeepBetter(TestCase):
+    """End to end through the real engine: the parsed #945 Semakan outranks an approved dashboard."""
+
+    def test_the_semakan_outranks_a_lulus_rayuan_dashboard(self):
+        from apps.scholarship.income_engine import str_proof_quality, student_str_check
+        from apps.scholarship.tests.test_td403_str_this_year import _family, _promotes, _upload_str
+        for columns in _BOTH_ORDERS:
+            with self.subTest(columns=columns):
+                app, dash = _family('str', year='', status='Lulus Rayuan', source_type='dashboard')
+                r = parse_by_labels('str', _semakan_page('Kekal Kelulusan Asal', columns=columns))
+                sem = _upload_str(app, year=r['year'], status=r['status'], source_type=r['source_type'])
+                self.assertEqual(student_str_check(sem)['current_status'], 'current')
+                self.assertEqual(student_str_check(dash)['current_status'], 'unconfirmed')
+                self.assertGreater(str_proof_quality(sem), str_proof_quality(dash))
+                self.assertIs(_promotes(sem, dash), True)
+                again = _upload_str(app, year='', status='Lulus Rayuan', source_type='dashboard')
+                self.assertIs(_promotes(again, sem), False)     # a dashboard never displaces it
 
 
 # A TNB "Bil Elektrik Anda" — label then value on the next line; amount = Caj Semasa (the

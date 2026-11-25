@@ -52,6 +52,22 @@ describe('the "Still to do" list', () => {
     })
   })
 
+  it('draws each item as a block, so a wrapped item keeps its bullet on its first line', async () => {
+    renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: nothingDone() })
+    await loaded()
+    const items = Array.from(document.querySelectorAll('#decision-missing li button')) as HTMLButtonElement[]
+    expect(items.length).toBeGreaterThan(0)
+    items.forEach((b) => expect(b.className.split(' ')).toContain('block'))
+  })
+
+  it('reads in plain words in all three languages (owner wording, 23 Nov)', () => {
+    const at = (m: Record<string, any>) => m.admin.scholarship.recordVerdict.missing
+    expect([at(en).submit, at(en).conclusion]).toEqual(['Submit interview findings', 'Write your recommendation'])
+    expect([at(ms).submit, at(ms).conclusion]).toEqual(['Hantar penemuan temu duga', 'Tulis cadangan anda'])
+    expect([at(ta).submit, at(ta).conclusion]).toEqual(
+      ['நேர்காணல் கண்டறிதல்களைச் சமர்ப்பியுங்கள்', 'உங்கள் பரிந்துரையை எழுதுங்கள்'])
+  })
+
   it('is gone once everything is done', async () => {
     renderCockpit({ role: 'reviewer', writes: true, stage: 'interviewing', build: readyCase() })
     await loaded()

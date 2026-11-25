@@ -326,7 +326,14 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # word and value on rendered page 1 (`pdf_ink`, `offer_exact`); no lock on ANY rules lane (university or
 # government family) when the page-1 text (a university lane's drawn layout; a government letter's text layer)
 # or the parsed programme / stream says ASASI (`_rules_exit`). Built on 2.2.0 after OCR-8 shipped it.
-PARSER_VERSION = '2.3.0'
+# 2.3.1 (TD-702, 2026-11-23) — the PDF gate (pdf_pages._open_pdf -> pdf_layer_guards.GateReader) refuses a crafted
+# PDF past 4 whole-file pypdf reads; genuine letters read as before, only the three named crafted shapes change.
+# 2.3.2 (TD-710, 2026-11-23) — the PDF gate's GateReader also caps pypdf's lookup work (bytes read, read calls,
+# cross-reference rows walked, object-stream entries parsed), also while it opens the file (two open-time scans
+# stay uncounted: docs/decisions.md TD-710), and
+# parses an object stream once; genuine letters read as before, only crafted files past the cap change (and a
+# genuine file with about 3,500-6,000 packed objects or more, by shape, which no fixture comes near).
+PARSER_VERSION = '2.3.2'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)

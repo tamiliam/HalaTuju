@@ -22,8 +22,16 @@ Fix round 6: 3 became a WHITELIST (`_doc_may_switch_off`). The layers count as a
    holds just the keys the corpus uses (/OCGs, /D: no /Configs, which pdfium may pick for viewing), /D just
    /ON /OFF /Order /RBGroups /BaseState, /BaseState absent or /ON, /OFF empty, no /AS, and every OCG only
    /Type and /Name. Anything else makes all OC-marked text and every OC form hidden.
+TD-702: `GateReader`, the reader every page check opens, caps pypdf's whole-file searches.
 """
+import io
 import re
+import threading
+
+import pypdf._reader
+from pypdf import PdfReader
+from pypdf.errors import LimitReachedError
+from pypdf.generic import IndirectObject
 
 #: Fixed operand counts (ISO 32000 operator summary), for EVERY such operator — not one of the 533 corpus
 #: PDFs breaks one. ``sc``/``scn`` (variable) and inline images are not here.
@@ -46,8 +54,10 @@ _MAX_FONT_STREAM = 800_000
 _MAX_W_ARRAY = 10_000
 
 
-class OverBudget(Exception):
-    """A PDF asked for more than one of the document budgets: hostile or broken, never read as text."""
+class OverBudget(LimitReachedError):
+    """A PDF asked for more than one of the document budgets: hostile or broken, never read as text. A pypdf
+    LimitReachedError (TD-710), because pypdf's non-strict dictionary parser swallows any other exception raised
+    inside a value (and keeps the half-read dictionary), but always re-raises that one."""
 
 
 _BARE = rb'[^\x00\t\n\x0c\r ()<>\[\]{}/%]'
@@ -113,6 +123,205 @@ def _packed_objects_check(reader) -> None:
         total += n if isinstance(n, int) and n > 0 else 0
         if total > MAX_PACKED_OBJECTS:
             raise OverBudget('objects in object streams past the cap')
+
+
+#: TD-702 (2026-11-23): pypdf copies and searches the WHOLE file when it cannot place an object (a row on the
+#: wrong bytes, a wrong generation, a comment before the header, a number with no row) and when it rebuilds a
+#: broken table: 0.1-0.3 s each on a 7.5 MB file, and nothing capped how many. Past this many whole-file reads
+#: in one reader, the PDF is refused. Genuine fixtures (870, through the gate): 7 make 1, none more (TD-702 census).
+MAX_WHOLE_FILE_READS = 4
+_HEADER = re.compile(rb'\s(\d+)\s+(\d+)\s+obj')
+
+#: TD-710 (2026-11-23): the LOOKUP WORK one reader may do, in units of about one byte copied (~0.3 ns here), is
+#: capped at LOOKUP_WORK_BASE + LOOKUP_WORK_PER_BYTE x the file size. Three shapes did unbounded work per lookup
+#: that no other cap saw: a /Length too short (pypdf walks EVERY cross-reference row to find where the stream
+#: ends), a /Length past the end of the file (each lookup copies the rest of the file), and a number an object
+#: stream does not hold (pypdf parsed the whole stream index again for each lookup). Charged AS IT HAPPENS: each
+#: read of the file (the call and each byte), each row walked, and (review round 2) each read pypdf makes of an
+#: object stream's DECODED data (`_MeteredData`), so index entries that share or overlap an offset, nesting and
+#: any re-parse cost what they read. Weights from measured time per operation (pypdf 6.21.4; one unit is ~0.3 ns
+#: of copying): a byte ~0.3 ns, a file read with the parsing around it ~1 us, a row ~100 ns, a read of decoded
+#: object-stream data with the parsing around it up to ~4 us. Review round 3: file reads and rows walked are charged
+#: while pypdf OPENS the file too (rows walked while a broken table is rebuilt were free). NOT charged: a stream's
+#: filters decoding it (TD-712), and two open-time scans pypdf reads through its own uncounted copies: the entries
+#: of a cross-reference stream (pypdf caps them at 2M) and the object-stream indexes a rebuilt table scans. Review
+#: round 4: the second held a reader ~70 s on a 68 KB file, accepted (already so before TD-710); owner decision
+#: 24 Nov: its own follow-up item, fixed next. Measured headroom (fixtures and large
+#: genuine-shaped files): docs/decisions.md (TD-710). Owner decision 23 Nov: the cap is 3x the first one (6e9 +
+#: 300 per byte, was 2e9 + 100), weights unchanged, so a hostile file holds a reader ~3x longer (seconds); a
+#: genuine file with about 3,500-6,000 packed objects or more, by shape, may still be refused.
+_READ_CALL_WORK = 3_000
+_ROW_WORK = 300
+_PARSE_CALL_WORK = 12_000
+LOOKUP_WORK_PER_BYTE = 300
+LOOKUP_WORK_BASE = 6_000_000_000
+_PARSING = threading.local()                 # .meter: the `_CountedBytes` of the reader parsing an object stream
+
+
+class _CountedBytes(io.BytesIO):
+    """The bytes `GateReader` reads: every unsized read (the whole file, or all of it from some point) counts.
+    ``getbuffer`` is hidden, so pypdf's `get_stream_data` (each whole-file search) takes its read path, and
+    `get_stream_size` its seek/tell path (a size, not a search: not counted). TD-710: every read, and the
+    other lookup work `GateReader` charges here, is ``work`` against the file's lookup budget."""
+    getbuffer = property()                   # no getter: AttributeError, so hasattr(stream, 'getbuffer') is False
+
+    def __init__(self, data: bytes):
+        super().__init__(data)
+        self.whole_reads = 0
+        self.work = 0
+        self.size = len(data)
+        self.refused = None                  # the first OverBudget raised here: pypdf may catch it as it opens
+
+    def _refuse(self, why: str):
+        self.refused = self.refused or why
+        raise OverBudget(why)
+
+    def charge(self, units: int) -> None:
+        self.work += units
+        if self.work > LOOKUP_WORK_BASE + LOOKUP_WORK_PER_BYTE * self.size:
+            self._refuse('pypdf lookup work past the cap')
+
+    def read(self, size=-1):
+        if size is None or size < 0:
+            self.whole_reads += 1
+            if self.whole_reads > MAX_WHOLE_FILE_READS:
+                self._refuse('pypdf whole-file reads past the cap')
+        data = super().read(size)
+        self.work += len(data) + _READ_CALL_WORK              # `charge`, inline: pypdf reads one byte at a time
+        if self.work > LOOKUP_WORK_BASE + LOOKUP_WORK_PER_BYTE * self.size:
+            self._refuse('pypdf lookup work past the cap')
+        return data
+
+
+class _MeteredData(io.BytesIO):
+    """The decoded object-stream data pypdf parses for a `GateReader`: each read is charged to that reader's
+    lookup budget as pypdf makes it (the call, with the parsing around it, and each byte it returns)."""
+
+    def __init__(self, meter, *args):
+        super().__init__(*args)
+        self.meter = meter
+
+    def read(self, size=-1):
+        data = super().read(size)
+        self.meter.charge(_PARSE_CALL_WORK + len(data))
+        return data
+
+
+def _bytes_io(*args):
+    """``pypdf._reader.BytesIO``: `_MeteredData` while this thread's `GateReader` parses an object stream (pypdf
+    wraps the decoded data by this name, _reader.py:407), else a plain BytesIO, as before."""
+    meter = getattr(_PARSING, 'meter', None)
+    return io.BytesIO(*args) if meter is None else _MeteredData(meter, *args)
+
+
+pypdf._reader.BytesIO = _bytes_io
+
+
+def _charge_lookup_work(reader, units: int) -> None:
+    """Review round 3 (HIGH): charged to the counted bytes the reader holds from BEFORE pypdf opens the file.
+    pypdf sets ``reader.stream`` only once ``read()`` returns, so rows walked while it opened the file (a
+    rebuilt cross-reference reads every object; each short /Length walks every row) went uncharged."""
+    reader._counted.charge(units)
+
+
+class _Rows(dict):
+    """One generation's cross-reference rows. pypdf walks all of them (``values()``, only in
+    `_get_next_object_position`) each time a stream's /Length does not end at 'endstream': each walk is charged."""
+    __slots__ = ('owner',)
+
+    def values(self):
+        _charge_lookup_work(self.owner, _ROW_WORK * len(self))
+        return super().values()
+
+
+class _Xref(dict):
+    """A `GateReader`'s cross-reference table: each generation's rows held as `_Rows` (also one pypdf adds
+    later, ``xref[gen] = {}``)."""
+    __slots__ = ('owner',)
+
+    def __setitem__(self, gen, rows):
+        if not isinstance(rows, _Rows):
+            rows = _Rows(rows)
+            rows.owner = self.owner
+        super().__setitem__(gen, rows)
+
+
+class GateReader(PdfReader):
+    """pypdf's reader, its whole-file reads capped (`_CountedBytes`). A lookup of an object with no cross-reference
+    row whose ``n g obj`` header the file does not hold gets pypdf's own answer for it (None) without pypdf's
+    whole-file search: the headers are found once, by one counted read, at the first such lookup. A header the
+    file DOES hold goes to pypdf, which searches (counted). The header test is a superset of pypdf's search.
+    TD-710: its lookup work is capped (`LOOKUP_WORK_BASE`), each read of an object stream's decoded data
+    included, and an object stream is parsed once: a number it does not hold then gets pypdf's NullObject."""
+
+    def __init__(self, data: bytes):
+        """Review round 3: the budget covers file reads and rows walked while pypdf opens the file (not the two
+        uncounted open-time scans named at LOOKUP_WORK_BASE). pypdf catches broad
+        exceptions in some recovery paths as it opens (a failed rebuild, _reader.py:1237, or one it rewraps as
+        PdfReadError, :1339), so an `OverBudget` raised in there is raised again here, whatever pypdf did."""
+        self._headers = None
+        self._objstm_done = set()
+        self._counted = _CountedBytes(data)
+        try:
+            super().__init__(self._counted)
+        except Exception as e:
+            if self._counted.refused and not isinstance(e, OverBudget):
+                raise OverBudget(self._counted.refused) from e
+            raise
+        if self._counted.refused:
+            raise OverBudget(self._counted.refused)
+
+    @property
+    def xref(self):
+        return self._xref
+
+    @xref.setter
+    def xref(self, rows):                                 # pypdf assigns ``self.xref = {}`` as it opens the file
+        table = _Xref()
+        table.owner = self
+        for gen, gen_rows in rows.items():
+            table[gen] = gen_rows
+        self._xref = table
+
+    def _get_object_from_stream(self, indirect_reference):
+        """pypdf parses the WHOLE object stream (its index, then every entry from that entry's own offset, each
+        cached) on any lookup in it, and caches nothing for a number the stream does not hold. Here every read
+        of the decoded data is charged as pypdf makes it (`_MeteredData`): entries at one offset, or at each
+        ``[`` of nested arrays, pay for each parse. Once a stream is parsed, a number it did not hold gets pypdf's
+        own answer (NullObject) at once. Review round 2: an object stream inside an object stream (never valid)
+        is refused here, before pypdf parses anything to reach it."""
+        from pypdf.generic import NullObject
+        stm = self.xref_objStm[indirect_reference.idnum][0]
+        if stm in self._objstm_done:
+            return NullObject()
+        if stm in self.xref_objStm:
+            raise OverBudget('an object stream inside an object stream')
+        outer = getattr(_PARSING, 'meter', None)
+        _PARSING.meter = self._counted
+        try:
+            found = super()._get_object_from_stream(indirect_reference)
+        finally:
+            _PARSING.meter = outer
+        self._objstm_done.add(stm)
+        return found
+
+    def get_object(self, indirect_reference):
+        ref = indirect_reference
+        if isinstance(ref, int):
+            ref = IndirectObject(ref, 0, self)
+        gen, num = ref.generation, ref.idnum
+        if ((gen, num) in self.resolved_objects or (gen == 0 and num in self.xref_objStm)
+                or num in self.xref.get(gen, ()) or min(gen, num) < 0):
+            return super().get_object(ref)
+        if self._headers is None:
+            at = self._counted.tell()
+            self._counted.seek(0)
+            self._headers = {m.groups() for m in _HEADER.finditer(self._counted.read())}   # one counted whole-file read; no findall list
+            self._counted.seek(at)
+        if (b'%d' % num, b'%d' % gen) in self._headers:
+            return super().get_object(ref)
+        self.cache_indirect_object(gen, num, None)                        # what pypdf stores for a missing one
+        return None
 
 
 def page_tree_check(reader) -> None:

@@ -315,8 +315,14 @@ class TestCheckedByTheQcNumbers(TestCase):
         # the other organisation's QC overturned its reviewer: must never reach this organisation
         cls.f1 = decided(cls.foreign, officer(income='fail', qc_fact_checks={'income': 'disagreed'}))
 
+    def _in_org_records(self):
+        rows = ScholarshipApplication.objects.filter(cohort=self.cohort, verdict_decided_at__isnull=False)
+        return list(rows.values_list('ai_verdict_snapshot', 'officer_verdict'))
+
     def test_the_counts(self):
-        body = authed_client(self.lead).get(METRICS).json()['qc_checked']
+        # F4: the card no longer shows the "Checked by the QC" table; the pure counts stay tested here
+        # on the organisation's rows (TD-NEW-1: the counter has no caller outside tests).
+        body = sl.qc_checked_counts(self._in_org_records())
         total = body['total']
         self.assertEqual({k: total[k] for k in ('in_doubt', 'checked', 'not_checked', 'agreed', 'disagreed',
                                                  'ai_green_checked', 'ai_wrong_checked',
@@ -331,23 +337,23 @@ class TestCheckedByTheQcNumbers(TestCase):
         self.assertEqual(body['facts']['academic']['ai_green_checked'], 0)
         self.assertEqual(set(body['facts']), set(audit.FACTS))
 
-    def test_the_overview_carries_the_same_object(self):
+    def test_the_card_no_longer_carries_the_qc_checked_table(self):
         page = authed_client(self.lead).get(OVERVIEW).json()['ai_prediction']
-        self.assertEqual(page['qc_checked'], authed_client(self.lead).get(METRICS).json()['qc_checked'])
+        self.assertNotIn('qc_checked', page)
+        self.assertEqual(page, authed_client(self.lead).get(METRICS).json())
 
     def test_by_reviewer_carries_the_qc_counts_for_a_lead_only(self):
         rows = authed_client(self.lead).get(METRICS).json()['by_reviewer']
         self.assertEqual([(r['qc_checked'], r['qc_overturned']) for r in rows], [(3, 2)])
-        for who in (self.qc, self.reviewer):
-            with self.subTest(role=who.role):
-                self.assertNotIn('by_reviewer', authed_client(who).get(METRICS).json())
+        self.assertNotIn('by_reviewer', authed_client(self.qc).get(METRICS).json())
 
-    def test_a_reviewer_counts_only_their_assigned_applicants(self):
+    def test_a_reviewer_gets_no_card(self):
+        # F4 (owner): no AI prediction card for a reviewer, even on her own assigned applicants.
         ScholarshipApplication.objects.filter(pk=self.a2.pk).update(assigned_to=self.reviewer)
-        for body in (authed_client(self.reviewer).get(METRICS).json(),
-                     authed_client(self.reviewer).get(OVERVIEW).json()['ai_prediction']):
-            self.assertEqual(body['qc_checked']['total']['checked'], 1)
-            self.assertEqual(body['qc_checked']['total']['ai_right_reviewer_wrong_checked'], 1)
+        self.assertEqual(authed_client(self.reviewer).get(METRICS).status_code, 403)
+        page = authed_client(self.reviewer).get(OVERVIEW)
+        if page.status_code == 200:
+            self.assertNotIn('ai_prediction', page.json())
 
     def test_old_rows_and_bad_stored_values_count_as_not_checked(self):
         m = sl.qc_checked_counts([(snap(), officer(income='fail')),

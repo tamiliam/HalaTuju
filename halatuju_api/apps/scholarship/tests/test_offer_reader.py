@@ -204,8 +204,9 @@ class InputsTest(SimpleTestCase):
 
     def test_a_damaged_text_layer_is_no_layer(self):                                    # review L2
         from apps.scholarship import pdf_pages
-        with mock.patch('pypdf.PdfReader', side_effect=RecursionError('deep')):
+        with mock.patch.object(pdf_pages, 'GateReader', side_effect=RecursionError('deep')) as gate:
             self.assertEqual(pdf_pages.pdf_page_texts(b'%PDF-1.4', 3), [])
+            gate.assert_called()
 
 
 GOOD = {'candidate_name': NAME, 'candidate_nric': NRIC, 'candidate_nric_source': 'label',

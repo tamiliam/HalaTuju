@@ -13,7 +13,7 @@ import VerifiedTick from '@/components/VerifiedTick'
 import { formatNric, referralAcronym } from '@/lib/scholarship'
 // The pill's tooltip: the fixed three from i18n, a source by the linked org's SERVED name, else its code.
 import { referralLabel } from '@/lib/referralSources'
-import { statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
+import { statusLabelKey, statusTone, displayStatus, rejectionChip } from '@/lib/applicationStatus'
 import { headerTimeline } from '@/lib/officerCockpit'
 import { stageStatus } from '@/lib/closeOffer'
 import { formatDate } from '@/lib/formatDate'
@@ -89,6 +89,13 @@ export function CockpitHeader({
               </span>
             )
           })()}
+          {/* Owner 2026-11-23: ONE second chip — where a rejected case was turned down, or "state"
+              on a case failing its intake's "Born in" rule. Served (`rejection_chip`), as on the list. */}
+          {rejectionChip(app) && (
+            <span data-testid="rejection-chip" className={`rounded-full bg-critical-100 px-2.5 py-0.5 text-xs font-semibold text-critical-700 ${PHONE_PILL_SM}`}>
+              {t(rejectionChip(app)!)}
+            </span>
+          )}
           {/* Primary action button — scrolls to the Record Verdict panel. Not shown once
               'interviewed' (awaiting QC): the verdict is submitted, panel is read-only. */}
           {canWrite && ['shortlisted', 'profile_complete', 'interviewing'].includes(app.status) && (
@@ -99,12 +106,6 @@ export function CockpitHeader({
               {t('admin.scholarship.recordVerdict.title')}
             </button>
           )}
-          {/* #75 review: not when the status pill already reads "Rejected before interview". */}
-          {app.status === 'rejected' && app.rejection_category && displayStatus(app) !== 'rejected_before_interview' && (
-            <span className={`rounded-full bg-critical-100 px-2.5 py-0.5 text-xs font-semibold text-critical-700 ${PHONE_PILL_SM}`}>
-              {t(`admin.scholarship.reject.category.${app.rejection_category}`)}
-            </span>
-          )}
           {app.bucket && (
             <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-caution-100 px-1.5 text-xs font-bold text-caution-700">{app.bucket}</span>
           )}
@@ -114,14 +115,11 @@ export function CockpitHeader({
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ground-500">
           <span>NRIC <span className="font-mono text-ground-700">{formatNric(app.nric || '') || '—'}</span>{vtip('nric') && <VerifiedTick label={vtip('nric')!} />}</span>
-          {/* Request #31: the place of birth the IC states, read and worded on the server. When the
-              CURRENT IC fails the intake's CURRENT rule it becomes the served warning instead. */}
-          {app.birth_state?.meets_rule === false ? (
-            <span data-testid="birth-state"
-              className={`rounded-full bg-critical-100 px-2 py-0.5 font-semibold text-critical-700 ${PHONE_PILL_SM}`}>
-              {app.birth_state.warning}
-            </span>
-          ) : app.birth_state?.label && <span data-testid="birth-state">{app.birth_state.label}</span>}
+          {/* Request #31: the place of birth the IC states. Owner 2026-11-23: "Born: Perak", the
+              state's served name alone, pass or fail — a failed rule is the red "state" chip above,
+              not a banner. No state on the IC (abroad / unknown / unreadable): the served line. */}
+          {app.birth_state?.name ? <span data-testid="birth-state">{t('admin.scholarship.bornState', { state: app.birth_state.name })}</span>
+            : app.birth_state?.label && <span data-testid="birth-state">{app.birth_state.label}</span>}
           {refTag && (
             <span
               title={refName}

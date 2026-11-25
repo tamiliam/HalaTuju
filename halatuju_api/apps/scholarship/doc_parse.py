@@ -101,7 +101,9 @@ def rules_parser_version(doc_type: str, text: str) -> str:
 _STR_MARKERS = (r'sumbangan\s+tunai\s+rahmah', r'\bMySTR\b', r'jumlah bayaran keseluruhan str',
                 r'status\s+permohonan', r'layak\s+str', r'\bSTR\b')
 _SARA_MARKERS = (r'sumbangan\s+asas\s+rahmah', r'bantuan\s+sara', r'perdana\s+menteri', r'\bSARA\b')
-_STR_APPROVED = (r'diluluskan', r'\blulus\b', r'\bberjaya\b')
+# "Kekal Kelulusan Asal" (Semakan, #945): the original approval stands. The exact phrase only —
+# "Kelulusan" alone (Menunggu / Dalam Proses / Tarikh Kelulusan) is not an approval.
+_STR_APPROVED = (r'diluluskan', r'\blulus\b', r'\bberjaya\b', r'\bkekal\s+kelulusan\s+asal\b')
 _STR_REJECTED = (r'\bditolak\b', r'tidak\s+layak', r'\bgagal\b')
 # The STR status VALUE is a small closed vocabulary. Used to (a) validate a label-anchored read and
 # (b) scan the body when a labels-then-values OCR layout puts the value far from its label.

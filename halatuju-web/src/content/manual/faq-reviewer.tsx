@@ -114,12 +114,12 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>What is the <strong>place-of-birth</strong> line beside the NRIC?</>,
-      a: <>The state the student was born in, read from the place-of-birth code in her IC number (the two
-        digits in the middle). A gift can accept only students born in certain states; one born elsewhere,
-        born outside Malaysia, with &ldquo;place of birth unknown&rdquo; (code 82), or whose IC number cannot be
-        read does not pass that rule. The line is checked again every time the case opens: if the IC
-        number was changed after she applied and no longer meets the rule, it turns red, and QC can
-        accept the case only with a recorded reason. Where you are in doubt, request her birth
+      a: <>The state the student was born in (for example <em>Born: Perak</em>), read from the place-of-birth
+        code in her IC number (the two digits in the middle). A gift can accept only students born in certain
+        states; one born elsewhere, born outside Malaysia, with &ldquo;place of birth unknown&rdquo; (code 82), or
+        whose IC number cannot be read does not pass that rule. The rule is checked again every time the case
+        opens: if the IC number was changed after she applied and no longer meets it, a red <em>state</em> chip
+        shows beside her status, and QC can accept the case only with a recorded reason. Where you are in doubt, request her birth
         certificate.</>,
     },
     {
@@ -194,8 +194,8 @@ export const REVIEWER_FAQ: QA[] = [
         <em> Other</em> already chosen; change it if a better reason fits. If you Approve
         while a fact is on Fail, you see a warning, but you can still go ahead. QC then takes a second look at
         those facts (a Fail on a green fact, or a Fail you still approved) and either agrees with you or taps
-        <strong> Disagree</strong>. The answers count how often QC agreed with you; leads also see how often QC
-        disagreed with each reviewer, to support reviewers, not to rank them.</>,
+        <strong> Disagree</strong>. Your decisions are counted as QC accepted or QC sent back; leads see
+        those counts, to support reviewers, not to rank them. You do not see the AI prediction card yourself.</>,
     },
     {
       q: <>What does each of the four facts ask me to prove?</>,
@@ -205,9 +205,9 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>Which reasons can I give when I <strong>Fail</strong> a fact?</>,
-      a: <>Five, all about the student, never the AI: <em>Proof is missing or unclear</em>, <em>A document looks
-        false or altered</em>, <em>The documents show something different</em>, <em>The interview or a call showed
-        something different</em>, and <em>Other</em>. Every Fail takes one; <em>Other</em> is chosen for you until
+      a: <>Five, all about the student, never the AI: <em>Proof is missing/unclear</em>, <em>Document looks
+        false/altered</em>, <em>Document(s) show something different</em>, <em>Interview revealed something
+        different</em>, and <em>Other</em>. Every Fail takes one; <em>Other</em> is chosen for you until
         you pick another.</>,
     },
     {

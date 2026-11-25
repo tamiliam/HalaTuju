@@ -214,6 +214,17 @@ def m4b_moved_cells(shape):
     return dict(M4B_READS) if shape in M4B_NOW_READ else {}
 
 
+#: F4 (2026-11-23, owner design): the AI prediction card follows `b40_scope == 'all'` (`see_all`, QC's implied
+#: one), never `review` alone. These shapes hold `review` and no `see_all`, so `verdict-metrics` was 200 in the
+#: BEFORE fixtures and is now 403. The fixtures are never regenerated; the moved cell is declared here.
+F4_METRICS = 'GET api/v1/admin/scholarship/verdict-metrics/'
+F4_SHUT = ('reviewer', 'reviewer_payments_check', 'finance_custom', 'reviewer_mentor')
+
+
+def f4_moved_cells(shape, before):
+    return {F4_METRICS: 403} if shape in F4_SHUT and before[F4_METRICS] == 200 else {}
+
+
 #: Invitations I4 (2026-11-08): a mentor's gifts (`AdminMentorGiftsView`, `POST admin/mentors/<id>/gifts/`). A NEW
 #: route behind the Mentors page's ACTION fence (`_MentorsBase._target`, the one Resend / Revoke / Deactivate
 #: use: `mentor_invite.may_invite`). Only a super or an organisation admin passes it (the T2 knockers); the
@@ -500,7 +511,7 @@ def _expected_row(shape):
            **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before),
            **a110a_moved_cells(shape, before), **m4b_moved_cells(shape), **r55_added_cells(shape, before),
            **a113b_added_cells(shape), **i4_added_cells(shape), **s1_moved_cells(shape, before), **thanks_cells(shape, before),
-           **r75_added_cells(shape), **r73_added_cells(shape)}
+           **r75_added_cells(shape), **r73_added_cells(shape), **f4_moved_cells(shape, before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     row.update(nudges_added_cells(row))

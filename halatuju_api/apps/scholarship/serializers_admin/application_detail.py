@@ -25,6 +25,7 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
     # Request #31: the place of birth the IC states, re-checked against the intake's CURRENT rule
     # on every load (`birth_state.for_cockpit`). Admin-only.
     birth_state = serializers.SerializerMethodField()
+    rejection_chip = serializers.SerializerMethodField()   # owner 2026-11-23 — `rejection_chip.py`
     has_file = serializers.SerializerMethodField()   # maintenance S2: the cockpit's "Open scholar file"
     maintenance_controls = serializers.SerializerMethodField()   # S3 review M1 — see the getter
     # Academic + financial data is read live from the canonical profile.
@@ -215,7 +216,7 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
             # Rejection bucket (merit/need/ineligible/interview/contractual/incomplete) + stamps.
             # rejection_comments = the org-admin's verbatim reason ('incomplete' only). ADMIN
             # SERIALIZER ONLY — it must never reach the student-facing ApplicationReadSerializer.
-            'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
+            'rejection_category', 'rejection_chip', 'rejected_at', 'rejected_by', 'rejected_by_name',
             'rejection_comments',
             # #75: a reject before interview's main reason (internal) + when its email went.
             'rejection_reason', 'decline_email_sent_at',

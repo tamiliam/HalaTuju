@@ -179,11 +179,12 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
     const d = await getScholarshipApplication(liveId.current, { token })
     if (!isLive(d)) return   // re-check 4 (L2): a dropped payload leaves the refusal as it was
     focusRefusal.current = afterRefusal
-    if (!afterRefusal) setPreInterviewRefusal(null)
+    // A stale refusal (has_reviewer, bad_status) reloads the ONE box too, so no unsaved taps sit beside
+    // a recommendation that is already in (fix round, 23 Nov).
+    if (afterRefusal) loadVerdictState(d); else setPreInterviewRefusal(null)
     setApp(d)
   }
   const refreshApp = () => reload(false)
-  const onPreInterviewDone = (next: AdminScholarshipDetail) => { setPreInterviewRefusal(null); setApp(next) }
   // The hooks' handlers keep the ctx of the render they were made in, so these drop what a request
   // for an earlier case brings back (busy is never guarded: it must always clear).
   const forThisCase = <A,>(set: (a: A) => void) => (a: A) => { if (id === liveId.current) set(a) }
@@ -195,8 +196,12 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   const interview = useInterview(ctx)
   const requests = useRequests(ctx)
   const postAward = usePostAward(ctx, canManageSources)
-  const actions = useCaseActions(ctx, admins)
   const { officerVerdict, loadVerdictState } = verdict
+  // A reply that may change the assessment (a reject before interview, a Cancel decline, an IC
+  // re-check): put it on the page AND reload the ONE assessment box from it (owner 23 Nov). The
+  // reject's refusal needs no clearing here: the panel clears it (`setErr('')`) before it sends.
+  const showReply = (a: AdminScholarshipDetail) => { setApp(a); loadVerdictState(a) }
+  const actions = useCaseActions(ctx, admins, showReply)
   const { findings, loadInterviewState } = interview
   // The load below needs the CURRENT hooks' handlers and `t`, but must fire on `token`/`id` alone: the
   // hook objects are new every render, so listing them would re-read the case on every keystroke.
@@ -406,7 +411,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
       />
 
 
-      <ReverifyIcCard app={app} t={t} token={token} busy={busy} canQc={canQc} onDone={(a) => { setApp(a); loadVerdictState(a) }} />
+      <ReverifyIcCard app={app} t={t} token={token} busy={busy} canQc={canQc} onDone={showReply} />
       <QcPanel
         app={app} t={t} busy={busy} canQc={canQc} doQcDecision={doQcDecision}
         qcReopenOpen={qcReopenOpen} setQcReopenOpen={setQcReopenOpen}
@@ -417,13 +422,15 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
       />
 
 
+      {/* Owner 2026-11-23: a reject before interview shows its record FIRST, the "Rejection
+          reason" below it, and nothing else (`cockpitStages.isRejectedBeforeReview`). */}
+      {app.status === 'rejected' && app.rejection_category === PRE_INTERVIEW_CATEGORY && <LazyPreInterviewRecord app={app} t={t} />}
       <OrgRejectPanel
         app={app} t={t} busy={busy} role={role}
         rejectStep={rejectStep} setRejectStep={setRejectStep}
         rejectComments={rejectComments} setRejectComments={setRejectComments}
         rejectErr={rejectErr} closeReject={closeReject} doOrgReject={doOrgReject}
       />
-      {app.status === 'rejected' && app.rejection_category === PRE_INTERVIEW_CATEGORY && <LazyPreInterviewRecord app={app} t={t} />}
       {preInterviewErr && !app.pre_interview && (
         <p className="text-sm text-critical-600" role="alert" data-testid="pre-interview-refused"
           tabIndex={-1} ref={focusOnArrival}>{preInterviewErr}</p>
@@ -438,10 +445,11 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
         witnessBusy={witnessBusy} witnessMsg={witnessMsg} setWitnessMsg={setWitnessMsg}
         witnessEditing={witnessEditing} setWitnessEditing={setWitnessEditing}
         doAssignWitness={doAssignWitness}
-        notesCard={!showsNotesCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened }) ? undefined : <ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
+        notesCard={!showsNotesCard({ status: app.status, assignedToId: app.assigned_to_id, decisionReopened, rejectionCategory: app.rejection_category }) ? undefined : <ReviewerNotesCard key={app.id} appId={app.id} token={token} t={t}
           refreshKey={`${app.status}|${app.verdict_decided_at ?? ''}|${app.decision_reopened_at ?? ''}`} />}
         preInterview={<LazyPreInterviewOption key={app.id} app={app} t={t} token={token} busy={busy} canAssign={canAssign}
-          err={preInterviewErr} setErr={setPreInterviewErr} onDone={onPreInterviewDone} onStale={() => reload(true)} />}
+          box={verdict}
+          err={preInterviewErr} setErr={setPreInterviewErr} onDone={showReply} onStale={() => reload(true)} />}
       />
 
 
