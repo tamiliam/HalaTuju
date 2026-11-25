@@ -45,7 +45,8 @@ from apps.scholarship.tests.factories import (
 JWT_ROLES = (
     'super',            # platform super: global, no organisation
     'org_admin_a',      # organisation A lead tier (see_all, scholars, qc, spending, manage_team, ...)
-    'admin_a',          # organisation A `admin` preset (see_all, scholars, spending, payments_prepare)
+    'admin_a',          # organisation A `admin` preset after 0101 (see_all, scholars, spending, payments_prepare,
+                        # scholars.approve)
     'qc_a',             # organisation A `qc` preset (see_all, qc)
     'reviewer_a',       # organisation A reviewer ASSIGNED to student A's case
     'reviewer_a2',      # organisation A reviewer with NO assignment (the assignment fence)
@@ -63,12 +64,26 @@ JWT_ROLES = (
 )
 
 #: Review round 2 (H1): staff who hold a WRITE key but no READ of the case (the Scholars key alone, and
-#: `students.approve` alone). Not manifest columns: swept only by the case-stage replay.
-WRITERS_WITHOUT_A_READ = ('scholars_only_a', 'approve_only_a')
+#: `students.approve` alone). Not manifest columns: swept only by the case-stage replay. S4: the Scholars key
+#: alone is View scholars (it writes nothing now); Manage scholar files alone joins them (it reads a FILE, and
+#: no case without one).
+WRITERS_WITHOUT_A_READ = ('scholars_only_a', 'approve_only_a', 'manage_only_a')
 
 #: S2 / M4a: the Payments switches, by key and not by label. Not manifest columns: `test_access_matrix`
 #: holds them to the payment routes (`PAYMENT_CALLERS`). S6 retires `finance_a`.
 PAYMENT_CALLERS = ('payments_holder_a', 'payments_viewer_a', 'oa_unkeyed_a')
+
+#: S4 (owner Q3, Q-E): the scholar-file switches, by key and not by label. Not manifest columns:
+#: `test_access_matrix` holds them to the scholar-file writes (`test_scholar_files_open_by_switch`) and holds
+#: the newly invited member to `admin_a`'s answer on every route but those writes. `admin_a` is the admin
+#: preset after courses 0101 (View scholars and Manage scholar files, as every live stored list holds them);
+#: `admin_invited_a` is a team member newly invited to Admins after it: the admin preset only, View scholars
+#: on and Manage off (owner Q-E).
+SCHOLAR_CALLERS = ('admin_invited_a', 'scholars_viewer_a', 'scholars_manager_a')
+#: S4a review M1 (owner Q-B): Payments: Prepare with the Applications read and NO View scholars — `see_all`, and
+#: `review` (the test assigns app_a to it). Not manifest columns: `test_money_past_the_award_needs_view_scholars`
+#: holds them refused on every money act on app_a's file.
+MONEY_CALLERS = ('see_all_prepare_a', 'review_prepare_a')
 
 #: S3 / M4b: the wallet-credit seats, by key and not by label. Not manifest columns: `test_access_matrix` holds
 #: them to the credit routes and drives one credit through the chain (`test_a_credit_runs_by_switch`).
@@ -338,9 +353,33 @@ def build_world():
     w.sponsors_editor_a = make_admin('admin', owning_org=w.org_a)
     PartnerAdmin.objects.filter(pk=w.sponsors_editor_a.pk).update(permissions=['sponsors.view', 'sponsors.edit'])
     w.sponsors_editor_a.refresh_from_db()
+    # S4 (owner Q-E): a team member newly invited to Admins after 0101 holds the admin preset as it is — View
+    # scholars on, Manage scholar files off (the factory's `pre_s4` row is exactly that list). The withdrawal
+    # maker's seat is added as on `admin_a`, so the two differ by the Manage key alone.
+    w.admin_invited_a = make_admin('admin', owning_org=w.org_a, pre_s4=True)
+    PartnerAdmin.objects.filter(pk=w.admin_invited_a.pk).update(
+        permissions=[*w.admin_invited_a.permissions, 'award_withdraw_request'])
+    # S4: View scholars only, and the same with Manage scholar files (the Applications read and the work pages
+    # as the preset's; no Payments key on either).
+    w.scholars_viewer_a = make_admin('admin', owning_org=w.org_a, pre_s4=True)
+    w.scholars_manager_a = make_admin('admin', owning_org=w.org_a, pre_s4=True)
+    viewer = [k for k in w.scholars_viewer_a.permissions if k not in ('spending', 'payments_prepare')]
+    PartnerAdmin.objects.filter(pk=w.scholars_viewer_a.pk).update(permissions=viewer)
+    PartnerAdmin.objects.filter(pk=w.scholars_manager_a.pk).update(permissions=[*viewer, 'scholars.approve'])
+    for who in (w.admin_invited_a, w.scholars_viewer_a, w.scholars_manager_a):
+        who.refresh_from_db()
     # Review round 2 (H1): two keys that WRITE but give no READ of a case, outside JWT_ROLES like the
     # granted member. `test_access_matrix` sweeps them in the case-stage replay, where they are allowed nowhere.
-    w.scholars_only_a = make_admin('admin', owning_org=w.org_a, permissions=['scholars'])
+    # S4: `scholars_only_a` is View scholars alone (made as before 0101, so it writes nothing at all now), and
+    # `manage_only_a` is Manage scholar files alone: Manage brings View (`holds_scholars_key` reads the v2
+    # view), so it reads a file (`test_manage_alone_reads_a_scholar_file`) but no case without one.
+    w.scholars_only_a = make_admin('admin', owning_org=w.org_a, permissions=['scholars'], pre_s4=True)
+    w.manage_only_a = make_admin('admin', owning_org=w.org_a, pre_s4=True)
+    PartnerAdmin.objects.filter(pk=w.manage_only_a.pk).update(permissions=['scholars.approve'])
+    w.manage_only_a.refresh_from_db()
+    # S4a review M1: Payments: Prepare and the Applications read, without View scholars.
+    w.see_all_prepare_a = make_admin('admin', owning_org=w.org_a, permissions=['see_all', 'payments_prepare'])
+    w.review_prepare_a = make_admin('reviewer', owning_org=w.org_a, permissions=['review', 'payments_prepare'])
     w.approve_only_a = make_admin('admin', owning_org=w.org_a, permissions=['students.approve'])
     w.qc_a = make_admin('qc', owning_org=w.org_a)
     w.reviewer_a = make_admin('reviewer', owning_org=w.org_a, gifts=[w.gift_a])
@@ -484,6 +523,7 @@ def build_world():
         w.clients[role] = authed_client(who, APIClient(raise_request_exception=False))
     for role in SECRET_ROLES:
         w.clients[role] = APIClient(raise_request_exception=False)
-    for role in ('admin_granted_a', *WRITERS_WITHOUT_A_READ, *PAYMENT_CALLERS, *CREDIT_CALLERS):
+    for role in ('admin_granted_a', *WRITERS_WITHOUT_A_READ, *PAYMENT_CALLERS, *CREDIT_CALLERS, *SCHOLAR_CALLERS,
+                 *MONEY_CALLERS):
         w.clients[role] = authed_client(getattr(w, role), APIClient(raise_request_exception=False))
     return w

@@ -99,9 +99,6 @@ export default function IssueLetterDialog({ id, token, data, onCancel, onIssued 
             </label>
           ))}
         </div>
-        {!data.can_issue.includes('termination') && !data.file_closed && (
-          <p className="mt-1 text-xs text-ground-500">{t(`${P}.dialog.seniorOnly`)}</p>
-        )}
       </fieldset>
 
       <div className="flex flex-wrap gap-4">

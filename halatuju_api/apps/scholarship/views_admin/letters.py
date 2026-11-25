@@ -6,11 +6,11 @@ Part of the `views_admin` package; re-exported from `views_admin/__init__.py`. T
 WHO (owner rulings, 2026-10-30):
   * READ — the scholar file's own fence (`_ScholarsBase._file_for`: the `scholars` key since sprint S1,
     or a mentor on their own current student; everyone else refused; another organisation 404).
-  * ISSUE — suspension and termination: super or org_admin; general, discipline, close-out: anyone
-    who may WRITE on the scholar file (`_may_write_file`, S1-d: a `scholars` holder of the file's
-    organisation; until S1 `_can_review_app`). RESEND — the same rights as issuing that kind. A mentor
-    issues nothing.
-  * WITHDRAW — super or org_admin, with a reason.
+  * ISSUE — every kind, suspension and termination included: whoever holds "Manage scholar files"
+    (`scholars.approve`, `_may_write_file`; a super passes every key) on a file of their own organisation
+    (S4, owner Q3). View scholars alone reads the tab and issues nothing. RESEND — the same switch, less
+    the kinds a closed file no longer re-sends (`svc.NO_RESEND_WHEN_CLOSED`). A mentor issues nothing.
+  * WITHDRAW — the same switch, with a reason.
 One class per url shape (lessons, Billing 2026-10-29: one view on two urls is how a wrong verb
 becomes a 500). Nothing here writes a status, a sub-state or money: letters are documents only.
 """
@@ -42,19 +42,10 @@ def _data(request):
 
 
 class _LettersBase(_ScholarsBase):
-    @staticmethod
-    def _senior(admin):
-        """Senior letters: `scholars.approve` (M3c D5; was the org_admin role)."""
-        from .. import surface_gates
-        return admin is not None and surface_gates.may_send_senior_letters(admin)
-
     def _kinds_for(self, admin, app):
-        """The kinds THIS admin may issue on THIS file — the one rule the dialog and the POST share."""
-        if self._senior(admin):
-            return svc.KINDS
-        if self._may_write_file(admin, app):
-            return tuple(k for k in svc.KINDS if k not in svc.SENIOR_KINDS)
-        return ()
+        """The kinds THIS admin may issue on THIS file — the one rule the dialog and the POST share. S4
+        (owner Q3): "Manage scholar files" sends every kind, suspension and termination included."""
+        return svc.KINDS if self._may_write_file(admin, app) else ()
 
     def _letter(self, app, lid):
         return Letter.objects.filter(pk=lid, application=app).select_related('application').first()
@@ -72,13 +63,17 @@ class AdminScholarLettersView(_LettersBase):
         if err:
             return err
         rows = svc.for_file(app)
-        kinds = self._kinds_for(admin, app)
+        kinds = may_resend = self._kinds_for(admin, app)
         if app.status == 'closed':
             kinds = tuple(k for k in kinds if k in svc.CLOSED_FILE_KINDS)
+            # The kinds `svc.resend` refuses on a closed file (409 `file_closed`) are not offered either.
+            may_resend = tuple(k for k in may_resend if k not in svc.NO_RESEND_WHEN_CLOSED)
         return Response({
             'letters': [svc.admin_dict(r, names_only=self._as_mentor(admin)) for r in rows],
             'can_issue': list(kinds),
-            'can_withdraw': self._senior(admin),
+            'can_withdraw': self._may_write_file(admin, app),
+            # S4: Resend is served (the kinds `svc.resend` lets through on this file), never derived.
+            'can_resend': list(may_resend),
             'prompt_close': svc.prompt_close(app, rows),
             'response_days': svc.response_days(app.owning_organisation),
             'student_name': svc.student_name(app),
@@ -90,6 +85,8 @@ class AdminScholarLettersView(_LettersBase):
         app, admin, err = self._file_for(request, pk)
         if err:
             return err
+        if not self._kinds_for(admin, app):
+            return self._deny_role()        # S4: View scholars alone reads the letters and sends none
         data = _data(request)
         try:
             letter, created = svc.issue(
@@ -112,6 +109,8 @@ class AdminScholarLetterPreviewView(_LettersBase):
         app, admin, err = self._file_for(request, pk)
         if err:
             return err
+        if not self._kinds_for(admin, app):
+            return self._deny_role()        # S4: View scholars alone reads the letters and sends none
         data = _data(request)
         try:
             return Response(svc.preview(app, kind=str(data.get('kind') or ''),
@@ -123,7 +122,7 @@ class AdminScholarLetterPreviewView(_LettersBase):
 
 
 class AdminScholarLetterActionView(_LettersBase):
-    """POST admin/scholarship/scholars/<pk>/letters/<lid>/withdraw/ `{reason}` (super / org_admin) and
+    """POST admin/scholarship/scholars/<pk>/letters/<lid>/withdraw/ `{reason}` (Manage scholar files) and
     .../resend/ (the issuing rights for that kind)."""
 
     def post(self, request, pk, lid, action):
@@ -135,7 +134,7 @@ class AdminScholarLetterActionView(_LettersBase):
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         try:
             if action == 'withdraw':
-                if not self._senior(admin):
+                if not self._may_write_file(admin, app):
                     return self._deny_role()
                 letter = svc.withdraw(letter, reason=_data(request).get('reason'), by_admin=admin)
                 logger.warning('AUDIT letter_withdrawn app=%s letter=%s by=%s', app.id, letter.id, admin.email)

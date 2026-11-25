@@ -62,7 +62,7 @@ describe('the scholar file: the status is read-only on a phone', () => {
   })
 
   it('a person who may not set the status sees neither the buttons nor the note', () => {
-    render(<ScholarControls file={{ ...FILE, controls: { ...FILE.controls!, can_set_substate: false } } as api.ScholarFile}
+    render(<ScholarControls file={{ ...FILE, controls: { ...FILE.controls!, can_set_substate: false, can_hold: false } } as api.ScholarFile}
       token="tok" onChanged={jest.fn()} />)
     expect(screen.queryAllByRole('button', { name: STATUS })).toHaveLength(0)
     expect(screen.queryByText('admin.maintenance.useComputer')).toBeNull()

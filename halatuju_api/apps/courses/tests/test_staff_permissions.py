@@ -195,7 +195,7 @@ class TheRoleEndpointServesThem(TestCase):
     def test_every_role_is_served_its_resolved_set(self):
         cases = {
             'reviewer': make_admin('reviewer', owning_org=self.org),
-            'admin': make_admin('admin', owning_org=self.org),
+            'admin': make_admin('admin', owning_org=self.org, pre_s4=True),   # S4: the admin preset (Q-E), not 0101's grant
             'finance': make_admin('finance', owning_org=self.org),
             'qc': make_admin('qc', owning_org=self.org),
             'org_admin': make_admin('org_admin', owning_org=self.org),

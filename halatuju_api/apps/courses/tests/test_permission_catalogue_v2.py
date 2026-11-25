@@ -85,8 +85,9 @@ _ORG_ADMIN_UNKEYED = set(_EVERY_PAGE_KEY) - _M4A_DISPLAY_ONLY - {'payments.view'
 #: shape -> (today's `resolve()` tuple, the hand-written v2 set). Set order does not matter.
 GOLDEN_V2 = {
     # Sprint S1: the admin preset and the lead tier hold `scholars` (v2 `scholars.view`).
+    # S4 (declared): after 0101 that row also holds Manage scholar files (the preset itself does not, Q-E).
     'admin': (('see_all', 'scholars', 'spending', 'payments_prepare'),
-              {*_ADMIN_NO_MONEY, 'payments.view', 'payments.prepare'}),
+              {*_ADMIN_NO_MONEY, 'payments.view', 'payments.prepare', 'scholars.approve'}),
     # A custom row saved without `scholars` (S1): Applications only, no Scholars door.
     'admin_see_all_spending': (('see_all', 'spending'), set(_ADMIN_NO_MONEY) - {'scholars.view'}),
     # resolve() ignores is_active (today's tuple stays); sign-in refuses the row, so v2 is empty.
@@ -161,7 +162,9 @@ class Vocabulary(TestCase):
         self.assertEqual(marked, {
             'programmes.edit', 'invitations.edit', 'sponsors.approve', 'billing.view', 'billing.edit',
             'requests.view', 'requests.edit', 'requests.approve', 'settings.edit', 'contracts.view',
-            'contracts.edit', 'students.edit', 'students.approve', 'scholars.approve'})   # M3c D5
+            'contracts.edit', 'students.edit', 'students.approve'})   # M3c D5
+        # S4 (declared): `scholars.approve` left the set; 0101 stores it on every View scholars holder's row.
+        self.assertFalse(v2.CATALOGUE_V2['scholars.approve'][3])
 
     def test_every_higher_tier_implies_its_view_and_approve_never_implies_edit(self):
         for key, implied in v2.IMPLIES.items():
@@ -609,8 +612,8 @@ class DoorKeysTable(TestCase):
             'requests_read': ('requests.view',),
             'requests_write': ('requests.edit',), 'requests_decide': ('requests.approve',),
             'contracts_read': ('contracts.view',), 'contracts_write': ('contracts.edit',),
-            # M3c (D5): the senior letters on a scholar's file.
-            'senior_letters': ('scholars.approve',),
+            # S4: Manage scholar files (M3c's senior letters door, renamed and widened to every write).
+            'scholar_files': ('scholars.approve',), 'scholars_read': ('scholars.view',),
             # S2 / M4a: Payments, on the View switch (Organisation admin powers hold it too).
             'payments_read': ('payments.view',),
             # S3 / M4b: the credit checker's seat; sponsor terms and emails read on `.view` (owner Q-D, TD-498).

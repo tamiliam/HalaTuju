@@ -120,7 +120,7 @@ def _exclude_from_open_runs(application):
     return refs
 
 
-def set_substate(application, substate, *, by_email=''):
+def set_substate(application, substate, *, by_email='', expected=None):
     """Set the maintenance sub-state. Requires ``can_set_substate`` (a payable student in
     maintenance or holding a wallet ID; lifting a stored hold always) and a valid sub-state.
     Returns the application.
@@ -138,9 +138,18 @@ def set_substate(application, substate, *, by_email=''):
     The STORED sub-state is re-read first (a plain read, no row lock — the run locks come first),
     so a stale in-memory copy cannot skip a real change or log the wrong ``old``; the write is
     CONDITIONAL on that value still being stored, so two officers racing cannot both "move" it —
-    the loser gets ``changed_meanwhile`` and her whole change (run exclusions too) rolls back."""
+    the loser gets ``changed_meanwhile`` and her whole change (run exclusions too) rolls back.
+
+    ``expected`` (S4a review round 2): the sub-state the caller's permission judgement READ. The door
+    judges a move on it (``hold_is_money_move``: a hold's lift to ``on_track`` asks a different key from
+    ``probation`` -> ``on_track``), so when the stored value differs the judgement is stale and the move
+    is refused ``changed_meanwhile`` with nothing written. The conditional write below is on the same
+    value, so a change landing after this re-read is refused too. ``None`` (the default): today's
+    behaviour, the stored value wins."""
     stored = (ScholarshipApplication.objects.filter(pk=application.pk)
               .values_list('maintenance_substate', flat=True).first())
+    if expected is not None and stored != expected:
+        raise MaintenanceError('changed_meanwhile')
     if stored is not None:
         application.maintenance_substate = stored
     _require_maintenance(application, substate)

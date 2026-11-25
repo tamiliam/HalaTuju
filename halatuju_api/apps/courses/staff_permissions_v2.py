@@ -60,9 +60,11 @@ CATALOGUE_V2 = {
     'students.view':         (PROGRAMME, 'students', VIEW, False),      # Applications (S1: not Scholars)
     # Sprint S1 (owner 2026-11-09): the Scholars page and every scholar's file — `scholars` (`ALIASES`).
     'scholars.view':         (PROGRAMME, 'scholars', VIEW, False),
-    # M3c (D5, 2026-11-15): the senior letters on a scholar's file (`letters._senior`); migration 0099
-    # gives it to every organisation admin's row.
-    'scholars.approve':      (PROGRAMME, 'scholars', APPROVE, LEAD_ONLY),
+    # S4 (owner Q3, 25 Nov): "Manage scholar files" — every write on a scholar's file, every letter included
+    # (door `scholar_files`, `views_admin.base.may_write_file`). 0099 stored it for the organisation admins,
+    # 0101 for every View scholars holder. Not in `ADMIN_PRESET_V2` (Q-E: a member newly invited to Admins
+    # starts with it off). Not lead-only (S4): 0101 stores it on team rows; the flag is data only since M3c.
+    'scholars.approve':      (PROGRAMME, 'scholars', APPROVE, False),
     'students.edit':         (PROGRAMME, 'students', EDIT, LEAD_ONLY),  # assign (never self), nudge
     'students.approve':      (PROGRAMME, 'students', APPROVE, LEAD_ONLY),
     'contracts.view':        (PROGRAMME, 'contracts', VIEW, LEAD_ONLY),

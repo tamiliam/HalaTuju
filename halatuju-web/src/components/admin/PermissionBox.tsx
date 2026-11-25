@@ -22,6 +22,9 @@ export interface KeyState {
   lock: boolean
   disabled: boolean
   changed: boolean
+  /** S4: an i18n key for one line under the words saying why the switch is held (View scholars while
+   *  Manage scholar files is on). */
+  note?: string
 }
 
 export type KeyStates = (key: string) => KeyState
@@ -121,7 +124,9 @@ function Switch({ label, k, onSwitch }: { label: string; k: KeyState; onSwitch: 
   return <span className="inline-flex items-center gap-1 text-ground-400"><Padlock />{toggle}</span>
 }
 
-function Words({ name, desc, changed, locked }: { name: string; desc: string; changed: boolean; locked: boolean }) {
+function Words({ name, desc, changed, locked, note }: {
+  name: string; desc: string; changed: boolean; locked: boolean; note?: string
+}) {
   return (
     <div className="min-w-0 flex-[1_1_16rem]">
       <div className={`flex flex-wrap items-center gap-2 text-sm font-semibold ${locked ? 'text-ground-500' : 'text-ground-900'}`}>
@@ -129,6 +134,7 @@ function Words({ name, desc, changed, locked }: { name: string; desc: string; ch
         {changed && <ChangedPill />}
       </div>
       <div className="text-[13px] text-ground-500">{desc}</div>
+      {note && <div className="text-xs text-ground-500" data-testid="perm-brought-note">{note}</div>}
     </div>
   )
 }
@@ -166,7 +172,7 @@ export function LayoutBox({ box, ks, onSwitch, onTri, worded }: {
     if (!k.shown) return null
     return (
       <div key={s.key} data-key={s.key} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-1.5">
-        <Words name={t(s.name)} desc={t(s.desc)} changed={k.changed} locked={k.lock} />
+        <Words name={t(s.name)} desc={t(s.desc)} changed={k.changed} locked={k.lock} note={k.note && t(k.note)} />
         <Switch label={t(s.name)} k={k} onSwitch={(v) => onSwitch(s.key, v)} />
       </div>
     )

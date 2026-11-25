@@ -127,10 +127,16 @@ def may_correct_vircle_id(admin):
                                        or sp.holds(admin, 'payments_approve')))
 
 
-def may_send_senior_letters(admin):
-    """Issue, resend or withdraw a SENIOR letter on a scholar's file (`letters._senior`): `scholars.approve`
-    (M3c D5; migration 0099 gives it to every organisation admin's row). The file is fenced by its view."""
-    return staff_tables.opens_door(admin, 'senior_letters')
+def may_view_scholars(admin):
+    """S4: "View scholars" — the v2 `scholars.view` (the old key `scholars`, or implied by Manage), so
+    "Manage scholar files" always reads too. `views_admin.base.holds_scholars_key` asks it."""
+    return staff_tables.opens_door(admin, 'scholars_read')
+
+
+def may_manage_scholar_files(admin):
+    """S4 (owner Q3): "Manage scholar files" (`scholars.approve`, door `scholar_files`) — every write on a
+    scholar's file and every letter. The file is fenced by its view (`views_admin.base.may_write_file`)."""
+    return staff_tables.opens_door(admin, 'scholar_files')
 
 
 def requests_live():

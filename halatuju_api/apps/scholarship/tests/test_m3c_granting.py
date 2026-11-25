@@ -75,7 +75,7 @@ class _World(TestCase):
         cls.super = make_admin('super', super_admin=True)
         cls.lead = make_admin('org_admin', owning_org=cls.org)
         cls.other_lead = make_admin('org_admin', owning_org=cls.other_org)
-        cls.member = make_admin('admin', owning_org=cls.org)
+        cls.member = make_admin('admin', owning_org=cls.org, pre_s4=True)   # S4: newly invited, Manage off (Q-E)
         cls.other_member = make_admin('admin', owning_org=cls.other_org)
         cls.gift = make_programme(organisation=cls.org)
         cls.other_gift = make_programme(organisation=cls.other_org)
@@ -164,7 +164,7 @@ class AGrantedTeamMember(_World):
         for door, key in (('settings', 'settings.edit'), ('assign', 'students.edit'),
                           ('decide', 'students.approve'), ('programme_settings', 'programmes.edit'),
                           ('billing_read', 'billing.view'), ('contracts_write', 'contracts.edit'),
-                          ('senior_letters', 'scholars.approve'), ('sponsor_vet', 'sponsors.approve')):
+                          ('scholar_files', 'scholars.approve'), ('sponsor_vet', 'sponsors.approve')):
             with self.subTest(key=key):
                 self.assertFalse(st.opens_door(PartnerAdmin.objects.get(pk=self.member.pk), door))
                 give(self.lead, self.member, key)
@@ -291,7 +291,8 @@ class TheSeniorLetters(TestCase):
                                     notify_email='scholar@example.test')
         org = self.app.owning_organisation
         self.lead = make_admin('org_admin', owning_org=org)
-        self.member = make_admin('admin', owning_org=org)          # holds `scholars`, not the senior letters
+        # S4: View scholars without Manage scholar files (a member newly invited to Admins, owner Q-E).
+        self.member = make_admin('admin', owning_org=org, pre_s4=True)
         PartnerAdmin.objects.update(first_seen_at=timezone.now())
 
     def tab(self, who):

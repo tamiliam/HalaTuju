@@ -80,8 +80,10 @@ def scholars_scope(admin):
 
 def holds_scholars_key(admin):
     """`scholars_scope(admin) == 'all'` without the mentor lookup (a mentor is never 'all'), so a
-    write test asked on every case detail costs no query."""
-    return admin is not None and admin.has_perm('scholars')
+    write test asked on every case detail costs no query. S4: "View scholars", read as the v2
+    `scholars.view` (`staff_tables.opens`), so "Manage scholar files" (which implies it) always reads too."""
+    from .. import surface_gates
+    return admin is not None and surface_gates.may_view_scholars(admin)
 
 
 def org_allows(admin, app):
@@ -96,11 +98,12 @@ def org_allows(admin, app):
 
 
 def may_write_file(admin, app):
-    """The scholar-file WRITE (S1-d): a `scholars` holder (a super passes every key) on a file of
-    their own organisation. THE ONE DEFINITION — the scholar-file views ask it through
-    `_may_write_file`, and `may_write_case` asks it for every case past the award. INTERIM on the
-    view switch: SCHOLARS-SPLIT moves the everyday file changes to the admin switch (owner 18 Nov)."""
-    return holds_scholars_key(admin) and org_allows(admin, app)
+    """The scholar-file WRITE: "Manage scholar files" (`scholars.approve`, door `scholar_files`; a super
+    passes every key) on a file of their own organisation. THE ONE DEFINITION (S4, owner Q3): every
+    everyday file write AND the suspension and termination letters ask it — the scholar-file views
+    through `_may_write_file`, `may_write_case` for every case past the award. View scholars alone reads."""
+    from .. import surface_gates
+    return admin is not None and surface_gates.may_manage_scholar_files(admin) and org_allows(admin, app)
 
 
 def reads_application(admin, app):
@@ -126,8 +129,8 @@ def may_write_case(admin, app, status=None):
 
       OPEN          — unchanged: a B40 scope, the own organisation, then `qc` org-wide or the case
                       ASSIGNED to them;
-      PAST_AWARD    — a `scholars` holder of the own organisation (`may_write_file`), who may hold no
-                      B40 scope at all. The reviewer's link is severed at `awarded`, and a reopen
+      PAST_AWARD    — whoever holds "Manage scholar files" (`scholars.approve`) in the own
+                      organisation (`may_write_file`), with or without a B40 scope. The reviewer's link is severed at `awarded`, and a reopen
                       never revives it ("QCs are reviewers as well");
       PRE_AWARD_END — a `students.approve` holder of the own organisation ("Those with 'Reject or
                       close applications' permissions"); a reviewer or QC only if they hold it.
@@ -158,8 +161,42 @@ def may_tranche(admin, app):
     THE PAYMENTS KEY DECIDES (owner 18 Nov: "Payments is a separate page. So the permissions are
     separate."): `payments.may_prepare`. The case rule's Scholars key only opens the scholar's file;
     it grants no tranche step. `_tranche_refusal` asks the payments half; the detail serves the whole
-    as `can_tranche`. See docs/decisions.md 2026-11-17."""
-    return may_write_case(admin, app) and tranche_key_held(admin, app)
+    as `can_tranche`. See docs/decisions.md 2026-11-17.
+
+    S4 (owner Q-B, 25 Nov): past the award it is View scholars + Payments: Prepare — "Manage scholar
+    files" is never a second key to money, so past the award the case half is `may_act_on_money`."""
+    return may_act_on_money(admin, app) and tranche_key_held(admin, app)
+
+
+def may_act_on_money(admin, app):
+    """The CASE half of a money act on this case (a tranche, or a move to or from `on_hold`). Past the
+    award (owner Q-B, 25 Nov): View scholars (`holds_scholars_key`) AND the case's read in the own
+    organisation (`reads_case`); a super passes. The Applications read alone (`see_all`, `qc`, an
+    assigned `review`) is NOT enough (S4a review M1: Q-B names View scholars), and "Manage scholar
+    files" is never a second key to money. Before the award: the case write rule (`may_write_case`).
+    The payments half is the caller's (`tranche_key_held`, `payments.may_prepare`)."""
+    if admin is None or app is None:
+        return False
+    if case_stage(app) == PAST_AWARD:
+        return admin.is_super or (org_allows(admin, app) and holds_scholars_key(admin)
+                                  and reads_case(admin, app))
+    return may_write_case(admin, app)
+
+
+def may_hold(admin, app):
+    """May this admin move the case to or from `on_hold` (`AdminMaintenanceSubstateView`)? The case half
+    (`may_act_on_money`) and Payments: Prepare (`payments.may_prepare`, S1 M1). The file serves it as
+    `controls.can_hold`, so the offer equals the door."""
+    from .. import payments
+    return may_act_on_money(admin, app) and payments.may_prepare(admin)
+
+
+def hold_is_money_move(current, target):
+    """The two sub-state moves whose CASE half is the money rule (`may_act_on_money`, owner Q-B): placing a
+    hold (any sub-state -> `on_hold`) and lifting it back (`on_hold` -> `on_track`). Every other target,
+    `on_hold` -> `probation` / `ready_to_close` included, asks Manage scholar files (`may_write_case`;
+    S4a review S1). A move to or from `on_hold` still needs Payments: Prepare whichever case half it asks."""
+    return target == 'on_hold' or (current == 'on_hold' and target == 'on_track')
 
 
 def tranche_key_held(admin, app):

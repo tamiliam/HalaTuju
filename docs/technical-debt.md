@@ -391,8 +391,8 @@ Each is an open entry with a defining line in the register body (read it there).
 - **TD-593** - Loose ends after an award withdrawal: the Vircle task stays (the countersign part was fixed by the A1.13 review; the staff_activity verbs came with A1.13b, migration 0206) - low
 - **TD-594** - Two award paths still lock out of order: `hold_pending_award` takes no lock, `lapse_expired_offers` locks the sponsorship before the application - low - **lapse part FIXED (2026-11-08, A1.13 third review); `hold_pending_award` still open**
 - **TD-595** - The award-email job sends the email over the network while it holds the application and sponsorship locks - low
-- **TD-597** - The Development and Surveys pages name and open every scholar on their own keys (`development.view`, `surveys.view`), not `scholars` - low (owner decision)
-- **TD-598** - Letters' senior kinds and withdraw are gated by the role label (`_LettersBase._senior`: super or `org_admin`), not a key - low
+- ~~**TD-597**~~ - Development and Surveys name scholars on their own keys - CLOSED 2026-11-25 (accepted, owner Q-A)
+- ~~**TD-598**~~ - Letters' senior kinds gated by the role label - CLOSED 2026-11-25 (M3c + S4a)
 
 - **TD-587** - On a published profile the finalise worker moves final_markdown only, so staff can read text sponsors do not see - low
 - **TD-588** - A re-record without finalise clears a pending profile but leaves an old failed state on the card - low
@@ -8797,11 +8797,15 @@ sends none). Closes when (1) and (2) are done and (3) is ruled. *(A · S)*
 
 **Raised 2026-11-09 by the Sprint T2 review, left as it is pending the owner's decision.** Since T2 every Team table and person page shows whether a person has work on record (Delete is live only when they have none). Every table but the Reviewers list reads that work in ONE batched query (`staff_footprint.footprints`, a single `UNION ALL`). The Reviewers list cannot: its query budget is frozen at 6, and the batched read would make it 7 (alias, caller, custom permissions, rows, `_reviewer_workloads`, the footprint, the `programmes` gift choices). So it keeps `staff_footprint.annotations()`, which puts 78 correlated subqueries on each row (16 FK traces, 3 mentor traces, 59 email sources), comparing about 98 fields between them. The one-person reviewer page carries the same. It is one query, and correct (the two paths are held equal source by source in `test_t2_footprint_sources.py`), but its cost grows with every reviewer listed. Folding the workloads into the rows query is not a fix: its two multi-valued counts would multiply each other. **Fix, if the list becomes slow:** option (a), load `programmes` (the gift choices) lazily, when a gift is first opened, so the batched footprint fits inside the budget of 6 without raising it, then move the list to `footprints()`. Option (b), a separate footprint endpoint, would need a new budget key. *(A · S)*
 
-### [TD-597] The Development and Surveys pages name and open every scholar on their own keys, not `scholars` - low (owner decision)
+### [TD-597] The Development and Surveys pages name and open every scholar on their own keys, not `scholars` - low (owner decision) ✅ CLOSED 2026-11-25 (accepted: owner ruling Q-A, sprint S4a)
+
+**Closed 2026-11-25, accepted (owner ruling Q-A, `docs/plans/2026-11-24-s4-scholars-split-brief.md` "Owner rulings on this brief").** Surveys and Development do not need View scholars: a module or survey author keeps their own results by name. Evidence: the brief's read-only count 8 (team rows with a Surveys or Development key but no `scholars`) is 0 on production; nothing changed in `staff_tables` (`development_read` / `surveys_read` keep their own keys). `DEPENDS_ON_V2` stays as data.
 
 **Raised 2026-11-10 by the sprint S1 review (nit 8), logged, not fixed.** Since S1 a scholar's file opens only for the `scholars` key or her current mentor (`base.scholars_scope`), but the Engagement pages still list and open scholars by their own doors: `GET admin/scholarship/development/<pk>/progress/` and its CSV (a row per scholar: name, lessons, task text, review), `GET .../development/<pk>/progress/<app>/file/` (a signed link to one scholar's upload), and `GET admin/scholarship/surveys/<pk>/results/` and its CSV (each scholar's answers by name). They open on `development_read` / `surveys_read` (`development.view` / `surveys.view`), so a person saved with those keys and without `scholars` reads per-scholar data the Scholars page refuses them. The screens no longer link those names to a file the reader cannot open (`pageGuard.readsAllScholars`, S1), and the v2 catalogue now records the dependency as data (`staff_permissions_v2.DEPENDS_ON_V2`: every Engagement key needs `scholars.view`; `dependency_gaps` reports the `admin_see_all_spending` shape). **The question for the owner:** should these doors also ask for `scholars` (a 403 for the rest), or is a module or survey author entitled to its own results by name? **Fix (once ruled):** add the key to `development_read` / `surveys_read` in `staff_tables`, or to the four views, with a refusal test each beside `test_team_tables_t5c_doors.py`. *(A · S)*
 
-### [TD-598] Letters' senior kinds and withdraw are gated by the role label - low
+### [TD-598] Letters' senior kinds and withdraw are gated by the role label - low ✅ CLOSED 2026-11-25 (fixed: M3c read the key; S4a made it one rule)
+
+**Closed 2026-11-25, done.** M3c (2026-11-15) moved the senior kinds onto `scholars.approve` and dropped the GATE-LEFT row (`apps/courses/tests/test_role_is_display_only.py` module docstring, line 24). Sprint S4a removed the second door: `views_admin/letters.py` `_LettersBase._kinds_for` gives every kind, suspension and termination included, on "Manage scholar files" (`views_admin/base.py` `may_write_file`, door `scholar_files`), and withdraw asks the same; no role label is read. Tests: `test_letters.py` (`test_manage_scholar_files_issues_every_kind_and_view_scholars_none`), `test_s4_nobody_changes.py`.
 
 **Raised 2026-11-10 by the sprint S1 review (nit 8), logged, not fixed.** `views_admin/letters.py` `_LettersBase._senior` answers "super or `role == 'org_admin'`" and gates the senior letter kinds (`letters.SENIOR_KINDS`), the Withdraw button (`can_withdraw`) and the withdraw POST. It reads the role label, which S1 and Team tables otherwise retired as a gate; it is allow-listed as `GATE-LEFT` (T5e) in `apps/courses/tests/test_role_is_display_only.py`. A key-seated admin with every other lead key still cannot issue a senior letter. **Fix:** T5e moves lead powers to keys: give the senior seat a key (or the lead tier's `manage_team`), read it through `has_perm`, and drop the allow-list row. *(A · S)*
 
@@ -9490,6 +9494,26 @@ from approving too (the fallback rule stays the owner's Q2), with a test. *(A - 
 ### [TD-730] Re-verify IC card shows a button a QC holder without write cannot use - low
 
 **Raised 2026-11-19 by the sprint S1 review (laptop session; placeholder number, the lead assigns one on landing).** ReverifyIcCard (halatuju-web/src/app/admin/scholarship/[id]/view/ReverifyIcCard.tsx:21/35) is gated on canQc but its door (verify-accept) is _require_app_write; a QC holder without write sees a button that returns 403. Predates S1. Fix: gate on canQc && served write, or serve a dedicated flag. *(A - S)*
+
+### [TD-NEW-disbursement-403-cross-org] A tranche action on another organisation's disbursement answers 403, not 404 - low
+
+**Raised 2026-11-25 by the sprint S4a review round (N4; laptop session, number placeholder until the desk numbers it).**
+`AdminDisbursementActionView.post` (`apps/scholarship/views_admin/lifecycle.py` ~150) loads the disbursement by id with
+no organisation filter, then refuses through `may_act_on_money` with `_deny_role()` (403). A caller from another
+organisation therefore learns that the id exists, where every other cross-organisation door answers 404. No money
+moves and nothing is read. Predates S4a. **Fix:** answer 404 when `org_allows(admin, disb.application)` is false,
+before the money rule, with an access-matrix row for a stranger's tranche id. *(A - S)*
+
+### ~~[TD-NEW-hold-unlocked-read] The sub-state door reads the current sub-state before it locks the row - low~~ — BUILT 2026-11-25 (sprint S4a review round 2, branch access-s4-scholars, not pushed; closes when live): the door passes the sub-state it judged (`expected=app.maintenance_substate`) to `maintenance.set_substate`, which refuses `changed_meanwhile` with nothing written when the stored value differs; its conditional write is on the same value, so a change landing after the re-read is refused too (no row lock needed: the run locks still come first). Tests `test_s4a_hold_moves.TestTheJudgedSubstateIsReCheckedAtTheWrite` (the race simulated between the judgement and the write)
+
+**Raised 2026-11-25 by the sprint S4a review round (N5; laptop session, number placeholder until the desk numbers it).**
+`AdminMaintenanceSubstateView.post` (`apps/scholarship/views_admin/lifecycle.py` ~206 and ~212) decides whether a
+move is a money move (`hold_is_money_move`) and whether it touches a hold (`hold_needs_payments`) from
+`app.maintenance_substate` as read, not under a row lock. Two moves racing can each judge from a stale sub-state, so
+a Manage holder without Payments: Prepare could move a file that a second request has just placed on hold. Low: both
+callers already pass the case half, and `maintenance.set_substate` records who moved it. **Fix:** re-read the
+application `select_for_update()` inside one transaction, judge from the locked row, then write, with a test that
+holds the row from a second connection. *(A - S)*
 
 ### [TD-670] pdfium child: its own crash signals are never remembered, and a refund before the memo write can start a second child - low
 

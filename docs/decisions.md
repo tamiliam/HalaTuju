@@ -14,6 +14,29 @@ is for admin, the person must first become a member, then be added as admin." Se
   only powers left. Counting invitees was the root cause, so the count changed rather than adding a guard to Cancel.
 - **Not yet applied** to reviewers or mentors (a separate audit).
 
+## 2026-11-25 — View scholars and Manage scholar files (sprint S4a, server half)
+
+Owner rulings, 25 Nov (programme ACCESS-BY-SWITCHES S4, brief `docs/plans/2026-11-24-s4-scholars-split-brief.md`).
+Services: api. Migration: courses 0101 (additive data step, run in the publish window).
+- **Q3, the split.** View scholars (`scholars`, v2 `scholars.view`) reads a scholar's file; every write on it, every
+  letter included, asks Manage scholar files (`scholars.approve`, door `scholar_files`, `views_admin.base.may_write_file`).
+  Manage implies View. **0101** appends the key to every team row holding `scholars` (4 live), whatever its stored
+  label, so today's file writers keep their write power; it removes nothing.
+- **Q-B, money past the award.** A tranche, a disbursement action and putting a scholar on hold (or lifting it) ask
+  View scholars + Payments: Prepare (`base.may_act_on_money`, `may_tranche`, `may_hold`), never Manage as a second key.
+  `may_tranche` no longer asks `may_write_case` past the award (it did through Manage); before the award it still
+  does. The file's `can_hold` is served from `may_hold`, the same rule as the door.
+- **Q-E, the preset.** `ADMIN_PRESET_V2` does not gain the key: a team member newly invited to Admins starts with View
+  on and Manage off; an organisation admin switches Manage on.
+- **Q-F, letters.** With Manage the letters tab offers every kind (suspension and termination included), Resend and
+  Withdraw; View alone reads the letters and sends none (the issue and preview POSTs refuse 403 before reading the
+  body).
+- **`scholars.approve` is no longer flagged lead-only** in `CATALOGUE_V2` (data only since M3c; no behaviour moves):
+  0101 stores it on team rows.
+- **Q-A:** Surveys and Development keep their own keys (TD-597 closed, accepted). TD-598 closed (M3c + S4a).
+- Roles are unchanged: holding a switch never places anyone in a role (`in_admins` deriving from keys is a stopgap
+  until S6). `test_s4_nobody_changes.py` pins that no role seat, old key or door moves but the 0101 grant.
+
 ## 2026-11-23 — Sponsor credits and the Vircle ID on Payments switches (sprint M4b)
 
 Owner rulings, 23 Nov (programme ACCESS-BY-SWITCHES S3). Services: both. Migration: none, but the sprint lands WITH or
@@ -21526,3 +21549,10 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 **Not decided here:** whether a read NET PAY figure should also stop "not a salary slip" (TD-743, owner to rule).
 **Review round 2 (2026-11-25):** "whole word" means LETTER edges: a label glued to its amount counts (`KWSP308.00`, from PDF text layers); a single-word label may carry one payroll suffix glued on its right (PEKERJA, MAJIKAN, EMPLOYEE, EMPLOYER, EE, ER), never a letter on its left; `MTD` (the English label for PCB) counts on the no-wage path only. Still model 1.3.0 (never live).
 **Owner ruling, 25 Nov 2026:** PERKESO runs both SOCSO and EIS, so a PERKESO letter or contribution statement with no wage label scores two groups and passes as genuine / private. Keep it so: two of KWSP / SOCSO / EIS / PCB is enough, exactly as the organisation was told; SOCSO and EIS stay separate groups. Pinned by `test_socso_and_eis_alone_are_two_groups_owner_ruling_25_nov`.
+
+## 2026-11-25 - Scholars switches split: owner rulings on the S4 brief (owner, 2026-11-25)
+
+**Decision:** the four Scholars switches stay four. Switch 1 ("The scholars page and every scholar's file", `scholars`) becomes VIEW ONLY; switch 4 (`scholars.approve`) is renamed "Manage scholar files", moves to second place and carries every everyday file write plus suspension and termination letters (Q3, 19 Nov). Rulings on the brief (`docs/plans/2026-11-24-s4-scholars-split-brief.md`): Q-A Surveys and Development keep their own keys (TD-597 accepted); Q-B money on a scholar's file = View scholars + Payments: Prepare; Q-C mentoring and lesson work stay on their own switches; Q-E a new Admin starts with View ON and Manage OFF (the admin preset does not gain `scholars.approve`).
+**Team members, not stored labels (owner, corrected 25 Nov):** "There are NO permanent reviewers or admins. There are team members who could be added to admins, reviewers and mentors groups." 0101 grants Manage to every `scholars` holder whatever the stored label (live: the 4 team members in Admins who hold View scholars) and removes nothing. A role offers switches and a member holds some of them; a switch never places anyone in a role (`staff_tables.in_admins` reading keys is today's stopgap until S6 / S6b). Phone-check count: 4. The editor keeps the Scholars row as today; stored role membership is S6 / S6b.
+**Why:** Q3 (one admin switch for file upkeep); roles first, switches second (24 Nov).
+**Revisit if:** scholar files are ever meant to be kept by someone outside the Admin role.

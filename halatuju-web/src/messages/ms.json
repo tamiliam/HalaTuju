@@ -7184,7 +7184,6 @@
         },
         "dialog": {
           "kind": "1. Jenis",
-          "seniorOnly": "Penggantungan dan Penamatan: pentadbir super atau pentadbir organisasi sahaja.",
           "language": "2. Bahasa PDF",
           "clause": "3. Fasal kontrak",
           "note": "Catatan (dimasukkan dalam surat)",
@@ -8701,8 +8700,8 @@
         "desc": "Baca setiap permohonan dalam organisasi ini."
       },
       "scholars": {
-        "name": "Penerima biasiswa",
-        "desc": "Baca fail setiap penerima biasiswa dalam organisasi ini."
+        "name": "Lihat penerima biasiswa",
+        "desc": "Buka halaman Penerima biasiswa dan baca fail setiap penerima biasiswa dalam organisasi ini. Baca sahaja."
       },
       "qc": {
         "name": "Kawalan mutu",
@@ -8743,7 +8742,8 @@
         "view": "Lihat",
         "edit": "Lihat dan ubah"
       },
-      "scholarsNote": "{pages} menunjukkan penerima biasiswa mengikut nama. Hidupkan Penerima biasiswa juga, atau orang ini akan melihat halaman itu tanpa fail penerima biasiswa.",
+      "scholarsNote": "{pages} menunjukkan penerima biasiswa mengikut nama. Hidupkan Lihat penerima biasiswa juga, atau orang ini akan melihat halaman itu tanpa fail penerima biasiswa.",
+      "scholarsBrought": "Hidup selagi Urus fail penerima biasiswa hidup.",
       "custom": "Tersuai",
       "changed": "diubah",
       "save": "Simpan perubahan",
@@ -8866,8 +8866,8 @@
         "desc": "Hentikan permohonan sebelum anugerah diberi."
       },
       "scholarsApprove": {
-        "name": "Gantung atau tamatkan biasiswa",
-        "desc": "Hantar surat penggantungan dan penamatan pada fail penerima biasiswa."
+        "name": "Urus fail penerima biasiswa",
+        "desc": "Semak keputusan, tambah nota aktiviti, putuskan mesej terima kasih, hantar dan tarik balik surat (termasuk penggantungan dan penamatan), serta kemas kini atau tutup fail penerima biasiswa. Termasuk Lihat penerima biasiswa."
       }
     },
     "permV2": {

@@ -38,9 +38,10 @@ const plan = (over: Partial<api.StaffPermissionsPlan>): api.StaffPermissionsPlan
   added: [], removed: [], consequences: [], ...over,
 })
 
-/** M2d: a page's own switch carries the sidebar's label; a sub-item and a Reviewers key their own words. */
+/** M2d: a page's own switch carries the sidebar's label; a sub-item and a Reviewers key their own words.
+ *  S4: View scholars is a sub-item of the Scholars row, so it carries its own words. */
 const LABEL: Record<string, string> = {
-  see_all: 'admin.scholarship.nav', scholars: 'admin.scholars.nav', spending: 'admin.spending.nav',
+  see_all: 'admin.scholarship.nav', spending: 'admin.spending.nav',
 }
 const label = (key: string) => LABEL[key] ?? `admin.perm.${key}.name`
 const toggle = (key: string) => screen.getByRole('switch', { name: label(key) })
@@ -65,7 +66,8 @@ it('shows the two groups of toggles the server serves, from the person\'s curren
   const reviewers = screen.getByTestId('perm-section-reviewers')
   expect(within(admins).getByText('admin.permLayout.box.organisation')).toBeTruthy()
   expect(within(admins).getByText('admin.permLayout.box.programme')).toBeTruthy()
-  // M2d: in sidebar order — Applications, Scholars (and its withdrawals), Payments' three, Spending.
+  // M2d: in sidebar order — Applications, Scholars (View scholars and the withdrawals; S4), Payments' three,
+  // Spending.
   expect(within(admins).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
     ['see_all', 'scholars', 'award_withdraw_request', 'award_withdraw_approve', 'payments_prepare',
       'payments_check', 'payments_approve', 'spending'].map(label))

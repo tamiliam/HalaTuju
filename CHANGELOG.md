@@ -4,6 +4,62 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
+
+Branch access-s4-scholars, not pushed. Migration: none. Services: web. The server half is S4a (above).
+- **Permissions tab:** the Scholars row carries four switches in order: View scholars (`scholars`, read only),
+  Manage scholar files (`scholars.approve`), Ask to withdraw an award, Approve award withdrawals
+  (`lib/permissionLayout.ts`). While Manage is on, View is on and locked, with the line "On while Manage scholar files
+  is on."; unticking View alone does nothing; switching Manage on brings View into the saved set
+  (`PermissionEditor`, `PermissionBox` gains a `note`).
+- **Letters:** Resend is drawn from the served `can_resend`, per letter kind (an older payload draws none); the
+  `readOnly` prop and the dialog's stale "super admin or organisation admin only" line (`dialog.seniorOnly`, now
+  never true) are gone.
+- **Doors:** `senior_letters` is `scholar_files`; `scholars_read` added (the server's `DOOR_KEYS`, drift-tested).
+- **Words:** `admin.perm.scholars` reads "View scholars" everywhere `permName` names the key (Team's Custom chips,
+  the Changes list, the save bar's line), and the Engagement note says "Switch on View scholars". The 4 team members
+  0101 grants read "Custom" with "+ Manage scholar files" on Team (true: the Admins set lacks it, Q-E); the org admin
+  manual says why. Manual: role-org-admin (invite start, the four switches), role-admin-general (which switch each
+  file change needs), role-reviewer ("View scholars"). ms / ta are drafts for Sol: `admin.perm.scholars.*`,
+  `admin.permLayout.scholarsApprove.*`, `admin.permEditor.scholarsNote`, new `admin.permEditor.scholarsBrought`;
+  removed `admin.scholars.letters.dialog.seniorOnly`.
+- **Sub-state control:** `ScholarControls` draws it when `can_set_substate` or `can_hold` is served and offers each move
+  as the door judges it (`hold_is_money_move`): to a hold, or a hold lifted to on track, needs `can_hold` (View scholars +
+  Payments: Prepare); any other move needs `can_set_substate` (Manage scholar files), and a move out of a hold also `can_hold`.
+- **Review round 2:** the cockpit's no-file sub-state control (`PostAwardPanels`) is drawn when Manage (`can_write`)
+  or the hold door (`maintenance_controls.can_hold`) allows a move, offering each by the scholar file's rule
+  (`mayMoveSubstate`, exported from `ScholarControls`), so someone holding View scholars and Payments: Prepare without
+  Manage can hold a payable student who has no file. An older payload behaves as before.
+
+### feat: sprint S4a - View scholars reads a scholar's file, Manage scholar files writes it (2026-11-25)
+
+Branch access-s4-scholars, not pushed. Migration: courses 0101_grant_scholars_manage (additive data step, run in the
+publish window; release note `docs/releases/access-s4-scholars-release-note-draft.md`). Services: api. The web half is S4b.
+- **Owner Q3:** every write on a scholar's file and every letter asks Manage scholar files (`scholars.approve`); View
+  scholars reads. 0101 gives Manage to every team member holding View scholars (4 live) and removes nothing.
+- **Q-B:** tranches, disbursement actions and on hold past the award ask View scholars + Payments: Prepare
+  (`views_admin/base.py` `may_act_on_money`, `may_hold`); the file serves `can_hold` from the same rule.
+- **Q-E:** the admin preset does not gain the key; a member newly invited to Admins reads the file and changes nothing.
+- **Q-F:** letters issue and preview refuse 403 to View alone; with Manage every kind, Resend and Withdraw.
+- `scholars.approve` is no longer flagged lead-only (data only). TD-597 closed (accepted, Q-A); TD-598 closed.
+- Tests: the access matrix gains `admin_invited_a`, `scholars_viewer_a`, `scholars_manager_a`, `manage_only_a` and
+  `test_scholar_files_open_by_switch` (no existing cell changed); `test_s4_nobody_changes.py` (no group seat, key or
+  door moves but the grant); the factory applies 0101 (`pre_s4=True` stops before it).
+- **Review fix round (98ce9078d):** money past the award asks View scholars + Payments: Prepare (reading the case
+  alone no longer admits); only placing a hold and lifting it back to on track are money moves, every other sub-state
+  change asks Manage (`hold_is_money_move`); the cockpit's hold control follows the same door; a closed file offers no
+  Resend of discipline, suspension or termination letters. 0101: a re-run is bounded by the cutover (rows created,
+  first seen, restored or edited after it are skipped and listed by a RE-RUN PRE-CHECK), PRE/POST checks add
+  `org_admin_without_manage` (expect 0), and the reverse deletes only the audit rows of rows it reverts. New debt:
+  TD-NEW-disbursement-403-cross-org, TD-NEW-hold-unlocked-read.
+- **Review round 2:** the sub-state door passes the sub-state it judged to `maintenance.set_substate`
+  (`expected`), which refuses `changed_meanwhile` with nothing written when the stored value moved since (someone
+  holding View scholars and Payments: Prepare can no longer land a Manage move such as probation to on track);
+  TD-NEW-hold-unlocked-read built. 0101: POST query 2 (a NULL admin row) is bounded by the cutover like query 1, and the
+  RE-RUN PRE-CHECK lists the NULL shape too (a Django-admin role switch since the cutover is skipped, listed and not
+  counted); SQL pinned in the test and the release note. `TheMoneyMoves` adds the same-state, no-target and
+  unknown-target rows.
+
 - fix: case list shows the status only; the state warning chip moved to the case page (owner 2026-11-25). Not pushed. Migration: none. Services: web.
 
 ### An invite not yet accepted does not count as an org admin (owner ruling, 2026-11-25)

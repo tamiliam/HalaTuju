@@ -19,6 +19,7 @@ import { AdminAuthContext } from '@/lib/adminAuthCore'
 import { formatDate } from '@/lib/formatDate'
 import { readsAllScholars } from '@/lib/pageGuard'
 import { closeOffer } from '@/lib/closeOffer'
+import { mayMoveSubstate } from '@/components/admin/ScholarControls'
 import type {
   AdminScholarshipDetail,
   AdminDisbursement,
@@ -75,7 +76,14 @@ export function PostAwardPanels({
   // the last real answer is kept (the door re-judges every request anyway).
   const holdRight = useRef(false)
   if (app.maintenance_controls?.can_hold != null) holdRight.current = app.maintenance_controls.can_hold
-  const noFileControl = !app.has_file && canWrite && !!app.maintenance_controls?.can_set_substate
+  // S4a review round 2: the cockpit serves `maintenance_controls.can_set_substate` (the case takes a
+  // sub-state at all), `can_write` (Manage scholar files past the award) and `can_hold` (the hold door).
+  // Each move is offered by the scholar file's rule (`mayMoveSubstate`), so someone holding View scholars
+  // and Payments: Prepare without Manage still gets the hold and its lift here: her only place to hold a
+  // student with no file. An older payload without `can_hold` keeps the last answer, as before.
+  const takesSubstate = !!app.maintenance_controls?.can_set_substate
+  const moveFlags = { manage: canWrite && takesSubstate, hold: takesSubstate && holdRight.current }
+  const noFileControl = !app.has_file && (moveFlags.manage || moveFlags.hold)
   const viewer = useContext(AdminAuthContext)?.role
   const opensFile = mayOpenFile && readsAllScholars(viewer)
   return (<>
@@ -101,7 +109,7 @@ export function PostAwardPanels({
           <div className="flex flex-wrap gap-1.5 max-md:hidden" data-substate-actions>
             {(['on_track', 'probation', 'on_hold', 'ready_to_close'] as const)
               .filter((s) => s !== app.maintenance_substate)
-              .filter((s) => holdRight.current || (s !== 'on_hold' && app.maintenance_substate !== 'on_hold'))
+              .filter((s) => mayMoveSubstate(app.maintenance_substate, s, moveFlags))
               .map((s) => (
                 <button key={s} type="button" onClick={() => doSetSubstate(s)} disabled={busy === 'disbursement'}
                   className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">

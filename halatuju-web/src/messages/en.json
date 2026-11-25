@@ -7184,7 +7184,6 @@
         },
         "dialog": {
           "kind": "1. Kind",
-          "seniorOnly": "Suspension and Termination: super admin or organisation admin only.",
           "language": "2. PDF language",
           "clause": "3. Contract clause",
           "note": "Note (goes in the letter)",
@@ -8701,8 +8700,8 @@
         "desc": "Read every application in this organisation."
       },
       "scholars": {
-        "name": "Scholars",
-        "desc": "Read every scholar's file in this organisation."
+        "name": "View scholars",
+        "desc": "Open the Scholars page and read every scholar's file in this organisation. Read only."
       },
       "qc": {
         "name": "Quality check",
@@ -8743,7 +8742,8 @@
         "view": "View",
         "edit": "View and change"
       },
-      "scholarsNote": "{pages} show scholars by name. Switch on Scholars as well, or this person will see those pages without the scholars' files.",
+      "scholarsNote": "{pages} show scholars by name. Switch on View scholars as well, or this person will see those pages without the scholars' files.",
+      "scholarsBrought": "On while Manage scholar files is on.",
       "custom": "Custom",
       "changed": "changed",
       "save": "Save changes",
@@ -8866,8 +8866,8 @@
         "desc": "Stop an application before an award."
       },
       "scholarsApprove": {
-        "name": "Suspend or end a scholarship",
-        "desc": "Send the suspension and termination letters on a scholar’s file."
+        "name": "Manage scholar files",
+        "desc": "Review results, add activity notes, decide thank-you messages, send and withdraw letters (suspension and termination included), and update or close a scholar's file. Brings View scholars."
       }
     },
     "permV2": {

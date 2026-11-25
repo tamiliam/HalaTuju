@@ -53,7 +53,10 @@ export const roleAdminGeneral: ManualChapter = {
         that on, and the mentor is never emailed); the list&rsquo;s <strong>No mentor</strong> and <strong>Asked
         for help</strong> filters find who needs one. Mentors log their own meetings too, and when a mentor is
         worried the scholar shows <strong>Mentor concerned</strong>: read the meeting, then press <strong>Mark as
-        handled</strong>.</>
+        handled</strong>. <em>View scholars</em> lets you read every file; accepting or querying a result, adding
+        a note, letters and changing or closing the file need <em>Manage scholar files</em>, and putting a student
+        on hold needs <em>View scholars</em> with <em>Prepare payment runs</em>. The mentor and meeting work
+        follows the Mentoring switches.</>
       ),
     },
     {

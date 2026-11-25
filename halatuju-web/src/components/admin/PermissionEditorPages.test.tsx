@@ -341,3 +341,78 @@ describe('S2 / M4a: Organisation admin powers and the Payments switches', () => 
     expect(mockApi.saveStaffPermissions.mock.calls.every(([, set]) => !set.includes(KEY))).toBe(true)
   })
 })
+
+describe('S4: the Scholars row — View scholars, Manage scholar files and the two withdrawal switches', () => {
+  const MANAGE = 'scholars.approve'
+  const viewSwitch = () => screen.getByRole('switch', { name: 'admin.perm.scholars.name' }) as HTMLButtonElement
+  const manageSwitch = () => screen.getByRole('switch', { name: 'admin.permLayout.scholarsApprove.name' }) as HTMLButtonElement
+  const withManage = (held = false): api.StaffV2Group[] => [GROUPS[0],
+    { group: 'programme', keys: [...GROUPS[1].keys, k(MANAGE, true, null, held)] }]
+  const row = () => screen.getByTestId('perm-box-programme').querySelector('[data-row="scholars"]') as HTMLElement
+
+  it('four switches in order, under a row with no control of its own', async () => {
+    await open({ ...ADMIN, v2_keys: withManage() })
+    expect(Array.from(row().querySelectorAll('[data-key]')).map((n) => n.getAttribute('data-key')))
+      .toEqual(['scholars', MANAGE, 'award_withdraw_request', 'award_withdraw_approve'])
+    expect(within(row()).getAllByRole('switch')).toHaveLength(4)
+  })
+
+  it('View alone: on and free, Manage off; no "held" line', async () => {
+    await open({ ...ADMIN, v2_keys: withManage() })
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().disabled).toBe(false)
+    expect(manageSwitch().getAttribute('aria-checked')).toBe('false')
+    expect(screen.queryByTestId('perm-brought-note')).toBeNull()
+  })
+
+  it('a row holding Manage: View is on and locked with one line, and unticking it does nothing', async () => {
+    await open({ ...ADMIN, v2_keys: withManage(true), v2_held: [...PRESET_V2, MANAGE] })
+    expect(manageSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().disabled).toBe(true)
+    expect(screen.getByTestId('perm-brought-note').textContent).toBe('admin.permEditor.scholarsBrought')
+    fireEvent.click(viewSwitch())
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(screen.queryAllByText('admin.permEditor.changed')).toHaveLength(0)
+    expect(mockApi.saveStaffPermissions).not.toHaveBeenCalled()
+  })
+
+  it('switching Manage on brings View; switching it off takes back the View it brought', async () => {
+    const noView = { ...ADMIN, permissions: ['see_all', 'spending', 'payments_prepare'], v2_keys: withManage() }
+    await open(noView)
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('false')
+    fireEvent.click(manageSwitch())
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().disabled).toBe(true)
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
+      ['see_all', 'spending', 'payments_prepare', ...PRESET_V2, MANAGE, 'scholars'], true, { token: 'tok' }))
+    fireEvent.click(manageSwitch())
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('false')
+    expect(viewSwitch().disabled).toBe(false)
+    expect(screen.queryByTestId('perm-brought-note')).toBeNull()
+  })
+
+  it('switching Manage on and off again leaves a View the person already held', async () => {
+    await open({ ...ADMIN, v2_keys: withManage() })
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(manageSwitch())
+    fireEvent.click(manageSwitch())
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().disabled).toBe(false)
+  })
+
+  it('a hand-made Manage-only row reads View on (as the server does), and it is not counted as changed', async () => {
+    await open({ ...ADMIN, permissions: ['see_all', 'spending', 'payments_prepare'], v2_keys: withManage(true),
+      v2_held: [...PRESET_V2, MANAGE] })
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().disabled).toBe(true)
+    expect(screen.queryAllByText('admin.permEditor.changed')).toHaveLength(0)
+  })
+
+  it('a fixed card draws View locked on beside a held Manage', async () => {
+    await open({ ...ADMIN, editable: false, v2_keys: withManage(true), v2_held: [...PRESET_V2, MANAGE] })
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().disabled).toBe(true)
+    expect(manageSwitch().disabled).toBe(true)
+  })
+})
