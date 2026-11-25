@@ -174,14 +174,12 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `docs/sprint-history.md` ("Moved from halatuju_api/CLAUDE.md Next Sprint, 2026-11-03").
 
-### Learning loop (LL): LL1, LL2, LL2b, LL3 and LL4 are LIVE (21 Nov 2026). LL5 is built on branch `ll5`, NOT landed
+### Learning loop (LL): LL1-LL5 LIVE (LL5 on 25 Nov 2026, main a2036dd51); LL5 closed. Next = LL6, LL7
+- LL5 (replay human lens + coach grade) is live but the lens has NOT run on real data. First live run only after LL6, the owner's derived key, the owner's yes and a time agreed with the release lead; never on an R3 run day or in a release slot.
+- **LL6 = exam-file home in a Cloud Storage bucket** (owner decision 2 = B). P1 `eval/replay/exam_store.py` BUILT 25 Nov (commit 74553a2c7, branch `ll6`, adversarial review running); P2 `exam_home.py` + parent wiring + result codes; P3 docs. Then a proof run (plain fetch on the empty bucket + dummy-object overwrite check): needs the owner's direct yes, after the owner makes the bucket. The owner makes the derived key by hand, once; no helper is built.
+- **LL7 = close the gap** (standing cycle): after each score run, list the 3 largest error groups; the owner picks one; cause first (read-only counts), a rule sprint only if it pays (eligibility/money/identity = own sprint, adversarial review, phone check). Round 1 (AI said Certain, reviewer failed): six scattered causes, candidate cap rule does NOT pay, no rule change. Next step = the owner's choice: group 2 ("Rule not met" but reviewer passed) or wait for about 50 new cases with fail reasons.
+- Owed by the owner: five phone checks (LL1, LL2, LL2b, LL4, withdraw card). Plan: `docs/plans/2026-11-18-learning-loop-roadmap.md`; reading guide `docs/replay-human-lens.md`.
 
-- LL5 (the replay human lens and the coach grade) waits for its own landing slot. The release lead lands it. It changes no live output: `ai_score.score_marks` and the `verdict_context` fingerprint key are refactored and give the same bytes; nothing live imports `coach_grade.py` or `eval/replay/`. No migration. Trailer: `Services: api`.
-- The lens is OFF unless `python -m replay.parent` gets `--human-lens`. The replay job image (`halatuju-replay`) does not change until the owner rebuilds it by hand from a main sha that holds LL5.
-- After such a rebuild, the replay refuses to start (exit 3) if its environment holds a non-empty `SECRET_KEY`, or a `REPLAY_FINGERPRINT_KEY` that is not exactly 64 hex characters. This is true with the lens on or off.
-- The lens must NOT run on real data yet. Three owner decisions are open (the release lead asks them after the landing): which answer is the truth when the QC overturned a Fail; where the exam file lives; who makes the derived key (no helper is built). The first live run needs the owner's yes and a time agreed with the release lead, never on a release slot.
-- How to read the report, and when a result blocks a release: `docs/replay-human-lens.md`. Owner steps: `docs/plans/2026-11-13-a5-replay-owner-steps.md` (step 2b and section 5b). Plan: `docs/plans/2026-11-18-learning-loop-roadmap.md`.
-- Owed by the owner: the phone checks for LL1, LL2, LL2b and LL4, and one for the withdraw card on the case page.
 - **From now on, any change to a model's files needs a version bump** in `apps/scholarship/model_versions/<model>.json` (and its version constant), or the guard tests `test_model_versions.py` and `test_model_digest.py` fail. Never re-seed a digest without a bump.
 
 ### STATE AT 2026-11-05 — T5c P5b + P5c LIVE (main 3c39489b, api-01255-zsm, web-01084-l6b; no migration)
