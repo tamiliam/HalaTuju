@@ -22,12 +22,14 @@ class ServesTheDetailBlocks:
     def get_maintenance_controls(self, obj):
         """S3 review M1: a PAYABLE student with no file (awarded + wallet id, not yet activated) is held
         from the COCKPIT, since no scholar file exists. `can_hold` needs the viewer (context 'admin'):
-        None when the caller passed none — the screen keeps its last answer; the door re-judges."""
+        None when the caller passed none — the screen keeps its last answer; the door re-judges. It is the
+        door's own rule (`views_admin.base.may_hold`: the case half and Payments: Prepare; S4a review S2),
+        never Payments: Prepare alone, so the offer equals the door."""
         from ..maintenance import can_set_substate
+        from ..views_admin.base import may_hold
         admin = self.context.get('admin')
-        from ..payments import may_prepare
         return {'can_set_substate': can_set_substate(obj),
-                'can_hold': may_prepare(admin) if admin is not None else None}
+                'can_hold': may_hold(admin, obj) if admin is not None else None}
 
     def get_paid_to_date(self, obj):
         from .. import payments

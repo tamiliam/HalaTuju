@@ -2,13 +2,15 @@
 Manage scholar files, NOBODY's access changes but the one named gain.
 
 Each row shape is made as it stood BEFORE S4 (`pre_s4=True`: migrations 0097-0100 applied, not 0101) and read
-with the OLD rule, frozen here: a scholar-file write and the ordinary letters asked View scholars (`scholars`);
-the suspension and termination letters (and with them nothing else) asked the stored `scholars.approve`. The
+with the OLD rule, frozen here as it stood before S4: the file opened, and a scholar-file write and the ordinary
+letters went through, on the old key `has_perm('scholars')`; the suspension and termination letters asked the
+stored `scholars.approve` as well (the file had to open first). The
 row then goes through migration 0101's `plan_row` and is read with the NEW code. Compared, per shape: the
 groups the row sits in (a switch never places anyone in a group; the groups read here are today's stopgap
 `in_admins` from keys, until S6), the old keys, the held v2 switches, every door, the file write, and the
 letter kinds. The ONE difference allowed: a row 0101 grants gains `scholars.approve`, its door, and with it
-the suspension and termination letters (owner Q3: today's file writers keep their write power).
+the suspension and termination letters (owner Q3: today's file writers keep their write power). One shape moves
+by declaration (`DECLARED`, with its reason).
 """
 from importlib import import_module
 
@@ -32,6 +34,7 @@ SHAPES = {
     'admin_see_all_spending':   ('admin', ['see_all', 'scholars', 'spending'], {}),
     'admin_see_all_only':       ('admin', ['see_all', 'spending'], {}),
     'admin_withdraw_only':      ('admin', ['award_withdraw_approve'], {}),
+    'manage_only':              ('admin', ['scholars.approve'], {}),
     'reviewer':                 ('reviewer', None, {}),
     'reviewer_admin_keys':      ('reviewer', ['review', 'see_all', 'scholars', 'spending'], {}),
     'finance':                  ('finance', None, {}),
@@ -42,15 +45,28 @@ SHAPES = {
     'partner':                  ('partner', None, {}),
 }
 
+#: The shapes whose access changes with S4 beyond the 0101 grant, each with its reason.
+DECLARED = {
+    # Pre-S4 the old key `scholars` opened the file, so Manage alone read nothing and wrote nothing; from S4
+    # Manage implies View (owner Q3), so it reads the file and makes every write and every letter.
+    'manage_only': 'Manage scholar files implies View scholars from S4',
+}
+
+
+def _old_opens(a):
+    """THE OLD RULE, frozen: before S4 the scholar file opened, and was written, on the old key `scholars`."""
+    return a.has_perm('scholars')
+
 
 def _old_kinds(a):
-    """The letter kinds before S4: the ordinary ones on View scholars, the senior ones on the stored key."""
+    """The letter kinds before S4: none unless the file opened (`_old_opens`); then the ordinary ones, and the
+    senior ones on the stored key."""
     if a.is_super:
         return set(svc.KINDS)
-    view = surface_gates.may_view_scholars(a)
+    if not _old_opens(a):
+        return set()
     senior = KEY in set(v2.effective_v2(a))
-    return ({k for k in svc.KINDS if k not in svc.SENIOR_KINDS} if view else set()) | (
-        set(svc.SENIOR_KINDS) if senior else set())
+    return {k for k in svc.KINDS if k not in svc.SENIOR_KINDS} | (set(svc.SENIOR_KINDS) if senior else set())
 
 
 def _new_kinds(a):
@@ -105,9 +121,13 @@ class NobodyChangesButTheNamedGain(TestCase):
         for shape, a in self.rows.items():
             with self.subTest(shape=shape):
                 before, _plan, after = self._through_0101(a)
-                old_writes = surface_gates.may_view_scholars(before)      # the old rule: View scholars wrote
-                self.assertEqual(surface_gates.may_manage_scholar_files(after), old_writes)
-                self.assertEqual(surface_gates.may_view_scholars(after), surface_gates.may_view_scholars(before))
+                old = _old_opens(before)                                  # the old rule read and wrote alike
+                if shape in DECLARED:                                     # pre-S4 no read, no write; now both
+                    self.assertEqual((old, surface_gates.may_view_scholars(after),
+                                      surface_gates.may_manage_scholar_files(after)), (False, True, True))
+                    continue
+                self.assertEqual(surface_gates.may_manage_scholar_files(after), old)
+                self.assertEqual(surface_gates.may_view_scholars(after), old)
 
     def test_the_letters_gain_only_the_senior_kinds_and_only_where_0101_grants(self):
         granted = set()
@@ -116,7 +136,9 @@ class NobodyChangesButTheNamedGain(TestCase):
                 before, plan, after = self._through_0101(a)
                 old, new = _old_kinds(before), _new_kinds(after)
                 self.assertTrue(old <= new)
-                if plan is not None:
+                if shape in DECLARED:
+                    self.assertEqual((old, new), (set(), set(svc.KINDS)))
+                elif plan is not None:
                     granted.add(shape)
                     self.assertEqual(new - old, set(svc.SENIOR_KINDS))
                 else:

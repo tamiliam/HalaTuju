@@ -9477,6 +9477,26 @@ from approving too (the fallback rule stays the owner's Q2), with a test. *(A - 
 
 **Raised 2026-11-19 by the sprint S1 review (laptop session; placeholder number, the lead assigns one on landing).** ReverifyIcCard (halatuju-web/src/app/admin/scholarship/[id]/view/ReverifyIcCard.tsx:21/35) is gated on canQc but its door (verify-accept) is _require_app_write; a QC holder without write sees a button that returns 403. Predates S1. Fix: gate on canQc && served write, or serve a dedicated flag. *(A - S)*
 
+### [TD-NEW-disbursement-403-cross-org] A tranche action on another organisation's disbursement answers 403, not 404 - low
+
+**Raised 2026-11-25 by the sprint S4a review round (N4; laptop session, number placeholder until the desk numbers it).**
+`AdminDisbursementActionView.post` (`apps/scholarship/views_admin/lifecycle.py` ~150) loads the disbursement by id with
+no organisation filter, then refuses through `may_act_on_money` with `_deny_role()` (403). A caller from another
+organisation therefore learns that the id exists, where every other cross-organisation door answers 404. No money
+moves and nothing is read. Predates S4a. **Fix:** answer 404 when `org_allows(admin, disb.application)` is false,
+before the money rule, with an access-matrix row for a stranger's tranche id. *(A - S)*
+
+### [TD-NEW-hold-unlocked-read] The sub-state door reads the current sub-state before it locks the row - low
+
+**Raised 2026-11-25 by the sprint S4a review round (N5; laptop session, number placeholder until the desk numbers it).**
+`AdminMaintenanceSubstateView.post` (`apps/scholarship/views_admin/lifecycle.py` ~206 and ~212) decides whether a
+move is a money move (`hold_is_money_move`) and whether it touches a hold (`hold_needs_payments`) from
+`app.maintenance_substate` as read, not under a row lock. Two moves racing can each judge from a stale sub-state, so
+a Manage holder without Payments: Prepare could move a file that a second request has just placed on hold. Low: both
+callers already pass the case half, and `maintenance.set_substate` records who moved it. **Fix:** re-read the
+application `select_for_update()` inside one transaction, judge from the locked row, then write, with a test that
+holds the row from a second connection. *(A - S)*
+
 ### [TD-670] pdfium child: its own crash signals are never remembered, and a refund before the memo write can start a second child - low
 
 **Raised 2026-11-19 by the S-visible round 10 review (PASS on safety; every answer stays safe and cost stays bounded).** (1) A child that dies by its OWN signal (SIGSEGV, SIGABRT, a pdfium abort under the 256 MiB cap) is treated like an outside kill: transient, never memoised, so the same bytes spawn again on the next question, each time charged to the document's 20 s budget until it is spent. (2) `pdfium_run.ask` refunds the unused reservation and wakes waiters before it writes the memo, so a waiter can start a duplicate child for the same question. Smaller: a budget window that restarts while a child runs; `_SPENT` set only on the first child's full-time kill; the `killed` flag tested only on POSIX; the unbounded `proc.wait` after a kill (pre-existing). Fix: tell our own kill from the child's own signal (remember SIGSEGV / SIGABRT, never SIGKILL from outside); write the memo before the refund under the same lock; add a Linux test for each.

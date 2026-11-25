@@ -15,7 +15,8 @@ from .. import surface_gates
 from ..models import Disbursement, Programme, ScholarshipApplication
 
 from .applications import _detail_payload
-from .base import _AdminBase, _id_or_no_match, may_act_on_money, may_write_case, tranche_key_held
+from .base import (_AdminBase, _id_or_no_match, hold_is_money_move, may_act_on_money, may_write_case,
+                   tranche_key_held)
 
 
 def _tranche_refusal(admin, app):
@@ -199,12 +200,13 @@ class AdminMaintenanceSubstateView(_AdminBase):
     student out of open payment runs and clears a signed run's signatures. So it needs what
     preparing a run needs — `payments.may_prepare` (super, the organisation admin, or a
     `payments_prepare` holder) — on top of the case half; anyone else is 403 `hold_needs_payments`.
-    S4 (owner Q-B, 25 Nov): that case half is `may_act_on_money` (past the award: View scholars, never
-    "Manage scholar files"); probation / on_track / ready_to_close stay with the app-write gate (Manage)."""
+    S4 (owner Q-B, 25 Nov): for placing a hold and lifting it to `on_track` (`hold_is_money_move`) that
+    case half is `may_act_on_money` (past the award: View scholars, never "Manage scholar files"); every
+    other target, from a hold or not, stays with the app-write gate (Manage; S4a review S1)."""
     def post(self, request, pk):
         def judge(admin, app):
-            moves_hold = 'on_hold' in (request.data.get('substate'), app.maintenance_substate)
-            return (may_act_on_money if moves_hold else may_write_case)(admin, app)
+            money = hold_is_money_move(app.maintenance_substate, request.data.get('substate'))
+            return (may_act_on_money if money else may_write_case)(admin, app)
         app, admin, err = self._require_app_write(request, pk, judge=judge)
         if err:
             return err

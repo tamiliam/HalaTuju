@@ -144,6 +144,16 @@ class TestDocumentsOnly(_Base):
         self.assertEqual(authed_client(self.org_admin).get(API.format(self.app.id)).json()['can_issue'],
                          ['general', 'close_out'])
 
+    def test_a_closed_file_offers_no_resend_the_door_refuses(self):
+        """S4a review N1: the served `can_resend` drops the kinds a closed file no longer re-sends, so the
+        tab never offers a resend the door answers 409 `file_closed`."""
+        type(self.app).objects.filter(pk=self.app.pk).update(status='closed', closure_reason='graduated')
+        for who in (self.org_admin, self.officer):
+            with self.subTest(who=who.role):
+                can_resend = authed_client(who).get(API.format(self.app.id)).json()['can_resend']
+                self.assertEqual(can_resend, [k for k in svc.KINDS if k not in svc.NO_RESEND_WHEN_CLOSED])
+                self.assertFalse(set(can_resend) & {'discipline', 'suspension', 'termination'})
+
     def test_wording_that_names_a_clause_refuses_without_one(self):
         r = self._issue(self.org_admin, kind='suspension', clause='')
         self.assertEqual((r.status_code, r.json()['code']), (400, 'clause_required'))
