@@ -9811,6 +9811,14 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Raised in the F4b sprint (see CHANGELOG).** Once the card was rewritten, only `officerCockpit.test.ts` uses `verdictReliability` and the override summary type. **Fix:** delete them with their tests, or bring them back into a card. *(A - S)*
 
+### [TD-NEW-ocr13-readers] OCR-13: the UPSI, UUM, UiTM and UM lanes have owner words but no page-1 reader - medium
+
+**Raised in OCR-13 phase 1 (see CHANGELOG).** The owner's words and the UiTM Asasi excuse are in; nothing dispatches to the four lanes, so every letter still goes to the AI. Held-out letters (UiTM 9, UPSI 4, UM 3, UUM 0) are under Gate 1's 20, so a reader cannot be switched on yet. Also open: 13 of 30 UPSI sample PDFs have no text layer; image letters were not measured (Vision is paid); one UiTM sample prints the office label in a different form and refuses (safe). **Fix:** phase 2: one reader per lane (files under 600 lines), dispatch in `diagnose`, `offer_exact` and the ink targets, the eval layout hook and `RULES_LANES`, versions 2.11.0 and 2.4.0, then the dry run each month until a lane reaches 20. *(A - M)*
+
+### [TD-NEW-ocr13-diploma] OCR-13: UiTM diploma letters show every UiTM owner phrase - high (before the UiTM lane goes on)
+
+**Raised in OCR-13 phase 1 (see CHANGELOG).** UiTM diploma and degree letters share one layout: 4 diploma sample PDFs show all 8 owner phrases and pass the Asasi check. **Fix:** the phase 2 UiTM reader must lock only a degree programme (refuse "Diploma" in the programme field and an unmatched course), with adversarial tests; the lane must not go on without it. *(A - S)*
+
 ### [TD-740] PDF text layer: text placed off the page by a plain cm or Td is still read - medium - FIXED 2026-11-25
 
 **Raised 2026-11-25 by the OCR-20 review round 3 (pre-existing, not new with round 3). Owner: new item, after OCR-20 and before OCR-18 step 1. Fixed 2026-11-25 (branch td-740-offpage): refuse, by pdfium's own placement (`pdfium_place.py`); see decisions.md 25 Nov, TD-740.** Text placed far off the page by a plain `cm` or `Td` (e.g. 5000 5000) keeps the exact read: pypdf reads it, pdfium does not draw it, and page 1 still counts as drawn. Round-3 probe p2i is the same class (positions only). Fix idea: have the exact read refuse, or drop, text whose position lies outside the page box, judged against pdfium's own placement.

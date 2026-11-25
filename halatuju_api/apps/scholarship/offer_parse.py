@@ -452,12 +452,18 @@ def _rules_exit(out: dict, shown: str) -> dict:
     digital PDF's page-1 TEXT LAYER, not checked for visibility, a scan its own text) or whose parsed programme or
     stream says ASASI (whole, glued, spaced or OCR-misread)
     (`offer_owner_words.ai_only`) does not lock — guard ``asasi_ai_read`` — and the AI reads the letter (owner,
-    20 Nov: "For now, let AI handle Asasi"). A letter already refused keeps its own guard."""
-    from .offer_owner_words import ai_only
+    20 Nov: "For now, let AI handle Asasi"). A letter already refused keeps its own guard.
+    OCR-13: a UNIVERSITY lock (it carries ``rules_lane``) is judged per lane: its one excused letterhead line
+    blanked first (`ai_only_on_lane`; UiTM's "Asasi & Diploma" office line only), and an English "Foundation in"
+    programme counts as Asasi (`programme_ai_only`, the programme field only). The government families as before."""
+    from .offer_owner_words import ai_only, ai_only_on_lane, programme_ai_only
     lock = out['locked']
     if not lock:
         return out
-    guard = (ai_only(shown) or ai_only(lock.get('programme') or '') or ai_only(lock.get('stream') or ''))
+    lane = lock.get('rules_lane') or ''
+    guard = ((ai_only_on_lane(lane, shown) if lane else ai_only(shown))
+             or (programme_ai_only if lane else ai_only)(lock.get('programme') or '')
+             or ai_only(lock.get('stream') or ''))
     if guard:
         out['locked'], out['guard'] = None, guard
     return out

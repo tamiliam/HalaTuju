@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: OCR-13 phase 1 - the owner's words for UPSI, UUM, UiTM and UM, and UiTM's Asasi office line (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. Lanes stay OFF: no layout reader dispatches to them yet.
+- **Owner words:** `offer_owner_words.OWNER_WORDS` gains `ua:UPSI` (11), `ua:UUM` (7), `ua:UiTM` (8) and `ua:UM` (8),
+  the owner's exact words (allow-list only). A letter can lock only when every phrase shows and no AI-only word does.
+- **UiTM Asasi excuse:** `ai_only_on_lane(lane, text)` excuses exactly one UiTM letterhead contact label
+  ("Asasi & Diploma :" followed by a telephone block, at a column start). Any other ASASI (programme, sentence, a second
+  copy, spaced, glued, misread, look-alike letters, words after the number) still refuses; every other lane is unchanged.
+- **Foundation in:** `programme_ai_only` treats "Foundation in" in the programme field as Asasi (university lanes only;
+  government families are judged as before).
+- **Exit:** `offer_parse._rules_exit` reads the lock's `rules_lane` and uses the per-lane check. UMS and government
+  locks behave as before. No version bump yet (it comes with the readers in phase 2).
+- **Measured (local, free):** held-out letters per lane UiTM 9, UPSI 4, UM 3, UUM 0, so no lane can reach Gate 1 (20)
+  on the current corpus. UMS unchanged. Debt: TD-NEW-ocr13-readers, TD-NEW-ocr13-diploma.
+  Tests: `test_offer_owner_words_ocr13.py`.
+
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
 
