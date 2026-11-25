@@ -265,6 +265,8 @@ function useWorkingSet({ adminId, token, onSaved, initial, table }: Omit<Permiss
   // before (held without Quality check), so turning Quality check off never leaves somebody seated at Admins
   // by a key nobody ticked (T2's rule, kept). In Admins the switch is on screen and stays as it is.
   const seeAllWasAdmin = !!view && view.permissions.includes('see_all') && !view.permissions.includes('qc')
+  // S4 review: View scholars as the person held it before this edit (stored, or brought by a held Manage).
+  const scholarsViewWasHeld = held.includes(SCHOLARS_VIEW) || bringsScholars(held)
   const served = useMemo(() => new Map<string, StaffV2Key>((view?.v2_keys ?? []).flatMap((g) => g.keys)
     .map((k) => [k.key, k])), [view])
   const grantable = useMemo(() => new Set(Array.from(served.values()).filter((k) => k.grantable)
@@ -283,11 +285,13 @@ function useWorkingSet({ adminId, token, onSaved, initial, table }: Omit<Permiss
       // S4: Manage scholar files brings View scholars, and View cannot go while Manage stays.
       if (key === SCHOLARS_MANAGE && on && !next.includes(SCHOLARS_VIEW)) next = [...next, SCHOLARS_VIEW]
       if (key === SCHOLARS_VIEW && !on && next.includes(SCHOLARS_MANAGE)) return cur
+      // Switching Manage back off takes away the View it brought, unless the person held View before.
+      if (key === SCHOLARS_MANAGE && !on && !scholarsViewWasHeld) next = next.filter((k) => k !== SCHOLARS_VIEW)
       // By their SEAT, not by what is drawn (O12): opened from Reviewers, an Admin's key stays theirs.
       if (!seatedAdmins && key === 'qc' && !on && !seeAllWasAdmin) next = next.filter((k) => k !== 'see_all')
       return next
     })
-  }, [seatedAdmins, seeAllWasAdmin, grantable])
+  }, [seatedAdmins, seeAllWasAdmin, scholarsViewWasHeld, grantable])
   // D2: the three-way writes the page's view and change at once; "No access" clears the whole page.
   const choose = useCallback((viewKey: string, editKey: string, level: 0 | 1 | 2) => {
     setSaved(false)

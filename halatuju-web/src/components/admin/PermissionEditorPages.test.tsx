@@ -377,7 +377,7 @@ describe('S4: the Scholars row — View scholars, Manage scholar files and the t
     expect(mockApi.saveStaffPermissions).not.toHaveBeenCalled()
   })
 
-  it('switching Manage on brings View; switching it off frees View and keeps it on', async () => {
+  it('switching Manage on brings View; switching it off takes back the View it brought', async () => {
     const noView = { ...ADMIN, permissions: ['see_all', 'spending', 'payments_prepare'], v2_keys: withManage() }
     await open(noView)
     expect(viewSwitch().getAttribute('aria-checked')).toBe('false')
@@ -387,9 +387,18 @@ describe('S4: the Scholars row — View scholars, Manage scholar files and the t
     await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(9,
       ['see_all', 'spending', 'payments_prepare', ...PRESET_V2, MANAGE, 'scholars'], true, { token: 'tok' }))
     fireEvent.click(manageSwitch())
-    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('false')
     expect(viewSwitch().disabled).toBe(false)
     expect(screen.queryByTestId('perm-brought-note')).toBeNull()
+  })
+
+  it('switching Manage on and off again leaves a View the person already held', async () => {
+    await open({ ...ADMIN, v2_keys: withManage() })
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(manageSwitch())
+    fireEvent.click(manageSwitch())
+    expect(viewSwitch().getAttribute('aria-checked')).toBe('true')
+    expect(viewSwitch().disabled).toBe(false)
   })
 
   it('a hand-made Manage-only row reads View on (as the server does), and it is not counted as changed', async () => {

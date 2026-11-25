@@ -110,7 +110,7 @@ export const roleOrgAdmin: ManualChapter = {
       body: (
         <>Open <strong>Invitations</strong> from the menu to bring new people in. You invite an
         <strong> Admin</strong>, a <strong>Reviewer</strong>, a <strong>Mentor</strong>, a <strong>Source</strong> or
-        a <strong>Sponsor</strong>. Someone newly invited to Admins starts with <em>Applications</em> and <em>View
+        a <strong>Sponsor</strong>. Someone newly invited as an Admin starts with <em>Applications</em> and <em>View
         scholars</em> (reading every scholar&rsquo;s file); you switch on <em>Manage scholar files</em> and more
         admin permissions on Team once they have joined. There is no separate &ldquo;View-only
         admin&rdquo;, &ldquo;Finance&rdquo; or &ldquo;QC&rdquo; any more: a finance person is an Admin with
@@ -200,7 +200,7 @@ export const roleOrgAdmin: ManualChapter = {
             scholar&rsquo;s file, read only. <em>Manage scholar files</em> changes them: results, activity notes,
             thank-you messages, every letter (suspension and termination included) and updating or closing the file.
             It brings <em>View scholars</em>, which stays on while it is on. The other two ask for and approve an
-            award&rsquo;s withdrawal. Team members in Admins who already changed scholar files were given
+            award&rsquo;s withdrawal. Team members who could already change scholar files were given
             <em> Manage scholar files</em> on 25 November 2026, so Team shows them as <strong>Custom</strong>, with
             &ldquo;+ Manage scholar files&rdquo;.</li>
           </ul>
