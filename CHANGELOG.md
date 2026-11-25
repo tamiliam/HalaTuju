@@ -51,11 +51,11 @@ publish window; release note `docs/releases/access-s4-scholars-release-note-draf
   Resend of discipline, suspension or termination letters. 0101: a re-run is bounded by the cutover (rows created,
   first seen, restored or edited after it are skipped and listed by a RE-RUN PRE-CHECK), PRE/POST checks add
   `org_admin_without_manage` (expect 0), and the reverse deletes only the audit rows of rows it reverts. New debt:
-  TD-NEW-disbursement-403-cross-org, TD-NEW-hold-unlocked-read.
+  TD-744, TD-745.
 - **Review round 2:** the sub-state door passes the sub-state it judged to `maintenance.set_substate`
   (`expected`), which refuses `changed_meanwhile` with nothing written when the stored value moved since (someone
   holding View scholars and Payments: Prepare can no longer land a Manage move such as probation to on track);
-  TD-NEW-hold-unlocked-read built. 0101: POST query 2 (a NULL admin row) is bounded by the cutover like query 1, and the
+  TD-745 built. 0101: POST query 2 (a NULL admin row) is bounded by the cutover like query 1, and the
   RE-RUN PRE-CHECK lists the NULL shape too (a Django-admin role switch since the cutover is skipped, listed and not
   counted); SQL pinned in the test and the release note. `TheMoneyMoves` adds the same-state, no-target and
   unknown-target rows.
