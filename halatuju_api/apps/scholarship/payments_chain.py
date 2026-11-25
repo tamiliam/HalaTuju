@@ -100,13 +100,14 @@ def _org_admin_powers(admin):
 def lock_actor(admin):
     """TD-605: re-read the ACTOR's row under a row lock BEFORE the run is locked (one order everywhere:
     the actor's row, then the run), so a key taken away while a request is in flight is seen before it
-    acts. The fresh keys, role, email and first sign-in are copied onto ``admin``; a row gone or revoked raises
+    acts. The fresh keys, role, email, organisation and first sign-in are copied onto ``admin``; a row gone or revoked raises
     `wrong_role`. Returns ``admin``."""
     from apps.courses.models import PartnerAdmin
     if admin is None or getattr(admin, 'pk', None) is None or not isinstance(admin, PartnerAdmin):
         return admin
     row = (PartnerAdmin.objects.select_for_update().filter(pk=admin.pk, is_active=True)
-           .values('permissions', 'role', 'first_seen_at', 'email').first())   # M4b review: email too
+           .values('permissions', 'role', 'first_seen_at', 'email', 'owning_organisation_id').first())
+    # M4b review: email, and (adversarial round) the organisation, so a move mid-request is seen too
     if row is None:
         from .payments import PaymentsError
         raise PaymentsError('wrong_role')

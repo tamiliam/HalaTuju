@@ -75,25 +75,43 @@ So a dry run "on the stored OCR text of live docs" is not possible today. The ch
 
 Every sprint now has one name: **OCR-** and a number. The number is the run order, done sprints included. The old names stay in old commits, notes and CHANGELOG entries; this table matches them. The sections below keep their old order and carry both names.
 
-| New | What it is | Old name | State (21 Nov) |
+| New | What it is | Old name | State (23 Nov) |
 |---|---|---|---|
 | OCR-1 | The dry-run harness | S0 | Live 19 Nov |
 | OCR-2 | Keep the OCR text of each new upload | S0b | Live 19 Nov |
 | OCR-3 | The SPM slip gate fix | S4 | Live 19 Nov |
 | OCR-4 | The visible page judges | S-visible | Live |
-| OCR-5 | TNB bills and EPF statements, rules first (switched off) | S6 | Live |
-| OCR-6 | PDF safety fixes: the render gate, the blank-page guard, the pdfium child timing, the pypdf 6.21.4 test fix and the install-pin check | D1 + fix-pypdf621 | main `dbf4e9d70`, publish 21 Nov 16:00 |
-| OCR-7 | Small jobs after OCR-6: the synthetic hostile PDFs saved as tests, the hidden-object TD row brought up to date, the pin check's review notes | (none) | Next |
-| OCR-8 | UMS offer letters, rules first | S1 + S1c | Built, waits for the lead's "go" |
-| OCR-9 | The ink check (a matched word must show real ink) and the Asasi rule | S-visible 2 | Built, rebased on main 21 Nov (branch ocr-9-ink), waits |
-| OCR-10 | SPM slips off 2.5 | S5 | Built; paid gate passed (owner yes 20 Nov) |
-| OCR-11 | An all-empty AI answer means "cannot read" | Blank-gap 1 | To build now (owner 21 Nov) |
-| OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | To build now (owner 21 Nov), new design |
+| OCR-5 | TNB bills and EPF statements, rules first (switched off) | S6 | Live, lanes off (OCR-18 switches them on) |
+| OCR-6 | PDF safety fixes: the render gate, the blank-page guard, the pdfium child timing, the pypdf 6.21.4 test fix and the install-pin check | D1 + fix-pypdf621 | Live 21 Nov 16:00 |
+| OCR-7 | Small jobs after OCR-6: the synthetic hostile PDFs saved as tests, the hidden-object TD row brought up to date, the pin check's review notes | (none) | Live 23 Nov 21:00 |
+| OCR-8 | UMS offer letters, rules first | S1 + S1c | Live 23 Nov 21:00, lane `ua:UMS` off (OCR-18 switches it on) |
+| OCR-9 | The ink check (a matched word must show real ink) and the Asasi rule | S-visible 2 | Live 23 Nov 21:00 |
+| OCR-10 | SPM slips off 2.5 | S5 | Live 23 Nov 21:00 |
+| OCR-11 | An all-empty AI answer means "cannot read" | Blank-gap 1 | Live 23 Nov 21:00 (debt TD-701 follows) |
+| OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | Parked 21 Nov after review round 4; UNPARKED 23 Nov (owner), new design; BUILT 24 Nov on branch ocr-12-gate (one object per number, owner: strict; census refuses 7 of 870, the 5 new ones go to Vision); awaits review round 1 |
 | OCR-13 | The next four universities | S2 | To build |
 | OCR-14 | The remaining public universities | S3 | To build |
 | OCR-15 | The parent IC | S7 | To build |
 | OCR-16 | The genuineness jobs off 2.5 | S8 | To build |
 | OCR-17 | The remaining 2.5 cascade tails | S9 | To build |
+| OCR-18 | Switch on the rules lanes that pass Gate 1 (UMS first, then TNB and EPF) | (lane switch) | Added 23 Nov (owner: unpause); runs after OCR-12 |
+| OCR-19 | PISMP offer letters, rules first | (deferred in S2) | Added 23 Nov (owner: unpark); runs after OCR-14 |
+
+OCR-18 and OCR-19 were added on 23 Nov, so their numbers do not show their run order. The run order below does.
+
+### Run order from 23 Nov (owner: unpark and unpause everything, 23 Nov)
+
+1. **TD-702** (the PDF gate counts pypdf's whole-file searches). Built, reviewed twice, full suite green. Live 23 Nov 21:00 (owner yes).
+2. **TD-710** (three more crafted PDF shapes: one lookup-work budget in `GateReader`). Building. Adversarial review and a census before and after. Same code and same risk as TD-702, so it goes first (lead, 23 Nov).
+3. **OCR-12** (unparked). The new design builds on TD-702 and TD-710's `GateReader`, not on the round-4 rebuild walk: a number the gate uses must resolve to one object only, and that rule is charged against the same lookup budget. Round 4's repros (B1 shapes) are its first tests. A fresh limit of 3 review rounds. It must land before any lane goes on, because a hidden object is how a doctored letter could pass a rules lane.
+4. **OCR-18, step 1: the UMS lane on.** Gate 1 is already met on held-out letters (22 of 33 locked, 100% agreement, 0 wrong; the threshold is 20 letters). Re-run the dry run on main first. Then `OCR_FIRST_LANES=ua:UMS` on the api (`--update-env-vars`) in its own release-train batch, with the owner's yes and a phone check: one UMS offer reads "Exact" with the right course, one non-UMS letter is unchanged. The lead sets the variable; the OCR lane never does.
+5. **TD-701 and the OCR-9 spacing notes** (small; one builder; they can run beside OCR-18).
+6. **OCR-18, step 2: the TNB and EPF lanes.** Each lane goes on only if its dry run passes Gate 1 (at least 20 held-out documents, 98% agreement, 0 wrong). A lane short of 20 stays off and is listed with its count.
+7. **OCR-13**, then **OCR-14**. Each new lane goes on at the end of its sprint if it passes Gate 1, in the same way as step 4.
+8. **OCR-19** (PISMP offer letters). The same method as the universities: the owner's exact words from 5 sample letters, then the layout reader, then Gate 1. If fewer than 20 letters exist, it ships with the lane off and a monthly count line.
+9. **OCR-15**, **OCR-16**, **OCR-17**, as planned.
+
+A lane is still switched off again if reviewers overturn more than 2% of its facts in a month (section 2).
 
 **OCR-11 and OCR-12 build now, alongside OCR-8 to OCR-10 going live** (owner, 21 Nov; at most 2 builders). OCR-11 changes the verdict, so it needs an adversarial review and the owner's phone check. OCR-12 starts from the round-5 reviewer's design: refuse a file where a number used in the gate walk has more than one distinct object (one set per number, stop at 17). It gets a fresh limit of 3 review rounds. TD-689 is debt, not an OCR sprint; it keeps its TD number.
 
@@ -166,7 +184,7 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
   - Each lane is switched on only if it passes Gate 1 with at least 20 held-out letters. A lane short of 20 stays AI and is listed.
 - **Version:** 2.10.0.
 - **Tests and gate:** as for S1, for each lane.
-- **Stays AI:** lanes under the threshold, private universities and the PISMP letters (deferred).
+- **Stays AI:** lanes under the threshold and private universities. The PISMP letters are now OCR-19 (23 Nov).
 - **Complexity:** medium.
 - **Asasi note (20 Nov):** The shared Asasi exit refuses any page-1 ASASI. 17 of 18 UiTM letters print an 'Asasi & Diploma' office line, and UTeM diploma letters name 'Sekolah Asasi Teknikal dan Pengajian Diploma'. A UiTM or UTeM lane must excuse its own letterhead phrase (per issuer) or check only the programme field and offer sentence, or the lane refuses almost every letter. An English-language lane must also treat 'Foundation in' in the programme field as Asasi (programme field only; sponsor names contain 'Foundation').
 

@@ -462,7 +462,8 @@ describe('rule 3 — the quizzes trade the dot row for Next on a phone', () => {
       const src = readWeb(rel, 'a quiz page')
       expect(src).toMatch(/<div className="hidden md:flex justify-center gap-2 mb-6" data-testid="quiz-dots">/)
       expect(src).toMatch(/className="btn-primary min-h-11 md:hidden[^"]*"\s+data-testid="quiz-next"/)
-      expect(src).toMatch(/disabled=\{!currentAnswered\}/)
+      // TD-714: the STPM quiz's Next also waits for the Q2 lookup (`|| q2Waiting`).
+      expect(src).toMatch(/disabled=\{!currentAnswered( \|\| q2Waiting)?\}/)
       expect(src).toContain("t('discovery.quizNext')")
       expect(src).toContain("import '@/lib/messagesDiscovery'")
       expect(src).toMatch(/t\('quiz\.questionOf'/)
@@ -1347,7 +1348,9 @@ const PILL_SITES: Record<string, number> = {
   'src/components/search/SearchFilterSheet.tsx': 1, 'src/app/search/page.tsx': 1,
   'src/components/admin/PanelTabs.tsx': 3, 'src/components/action-centre/StatusCards.tsx': 3, 'src/components/action-centre/ActionCard.tsx': 1,
   'src/components/RequirementsCard.tsx': 4, 'src/components/CourseCard.tsx': 1,
-  'src/app/admin/scholarship/page.tsx': 3, 'src/app/admin/scholarship/[id]/view/CockpitHeader.tsx': 5,
+  // Owner 2026-11-23: the list gains the rejection chip (+1); the header loses the birth-state banner (-1).
+  // Owner 2026-11-25: the list shows the status only, the chip is gone again (-1).
+  'src/app/admin/scholarship/page.tsx': 3, 'src/app/admin/scholarship/[id]/view/CockpitHeader.tsx': 4,
   'src/app/admin/organisation/team/page.tsx': 1, 'src/app/sponsor/(portal)/page.tsx': 2,
   'src/app/sponsor/(portal)/my-students/[id]/page.tsx': 2, 'src/app/sponsor/(portal)/students/page.tsx': 2,
   'src/components/admin/ScholarActivity.tsx': 1,   // sprint P1: the Activity tab's All · Notes · System filter

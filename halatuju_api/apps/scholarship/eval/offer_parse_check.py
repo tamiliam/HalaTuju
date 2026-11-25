@@ -163,7 +163,7 @@ def main(argv=None):
     ap.add_argument('--base', default=DEFAULT_BASE, help="the AI read under the pipeline ('' for none)")
     ap.add_argument('--json', action='store_true')
     args = ap.parse_args(argv)
-    logging.getLogger('pypdf').setLevel(logging.ERROR)      # a damaged corpus PDF's warnings are noise here
+    logging.getLogger('pypdf').setLevel(logging.CRITICAL)      # a damaged corpus PDF's warnings are noise here
     if not orc.offer_keys(args.eval_dir):
         print(f'No offer letters in {args.eval_dir} - this measurement needs the local corpus.')
         return 2

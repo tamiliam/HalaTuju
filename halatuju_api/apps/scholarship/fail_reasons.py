@@ -19,10 +19,10 @@ from __future__ import annotations
 
 from . import audit
 
-PROOF_MISSING = 'proof_missing'            # Proof is missing or unclear
-DOCUMENT_FALSE = 'document_false'          # A document looks false or altered
-DOCUMENTS_DIFFER = 'documents_differ'      # The documents show something different
-INTERVIEW_DIFFERS = 'interview_differs'    # The interview or a call showed something different
+PROOF_MISSING = 'proof_missing'            # Proof is missing/unclear
+DOCUMENT_FALSE = 'document_false'          # Document looks false/altered
+DOCUMENTS_DIFFER = 'documents_differ'      # Document(s) show something different
+INTERVIEW_DIFFERS = 'interview_differs'    # Interview revealed something different
 OTHER = 'other'
 #: In the order the chips show. Written as literals so the web's drift test can read it.
 CODES = ('proof_missing', 'document_false', 'documents_differ', 'interview_differs', 'other')

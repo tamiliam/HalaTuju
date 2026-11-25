@@ -1,13 +1,16 @@
 /**
- * Made-up "AI prediction" payloads for the section and landing tests (LL1). Nobody real is in here:
- * the reviewers are invented names, and every figure is invented to be easy to find on the screen.
+ * Made-up "AI prediction" payloads (F4 shape) for the section and landing tests. Nobody real is in
+ * here: the reviewers are invented names, and every figure is invented to be easy to find on screen.
  */
-import type { PredictionCounts, QcCheckedCounts, ReviewerRow, VerdictMetrics } from '@/lib/admin-api'
+import type { FactScore, PredictionCounts, ReviewerRow, ScoreBlock, VerdictMetrics } from '@/lib/admin-api'
 
-/** LL2b: one block of "checked by the QC" counts. */
-export const qcChecked = (over: Partial<QcCheckedCounts> = {}): QcCheckedCounts => ({
-  in_doubt: 0, checked: 0, not_checked: 0, agreed: 0, disagreed: 0, ai_green_checked: 0,
-  ai_wrong_checked: 0, ai_right_reviewer_wrong_checked: 0, few: false, few_ai_green: false, ...over,
+export const block = (over: Partial<ScoreBlock> = {}): ScoreBlock => ({
+  facts: 100, points: 150, best: 200, lost: -30, score_pct: 75,
+  right_sure: 60, right_leaning: 20, unsure: 10, wrong_leaning: 6, wrong_sure: 4, ...over,
+})
+
+export const factScore = (over: Partial<FactScore> = {}): FactScore => ({
+  ...block(), top_reasons: [], ...over,
 })
 
 export const counts = (over: Partial<PredictionCounts> = {}): PredictionCounts => ({
@@ -17,43 +20,51 @@ export const counts = (over: Partial<PredictionCounts> = {}): PredictionCounts =
 })
 
 export const reviewer = (over: Partial<ReviewerRow> = {}): ReviewerRow => ({
-  ...counts(), id: 7, name: 'Test Reviewer One', label_key: null, applications: 12, ...over,
+  ...counts(), id: 7, name: 'Test Reviewer One', label_key: null, applications: 12,
+  qc_accepted: 9, qc_sent_back: 2, ...over,
 })
 
+/** The payload an organisation admin is served: score only, no `by_reviewer` / `ai_team`. */
 export const metrics = (over: Partial<VerdictMetrics> = {}): VerdictMetrics => ({
-  applications: 50, fact_decisions: 200, overrides: 20, override_rate: 0.1, per_fact: {},
-  overall: counts(),
-  fact_counts: {
-    identity: counts({ green: 50, green_agreed: 49, green_agree_rate: 0.98 }),
-    academic: counts({ green: 30, green_agreed: 27, green_agree_rate: 0.9 }),
-    pathway: counts({ green: 10, green_agreed: 6, green_agree_rate: 0.6 }),
-    income: counts({ green: 10, green_agreed: 8, green_agree_rate: 0.8 }),
-  },
-  by_version: {
-    'v5.1': counts({ green: 60, green_agreed: 57, green_agree_rate: 0.95 }),
-    '': counts({ green: 40, green_agreed: 33, green_agree_rate: 0.825 }),
-  },
-  by_month: {
-    '2026-08': counts({ green: 20, green_agreed: 17, green_agree_rate: 0.85 }),
-    '2026-09': counts({ green: 3, green_agreed: 3, green_agree_rate: 1, few_green: true }),
-    '2026-10': counts({ green: 40, green_agreed: 38, green_agree_rate: 0.95 }),
-  },
-  doubt_codes: [
-    { fact: 'income', code: 'income_unclear', passed: 18, failed: 2, total: 20, fail_rate: 0.1, pass_rate: 0.9, few: false },
-    { fact: 'academic', code: 'grade_blurred', passed: 3, failed: 1, total: 4, fail_rate: 0.25, pass_rate: 0.75, few: true },
-  ],
-  qc_agreement: {
-    accept: 17, reopen: 2, reject: 1, total: 20, accept_rate: 0.85, few: false,
-    by_month: {},
+  applications: 187,
+  score: {
+    ...block({ facts: 775, points: 736, best: 1550, lost: -390, score_pct: 47 }),
+    not_scored: 0,
+    most_lost: { fact: 'pathway', points: -156 },
+    by_fact: {
+      identity: factScore({ facts: 200, points: 268, best: 400, lost: -52, score_pct: 67,
+        right_sure: 150, right_leaning: 20, unsure: 22, wrong_leaning: 4, wrong_sure: 4,
+        top_reasons: [{ key: 'fail:documents_differ', points: -30 }, { key: 'fail:not_given', points: -20 }] }),
+      academic: factScore({ facts: 200, points: 224, best: 400, lost: -78, score_pct: 56,
+        top_reasons: [{ key: 'fail:interview_differs', points: -50 }, { key: 'pass:ruleNotMet', points: -28 }] }),
+      pathway: factScore({ facts: 204, points: 108, best: 408, lost: -156, score_pct: 26,
+        top_reasons: [{ key: 'pass:unverifiable', points: -100 }] }),
+      income: factScore({ facts: 171, points: 136, best: 342, lost: -104, score_pct: 40 }),
+    },
   },
   ...over,
 })
 
-/** The same payload as a lead is served it: with the reviewer table. */
+/** As a lead is served it: with the reviewer table. */
 export const leadMetrics = (): VerdictMetrics => metrics({
   by_reviewer: [
     reviewer(),
     reviewer({ id: null, name: 'x', label_key: 'unmatched_reviewer', applications: 3 }),
     reviewer({ id: null, name: 'y', label_key: 'unnamed_reviewer', applications: 2 }),
   ],
+})
+
+/** As a super is served it: with the reviewer table and the "For the AI team" part. */
+export const superMetrics = (): VerdictMetrics => ({
+  ...leadMetrics(),
+  ai_team: {
+    doubt_codes: [
+      { fact: 'income', code: 'income_unclear', passed: 18, failed: 2, total: 20, fail_rate: 0.1, pass_rate: 0.9, few: false },
+      { fact: 'academic', code: 'grade_blurred', passed: 3, failed: 1, total: 4, fail_rate: 0.25, pass_rate: 0.75, few: true },
+    ],
+    by_version: [
+      { version: 'v5.1', ...block({ facts: 260, points: 210, best: 520, score_pct: 40 }) },
+      { version: '', ...block({ facts: 290, points: -20, best: 580, score_pct: -3 }) },
+    ],
+  },
 })

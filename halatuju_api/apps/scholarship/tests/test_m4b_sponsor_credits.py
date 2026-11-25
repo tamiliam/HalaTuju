@@ -408,3 +408,38 @@ class TestReadersSeeNoStaffEmail(TestCase):
     def test_an_editor_still_does(self):
         self.assertEqual(self._emails(self.editor),
                          {'author@example.test', 'publisher@example.test', 'editor@example.test'})
+
+
+class TestAdversarialRound(_Credits):
+    """The adversarial review (24 Nov): a move to another organisation mid-request is seen under the lock; a
+    failed confirmation email never turns a confirmed credit into a 500; another organisation's approver
+    cannot even find the credit."""
+
+    def test_a_signer_moved_to_another_organisation_mid_request_is_refused(self):
+        credit = self._record()
+        stale_copy = PartnerAdmin.objects.get(pk=self.maker.pk)        # loaded while still in this org
+        PartnerAdmin.objects.filter(pk=self.maker.pk).update(owning_organisation=make_org())
+        self.assertEqual(self._refusal(self._sign, credit, stale_copy), 'wrong_role')
+        credit.refresh_from_db()
+        self.assertEqual(credit.status, Donation.STATUS_DRAFT)
+
+    def test_a_failed_confirmation_email_leaves_the_credit_confirmed_and_raises_nothing(self):
+        credit = self._record()
+        self._sign(credit, self.maker)
+        with mock.patch('apps.scholarship.sponsor_notify.send_credit_confirmed', side_effect=RuntimeError):
+            with self.captureOnCommitCallbacks(execute=True) as callbacks:
+                self._sign(credit, self.payer)
+        self.assertEqual(len(callbacks), 1)
+        credit.refresh_from_db()
+        self.assertEqual(credit.status, Donation.STATUS_CONFIRMED)
+
+    @HTTP
+    def test_another_organisations_approver_cannot_find_the_credit(self):
+        credit = self._record()
+        self._sign(credit, self.maker)
+        outsider = _exact(make_admin('finance', owning_org=make_org()), ['payments_approve'])
+        r = authed_client(outsider).post(f'{ADMIN}credits/{credit.pk}/sign/', {
+            'typed_name': outsider.name, 'expected_status': Donation.STATUS_ADMIN_SIGNED}, format='json')
+        self.assertEqual(r.status_code, 404)
+        credit.refresh_from_db()
+        self.assertEqual(credit.status, Donation.STATUS_ADMIN_SIGNED)

@@ -149,7 +149,7 @@ class TestStaffDeleteErasesOrArchives(_Base):
 
     def test_the_sole_org_admin_is_never_archived(self):
         org = make_org()
-        sole = make_admin('org_admin', owning_org=org)
+        sole = make_admin('org_admin', owning_org=org, first_seen_at=timezone.now())   # signed in: counts
         _reviewed(sole)
         r = self.delete(self.super, sole, ARCHIVE)
         self.assertNotEqual(r.status_code, 200)

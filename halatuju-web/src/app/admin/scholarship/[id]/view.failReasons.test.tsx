@@ -11,12 +11,16 @@
  */
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
-import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
+import { installCockpitConsoleGuard, renderCockpit, settleCockpit } from '@/test/renderCockpit'
 import { buildVerdict } from '@/test/adminApplicationDetail'
 
 installCockpitConsoleGuard()
 
-const loaded = () => screen.findByText('Test Student 07')
+/** The page is up AND its late parts (notes card, lazy parts) have finished inside act (TD-711). */
+const loaded = async () => {
+  await screen.findByText('Test Student 07')
+  await settleCockpit()
+}
 const K = 'admin.scholarship.recordVerdict.'
 const failButtons = () => screen.getAllByRole('button', { name: `${K}factFail` })
 const chip = (code: string) => screen.getByRole('button', { name: `${K}failReason.${code}` })

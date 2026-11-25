@@ -13,6 +13,7 @@ from unittest.mock import patch
 from django.db import connection
 from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import staff_footprint
@@ -120,7 +121,7 @@ class TestN2ToN4WhatTheScreensMayOffer(TestCase):
         cls.org = make_org()
         cls.super = make_admin('super', super_admin=True)
         cls.other_super = make_admin('super', super_admin=True)
-        cls.lead = make_admin('org_admin', owning_org=cls.org)
+        cls.lead = make_admin('org_admin', owning_org=cls.org, first_seen_at=timezone.now())   # signed in: counts
         cls.staff = make_admin('admin', owning_org=cls.org)
 
     def _admins(self, caller):
@@ -164,7 +165,7 @@ class TestN2ToN4WhatTheScreensMayOffer(TestCase):
         self.assertEqual((page['revocable'], page['delete_never'], page['deletable']), (False, True, False))
         row = self._admins(self.super)[self.lead.pk]
         self.assertEqual((row['revocable'], row['delete_never']), (False, True))
-        make_admin('org_admin', owning_org=self.org)          # a second one: both may now go
+        make_admin('org_admin', owning_org=self.org, first_seen_at=timezone.now())        # a second one: both may now go
         page = self._page(self.super, self.lead)
         self.assertEqual((page['revocable'], page['delete_never'], page['deletable']), (True, False, True))
 
@@ -174,13 +175,13 @@ class TestN2ToN4WhatTheScreensMayOffer(TestCase):
         self.assertTrue(PartnerAdmin.objects.filter(pk=self.lead.pk).exists())
 
     def test_delete_takes_an_org_admin_who_is_not_the_only_one(self):
-        make_admin('org_admin', owning_org=self.org)
+        make_admin('org_admin', owning_org=self.org, first_seen_at=timezone.now())
         r = self._delete(self.super, self.lead)
         self.assertEqual(r.status_code, 200, r.content[:200])
         self.assertFalse(PartnerAdmin.objects.filter(pk=self.lead.pk).exists())
 
     def test_a_revoked_org_admin_is_not_the_sole_one(self):
-        second = make_admin('org_admin', owning_org=self.org)
+        second = make_admin('org_admin', owning_org=self.org, first_seen_at=timezone.now())
         PartnerAdmin.objects.filter(pk=second.pk).update(is_active=False)
         r = self._delete(self.super, self.lead)
         self.assertEqual(r.json().get('code'), 'last_org_admin')
@@ -219,8 +220,8 @@ class TestTheSoleOrgAdminGuardLocksTheWholeSet(TestCase):
     def setUp(self):
         self.org = make_org()
         self.super = make_admin('super', super_admin=True)
-        self.lead = make_admin('org_admin', owning_org=self.org)
-        self.second = make_admin('org_admin', owning_org=self.org)
+        self.lead = make_admin('org_admin', owning_org=self.org, first_seen_at=timezone.now())
+        self.second = make_admin('org_admin', owning_org=self.org, first_seen_at=timezone.now())
 
     def _assert_set_locked_first(self, locks):
         self.assertGreaterEqual(len(locks), 2, locks)

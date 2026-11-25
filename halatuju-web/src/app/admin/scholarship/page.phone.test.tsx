@@ -89,6 +89,28 @@ describe('the case list on a phone (Mobile M6a)', () => {
     expect(list.querySelector('select')).toBeNull()
   })
 
+  it('owner 2026-11-25: the list shows the status only; no rejection chip on a rejected row or a live state-rule row', async () => {
+    mockApi.getScholarshipApplications.mockResolvedValue({
+      count: 4, total_count: 4, total_pages: 1, page: 1, page_size: 25, next: null, previous: null,
+      applications: [
+        row(1, { status: 'rejected', rejection_chip: 'before_interview' }),
+        row(2, { status: 'rejected', rejection_chip: 'qc' }),
+        row(3, { status: 'submitted', rejection_chip: 'state' }),
+        row(4, { status: 'rejected', rejection_chip: '' }),
+      ],
+    })
+    render(<AdminScholarshipList />)
+    const list = await phone()
+    await waitFor(() => expect(within(list).getAllByText(/^Pelajar /)).toHaveLength(4))
+    const chips = (root: HTMLElement) => within(root).queryAllByTestId('rejection-chip').map((c) => c.textContent)
+    expect(chips(list)).toEqual([])
+    expect(chips(screen.getByRole('table'))).toEqual([])
+    expect(screen.queryByText('admin.scholarship.rejectionChip.state')).toBeNull()
+    expect(within(list).getAllByText('admin.scholarship.statuses.submitted')).toHaveLength(1)
+    expect(screen.queryByText('admin.scholarship.statuses.rejected_before_interview')).toBeNull()
+    expect(within(list).getAllByText('admin.scholarship.statuses.rejected')).toHaveLength(3)
+  })
+
   it('Sort asks the SERVER for the column and direction the table headers would', async () => {
     render(<AdminScholarshipList />)
     const tools = await screen.findByTestId('list-phone-tools')

@@ -49,7 +49,9 @@ const SLICES = {
   documents: ['documentsTab'],
   // TD-416 (2026-10-29): the student scholarship screens' words — ~30 kB gz, the biggest namespace
   // after `admin` — loaded by `lib/messagesScholarship.ts` on the routes that show them only.
-  scholarship: ['scholarship'],
+  // Slim (2026-11-23): plus the `profile` namespace (the profile page's words, ~1.7 kB gz of core on
+  // every route). Every route that reads `profile.*` is already a scholarship route.
+  scholarship: ['scholarship', 'profile'],
   // TD-416: the sponsor portal's and the sponsor sign-in screens' words (~6 kB gz), loaded by
   // `lib/messagesSponsor.ts` on the sponsor routes only.
   sponsor: ['sponsorPortal', 'sponsorAuth', 'sponsorPool', 'sponsorLanding'],
@@ -62,7 +64,9 @@ const SLICES = {
   // G13 (2026-11-11): plus the course pages' and the saved page's own words (`courseDetail`,
   // `saved`) but the children `CORE_KEEPS` names; A4.2 put them in the catalogue and in core they
   // pushed /scholarship/apply over its line. /stpm/[id] loads the slice for them.
-  discovery: ['discovery', 'courseDetail', 'saved'],
+  // Slim (2026-11-23): plus `courses` (the per-course blurbs, ~1 kB gz of core on every route; only
+  // /course/[id] reads them, and it already loads this slice).
+  discovery: ['discovery', 'courseDetail', 'saved', 'courses'],
 }
 
 /**

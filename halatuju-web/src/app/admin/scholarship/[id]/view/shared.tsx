@@ -140,12 +140,14 @@ export const NON_PARENT_RELATIONSHIPS = new Set([
 export const SHOW_REFEREES = false
 
 
-export function Field({ label, value, verifiedLabel, note, noteTone = 'amber' }: { label: string; value: ReactNode; verifiedLabel?: string; note?: string; noteTone?: 'amber' | 'muted' }) {
+export function Field({ label, value, verifiedLabel, note, noteTone = 'amber', na }: { label: string; value: ReactNode; verifiedLabel?: string; note?: ReactNode; noteTone?: 'amber' | 'muted'; na?: string }) {
   return (
     <div>
       <dt className="text-xs text-ground-400 uppercase tracking-wider">{label}</dt>
       <dd className="text-sm text-ground-800 break-words">
-        {value === null || value === undefined || value === '' ? '—' : value}
+        {value === null || value === undefined || value === ''
+          ? (na ? <span className="text-ground-400">{na}</span> : '—')
+          : value}
         {verifiedLabel && <VerifiedTick label={verifiedLabel} />}
       </dd>
       {note && <p className={`mt-0.5 text-xs ${noteTone === 'muted' ? 'text-ground-400' : 'text-caution-700'}`}>{note}</p>}
@@ -201,11 +203,11 @@ export const joinOr = (a?: string[] | null) => (a && a.length ? a.join(', ') : '
 /** Grade dict → readable chips (subject key uppercased · grade). */
 /** `marks` (STPM CGPA C3): an optional check mark / difference marker per subject key, rendered
  *  inside that subject's chip after the grade. */
-export function Grades({ grades, trailing, marks }: {
-  grades?: Record<string, string> | null; trailing?: ReactNode; marks?: Record<string, ReactNode>
+export function Grades({ grades, trailing, marks, na }: {
+  grades?: Record<string, string> | null; trailing?: ReactNode; marks?: Record<string, ReactNode>; na?: string
 }) {
   const entries = Object.entries(grades || {}).filter(([, g]) => g)
-  if (!entries.length) return <span className="text-ground-400 text-sm">—</span>
+  if (!entries.length) return <span className="text-ground-400 text-sm">{na || '—'}</span>
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {entries.map(([k, g]) => (

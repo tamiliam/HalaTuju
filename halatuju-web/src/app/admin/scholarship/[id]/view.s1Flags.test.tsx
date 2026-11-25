@@ -23,8 +23,8 @@ installCockpitConsoleGuard()
 const loaded = () => screen.findByText('Test Student 07')
 const qcPanel = () => screen.queryByText('admin.scholarship.qcDecision.title')
 const closeCard = () => screen.queryByText('admin.closure.title')
-const RULED = { kind: 'state' as const, state: 'selangor', code: '10', label: 'Born in: Selangor (IC code 10)',
-  meets_rule: true, warning: '' }
+const RULED = { kind: 'state' as const, state: 'selangor', code: '10', name: 'Selangor',
+  label: 'Born in: Selangor (IC code 10)', meets_rule: true, warning: '' }
 
 describe('the QC panel and the Re-verify IC card follow the served can_qc', () => {
   it.each([

@@ -35,18 +35,18 @@ code can lag the course (#251 kept a stale `stpm`).
 
 | Item | Figure | Constant (`funding_estimate.py`) |
 |---|---|---|
-| Living costs | RM1,200 a study month × **10 study months** a year | `DEGREE_LIVING_MONTHLY`, `DEGREE_STUDY_MONTHS_PER_YEAR` |
+| Living costs | RM900 a study month × **10 study months** a year (owner 2026-11-24, TD-719; was RM1,200) | `DEGREE_LIVING_MONTHLY`, `DEGREE_STUDY_MONTHS_PER_YEAR` |
 | Fee | flat **RM2,900/yr** (the SLS IPTA bachelor mean); `variable` caveat shown | `DEGREE_FEE_PER_YEAR` |
 | PTPTN (IPTA bachelor maximum) | arts **6,180**, science **6,650**; any other stream → arts | `DEGREE_PTPTN_BY_STREAM`, `DEGREE_DEFAULT_STREAM` |
 | Years | by name first: Perubatan / Pergigian (medicine, dentistry) **5**, Pendidikan **4**; then by stream: arts **3**, science **4**; else **4** | `DEGREE_YEARS_BY_NAME`, `DEGREE_YEARS_BY_STREAM`, `DEGREE_DEFAULT_YEARS` |
 | Continuing | years left = years − (cohort year − course-start year), at least 1; start unknown → full length | `_years_done` |
 
-Annual shortfall = 12,000 + 2,900 − PTPTN: **arts 8,720** (≈872 per study month), **science 8,250**
-(≈825). Monthly = round(annual / 10); months = 10 × years left; total = annual × years left, rounded
+Annual shortfall = 9,000 + 2,900 − PTPTN: **arts 5,720** (≈572 per study month), **science 5,250**
+(≈525). Monthly = round(annual / 10); months = 10 × years left; total = annual × years left, rounded
 to RM100. `variable` is true and `practical` false. The dict carries two extra keys:
 `study_months: true` (the cockpit says "study months") and `continuing` (true when years were taken
 off; the cockpit adds "Continuing student: estimated for the years left."). Example, #278 (UH6145006,
-Pendidikan, arts): 872 × 40 study months, **RM34,900**.
+Pendidikan, arts): 572 × 40 study months, **RM22,900**.
 
 The stream is read from `stpm_courses.stream` in one query. ⚠ The live column holds three values, not
 two: `arts` 95, `science` 686 and **`both` 331**. `both` is read as "unknown": arts PTPTN and the
@@ -73,7 +73,7 @@ rounded. **Total** = monthly × months, rounded to the nearest RM100 (ballpark, 
 | **poly** (Politeknik diploma) | Cheap provided hostel + **PTPTN loan** | **~120** | 36 | **~4,000** | Mostly meals + misc. Practical term may add travel. |
 | **university** (public-uni diploma) ⚠️ | **PTPTN loan** | **~220** | 30 | **~6,600** | **Varies** by university & field. Practical term may add travel. |
 | **pismp** (IPG teacher training) | IPG allowance (~RM530/mo) + hostel | **~180** | 60 | **~10,800** | 5-year programme. Meals, hostel top-up, travel. Practicum may add travel. |
-| **degree** (public-university bachelor) ⚠️ | **PTPTN loan** (by stream) | **~872** arts / **~825** science per *study* month | 10 × years left | **~34,900** (arts, 4 yrs) | See *Degree (post-STPM) scope*. |
+| **degree** (public-university bachelor) ⚠️ | **PTPTN loan** (by stream) | **~572** arts / **~525** science per *study* month | 10 × years left | **~22,900** (arts, 4 yrs) | See *Degree (post-STPM) scope*. |
 | **mara_diploma** (Kolej Profesional MARA / a MARA TVET diploma) ⚠️ | MARA education loan | **~220** | 30 | **~6,600** | Same numbers as `university` (decision 9). |
 | **ilkbs** (IKBN / IKTBN) | Free tuition & hostel + ~RM100/mo allowance | **~350** | semesters × 6 (else 24) | e.g. 24 → **~8,400** | Decision 10. Lead's derivation (Matrikulasi ~RM450 living − RM100); owner may adjust. |
 | **iljtm** (ILJTM) | Free tuition & hostel, no allowance | **~450** | semesters × 6 (else 24) | e.g. 24 → **~10,800** | Decision 11. |

@@ -28,6 +28,8 @@ import {
   APPLY_STAGE_STATUSES,
   isApplyStage,
   displayStatus,
+  rejectionChip,
+  REJECTION_CHIPS,
 } from '@/lib/applicationStatus'
 import { QC_ACCEPTED_STATES, isQcAccepted } from '@/lib/officerCockpit'
 
@@ -134,17 +136,45 @@ describe('isApplyStage (owner 2026-10-05)', () => {
   })
 })
 
-describe('displayStatus (request #75)', () => {
-  it('a decline made before interview reads as its own status, in critical tone', () => {
-    expect(displayStatus({ status: 'rejected', rejection_category: 'pre_interview' })).toBe('rejected_before_interview')
-    expect(statusTone('rejected_before_interview')).toContain('critical')
+describe('displayStatus (owner 2026-11-23: no "Rejected before interview" status)', () => {
+  it('every decline reads Rejected, and a reopened decision still reads Reopened', () => {
+    expect(displayStatus({ status: 'rejected' })).toBe('rejected')
+    expect(displayStatus({ status: 'rejected', decision_reopened_at: '2026-11-16T00:00:00Z' })).toBe('reopened')
+    expect(displayStatus({ status: 'profile_complete' })).toBe('profile_complete')
+    expect([...SYNTHETIC_STATUSES]).toEqual(['reopened'])
+  })
+})
+
+describe('rejectionChip (owner 2026-11-23): the ONE second chip, labelled from the served code', () => {
+  it.each([
+    ['merit', 'admin.scholarship.rejectionChip.merit'],
+    ['need', 'admin.scholarship.rejectionChip.need'],
+    ['state', 'admin.scholarship.rejectionChip.state'],
+    ['shortlisted', 'admin.scholarship.rejectionChip.shortlisted'],
+    ['before_interview', 'admin.scholarship.rejectionChip.before_interview'],
+    ['interview', 'admin.scholarship.rejectionChip.interview'],
+    ['qc', 'admin.scholarship.rejectionChip.qc'],
+    ['contractual', 'admin.scholarship.rejectionChip.contractual'],
+    ['ineligible', 'admin.scholarship.reject.category.ineligible'],
+  ])('%s -> %s', (code, key) => {
+    expect(rejectionChip({ rejection_chip: code })).toBe(key)
   })
 
-  it('every other decline stays Rejected, and a reopened decision still reads Reopened', () => {
-    expect(displayStatus({ status: 'rejected', rejection_category: 'interview' })).toBe('rejected')
-    expect(displayStatus({ status: 'rejected' })).toBe('rejected')
-    expect(displayStatus({ status: 'rejected', rejection_category: 'pre_interview', decision_reopened_at: '2026-11-16T00:00:00Z' }))
-      .toBe('reopened')
-    expect(displayStatus({ status: 'profile_complete', rejection_category: 'pre_interview' })).toBe('profile_complete')
+  it('a blank, absent or unknown code shows no chip', () => {
+    for (const code of ['', null, undefined, 'nonsense']) expect(rejectionChip({ rejection_chip: code })).toBeNull()
+    expect(rejectionChip({})).toBeNull()
+  })
+
+  it.each([['en', en], ['ms', ms], ['ta', ta]])('%s has a label for every chip', (_lang, messages) => {
+    const m = messages as unknown as { admin: { scholarship: {
+      rejectionChip: Record<string, string>; reject: { category: Record<string, string> }; bornState: string } } }
+    for (const code of REJECTION_CHIPS) {
+      const label = code === 'ineligible' ? m.admin.scholarship.reject.category.ineligible
+        : m.admin.scholarship.rejectionChip[code]
+      expect(label).toBeTruthy()
+    }
+    expect(Object.keys(m.admin.scholarship.rejectionChip).sort())
+      .toEqual(REJECTION_CHIPS.filter((c) => c !== 'ineligible').sort())
+    expect(m.admin.scholarship.bornState).toContain('{state}')
   })
 })

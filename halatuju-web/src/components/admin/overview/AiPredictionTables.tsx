@@ -1,21 +1,21 @@
 'use client'
 /**
- * LL1: the tables of the "AI prediction" section — by fact, by doubt, by engine version, by reviewer.
+ * F4b: the tables of the "AI prediction" card — By fact, By reviewer, and (for the AI team only)
+ * Doubts often passed and By model version.
  *
- * ⚠⚠ **THE BROWSER ONLY FORMATS.** Every count, rate and "few cases" flag below was served. A cell
- * prints "x of y" from two served counts, `Math.round(rate * 100) + '%'` from a served rate, and —
- * when the served flag is true — a "few cases" pill INSTEAD of the percent. Nothing here sums,
- * divides, compares to a threshold, or asks who the reader is: a table exists because its data did.
+ * ⚠⚠ **THE BROWSER ONLY FORMATS.** Every count, score, point total and top-reason list below was
+ * served (`ai_score.py`). This file adds a sign, a thousands separator and a word. It sums nothing,
+ * divides nothing, and never asks who the reader is: a table exists because its data did.
  *
- * ⚠ On a phone each row becomes a small card (`TableFrame phoneRows`: the cells carry `data-label`).
+ * ⚠ On a phone the tables SCROLL SIDEWAYS inside their own box (`TableFrame`, no `phoneRows`): the
+ * page itself must never scroll sideways.
  */
 
 import TableFrame, { TH } from '@/components/admin/TableFrame'
-import type { PredictionCounts, DoubtRow, ReviewerRow, QcCheckedCounts } from '@/lib/admin-api'
-import { tOr } from '@/lib/i18n'
-import { PHONE_PILL_SM } from '@/lib/phonePill'
-import type { Translate } from './sectionTypes'
+import type { DoubtRow, FactScore, ReviewerRow, ScoreBlock, ScoreReason, VersionScore } from '@/lib/admin-api'
 import { FAIL_REASON_CODES } from '@/lib/failReasons'
+import { tOr } from '@/lib/i18n'
+import type { Translate } from './sectionTypes'
 
 /** ⚠ The i18n guard resolves `${K}.` templates by this LITERAL name. */
 const K = 'admin.programmeOverview.aiPrediction'
@@ -23,58 +23,19 @@ const K = 'admin.programmeOverview.aiPrediction'
 /** The four facts, in the order the cockpit and the picture list them. */
 export const FACT_CODES = ['identity', 'academic', 'pathway', 'income'] as const
 
-export const pct = (rate: number): string => `${Math.round(rate * 100)}%`
+/** "+736", "−390", "0": a real minus sign, a thousands separator, no derivation. */
+export const signed = (n: number): string =>
+  n > 0 ? `+${n.toLocaleString('en-GB')}` : n < 0 ? `−${Math.abs(n).toLocaleString('en-GB')}` : '0'
 
-export function FewPill({ t }: { t: Translate }) {
-  return (
-    <span data-testid="few-pill"
-      className={`inline-block md:whitespace-nowrap rounded-full border border-ground-200 bg-ground-100 px-2 text-xs text-ground-600 ${PHONE_PILL_SM}`}>
-      {t(`${K}.fewCases`)}
-    </span>
-  )
-}
+/** The served whole percent (it may be below 0), or a dash when no fact was marked. */
+export const scorePct = (p: number | null): string =>
+  p === null ? '–' : p < 0 ? `−${Math.abs(p)}%` : `${p}%`
 
-/** "x of y" and then the served percent, or the pill and NO percent when the served flag says few. */
-export function Figure({ t, a, b, rate, few }: {
-  t: Translate; a: number; b: number; rate: number; few: boolean
-}) {
-  return (
-    <>
-      {t(`${K}.xOfY`, { a: String(a), b: String(b) })}{' '}
-      {few ? <FewPill t={t} /> : <span className="text-ground-500">({pct(rate)})</span>}
-    </>
-  )
-}
-
-const TD = 'px-4 py-2.5 text-sm tabular-nums text-ground-700'
+const TD = 'px-3 py-3 text-sm tabular-nums text-ground-700 align-top'
 const ROW = 'border-b border-ground-100 last:border-b-0'
-
-/** The two figure cells every table repeats: the AI sure and the reviewer agreed; the AI in doubt and
- *  the reviewer passed. */
-function CountCells({ t, c }: { t: Translate; c: PredictionCounts }) {
-  return (
-    <>
-      <td className={TD} data-label={t(`${K}.col.sure`)}>
-        <Figure t={t} a={c.green_agreed} b={c.green} rate={c.green_agree_rate} few={c.few_green} />
-      </td>
-      <td className={TD} data-label={t(`${K}.col.doubt`)}>
-        <Figure t={t} a={c.unsure_passed} b={c.unsure} rate={c.unsure_pass_rate} few={c.few_unsure} />
-      </td>
-    </>
-  )
-}
-
-function CountHeads({ t }: { t: Translate }) {
-  return (
-    <>
-      <th className={TH}>{t(`${K}.col.sure`)}</th>
-      <th className={TH}>{t(`${K}.col.doubt`)}</th>
-    </>
-  )
-}
-
 const HEAD = 'border-b border-ground-200 bg-ground-50'
-const NAME = 'px-4 py-2.5 text-sm font-medium text-ground-900'
+const NAME = 'px-3 py-3 text-sm font-medium text-ground-900 align-top'
+const THC = `${TH} !px-3 whitespace-nowrap`
 
 /** A fact's name: the cockpit's own words when it is one of the four, else the plain code. */
 export function factName(t: Translate, fact: string): string {
@@ -86,146 +47,95 @@ export function factName(t: Translate, fact: string): string {
 /**
  * The engine's reason code as words. The cockpit already has sentences for most codes
  * (`admin.scholarship.verdict.item.<code>`); they are written for ONE student and some carry a
- * `{placeholder}` this table cannot fill, so such a sentence is not used. No label — or one with a
- * hole in it — shows the code as plain text. No new label table is invented here.
+ * `{placeholder}` this list cannot fill, so such a sentence is not used. No label — or one with a
+ * hole in it — shows the code as plain text.
  */
 export function doubtName(t: Translate, code: string): string {
   const own = tOr(t, `admin.scholarship.verdict.item.${code}`, '')
   return own && !own.includes('{') ? own : code.replace(/_/g, ' ')
 }
 
-// F3 (I-11): the reviewer's reason list, one home (`@/lib/failReasons`, drift-tested against the api).
-const REASON_CODES = FAIL_REASON_CODES
-
-/** LL2: "The interview or a call showed something different 3 · Proof is missing or unclear 1 · Not given 2" for one fact; '' when the fact has no
- *  green -> fail case or the payload predates the reasons (old cached data). Counts only, no percent. */
-function reasonLine(
-  t: Translate, f: string, counts: Record<string, PredictionCounts>,
-  reasons?: Record<string, Record<string, number>>, notGiven?: Record<string, number>,
-): string {
-  if (!counts[f]?.green_failed || !reasons?.[f]) return ''
-  const parts: string[] = REASON_CODES.filter((c) => reasons[f][c]).map(
-    (c) => `${t(`admin.scholarship.recordVerdict.failReason.${c}`)} ${reasons[f][c]}`)
-  if (notGiven?.[f]) parts.push(`${t(`${K}.notGiven`)} ${notGiven[f]}`)
-  return parts.join(' · ')
+/** A lost-points reason key as words: `fail:<code>` (the reviewer's own reason), `fail:not_given`
+ *  (an old row), or `pass:<band>` (what the AI said when the reviewer passed). */
+export function reasonName(t: Translate, key: string): string {
+  const [kind, rest = ''] = key.split(':')
+  if (kind === 'fail') {
+    if (rest === 'not_given') return t(`${K}.notGiven`)
+    return (FAIL_REASON_CODES as readonly string[]).includes(rest)
+      ? t(`admin.scholarship.recordVerdict.failReason.${rest}`)
+      : rest.replace(/_/g, ' ')
+  }
+  if (rest === 'ruleNotMet') return t(`${K}.reasonPassRuleNotMet`)
+  if (rest === 'unverifiable') return t(`${K}.reasonPassUnverifiable`)
+  return key.replace(/[_:]/g, ' ')
 }
 
-/** The reasons count the facts the AI was sure of, so the served `few_green` flag marks them with the
- *  same pill as the "AI sure" cell beside them (LL2 review fix). Counts only, never a percent. */
-function ReasonCell({ t, line, few }: { t: Translate; line: string; few: boolean }) {
-  return <>{line}{line && few && <> <FewPill t={t} /></>}</>
+const OUTCOMES = ['right_sure', 'right_leaning', 'unsure', 'wrong_leaning', 'wrong_sure'] as const
+const OUTCOME_COLOUR = {
+  right_sure: 'text-positive-800 font-semibold', right_leaning: 'text-positive-700', unsure: 'text-ground-600',
+  wrong_leaning: 'text-caution-800', wrong_sure: 'text-critical-800 font-bold',
+} as const
+
+function ReasonChips({ t, reasons }: { t: Translate; reasons: readonly ScoreReason[] }) {
+  if (reasons.length === 0) return <span className="text-ground-400">{'–'}</span>
+  return (
+    <ul className="flex flex-wrap gap-1.5">
+      {reasons.map((r) => (
+        <li key={r.key} className="rounded-full bg-ground-100 px-2.5 py-0.5 text-xs text-ground-700">
+          {reasonName(t, r.key)} {signed(r.points)}
+        </li>
+      ))}
+    </ul>
+  )
 }
 
-export function FactTable({ t, counts, reasons, notGiven }: {
-  t: Translate; counts: Record<string, PredictionCounts>
-  reasons?: Record<string, Record<string, number>>; notGiven?: Record<string, number>
-}) {
-  const rows = FACT_CODES.filter((f) => counts[f])
+function ScoreCell({ t, b }: { t: Translate; b: ScoreBlock }) {
+  return (
+    <div>
+      <div className="text-base font-bold text-brand-fill" data-testid="ai-score-pct">{scorePct(b.score_pct)}</div>
+      <div className="text-xs text-ground-500">
+        {t(`${K}.pointsOfBest`, { points: signed(b.points), best: signed(b.best) })}
+      </div>
+      <div className="text-xs text-critical-800">{t(`${K}.lost`, { points: signed(b.lost) })}</div>
+    </div>
+  )
+}
+
+export function FactTable({ t, facts }: { t: Translate; facts: Record<string, FactScore> }) {
+  const rows = FACT_CODES.filter((f) => facts[f])
   if (rows.length === 0) return null
-  const showReasons = rows.some((f) => reasonLine(t, f, counts, reasons, notGiven))
   return (
-    <TableFrame phoneRows minWidth={520} label={t(`${K}.byFact`)}>
+    <TableFrame minWidth={1100} label={t(`${K}.byFact`)}>
       <table className="w-full">
         <thead className={HEAD}>
           <tr>
-            <th className={TH}>{t(`${K}.col.fact`)}</th><CountHeads t={t} />
-            {showReasons && <th className={TH}>{t(`${K}.col.reasons`)}</th>}
+            <th className={THC}>{t(`${K}.col.fact`)}</th>
+            <th className={THC}>{t(`${K}.outcome.right_sure`)}</th>
+            <th className={THC}>{t(`${K}.outcome.right_leaning`)}</th>
+            <th className={THC}>{t(`${K}.outcome.unsure`)}</th>
+            <th className={THC}>{t(`${K}.outcome.wrong_leaning`)}</th>
+            <th className={THC}>{t(`${K}.outcome.wrong_sure`)}</th>
+            <th className={THC}>{t(`${K}.col.score`)}</th>
+            <th className={THC}>{t(`${K}.col.lostMost`)}</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((f) => (
-            <tr key={f} className={ROW} data-testid={`ai-fact-${f}`}>
-              <td className={NAME}>{factName(t, f)}</td>
-              <CountCells t={t} c={counts[f]} />
-              {showReasons && (
-                <td className={TD} data-label={t(`${K}.col.reasons`)} data-testid={`ai-reasons-${f}`}>
-                  <ReasonCell t={t} line={reasonLine(t, f, counts, reasons, notGiven)} few={counts[f].few_green} />
-
+          {rows.map((f) => {
+            const b = facts[f]
+            return (
+              <tr key={f} className={ROW} data-testid={`ai-fact-${f}`}>
+                <td className={NAME}>
+                  {factName(t, f)}
+                  <div className="text-xs font-normal text-ground-500">{t(`${K}.nFacts`, { n: String(b.facts) })}</div>
                 </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </TableFrame>
-  )
-}
-
-/** LL2b: the facts in doubt the QC checked, by fact — counts only. A fact with none in doubt has
- *  no row; the served `few` flag adds the pill. The caller draws this only when the total in doubt
- *  is above 0. */
-export function QcCheckedTable({ t, facts }: { t: Translate; facts: Record<string, QcCheckedCounts> }) {
-  const rows = FACT_CODES.filter((f) => facts[f]?.in_doubt)
-  return (
-    <TableFrame phoneRows minWidth={520} label={t(`${K}.qcChecked`)}>
-      <table className="w-full">
-        <thead className={HEAD}>
-          <tr>
-            <th className={TH}>{t(`${K}.col.fact`)}</th>
-            <th className={TH}>{t(`${K}.col.qcChecked`)}</th>
-            <th className={TH}>{t(`${K}.col.qcAgreed`)}</th>
-            <th className={TH}>{t(`${K}.col.qcDisagreed`)}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((f) => (
-            <tr key={f} className={ROW} data-testid={`ai-qc-${f}`}>
-              <td className={NAME}>{factName(t, f)}</td>
-              <td className={TD} data-label={t(`${K}.col.qcChecked`)}>
-                {t(`${K}.xOfY`, { a: String(facts[f].checked), b: String(facts[f].in_doubt) })}
-                {facts[f].few && <> <FewPill t={t} /></>}
-              </td>
-              <td className={TD} data-label={t(`${K}.col.qcAgreed`)}>{facts[f].agreed}</td>
-              <td className={TD} data-label={t(`${K}.col.qcDisagreed`)}>{facts[f].disagreed}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </TableFrame>
-  )
-}
-
-export function DoubtTable({ t, rows }: { t: Translate; rows: readonly DoubtRow[] }) {
-  return (
-    <TableFrame phoneRows minWidth={520} label={t(`${K}.doubts`)}>
-      <table className="w-full">
-        <thead className={HEAD}>
-          <tr>
-            <th className={TH}>{t(`${K}.col.doubtCode`)}</th>
-            <th className={TH}>{t(`${K}.col.fact`)}</th>
-            <th className={TH}>{t(`${K}.col.passed`)}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={`${r.fact}-${r.code}`} className={ROW}>
-              <td className={NAME}>{doubtName(t, r.code)}</td>
-              <td className={TD} data-label={t(`${K}.col.fact`)}>{factName(t, r.fact)}</td>
-              <td className={TD} data-label={t(`${K}.col.passed`)}>
-                <Figure t={t} a={r.passed} b={r.total} rate={r.pass_rate} few={r.few} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </TableFrame>
-  )
-}
-
-export function VersionTable({ t, versions }: { t: Translate; versions: Record<string, PredictionCounts> }) {
-  return (
-    <TableFrame phoneRows minWidth={520} label={t(`${K}.byVersion`)}>
-      <table className="w-full">
-        <thead className={HEAD}>
-          <tr><th className={TH}>{t(`${K}.col.version`)}</th><CountHeads t={t} /></tr>
-        </thead>
-        <tbody>
-          {Object.entries(versions).map(([version, c]) => (
-            <tr key={version} className={ROW}>
-              <td className={NAME}>{version || t(`${K}.versionUnknown`)}</td>
-              <CountCells t={t} c={c} />
-            </tr>
-          ))}
+                {OUTCOMES.map((o) => (
+                  <td key={o} className={`${TD} ${OUTCOME_COLOUR[o]}`}>{b[o]}</td>
+                ))}
+                <td className={TD}><ScoreCell t={t} b={b} /></td>
+                <td className={TD} data-testid={`ai-reasons-${f}`}><ReasonChips t={t} reasons={b.top_reasons} /></td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </TableFrame>
@@ -240,30 +150,77 @@ function reviewerName(t: Translate, r: ReviewerRow): string {
   return r.name
 }
 
+/** COUNTS only, per recorder. "Green but failed" and "Unsure but passed" are the served
+ *  `green_failed` and `unsure_passed`; the QC columns are the served QC decisions. */
 export function ReviewerTable({ t, rows }: { t: Translate; rows: readonly ReviewerRow[] }) {
-  // LL2b: the two QC columns appear only when the server served them (older payloads have none).
-  const qc = rows.some((r) => r.qc_checked !== undefined)
   return (
-    <TableFrame phoneRows minWidth={620} label={t(`${K}.byReviewer`)}>
+    <TableFrame minWidth={900} label={t(`${K}.byReviewer`)}>
       <table className="w-full">
         <thead className={HEAD}>
           <tr>
-            <th className={TH}>{t(`${K}.col.reviewer`)}</th>
-            <th className={TH}>{t(`${K}.col.applications`)}</th>
-            <CountHeads t={t} />
-            {qc && <><th className={TH}>{t(`${K}.col.qcChecked`)}</th><th className={TH}>{t(`${K}.col.qcDisagreed`)}</th></>}
+            <th className={THC}>{t(`${K}.col.reviewer`)}</th>
+            <th className={THC}>{t(`${K}.col.applications`)}</th>
+            <th className={THC}>{t(`${K}.col.greenFailed`)}</th>
+            <th className={THC}>{t(`${K}.col.unsurePassed`)}</th>
+            <th className={THC}>{t(`${K}.col.qcAccepted`)}</th>
+            <th className={THC}>{t(`${K}.col.qcSentBack`)}</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
             <tr key={`${r.id ?? 'x'}-${i}`} className={ROW} data-testid="ai-reviewer-row">
               <td className={NAME}>{reviewerName(t, r)}</td>
-              <td className={TD} data-label={t(`${K}.col.applications`)}>{r.applications}</td>
-              <CountCells t={t} c={r} />
-              {qc && <>
-                <td className={TD} data-label={t(`${K}.col.qcChecked`)}>{r.qc_checked ?? 0}</td>
-                <td className={TD} data-label={t(`${K}.col.qcDisagreed`)}>{r.qc_overturned ?? 0}</td>
-              </>}
+              <td className={TD}>{r.applications}</td>
+              <td className={TD}>{r.green_failed}</td>
+              <td className={TD}>{r.unsure_passed}</td>
+              <td className={TD}>{r.qc_accepted}</td>
+              <td className={TD}>{r.qc_sent_back}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableFrame>
+  )
+}
+
+/** For the AI team: the doubts reviewers passed most often, as a plain list with the served count. */
+export function DoubtList({ t, rows }: { t: Translate; rows: readonly DoubtRow[] }) {
+  return (
+    <ul className="divide-y divide-ground-100 rounded-lg border border-ground-200 bg-ground-0">
+      {rows.map((r) => (
+        <li key={`${r.fact}-${r.code}`} className="flex items-start justify-between gap-4 px-3.5 py-2.5 text-sm">
+          <span className="min-w-0 break-words text-ground-900">
+            {doubtName(t, r.code)}
+            <span className="ml-1.5 text-xs text-ground-500">{factName(t, r.fact)}</span>
+          </span>
+          <span className="shrink-0 font-semibold text-ground-900">
+            {t(`${K}.nPassed`, { n: String(r.passed) })}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export function VersionTable({ t, versions }: { t: Translate; versions: readonly VersionScore[] }) {
+  return (
+    <TableFrame minWidth={480} label={t(`${K}.byVersion`)}>
+      <table className="w-full">
+        <thead className={HEAD}>
+          <tr>
+            <th className={THC}>{t(`${K}.col.version`)}</th>
+            <th className={THC}>{t(`${K}.col.factsMarked`)}</th>
+            <th className={THC}>{t(`${K}.col.score`)}</th>
+            <th className={THC}>{t(`${K}.col.points`)}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {versions.map((v) => (
+            <tr key={v.version} className={ROW} data-testid="ai-version-row">
+              <td className={NAME}>{v.version || t(`${K}.versionUnknown`)}</td>
+              <td className={TD}>{v.facts}</td>
+              <td className={TD}>{scorePct(v.score_pct)}</td>
+              <td className={TD}>{t(`${K}.pointsOfBest`, { points: signed(v.points), best: signed(v.best) })}</td>
             </tr>
           ))}
         </tbody>

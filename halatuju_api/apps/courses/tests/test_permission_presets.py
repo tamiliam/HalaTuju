@@ -139,9 +139,9 @@ GOLDEN = {
     },
     'ai_reliability_card': {
         'where': 'views_admin/verdict.py AdminVerdictMetricsView',
-        'keys': ('see_all', 'review'),
-        'today': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
-        'rule': lambda a, c: a.has_perm('see_all') or a.has_perm('review'),
+        'keys': ('see_all',),   # F4: a reviewer (`review` alone) no longer gets the AI card
+        'today': _t('super', 'org_admin', 'admin', 'qc'),
+        'rule': lambda a, c: a.has_perm('see_all'),
     },
     # ── C. quality check ────────────────────────────────────────────────────────────────────────
     'qc_gate': {

@@ -437,10 +437,12 @@ def _refuse_last_powers(target, before, after):
     """S2 / M4a: never take Organisation admin powers from the organisation's last active holder (zero
     holders only, never a limit on how many). The count is `powers_holder_ids`, the ONE rule Archive,
     Revoke and Delete also refuse by (`staff_delete_rules.is_sole_org_admin`). `change_permissions` locks
-    the organisation's org admins first (`lock_org_admins_of`)."""
+    the organisation's org admins first (`lock_org_admins_of`). Owner ruling, 25 Nov: only signed-in org
+    admins count (`powers_holder_ids`), so an invitee who never signed in is never the last holder either."""
     from apps.courses.public import powers_holder_ids
     key = _v2().ORG_ADMIN_KEY
-    if key not in before or key in after or target.owning_organisation_id is None:
+    if (key not in before or key in after or target.owning_organisation_id is None
+            or target.first_seen_at is None):
         return
     if not powers_holder_ids(target.owning_organisation_id) - {target.pk}:
         raise PermissionChangeRefused(

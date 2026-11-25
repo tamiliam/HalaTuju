@@ -7,7 +7,7 @@
  * dots and the old layout stay. jsdom applies no media queries, so "hidden below md" is the class pair
  * `hidden md:flex` on the dot row and `md:hidden` on Next. `t` echoes its key and params.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import QuizPage from './page'
 import * as api from '@/lib/api'
 
@@ -80,5 +80,47 @@ describe('the quiz on a phone: a progress bar and Next / Previous, no dot row', 
     await waitFor(() => expect(screen.queryByText('Third?')).not.toBeNull(), { timeout: 2000 })
     expect(screen.queryByTestId('quiz-next')).toBeNull()
     expect(screen.queryByText('quiz.seeResults')).not.toBeNull()
+  })
+})
+
+describe('the quiz: one step per answer (TD-708)', () => {
+  beforeEach(() => { jest.useFakeTimers() })
+  afterEach(() => { jest.useRealTimers() })
+
+  async function open() {
+    render(<QuizPage />)
+    await act(async () => { await Promise.resolve() })
+    expect(screen.queryByText('First?')).not.toBeNull()
+  }
+  // q1 is multi-select (no auto-advance on one pick), so move to q2 (single) first.
+  async function openAtSecond() {
+    await open()
+    fireEvent.click(screen.getByText('A'))
+    fireEvent.click(screen.getByTestId('quiz-next'))
+    expect(screen.queryByText('Second?')).not.toBeNull()
+  }
+
+  it('answer then Next at once lands on the next question, not two ahead', async () => {
+    await openAtSecond()
+    fireEvent.click(screen.getByText('E'))
+    fireEvent.click(screen.getByTestId('quiz-next'))
+    act(() => { jest.advanceTimersByTime(1000) })
+    expect(screen.queryByText('Third?')).not.toBeNull()
+  })
+
+  it('answer then wait still auto-advances exactly one step', async () => {
+    await openAtSecond()
+    fireEvent.click(screen.getByText('E'))
+    expect(screen.queryByText('Second?')).not.toBeNull()
+    act(() => { jest.advanceTimersByTime(300) })
+    expect(screen.queryByText('Third?')).not.toBeNull()
+  })
+
+  it('answer then Previous does not jump forward later', async () => {
+    await openAtSecond()
+    fireEvent.click(screen.getByText('E'))
+    fireEvent.click(screen.getByText('quiz.previous'))
+    act(() => { jest.advanceTimersByTime(2000) })
+    expect(screen.queryByText('First?')).not.toBeNull()
   })
 })

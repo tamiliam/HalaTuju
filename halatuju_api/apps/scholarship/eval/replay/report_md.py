@@ -7,7 +7,7 @@ value of its own. The owner's sign-off lines are left blank for the owner.
 """
 from collections import Counter, defaultdict
 
-from . import parent, rulings
+from . import parent, report_lens, rulings
 from .adapters import FAMILY
 
 EXAMPLES = 2
@@ -45,7 +45,9 @@ def tally(rows):
     return {'counts': counts, 'a': a, 'b': b, 'c': c, 'n': n}
 
 
-def render(rows, *, old_commit='', new_commit=''):
+def render(rows, *, old_commit='', new_commit='', human_lens=None, coach_grade=None):
+    """The report. Given either lens result (LL5 C2b), `report_lens` adds its two sections before the
+    sign-off; given neither, the text is byte for byte what it was before."""
     d = tally(rows)
     out = ['# Replay report', '', f'Old tree {old_commit}, new tree {new_commit}.', '', '## Counts', '',
            '| Family | Records | Same | A | B | C | N |', '|---|---|---|---|---|---|---|']
@@ -73,5 +75,7 @@ def render(rows, *, old_commit='', new_commit=''):
     out += [f'- {e}: {d["n"][e]}' for e in sorted(d['n'])] or ['None.']
     out += ['', '## Pending (not shipped: differences are B)', '']
     out += [f'- {pid}: {text}' for pid, text in rulings.PENDING]
+    if human_lens is not None or coach_grade is not None:
+        out += [''] + report_lens.lens_coach_section_lines(human_lens, coach_grade)
     out += ['', '## Owner sign-off', '', '- Reviewed by:', '- Date:', '']
     return '\n'.join(out)

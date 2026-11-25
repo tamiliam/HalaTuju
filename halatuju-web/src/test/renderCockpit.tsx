@@ -24,7 +24,7 @@
  * `renderCockpit` installs a spy and `expectNoConsoleErrors()` — wired into an `afterEach` by
  * `installCockpitConsoleGuard()` — fails the test that produced one.
  */
-import { render, type RenderResult } from '@testing-library/react'
+import { act, render, type RenderResult } from '@testing-library/react'
 import type { JSXElementConstructor, ReactNode } from 'react'
 
 import { AdminScholarshipDetailView } from '@/app/admin/scholarship/[id]/view'
@@ -243,7 +243,26 @@ export function installCockpitConsoleGuard(): void {
     jest.clearAllMocks()
     startCockpitConsoleGuard()
   })
-  afterEach(() => {
+  afterEach(async () => {
+    await settleCockpit()
     expectNoConsoleErrors()
   })
+}
+
+/**
+ * Let late async work (a lazy part's chunk, the notes card's fetch) finish INSIDE act before the
+ * console check. A test that ends straight after a click left those updates to land outside act,
+ * and whether they did depended on machine speed: a cloud-build flake (22 Nov and 23 Nov, in
+ * view.failReasons.test.tsx, "not wrapped in act" from ReviewerNotesCard and LazyPartScreen).
+ * Real defects still fail: only act's own timing is changed, not what is reported.
+ */
+export async function settleCockpit(): Promise<void> {
+  await settleTick()
+  await settleTick()
+  await settleTick()
+}
+
+/** One macrotask turn inside act. Three in a row, not a loop, so no lint suppression is needed. */
+function settleTick(): Promise<void> {
+  return act(async () => { await new Promise((resolve) => { setTimeout(resolve, 0) }) })
 }

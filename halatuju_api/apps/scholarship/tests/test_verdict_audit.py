@@ -237,15 +237,19 @@ class TestVerdictMetricsEndpoint(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
 
-    def test_metrics_excludes_undecided_and_computes_rate(self):
+    def test_metrics_excludes_undecided_and_scores_the_decided_facts(self):
+        # F4: a reviewer gets no AI prediction card at all; a super reads the whole set.
         self._auth(REVIEWER)
+        self.assertEqual(self.client.get('/api/v1/admin/scholarship/verdict-metrics/').status_code, 403)
+        PartnerAdmin.objects.create(supabase_user_id='audit-super', role='super', is_active=True,
+                                    name='Sue', email='s@x.com')
+        self._auth('audit-super')
         r = self.client.get('/api/v1/admin/scholarship/verdict-metrics/')
         self.assertEqual(r.status_code, 200)
         m = r.json()
         self.assertEqual(m['applications'], 2)          # the undecided app is excluded
-        self.assertEqual(m['overrides'], 2)
-        self.assertEqual(m['fact_decisions'], 2)
-        self.assertEqual(m['override_rate'], 1.0)
+        # identity Certain + fail (-10); income Can't verify + pass (-1); blank facts are not marked
+        self.assertEqual((m['score']['facts'], m['score']['points']), (2, -11))
 
     def test_requires_admin(self):
         # No credentials → 401 (not authenticated); a valid non-admin token → 403 (admin guard).

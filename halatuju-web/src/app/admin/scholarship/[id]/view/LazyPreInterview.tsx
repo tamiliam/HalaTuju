@@ -6,7 +6,8 @@
  * WHY (first-load budget, 2026-11-23): F3 made `PreInterviewReject.tsx` heavier (the four-fact
  * assessment now sits in the form) and `/admin/scholarship/[id]` went to 250.9 kB against its
  * 250 kB ceiling. Most cases never draw either screen, yet both rode in every visit. The budget is
- * never raised; the weight is paid for here.
+ * never raised; the weight is paid for here. (Since 23 Nov the four facts come from the ONE Reviewer
+ * Assessment box, passed in as `box`; the form no longer draws its own, so the chunk is lighter.)
  *
  * The record is mounted under the SAME condition as the component's own early return: the case is
  * `rejected` in the pre-interview category. Keep that condition identical. The import is owned by `lazySource`, with LITERAL specifiers.

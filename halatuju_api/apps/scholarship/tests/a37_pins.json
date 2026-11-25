@@ -599,6 +599,7 @@
     "proposed_award_amount",
     "award_disqualifier",
     "rejection_category",
+    "rejection_chip",
     "rejected_at",
     "rejected_by",
     "rejected_by_name",
@@ -732,7 +733,8 @@
     "ready_on",
     "decision_reopened_at",
     "rejection_category",
-    "new_note"
+    "new_note",
+    "rejection_chip"
    ],
    "AdminGraduationMessageSerializer": [
     "id",

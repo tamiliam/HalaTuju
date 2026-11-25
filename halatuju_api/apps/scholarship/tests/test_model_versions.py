@@ -174,6 +174,9 @@ _NOT_A_MODEL_VERSION = {
         'The version of the consent wording a sponsor agreed to. Legal text, not a model.',
     'apps/scholarship/management/commands/seed_sponsor_terms.py:VERSION':
         'The version of the sponsor terms text it seeds. Legal text, not a model.',
+    'apps/scholarship/coach_grade.py:UNKNOWN_VERSION':
+        'A display label, "(unknown version)", for decided records that carry no engine version '
+        'label. It names the absence of a version; it versions no model and scores nothing.',
 }
 
 #: Gaps no import walk can see, each with where it lives (`<file>:<text that must still be

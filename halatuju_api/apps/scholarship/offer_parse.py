@@ -326,7 +326,20 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # word and value on rendered page 1 (`pdf_ink`, `offer_exact`); no lock on ANY rules lane (university or
 # government family) when the page-1 text (a university lane's drawn layout; a government letter's text layer)
 # or the parsed programme / stream says ASASI (`_rules_exit`). Built on 2.2.0 after OCR-8 shipped it.
-PARSER_VERSION = '2.3.0'
+# 2.3.1 (TD-702, 2026-11-23) — the PDF gate (pdf_pages._open_pdf -> pdf_layer_guards.GateReader) refuses a crafted
+# PDF past 4 whole-file pypdf reads; genuine letters read as before, only the three named crafted shapes change.
+# 2.3.2 (TD-710, 2026-11-23) — the PDF gate's GateReader also caps pypdf's lookup work (bytes read, read calls,
+# cross-reference rows walked, object-stream entries parsed), also while it opens the file, and
+# parses an object stream once; genuine letters read as before, only crafted files past the cap change (and a
+# genuine file with about 3,500-6,000 packed objects or more, by shape, which no fixture comes near).
+# 2.3.3 (TD-710 gap 2, 2026-11-24) — the two open-time scans pypdf read through its own uncounted copies (a
+# cross-reference stream's entries; the object-stream indexes a rebuilt table scans) are charged to the same
+# budget; only filter decoding stays uncounted. Gap 3: pypdf's log records are off. Genuine letters as before.
+# 2.3.4 (OCR-12 new design, 2026-11-24) — every object number the PDF gate looks up must resolve to ONE object
+# (pdf_object_identity): a second copy anywhere in the raw bytes or an object stream, a header pdfium may read
+# differently, or an object stream no entry names refuses the file. 5 genuine incremental-update fixtures are now
+# refused by the layer gate (owner: strict) and go to the Vision route; every other letter reads as before.
+PARSER_VERSION = '2.3.4'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)

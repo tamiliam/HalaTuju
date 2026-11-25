@@ -151,7 +151,8 @@ export const roleOrgAdmin: ManualChapter = {
           <span className="mt-2 block">On Team you can also <strong>Resend</strong> a sign-in invite or
           <strong> Revoke</strong> (and later restore) access &mdash; each asks you first. One safeguard: you
           can&rsquo;t revoke the <strong>last</strong> organisation admin &mdash; the Revoke option simply isn&rsquo;t
-          offered on the sole admin, so your organisation is never left without one.</span>
+          offered on the sole admin, so your organisation is never left without one. An invited admin counts
+          only once they have signed in.</span>
           <span className="mt-2 block"><strong>Delete</strong> sits next to Revoke on every Team table and on
           each person&rsquo;s own page. It works for anybody who has done no work yet: an admin, a reviewer, QC
           or a mentor. You type their email address to confirm, and it removes their sign-in and their
@@ -258,18 +259,21 @@ export const roleOrgAdmin: ManualChapter = {
         <strong> Reject before interview</strong> under <strong>Assign a reviewer</strong>. No interview is held.
         If a reviewer is already on the case, set the reviewer back to <em>Unassigned</em> first. Whoever holds
         the quality control permission can do this (organisation admins and QC hold it); a reviewer never can.
-        <span className="mt-2 block">First record the <strong>four facts</strong>, as a reviewer does:
-        <strong> Pass</strong> (yes, this is true) or <strong>Fail</strong> (no, or not proven) for Identity, Results,
-        Pathway and Income. Every Fail asks <em>Why?</em>, with <em>Other</em> already chosen. Reject stays greyed
-        until all four are recorded. They are kept on the case where a reviewer&rsquo;s assessment goes, unless an
+        <span className="mt-2 block">First fill in the <strong>Reviewer Assessment</strong> box above, as a reviewer
+        does: <strong>Pass</strong> (yes, this is true) or <strong>Fail</strong> (no, or not proven) for Identity,
+        Academic, Pathway and Income. Every Fail asks <em>Why?</em>, with <em>Other</em> already chosen. Until all four
+        are rated, a red line shows in the reject panel and Reject stays greyed. You can change them until someone
+        submits: <strong>Yes, reject</strong> here, or a reviewer&rsquo;s recommendation. Taps alone save nothing. They are kept on the case where a reviewer&rsquo;s assessment goes, unless an
         assessment is already recorded there: that one stays as it is. Either way, the four facts and reasons you
         gave are kept with your reject, and <strong>Cancel decline</strong> never removes that record.</span>
         <span className="mt-2 block">Under <strong>Why are you rejecting?</strong>, choose the reason, then add
         <strong> Additional details</strong> (required, up to 2,000 characters). Both are confidential and are not
         shared with the student. Press <strong>Reject student</strong>, check the summary, then press
         <strong> Yes, reject</strong>.</span>
-        <span className="mt-2 block">The decision is recorded at once as <strong>Rejected before
-        interview</strong>, and it never counts against a reviewer. The student gets the same kind decline email
+        <span className="mt-2 block">The decision is recorded at once: the case shows <strong>Rejected</strong> with a
+        <em> before interview</em> chip, and it never counts against a reviewer. Its page then shows only two cards
+        on the right: <em>Rejected before interview</em> (the four facts you rated) and, below it,
+        <em> Rejection reason</em>. The student gets the same kind decline email
         as after an interview, but only when the quality control hold ends; until then they still see
         <em> Awaiting review</em>, and <strong>Cancel decline</strong> on the applicant&rsquo;s page puts them
         back at Awaiting review with no reviewer. Once the email has gone, the page says <em>Decline email sent
@@ -395,9 +399,17 @@ export const roleOrgAdmin: ManualChapter = {
         gift, and your other gifts are not affected. A gift with no layout of its own shows the
         <em> organisation layout</em>, which you set from Customise with no gift chosen; <strong>Use the
         organisation layout</strong> sends a gift back to it. A reviewer&rsquo;s own cases and a QC&rsquo;s
-        queue are not panels and cannot be switched off. An <strong>AI prediction</strong> block, showing how
-        often reviewers agreed with the AI, is on this page and at the foot of the <strong>Programmes</strong> page (all your
-        gifts together); its <strong>By reviewer</strong> table is for organisation admins. Platform-only tools —
+        queue are not panels and cannot be switched off. An <strong>AI prediction</strong> card, showing how good the
+        AI&rsquo;s prediction was in marks, is on this page and at the foot of the <strong>Programmes</strong> page
+        (all your gifts together). Reviewers do not see it. Each decided fact lands in one of five outcomes:
+        <strong> Right, sure</strong> (+2), <strong>Right, leaning</strong> (+1), <strong>Unsure</strong> (0),
+        <strong> Wrong, leaning</strong> (&minus;3 or &minus;1) and <strong>Wrong, sure</strong> (&minus;10). The
+        <strong> AI score</strong> is the points won out of the best possible, as a whole percentage:
+        100% means sure and right on every fact, 0% means no better than &ldquo;Unsure&rdquo; on every fact, and
+        below 0% means its confident mistakes cost more than its right answers won. <strong>Points lost</strong>
+        and the <strong>By fact</strong> table show where it lost most. <strong>By reviewer</strong> gives plain
+        counts (applications, green but failed, unsure but passed, QC accepted, QC sent back) for organisation
+        admins only. Platform-only tools —
         adding organisations or referral partners — never appear for you; those stay with the HalaTuju
         platform team.</>
       ),

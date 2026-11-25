@@ -140,7 +140,7 @@ export function ReviewerNotesCard({ appId, token, t, refreshKey }: {
           ))}
         </ol>
       ) : data && !data.can_add && (
-        <p className="text-sm text-ground-500">{t(`${P}.empty`)}</p>
+        <p className="text-sm text-ground-500">{t(`${P}.${data.reason === 'finished' ? 'emptyClosed' : 'empty'}`)}</p>
       )}
 
       {data?.can_add && (

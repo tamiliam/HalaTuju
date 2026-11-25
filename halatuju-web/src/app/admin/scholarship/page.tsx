@@ -360,6 +360,7 @@ function StaffScholarshipList() {
         <div className="divide-y divide-ground-100 border-y border-ground-100 md:hidden" data-testid="application-cards">
           {apps.map((a) => {
             const s = displayStatus(a)
+            // owner 2026-11-25: the list shows the status only; every warning chip lives on the case page.
             return (
               <div key={a.id} data-app-row>
                 <Link href={`/admin/scholarship/${a.id}`} data-row-link
@@ -369,8 +370,10 @@ function StaffScholarshipList() {
                   <span className="min-w-0 grow basis-40 break-words text-[15px] font-semibold">
                     {a.name || '—'}{a.new_note && <NewNoteMark label={t('admin.scholarship.newNote')} />}
                   </span>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(s)} ${PHONE_PILL_SM}`}>
-                    {t(statusLabelKey(s))}
+                  <span className="flex shrink-0 gap-1">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(s)} ${PHONE_PILL_SM}`}>
+                      {t(statusLabelKey(s))}
+                    </span>
                   </span>
                 </span>
 
@@ -466,7 +469,10 @@ function StaffScholarshipList() {
                     {(() => {
                       // A super-reopened decision shows "Reopened", overriding the stored accepted/rejected.
                       const s = displayStatus(a)
-                      return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone(s)}`}>{t(statusLabelKey(s))}</span>
+                      // owner 2026-11-25: the status only; warning chips live on the case page.
+                      return <span className="inline-flex flex-wrap gap-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone(s)}`}>{t(statusLabelKey(s))}</span>
+                      </span>
                     })()}
                   </td>
                   <td className="px-4 py-3 text-ground-500">{formatDate(a.submitted_at)}</td>

@@ -31,9 +31,13 @@ export interface PreInterviewDetailFields {
   rejection_reason?: string
   /** When THIS decline's email went to the student (null while it is held). */
   decline_email_sent_at?: string | null
+  /** The second chip beside the status (`lib/applicationStatus.rejectionChip`, owner 2026-11-23). */
+  rejection_chip?: string
 }
 
-/** The list row's #75 field (`AdminScholarshipListItem` extends this): the decline kind. */
+/** The list row's #75 field (`AdminScholarshipListItem` extends this): the decline kind, and the
+ *  second chip beside the status (`lib/applicationStatus.rejectionChip`, owner 2026-11-23). */
 export interface PreInterviewListFields {
   rejection_category?: string
+  rejection_chip?: string
 }

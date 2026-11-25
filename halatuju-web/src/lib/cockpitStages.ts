@@ -278,23 +278,57 @@ export function showsRecommendationCard(
     assignedToId?: number | null
     decisionReopened?: boolean | null
     decisionRecorded?: boolean | null
+    rejectionCategory?: string | null
   },
 ): boolean {
   return showsDecisionCards(opts) && !isWaitingForReviewer(opts)
 }
 
-/** Estimated need & proposed bursary: hidden pre-submission and while waiting for a reviewer. */
-export function showsEstimateCard(
-  opts: { status: string | null | undefined; assignedToId?: number | null; decisionReopened?: boolean | null },
+/** The decline kinds of a case rejected BEFORE any review (owner 2026-11-23): the org admin's
+ *  reject at Shortlisted (`incomplete`) and the reject before interview (`pre_interview`). */
+const REJECTED_BEFORE_REVIEW = ['incomplete', 'pre_interview']
+
+/** Rejected before any review, decision not reopened: the right column shows only the rejection's
+ *  own record ("Rejection reason", and "Rejected before interview" above it for `pre_interview`). */
+export function isRejectedBeforeReview(
+  opts: { status: string | null | undefined; rejectionCategory?: string | null; decisionReopened?: boolean | null },
 ): boolean {
-  return showsPostSubmissionCards(opts.status) && !isWaitingForReviewer(opts)
+  return opts.status === 'rejected' && !opts.decisionReopened
+    && REJECTED_BEFORE_REVIEW.includes(opts.rejectionCategory || '')
 }
 
-/** Org admin and reviewer notes: not before Awaiting review, and not while waiting for a reviewer. */
-export function showsNotesCard(
-  opts: { status: string | null | undefined; assignedToId?: number | null; decisionReopened?: boolean | null },
+/** The decline kinds of a case rejected AFTER an interview (TD-716, owner 2026-11-24): the
+ *  post-shortlist decline (`interview`, "Reviewed but not selected") and the post-award one
+ *  (`contractual`). Served data: `rejection_category`, never text matching. */
+const REJECTED_AFTER_INTERVIEW = ['interview', 'contractual']
+
+/** Rejected after an interview, decision not reopened (a reopened case is `displayStatus`
+ *  'reopened' and keeps its cards, since it is back in review). */
+export function isRejectedAfterInterview(
+  opts: { status: string | null | undefined; rejectionCategory?: string | null; decisionReopened?: boolean | null },
 ): boolean {
-  return showsPostSubmissionCards(opts.status) && !isWaitingForReviewer(opts)
+  return opts.status === 'rejected' && !opts.decisionReopened
+    && REJECTED_AFTER_INTERVIEW.includes(opts.rejectionCategory || '')
+}
+
+type CardOpts = {
+  status: string | null | undefined
+  assignedToId?: number | null
+  decisionReopened?: boolean | null
+  rejectionCategory?: string | null
+}
+
+/** Estimated need & proposed bursary: hidden pre-submission, while waiting for a reviewer, on
+ *  a case rejected before any review, and on a case rejected after an interview (TD-716). */
+export function showsEstimateCard(opts: CardOpts): boolean {
+  return showsPostSubmissionCards(opts.status) && !isWaitingForReviewer(opts) && !isRejectedBeforeReview(opts)
+    && !isRejectedAfterInterview(opts)
+}
+
+/** Org admin and reviewer notes: not before Awaiting review, not while waiting for a reviewer, and
+ *  not on a case rejected before any review. */
+export function showsNotesCard(opts: CardOpts): boolean {
+  return showsPostSubmissionCards(opts.status) && !isWaitingForReviewer(opts) && !isRejectedBeforeReview(opts)
 }
 
 // ── The other end of the lifecycle: a CLOSED case (2026-08-18) ───────────────
@@ -370,9 +404,10 @@ export function showsDecisionCards(
     status: string | null | undefined
     decisionReopened?: boolean | null
     decisionRecorded?: boolean | null
+    rejectionCategory?: string | null
   },
 ): boolean {
-  if (!showsPostSubmissionCards(opts.status)) return false
+  if (!showsPostSubmissionCards(opts.status) || isRejectedBeforeReview(opts)) return false
   if (!isCaseClosed(opts)) return true
   return !!opts.decisionRecorded
 }

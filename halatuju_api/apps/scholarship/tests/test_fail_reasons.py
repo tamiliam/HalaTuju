@@ -171,29 +171,25 @@ class TestReasonMetrics(TestCase):
     def _get(self, who, url=METRICS):
         return authed_client(who).get(url)
 
-    def test_reason_counts_per_fact_with_not_given(self):
-        body = self._get(self.lead).json()
-        income = body['fail_reasons']['income']
-        self.assertEqual(income['interview_differs'], 2)
-        self.assertEqual(sum(income.values()), 2)
-        self.assertEqual(set(income), set(fr.CODES))
-        self.assertEqual(body['fail_reasons']['identity']['documents_differ'], 1)
-        self.assertEqual(sum(body['fail_reasons']['academic'].values()), 0)   # not green
-        self.assertEqual(body['fail_reasons_not_given'],
-                         {'identity': 0, 'academic': 0, 'pathway': 0, 'income': 1})
-        self.assertEqual(body['fact_counts']['income']['green_failed'], 3)    # 2 given + 1 not given
+    def test_the_reasons_are_where_the_fact_lost_most_points(self):
+        # F4: a fail reason now shows as "Where it lost most points" on the By fact table.
+        by_fact = self._get(self.lead).json()['score']['by_fact']
+        self.assertEqual(by_fact['income']['top_reasons'],
+                         [{'key': 'fail:interview_differs', 'points': -20},
+                          {'key': 'fail:not_given', 'points': -10}])         # the old row: no key at all
+        self.assertEqual(by_fact['identity']['top_reasons'],
+                         [{'key': 'fail:documents_differ', 'points': -10}])
+        self.assertEqual(by_fact['academic']['top_reasons'], [])            # not sure, so nothing lost
 
     def test_the_overview_carries_the_same_object_and_the_fence_holds(self):
         page = self._get(self.lead, OVERVIEW).json()['ai_prediction']
-        self.assertEqual(page['fail_reasons'], self._get(self.lead).json()['fail_reasons'])
-        self.assertEqual(page['fail_reasons']['income']['other'], 0)   # the other tenant's tap
+        self.assertEqual(page['score'], self._get(self.lead).json()['score'])
+        keys = [r['key'] for r in page['score']['by_fact']['income']['top_reasons']]
+        self.assertNotIn('fail:other', keys)   # the other tenant's tap
 
-    def test_a_reviewer_sees_only_their_assigned_applicants(self):
+    def test_a_reviewer_gets_no_card(self):
         ScholarshipApplication.objects.filter(pk=self.a2.pk).update(assigned_to=self.reviewer)
-        for body in (self._get(self.reviewer).json(), self._get(self.reviewer, OVERVIEW).json()['ai_prediction']):
-            self.assertEqual(body['fail_reasons']['income']['interview_differs'], 1)
-            self.assertEqual(body['fail_reasons_not_given']['income'], 0)
-            self.assertNotIn('by_reviewer', body)
+        self.assertEqual(self._get(self.reviewer).status_code, 403)
 
     def test_an_old_row_without_the_key_counts_as_not_given(self):
         m = audit.override_metrics([(snap(), officer(income='fail'), 'v'),

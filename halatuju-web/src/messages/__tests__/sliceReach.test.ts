@@ -388,8 +388,8 @@ interface SliceRule {
 const SLICE_RULES: Record<'scholarship' | 'sponsor' | 'bursary' | 'discovery', SliceRule> = {
   scholarship: {
     loader: path.join(SRC, 'lib', 'messagesScholarship.ts'),
-    key: new RegExp(`^scholarship\\.(?!(?:${KEPT.join('|')})(?:\\.|$))|\\$\\{\\}scholarship\\.`),
-    notKey: /^scholarship\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
+    key: new RegExp(`^scholarship\\.(?!(?:${KEPT.join('|')})(?:\\.|$))|\\$\\{\\}scholarship\\.|^profile\\.|\\$\\{\\}profile\\.`),
+    notKey: /^(scholarship|profile)\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
     // The 17 routes that show these words on 2026-10-29, plus the sandbox.
     owners: [
       '/admin/profile', '/admin/programme', '/admin/requests', '/admin/requests/[id]',
@@ -426,10 +426,10 @@ const SLICE_RULES: Record<'scholarship' | 'sponsor' | 'bursary' | 'discovery', S
   // G13 (2026-11-11): plus the `courseDetail.*` and `saved.*` children outside CORE_KEEPS.
   discovery: {
     loader: path.join(SRC, 'lib', 'messagesDiscovery.ts'),
-    key: new RegExp('^discovery\\.|\\$\\{\\}discovery\\.'
+    key: new RegExp('^discovery\\.|\\$\\{\\}discovery\\.|^courses\\.|\\$\\{\\}courses\\.'
       + `|^courseDetail\\.(?!(?:${CORE_KEEPS.courseDetail.join('|')})(?:\\.|$))|\\$\\{\\}courseDetail\\.`
       + `|^saved\\.(?!(?:${CORE_KEEPS.saved.join('|')})(?:\\.|$))|\\$\\{\\}saved\\.`),
-    notKey: /^(discovery|courseDetail|saved)\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
+    notKey: /^(discovery|courseDetail|saved|courses)\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
     // Plus both quizzes (Mobile M4c follow-up, owner 2026-11-02): their phone Next (`discovery.quizNext`)
     // and `saved.signIn`; and /stpm/[id] (G13): the course page's own words.
     owners: ['/course/[id]', '/quiz', '/sandbox', '/sandbox/[surface]', '/saved', '/search', '/stpm/[id]', '/stpm/quiz'],

@@ -17,7 +17,37 @@
 5. Compares: per record `same`, `differs` (old against new), `could_not_run` (either side raised) or
    `noise` (new against new_again differ: the engine is not deterministic; left out of A/B). The A/B
    split by the ruling catalogue is R2.
-Everything printed goes through the scrubber; an error is printed by class name only.
+Everything printed goes through the scrubber; an error is printed by class name only. One exception:
+the fixed line `HUMAN_LENS_ON_LINE` (a constant, no data in it; the scrubber has no code for it).
+
+THE HUMAN LENS (LL5 phase C1), OFF by default. Only `--human-lens` turns it on; then ONLY the `new` child
+gets the lens names (`human_lens_env`: the switch, the exam folder, the freeze flag, and
+`REPLAY_FINGERPRINT_KEY` copied from this process's environment). Off, every child's environment is
+exactly as before and the result has no new key. The `new` child writes the lens's counts and codes to
+`human_lens.json` in the workdir; `run_replay` returns them under the one key ``human_lens``. They are
+not printed in this phase. SAFETY (phase C1c): `--human-lens` without `--human-lens-exam-folder` is an
+argument error; so are `--human-lens` with `--counts-only`, and a relative exam folder (the child's own
+`os.path.isabs` rule; the child still refuses it too, as `folder_not_absolute`); the file is checked
+again here against the allow-list (`lens_result_schema`); a lens
+result that is an error (``{"error": ...}``) makes `main` exit `HUMAN_LENS_FAILED_EXIT` (4), never 0.
+
+THE COACH GRADE (LL5 phase C2), under the SAME switch, with no new environment name (`child_env` is
+unchanged). The `new` child also writes the coach grade's report to `coach_grade.json` in the workdir.
+This process deletes an old copy before the run, reads it after the children exit, checks it again
+against its own allow-list (`coach_result_schema`) and returns it under the one more key ``coach_grade``.
+The same error rules as the lens; an error in either result makes `main` exit 4. `run_replay` prints
+neither result.
+
+THE LL5 BLOCK (LL5 phase C2d). With `--human-lens` only, once `run_replay` has printed its JSON lines and
+returned, `main` prints the two results as `report_lens` renders them (the same allow-list re-check and
+label tables as the markdown report; this file formats nothing from them) between the fixed lines
+`LENS_REPORT_START` and `LENS_REPORT_END`, in ONE print to stdout, the stream of the JSON lines. A block
+that holds a failure (either result failed its check), or a render that raised one of
+`report_lens.RENDER_ERRORS` (then the block is only `report_lens.RENDER_FAILED_LINE`), makes `main` exit 4
+even when the run would exit 0: a report that cannot be shown is not a pass. No block with the lens off
+(the output is as before), on the fatal path (exit 3) or on an argument error (exit 2, which
+`--counts-only` with `--human-lens` is): there is no result to show. Any other error in the render is
+the fatal path.
 """
 import argparse
 import importlib
@@ -28,13 +58,30 @@ import sys
 import time
 from collections import Counter, defaultdict
 
-from . import guards, netguard
+from . import coach_result_schema, guards, lens_result_schema, netguard, report_lens
 from . import scrub as scrub_module
-from .child import parse_instant, setup_django
+from .child import (COACH_GRADE_FILE, HUMAN_LENS_ENV, HUMAN_LENS_FILE, HUMAN_LENS_FOLDER_ENV,
+                    HUMAN_LENS_FREEZE_ENV, parse_instant, setup_django)
 from .scrub import count_dropped, error_record, scrub
 
 RUN_SIDES = ('old', 'new', 'new_again')
 TREE_OF = {'old': 'old', 'new': 'new', 'new_again': 'new'}
+#: The derived fingerprint key's variable (`replay.settings`); it reaches a child only with the lens on.
+FINGERPRINT_KEY_ENV = 'REPLAY_FINGERPRINT_KEY'
+#: The one side that runs the human lens: one freeze at most, and the key reaches one child only.
+HUMAN_LENS_SIDE = 'new'
+#: The result's one new key, present only with the lens on.
+HUMAN_LENS_KEY = 'human_lens'
+#: The coach grade's key (LL5 phase C2), present only with the lens switch on.
+COACH_GRADE_KEY = 'coach_grade'
+#: The run's one line saying the lens is on: a fixed text, never the key or a folder.
+HUMAN_LENS_ON_LINE = '{"event": "human_lens_on"}'
+#: ``main``'s exit code when the lens result is an error. 0 is a finished run, 2 an argument error
+#: (argparse), 3 a fatal error; 4 is new and means only this.
+HUMAN_LENS_FAILED_EXIT = 4
+#: The two fixed lines around the LL5 block (`lens_report_block`); nothing else is printed between them.
+LENS_REPORT_START = '=== LL5 lens report start ==='
+LENS_REPORT_END = '=== LL5 lens report end ==='
 CHILD_TIMEOUT_S = 3 * 60 * 60
 #: How long the parent waits for every child to join; below the parent's idle-in-transaction limit.
 JOIN_TIMEOUT_S = 10 * 60
@@ -60,10 +107,11 @@ def case_counts():
     }
 
 
-def child_env(env, side_root, harness_dir):
+def child_env(env, side_root, harness_dir, lens=None):
     """The child's WHOLE environment: nothing from the parent but the replay URL, the path and the run's
-    scrub salt (so every side hashes alike)."""
-    return {
+    scrub salt (so every side hashes alike). ``lens`` (`human_lens_env`, the lens side only) adds the
+    lens names; None (the default) adds nothing."""
+    out = {
         'PATH': env.get('PATH', '/usr/bin:/bin'),
         guards.DB_ENV: env.get(guards.DB_ENV, ''),
         scrub_module.SALT_ENV: env.get(scrub_module.SALT_ENV, ''),
@@ -72,6 +120,19 @@ def child_env(env, side_root, harness_dir):
         'PYTHONDONTWRITEBYTECODE': '1',
         'TZ': 'UTC',
     }
+    if lens is not None:
+        out.update(lens)
+    return out
+
+
+def human_lens_env(args, env, side):
+    """The lens names for ``side``'s child, or None: the lens is off (no `--human-lens`), or this is not
+    the lens side. The key is copied from ``env`` ('' when absent: the lens then answers `key_blank`)."""
+    if not getattr(args, 'human_lens', False) or side != HUMAN_LENS_SIDE:
+        return None
+    return {HUMAN_LENS_ENV: '1', HUMAN_LENS_FOLDER_ENV: args.human_lens_exam_folder,
+            HUMAN_LENS_FREEZE_ENV: '1' if args.human_lens_freeze else '0',
+            FINGERPRINT_KEY_ENV: env.get(FINGERPRINT_KEY_ENV, '')}
 
 
 def child_command(args, side, snapshot, out_path):
@@ -89,7 +150,8 @@ def spawn_child(args, side, snapshot, out_path, env):
     """Start one child; its stdout and stderr are discarded (it writes only to ``out_path``)."""
     root = getattr(args, f'{TREE_OF[side]}_root')
     return subprocess.Popen(child_command(args, side, snapshot, out_path), cwd=os.path.join(root, 'halatuju_api'),
-                            env=child_env(env, root, args.harness_dir), stdin=subprocess.DEVNULL,
+                            env=child_env(env, root, args.harness_dir, human_lens_env(args, env, side)),
+                            stdin=subprocess.DEVNULL,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
@@ -203,10 +265,21 @@ def parse_args(argv):
     ap.add_argument('--workdir', default='/tmp/replay')
     ap.add_argument('--engines', default='')
     ap.add_argument('--counts-only', action='store_true')
+    ap.add_argument('--human-lens', action='store_true', help='run the human lens (off by default)')
+    ap.add_argument('--human-lens-exam-folder', default='', help='the exam folder: absolute, outside git')
+    ap.add_argument('--human-lens-freeze', action='store_true', help='freeze a missing exam file')
     args = ap.parse_args(argv)
     parse_instant(args.instant)
     if len(args.months.split(',')) != 2:
         ap.error('--months takes exactly two months')
+    if (args.human_lens_freeze or args.human_lens_exam_folder) and not args.human_lens:
+        ap.error('--human-lens-freeze and --human-lens-exam-folder need --human-lens')
+    if args.human_lens and not args.human_lens_exam_folder:     # fail fast, not after hours of engines
+        ap.error('--human-lens needs --human-lens-exam-folder')
+    if args.human_lens and args.counts_only:                    # no lens would run: refuse, not a silent 0
+        ap.error('--counts-only and --human-lens cannot be used together')
+    if args.human_lens and not os.path.isabs(args.human_lens_exam_folder):  # the child's own rule (isabs)
+        ap.error('--human-lens-exam-folder must be an absolute path')       # fixed words: never the value
     return args
 
 
@@ -251,6 +324,56 @@ def clear_side_files(workdir):
     return paths
 
 
+def clear_human_lens_file(workdir, name=HUMAN_LENS_FILE):
+    """The lens file's path (or the coach file's, by ``name``), after deleting the one an earlier run
+    left, so a side that writes nothing is never read as an old run's result."""
+    path = os.path.join(workdir, name)
+    if os.path.lexists(path):
+        os.remove(path)
+    return path
+
+
+def read_human_lens(path):
+    """The lens side's counts and codes, checked again against the allow-list (`lens_result_schema`):
+    ``{"error": "no_output"}`` when it wrote none, ``{"error": "bad_output"}`` when the file cannot be
+    read or is not a JSON object, ``{"error": "schema"}`` when the object fails the allow-list. Never
+    raises on the file and never echoes its content."""
+    if not os.path.exists(path):
+        return {'error': lens_result_schema.NO_OUTPUT}
+    try:
+        with open(path, 'rb') as fh:
+            raw = fh.read(lens_result_schema.MAX_RESULT_BYTES + 1)
+    except OSError:                                     # a folder, or no read permission
+        return {'error': lens_result_schema.BAD_OUTPUT}
+    return lens_result_schema.parse_human_lens_bytes(raw)
+
+
+def read_coach_grade(path):
+    """The coach grade's report, checked again against its allow-list (`coach_result_schema`), with the
+    lens's error rules: ``no_output``, ``bad_output``, ``schema``. Never raises on the file, never echoes."""
+    if not os.path.exists(path):
+        return {'error': coach_result_schema.NO_OUTPUT}
+    try:
+        with open(path, 'rb') as fh:
+            raw = fh.read(coach_result_schema.MAX_RESULT_BYTES + 1)
+    except OSError:                                     # a folder, or no read permission
+        return {'error': coach_result_schema.BAD_OUTPUT}
+    return coach_result_schema.parse_coach_grade_bytes(raw)
+
+
+def replay_exit_code(result):
+    """``main``'s exit code for a finished run: `HUMAN_LENS_FAILED_EXIT` when the lens was on and its
+    result or the coach grade's is an error (``{"error": ...}``: no output, a bad file, the allow-list, a
+    caught error), else 0. A REFUSAL (a code inside an exam, the coach's ``refusal``) is a result: 0."""
+    if not isinstance(result, dict):
+        return 0
+    for key in (HUMAN_LENS_KEY, COACH_GRADE_KEY):
+        value = result.get(key)
+        if isinstance(value, dict) and 'error' in value:
+            return HUMAN_LENS_FAILED_EXIT
+    return 0
+
+
 def stop_children(procs):
     """Kill every child still running (its `poll()` is None)."""
     for proc in procs.values():
@@ -262,7 +385,9 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
     """The exporting transaction reads no table while it waits for every child to join its snapshot
     (`joins`), so the wait holds no table lock; the case counts run AFTER the joins, in the same snapshot,
     and the transaction is rolled back BEFORE the children run their engines (`--counts-only`: the counts
-    and stop). Whatever goes wrong once a child has started, every child still running is killed."""
+    and stop). Whatever goes wrong once a child has started, every child still running is killed.
+    With `--human-lens` only: one fixed line says so, and the totals come back with ``human_lens``."""
+    lens_on = bool(getattr(args, 'human_lens', False))
     guards.check_environment(env)
     host, port = guards.check_database_url(env.get(guards.DB_ENV))
     sess = session or (lambda: guards.read_only_session(export=True))
@@ -279,6 +404,10 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
                     emit({'event': 'counts', **counts()}, out)
                     return {}
                 paths = clear_side_files(args.workdir)
+                if lens_on:
+                    lens_path = clear_human_lens_file(args.workdir)
+                    coach_path = clear_human_lens_file(args.workdir, COACH_GRADE_FILE)
+                    out(HUMAN_LENS_ON_LINE)
                 for s in RUN_SIDES:
                     procs[s] = spawn(args, s, snapshot, paths[s], child_vars)
                 emit({'event': 'joins', **wait_for_joins(paths, procs)}, out)
@@ -292,7 +421,21 @@ def run_replay(args, *, env, out=print, spawn=spawn_child, session=None, counts=
         emit({'event': 'side', 'side': s, 'exit': codes[s], 'records': len(sides[s]),
               'fatal': [{'error': e.get('error')} for e in events if e.get('event') == 'fatal'],
               'dropped': count_dropped(list(sides[s].values()))}, out)
-    return report(compare_sides(sides), out)
+    totals = report(compare_sides(sides), out)
+    if lens_on:
+        return {**totals, HUMAN_LENS_KEY: read_human_lens(lens_path), COACH_GRADE_KEY: read_coach_grade(coach_path)}
+    return totals
+
+
+def lens_report_block(result):
+    """(text, failed): the LL5 block - `LENS_REPORT_START`, the lines `report_lens` renders from the two
+    results, `LENS_REPORT_END` - and True when it shows a failure. When the render raises one of
+    `report_lens.RENDER_ERRORS`, the lines are only `report_lens.RENDER_FAILED_LINE` (failed: True)."""
+    try:
+        lines, failed = report_lens.lens_coach_report(result.get(HUMAN_LENS_KEY), result.get(COACH_GRADE_KEY))
+    except report_lens.RENDER_ERRORS:                   # never the message, never the result
+        lines, failed = [report_lens.RENDER_FAILED_LINE], True
+    return '\n'.join([LENS_REPORT_START, *lines, LENS_REPORT_END]), failed
 
 
 def main(argv=None):
@@ -303,13 +446,19 @@ def main(argv=None):
         guards.check_environment(os.environ)            # the checks come BEFORE Django: its setup queries
         guards.check_database_url(os.environ.get(guards.DB_ENV))
         setup_django()
-        run_replay(args, env=os.environ)
+        result = run_replay(args, env=os.environ)
+        code = replay_exit_code(result)
+        if args.human_lens and not args.counts_only:    # after the JSON lines; built whole, then one print
+            block, failed = lens_report_block(result)
+            print(block)
+            if failed:
+                code = HUMAN_LENS_FAILED_EXIT
     except SystemExit:
         raise
     except BaseException as exc:                        # by class name only, never the message
         emit({'event': 'fatal', **error_record(exc)})
         return 3
-    return 0
+    return code
 
 
 if __name__ == '__main__':
