@@ -31,20 +31,18 @@ SCHOLARS-SPLIT" and owner ruling Q3. Template: `docs/plans/2026-11-23-m4b-sponso
   `scholars.approve`; invites, Restore (gives back what was held) and a role switch to admin use the preset as it
   is. This also settles surprise 7's role-switch case: no `ADMIN_SWITCH_V2` is needed. `holds_scholars_key` still
   reads the v2 view key so Manage always brings View.
-- **Q-F / reviewers (owner): "Reviewers have nothing to do with scholars. Only admins do, based on permissions
-  given them."** So:
-  - 0101 grants `scholars.approve` only to rows that hold `scholars` AND sit in Admins (`staff_tables.in_admins`
-    on the stored keys; the org admin rows already hold it). Live: 2 `admin` rows + the one reviewer row that sits
-    in Admins by ruling O8 (row id 9, by id only). These 3 gain the letters on day one: name the count in the
-    phone check, never a name.
-  - 0101 REMOVES `scholars` (and any `scholars.approve`, `award_withdraw_request`, `award_withdraw_approve` it
-    holds) from every team row that holds it but does NOT sit in Admins. Live: 1 active reviewer, who got it from
-    0095 (10 Nov) only because it then held `see_all`. Audit row, kind `edit`, `changed_by_role` 'migration';
-    the reverse puts back exactly what this migration took. Their applications work is unchanged.
-  - The Permissions editor offers the Scholars row only on a person in Admins (and the org admin); on anyone
-    else it is not drawn. The server enforcing "Scholars keys only inside Admins" is S6 (groups first), not S4.
-- **Production counts (25 Nov, read-only):** 1: admin 2, org_admin 2, reviewer 2. 2: org_admin 2. 3: admin
-  view-only 2, org_admin both 2, reviewer view-only 2 (one of them in Admins). 4: no NULL admin row. 5: 0.
+- **Q-F (owner, corrected 25 Nov): "There are NO permanent reviewers or admins. There are team members who could
+  be added to admins, reviewers and mentors groups."** The stored `role` label decides nothing. A group (Admins /
+  Reviewers / Mentors) offers a set of switches and a member holds a subset; holding a switch never places anyone
+  in a group. (`staff_tables.in_admins` still infers membership from keys: today's stopgap until stored group
+  membership lands, S6 / S6b; S4 does not change it.) So:
+  - 0101 grants `scholars.approve` to every row whose stored list holds `scholars` and not the key, WHATEVER the
+    stored label (active, revoked, archived, pending). Live: the 4 team members in Admins who hold View scholars gain Manage scholar files and
+    with it the letters (name the count, 4, in the phone check, never a name). Organisation admins unchanged.
+  - 0101 removes NOTHING. The team member holding `award_withdraw_approve` without `scholars` is untouched.
+  - The Permissions editor keeps drawing the Scholars row as today; stored group membership is S6 / S6b.
+- **Production counts (25 Nov, read-only):** 1: admin 2, org_admin 2, reviewer 2. 2: org_admin 2. 3: 4 team
+  members view only, org_admin both 2; plus 1 team member with `award_withdraw_approve` only. 4: no NULL admin row. 5: 0.
   6: 0. 7: 0. 8: 0. 9: `0099_grant_scholars_approve` only (0100 runs at the 25 Nov 11:00 landing).
 
 ## The one principle
@@ -58,7 +56,8 @@ on the Payments switches.
 
 ### The keys today
 - `scholars` is an OLD key (`courses/staff_permissions.py:43`), read by `has_perm`. It is in the admin preset
-  (`:86`) and the lead tier (`:99`), and it seats a team member at Admins (`staff_tables.ADMIN_KEYS`, `:47`).
+  (`:86`) and the lead tier (`:99`), and `staff_tables.ADMIN_KEYS` (`:47`) lists it: today's stopgap that infers Admins membership from keys until
+  stored group membership lands (S6 / S6b).
 - `scholars.view` is its v2 spelling (`staff_permissions_v2.ALIASES`, `:130`); it is never stored.
 - `scholars.approve` is a v2 key (`staff_permissions_v2.py:65`, flagged `LEAD_ONLY`). It IS in `GRANTABLE_V2`
   (not an alias, not never-grantable), so `stored_v2` reads it on a team member's row today, on main as well.
@@ -95,7 +94,7 @@ on the Payments switches.
 | `letters.py:99,120,143` issue, preview, resend | `_kinds_for` | Unchanged (follow `_kinds_for`) |
 | `surface_gates.py:130-133` `may_send_senior_letters` | door `senior_letters` | **Deleted** (no other caller) |
 | `courses/staff_tables.py:201` door `senior_letters` | `('scholars.approve',)` | **Renamed `scholar_files`**, same key; the web mirror follows |
-| `staff_tables.py:265` `INVITE_START['admin']` + `ADMIN_PRESET_V2` | new Admin starts `see_all`, `scholars` + work pages | **Q-E**: + `scholars.approve` |
+| `staff_tables.py:265` `INVITE_START['admin']` + `ADMIN_PRESET_V2` | new Admin starts `see_all`, `scholars` + work pages | **Q-E (ruled OFF)**: unchanged; a new Admin starts View on, Manage off |
 | `views_admin/mentors.py:257` | Mentors list read: `scholars_scope == 'all'` | Unchanged (View) |
 | `development.py:233` per-scholar review, `mentoring.py:85,120` assign / end / log a meeting | their own Engagement switches | **Q-C** (recommended unchanged) |
 | `award_withdrawal_chain.py:116-180` | `award_withdraw_*` + the Applications read (`b40_scope == 'all'`) | Unchanged (sits in the Scholars row, reads Applications) |
@@ -106,10 +105,9 @@ converted in M3c; its GATE-LEFT entry is already gone. S4 closes TD-598 in the l
 **Manage without View.** `has_perm('scholars')` reads only old keys, so a row storing `scholars.approve` without
 `scholars` could write and not read (`reads_case` false, every past-award write refused). The editor never stores
 that shape, but `staff_lifecycle.change_role` does (`:288-295`): a switch TO `admin` keeps the old keys exactly and
-adds `ADMIN_PRESET_V2`. Once the preset carries `scholars.approve`, a reviewer switched to Admin would hold Manage
-without View. **Decision:** the role switch adds the work pages only (a new frozen `ADMIN_SWITCH_V2`, today's
-`ADMIN_PRESET_V2` without `scholars.approve`: a switch never gives a write key), and `holds_scholars_key` reads the
-v2 `scholars.view` (Manage implies it), so the server and the editor agree. Count 7 below must be 0.
+adds `ADMIN_PRESET_V2`. **Ruled (Q-E, 25 Nov):** the preset does NOT gain `scholars.approve`, so a role switch never
+gives Manage and no `ADMIN_SWITCH_V2` is needed. `holds_scholars_key` still reads the v2 `scholars.view` (Manage
+implies it), so a hand-made Manage-only row reads too and the server and the editor agree. Count 7 must be 0.
 
 ### Web map
 
@@ -206,8 +204,10 @@ Follows 0097 / 0099 / 0100 exactly: frozen constants (`KEY = 'scholars.approve'`
 `ADMIN_PRESET` frozen as 0097's), a `plan_row` the test pins the SQL's WHERE text to, docstring with PRE-CHECK,
 DATA block, LEDGER row in the same transaction, POST-DEPLOY CHECK, and a REVERSE.
 
-- **Writes:** append `scholars.approve` to every row whose `permissions` is a JSON array that holds `scholars` and
-  lacks `scholars.approve`, **any role** (admin, finance, qc, reviewer custom lists, org_admin lists).
+- **Writes (as ruled 25 Nov, Q-F corrected):** append `scholars.approve` to every team row (`admin`, `finance`,
+  `qc`, `reviewer` labels alike) whose `permissions` is a JSON array holding `scholars` and lacking the key (live:
+  4). Remove nothing. Organisation admin rows are left alone (0099 gave them the key; leaving them out keeps
+  0099's audit rows out of 0101's reverse). `ADMIN_PRESET_V2` does not gain the key (Q-E OFF).
   **Active, revoked, archived and pending alike** (the 0097 amendment and the 0099 / 0100 rule: a later Restore must
   give back what they had). The brief asked for "active rows"; precedent says all rows, and the reverse is exact
   either way. Lead call: follow precedent.
@@ -217,8 +217,8 @@ DATA block, LEDGER row in the same transaction, POST-DEPLOY CHECK, and a REVERSE
   hold no `scholars`; untouched.
 - **Audit:** one `staff_permission_changes` row per row changed, kind `edit` (or `edit_null`), before and after,
   `changed_by_email` '', `changed_by_role` 'migration'. Idempotent: a row holding the key is not written.
-- **Reverse:** removes the key only from rows whose latest audit row is this migration's (the 0097 rule); an
-  `edit_null` row goes back to NULL.
+- **Reverse:** a row whose NEWEST audit row is this migration's and which still holds exactly that row's `after`
+  goes back to its `before` (a grant loses the key, an `edit_null` row goes back to NULL).
 - **Not invisible to the old image.** The live image already reads a stored `scholars.approve` on a team row
   (senior letters through `senior_letters`). So running 0101 opens the senior letters to today's writers at once,
   before S4 serves. **Run it in the same window as the S4 publish, straight before it**, and do the phone check
@@ -284,10 +284,10 @@ today, apply `0101.plan_row`, and compare every scholar-file flag the old code s
 | Row shape | Today | After 0101 + S4 |
 |---|---|---|
 | `admin`, list with `scholars` (the preset shape) | every everyday write; no senior letter, no withdraw | same writes; **gains suspension / termination and withdraw** (Q-F) |
-| `reviewer` / `qc` / `finance`, custom list with `scholars` (e.g. the person in both Reviewers and Admins) | as above | as above, the same gain |
+| any other team label, custom list with `scholars` (a team member in Admins, maybe in Reviewers too) | as above | as above, the same gain |
 | team row already storing `scholars.approve` (given since M3c) | everything | unchanged |
 | `org_admin`, list with the key (0099), or NULL | everything | unchanged |
-| `org_admin`, list without the key (a super switched it off) | everyday writes, no senior | Q-D: everything again (recommended) |
+| `org_admin`, list without the key (a super switched it off) | everyday writes, no senior | Q-D fell away (count 0); 0101 gives it back as an Admins row |
 | `admin` NULL | everyday writes (preset) | materialised; same as the preset shape |
 | any row without `scholars` | no write | no write |
 | super | everything | unchanged |
@@ -311,7 +311,9 @@ Pins: a row reshaped by hand to View only (`['scholars']`) is refused every writ
 
 - `access_world.py`: `scholars_viewer_a` (`admin`, `['see_all', 'scholars']` + work pages) and
   `scholars_manager_a` (the same + `scholars.approve`), in a new `SCHOLAR_CALLERS`. `admin_a` (factory preset)
-  gains the key with the preset; `scholars_only_a` (`['scholars']`) becomes a View holder and its case-stage replay
+  holds the key through 0101's `plan_row` (the factory applies it), NOT through the preset (Q-E: the preset
+  does not gain it); `admin_invited_a` (the preset without 0101, `pre_s4=True`) is a member newly invited to
+  Admins: reads stay, every past-award scholar-file write refuses; `scholars_only_a` (`['scholars']`) becomes a View holder and its case-stage replay
   cells past the award flip to refused (declared, not silent); add `manage_only_a` (`['scholars.approve']`) to
   `WRITERS_WITHOUT_A_READ` and pin that it reads (Manage brings View).
 - `test_access_matrix.py`, `test_scholar_files_open_by_switch` over `SCHOLAR_WRITE_PAIRS` (the scholars/ POSTs:
@@ -328,11 +330,12 @@ Pins: a row reshaped by hand to View only (`['scholars']`) is refused every writ
 
 ## Groups first
 
-S4 changes no seat. Everyone given the key already sits at Admins by `scholars` (an `ADMIN_KEYS` key) or is an
-organisation admin; a stored `scholars.approve` also seats by `stored_v2`, so `in_admins` answers the same for
-every row. "Manage scholar files" is an Admins switch: it is drawn only in the Admins card's Programme box, never on
+A group offers a set of switches and a member holds a subset; holding a switch never places anyone in a group.
+S4 changes no group: everyone given the key is one of the team members in Admins who hold View scholars, or an
+organisation admin. (`in_admins` still infers membership from keys, today's stopgap until S6 / S6b; it answers
+the same for every row after 0101, and S4 does not change it.) "Manage scholar files" is an Admins switch: it is drawn only in the Admins card's Programme box, never on
 Reviewers. A person in both groups holds it as an Admins switch, as Sponsors: edit. S4 adds no membership rule;
-the stored Admins / Reviewers membership is S6 / S6b, which must seat today's `scholars` holders at Admins.
+the stored Admins / Reviewers membership is S6 / S6b, which must record today's team members in Admins as members.
 
 ## Debt
 
@@ -348,7 +351,8 @@ Mentor notes (S5). Retiring `finance` (S6). Stored group membership (S6b). The w
 ## Risks
 
 - Migrate-first opens the senior letters before the publish (above): run 0101 in the publish window.
-- A role switch to Admin giving Manage without View: closed by `ADMIN_SWITCH_V2` and the v2 read.
+- A role switch to Admin giving Manage without View: cannot happen (the preset holds no Manage, Q-E); the v2 read
+  covers a hand-made row.
 - A missed write door: the matrix sweeps every scholars/ POST and the case-stage replay sweeps every past-award door.
 - Wording: "Scholars" becomes "View scholars" in other places; the builder lists each.
 
@@ -358,8 +362,7 @@ Mentor notes (S5). Retiring `finance` (S6). Stored group membership (S6b). The w
 2. Server: door `scholar_files` (delete `senior_letters`, `may_send_senior_letters`); `may_write_file`;
    `holds_scholars_key` on the v2 view; `letters` collapse (`_senior` gone, `can_resend` served); `may_tranche` /
    `on_hold` per Q-B; `can_hold` served as the door.
-3. Presets: `ADMIN_PRESET_V2` + `scholars.approve` (catalogue order); flag `LEAD_ONLY` off for it;
-   `ADMIN_SWITCH_V2` for `change_role`; `INVITE_START` per Q-E; factory.
+3. Presets (Q-E OFF): `ADMIN_PRESET_V2`, `INVITE_START` and `change_role` unchanged; no `ADMIN_SWITCH_V2`.
 4. Migration 0101 + `test_s4_migration_0101.py` (frozen constants equal live, WHERE text pinned, idempotent,
    exact reverse, inactive rows written, NULL admin materialised).
 5. `test_s4_nobody_changes.py`.
