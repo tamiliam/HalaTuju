@@ -40,6 +40,8 @@ from .results_doc import _any_token, _norm_fold_upper_alnum
 #                        deductions must be WHOLE words (`_STATUTORY_WORDS`: 'EIS' in LEISURE or a tax form's
 #                        LHDN do not count); slips with a wage label are counted exactly as in 1.2.0. Stored
 #                        not_salary rows re-score via `rescore_salary_statutory` (from stored OCR text), no read.
+#                        Review round 2 (same unreleased version): letter edges, so a label glued to its
+#                        amount counts (KWSP308.00), known suffixes (KWSPPEKERJA, SOCSOEE); 'MTD' is PCB.
 MODEL_VERSION = '1.3.0'
 
 # ── Marker groups (normalised substring probes; matched via _norm_fold_upper_alnum) ──────────
@@ -55,12 +57,32 @@ _STATUTORY = {
 #: a longer token) must not. 'LHDN' is left out here: it names the tax office, which every tax form and tax
 #: letter prints (a BE form beside a KWSP relief line is not a payslip); the monthly deduction is PCB /
 #: CUKAI BULANAN. The substring groups above still count for a slip WITH wage labels, unchanged.
+#: Review round 2: 'MTD' (monthly tax deduction, the English label for PCB) counts here too — on this
+#: no-wage path only; the substring groups above are left as in 1.2.0.
 _STATUTORY_WORDS = {
     'KWSP/EPF':      ['KWSP', 'KUMPULAN WANG SIMPANAN', 'EPF'],
     'PERKESO/SOCSO': ['PERKESO', 'SOCSO'],
     'EIS/SIP':       ['EIS', 'INSURANS PEKERJAAN'],
-    'PCB/tax':       ['PCB', 'CUKAI BULANAN'],
+    'PCB/tax':       ['PCB', 'CUKAI BULANAN', 'MTD'],
 }
+#: Review round 2: the word edge is a LETTER edge, so a label glued to its amount still counts (PDF text
+#: layers print 'KWSP308.00', 'EIS5.10'); a letter on either side does not ('EIS' in LEISURE / REISSUE).
+#: Deliberate exception: a single-word label may carry ONE of these employee / employer suffixes glued on
+#: its right ('KWSPPEKERJA', 'SOCSOEE', 'EPFER') — payroll column heads, never English words. A letter
+#: glued on the LEFT ('AKAUNKWSP') still does not count. Phrases keep a space between their words.
+_WORD_SUFFIXES = ('PEKERJA', 'MAJIKAN', 'EMPLOYEE', 'EMPLOYER', 'EE', 'ER')
+
+
+def _word_pattern(token):
+    words = _norm_fold_upper_alnum(token).split()
+    body = r'\s+'.join(re.escape(w) for w in words)
+    if len(words) == 1:
+        body += '(?:' + '|'.join(_WORD_SUFFIXES) + ')?'
+    return f'(?<![A-Z]){body}(?![A-Z])'
+
+
+_STATUTORY_WORD_RE = {g: re.compile('|'.join(_word_pattern(t) for t in toks))
+                      for g, toks in _STATUTORY_WORDS.items()}
 # Wage-label grammar — "is this a payslip at all?". Each GROUP counts once.
 _WAGE_LABELS = [
     ['SLIP GAJI', 'PENYATA GAJI', 'PAYSLIP', 'PAY SLIP', 'SALARY SLIP', 'PAY ADVICE'],
@@ -99,12 +121,10 @@ _GIG = ['GRAB', 'FOODPANDA', 'LALAMOVE', 'MAXIM', 'SHOPEEFOOD', 'PANDA']
 _MYKAD = ['WARGANEGARA', 'PENGARAH PENDAFTARAN', 'PENDAFTARAN NEGARA']
 
 
-def _any_word(tokens, tn):
-    """True when any of `tokens` appears in the normalised text `tn` as whole words (a phrase stays a
-    phrase). `tn` is space-separated alphanumerics (`_norm_fold_upper_alnum`), so a padded match is a
-    word-boundary match."""
-    padded = f' {tn} '
-    return any(f' {_norm_fold_upper_alnum(t)} ' in padded for t in tokens)
+def _any_word(group, tn):
+    """True when a label of statutory `group` (a `_STATUTORY_WORDS` key) appears in the normalised text
+    `tn` as a whole word / phrase: letter edges, digits may touch it, known suffixes allowed (above)."""
+    return bool(_STATUTORY_WORD_RE[group].search(tn))
 
 
 def _count_groups(groups, tn):
@@ -127,7 +147,7 @@ def score_family(ocr_text: str) -> dict:
     tn = _norm_fold_upper_alnum(ocr_text)
     return {
         'statutory': sum(1 for g in _STATUTORY.values() if _any_token(g, tn)),
-        'statutory_words': sum(1 for g in _STATUTORY_WORDS.values() if _any_word(g, tn)),
+        'statutory_words': sum(1 for g in _STATUTORY_WORDS if _any_word(g, tn)),
         'kwsp': _any_token(_STATUTORY['KWSP/EPF'], tn),
         'wage': sum(1 for g in _WAGE_LABELS if _any_token(g, tn)),
         'govt': (_any_token(_GOVT_FORMAT, tn) or bool(_GOVT_WORD.search(tn))

@@ -1,9 +1,10 @@
 """#85 — `rescore_salary_statutory`: re-writes the live 1.2.x payslips called not_salary although they show
 >=2 statutory deductions — from stored OCR text when there is some (whole-word rule), from stored markers
-only after an eye check (`--include-no-text`). Synthetic rows and text only — no PII."""
+only for the ids named in `--eye-checked-ids` (review round 2). Synthetic rows and text only — no PII."""
 from io import StringIO
+from unittest import mock
 
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.test import TestCase
 from django.utils import timezone
 
@@ -51,22 +52,32 @@ class RescoreSalaryStatutoryTest(TestCase):
         self._slip(statutory=1)                                    # one deduction: still not a payslip
         self._slip(reason=_MYKAD)                                  # the MyKad reject stands
         self._slip(version=MODEL_VERSION)                          # already scored by the fixed model
-        self._slip(version='')                                     # no version: not ours to guess
+        unknown = self._slip(version='')                           # no version: listed, not ours to guess
         self._slip(kwsp=None)                                      # pre-1.1.0 markers: incomplete
         self._slip(wage=1)                                         # not the old reject's shape
         self._slip(status='genuine')                               # not a not_salary row
         self._slip(doc_type='income_support_doc')                  # not a payslip slot
         self._slip(statutory=4, superseded_at=timezone.now())      # replaced: not live
         old_11, old_10 = self._slip(version='1.1.0'), self._slip(version='1.0.0', kwsp=None)
-        docs, older = cmd.rescore_candidates()
+        docs, older, unknowns = cmd.rescore_candidates()
         self.assertEqual([d.id for d in docs], [hit2.id, hit3.id])
         self.assertEqual([d.id for d in older], [old_11.id, old_10.id])
+        self.assertEqual([d.id for d in unknowns], [unknown.id])
+
+    def test_an_unknown_model_row_is_counted_and_never_written(self):
+        """Round 2 nit: a row of the shape with no model version is counted by id, never written."""
+        doc = self._slip(version=None)
+        out = self._run('--apply', '--eye-checked-ids', str(doc.id))
+        self.assertIn('selected=0', out)
+        self.assertIn(f'unknown model (no model version, never written): count=1 ids=[{doc.id}]', out)
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_fields['authenticity']['status'], 'not_salary')
 
     def test_an_older_model_row_is_listed_and_never_written(self):
         """Fix 1: a 1.1.0 not_salary may be a statutory declaration (recognised from 1.2.0); a fresh read
-        would make it suspect/declaration, so it is only counted — even with --include-no-text."""
+        would make it suspect/declaration, so it is only counted — even when its id is named."""
         doc = self._slip(version='1.1.0', text='AKUAN BERKANUN\nKWSP dan PERKESO')
-        out = self._run('--apply', '--include-no-text')
+        out = self._run('--apply', '--eye-checked-ids', str(doc.id))
         self.assertIn('selected=0', out)
         self.assertIn(f'older model (< 1.2.0, never written): count=1 ids=[{doc.id}]', out)
         doc.refresh_from_db()
@@ -84,7 +95,7 @@ class RescoreSalaryStatutoryTest(TestCase):
 
     def test_text_that_fails_the_whole_word_rule_is_left_alone(self):
         doc = self._slip(text=_LEISURE_TEXT)
-        out = self._run('--apply', '--include-no-text')
+        out = self._run('--apply', '--eye-checked-ids', str(doc.id))
         self.assertIn(f'document {doc.id} case {self.app.id} model 1.2.0: stays not_salary', out)
         self.assertIn('text_ok=0 text_fails=1 needs_eye_check=0 written=0', out)
         doc.refresh_from_db()
@@ -95,25 +106,77 @@ class RescoreSalaryStatutoryTest(TestCase):
         doc = self._slip()
         out = self._run('--apply')
         self.assertIn(f'document {doc.id} case {self.app.id} model 1.2.0: needs eye check', out)
-        self.assertIn(f'needs eye check (written only with --include-no-text): ids=[{doc.id}]', out)
+        self.assertIn(f'needs eye check (written only when named in --eye-checked-ids): ids=[{doc.id}]', out)
         self.assertIn('needs_eye_check=1 written=0', out)
         doc.refresh_from_db()
         self.assertEqual(doc.vision_fields['authenticity']['status'], 'not_salary')
 
-    def test_include_no_text_writes_from_the_stored_markers(self):
-        doc = self._slip(statutory=2, kwsp=False)
-        self.assertIn('written=1', self._run('--apply', '--include-no-text'))
+    def test_an_eye_checked_id_is_written_from_the_stored_markers(self):
+        doc, other = self._slip(statutory=2, kwsp=False), self._slip(statutory=3)
+        out = self._run('--apply', '--eye-checked-ids', str(doc.id))
+        self.assertIn('needs_eye_check=2 written=1', out)
         doc.refresh_from_db()
         auth = doc.vision_fields['authenticity']
         self.assertEqual((auth['status'], auth['doc_seen'], auth['probability']), ('genuine', 'private', 0.8))
         self.assertEqual(auth['markers'], {'statutory': 2, 'wage': 0, 'kwsp': False})
         self.assertEqual(auth['rescored']['basis'], 'stored_markers_eye_checked')
+        other.refresh_from_db()                                    # not named: not written
+        self.assertEqual(other.vision_fields['authenticity']['status'], 'not_salary')
+
+    def test_an_id_not_on_the_eye_check_list_is_not_written(self):
+        """Round 2: only ids on THIS run's no-text list. A text row, a row of another shape and an id that
+        does not exist are reported and skipped; the text row is still decided by its text alone."""
+        no_text = self._slip()
+        leisure = self._slip(text=_LEISURE_TEXT)                   # has text: the text decides, not the id
+        mykad = self._slip(reason=_MYKAD)                          # not eligible at all
+        out = self._run('--apply', '--eye-checked-ids', f'{leisure.id},{mykad.id},999999')
+        self.assertIn('text_fails=1 needs_eye_check=1 written=0', out)
+        self.assertIn(f'eye-checked ids skipped (not on the eye-check list, or no longer eligible): '
+                      f'ids={sorted([leisure.id, mykad.id, 999999])}', out)
+        for doc in (no_text, leisure, mykad):
+            doc.refresh_from_db()
+            self.assertEqual(doc.vision_fields['authenticity']['status'], 'not_salary')
+
+    def test_a_listed_id_no_longer_eligible_under_the_lock_is_not_written(self):
+        """Round 2: an eye-checked id is re-checked under the row lock; a re-read since selection wins."""
+        doc = self._slip()
+        reread = dict(doc.vision_fields['authenticity'], status='suspect', model_version=MODEL_VERSION)
+        real_write = cmd._write
+
+        def reread_then_write(doc_id, eye_checked=False):
+            type(doc).objects.filter(pk=doc_id).update(vision_fields={'authenticity': reread})
+            return real_write(doc_id, eye_checked)
+
+        with mock.patch.object(cmd, '_write', reread_then_write):
+            out = self._run('--apply', '--eye-checked-ids', str(doc.id))
+        self.assertIn('written=0', out)
+        self.assertIn(f'eye-checked ids skipped (not on the eye-check list, or no longer eligible): '
+                      f'ids=[{doc.id}]', out)
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_fields['authenticity'], reread)
+
+    def test_a_dry_run_with_eye_checked_ids_writes_nothing(self):
+        doc = self._slip()
+        before = dict(doc.vision_fields)
+        out = self._run('--eye-checked-ids', str(doc.id))
+        self.assertIn('DRY-RUN', out)
+        self.assertIn(f'document {doc.id} case {self.app.id} model 1.2.0: needs eye check (no stored OCR '
+                      'text) -> genuine/private (stored markers, eye-checked)', out)
+        self.assertIn('written=0', out)
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_fields, before)
+
+    def test_the_old_global_flag_is_gone_and_bad_ids_are_refused(self):
+        with self.assertRaises(CommandError):
+            self._run('--apply', '--include-no-text')
+        with self.assertRaises(CommandError):
+            self._run('--eye-checked-ids', '4431,abc')
 
     # ── dry run and apply ───────────────────────────────────────────────────────
     def test_dry_run_prints_ids_and_counts_and_writes_nothing(self):
         doc = self._slip(statutory=3, text=_GOOD_TEXT)
         before = dict(doc.vision_fields)
-        out = self._run('--include-no-text')
+        out = self._run('--eye-checked-ids', str(doc.id))
         self.assertIn('DRY-RUN', out)
         self.assertIn(f'document {doc.id} case {self.app.id} model 1.2.0: not_salary -> genuine/private', out)
         self.assertIn('selected=1 text_ok=1 text_fails=0 needs_eye_check=0 written=0', out)
@@ -135,10 +198,10 @@ class RescoreSalaryStatutoryTest(TestCase):
     def test_a_row_that_changed_before_the_lock_is_not_written(self):
         """The write re-fetches the row under a lock and re-checks it: a re-read since selection wins."""
         doc = self._slip(text=_GOOD_TEXT)
-        docs, _ = cmd.rescore_candidates()
+        docs, _, _ = cmd.rescore_candidates()
         self.assertEqual([d.id for d in docs], [doc.id])
         reread = dict(doc.vision_fields['authenticity'], status='suspect', model_version=MODEL_VERSION)
         type(doc).objects.filter(pk=doc.pk).update(vision_fields={'authenticity': reread})
-        self.assertFalse(cmd._write(doc.id, include_no_text=False))
+        self.assertFalse(cmd._write(doc.id))
         doc.refresh_from_db()
         self.assertEqual(doc.vision_fields['authenticity'], reread)

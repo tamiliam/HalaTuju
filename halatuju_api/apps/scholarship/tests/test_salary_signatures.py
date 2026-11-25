@@ -108,6 +108,57 @@ class TestSalarySignatures(SimpleTestCase):
         r = self._g("Slip Gaji\nKWSP 308.00\nLHDN")
         self.assertEqual((r['status'], r['family'], r['probability']), ('genuine', 'private', 0.83))
 
+    # ── #85 review round 2: letter edges, glued amounts, payroll suffixes, MTD (1.3.0) ──
+    def _words(self, text):
+        return score_family(text)['statutory_words']
+
+    def test_a_label_glued_to_its_amount_counts(self):
+        """PDF text layers glue column labels to amounts; a digit is not a letter, so the word still counts.
+        Round 1's padded match scored this 0 and left the slip not_salary."""
+        text = "KWSP308.00\nPERKESO12.75\nEIS5.10"
+        self.assertEqual(self._words(text), 3)
+        self.assertEqual((self._g(text)['status'], self._g(text)['family']), ('genuine', 'private'))
+        for text in ("EPF-EE 308.00", "KWSP: 308.00", "KWSP308", "(SOCSO)12.75"):
+            with self.subTest(text=text):
+                self.assertEqual(self._words(text), 1)
+
+    def test_payroll_suffixes_glued_on_the_right_count(self):
+        """Decision (round 2): a single-word label may carry ONE employee / employer suffix glued on its
+        right — PEKERJA, MAJIKAN, EMPLOYEE, EMPLOYER, EE, ER — the payroll column heads."""
+        text = "KWSPPEKERJA 308\nSOCSOEE 12"
+        self.assertEqual(self._words(text), 2)
+        self.assertEqual((self._g(text)['status'], self._g(text)['family']), ('genuine', 'private'))
+        for text in ("KWSPMAJIKAN 400", "EPFER 400", "EISEMPLOYEE 5", "PCBEMPLOYER 0", "PERKESOEE 12"):
+            with self.subTest(text=text):
+                self.assertEqual(self._words(text), 1)
+
+    def test_other_glued_letters_still_do_not_count(self):
+        """A letter on the left, or a letter run that is not a known suffix, is still another word."""
+        for text in ("LEISURE", "REISSUE", "AKAUNKWSP 308", "KWSPX 308", "EISX 5", "EPFEEX 3",
+                     "SOCSOPEKERJAAN 12", "LEISURE REISSUE\nEPF"):
+            with self.subTest(text=text):
+                self.assertLess(self._words(text), 2)
+                self.assertEqual(self._g(text + "\nMac 2026")['status'], 'not_salary')
+        self.assertEqual(self._words("LEISURE REISSUE"), 0)
+
+    def test_mtd_is_the_pcb_group_on_the_no_wage_path(self):
+        """MTD (monthly tax deduction) is the English label for PCB — counted on the no-wage path only."""
+        text = "EPF 308.00\nMTD 40.00\nMac 2026"
+        self.assertEqual((score_family(text)['statutory'], self._words(text)), (1, 2))
+        r = self._g(text)
+        self.assertEqual((r['status'], r['family'], r['probability']), ('genuine', 'private', 0.8))
+        self.assertEqual(self._words("PCB 40\nMTD 40"), 1)                  # one group, counted once
+        self.assertEqual(self._words("LIMITED\nAMTD"), 0)                   # letter edges hold
+        # A slip WITH a wage label is unchanged from 1.2.0: MTD does not join its substring count.
+        r = self._g("Slip Gaji\nEPF 308.00\nMTD 40.00")
+        self.assertEqual((r['status'], r['family']), ('suspect', 'informal'))
+
+    def test_socso_and_eis_alone_are_two_groups_owner_ruling_25_nov(self):
+        """Owner ruling 25 Nov 2026 (#85, decisions.md): PERKESO runs both SOCSO and EIS, but they stay
+        separate groups — two of KWSP / SOCSO / EIS / PCB is enough, as the organisation was told."""
+        r = self._g("SOCSO 12.75\nEIS 5.10\nMac 2026")
+        self.assertEqual((r['status'], r['family']), ('genuine', 'private'))
+
     # ── guards ───────────────────────────────────────────────────────────────────
     def test_nric_label_is_not_a_reject_marker(self):
         # 'Kad Pengenalan' is a legitimate NRIC label on real payslips — must NOT reject a
