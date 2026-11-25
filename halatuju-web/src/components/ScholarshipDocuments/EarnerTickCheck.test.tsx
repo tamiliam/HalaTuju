@@ -74,15 +74,29 @@ describe('#84: ask before saving a disagreeing tick', () => {
     expect(screen.queryByTestId('earner-tick-note-mother')).toBeNull()
   })
 
-  it('focus: into the question (its confirm button, described by the check line), back to the toggle on close', () => {
+  it('focus: into the question on "No" (never on "Yes"), described by the check line; back to the toggle on close', () => {
     render(<Harness start={[]} onSave={jest.fn()} />)
     fireEvent.click(screen.getByText('tick-mother'))
     const dialog = screen.getByRole('alertdialog')
-    expect(document.activeElement).toBe(screen.getByText(`${W}.confirm`))
+    expect(document.activeElement).toBe(screen.getByText(`${W}.cancel`))   // review round 2: Enter twice never confirms unread
     expect(document.getElementById(dialog.getAttribute('aria-labelledby') || '')?.textContent).toContain(`${W}.askNotWorking`)
     expect(document.getElementById(dialog.getAttribute('aria-describedby') || '')?.textContent).toBe(`${W}.askCheck`)
     fireEvent.click(screen.getByText(`${W}.confirm`))
     expect(document.activeElement).toBe(screen.getByText('tick-mother'))
+  })
+
+  it('review round 2: Enter on the first focus answers "No"; Escape is "No" too; focus returns to the toggle', () => {
+    const onSave = jest.fn()
+    render(<Harness start={[]} onSave={onSave} />)
+    fireEvent.click(screen.getByText('tick-mother'))
+    fireEvent.click(document.activeElement as HTMLElement)   // what Enter does on a focused button
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(onSave).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByText('tick-guardian'))
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Escape' })
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(onSave).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(screen.getByText('tick-guardian'))
   })
 
   it('the served answer changes while asking and the member now agrees: the question is dropped, never drawn empty', () => {

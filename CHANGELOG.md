@@ -23,6 +23,9 @@ Branch req84-earner-ticks, not pushed. Migration: none. Services: both. Brief:
   route changes. Open cases: the officer warning on all 31; the student sees the question or note only where they edit
   ticks (income step before submission, the switch after), never a note on ticks already saved after submission. No new
   strings. Tests: `IncomeRouteSwitch.earnerTicks.test.tsx` (new), `EarnerTickCheck.test.tsx` (+3).
+- **Review round 2:** the question opens on "No" (Enter twice never confirms unread) and Escape answers "No"; the
+  switch holds its Confirm while a question is open; on the income step only a tick that changes stops the roster sync
+  (a "No" does not). New `IncomeWizard.earnerTicks.test.tsx` mounts the real wizard; TD-744 logs the rest. No new strings.
 
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 

@@ -168,7 +168,7 @@ export default function IncomeRouteSwitch({
         <button
           type="button"
           onClick={confirm}
-          disabled={busy || !valid}
+          disabled={busy || !valid || tickCheck.open}   // #84: never send while a tick question is open
           className="flex-1 rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
         >
           {busy ? t('scholarship.incomeRouteSwitch.confirming') : t('scholarship.incomeRouteSwitch.confirm')}

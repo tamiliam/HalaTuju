@@ -87,14 +87,27 @@ describe('#84 after submission: the Action Centre asks before holding a disagree
       7, { income_route: 'salary', income_working_members: ['guardian'] }, { token: 'test-token' })
   })
 
-  it('focus moves into the question and back to the chip that opened it', async () => {
+  it('focus moves into the question (on "No") and back to the chip that opened it', async () => {
     await openSalary()
     fireEvent.click(chip('mother'))
     const dialog = screen.getByRole('alertdialog')
-    expect(document.activeElement).toBe(screen.getByText(`${W}.confirm`))
+    expect(document.activeElement).toBe(screen.getByText(`${W}.cancel`))
     expect(document.getElementById(dialog.getAttribute('aria-describedby') || '')?.textContent).toBe(`${W}.askCheck`)
     fireEvent.click(screen.getByText(`${W}.cancel`))
     expect(document.activeElement).toBe(chip('mother'))
+  })
+
+  it('review round 2: Confirm is held while a question is open, so the held member is never silently left out', async () => {
+    await openSalary()
+    fireEvent.click(chip('father'))                                     // agreeing: Confirm is ready
+    const confirm = screen.getByText(`${S}.confirm`) as HTMLButtonElement
+    expect(confirm.disabled).toBe(false)
+    fireEvent.click(chip('mother'))                                     // disagreeing: asked
+    expect(confirm.disabled).toBe(true)
+    fireEvent.click(confirm)
+    expect(mockApi.switchIncomeRoute).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByText(`${W}.cancel`))                     // answered: Confirm is back
+    expect(confirm.disabled).toBe(false)
   })
 
   it('a route change drops an open question (STR and back does not revive it)', async () => {

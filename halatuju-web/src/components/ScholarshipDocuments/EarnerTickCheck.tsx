@@ -62,22 +62,23 @@ export function useEarnerTickCheck({ conflicts, members, saveMembers, t, route }
   t: (key: string) => string
   /** The income route on screen: a change drops an open question (STR and back never revives it). */
   route?: string
-}): { toggle: (m: WorkingMemberRole, opener?: HTMLElement | null) => void; node: ReactNode } {
+}): { toggle: (m: WorkingMemberRole, opener?: HTMLElement | null) => void; node: ReactNode; open: boolean } {
   const [pending, setPending] = useState<WorkingMemberRole | null>(null)
   const served = conflicts || {}
   // A question whose member no longer disagrees (the served answer changed) is dropped, never drawn empty.
   const asking = pending && served[pending] ? pending : null
   const ids = useId()
-  const confirmRef = useRef<HTMLButtonElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
   const wasAsking = useRef(false)
 
   useEffect(() => { if (pending && !asking) setPending(null) }, [pending, asking])
   useEffect(() => { setPending(null) }, [route])
-  // Focus: into the question on open (its confirm button); back to the toggle that opened it on close.
+  // Focus: into the question on open, on "No" (review round 2: Enter twice must never confirm unread;
+  // "Yes" is the answer that makes proof owed); back to the toggle that opened it on close.
   useEffect(() => {
     if (asking) {
-      confirmRef.current?.focus()
+      cancelRef.current?.focus()
     } else if (wasAsking.current && openerRef.current?.isConnected) {
       openerRef.current.focus()
     }
@@ -102,15 +103,16 @@ export function useEarnerTickCheck({ conflicts, members, saveMembers, t, route }
     <div className="mt-3 space-y-2" data-testid="earner-tick-check">
       {asking && (
         <div role="alertdialog" aria-labelledby={`${ids}-ask`} aria-describedby={`${ids}-check`}
+          onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setPending(null) } }}   // Escape = No
           className="rounded-lg border border-caution-200 bg-caution-50 p-3 text-sm text-caution-800">
           <p id={`${ids}-ask`} className="font-medium">{said(t, asking, served, 'ask')}</p>
           <p id={`${ids}-check`} className="mt-1">{t(`${W}.earnerCheck.askCheck`)}</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" ref={confirmRef} onClick={() => { saveMembers([...members, asking]); setPending(null) }}
+            <button type="button" onClick={() => { saveMembers([...members, asking]); setPending(null) }}
               className="min-h-11 rounded-full border border-primary-600 bg-brand-fill px-4 py-2 text-sm text-brand-fill-ink">
               {t(`${W}.earnerCheck.confirm`)}
             </button>
-            <button type="button" onClick={() => setPending(null)}
+            <button type="button" ref={cancelRef} onClick={() => setPending(null)}
               className="min-h-11 rounded-full border border-ground-300 px-4 py-2 text-sm text-ground-700">
               {t(`${W}.earnerCheck.cancel`)}
             </button>
@@ -121,5 +123,6 @@ export function useEarnerTickCheck({ conflicts, members, saveMembers, t, route }
     </div>
   ) : null
 
-  return { toggle, node }
+  // `open`: a question is waiting — the route switch holds its Confirm so the held member is not silently left out.
+  return { toggle, node, open: !!asking }
 }
