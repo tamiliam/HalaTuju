@@ -120,8 +120,8 @@ class Resolver:
 def _run(argv, fake=None, resolver=None, env=None):
     fake = FakeGcs() if fake is None else fake
     resolver = Resolver() if resolver is None else resolver
-    code = ES.run(argv, env=ES.store_env({'PATH': '/usr/bin:/bin'}, '/h') if env is None else env,
-                  getaddrinfo=resolver, opener=lambda addresses: fake)
+    code = ES.run_store(argv, env=ES.store_env({'PATH': '/usr/bin:/bin'}, '/h') if env is None else env,
+                        getaddrinfo=resolver, opener=lambda addresses: fake)
     return code, fake, resolver
 
 
@@ -303,7 +303,6 @@ def test_put_refuses_a_folder_at_the_exam_path_with_no_network(tmp_path):
     assert (code, fake.calls, resolver.asked) == (ES.NOT_VERIFIED, [], [])
 
 
-@pytest.mark.skipif(not hasattr(os, 'mkfifo'), reason='no FIFOs on this system')
 def test_put_refuses_a_fifo_at_the_exam_path_without_waiting_for_a_writer(tmp_path):
     exam = _freeze(tmp_path)
     path = tmp_path / 'exam-old.json'
@@ -506,8 +505,8 @@ def test_names_are_resolved_once_before_the_guard_and_only_they_are_allowed(tmp_
                 refused.append(True)
         return fake
 
-    assert ES.run(_fetch_argv(tmp_path), env=ES.store_env({}, '/h'), getaddrinfo=spy_resolve,
-                  opener=opener) == ES.ABSENT
+    assert ES.run_store(_fetch_argv(tmp_path), env=ES.store_env({}, '/h'), getaddrinfo=spy_resolve,
+                        opener=opener) == ES.ABSENT
     assert [e[0] for e in events] == ['resolve', 'resolve', 'guard', 'open']
     assert sorted(e[1] for e in events[:2]) == sorted(ES.HOSTS)
     assert events[2][1] == {(ADDRS[ES.METADATA_HOST], 80), (ADDRS[ES.STORAGE_HOST], 443)}

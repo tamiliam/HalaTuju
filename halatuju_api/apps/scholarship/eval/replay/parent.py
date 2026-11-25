@@ -52,7 +52,7 @@ the fatal path.
 THE EXAM HOME IN A BUCKET (LL6). `--human-lens-exam-bucket NAME` (a CLI argument only; never with
 `--human-lens-exam-folder`) keeps the exams in one private bucket instead of a folder. `main` asks
 `exam_home.fetch` for them (a private temp folder in the workdir, set as the exam folder; any failure is
-the fatal path, exit 3, before any child starts), runs as before, then `exam_home.keep` uploads a NEWLY
+the fatal path, exit 3, before any child starts), runs as before, then `exam_home.keep_exams` uploads a NEWLY
 frozen exam, ONLY with `--human-lens-freeze`; its fixed lines (`exam_home.ALL_HOME_LINES`) follow the
 LL5 block, and an exam frozen here but not kept exits 4. The temp folder is removed in a ``finally``.
 Without the flag nothing of this runs and the output is as before.
@@ -488,7 +488,7 @@ def main(argv=None):
         home = exam_home.fetch(args) if args.human_lens_exam_bucket is not None else None   # LL6: exit 3
         try:
             result = run_replay(args, env=os.environ)
-            result, home_lines, home_failed = exam_home.keep(home, args, result)   # no home: as before
+            result, home_lines, home_failed = exam_home.keep_exams(home, args, result)   # no home: as before
             code = replay_exit_code(result)
             if args.human_lens and not args.counts_only:    # after the JSON lines; built whole, then one print
                 block, failed = lens_report_block(result)

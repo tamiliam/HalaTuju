@@ -70,6 +70,8 @@ P3 review round 1 (docs only): the owner steps now say, as the first box of step
 
 P3 review rounds 2 and 3 (docs only): step 4c of the owner steps gains a short list of by-hand checks with one dummy object that holds a fixed sentence and no data of any person (a create-only upload, a narrow read of its hold, a create-only replace try, a plain replace try); every command is marked "check before use" and none has been run. The owner types them, or the release lead only if the owner says so in the yes for step 4c. Step 4c has passed only when the job run and these checks have both passed. `docs/decisions.md` now says that the proof-first run is the first lens run on live data, with no freeze, and that this replaces the LL5 phase B2a line that put the first freeze inside the first lens run. The docs review passed in round 3.
 
+Code-standards gate fix (refactor, no behaviour change): `exam_home.keep` is now `exam_home.keep_exams` and `exam_store.run` is now `exam_store.run_store` (each name had a third home in the app); the exam score (`_small`, `_fails_table`, `_exam_score`, now `exam_score`) moved from `lens_human.py` to the new `eval/replay/lens_score.py`, so `lens_human.py` is back under the 600-line limit; the two skip markers in `test_replay_exam_home.py` and `test_replay_exam_store.py` are removed, so both tests always run.
+
 ### An invite not yet accepted does not count as an org admin (owner ruling, 2026-11-25)
 
 Not pushed. Migration: none. Services: api, web (manual text only).

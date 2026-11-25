@@ -156,7 +156,7 @@ def engine_version_ok(value) -> bool:
 
 
 def _score_block_ok(block, label, full_keys, extra_counts, outcomes) -> bool:
-    """A score line: the count only under the small-number rule, else every figure (`lens_human._small`)."""
+    """A score line: the count only under the small-number rule, else every figure (`lens_score._small`)."""
     if block is None:
         return True
     if not _keys_are(block, SMALL_LINE_KEYS, full_keys) or block['label'] != label or not _is_count(block['facts']):

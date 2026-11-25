@@ -11,7 +11,7 @@ THE FLOW (`parent.main`):
    ``absent`` (and it is not). Anything else - a failure code, ``refused``, a line not in the one fixed
    form, a timeout - raises `ExamFetchFailed` (exit 3) before any replay child starts: never "treat it
    as absent and freeze a new one". The lens then reads its exams from that folder.
-2. `keep`, after the run, and ONLY on a `--human-lens-freeze` run: an exam is uploaded only when it was
+2. `keep_exams`, after the run, and ONLY on a `--human-lens-freeze` run: an exam is uploaded only when it was
    ``absent`` at fetch, its file is in the temp folder now, and the CHECKED lens result (the schema
    again) shows it frozen with no refusal. The child gets the block's own digest (12), size and frozen
    time; it proves the file before it sends anything. ``kept`` = the score stands. ``frozen_elsewhere``
@@ -36,7 +36,7 @@ import tempfile
 from . import exam_store, guards, lens_human, lens_result_schema, report_lens
 from .exam_store import bucket_name_ok, store_env
 
-__all__ = ['bucket_name_ok', 'store_env', 'fetch', 'keep', 'clean', 'ExamFetchFailed', 'ExamHomeError']
+__all__ = ['bucket_name_ok', 'store_env', 'fetch', 'keep_exams', 'clean', 'ExamFetchFailed', 'ExamHomeError']
 
 #: The result's two keys (`parent.HUMAN_LENS_KEY`, `parent.COACH_GRADE_KEY`; a test holds them equal).
 HUMAN_LENS_KEY, COACH_GRADE_KEY = 'human_lens', 'coach_grade'
@@ -197,7 +197,7 @@ def _debug_shape(data) -> bool:
     return any(frozenset(block) == lens_result_schema.EXAM_DEBUG_KEYS for block in data['exams'].values())
 
 
-def keep(home, args, result, *, env=None):
+def keep_exams(home, args, result, *, env=None):
     """``(result, lines, failed)`` after the run. Returns at once, changing nothing, unless this is a
     bucket run (``home``) with `--human-lens-freeze`. Then uploads each NEW exam (``absent`` at fetch, its
     file there now, its checked block frozen with no refusal) and turns each answer into the block, a

@@ -191,12 +191,12 @@ def test_without_the_freeze_flag_nothing_is_ever_uploaded(store, tmp_path):
     home = EH.fetch(args)
     result = result_of(run(cases_rich(), home.folder, freeze=False))      # an empty bucket: exam_missing
     assert {b['refusal'] for b in result[EH.HUMAN_LENS_KEY]['exams'].values()} == {L.EXAM_MISSING}
-    assert EH.keep(home, args, result) == (result, [], False)
+    assert EH.keep_exams(home, args, result) == (result, [], False)
     frozen = result_of(run(cases_rich(), home.folder, freeze=True))       # even a frozen block and a new file
-    assert EH.keep(home, args, frozen) == (frozen, [], False)
+    assert EH.keep_exams(home, args, frozen) == (frozen, [], False)
     args.human_lens_freeze = 'yes'                                        # only True itself is the flag
-    assert EH.keep(home, args, frozen) == (frozen, [], False)
-    assert EH.keep(None, bucket_args(tmp_path), frozen) == (frozen, [], False)   # not a bucket run
+    assert EH.keep_exams(home, args, frozen) == (frozen, [], False)
+    assert EH.keep_exams(None, bucket_args(tmp_path), frozen) == (frozen, [], False)   # not a bucket run
     assert store.asked(S.PUT) == []
     EH.clean(home)
 
@@ -207,7 +207,7 @@ def test_an_empty_bucket_and_a_freeze_run_put_both_with_the_blocks_own_values(st
     result = result_of(run(cases_rich(), home.folder))
     blocks = result[EH.HUMAN_LENS_KEY]['exams']
     assert all(blocks[n]['frozen'] is True and blocks[n]['refusal'] is None for n in L.EXAM_NAMES)
-    kept, lines, failed = EH.keep(home, args, result)
+    kept, lines, failed = EH.keep_exams(home, args, result)
     assert kept is result and failed is False
     assert fixed(lines) == [f'exam home: {n} frozen and kept in the bucket' for n in L.EXAM_NAMES]
     puts = [c.argv for c in store.calls if c.argv[0] == S.PUT]
@@ -225,7 +225,7 @@ def test_a_fetched_exam_is_never_uploaded_only_the_new_one(store, tmp_path):
     home = EH.fetch(args)
     assert home.found == {L.EXAM_1: S.FETCHED, L.EXAM_OLD: S.ABSENT}
     result = result_of(run(cases_rich(), home.folder))
-    kept, lines, failed = EH.keep(home, args, result)
+    kept, lines, failed = EH.keep_exams(home, args, result)
     assert store.asked(S.PUT) == [(S.PUT, L.EXAM_OLD)] and failed is False
     assert fixed(lines) == [EH.HOME_LINES[(L.EXAM_OLD, S.KEPT)]] and kept is result
     EH.clean(home)
@@ -242,7 +242,7 @@ def test_a_corrupt_stored_exam_is_refused_by_the_lens_and_never_replaced(store, 
     stored = pathlib.Path(home.folder, 'exam-1.json').read_bytes()
     result = result_of(run(cases_rich(), home.folder))
     assert result[EH.HUMAN_LENS_KEY]['exams'][L.EXAM_1]['refusal'] == L.DIGEST_MISMATCH
-    kept, lines, failed = EH.keep(home, args, result)
+    kept, lines, failed = EH.keep_exams(home, args, result)
     assert (S.PUT, L.EXAM_1) not in store.asked(S.PUT)
     assert pathlib.Path(home.folder, 'exam-1.json').read_bytes() == stored
     assert fixed(lines) == [EH.HOME_LINES[(L.EXAM_OLD, S.KEPT)]] and failed is False
@@ -254,7 +254,7 @@ def test_a_lost_race_withholds_that_score_prints_a_fixed_line_and_is_not_a_failu
     args = bucket_args(tmp_path)
     home = EH.fetch(args)
     result = result_of(run(cases_rich(), home.folder))
-    kept, lines, failed = EH.keep(home, args, result)
+    kept, lines, failed = EH.keep_exams(home, args, result)
     lens = kept[EH.HUMAN_LENS_KEY]
     assert failed is False and LS.human_lens_result_allowed(lens)
     assert lens['exams'][L.EXAM_1] == L.refused_exam(L.EXAM_1, lens['engine_version'], L.FROZEN_ELSEWHERE)
@@ -276,7 +276,7 @@ def test_every_failed_put_is_not_kept_and_blocking(store, tmp_path, answer):
     args = bucket_args(tmp_path)
     home = EH.fetch(args)
     result = result_of(run(cases_rich(), home.folder))
-    kept, lines, failed = EH.keep(home, args, result)
+    kept, lines, failed = EH.keep_exams(home, args, result)
     lens = kept[EH.HUMAN_LENS_KEY]
     assert failed is True and LS.human_lens_result_allowed(lens)
     assert lens['exams'][L.EXAM_1] == L.refused_exam(L.EXAM_1, lens['engine_version'], L.NOT_KEPT)
@@ -291,9 +291,9 @@ def test_the_error_shape_and_the_debug_shape_upload_nothing(store, tmp_path):
     for lens in ({'error': LS.SCHEMA}, debug_shape(), {'exams': 'Siti Aminah'}, None):
         home = EH.fetch(args)
         result = result_of(lens)
-        assert EH.keep(home, args, result) == (result, [], False)        # no new file: nothing to say
+        assert EH.keep_exams(home, args, result) == (result, [], False)        # no new file: nothing to say
         pathlib.Path(home.folder, 'exam-1.json').write_text('{}', encoding='utf-8')
-        kept, lines, failed = EH.keep(home, args, result)
+        kept, lines, failed = EH.keep_exams(home, args, result)
         assert kept is result and failed is True
         assert fixed(lines) == [EH.HOME_LINES[(L.EXAM_1, L.NOT_KEPT)]]
         EH.clean(home)
@@ -304,7 +304,7 @@ def test_a_coach_error_uploads_nothing_and_blocks(store, tmp_path):
     args = bucket_args(tmp_path)
     home = EH.fetch(args)
     result = result_of(run(cases_rich(), home.folder), {'error': 'schema'})
-    kept, lines, failed = EH.keep(home, args, result)
+    kept, lines, failed = EH.keep_exams(home, args, result)
     assert store.asked(S.PUT) == [] and failed is True
     assert fixed(lines) == [EH.HOME_LINES[(n, L.NOT_KEPT)] for n in L.EXAM_NAMES]
     assert {kept[EH.HUMAN_LENS_KEY]['exams'][n]['refusal'] for n in L.EXAM_NAMES} == {L.NOT_KEPT}
@@ -316,7 +316,7 @@ def test_a_block_that_says_frozen_with_no_file_is_not_kept(store, tmp_path):
     home = EH.fetch(args)
     result = result_of(run(cases_rich(), home.folder))
     os.remove(os.path.join(home.folder, 'exam-1.json'))
-    kept, lines, failed = EH.keep(home, args, result)
+    kept, lines, failed = EH.keep_exams(home, args, result)
     assert store.asked(S.PUT) == [(S.PUT, L.EXAM_OLD)] and failed is True
     assert fixed(lines) == [EH.HOME_LINES[(L.EXAM_1, L.NOT_KEPT)], EH.HOME_LINES[(L.EXAM_OLD, S.KEPT)]]
     EH.clean(home)
@@ -350,7 +350,6 @@ def test_the_store_child_is_started_with_no_shell_no_stdin_no_stderr_and_a_limit
                       'stdout': subprocess.PIPE, 'stderr': subprocess.DEVNULL, 'timeout': 120, 'check': False})]
 
 
-@pytest.mark.skipif(sys.version_info < (3, 11), reason='-P is Python 3.11+')
 def test_the_real_child_refuses_a_bad_request_in_its_one_line(tmp_path):
     assert EH.ask_store([], EH.FETCH_ANSWERS, harness_dir=str(EVAL_DIR), env=os.environ) == S.REFUSED
     assert EH.ask_store([], EH.PUT_ANSWERS, harness_dir=str(EVAL_DIR), env=os.environ) == S.REFUSED

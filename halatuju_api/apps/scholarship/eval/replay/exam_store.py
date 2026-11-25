@@ -379,7 +379,7 @@ def _write_new(folder, name, data):
 
 def fetch_exam(http, token, bucket, name, folder) -> str:
     """FETCHED (the file is written) or ABSENT (the object GET answers 404 and `bucket_reachable` proves
-    the bucket is there). StoreFailed or a transport error otherwise; `run` turns either into
+    the bucket is there). StoreFailed or a transport error otherwise; `run_store` turns either into
     FETCH_FAILED. GET requests only."""
     if not os.path.isabs(folder) or not os.path.isdir(folder):
         raise StoreFailed()
@@ -481,7 +481,7 @@ def keep_exam(http, token, bucket, name, data) -> str:
 
 
 # ── The child ───────────────────────────────────────────────────────────────────────────────────────
-def run(argv, *, env, getaddrinfo=socket.getaddrinfo, opener=None) -> str:
+def run_store(argv, *, env, getaddrinfo=socket.getaddrinfo, opener=None) -> str:
     """The store child's whole work; returns ONE fixed code and never raises. In order: the request
     (`parse_args`) and the environment (`environment_ok`), both REFUSED; for a put, the proof
     (`prove_new_exam`), for a fetch, a folder with no exam file in it yet, both with no network; the two names resolved (`resolve_hosts`); then, inside
@@ -530,7 +530,7 @@ def _private_stdout():
 
 
 def main(argv=None, env=None) -> str:
-    return run(sys.argv[1:] if argv is None else argv, env=os.environ if env is None else env)
+    return run_store(sys.argv[1:] if argv is None else argv, env=os.environ if env is None else env)
 
 
 if __name__ == '__main__':
