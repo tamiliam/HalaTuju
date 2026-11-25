@@ -48,7 +48,7 @@ class PdfiumReadsTheBlankCodes(SimpleTestCase):
 
     def test_tiny_and_zero_boxes(self):
         """The sheet shows codes at `TEXT_PT`: a 1 x 1 box (pdfium reads it on a real page) is read there, so a
-        parser-only space is refused; a zero box (the genuine space: pdfium drops it on every page) reads as blank."""
+        parser-only space is refused; a zero box mapped to a real space reads as blank (r4: read in a spread run)."""
         self.assertEqual(pdfium_type3.TEXT_PT, 1000)
         glued = b'/Xbeginbfchar ' + SPACES + b' endbfchar'
         self.assertTrue(_page1_lost(_t3_tu(glued, b'600 0 0 0 1 1 d1')))
@@ -65,12 +65,13 @@ class PdfiumReadsTheBlankCodes(SimpleTestCase):
         self.assertIsNone(pdfium_type3.pdfium_blank(too_many, lambda data: [[(32, 0)]] * len(too_many)))
 
     def test_pdfium_blank_rules(self):
-        """Per page: every character whitespace; none at all is blank (pdfium drops a degenerate box)."""
+        """Per page: every character whitespace, at least one pdfium's own. r4 (edge (j)): none at all, or only a
+        generated space, is NOT blank (test_td740_round4)."""
         pdf = _t3_tu(b'3 beginbfchar ' + SPACES + b' endbfchar')
         from pypdf import PdfReader
         import io
         font = PdfReader(io.BytesIO(pdf)).pages[0]['/Resources']['/Font']['/T3']
-        for name, read, blank in (('space', [(32, 0)], True), ('none', [], True), ('generated_only', [(32, 1)], True),
+        for name, read, blank in (('space', [(32, 0)], True), ('none', [], False), ('generated_only', [(32, 1)], False),
                                   ('a_letter', [(32, 0), (76, 0)], False), ('an_error', [(32, -1)], False),
                                   ('nbsp', [(0xA0, 0)], True)):
             with self.subTest(name):

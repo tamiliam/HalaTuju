@@ -110,9 +110,10 @@ INK_MAX_GLYPHS = 1440
 #: its own byte (probe pages_node_layout: a /space glyph under code 76 reads 'L' in the words op), so only a
 #: whitespace byte that every candidate font also reads as blank is blank to both readers.
 BLANK_CODES = frozenset((9, 10, 13, 32))
-#: The text sheet's font size (points), its page 8x that a side. pdfium drops a Type3 char whose d1 box rounds to 0
-#: wide or high (1/1000 em) at any size, others only under ~10 pt (probe r3c): the sheet never reads less.
-TEXT_PT = 1000
+#: The text sheet's font size (points), its page 8x that a side, and the run each code is shown in: `RUN` copies
+#: spread `RUN_TC` points apart by character spacing (r4, edge (j): pdfium drops a text OBJECT whose whole box is
+#: degenerate, so a zero-box code shown alone read nothing on the sheet while ``(LL) Tj`` read on the page).
+TEXT_PT, RUN, RUN_TC = 1000, 3, 500
 
 
 def shown_ok(data: bytes, index: int, sheet=None, chars=None) -> bool:
@@ -121,15 +122,13 @@ def shown_ok(data: bytes, index: int, sheet=None, chars=None) -> bool:
     and really inks (round 2: measured by pdfium on a glyph sheet, `glyph_ink`; ``sheet`` renders it, None: no
     Type3 character can pass), or (a glyph that inks nothing, or none) shows a code every font the name could
     resolve to reads as blank to pdfium's own text page (r3: `pdfium_blank`, read by ``chars``; None: no such code
-    can pass) and to pypdf, and is not refused by `_blank_to_both`. pdfium boxes a Type3 character by its glyph's
-    ``d1`` box, not its ink: a box that holds the ink is where `pdfium_place.outside` judges the ink to be, but a box the ink leaves (probes
-    t3_d1_lie_*, t3_cm_ink_offpage), or an empty glyph (t3_onpage_empty, round 2's zero_re ... tiny_ink), places a
-    box on the page while pypdf still reads a letter drawn elsewhere or nowhere. Only the glyphs shown are judged.
-    Read with pypdf from the request's bytes, walking the page's content and its forms (``Do``) as the text state
-    flows: a ``Tf`` name is looked up in EVERY enclosing resource dictionary (pdfium lends a form the page's). A
-    form with no /Resources of its own but a /Parent (round 2, Finding 2: pypdf reads its text through the
-    /Parent's resources, pdfium through its caller's) is False. Fails closed: a walk past 15 forms deep or
-    `SHOWN_MAX_BYTES`, past `INK_MAX_GLYPHS`, or anything pypdf or the sheet cannot do, is False."""
+    can pass) and to pypdf, and is not refused by `_blank_to_both`. pdfium boxes a Type3 char by its ``d1`` box,
+    not its ink: a box the ink leaves (probes t3_d1_lie_*, t3_cm_ink_offpage) or an empty glyph (t3_onpage_empty,
+    zero_re ... tiny_ink) puts a box on the page while pypdf reads a letter drawn elsewhere or nowhere. Read with
+    pypdf from the request's bytes, walking the page's content and forms (``Do``) as the text state flows: a ``Tf``
+    name is looked up in EVERY enclosing resource dictionary (pdfium lends a form the page's). A form with no
+    /Resources but a /Parent (round 2, Finding 2: two resource views) is False. Fails closed: a walk past 15 forms
+    deep or `SHOWN_MAX_BYTES`, past `INK_MAX_GLYPHS`, or anything pypdf or the sheet cannot do, is False."""
     import io
     from pypdf import PdfReader
     try:
@@ -252,12 +251,12 @@ def _uses_ok(uses: dict, sheet, chars) -> bool:
 
 def pdfium_blank(pairs: list, chars) -> set | None:
     """TD-740 review round 3 (Finding 1): {(id(font), code)} of the (font, code) ``pairs`` that pdfium's OWN text
-    page reads as whitespace. Each pair is shown alone on its own page of a text sheet (`text_sheet`) and read by
-    ``chars`` (the child's `pdfium_place.sheet_text`): every character the page gives must be whitespace, and
-    none at all is blank (pdfium drops a glyph whose d1 box is degenerate, the genuine zero-box space, on every
-    page; see `TEXT_PT`). A /ToUnicode read by our own parser is not pdfium's reading (a ``/Xbeginbfchar``, a
-    ``%`` comment, a space inside ``<00 20>``: pdfium reads 'L', the parser a space). None: past `INK_MAX_GLYPHS`
-    pairs, no ``chars``, or a read that does not match the sheet (fails closed)."""
+    page reads as whitespace. Each pair is shown in a spread run on its own page of a text sheet (`text_sheet`)
+    and read by ``chars`` (the child's `pdfium_place.sheet_text`): pdfium must read at least one character of its
+    own (not generated) and only whitespace. r4 (edge (j)): reading nothing is NOT blank (a zero-box 'L' alone read
+    nothing, but read in a run on the page); a run that collapses anyway is refused. Our own /ToUnicode parser is
+    not pdfium (``/Xbeginbfchar``, a ``%`` comment, ``<00 20>``: pdfium reads 'L', the parser a space). None: past
+    `INK_MAX_GLYPHS` pairs, no ``chars``, or a read that does not match the sheet (fails closed)."""
     if not pairs:
         return set()
     if chars is None or len(pairs) > INK_MAX_GLYPHS:
@@ -267,14 +266,14 @@ def pdfium_blank(pairs: list, chars) -> set | None:
         return None
     blank = set()
     for (font, code), read in zip(pairs, pages):
-        if all(gen in (0, 1) and chr(u).isspace() for u, gen in read):
+        if any(gen == 0 for _u, gen in read) and all(gen in (0, 1) and chr(u).isspace() for u, gen in read):
             blank.add((id(font), code))
     return blank
 
 
 def text_sheet(pairs: list) -> bytes:
-    """PDF bytes: one page per (font, code) of ``pairs``, the code shown alone in a copy of the font (`_copy_font`)
-    at `TEXT_PT` points, inside the page (`pdfium_blank`)."""
+    """PDF bytes: one page per (font, code) of ``pairs``, the code shown `RUN` times in one string in a copy of the
+    font (`_copy_font`) at `TEXT_PT` points, `RUN_TC` of character spacing apart, inside the page (`pdfium_blank`)."""
     import io
     from pypdf import PdfWriter
     from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
@@ -285,7 +284,8 @@ def text_sheet(pairs: list) -> bytes:
         page[NameObject('/Resources')] = DictionaryObject({NameObject('/Font'): DictionaryObject(
             {NameObject(name.decode()): ref})})
         stream = DecodedStreamObject()
-        stream.set_data(b'BT %s %d Tf %d %d Td <%02x> Tj ET' % (name, TEXT_PT, TEXT_PT * 2, TEXT_PT * 2, code))
+        stream.set_data(b'BT %s %d Tf %d Tc %d %d Td <%s> Tj ET' % (
+            name, TEXT_PT, RUN_TC, TEXT_PT * 2, TEXT_PT * 2, (b'%02x' % code) * RUN))
         page[NameObject('/Contents')] = writer._add_object(stream)
     out = io.BytesIO()
     writer.write(out)
