@@ -21265,3 +21265,10 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 **Why:** the flagship is closed and the three were stuck mid-way. The owner rated this a one-off, so no move feature was built.
 **Still to do (owner):** add the Degree programme to the "Covers" list of #140's interviewer in the Team page (the one writer of `reviewer_gifts` is `staff_gift.set_gifts`); send the two student emails from the BrightPath mailbox.
 **Revisit if:** moves between programmes are asked for again; then build a proper move with a re-check of the rules and an audit event.
+
+## 2026-11-25 - Scholars switches split: owner rulings on the S4 brief (owner, 2026-11-25)
+
+**Decision:** the four Scholars switches stay four. Switch 1 ("The scholars page and every scholar's file", `scholars`) becomes VIEW ONLY; switch 4 (`scholars.approve`) is renamed "Manage scholar files", moves to second place and carries every everyday file write plus suspension and termination letters (Q3, 19 Nov). Rulings on the brief (`docs/plans/2026-11-24-s4-scholars-split-brief.md`): Q-A Surveys and Development keep their own keys (TD-597 accepted); Q-B money on a scholar's file = View scholars + Payments: Prepare; Q-C mentoring and lesson work stay on their own switches; Q-E a new Admin starts with View ON and Manage OFF (the admin preset does not gain `scholars.approve`).
+**Reviewers (owner):** "Reviewers have nothing to do with scholars. Only admins do, based on permissions given them." The data step (courses 0101) gives Manage only to `scholars` holders who sit in Admins, and takes the Scholars keys off any team row that holds them outside Admins (live: one reviewer, carried over by 0095 from `see_all`). The editor draws the Scholars row only for Admins members and the org admin; the server rule waits for S6 (groups first).
+**Why:** Q3 (one admin switch for file upkeep); groups first, switches second (24 Nov).
+**Revisit if:** a non-admin role is ever meant to keep scholar files.

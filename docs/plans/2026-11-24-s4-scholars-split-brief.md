@@ -19,6 +19,34 @@ SCHOLARS-SPLIT" and owner ruling Q3. Template: `docs/plans/2026-11-23-m4b-sponso
 - **Q1 (19 Nov):** store what people effectively hold today; nothing changes on day one except a gain the owner names.
 - **Permissions, not role labels (15 Nov):** keys decide. No "view-only admin" wording anywhere.
 
+### Owner rulings on this brief (25 Nov, direct, in the Team Work session). These OVERRIDE the questions below
+
+- **Q-A: no.** Surveys and Development do not need View scholars. Close TD-597 as accepted (count 8 = 0).
+- **Q-B: yes.** A tranche, release, withhold, return or hold past the award = View scholars (`scholars`) +
+  Payments: Prepare. "Manage scholar files" is never a second key to money. Day one: nobody changes (count 6 = 0).
+- **Q-C: yes.** Mentor assignment, meetings and lesson review stay on the Mentoring and Development switches.
+- **Q-D: falls away.** Count 3: both org admins hold `scholars.approve`.
+- **Q-E: OFF.** A newly invited Admin starts with switch 1 ("The scholars page and every scholar's file", now view
+  only) ON and "Manage scholar files" OFF; an org admin switches it on. So `ADMIN_PRESET_V2` does NOT gain
+  `scholars.approve`; invites, Restore (gives back what was held) and a role switch to admin use the preset as it
+  is. This also settles surprise 7's role-switch case: no `ADMIN_SWITCH_V2` is needed. `holds_scholars_key` still
+  reads the v2 view key so Manage always brings View.
+- **Q-F / reviewers (owner): "Reviewers have nothing to do with scholars. Only admins do, based on permissions
+  given them."** So:
+  - 0101 grants `scholars.approve` only to rows that hold `scholars` AND sit in Admins (`staff_tables.in_admins`
+    on the stored keys; the org admin rows already hold it). Live: 2 `admin` rows + the one reviewer row that sits
+    in Admins by ruling O8 (row id 9, by id only). These 3 gain the letters on day one: name the count in the
+    phone check, never a name.
+  - 0101 REMOVES `scholars` (and any `scholars.approve`, `award_withdraw_request`, `award_withdraw_approve` it
+    holds) from every team row that holds it but does NOT sit in Admins. Live: 1 active reviewer, who got it from
+    0095 (10 Nov) only because it then held `see_all`. Audit row, kind `edit`, `changed_by_role` 'migration';
+    the reverse puts back exactly what this migration took. Their applications work is unchanged.
+  - The Permissions editor offers the Scholars row only on a person in Admins (and the org admin); on anyone
+    else it is not drawn. The server enforcing "Scholars keys only inside Admins" is S6 (groups first), not S4.
+- **Production counts (25 Nov, read-only):** 1: admin 2, org_admin 2, reviewer 2. 2: org_admin 2. 3: admin
+  view-only 2, org_admin both 2, reviewer view-only 2 (one of them in Admins). 4: no NULL admin row. 5: 0.
+  6: 0. 7: 0. 8: 0. 9: `0099_grant_scholars_approve` only (0100 runs at the 25 Nov 11:00 landing).
+
 ## The one principle
 
 After S4 a scholar's file has two powers: **reading** it (`scholars`, shown as "View scholars", the v2
