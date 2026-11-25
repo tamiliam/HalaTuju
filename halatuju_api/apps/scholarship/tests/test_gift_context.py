@@ -140,6 +140,7 @@ class TestThePayloadIsStillAnAllowlist(_TwoGifts):
         data = AdminApplicationDetailSerializer(app).data
         extra = set(data) - set(AdminApplicationDetailSerializer.Meta.fields)
         self.assertEqual(extra, {'programme', 'income_declared', 'income_nonearning',
-                                 'guardian_ic_name_match', 'stpm_marks', 'decision_mail'})
+                                 'guardian_ic_name_match', 'stpm_marks', 'decision_mail',
+                                 'earner_tick_warnings'})
         # …and it is the LAST key, so every existing key kept its position.
         self.assertEqual(list(data)[-1], 'programme')
