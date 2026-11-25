@@ -3,5 +3,10 @@
     "digest": "80d6f029bb5230d6705e088fb018ac0cee99e310385affb80c0bca8308c5a434",
     "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day.",
     "also_ok": []
+  },
+  "1.3.0": {
+    "digest": "c2bcceb205d95a348e82b05675cd89f6f8692a4a2e434e0d25dbeb2062418e5f",
+    "note": "Request #85 (2026-11-24): the statutory branch (>=2 of KWSP/SOCSO/EIS/PCB -> genuine/private) now runs before the 'no recognisable payslip fields' reject, so a slip with statutory deductions and no wage label is a payslip (the 2026-07-09 rule). The MyKad reject still runs first. The cascade is split out as decide(markers) so rescore_salary_statutory re-scores stored rows from their markers.",
+    "also_ok": []
   }
 }

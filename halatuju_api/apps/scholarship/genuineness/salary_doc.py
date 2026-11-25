@@ -35,7 +35,10 @@ from .results_doc import _any_token, _norm_fold_upper_alnum
 #                        needs a real government-payslip or PENSION-statement marker — 'KUMPULAN
 #                        PERKHIDMATAN' / a bare 'PERKHIDMATAN AWAM' (a form's sector field) no longer make
 #                        a civil-service slip; JPA / KWAP / "Penyata Bayaran"+"Pencen" keep pensions govt.
-MODEL_VERSION = '1.2.0'
+#   1.3.0 (2026-11-24) — #85: ≥2 statutory deductions are a private payslip even with NO wage label (the
+#                        2026-07-09 rule); the MyKad reject still runs first. Stored not_salary rows re-score
+#                        from their markers (`rescore_salary_statutory`), no read.
+MODEL_VERSION = '1.3.0'
 
 # ── Marker groups (normalised substring probes; matched via _norm_fold_upper_alnum) ──────────
 # Statutory scaffold — the private-payslip discriminator. Each GROUP counts once.
@@ -117,7 +120,12 @@ def salary_genuineness(ocr_text: str) -> dict:
     (private/govt/singapore/gig/informal/not_salary). Pure + deterministic; never raises."""
     if is_declaration_text(ocr_text):     # 1.2.0 (#374): a declaration form is never a payslip family
         return declaration_genuineness(MODEL_VERSION)
-    m = score_family(ocr_text)
+    return decide(score_family(ocr_text))
+
+
+def decide(m: dict) -> dict:
+    """The decision cascade over the marker tallies of `score_family` (pure). Split out (#85) so the
+    re-score command answers from a document's STORED markers exactly as a fresh read would."""
     stat, wage = m['statutory'], m['wage']
 
     def out(status, family, prob, reason):
@@ -125,17 +133,21 @@ def salary_genuineness(ocr_text: str) -> dict:
                 'reason': reason[:300], 'model_version': MODEL_VERSION,
                 'markers': {'statutory': stat, 'wage': wage, 'kwsp': m['kwsp']}}
 
-    # Reject: a MyKad in the slot (the #47 class), or nothing that reads like a payslip at all.
+    # Reject first: a MyKad in the slot (the #47 class) — it wins even over statutory words (a MyKad
+    # photo beside a KWSP card is still an identity card, and the org was told it is still refused).
     if m['mykad'] and wage == 0:
         return out('not_salary', 'not_salary', 0.05, 'MyKad markers, no payslip fields — not a salary slip')
+
+    # 1.3.0 (#85): ≥2 statutory deductions ARE the private payslip (the 2026-07-09 rule), even when the
+    # OCR caught none of the wage labels — so this runs BEFORE the "no payslip fields" reject.
+    if stat >= 2:
+        return out('genuine', 'private', min(0.95, 0.60 + 0.10 * stat + 0.03 * wage),
+                   f'{stat} statutory markers (KWSP/SOCSO/EIS/PCB) + {wage} wage labels — private payslip')
     if wage == 0:
         return out('not_salary', 'not_salary', 0.10,
                    'no recognisable payslip fields (wage/deduction labels absent)')
 
-    # Genuine families, in discriminator-strength order.
-    if stat >= 2:
-        return out('genuine', 'private', min(0.95, 0.60 + 0.10 * stat + 0.03 * wage),
-                   f'{stat} statutory markers (KWSP/SOCSO/EIS/PCB) + {wage} wage labels — private payslip')
+    # The other genuine families, in discriminator-strength order.
     if m['govt']:
         return out('genuine', 'govt', min(0.90, 0.70 + 0.03 * wage),
                    'JANM/civil-service e-Penyata Gaji (issuer + GRED)')

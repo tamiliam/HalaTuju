@@ -60,6 +60,37 @@ class TestSalarySignatures(SimpleTestCase):
         for text in ('', '   ', 'blurry photo lorem ipsum dolor sit amet'):
             self.assertEqual(self._g(text)['status'], 'not_salary')
 
+    # ── #85: statutory deductions win over missing wage labels (1.3.0) ──────────
+    # Text with statutory words and NO wage label (none of _WAGE_LABELS appears in it).
+    _STAT_ONLY = "KWSP 308.00\nPERKESO 12.75\nEIS 5.10\nBulan Mac 2026"
+
+    def test_two_statutory_and_no_wage_label_is_a_private_payslip(self):
+        """Regression (#85, case 242): the old cascade rejected this as 'no recognisable payslip fields'."""
+        m = score_family(self._STAT_ONLY)
+        self.assertEqual((m['statutory'], m['wage'], m['mykad']), (3, 0, False))
+        r = self._g(self._STAT_ONLY)
+        self.assertEqual((r['status'], r['family']), ('genuine', 'private'))
+        self.assertEqual(r['probability'], 0.90)
+        self.assertEqual(self._g('KWSP 308.00\nPERKESO 12.75')['probability'], 0.80)   # still >= GENUINE_MIN
+
+    def test_mykad_wins_over_statutory_words(self):
+        """The MyKad reject runs first: an identity card is refused even beside statutory words."""
+        r = self._g("WARGANEGARA\nKETUA PENGARAH PENDAFTARAN NEGARA\nKWSP\nPERKESO")
+        self.assertEqual((r['status'], r['family']), ('not_salary', 'not_salary'))
+        self.assertTrue(r['reason'].startswith('MyKad'))
+
+    def test_one_statutory_and_no_wage_label_is_still_not_salary(self):
+        r = self._g("KWSP 308.00\nBulan Mac 2026")
+        self.assertEqual(r['status'], 'not_salary')
+        self.assertTrue(r['reason'].startswith('no recognisable payslip fields'))
+
+    def test_decide_matches_the_text_path(self):
+        """The re-score command answers from stored markers through `decide`; it must equal a fresh read."""
+        from apps.scholarship.genuineness.salary_doc import decide
+        for text in (self._STAT_ONLY, "KWSP 1\nBulan", "SLIP GAJI Gaji Pokok KWSP PERKESO"):
+            with self.subTest(text):
+                self.assertEqual(decide(score_family(text)), self._g(text))
+
     # ── guards ───────────────────────────────────────────────────────────────────
     def test_nric_label_is_not_a_reject_marker(self):
         # 'Kad Pengenalan' is a legitimate NRIC label on real payslips — must NOT reject a

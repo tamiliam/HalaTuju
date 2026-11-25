@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint #85 - a payslip with two statutory deductions counts as a payslip (2026-11-24)
+
+Branch req85-slip-stat, not pushed. Migration: none. Services: api. Request #85 (org 11, case 242), analysis 195 (bug, free).
+- **Scorer:** `salary_doc` 1.3.0 checks two or more statutory deductions (KWSP / SOCSO / EIS / PCB) before the "no
+  payslip fields" reject, so such a slip reads genuine / private even when no wage label was read. The MyKad reject
+  still runs first; one deduction alone is still not a payslip. The cascade is split out as `decide(markers)`.
+- **Re-score:** new `rescore_salary_statutory` re-writes, from the stored markers only (no read, no AI, no OCR), live
+  payslips stored `not_salary` by an older model with two or more deductions and no MyKad reason. Dry run by default;
+  `--apply` writes. Expected today: 2 documents (case 242, case 861). Not run against production.
+- **Version:** VERDICT_ENGINE_VERSION 2026-11-24.1; `model_versions/salary_doc.json` 1.3.0 and `verdict_engine.json`
+  2026-11-24.1 logged (verdict digest unchanged: its own files did not change). No golden moved.
+- **Tests:** `test_salary_signatures` (+4, one fails on the old order), new `test_rescore_salary_statutory` (4).
+- **Logged:** TD-NEW-netpay-not-salary (a read net pay figure vs "not a salary slip", owner to rule).
+
 ### refactor: sprint M4b review round 1 - stale-step refusal, readers see no staff emails, pre-0100 pinned (2026-11-24)
 
 Branch access-s3-m4b, not pushed. Migration: none. Services: both. From the independent Opus adversarial review of

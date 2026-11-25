@@ -108,7 +108,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-18.1 — #804 offer course proof (owner 2026-11-18): a letter whose ONE catalogue course the linker writes (plan_offer_link: one campus, its own level, a genuine letter for an empty pick) asks nothing of a student with no pick of her own (the one-tap confirm is gone for it; pre-U and unique-bidang PISMP keep theirs); a tertiary student's named degrees count as declared and her old pre-U school never raises "is this where you're going?"; a letter matching no one course asks her to pick her course; the matcher reads a bracketed option list as options; the no-offer line names her degree(s).
 #   2026-11-18.2 — IPTS offers (owner 2026-11-18): an offer letter from a private college / university or a public university's private wing turns Pathway red (pathway_offer_private, a confident disqualifier): flag only, reviewers only; it blocks nothing and the amount does not move.
 #   2026-11-23.1 — request #78 (owner 23 Nov): birth-certificate / guardianship links score each row on name + IC number (`income_engine.match_bands`); only a red row blocks, and with no number on the document the name decides, as before.
-VERDICT_ENGINE_VERSION = '2026-11-23.1'   # #78 match bands (above); sorts after '2026-11-18.2' as text.
+#   2026-11-24.1 — request #85: salary_doc 1.3.0 — a payslip with >=2 statutory deductions and no wage label now reads genuine/private, so the mother's/father's income proof counts for the same documents.
+VERDICT_ENGINE_VERSION = '2026-11-24.1'   # #85 slip statutory (above); sorts after '2026-11-23.1' as text.
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
