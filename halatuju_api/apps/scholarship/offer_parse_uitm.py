@@ -69,7 +69,7 @@ def is_uitm(up: str) -> bool:
             and ('UNIVERSITI TEKNOLOGI MARA' in up or bool(re.search(r'\bUITM\b', up))))
 
 
-def _lines(text: str) -> list:
+def _uitm_lines(text: str) -> list:
     """The non-blank lines, right-stripped, leading spaces kept (an indented line is a wrapped value)."""
     return [ln.rstrip() for ln in (text or '').splitlines() if ln.strip()]
 
@@ -121,7 +121,7 @@ def not_degree(programme: str) -> bool:
             or not _DEGREE.match(programme or ''))
 
 
-def _programme(lines, at):
+def _uitm_programme(lines, at):
     """(code, programme, reason): the one "Program | CODE" line after the head, its 1-2 indented value lines,
     then "Mod Pengajian"."""
     hits = [i for i in _labelled(lines, 'Program') if i > at + 1]
@@ -170,7 +170,7 @@ def _reporting(lines, at):
 
 def printed_date(page1_layout: str) -> str:
     """The reporting date exactly as page 1 prints it ("DD/MM/YYYY"), '' when it cannot be read."""
-    lines = _lines(page1_layout)
+    lines = _uitm_lines(page1_layout)
     at = _title_at(lines)
     return _reporting(lines, at) if at >= 0 else ''
 
@@ -208,7 +208,7 @@ def read_uitm(source: str):
         return None, 'too_long'
     if status_said(source) or status_said(fold_lookalikes(source)):
         return None, 'status_letter'
-    lines = _lines(source)
+    lines = _uitm_lines(source)
     at = _title_at(lines)
     if at < 0:
         return None, 'no_title'
@@ -216,7 +216,7 @@ def read_uitm(source: str):
     # conditional note (`_NOTE_CANCEL`) is broken up. `letter_refusal` checks the whole letter's PLAIN text
     # (every page, page 1 included), where the note runs whole (measured: all 14 sample letters).
     name, nric, why_head = _head(lines, at)
-    code, programme, why_prog = _programme(lines, at)
+    code, programme, why_prog = _uitm_programme(lines, at)
     intake, _h = _one_value(lines, 'Sesi Kemasukan', at)
     intake = intake if _SESI.match(intake) else ''
     printed = _reporting(lines, at)
@@ -302,7 +302,7 @@ def ink_targets(fields, page1_layout) -> tuple:
     shown = _shown(LANE, page1_layout or '')
     phrases = [(f'p{k + 1}', p) for k, p in enumerate(OWNER_WORDS[LANE]) if k in shown]
     f = fields if isinstance(fields, dict) else {}
-    lines = _lines(page1_layout)
+    lines = _uitm_lines(page1_layout)
     at = _title_at(lines)
     head = _cols(lines[at + 1]) if 0 <= at < len(lines) - 1 else []
     printed = {**{k: f.get(k) or '' for k in INK_LABELS},
