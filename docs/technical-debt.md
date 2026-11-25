@@ -9809,6 +9809,6 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Raised in the F4b sprint (see CHANGELOG).** Once the card was rewritten, only `officerCockpit.test.ts` uses `verdictReliability` and the override summary type. **Fix:** delete them with their tests, or bring them back into a card. *(A - S)*
 
-### [TD-715] PDF text layer: text placed off the page by a plain cm or Td is still read - medium
+### [TD-740] PDF text layer: text placed off the page by a plain cm or Td is still read - medium
 
 **Raised 2026-11-25 by the OCR-20 review round 3 (pre-existing, not new with round 3). Owner: new item, after OCR-20 and before OCR-18 step 1. Not built.** Text placed far off the page by a plain `cm` or `Td` (e.g. 5000 5000) keeps the exact read: pypdf reads it, pdfium does not draw it, and page 1 still counts as drawn. Round-3 probe p2i is the same class (positions only). Fix idea: have the exact read refuse, or drop, text whose position lies outside the page box, judged against pdfium's own placement.
