@@ -25,7 +25,7 @@ Branch req84-earner-ticks, not pushed. Migration: none. Services: both. Brief:
   strings. Tests: `IncomeRouteSwitch.earnerTicks.test.tsx` (new), `EarnerTickCheck.test.tsx` (+3).
 - **Review round 2:** the question opens on "No" (Enter twice never confirms unread) and Escape answers "No"; the
   switch holds its Confirm while a question is open; on the income step only a tick that changes stops the roster sync
-  (a "No" does not). New `IncomeWizard.earnerTicks.test.tsx` mounts the real wizard; TD-744 logs the rest. No new strings.
+  (a "No" does not). New `IncomeWizard.earnerTicks.test.tsx` mounts the real wizard; TD-NEW-earner-tick-followups logs the rest. No new strings.
 
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 

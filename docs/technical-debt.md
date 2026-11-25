@@ -9817,9 +9817,9 @@ the same whether the student confirmed the tick after the question or saved it b
 25 Nov). Not built because the promise was a check and a warning, and storing the answer needs a model field. **Fix:**
 record the confirmation per member (additive JSON field) and let the officer's warning say "the student confirmed". *(A - S)*
 
-### [TD-744] #84 follow-ups: the officer's earners line, a role listed twice, the question's wording - low
+### [TD-NEW-earner-tick-followups] #84 follow-ups: the officer's earners line, a role listed twice, the question's wording - low
 
-**Raised 2026-11-25 by the #84 review round 2 (number from the lead 25 Nov).** Logged, not built. **(a)** The officer's
+**Raised 2026-11-25 by the #84 review round 2 (laptop session, number placeholder until the lead numbers it).** Logged, not built. **(a)** The officer's
 Family & finances card still lists a disagreeing member plainly in its "Household earners" line, beside the new warning.
 **(b)** `family.earner_tick_conflicts` reports only the first listing's occupation when a role (brother, sister) is
 listed twice with different non-earning codes (for example "student" and "unemployed"). **(c)** Wording: `{who}` uses
