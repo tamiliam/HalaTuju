@@ -63,6 +63,24 @@ def through(box: tuple, m: tuple) -> tuple:
     return (min(xs), min(ys), max(xs), max(ys))
 
 
+def render_gray(doc_class, data: bytes, scale: float) -> list:
+    """TD-740 review round 2: every page of the glyph sheet ``data`` (`pdfium_type3.glyph_sheet`) drawn by pdfium
+    at ``scale`` px a point, greyscale, as Pillow 'L' images. ``doc_class``: the worker's pypdfium2 ``PdfDocument``
+    (passed in, so pdfium stays in the child)."""
+    doc = doc_class(data)
+    try:
+        out = []
+        for i in range(len(doc)):
+            page = doc[i]
+            try:
+                out.append(page.render(scale=scale, grayscale=True).to_pil().convert('L'))
+            finally:
+                page.close()
+        return out
+    finally:
+        doc.close()
+
+
 def outside(box: tuple, area: tuple) -> bool:
     """True when ``box`` reaches past ``area`` by more than `EDGE_PT` on any side, or its centre is not in ``area``
     (a small box wholly off the page, within `EDGE_PT` of the edge), or it is not a number at all."""

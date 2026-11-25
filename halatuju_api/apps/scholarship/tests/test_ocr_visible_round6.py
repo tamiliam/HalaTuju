@@ -166,7 +166,9 @@ class WhatPdfiumLoadsWithAPage(SimpleTestCase):
         # the corpus's shapes: a small Type3 font, an ICC profile, an axial shading of exponential functions,
         # a soft mask, a huge image (pdfium decodes it only to paint: not charged)
         kept = {
-            'type3': _type3(4, 40, GLYPH),
+            # TD-740 r2: a glyph of real size (GLYPH's 10-unit triangle is under pdfium_type3.INK_MIN_SHARE, so
+            # it no longer counts as ink; this test is about what pdfium loads, not about ink)
+            'type3': _type3(4, 40, b'500 0 0 0 500 700 d1 0 0 500 700 re f'),
             'icc': _with(b'/ColorSpace << /CS0 6 0 R >>', b'/CS0 cs 0.5 0.5 0.5 sc 0 0 9 9 re f', {
                 6: b'[/ICCBased 7 0 R]', 7: _flate(b'<< /N 3', b'\x00' * 3_144)}),
             'shading': _with(b'/Shading << /Sh0 6 0 R >>', b'q /Sh0 sh Q', {

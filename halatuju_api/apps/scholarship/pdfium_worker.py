@@ -16,6 +16,7 @@ getting the safe answer. The module's top level imports only the standard
 library: the web process imports it for `raster_scale` alone.
 """
 import ctypes
+import functools
 import io
 import json
 import sys
@@ -81,7 +82,8 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
         if annots < 0 or not all(_plain_link(page.raw, k) for k in range(annots)):
             return False
         oc_xobject, _xfa, _t3_ok, t3_any = _t3.page_flags(_DATA[0], index)   # OCR-20 r2: an XObject with /OC
-        if oc_xobject or (t3_any and not _t3.shown_ok(_DATA[0], index)):    # TD-740 r1: Type3 glyph boxes
+        sheet = functools.partial(_pl.render_gray, type(pdf))               # TD-740 r2: glyph ink
+        if oc_xobject or (t3_any and not _t3.shown_ok(_DATA[0], index, sheet)):   # TD-740 r1: Type3 glyph boxes
             return False
         area = _page_box(raw, page.raw)                            # TD-740: where pdfium draws the page
         # (page or form object, is a form, under an OC mark, the holder's space to page space)

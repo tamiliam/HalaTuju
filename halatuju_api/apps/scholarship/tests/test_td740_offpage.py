@@ -306,3 +306,194 @@ class TheWorkerRule(SimpleTestCase):
     def test_box_through_a_matrix(self):
         box = pdfium_place.through((0, 0, 10, 20), (0, 1, -1, 0, 100, 0))    # turned 90 degrees, then moved
         self.assertEqual(tuple(round(v, 6) for v in box), (80.0, 0.0, 100.0, 10.0))
+
+
+# ---- TD-740 review round 2 -------------------------------------------------------------------------------------
+#: A d1 glyph box with area and no ink of its own: each round-2 case adds operators that "paint" by their words.
+EMPTY_D1 = b'600 0 0 0 500 700 d1'
+#: A Type3 font whose L, U and S codes name a /space glyph that draws nothing: pypdf reads them as spaces.
+BLANK_DIFFS = b'[76 /space 83 /space 85 /space]'
+
+
+def _fix_xref(data: bytes) -> bytes:
+    """Rebuild the xref after an in-place edit of `_pdf`'s output (objects keep their order)."""
+    import re
+    head = data[:data.index(b'xref\n')]
+    offs = [m.start() for m in re.finditer(rb'(?m)^\d+ 0 obj\n', head)]
+    size = len(offs) + 1
+    out = head + b'xref\n0 %d\n0000000000 65535 f \n' % size + b''.join(b'%010d 00000 n \n' % o for o in offs)
+    return out + b'trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n' % (size, len(head))
+
+
+def _gate_refuses(pdf: bytes) -> bool:
+    """The primary gate: page 1 not drawn and no text layer (the words op is a backstop only)."""
+    pdf_pages._layer_memo_clear()
+    drawn = pdf_pages.first_page_drawn(pdf)
+    pdf_pages._layer_memo_clear()
+    return not drawn and pdf_pages.pdf_text_layer(pdf) == ''
+
+
+def _parent_form(body: bytes, parent: int) -> bytes:
+    """A form XObject with NO /Resources of its own and a /Parent (object ``parent``)."""
+    return _stream(body, b'<< /Type /XObject /Subtype /Form /BBox [-10000 -10000 10000 10000] /Parent %d 0 R' % parent)
+
+
+def _with_page_xobjects(data: bytes, xobjects: bytes) -> bytes:
+    return _fix_xref(data.replace(b'/Font << /F1 4 0 R', b'/XObject << ' + xobjects + b' >> /Font << /F1 4 0 R', 1))
+
+
+def _blank_t3(at: int) -> list:
+    return _t3({b'space': EMPTY_D1}, at=at, diffs=BLANK_DIFFS)
+
+
+class AType3GlyphMustReallyInk(SimpleTestCase):
+    """Review round 2, Finding 1: "paints" was read from the glyph's operators; each case below passed it while
+    pdfium puts no real ink down (a hairline at most). The ink is now measured by pdfium (`pdfium_type3.glyph_ink`)."""
+
+    def test_review_probes(self):
+        cases = {'zero_re': b' 0 0 0 0 re f', 'n_then_f': b' 0 0 500 700 re n f', 'line_fill': b' 0 0 m 500 700 l f',
+                 'evenodd_cancel': b' 0 0 500 700 re 0 0 500 700 re f*', 'tiny_ink': b' 0 0 1 1 re f',
+                 'empty_clip': b' 0 0 m 0 0 l W n 0 0 500 700 re f'}
+        for name, ops in cases.items():
+            with self.subTest(name):
+                self.assertTrue(_page1_lost(_t3pdf(b'BT /T3 24 Tf 72 600 Td (LULUS) Tj ET', _lus(EMPTY_D1 + ops))))
+
+    def test_a_small_real_glyph_still_reads(self):
+        """A full stop's worth of ink (120 x 120 units, 1.4% of the em) is real ink."""
+        pdf = _t3pdf(b'BT /T3 24 Tf 72 600 Td (LULUS) Tj ET', _lus(EMPTY_D1 + b' 0 0 120 120 re f'))
+        self.assertTrue(_reads(pdf, 'GENUINE LULUS'))
+
+    def test_a_blank_code_must_be_a_whitespace_byte(self):
+        """pdfium's text page reads a Type3 code with no ToUnicode as its own byte: a /space glyph under code 76
+        is blank to pypdf but 'L' to the words op."""
+        pdf = _t3pdf(b'BT /T3 24 Tf 72 600 Td (LULUS) Tj ET', {b'space': EMPTY_D1}, BLANK_DIFFS)
+        self.assertTrue(_page1_lost(pdf))
+
+    def test_a_blank_code_by_tounicode(self):
+        """Genuine letters show zero-box Type3 glyphs under codes their /ToUnicode maps to a space: pdfium reads
+        a Type3 code through /ToUnicode first, so both readers see a space and the page reads. A /ToUnicode that maps
+        the code to a letter, or that this reader cannot parse, is refused (fails closed)."""
+        space = b'bfchar <4C> <0020> <53> <0020> <55> <0020> endbfchar'
+        for name, cmap, lost in (
+                ('to_space', space, False),
+                ('to_space_by_range', b'bfrange <4C> <4C> <0020> <53> <55> <0020> endbfrange', True),
+                ('to_space_by_one_range', b'bfrange <4C> <4C> <0020> endbfrange 2 beginbfchar <53> <0020> <55>'
+                                          b' <0020> endbfchar', False),
+                ('to_a_letter', b'bfchar <4C> <0041> <53> <0020> <55> <0020> endbfchar', True),
+                ('an_array_range', b'bfrange <4C> <55> [<0020>] endbfrange', True),
+                ('no_entry', b'bfchar <41> <0020> endbfchar', True)):
+            with self.subTest(name):
+                cmap = b'begincmap 1 begincodespacerange <00> <FF> endcodespacerange 3 begin' + cmap + b' endcmap'
+                for glyph in (b'600 0 0 0 0 0 d1', EMPTY_D1):
+                    objs = _t3({b'space': glyph}, diffs=BLANK_DIFFS)
+                    objs[0] = objs[0][:-2] + b' /ToUnicode 10 0 R >>'
+                    pdf = _pdf(G + b'BT /T3 24 Tf 72 600 Td (LULUS) Tj ET', extra=objs + [_stream(cmap)],
+                               fonts=b'/T3 8 0 R ', forms=0)
+                    self.assertEqual(_page1_lost(pdf), lost)
+                    if not lost:
+                        self.assertTrue(_reads(pdf, 'GENUINE'))
+
+    def test_no_renderer_or_a_wrong_render_fails_closed(self):
+        from apps.scholarship import pdfium_type3
+        pdf = _t3pdf(b'BT /T3 24 Tf 72 600 Td (LULUS) Tj ET', _lus(INKED))
+        self.assertFalse(pdfium_type3.shown_ok(pdf, 0))
+        self.assertFalse(pdfium_type3.shown_ok(pdf, 0, lambda data, scale: []))
+        self.assertFalse(pdfium_type3.shown_ok(pdf, 0, lambda data, scale: 1 / 0))
+        too_many = [(object(), 76, (0, 0, 1, 1))] * (pdfium_type3.INK_MAX_GLYPHS + 1)
+        self.assertIsNone(pdfium_type3.glyph_ink(too_many, lambda data, scale: []))
+
+
+class OneResourceViewPerForm(SimpleTestCase):
+    """Review round 2, Findings 2 and 3: pypdf reads a form with no /Resources of its own through its /Parent's,
+    pdfium through its caller's; and a form drawn twice under other resources must be judged twice."""
+
+    def test_a_form_with_a_parent_and_no_resources(self):
+        """parent_res: drawn from G, whose /F1 is the blank Type3 font; F's /Parent gives pypdf Helvetica."""
+        f = _parent_form(b'BT /F1 24 Tf 72 300 Td (LULUS) Tj ET', 10)
+        g = _stream(b'/XF Do', b'<< /Type /XObject /Subtype /Form /BBox [-10000 -10000 10000 10000]'
+                    b' /Resources << /Font << /F1 11 0 R >> /XObject << /XF 8 0 R >> >>')
+        parent = b'<< /Resources << /Font << /F1 4 0 R >> >> >>'
+        pdf = _pdf(G + b'/XG Do', extra=[f, g, parent] + _blank_t3(11), forms=0)
+        self.assertTrue(_page1_lost(_with_page_xobjects(pdf, b'/XG 9 0 R')))
+        with self.subTest('parent_res_page_t3'):
+            f = _parent_form(b'BT /F2 24 Tf 72 300 Td (LULUS) Tj ET', 9)
+            parent = b'<< /Resources << /Font << /F2 4 0 R >> >> >>'
+            pdf = _pdf(G + b'/XF Do', extra=[f, parent] + _blank_t3(10), fonts=b'/F2 10 0 R ', forms=0)
+            self.assertTrue(_page1_lost(_with_page_xobjects(pdf, b'/XF 8 0 R')))
+        with self.subTest('no_type3_at_all'):          # two resource views, whatever the fonts: refused
+            f = _parent_form(b'BT /F1 24 Tf 72 300 Td (LULUS) Tj ET', 9)
+            pdf = _pdf(G + b'/XF Do', extra=[f, b'<< /Resources << /Font << /F1 4 0 R >> >> >>'], forms=0)
+            self.assertTrue(_page1_lost(_with_page_xobjects(pdf, b'/XF 8 0 R')))
+
+    def _twice(self, page: bytes, parent: bool) -> bytes:
+        """F (no /Resources) drawn from the page (Helvetica /F1) and from G (/F1: an empty Type3 font)."""
+        f = (_parent_form(b'BT /F1 24 Tf 72 600 Td (LULUS) Tj ET', 10) if parent else
+             _stream(b'BT /F1 24 Tf 72 600 Td (LULUS) Tj ET',
+                     b'<< /Type /XObject /Subtype /Form /BBox [-10000 -10000 10000 10000]'))
+        g = _stream(b'/XF Do', b'<< /Type /XObject /Subtype /Form /BBox [-10000 -10000 10000 10000]'
+                    b' /Matrix [1 0 0 1 0 -300] /Resources << /Font << /F1 11 0 R >> /XObject << /XF 8 0 R >> >>')
+        parent_dict = b'<< /Resources << /Font << /F1 4 0 R >> >> >>'
+        pdf = _pdf(G + page, extra=[f, g, parent_dict] + _t3(_lus(EMPTY_D1), at=11), forms=0)
+        return _with_page_xobjects(pdf, b'/XF 8 0 R /XG 9 0 R')
+
+    def test_done_key_skip_and_control(self):
+        for name, page in (('skip', b'/XF Do /XG Do'), ('control', b'/XG Do')):
+            with self.subTest(name):
+                self.assertTrue(_page1_lost(self._twice(page, parent=True)))
+
+    def test_the_walk_judges_a_form_again_under_other_resources(self):
+        """Without the /Parent (so the page is not refused on that rule) the walk itself must judge F under G's
+        resources the second time: its key holds the resource chain (Finding 3)."""
+        from apps.scholarship import pdfium_type3
+        self.assertTrue(pdfium_type3.shown_ok(self._twice(b'/XF Do', parent=False), 0))
+        self.assertFalse(pdfium_type3.shown_ok(self._twice(b'/XF Do /XG Do', parent=False), 0))
+
+
+class APagesNodeFontNameClash(SimpleTestCase):
+    """Review round 2, Finding 4: pypdf's layout mode lays the /Pages node's fonts over the page's own."""
+
+    def _pages_res(self, data: bytes, fonts: bytes) -> bytes:
+        return _fix_xref(data.replace(b'<< /Type /Pages /Kids [3 0 R 6 0 R] /Count 2 >>',
+                                      b'<< /Type /Pages /Kids [3 0 R 6 0 R] /Count 2 /Resources << /Font << '
+                                      + fonts + b'>> >> >>'))
+
+    def _lost(self, pdf: bytes) -> bool:
+        """Both pages sit under the clashing /Pages node, so both lose their exact read."""
+        return _gate_refuses(pdf) and _texts(pdf) == ['', ''] and _words(pdf) == []
+
+    def test_pages_node_layout(self):
+        pdf = _pdf(G + b'BT /F2 24 Tf 72 300 Td (LULUS) Tj ET', extra=_blank_t3(8), fonts=b'/F2 8 0 R ', forms=0)
+        self.assertTrue(self._lost(self._pages_res(pdf, b'/F2 4 0 R ')))
+
+    def test_any_clash_or_a_name_the_page_lacks(self):
+        bold = b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'
+        for name, fonts in (('other_object', b'/F1 8 0 R '), ('page_lacks_it', b'/F9 4 0 R ')):
+            with self.subTest(name):
+                pdf = _pdf(G + b'BT /F1 24 Tf 72 300 Td (LULUS) Tj ET', extra=[bold], forms=0)
+                self.assertTrue(self._lost(self._pages_res(pdf, fonts)))
+
+    def test_the_same_font_object_still_reads(self):
+        pdf = self._pages_res(_pdf(G + b'BT /F1 24 Tf 72 300 Td (LULUS) Tj ET'), b'/F1 4 0 R ')
+        self.assertTrue(_reads(pdf, 'GENUINE LULUS'))
+
+
+class ThePrimaryGateRefusesWhatTheWordsBackstopMisses(SimpleTestCase):
+    """Review round 2, Finding 5 (LOW): the words op's own backstop misses these; the primary gate refuses them."""
+
+    def _oc(self, in_font: bool) -> bytes:
+        objs = _t3(_lus(EMPTY_D1 + b' /OC /P1 BDC 0 0 500 700 re f EMC'))
+        if in_font:
+            objs[0] = objs[0].replace(b'/CharProcs', b'/Resources << /Properties << /P1 12 0 R >> >> /CharProcs')
+        fonts = b'/T3 8 0 R ' if in_font else b'/T3 8 0 R >> /Properties << /P1 12 0 R '
+        data = _pdf(G + b'BT /T3 24 Tf 72 600 Td (LULUS) Tj ET', extra=objs + [b'<< /Type /OCG /Name (x) >>'],
+                    fonts=fonts, forms=0)
+        return _fix_xref(data.replace(b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Catalog /Pages 2 0 R'
+                                      b' /OCProperties << /OCGs [12 0 R] /D << /OFF [12 0 R] >> >> >>'))
+
+    def test_tf_with_three_operands(self):
+        self.assertTrue(_gate_refuses(_t3pdf(b'BT /F1 /T3 24 Tf 72 600 Td (LULUS) Tj ET', _lus(EMPTY_D1))))
+
+    def test_ink_in_off_optional_content_inside_a_glyph(self):
+        for name, in_font in (('page_properties', False), ('font_resources', True)):
+            with self.subTest(name):
+                self.assertTrue(_gate_refuses(self._oc(in_font)))
