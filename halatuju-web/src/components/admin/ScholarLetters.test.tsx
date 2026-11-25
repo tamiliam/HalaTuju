@@ -6,12 +6,13 @@
  *    emailed" with Resend;
  *  * a termination prompts "Close the file?" — the button goes to the file's OWN Close control, "Not
  *    now" dismisses, and nothing here closes anything;
- *  * Withdraw only for who the server allows, and only with a reason;
+ *  * Withdraw only for who the server allows, and only with a reason; Resend only for the kinds the server
+ *    serves in `can_resend` (S4: never derived from who is signed in);
  *  * the dialog offers only `can_issue`, shows the SERVER's draft and her email, says "documents only"
  *    for suspension and termination, and keeps "Issue and email" shut until the full name is typed
  *    (the server checks again); a refusal is said in words.
  */
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import ScholarLetters from './ScholarLetters'
 import * as api from '@/lib/admin-api/letters'
 
@@ -38,6 +39,7 @@ const PAYLOAD = (over: Partial<api.ScholarLetters> = {}): api.ScholarLetters => 
       withdrawn_reason: 'issued to the wrong student', state: 'withdrawn' }),
   ],
   can_issue: ['general', 'discipline', 'suspension', 'termination', 'close_out'], can_withdraw: true,
+  can_resend: ['general', 'discipline', 'suspension', 'termination', 'close_out'],
   prompt_close: true, response_days: 14, student_name: 'Nur Aisyah binti Rahman', default_language: 'en',
   file_closed: false, ...over,
 })
@@ -99,17 +101,41 @@ it('Withdraw needs a reason, and is not offered when the server says this office
   await waitFor(() => expect(mockApi.withdrawLetter).toHaveBeenCalledWith(104, 1, 'wrong student', { token: 'tok' }))
 })
 
-it('a reviewer sees no Withdraw and only the kinds she may issue', async () => {
+it('no Withdraw when the server says none, and the dialog offers only the served kinds', async () => {
   mockApi.getScholarLetters.mockResolvedValue(PAYLOAD({ can_withdraw: false, prompt_close: false,
-    can_issue: ['general', 'discipline', 'close_out'] }))
+    can_issue: ['general', 'close_out'] }))
   mount()
   await screen.findByTestId('letter-1')
   expect(screen.queryByText(`${P}.withdraw`)).toBeNull()
   fireEvent.click(screen.getByText(`${P}.issue`))
   const dialog = screen.getByTestId('issue-letter')
-  expect(within(dialog).getAllByRole('radio')).toHaveLength(3)
+  expect(within(dialog).getAllByRole('radio')).toHaveLength(2)
   expect(within(dialog).queryByText(`${P}.kind.termination`)).toBeNull()
-  expect(within(dialog).getByText(`${P}.dialog.seniorOnly`)).toBeTruthy()
+})
+
+it('S4: View scholars alone — the letters read, and no Issue, Withdraw or Resend (all served empty)', async () => {
+  mockApi.getScholarLetters.mockResolvedValue(PAYLOAD({ can_issue: [], can_withdraw: false, can_resend: [] }))
+  mount()
+  const line = await screen.findByTestId('letter-not-emailed-2')
+  expect(line.textContent).toContain(`${P}.notEmailed`)
+  expect(within(line).queryByText(`${P}.resend`)).toBeNull()
+  expect(screen.queryByText(`${P}.issue`)).toBeNull()
+  expect(screen.queryByText(`${P}.withdraw`)).toBeNull()
+})
+
+it('S4: Resend follows can_resend per letter kind; an older payload without it draws none', async () => {
+  mockApi.getScholarLetters.mockResolvedValue(PAYLOAD({ can_resend: ['general'] }))
+  mount()
+  expect(within(await screen.findByTestId('letter-not-emailed-2')).queryByText(`${P}.resend`)).toBeNull()  // discipline
+  cleanup()
+  mockApi.getScholarLetters.mockResolvedValue(PAYLOAD({ can_resend: ['discipline'] }))
+  mount()
+  expect(within(await screen.findByTestId('letter-not-emailed-2')).getByText(`${P}.resend`)).toBeTruthy()
+  cleanup()
+  const { can_resend: _gone, ...older } = PAYLOAD()
+  mockApi.getScholarLetters.mockResolvedValue(older)
+  mount()
+  expect(within(await screen.findByTestId('letter-not-emailed-2')).queryByText(`${P}.resend`)).toBeNull()
 })
 
 it('the dialog: the server draft and her email, documents-only, and the typed full name', async () => {
@@ -185,8 +211,8 @@ it('a refusal from the server is said in words', async () => {
 })
 
 it('sprint S1 (S1-h): read-only for a mentor — the letters show, no Resend, no Issue, no Withdraw', async () => {
-  mockApi.getScholarLetters.mockResolvedValue(PAYLOAD({ can_issue: [], can_withdraw: false }))
-  mount({ readOnly: true, canClose: false })
+  mockApi.getScholarLetters.mockResolvedValue(PAYLOAD({ can_issue: [], can_withdraw: false, can_resend: [] }))
+  mount({ canClose: false })
   const line = await screen.findByTestId('letter-not-emailed-2')
   expect(line.textContent).toContain(`${P}.notEmailed`)
   expect(within(line).queryByText(`${P}.resend`)).toBeNull()

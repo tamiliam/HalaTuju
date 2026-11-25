@@ -93,7 +93,7 @@ export const roleReviewer: ManualChapter = {
         &mdash; she moves to <strong>Scholars</strong>, which your organisation&rsquo;s admins look after: they
         accept or query her semester results, write her letters and keep her activity log. Your work stays in
         <strong> Applications</strong>, where her case remains, and Scholars is not in your menu. If your
-        organisation also gives you the <em>Scholars</em> permission, the admin guide&rsquo;s Scholars section
+        organisation also gives you the <em>View scholars</em> permission, the admin guide&rsquo;s Scholars section
         describes what you can then do.</>
       ),
     },

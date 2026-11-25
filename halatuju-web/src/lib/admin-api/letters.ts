@@ -34,6 +34,9 @@ export interface ScholarLetters {
   letters: AdminLetter[]
   can_issue: LetterKind[]
   can_withdraw: boolean
+  /** S4: the kinds this person may resend (Manage scholar files: every kind, a closed file too; else none).
+   *  Served, never derived; an older payload without it draws no Resend. */
+  can_resend?: LetterKind[]
   /** A termination letter stands and the file is open: show "Close the file?". */
   prompt_close: boolean
   response_days: number

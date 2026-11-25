@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
+
+Branch access-s4-scholars, not pushed. Migration: none. Services: web. The server half is S4a (above).
+- **Permissions tab:** the Scholars row carries four switches in order: View scholars (`scholars`, read only),
+  Manage scholar files (`scholars.approve`), Ask to withdraw an award, Approve award withdrawals
+  (`lib/permissionLayout.ts`). While Manage is on, View is on and locked, with the line "On while Manage scholar files
+  is on."; unticking View alone does nothing; switching Manage on brings View into the saved set
+  (`PermissionEditor`, `PermissionBox` gains a `note`).
+- **Letters:** Resend is drawn from the served `can_resend`, per letter kind (an older payload draws none); the
+  `readOnly` prop and the dialog's stale "super admin or organisation admin only" line (`dialog.seniorOnly`, now
+  never true) are gone.
+- **Doors:** `senior_letters` is `scholar_files`; `scholars_read` added (the server's `DOOR_KEYS`, drift-tested).
+- **Words:** `admin.perm.scholars` reads "View scholars" everywhere `permName` names the key (Team's Custom chips,
+  the Changes list, the save bar's line), and the Engagement note says "Switch on View scholars". The 4 team members
+  0101 grants read "Custom" with "+ Manage scholar files" on Team (true: the Admins set lacks it, Q-E); the org admin
+  manual says why. Manual: role-org-admin (invite start, the four switches), role-admin-general (which switch each
+  file change needs), role-reviewer ("View scholars"). ms / ta are drafts for Sol: `admin.perm.scholars.*`,
+  `admin.permLayout.scholarsApprove.*`, `admin.permEditor.scholarsNote`, new `admin.permEditor.scholarsBrought`;
+  removed `admin.scholars.letters.dialog.seniorOnly`.
+
 ### feat: sprint S4a - View scholars reads a scholar's file, Manage scholar files writes it (2026-11-25)
 
 Branch access-s4-scholars, not pushed. Migration: courses 0101_grant_scholars_manage (additive data step, run in the

@@ -127,7 +127,8 @@ function StaffScholarFile() {
   if (!file) return <RecordState loading={loading} />
   // Sprint S1 (S1-h): a MENTOR reads every tab of its current student's file and writes nothing — the
   // server says which reader this is (`mentor_view`); its controls are all off already, and the header's
-  // controls, the activity form, a letter's Resend and the Applications link are not drawn for it.
+  // controls, the activity form and the Applications link are not drawn for it (a letter's Resend follows the
+  // served `can_resend`, S4).
   const asMentor = file.mentor_view === true
   // T5c P4: each tab on its server door. TD-623: the served keys only, no role lists. TD-631: each tab on its
   // READ door (the tab's GET asks `.view`); the tabs hold no write.
@@ -345,7 +346,7 @@ function StaffScholarFile() {
       {tab === 'contract' && <div className="max-w-3xl"><ScholarContract id={file.id} token={token} /></div>}
       {tab === 'letters' && (
         <div className="max-w-4xl">
-          <ScholarLetters id={file.id} token={token} readOnly={asMentor}
+          <ScholarLetters id={file.id} token={token}
             canClose={(file.controls?.close_reasons.length ?? 0) > 0}
             onGoToClose={() => controlsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             onChanged={() => setReloads((n) => n + 1)} />

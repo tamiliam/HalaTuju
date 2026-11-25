@@ -61,7 +61,7 @@ it('D1/D2: the rows in sidebar order, each with its control', () => {
       'sources:tri:sources.view+sources.edit', 'sponsors:tri:sponsors.view+sponsors.edit>sponsors.approve',
       'billing:switch:billing.view', 'requests:tri:requests.view+requests.edit', 'orgSettings:switch:settings.edit']],
     ['programme', ['programmeOverview:info:', 'applications:switch:see_all>students.edit,students.approve',
-      'scholars:switch:scholars>award_withdraw_request,award_withdraw_approve,scholars.approve',
+      'scholars:info:>scholars,scholars.approve,award_withdraw_request,award_withdraw_approve',
       'announcements:tri:announcements.view+announcements.edit', 'surveys:tri:surveys.view+surveys.edit',
       'development:tri:development.view+development.edit', 'mentoring:tri:mentoring.view+mentoring.edit',
       'payments:info:>payments.view,payments_prepare,payments_check,payments_approve', 'spending:switch:spending',

@@ -54,8 +54,10 @@ export const DOOR_KEYS = {
   requests_decide: ['requests.approve'],
   contracts_read: ['contracts.view'],
   contracts_write: ['contracts.edit'],
-  // M3c D5: the senior letters on a scholar's file (`letters._senior`).
-  senior_letters: ['scholars.approve'],
+  // S4 (owner Q3): "Manage scholar files", every write on a scholar's file and every letter
+  // (`views_admin.base.may_write_file`; was M3c's `senior_letters`), and View scholars (implied by Manage).
+  scholar_files: ['scholars.approve'],
+  scholars_read: ['scholars.view'],
   // S2 / M4a: Payments (the View switch, or Organisation admin powers; `payments_chain.may_read`).
   payments_read: ['payments.view'],
   // S3 / M4b: the credit's check seat, and the sponsor terms / emails READS on Sponsors: view (owner Q-D).

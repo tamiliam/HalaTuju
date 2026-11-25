@@ -110,8 +110,9 @@ export const roleOrgAdmin: ManualChapter = {
       body: (
         <>Open <strong>Invitations</strong> from the menu to bring new people in. You invite an
         <strong> Admin</strong>, a <strong>Reviewer</strong>, a <strong>Mentor</strong>, a <strong>Source</strong> or
-        a <strong>Sponsor</strong>. A new Admin starts with <em>Applications</em> and <em>Scholars</em>; you tick
-        more admin permissions on Team once they have joined. There is no separate &ldquo;View-only
+        a <strong>Sponsor</strong>. Someone newly invited to Admins starts with <em>Applications</em> and <em>View
+        scholars</em> (reading every scholar&rsquo;s file); you switch on <em>Manage scholar files</em> and more
+        admin permissions on Team once they have joined. There is no separate &ldquo;View-only
         admin&rdquo;, &ldquo;Finance&rdquo; or &ldquo;QC&rdquo; any more: a finance person is an Admin with
         <em> Approve payment runs</em>, and a QC person is a Reviewer with <em>Quality check</em>.
           <span className="mt-2 block"><strong>Team</strong> has a table for each hat &mdash;
@@ -195,8 +196,13 @@ export const roleOrgAdmin: ManualChapter = {
             requests that use paid hours.</li>
             <li>Payments come with your role until payments move to permissions: you start payment runs and
             approve one when nobody else can, but you never prepare one. Your card says so on the Payments row.</li>
-            <li><em>Suspend or end a scholarship</em> (under Scholars) sends the suspension and termination letters
-            on a scholar&rsquo;s file.</li>
+            <li>Scholars has four switches. <em>View scholars</em> opens the Scholars page and every
+            scholar&rsquo;s file, read only. <em>Manage scholar files</em> changes them: results, activity notes,
+            thank-you messages, every letter (suspension and termination included) and updating or closing the file.
+            It brings <em>View scholars</em>, which stays on while it is on. The other two ask for and approve an
+            award&rsquo;s withdrawal. Team members in Admins who already changed scholar files were given
+            <em> Manage scholar files</em> on 25 November 2026, so Team shows them as <strong>Custom</strong>, with
+            &ldquo;+ Manage scholar files&rdquo;.</li>
           </ul>
           <span className="mt-2 block">The change takes effect on the person&rsquo;s next page. Every change is
           recorded &mdash; who changed what, from what to what, and when &mdash; and the latest changes are listed

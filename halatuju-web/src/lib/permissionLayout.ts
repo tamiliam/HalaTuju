@@ -9,7 +9,8 @@
  * still gets a switch under the boxes, and `permissionLayout.test.ts` fails the build until it is placed.
  *
  * Controls (D2): `tri` is "No access / View / View and change" over a page's `.view` and `.edit`; `switch`
- * is one key; `info` has no control (the Overview rows, and Payments, whose four switches are its sub-items).
+ * is one key; `info` has no control (the Overview rows, and Payments and Scholars, whose four switches are
+ * their sub-items).
  * A row's `subs` are one switch each. Names are i18n keys — the sidebar's own label where the page has
  * one, so a renamed page reads the same in both places.
  */
@@ -50,6 +51,9 @@ const INFO: PermControl = { kind: 'info' }
 export const PAYMENTS_VIEW = ['payments', 'view'].join('.')
 /** S2 / M4a: the Payments switches that bring View; while one is on, View is locked on. */
 export const PAYMENTS_BRING_VIEW: readonly string[] = ['payments_prepare', 'payments_check', 'payments_approve']
+/** S4: View scholars (today's key `scholars`, the v2 `scholars.view`) and Manage scholar files. */
+export const SCHOLARS_VIEW = 'scholars'
+export const SCHOLARS_MANAGE = 'scholars.approve'
 /** A sub-item on one of today's keys: its own words (`admin.perm.<key>`). */
 const oldSub = (key: string): PermSub => ({ key, name: `admin.perm.${key}.name`, desc: `admin.perm.${key}.desc` })
 const sub = (key: string, id: string): PermSub => ({ key, name: `${L}.${id}.name`, desc: `${L}.${id}.desc` })
@@ -70,9 +74,11 @@ export const PERMISSION_LAYOUT: readonly PermBox[] = [
     { id: 'programmeOverview', name: 'admin.nav.programmeOverview', desc: `${L}.programmeOverview.desc`, control: INFO },
     { id: 'applications', name: 'admin.scholarship.nav', desc: 'admin.perm.see_all.desc', control: sw('see_all'),
       subs: [sub('students.edit', 'assign'), sub('students.approve', 'approveAwards')] },
-    { id: 'scholars', name: 'admin.scholars.nav', desc: `${L}.scholars.desc`, control: sw('scholars'),
-      subs: [oldSub('award_withdraw_request'), oldSub('award_withdraw_approve'),
-        sub('scholars.approve', 'scholarsApprove')] },
+    // S4 (owner Q3): four switches. Manage scholar files brings View scholars: while it is on, View is
+    // locked on (`PermissionEditor`), as the server stores the view with it (`with_implied_views`).
+    { id: 'scholars', name: 'admin.scholars.nav', desc: `${L}.scholars.desc`, control: INFO,
+      subs: [oldSub(SCHOLARS_VIEW), sub(SCHOLARS_MANAGE, 'scholarsApprove'), oldSub('award_withdraw_request'),
+        oldSub('award_withdraw_approve')] },
     { id: 'announcements', name: 'admin.announcements.nav', desc: `${L}.announcements.desc`, control: tri('announcements') },
     { id: 'surveys', name: 'admin.surveys.nav', desc: `${L}.surveys.desc`, control: tri('surveys') },
     { id: 'development', name: 'admin.development.nav', desc: `${L}.development.desc`, control: tri('development') },

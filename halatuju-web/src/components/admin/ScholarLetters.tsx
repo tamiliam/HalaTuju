@@ -26,14 +26,12 @@ const STATE_TONE: Record<string, string> = {
  * ⚠ DOCUMENTS ONLY. Issuing never changes her status or payments. After a termination letter the tab
  * asks "Close the file?" — its button takes the officer to the file's OWN Close control in the header
  * (`ScholarControls`), which keeps every rule of a close; nothing here closes anything.
- * ⚠ THE SERVER DECIDES: which kinds this officer may issue (`can_issue`), who may withdraw, and the
- * typed name. A letter is never edited or deleted — Withdraw, with a reason, is the only way out.
+ * ⚠ THE SERVER DECIDES: which kinds this person may issue (`can_issue`) and resend (`can_resend`, S4: a
+ * served flag, never derived from who is signed in), who may withdraw (`can_withdraw`), and the typed name. A letter is never edited or deleted — Withdraw, with a reason, is the only way out.
  */
-export default function ScholarLetters({ id, token, canClose, onGoToClose, onChanged, readOnly = false }: {
+export default function ScholarLetters({ id, token, canClose, onGoToClose, onChanged }: {
   id: number
   token: string | null
-  /** Sprint S1 (S1-h): a mentor reads the letters and resends nothing (the server refuses it anyway). */
-  readOnly?: boolean
   /** The header's Close control offers a close (its own rules decide). */
   canClose: boolean
   onGoToClose: () => void
@@ -96,6 +94,7 @@ export default function ScholarLetters({ id, token, canClose, onGoToClose, onCha
     } catch { setMessage(t(`${P}.actionFailed`)) } finally { setBusy(null) }
   }
 
+  const canResend = (l: AdminLetter) => (data.can_resend ?? []).includes(l.kind)
   const termination = data.letters.find((l) => l.kind === 'termination' && !l.withdrawn_at)
   return (
     <div className="space-y-4" data-testid="scholar-letters">
@@ -164,7 +163,7 @@ export default function ScholarLetters({ id, token, canClose, onGoToClose, onCha
                   ) : (
                     <span className="text-sm text-caution-800" data-testid={`letter-not-emailed-${l.id}`}>
                       {t(`${P}.notEmailed`)}
-                      {!readOnly && <>{' — '}<button type="button" onClick={() => resend(l)} disabled={busy === l.id}
+                      {canResend(l) && <>{' — '}<button type="button" onClick={() => resend(l)} disabled={busy === l.id}
                         className="text-primary-600 underline disabled:opacity-50">{t(`${P}.resend`)}</button></>}
                     </span>
                   )}

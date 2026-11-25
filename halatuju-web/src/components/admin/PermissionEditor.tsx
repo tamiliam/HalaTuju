@@ -6,7 +6,9 @@ import PermissionHistory from './PermissionHistory'
 import { BoxShell, ChangedPill, LayoutBox, Padlock, PowersRow, type KeyState, type RowWords } from './PermissionBox'
 import { permName } from './permName'
 import { useT } from '@/lib/i18n'
-import { LAYOUT_KEYS, PAYMENTS_BRING_VIEW, PAYMENTS_VIEW, PERMISSION_LAYOUT } from '@/lib/permissionLayout'
+import {
+  LAYOUT_KEYS, PAYMENTS_BRING_VIEW, PAYMENTS_VIEW, PERMISSION_LAYOUT, SCHOLARS_MANAGE, SCHOLARS_VIEW,
+} from '@/lib/permissionLayout'
 import {
   getStaffPermissions, saveStaffPermissions,
   type StaffPermissionsPlan, type StaffPermissionsView, type StaffV2Key,
@@ -37,7 +39,8 @@ import {
  * (the server serves `org_admin_powers`) draws the "Organisation admin powers" switch with its served list, and
  * its Payments row says it comes with those powers, with no switches. No "Custom" chip: every admin is set up individually (the server's `custom` still tells
  * Reset whether there is anything to undo). The Engagement pages' need for Scholars is a note from the
- * server (`v2_gaps`, the dry run's), never a refusal.
+ * server (`v2_gaps`, the dry run's), never a refusal. S4 (owner Q3): the Scholars row's four switches;
+ * Manage scholar files brings View scholars, so View is on and locked, with one line, while Manage is on.
  */
 
 /**
@@ -81,6 +84,9 @@ const POWERS_KEY = 'organisation.admin'
 /** S2 / M4a: a Payments switch brings View (the server stores View by itself only without one), so a set
  *  holding one shows View on, locked. */
 const brings = (keys: readonly string[]) => PAYMENTS_BRING_VIEW.some((k) => keys.includes(k))
+/** S4 (owner Q3): Manage scholar files brings View scholars (the server stores the view with it), so a set
+ *  holding it shows View on, locked, with one line saying why. */
+const bringsScholars = (keys: readonly string[]) => keys.includes(SCHOLARS_MANAGE)
 /** M2b: the whole set a card starts from — today's keys, then the stored page keys (S2: and the powers key
  *  when the served card says it is held). */
 const heldBy = (v: Pick<StaffPermissionsView, 'permissions' | 'v2_held' | 'org_admin_powers'>) =>
@@ -121,11 +127,14 @@ function keyStates(view: StaffPermissionsView, served: Map<string, StaffV2Key>, 
       return { shown: true, on, lock, disabled: frozen || lock || brought, changed: tickable && on !== wasOn }
     }
     if (!view.keys.includes(key)) return OFF
-    const on = want.includes(key)
+    // S4: View scholars is on and locked while Manage scholar files is on.
+    const brought = key === SCHOLARS_VIEW && bringsScholars(fixed ? held : want)
+    const on = want.includes(key) || brought
     const lock = !!view.keys_not_held?.includes(key) && !held.includes(key)
+    const wasOn = held.includes(key) || (key === SCHOLARS_VIEW && bringsScholars(held))
     // Applications is locked on while Quality check holds it (TD-499).
-    return { shown: true, on, lock, disabled: frozen || lock || (key === 'see_all' && want.includes('qc')),
-      changed: on !== held.includes(key) }
+    return { shown: true, on, lock, disabled: frozen || lock || brought || (key === 'see_all' && want.includes('qc')),
+      changed: on !== wasOn, note: brought ? 'admin.permEditor.scholarsBrought' : undefined }
   }
 }
 
@@ -271,6 +280,9 @@ function useWorkingSet({ adminId, token, onSaved, initial, table }: Omit<Permiss
       }
       if (page && !on && key.endsWith('.view')) next = next.filter((k) => pageOf(k) !== page)
       if (key === 'qc' && on && !next.includes('see_all')) next = [...next, 'see_all']
+      // S4: Manage scholar files brings View scholars, and View cannot go while Manage stays.
+      if (key === SCHOLARS_MANAGE && on && !next.includes(SCHOLARS_VIEW)) next = [...next, SCHOLARS_VIEW]
+      if (key === SCHOLARS_VIEW && !on && next.includes(SCHOLARS_MANAGE)) return cur
       // By their SEAT, not by what is drawn (O12): opened from Reviewers, an Admin's key stays theirs.
       if (!seatedAdmins && key === 'qc' && !on && !seeAllWasAdmin) next = next.filter((k) => k !== 'see_all')
       return next
