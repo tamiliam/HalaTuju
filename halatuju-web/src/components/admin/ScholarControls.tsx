@@ -15,6 +15,16 @@ export function isHoldMoneyMove(current: string | null | undefined, target: stri
   return target === 'on_hold' || (current === 'on_hold' && target === 'on_track')
 }
 
+/** May a sub-state move be OFFERED, on two served flags: `manage` (Manage scholar files, where the move may
+ *  go at all) and `hold` (the hold door, `may_hold`). A money move asks `hold`; any other asks `manage`, and
+ *  one out of a hold `hold` too. The scholar file and the cockpit's no-file control both offer by this. */
+export function mayMoveSubstate(current: string | null | undefined, target: string,
+  flags: { manage: boolean; hold: boolean }): boolean {
+  return isHoldMoneyMove(current, target)
+    ? flags.hold
+    : flags.manage && (current !== 'on_hold' || flags.hold)
+}
+
 /** Refusal codes the two doors answer, each with its own sentence (the rest read generically). */
 const KNOWN_ERRORS = [
   'hold_needs_payments', 'not_in_maintenance', 'changed_meanwhile', 'bad_substate',
@@ -57,10 +67,8 @@ export default function ScholarControls({ file, token, onChanged }: {
   // (`can_hold` implies it). An offer only; the door judges again.
   // drift-test: halatuju-web/src/lib/__tests__/holdMoneyMoveDrift.test.ts
   const current = file.maintenance_substate
-  const moneyMove = (s: MaintenanceSubstate) => isHoldMoneyMove(current, s)
-  const may = (s: MaintenanceSubstate) => moneyMove(s)
-    ? !!c.can_hold
-    : !!c.can_set_substate && (current !== 'on_hold' || !!c.can_hold)
+  const may = (s: MaintenanceSubstate) =>
+    mayMoveSubstate(current, s, { manage: !!c.can_set_substate, hold: !!c.can_hold })
 
   async function move(s: MaintenanceSubstate) {
     if (!token) return

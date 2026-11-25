@@ -98,18 +98,23 @@ Then publish the api. Note the **cutover**: the moment the new image first took 
 A row touched since the cutover is skipped: invited since, not signed in before it (a pending invite, or a
 Restore, which clears the first sign-in), or with any permission change since (an edit or a role switch). Under
 the new image those people start with Manage scholar files off, and the re-run must not switch it on. First list
-them (each is expected to be skipped):
+them (each is expected to be skipped). Both shapes the DATA block writes are listed: a list, and a NULL `admin` row
+(e.g. a Django-admin role switch, which stores NULL and writes a `role_change` audit row, or a pending invite the
+old image stored as NULL):
 
 ```sql
 BEGIN READ ONLY;
 WITH cut AS (SELECT TIMESTAMPTZ '2026-11-25 11:00:00+08' AS at)
-SELECT a.id, a.role, a.is_active, a.created_at >= cut.at AS created_since,
+SELECT a.id, a.role, a.is_active,
+       CASE WHEN jsonb_typeof(permissions) = 'array' THEN 'list' ELSE 'null_admin' END AS shape,
+       a.created_at >= cut.at AS created_since,
        a.first_seen_at IS NULL OR a.first_seen_at >= cut.at AS not_seen_before,
        EXISTS (SELECT 1 FROM staff_permission_changes c
                 WHERE c.target_id = a.id AND c.created_at >= cut.at) AS changed_since
   FROM partner_admins a, cut
- WHERE role IN ('admin','finance','qc','reviewer') AND jsonb_typeof(permissions) = 'array'
-   AND permissions ? 'scholars' AND NOT permissions ? 'scholars.approve'
+ WHERE ((role IN ('admin','finance','qc','reviewer') AND jsonb_typeof(permissions) = 'array'
+         AND permissions ? 'scholars' AND NOT permissions ? 'scholars.approve')
+        OR (role = 'admin' AND (permissions IS NULL OR jsonb_typeof(permissions) = 'null')))
    AND NOT (a.created_at < cut.at AND a.first_seen_at < cut.at
             AND NOT EXISTS (SELECT 1 FROM staff_permission_changes c
                              WHERE c.target_id = a.id AND c.created_at >= cut.at))
@@ -123,7 +128,7 @@ Manage off, so the DATA block is never run a third time.
 
 ### 4. POST-DEPLOY CHECK (read-only, after the re-run, with the same cutover)
 
-Queries 1 to 3 must each return ZERO (1 counts only rows untouched since the cutover). Query 4 is informational:
+Queries 1 to 3 must each return ZERO (1 and 2 count only rows untouched since the cutover). Query 4 is informational:
 Manage scholar files without View scholars is a legal shape (Manage implies View).
 
 ```sql
@@ -135,8 +140,12 @@ SELECT count(*) FROM partner_admins a, cut
    AND a.created_at < cut.at AND a.first_seen_at < cut.at
    AND NOT EXISTS (SELECT 1 FROM staff_permission_changes c
                     WHERE c.target_id = a.id AND c.created_at >= cut.at);
-SELECT count(*) FROM partner_admins
- WHERE role = 'admin' AND (permissions IS NULL OR jsonb_typeof(permissions) = 'null');
+WITH cut AS (SELECT TIMESTAMPTZ '2026-11-25 11:00:00+08' AS at)
+SELECT count(*) FROM partner_admins a, cut
+ WHERE role = 'admin' AND (permissions IS NULL OR jsonb_typeof(permissions) = 'null')
+   AND a.created_at < cut.at AND a.first_seen_at < cut.at
+   AND NOT EXISTS (SELECT 1 FROM staff_permission_changes c
+                    WHERE c.target_id = a.id AND c.created_at >= cut.at);
 SELECT count(*) FROM partner_admins
  WHERE role = 'org_admin' AND jsonb_typeof(permissions) = 'array'
    AND permissions ? 'scholars' AND NOT permissions ? 'scholars.approve';

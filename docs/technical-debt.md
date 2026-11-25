@@ -9486,7 +9486,7 @@ organisation therefore learns that the id exists, where every other cross-organi
 moves and nothing is read. Predates S4a. **Fix:** answer 404 when `org_allows(admin, disb.application)` is false,
 before the money rule, with an access-matrix row for a stranger's tranche id. *(A - S)*
 
-### [TD-NEW-hold-unlocked-read] The sub-state door reads the current sub-state before it locks the row - low
+### ~~[TD-NEW-hold-unlocked-read] The sub-state door reads the current sub-state before it locks the row - low~~ — BUILT 2026-11-25 (sprint S4a review round 2, branch access-s4-scholars, not pushed; closes when live): the door passes the sub-state it judged (`expected=app.maintenance_substate`) to `maintenance.set_substate`, which refuses `changed_meanwhile` with nothing written when the stored value differs; its conditional write is on the same value, so a change landing after the re-read is refused too (no row lock needed: the run locks still come first). Tests `test_s4a_hold_moves.TestTheJudgedSubstateIsReCheckedAtTheWrite` (the race simulated between the judgement and the write)
 
 **Raised 2026-11-25 by the sprint S4a review round (N5; laptop session, number placeholder until the desk numbers it).**
 `AdminMaintenanceSubstateView.post` (`apps/scholarship/views_admin/lifecycle.py` ~206 and ~212) decides whether a

@@ -216,8 +216,9 @@ class AdminMaintenanceSubstateView(_AdminBase):
             return Response({'error': 'hold_needs_payments', 'code': 'hold_needs_payments'},
                             status=status.HTTP_403_FORBIDDEN)
         try:
+            # The judged value goes with the move: a sub-state changed since is `changed_meanwhile`.
             maintenance_service.set_substate(app, request.data.get('substate'),
-                                             by_email=admin.email)
+                                             by_email=admin.email, expected=app.maintenance_substate)
         except maintenance_service.MaintenanceError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(_detail_payload(app, admin))

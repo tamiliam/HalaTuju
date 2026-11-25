@@ -26,6 +26,10 @@ Branch access-s4-scholars, not pushed. Migration: none. Services: web. The serve
 - **Sub-state control:** `ScholarControls` draws it when `can_set_substate` or `can_hold` is served and offers each move
   as the door judges it (`hold_is_money_move`): to a hold, or a hold lifted to on track, needs `can_hold` (View scholars +
   Payments: Prepare); any other move needs `can_set_substate` (Manage scholar files), and a move out of a hold also `can_hold`.
+- **Review round 2:** the cockpit's no-file sub-state control (`PostAwardPanels`) is drawn when Manage (`can_write`)
+  or the hold door (`maintenance_controls.can_hold`) allows a move, offering each by the scholar file's rule
+  (`mayMoveSubstate`, exported from `ScholarControls`), so someone holding View scholars and Payments: Prepare without
+  Manage can hold a payable student who has no file. An older payload behaves as before.
 
 ### feat: sprint S4a - View scholars reads a scholar's file, Manage scholar files writes it (2026-11-25)
 
@@ -48,6 +52,13 @@ publish window; release note `docs/releases/access-s4-scholars-release-note-draf
   first seen, restored or edited after it are skipped and listed by a RE-RUN PRE-CHECK), PRE/POST checks add
   `org_admin_without_manage` (expect 0), and the reverse deletes only the audit rows of rows it reverts. New debt:
   TD-NEW-disbursement-403-cross-org, TD-NEW-hold-unlocked-read.
+- **Review round 2:** the sub-state door passes the sub-state it judged to `maintenance.set_substate`
+  (`expected`), which refuses `changed_meanwhile` with nothing written when the stored value moved since (someone
+  holding View scholars and Payments: Prepare can no longer land a Manage move such as probation to on track);
+  TD-NEW-hold-unlocked-read built. 0101: POST query 2 (a NULL admin row) is bounded by the cutover like query 1, and the
+  RE-RUN PRE-CHECK lists the NULL shape too (a Django-admin role switch since the cutover is skipped, listed and not
+  counted); SQL pinned in the test and the release note. `TheMoneyMoves` adds the same-state, no-target and
+  unknown-target rows.
 
 ### refactor: sprint M4b review round 1 - stale-step refusal, readers see no staff emails, pre-0100 pinned (2026-11-24)
 

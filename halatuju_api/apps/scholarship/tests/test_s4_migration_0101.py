@@ -57,9 +57,12 @@ class HandSql(TestCase):
         roles = ','.join(f"'{r}'" for r in M.TEAM_ROLES)
         where = (f"WHEREroleIN({roles})ANDjsonb_typeof(permissions)='array'"
                  f"ANDpermissions?'{M.VIEW}'ANDNOTpermissions?'{M.KEY}'")
-        # PRE-CHECK, DATA block, RE-RUN PRE-CHECK and POST-DEPLOY CHECK.
-        self.assertEqual(self.flat.count(where), 4)
-        self.assertEqual(self.flat.count("WHERErole='admin'AND(permissionsISNULLORjsonb_typeof(permissions)='null')"), 3)
+        null_admin = "role='admin'AND(permissionsISNULLORjsonb_typeof(permissions)='null')"
+        # PRE-CHECK, DATA block and POST-DEPLOY CHECK; the RE-RUN PRE-CHECK lists both shapes in one WHERE.
+        self.assertEqual(self.flat.count(where), 3)
+        self.assertEqual(self.flat.count('WHERE' + null_admin), 3)
+        rerun = self.flat.split('RE-RUNPRE-CHECK(read-only', 1)[1].split('POST-DEPLOYCHECK(read-only', 1)[0]
+        self.assertIn('WHERE((' + where[len('WHERE'):] + ')OR(' + null_admin + '))', rerun)
         data = self.flat.split('DATAblock(onetransaction', 1)[1].split('RE-RUNPRE-CHECK(read-only', 1)[0]
         self.assertNotIn("'org_admin'", data)                     # the writes never touch an organisation admin
 
@@ -88,7 +91,24 @@ class HandSql(TestCase):
         self.assertIn('EXPECTEDTOBESKIPPED', rerun)
         post = self.flat.split('POST-DEPLOYCHECK(read-only', 1)[1].split('Reverse:', 1)[0]
         self.assertIn("ANDNOTpermissions?'scholars.approve'AND" + bound, post)
+        # S4a review round 2: query 2 (a NULL admin row) reads the same bound, so a skipped NULL row is not counted.
+        self.assertIn("jsonb_typeof(permissions)='null')AND" + bound, post)
+        self.assertEqual(post.count("WITHcutAS(SELECTTIMESTAMPTZ'2026-11-2511:00:00+08'ASat)"), 2)
         self.assertIn('THERE-RUNISBOUNDEDBYTHECUTOVER', self.flat)
+
+    def test_the_release_note_carries_the_same_re_run_and_post_checks(self):
+        """S4a review round 2: the RE-RUN PRE-CHECK and the POST-DEPLOY CHECK are copied into the release note;
+        the copies must agree with the migration word for word (whitespace aside)."""
+        import os
+        note = os.path.join(os.path.dirname(os.path.abspath(__file__)), *([os.pardir] * 4),
+                            'docs', 'releases', 'access-s4-scholars-release-note-draft.md')
+        flat_note = ''.join(open(note, encoding='utf-8').read().split())
+        for head, tail in (('RE-RUNPRE-CHECK(read-only', 'POST-DEPLOYCHECK(read-only'),
+                           ('POST-DEPLOYCHECK(read-only', 'Reverse:')):
+            part = self.flat.split(head, 1)[1].split(tail, 1)[0]
+            sql = 'BEGINREADONLY;' + part.split('BEGINREADONLY;', 1)[1].split('COMMIT;', 1)[0] + 'COMMIT;'
+            with self.subTest(check=head):
+                self.assertIn(sql, flat_note)
 
     def test_the_writes_match_plan_row_and_nothing_is_removed(self):
         self.assertIn(f"permissions||'[\"{M.KEY}\"]'::jsonbASafter", self.flat)
@@ -301,6 +321,30 @@ class TheReRunIsBoundedByTheCutover(TestCase):
             self.assertEqual(PartnerAdmin.objects.get(pk=a.pk).permissions, PRESET, a.pk)
             self.assertFalse(StaffPermissionChange.objects.filter(target_id=a.pk, changed_by_role='migration')
                              .exists())
+
+    def test_a_null_admin_row_touched_since_is_skipped_listed_and_not_counted(self):
+        """S4a review round 2: a Django-admin role switch since the cutover stores NULL and writes a `role_change`
+        audit row. The re-run skips it; the RE-RUN PRE-CHECK lists it (NULL shape and `NOT (bound)`); POST query 2,
+        bounded the same way, does not count it. The SQL's text is pinned above; here the bound it shares with
+        the forward step (`touched_since`) is held on the row."""
+        org = self.untouched.owning_organisation
+        switched = make_admin('admin', owning_org=org)
+        PartnerAdmin.objects.filter(pk=switched.pk).update(
+            permissions=None, created_at=self.cut - datetime.timedelta(days=3),
+            first_seen_at=self.cut - datetime.timedelta(days=3))
+        StaffPermissionChange.objects.create(
+            target_id=switched.pk, organisation_id=org.pk, kind='role_change', role='admin', before=['review'],
+            after=list(M.ADMIN_PRESET), changed_by_email='', changed_by_role='django_admin')
+        StaffPermissionChange.objects.filter(target_id=switched.pk).update(
+            created_at=self.cut + datetime.timedelta(minutes=5))
+        changed = M.grant_scholars_manage(live_apps, None, cutover=self.cut)
+        self.assertNotIn(switched.pk, changed)
+        self.assertIsNone(PartnerAdmin.objects.get(pk=switched.pk).permissions)
+        fresh = PartnerAdmin.objects.get(pk=switched.pk)
+        self.assertEqual(M.plan_row(fresh.role, fresh.permissions)[0], M.NULL_KIND)     # the NULL shape
+        since = set(StaffPermissionChange.objects.filter(created_at__gte=self.cut)
+                    .values_list('target_id', flat=True))
+        self.assertTrue(M.touched_since(fresh, self.cut, since))     # listed by the pre-check, not counted by query 2
 
     def test_the_first_run_is_unbounded(self):
         changed = M.grant_scholars_manage(live_apps, None)

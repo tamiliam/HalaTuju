@@ -57,8 +57,50 @@ it('nothing for a case that takes no sub-state, or a reader who cannot write', (
   expect(screen.queryByTestId('no-file-substate')).toBeNull()
   unmount()
   render(<PostAwardPanels {...props({ has_file: false,
-    maintenance_controls: { can_set_substate: true, can_hold: true } }, { canWrite: false })} />)
+    maintenance_controls: { can_set_substate: true, can_hold: false } }, { canWrite: false })} />)
   expect(screen.queryByTestId('no-file-substate')).toBeNull()
+})
+
+describe('S4a review round 2: each move offered by the scholar file\'s rule on the served flags', () => {
+  // `canWrite` = served `can_write` (Manage scholar files past the award); `can_hold` = the hold door.
+  const offered = (current: string, canWrite: boolean, canHold: boolean | null) => {
+    const { unmount } = render(<PostAwardPanels {...props({ has_file: false, maintenance_substate: current as never,
+      maintenance_controls: { can_set_substate: true, can_hold: canHold } }, { canWrite })} />)
+    const names = screen.queryAllByRole('button').map((b) => b.textContent)
+      .filter((n): n is string => !!n && n.startsWith('admin.maintenance.action.'))
+      .map((n) => n.replace('admin.maintenance.action.', ''))
+    const drawn = !!screen.queryByTestId('no-file-substate')
+    unmount()
+    return { drawn, names }
+  }
+
+  it('Manage only: every move but placing or lifting a hold', () => {
+    expect(offered('on_track', true, false)).toEqual({ drawn: true, names: ['probation', 'ready_to_close'] })
+    expect(offered('on_hold', true, false)).toEqual({ drawn: true, names: [] })
+  })
+
+  it('View scholars and Payments: Prepare only (Manage off): the hold and its lift, nothing else', () => {
+    expect(offered('on_track', false, true)).toEqual({ drawn: true, names: ['on_hold'] })
+    expect(offered('probation', false, true)).toEqual({ drawn: true, names: ['on_hold'] })
+    expect(offered('on_hold', false, true)).toEqual({ drawn: true, names: ['on_track'] })
+  })
+
+  it('neither: no control', () => {
+    expect(offered('on_track', false, false).drawn).toBe(false)
+    expect(offered('on_hold', false, false).drawn).toBe(false)
+  })
+
+  it('both: every move, a hold\'s too', () => {
+    expect(offered('on_track', true, true)).toEqual({ drawn: true,
+      names: ['probation', 'on_hold', 'ready_to_close'] })
+    expect(offered('on_hold', true, true)).toEqual({ drawn: true,
+      names: ['on_track', 'probation', 'ready_to_close'] })
+  })
+
+  it('an older payload with no viewer answer (`can_hold` null) behaves as before: Manage moves only', () => {
+    expect(offered('on_track', true, null)).toEqual({ drawn: true, names: ['probation', 'ready_to_close'] })
+    expect(offered('on_track', false, null).drawn).toBe(false)
+  })
 })
 
 it('sprint S1: no "Open scholar file" for a reader the Scholars page refuses (no `scholars` key)', () => {

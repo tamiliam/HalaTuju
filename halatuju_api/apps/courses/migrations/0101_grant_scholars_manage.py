@@ -95,16 +95,21 @@ audit row, and the ledger row is written once). `cut`: NULL on the first run; on
     COMMIT;
 
 RE-RUN PRE-CHECK (read-only, before the re-run; `cut` = the cutover). The rows touched since the cutover, by id
-(no name), each EXPECTED TO BE SKIPPED: they keep Manage off (Q-E).
+(no name), each EXPECTED TO BE SKIPPED: they keep Manage off (Q-E). Both shapes the DATA block writes: a list,
+and a NULL `admin` row (S4a review round 2: e.g. a Django-admin role switch, which stores NULL and writes a
+`role_change` audit row, or a pending invite the old image stored as NULL).
     BEGIN READ ONLY;
     WITH cut AS (SELECT TIMESTAMPTZ '2026-11-25 11:00:00+08' AS at)
-    SELECT a.id, a.role, a.is_active, a.created_at >= cut.at AS created_since,
+    SELECT a.id, a.role, a.is_active,
+           CASE WHEN jsonb_typeof(permissions) = 'array' THEN 'list' ELSE 'null_admin' END AS shape,
+           a.created_at >= cut.at AS created_since,
            a.first_seen_at IS NULL OR a.first_seen_at >= cut.at AS not_seen_before,
            EXISTS (SELECT 1 FROM staff_permission_changes c
                     WHERE c.target_id = a.id AND c.created_at >= cut.at) AS changed_since
       FROM partner_admins a, cut
-     WHERE role IN ('admin','finance','qc','reviewer') AND jsonb_typeof(permissions) = 'array'
-       AND permissions ? 'scholars' AND NOT permissions ? 'scholars.approve'
+     WHERE ((role IN ('admin','finance','qc','reviewer') AND jsonb_typeof(permissions) = 'array'
+             AND permissions ? 'scholars' AND NOT permissions ? 'scholars.approve')
+            OR (role = 'admin' AND (permissions IS NULL OR jsonb_typeof(permissions) = 'null')))
        AND NOT (a.created_at < cut.at AND a.first_seen_at < cut.at
                 AND NOT EXISTS (SELECT 1 FROM staff_permission_changes c
                                  WHERE c.target_id = a.id AND c.created_at >= cut.at))
@@ -112,7 +117,7 @@ RE-RUN PRE-CHECK (read-only, before the re-run; `cut` = the cutover). The rows t
     COMMIT;
 
 POST-DEPLOY CHECK (read-only, after the re-run; `cut` = the same cutover). Queries 1 to 3 must each return
-ZERO (1 counts only the rows not touched since the cutover: the skipped rows are the RE-RUN PRE-CHECK's list).
+ZERO (1 and 2 count only the rows not touched since the cutover: the skipped rows are the RE-RUN PRE-CHECK's list).
 Query 4 is INFORMATIONAL: Manage scholar files without View scholars is a legal shape (Manage implies View).
     BEGIN READ ONLY;
     WITH cut AS (SELECT TIMESTAMPTZ '2026-11-25 11:00:00+08' AS at)
@@ -122,8 +127,12 @@ Query 4 is INFORMATIONAL: Manage scholar files without View scholars is a legal 
        AND a.created_at < cut.at AND a.first_seen_at < cut.at
        AND NOT EXISTS (SELECT 1 FROM staff_permission_changes c
                         WHERE c.target_id = a.id AND c.created_at >= cut.at);
-    SELECT count(*) FROM partner_admins
-     WHERE role = 'admin' AND (permissions IS NULL OR jsonb_typeof(permissions) = 'null');
+    WITH cut AS (SELECT TIMESTAMPTZ '2026-11-25 11:00:00+08' AS at)
+    SELECT count(*) FROM partner_admins a, cut
+     WHERE role = 'admin' AND (permissions IS NULL OR jsonb_typeof(permissions) = 'null')
+       AND a.created_at < cut.at AND a.first_seen_at < cut.at
+       AND NOT EXISTS (SELECT 1 FROM staff_permission_changes c
+                        WHERE c.target_id = a.id AND c.created_at >= cut.at);
     SELECT count(*) FROM partner_admins
      WHERE role = 'org_admin' AND jsonb_typeof(permissions) = 'array'
        AND permissions ? 'scholars' AND NOT permissions ? 'scholars.approve';
