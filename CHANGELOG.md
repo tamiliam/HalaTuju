@@ -201,6 +201,39 @@ Not pushed. Migration: none. Services: api, web.
 - The owner saw Q2 skipped on the STPM quiz: its dot stayed grey and "See My Results" stayed off. After the Q2 answer the page fetches Q3/Q4, then rebuilt the answer list from the render before the tap, which had no Q2 answer, so Q2 was wiped every time. It now keeps Q1/Q2 from the latest answers.
 - Same path: a second quick tap no longer starts a second Q3/Q4 lookup; Next on a phone waits for the lookup; Previous during the lookup is no longer undone by the auto-advance.
 - 4 new tests in `stpm/quiz/page.test.tsx`; all 4 fail on the old page.
+
+### fix: sprint #85 - a payslip with two statutory deductions counts as a payslip (2026-11-24)
+
+Branch req85-slip-stat, not pushed. Migration: none. Services: api. Request #85 (org 11, case 242), analysis 195 (bug, free).
+- **Scorer:** `salary_doc` 1.3.0 checks two or more statutory deductions (KWSP / SOCSO / EIS / PCB) before the "no
+  payslip fields" reject, so such a slip reads genuine / private even when no wage label was read. The MyKad reject
+  still runs first; one deduction alone is still not a payslip. The cascade is split out as `decide(markers)`.
+  On this no-wage path the deductions are matched as WHOLE words (review round 1: 'EIS' inside LEISURE / REISSUE
+  no longer counts, and LHDN, the tax office every tax form prints, is left out); a slip with a wage label is
+  counted exactly as in 1.2.0.
+- **Re-score:** new `rescore_salary_statutory` (no read, no AI call) takes live payslips stored `not_salary` by
+  model 1.2.x with two or more deductions, no wage label and no MyKad reason. With stored OCR text it re-runs the
+  1.3.0 scorer on that text and writes only a genuine / private answer; with no stored text the row is listed as
+  "needs eye check" and written from its stored markers only when its id is named in `--eye-checked-ids`. Rows of
+  that shape from a model older than 1.2.0, or with no model version ("unknown model"), are listed by id and never
+  written. Dry run by default; `--apply` writes, each row
+  re-fetched under a row lock and re-checked. Expected today: case 861 from its text; case 242 needs an eye check
+  (no stored text). Not run against production.
+- **Version:** VERDICT_ENGINE_VERSION 2026-11-24.1; `model_versions/salary_doc.json` 1.3.0 and `verdict_engine.json`
+  2026-11-24.1 logged (verdict digest unchanged: its own files did not change). No golden moved.
+- **Tests:** `test_salary_signatures` (+6, one fails on the old order), new `test_rescore_salary_statutory` (9);
+  `test_ocr_keep` allows the command to read the stored OCR text (in memory, never printed).
+- **Logged:** TD-NEW-netpay-not-salary (a read net pay figure vs "not a salary slip", owner to rule).
+- **Review round 2 (2026-11-25, same unreleased 1.3.0):** the whole-word match uses LETTER edges, so a label glued
+  to its amount counts (`KWSP308.00`, `EIS5.10` from PDF text layers) while LEISURE / REISSUE still do not; a
+  single-word label may carry one payroll suffix glued on its right (PEKERJA, MAJIKAN, EMPLOYEE, EMPLOYER, EE, ER:
+  `KWSPPEKERJA`, `SOCSOEE`), a letter glued on its left still does not count; `MTD` joins the PCB group on the
+  no-wage path only. The command's global `--include-no-text` is gone: `--eye-checked-ids <ids>` writes ONLY those
+  ids, only when they are on the run's no-text list and still eligible under the row lock; any other id is
+  reported and skipped. Rows with no model version are counted as "unknown model". Owner ruling 25 Nov recorded
+  (SOCSO and EIS stay two groups) and pinned by a test. Tests: `test_salary_signatures` +5,
+  `test_rescore_salary_statutory` 14 (was 9). VERDICT_ENGINE_VERSION unchanged (the lead re-sets it at landing).
+
 ### refactor: sprint M4b review round 1 - stale-step refusal, readers see no staff emails, pre-0100 pinned (2026-11-24)
 
 Branch access-s3-m4b, not pushed. Migration: none. Services: both. From the independent Opus adversarial review of
