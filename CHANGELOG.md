@@ -175,7 +175,7 @@ Branch req85-slip-stat, not pushed. Migration: none. Services: api. Request #85 
   2026-11-24.1 logged (verdict digest unchanged: its own files did not change). No golden moved.
 - **Tests:** `test_salary_signatures` (+6, one fails on the old order), new `test_rescore_salary_statutory` (9);
   `test_ocr_keep` allows the command to read the stored OCR text (in memory, never printed).
-- **Logged:** TD-NEW-netpay-not-salary (a read net pay figure vs "not a salary slip", owner to rule).
+- **Logged:** TD-743 (a read net pay figure vs "not a salary slip", owner to rule).
 - **Review round 2 (2026-11-25, same unreleased 1.3.0):** the whole-word match uses LETTER edges, so a label glued
   to its amount counts (`KWSP308.00`, `EIS5.10` from PDF text layers) while LEISURE / REISSUE still do not; a
   single-word label may carry one payroll suffix glued on its right (PEKERJA, MAJIKAN, EMPLOYEE, EMPLOYER, EE, ER:
@@ -308,7 +308,7 @@ Not pushed. Migration: none. Services: api, web.
   - `VERDICT_ENGINE_VERSION` 2026-11-25.5 with its digest (2026-11-25.4 was never published). test_td718_str_household_keep.py: the round-5 reproduction with a birth certificate (both ICs, no IC), the control without one, the family's own approval with a birth certificate, a chain-only (#9) approval at tier 1 still beating a received page, the helper's unit rows, and the tier table with the implication test (replacing the round-4 parity test and table; the round-4 partial-check rows for a mocked "match" now expect tier 1). test_td718_str_tidak_lulus.py: B5.
   - Merge train (2026-11-25): rebased onto request #78 (engine 2026-11-23.1), which merged first. `VERDICT_ENGINE_VERSION` 2026-11-25.6 with the digest of the source that holds both; no rule change of its own.
 
-### Criteria editor S1: the criteria-tree engine and a read-only replay (2026-11-25)
+### Criteria editor S1: the criteria-tree engine and a read-only replay (2026-11-25, TD-722)
 
 - New pure engine `apps/scholarship/criteria.py`: judges an application against an AND/OR criteria tree (results groups post-SPM and SPM, income, born in, course-start flag), with `validate` and `from_legacy(cohort)`. The CGPA trap (owner ruling 25 Nov: SPM group OFF) is read from the shape, a PNGK floor with no SPM bar, not from an intake code; intake 5 is the one live case. Bars stored as 0 are kept as rules, as today, but only a count or merit above 0 counts as an SPM bar. Beside a floor the SPM group is an alternative door and a post-SPM holder using it faces every SPM test, the UPU merit included (review round 2: a merit-only door had let every post-SPM holder through); `validate` refuses an `any` SPM door that cannot fail anyone; `refused_trees` lists intakes whose converted tree would be refused. Nothing live reads it yet; Sprint 2 stores the tree and switches the gate. Semantics and worked examples: decisions.md, 2026-11-25.
 - New read-only command `replay_criteria`: today's gate against the tree, per intake; prints ids, counts, statuses and difference classes (a1 below the floor, a2 CGPA missing, b SPM-only on a trap intake, b2 the same already refused with a new reason) only, split into pending and decided, and compares the course-start flag; an automatic pass through an SPM door that cannot fail is never expected; an intake whose tree `validate` refuses is listed by id and code; an unknown intake code is an error; all inside a rolled-back READ ONLY transaction.

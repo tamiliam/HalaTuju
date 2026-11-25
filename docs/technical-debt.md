@@ -9460,7 +9460,7 @@ work address, each holding a switch) can record a credit on one and check or app
 (read-only count before the fix). **Fix:** store the signer's staff row id beside each signature and compare the
 person behind it (a migration, migrate-first; owner's call, pairs with TD-726). *(A - S)*
 
-### [TD-NEW-netpay-not-salary] A payslip with a read net pay figure but no statutory deduction is still "not a salary slip" - low
+### [TD-743] A payslip with a read net pay figure but no statutory deduction is still "not a salary slip" - low
 
 **Raised 2026-11-24 by request #85 (laptop session, number placeholder until the desk numbers it).** #85 fixed slips
 with two or more statutory deductions. A read-only count on 24 Nov found 9 more live `not_salary` payslips with zero
