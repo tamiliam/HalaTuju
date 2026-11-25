@@ -218,6 +218,13 @@ Branch ll5, not pushed. Migration: none. Services: api only. Not wired to any pa
 
 - fix: STPM quiz shows Question 1 of 9 and nine dots from the start (owner 2026-11-25). Not pushed. Migration: none. Services: web.
 
+### Academic reads, phase B3: a one-off OCR re-read fills the two new reads on old documents (TD-741, 2026-11-25)
+
+Not pushed. Migration: none. Services: api (a management command run in the release-decisions job). No Gemini, no `MODEL_VERSION` bump.
+- TD-741: `reread_academic_ocr` fills `vision_fields.fields._debug_rows` (the slip school) on SPM results slips and `vision_fields.exam_year_read` (the transcript year) on Matriculation, Asasi and Diploma higher results, for current documents read before B1/B2. OCR only (a digital PDF's text layer, else one Google Vision `document_text_detection`), through the upload's own parsers (`parse_spm_cert`, `_extract_slip_deterministic` / `parse_spm_slip`, `read_transcript_year`).
+- Safety: dry run by default (counts only); `--apply` writes one key per document under a row lock and only if the stored read is unchanged; a missing blob, empty OCR, OCR error, certificate, unparsed slip or unread year is skipped and counted, never written. `--limit`, `--ids`, `--max-cost-usd` (default US$2, US$0.0015 a page, stops before the cap). Output is counts and document ids only. The OCR text is not kept. Run steps in the command docstring.
+- Tests: new `test_reread_academic_ocr.py` (Vision, Storage and Gemini mocked).
+
 ### Academic reads, phase B2: the transcript year on a third-route merit (TD-735, 2026-11-25)
 
 Not pushed. Migration: none. Services: api, web. No new AI call, no `MODEL_VERSION` bump, no backfill.
