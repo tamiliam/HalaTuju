@@ -285,8 +285,9 @@ class TestStrKekalKelulusanAsal(SimpleTestCase):
                     self.assertEqual(_currency(r), 'current')
 
     def test_near_misses_are_not_approvals(self):
-        # "Kelulusan" alone is not the phrase: waiting, in process, an appeal, half the phrase.
-        for status in ('Menunggu Kelulusan', 'Dalam Proses Kelulusan', 'Dalam Proses Rayuan',
+        # "Kelulusan" alone is not the phrase: waiting, in process, half the phrase. (An appeal in
+        # process, "Dalam Proses Rayuan", is no longer blank: TD-718 reads it red — test_td718.)
+        for status in ('Menunggu Kelulusan', 'Dalam Proses Kelulusan',
                        'Kekal Kelulusan', 'Kelulusan Asal', 'Tarikh Kelulusan'):
             for columns in _BOTH_ORDERS:
                 with self.subTest(status=status, columns=columns):

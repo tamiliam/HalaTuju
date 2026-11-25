@@ -406,9 +406,11 @@ def document_red_blockers(application, per_doc=False):
         elif dt == 'str':
             chk = income_engine.student_str_check(doc)
             cs = chk.get('current_status')
-            if person_red(dt, chk) or (cs in income_engine.STR_RED_STATES and cs != 'stale'):
+            if person_red(dt, chk) or (cs in income_engine.STR_RED_STATES and cs not in ('stale', 'not_approved')):
                 codes.append((doc, 'str_person_mismatch'))
-            if cs == 'stale':
+            if cs == 'not_approved':     # TD-718: "received" / appeal pending is no approval; own ask
+                codes.append((doc, 'str_not_approved'))
+            elif cs == 'stale':
                 # TD-403: an EARLIER year's STR gets its own plain ask — "Your STR is from {year}" —
                 # never "doesn't match". The year rides after the colon (`str_stale:2025`).
                 m = income_engine._STR_YEAR_RE.search(chk.get('year') or '')

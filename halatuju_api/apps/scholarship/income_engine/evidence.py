@@ -24,7 +24,7 @@ from ..income_str_ownership import str_check_names_a_stranger
 from .identity_checks import _cluster_docs, _member_ic_doc, student_income_ic_check, student_income_proof_check
 from .relationships import effective_working_members, relationship_doc_for
 from .salary_figures import _doc_fields, _epf_monthly_salary
-from .str_route import STR_NOT_THIS_YEAR_STATES, student_str_check
+from .str_route import STR_FAILED_STATES, STR_NOT_THIS_YEAR_STATES, student_str_check
 
 
 def has_valid_str(application):
@@ -114,7 +114,8 @@ def str_not_breached(application):
         return False
     sc = student_str_check(str_doc)
     cs = (sc or {}).get('current_status', '')
-    if not cs or cs in ('wrong_type', 'rejected') + STR_NOT_THIS_YEAR_STATES:   # failed, or not this year's
+    # failed (TD-718: a received / appeal-pending page too), or not this year's
+    if not cs or cs in STR_FAILED_STATES + STR_NOT_THIS_YEAR_STATES:
         return False
     auth = stored_status(getattr(str_doc, 'vision_fields', None))           # TD-293
     return not (auth and auth not in ('genuine', 'likely_genuine'))   # a positive non-genuine call → breached

@@ -84,8 +84,9 @@ still not an STR).
 
 | Status | Condition |
 |---|---|
-| 🔴 **Not a valid STR** | `source_type = unknown` — SALINAN / borang permohonan / SARA letter / PERKESO statement / salary slip / any non-STR document |
-| 🔴 **Rejected** | a recognised format showing **Ditolak / Tidak Layak / Gagal** |
+| 🔴 **Not a valid STR** | `source_type = unknown` — SALINAN / borang permohonan / MySTR application details page (TD-718) / SARA letter / PERKESO statement / salary slip / any non-STR document |
+| 🔴 **Rejected** | a recognised format showing **Ditolak / Tidak Layak / Gagal / Tidak Lulus / Tidak Diluluskan / Not Approved** ("Tidak Lulus" only when it is on ONE line; a one-line "Tidak Lulus" that may be Status Pedalaman's "Tidak" beside "Lulus" reads 🟡 unread, TD-718 round 3) |
+| 🔴 **Not approved** (TD-718) | a recognised format showing only **Permohonan Diterima / Dalam Proses** — anyone can apply, so this is no approval; the salary route applies |
 | 🟢 **Lulus (current)** | recognised format + approved + **dated current** (letter date, or Semakan payment date, ≥ cohort year) + recipient = earner |
 | 🔵 **Lulus (currency unconfirmed)** | recognised format + approved but **no date** (dashboard, or collapsed Semakan) — probably current |
 | 🟡 **Incomplete / out of date** | recognised format but **status unreadable** (cropped) **or stale** (readable prior-year date) |
@@ -137,6 +138,7 @@ button; `CHECK2_STUDENT_QUERIES_ENABLED`), resolvable in the **5-day** window �
 |---|---|
 | 🔴 wrong-type | "Not an STR document — it doesn't count as STR proof. Assessing the salary documents; a valid STR is required from the student." |
 | 🔴 rejected | "STR rejected (Ditolak) — it fails as STR proof. Assessing the salary documents for B40 instead." |
+| 🔴 not approved (TD-718) | "STR not approved — the page shows only that the application was received or is still in process (Permohonan Diterima / Dalam Proses). It fails as STR proof. Assessing the salary documents instead." |
 | 🔴 salary over line | "Per-capita RM{amount} is over the B40 line (RM{ceiling}) — recommend reject on income; override only if the interview surfaces genuine qualifying circumstances." |
 | 🟡 stale | "Approved last cycle only — that's stale, not proof of current need. The current cycle's status is required from the student before this counts." |
 | 🟡 unreadable | "Recognised STR page, but the approval line didn't read and no payment is shown — don't assume Lulus. A clear status is required from the student before this counts." (Never assert "cropped" — a complete page can be *misread*; cropping is a genuineness judgment.) |
@@ -171,9 +173,82 @@ reach the decision layer as a state, not stay as prose.
 | `unreadable` | recognised format, approval NOT read AND no payment | 🟡 / ⚪ | **Unsure** |
 | `rejected` | Ditolak | 🔴 / ⚪ | **Fail** — fall through to salary |
 | `wrong_type` | `source_type = unknown` (not an STR) | 🔴 / ⚪ | **Fail** — fall through to salary |
+| `not_approved` | TD-718 (owner 2026-11-24): recognised format, no approved word, status says **Permohonan Diterima** or **Dalam Proses** (incl. Dalam Proses Rayuan). Checked after another year (`stale`/`future`), a rejection and `wrong_type`; only ever where `unreadable` stood before | 🔴 / ⚪ | **Fail** — fall through to salary |
 
 Approval is set by a readable Lulus **or** (as a rescue) a positive paid amount (§2 payment guard).
-`rejected` and `wrong_type` are **terminal for the STR axis** and **trigger the route fall-through**
+**TD-718 ladder order:** another year → `future`/`stale`; Ditolak → `rejected`; `source_type=unknown` →
+`wrong_type`; no approved word → `not_approved` if a pending word is present, else `unreadable`;
+dashboard → `unconfirmed`; else `current`/`unconfirmed` by year. Keep-better rank: `not_approved`
+ranks with `stale`/`future` (1): below `unreadable` (2), above `wrong_type` (0); it never displaces an
+approved copy and, unlike `rejected`, is not news that always replaces. The rules reader keeps a
+pending word only as the whole label-anchored status value (the info icon skipped), plus one rescue
+for the labels-then-values (#104) layout: a whole line "Permohonan Diterima" on a page with no
+approved/rejected token and no RM row. A bare "Dalam Proses" in that layout stays `unreadable`.
+**TD-718 repair (owner 2026-11-25).** *Approved words, strict:* whole-word "Lulus", "diluluskan",
+"Kekal Kelulusan Asal" (any spacing) or "approve"; "Tidak Lulus" is a rejection (the rejected test runs
+first). So "Dalam Proses Kelulusan" → `not_approved`, "Menunggu Kelulusan" → `unreadable` ("Menunggu"
+is not a pending word), "Lulus (Dalam Proses Bayaran)" and "Lulus Rayuan" → approved. *A body
+"berjaya"* ("berjaya dihantar", sent) never overrides a label-anchored pending value. *The household
+de-dupe* (`income_dedup_rank`, which collapses the STR across ALL members) ranks genuineness first, then
+the STR tier (round 2, narrowed in round 4): **2** an approval (`current` / `unconfirmed`) whose
+recipient a household card matched on name or IC number, never replaced by a lower tier; **1** every
+other approval, `rejected` and `unreadable`, ordered between themselves by date, then upload (a newer
+unread page replaces a rejection, a newer rejection an unread page); **0** every other state (`not_approved`,
+`wrong_type`, `stale`, `future`, blank), which never replaces tiers 1-2. So a received page, an
+application page or another year's page filed under another member never replaces a live approved
+STR or a live amber page; an approved upload still replaces a non-approved live copy, and a MATCHED
+approval holds against a rejection filed under another member (in its own slot a rejection still
+replaces it). Since round 4: only an approval a household card matched; since round 5: only when the
+page's own name or IC number matches a household IC card.
+"Tidak Lulus", "Tidak Diluluskan" and "Not Approved" are rejections. The student's pill reads
+"Not approved — application not yet decided".
+**TD-718 rounds 3-4.** *Which approval holds the slot (round 4, replacing round 3's stranger tier):*
+an approved STR holds the household slot against the other members' pages only when its name or IC
+number matches a household member (`'match'` on name or NRIC — the twin of
+`promotion._str_matched(doc, counting=True)`, the TD-409 same-slot guard); otherwise the usual order
+decides. An approval nobody has matched yet — a member's IC not on file, `no_ref`, pending our read,
+or a stranger's — is tier **1** with rejections and unread pages. The rank lifts a copy only on
+positive evidence: a stranger verdict depends on which ICs are on file and how they read, so it can be
+wrong or late, and round 3's tier 0 for it is gone.
+**TD-718 round 5 — the match must be the page's own.** An approved STR holds the household slot
+against the other members' pages only when the name or IC number on the page itself matches a
+household member's IC card (`str_route.str_recipient_hits_a_household_card`); a match that comes only
+through the birth-certificate IC-number chain does not hold the slot; otherwise the usual order
+decides. Fault found: the chain (`chain_verified_earner`) compares the birth certificate's parent IC
+number with the NEWEST live STR, so while two copies were live in the de-dupe an outsider's approval
+borrowed the match from the family's newer page, took the slot and blocked the case on
+`str_not_household`. The rank lifts a copy only on evidence on the page itself plus the household's
+IC cards, never on evidence borrowed from another document. A chain-only match still counts at the
+TD-409 same-slot guard, so tier 2 implies `promotion._str_matched(doc, counting=True)` — the same idea,
+minus the chain. *The one-line "Tidak Lulus" read*
+(`str_status_read.py`): every page has a "Status Pedalaman" field valued Ya / Tidak, and OCR can put
+its "Tidak" beside the status "Lulus". So (B1) one line means a space, TAB or no-break space only —
+every other line break (`\r`, U+2028, …) is a new line; (B2) when the status label shares its line
+with a "Status Pedalaman" label just before it (both labels on one row, both values on the next), the
+value's first Ya / Tidak is Pedalaman's and is dropped ("Tidak Lulus" → "Lulus", "Ya Tidak Lulus" →
+"Tidak Lulus"); (B3) a body-scan "Tidak Lulus" / "Tidak Diluluskan" on a page carrying a "Status
+Pedalaman" label is ambiguous and stores no status → `unreadable` (amber, an officer looks; without
+that label it still reads rejected), unless the labelled status is a clear pending one (Dalam Proses /
+Permohonan Diterima), which stays not approved; (B4) a label-anchored "Tidak Lulus" whose label line holds only
+the status label stays a rejection; (B5, round 5) except when the nearest non-empty line above the status label
+is a bare "Status Pedalaman" label (no value of its own; an info icon allowed): the two labels are
+stacked and the two values may have merged on one line, so a value of exactly "Tidak Lulus" / "Tidak
+Diluluskan" is ambiguous and stores no status → `unreadable` (amber), as B3 (the same when that value
+sits on the status label's own line). "Ya Lulus" there still
+reads approved; "Tidak Tidak Lulus", "Ya Tidak Lulus" and "Tidak Ditolak" still read rejected.
+**TD-718 part 2 — the MySTR application details page** (`str_application_page.py`): "Maklumat Pemohon"
+with age, sex, marital status, phone and address, and no status. It shows who applied, never an
+approval, so it reads `source_type = unknown` → `wrong_type` (🔴 "Not an STR document"; the salary
+route applies). The rule: at least 3 of the labels Umur / Jantina / Status Perkahwinan / No. Telefon
+Bimbit / Alamat / Poskod / Bandar / Negeri, each a whole line (optionally "label : value"; case and
+spacing free, a no-break or other Unicode space included); no "Status Permohonan Semasa" / "Status
+Permohonan STR"; no approved or rejected word anywhere (a bare "berjaya", as in "berjaya dihantar",
+does not count); no letter marker ("Nama Penerima", "Layak STR"). A pending word does not keep the page out.
+It is applied in the rules reader (`_str_surface`, before the letter test) and again after every read
+of an STR on its OCR text (`field_extraction._read_labelled_doc`), so a Gemini read, a Re-run, the
+bulk re-read and the hourly sweep store `unknown` too. A cropped Semakan, a letter with an address,
+a dashboard, SALINAN and SARA are unchanged.
+`rejected`, `wrong_type` and `not_approved` are **terminal for the STR axis** and **trigger the route fall-through**
 (§6). `stale`/`unreadable` → **Unsure** (amber `recommend`), not a blue `review`: a review tile would
 read blue off the verified earner-IC greens, overstating a doc whose cycle is old or whose approval
 never read. `unconfirmed` stays `review` (🔵) because a green Status earns it.

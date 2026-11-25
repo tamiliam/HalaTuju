@@ -320,6 +320,9 @@ def _read_labelled_doc(doc, ocr, image_fn):
     else:
         ex = _v.extract_document_fields(r['text'], doc.doc_type)
         ex['capture'] = 'ai'
+    # TD-718: an STR application details page is not a proof, whichever reader (rules / Gemini) read it.
+    from ..str_application_page import guard_str_source
+    ex = guard_str_source(doc.doc_type, ex, r['text'])
     return _read_approval(doc, ex, r['text'], image_fn)   # #374: informal income docs — one image call
 
 

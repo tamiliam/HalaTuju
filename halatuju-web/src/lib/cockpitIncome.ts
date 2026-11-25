@@ -141,7 +141,8 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     const auth = String(d.authenticity?.status || '')
     // TD-403 (2026-10-26): an earlier year's ('stale') or a later year's ('future') STR is not this
     // year's proof, so it no longer makes the salary documents supportive — as `str_not_breached`.
-    if (!cs || cs === 'wrong_type' || cs === 'rejected' || cs === 'stale' || cs === 'future') return false
+    // TD-718: a received / appeal-pending page ('not_approved') is breached too.
+    if (!cs || ['wrong_type', 'rejected', 'not_approved', 'stale', 'future'].includes(cs)) return false
     if (auth && auth !== 'genuine' && auth !== 'likely_genuine') return false
     return true
   })

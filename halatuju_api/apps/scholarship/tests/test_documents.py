@@ -1203,7 +1203,7 @@ class TestStrKeepBetterGuard(TestCase):
 
     def test_better_currency_dashboard_still_replaces_weaker_semakan(self):
         # #112: currency DOMINATES the source tiebreak. An older Semakan whose approval didn't read
-        # as Lulus ('Dalam Proses Rayuan' → unreadable, currency 1) is correctly displaced by a
+        # as Lulus ('Dalam Proses Rayuan' → not_approved since TD-718, currency 1) is displaced by a
         # newer Lulus DASHBOARD (unconfirmed, currency 3) — the dashboard is genuinely better.
         weak = ApplicantDocument.objects.create(
             application=self.app, doc_type='str', household_member='mother',

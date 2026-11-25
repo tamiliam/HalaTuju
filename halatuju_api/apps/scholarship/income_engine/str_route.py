@@ -16,11 +16,23 @@ from .identity_checks import _member_ic_doc, chain_verified_earner
 from .relationships import _MEMBER_ORDER
 
 
-_STR_REJECTED_WORDS = ('tolak', 'tidak layak', 'gagal', 'reject')
-# Positive STR approval signals. 'lulus' also matches 'diLULUSkan'. NOTE: SARA's 'Layak' is
-# deliberately NOT here — SARA (Sumbangan Asas Rahmah) is a different programme from STR, and the
-# STR status on the MySTR portal is 'Lulus', never 'Layak'. (#5b SARA≠STR, 2026-06-11)
-_STR_APPROVED_WORDS = ('lulus', 'approve')
+# TD-718 R3/R7: 'tidak lulus', 'tidak diluluskan' and 'not approve(d)' are rejections (checked BEFORE the
+# approved test, on the lower-cased, whitespace-collapsed status, so they never read approved).
+_STR_REJECTED_WORDS = ('tolak', 'tidak layak', 'tidak lulus', 'tidak diluluskan', 'gagal', 'reject',
+                       'not approve')
+# Positive STR approval signals (TD-718 R3, strict): the WHOLE word "Lulus" (so "Lulus Rayuan" and
+# "Lulus (Dalam Proses Bayaran)" approve, but "KeLULUSan" in "Dalam Proses Kelulusan" / "Menunggu
+# Kelulusan" does not), "diluluskan", the exact phrase "Kekal Kelulusan Asal", or 'approve' as a
+# substring. NOTE: SARA's 'Layak' is deliberately NOT here — SARA (Sumbangan Asas Rahmah) is a
+# different programme from STR, and the STR status on the MySTR portal is 'Lulus', never 'Layak'.
+# (#5b SARA≠STR, 2026-06-11)
+_STR_APPROVED_WORDS = (r'\blulus\b', r'diluluskan', r'\bkekal\s+kelulusan\s+asal\b', r'approve')
+_STR_APPROVED_RE = re.compile('|'.join(_STR_APPROVED_WORDS))
+# TD-718 (owner 2026-11-24): a MySTR status that says the application was only RECEIVED, or that an
+# appeal is not decided yet. Anyone can apply, so neither is an approval -> 'not_approved' (red).
+# "dalam proses" is a real Semakan status on its own and also covers "dalam proses rayuan" and
+# "dalam proses kelulusan". An approved word is checked first and wins ("Lulus (Dalam Proses Bayaran)").
+_STR_PENDING_WORDS = ('permohonan diterima', 'dalam proses')
 _STR_YEAR_RE = re.compile(r'(20\d{2})')
 # The three genuine MySTR proof formats (docs/scholarship/str-proof-spec.md). Anything else — a
 # SALINAN / application copy, a SARA letter, a salary slip, a random doc — is classified 'unknown'
@@ -37,7 +49,10 @@ _STR_RECOGNISED_SOURCES = ('letter', 'semakan_status', 'dashboard')
 # NB 'unreadable' is deliberately NOT here: it is AMBER per the spec (the status token
 # didn't read — misread ≠ disproven). (A never-scanned or outage-deferred doc read 'unreadable'
 # too until 2026-10-24; it now reads 'unknown', in no tuple here — `_read_str_check`.)
-STR_RED_STATES = ('wrong_type', 'rejected', 'stale')
+STR_RED_STATES = ('wrong_type', 'rejected', 'stale', 'not_approved')
+#: The states in which the STR FAILS as proof (TD-718 adds 'not_approved'): the income verdict falls
+#: through to the salary route and the submission gate asks for salary papers (`str_not_breached`).
+STR_FAILED_STATES = ('wrong_type', 'rejected', 'not_approved')
 # The student coach nudges on the fixable non-green states too (an unreadable status →
 # re-upload cleanly; a dateless 'unconfirmed' approval → a dated proof confirms the cycle; a
 # LATER year's page → this year's STR, TD-403 — NOT red: it is nobody's fault, see `_str_currency`).
@@ -91,6 +106,9 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
       'wrong_type'  — NOT a recognised STR proof (``source_type='unknown'``: a SALINAN / SARA
                       letter / salary slip / other). NOT an STR at all → RED; the income verdict
                       falls through to the salary route.
+      'not_approved'— TD-718 (owner 2026-11-24): a recognised format whose status READ as a
+                      not-yet-approved word ("Permohonan Diterima", "Dalam Proses [Rayuan]") and
+                      carries no approved word → RED, like a SALINAN; the salary route applies.
       'unreadable'  — a recognised format but the approval status did NOT read AND no current-cycle
                       date is shown, so approval can't be confirmed → AMBER (Unsure). NB not a claim
                       the page is cropped — the status token may simply have been misread.
@@ -130,7 +148,7 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
                       news about this year, so it must not replace a live STR the way a 'rejected'
                       does (``str_proof_quality`` None). 'rejected' is this year's or a dateless one.
     No year read stays 'unconfirmed' (Probable — the officer checks)."""
-    s = (status_raw or '').lower()
+    s = ' '.join((status_raw or '').lower().split())     # any case, any spacing
     st = (source_type or '').strip().lower()
     m = _STR_YEAR_RE.search(year_str or '')
     read_year = int(m.group(1)) if m else None
@@ -143,7 +161,11 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
         return 'rejected'
     if st == 'unknown':
         return 'wrong_type'          # not a genuine STR proof at all (SALINAN / SARA / payslip / …)
-    if not any(w in s for w in _STR_APPROVED_WORDS):
+    if not _STR_APPROVED_RE.search(s):
+        # TD-718: a READ status that says "received" / "appeal not decided" is not an approval (red);
+        # a status that did not read at all stays amber (misread is not disproven).
+        if any(w in s for w in _STR_PENDING_WORDS):
+            return 'not_approved'
         return 'unreadable'          # no readable "Lulus"/"diluluskan" → STR approval can't be confirmed
     # SURFACE CEILING (owner 2026-07-07): a DASHBOARD confirms APPROVAL but is a self-service snapshot
     # that cannot certify the cycle to certainty — its max band is Probable. So an approved dashboard
@@ -226,7 +248,7 @@ def _str_recipient_household_match(application, name, nric, tagged_member='', re
 # < Semakan). A re-upload must never displace a live proof of STRICTLY HIGHER quality with a thinner
 # one. Quality is a tuple (currency_rank, source_rank), CURRENCY FIRST — so #112 is correctly NOT a
 # regression: its live Lulus DASHBOARD (unconfirmed) outranks the older 'Dalam Proses Rayuan'
-# SEMAKAN (unreadable approval) on currency, which dominates the source tiebreak. The source tier
+# SEMAKAN (not approved; 'not_approved' since TD-718) on currency, which dominates the source tiebreak. The source tier
 # only decides ties (both Lulus + dateless): a Semakan (shows the payment-dates page → can reach
 # 'current') carries MORE than a Dashboard (home totals, capped at 'unconfirmed'), which carries
 # more than an unrecognised page.
@@ -234,7 +256,11 @@ def _str_recipient_household_match(application, name, nric, tagged_member='', re
 # BELOW an unreadable one. 'stale' used to rank above it on "stale ⇒ approved", no longer true; and an
 # unreadable page of THIS year counts at the gate where another year's never does, so a blurred 2026
 # re-upload must be able to replace a live 2025 STR (and neither may ever replace a current one).
-_STR_CURRENCY_RANK = {'current': 4, 'unconfirmed': 3, 'unreadable': 2, 'stale': 1, 'future': 1, 'wrong_type': 0}
+# TD-718: 'not_approved' (a received / appeal-pending page) ranks with another year's page: below an
+# approved copy (so it can never displace this year's Lulus) and below an unreadable one (which counts
+# at the gate where it does not), above a non-STR. Unlike 'rejected' it is NOT news that must replace.
+_STR_CURRENCY_RANK = {'current': 4, 'unconfirmed': 3, 'unreadable': 2, 'stale': 1, 'future': 1,
+                      'not_approved': 1, 'wrong_type': 0}
 _STR_SOURCE_RANK = {'letter': 3, 'semakan_status': 2, 'dashboard': 1}
 
 
@@ -260,6 +286,28 @@ def student_str_check(doc):
         return None
     from ..str_check_memo import remembered
     return remembered(doc, _read_str_check)
+
+
+def str_recipient_hits_a_household_card(doc) -> bool:
+    """TD-718 (repair round 5): does the recipient name or NRIC printed on THIS STR page hit a household
+    member's IC card? The same ``_str_recipient_household_match`` call ``_read_str_check`` makes, with
+    the same fields and the same ``tagged`` fallback, but taken WITHOUT the IC-number chain: the chain
+    (``chain_verified_earner``) compares the birth certificate with the NEWEST live STR, not with this
+    page, so it may not lift this page's household rank. Pure; False for a non-STR doc, a doc with no
+    application or nothing read; never raises."""
+    if getattr(doc, 'doc_type', '') != 'str':
+        return False
+    app = getattr(doc, 'application', None)
+    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
+    f = vf.get('fields', {}) if isinstance(vf.get('fields', {}), dict) else {}
+    name = (f.get('recipient_name', '') or '').strip()
+    nric = (f.get('recipient_nric', '') or '').strip()
+    if app is None or not (name or nric):
+        return False
+    tagged = ((getattr(app, 'income_earner', '') or '').strip()
+              or (getattr(doc, 'household_member', '') or '').strip())
+    name_status, nric_status, _ = _str_recipient_household_match(app, name, nric, tagged)
+    return 'match' in (name_status, nric_status)
 
 
 def _read_str_check(doc):

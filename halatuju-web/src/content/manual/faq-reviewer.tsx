@@ -196,7 +196,16 @@ export const REVIEWER_FAQ: QA[] = [
     {
       q: <>How do I judge the Income (B40) check? It&rsquo;s the hardest one.</>,
       a: <>Two routes. <strong>STR route:</strong> the proof is an <em>approved</em> MySTR record — a
-        <strong> SALINAN application-record is not proof</strong>; if the status isn&rsquo;t clearly
+        <strong> SALINAN application-record is not proof</strong>, and nor is a page whose status only says
+        &ldquo;Permohonan Diterima&rdquo; or &ldquo;Dalam Proses&rdquo; (incl. &ldquo;Dalam Proses Kelulusan&rdquo;;
+        anyone can apply: the Status chip is red and the salary documents are judged instead; such a page
+        never replaces an approved, rejected or amber STR already on file, and an approved STR whose name or IC
+        number matches a family member&rsquo;s IC card is kept even against a rejection or an unread page uploaded
+        for another family member; any other
+        approved STR (someone outside the family, a parent whose IC is not uploaded yet, or a match found only
+        through the birth certificate) holds no such place,
+        so the usual order decides: a dated page first, then the newest), nor an application details page that lists the
+        applicant&rsquo;s age and address with no status (red &ldquo;Not an STR document&rdquo;); if the status isn&rsquo;t clearly
         &ldquo;Lulus&rdquo;, ask for the MySTR Semakan Status / Dashboard, or the approval letter.
         <strong> Salary route:</strong> payslips / EPF, judged per head against the B40 line. When it&rsquo;s
         genuinely borderline, that&rsquo;s what the interview is for — don&rsquo;t force a verdict on weak

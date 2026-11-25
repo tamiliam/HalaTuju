@@ -413,6 +413,15 @@ describe('documentFacts', () => {
       ])
   })
 
+  it('TD-718: a received / appeal-pending STR → Status chip RED, like a SALINAN; Current stays grey', () => {
+    const facts = (s: StrStatus) =>
+      documentFacts(doc({ doc_type: 'str', str_check: strCheck({ name_status: 'match', nric_status: 'match', current_status: s }) }))
+    for (const s of ['not_approved', 'wrong_type'] as StrStatus[]) {
+      expect(facts(s).find((f) => f.key === 'status')!.status).toBe('not')       // red, never "Lulus"
+      expect(facts(s).find((f) => f.key === 'current')!.status).toBe('unknown')  // no date claim
+    }
+  })
+
   it('str Current chip is DATE-only — dated→green, prior-year→amber, else grey "we don\'t know"', () => {
     const cur = (s: StrStatus) =>
       documentFacts(doc({ doc_type: 'str', str_check: strCheck({ current_status: s }) }))

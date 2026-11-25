@@ -83,7 +83,8 @@ function strStatusFactStatus(s: string | undefined | null): FactStatus {
     // TD-403 review: 'stale' is any EARLIER year's page, read status or not, so it no longer
     // implies Lulus — grey "we don't know", like 'future'; the Current chip carries the amber.
     case 'current': case 'unconfirmed': return 'verified'
-    case 'rejected': case 'wrong_type': return 'not'
+    // TD-718: "Permohonan Diterima" / "Dalam Proses [Rayuan]" read clearly and is NOT an approval → red.
+    case 'rejected': case 'wrong_type': case 'not_approved': return 'not'
     case 'unreadable': return 'partial'
     default: return 'unknown'
   }

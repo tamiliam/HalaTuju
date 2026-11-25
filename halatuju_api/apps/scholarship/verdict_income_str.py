@@ -132,13 +132,14 @@ def _str_reading(str_doc, earner, evidence, gap, review):
     # unreadable (cropped) / unconfirmed (approved, no date → confirm currency). Anything that isn't
     # a CURRENT approved STR keeps the income fact off green — a human looks (and, post Sprint-2, the
     # salary route is assessed when the STR is wrong_type/rejected).
-    from .income_engine import STR_COACH_STATES, STR_NOT_THIS_YEAR_STATES, student_str_check
+    from .income_engine import STR_COACH_STATES, STR_FAILED_STATES, STR_NOT_THIS_YEAR_STATES, student_str_check
     sc = student_str_check(str_doc) if str_doc is not None else None
     str_verified = False
     # A wrong_type (not an STR at all) or rejected (Ditolak) STR is definitively NOT a current STR;
     # the family may still be B40 on their salary/benefit docs, so we fall through to the salary
     # route below rather than freezing on the failed STR (str-proof-spec.md §6).
-    str_failed = bool(sc and sc['current_status'] in ('wrong_type', 'rejected'))
+    # TD-718: a received / appeal-pending page ('not_approved') fails the same way (STR_FAILED_STATES).
+    str_failed = bool(sc and sc['current_status'] in STR_FAILED_STATES)
     # STR-proof band matrix (str-proof-spec.md): approval Status × cycle Current →
     #   Lulus + dated-current → Certain (verified) ; Lulus + no date → Probable (review, needs a green)
     #   Lulus + prior-year (stale) OR approval-unread (unreadable) → Unsure (recommend → amber)

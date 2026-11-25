@@ -151,7 +151,10 @@ export interface StrCheck {
   // only this union lagged, which the type check found on 2026-09-18 (TD-221).
   // TD-403 (2026-10-26): the year is THIS calendar year; 'future' = a page for a LATER year (likely
   // next year's application status) — not this year's proof, and never shown as the family's fault.
+  // TD-718 (2026-11-24): 'not_approved' = the status reads "Permohonan Diterima" / "Dalam Proses"
+  // (incl. "Dalam Proses Rayuan") — the application was only received, or is still in process. Red; salary route applies.
   current_status: 'current' | 'stale' | 'future' | 'rejected' | 'unconfirmed' | 'unknown' | 'wrong_type' | 'unreadable'
+    | 'not_approved'
   ic_present: boolean
   // TD-309: the roster members whose IC would settle whose STR this is (`str_ic_slots` — the
   // same rule Check 2 asks from). 'missing' = no IC on file; 'unreadable' = on file, unread.

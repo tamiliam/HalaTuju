@@ -434,7 +434,7 @@ class ADeferredReadAsksTheStudentForNothing(TestCase):
         self.assertNotEqual(verdict_for_document(str_doc), 'str_not_current')
         self.assertNotIn('str_not_current', self._asks(app))
         # A real read whose approval did not show still reads 'unreadable' and still asks.
-        str_doc.vision_fields = {'fields': {'recipient_name': 'SITI BINTI AHMAD', 'status': 'Dalam proses',
+        str_doc.vision_fields = {'fields': {'recipient_name': 'SITI BINTI AHMAD', 'status': '',  # TD-718
                                             'source_type': 'semakan_status'},
                                  'student_verdict': 'ok', 'error': ''}
         str_doc.save(update_fields=['vision_fields'])
@@ -455,7 +455,7 @@ class ADeferredReadAsksTheStudentForNothing(TestCase):
         deferred = income()
         self.assertIn('str_present_unverified', [i['code'] for i in deferred['unresolved']])
         self.assertNotIn('str_not_current', self._asks(app))
-        str_doc.vision_fields = {'fields': {'recipient_name': 'KUMAR A/L RAJU', 'status': 'Dalam proses',
+        str_doc.vision_fields = {'fields': {'recipient_name': 'KUMAR A/L RAJU', 'status': '',  # TD-718
                                             'source_type': 'semakan_status'},
                                  'student_verdict': 'ok', 'error': ''}
         str_doc.save(update_fields=['vision_fields'])

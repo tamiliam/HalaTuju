@@ -56,9 +56,12 @@ class TestSharedRedStates(TestCase):
         # uses these shared tuples instead of two typed-out copies. That was a pure move ONLY
         # because their members equal the copies it replaced; changing either tuple now changes
         # the income verdict too, so it must be a deliberate, owner-approved rule change.
+        # TD-718 (owner ruling 2026-11-25: "a received application is a failed STR route"): the
+        # deliberate, owner-approved change — 'not_approved' joins the red states, hence the coach's.
         self.assertEqual(set(STR_COACH_STATES),
-                         {'stale', 'future', 'rejected', 'unconfirmed', 'wrong_type', 'unreadable'})
-        self.assertEqual(len(STR_COACH_STATES), 6)
+                         {'stale', 'future', 'rejected', 'unconfirmed', 'wrong_type', 'unreadable',
+                          'not_approved'})
+        self.assertEqual(len(STR_COACH_STATES), 7)
         self.assertEqual(STR_NOT_THIS_YEAR_STATES, ('stale', 'future'))
 
     def test_cluster_coach_nudges_on_wrong_type(self):

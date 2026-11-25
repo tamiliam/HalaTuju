@@ -279,6 +279,14 @@ describe('W-B incomeSubSections — what the officer chases', () => {
             str_check: { current_status: 'rejected' } as AdminApplicantDocument['str_check'] })])
     expect(rows.filter((r) => r[0] === 'income_evidence')).toEqual([['income_evidence', 'father', null]])
   })
+
+  it('TD-718: a received / appeal-pending STR (not_approved) also needs full salary documentation', () => {
+    // api twin: test_td718_str_not_approved.AReceivedPageIsAFailedStr (str_not_breached is False).
+    const rows = salaryRows(SALARY_FATHER, [
+      doc({ id: 3, doc_type: 'str', household_member: 'father',
+            str_check: { current_status: 'not_approved' } as AdminApplicantDocument['str_check'] })])
+    expect(rows.filter((r) => r[0] === 'income_evidence')).toEqual([['income_evidence', 'father', null]])
+  })
 })
 
 // ════════════════════════════════════════════════════════════════════════════════════════════

@@ -25,6 +25,8 @@ from typing import Callable, Optional
 # ── text + label helpers — moved to the leaf `doc_parse_text` (review F3) ───────
 from .doc_parse_text import _NRIC_RE, _first_rm_figure, _lines, find_value, first_nric, has
 from .doc_parse_tnb import PHOTO_SWITCH, lane_on, parse_tnb_photo
+from .str_application_page import is_application_details
+from .str_status_read import ambiguous_tidak_lulus, one_line_per_break, status_value
 
 
 # Tolerate an intervening ``)``/space — Malaysian bills print the amount as a column under
@@ -93,21 +95,28 @@ def rules_parser_version(doc_type: str, text: str) -> str:
 #                        values in separate columns → name/NRIC read layout-independently.
 #   * 'dashboard'      — MySTR app dashboard ("Papan Pemuka").
 #   * 'unknown'        — recognised but NOT an STR proof: a SARA-only Perdana Menteri
-#                        letter ("bantuan SARA", no STR entitlement), or a SALINAN
-#                        application record with no approval. This GATES income_engine.
+#                        letter ("bantuan SARA", no STR entitlement), a SALINAN application
+#                        record, or an application details page (TD-718). This GATES income_engine.
 #                        _str_currency to 'unconfirmed' — deterministically retiring the
 #                        AI inference that mis-passed app #63's SARA letter.
 
 _STR_MARKERS = (r'sumbangan\s+tunai\s+rahmah', r'\bMySTR\b', r'jumlah bayaran keseluruhan str',
                 r'status\s+permohonan', r'layak\s+str', r'\bSTR\b')
 _SARA_MARKERS = (r'sumbangan\s+asas\s+rahmah', r'bantuan\s+sara', r'perdana\s+menteri', r'\bSARA\b')
-# "Kekal Kelulusan Asal" (Semakan, #945): the original approval stands. The exact phrase only —
-# "Kelulusan" alone (Menunggu / Dalam Proses / Tarikh Kelulusan) is not an approval.
+# "Kekal Kelulusan Asal" (#945) approves; "Kelulusan" alone (Menunggu / Dalam Proses) does not. TD-718 R7:
+# "Tidak (Di)Lulus(kan)" rejects, on ONE line only = space/TAB/NBSP (repair 3: see str_status_read).
 _STR_APPROVED = (r'diluluskan', r'\blulus\b', r'\bberjaya\b', r'\bkekal\s+kelulusan\s+asal\b')
-_STR_REJECTED = (r'\bditolak\b', r'tidak\s+layak', r'\bgagal\b')
-# The STR status VALUE is a small closed vocabulary. Used to (a) validate a label-anchored read and
-# (b) scan the body when a labels-then-values OCR layout puts the value far from its label.
+_STR_REJECTED = (r'\bditolak\b', r'tidak\s+layak', r'\bgagal\b', r'tidak[ \t\xa0]+lulus', r'tidak[ \t\xa0]+diluluskan')
+# The STR status VALUE is a small closed vocabulary: (a) validates a label-anchored read, (b) scans the body.
 _STR_STATUS_RE = re.compile('|'.join(_STR_APPROVED + _STR_REJECTED), re.IGNORECASE)
+# TD-718 R2: less a bare "berjaya" ("Permohonan anda telah berjaya dihantar" = sent, not approved).
+_STR_DECIDED_RE = re.compile('|'.join(t for t in _STR_APPROVED + _STR_REJECTED if 'berjaya' not in t), re.IGNORECASE)
+# TD-718: a not-yet-approved status = the WHOLE label-anchored value (icon "i"/"(i)"/"ⓘ" skipped); a body
+# "berjaya" never overrides it. #104 rescue: ONLY a whole line "Permohonan Diterima", no status token, no RM row.
+_STR_PENDING_RE = re.compile(r'\s*(permohonan\s+diterima|dalam\s+proses(?:\s+rayuan)?)\s*\.?\s*', re.IGNORECASE)
+_STR_RECEIVED_LINE = re.compile(r'^\s*permohonan\s+diterima\s*\.?\s*$', re.IGNORECASE | re.MULTILINE)
+_INFO_ICON = r'(?:\(\s*i\s*\)|ⓘ|\bi\b)'
+_ICON_LINE = re.compile(r'^[ \t]*' + _INFO_ICON + r'[ \t]*$', re.MULTILINE | re.IGNORECASE)
 
 # A MyKad-style name line: all-caps with a patronymic/parentage connector. Layout-robust —
 # survives the mobile "labels column then values column" OCR order that breaks label anchors.
@@ -146,13 +155,12 @@ def _str_surface(text: str) -> Optional[str]:
     has_str = has(text, *_STR_MARKERS)
     if not has_str:
         return 'unknown' if has(text, *_SARA_MARKERS) else None
-    if has(text, r'\bsalinan\b'):
-        return 'unknown'    # a MySTR application-record COPY — NOT proof of approval
+    if has(text, r'\bsalinan\b') or is_application_details(text):
+        return 'unknown'    # a SALINAN copy / TD-718 an application details page — NOT proof of approval
     if has(text, r'kementerian\s+kewangan', r'nama\s+penerima', r'telah\s+diluluskan'):
         return 'letter'
-    # DASHBOARD before SEMAKAN: the dashboard's own heading "Status Permohonan STR" (and Papan
-    # Pemuka / Dashboard) is distinct from the Semakan's "Status Permohonan SEMASA". Testing the
-    # broad 'status permohonan' for Semakan first would mis-tag every dashboard as semakan_status.
+    # DASHBOARD before SEMAKAN: its heading "Status Permohonan STR" (and Papan Pemuka) is not the Semakan's
+    # "Status Permohonan SEMASA"; testing 'status permohonan' first would tag every dashboard semakan_status.
     if has(text, r'status\s+permohonan\s+str', r'papan\s+pemuka', r'\bdashboard\b'):
         return 'dashboard'
     if has(text, r'semakan\s+status', r'status\s+permohonan\s+semasa', r'status\s+pedalaman'):
@@ -162,7 +170,7 @@ def _str_surface(text: str) -> Optional[str]:
 
 @register('str')
 def _parse_str(text: str) -> Optional[dict]:
-    source_type = _str_surface(text)
+    source_type = _str_surface(text := one_line_per_break(text))   # repair 3 (B1): every break is '\n'
     if source_type is None:
         return None                          # not an STR/SARA doc → Gemini
 
@@ -174,16 +182,18 @@ def _parse_str(text: str) -> Optional[dict]:
     if source_type != 'unknown' and not (name or nric):
         return None
 
-    # Read the status VALUE, not a label. The status is a small closed vocabulary (Lulus /
-    # diluluskan / Ditolak / …), so ACCEPT the label-anchored read only when it IS one of those
-    # words. A labels-then-values OCR layout (mobile Semakan: labels in one column, values in
-    # another) makes find_value grab the NEXT LABEL — "Fasa Bayaran" / "Status Pedalaman" — instead
-    # of the value (#104), and a dashboard's "Status Permohonan STR" heading leaks "STR". In every
-    # such case we fall back to scanning the whole body for the status token.
-    status = find_value(text, r'status\s+permohonan(?:\s+str|\s+semasa)?')
+    # Read the status VALUE, not a label: accept the label-anchored read only when it IS one of the closed
+    # vocabulary words. A labels-then-values OCR layout (mobile Semakan) makes find_value grab the NEXT
+    # LABEL — "Fasa Bayaran" / "Status Pedalaman" — instead of the value (#104), and a dashboard's
+    # "Status Permohonan STR" heading leaks "STR" → body scan. Repair 3: B2 status_value, B3 below.
+    label = r'status\s+permohonan(?:\s+str|\s+semasa)?(?:\s*' + _INFO_ICON + ')?'
+    status = status_value(_ICON_LINE.sub('', text or ''), label)
     if not _STR_STATUS_RE.search(status or ''):
-        m = _STR_STATUS_RE.search(text or '')
-        status = m.group(0) if m else ''
+        pending = _STR_PENDING_RE.fullmatch(status or '')
+        m = (_STR_DECIDED_RE if pending else _STR_STATUS_RE).search(text or '')   # tokens keep priority
+        rescued = not (m or pending or _ALL_AMOUNTS_RE.search(text or '')) and _STR_RECEIVED_LINE.search(text or '')
+        status = (m.group(0) if m and not ambiguous_tidak_lulus(m.group(0), text)   # B3: else pending / unread
+                  else ' '.join(pending.group(1).split()) if pending else 'Permohonan Diterima' if rescued else '')
 
     ym = _YEAR_RE.search(text or '')
     year = ym.group(1) if ym else ''

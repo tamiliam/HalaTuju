@@ -36,7 +36,18 @@ export const basicsFourChecks: ManualChapter = {
           </ul>
           <span className="mt-2 block">Green tiles you can move past quickly; the real work is the
           <strong> amber</strong> and <strong>red</strong> ones. A red <em>Pathway</em> usually means no offer
-          letter yet; an amber <em>Income</em> often means the STR proof isn&rsquo;t clearly approved; an amber
+          letter yet; an amber <em>Income</em> often means the STR proof isn&rsquo;t clearly approved. An STR page
+          that only says <em>Permohonan Diterima</em> or <em>Dalam Proses</em> (incl. <em>Dalam Proses
+          Kelulusan</em>) is not an approval: its Status chip is red, it fails like a SALINAN and the salary
+          documents are judged instead. Such a page never replaces an STR already on file that is approved,
+          rejected or amber (status unread), whoever it was uploaded for; an approved STR whose name or IC
+          number matches a family member&rsquo;s IC card is kept even against a rejection or an unread page
+          uploaded for another family member.
+          Any other approved STR (someone outside the family, a parent whose IC is not uploaded yet, or a
+          match found only through the birth certificate) holds
+          no such place: the usual order decides (a dated page first, then the newest). A MySTR
+          application details page (<em>Maklumat Pemohon</em> with age and address, and no status) fails too:
+          it reads red &ldquo;Not an STR document&rdquo;. An amber
           <em> Academic</em> means the results slip needs re-reading against the grades.</span></>
       ),
     },

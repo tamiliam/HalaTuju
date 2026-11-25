@@ -130,6 +130,56 @@ def _dedup_clean_rank(doc):
     return 1
 
 
+#: TD-718 (owner ruling 2026-11-25; repair rounds 4-5): the household STR de-dupe ranks the live
+#: currency (``student_str_check``) in THREE tiers — HIGHER wins, across household members. The tier
+#: lifts a copy ABOVE the base order only on POSITIVE evidence, never on absence of evidence, and never
+#: on a judgement that can change after the de-dupe ran (which ICs are on file, how they read). And
+#: (round 5) only on evidence that is ON THE PAGE ITSELF plus the household's IC cards — never on
+#: evidence borrowed from another income document:
+#:   2 — an approval (``current`` / ``unconfirmed``) whose OWN recipient name or NRIC hits a household
+#:       member's IC card (``str_route.str_recipient_hits_a_household_card``), taken WITHOUT the
+#:       IC-number chain: ``chain_verified_earner`` compares the birth certificate with the NEWEST live
+#:       STR, so while two copies are live an outsider's approval borrowed the family's newer page's
+#:       match and buried it (round 5). The check's own 'match' is required too, so tier 2 always
+#:       implies the TD-409 same-slot guard ``promotion._str_matched(doc, counting=True)`` — the same
+#:       idea, minus the chain (a test pins the implication). No lower tier ever supersedes it, whatever
+#:       the dates — not even a rejection filed under ANOTHER member (owner 2026-07-07: a valid, genuine,
+#:       approved STR wins regardless of the member tag). In the SAME slot a rejection still replaces it
+#:       through ``promotion.should_promote`` (a rejection is news).
+#:   1 — every OTHER approval (no own card hit: not judged yet, pending our read, a stranger's, or one
+#:       matched only through the birth-certificate chain), plus
+#:       ``rejected`` and ``unreadable`` (amber, passes the gate): between themselves the base order
+#:       (has-a-date, recency, upload) decides exactly as before TD-718, so a newer unread page replaces
+#:       a rejection or an unmatched approval, and a newer rejection replaces an unread page. A
+#:       stranger's copy is NOT demoted below this (round 3's stranger tier is gone): that verdict
+#:       depends on the ICs on file and their OCR, so it can be wrong or late.
+#:   0 — every other state (``not_approved``, ``wrong_type``, ``stale``, ``future``, blank / unknown):
+#:       all fail the gate, so none may supersede tiers 1-2. Agrees with the same-slot order in
+#:       ``str_route._STR_CURRENCY_RANK`` (unreadable above not_approved / stale / future / wrong_type).
+_STR_APPROVED_STATES = ('current', 'unconfirmed')      # the same pair as promotion._str_matched(counting=True)
+_STR_DEDUP_TIER = {'current': 1, 'unconfirmed': 1, 'rejected': 1, 'unreadable': 1}   # 2: own-card approval
+#: Every NON-STR doc gets this constant, so salary / EPF / bill ordering is unchanged.
+_NON_STR_DEDUP_TIER = 1
+
+
+def _dedup_str_rank(doc):
+    """TD-718 (rounds 4-5): 2 for an approval whose OWN recipient name or NRIC hits a household IC card
+    (``str_recipient_hits_a_household_card``, no IC-number chain; the same idea as
+    ``promotion._str_matched(doc, counting=True)``, minus the chain, so tier 2 implies it); 1 for every
+    other approval (unjudged, pending, a stranger's, or matched only through the chain), a rejection and
+    an unread page; 0 for every other state; ``_NON_STR_DEDUP_TIER`` for every NON-STR doc. Pure; never
+    raises on an empty reading or a doc with no application."""
+    if getattr(doc, 'doc_type', '') != 'str':
+        return _NON_STR_DEDUP_TIER
+    from .str_route import str_recipient_hits_a_household_card, student_str_check
+    sc = student_str_check(doc) or {}
+    state = sc.get('current_status')
+    if (state in _STR_APPROVED_STATES and 'match' in (sc.get('name_status'), sc.get('nric_status'))
+            and str_recipient_hits_a_household_card(doc)):
+        return 2
+    return _STR_DEDUP_TIER.get(state, 0)
+
+
 def income_dedup_rank(doc):
     """Which live copy of an income proof KEEPS the slot — HIGHER wins. Pure; reads stored fields.
 
@@ -141,16 +191,27 @@ def income_dedup_rank(doc):
     usable). By ``doc_quality`` the photo wins; by this rank the payslip does. At upload both run —
     promotion first, then ``dedupe_income_proof`` — so the de-dup is what makes the promote proxy
     safe for these types, and any OTHER caller settling an income slot must run this one too.
+    TD-718: for STR, the currency TIER comes second (``_dedup_str_rank``: an approval whose own page
+    hits a household IC card 2; any other approval, a rejection or an unread page 1; every failing
+    state 0) — the STR dedupe is household-wide, so without it a newer received / application page
+    filed under another member buried a live Lulus or a live amber page. Only positive evidence on the
+    page itself (its name or NRIC hits a card) lifts an approval above the base order (rounds 4-5),
+    so an approval nobody matched yet — an outsider's, one whose member's IC is not on file, or one
+    matched only through the birth-certificate chain (which reads the newest live STR, not this page) —
+    competes with the family's own pages by the usual date and upload order.
     """
-    return (_doc_genuine_rank(doc), _dedup_clean_rank(doc),
+    return (_doc_genuine_rank(doc), _dedup_str_rank(doc), _dedup_clean_rank(doc),
             1 if _income_doc_recency(doc) else 0,
             _income_doc_recency(doc) or (0, 0), doc.id)
 
 
 def dedupe_income_proof(application, member, doc_type):
     """Collapse LIVE copies of ``doc_type`` to a SINGLE best live doc, superseding the rest into
-    Old / Replaced. Ranks by (genuine, has-a-date, recency, id): a genuine copy is never superseded
-    by a non-genuine one, then the newest pay month / latest-dated STR wins, then the latest upload.
+    Old / Replaced. Ranks by (genuine, STR tier, has-a-date, recency, id): a genuine copy is never
+    superseded by a non-genuine one; an approved STR whose own recipient hits a household card never by
+    any other STR, and any other approval, a rejected or an unread one never by a failing state (TD-718,
+    ``_dedup_str_rank``; between those the usual order decides); then the newest pay month /
+    latest-dated STR wins, then the latest upload.
     Runs across request_codes (an officer re-request no longer leaves a parallel live copy). Retains
     the superseded rows + blobs — never a hard delete. Returns the superseded ids.
 

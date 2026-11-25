@@ -96,7 +96,7 @@ class TheCurrencyLadder(TestCase):
             ('', '2025', 'letter', 'stale'),
             ('', '2026', 'semakan_status', 'unreadable'),      # this year, unread: as before
             ('', '', 'semakan_status', 'unreadable'),          # no year, unread: as before
-            ('Dalam proses', '2026', 'semakan_status', 'unreadable'),
+            ('Dalam proses', '2026', 'semakan_status', 'not_approved'),   # TD-718: red now
             # A dashboard still caps at unconfirmed this year — but its year is still read.
             ('Lulus', '2026', 'dashboard', 'unconfirmed'),
             ('Lulus', '', 'dashboard', 'unconfirmed'),
