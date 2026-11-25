@@ -30,7 +30,7 @@ import { Pagination } from '@/components/Pagination'
 import { lazySource } from '@/components/source/LazySource'
 import { referralAcronym } from '@/lib/scholarship'
 import { FIXED_REFERRAL_CODES, referralLabel } from '@/lib/referralSources'
-import { APPLICATION_STATUSES, statusLabelKey, statusTone, displayStatus, rejectionChip } from '@/lib/applicationStatus'
+import { APPLICATION_STATUSES, statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
 import { SCHOLARSHIP_LIST_NAV, writeListNav } from '@/lib/listNav'
 
 const SourceApplications = lazySource(
@@ -360,9 +360,7 @@ function StaffScholarshipList() {
         <div className="divide-y divide-ground-100 border-y border-ground-100 md:hidden" data-testid="application-cards">
           {apps.map((a) => {
             const s = displayStatus(a)
-            // owner 2026-11-24: the list shows only "Rejected" on a rejected case; the chip stays on the
-            // case page and on a live case failing the state rule (a warning).
-            const chip = s === 'rejected' ? '' : rejectionChip(a)
+            // owner 2026-11-25: the list shows the status only; every warning chip lives on the case page.
             return (
               <div key={a.id} data-app-row>
                 <Link href={`/admin/scholarship/${a.id}`} data-row-link
@@ -376,7 +374,6 @@ function StaffScholarshipList() {
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(s)} ${PHONE_PILL_SM}`}>
                       {t(statusLabelKey(s))}
                     </span>
-                    {chip && <span data-testid="rejection-chip" className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone('rejected')} ${PHONE_PILL_SM}`}>{t(chip)}</span>}
                   </span>
                 </span>
 
@@ -472,12 +469,9 @@ function StaffScholarshipList() {
                     {(() => {
                       // A super-reopened decision shows "Reopened", overriding the stored accepted/rejected.
                       const s = displayStatus(a)
-                      // owner 2026-11-24: only "Rejected" on a rejected case; the chip stays on the case page and on a live
-                      // case failing the state rule (a warning).
-                      const chip = s === 'rejected' ? '' : rejectionChip(a)
+                      // owner 2026-11-25: the status only; warning chips live on the case page.
                       return <span className="inline-flex flex-wrap gap-1">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone(s)}`}>{t(statusLabelKey(s))}</span>
-                        {chip && <span data-testid="rejection-chip" className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone('rejected')}`}>{t(chip)}</span>}
                       </span>
                     })()}
                   </td>

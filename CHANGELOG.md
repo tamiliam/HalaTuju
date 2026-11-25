@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- fix: case list shows the status only; the state warning chip moved to the case page (owner 2026-11-25). Not pushed. Migration: none. Services: web.
+
 ### An invite not yet accepted does not count as an org admin (owner ruling, 2026-11-25)
 
 Not pushed. Migration: none. Services: api, web (manual text only).
