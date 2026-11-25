@@ -7,7 +7,7 @@ merit-only SPM bar, a floor beside every bar at 0; a diploma with no institution
 application with no profile). For each pair:
 `shortlisting.evaluate(app, cohort)` vs `criteria.evaluate(app, from_legacy(cohort))`. The ONLY
 allowed differences are the owner's two classes (2026-11-25), classified by the replay command's
-own `classify`, so the test and the live replay judge alike."""
+own `classify_replay`, so the test and the live replay judge alike."""
 import itertools
 from types import SimpleNamespace
 
@@ -16,7 +16,7 @@ from django.test import SimpleTestCase
 from apps.courses.models import StudentProfile
 from apps.scholarship import criteria, shortlisting
 from apps.scholarship.management.commands.replay_criteria import (
-    CLASS_A1, CLASS_A2, CLASS_B, CLASS_B2, EXPECTED, UNEXPECTED, classify)
+    CLASS_A1, CLASS_A2, CLASS_B, CLASS_B2, EXPECTED, UNEXPECTED, classify_replay)
 from apps.scholarship.tests.test_criteria import COHORT_1, COHORT_3, COHORT_4, COHORT_5, DEFAULTS, cohort
 
 STRONG = {'bm': 'A+', 'eng': 'A', 'math': 'A', 'hist': 'A-', 'moral': 'B+', 'sci': 'B', 'geo': 'C'}
@@ -108,7 +108,7 @@ def _grid(**opts):
     for (cname, c), r, i, n in itertools.product(COHORTS.items(), RESULTS, INCOME, NRICS):
         a = _app(r, i, n)
         tree = criteria.from_legacy(c, **opts)
-        cls = classify(a, c, shortlisting.evaluate(a, c), criteria.evaluate(a, tree), tree)
+        cls = classify_replay(a, c, shortlisting.evaluate(a, c), criteria.evaluate(a, tree), tree)
         found.setdefault(cls, []).append((cname, r, i, n))
     return found
 
@@ -136,7 +136,7 @@ class TestEquivalence(SimpleTestCase):
     def test_every_tree_validates(self):
         for cname, c in COHORTS.items():
             with self.subTest(cohort=cname):
-                self.assertEqual(criteria.validate(criteria.from_legacy(c)), [])
+                self.assertEqual(criteria.validate_tree(criteria.from_legacy(c)), [])
 
     def test_a_floor_beside_a_merit_only_bar_is_not_void(self):
         # F1: STPM PNGK 1.0 with no SPM grades used to pass through the merit-only SPM door.

@@ -7,7 +7,8 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-const read = (rel: string) => readFileSync(join(__dirname, rel), 'utf8')
+// A Windows checkout (core.autocrlf) gives CRLF; the map reader below looks for '\n}\n'.
+const read = (rel: string) => readFileSync(join(__dirname, rel), 'utf8').replace(/\r\n/g, '\n')
 
 function dataIcons(pyFile: string): string[] {
   const src = read(`../../../halatuju_api/apps/courses/${pyFile}`)

@@ -79,12 +79,12 @@ class TestValidate(SimpleTestCase):
                                                       {'test': 'income_per_person_under', 'rm': 1584}]},
                         {'section': 'born_in', 'any': ['sabah', 'wp_labuan']}],
                 'flag': [{'test': 'course_start_year', 'allowed': [2025, 2026]}]}
-        self.assertEqual(criteria.validate(good), [])
-        self.assertEqual(criteria.validate({'all': []}), [])
-        self.assertEqual(criteria.validate({'all': [results('all', post(), spm())]}), [])
-        self.assertEqual(criteria.validate({'all': [results('any', spm())]}), [])     # blank floor shape
+        self.assertEqual(criteria.validate_tree(good), [])
+        self.assertEqual(criteria.validate_tree({'all': []}), [])
+        self.assertEqual(criteria.validate_tree({'all': [results('all', post(), spm())]}), [])
+        self.assertEqual(criteria.validate_tree({'all': [results('any', spm())]}), [])     # blank floor shape
         # a 0 count is today's "0 set" bar (asks only that SPM grades be given)
-        self.assertEqual(criteria.validate({'all': [results('any', spm(gc(0, 'A-')))]}), [])
+        self.assertEqual(criteria.validate_tree({'all': [results('any', spm(gc(0, 'A-')))]}), [])
 
     def test_bad_trees_are_refused_not_repaired(self):
         bad = [
@@ -106,7 +106,7 @@ class TestValidate(SimpleTestCase):
         ]
         for tree in bad:
             with self.subTest(tree=tree):
-                self.assertNotEqual(criteria.validate(tree), [])
+                self.assertNotEqual(criteria.validate_tree(tree), [])
 
 
 class TestVoidSpmDoor(SimpleTestCase):
@@ -117,7 +117,7 @@ class TestVoidSpmDoor(SimpleTestCase):
     def test_refused_under_any(self):
         for door in (spm(), spm(gc(0, 'A-'), gc(0, 'C')), spm(self.MERIT0), spm(gc(0, 'C'), self.MERIT0)):
             with self.subTest(door=door):
-                self.assertEqual(criteria.validate({'all': [results('any', post(PNGK3), door)]}),
+                self.assertEqual(criteria.validate_tree({'all': [results('any', post(PNGK3), door)]}),
                                  [criteria.VOID_SPM_DOOR])
         self.assertIn('would let every SPM holder through', criteria.VOID_SPM_DOOR)
         self.assertIn('add a rule', criteria.VOID_SPM_DOOR)
@@ -127,11 +127,11 @@ class TestVoidSpmDoor(SimpleTestCase):
         for door in (spm(gc(1, 'C')), spm({'test': 'min_upu_merit', 'value': 80}),
                      spm(gc(0, 'A-'), gc(3, 'C'), self.MERIT0)):
             with self.subTest(door=door):
-                self.assertEqual(criteria.validate({'all': [results('any', post(PNGK3), door)]}), [])
+                self.assertEqual(criteria.validate_tree({'all': [results('any', post(PNGK3), door)]}), [])
 
     def test_not_refused_under_all_or_without_a_post_spm_group(self):
-        self.assertEqual(criteria.validate({'all': [results('all', post(PNGK3), spm(gc(0, 'C')))]}), [])
-        self.assertEqual(criteria.validate({'all': [results('any', spm(gc(0, 'C'), self.MERIT0))]}), [])
+        self.assertEqual(criteria.validate_tree({'all': [results('all', post(PNGK3), spm(gc(0, 'C')))]}), [])
+        self.assertEqual(criteria.validate_tree({'all': [results('any', spm(gc(0, 'C'), self.MERIT0))]}), [])
 
 
 class TestSpmDoorBesideAFloor(SimpleTestCase):
@@ -410,7 +410,7 @@ class TestFromLegacy(SimpleTestCase):
                            (cohort(min_stpm_pngk=2.5, min_merit_score=50.0), True),
                            (cohort(min_stpm_pngk=2.5, min_spm_credit_count=1), True),
                            (cohort(code='bpb-deg-dip-2026', min_stpm_pngk=3.0, min_spm_credit_count=5), True)):
-            with self.subTest(c=c):
+            with self.subTest(c=repr(c)):
                 groups = criteria.from_legacy(c)['all'][0]['any']
                 self.assertEqual([g['route'] for g in groups], ['post_spm', 'spm'] if has_spm else ['post_spm'])
 
@@ -424,11 +424,11 @@ class TestFromLegacy(SimpleTestCase):
         self.assertEqual(criteria.from_legacy(cohort(min_merit_score=80.0))['all'][0],
                          results('any', spm({'test': 'min_upu_merit', 'value': 80.0})))
         for c in (COHORT_1, COHORT_3, COHORT_4, COHORT_5, DEFAULTS, cohort()):
-            self.assertEqual(criteria.validate(criteria.from_legacy(c)), [])
+            self.assertEqual(criteria.validate_tree(criteria.from_legacy(c)), [])
         for c in (COHORT_1, COHORT_3, COHORT_4, DEFAULTS, cohort()):
-            self.assertEqual(criteria.validate(criteria.from_legacy(c, keep_empty_spm=True)), [])
+            self.assertEqual(criteria.validate_tree(criteria.from_legacy(c, keep_empty_spm=True)), [])
         # --plain on intake 5 is the trap left on: a comparison view that validate refuses.
-        self.assertEqual(criteria.validate(criteria.from_legacy(COHORT_5, keep_empty_spm=True)),
+        self.assertEqual(criteria.validate_tree(criteria.from_legacy(COHORT_5, keep_empty_spm=True)),
                          [criteria.VOID_SPM_DOOR])
 
     def test_from_legacy_never_builds_a_void_spm_door(self):
@@ -440,7 +440,7 @@ class TestFromLegacy(SimpleTestCase):
                   dict(min_stpm_pngk=2.0, min_merit_score=0), dict(min_stpm_pngk=0.0, min_spm_a_count=0)]
         for f in shapes:
             with self.subTest(f=f):
-                self.assertEqual(criteria.validate(criteria.from_legacy(cohort(**f))), [])
+                self.assertEqual(criteria.validate_tree(criteria.from_legacy(cohort(**f))), [])
         self.assertTrue(criteria.has_spm_bar(COHORT_3))          # credit 3 keeps its group
         self.assertFalse(criteria.has_spm_bar(COHORT_5))
         self.assertEqual([g['route'] for g in criteria.from_legacy(COHORT_3)['all'][0]['any']], ['post_spm', 'spm'])

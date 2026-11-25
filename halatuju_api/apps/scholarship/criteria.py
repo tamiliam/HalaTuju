@@ -65,7 +65,7 @@ def _num(v):
 
 # ── Validation ──────────────────────────────────────────────────────────────────────────────
 
-def validate(tree):
+def validate_tree(tree):
     """Every problem with ``tree`` as a list of short strings; ``[]`` means it is valid.
 
     Refuses rather than repairs (request #30's lesson): an unknown key, a repeated section or
@@ -421,9 +421,9 @@ def from_legacy(cohort, keep_empty_spm=False):
     * THE CGPA TRAP, BY SHAPE (owner ruling 2026-11-25: the trap = SPM group OFF): a PNGK floor
       with no SPM bar (`has_spm_bar` false) has NO SPM group, so SPM-only students do not qualify.
       Today such an intake passes them (#921); intake 5 (bpb-deg-dip-2026) is the one live case.
-      So `validate(from_legacy(c))` never meets `VOID_SPM_DOOR`. ``keep_empty_spm=True`` keeps the
+      So `validate_tree(from_legacy(c))` never meets `VOID_SPM_DOOR`. ``keep_empty_spm=True`` keeps the
       group (the replay's ``--plain`` view) for COMPARISON ONLY: that tree is the trap left on, and
-      `validate` refuses it.
+      `validate_tree` refuses it.
     * Otherwise the SPM group is present whenever the results section is. No academic value at
       all -> no section.
     * income_ceiling / per_capita_ceiling -> income, 'any' (today's rescue rule); neither -> none.
@@ -467,13 +467,13 @@ tree_for_migration = from_legacy
 
 
 def refused_trees(cohorts):
-    """``[(id, code, [problems])]`` for every intake whose `from_legacy` tree `validate` refuses -
+    """``[(id, code, [problems])]`` for every intake whose `from_legacy` tree `validate_tree` refuses -
     a stored birth state that is not a known key (a wrong case such as 'Sabah'), a start-year
     list of junk only. Sprint 2's migration must stop on these rather than store them. Ids, codes
     and the generic problem texts only."""
     out = []
     for c in cohorts:
-        errs = validate(from_legacy(c))
+        errs = validate_tree(from_legacy(c))
         if errs:
             out.append((getattr(c, 'id', None), getattr(c, 'code', ''), errs))
     return out

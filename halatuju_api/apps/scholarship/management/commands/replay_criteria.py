@@ -24,7 +24,7 @@ Anything else is `unexpected` (or `reason_only` when only the wording moved) and
 the engine until shown otherwise. A pass through an SPM group with no rule able to fail is NEVER
 expected (owner, review round 2): it lands in `unexpected`. The course-start flag is compared too
 (`start_year.reading` against the tree's flag); a differing flag needs a look. Every intake's
-`from_legacy` tree is also put through `criteria.validate` (`criteria.refused_trees`); a refused
+`from_legacy` tree is also put through `criteria.validate_tree` (`criteria.refused_trees`); a refused
 tree (a wrong-case birth state, junk-only start years) is listed by id and code and needs a look.
 
 ⚠ PRIVACY: prints intake ids / codes, statuses, counts and application ids ONLY - never a name,
@@ -64,7 +64,7 @@ def _groups(tree):
     return {g['route']: g['all'] for g in groups}
 
 
-def classify(application, cohort, old, new, tree):
+def classify_replay(application, cohort, old, new, tree):
     """'same', or the difference class of one application (see the module docstring). Class (a)
     needs (1) a new SPM group holding at least one rule that can fail (`criteria.spm_can_fail`) -
     an automatic pass is never expected - and (2) a pass on the OLD gate's own SPM test,
@@ -99,7 +99,7 @@ def _pending(app):
 def replay(cohort_codes=None, plain=False):
     """``{cohort_id: {'code', 'total', 'classes': Counter, 'flags': Counter, 'refused': [problems],
     'ids': {class: {'pending'|'decided': [ids]}}, 'statuses': {class: Counter}}}``. Pure reads.
-    ``refused`` is `validate(from_legacy(cohort))` - the tree Sprint 2 would store, whatever
+    ``refused`` is `validate_tree(from_legacy(cohort))` - the tree Sprint 2 would store, whatever
     ``plain`` says. An unknown intake code raises CommandError."""
     cohorts = ScholarshipCohort.objects.all().order_by('id')
     if cohort_codes:
@@ -111,12 +111,12 @@ def replay(cohort_codes=None, plain=False):
     for cohort in cohorts:
         tree = criteria.from_legacy(cohort, keep_empty_spm=plain)
         row = {'code': cohort.code, 'total': 0, 'classes': Counter(), 'flags': Counter(),
-               'refused': criteria.validate(criteria.from_legacy(cohort)),
+               'refused': criteria.validate_tree(criteria.from_legacy(cohort)),
                'ids': defaultdict(lambda: {'pending': [], 'decided': []}), 'statuses': defaultdict(Counter)}
         apps = (ScholarshipApplication.objects.filter(cohort=cohort)
                 .select_related('profile', 'cohort').order_by('id'))
         for app in apps:
-            cls = classify(app, cohort, shortlisting.evaluate(app, cohort), criteria.evaluate(app, tree), tree)
+            cls = classify_replay(app, cohort, shortlisting.evaluate(app, cohort), criteria.evaluate(app, tree), tree)
             row['total'] += 1
             row['classes'][cls] += 1
             marks = [cls] if cls != 'same' else []
