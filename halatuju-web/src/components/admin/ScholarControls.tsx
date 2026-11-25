@@ -45,7 +45,15 @@ export default function ScholarControls({ file, token, onChanged }: {
     const code = (e as { code?: string })?.code || ''
     setError(KNOWN_ERRORS.includes(code) ? t(`admin.scholars.control.error.${code}`) : t(fallback))
   }
-  const holdMove = (s: MaintenanceSubstate) => s === 'on_hold' || file.maintenance_substate === 'on_hold'
+  // Mirrors the server (`hold_is_money_move`, lifecycle door): placing a hold and lifting it to
+  // `on_track` are money moves (`can_hold`: View scholars + Payments: Prepare); every other change
+  // needs Manage scholar files (`can_set_substate`), and a move out of a hold also needs Prepare
+  // (`can_hold` implies it). An offer only; the door judges again.
+  const current = file.maintenance_substate
+  const moneyMove = (s: MaintenanceSubstate) => s === 'on_hold' || (current === 'on_hold' && s === 'on_track')
+  const may = (s: MaintenanceSubstate) => moneyMove(s)
+    ? !!c.can_hold
+    : !!c.can_set_substate && (current !== 'on_hold' || !!c.can_hold)
 
   async function move(s: MaintenanceSubstate) {
     if (!token) return
@@ -67,7 +75,7 @@ export default function ScholarControls({ file, token, onChanged }: {
   return (
     <section aria-label={t('admin.scholars.control.title')} data-testid="scholar-controls"
       className="mt-4 space-y-3 border-t border-ground-100 pt-4">
-      {c.can_set_substate && (
+      {(c.can_set_substate || c.can_hold) && (
         <div>
           <p className="mb-1.5 text-xs font-medium text-ground-600">{t('admin.scholars.control.substate')}</p>
           {/* ⚠ READ-ONLY ON A PHONE (owner, 2026-11-03, Mobile M6b follow-up — On hold stops a student's
@@ -75,7 +83,7 @@ export default function ScholarControls({ file, token, onChanged }: {
               these are the controls they were, and the server still judges every request. */}
           <div className="max-md:hidden" data-substate-actions>
             <div className="flex flex-wrap gap-1.5">
-              {offered.map((s) => (holdMove(s) && !c.can_hold) ? null : (
+              {offered.map((s) => !may(s) ? null : (
                 <button key={s} type="button" onClick={() => move(s)} disabled={!!busy}
                   className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                   {t(`admin.maintenance.action.${s}`)}

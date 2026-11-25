@@ -23,6 +23,9 @@ Branch access-s4-scholars, not pushed. Migration: none. Services: web. The serve
   file change needs), role-reviewer ("View scholars"). ms / ta are drafts for Sol: `admin.perm.scholars.*`,
   `admin.permLayout.scholarsApprove.*`, `admin.permEditor.scholarsNote`, new `admin.permEditor.scholarsBrought`;
   removed `admin.scholars.letters.dialog.seniorOnly`.
+- **Sub-state control:** `ScholarControls` draws it when `can_set_substate` or `can_hold` is served and offers each move
+  as the door judges it (`hold_is_money_move`): to a hold, or a hold lifted to on track, needs `can_hold` (View scholars +
+  Payments: Prepare); any other move needs `can_set_substate` (Manage scholar files), and a move out of a hold also `can_hold`.
 
 ### feat: sprint S4a - View scholars reads a scholar's file, Manage scholar files writes it (2026-11-25)
 

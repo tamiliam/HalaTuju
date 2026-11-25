@@ -8,7 +8,7 @@
  *  * a refusal reads as a sentence, never a bare code (TD-419's `hold_needs_payments`);
  *  * Close asks twice, then calls the close door and re-reads.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarControls from './ScholarControls'
 import * as api from '@/lib/admin-api'
 
@@ -94,4 +94,44 @@ it('a closed file draws no controls', () => {
   const { container } = render(<ScholarControls file={file({}, { status: 'closed' })} token="tok"
     onChanged={jest.fn()} />)
   expect(container.innerHTML).toBe('')
+})
+
+describe('S4b: the sub-state control follows can_set_substate or can_hold', () => {
+  const names = () => screen.queryAllByRole('button', { name: /admin\.maintenance\.action\./ })
+    .map((b) => (b.textContent || '').replace('admin.maintenance.action.', ''))
+  const draw = (c: Partial<api.ScholarControls>, over: Partial<api.ScholarFile> = {}) =>
+    render(<ScholarControls file={file(c, over)} token="tok" onChanged={jest.fn()} />)
+
+  it('Manage only: every move except those to or from a hold', () => {
+    draw({ can_set_substate: true, can_hold: false })
+    expect(names()).toEqual(['probation', 'ready_to_close'])
+  })
+  it('Manage only on a held file: nothing is offered', () => {
+    draw({ can_set_substate: true, can_hold: false }, { maintenance_substate: 'on_hold' })
+    expect(names()).toEqual([])
+  })
+  it('View + Prepare only, on track: only on_hold', () => {
+    draw({ can_set_substate: false, can_hold: true })
+    expect(names()).toEqual(['on_hold'])
+  })
+  it('View + Prepare only, on probation: only on_hold', () => {
+    draw({ can_set_substate: false, can_hold: true }, { maintenance_substate: 'probation' })
+    expect(names()).toEqual(['on_hold'])
+  })
+  it('View + Prepare only, on hold: only on_track', () => {
+    draw({ can_set_substate: false, can_hold: true }, { maintenance_substate: 'on_hold' })
+    expect(names()).toEqual(['on_track'])
+  })
+  it('neither: the control is hidden', () => {
+    draw({ can_set_substate: false, can_hold: false })
+    expect(names()).toEqual([])
+    expect(document.querySelector('[data-substate-actions]')).toBeNull()
+  })
+  it('both: every move is offered', () => {
+    draw({ can_set_substate: true, can_hold: true })
+    expect(names()).toEqual(['probation', 'on_hold', 'ready_to_close'])
+    cleanup()
+    draw({ can_set_substate: true, can_hold: true }, { maintenance_substate: 'on_hold' })
+    expect(names()).toEqual(['on_track', 'probation', 'ready_to_close'])
+  })
 })
