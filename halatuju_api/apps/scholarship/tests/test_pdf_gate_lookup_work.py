@@ -27,6 +27,17 @@ CAP = 'lookup work past the cap'
 SMALL_BASE = 200_000_000            # a thirtieth of the real base, so each hostile file can stay small
 
 
+STREAM = 'a stream the gate and the renderer may bound differently'
+
+
+def _lengths_unchecked():
+    """OCR-20 review round 3 part 2: the gate now refuses a stream that does not end exactly where its /Length
+    says (`pdf_dict_keys._stream_start` / `_stream_end`), so every wrong-length shape here is refused for that
+    first. These tests pin the lookup budget that still stands behind it, so they switch the length rule off; each
+    also checks that the real gate refuses the file for its length."""
+    return mock.patch('apps.scholarship.pdf_dict_keys._stream_start', return_value=None)
+
+
 def _small_base():
     """The cap with a smaller fixed part: the work charged per lookup is what these tests pin, and the real base
     only adds a fixed amount (about 2 s) before the same refusal."""
@@ -347,7 +358,9 @@ class HostileLookupsAreBounded(SimpleTestCase):
 
     def test_short_lengths_are_refused_after_a_few_row_walks(self):
         n = 2000                            # small enough to open inside the small base, so the walks are what refuse
-        with _small_base():
+        why, walks = _walks(_pdf('shortlen', n))
+        self.assertEqual((why, walks), ('OverBudget: ' + STREAM, 1))   # the length rule: at the first stream
+        with _small_base(), _lengths_unchecked():
             why, walks = _walks(_pdf('shortlen', n))
         self.assertIn(CAP, why or '')                                 # was ACCEPTED after one walk per stream
         self.assertGreater(walks, 0)
@@ -355,7 +368,8 @@ class HostileLookupsAreBounded(SimpleTestCase):
 
     def test_lengths_past_the_end_are_refused_after_a_few_large_reads(self):
         n = 2000
-        with _small_base():
+        self.assertEqual(_big_reads(_pdf('overlen', n, PAD), PAD)[0], 'OverBudget: ' + STREAM)
+        with _small_base(), _lengths_unchecked():
             why, big = _big_reads(_pdf('overlen', n, PAD), PAD)
         self.assertIn(CAP, why or '')                                 # was ACCEPTED after a copy per stream
         self.assertLess(big, n // 4)
@@ -410,8 +424,12 @@ class HostileLookupsAreBounded(SimpleTestCase):
         """Review round 2 (MEDIUM): object 200 sits in object stream 100, which sits in stream 5. pypdf parsed all
         of 5 to reach 100, uncharged, before `page_tree_check` saw the nesting."""
         inner = b'<< /Type /ObjStm /N 1 /First 6 /Length 8 >>\nstream\n200 0 1 \nendstream'
-        reader = GateReader(_objstm_pdf(3, [200], first=inner, extra={200: (2, 100, 0)}))
-        got, parses = _stream_parses(lambda: reader.get_object(200))
+        data = _objstm_pdf(3, [200], first=inner, extra={200: (2, 100, 0)})
+        with self.assertRaisesRegex(OverBudget, STREAM):              # round 3 part 2: a stream in an object
+            GateReader(data)                                          # stream refuses the file as it opens
+        with _lengths_unchecked():
+            reader = GateReader(data)
+            got, parses = _stream_parses(lambda: reader.get_object(200))
         self.assertIsInstance(got, OverBudget)
         self.assertEqual(parses, 0)
 
@@ -441,16 +459,17 @@ class HostileLookupsAreBounded(SimpleTestCase):
             rebuilds.append(1)
             return real(reader, stream)
 
+        self.assertEqual(_gate(_rebuild_pdf(n))[1], 'OverBudget: ' + STREAM)   # the real gate: its lengths
         walk = DictionaryObject._get_next_object_position
-        with _small_base(), mock.patch.object(PdfReader, '_rebuild_xref_table', rebuild), \
+        with _small_base(), _lengths_unchecked(), mock.patch.object(PdfReader, '_rebuild_xref_table', rebuild), \
                 mock.patch.object(DictionaryObject, '_get_next_object_position', side_effect=walk) as walks:
             with self.assertRaisesRegex(OverBudget, CAP):
                 GateReader(_rebuild_pdf(n))
         self.assertEqual(len(rebuilds), 1)                            # the shape is the rebuild, as it opens
         self.assertGreater(walks.call_count, 0)
         self.assertLess(walks.call_count, n // 4)                     # was every one of the n walks, then opened
-        with _small_base():
-            self.assertIn(CAP, _gate(_rebuild_pdf(n))[1] or '')       # the real gate refuses it
+        with _small_base(), _lengths_unchecked():
+            self.assertIn(CAP, _gate(_rebuild_pdf(n))[1] or '')       # the budget behind the length rule
 
     def test_a_refusal_pypdf_swallows_as_it_opens_still_refuses(self):
         """pypdf catches broad exceptions in some recovery paths as it opens (a failed rebuild is dropped,
@@ -464,7 +483,7 @@ class HostileLookupsAreBounded(SimpleTestCase):
             except Exception:  # noqa: BLE001 - what pypdf's recovery does
                 pass
 
-        with _small_base(), mock.patch.object(PdfReader, 'read', swallowing):
+        with _small_base(), _lengths_unchecked(), mock.patch.object(PdfReader, 'read', swallowing):
             with self.assertRaisesRegex(OverBudget, CAP):
                 GateReader(_rebuild_pdf(2000))
 
@@ -598,21 +617,28 @@ class GenuineShapesAreUnchanged(SimpleTestCase):
         self.assertLess(share, 0.40)
 
     def test_a_few_short_lengths_read_as_pypdf_reads_them(self):
+        """Owner's strict rule (round 3 part 2): a wrong /Length is refused, as pdfium may end the stream elsewhere
+        (the census and the wider compare on 25 Nov found no genuine file with one). Behind that rule the reader is pypdf's."""
         data = _pdf('shortlen', 5)
-        self.assertEqual(_gate(data), (1, None))
-        gate, plain = GateReader(data), PdfReader(io.BytesIO(data))
-        for a, b in zip(gate.pages[0]['/Contents'], plain.pages[0]['/Contents']):
-            self.assertEqual(a.get_object().get_data(), b.get_object().get_data())
-        self.assertEqual(gate.pages[0]['/Contents'][0].get_object().get_data(), b'0 g')
+        self.assertEqual(_gate(data), (0, 'OverBudget: ' + STREAM))
+        self.assertEqual(_gate(_pdf('plain', 5)), (1, None))
+        with _lengths_unchecked():
+            self.assertEqual(_gate(data), (1, None))
+            gate, plain = GateReader(data), PdfReader(io.BytesIO(data))
+            for a, b in zip(gate.pages[0]['/Contents'], plain.pages[0]['/Contents']):
+                self.assertEqual(a.get_object().get_data(), b.get_object().get_data())
+            self.assertEqual(gate.pages[0]['/Contents'][0].get_object().get_data(), b'0 g')
 
     def test_a_small_rebuilt_table_is_refused_at_the_first_lookup(self):
         """OCR-12 round 1: a table that starts but cannot be read ('0 (x)') may still give pdfium rows the gate
         never saw, so the gate refuses it (no genuine letter in the corpus has one). pypdf's rebuild on open is
         still the reader's own and still metered."""
         data = _rebuild_pdf(5)
-        self.assertEqual(_gate(data), (0, 'OverBudget: a cross-reference section the gate cannot read'))
-        with self.assertRaisesRegex(OverBudget, 'a cross-reference section the gate cannot read'):
-            GateReader(data).pages[0]['/Contents'].get_object()
+        self.assertEqual(_gate(data), (0, 'OverBudget: ' + STREAM))   # its /Length 1 streams, first
+        with _lengths_unchecked():
+            self.assertEqual(_gate(data), (0, 'OverBudget: a cross-reference section the gate cannot read'))
+            with self.assertRaisesRegex(OverBudget, 'a cross-reference section the gate cannot read'):
+                GateReader(data).pages[0]['/Contents'].get_object()
 
     def test_a_rebuilt_table_with_a_small_object_stream_is_refused_and_its_open_is_metered(self):
         """Gap 2 control: the index scan of a table rebuilt on open is metered and charged well under the cap
@@ -635,10 +661,12 @@ class GenuineShapesAreUnchanged(SimpleTestCase):
 
     def test_a_length_past_the_end_reads_as_pypdf_reads_it(self):
         data = _pdf('overlen', 3, 10_000)
-        self.assertEqual(_gate(data), (1, None))
-        gate, plain = GateReader(data), PdfReader(io.BytesIO(data))
-        for a, b in zip(gate.pages[0]['/Contents'], plain.pages[0]['/Contents']):
-            self.assertEqual(a.get_object().get_data(), b.get_object().get_data())
+        self.assertEqual(_gate(data), (0, 'OverBudget: ' + STREAM))   # round 3 part 2: refused for its length
+        with _lengths_unchecked():
+            self.assertEqual(_gate(data), (1, None))
+            gate, plain = GateReader(data), PdfReader(io.BytesIO(data))
+            for a, b in zip(gate.pages[0]['/Contents'], plain.pages[0]['/Contents']):
+                self.assertEqual(a.get_object().get_data(), b.get_object().get_data())
 
     def test_packed_objects_read_as_pypdf_reads_them(self):
         data = _objstm_pdf(50, [4], page_in_stream=True)

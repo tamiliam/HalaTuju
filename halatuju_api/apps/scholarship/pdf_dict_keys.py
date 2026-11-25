@@ -27,41 +27,70 @@ Why the FILE, not the page: the object may be shared, pypdf parses each object o
 is the meter's (`_CountedBytes._refuse`: an `OverBudget`, which pypdf's lenient parser always re-raises, and
 ``refused`` stays set even when a pypdf recovery path swallows the raise; `pdf_pages._layer_read` checks it).
 
+Round 3 part 2 (H4, H5). STREAM BOUNDS: pypdf trusts a /Length only when 'endstream' follows it; otherwise it
+looks one byte back, then searches on to the next 'endstream'. pdfium searches to the FIRST of 'endstream' and
+'endobj' (probes p2d, p2e: a wrong /Length and an 'endobj' in the data; pypdf read GENUINE LULUS, pdfium drew
+GENUINE). So a stream in the file is refused unless (`_stream_start`, `_stream_end`):
+  * the 'stream' keyword is pypdf's: after the dictionary only pypdf's white space (NUL, TAB, LF, FF, CR, space),
+    then 'stream', spaces, and LF, CR LF or CR (pdfium also skips comments and 0x80 / 0xFF before the keyword, and
+    takes any rest of the line after it: pypdf then reads no stream or raises);
+  * /Length (direct, or an indirect one pypdf resolves; any failure refuses) is a whole number >= 0, pypdf's data
+    holds exactly that many bytes, and from start + /Length there is only pypdf's white space, then 'endstream'.
+    Both readers skip that white space and then take /Length as it is (checked against pdfium: none, LF, CR LF,
+    CR, LF LF, TAB, FF, NUL). A wrong /Length with no 'endobj' word refuses too: no search path is relied on;
+  * for an indirect /Length, the data holds neither 'endstream' nor 'endobj' (should pdfium resolve it another
+    way, its search then ends where pypdf's read does);
+  * it is not inside a content stream or an object stream (pdfium reads 'stream' there as an operator or a word,
+    and draws what follows);
+  * pypdf's stream read raises nothing.
+WORD ENDS IN ARRAYS (`_array_item`, probe p2l): pypdf reads 'null' in an array by a shortcut that skips the
+round-2 word check, so '[5 0 R nulltrue 6 0 R]' was two content streams to pypdf and one to pdfium (the unknown
+word 'nulltrue' ends its array). Each array element whose first byte is a regular one must follow white space or
+a delimiter, and the shortcut's 'null' must be followed by one.
+
 pypdf with no `GateReader` (other readers, the pdfium child's layout op and `page_flags`) is unchanged.
 """
 import io
 import threading
 from contextlib import contextmanager
 
-from pypdf.generic import ArrayObject, BooleanObject, DictionaryObject, NameObject, NullObject
+from pypdf.generic import ArrayObject, BooleanObject, DictionaryObject, IndirectObject, NameObject, NullObject
 from pypdf.generic import _data_structures as _pypdf_dicts
 
-from .pdf_layer_guards import _CountedBytes
+from .pdf_layer_guards import OverBudget, _CountedBytes
 
 REFUSAL = 'a dictionary the gate and the renderer may read differently'
 ARRAY_REFUSAL = 'an array the gate and the renderer may read differently'
 WORD_REFUSAL = 'a null or boolean the gate and the renderer may read differently'
 NAME_REFUSAL = 'a name past the 127-byte limit'
+STREAM_REFUSAL = 'a stream the gate and the renderer may bound differently'
 #: A name this long or longer (bytes, after the '/') refuses: the PDF limit is 127 (pdfium cuts at about 255).
 NAME_MAX_BYTES = 128
 #: Switched off only by tests that check another guard on its own.
 CHECKS_ON = True
 _DELIMITERS = frozenset(b'\x00\t\n\x0c\r ()<>[]{}/%')
+_PYPDF_SPACE = frozenset(b'\x00\t\n\x0c\r ')            # pypdf's WHITESPACES (6.21.4); pdfium skips all of them
+_PDFIUM_SPACE = _PYPDF_SPACE | frozenset(b'\x80\xff')    # pdfium's word-ending white space
+_SPACE = frozenset(b' ')
+#: How far past a dictionary or a stream's data the keyword checks look (uncharged; first 64 bytes): white
+#: space or comments running past it refuse.
+_PEEK = 4096
 _HERE = threading.local()     # .frames: the dictionaries / arrays being read on this thread; .content: a meter
 _pypdf_read_dict = DictionaryObject.read_from_stream
 _pypdf_read_array = ArrayObject.read_from_stream
 _pypdf_stream_data = DictionaryObject._read_stream_data
 _pypdf_read_object = _pypdf_dicts.read_object
+_pypdf_check_limits = ArrayObject._check_limits
 _pypdf_warning = _pypdf_dicts.logger_warning
 
 
 class _Frame:
     """One dictionary or array being read: its gate meter (None: not a gate stream) and, for a dictionary, the
-    objects pypdf read directly in it and whether it reached its normal end."""
-    __slots__ = ('meter', 'is_dict', 'reads', 'ended')
+    objects pypdf read directly in it and whether it reached its normal end; the stream it is read from."""
+    __slots__ = ('meter', 'is_dict', 'reads', 'ended', 'stream')
 
-    def __init__(self, meter, is_dict: bool):
-        self.meter, self.is_dict, self.reads, self.ended = meter, is_dict, 0, False
+    def __init__(self, meter, is_dict: bool, stream=None):
+        self.meter, self.is_dict, self.reads, self.ended, self.stream = meter, is_dict, 0, False, stream
 
 
 def _frames() -> list:
@@ -119,20 +148,100 @@ def _read_dict(stream, pdf, forced_encoding=None, **kwargs):
 
 def _stream_data(*, stream, pdf, data):
     """pypdf calls this once a dictionary's loop ends normally ('>' or a null key): it must have read two objects
-    per entry kept, and the two bytes before here must be '>>'."""
+    per entry kept, and the two bytes before here must be '>>'. Then the stream bounds (round 3 part 2, H4)."""
     frames = _frames()
     frame = frames[-1] if frames and frames[-1].is_dict else None
+    meter = frame.meter if frame is not None else None
     if frame is not None:
         frame.ended = True
-        if frame.meter is not None and (frame.reads != 2 * len(data) or _around(stream, 2, 0)[0] != b'>>'):
-            frame.meter._refuse(REFUSAL)
-    return _pypdf_stream_data(stream=stream, pdf=pdf, data=data)
+        if meter is not None and (frame.reads != 2 * len(data) or _around(stream, 2, 0)[0] != b'>>'):
+            meter._refuse(REFUSAL)
+    if meter is None:
+        return _pypdf_stream_data(stream=stream, pdf=pdf, data=data)
+    start = _stream_start(stream, meter)
+    try:
+        result = _pypdf_stream_data(stream=stream, pdf=pdf, data=data)
+    except OverBudget:
+        raise
+    except Exception:                    # pypdf may recover from it further up: the file is refused first
+        if start is not None:
+            meter._refuse(STREAM_REFUSAL)
+        raise
+    if start is not None:
+        _stream_end(stream, data, start, meter)
+    return result
+
+
+def _skip(ahead: bytes, space: frozenset, comments: bool = False) -> int:
+    """The index of the first byte of ``ahead`` past ``space`` bytes (and, with ``comments``, '%' comments)."""
+    k = 0
+    while k < len(ahead) and (ahead[k] in space or (comments and ahead[k] == 0x25)):
+        if ahead[k] == 0x25:                                 # a comment runs to its end of line
+            while k < len(ahead) and ahead[k] not in (0x0A, 0x0D):
+                k += 1
+        k += 1
+    return k
+
+
+def _peek(stream, at: int, space: frozenset, meter, comments: bool = False) -> tuple:
+    """(bytes of ``stream`` from ``at``, read uncharged with its position kept; the index `_skip` stops at, with
+    at least 16 bytes after it): 64 bytes, or `_PEEK` when the white space runs on. Past that: refused."""
+    here = io.BytesIO.tell(stream)
+    try:
+        for size in (64, _PEEK):
+            io.BytesIO.seek(stream, at)
+            ahead = io.BytesIO.read(stream, size)
+            k = _skip(ahead, space, comments)
+            if k + 16 <= len(ahead) or len(ahead) < size:
+                return ahead, k
+    finally:
+        io.BytesIO.seek(stream, here)
+    meter._refuse(STREAM_REFUSAL)
+
+
+def _stream_start(stream, meter):
+    """Where the stream data after this dictionary starts, as pypdf reads it; None when pypdf reads no stream here.
+    Refused: a 'stream' keyword pdfium finds and pypdf does not, one pypdf reads in a content or object stream,
+    or one not followed by spaces and an end of line."""
+    at = io.BytesIO.tell(stream)
+    ahead, k = _peek(stream, at, _PYPDF_SPACE, meter)
+    if ahead[k:k + 6] != b'stream':
+        ahead, k = _peek(stream, at, _PDFIUM_SPACE, meter, comments=True)
+        if ahead[k:k + 6] == b'stream':
+            meter._refuse(STREAM_REFUSAL)
+        return None
+    if not isinstance(stream, _CountedBytes):
+        meter._refuse(STREAM_REFUSAL)
+    at += k + 6
+    ahead, k = _peek(stream, at, _SPACE, meter)
+    if ahead[k:k + 1] not in (b'\n', b'\r'):
+        meter._refuse(STREAM_REFUSAL)
+    return at + k + (2 if ahead[k:k + 2] == b'\r\n' else 1)
+
+
+def _stream_end(stream, data, start: int, meter) -> None:
+    """The data pypdf read must be exactly /Length bytes from ``start``, then white space and 'endstream'."""
+    length = data.get('/Length')
+    indirect = isinstance(length, IndirectObject)
+    try:
+        length = length.get_object() if indirect else length      # pypdf resolved it already: cached
+    except OverBudget:
+        raise
+    except Exception:
+        meter._refuse(STREAM_REFUSAL)
+    got = data.get('__streamdata__')
+    if (not isinstance(length, int) or isinstance(length, bool) or length < 0 or not isinstance(got, bytes)
+            or len(got) != length or (indirect and (b'endstream' in got or b'endobj' in got))):
+        meter._refuse(STREAM_REFUSAL)
+    after, k = _peek(stream, start + length, _PYPDF_SPACE, meter)
+    if after[k:k + 9] != b'endstream':
+        meter._refuse(STREAM_REFUSAL)
 
 
 def _read_array(stream, pdf, forced_encoding=None, **kwargs):
     """pypdf's array read; for a gate stream, refused unless its last byte is its OWN ']' (an inner array that
     ended at the same place means the outer one ran off the end of the data)."""
-    frame = _Frame(_meter(stream), False)
+    frame = _Frame(_meter(stream), False, stream)
     frames = _frames()
     frames.append(frame)
     _HERE.array_end = None
@@ -146,6 +255,21 @@ def _read_array(stream, pdf, forced_encoding=None, **kwargs):
             frame.meter._refuse(ARRAY_REFUSAL)
         _HERE.array_end = end
     return result
+
+
+def _array_item(*, remaining_elements, parsing_budget):
+    """pypdf calls this for each array element, its first byte just read (round 3 part 2, H5): a regular first
+    byte must follow white space or a delimiter, and a 'null' (read by pypdf's shortcut, past `_read_object`)
+    must be followed by one."""
+    frames = _frames()
+    frame = frames[-1] if frames and not frames[-1].is_dict else None
+    if frame is not None and frame.meter is not None:
+        before, after = _around(frame.stream, 2, 4)
+        if before[-1:] and before[-1] not in _DELIMITERS and (len(before) < 2 or before[0] not in _DELIMITERS):
+            frame.meter._refuse(WORD_REFUSAL)
+        if before[-1:] == b'n' and after[:3] == b'ull' and (len(after) < 4 or after[3] not in _DELIMITERS):
+            frame.meter._refuse(WORD_REFUSAL)
+    return _pypdf_check_limits(remaining_elements=remaining_elements, parsing_budget=parsing_budget)
 
 
 def _read_object(stream, pdf, forced_encoding=None, **kwargs):
@@ -198,6 +322,8 @@ def install() -> None:
         DictionaryObject._read_stream_data = staticmethod(_stream_data)
     if ArrayObject.read_from_stream is not _read_array:
         ArrayObject.read_from_stream = staticmethod(_read_array)
+    if ArrayObject._check_limits is not _array_item:
+        ArrayObject._check_limits = staticmethod(_array_item)
     if _pypdf_dicts.read_object is _pypdf_read_object:
         _pypdf_dicts.read_object = _read_object
     if not getattr(NameObject.read_from_stream, 'gate_length_check', False):

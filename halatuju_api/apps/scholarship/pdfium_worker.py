@@ -58,12 +58,14 @@ class _OverObjects(Exception):
 
 
 def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list, plain: frozenset,
-            blank: bool = False) -> bool:
+            blank: bool = False, words: bool = False) -> bool:
     """True when every text object pdfium places on the page paints, outside optional content, and (when pypdf
     found letters or digits there) pdfium places at least one text object. OCR-20: and every annotation pdfium
     lists on the page is a /Link with no /AP (`_plain_link`; each charged one object). Review round 1: ``blank``
     (pypdf's text of the page is blank): pdfium must place NO text object at all. Review round 2: and no XObject
-    the page draws carries /OC (`pdfium_type3.page_flags`, as `_op_ink`): an OC mark is not all optional content."""
+    the page draws carries /OC (`pdfium_type3.page_flags`, as `_op_ink`): an OC mark is not all optional content.
+    Review round 3 part 2 (``words``, the SPM words op): and no text or form object under a mark carrying
+    /ActualText (`_own_text`)."""
     import pypdfium2.raw as raw
     page = pdf[index]
     try:
@@ -92,9 +94,11 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
                 if kind == raw.FPDF_PAGEOBJ_TEXT:
                     texts += 1
                     if (blank or under_oc or _oc_marked(obj, oc_may_be_off, plain)
-                            or raw.FPDFTextObj_GetTextRenderMode(obj) not in DRAWN_MODES):
+                            or raw.FPDFTextObj_GetTextRenderMode(obj) not in DRAWN_MODES or (words and _own_text(obj))):
                         return False
                 elif kind == raw.FPDF_PAGEOBJ_FORM:
+                    if words and _own_text(obj):
+                        return False
                     todo.append((obj, True, under_oc or _oc_marked(obj, oc_may_be_off, plain)))
         return texts > 0 or not has_alnum
     finally:
@@ -126,6 +130,20 @@ def _oc_marked(obj, oc_may_be_off: bool, plain: frozenset) -> bool:
         keys = {_mark_text(raw.FPDFPageObjMark_GetParamKey, mark, k) for k in range(raw.FPDFPageObjMark_CountParams(mark))}
         if (oc_may_be_off or keys != plain
                 or raw.FPDFPageObjMark_GetParamValueType(mark, b'Type') != raw.FPDF_OBJECT_NAME):
+            return True
+    return False
+
+
+def _own_text(obj) -> bool:
+    """True when a mark on the object (a BDC property list, inline or a /Properties resource) holds /ActualText,
+    or a mark pdfium cannot read in full: pdfium's text page then gives that text, not the glyphs drawn (probes
+    p4a, p4b: drawn 'D', words 'A+'). OCR-20 review round 3 part 2."""
+    import pypdfium2.raw as raw
+    for m in range(raw.FPDFPageObj_CountMarks(obj)):
+        mark = raw.FPDFPageObj_GetMark(obj, m)
+        count = raw.FPDFPageObjMark_CountParams(mark) if mark else -1
+        if count < 0 or any(_mark_text(raw.FPDFPageObjMark_GetParamKey, mark, k) in (None, 'ActualText')
+                            for k in range(count)):
             return True
     return False
 
@@ -303,10 +321,10 @@ def _op_words(pdf, req, blobs):
     OCR-20 review round 1, its own backstop: NO words (``refused``) unless page 1 passes `_paints` strictly — every
     annotation a /Link with no /AP, every text object (forms' too) in a mode that paints (never 3 / 7) and under no
     optional-content mark at all (any OC mark may be off) and no XObject with /OC (review round 2), within
-    `WORDS_MAX_OBJECTS`. The whole page is refused,
-    not its hidden characters dropped: pdfium's text page (pypdfium2 4.30) does not say which object drew a character."""
+    `WORDS_MAX_OBJECTS`; and no text under /ActualText (`_own_text`, review round 3 part 2). The whole page is
+    refused, not its hidden characters dropped: pdfium's text page (pypdfium2 4.30) does not say which object drew a character."""
     try:
-        drawn = len(pdf) > 0 and _paints(pdf, 0, True, True, [WORDS_MAX_OBJECTS], frozenset())
+        drawn = len(pdf) > 0 and _paints(pdf, 0, True, True, [WORDS_MAX_OBJECTS], frozenset(), words=True)
     except MemoryError:
         raise
     except Exception:            # a page pdfium cannot judge gives no words
