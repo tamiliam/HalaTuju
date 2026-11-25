@@ -21,16 +21,19 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>What does each slot of the <strong>Academic card</strong> show, and what does <strong>N/A</strong> mean?</>,
-      a: <>Every student&rsquo;s Academic card has the same slots, in the same order, whatever her route (since
-        24 November 2026). <strong>Secondary school</strong> is the school she attended (always in capitals, as her
-        documents print it). <strong>Merit score</strong> has a small grey line under it naming the exam that produced
-        it and, where we have read it, the year &mdash; <em>SPM 2025</em> from her SPM slip, <em>STPM 2025</em> from her
-        STPM results; a year off the expected sitting is shown in amber. Matriculation, Asasi and Diploma students show
-        just the name of the qualification, as no year is read for them yet. A Matriculation, Asasi or Diploma student
-        also has a <strong>Pre-U institution</strong> row (an STPM student does not: her STPM school is her secondary
-        school). After SPM there is one <strong>CGPA</strong> slot and her <strong>MUET</strong> band, then her STPM
-        grades (STPM only) and her <strong>SPM grades</strong> (<strong>SPM prerequisites</strong> after SPM). Last come
-        <strong> Chosen programme</strong>, <strong>Reporting date</strong> and <strong>Institution</strong>. A grey
+      a: <>Every student&rsquo;s Academic card is a set of rows in the same order for her route, each with a thin
+        line above it; two slots share a row on a wider screen and stack on a phone. <strong>SPM:</strong>
+        <strong> Secondary school</strong> and <strong>Merit score</strong>; her <strong>SPM grades</strong>;
+        <strong> Chosen programme</strong> and <strong>Reporting date</strong>; <strong>Institution</strong>.
+        <strong> STPM:</strong> Secondary school and Merit score; <strong>CGPA</strong> and <strong>MUET</strong>;
+        her <strong>STPM grades</strong>; her <strong>SPM prerequisites</strong>; then the programme, reporting date
+        and institution rows. <strong>Matriculation, Asasi or Diploma:</strong> Secondary school alone; then
+        <strong> Pre-U institution</strong> and Merit score; CGPA and MUET; SPM prerequisites; then the programme,
+        reporting date and institution rows. Secondary school is always in capitals, as her documents print it. The
+        merit score carries its exam and, where we have read it, the year in brackets on the same line &mdash;
+        <em>85.4 (SPM 2024)</em> from her SPM slip, <em>92.1 (STPM 2025)</em> from her STPM results; a year off the
+        expected sitting is shown in amber. Matriculation, Asasi and Diploma students show just the qualification,
+        for example <em>96.5 (Diploma)</em>, as no year is read for them yet. A grey
         <strong> Stated by student</strong> line under the programme or institution means no offer letter confirms it
         yet. <strong>N/A</strong> in a muted colour means the slot is required but empty: nothing was entered or read.
         It is not a mismatch. The reporting date always shows, and reads N/A until a date is stored or read from her
@@ -42,7 +45,7 @@ export const REVIEWER_FAQ: QA[] = [
         instead of STPM. They count as <strong>STPM-equivalent</strong>: the gift&rsquo;s minimum CGPA is
         tested on her overall CGPA, and her merit is that CGPA ÷ 4 × 100, as for an STPM student. The card
         uses the same slots as every other student (see the next question): the qualification
-        (<strong>Matriculation</strong>, <strong>Asasi</strong> or <strong>Diploma</strong>) sits under her merit score,
+        (<strong>Matriculation</strong>, <strong>Asasi</strong> or <strong>Diploma</strong>) is named in brackets after her merit score,
         with a <strong>Pre-U institution</strong> row, her <strong>CGPA</strong> as printed on her results
         (Matriculation and Asasi: her overall CGPA is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall
         CGPA is its CGPA as it is &mdash; the co-curriculum score no longer has a line of its own), her

@@ -4815,7 +4815,9 @@
           "unknown": "தேர்ந்தெடுக்கப்படவில்லை"
         }
       },
-      "meritScore": "தகுதி மதிப்பெண் (100-க்கு)",
+      "meritScore": "தகுதி மதிப்பெண்",
+      "meritExam": "({exam} {year})",
+      "meritExamNoYear": "({exam})",
       "cgpa": "CGPA",
       "preUInstitution": "முன்-பல்கலை நிறுவனம்",
       "na": "இல்லை",

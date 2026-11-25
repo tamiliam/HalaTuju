@@ -110,6 +110,10 @@ Branch ll5, not pushed. Migration: none. Services: api only. Not wired to any pa
 
 - fix: STPM quiz shows Question 1 of 9 and nine dots from the start (owner 2026-11-25). Not pushed. Migration: none. Services: web.
 
+### Academic box matches the approved slot layout (owner phone check, 2026-11-25)
+
+- fix: Academic box matches the approved slot layout; merit shows its exam and year in brackets; label Merit score (owner phone check 2026-11-25). Not pushed. Migration: none. Services: web.
+
 ### Degree funding estimate: living costs RM900 a study month (TD-719, 2026-11-24)
 
 Not pushed. Migration: none. Services: api, web.

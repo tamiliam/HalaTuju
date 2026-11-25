@@ -4815,7 +4815,9 @@
           "unknown": "Belum dipilih"
         }
       },
-      "meritScore": "Skor merit (daripada 100)",
+      "meritScore": "Skor merit",
+      "meritExam": "({exam} {year})",
+      "meritExamNoYear": "({exam})",
       "cgpa": "PNGK",
       "preUInstitution": "Institusi pra-U",
       "na": "T/B",

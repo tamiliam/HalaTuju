@@ -254,159 +254,149 @@ export function ApplicantCards({
               <div className="space-y-4">
               {/* Academic — school / merit / grades. Plans + notes are their own boxes below. */}
               <Card title={t('admin.scholarship.sec.academic')}>
-                {/* ONE slot layout for every route (owner mock, 2026-11-24): the same rows in the same
-                    order for SPM, STPM, Matriculation, Asasi and Diploma. A required slot with no
-                    value says N/A in a muted colour, so an empty slot is never mistaken for a hidden one. */}
-                <dl className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2">
-                  {/* Always in capitals, as the documents print it (owner, 2026-10-30) — the student
-                      types it however she likes, and the case was being read as a difference. */}
-                  <Field label={t('admin.scholarship.school')} value={app.school ? app.school.toUpperCase() : app.school} verifiedLabel={vtip('school')} na={na} />
-                  {/* The merit score carries the exam that produced it and its YEAR on a grey line
-                      under it (request #12, owner mock 2026-11-24). SPM: the slip's year. STPM: the
-                      higher-results document's year. Matriculation / Asasi / Diploma: no year is read
-                      yet, so the exam name alone. Only the year is tinted, and only when it is off the
-                      expected sitting — the same tone the Documents drawer chip uses. */}
-                  <Field label={t('admin.scholarship.meritScore')} na={na} value={app.merit_score}
-                    noteTone="muted" note={(() => {
-                      const examName = third ? t(`admin.scholarship.qualificationLabel.${third}`)
-                        : t(`admin.scholarship.examName.${isStpm ? 'stpm' : 'spm'}`)
-                      const ey = third ? null : isStpm ? higherExamYear(app.documents) : spmExamYear(app.documents)
-                      return (
-                        <>
-                          {examName}
-                          {ey && <>{' '}<span className={ey.status === 'off' ? 'text-caution-700' : undefined}>{ey.year}</span></>}
-                        </>
-                      )
-                    })()} />
-                  {/* Matriculation / Asasi / Diploma: where they did the pre-U course. An STPM student
-                      has no such row — their STPM school IS their secondary school. No tick yet:
-                      the only preUInstitution check today is the OFFER letter's institution, which
-                      is the destination, not this past college (the results-document tick is a TD). */}
-                  {third && <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} na={na} />}
-                  {/* ONE CGPA slot (STPM: the PNGK with its STPM-results mark; the third route: the
-                      CGPA entered, with its results tick) beside the MUET band. */}
-                  {(isStpm || third) && <>
-                    <Field label={t('admin.scholarship.cgpa')} na={na}
-                      value={isStpm
-                        ? (app.stpm_pngk == null ? app.stpm_pngk : <>{Number(app.stpm_pngk).toFixed(2)}{cgpaMark}</>)
-                        : fmt2(app.higher_cgpa)}
-                      verifiedLabel={isStpm ? undefined : vtip('higherCgpa')} />
-                    <Field label="MUET" value={app.muet_band} na={na} />
-                  </>}
-                </dl>
-                <div className="mt-3">
-                  {/* SPM route: her SPM grades. Post-SPM routes: the SPM grades are her PREREQUISITES
-                      (owner, 2026-11-16) and, for STPM, her STPM grades come first. */}
-                  {isStpm && (
-                    <div className="mb-2">
-                      <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">{t('admin.scholarship.stpmGrades')}</dt>
-                      <Grades grades={app.stpm_grades} na={na}
-                        trailing={stpmAllMatch ? stpmMark({ status: 'match', doc: '' }) ?? undefined : undefined}
-                        marks={gradeMarks} />
-                    </div>
-                  )}
-                  <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">
-                    {isStpm || third ? t('admin.scholarship.spmPrereq') : t('admin.scholarship.spmGrades')}
-                  </dt>
-                  {/* The tick renders AFTER the subject chips (item 1). The SPM slip's tick belongs to
-                      SPM chips only — never to an STPM student's STPM grades (#132), which carry the
-                      STPM results' own tick instead. The slip is checked against the SPM block
-                      `spm_grades_for` returns, so a post-SPM student's SPM chips earn it too. Three
-                      exclusive routes (owner 2026-11-06): a post-SPM student's SPM chips are her
-                      SPM prereq ONLY - never her `grades` (an earlier SPM-page entry), never merged. */}
-                  <Grades
-                    grades={isStpm || third ? app.spm_prereq_grades : app.grades} na={na}
-                    trailing={vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
-                  />
-                  {/* Third results route S3b (D13, review fix 3): what the student changed in her
-                      results before submitting — "SPM results only" or a slip moved to the SPM card;
-                      S4 (D15): a higher result she moved OUT of the SPM card. Always recorded, so a
-                      CGPA she was shortlisted on never vanishes silently. The team's own notes are
-                      not served here (owner 2026-11-06, `results_route.cockpit_notes`). */}
-                  {(app.results_change_notes || []).map((n, i) => {
-                    const key = resultsChangeKey(n)
-                    return key && (
-                      <p key={i} data-testid="results-change-note" className="mt-2 rounded-lg bg-caution-50 px-3 py-2 text-xs text-caution-800 ring-1 ring-caution-200">
-                        {t(key, {
-                          date: (n.at || '').slice(0, 10),
-                          cleared: t(`admin.scholarship.resultsChanged.kind.${n.cleared || 'other'}`),
-                          kind: t(`admin.scholarship.resultsChanged.kind.${n.results_kind || 'other'}`),
-                          cgpa: n.cgpa != null ? Number(n.cgpa).toFixed(2) : '—',
-                        })}
-                      </p>
-                    )
-                  })}
-                </div>
-
-                {/* Plans — chosen programme/pathway nested into Academic (no sub-label;
-                    the divider sets it off). The free-text memos live in Student's note. */}
-                <div className="mt-4 border-t border-ground-100 pt-3">
-                    <dl className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2">
-                      {/* Unified across ALL pathways (owner 2026-07-17): Chosen Programme (linked to
-                          its course / pathway page) · Institution · Reporting Date. Replaces the old
-                          split (Chosen Pathway + Pre-U Track + Pre-U Institution for STPM/Matric vs
-                          Chosen Programme for the rest). The pre-U track (Sains Sosial / Perakaunan)
-                          folds inline after the programme so no info is lost. */}
-                      {/* PISMP (a degree+specialisation pathway) reads INLINE exactly like STPM/Matric:
-                          the constant degree + " · {bidang}" in the one Chosen Programme field
-                          ("Ijazah Sarjana Muda Perguruan · Bahasa Tamil Pendidikan Rendah (SJKT)"),
-                          echoing "Tingkatan Enam · Sains Sosial". The gray suffix is the pre-U track
-                          for STPM/Matric, or the bidang for PISMP; other pathways keep course_name and
-                          have no suffix. One inline format across all pathways — no separate row. */}
-                      {(() => {
-                        const cid = app.chosen_programme?.course_id as string | undefined
-                        const disp = app.chosen_programme_display
-                        const degreeSplit = !isInstitutionPathway && !!disp?.stream
-                        const name = degreeSplit
-                          ? (disp?.title || pathwayLabel(app.chosen_pathway))
-                          : ((app.chosen_programme?.course_name as string) || pathwayLabel(app.chosen_pathway))
-                        const suffix = isInstitutionPathway ? preUTrackLabel : (degreeSplit ? disp?.stream : null)
-                        const tick = vtip('chosenProgramme')
-                        return (
-                          <Field
-                            label={t('admin.scholarship.chosenProgramme')}
-                            na={na}
-                            value={name ? (
-                              <>
-                                {courseLink(cid, name)}
-                                {suffix && <span className="text-ground-400"> · {suffix}</span>}
-                              </>
-                            ) : null}
-                            verifiedLabel={tick}
-                            noteTone="muted"
-                            note={name && !tick ? t('admin.scholarship.statedByStudent') : undefined}
-                          />
-                        )
-                      })()}
-                      {/* The reporting date always shows: N/A when no date is stored or read. */}
-                      <Field label={t('admin.scholarship.reportingDate')} value={reportingDate} na={na} verifiedLabel={vtip('reportingDate')} />
-                      {/* Institution on its OWN row below (col-span-2); Chosen Programme + Reporting
-                          Date share the top row (owner 2026-07-18). "Stated by student" only when the
-                          value is HER OWN entry that no offer letter confirms - an institution copied
-                          off the letter itself is not hers to state. */}
-                      <div className="sm:col-span-2">
-                        {(() => {
-                          const tick = isInstitutionPathway ? vtip('preUInstitution') : vtip('institution')
-                          // An SPM-route student's pre_u_institution is their DESTINATION, so it still falls back; on the
-                          // post-SPM routes it is their past college (own row above) and never does.
-                          const spmRoute = !isStpm && !third
-                          const chosenApp = { documents: app.documents, chosen_programme: app.chosen_programme,
-                            pre_u_institution: spmRoute ? app.pre_u_institution : undefined }
-                          const own = ((app.chosen_programme?.institution as string)
-                            || (spmRoute ? app.pre_u_institution : '') || '').trim()
-                          return (
-                            <Field
-                              label={t('admin.scholarship.institution')}
-                              na={na}
-                              value={expandMatricInstitution(shownInstitution(chosenApp)) || null}
-                              verifiedLabel={tick}
-                              noteTone="muted"
-                              note={own && !tick ? t('admin.scholarship.statedByStudent') : undefined}
-                            />
+                {/* ONE slot layout for every route (owner mock, 2026-11-24; phone check 2026-11-25):
+                    rows top to bottom, each with its own thin top divider, two columns from `sm`.
+                    SPM: [school | merit] · SPM grades · [programme | reporting date] · institution.
+                    STPM: [school | merit] · [CGPA | MUET] · STPM grades · SPM prerequisites · plans.
+                    Matric / Asasi / Diploma: [school | -] · [pre-U institution | merit] · [CGPA | MUET]
+                    · SPM prerequisites · plans. A required slot with no value says N/A in a muted
+                    colour, so an empty slot is never mistaken for a hidden one. */}
+                {(() => {
+                  const row = 'grid grid-cols-1 gap-x-4 gap-y-2.5 border-t border-ground-100 py-3 sm:grid-cols-2'
+                  const rowFull = 'border-t border-ground-100 py-3'
+                  // The merit score carries its exam and YEAR in brackets on the SAME line
+                  // (owner 2026-11-25): "85.4 (SPM 2024)". SPM: the slip's year. STPM: the
+                  // higher-results document's year. Matriculation / Asasi / Diploma: no year is
+                  // served (the api only reads a year off STPM results), so the exam name alone.
+                  // Only the bracket is tinted, and only when the year is off the expected sitting.
+                  const examName = third ? t(`admin.scholarship.qualificationLabel.${third}`)
+                    : t(`admin.scholarship.examName.${isStpm ? 'stpm' : 'spm'}`)
+                  const ey = third ? null : isStpm ? higherExamYear(app.documents) : spmExamYear(app.documents)
+                  const meritValue = app.merit_score == null || (app.merit_score as unknown) === '' ? null : (
+                    <>
+                      {app.merit_score}{' '}
+                      <span className={ey?.status === 'off' ? 'text-caution-700' : undefined}>
+                        {ey ? t('admin.scholarship.meritExam', { exam: examName, year: ey.year })
+                          : t('admin.scholarship.meritExamNoYear', { exam: examName })}
+                      </span>
+                    </>
+                  )
+                  const meritField = <Field label={t('admin.scholarship.meritScore')} na={na} value={meritValue} />
+                  // Always in capitals, as the documents print it (owner, 2026-10-30).
+                  const schoolField = <Field label={t('admin.scholarship.school')} value={app.school ? app.school.toUpperCase() : app.school} verifiedLabel={vtip('school')} na={na} />
+                  const cgpaField = <Field label={t('admin.scholarship.cgpa')} na={na}
+                    value={isStpm
+                      ? (app.stpm_pngk == null ? app.stpm_pngk : <>{Number(app.stpm_pngk).toFixed(2)}{cgpaMark}</>)
+                      : fmt2(app.higher_cgpa)}
+                    verifiedLabel={isStpm ? undefined : vtip('higherCgpa')} />
+                  // PISMP etc.: the constant degree + " · {bidang}" in the one Chosen Programme field;
+                  // for STPM/Matric the gray suffix is the pre-U track. Linked to its course page.
+                  const cid = app.chosen_programme?.course_id as string | undefined
+                  const disp = app.chosen_programme_display
+                  const degreeSplit = !isInstitutionPathway && !!disp?.stream
+                  const progName = degreeSplit
+                    ? (disp?.title || pathwayLabel(app.chosen_pathway))
+                    : ((app.chosen_programme?.course_name as string) || pathwayLabel(app.chosen_pathway))
+                  const progSuffix = isInstitutionPathway ? preUTrackLabel : (degreeSplit ? disp?.stream : null)
+                  const progTick = vtip('chosenProgramme')
+                  // "Stated by student" only when the institution is HER OWN entry that no offer
+                  // letter confirms - one copied off the letter itself is not hers to state.
+                  const instTick = isInstitutionPathway ? vtip('preUInstitution') : vtip('institution')
+                  // An SPM-route student's pre_u_institution is their DESTINATION, so it still falls
+                  // back; on the post-SPM routes it is their past college (own row above), never.
+                  const spmRoute = !isStpm && !third
+                  const chosenApp = { documents: app.documents, chosen_programme: app.chosen_programme,
+                    pre_u_institution: spmRoute ? app.pre_u_institution : undefined }
+                  const ownInst = ((app.chosen_programme?.institution as string)
+                    || (spmRoute ? app.pre_u_institution : '') || '').trim()
+                  return (
+                    <dl>
+                      {third ? (<>
+                        <div className={row}>{schoolField}<div /></div>
+                        {/* Where they did the pre-U course. No tick yet: the only preUInstitution check
+                            today is the OFFER letter's institution, the destination, not this college. */}
+                        <div className={row}>
+                          <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} na={na} />
+                          {meritField}
+                        </div>
+                      </>) : (
+                        <div className={row}>{schoolField}{meritField}</div>
+                      )}
+                      {(isStpm || third) && (
+                        <div className={row}>
+                          {cgpaField}
+                          <Field label="MUET" value={app.muet_band} na={na} />
+                        </div>
+                      )}
+                      {isStpm && (
+                        <div className={rowFull}>
+                          <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">{t('admin.scholarship.stpmGrades')}</dt>
+                          <Grades grades={app.stpm_grades} na={na}
+                            trailing={stpmAllMatch ? stpmMark({ status: 'match', doc: '' }) ?? undefined : undefined}
+                            marks={gradeMarks} />
+                        </div>
+                      )}
+                      {/* The SPM chips' tick belongs to SPM chips only - never to an STPM student's STPM
+                          grades (#132), which carry the STPM results' own tick. A post-SPM student's SPM
+                          chips are her prerequisites ONLY, never her `grades` (owner 2026-11-06). */}
+                      <div className={rowFull}>
+                        <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">
+                          {isStpm || third ? t('admin.scholarship.spmPrereq') : t('admin.scholarship.spmGrades')}
+                        </dt>
+                        <Grades
+                          grades={isStpm || third ? app.spm_prereq_grades : app.grades} na={na}
+                          trailing={vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
+                        />
+                        {/* Third results route S3b (D13) / S4 (D15): what the student changed in her
+                            results before submitting. Always recorded; the team's own notes are not
+                            served here (owner 2026-11-06). */}
+                        {(app.results_change_notes || []).map((n, i) => {
+                          const key = resultsChangeKey(n)
+                          return key && (
+                            <p key={i} data-testid="results-change-note" className="mt-2 rounded-lg bg-caution-50 px-3 py-2 text-xs text-caution-800 ring-1 ring-caution-200">
+                              {t(key, {
+                                date: (n.at || '').slice(0, 10),
+                                cleared: t(`admin.scholarship.resultsChanged.kind.${n.cleared || 'other'}`),
+                                kind: t(`admin.scholarship.resultsChanged.kind.${n.results_kind || 'other'}`),
+                                cgpa: n.cgpa != null ? Number(n.cgpa).toFixed(2) : '—',
+                              })}
+                            </p>
                           )
-                        })()}
+                        })}
+                      </div>
+                      {/* Plans: Chosen Programme + Reporting Date share a row, Institution its own. The
+                          free-text memos live in Student's note. */}
+                      <div className={row}>
+                        <Field
+                          label={t('admin.scholarship.chosenProgramme')}
+                          na={na}
+                          value={progName ? (
+                            <>
+                              {courseLink(cid, progName)}
+                              {progSuffix && <span className="text-ground-400"> · {progSuffix}</span>}
+                            </>
+                          ) : null}
+                          verifiedLabel={progTick}
+                          noteTone="muted"
+                          note={progName && !progTick ? t('admin.scholarship.statedByStudent') : undefined}
+                        />
+                        {/* The reporting date always shows: N/A when no date is stored or read. */}
+                        <Field label={t('admin.scholarship.reportingDate')} value={reportingDate} na={na} verifiedLabel={vtip('reportingDate')} />
+                      </div>
+                      <div className={rowFull}>
+                        <Field
+                          label={t('admin.scholarship.institution')}
+                          na={na}
+                          value={expandMatricInstitution(shownInstitution(chosenApp)) || null}
+                          verifiedLabel={instTick}
+                          noteTone="muted"
+                          note={ownInst && !instTick ? t('admin.scholarship.statedByStudent') : undefined}
+                        />
                       </div>
                     </dl>
+                  )
+                })()}
+                <div>
                     {app.top_choices?.length > 0 && (
                       <div className="mt-3">
                         <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
