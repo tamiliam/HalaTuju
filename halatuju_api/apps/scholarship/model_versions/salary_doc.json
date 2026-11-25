@@ -5,8 +5,8 @@
     "also_ok": []
   },
   "1.3.0": {
-    "digest": "c2bcceb205d95a348e82b05675cd89f6f8692a4a2e434e0d25dbeb2062418e5f",
-    "note": "Request #85 (2026-11-24): the statutory branch (>=2 of KWSP/SOCSO/EIS/PCB -> genuine/private) now runs before the 'no recognisable payslip fields' reject, so a slip with statutory deductions and no wage label is a payslip (the 2026-07-09 rule). The MyKad reject still runs first. The cascade is split out as decide(markers) so rescore_salary_statutory re-scores stored rows from their markers.",
+    "digest": "a32dd0337c8d1fe206b81ce6acf0b975aa4f17cc0517dbf27586922c5f430354",
+    "note": "Request #85 (2026-11-24): the statutory branch (>=2 of KWSP/SOCSO/EIS/PCB -> genuine/private) now runs before the 'no recognisable payslip fields' reject, so a slip with statutory deductions and no wage label is a payslip (the 2026-07-09 rule). The MyKad reject still runs first. The cascade is split out as decide(markers) so rescore_salary_statutory re-scores stored rows. Review round 1 (same unreleased version, never live): on that no-wage path only, the deductions must be WHOLE words and LHDN does not count (_STATUTORY_WORDS / statutory_words), so EIS inside LEISURE or a tax form's LHDN beside KWSP is still not a payslip; slips with a wage label are counted exactly as in 1.2.0.",
     "also_ok": []
   }
 }

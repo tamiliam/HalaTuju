@@ -84,12 +84,29 @@ class TestSalarySignatures(SimpleTestCase):
         self.assertEqual(r['status'], 'not_salary')
         self.assertTrue(r['reason'].startswith('no recognisable payslip fields'))
 
-    def test_decide_matches_the_text_path(self):
-        """The re-score command answers from stored markers through `decide`; it must equal a fresh read."""
-        from apps.scholarship.genuineness.salary_doc import decide
-        for text in (self._STAT_ONLY, "KWSP 1\nBulan", "SLIP GAJI Gaji Pokok KWSP PERKESO"):
-            with self.subTest(text):
-                self.assertEqual(decide(score_family(text)), self._g(text))
+    # ── #85 review round 1: on the no-wage path the deductions are WHOLE words (1.3.0) ──
+    def test_no_wage_label_needs_whole_word_deductions(self):
+        """'EIS' inside LEISURE / REISSUE and a tax form's LHDN beside a KWSP relief line counted as two
+        deductions by substring (genuine/private 0.8). With no wage label they no longer do."""
+        for text in ("KWSP i-Akaun\nLeisure", "KWSP\nREISSUE", "LHDN\nBorang BE 2025\nKWSP",
+                     "LEISURE REISSUE\nEPF"):
+            with self.subTest(text=text):
+                m = score_family(text)
+                self.assertGreaterEqual(m['statutory'], 2)            # the substring count still fires
+                self.assertLess(m['statutory_words'], 2)
+                r = self._g(text)
+                self.assertEqual((r['status'], r['family']), ('not_salary', 'not_salary'))
+
+    def test_whole_word_deductions_with_no_wage_label_are_a_payslip(self):
+        r = self._g("KWSP 308.00\nPERKESO (SOCSO) 12.75\nPCB 40.00\nMac 2026")
+        self.assertEqual((r['status'], r['family'], r['probability']), ('genuine', 'private', 0.9))
+        r = self._g("Kumpulan Wang Simpanan Pekerja 308.00\nSistem Insurans Pekerjaan 5.10")   # phrases
+        self.assertEqual((r['status'], r['family']), ('genuine', 'private'))
+
+    def test_a_wage_label_keeps_the_substring_count(self):
+        """Slips WITH a wage label are counted exactly as in 1.2.0 (moving them needs a corpus check)."""
+        r = self._g("Slip Gaji\nKWSP 308.00\nLHDN")
+        self.assertEqual((r['status'], r['family'], r['probability']), ('genuine', 'private', 0.83))
 
     # ── guards ───────────────────────────────────────────────────────────────────
     def test_nric_label_is_not_a_reject_marker(self):

@@ -265,6 +265,8 @@ class TestPrivate(_Base):
         'scholarship/models/__init__.py',
         'scholarship/models/documents.py',
         'scholarship/ocr_keep.py',
+        # #85: reads the stored text (in memory only, never printed) to re-score payslips without a read.
+        'scholarship/management/commands/rescore_salary_statutory.py',
         'scholarship/vision/ocr.py',
     }
     PATTERN = re.compile(r'ApplicantDocumentOcrText|applicant_document_ocr_text|ocr_keep')

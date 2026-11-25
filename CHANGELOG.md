@@ -10,12 +10,20 @@ Branch req85-slip-stat, not pushed. Migration: none. Services: api. Request #85 
 - **Scorer:** `salary_doc` 1.3.0 checks two or more statutory deductions (KWSP / SOCSO / EIS / PCB) before the "no
   payslip fields" reject, so such a slip reads genuine / private even when no wage label was read. The MyKad reject
   still runs first; one deduction alone is still not a payslip. The cascade is split out as `decide(markers)`.
-- **Re-score:** new `rescore_salary_statutory` re-writes, from the stored markers only (no read, no AI, no OCR), live
-  payslips stored `not_salary` by an older model with two or more deductions and no MyKad reason. Dry run by default;
-  `--apply` writes. Expected today: 2 documents (case 242, case 861). Not run against production.
+  On this no-wage path the deductions are matched as WHOLE words (review round 1: 'EIS' inside LEISURE / REISSUE
+  no longer counts, and LHDN, the tax office every tax form prints, is left out); a slip with a wage label is
+  counted exactly as in 1.2.0.
+- **Re-score:** new `rescore_salary_statutory` (no read, no AI call) takes live payslips stored `not_salary` by
+  model 1.2.x with two or more deductions, no wage label and no MyKad reason. With stored OCR text it re-runs the
+  1.3.0 scorer on that text and writes only a genuine / private answer; with no stored text the row is listed as
+  "needs eye check" and written from its stored markers only with `--include-no-text`. Rows of that shape from a
+  model older than 1.2.0 are listed by id and never written. Dry run by default; `--apply` writes, each row
+  re-fetched under a row lock and re-checked. Expected today: case 861 from its text; case 242 needs an eye check
+  (no stored text). Not run against production.
 - **Version:** VERDICT_ENGINE_VERSION 2026-11-24.1; `model_versions/salary_doc.json` 1.3.0 and `verdict_engine.json`
   2026-11-24.1 logged (verdict digest unchanged: its own files did not change). No golden moved.
-- **Tests:** `test_salary_signatures` (+4, one fails on the old order), new `test_rescore_salary_statutory` (4).
+- **Tests:** `test_salary_signatures` (+6, one fails on the old order), new `test_rescore_salary_statutory` (9);
+  `test_ocr_keep` allows the command to read the stored OCR text (in memory, never printed).
 - **Logged:** TD-NEW-netpay-not-salary (a read net pay figure vs "not a salary slip", owner to rule).
 
 ### refactor: sprint M4b review round 1 - stale-step refusal, readers see no staff emails, pre-0100 pinned (2026-11-24)
