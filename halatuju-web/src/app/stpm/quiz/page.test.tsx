@@ -191,4 +191,36 @@ describe('STPM quiz: the total is nine from the first question', () => {
     await flush()
     expect(mockApi.submitStpmQuiz).toHaveBeenCalledTimes(1)
   })
+
+  it('is the real seven when the Q2 answer has no field signal, and the quiz can finish', async () => {
+    mockApi.getStpmQuizQuestions.mockResolvedValue({
+      branch: 'science',
+      questions: [
+        q('q1', 'First?', 'A1', 'A2'),
+        { id: 'q2', prompt: 'Second?', options: [{ text: 'B1', icon: 'target_bullseye', signals: { other: 1 } }, opt('B2')] },
+      ],
+      q5: q('q5', 'Fifth?', 'C1', 'C2'),
+      trunk_remaining: [q('q7', 'Seventh?', 'D1', 'D2'), q('q8', 'Eighth?', 'F1', 'F2'), q('q9', 'Ninth?', 'G1', 'G2'), q('q10', 'Tenth?', 'H1', 'H2')],
+    } as never)
+    mockApi.submitStpmQuiz.mockResolvedValue({ student_signals: {}, branch: 'science' } as never)
+    await open()
+    fireEvent.click(screen.getByText('A1'))
+    act(() => { jest.advanceTimersByTime(300) })
+    fireEvent.click(screen.getByText('B1'))
+    await flush()
+    expect(mockApi.resolveStpmQuizQ3Q4).not.toHaveBeenCalled()
+    expect(dotCount()).toBe(7)
+    expect(screen.queryAllByTestId('quiz-dot-pending')).toHaveLength(0)
+    fireEvent.click(screen.getByTestId('quiz-next'))
+    for (const text of ['C1', 'D1', 'F1', 'G1', 'H1']) {
+      fireEvent.click(screen.getByText(text))
+      act(() => { jest.advanceTimersByTime(300) })
+    }
+    expect(screen.queryByText(ofText(7, 7))).not.toBeNull()
+    const done = screen.getByText('quiz.seeResults') as HTMLButtonElement
+    expect(done.disabled).toBe(false)
+    fireEvent.click(done)
+    await flush()
+    expect(mockApi.submitStpmQuiz).toHaveBeenCalledTimes(1)
+  })
 })

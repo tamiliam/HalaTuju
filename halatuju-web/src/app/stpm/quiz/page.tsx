@@ -165,7 +165,11 @@ export default function StpmQuizPage() {
 
     // Find the field signal from the chosen option
     const fieldSignal = Object.keys(chosenOption.signals).find(s => s.startsWith('field_'))
-    if (!fieldSignal) return
+    if (!fieldSignal) {
+      // No field to look up: there will be no Q3/Q4, so the total becomes the real length.
+      setQ2Resolved(true)
+      return
+    }
 
     const lang = locale === 'ms' ? 'bm' : locale
     q2Pending.current = true
