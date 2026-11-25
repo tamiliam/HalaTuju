@@ -9,7 +9,10 @@ only the standard library, `netguard` and the pure `lens_human`.
 TWO ENTRY POINTS, NO THIRD. The mode is the first word and is required; there is no default and no mode
 that does both:
 * ``fetch --bucket B --exam NAME --folder ABS`` - GET the object's metadata (size, md5Hash, generation);
-  HTTP 404 = ABSENT (only 404: a 403 or anything else is FETCH_FAILED); GET the bytes of THAT generation
+  ABSENT only when that GET answers 404 AND a list GET of the same bucket (``prefix`` = the object name,
+  ``maxResults=1``) answers 200 with a JSON object: the bucket is proved there, the object is not. Cloud
+  Storage answers 404 for a missing bucket too, so a 404 alone is never ABSENT; a 403, or any other
+  answer to either GET, is FETCH_FAILED. GET the bytes of THAT generation
   (``ifGenerationMatch``); refuse over `MAX_EXAM_BYTES`; check the size and the md5; write
   ``<folder>/<NAME>.json`` as a new file (never over an existing one). FETCHED. It never sends a POST.
   It does not judge the content: a corrupt stored exam is the lens's refusal to give, not this one's.
@@ -34,10 +37,11 @@ over TLS with ``ssl.create_default_context()`` (certificate and host name checke
 ``Metadata-Flavor: Google``; the answer must carry it too).
 
 WHAT LEAVES THE PROCESS: exactly one line on stdout, ``{"code": "<code>"}``, the code from the fixed sets
-`FETCH_CODES` / `PUT_CODES`. Run as a module, fd 1 and fd 2 point at /dev/null for the whole run and the
-line is written to a private copy of the real stdout, so nothing else (a library's print, a traceback)
-can add a line. Every error becomes a fixed code. Never a token, URL, bucket name, message or exam
-content; this module has no logging and prints nothing else. The token is held in `_Token` (its repr is
+`FETCH_CODES` / `PUT_CODES`. Run as a module, fd 1 and fd 2 point at /dev/null from the moment the
+module's own start-up code runs (before `main`, after only the imports, when no token, argument or exam
+has been read) to the end, and the line is written to a private copy of the real stdout, so nothing else
+(a library's print, a traceback) can add a line. Every error becomes a fixed code. Never a token, URL,
+bucket name, message or exam content; this module has no logging and prints nothing else. The token is held in `_Token` (its repr is
 fixed), checked to be plain token characters before it goes into a header, and never placed in an
 exception: errors are raised OUTSIDE the ``except`` that met them, so no exception chain carries a
 parsed body.
@@ -300,6 +304,13 @@ def media_path(bucket, name, generation) -> str:
     return f'{object_path(bucket, name)}?alt=media&ifGenerationMatch={generation}'
 
 
+def list_path(bucket, name) -> str:
+    """A list of ``bucket`` holding at most the one object named ``<name>.json`` (and only its name).
+    It proves the bucket is there; it needs only the list right that ``objectViewer`` gives."""
+    return (f'/storage/v1/b/{bucket}/o?prefix={quote(name + ".json", safe="")}&maxResults=1'
+            f'&fields={quote("items(name)", safe="")}')
+
+
 def upload_path(bucket, name) -> str:
     """The create-only upload of ``<name>.json``: ``ifGenerationMatch=0`` refuses (412) when it exists."""
     return (f'/upload/storage/v1/b/{bucket}/o?uploadType=media&name={quote(name + ".json", safe="")}'
@@ -320,8 +331,10 @@ def metadata_token(http) -> _Token:
 
 
 def object_meta(http, token, bucket, name):
-    """``(size, md5Hash, generation)`` of the stored ``<name>.json``; None when it is ABSENT, which is
-    HTTP 404 and nothing else. StoreFailed on any other answer (a 403 included)."""
+    """``(size, md5Hash, generation)`` of the stored ``<name>.json``; None on HTTP 404 and nothing else.
+    A 404 is NOT yet "absent": Cloud Storage answers 404 for a missing bucket too. Only `fetch_exam`
+    turns it into ABSENT, after `bucket_reachable`; a put treats None as a failure. StoreFailed on any
+    other answer (a 403 included)."""
     status, _headers, body = http(STORAGE_HOST, 'GET', object_path(bucket, name), token.header(),
                                   limit=MAX_META_BYTES)
     if status == 404:
@@ -332,6 +345,15 @@ def object_meta(http, token, bucket, name):
     if found is None or not isinstance(generation, str) or _DIGITS.fullmatch(generation) is None:
         raise StoreFailed()
     return found[0], found[1], generation
+
+
+def bucket_reachable(http, token, bucket, name) -> bool:
+    """True only when ONE list GET of ``bucket`` (`list_path`) answers 200 with a JSON object (with or
+    without ``items``): the bucket is there. False on any other answer; a transport error is raised.
+    No error text is read. Called by `fetch_exam` only, after a 404 on the object."""
+    status, _headers, body = http(STORAGE_HOST, 'GET', list_path(bucket, name), token.header(),
+                                  limit=MAX_META_BYTES)
+    return status == 200 and len(body) <= MAX_META_BYTES and _json(body) is not None
 
 
 # ── fetch ───────────────────────────────────────────────────────────────────────────────────────────
@@ -356,12 +378,15 @@ def _write_new(folder, name, data):
 
 
 def fetch_exam(http, token, bucket, name, folder) -> str:
-    """FETCHED (the file is written) or ABSENT (HTTP 404). StoreFailed or a transport error otherwise;
-    `run` turns either into FETCH_FAILED. GET requests only."""
+    """FETCHED (the file is written) or ABSENT (the object GET answers 404 and `bucket_reachable` proves
+    the bucket is there). StoreFailed or a transport error otherwise; `run` turns either into
+    FETCH_FAILED. GET requests only."""
     if not os.path.isabs(folder) or not os.path.isdir(folder):
         raise StoreFailed()
     meta = object_meta(http, token, bucket, name)
     if meta is None:
+        if not bucket_reachable(http, token, bucket, name):
+            raise StoreFailed()                 # no such bucket, or no right to it: never ABSENT
         return ABSENT
     size, md5, generation = meta
     if size > MAX_EXAM_BYTES:
@@ -376,10 +401,11 @@ def fetch_exam(http, token, bucket, name, folder) -> str:
 
 # ── put ─────────────────────────────────────────────────────────────────────────────────────────────
 def _read_exam_bytes(path):
-    """The file's bytes, read once: a regular file (never a link), at most `MAX_EXAM_BYTES`; else None."""
-    fd = os.open(path, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0))
+    """The file's bytes, read once: a regular file (never a link, a folder or a FIFO), at most
+    `MAX_EXAM_BYTES`; else None. ``O_NONBLOCK`` so a FIFO's open does not wait for a writer."""
+    fd = os.open(path, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
     with os.fdopen(fd, 'rb') as fh:
-        if not stat.S_ISREG(os.fstat(fh.fileno()).st_mode):
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
             return None
         data = fh.read(MAX_EXAM_BYTES + 1)
     return data if len(data) <= MAX_EXAM_BYTES else None

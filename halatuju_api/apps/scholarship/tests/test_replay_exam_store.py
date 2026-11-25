@@ -12,7 +12,9 @@ import re
 import socket
 import subprocess
 import sys
+import threading
 import traceback
+import urllib.parse
 
 import pytest
 
@@ -38,12 +40,13 @@ def _resource(name, data, generation):
 
 
 class FakeGcs:
-    """The metadata server and one bucket. ``script[kind]`` (token / meta / media / upload) is a list
-    used first: an exception is raised, a tuple is the answer, a callable gets the default answer
-    (side effects already applied) and returns the answer."""
+    """The metadata server and one bucket, named ``bucket`` (any other bucket answers 404, as Cloud
+    Storage does). ``script[kind]`` (token / meta / list / media / upload) is a list used first: an
+    exception is raised, a tuple is the answer, a callable gets the default answer (side effects
+    already applied) and returns the answer. ``calls`` holds (host, method, path, kind, headers, body)."""
 
-    def __init__(self, token=CANARY):
-        self.token, self.objects, self.script, self.calls = token, {}, {}, []
+    def __init__(self, token=CANARY, bucket=BUCKET):
+        self.token, self.bucket, self.objects, self.script, self.calls = token, bucket, {}, {}, []
         self._generation = 1700000000000000
 
     def _kind(self, host, method, path):
@@ -51,11 +54,13 @@ class FakeGcs:
             return 'token'
         if method == 'POST':
             return 'upload'
-        return 'media' if 'alt=media' in path else 'meta'
+        if 'alt=media' in path:
+            return 'media'
+        return 'list' if '/o?' in path else 'meta'
 
     def __call__(self, host, method, path, headers, body=None, limit=ES.MAX_META_BYTES):
         kind = self._kind(host, method, path)
-        self.calls.append((host, method, path, kind))
+        self.calls.append((host, method, path, kind, dict(headers), body))
         queued = self.script.get(kind)
         item = queued.pop(0) if queued else None
         if isinstance(item, BaseException):
@@ -73,6 +78,12 @@ class FakeGcs:
         assert host == ES.STORAGE_HOST
         if headers.get('Authorization') != 'Bearer ' + self.token:
             return 401, {}, b'{}'
+        if path.split('/b/', 1)[1].split('/', 1)[0] != self.bucket:
+            return 404, {}, b'{"error": {"code": 404}}'
+        if kind == 'list':
+            prefix = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)['prefix'][0]
+            items = [{'name': f'{n}.json'} for n in sorted(self.objects) if f'{n}.json'.startswith(prefix)]
+            return 200, {}, json.dumps({'items': items[:1]} if items else {}).encode()
         if kind == 'upload':
             name = re.search(r'[?&]name=([^&]+)', path).group(1)[:-len('.json')]
             if name in self.objects:
@@ -171,10 +182,13 @@ def test_put_retries_a_5xx_exactly_once_then_fails(tmp_path):
     fake.script['upload'] = [(503, {}, b''), (500, {}, b'')]
     assert _run(_put_argv(tmp_path, exam), fake)[0] == ES.PUT_FAILED
     assert fake.kinds().count('upload') == 2
+    create_only = f'/upload/storage/v1/b/{BUCKET}/o?uploadType=media&name=exam-old.json&ifGenerationMatch=0'
+    assert [c[2] for c in fake.calls if c[1] == 'POST'] == [create_only, create_only]   # the retry too
     fake = FakeGcs()
     fake.script['upload'] = [(429, {}, b'')]
     assert _run(_put_argv(tmp_path, exam), fake)[0] == ES.KEPT
     assert fake.kinds().count('upload') == 2
+    assert [c[2] for c in fake.calls if c[1] == 'POST'] == [create_only, create_only]
 
 
 def test_a_lost_answer_then_412_with_our_bytes_is_kept(tmp_path):
@@ -184,6 +198,7 @@ def test_a_lost_answer_then_412_with_our_bytes_is_kept(tmp_path):
     fake.script['upload'] = [ConnectionResetError()]
     assert _run(_put_argv(tmp_path, exam), fake)[0] == ES.KEPT
     assert fake.kinds() == ['token', 'upload', 'upload', 'meta']
+    assert all(c[2].endswith('&ifGenerationMatch=0') for c in fake.calls if c[1] == 'POST')
 
 
 @pytest.mark.parametrize('status', [400, 401, 403, 404, 409])
@@ -222,6 +237,16 @@ def test_put_412_with_the_object_gone_again_fails(tmp_path):
     fake = FakeGcs()
     fake.script['upload'] = [(412, {}, b'')]
     assert _run(_put_argv(tmp_path, exam), fake)[0] == ES.PUT_FAILED
+    assert fake.kinds() == ['token', 'upload', 'meta']       # a 404 on a put never asks about the bucket
+
+
+def test_put_an_accepted_answer_then_a_404_on_the_metadata_fails_with_no_list(tmp_path):
+    exam = _freeze(tmp_path)
+    fake = FakeGcs()
+    fake.script['upload'] = [lambda answer: (200, {}, b'{"kind": "storage#object"}')]
+    fake.script['meta'] = [(404, {}, b'')]
+    assert _run(_put_argv(tmp_path, exam), fake)[0] == ES.PUT_FAILED
+    assert fake.kinds() == ['token', 'upload', 'meta']
 
 
 # ── put: the proof comes first, with no network ───────────────────────────────────────────────────
@@ -255,6 +280,47 @@ def test_put_refuses_a_corrupt_or_linked_exam_file(tmp_path):
     assert (code, fake.calls, resolver.asked) == (ES.NOT_VERIFIED, [], [])
 
 
+def test_put_refuses_an_exam_file_over_the_cap_before_any_network(tmp_path, monkeypatch):
+    exam = _freeze(tmp_path)
+    size = len(_exam_bytes(tmp_path))
+    monkeypatch.setattr(ES, 'MAX_EXAM_BYTES', size - 1)
+    code, fake, resolver = _run(_put_argv(tmp_path, exam))
+    assert (code, fake.calls, resolver.asked) == (ES.NOT_VERIFIED, [], [])
+    with pytest.raises(ES.StoreFailed) as caught:
+        ES.prove_new_exam(str(tmp_path), 'exam-old', exam['digest'][:12], exam['size'], exam['frozen_at'])
+    assert caught.value.code == ES.NOT_VERIFIED
+    monkeypatch.setattr(ES, 'MAX_EXAM_BYTES', size)              # at the cap itself it is taken
+    assert _run(_put_argv(tmp_path, exam))[0] == ES.KEPT
+
+
+def test_put_refuses_a_folder_at_the_exam_path_with_no_network(tmp_path):
+    exam = _freeze(tmp_path)
+    source = tmp_path / 'source'
+    source.mkdir()
+    (tmp_path / 'exam-old.json').rename(source / 'exam-old.json')
+    (tmp_path / 'exam-old.json').mkdir()
+    code, fake, resolver = _run(_put_argv(tmp_path, exam))
+    assert (code, fake.calls, resolver.asked) == (ES.NOT_VERIFIED, [], [])
+
+
+@pytest.mark.skipif(not hasattr(os, 'mkfifo'), reason='no FIFOs on this system')
+def test_put_refuses_a_fifo_at_the_exam_path_without_waiting_for_a_writer(tmp_path):
+    exam = _freeze(tmp_path)
+    path = tmp_path / 'exam-old.json'
+    path.unlink()
+    os.mkfifo(path)
+    done = []
+    worker = threading.Thread(target=lambda: done.append(_run(_put_argv(tmp_path, exam))), daemon=True)
+    worker.start()
+    worker.join(10)
+    if worker.is_alive():                                       # release the blocked open, then fail
+        os.close(os.open(path, os.O_WRONLY | os.O_NONBLOCK))
+        worker.join(10)
+        pytest.fail('the store child waited on a FIFO')
+    code, fake, resolver = done[0]
+    assert (code, fake.calls, resolver.asked) == (ES.NOT_VERIFIED, [], [])
+
+
 # ── fetch ─────────────────────────────────────────────────────────────────────────────────────────
 def test_fetch_writes_the_stored_generation_and_uses_get_only(tmp_path):
     source = tmp_path / 'source'
@@ -273,11 +339,64 @@ def test_fetch_writes_the_stored_generation_and_uses_get_only(tmp_path):
     assert {c[1] for c in fake.calls} == {'GET'}
 
 
-def test_fetch_404_is_absent_and_writes_nothing(tmp_path):
+def test_fetch_404_in_a_bucket_proved_there_is_absent_and_writes_nothing(tmp_path):
     code, fake, _r = _run(_fetch_argv(tmp_path))
     assert code == ES.ABSENT
     assert os.listdir(tmp_path) == []
-    assert fake.kinds() == ['token', 'meta']
+    assert fake.kinds() == ['token', 'meta', 'list']
+
+
+def test_fetch_from_a_bucket_that_is_not_there_is_fetch_failed_not_absent(tmp_path):
+    fake = FakeGcs(bucket='another-bucket')     # a mistyped, not yet made or deleted bucket: 404 on both
+    code, fake, _r = _run(_fetch_argv(tmp_path), fake)
+    assert code == ES.FETCH_FAILED
+    assert fake.kinds() == ['token', 'meta', 'list']
+    assert os.listdir(tmp_path) == []
+
+
+@pytest.mark.parametrize('answer', [
+    (404, {}, b'{"error": {"code": 404}}'), (403, {}, b'{}'), (401, {}, b''), (500, {}, b'{}'),
+    (503, {}, b''), (200, {}, b'not json'), (200, {}, b'[]'), (200, {}, b'"items"'), (200, {}, b''),
+    (200, {}, b'{"items": []}' + b' ' * ES.MAX_META_BYTES),
+    ConnectionResetError(), TimeoutError(),
+])
+def test_fetch_404_then_any_list_answer_but_a_json_object_is_fetch_failed(tmp_path, answer):
+    fake = FakeGcs()
+    fake.script['list'] = [answer]
+    assert _run(_fetch_argv(tmp_path), fake)[0] == ES.FETCH_FAILED
+    assert fake.kinds() == ['token', 'meta', 'list']
+    assert os.listdir(tmp_path) == []
+
+
+@pytest.mark.parametrize('body', [b'{}', b'{"items": [{"name": "exam-old.json"}]}',
+                                  b'{"items": [{"name": "exam-older.json"}]}'])
+def test_fetch_404_then_a_list_answer_of_200_is_absent_with_no_second_try(tmp_path, body):
+    fake = FakeGcs()
+    fake.script['list'] = [(200, {}, body)]     # even when the list names the object (a race): no loop
+    assert _run(_fetch_argv(tmp_path), fake)[0] == ES.ABSENT
+    assert fake.kinds() == ['token', 'meta', 'list']
+    assert os.listdir(tmp_path) == []
+
+
+def test_the_list_request_is_a_get_to_storage_with_the_token_only_in_its_header(tmp_path):
+    fake = FakeGcs()
+    assert _run(_fetch_argv(tmp_path), fake)[0] == ES.ABSENT
+    host, method, path, kind, headers, body = fake.calls[2]
+    assert (host, method, kind, headers, body) == (
+        ES.STORAGE_HOST, 'GET', 'list', {'Authorization': 'Bearer ' + CANARY}, None)
+    split = urllib.parse.urlsplit(path)
+    assert split.path == f'/storage/v1/b/{BUCKET}/o' and CANARY not in path
+    assert urllib.parse.parse_qs(split.query, strict_parsing=True) == {
+        'prefix': ['exam-old.json'], 'maxResults': ['1'], 'fields': ['items(name)']}
+    assert path == ES.list_path(BUCKET, 'exam-old')
+
+
+def test_the_list_path_encodes_the_name_as_strictly_as_the_other_paths():
+    assert ES.list_path(BUCKET, 'exam-old') == (
+        f'/storage/v1/b/{BUCKET}/o?prefix=exam-old.json&maxResults=1&fields=items%28name%29')
+    odd = ES.list_path(BUCKET, 'a b/&?#=')
+    assert odd.startswith(f'/storage/v1/b/{BUCKET}/o?prefix=a%20b%2F%26%3F%23%3D.json&maxResults=1&')
+    assert ES.object_path(BUCKET, 'a b/&?#=').endswith('/o/a%20b%2F%26%3F%23%3D.json')
 
 
 @pytest.mark.parametrize('kind,answer', [
@@ -493,13 +612,15 @@ def _leak_scenarios(tmp_path):
     yield _fetch_argv(tmp_path / 'f3'), {'token': [(200, {'metadata-flavor': 'Google'}, json.dumps(
         {'access_token': CANARY + '\n'}).encode())]}
     yield _fetch_argv(tmp_path / 'f4'), {'media': [ValueError(CANARY)]}
+    yield _fetch_argv(tmp_path / 'f5'), {'meta': [(404, {}, b'')], 'list': [(403, {}, echo)]}
+    yield _fetch_argv(tmp_path / 'f6'), {'meta': [(404, {}, b'')], 'list': [ValueError(CANARY)]}
     yield _put_argv(exam_dir, exam), {'upload': [(500, {}, echo), (500, {}, echo)]}
     yield _put_argv(exam_dir, exam), {'upload': [(403, {}, echo)]}
 
 
 def test_no_token_reaches_any_output(tmp_path, capfd, caplog):
     caplog.set_level('DEBUG')
-    for name in ('f1', 'f2', 'f3', 'f4'):
+    for name in ('f1', 'f2', 'f3', 'f4', 'f5', 'f6'):
         (tmp_path / name).mkdir()
     for argv, script in _leak_scenarios(tmp_path):
         fake = FakeGcs()
@@ -511,6 +632,31 @@ def test_no_token_reaches_any_output(tmp_path, capfd, caplog):
     out, err = capfd.readouterr()
     assert CANARY not in out + err and out == '' and err == ''
     assert CANARY not in caplog.text
+
+
+@pytest.mark.parametrize('list_answer', [
+    (403, {}, json.dumps({'error': {'message': 'Bearer ' + CANARY}}).encode()),
+    (404, {}, CANARY.encode()), ValueError(CANARY), ConnectionResetError(CANARY)])
+def test_a_failed_list_call_while_the_token_is_held_gives_only_the_fixed_line(tmp_path, capfd, caplog,
+                                                                             list_answer):
+    caplog.set_level('DEBUG')
+    fake = FakeGcs()
+    fake.script = {'meta': [(404, {}, b'')], 'list': [list_answer]}
+    code = _run(_fetch_argv(tmp_path), fake)[0]
+    assert fake.kinds() == ['token', 'meta', 'list']
+    assert fake.calls[2][4] == {'Authorization': 'Bearer ' + CANARY}      # the token was held and sent
+    assert code == ES.FETCH_FAILED
+    assert ES.result_line(code) == '{"code": "fetch_failed"}\n'
+    out, err = capfd.readouterr()
+    assert (out, err) == ('', '') and CANARY not in caplog.text
+    assert os.listdir(tmp_path) == []
+
+
+def test_a_refused_list_answer_carries_no_token():
+    token = ES._Token(CANARY)
+    echo = json.dumps({'error': 'Bearer ' + CANARY}).encode()
+    for answer in ((403, {}, echo), (404, {}, echo), (200, {}, echo[:-3])):
+        assert ES.bucket_reachable(lambda *a, **k: answer, token, BUCKET, 'exam-old') is False
 
 
 def _all_text(exc):
