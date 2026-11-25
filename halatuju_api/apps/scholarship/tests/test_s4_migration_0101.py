@@ -5,8 +5,12 @@ Done-when: a team row (any of the four team labels) whose list holds `scholars` 
 `scholars.approve`, appended, and nothing else moves; a NULL `admin` row is materialised (kind 'edit_null');
 organisation admins, supers, a row holding a withdraw key without `scholars`, other shapes and rows without
 `scholars` are untouched; active, revoked, archived and pending alike; one truthful audit row each;
-idempotent; an exact reverse that never takes back 0099's rows; the hand SQL is pinned to `plan_row`.
+idempotent; an exact reverse that never takes back 0099's rows and deletes only the audit rows of the rows it put
+back; the re-run is bounded by the cutover (a row touched since keeps Manage off, Q-E); the hand SQL is pinned to
+`plan_row` and to that bound.
 """
+import datetime
+
 from importlib import import_module
 
 from django.apps import apps as live_apps
@@ -53,9 +57,38 @@ class HandSql(TestCase):
         roles = ','.join(f"'{r}'" for r in M.TEAM_ROLES)
         where = (f"WHEREroleIN({roles})ANDjsonb_typeof(permissions)='array'"
                  f"ANDpermissions?'{M.VIEW}'ANDNOTpermissions?'{M.KEY}'")
-        self.assertEqual(self.flat.count(where), 3)
+        # PRE-CHECK, DATA block, RE-RUN PRE-CHECK and POST-DEPLOY CHECK.
+        self.assertEqual(self.flat.count(where), 4)
         self.assertEqual(self.flat.count("WHERErole='admin'AND(permissionsISNULLORjsonb_typeof(permissions)='null')"), 3)
-        self.assertNotIn("'org_admin'", self.flat.split('PRE-CHECK(read-only)', 1)[1].split('Reverse:', 1)[0])
+        data = self.flat.split('DATAblock(onetransaction', 1)[1].split('RE-RUNPRE-CHECK(read-only', 1)[0]
+        self.assertNotIn("'org_admin'", data)                     # the writes never touch an organisation admin
+
+    def test_the_organisation_admin_check_is_in_the_pre_and_post_checks(self):
+        """S4a review S4: an organisation admin list holding View without Manage, expected 0, before and after."""
+        check = ("WHERErole='org_admin'ANDjsonb_typeof(permissions)='array'"
+                 f"ANDpermissions?'{M.VIEW}'ANDNOTpermissions?'{M.KEY}'")
+        pre = self.flat.split('PRE-CHECK(read-only)', 1)[1].split('DATAblock(onetransaction', 1)[0]
+        post = self.flat.split('POST-DEPLOYCHECK(read-only', 1)[1].split('Reverse:', 1)[0]
+        self.assertIn(check, pre)
+        self.assertIn(check, post)
+
+    def test_the_re_run_is_bounded_by_the_cutover(self):
+        """S4a review S3: the DATA block reads `eligible` (every row while `cut` is NULL; on the re-run only rows
+        created, first seen and unchanged before the cutover); the RE-RUN PRE-CHECK lists the rows it skips and
+        POST-DEPLOY's first count reads the same bound."""
+        bound = ("a.created_at<cut.atANDa.first_seen_at<cut.atANDNOTEXISTS(SELECT1FROMstaff_permission_changesc"
+                 "WHEREc.target_id=a.idANDc.created_at>=cut.at)")
+        data = self.flat.split('DATAblock(onetransaction', 1)[1].split('RE-RUNPRE-CHECK(read-only', 1)[0]
+        self.assertIn('WITHcutAS(SELECTNULL::timestamptzASat),eligibleAS(', data)
+        self.assertIn('WHEREcut.atISNULLOR(' + bound + ')', data)
+        self.assertEqual(data.count('FROMeligible'), 2)
+        self.assertNotIn('FROMpartner_admins\n', data)
+        rerun = self.flat.split('RE-RUNPRE-CHECK(read-only', 1)[1].split('POST-DEPLOYCHECK(read-only', 1)[0]
+        self.assertIn('ANDNOT(' + bound + ')', rerun)
+        self.assertIn('EXPECTEDTOBESKIPPED', rerun)
+        post = self.flat.split('POST-DEPLOYCHECK(read-only', 1)[1].split('Reverse:', 1)[0]
+        self.assertIn("ANDNOTpermissions?'scholars.approve'AND" + bound, post)
+        self.assertIn('THERE-RUNISBOUNDEDBYTHECUTOVER', self.flat)
 
     def test_the_writes_match_plan_row_and_nothing_is_removed(self):
         self.assertIn(f"permissions||'[\"{M.KEY}\"]'::jsonbASafter", self.flat)
@@ -66,7 +99,7 @@ class HandSql(TestCase):
 
     def test_the_audit_row_and_the_ledger(self):
         self.assertIn(f"kind,role,base,after,'','{M.BY_ROLE}',now()", self.flat)
-        data = self.flat.split('DATAblock(onetransaction', 1)[1].split('POST-DEPLOYCHECK(read-only', 1)[0]
+        data = self.flat.split('DATAblock(onetransaction', 1)[1].split('RE-RUNPRE-CHECK(read-only', 1)[0]
         body = data.split('BEGIN;', 1)[1].split('COMMIT;', 1)[0]
         for words in ('UPDATEpartner_adminsp', 'INSERTINTOstaff_permission_changes', 'INSERTINTOdjango_migrations',
                       "'courses','0101_grant_scholars_manage'", 'WHERENOTEXISTS(SELECT1FROMdjango_migrations'):
@@ -75,12 +108,17 @@ class HandSql(TestCase):
 
     def test_the_checks_are_read_only(self):
         pre = self.flat.split('PRE-CHECK(read-only)', 1)[1].split('DATAblock(onetransaction', 1)[0]
+        rerun = self.flat.split('RE-RUNPRE-CHECK(read-only', 1)[1].split('POST-DEPLOYCHECK(read-only', 1)[0]
         post = self.flat.split('POST-DEPLOYCHECK(read-only', 1)[1].split('Reverse:', 1)[0]
-        self.assertIn('BEGINREADONLY;', pre)
-        for part in (pre, post):
+        for part in (pre, rerun, post):
+            self.assertIn('BEGINREADONLY;', part)
             self.assertNotIn('UPDATE', part)
             self.assertNotIn('INSERT', part)
+        # Three that must be ZERO and one informational (S4a review SF2: Manage without View is legal).
         self.assertEqual(post.count('SELECTcount(*)'), 3)
+        self.assertIn("SELECT'informational'ASnote,count(*)FROMpartner_admins"
+                      f"WHEREjsonb_typeof(permissions)='array'ANDpermissions?'{M.KEY}'ANDNOTpermissions?'{M.VIEW}'", post)
+        self.assertIn('Query4isINFORMATIONAL', post)
 
     def test_the_warnings_are_carried(self):
         for words in ('NOTINVISIBLETOTHEOLDIMAGE', 'ORGANISATIONADMINROWSARENOTTOUCHED', 'NEWEST',
@@ -208,4 +246,62 @@ class ForwardAndBack(TestCase):
         self.assertEqual(self.perms(self.admin), ['see_all', 'scholars'])
         self.assertEqual(self.perms(self.reviewing), ['review'])
         self.assertEqual(self.perms(self.reviewing_view), REVIEWING_VIEW)
-        self.assertFalse(StaffPermissionChange.objects.filter(changed_by_role='migration').exists())
+        # S4a review N2: only the audit rows of the rows put back go; the row left alone keeps its history.
+        left = StaffPermissionChange.objects.filter(changed_by_role='migration')
+        self.assertEqual(set(left.values_list('target_id', flat=True)), {self.reviewing.pk})
+
+    def test_backwards_never_deletes_the_audit_rows_of_a_row_it_leaves(self):
+        M.grant_scholars_manage(live_apps, None)
+        PartnerAdmin.objects.filter(pk=self.reviewing_view.pk).update(permissions=['review'])   # edited since
+        restored = M.take_back_scholars_manage(live_apps, None)
+        self.assertNotIn(self.reviewing_view.pk, restored)
+        self.assertEqual(sorted(restored), sorted(a.pk for a in self.changed if a != self.reviewing_view))
+        mine = StaffPermissionChange.objects.filter(changed_by_role='migration', target_id=self.reviewing_view.pk)
+        self.assertEqual(list(mine.values_list('before', 'after')),
+                         [(REVIEWING_VIEW, [*REVIEWING_VIEW, M.KEY])])
+        self.assertEqual(StaffPermissionChange.objects.count(), 1)
+
+
+class TheReRunIsBoundedByTheCutover(TestCase):
+    """S4a review S3: re-run after the publish, the step skips every row touched since the cutover (Q-E: under
+    the new image an invite, a Restore or a role switch means Manage off), and still writes an untouched row."""
+
+    @classmethod
+    def setUpTestData(cls):
+        org = make_org()
+        cls.cut = timezone.now()
+        before, after = cls.cut - datetime.timedelta(days=3), cls.cut + datetime.timedelta(minutes=5)
+
+        def row(created, seen, keys=None):
+            a = make_admin('admin', owning_org=org)
+            PartnerAdmin.objects.filter(pk=a.pk).update(permissions=list(keys or PRESET), created_at=created,
+                                                        first_seen_at=seen)
+            return a
+        cls.untouched = row(before, before)                        # changed by the old image before the cutover
+        cls.invited = row(after, None)                              # invited on the new image
+        cls.invited_and_seen = row(after, after)
+        cls.restored = row(before, None)                            # Restore clears `first_seen_at`
+        cls.restored_and_seen = row(before, after)
+        cls.edited = row(before, before)                            # an edit or a role switch since
+        StaffPermissionChange.objects.create(
+            target_id=cls.edited.pk, organisation_id=org.pk, kind='role_change', role='admin', before=[],
+            after=list(PRESET), changed_by_email='', changed_by_role='org_admin')
+        StaffPermissionChange.objects.filter(target_id=cls.edited.pk).update(created_at=after)
+        cls.edited_before = row(before, before)                     # an audit row from before the cutover only
+        StaffPermissionChange.objects.create(
+            target_id=cls.edited_before.pk, organisation_id=org.pk, kind='edit', role='admin', before=[],
+            after=list(PRESET), changed_by_email='', changed_by_role='org_admin')
+        StaffPermissionChange.objects.filter(target_id=cls.edited_before.pk).update(created_at=before)
+        cls.skipped = (cls.invited, cls.invited_and_seen, cls.restored, cls.restored_and_seen, cls.edited)
+
+    def test_the_re_run_writes_only_rows_untouched_since_the_cutover(self):
+        changed = M.grant_scholars_manage(live_apps, None, cutover=self.cut)
+        self.assertEqual(sorted(changed), sorted([self.untouched.pk, self.edited_before.pk]))
+        for a in self.skipped:
+            self.assertEqual(PartnerAdmin.objects.get(pk=a.pk).permissions, PRESET, a.pk)
+            self.assertFalse(StaffPermissionChange.objects.filter(target_id=a.pk, changed_by_role='migration')
+                             .exists())
+
+    def test_the_first_run_is_unbounded(self):
+        changed = M.grant_scholars_manage(live_apps, None)
+        self.assertEqual(sorted(changed), sorted(a.pk for a in (self.untouched, self.edited_before, *self.skipped)))

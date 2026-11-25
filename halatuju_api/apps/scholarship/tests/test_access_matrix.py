@@ -566,3 +566,44 @@ def test_money_on_a_scholar_file_is_view_plus_prepare(world):
 def test_manage_alone_reads_a_scholar_file(world):
     """Manage scholar files brings View scholars on the server too (`holds_scholars_key` reads the v2 view)."""
     assert _passes(world, 'manage_only_a', 'api/v1/admin/scholarship/scholars/<int:pk>/', 'get')
+
+
+def _money_codes(world, role, *, assign=False, on_hold=False):
+    """Each money act on app_a's funded file (owner Q-B), by status code, each rolled back: schedule a tranche;
+    release, withhold and return the seeded tranche; place a hold; lift a hold to `on_track`. ``assign`` makes
+    the caller app_a's assignee first; the lift starts from a stored hold."""
+    from apps.scholarship.models import ScholarshipApplication
+    app, disb = world.app_a.pk, world.tranche_a.pk
+    calls = {'schedule': (f'/api/v1/admin/scholarship/applications/{app}/disbursements/', {}),
+             **{a: (f'/api/v1/admin/scholarship/disbursements/{disb}/{a}/', {}) for a in ('release', 'withhold',
+                                                                                          'return')},
+             'hold': (f'/api/v1/admin/scholarship/applications/{app}/maintenance/', {'substate': 'on_hold'}),
+             'lift': (f'/api/v1/admin/scholarship/applications/{app}/maintenance/', {'substate': 'on_track'})}
+    codes = {}
+    for name, (url, body) in calls.items():
+        cache.clear()
+        with transaction.atomic():
+            fields = {'assigned_to': getattr(world, role)} if assign else {}
+            if name == 'lift':
+                fields['maintenance_substate'] = 'on_hold'
+            if fields:
+                ScholarshipApplication.objects.filter(pk=app).update(**fields)
+            codes[name] = world.clients[role].post(url, body, format='json').status_code
+            transaction.set_rollback(True)
+    return codes
+
+
+@pytest.mark.django_db
+def test_money_past_the_award_needs_view_scholars(world):
+    """S4a review M1 (owner Q-B): past the award a money act asks View scholars AND Payments: Prepare. The
+    Applications read (`see_all`, or `review` on the assigned case) with Prepare is refused every act; View
+    scholars with Prepare (the newly invited Admins member: the preset holds both) is let through every one."""
+    from apps.scholarship.views_admin.base import may_act_on_money, may_hold, may_tranche, reads_case
+    for role, assign in (('see_all_prepare_a', False), ('review_prepare_a', True)):
+        codes = _money_codes(world, role, assign=assign)
+        assert all(code in HIDE for code in codes.values()), (role, codes)
+    who = world.see_all_prepare_a
+    assert reads_case(who, world.app_a)                    # it reads the case, and still moves no money
+    assert not (may_act_on_money(who, world.app_a) or may_hold(who, world.app_a) or may_tranche(who, world.app_a))
+    codes = _money_codes(world, 'admin_invited_a')
+    assert not any(code in HIDE for code in codes.values()), codes

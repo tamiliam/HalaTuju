@@ -80,6 +80,10 @@ PAYMENT_CALLERS = ('payments_holder_a', 'payments_viewer_a', 'oa_unkeyed_a')
 #: `admin_invited_a` is a team member newly invited to Admins after it: the admin preset only, View scholars
 #: on and Manage off (owner Q-E).
 SCHOLAR_CALLERS = ('admin_invited_a', 'scholars_viewer_a', 'scholars_manager_a')
+#: S4a review M1 (owner Q-B): Payments: Prepare with the Applications read and NO View scholars — `see_all`, and
+#: `review` (the test assigns app_a to it). Not manifest columns: `test_money_past_the_award_needs_view_scholars`
+#: holds them refused on every money act on app_a's file.
+MONEY_CALLERS = ('see_all_prepare_a', 'review_prepare_a')
 
 #: S3 / M4b: the wallet-credit seats, by key and not by label. Not manifest columns: `test_access_matrix` holds
 #: them to the credit routes and drives one credit through the chain (`test_a_credit_runs_by_switch`).
@@ -373,6 +377,9 @@ def build_world():
     w.manage_only_a = make_admin('admin', owning_org=w.org_a, pre_s4=True)
     PartnerAdmin.objects.filter(pk=w.manage_only_a.pk).update(permissions=['scholars.approve'])
     w.manage_only_a.refresh_from_db()
+    # S4a review M1: Payments: Prepare and the Applications read, without View scholars.
+    w.see_all_prepare_a = make_admin('admin', owning_org=w.org_a, permissions=['see_all', 'payments_prepare'])
+    w.review_prepare_a = make_admin('reviewer', owning_org=w.org_a, permissions=['review', 'payments_prepare'])
     w.approve_only_a = make_admin('admin', owning_org=w.org_a, permissions=['students.approve'])
     w.qc_a = make_admin('qc', owning_org=w.org_a)
     w.reviewer_a = make_admin('reviewer', owning_org=w.org_a, gifts=[w.gift_a])
@@ -516,6 +523,7 @@ def build_world():
         w.clients[role] = authed_client(who, APIClient(raise_request_exception=False))
     for role in SECRET_ROLES:
         w.clients[role] = APIClient(raise_request_exception=False)
-    for role in ('admin_granted_a', *WRITERS_WITHOUT_A_READ, *PAYMENT_CALLERS, *CREDIT_CALLERS, *SCHOLAR_CALLERS):
+    for role in ('admin_granted_a', *WRITERS_WITHOUT_A_READ, *PAYMENT_CALLERS, *CREDIT_CALLERS, *SCHOLAR_CALLERS,
+                 *MONEY_CALLERS):
         w.clients[role] = authed_client(getattr(w, role), APIClient(raise_request_exception=False))
     return w

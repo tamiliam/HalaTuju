@@ -1,12 +1,12 @@
 """Formal letters on a scholar's file (student maintenance Sprint 6b, 2026-10-31; owner rulings 2026-10-30).
 
 THE DOORS (step 3b) — every way a letter is made, changed or read:
-  * ISSUE    — `issue()`: the officer's dialog. Suspension / termination: super or org_admin only;
-               general / discipline / close-out: anyone who may WRITE on the case. A typed FULL NAME
+  * ISSUE    — `issue()`: the officer's dialog. Every kind on "Manage scholar files" (`scholars.approve`,
+               S4; the view's fence); suspension / termination are the SENIOR kinds. A typed FULL NAME
                confirms discipline and termination, checked HERE (never only on the page). A closed
                file takes only general and close-out letters.
   * PREVIEW  — `preview()`: renders, writes nothing.
-  * WITHDRAW — `withdraw()`: super / org_admin, a reason required. The row stays; nothing is deleted.
+  * WITHDRAW — `withdraw()`: Manage scholar files, a reason required. The row stays; nothing is deleted.
   * RESEND   — `send_notice()`: the "a letter has been issued" email again; same rights as issuing.
   * ACKNOWLEDGE / READ — `acknowledge()` / `mark_read()`: the STUDENT, on her own file only
                (`views_bursary._own_file`), never on a withdrawn letter.
@@ -35,7 +35,7 @@ logger = logging.getLogger('apps.scholarship.letters')
 
 KINDS = ('general', 'discipline', 'suspension', 'termination', 'close_out')
 LANGUAGES = ('en', 'ms')
-#: Super / org_admin only (owner ruling).
+#: The senior kinds (owner ruling); since S4 they ask Manage scholar files like every kind.
 SENIOR_KINDS = frozenset({'suspension', 'termination'})
 #: The issuing officer types the student's full name (owner ruling); the server compares.
 CONFIRM_KINDS = frozenset({'discipline', 'termination'})
@@ -287,7 +287,7 @@ def resend(letter, *, allowed_kinds):
 
 
 def withdraw(letter, *, reason, by_admin):
-    """Withdraw with a reason (super / org_admin — the view's fence). Nothing is deleted."""
+    """Withdraw with a reason (Manage scholar files, `scholars.approve` — the view's fence). Nothing is deleted."""
     from . import activity
     from .models.activity import EVENT_LETTER_WITHDRAWN
     reason = str(reason or '').strip()
