@@ -27,6 +27,7 @@ import {
   type ApplicantDocument,
   type DocumentLimits,
 } from '@/lib/api'
+import type { EarnerTickConflicts } from '@/lib/api/application'
 import {
   computeProgress,
   splitSections,
@@ -64,6 +65,7 @@ export default function ActionCentre({
   incomeRoute = '',
   incomeEarner = '',
   contactPhone = '',
+  earnerTickConflicts = null,
 }: {
   token: string | null
   studentName?: string
@@ -89,6 +91,9 @@ export default function ActionCentre({
   /** The student's phone on file — pre-fills the Vircle task's mobile field. They can
    *  correct it there if they registered with Vircle under a different number. */
   contactPhone?: string
+  /** #84: the served `earner_tick_conflicts` — the income-route switch asks before holding a
+   *  "who works" tick the family details disagree with. */
+  earnerTickConflicts?: EarnerTickConflicts | null
 }) {
   const { t, locale } = useT()
   // Read by fetchItems without re-fetching the tasks on a language switch (the switch itself
@@ -306,7 +311,8 @@ export default function ActionCentre({
           entry for the whole income section, not per-ticket. */}
       {formLocked && applicationId && open.some((i) => i.fact === 'income') && (
         <div className="mt-4">
-          <IncomeRouteSwitch token={token} applicationId={applicationId} onDone={fetchItems} />
+          <IncomeRouteSwitch token={token} applicationId={applicationId} onDone={fetchItems}
+            earnerTickConflicts={earnerTickConflicts} />
         </div>
       )}
       {setAsideCards}

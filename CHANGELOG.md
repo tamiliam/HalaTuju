@@ -16,6 +16,13 @@ Branch req84-earner-ticks, not pushed. Migration: none. Services: both. Brief:
   `admin.scholarship.familyAnswers.tickDisagrees` / `tickNotListed`; Malay and Tamil are drafts for Sol's read.
 - **Officer:** the Family & finances card warns instead of a plain "Earns".
 - **Unchanged:** blockers and the verdict (pinned); no version bump. 31 of 167 open salary-route cases benefit.
+- **Review round 1:** the promise now holds after submission too: the Action Centre's income-route switch (the only
+  place a submitted student changes the ticks) asks the same question before holding a disagreeing tick
+  (`earner_tick_conflicts` passed page → `ActionCentre` → `IncomeRouteSwitch`). The question takes focus (confirm button;
+  labelled and described) and returns it to the toggle; it is dropped when the member stops disagreeing or the income
+  route changes. Open cases: the officer warning on all 31; the student sees the question or note only where they edit
+  ticks (income step before submission, the switch after), never a note on ticks already saved after submission. No new
+  strings. Tests: `IncomeRouteSwitch.earnerTicks.test.tsx` (new), `EarnerTickCheck.test.tsx` (+3).
 
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 

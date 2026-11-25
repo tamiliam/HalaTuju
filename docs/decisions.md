@@ -14,14 +14,19 @@ Bug, no charge; analysis 190 (posted 24 Nov). No earlier ruling on earner ticks 
   compared. `family.earner_tick_warnings` narrows it to the SAVED salary-route ticks (the STR route's one earner is whose
   STR it is, which a non-working parent may hold, so it is not compared).
 - **Served, not derived.** The student payload carries `earner_tick_conflicts` (per member); the officer payload carries
-  `earner_tick_warnings`. The income step holds a disagreeing tick behind a non-blocking question (confirm saves it,
-  cancel leaves it unticked; nothing is ever unticked for the student) and keeps a note beside a saved one. The case page
-  shows the warning in place of a plain "Earns", and a ticked member the details do not list gets its own line.
+  `earner_tick_warnings`. Wherever the student edits the ticks, a disagreeing tick is held behind a non-blocking question
+  (confirm keeps it, cancel leaves it unticked; nothing is ever unticked for the student; focus moves into the question
+  and back to the toggle): the income step before submission, and after submission the Action Centre's income-route
+  switch (drawn while an income task is open; the page hands it the served conflicts). Both keep a note beside a
+  disagreeing tick on screen. The case page shows the warning in place of a plain "Earns", and a ticked member the
+  details do not list gets its own line.
 - **What is owed does not move.** The posted text promises a check and a warning only. The blockers and the verdict do not
   read the rule, so a confirmed tick still owes an IC and proof of income (`TestWhatIsOwedDoesNotMove`). No version bump:
   nothing the verdict engine reads changed.
 - **Open cases:** computed live, no migration and no data written. Read-only count 25 Nov: 31 of the 167 open
-  salary-route cases have at least one disagreeing tick (22 not-working ticks, 16 not-listed ticks).
+  salary-route cases have at least one disagreeing tick (22 not-working ticks, 16 not-listed ticks). What they get: the
+  officer's case page warns on every one of them. The student of a submitted case sees nothing about ticks already saved
+  (no standing note after submission); if they change their ticks through the Action Centre's switch, they are asked.
 
 ## 2026-11-25 — Membership comes first: an invitee who has not signed in is not an org admin (owner ruling)
 

@@ -17,15 +17,15 @@ const CONFLICTS: EarnerTickConflicts = {
   guardian: { kind: 'not_listed' },
 }
 
-function Harness({ start, onSave, conflicts = CONFLICTS }: {
-  start: WorkingMemberRole[]; onSave: (n: WorkingMemberRole[]) => void; conflicts?: EarnerTickConflicts | null
+function Harness({ start, onSave, conflicts = CONFLICTS, route = 'salary' }: {
+  start: WorkingMemberRole[]; onSave: (n: WorkingMemberRole[]) => void; conflicts?: EarnerTickConflicts | null; route?: string
 }) {
   const [members, setMembers] = useState(start)
-  const check = useEarnerTickCheck({ conflicts, members, t, saveMembers: (n) => { onSave(n); setMembers(n) } })
+  const check = useEarnerTickCheck({ conflicts, members, t, route, saveMembers: (n) => { onSave(n); setMembers(n) } })
   return (
     <div>
       {(['father', 'mother', 'guardian'] as const).map((m) => (
-        <button key={m} type="button" onClick={() => check.toggle(m)}>{`tick-${m}`}</button>
+        <button key={m} type="button" onClick={(e) => check.toggle(m, e.currentTarget)}>{`tick-${m}`}</button>
       ))}
       {check.node}
     </div>
@@ -72,6 +72,42 @@ describe('#84: ask before saving a disagreeing tick', () => {
     fireEvent.click(screen.getByText('tick-mother'))
     expect(onSave).toHaveBeenCalledWith(['father'])
     expect(screen.queryByTestId('earner-tick-note-mother')).toBeNull()
+  })
+
+  it('focus: into the question (its confirm button, described by the check line), back to the toggle on close', () => {
+    render(<Harness start={[]} onSave={jest.fn()} />)
+    fireEvent.click(screen.getByText('tick-mother'))
+    const dialog = screen.getByRole('alertdialog')
+    expect(document.activeElement).toBe(screen.getByText(`${W}.confirm`))
+    expect(document.getElementById(dialog.getAttribute('aria-labelledby') || '')?.textContent).toContain(`${W}.askNotWorking`)
+    expect(document.getElementById(dialog.getAttribute('aria-describedby') || '')?.textContent).toBe(`${W}.askCheck`)
+    fireEvent.click(screen.getByText(`${W}.confirm`))
+    expect(document.activeElement).toBe(screen.getByText('tick-mother'))
+  })
+
+  it('the served answer changes while asking and the member now agrees: the question is dropped, never drawn empty', () => {
+    const onSave = jest.fn()
+    const { rerender } = render(<Harness start={[]} onSave={onSave} />)
+    fireEvent.click(screen.getByText('tick-mother'))
+    expect(screen.getByRole('alertdialog')).toBeTruthy()
+    rerender(<Harness start={[]} onSave={onSave} conflicts={{ guardian: { kind: 'not_listed' } }} />)
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(screen.queryByTestId('earner-tick-check')).toBeNull()
+    expect(onSave).not.toHaveBeenCalled()
+    // and it does not come back if the disagreement returns
+    rerender(<Harness start={[]} onSave={onSave} conflicts={CONFLICTS} />)
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+
+  it('a route change drops an open question (STR and back does not revive it)', () => {
+    const onSave = jest.fn()
+    const { rerender } = render(<Harness start={[]} onSave={onSave} />)
+    fireEvent.click(screen.getByText('tick-guardian'))
+    expect(screen.getByRole('alertdialog')).toBeTruthy()
+    rerender(<Harness start={[]} onSave={onSave} route="str" />)
+    rerender(<Harness start={[]} onSave={onSave} route="salary" />)
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(onSave).not.toHaveBeenCalled()
   })
 
   it('no served answer (an older api) asks nothing', () => {

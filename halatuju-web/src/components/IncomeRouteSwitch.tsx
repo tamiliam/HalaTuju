@@ -8,30 +8,53 @@
  * route (who works), confirm, and the backend flips `income_route`, recomputes the
  * document tasks, and never re-blocks the submission. Asks the income wizard's
  * route question — see lib/incomeWizard.ts for the shared completeness rule.
+ *
+ * Request #84: a "who works" tick the family details disagree with is asked about before it is
+ * held (the same question as the income step, `useEarnerTickCheck`); the disagreement is the
+ * SERVED `earner_tick_conflicts`, never re-derived here.
  */
 
 import { useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { switchIncomeRoute } from '@/lib/api'
+import type { EarnerTickConflicts, WorkingMemberRole } from '@/lib/api/application'
+import { useEarnerTickCheck } from '@/components/ScholarshipDocuments/EarnerTickCheck'
 
 const EARNERS = ['father', 'mother', 'guardian'] as const          // STR route: one earner
 const MEMBERS = ['father', 'mother', 'guardian', 'brother', 'sister'] as const  // salary route: many
+
+// Module level (not inside the component), so a re-render keeps the same button and focus can return to it.
+const Chip = ({ active, label, onClick }: { active: boolean; label: string; onClick: (el: HTMLButtonElement) => void }) => (
+  <button
+    type="button"
+    aria-pressed={active}
+    onClick={(e) => onClick(e.currentTarget)}
+    className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+      active ? 'border-brand-shape bg-primary-50 text-primary-700' : 'border-ground-200 text-ground-700 hover:border-ground-300'
+    }`}
+  >
+    {label}
+  </button>
+)
 
 export default function IncomeRouteSwitch({
   token,
   applicationId,
   onDone,
+  earnerTickConflicts,
 }: {
   token: string | null
   applicationId: number
   /** Refetch the Action Centre tasks after a successful switch. */
   onDone: () => void
+  /** #84: the served `earner_tick_conflicts` (absent → nothing is asked). */
+  earnerTickConflicts?: EarnerTickConflicts | null
 }) {
   const { t } = useT()
   const [open, setOpen] = useState(false)
   const [route, setRoute] = useState<'str' | 'salary' | ''>('')
   const [earner, setEarner] = useState('')
-  const [members, setMembers] = useState<string[]>([])
+  const [members, setMembers] = useState<WorkingMemberRole[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,8 +63,8 @@ export default function IncomeRouteSwitch({
   const valid = route === 'str' ? !!earner : route === 'salary' ? members.length > 0 : false
 
   const reset = () => { setOpen(false); setRoute(''); setEarner(''); setMembers([]); setError(null) }
-  const toggleMember = (m: string) =>
-    setMembers((s) => (s.includes(m) ? s.filter((x) => x !== m) : [...s, m]))
+  // #84: the local choice is the "save"; a disagreeing tick is asked about first (and a route change drops the question).
+  const tickCheck = useEarnerTickCheck({ conflicts: earnerTickConflicts, members, t, route, saveMembers: setMembers })
 
   const confirm = async () => {
     if (!token || !valid) return
@@ -75,18 +98,6 @@ export default function IncomeRouteSwitch({
       </button>
     )
   }
-
-  const Chip = ({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-        active ? 'border-brand-shape bg-primary-50 text-primary-700' : 'border-ground-200 text-ground-700 hover:border-ground-300'
-      }`}
-    >
-      {label}
-    </button>
-  )
 
   return (
     <div className="rounded-2xl border border-ground-100 bg-ground-0 p-5 shadow-sm">
@@ -135,9 +146,10 @@ export default function IncomeRouteSwitch({
           <p className="text-sm font-medium text-ground-700">{t('scholarship.incomeRouteSwitch.membersQ')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {MEMBERS.map((m) => (
-              <Chip key={m} active={members.includes(m)} label={t(`scholarship.incomeRouteSwitch.member.${m}`)} onClick={() => toggleMember(m)} />
+              <Chip key={m} active={members.includes(m)} label={t(`scholarship.incomeRouteSwitch.member.${m}`)} onClick={(el) => tickCheck.toggle(m, el)} />
             ))}
           </div>
+          {tickCheck.node}
         </div>
       )}
 

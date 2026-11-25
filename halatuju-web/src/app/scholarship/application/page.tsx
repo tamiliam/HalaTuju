@@ -245,6 +245,7 @@ export default function ScholarshipApplicationPage() {
           incomeRoute={app.income_route || ''}
           incomeEarner={app.income_earner || ''}
           contactPhone={app.contact_phone || profile?.contact_phone || ''}
+          earnerTickConflicts={app.earner_tick_conflicts}
           formLocked
           funded={funded}
         />

@@ -332,10 +332,10 @@ export default function IncomeWizard({
   const MEMBER_OPTIONS: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
   const members = ans.income_working_members
   // #84: a tick the family details disagree with is asked about before it is saved (EarnerTickCheck).
-  const tickCheck = useEarnerTickCheck({ conflicts: app.earner_tick_conflicts, members, t, saveMembers: (next) => save({ income_working_members: next }) })
-  const toggleMember = (m: WorkingMember) => {
+  const tickCheck = useEarnerTickCheck({ conflicts: app.earner_tick_conflicts, members, t, route: ans.income_route, saveMembers: (next) => save({ income_working_members: next }) })
+  const toggleMember = (m: WorkingMember, opener?: HTMLElement) => {
     setTouchedMembers(true)   // #1: the student is now choosing — stop syncing from the roster
-    tickCheck.toggle(m)
+    tickCheck.toggle(m, opener)   // opener: focus returns to it when a question closes
   }
 
   // STR-route checklist display order: income evidence first, then the earner IC,
@@ -412,7 +412,7 @@ export default function IncomeWizard({
             {MEMBER_OPTIONS.map((m) => {
               const on = members.includes(m)
               return (
-                <button key={m} type="button" onClick={() => toggleMember(m)}
+                <button key={m} type="button" onClick={(e) => toggleMember(m, e.currentTarget)}
                   className={`min-h-11 text-sm px-4 py-2 rounded-full border transition-colors ${
                     on ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
                        : 'text-ground-600 border-ground-300 hover:border-primary-400'}`}>
