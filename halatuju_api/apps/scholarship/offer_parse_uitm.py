@@ -26,7 +26,7 @@ from .offer_parse import _IC, _IC_END, _name_ok, _norm_nric, house_date
 from .offer_ums_refusal import (_DATE_SEP, _SQUEEZE_OUT, _withdrawn_one, fold_lookalikes, status_said)
 
 LANE = 'ua:UiTM'
-INSTITUTION = 'Universiti Teknologi MARA'
+INSTITUTION = 'UiTM'
 ISSUER = INSTITUTION
 
 #: Page 1 is short; past these no rule runs (the UMS bounds).

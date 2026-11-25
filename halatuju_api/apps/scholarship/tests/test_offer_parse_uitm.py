@@ -78,7 +78,7 @@ class UitmLockTest(SimpleTestCase):
         self.assertEqual(lock['programme_code'], 'CS230')
         self.assertEqual(lock['intake'], 'SESI 1 2027/2028')
         self.assertEqual(lock['reporting_date'], '5 Oct 2027')
-        self.assertEqual(lock['institution'], 'Universiti Teknologi MARA')
+        self.assertEqual(lock['institution'], 'UiTM')
         self.assertEqual(lock['offer_date'], '')
         self.assertEqual(lock['_offer_parser_version'], offer_parse.PARSER_VERSION)
 

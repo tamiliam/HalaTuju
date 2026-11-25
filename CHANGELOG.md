@@ -20,6 +20,24 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. Lanes stay OFF: 
   on the current corpus. UMS unchanged. Debt: TD-NEW-ocr13-readers, TD-NEW-ocr13-diploma.
   Tests: `test_offer_owner_words_ocr13.py`.
 
+### feat: OCR-13 phase 2 - the UiTM rules reader (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UiTM` stays OFF (off by default; `OCR_FIRST_LANES`).
+- **Reader:** new `offer_parse_uitm.py` reads a digital UiTM degree letter from its page-1 layout (degree code third
+  character 2, a plain SARJANA MUDA name, later pages checked). It writes institution "UiTM", as the hand-checked answers do.
+  It refuses a scan (no layout), a diploma programme, a name wrapped over two lines, a second programme and any missing owner word.
+- **Wiring:** `family_of` reads 'uitm'; `_diagnose_uitm` in `offer_parse`; `offer_exact` lane switch, refusal note and ink check are per lane.
+  UMS and the government families read as before.
+- **Versions:** offer_reader 2.10.0 to 2.11.0, offer_parse 2.4.0 (registry entries added).
+- **Dry run (local, free, lanes UMS and UiTM on):** UiTM held-out 9 letters, 1 locked, 100% agreement, 0 wrong (need 20 locks
+  for Gate 1, so it stays AI). All splits 18 letters, 3 locked, 0 wrong. UMS unchanged: held-out 33 docs, 22 locked, 100%, 0 wrong;
+  all splits 62 / 44 / 100% / 0 wrong. Before this change 3 UiTM answers were wrong on institution (the reader wrote the long name).
+- **Owner folders (UiTM reader, lane on):** uitm/ 22 letters, 6 lock (5 wrapped name, 1 owner word missing, 1 second programme,
+  1 no title, 8 not a UiTM layout); diploma/, asasi/, confirmation/ and fail/ lock 0 of 43 (4 diploma letters refuse as not a degree).
+  Corpus UiTM letters in this check: 13, 3 lock.
+- Debt: TD-NEW-ocr13-uitm-wrapped-names, TD-NEW-ocr13-uitm-wrap-edge; TD-NEW-ocr13-diploma stays open.
+  Tests: `test_offer_parse_uitm.py`.
+
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
 

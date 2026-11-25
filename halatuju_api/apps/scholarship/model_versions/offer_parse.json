@@ -50,7 +50,7 @@
     "also_ok": []
   },
   "2.4.0": {
-    "digest": "eb0cf4603d7d685b35d4e9702254b9234520bf65a9763b858c107b9c1fc0e018",
+    "digest": "c11f19f6d714b6e03c1660091d2e83eef5adf6f5476dcd6f199768c5f08f171c",
     "note": "2026-11-26: OCR-13 phase 2: new offer_parse_uitm (lane 'ua:UiTM', off by default). family_of reads 'uitm'; _diagnose_uitm locks a digital UiTM degree letter from its page-1 layout (degree code third character '2', plain SARJANA MUDA name, later pages checked); a scan refuses no_layout. offer_exact lane switch, refusal note and ink check are per lane. UMS and the government families read as before.",
     "also_ok": []
   }

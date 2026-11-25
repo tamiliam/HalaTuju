@@ -9815,9 +9815,17 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Raised in OCR-13 phase 1 (see CHANGELOG).** The owner's words and the UiTM Asasi excuse are in; nothing dispatches to the four lanes, so every letter still goes to the AI. Held-out letters (UiTM 9, UPSI 4, UM 3, UUM 0) are under Gate 1's 20, so a reader cannot be switched on yet. Also open: 13 of 30 UPSI sample PDFs have no text layer; image letters were not measured (Vision is paid); one UiTM sample prints the office label in a different form and refuses (safe). **Fix:** phase 2: one reader per lane (files under 600 lines), dispatch in `diagnose`, `offer_exact` and the ink targets, the eval layout hook and `RULES_LANES`, versions 2.11.0 and 2.4.0, then the dry run each month until a lane reaches 20. *(A - M)*
 
+### [TD-NEW-ocr13-uitm-wrapped-names] OCR-13: UiTM names that wrap onto two lines are refused - low
+
+**Raised in OCR-13 phase 2 (see CHANGELOG).** The UiTM reader refuses a student name printed over two lines: about 5 of the 11 digital UiTM letters in the owner sample. The owner has no rule for two-line names, so they stay refused and go to the AI as before. **Fix:** an owner rule for two-line names, then a reader step with adversarial tests. *(A - S)*
+
+### [TD-NEW-ocr13-uitm-wrap-edge] OCR-13: a UiTM name wrapping below the IC line is caught only when it ends in BIN or BINTI - low (known edge)
+
+**Raised in OCR-13 phase 2 (see CHANGELOG).** A name that wraps below the IC line is refused only when its first line ends in BIN or BINTI. Other endings are not recognised as wrapped. Recorded as a known edge: the review must check the refusal side (a letter with such a name must never lock a wrong name). **Fix:** refuse any text between the IC line and the next label that is not the expected label, or widen the endings with an owner rule. *(A - S)*
+
 ### [TD-NEW-ocr13-diploma] OCR-13: UiTM diploma letters show every UiTM owner phrase - high (before the UiTM lane goes on)
 
-**Raised in OCR-13 phase 1 (see CHANGELOG).** UiTM diploma and degree letters share one layout: 4 diploma sample PDFs show all 8 owner phrases and pass the Asasi check. **Fix:** the phase 2 UiTM reader must lock only a degree programme (refuse "Diploma" in the programme field and an unmatched course), with adversarial tests; the lane must not go on without it. *(A - S)*
+**Raised in OCR-13 phase 1 (see CHANGELOG).** UiTM diploma and degree letters share one layout: 4 diploma sample PDFs show all 8 owner phrases and pass the Asasi check. **Fix:** the phase 2 UiTM reader must lock only a degree programme (refuse "Diploma" in the programme field and an unmatched course), with adversarial tests; the lane must not go on without it. **Stays open (phase 2):** the reader refuses the 4 digital diploma letters correctly, but the corpus diplomas are scans, so the refusal is not yet tested on a corpus diploma with a text layer. *(A - S)*
 
 ### [TD-740] PDF text layer: text placed off the page by a plain cm or Td is still read - medium - FIXED 2026-11-25
 
