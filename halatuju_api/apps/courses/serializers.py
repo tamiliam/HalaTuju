@@ -343,6 +343,12 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         inst = self.instance
         self._refuse_third_route_while_closed(attrs)
 
+        # A blank school never wipes a stored one (the /profile page and the sign-in sync both send
+        # `school` whatever it holds). A first school, or a change to another non-blank one, passes.
+        if 'school' in attrs and not (attrs['school'] or '').strip() \
+                and (getattr(inst, 'school', '') or '').strip():
+            attrs.pop('school')
+
         def _merged(field):
             return attrs[field] if field in attrs else getattr(inst, field, None)
 

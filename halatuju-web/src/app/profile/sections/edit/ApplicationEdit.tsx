@@ -18,7 +18,7 @@ export default function ApplicationEdit({ f, ed }: SectionProps) {
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-ground-700 mb-1.5">
-          {t('profile.school')} <span className="text-ground-400 font-normal">({t('profile.optional')})</span>
+          {t('profile.school')}
         </label>
         <SchoolSelect value={school} onChange={setSchool} />
       </div>

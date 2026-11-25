@@ -475,7 +475,7 @@ class TestTheSubmitRereadsTheRule(TestCase):
     def setUp(self):
         self.gift = make_programme(organisation=make_org())
         self.round = make_cohort(programme=self.gift)
-        self.student = make_student(contact_email='s@example.test')
+        self.student = make_student(school='SMK Contoh', contact_email='s@example.test')
         self.real = apply_gate.apply_verdict
 
     def _post_with(self, on_call):

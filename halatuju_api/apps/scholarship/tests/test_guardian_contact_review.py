@@ -36,7 +36,7 @@ def _finished_earlier(profile=None):
 
 def _apply(profile, cohort, guardian_phone, **extra):
     return authed_client(profile).post(APPLY, {
-        'cohort_code': cohort.code, 'consent_to_contact': True, 'intends_tertiary_2026': True,
+        'cohort_code': cohort.code, 'school': 'SMK Contoh', 'consent_to_contact': True, 'intends_tertiary_2026': True,
         'guardians': [{'name': 'Ravi a/l Muthu', 'phone': guardian_phone}], **extra,
     }, format='json')
 
@@ -104,7 +104,7 @@ class TestF3_ASharedNumberIsAcceptedAndFlagged(TestCase):
     call (`parent_call.needs_parent_call`). These are the old refusal tests, inverted."""
 
     def setUp(self):
-        self.profile = make_student(guardians=[dict(PARENT)], contact_phone=OWN)
+        self.profile = make_student(school='SMK Contoh', guardians=[dict(PARENT)], contact_phone=OWN)
         self.app = make_application('recommended', student=self.profile)
 
     def _flagged(self):
@@ -129,7 +129,7 @@ class TestF3_ASharedNumberIsAcceptedAndFlagged(TestCase):
     def test_the_application_form_stores_it_and_it_is_flagged(self):
         # The form arrives from a FINISHED earlier application: setUp's 'recommended' one is in
         # play and the submit would refuse it (`services/apply_gate.py`, TD-337).
-        self.profile = _finished_earlier(make_student(guardians=[dict(PARENT)], contact_phone=OWN))
+        self.profile = _finished_earlier(make_student(school='SMK Contoh', guardians=[dict(PARENT)], contact_phone=OWN))
         resp = _apply(self.profile, make_cohort(is_open=True), OWN, contact_phone=OWN)
         self.assertEqual(resp.status_code, 201)
         self.assertTrue(self._flagged())

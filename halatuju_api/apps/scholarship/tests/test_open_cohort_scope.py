@@ -126,7 +126,7 @@ class TestApplyEndpointRefusesToGuess(TestCase):
         self.cohort_a = _cohort(self.org_a, 'a-2026')
         self.cohort_b = _cohort(self.org_b, 'b-2026')
         self.profile = StudentProfile.objects.create(
-            supabase_user_id='pf1-user', name='Test Student', nric='010101010101',
+            supabase_user_id='pf1-user', school='SMK Contoh', name='Test Student', nric='010101010101',
             contact_email='student@example.com',
         )
 
@@ -316,7 +316,7 @@ class TestApplyLinkEndToEnd(TestCase):
             cohort.programme = prog
             cohort.save(update_fields=['programme'])
         StudentProfile.objects.create(
-            supabase_user_id='pf1-user', name='Test Student', nric='010101010101',
+            supabase_user_id='pf1-user', school='SMK Contoh', name='Test Student', nric='010101010101',
             contact_email='student@example.com',
         )
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_make_token("pf1-user")}')

@@ -45,6 +45,12 @@ export function useProfileEditor(f: ProfileForm) {
       showToast(t('profile.invalidPhone'), 'error')
       return false
     }
+    // School is required, as on /apply (a blank was wiping the stored school). Gated on the
+    // Application section, the only place it is editable, so no other section's save is blocked.
+    if (editingSection === 'application' && !school.trim()) {
+      showToast(t('scholarship.apply.error.school'), 'error')
+      return false
+    }
     // Household income + size are shared with /apply and feed the per-capita need calc, so
     // they carry the SAME strict rules here (size integer 1–20; income required, ≥0) — a bad
     // value must not be saveable on /profile and flow into the application. Only gated on the

@@ -464,6 +464,29 @@ describe('application section', () => {
     expect((screen.getByText('profile.save') as HTMLButtonElement).disabled).toBe(true)
   })
 
+  it('the School label is not marked optional', async () => {
+    await mount()
+    editSection(4)
+    expect(screen.getByText('profile.school')).toBeTruthy()
+    expect(screen.queryByText(/profile\.optional/)).toBeNull()
+  })
+
+  it('an empty School is refused on Save and nothing is sent', async () => {
+    await mount({ school: '' })
+    editSection(4)
+    await save()
+    expect(mockToast.showToast).toHaveBeenCalledWith('scholarship.apply.error.school', 'error')
+    expect(updateMock).not.toHaveBeenCalled()
+  })
+
+  it('a School is sent on Save', async () => {
+    await mount({ school: 'SMK Contoh' })
+    editSection(4)
+    await save()
+    await waitFor(() => expect(updateMock).toHaveBeenCalled())
+    expect(updateMock.mock.calls[0][0]).toMatchObject({ school: 'SMK Contoh' })
+  })
+
   it('uppercases and trims Angka Giliran to nine characters', async () => {
     await mount()
     editSection(4)

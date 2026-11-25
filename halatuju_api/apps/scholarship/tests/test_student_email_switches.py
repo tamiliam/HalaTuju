@@ -51,6 +51,7 @@ class TestApplicationReceived(TestCase):
     def setUp(self):
         self.cohort = make_cohort(name='B40 Assistance Programme 2026', year=2026, income_ceiling=5250)
         self.student = make_student(
+            school='SMK Contoh',
             name='Priya', contact_email='priya@example.com',
             grades={'bm': 'B+', 'eng': 'B+', 'math': 'A', 'sej': 'A', 'tamil_lit': 'A+', 'eko': 'A-',
                     'sci': 'A-'})
@@ -365,7 +366,7 @@ class TestTheSwitchEndpoint(TestCase):
         self.assertTrue(StudentEmailSwitch.objects.filter(organisation=self.theirs, enabled=False).exists())
 
     def test_a_student_cannot_reach_it(self):
-        student = make_student()
+        student = make_student(school='SMK Contoh')
         from rest_framework.test import APIClient
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token(student.supabase_user_id)}')

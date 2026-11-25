@@ -116,6 +116,13 @@ class ApplicationListCreateView(APIView):
             return Response({'error': 'referral_source_not_offered', 'code': 'referral_source_not_offered'},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        # A submit needs a school: the one sent, else the one already on the profile. A blank sent
+        # beside a stored school keeps the stored one (`sync_profile_fields`). Refused as a field
+        # error on `school`, which the apply form maps to the About Me step.
+        if not ((validated.get('school') or '').strip() or (profile.school or '').strip()):
+            return Response({'school': ['Please enter your school.']},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         lang = request.data.get('lang') or 'en'
         to_email = profile.contact_email or supabase_user.get('email') or ''
         application, refused = submit_application(   # TD-348 / TD-351: the gate re-asked under a lock

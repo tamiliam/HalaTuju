@@ -296,6 +296,9 @@ export default function ScholarshipApplyPage() {
       // Who-referred-you code no longer offered → re-read the list, ask again by the field; nothing else lost.
       if (isReferralNotOffered(err)) { update('referringOrg', ''); setTab('personal'); await gift.refuseReferral(); return }
       if (gate.adopt(err) || (isOtherConflict(err) && await gift.recheck())) return
+      // No school anywhere (none typed, none on the profile): back to About Me, the same words as the client check.
+      const fe = (err as { fieldErrors?: Record<string, unknown> }).fieldErrors
+      if (fe && fe.school) { setServerError(t('scholarship.apply.error.school')); setTab('personal'); return }
       // If a field was rejected for length, name the exact question to shorten.
       const key = firstTooLongField((err as { fieldErrors?: unknown }).fieldErrors)
       const labelKey = key ? APPLY_FIELD_LABEL_KEYS[key] : null

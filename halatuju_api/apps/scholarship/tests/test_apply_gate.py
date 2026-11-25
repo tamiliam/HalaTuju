@@ -89,7 +89,7 @@ class TestStudentFacingStatusHasOneHome(TestCase):
     """The serializer and the gate read ONE function, so the embargo is masked the same way."""
 
     def setUp(self):
-        self.student = make_student()
+        self.student = make_student(school='SMK Contoh')
 
     def test_the_serializer_answers_exactly_what_the_function_answers(self):
         for status in _BUILD:
@@ -120,12 +120,12 @@ class TestTheRule(TestCase):
         self.org = make_org()
         self.round_a = _round(self.org, is_open=False)
         self.round_b = _round(self.org)
-        self.student = make_student()
+        self.student = make_student(school='SMK Contoh')
 
     def test_every_status_in_another_round_of_the_same_organisation(self):
         for status in _BUILD:
             with self.subTest(status=status):
-                student = make_student()
+                student = make_student(school='SMK Contoh')
                 app = _build(status, self.round_a, student)
                 v = apply_gate.apply_verdict(student, self.round_b)
                 if status in FINISHED_STATUSES:
@@ -138,7 +138,7 @@ class TestTheRule(TestCase):
         an in-play application in organisation B blocks A; a finished one in B does not."""
         for status in _BUILD:
             with self.subTest(status=status):
-                student = make_student()
+                student = make_student(school='SMK Contoh')
                 app = _build(status, _round(is_open=False), student)
                 v = apply_gate.apply_verdict(student, self.round_b)
                 expected = ('', None) if status in FINISHED_STATUSES else (IN_PROGRESS, app)
@@ -151,11 +151,11 @@ class TestTheRule(TestCase):
     def test_same_round_finished_is_already_applied_and_expired_is_not(self):
         for status in ('rejected', 'withdrawn', 'closed'):
             with self.subTest(status=status):
-                student = make_student()
+                student = make_student(school='SMK Contoh')
                 app = _build(status, self.round_b, student)
                 v = apply_gate.apply_verdict(student, self.round_b)
                 self.assertEqual((v.reason, v.application), (ALREADY_APPLIED, app))
-        student = make_student()
+        student = make_student(school='SMK Contoh')
         _build('expired', self.round_b, student)
         self.assertTrue(apply_gate.apply_verdict(student, self.round_b).allowed)
 
@@ -177,7 +177,7 @@ class TestTheRule(TestCase):
     def test_every_embargoed_variant_is_in_play_in_any_organisation(self):
         for pre in _EMBARGOED_FROM:
             with self.subTest(pre=pre):
-                student = make_student()
+                student = make_student(school='SMK Contoh')
                 _embargoed(pre, _round(is_open=False), student)
                 self.assertEqual(apply_gate.apply_verdict(student, self.round_b).reason,
                                  IN_PROGRESS)
@@ -235,7 +235,7 @@ class TestTheServedListOfABlockedStudent(TestCase):
         for kind, value in shapes:
             for companions in self.COMPANIONS:
                 with self.subTest(shape=f'{kind}:{value}', companions=companions):
-                    student = make_student()
+                    student = make_student(school='SMK Contoh')
                     for done in companions:
                         _build(done, _round(is_open=False), student)
                     old = _round(is_open=False)
@@ -260,7 +260,7 @@ class TestTheSubmitRefuses(TestCase):
         self.old = _round(self.org, is_open=False)
         self.gift = make_programme(organisation=self.org)
         self.new = make_cohort(programme=self.gift)
-        self.student = make_student(contact_email='s@example.test')
+        self.student = make_student(school='SMK Contoh', contact_email='s@example.test')
         self.client = authed_client(self.student)
 
     def _post(self):
@@ -304,7 +304,7 @@ class TestThePageCanAsk(TestCase):
         self.old = _round(self.org, is_open=False)
         self.gift = make_programme(organisation=self.org)
         self.new = make_cohort(programme=self.gift)
-        self.student = make_student()
+        self.student = make_student(school='SMK Contoh')
         self.client = authed_client(self.student)
 
     def _ask(self, code=''):
@@ -332,7 +332,7 @@ class TestThePageCanAsk(TestCase):
                           'referral': ''})
 
     def test_another_students_applications_are_not_hers(self):
-        _build('active', self.old, make_student())
+        _build('active', self.old, make_student(school='SMK Contoh'))
         self.assertTrue(self._ask(self.gift.code)['allowed'])
 
     def test_several_open_bare_refused_only_when_already_applied_to_every_one(self):
@@ -365,7 +365,7 @@ class TestEveryVisitOfAnInPlayStudent(TestCase):
         self.org = make_org()
         self.gift = make_programme(organisation=self.org)
         self.round = make_cohort(programme=self.gift, is_open=False)     # her gift, now closed
-        self.student = make_student()
+        self.student = make_student(school='SMK Contoh')
         self.client = authed_client(self.student)
 
     def _ask(self, code=''):
@@ -396,7 +396,7 @@ class TestEveryVisitOfAnInPlayStudent(TestCase):
     def test_every_in_play_status_on_her_closed_gift(self):
         for status in sorted(IN_PLAY_STATUSES):
             with self.subTest(status=status):
-                student = make_student()
+                student = make_student(school='SMK Contoh')
                 _build(status, self.round, student)
                 self.assertEqual(apply_gate.verdict_for_visit(student, self.gift.code).reason,
                                  IN_PROGRESS)
@@ -416,7 +416,7 @@ class TestEveryVisitOfAnInPlayStudent(TestCase):
     def test_a_finished_student_on_her_closed_gift_is_allowed_and_meets_the_closed_card(self):
         for status in sorted(FINISHED_STATUSES):
             with self.subTest(status=status):
-                student = make_student()
+                student = make_student(school='SMK Contoh')
                 _build(status, self.round, student)
                 self.assertTrue(apply_gate.verdict_for_visit(student, self.gift.code).allowed)
 
@@ -440,7 +440,7 @@ class TestTheAgreementFollowsHerCurrentApplication(TestCase):
 
     def setUp(self):
         self.org = make_org()
-        self.student = make_student()
+        self.student = make_student(school='SMK Contoh')
         self.client = authed_client(self.student)
 
     def _signed(self, app):

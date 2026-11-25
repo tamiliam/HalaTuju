@@ -33,6 +33,7 @@ class TestApplicationIntake(TestCase):
             income_ceiling=5250,
         )
         cls.profile_a = make_student(
+            school='SMK Contoh',
             supabase_user_id=USER_A, nric='080101-14-1234',
             name='Priya', contact_email='priya@example.com',
             # math A, sej A, tamil_lit A+, eko A-, sci A- => 5 A's
@@ -40,6 +41,7 @@ class TestApplicationIntake(TestCase):
                     'tamil_lit': 'A+', 'eko': 'A-', 'sci': 'A-'},
         )
         cls.profile_b = make_student(
+            school='SMK Contoh',
             supabase_user_id=USER_B, nric='080202-14-5678',
             name='Nathiyaa', contact_email='nat@example.com',
         )

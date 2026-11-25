@@ -193,6 +193,35 @@ class TestProfileAPINewFields:
 
 
 @pytest.mark.django_db
+class TestBlankSchoolNeverWipes:
+    """A blank school (the /profile page sends `school` whatever it holds) never overwrites a
+    stored one; a first school, or another non-blank one, still saves."""
+
+    @pytest.mark.parametrize('blank', ['', '   '])
+    def test_put_blank_keeps_stored_school(self, blank):
+        StudentProfile.objects.create(supabase_user_id='api-test-user', school='SMK Contoh')
+        response = ProfileView().put(_auth_request('PUT', data={'school': blank, 'city': 'Ipoh'}))
+        assert response.status_code == 200
+        p = StudentProfile.objects.get(supabase_user_id='api-test-user')
+        assert p.school == 'SMK Contoh'
+        assert p.city == 'Ipoh'          # the rest of the save still lands
+
+    def test_sync_blank_keeps_stored_school(self):
+        StudentProfile.objects.create(supabase_user_id='api-test-user', school='SMK Contoh')
+        request = _auth_request('PUT', data={'school': ''})
+        request.supabase_user = {}
+        ProfileSyncView().post(request)
+        assert StudentProfile.objects.get(supabase_user_id='api-test-user').school == 'SMK Contoh'
+
+    def test_put_sets_a_first_school_and_changes_it(self):
+        StudentProfile.objects.create(supabase_user_id='api-test-user', school='')
+        assert ProfileView().put(_auth_request('PUT', data={'school': 'SMK Contoh'})).status_code == 200
+        assert StudentProfile.objects.get(supabase_user_id='api-test-user').school == 'SMK Contoh'
+        assert ProfileView().put(_auth_request('PUT', data={'school': 'SMK Lain'})).status_code == 200
+        assert StudentProfile.objects.get(supabase_user_id='api-test-user').school == 'SMK Lain'
+
+
+@pytest.mark.django_db
 class TestSavedCoursesAPIInterestStatus:
 
     def _setup(self, user_id='saved-api-user'):

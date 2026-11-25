@@ -245,7 +245,7 @@ class TestSecondReviewC_TheGuardiansShape(TestCase):
         student = make_student()
         return authed_client(student).post('/api/v1/scholarship/applications/', {
             'cohort_code': make_cohort(is_open=True).code, 'consent_to_contact': True,
-            'guardians': guardians}, format='json')
+            'school': 'SMK Contoh', 'guardians': guardians}, format='json')
 
     def test_only_empty_or_one_name_and_phone_entry_is_accepted(self):
         for bad in ([[], {'name': 'A', 'phone': OTHER}], [{'name': 'A', 'phone': OTHER}] * 2,

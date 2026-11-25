@@ -377,6 +377,13 @@ describe('a refused submit (TD-337 codes, and TD-340)', () => {
     expect(screen.getByText('scholarship.apply.error.tooLong')).toBeTruthy()
   })
 
+  it('a server refusal on school (none anywhere) shows the school message, not the generic one', async () => {
+    submit.mockRejectedValueOnce(Object.assign(refusal(400), { fieldErrors: { school: ['Please enter your school.'] } }))
+    await submitComplete()
+    expect(await screen.findByText('scholarship.apply.error.school')).toBeTruthy()
+    expect(screen.queryByText('scholarship.apply.error.generic')).toBeNull()
+  })
+
   it('TD-340: an NRIC already taken (a server answer) stays on the About Me tab', async () => {
     claim.mockResolvedValueOnce({ status: 'exists' })
     const unverified = { ...profile, nric_verified: false, nric: '080101-14-9999' }

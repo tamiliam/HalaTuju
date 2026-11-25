@@ -37,6 +37,18 @@ split and tall. Now the rows sit 10 px apart with no line, and ONE thin line sit
 before a52b7c957). Rows and their order are unchanged. Test: `ApplicantCards.academicSlots.test.tsx` pins one
 divider, on the plans row, and no row padding. Migration: none. Services: web.
 
+### fix: Student school - a blank no longer wipes the stored school; submit needs a school (2026-11-26)
+
+Branch school-guard, not pushed. Migration: none. Services: both.
+- **Cause:** `/profile` PUT and the sign-in sync, and the apply submit (`sync_profile_fields`, which wrote any non-None value),
+  all overwrote `StudentProfile.school` with a blank `''`; the submit also accepted no school at all.
+- **Server:** a blank or whitespace school never replaces a stored one (`ProfileUpdateSerializer.validate`, `profile_sync`); a first
+  school or a change to another still saves. The submit refuses (400, field `school`) when neither the form nor the profile has one.
+- **Web:** the `/profile` School label is no longer "(optional)" and saving the Application section with no school is refused;
+  the apply page shows the existing school message and returns to About Me on that 400. No new strings.
+- **Tests:** `test_submit_school_guard.py`, `TestBlankSchoolNeverWipes`, and jest in `page.sections.test.tsx` and `page.gate.test.tsx`;
+  scholarship submit fixtures now give the student a school.
+
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 
 Branch access-s4-scholars, not pushed. Migration: none. Services: web. The server half is S4a (above).

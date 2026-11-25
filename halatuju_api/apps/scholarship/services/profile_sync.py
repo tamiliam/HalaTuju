@@ -107,6 +107,8 @@ def sync_profile_fields(profile, data):
     for field in _PROFILE_WRITEBACK_FIELDS + _PROFILE_ABOUTME_FIELDS:
         if field in data and data[field] is not None:
             value = data[field]
+            if field == 'school' and not str(value).strip():
+                continue    # a blank school never overwrites a stored one (nor sets a blank)
             if field == 'name':
                 if not identity.name_change_allowed(profile, value):
                     continue
