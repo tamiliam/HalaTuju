@@ -177,6 +177,72 @@ class RereadAcademicOcr(TestCase):
         self.assertEqual(_canon(student_slip_check(fresh())), check_before)
         self.assertEqual(_canon(_verdict_academic(self.app)), fact_before)
 
+    # ── review round 2: whole-verdict proofs ──
+    def _verdict_state(self):
+        from apps.scholarship import services
+        from apps.scholarship.verdict_engine import build_verdict
+        return _canon([build_verdict(self.app), services.document_red_blockers(self.app, per_doc=True),
+                       services.document_unreadable_blockers(self.app, per_doc=True)])
+
+    def test_a_slip_backfill_leaves_the_whole_verdict_byte_identical(self):
+        profile = self.app.profile
+        profile.grades, profile.school = EIGHT_TYPED, SCHOOL
+        profile.save()
+        slip = self._slip(results=EIGHT_READ)
+        before = self._verdict_state()
+        with mock.patch(FETCH, return_value=b'img'), \
+                mock.patch(WORDS, return_value=_ok(NINE_WORDS, ' '.join(w['text'] for w in NINE_WORDS))):
+            self._run('--apply')
+        self.assertEqual(self._vf(slip)[SLIP_SCHOOL_READ], SCHOOL)
+        self.assertEqual(self._verdict_state(), before)
+
+    def test_a_higher_backfill_moves_only_the_year_label(self):
+        from apps.scholarship.higher_results import match_verdict, student_higher_check
+
+        def doc():
+            return ApplicantDocument.objects.select_related('application__profile').get(pk=higher.pk)
+        higher = self._higher()
+        before, check, match = self._verdict_state(), student_higher_check(doc()), match_verdict(doc())
+        with mock.patch(FETCH, return_value=b'img'), mock.patch(WORDS, return_value=_ok(None, MATRIC_TEXT)):
+            self._run('--apply')
+        self.assertEqual(self._vf(higher)['exam_year_read']['year'], '2025')
+        self.assertEqual(self._verdict_state(), before)
+        self.assertEqual(match_verdict(doc()), match)
+        after = student_higher_check(doc())
+        moved = {k for k in set(check) | set(after) if check.get(k) != after.get(k)}
+        self.assertTrue(moved)                                   # the year label does show
+        self.assertLessEqual(moved, {'exam_year', 'exam_year_status'})
+
+    # ── review round 2: decided cases and the old profile-driven gate record ──
+    def test_a_decided_application_is_skipped_unless_opted_in(self):
+        slip = self._slip()
+        self.app.ai_verdict_context = {'schema': 1, 'fingerprint': 'f'}
+        self.app.save(update_fields=['ai_verdict_context'])
+        with mock.patch(FETCH) as fetch:
+            out = self._run('--apply')
+        fetch.assert_not_called()
+        self.assertIn('slip_school: fresh=0 known_skip=1 already_filled=0', out)
+        self.assertIn('slip_school known_skip decided_record=1', out)
+        with mock.patch(FETCH, return_value=b'img'), mock.patch(WORDS, return_value=_ok()):
+            out = self._run('--apply', '--include-decided')
+        self.assertIn(f'slip_school: written=1 ids=[{slip.pk}]', out)
+
+    def test_an_empty_decision_context_is_not_decided(self):
+        self._slip()
+        self.app.ai_verdict_context = {}
+        self.app.save(update_fields=['ai_verdict_context'])
+        self.assertIn('slip_school: fresh=1 known_skip=0', self._run())
+
+    def test_the_old_profile_driven_not_spm_record_is_read(self):
+        old = self._slip(_slip_ocr_diag={'reason': 'not_spm_exam', 'exam_type': 'stpm'})   # pre-071fbaa9a shape
+        self._slip(_slip_ocr_diag={'reason': 'not_spm_exam', 'exam_type': 'stpm', 'by': 'document'})
+        out = self._run()
+        self.assertIn('slip_school: fresh=1 known_skip=1 already_filled=0', out)
+        self.assertIn('slip_school known_skip not_spm_exam=1', out)
+        with mock.patch(FETCH, return_value=b'img'), mock.patch(WORDS, return_value=_ok()):
+            out = self._run('--apply')
+        self.assertIn(f'slip_school: written=1 ids=[{old.pk}]', out)
+
     # ── safety: a failed read never writes ──
     def test_blob_missing_empty_ocr_and_ocr_error_are_skipped_untouched(self):
         cases = (('blob_missing', None, _ok()), ('ocr_empty', b'img', _ok([], '  ')),

@@ -28,20 +28,37 @@ cannot be fetched, an OCR error or an empty OCR text SKIPS the document and coun
 written. An empty value (no school, no year) is never written. Already-filled documents are skipped, so
 a re-run is idempotent.
 
+DECIDED CASES ARE SKIPPED BY DEFAULT (known skip ``decided_record``). An application with a recorded
+decision context (a non-empty ``ai_verdict_context``, LL4) carries an evidence fingerprint that hashes
+the WHOLE ``vision_fields`` (``verdict_context``), so ANY new key moves it, and the LL5 human lens
+(``eval/replay/lens_human_rows.py``, ``lens_human.py``) would mark that case 'evidence_changed' although
+no evidence changed. ``--include-decided`` opts in. ``verdict_context`` is not touched here.
+
 KNOWN SKIPS, decided from the stored read WITHOUT a Vision call, so a re-run does not pay for them again:
-a higher result in the slip slot (``wrong_slip.higher_kind``), a slip whose stored page text prints no
-school, a certificate read, a non-SPM title, and a higher document whose detected kind is not the held
-one. A document that is read and skipped for another reason (no year, a slip that does not lock) stays
-a target: ``--after-id`` (the ``resume_after_id`` a run prints last) starts past it.
+a decided case (above), a higher result in the slip slot (``wrong_slip.higher_kind``), a slip whose
+stored page text prints no school, a certificate read, a page the slip gate refused BY THE DOCUMENT
+(``_slip_ocr_diag.by == 'document'``; the pre-2026-11-18 profile-driven refusals carry no 'by' and are
+read) or a non-SPM title, and a higher document whose detected kind is not the held one.
+
+RE-BILLING. A document that is READ and then skipped (no year, no school, a slip that does not lock, a
+certificate page, an outage) is still "fresh" to the next run, which reads and bills it AGAIN unless
+``--after-id`` (the ``resume_after_id`` a run prints last) starts past it. The dry run says so beside
+its counts. Ids skipped for a PASSING reason (``blob_missing``, ``ocr_error``, ``ocr_empty``,
+``error_*``, ``write_error_*``) are worth one more try: re-run just those with ``--ids``.
+
+A LATER RE-READ of a document (a new upload read or a re-extraction) writes a new ``vision_fields`` and
+may drop ``slip_school_read``; that is acceptable (a new deterministic read keeps its own rows).
 
 USAGE (dry run is the DEFAULT: counts only, no OCR, no write, no spend):
     python manage.py reread_academic_ocr                               # dry run: fresh / known-skip counts
     python manage.py reread_academic_ocr --apply --limit 20            # the 20-document pilot
     python manage.py reread_academic_ocr --apply --ids 3020,3615       # named documents only
     python manage.py reread_academic_ocr --apply --after-id 4100       # resume past the last run
-    python manage.py reread_academic_ocr --apply                       # the rest, up to --max-cost-usd
+    python manage.py reread_academic_ocr --apply --max-cost-usd 0.5    # the rest, a slice per run
 ``--max-cost-usd`` (default 2.0): each read is estimated at one page x US$0.0015 and the run stops
-before the next read would pass the cap; the running spend is printed per document. Output is counts
+before the next read would pass the cap; the running spend is printed per document. On the job, run
+SLICES of ``--max-cost-usd 0.5`` (about 330 reads) so each run ends well inside the 3600s task timeout,
+resuming each from the last one's ``resume_after_id``. Output is counts
 and document ids only — never a name, IC, school, college or OCR text.
 
 RUN IT SERVICE-SIDE, NEVER FROM A LOCAL CHECKOUT (a laptop has no Storage access: every blob would
@@ -55,8 +72,10 @@ gcloud run jobs execute release-decisions --region asia-southeast1 --wait --acco
     2. Pilot, 20 documents (check the log: written / skipped counts and ids; spot-check a few rows):
 gcloud run jobs execute release-decisions --region asia-southeast1 --wait --account tamiliam@gmail.com --project gen-lang-client-0871147736 --task-timeout=3600s --update-env-vars=BILLING_USAGE_ENABLED=true --args=manage.py,reread_academic_ocr,--apply,--limit,20
 
-    3. The rest, resuming past the last id the previous run printed (``resume_after_id=N``):
-gcloud run jobs execute release-decisions --region asia-southeast1 --wait --account tamiliam@gmail.com --project gen-lang-client-0871147736 --task-timeout=3600s --update-env-vars=BILLING_USAGE_ENABLED=true --args=manage.py,reread_academic_ocr,--apply,--after-id,N,--max-cost-usd,2
+    3. The rest, one US$0.5 slice per run. Before pasting, replace RESUME_ID with the number printed
+       after ``resume_after_id=`` on the LAST line of the previous run's log; repeat until the dry run
+       shows fresh=0 (or only documents already read and skipped):
+gcloud run jobs execute release-decisions --region asia-southeast1 --wait --account tamiliam@gmail.com --project gen-lang-client-0871147736 --task-timeout=3600s --update-env-vars=BILLING_USAGE_ENABLED=true --args=manage.py,reread_academic_ocr,--apply,--after-id,RESUME_ID,--max-cost-usd,0.5
 
 RETRIES. The ``release-decisions`` job is configured with ``maxRetries: 1`` (run_cron_job.py,
 docs/technical-debt.md; not re-read off the live job here), and ``gcloud run jobs execute`` has no
@@ -107,9 +126,21 @@ def _acad_slip_state(doc, vf, f) -> str:
     if vf.get('capture') == 'deterministic' and 'nric' in f and 'skew_angle' not in f:
         return 'certificate'            # a `parse_spm_cert` read: a certificate keeps no slip rows
     title = str(f.get('exam') or '')
-    if diag.get('reason') == 'not_spm_exam' or (title and slip_not_spm_kind(title, title=title)):
+    # Only the DOCUMENT's own refusal counts. Before 2026-11-18 (071fbaa9a) the gate wrote
+    # {'reason': 'not_spm_exam', 'exam_type': held} off the student's PROFILE, with no 'by' key, on most
+    # real SPM slips of STPM / diploma students (TD-324: 115 of 158) - those are read, not skipped.
+    by_document = diag.get('reason') == 'not_spm_exam' and diag.get('by') == 'document'
+    if by_document or (title and slip_not_spm_kind(title, title=title)):
         return 'not_spm_exam'           # the slip gate refuses this page
     return FRESH
+
+
+def _acad_decided(doc) -> bool:
+    """The application already has a recorded decision context (LL4, a non-empty `ai_verdict_context`):
+    a new vision_fields key would move its evidence fingerprint (`verdict_context` hashes the whole
+    vision_fields), and the LL5 human lens would mark the case 'evidence_changed'."""
+    ctx = getattr(getattr(doc, 'application', None), 'ai_verdict_context', None)
+    return isinstance(ctx, dict) and bool(ctx)
 
 
 def _acad_reread_kind(doc):
@@ -228,6 +259,9 @@ class Command(BaseCommand):
         parser.add_argument('--ids', default='', help='Comma-separated document ids (only these).')
         parser.add_argument('--after-id', type=int, default=0,
                             help='Only documents with an id above this (resume past the last run).')
+        parser.add_argument('--include-decided', action='store_true',
+                            help='Also fill documents of applications with a recorded decision context '
+                                 '(default: skipped; it moves their LL4 evidence fingerprint).')
         parser.add_argument('--max-cost-usd', type=float, default=2.0,
                             help=f'Stop before the estimated Vision spend (pages x US${VISION_PAGE_USD}) '
                                  'passes this cap.')
@@ -250,6 +284,8 @@ class Command(BaseCommand):
             if got is None:
                 continue
             kind, state = got
+            if state == FRESH and not opts['include_decided'] and _acad_decided(doc):
+                state = 'decided_record'
             counts[kind][state] = counts[kind].get(state, 0) + 1
             if state == FRESH:
                 targets.append((doc, kind))
@@ -269,6 +305,8 @@ class Command(BaseCommand):
                 out(f'{kind} known_skip {why}={known[why]}')
         planned = targets[:limit] if limit else targets
         affordable = min(len(planned), int(round(cap / VISION_PAGE_USD, 6)))
+        out('(fresh = not yet filled: it includes any document an earlier run read and skipped, which a '
+            're-run reads and bills again unless --after-id starts past it)')
         if not opts['apply']:
             out(f'DRY RUN: nothing read, nothing written. would_read={affordable} '
                 f'est_cost_usd={affordable * VISION_PAGE_USD:.4f} cap_usd={cap:.4f}'
