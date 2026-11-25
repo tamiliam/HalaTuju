@@ -6,7 +6,8 @@
  * The who-is-working toggles saved every tap. A student once ticked all five members while the
  * family details said the mother was unemployed and listed no guardian or siblings, and every one
  * of them then owed an IC and proof of income. Now a tick the family details disagree with is held:
- * a short, non-blocking question names the person and what the details say, and the student
+ * a short question names the person and what the details say (the Action Centre switch holds its
+ * Confirm until it is answered; nothing else waits on it), and the student
  * confirms (saved as before) or leaves it unticked. Nothing is ever unticked for the student.
  *
  * WHERE IT HOLDS (both places the ticks are edited): the income step (`IncomeWizard`, before
@@ -108,7 +109,7 @@ export function useEarnerTickCheck({ conflicts, members, saveMembers, t, route }
           <p id={`${ids}-ask`} className="font-medium">{said(t, asking, served, 'ask')}</p>
           <p id={`${ids}-check`} className="mt-1">{t(`${W}.earnerCheck.askCheck`)}</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" onClick={() => { saveMembers([...members, asking]); setPending(null) }}
+            <button type="button" onClick={() => { saveMembers(members.includes(asking) ? members : [...members, asking]); setPending(null) }}
               className="min-h-11 rounded-full border border-primary-600 bg-brand-fill px-4 py-2 text-sm text-brand-fill-ink">
               {t(`${W}.earnerCheck.confirm`)}
             </button>
