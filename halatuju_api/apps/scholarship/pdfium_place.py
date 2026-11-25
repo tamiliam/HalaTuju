@@ -81,6 +81,33 @@ def render_gray(doc_class, data: bytes, scale: float) -> list:
         doc.close()
 
 
+def sheet_text(raw, doc_class, data: bytes) -> list:
+    """TD-740 review round 3: what pdfium's own text page reads on each page of the text sheet ``data``
+    (`pdfium_type3.text_sheet`): per page, [(code point, FPDFText_IsGenerated), ...]. ``raw``, ``doc_class``: the
+    worker's pypdfium2 modules (passed in, so pdfium stays in the child); ValueError when pdfium cannot read one."""
+    doc = doc_class(data)
+    try:
+        out = []
+        for i in range(len(doc)):
+            page = doc[i]
+            try:
+                tp = raw.FPDFText_LoadPage(page.raw)
+                if not tp:
+                    raise ValueError('pdfium gives no text page')
+                try:
+                    n = raw.FPDFText_CountChars(tp)
+                    if n < 0:
+                        raise ValueError('pdfium cannot count the characters')
+                    out.append([(raw.FPDFText_GetUnicode(tp, k), raw.FPDFText_IsGenerated(tp, k)) for k in range(n)])
+                finally:
+                    raw.FPDFText_ClosePage(tp)
+            finally:
+                page.close()
+        return out
+    finally:
+        doc.close()
+
+
 def outside(box: tuple, area: tuple) -> bool:
     """True when ``box`` reaches past ``area`` by more than `EDGE_PT` on any side, or its centre is not in ``area``
     (a small box wholly off the page, within `EDGE_PT` of the edge), or it is not a number at all."""

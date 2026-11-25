@@ -83,7 +83,8 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
             return False
         oc_xobject, _xfa, _t3_ok, t3_any = _t3.page_flags(_DATA[0], index)   # OCR-20 r2: an XObject with /OC
         sheet = functools.partial(_pl.render_gray, type(pdf))               # TD-740 r2: glyph ink
-        if oc_xobject or (t3_any and not _t3.shown_ok(_DATA[0], index, sheet)):   # TD-740 r1: Type3 glyph boxes
+        chars = functools.partial(_pl.sheet_text, raw, type(pdf))          # TD-740 r3: pdfium reads blank codes
+        if oc_xobject or (t3_any and not _t3.shown_ok(_DATA[0], index, sheet, chars)):   # TD-740 r1: Type3 boxes
             return False
         area = _page_box(raw, page.raw)                            # TD-740: where pdfium draws the page
         # (page or form object, is a form, under an OC mark, the holder's space to page space)

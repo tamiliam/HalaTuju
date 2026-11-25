@@ -2,8 +2,7 @@
 
 Pure Python plus pypdf (imported inside the function): no pdfium. `pdfium_worker` re-exports `T3_TOLERANCE`,
 `T3_MAX_BYTES` and `_type3_ok`, and loads this file by path when it runs as a script. `page_flags` (the ink op's
-pypdf flags) lives here too since the OCR-9 rebase.
-"""
+pypdf flags) lives here too since the OCR-9 rebase."""
 
 #: Type3 glyph procedures (review round 2, B2): a glyph whose procedure paints outside its own ``d1`` box draws
 #: ink where pdfium's char box is not (a tiny /space glyph placed far away painting boxes over a white word), so
@@ -30,8 +29,7 @@ T3_MAX_BYTES = 4_000_000
 def type3_ok(font, budget: list) -> bool:
     """True when every glyph procedure of the Type3 ``font`` keeps to the rules above (`T3_TOLERANCE`)."""
     from pypdf.generic import ContentStream
-    procs = font.get('/CharProcs')
-    procs = procs.get_object() if procs is not None else None
+    procs = _val(font, '/CharProcs')
     if not hasattr(procs, 'values'):
         return False
     for ref in procs.values():
@@ -83,6 +81,14 @@ def _op_name(op) -> str:
     return op.decode('latin-1') if isinstance(op, bytes) else str(op)
 
 
+def _val(d, key):
+    """``d[key]`` with an indirect reference resolved; None when absent or ``d`` is no dictionary. TD-740 review
+    round 3 (Finding 2): pdfium (and pypdf's ``[]``) resolve every value, pypdf's ``get`` does not, so a compare
+    on the unresolved value missed a form whose /Subtype is ``9 0 R`` that both readers draw and read."""
+    v = d.get(key) if hasattr(d, 'get') else None
+    return v.get_object() if v is not None else None
+
+
 #: TD-740 review round 1: the most bytes of page content (the page's and its forms') `shown_ok` reads.
 SHOWN_MAX_BYTES = 16_000_000
 #: TD-740 review round 2 (Finding 1): a Type3 glyph must really ink, MEASURED by pdfium, not read from its operators
@@ -104,16 +110,19 @@ INK_MAX_GLYPHS = 1440
 #: its own byte (probe pages_node_layout: a /space glyph under code 76 reads 'L' in the words op), so only a
 #: whitespace byte that every candidate font also reads as blank is blank to both readers.
 BLANK_CODES = frozenset((9, 10, 13, 32))
+#: The text sheet's font size (points), its page 8x that a side. pdfium drops a Type3 char whose d1 box rounds to 0
+#: wide or high (1/1000 em) at any size, others only under ~10 pt (probe r3c): the sheet never reads less.
+TEXT_PT = 1000
 
 
-def shown_ok(data: bytes, index: int, sheet=None) -> bool:
+def shown_ok(data: bytes, index: int, sheet=None, chars=None) -> bool:
     """TD-740 review round 1 (pdfium child, `pdfium_worker._paints`): True when every character page ``index``
     shows in a Type3 font has a glyph that keeps its ink inside its ``d1`` box (`_glyph_ok`, the `type3_ok` rules)
     and really inks (round 2: measured by pdfium on a glyph sheet, `glyph_ink`; ``sheet`` renders it, None: no
     Type3 character can pass), or (a glyph that inks nothing, or none) shows a code every font the name could
-    resolve to reads as blank to both readers (`_blank_to_both`: its /ToUnicode maps it to whitespace, or with no
-    entry it is a `BLANK_CODES` byte). pdfium boxes a Type3 character by its glyph's ``d1`` box, not its ink: a
-    box that holds the ink is where `pdfium_place.outside` judges the ink to be, but a box the ink leaves (probes
+    resolve to reads as blank to pdfium's own text page (r3: `pdfium_blank`, read by ``chars``; None: no such code
+    can pass) and to pypdf, and is not refused by `_blank_to_both`. pdfium boxes a Type3 character by its glyph's
+    ``d1`` box, not its ink: a box that holds the ink is where `pdfium_place.outside` judges the ink to be, but a box the ink leaves (probes
     t3_d1_lie_*, t3_cm_ink_offpage), or an empty glyph (t3_onpage_empty, round 2's zero_re ... tiny_ink), places a
     box on the page while pypdf still reads a letter drawn elsewhere or nowhere. Only the glyphs shown are judged.
     Read with pypdf from the request's bytes, walking the page's content and its forms (``Do``) as the text state
@@ -132,7 +141,7 @@ def shown_ok(data: bytes, index: int, sheet=None) -> bool:
         if not _shown_walk(reader, page.get('/Contents'), [page.get('/Resources')], (), [SHOWN_MAX_BYTES], uses,
                            set()):
             return False
-        return _uses_ok(uses, sheet)
+        return _uses_ok(uses, sheet, chars)
     except MemoryError:
         raise
     except Exception:
@@ -170,11 +179,11 @@ def _shown_walk(reader, contents, chain: list, fonts: tuple, budget: list, uses:
                 uses.setdefault(tuple(id(f) for f in fonts), (fonts, set()))[1].update(b''.join(_strings(args)))
         elif name == 'Do' and args:
             for xo in _in_resources(chain, '/XObject', args[0]):
-                if not hasattr(xo, 'get') or xo.get('/Subtype') != '/Form':
+                if not hasattr(xo, 'get') or _val(xo, '/Subtype') != '/Form':     # r3 Finding 2: resolved
                     continue
-                if '/Resources' not in xo and '/Parent' in xo:      # r2 Finding 2: two resource views
+                if not hasattr(_val(xo, '/Resources'), 'get') and '/Parent' in xo:   # r2 Finding 2: two views
                     return False
-                inner = [xo.get('/Resources')] + chain
+                inner = [_val(xo, '/Resources')] + chain
                 # r2 Finding 3: the same form under other resources is another walk
                 key = (id(xo), tuple(id(r.get_object()) if r is not None else 0 for r in inner),
                        tuple(id(f) for f in fonts))
@@ -190,12 +199,9 @@ def _in_resources(chain: list, kind: str, name) -> list:
     """Every object named ``name`` under ``kind`` in any resource dictionary of ``chain``."""
     found = []
     for res in chain:
-        res = res.get_object() if res is not None else None
-        group = res.get(kind) if hasattr(res, 'get') else None
-        group = group.get_object() if group is not None else None
-        obj = group.get(name) if hasattr(group, 'get') else None
+        obj = _val(_val(res.get_object() if res is not None else None, kind), name)
         if obj is not None:
-            found.append(obj.get_object())
+            found.append(obj)
     return found
 
 
@@ -209,12 +215,13 @@ def _strings(args):
 
 
 def _is_t3(font) -> bool:
-    return hasattr(font, 'get') and font.get('/Subtype') == '/Type3'
+    return _val(font, '/Subtype') == '/Type3'                    # r3 Finding 2: an indirect /Subtype resolved
 
 
-def _uses_ok(uses: dict, sheet) -> bool:
+def _uses_ok(uses: dict, sheet, chars) -> bool:
     """`shown_ok`'s verdict on the walk's ``uses``: no shown glyph breaks `_glyph_ok`, and each shown code either
-    inks (`glyph_ink`) or is blank to both readers in every candidate font (`_blank_to_both`)."""
+    inks (`glyph_ink`) or, in every candidate font, is blank to pypdf and to our own /ToUnicode reading
+    (`_blank_to_both`, now a refuse-only check) AND to pdfium's own text page (`pdfium_blank`, r3)."""
     fonts = {}
     for cands, codes in uses.values():
         for f in cands:
@@ -229,13 +236,69 @@ def _uses_ok(uses: dict, sheet) -> bool:
     inked = glyph_ink(cells, sheet)
     if inked is None:
         return False
-    memo = {}
+    memo, need = {}, {}
     for cands, codes in uses.values():
         for f in cands:
             for c in (codes if _is_t3(f) else ()):
-                if (id(f), c) not in inked and not all(_blank_to_both(g, c, memo) for g in cands):
-                    return False
-    return True
+                if (id(f), c) in inked:
+                    continue
+                for g in cands:                  # r3 Finding 1: pdfium decides; `_blank_to_both` only refuses
+                    if not _blank_to_both(g, c, memo):
+                        return False
+                    need[(id(g), c)] = (g, c)
+    blank = pdfium_blank(list(need.values()), chars)
+    return blank is not None and set(need) <= blank
+
+
+def pdfium_blank(pairs: list, chars) -> set | None:
+    """TD-740 review round 3 (Finding 1): {(id(font), code)} of the (font, code) ``pairs`` that pdfium's OWN text
+    page reads as whitespace. Each pair is shown alone on its own page of a text sheet (`text_sheet`) and read by
+    ``chars`` (the child's `pdfium_place.sheet_text`): every character the page gives must be whitespace, and
+    none at all is blank (pdfium drops a glyph whose d1 box is degenerate, the genuine zero-box space, on every
+    page; see `TEXT_PT`). A /ToUnicode read by our own parser is not pdfium's reading (a ``/Xbeginbfchar``, a
+    ``%`` comment, a space inside ``<00 20>``: pdfium reads 'L', the parser a space). None: past `INK_MAX_GLYPHS`
+    pairs, no ``chars``, or a read that does not match the sheet (fails closed)."""
+    if not pairs:
+        return set()
+    if chars is None or len(pairs) > INK_MAX_GLYPHS:
+        return None
+    pages = chars(text_sheet(pairs))
+    if len(pages) != len(pairs):
+        return None
+    blank = set()
+    for (font, code), read in zip(pairs, pages):
+        if all(gen in (0, 1) and chr(u).isspace() for u, gen in read):
+            blank.add((id(font), code))
+    return blank
+
+
+def text_sheet(pairs: list) -> bytes:
+    """PDF bytes: one page per (font, code) of ``pairs``, the code shown alone in a copy of the font (`_copy_font`)
+    at `TEXT_PT` points, inside the page (`pdfium_blank`)."""
+    import io
+    from pypdf import PdfWriter
+    from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+    writer, refs = PdfWriter(), {}
+    for font, code in pairs:
+        name, ref = _copy_font(writer, refs, font)
+        page = writer.add_blank_page(TEXT_PT * 8, TEXT_PT * 8)
+        page[NameObject('/Resources')] = DictionaryObject({NameObject('/Font'): DictionaryObject(
+            {NameObject(name.decode()): ref})})
+        stream = DecodedStreamObject()
+        stream.set_data(b'BT %s %d Tf %d %d Td <%02x> Tj ET' % (name, TEXT_PT, TEXT_PT * 2, TEXT_PT * 2, code))
+        page[NameObject('/Contents')] = writer._add_object(stream)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def _copy_font(writer, refs: dict, font) -> tuple:
+    """(resource name, reference) of ``font`` copied into ``writer`` with pypdf (its glyph procedures, /ToUnicode
+    and own resources come with it), once per font (``refs``)."""
+    if id(font) not in refs:
+        copy = font.clone(writer)
+        refs[id(font)] = (b'/G%d' % len(refs), copy.indirect_reference or writer._add_object(copy))
+    return refs[id(font)]
 
 
 def _blank_to_both(font, code: int, memo: dict) -> bool:
@@ -269,11 +332,11 @@ def _tounicode_map(font):
     """{code: [text, ...]} from the font's /ToUnicode bfchar and bfrange entries (None: no /ToUnicode; False: one
     this reader cannot parse, or a range or value it does not take, such as an array range)."""
     import re
-    tu = font.get('/ToUnicode') if hasattr(font, 'get') else None
+    tu = _val(font, '/ToUnicode')
     if tu is None:
         return None
     try:
-        text = tu.get_object().get_data().decode('latin-1')
+        text = tu.get_data().decode('latin-1')
         found = {}
         for kind, body in re.findall(r'begin(bfchar|bfrange)(.*?)end\1', text, re.S):
             if not re.fullmatch(r'(\s*<[0-9A-Fa-f\s]*>)*\s*', body):
@@ -299,11 +362,9 @@ def _tounicode_map(font):
 
 def _differences(font) -> dict:
     """code -> glyph name, from the Type3 font's /Encoding /Differences."""
-    enc = font.get('/Encoding')
-    enc = enc.get_object() if enc is not None else None
-    diffs = enc.get('/Differences') if hasattr(enc, 'get') else None
+    diffs = _val(_val(font, '/Encoding'), '/Differences')
     names, code = {}, 0
-    for item in (diffs.get_object() if diffs is not None else ()):
+    for item in (diffs if diffs is not None else ()):
         item = item.get_object() if hasattr(item, 'get_object') else item
         if isinstance(item, (int, float)) and not isinstance(item, bool):
             code = int(item)
@@ -317,12 +378,12 @@ def _glyph_boxes(font, codes, budget: list) -> tuple:
     ``d1`` glyph keeping `_glyph_ok`, {codes whose glyph breaks `_glyph_ok`}). A code with no glyph, or a ``d0``
     glyph, is in neither: it draws nothing. Every code is broken past ``budget``."""
     from pypdf.generic import ContentStream
-    fm = [float(v) for v in font.get('/FontMatrix').get_object()]
+    fm = [float(v.get_object()) for v in _val(font, '/FontMatrix')]
     if len(fm) != 6:
         return {}, set(codes) or {0}
     names = _differences(font)
-    procs = font.get('/CharProcs')
-    procs = procs.get_object() if procs is not None else {}
+    procs = _val(font, '/CharProcs')
+    procs = procs if procs is not None else {}
     boxes, broken, parsed = {}, set(), {}
     for c in codes:
         proc = procs.get(names[c]) if c in names and hasattr(procs, 'get') else None
@@ -364,9 +425,7 @@ def glyph_sheet(cells: list) -> tuple:
     for k, (font, code, box) in enumerate(cells):
         if k % per == 0:
             pages.append([b'0 g 0 Tr'])
-        if id(font) not in refs:
-            copy = font.clone(writer)
-            refs[id(font)] = (b'/G%d' % len(refs), copy.indirect_reference or writer._add_object(copy))
+        name = _copy_font(writer, refs, font)[0]
         left, bottom, right, top = box
         longer = max(right - left, top - bottom)
         if not all(math.isfinite(v) for v in box) or not longer > 0:
@@ -375,7 +434,7 @@ def glyph_sheet(cells: list) -> tuple:
         scale = INK_PX_EM if longer <= INK_MAX_EM else INK_PX_EM * INK_MAX_EM / longer
         x0, y0 = INK_GAP + (k % per) % INK_GRID * pitch, INK_GAP + (k % per) // INK_GRID * pitch
         pages[-1].append(b'BT %s 1 Tf %.6f 0 0 %.6f %.6f %.6f Tm <%02x> Tj ET' % (
-            refs[id(font)][0], scale, scale, x0 - scale * left, y0 - scale * bottom, code))
+            name, scale, scale, x0 - scale * left, y0 - scale * bottom, code))
         crop = (math.floor(x0) - 3, math.floor(side - y0 - scale * (top - bottom)) - 3,
                 math.ceil(x0 + scale * (right - left)) + 3, math.ceil(side - y0) + 3)
         spots.append((crop, INK_MIN_SHARE * scale * scale))
@@ -479,39 +538,39 @@ def page_flags(data: bytes, index: int) -> tuple:
             continue
         if len(seen) >= 5000:
             return True, xfa, False, True        # past any genuine page: counted as optional (refused)
-        fonts = res.get('/Font')
-        fonts = list(fonts.get_object().values()) if fonts is not None else []
-        states = res.get('/ExtGState')
-        for gs in (states.get_object().values() if states is not None else ()):
-            font = gs.get_object().get('/Font')
-            font = font.get_object() if font is not None else None
+        # TD-740 r3 (Finding 2): every value compared or walked is resolved first (`_val`)
+        fonts = _val(res, '/Font')
+        fonts = list(fonts.values()) if fonts is not None else []
+        states = _val(res, '/ExtGState')
+        for gs in (states.values() if states is not None else ()):
+            font = _val(gs.get_object(), '/Font')
             if font is not None and len(font) > 0:
                 fonts.append(font[0])
         for ref in fonts:
             if not new(ref):
                 continue
             font = ref.get_object()
-            if hasattr(font, 'get') and font.get('/Subtype') == '/Type3':
+            if _is_t3(font):
                 t3_any = True
                 t3_ok = t3_ok and type3_ok(font, budget)        # its glyphs draw no XObject or text: not walked
-        patterns = res.get('/Pattern')
-        for ref in (patterns.get_object().values() if patterns is not None else ()):
+        patterns = _val(res, '/Pattern')
+        for ref in (patterns.values() if patterns is not None else ()):
             if new(ref):
                 pat = ref.get_object()
-                if hasattr(pat, 'get') and pat.get('/PatternType') == 1:
-                    todo.append((pat.get('/Resources'), depth + 1))
-        xobjects = res.get('/XObject')
-        for ref in (xobjects.get_object().values() if xobjects is not None else ()):
+                if _val(pat, '/PatternType') == 1:
+                    todo.append((_val(pat, '/Resources'), depth + 1))
+        xobjects = _val(res, '/XObject')
+        for ref in (xobjects.values() if xobjects is not None else ()):
             if not new(ref):
                 continue
             xo = ref.get_object()
             if '/OC' in xo:
                 return True, xfa, False, True    # refused as optional; the walk stops, so Type3 is unknown
-            if xo.get('/Subtype') == '/Form' and '/Resources' not in xo and '/Parent' in xo:
+            if _val(xo, '/Subtype') == '/Form' and not hasattr(_val(xo, '/Resources'), 'get') and '/Parent' in xo:
                 return True, xfa, False, True    # TD-740 r2 (Finding 2): pypdf reads it through its /Parent's
                 #                                  resources, pdfium through its caller's: refused the same way
-            if xo.get('/Subtype') == '/Form':
-                todo.append((xo.get('/Resources'), depth + 1))
+            if _val(xo, '/Subtype') == '/Form':
+                todo.append((_val(xo, '/Resources'), depth + 1))
     return False, xfa, t3_ok, t3_any
 
 
