@@ -28,5 +28,10 @@
     "digest": "7bb0a1d2ed9835003647ff22ef84eeff0059463c5ecdb78eba5d30de14395df8",
     "note": "2026-11-21: OCR-11 review round 4. The 16 MP cap (income_declaration.WHITE_CHECK_MAX_PIXELS) applies to EVERY format by the header size, before any draft or decode: a baseline (SOF0/SOF1) JPEG with one scan per colour is not marked progressive, yet libjpeg holds its full buffer whatever the scale (158-177 byte 13000 x 13000 files peaked 361-1,383 MB). So a white 48/50 MP phone photo gets the paid read as before 1.32.0. TIFF is removed from WHITE_CHECK_FORMATS: a 1 MB TIFF with a 64 x 64 header and one 16384 x 16384 tile peaked ~1.1 GB and read white; a TIFF page now gets the paid read. Every over-cap round 3 and round 4 repro and the tiled TIFF now peak at 21-24 MB.",
     "also_ok": []
+  },
+  "1.36.0": {
+    "digest": "0ff1b84828b1c978c707c653e5add7b67ff08ef3cca418d58808b62a3358921b",
+    "note": "2026-11-26: TD-701. The white check (income_declaration.approval_page_white) pastes a transparent page in greyscale (an L page with the alpha channel as mask; a P image with transparency converts to RGBA first) instead of building four full-size RGBA copies (16 MP RGBA: about 192 MB over baseline before, 47 MB now), and HEIF is dropped from the formats it opens (HEIC is already converted to JPEG at upload), so a HEIF page is not judged white and gets the paid read. Verdicts for JPEG/PNG/GIF/BMP/WEBP are unchanged.",
+    "also_ok": []
   }
 }

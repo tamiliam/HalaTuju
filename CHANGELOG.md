@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
+- `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
+
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 
 Branch access-s4-scholars, not pushed. Migration: none. Services: web. The server half is S4a (above).

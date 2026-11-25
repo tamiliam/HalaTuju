@@ -179,7 +179,7 @@ WHITE_PAGE_INK_SHARE = 0.002
 WHITE_CHECK_MAX_PIXELS = 16_000_000
 #: Round 3: the only formats the white check opens. Some PIL openers decode the whole image inside `open`,
 #: before any size check (an ICO wrapping a huge PNG); any other format is not white (the read goes ahead).
-#: HEIF is added only while `pillow_heif` has registered it (`imaging.convert_heic_to_jpeg`).
+#: TD-701: HEIF is NOT opened here (its decode size is unverified; HEIC is turned into JPEG at upload).
 #: Round 4: TIFF dropped (a small header over one huge tile is decoded whole); a TIFF page gets the paid read.
 WHITE_CHECK_FORMATS = ('JPEG', 'PNG', 'GIF', 'BMP', 'WEBP')
 
@@ -201,9 +201,8 @@ def approval_page_white(img: bytes) -> bool:
     opened (one huge tile behind a small header is decoded whole)."""
     import io
     from PIL import Image
-    formats = WHITE_CHECK_FORMATS + (('HEIF',) if 'HEIF' in Image.OPEN else ())
     try:
-        with Image.open(io.BytesIO(img), formats=formats) as im:   # the header only: nothing is decoded yet
+        with Image.open(io.BytesIO(img), formats=WHITE_CHECK_FORMATS) as im:   # the header only: nothing is decoded yet
             if im.mode in ('I', 'F') or im.mode.startswith('I;'):
                 return False
             if im.width * im.height > WHITE_CHECK_MAX_PIXELS:   # round 4: every format, by the header size
@@ -212,11 +211,15 @@ def approval_page_white(img: bytes) -> bool:
                 im.draft('L', (1600, 1600))
             if im.width * im.height > WHITE_CHECK_MAX_PIXELS:
                 return False
-            if im.mode in ('RGBA', 'LA', 'PA') or (im.mode == 'P' and 'transparency' in im.info):
-                rgba = im.convert('RGBA')
-                page = Image.new('RGBA', rgba.size, (255, 255, 255, 255))
-                page.alpha_composite(rgba)
-                grey = page.convert('L')
+            if im.mode in ('RGBA', 'LA') or im.mode in ('PA', 'P') and (im.mode == 'PA' or 'transparency' in im.info):
+                # TD-701: paste in greyscale, one 'L' page and an 'L' mask, never a full-size RGBA page
+                src = im
+                if im.mode in ('PA', 'P'):
+                    src = im.convert('RGBA')   # a palette image has no alpha channel until it is converted
+                mask = src.getchannel('A')
+                page = Image.new('L', src.size, 255)
+                page.paste(src.convert('L'), mask=mask)
+                grey = page
             else:
                 grey = im.convert('L')
         counts = grey.histogram()
