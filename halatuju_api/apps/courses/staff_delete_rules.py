@@ -6,12 +6,14 @@ never offers a button the server refuses:
   * `deletable`    - Delete is live: the caller may delete them AND they have no work on record.
   * `delete_never` - no Delete is drawn at all, because nobody can delete this row here whatever work it
                      has: a super, a source/partner/mentor login, a role outside `_DELETABLE_ROLES`, a row
-                     outside the caller's remit, or the SOLE active org admin of their organisation (N4).
+                     outside the caller's remit, or the SOLE counted (active and signed-in) org admin of
+                     their organisation (N4).
                      A row that is neither shows a greyed Delete with its work as the reason.
   * `revocable`    - the Revoke / Restore toggle may be drawn (N3): the caller manages them, they are not a
-                     super, not the caller, and not the sole active org admin (Revoke refuses that too).
+                     super, not the caller, and not the sole counted org admin (Revoke refuses that too).
 
-The sole-org-admin guard (`is_sole_org_admin`: the only active org admin, or the last one holding
+The sole-org-admin guard (`is_sole_org_admin`: the only counted (active and signed-in, `_org_admins`)
+org admin, or the last one holding
 Organisation admin powers, S2 / M4a review) is the one `AdminRevokeView`, `AdminDeleteView` and Archive
 enforce, with the organisation's org admins locked first (`lock_org_admins_of`). Only a super can
 reach an org admin at all (`_staff_target_manageable`), so a table read by anybody else never pays

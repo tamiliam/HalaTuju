@@ -445,3 +445,46 @@ class AnInviteeIsNotAnOrgAdmin(TestCase):
                 PartnerAdmin.objects.filter(pk=c.pk).update(
                     is_active=False, archived_at=timezone.now() if archived else None)
                 self._refused(self._revoke(self.a))
+
+
+@override_settings(**SUPABASE)
+class AnOrganisationWhoseOnlyOrgAdminIsAnInvitee(TestCase):
+    """Owner ruling, 25 Nov, the other side: when the organisation's ONLY org admin is invitee B (never
+    signed in, powers pre-granted), B is not a member, so no last-admin refusal ever protects B. Catches:
+    Revoke, Delete and the Team table read `staff_delete_rules._live_org_admin` (its `first_seen_at` test);
+    the untick reads the early return in `staff_permissions_admin._refuse_last_powers` (`first_seen_at`)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.scholarship import invitations
+        cls.org = make_org()
+        cls.b = make_admin('org_admin', owning_org=cls.org, uid='uid-only-invitee')   # never signed in
+        cls.boss = make_admin('super', super_admin=True)
+        invitations.create_or_refresh(
+            audience='staff', email=cls.b.email, role='org_admin', organisation=cls.org, invited_by=cls.boss,
+            partner_admin=cls.b, credential_issued=True, ttl_days=7)
+
+    def setUp(self):
+        b = _fresh(self.b)
+        self.assertIsNone(b.first_seen_at)
+        self.assertTrue(sp.holds_org_admin_powers(b))   # the invite pre-granted the powers
+
+    def test_revoke_of_the_invitee_is_allowed(self):
+        r = authed_client(self.boss).patch(f'/api/v1/admin/admins/{self.b.pk}/revoke/', {'action': 'revoke'},
+                                           format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertFalse(_fresh(self.b).is_active)
+
+    def test_delete_of_the_invitee_with_no_work_is_allowed(self):
+        with patch(READ, side_effect=_unused), patch(DELETE, return_value='deleted'):
+            r = authed_client(self.boss).delete(f'/api/v1/admin/admins/{self.b.pk}/', None, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertFalse(PartnerAdmin.objects.filter(pk=self.b.pk).exists())
+
+    def test_unticking_the_invitees_powers_is_allowed(self):
+        r = _patch(self.boss, self.b, [k for k in _stored(self.b) if k != KEY])
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertNotIn(KEY, _stored(self.b))
+
+    def test_the_team_table_does_not_mark_the_invitee_sole(self):
+        self.assertEqual(sole_org_admin_ids(self.boss, [_fresh(self.b)]), set())
