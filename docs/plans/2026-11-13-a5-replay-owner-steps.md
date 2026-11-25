@@ -362,12 +362,100 @@ How the run shows it, and what it cannot show:
   item failed.
 - The missing-bucket and no-rights halves of item 3, and items 5, 6 and 7, cannot be seen in the job's
   fixed output, and no tool in this repository uploads a dummy object as the job's account (the store
-  child uploads only an exam the lens itself froze and proved). How these are proven is to be agreed
-  with the release lead before the run. Nobody runs an ad-hoc command against the bucket without that
-  agreement and the owner's yes.
+  child uploads only an exam the lens itself froze and proved). The by-hand checks below cover part of
+  them, with the limits written there. Nobody runs any other command against the bucket without the
+  release lead's agreement and the owner's yes.
 - Not in the seven, also not yet proven: the job's `/tmp` must allow hard links. Both the fetch (when an
   exam object exists) and the freeze write their file by hard link. A failure shows as exit 3 on a fetch,
   or as `folder_not_writable` on a freeze.
+
+**By-hand checks with a dummy object.** These few commands look at the bucket itself, for what the job's
+output cannot show. They upload ONE tiny dummy file that holds a fixed sentence and no data of any person.
+
+- **Who types them.** The owner. The release lead may type them instead only if the owner says so in the
+  yes for step 4c.
+- **When.** AFTER the job run above has passed, so that run meets a truly empty bucket (the box above).
+  The dummy, `ll6-proof/dummy-4c.txt`, can never be read as an exam: the job asks only for the objects
+  `exam-1.json` and `exam-old.json`, and its one list call is filtered to names that begin with that one
+  exam name (`list_path` in `exam_store.py`), so a name that begins `ll6-proof/` is never in its answer.
+- **Shell.** Git Bash, as in step 3. Git Bash can rewrite an argument that looks like a path before
+  gcloud sees it. A check on the station on 2026-11-25 (the same `gs://`, `--format=` and
+  `--if-generation-match=0` arguments, handed to a Windows program) showed them arrive unchanged. If an
+  error still names a strange path (for example one under `C:/Program Files/Git`), stop.
+- **Flags.** Every gcloud line carries `--account`, `--project` and `--no-log-http` (no request or reply
+  is written out, even if HTTP logging was left on). The flag and field names were checked against the
+  installed gcloud on 2026-11-25. These commands have never been run, and the exact wording of each refusal
+  is not known in advance: **check before use**.
+- **STOP rule.** If any command gives a result other than the PASS written for it: stop, change nothing, run
+  nothing more, and tell the release lead. Never delete the dummy to "retry".
+
+1. Make the dummy file in a new, empty folder outside the repo (`mkdir` fails if the folder already
+   exists: then stop and ask the release lead). PASS: no error.
+
+   ```
+   mkdir ~/ll6-proof-4c
+   cd ~/ll6-proof-4c
+   printf 'LL6 step 4c dummy object. No personal data.\n' > dummy-4c.txt
+   ```
+
+2. Upload it, create-only (this form can never replace anything). PASS: no `ERROR` line. It proves only
+   that the owner's account can add a new object.
+
+   ```
+   gcloud storage cp dummy-4c.txt gs://halatuju-replay-exams-0871147736/ll6-proof/dummy-4c.txt --if-generation-match=0 --no-log-http --account tamiliam@gmail.com --project gen-lang-client-0871147736
+   ```
+
+3. Read its hold (only the name and the hold and retention fields, never a full dump). PASS: the answer
+   holds `"event_based_hold": true`. Record the whole short answer. It proves item 7 for the bucket: the
+   default hold lands on a new object. If that line is missing or `false`, stop: never run commands 4 and 5
+   against an object without a hold.
+
+   ```
+   gcloud storage objects describe gs://halatuju-replay-exams-0871147736/ll6-proof/dummy-4c.txt --format="json(name,event_based_hold,temporary_hold,retention_expiration)" --no-log-http --account tamiliam@gmail.com --project gen-lang-client-0871147736
+   ```
+
+4. Try to replace it, create-only (the form the job uses). PASS: an `ERROR` line that names status 412,
+   or a precondition that did not hold. Record that line exactly. It proves item 5 for the bucket: the
+   create-only upload onto an existing object is refused with 412, the one answer the code reads as "it
+   exists", even while the object is held. If the refusal names the hold or another status instead, stop
+   and tell the release lead which.
+
+   ```
+   gcloud storage cp dummy-4c.txt gs://halatuju-replay-exams-0871147736/ll6-proof/dummy-4c.txt --if-generation-match=0 --no-log-http --account tamiliam@gmail.com --project gen-lang-client-0871147736
+   ```
+
+5. Try to replace it plainly (no create-only guard). PASS: an `ERROR` line that says the object is under
+   a hold. Record that line exactly. It proves the hold itself: even the owner's account, which made the
+   bucket, cannot replace a held object. This is a second, different refusal from command 4: command 4 is
+   the create-only guard the code relies on (412); command 5 is the bucket's own lock behind it.
+
+   ```
+   gcloud storage cp dummy-4c.txt gs://halatuju-replay-exams-0871147736/ll6-proof/dummy-4c.txt --no-log-http --account tamiliam@gmail.com --project gen-lang-client-0871147736
+   ```
+
+Afterwards, leave the dummy in place. Removing it is the owner's own later step (the last box of the list
+above): release its hold, then delete it, with the two one-object lines of step 6 and
+`ll6-proof/dummy-4c.txt` in place of `exam-1.json`. The local folder `~/ll6-proof-4c` holds only the
+dummy file and may be deleted.
+
+What still stays unproven after the job run and these checks:
+
+- **Items 5 and 7 for the JOB's account.** Commands 2 to 5 run as the owner's account (or the lead's use
+  of it), so they prove the bucket's settings, not the rights of the job's service account. Whether the
+  job's account gets 412 on an existing object is never seen in a normal run: only a lost race (two
+  freeze runs at once) meets it. Any refusal but 412 reads as `not_kept` (exit 4): nothing is replaced.
+  Whether the hold lands on an object the job's account uploads is not seen until a freeze run has kept
+  an exam, and then only by reading that object's hold (command 3 with the exam's name in place of the
+  dummy's: **check before use**).
+- **Item 6, the upload reply.** These commands show no reply. It is first seen at the first freeze run. A
+  reply in another shape gives `not_kept` (exit 4), or exit 3 on a later fetch; nothing is replaced.
+- **The missing-bucket and no-rights halves of item 3.** The owner's account made this bucket and has
+  rights on it, so these commands cannot show a missing bucket or a refused right. Both stop the run
+  (exit 3) and never read as "no exam yet".
+- For all three, the unit tests (`halatuju_api/apps/scholarship/tests/test_replay_exam_store.py`) check
+  how the code reads these answers, with made-up replies. They do not show what Cloud Storage really
+  sends.
+- The `/tmp` hard links (above) are not touched by these checks.
 
 ## 5. Run it: counts first, then the replay
 
