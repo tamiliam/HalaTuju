@@ -87,6 +87,13 @@ SGD→MYR before the B40 band (existing `SGD_TO_MYR_RATE` path).
 ### C0 `not_salary` — wrong-type / unreadable (n=8)
 MyKad markers (`KAD PENGENALAN`/`WARGANEGARA`/`PENDAFTARAN NEGARA`) 2/2 — **the #47 class** — plus 6
 low-text/cropped. **Rule:** MyKad markers present, OR no wage-grammar at all → `not_salary`.
+**1.3.0 (#85, 2026-11-24):** the MyKad reject runs first; then ≥2 statutory markers → C1 `private` even with
+no wage label — on that no-wage path the deductions must be WHOLE words and LHDN does not count
+(review round 1); only then does "no wage-grammar" reject (`docs/decisions.md`, 2026-11-24).
+Round 2 (2026-11-25): word edges are LETTER edges (`KWSP308.00` counts, LEISURE does not); one payroll suffix
+may be glued on the right (PEKERJA/MAJIKAN/EMPLOYEE/EMPLOYER/EE/ER); `MTD` is PCB on this path; SOCSO and EIS
+stay two groups (owner, 25 Nov). Stored rows without OCR text are re-written only by named id
+(`rescore_salary_statutory --eye-checked-ids`).
 
 ## Variables to extract (per category)
 
