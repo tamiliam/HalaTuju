@@ -18,8 +18,7 @@ import type { T } from './shared'
 // The two merit-bracket templates are the REAL English ones; every other key stays a bare key.
 const sch = (enMessages as unknown as { admin: { scholarship: Record<string, string> } }).admin.scholarship
 const t = ((k: string, p?: Record<string, string>) => {
-  const tpl = k === 'admin.scholarship.meritExam' ? sch.meritExam
-    : k === 'admin.scholarship.meritExamNoYear' ? sch.meritExamNoYear : null
+  const tpl = k === 'admin.scholarship.meritExam' ? sch.meritExam : null
   return tpl ? tpl.replace(/\{(\w+)\}/g, (_m, n) => p?.[n] ?? '') : k
 }) as unknown as T
 
@@ -48,12 +47,12 @@ function meritValue() {
 describe('ApplicantCards — merit on one 0-100 scale', () => {
   it('shows an STPM holder the served 0-100 figure, not the PNGK', () => {
     renderWith({ qualification: 'stpm', merit_score: 92.5, stpm_pngk: 3.7 })
-    expect(meritValue()).toBe('92.5 (admin.scholarship.examName.stpm)')
+    expect(meritValue()).toBe('92.5')
   })
 
   it('shows an SPM holder the served figure unchanged', () => {
     renderWith({ qualification: 'spm', merit_score: 54.2 })
-    expect(meritValue()).toBe('54.2 (admin.scholarship.examName.spm)')
+    expect(meritValue()).toBe('54.2')
   })
 
   it('keeps the STPM CGPA on its own line, since the merit no longer carries it', () => {
@@ -82,8 +81,7 @@ describe('the merit label is just "Merit score" and its bracket is a template, i
     expect(s.meritScore).toBe(label)        // cockpit card: no "(out of 100)" any more (owner 2026-11-25)
     expect(s.meritExam).toContain('{exam}') // "(SPM 2024)"
     expect(s.meritExam).toContain('{year}')
-    expect(s.meritExamNoYear).toContain('{exam}')
-    expect(s.meritExamNoYear).not.toContain('{year}')
+    expect(s.meritExamNoYear).toBeUndefined() // no year read -> no bracket at all
     expect(s.merit).toContain('100')        // applicant list column + mobile card
   })
 })

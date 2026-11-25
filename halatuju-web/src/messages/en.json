@@ -4817,7 +4817,6 @@
       },
       "meritScore": "Merit score",
       "meritExam": "({exam} {year})",
-      "meritExamNoYear": "({exam})",
       "cgpa": "CGPA",
       "preUInstitution": "Pre-U institution",
       "na": "N/A",

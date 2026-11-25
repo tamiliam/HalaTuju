@@ -264,21 +264,22 @@ export function ApplicantCards({
                 {(() => {
                   const row = 'grid grid-cols-1 gap-x-4 gap-y-2.5 border-t border-ground-100 py-3 sm:grid-cols-2'
                   const rowFull = 'border-t border-ground-100 py-3'
-                  // The merit score carries its exam and YEAR in brackets on the SAME line
-                  // (owner 2026-11-25): "85.4 (SPM 2024)". SPM: the slip's year. STPM: the
-                  // higher-results document's year. Matriculation / Asasi / Diploma: no year is
-                  // served (the api only reads a year off STPM results), so the exam name alone.
-                  // Only the bracket is tinted, and only when the year is off the expected sitting.
-                  const examName = third ? t(`admin.scholarship.qualificationLabel.${third}`)
-                    : t(`admin.scholarship.examName.${isStpm ? 'stpm' : 'spm'}`)
+                  // The merit score carries its exam and YEAR in brackets on the SAME line, but ONLY
+                  // once the year has been read off the results document (owner 2026-11-25):
+                  // "85.4 (SPM 2024)". No year read -> the number alone, never "(SPM)". SPM: the
+                  // slip's year. STPM: the higher-results document's year. Matriculation / Asasi /
+                  // Diploma: no year is served (the api only reads one off STPM results), so the
+                  // bare number. The bracket is tinted only when the year is off the expected sitting.
                   const ey = third ? null : isStpm ? higherExamYear(app.documents) : spmExamYear(app.documents)
+                  const examName = t(`admin.scholarship.examName.${isStpm ? 'stpm' : 'spm'}`)
                   const meritValue = app.merit_score == null || (app.merit_score as unknown) === '' ? null : (
                     <>
-                      {app.merit_score}{' '}
-                      <span className={ey?.status === 'off' ? 'text-caution-700' : undefined}>
-                        {ey ? t('admin.scholarship.meritExam', { exam: examName, year: ey.year })
-                          : t('admin.scholarship.meritExamNoYear', { exam: examName })}
-                      </span>
+                      {app.merit_score}
+                      {ey && (
+                        <>{' '}<span className={ey.status === 'off' ? 'text-caution-700' : undefined}>
+                          {t('admin.scholarship.meritExam', { exam: examName, year: ey.year })}
+                        </span></>
+                      )}
                     </>
                   )
                   const meritField = <Field label={t('admin.scholarship.meritScore')} na={na} value={meritValue} />

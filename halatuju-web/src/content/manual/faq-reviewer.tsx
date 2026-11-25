@@ -32,8 +32,8 @@ export const REVIEWER_FAQ: QA[] = [
         reporting date and institution rows. Secondary school is always in capitals, as her documents print it. The
         merit score carries its exam and, where we have read it, the year in brackets on the same line &mdash;
         <em>85.4 (SPM 2024)</em> from her SPM slip, <em>92.1 (STPM 2025)</em> from her STPM results; a year off the
-        expected sitting is shown in amber. Matriculation, Asasi and Diploma students show just the qualification,
-        for example <em>96.5 (Diploma)</em>, as no year is read for them yet. A grey
+        expected sitting is shown in amber. When no year has been read yet, the merit shows as the number alone, with no
+        bracket (and Matriculation, Asasi and Diploma students show the number alone, as no year is read for them yet). A grey
         <strong> Stated by student</strong> line under the programme or institution means no offer letter confirms it
         yet. <strong>N/A</strong> in a muted colour means the slot is required but empty: nothing was entered or read.
         It is not a mismatch. The reporting date always shows, and reads N/A until a date is stored or read from her
@@ -44,8 +44,7 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>Since 26 October 2026 a student may enter Matriculation, Asasi (Foundation) or Diploma results
         instead of STPM. They count as <strong>STPM-equivalent</strong>: the gift&rsquo;s minimum CGPA is
         tested on her overall CGPA, and her merit is that CGPA ÷ 4 × 100, as for an STPM student. The card
-        uses the same slots as every other student (see the next question): the qualification
-        (<strong>Matriculation</strong>, <strong>Asasi</strong> or <strong>Diploma</strong>) is named in brackets after her merit score,
+        uses the same slots as every other student (see the next question): her merit score shows as the number alone,
         with a <strong>Pre-U institution</strong> row, her <strong>CGPA</strong> as printed on her results
         (Matriculation and Asasi: her overall CGPA is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall
         CGPA is its CGPA as it is &mdash; the co-curriculum score no longer has a line of its own), her

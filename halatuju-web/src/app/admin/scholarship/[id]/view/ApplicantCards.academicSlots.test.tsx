@@ -15,8 +15,7 @@ import type { T } from './shared'
 // The two merit-bracket templates are the REAL English ones; every other key stays a bare key.
 const sch = (enMessages as unknown as { admin: { scholarship: Record<string, string> } }).admin.scholarship
 const t = ((k: string, p?: Record<string, string>) => {
-  const tpl = k === 'admin.scholarship.meritExam' ? sch.meritExam
-    : k === 'admin.scholarship.meritExamNoYear' ? sch.meritExamNoYear : null
+  const tpl = k === 'admin.scholarship.meritExam' ? sch.meritExam : null
   return tpl ? tpl.replace(/\{(\w+)\}/g, (_m, n) => p?.[n] ?? '') : k
 }) as unknown as T
 const NA = 'admin.scholarship.na'
@@ -87,11 +86,11 @@ describe('Academic box slots', () => {
     expect(screen.queryByText(PRE_U)).toBeNull()
   })
 
-  it('Diploma: [school | empty] / [pre-U institution | merit] / [CGPA | MUET] / SPM prerequisites / plans; "(Diploma)", no year', () => {
+  it('Diploma: [school | empty] / [pre-U institution | merit] / [CGPA | MUET] / SPM prerequisites / plans; bare 96.5, no bracket', () => {
     renderWith({ qualification: 'diploma', merit_score: 96.5, higher_cgpa: 3.86, muet_band: 3,
       pre_u_institution: 'Politeknik Z', spm_prereq_grades: { bm: 'A' } })
     expect(slotOrder()).toEqual([SCHOOL, PRE_U, MERIT, CGPA, 'MUET', PREREQ, PLANS[0], PLANS[1], PLANS[2]])
-    expect(dd(MERIT)).toBe('96.5 (admin.scholarship.qualificationLabel.diploma)')
+    expect(dd(MERIT)).toBe('96.5')
     expect(rowOf(SCHOOL)).not.toBe(rowOf(PRE_U))        // school sits alone; the other cell is empty
     expect(rowOf(SCHOOL)?.children).toHaveLength(2)
     expect(rowOf(PRE_U)).toBe(rowOf(MERIT))
@@ -99,15 +98,15 @@ describe('Academic box slots', () => {
     expect(dd(PRE_U)).toBe('Politeknik Z')
   })
 
-  it.each(['matric', 'asasi'])('%s has the same rows as Diploma, its own name in the brackets', (q) => {
+  it.each(['matric', 'asasi'])('%s has the same rows as Diploma, a bare merit (no year read)', (q) => {
     renderWith({ qualification: q, merit_score: 80, spm_prereq_grades: { bm: 'A' } })
     expect(slotOrder()).toEqual([SCHOOL, PRE_U, MERIT, CGPA, 'MUET', PREREQ, PLANS[0], PLANS[1], PLANS[2]])
-    expect(dd(MERIT)).toBe(`80 (admin.scholarship.qualificationLabel.${q})`)
+    expect(dd(MERIT)).toBe('80')
   })
 
-  it('STPM without a read year shows the bare exam name in brackets', () => {
+  it('STPM without a read year shows the bare merit, no bracket', () => {
     renderWith({ qualification: 'stpm', merit_score: 92.5, stpm_pngk: 3.7, documents: [slip] })
-    expect(dd(MERIT)).toBe('92.5 (admin.scholarship.examName.stpm)')
+    expect(dd(MERIT)).toBe('92.5')
   })
 
   it('an off-sitting year keeps its caution tint', () => {

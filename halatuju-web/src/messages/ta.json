@@ -4817,7 +4817,6 @@
       },
       "meritScore": "தகுதி மதிப்பெண்",
       "meritExam": "({exam} {year})",
-      "meritExamNoYear": "({exam})",
       "cgpa": "CGPA",
       "preUInstitution": "முன்-பல்கலை நிறுவனம்",
       "na": "இல்லை",

@@ -17,8 +17,7 @@ import type { T } from './shared'
 // The two merit-bracket templates are the REAL English ones; every other key stays a bare key.
 const sch = (enMessages as unknown as { admin: { scholarship: Record<string, string> } }).admin.scholarship
 const t = ((k: string, p?: Record<string, string>) => {
-  const tpl = k === 'admin.scholarship.meritExam' ? sch.meritExam
-    : k === 'admin.scholarship.meritExamNoYear' ? sch.meritExamNoYear : null
+  const tpl = k === 'admin.scholarship.meritExam' ? sch.meritExam : null
   return tpl ? tpl.replace(/\{(\w+)\}/g, (_m, n) => p?.[n] ?? '') : k
 }) as unknown as T
 
@@ -51,9 +50,9 @@ const MATRIC = {
   higher_institution_type: '', muet_band: 4, spm_prereq_grades: { bm: 'A', math: 'B+' },
 }
 
-it('names the exam in brackets after the merit (no year yet), with ONE CGPA slot and the MUET band', () => {
+it('shows the bare merit, no exam bracket (no year read), with ONE CGPA slot and the MUET band', () => {
   renderWith(MATRIC)
-  expect(value('admin.scholarship.meritScore')).toBe('86.75 (admin.scholarship.qualificationLabel.matric)')
+  expect(value('admin.scholarship.meritScore')).toBe('86.75')
   expect(sub('admin.scholarship.meritScore')).toBeUndefined()   // no grey line under it any more
   expect(screen.getAllByText('admin.scholarship.cgpa')).toHaveLength(1)
   expect(value('admin.scholarship.cgpa')).toBe('3.50')
@@ -101,10 +100,10 @@ it('her SPM chips carry the slip tick, as an SPM student\'s do (owner, 2026-10-3
   expect(screen.getAllByRole('img').map((i) => i.getAttribute('title'))).toEqual(['slip'])
 })
 
-it('a Diploma: its name in brackets after the merit, no year, no "Diploma from" or co-curriculum line', () => {
+it('a Diploma: the bare merit, no bracket, no year, no "Diploma from" or co-curriculum line', () => {
   renderWith({ ...MATRIC, qualification: 'diploma', overall_cgpa: 2.8, higher_cgpa: 2.8,
     higher_koko: null, higher_institution_type: 'public', merit_score: 70 })
-  expect(value('admin.scholarship.meritScore')).toBe('70 (admin.scholarship.qualificationLabel.diploma)')
+  expect(value('admin.scholarship.meritScore')).toBe('70')
   expect(value('admin.scholarship.cgpa')).toBe('2.80')
   expect(screen.getByText('admin.scholarship.preUInstitution')).toBeTruthy()
   expect(screen.queryByText('admin.scholarship.diplomaFrom')).toBeNull()
