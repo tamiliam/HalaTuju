@@ -16,6 +16,7 @@ import re
 from typing import Optional
 
 from .doc_parse_text import _first_rm_figure, _lines, find_value, first_nric, has
+from .name_guard import clean_person_name
 
 
 # ── P3: KWSP EPF statement ────────────────────────────────────────────────────
@@ -151,7 +152,7 @@ def _shares_doubtful(rows: list) -> bool:
 
 # ── OCR-first S6 (2026-11-19): the RELAXED cell read, behind its lane switch ──────────────────
 #: The reader's version, stored as ``parser_version`` beside a rules read.
-EPF_PARSER_VERSION = '1.1.0'
+EPF_PARSER_VERSION = '1.2.0'   # 1.2.0 (TD-742): a junk member-name line hands the read to the AI
 #: The settings switch (env ``OCR_FIRST_EPF_RELAXED_ENABLED=1``); off until Gate 1 passes.
 RELAXED_SWITCH = 'OCR_FIRST_EPF_RELAXED_ENABLED'
 _SECTION_START_RE = re.compile(r'caruman\s*semasa', re.IGNORECASE)
@@ -292,6 +293,11 @@ def _parse_epf(text: str) -> Optional[dict]:
     si = next((k for k, ln in enumerate(lines)
                if re.search(r'sulit\s+dan\s+persendirian', ln, re.IGNORECASE)), -1)
     name = next((ln for ln in lines[si + 1:] if ln), '') if si >= 0 else ''
+    # TD-742 (owner ruling 25 Nov 2026): a line after "SULIT ..." that is not a name (':', a label
+    # word, under 4 letters) is not taken as the member's name; the AI reads the statement instead.
+    if name and not clean_person_name(name):
+        return None
+    name = clean_person_name(name)
     nric = first_nric(find_value(text, r'no\.?\s*kad\s+pengenalan')) or first_nric(text)
     # The KWSP employer number is a digit code — extract the digit-run so a label/value
     # adjacency broken by image OCR yields '' rather than junk ("RINGKASAN", ":").

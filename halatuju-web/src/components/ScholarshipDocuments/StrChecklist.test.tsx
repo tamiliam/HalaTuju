@@ -41,3 +41,27 @@ describe('StrChecklist — the year rows (TD-403)', () => {
     expect(screen.getByText('scholarship.docs.strCheck.current')).toBeTruthy()
   })
 })
+
+describe('StrChecklist — the display words (TD-742, owner ruling 25 Nov 2026)', () => {
+  function displayDoc(extra: Partial<StrCheck>): ApplicantDocument {
+    const doc = strDoc('current')
+    return { ...doc, str_check: { ...doc.str_check, ...extra } } as ApplicantDocument
+  }
+
+  test('a recipient not read shows grey "Not read", never the green IC match', () => {
+    render(<StrChecklist doc={displayDoc({ display_name_status: 'not_read', display_nric_status: 'match' })} t={t} />)
+    expect(screen.getByText('scholarship.docs.incomeProofCheck.notRead')).toBeTruthy()
+    expect(screen.getAllByText('scholarship.docs.incomeProofCheck.matchesIc')).toHaveLength(1)   // IC No row only
+  })
+
+  test('a clean disagreement shows red on the STR itself', () => {
+    render(<StrChecklist doc={displayDoc({ display_name_status: 'mismatch', display_nric_status: 'mismatch' })} t={t} />)
+    expect(screen.getAllByText('scholarship.docs.incomeProofCheck.mismatchIc')).toHaveLength(2)
+  })
+
+  test('an older payload without display fields reads the decision fields', () => {
+    render(<StrChecklist doc={strDoc('current')} t={t} />)
+    expect(screen.getAllByText('scholarship.docs.incomeProofCheck.matchesIc')).toHaveLength(2)
+    expect(screen.queryByText('scholarship.docs.incomeProofCheck.notRead')).toBeNull()
+  })
+})

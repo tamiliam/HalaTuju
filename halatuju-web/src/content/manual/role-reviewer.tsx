@@ -110,7 +110,10 @@ export const roleReviewer: ManualChapter = {
         work is the amber and red ones. You have three tools, in order of effort: <strong>read the document
         yourself</strong>; <strong>raise a query or request a document</strong> (the student replies by email); or
         <strong> ask in the interview</strong>. Don&rsquo;t pass weak evidence through — it&rsquo;s fairer to ask
-        for a clean upload.</>
+        for a clean upload. On a document, a grey <strong>Not read</strong> row means the page gave nothing usable
+        there, so nothing was compared; a disagreement between a parent&rsquo;s IC and an income document shows red on
+        the income document, and <strong>Wrong card</strong> on an IC means the card itself does not fit the birth
+        certificate (see the FAQ).</>
       ),
       img: '/reviewer-guide/step2-overview.png',
       alt: 'The applicant review screen and details',

@@ -45,7 +45,9 @@ function factStatus(s: string | undefined | null): FactStatus {
     case 'mismatch': case 'unreadable': case 'not_found': case 'rejected':
       return 'not'
     // 'not_compared' (request #62 review 2): no SPM prereq, so nothing was compared — grey, never amber
-    default:                       // '', 'no_ref', 'unknown', 'not_compared', undefined
+    // 'not_read' (TD-742, owner ruling 25 Nov 2026): the document's own value was blank or not a name
+    // (a ':' or a label word) — grey, never a green tick and never a fault on another document
+    default:                       // '', 'no_ref', 'unknown', 'not_compared', 'not_read', undefined
       return 'unknown'
   }
 }
@@ -194,9 +196,11 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     ]
     if (gf) {
       facts.push(gf)
-    } else if (c.wrong_card) {
+    } else if (c.display_wrong_card ?? c.wrong_card) {
       // The IC-number chain verified the earner from the BC + income proof, but the card in THIS
-      // slot is a different family member's — a soft caveat (amber), never a block.
+      // slot is a different family member's — a soft caveat (amber), never a block. TD-742 (ruling 3):
+      // the served display flag first — only the card's OWN number far from the chained number, or
+      // its own row red against the birth certificate; a fault on the proof never lands here.
       facts.push({ key: 'wrong_card', status: 'partial' })
     } else if (_PATRONYMIC_MEMBER.has(c.member)) {
       facts.push({ key: 'relationship', status: factStatus(c.name_status) })
@@ -231,8 +235,9 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // SUSPECT (amber) STR does not — its chips keep their real status; the amber Genuine fact stands
     // alongside. (Currency vs approval stays in the Status/Current chips.)
     const facts: DocumentFactLabel[] = [
-      { key: 'recipient', status: cap ? 'not' : factStatus(c.name_status) },
-      { key: 'ic_no', status: cap ? 'not' : factStatus(c.nric_status) },
+      // TD-742: the served display words first (a recipient not read is grey, not a forced green).
+      { key: 'recipient', status: cap ? 'not' : factStatus(c.display_name_status ?? c.name_status) },
+      { key: 'ic_no', status: cap ? 'not' : factStatus(c.display_nric_status ?? c.nric_status) },
       { key: 'status', status: cap ? 'not' : strStatusFactStatus(c.current_status) },
       { key: 'current', status: cap ? 'not' : strCurrencyFactStatus(c.current_status) },
     ]
@@ -246,7 +251,10 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // the earner reads (off the wrong paper), so red them. A merely SUSPECT (amber) one does not.
     if (!c) return gf ? [gf] : []
     const has = (k: string) => (c.points || []).some((p) => p.key === k && (p.value || '').trim())
-    const facts: DocumentFactLabel[] = [{ key: 'name', status: cap ? 'not' : factStatus(c.name_status) }]
+    // TD-742: each slip on its OWN values (the served display words; older payloads fall back).
+    const nameSt = c.display_name_status ?? c.name_status
+    const nricSt = c.display_nric_status ?? c.nric_status
+    const facts: DocumentFactLabel[] = [{ key: 'name', status: cap ? 'not' : factStatus(nameSt) }]
     // IC No: an EPF statement always carries the member's number; a salary slip only sometimes
     // (hide it there when absent). Same treatment the STR chip gives it — the number is the strong
     // earner key — and both read `nric` off the check object the server sent, not a rule of ours.
@@ -254,8 +262,8 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // mismatch chip; a slip that read nothing (unreadable / wrong_doc) → the unreadable chip; an
     // `incomplete` slip with no number → no IC chip (doc_match_verdict counts it unreadable; we don't).
     if ((c.nric || '').trim()) {
-      const differs = !cap && c.nric_status === 'mismatch'
-      facts.push({ key: differs ? 'ic_no_mismatch' : 'ic_no', status: cap ? 'not' : factStatus(c.nric_status) })
+      const differs = !cap && nricSt === 'mismatch'
+      facts.push({ key: differs ? 'ic_no_mismatch' : 'ic_no', status: cap ? 'not' : factStatus(nricSt) })
     } else if (!cap && ['unreadable', 'wrong_doc'].includes(doc.vision_fields?.student_verdict || '')) {
       facts.push({ key: 'ic_no_unreadable', status: 'not' })
     }
@@ -290,7 +298,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // (red) discredits the reads, so no green tick; a merely SUSPECT one keeps them beside an amber chip.
     const facts: DocumentFactLabel[] = [
       { key: 'child', status: cap ? 'not' : factStatus(c.child_status) },
-      { key: 'mother', status: cap ? 'not' : factStatus(c.mother_status) },
+      { key: 'mother', status: cap ? 'not' : factStatus(c.display_mother_status ?? c.mother_status) },   // TD-742
       { key: 'father', status: cap ? 'not' : factStatus(c.father_status) },
     ]
     if (gf) facts.push(gf)

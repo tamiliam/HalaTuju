@@ -45,6 +45,27 @@ Bug, no charge; analysis 190 (posted 24 Nov). No earlier ruling on earner ticks 
   officer's case page warns on every one of them. The student of a submitted case sees nothing about ticks already saved
   (no standing note after submission); if they change their ticks through the Action Centre's switch, they are asked.
 
+## 2026-11-25 — TD-742 linkage Phase 1: one document's fault never paints another (owner ruling, display only)
+
+Owner rulings, 25 Nov. Services: both. Migration: none. Case 177: a junk STR recipient name (a lone ':') made the correct
+parent IC show amber "Wrong card" and a red Name row, while the STR itself showed a green tick.
+1. **Phase 1 is display only.** Decisions, gates, owed lines, verdicts, the stranger rule and Action Centre holds are
+   UNCHANGED: they still read the decision fields (`name_status`, `nric_status`, `proof_*_status`, `wrong_card`,
+   `mother_status`). The serializers ADD `display_*` fields beside them (`link_display.py`, outside `income_engine`, so
+   the verdict engine's digest is unchanged and VERDICT_ENGINE_VERSION is not bumped). Phase 2 (decisions move) is later.
+2. **Not read is grey.** When the chain holds but the STR / slip / EPF name was not read or is junk (`name_guard.clean_person_name`:
+   NRIC patterns, punctuation, under four letters, or label words only), that row shows grey "not read". Never a green
+   tick for a field nobody compared; never amber or red on another document because of it.
+3. **The red goes on the income document.** A true parent-IC vs proof disagreement (RED on clean values) shows red on
+   the proof, not the IC card. The card shows "Wrong card" only when its own number is far from the chained number, or
+   its own row is RED against its anchor (the birth certificate's parent row) on clean values.
+4. **Stored bad reads stay as they are.** No DB change, no re-read, no decision reclassification; the display applies the
+   junk guard at comparison time. NEW reads: `_parse_str` skips a junk recipient candidate (and hands a junk-only name to
+   the AI read on proof surfaces); the EPF parser hands a junk member-name line to the AI read (EPF_PARSER_VERSION 1.2.0).
+- **L2-1 narrowed, for DISPLAY only.** The IC-number chain (#9, 2026-06-29) still forces 'match' in the decisions. On
+  screen it now confirms only what it compared: a document's own value equal to the birth certificate's parent row shows
+  green; a value not read shows grey. The BC father row stays outside the bands (#23); the student's own IC stays strict.
+
 ## 2026-11-25 — Membership comes first: an invitee who has not signed in is not an org admin (owner ruling)
 
 Owner ruling, 25 Nov: "A person becomes an admin, reviewer or mentor by being a member first. Even if the invitation

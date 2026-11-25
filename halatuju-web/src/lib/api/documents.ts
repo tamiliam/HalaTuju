@@ -95,6 +95,12 @@ type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'che
 // student's parent"): green confirms it, red asks the student to act, amber / grey go to a person.
 // The same scoring the income decision reads (`income_engine.match_bands`); never re-derived here.
 type LinkBand = 'green' | 'amber' | 'red' | 'grey'
+// TD-742 linkage Phase 1 (owner ruling 25 Nov 2026): the DISPLAY words of a link row, served as
+// `display_*` beside the decision fields and read in their place when present (older payloads fall
+// back). DISPLAY ONLY: decisions still read the old fields. 'not_read' = this document's own value
+// was blank or not a name (a ':' or a label word), so nothing was compared: grey, never green.
+type DisplayStatus = 'match' | 'mismatch' | 'no_ref' | 'not_read' | 'check' | 'check_near' | 'check_name'
+  | 'check_one' | 'check_both'
 
 export interface BcCheck {
   child_name: string
@@ -102,6 +108,7 @@ export interface BcCheck {
   mother_name: string
   mother_nric: string
   mother_status: RelStatus    // vs the mother's IC
+  display_mother_status?: DisplayStatus   // TD-742: what the Mother row shows (falls back to mother_status)
   link: LinkBand              // #78: the child + mother link
   father_name: string
   father_status: RelStatus    // vs your IC patronymic
@@ -143,6 +150,9 @@ export interface StrCheck {
   // parent/guardian's IC (each field independently — see _str_recipient_household_match).
   name_status: 'match' | 'mismatch' | 'no_ref'
   nric_status: 'match' | 'mismatch' | 'no_ref'
+  // TD-742: what the Recipient / IC No rows show (fall back to name_status / nric_status).
+  display_name_status?: DisplayStatus
+  display_nric_status?: DisplayStatus
   // 'current' = approved (Lulus/Diluluskan/Layak) AND a current year; 'stale' = older year;
   // 'rejected' = a clear negative status; 'unconfirmed' = no approval shown (e.g. a SALINAN
   // application record) or approval we can't tie to a current year — not proof on its own.
@@ -185,6 +195,12 @@ export interface IncomeIcCheck {
   // caveat: "looks like a different family member's IC; we verified the earner another way").
   chain_verified?: boolean
   wrong_card?: boolean
+  // TD-742 (ruling 3): what the card shows. A disagreement with the proof shows on the PROOF, so
+  // these are 'match' or 'no_ref'; `display_wrong_card` only when the card's own number is far from
+  // the chained number, or its own row is red against the birth certificate. Fall back to the above.
+  display_proof_name_status?: 'match' | 'no_ref'
+  display_proof_nric_status?: 'match' | 'no_ref'
+  display_wrong_card?: boolean
   // The CLUSTER coach verdict for this member (relationship + coherence across their IC +
   // income proofs); '' when the cluster is consistent. Drives the single per-member coach.
   cluster_status?: string
@@ -200,6 +216,9 @@ export interface IncomeProofCheck {
   // vs the member's IC: 'match' | 'mismatch' | 'no_ref' (that member's IC not uploaded / not read)
   name_status: 'match' | 'mismatch' | 'no_ref'
   nric_status: 'match' | 'mismatch' | 'no_ref'
+  // TD-742: what the Name / IC No rows show — THIS slip's own values (fall back to the above).
+  display_name_status?: DisplayStatus
+  display_nric_status?: DisplayStatus
   ic_present: boolean
   // #374 / ruling 2A: what an INFORMAL payslip or declaration form still lacks to count; absent on older payloads.
   approval_missing?: ('header' | 'approver')[]

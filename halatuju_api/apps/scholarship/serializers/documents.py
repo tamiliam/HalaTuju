@@ -206,6 +206,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             # docs) drives the single per-member coach anchored on the IC.
             chk['cluster_status'] = (income_cluster_advice(obj.application, chk['member'])
                                      if chk['member'] else '')
+            # TD-742 Phase 1: display-only fields beside the decision fields (`link_display`).
+            from ..link_display import income_ic_display
+            chk.update(income_ic_display(obj, chk))
         return chk
 
     def get_income_proof_check(self, obj):
@@ -216,7 +219,10 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         if obj.doc_type not in ('salary_slip', 'epf'):
             return None
         from ..income_engine import student_income_proof_check
-        return student_income_proof_check(obj)
+        from ..link_display import income_proof_display
+        chk = student_income_proof_check(obj)
+        # TD-742 Phase 1: display-only fields beside the decision fields (`link_display`).
+        return {**chk, **income_proof_display(obj, chk)} if chk else chk
 
     def get_str_check(self, obj):
         """{name, nric, status, year, member, name_status, nric_status, current_status,
@@ -225,7 +231,10 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         if obj.doc_type != 'str':
             return None
         from ..income_str_ownership import student_str_payload
-        return student_str_payload(obj)
+        from ..link_display import str_display
+        out = student_str_payload(obj)
+        # TD-742 Phase 1: display-only fields beside the decision fields (`link_display`).
+        return {**out, **str_display(obj, out)} if out else out
 
     def get_utility_check(self, obj):
         """{name, address, monthly_bill, unpaid_balance, address_status, current_status, bill_month,
@@ -243,7 +252,10 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         if obj.doc_type != 'birth_certificate':
             return None
         from ..income_engine import student_bc_check
-        return student_bc_check(obj)
+        from ..link_display import bc_display
+        chk = student_bc_check(obj)
+        # TD-742 Phase 1: display-only fields beside the decision fields (`link_display`).
+        return {**chk, **bc_display(obj, chk)} if chk else chk
 
     def get_guardianship_check(self, obj):
         """{guardian/ward names + statuses + doc_kind} for a guardianship letter — ties the

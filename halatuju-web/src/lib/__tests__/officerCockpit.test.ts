@@ -744,6 +744,34 @@ describe('documentFacts', () => {
       .toEqual(['name', 'ic_no'])
   })
 
+  // ── TD-742 (owner ruling 25 Nov 2026): the served DISPLAY words win, the old fields are the fallback ──
+  it('TD-742 parent_ic: display_wrong_card false hides a decision-side wrong_card (case 177 shape)', () => {
+    // A junk STR recipient (':') made the decision say wrong_card; the card's own number is the
+    // chained number, so the display says no wrong card.
+    expect(documentFacts(doc({ doc_type: 'parent_ic',
+      income_ic_check: icCheck({ member: 'mother', readable: true, name_status: 'match',
+                                 chain_verified: true, wrong_card: true, display_wrong_card: false }) })).map((f) => f.key))
+      .toEqual(['name', 'ic_no'])
+  })
+
+  it('TD-742 str: a recipient not read is grey, never the forced green', () => {
+    expect(documentFacts(doc({ doc_type: 'str', str_check: strCheck({
+      name_status: 'match', nric_status: 'match', display_name_status: 'not_read', display_nric_status: 'match' }) })).slice(0, 2))
+      .toEqual([
+        { key: 'recipient', status: 'unknown' },
+        { key: 'ic_no', status: 'verified' },
+      ])
+  })
+
+  it('TD-742 str: an older payload without display fields reads the decision fields', () => {
+    expect(documentFacts(doc({ doc_type: 'str', str_check: strCheck({
+      name_status: 'match', nric_status: 'match' }) })).slice(0, 2))
+      .toEqual([
+        { key: 'recipient', status: 'verified' },
+        { key: 'ic_no', status: 'verified' },
+      ])
+  })
+
   // ── Proof chips (Item C): EPF/salary show IC No when the proof carries one ──
   it('epf chips: Name + IC No + Contribution + Balance + Current (from the EPF points)', () => {
     expect(documentFacts(doc({ doc_type: 'epf',

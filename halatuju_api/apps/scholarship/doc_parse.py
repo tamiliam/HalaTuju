@@ -25,6 +25,7 @@ from typing import Callable, Optional
 # ── text + label helpers — moved to the leaf `doc_parse_text` (review F3) ───────
 from .doc_parse_text import _NRIC_RE, _first_rm_figure, _lines, find_value, first_nric, has
 from .doc_parse_tnb import PHOTO_SWITCH, lane_on, parse_tnb_photo
+from .name_guard import pick_name
 from .str_application_page import is_application_details
 from .str_status_read import ambiguous_tidak_lulus, one_line_per_break, status_value
 
@@ -174,12 +175,11 @@ def _parse_str(text: str) -> Optional[dict]:
     if source_type is None:
         return None                          # not an STR/SARA doc → Gemini
 
-    name = _patronymic_name(text) or find_value(text, r'nama\s+penerima') or find_value(text, r'\bnama\b')
+    name, junk_only = pick_name(_patronymic_name(text), find_value(text, r'nama\s+penerima'), find_value(text, r'\bnama\b'))
     nric = first_nric(text)
-    # A genuine STR surface must yield at least a name or an NRIC; otherwise we don't trust
-    # the deterministic read and hand off to Gemini (the SARA-only 'unknown' is exempt — it
-    # is a deliberate "not a proof" verdict that needs no recipient fields).
-    if source_type != 'unknown' and not (name or nric):
+    # A genuine STR surface must yield a name or an NRIC, and a name found must BE a name, not ':' or a label (TD-742,
+    # owner 25 Nov 2026); else Gemini reads it (SARA-only 'unknown' is exempt: a deliberate "not a proof" verdict).
+    if source_type != 'unknown' and (junk_only or not (name or nric)):
         return None
 
     # Read the status VALUE, not a label: accept the label-anchored read only when it IS one of the closed

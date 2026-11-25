@@ -93,6 +93,14 @@ publish window; release note `docs/releases/access-s4-scholars-release-note-draf
   counted); SQL pinned in the test and the release note. `TheMoneyMoves` adds the same-state, no-target and
   unknown-target rows.
 
+### TD-742 linkage Phase 1 - one document's fault never paints another (owner ruling, 2026-11-25)
+
+Not pushed. Migration: none. Services: both. Display only: no decision, gate, owed line, verdict, stranger rule or Action Centre hold changes.
+- Case 177: a ':' read as the STR recipient made the correct parent IC show "Wrong card" and a red Name row. New `apps/scholarship/name_guard.py` (`clean_person_name`) and `apps/scholarship/link_display.py` serve `display_*` fields beside the decision fields: STR `display_name_status` / `display_nric_status`, salary slip / EPF the same, parent IC `display_proof_name_status` / `display_proof_nric_status` / `display_wrong_card`, birth certificate `display_mother_status`. A blank or junk name shows grey "not read"; a clean disagreement shows red on the income document, never the IC; "Wrong card" only when the card's own number is far from the chained number or its own row is red against the birth certificate. Every slip in a group is judged on its own values.
+- New reads: `_parse_str` skips a junk recipient candidate; the EPF parser hands a junk member-name line to the AI read (`EPF_PARSER_VERSION` 1.2.0). Stored reads are not changed or re-read. `income_engine` untouched, so `VERDICT_ENGINE_VERSION` is unchanged.
+- Web: `checklists.tsx`, `cockpitDocFacts.ts` and the `documents.ts` types read the display fields, falling back to the old ones; new i18n key `scholarship.docs.incomeProofCheck.notRead` (en / ms / ta). Reviewer FAQ and guide explain "Not read" and "Wrong card". `docs/decisions.md` records the rulings.
+- Tests: 25 in `test_td742_link_display.py` (case-177 shape, clean red on the proof, real wrong card, slip group, guard units, decisions unchanged); 3 EPF parser-version pins in `test_doc_parse_s6.py`; jest: 3 in `officerCockpit.test.ts`, 3 in `StrChecklist.test.tsx`.
+
 - fix: case list shows the status only; the state warning chip moved to the case page (owner 2026-11-25). Not pushed. Migration: none. Services: web.
 
 ### LL6 - the exam file's home is a private Cloud Storage bucket (2026-11-25)

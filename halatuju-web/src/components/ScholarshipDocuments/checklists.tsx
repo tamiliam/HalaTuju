@@ -142,11 +142,24 @@ export function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key:
 
   return (
     <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
-      {chk.nric ? row(t('scholarship.docs.icCheck.icNo'), formatNric(chk.nric), matchTag(chk.proof_nric_status)) : null}
-      {row(t('scholarship.docs.icCheck.name'), chk.name, matchTag(chk.proof_name_status))}
+      {/* TD-742 (ruling 3): the served display words first; a clash with the proof shows on the proof. */}
+      {chk.nric ? row(t('scholarship.docs.icCheck.icNo'), formatNric(chk.nric),
+        matchTag(chk.display_proof_nric_status ?? chk.proof_nric_status)) : null}
+      {row(t('scholarship.docs.icCheck.name'), chk.name, matchTag(chk.display_proof_name_status ?? chk.proof_name_status))}
       {chk.address ? row(t('scholarship.docs.icCheck.address'), chk.address, neutralTag) : null}
     </div>
   )
+}
+
+/** TD-742 linkage Phase 1 (owner ruling 25 Nov 2026): the words a served `display_*` link row can
+ *  carry beyond match / mismatch / no_ref. 'not_read' = this document's own value was blank or not
+ *  a name (a ':' or a label word), so nothing was compared: grey "Not read", never a green tick and
+ *  never a fault. The amber 'check_*' words reuse the birth certificate's labels. null = not one. */
+function displayPill(status: string, t: (key: string) => string): { kind: ICCheckKind; label: string } | null {
+  if (status === 'not_read') return { kind: 'none', label: t('scholarship.docs.incomeProofCheck.notRead') }
+  if (status === 'check_name') return { kind: 'partial', label: t('scholarship.docs.relCheck.checkName') }
+  if (status === 'check_near') return { kind: 'partial', label: t('scholarship.docs.relCheck.checkNumberOneDigit') }
+  return null
 }
 
 /** Member-tagged salary slip / EPF checklist (Check-1 Income). Reads the EARNER's facts
@@ -168,9 +181,11 @@ export function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   // A status pill vs the member's IC. 'no_ref' (that IC not uploaded / not read) is a
   // neutral nudge, never a problem.
   const vsIc = (status: string) => {
-    const kind: ICCheckKind = status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : 'none'
-    const label =
-      status === 'match'
+    const shown = displayPill(status, t)
+    const kind: ICCheckKind = shown ? shown.kind : status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : 'none'
+    const label = shown
+      ? shown.label
+      : status === 'match'
         ? t('scholarship.docs.incomeProofCheck.matchesIc')
         : status === 'mismatch'
           ? t('scholarship.docs.incomeProofCheck.mismatchIc')
@@ -198,8 +213,10 @@ export function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
 
   return (
     <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
-      {row(t('scholarship.docs.incomeProofCheck.name'), chk.name, vsIc(chk.name_status))}
-      {chk.nric ? row(t('scholarship.docs.incomeProofCheck.icNo'), formatNric(chk.nric), vsIc(chk.nric_status)) : null}
+      {/* TD-742: each slip on its own values (the served display words; older payloads fall back). */}
+      {row(t('scholarship.docs.incomeProofCheck.name'), chk.name, vsIc(chk.display_name_status ?? chk.name_status))}
+      {chk.nric ? row(t('scholarship.docs.incomeProofCheck.icNo'), formatNric(chk.nric),
+        vsIc(chk.display_nric_status ?? chk.nric_status)) : null}
       {chk.points.map((p) => (
         <div key={p.key}>{row(t(`scholarship.docs.incomeProofCheck.${p.key}`), p.value, fromDoc)}</div>
       ))}
@@ -309,12 +326,16 @@ export function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: stri
   const pill = (kind: ICCheckKind, label: string) => (
     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>{label}</span>
   )
-  const vsIc = (status: string) =>
-    status === 'match'
-      ? pill('match', t('scholarship.docs.incomeProofCheck.matchesIc'))
-      : status === 'mismatch'
-        ? pill('mismatch', t('scholarship.docs.incomeProofCheck.mismatchIc'))
-        : pill('none', t('scholarship.docs.incomeProofCheck.addIc'))
+  const vsIc = (status: string) => {
+    const shown = displayPill(status, t)
+    return shown
+      ? pill(shown.kind, shown.label)
+      : status === 'match'
+        ? pill('match', t('scholarship.docs.incomeProofCheck.matchesIc'))
+        : status === 'mismatch'
+          ? pill('mismatch', t('scholarship.docs.incomeProofCheck.mismatchIc'))
+          : pill('none', t('scholarship.docs.incomeProofCheck.addIc'))
+  }
   // The STR model is exactly four variables — Name · IC · Status · Year (owner 2026-07-07).
   // STATUS answers "is it approved?" (Lulus/diluluskan); YEAR answers "is it for this cycle?"
   // (a date, never an amount). The single currency ladder decomposes onto the two axes.
@@ -355,8 +376,10 @@ export function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: stri
 
   return (
     <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
-      {row(t('scholarship.docs.strCheck.recipient'), chk.name, vsIc(chk.name_status))}
-      {chk.nric ? row(t('scholarship.docs.strCheck.icNo'), formatNric(chk.nric), vsIc(chk.nric_status)) : null}
+      {/* TD-742: a recipient name not read shows grey "Not read" (the served display words first). */}
+      {row(t('scholarship.docs.strCheck.recipient'), chk.name, vsIc(chk.display_name_status ?? chk.name_status))}
+      {chk.nric ? row(t('scholarship.docs.strCheck.icNo'), formatNric(chk.nric),
+        vsIc(chk.display_nric_status ?? chk.nric_status)) : null}
       {row(t('scholarship.docs.strCheck.status'), chk.status, statusPill)}
       {row(t('scholarship.docs.strCheck.year'), chk.year, yearPill)}
     </div>
@@ -388,7 +411,8 @@ function relPill(status: string, t: (k: string) => string): ReactNode {
             // certificate — the document is right and the spelling difference is real.
             : status === 'check_name' ? t('scholarship.docs.relCheck.checkName')
               : status === 'check_both' ? t('scholarship.docs.relCheck.checkBoth')   // #78: both read, both slightly off
-                : t('scholarship.docs.relCheck.reviewing')
+                : status === 'not_read' ? t('scholarship.docs.incomeProofCheck.notRead')   // TD-742: grey
+                  : t('scholarship.docs.relCheck.reviewing')
   return <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${REL_PILL[kind]}`}>{label}</span>
 }
 
@@ -413,7 +437,8 @@ export function BcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: strin
     <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {relRow(t('scholarship.docs.relCheck.child'), chk.child_name, relPill(chk.child_status, t))}
       {relRow(t('scholarship.docs.relCheck.mother'),
-              [chk.mother_name, chk.mother_nric].filter(Boolean).join(' · '), relPill(chk.mother_status, t))}
+              [chk.mother_name, chk.mother_nric].filter(Boolean).join(' · '),
+              relPill(chk.display_mother_status ?? chk.mother_status, t))}
       {chk.father_name ? relRow(t('scholarship.docs.relCheck.father'), chk.father_name, relPill(chk.father_status, t)) : null}
     </div>
   )

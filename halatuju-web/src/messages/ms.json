@@ -1689,6 +1689,7 @@
         "matchesIc": "Sepadan dengan KP mereka",
         "mismatchIc": "Tidak sepadan dengan KP mereka — semak semula",
         "addIc": "Muat naik KP mereka untuk semak automatik",
+        "notRead": "Tidak dibaca",
         "fromDoc": "daripada dokumen"
       },
       "utilityCheck": {

@@ -1689,6 +1689,7 @@
         "matchesIc": "Matches their IC",
         "mismatchIc": "Doesn't match their IC — re-check",
         "addIc": "Add their IC to auto-check",
+        "notRead": "Not read",
         "fromDoc": "from the document"
       },
       "utilityCheck": {

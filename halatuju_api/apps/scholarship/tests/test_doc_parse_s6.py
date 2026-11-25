@@ -222,7 +222,7 @@ class TestEpfRelaxedRows(SimpleTestCase):
     def test_switch_off_keeps_the_old_unknown(self):
         r = parse_by_labels('epf', _EPF)
         self.assertEqual(r['contribution_status'], 'unknown')
-        self.assertEqual(rules_parser_version('epf', _EPF), 'epf_parse kwsp_penyata 1.1.0')
+        self.assertEqual(rules_parser_version('epf', _EPF), 'epf_parse kwsp_penyata 1.2.0')
 
     @_EPF_ON
     def test_joined_and_split_cells_reconcile_and_lock(self):
@@ -233,7 +233,7 @@ class TestEpfRelaxedRows(SimpleTestCase):
         self.assertEqual(r['months_counted'], '2')
         self.assertEqual(r['employer_contribution_total'], 'RM471.00')
         self.assertEqual(r['employee_contribution_total'], 'RM397.00')
-        self.assertEqual(rules_parser_version('epf', _EPF), 'epf_parse kwsp_penyata_relaxed 1.1.0')
+        self.assertEqual(rules_parser_version('epf', _EPF), 'epf_parse kwsp_penyata_relaxed 1.2.0')
 
     @_EPF_ON
     def test_a_header_without_its_space_is_found(self):
@@ -327,7 +327,7 @@ class TestEpfRelaxedRows(SimpleTestCase):
     def test_a_strict_read_is_never_replaced(self):
         from apps.scholarship.tests.test_doc_parse import _KWSP
         self.assertEqual(doc_parse_epf._caruman_rows(_KWSP), doc_parse_epf._strict_rows(_KWSP))
-        self.assertEqual(rules_parser_version('epf', _KWSP), 'epf_parse kwsp_penyata 1.1.0')
+        self.assertEqual(rules_parser_version('epf', _KWSP), 'epf_parse kwsp_penyata 1.2.0')
 
 
 # Review round 2: an EMPTY withdrawals section, printed as real statements print it.

@@ -214,6 +214,19 @@ export const REVIEWER_FAQ: QA[] = [
         evidence.</>,
     },
     {
+      q: <>A row on an STR, payslip or EPF statement says <strong>Not read</strong>. And when does a parent&rsquo;s IC say <strong>Wrong card</strong>?</>,
+      a: <><strong>Not read</strong> (grey) means the document itself gave us nothing usable for that row &mdash; a
+        blank, or a stray mark such as a colon or a form label in place of a name. Nothing was compared, so there is no
+        tick, and it never turns another document amber or red. If the family&rsquo;s IC numbers already link the
+        documents (the birth certificate, the parent&rsquo;s IC and the income proof), the case is unaffected; read the
+        name on the page yourself if you want to be sure. When a parent&rsquo;s IC and an income document really
+        disagree, the red shows on the <strong>income document</strong>, not on the IC. The IC shows
+        <strong> Wrong card</strong> only when its own number is far from the family member&rsquo;s number on the
+        birth certificate, or its own details clearly clash with the birth certificate &mdash; usually another family
+        member&rsquo;s card uploaded in that slot. This changes only what the chips show: the case&rsquo;s checks and
+        verdict are worked out exactly as before.</>,
+    },
+    {
       q: <>How do I ask the student a question?</>,
       a: <>Use <strong>Raise a query</strong> or <strong>Request a document</strong>. They get an email; their
         reply shows in the <strong>Outstanding</strong> box. While the student is still completing their
