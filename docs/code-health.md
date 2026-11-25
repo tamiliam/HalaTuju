@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-25 | bedb73a | 90 | 57 | verdict_engine.py 29.2 | 1 | 1 | 0 | 27 | 21 | 0 | 0 | 9 | 249 | 0 | 0 | ok | ok |
 | 2026-11-19 | 1cc6089 | 90 | 55 | verdict_engine.py 27.9 | 1 | 1 | 1 | 24 | 20 | 0 | 0 | 9 | 234 | 0 | 0 | ok | ok |
 | 2026-11-14 | 67f322d | 90 | 52 | verdict_engine.py 21.1 | 1 | 1 | 1 | 49 | 20 | 0 | 0 | 8 | 181 | 0 | 0 | ok | FAIL |
 | 2026-11-05 | 227eaf7 | 90 | 51 | vision.py 32.4 | 13 | 15 | 4 | 85 | 92 | 0 | 3 | 12 | 208 | 0 | - | - | FAIL |
@@ -133,24 +134,24 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-19, 1cc6089, window 2026-08-21 onward)
+## Latest run (2026-11-25, bedb73a, window 2026-08-27 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju_api/apps/scholarship/verdict_engine.py` | 48 | 581 | 27.9 |
-| `halatuju_api/apps/scholarship/genuineness/results_doc.py` | 29 | 539 | 15.6 |
+| `halatuju_api/apps/scholarship/verdict_engine.py` | 50 | 584 | 29.2 |
+| `halatuju_api/apps/scholarship/genuineness/results_doc.py` | 34 | 564 | 19.2 |
+| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 32 | 486 | 15.6 |
 | `halatuju_api/apps/scholarship/genuineness/offer_rulings.py` | 24 | 571 | 13.7 |
 | `halatuju_api/apps/courses/views_admin.py` | 16 | 768 | 12.3 |
-| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 25 | 470 | 11.8 |
-| `halatuju_api/apps/scholarship/services/blockers.py` | 18 | 594 | 10.7 |
-| `halatuju_api/apps/scholarship/pdf_pages.py` | 15 | 560 | 8.4 |
-| `halatuju_api/apps/scholarship/academic_engine.py` | 10 | 829 | 8.3 |
-| `halatuju-web/src/app/scholarship/apply/page.tsx` | 11 | 734 | 8.1 |
-| `halatuju_api/apps/scholarship/views_admin/verdict.py` | 14 | 576 | 8.1 |
+| `halatuju_api/apps/scholarship/pdf_pages.py` | 20 | 576 | 11.5 |
+| `halatuju-web/src/content/manual/faq-reviewer.tsx` | 25 | 398 | 9.9 |
+| `halatuju-web/src/lib/admin-api/applications.ts` | 16 | 600 | 9.6 |
+| `halatuju_api/apps/scholarship/services/blockers.py` | 19 | 488 | 9.3 |
+| `halatuju-web/src/content/manual/faq.tsx` | 17 | 542 | 9.2 |
 
 ### Fix ratio
-- 525 fix / 433 feat commits since 2026-08-21; 61 sprint-own review-round fix(es) left out (58 incl. review-round)
+- 617 fix / 465 feat commits since 2026-08-27; 71 sprint-own review-round fix(es) left out (60 incl. review-round)
 
 ### Files over 1000 lines
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
@@ -165,10 +166,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 1 edges (16 import statements)
 - reports -> courses: 1 edges (3 import statements)
 - reports -> scholarship: 1 edges (3 import statements)
-- scholarship -> courses: 21 edges (343 import statements)
+- scholarship -> courses: 24 edges (348 import statements)
 
 ### Suppressions
-- # noqa: 5
+- # noqa: 6
 - eslint-disable: 15
 - reasoned `# noqa: CODE — reason` (informational, not budgeted): 74
 
@@ -179,12 +180,12 @@ drift tests are counted as the habit they cure). See TD-284.
 - 58 of 58 mirror claims in src/lib name a drift test
 
 ### Source-text guard tests (web)
-- 44 of 496 web test files read source text (signals: readFileSync, apiSource); drift 42 (*Drift.test.ts, counted apart)
+- 45 of 511 web test files read source text (signals: readFileSync, apiSource); drift 45 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 646 entries have a defining line; 234 carry no resolution marker on it
+- 672 entries have a defining line; 249 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
-- debt band: ceiling 150, floor 100, enforced from 2026-12-11 (owner 2026-11-16 (docs/decisions.md): hold between 100 and 150; under 150 by the 11 Dec review); 84 ABOVE the ceiling
+- debt band: ceiling 150, floor 100, enforced from 2026-12-11 (owner 2026-11-16 (docs/decisions.md): hold between 100 and 150; under 150 by the 11 Dec review); 99 ABOVE the ceiling
 
 ### Debt register near-misses — read these by eye
 - line 1512: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
@@ -202,13 +203,16 @@ drift tests are counted as the habit they cure). See TD-284.
 - line 8308: ### [TD-502] Overview cards without a filtered action link - low - PARTLY FIXED 2026-11-11 (A4.4: sponsors_to_vet opens `/admin/sponsors?status=pendin
 - line 8413: ### [TD-492] A confirmation letterhead may carry a two-word non-institution line above a closed-list name - medium
 - line 8501: ### [TD-518] reprocess-ic-vision hourly job runs near the 300 s limit (SP-02) - medium - **FIXED IN CODE 2026-11-07 (A2.2; live proof after G6: p95 un
-- line 9336: ### [TD-656] The Done card for a hand-resolved officer request may show the blank slot's counter - low
+- line 9352: ### [TD-656] The Done card for a hand-resolved officer request may show the blank slot's counter - low
+- line 9671: ### [TD-702] PDF gate: pypdf whole-file searches are not counted, so a crafted PDF can hold a web worker for minutes - medium - three named shapes FIX
+- line 9703: ### [TD-710] PDF gate: three more crafted PDF shapes still hold a web worker for 30 s to minutes (short /Length, huge /Length, object-stream misses) -
+- line 9714: ### [TD-711] Cockpit jest tests flake in the cloud build: late async updates land outside act - high - FIXED 2026-11-23
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 67f322d
+- budgets no looser than at 1cc6089
 
 ### tsc
 - 0 errors in 0 files
@@ -216,7 +220,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 8479
+- Total keys per locale: 8539
 
 ## Reviews
 

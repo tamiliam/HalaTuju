@@ -8242,7 +8242,7 @@ last 30 days of `halatuju-api` logs. Removed on branch a111a: `AdminGraduationMe
 `UNMAPPED` entry) and its `GATE-LEFT` line in `test_role_is_display_only`; the access-matrix fixtures keep the old
 cell, filtered by `RETIRED_CELLS`. Kept: the moderation POST `.../<id>/review/` and its `_require_reviewer` door.
 
-### ~~[TD-498] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)~~ — BUILT 2026-11-23 (sprint M4b, branch access-s3-m4b, not pushed; closes when live; owner Q-D 23 Nov: the sponsor terms and sponsor emails GETs open on the read doors `sponsor_terms_read` / `sponsor_emails_read` (`sponsors.view`), every write stays on `.edit`; the other converted doors were split earlier; tests `test_m4b_sponsor_credits.TestQDSponsorReads`, `test_team_tables_matrix` (M4b cells). The web tabs still show to editors only: TD-NEW-sponsor-reads-web)
+### ~~[TD-498] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)~~ — BUILT 2026-11-23 (sprint M4b, branch access-s3-m4b, not pushed; closes when live; owner Q-D 23 Nov: the sponsor terms and sponsor emails GETs open on the read doors `sponsor_terms_read` / `sponsor_emails_read` (`sponsors.view`), every write stays on `.edit`; the other converted doors were split earlier; tests `test_m4b_sponsor_credits.TestQDSponsorReads`, `test_team_tables_matrix` (M4b cells). The web tabs still show to editors only: TD-724)
 
 **Raised 2026-11-04 by Team tables T5c P1.** Announcements, Surveys, Development, the scholar Mentoring tab, the
 sponsor terms and the sponsor emails each have ONE door that both reads and writes, so P1 asks the writing key
@@ -9428,7 +9428,7 @@ Fix: serve a flag for each control from the server's own door (as `can_write` is
 
 **Raised 2026-11-13 by the A5 replay second re-check (branch a5).** Deploy migrate step should set lock_timeout (~5-10s) so an ALTER fails fast instead of queueing app reads behind a long reader. Today a migration's `ALTER TABLE` waits for its ACCESS EXCLUSIVE lock behind any open read transaction (the A5 replay job, a long report, a stuck session), and every app query on that table then queues behind the waiting ALTER, so one long reader plus one deploy can stall the live site. **Fix:** the migrate step runs with `lock_timeout` of about 5-10 seconds (for example `SET lock_timeout` in the migrate connection's options, or per migration), so the ALTER fails and the deploy stops instead of blocking reads; retry the deploy once the reader is gone. Until then the A5 owner steps carry a hard rule: no deploy, no migration, no ALTER while the replay job runs. *(A · S)*
 
-### [TD-NEW-sponsor-reads-web] The sponsor Emails and Terms tabs still show only to editors on the web - low
+### [TD-724] The sponsor Emails and Terms tabs still show only to editors on the web - low
 
 **Raised 2026-11-23 by sprint M4b (laptop session, number placeholder until the desk numbers it).** Owner Q-D (23 Nov)
 lets Sponsors: view read the sponsor terms and sponsor emails, and the server now serves both GETs on the read doors
@@ -9437,7 +9437,7 @@ lets Sponsors: view read the sponsor terms and sponsor emails, and the server no
 read-only view of each tab adds JS to the sponsor route and the sprint added none. **Fix:** serve a `can_read` / `can_edit`
 pair for each tab and draw a read-only view for a reader, inside the route's budget. *(A - S)*
 
-### [TD-NEW-credit-stale-optional] The credit sign request's `expected_status` is optional on the server - low
+### [TD-725] The credit sign request's `expected_status` is optional on the server - low
 
 **Raised 2026-11-24 by the sprint M4b review round 1 (laptop session, number placeholder until the desk numbers it).**
 `sign_admin_credit` refuses `stale` (409) only when the request names the status it saw; without it the old race
@@ -9445,22 +9445,22 @@ remains (a second holder's check that waited on the lock confirms instead). Opti
 signing during the rollout. **Fix:** once the web that sends it is live, make `expected_status` required (400
 when missing), with a test. *(A - S)*
 
-### [TD-NEW-credit-maker-unstored] A credit does not store who recorded it as a seat, only the signer's email - low
+### [TD-726] A credit does not store who recorded it as a seat, only the signer's email - low
 
 **Raised 2026-11-23 by sprint M4b.** The maker's step signs with `recorded_by_email`; `same_signer` compares emails, which
 is the rule (two admins share a display name). Nothing records which seat (switch) the maker held when they signed, so an
 audit cannot tell later whether a credit was recorded under Sponsors: edit or by a super. **Fix:** log the seat in an
 `AUDIT` line when a credit is signed, or store it beside the email (a migration; owner's call). *(A - S)*
 
-### [TD-NEW-credit-signer-row] Two staff rows for one person can sign two steps of one credit - low
+### [TD-727] Two staff rows for one person can sign two steps of one credit - low
 
 **Raised 2026-11-24 by the sprint M4b adversarial review (F4; laptop session, number placeholder until the desk numbers it).**
 `same_signer` compares the email on each signature. One person with two staff rows (two emails, e.g. a personal and a
 work address, each holding a switch) can record a credit on one and check or approve it on the other. Not seen live
 (read-only count before the fix). **Fix:** store the signer's staff row id beside each signature and compare the
-person behind it (a migration, migrate-first; owner's call, pairs with TD-NEW-credit-maker-unstored). *(A - S)*
+person behind it (a migration, migrate-first; owner's call, pairs with TD-726). *(A - S)*
 
-### [TD-NEW-run-lock-gaps] Editing a run's item and cancelling a run do not lock the actor's row first - low
+### [TD-728] Editing a run's item and cancelling a run do not lock the actor's row first - low
 
 **Raised 2026-11-19 by the sprint M4a review (nit; laptop session, number placeholder until the desk numbers it).**
 TD-605's `payments_chain.lock_actor` (lock the actor's row, re-read the key, then the run) runs in
@@ -9469,7 +9469,7 @@ taken from someone while their edit or cancel is in flight is not seen by that r
 draft and clears its signatures, and a cancel only withdraws. **Fix:** call `lock_actor` first in both, as `create_run`
 does, with a test like `test_m4a_maker_checker.TD605TheActorsRowFirst`. *(A - S)*
 
-### [TD-NEW-editor-approves] A person who edits a signed run and did not build it can approve it - low
+### [TD-729] A person who edits a signed run and did not build it can approve it - low
 
 **Raised 2026-11-19 by the sprint M4a review (nit, pre-existing; laptop session, number placeholder).** `set_item`
 calls `_revert_to_draft`, which clears the signatures. Someone holding Prepare and Approve who did not create the run
@@ -9477,7 +9477,7 @@ can edit an item, wait for the maker (and checker) to sign again, then approve: 
 signers and the creator only, not the last editor. **Fix (later):** record the last editor on the run and bar them
 from approving too (the fallback rule stays the owner's Q2), with a test. *(A - S)*
 
-### [TD-NEW-reverify-card] Re-verify IC card shows a button a QC holder without write cannot use - low
+### [TD-730] Re-verify IC card shows a button a QC holder without write cannot use - low
 
 **Raised 2026-11-19 by the sprint S1 review (laptop session; placeholder number, the lead assigns one on landing).** ReverifyIcCard (halatuju-web/src/app/admin/scholarship/[id]/view/ReverifyIcCard.tsx:21/35) is gated on canQc but its door (verify-accept) is _require_app_write; a QC holder without write sees a button that returns 403. Predates S1. Fix: gate on canQc && served write, or serve a dedicated flag. *(A - S)*
 
@@ -9734,3 +9734,43 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 10. ~~**Walks that end early.**~~ **Corrected and closed, review round 2.** This item used to say that where startxref or /Prev points where no section starts, both readers rebuild from the headers. That was wrong: pdfium often still reads the chain (a comment or a '+' before the startxref number, a 'startxref' comment after %%EOF, /XRefStm 0), so the walk that stopped there left the row checks off. Census 390, 621, 623 to 626, 629 and 733 were not ends at all, only startxref words the old reading missed; they now walk whole. The walk now reads the whole chain or refuses the file; /Prev 0 ends it. Where pdfium finds no start (a tail past its 4096-byte search: census 847 and 74 more) it rebuilds; the one-header rule covers that, pypdf's chain is still checked, and every /Root and /Encrypt in the raw file must equal pypdf's. Still open: (a) the /Encrypt check was not probed against a pdfium rebuild (it is applied anyway, refusing only); (b) /Info is not checked (pdfium does not draw from it); (c) where no trailer names a /Root, what pdfium's rebuild falls back to is not modelled (pypdf's /Root always comes from a raw trailer, so this cannot arise for a file the gate opens, but it is not probed).
 11. **High-byte white space (review round 3, fixed; what is left).** pdfium reads 0x80 and 0xff as white space; the finding scans now do too, in every mode, and accepting matches stay strict (see CHANGELOG). Left open: (a) over-refusals, accepted as safe: a reference ended by a high byte (`1 0 R<80>`) or `/Root<80>1 0 R` in a trailer, and a high-byte header beside a free row (I5g, which pdfium draws light); no genuine census file hit either; (b) a header that follows `%`, `/`, `(` or `<` with no space is found by the gate's scan but may be invisible to pdfium's rebuild, so pdfium can see FEWER objects than the gate: that can only refuse more, never accept more, but it is not probed; (c) the name scan's charge is calibrated by timing on one machine (about 2 to 6 units per byte for /Root names, more for '#' names); a slower host would still be bounded by the cap, but the charge is not a measurement of that host.
 12. **Bad '#' escapes in names (review round 4, fixed strict; what is left).** pdfium decodes a '#' and ANY two bytes of a name, a byte that is not hex counting as 0 (`/Encry#7Gt` is /Encrypt to pdfium only); the gate now refuses a '#' not followed by two hex digits in the raw-bytes scan of watched names and in every name pypdf parses for the gate (see CHANGELOG). Left open: (a) **names in content streams** (`/F#7G1 Tf`) are only partly checked: content streams are parsed outside the hook, so only the round-5 resource-name check (a decoded byte under 0x10, for Do, Tf, BDC, BMC and gs) sees them; a non-hex escape that decodes to no such byte, or in another operator's name operand, is not checked; (b) **a valid `#23` or `#0A` is refused** (strict: a decoded '#' or a byte under 0x10 is indistinguishable from a bad escape after pypdf's decode); no genuine census file is known to need one; (c) **a bad '#' inside raw stream data** is not checked (stream data is full of such bytes: 866 of 870 genuine files would be refused), so a name inside an object stream is checked only as pypdf parses it, not in its raw bytes; (d) **where a name ends** is not settled in general: pdfium's word runs on through 0x0b and pypdf's through 0x80 and 0xff; the gate handles both for '#' names and for a name followed by 0x0b, but has no model of each reader's tokenizer. Cost: one genuine file's three census copies (149, 204, 407) are refused, accepted by the owner's strict rule (Vision route). The '#' name scan now decodes each name two ways and charges about twice as much: probe J, 100k `/R#6f#6ft` names, 1.1 s to 2.7 s (opened, 5.1e9 units); 400k refused at the cap after 4.6 s (was 3.4 s).
+
+### [TD-723] Tests: the multi-page PDF libs smoke test reads empty text under a full parallel run on the Windows venv - low
+
+**Raised 2026-11-25 by the 16:00 batch paperwork.** `apps/scholarship/tests/test_a12_upload_libs_smoke.py::TestPdfLibsSmoke::test_multi_page_pdf_counts_renders_and_reads_text`: the PDF text read comes back empty under a full parallel run on the Windows 3.11 venv. It passes alone and passes on WSL (the gate runner). Not a product fault seen live. **Fix:** find what the parallel run changes (a shared pdfium or font state, a temp path, the child's time budget; compare TD-703) and make the test independent of it, or mark the Windows run as not a gate. *(A - S)*
+
+### [TD-731] Membership first: reviewer and mentor paths still count an invitee who has not signed in - medium
+
+**Raised 2026-11-25 (owner principle "membership first").** An invitee who has not signed in is not a member, so not an admin, reviewer or mentor. The org-admin count already follows it (`staff_delete_rules._org_admins`: active AND `first_seen_at` set). Not yet audited for the same rule: assignment pickers (who can be given a case), reviewer and mentor counts, nudges and mail lists (`send_review_nudges`, `nudge.py`, `assign_notify.py`, `mentor_desk.py`, `staff_mentor.py`, `courses/staff_tables.in_reviewers`). **Fix:** read each path, list where an invitee is offered or counted, apply the one rule (active and signed in at least once), add a test per path. *(A - M)*
+
+### [TD-732] Invitee-fix review notes (pre-existing, found 25 Nov): admin page bypass, a 500 for a 503, a FAQ aimed at the wrong person, invitee admins still mailed - low
+
+**Raised 2026-11-25 by the invitee-fix review.** (1) The Django admin staff page bypasses the last-org-admin guards. (2) A Revoke lock deadlock answers 500, not 503 (`views_staff.py`, about line 543). (3) The FAQ answer at `faq.tsx` about line 334 is addressed to an org admin, who cannot revoke anyway. (4) `send_review_nudges` and `payment_mail` still include invitee org admins (pairs with TD-731). **Fix:** route the admin page through the same guards; map the deadlock to 503; address the FAQ answer to who can act; filter invitees out of both mailings; a test each. *(A - S)*
+
+### [TD-733] Secondary school is ticked only against the School Leaving Certificate, never the SPM slip - medium
+
+**Raised 2026-11-25 (owner).** The Academic card's Secondary school shows the typed value and ticks only against the School Leaving Certificate (`fieldVerification.ts`, `set('school','school_leaving_cert',...)`). The certificate is optional and most students upload only the SPM slip, so most never get a tick. **Fix:** read the school name off the SPM results slip as well and tick on a match. Document reader change: bump `MODEL_VERSION`; re-reading existing documents costs AI credits and needs the owner's yes; never re-extract locally. Owner plan: one sprint with TD-734 and TD-735, AFTER the criteria editor. *(A - M)*
+
+### [TD-734] Pre-U institution (Matriculation, Asasi, Diploma) shows the typed value with no tick - medium
+
+**Raised 2026-11-25 (owner).** `ApplicantCards.tsx` shows the typed `pre_u_institution` with no tick (its comment says the results-document tick is a TD; none existed). **Fix:** read the college name off the higher-results document and tick on a match. Same rules as TD-733: bump `MODEL_VERSION`, owner's yes before any re-read, never re-extract locally; same sprint. *(A - M)*
+
+### [TD-735] Exam year is served only for STPM; the merit line for Matriculation, Asasi and Diploma shows no year - low
+
+**Raised 2026-11-25 (owner).** `higher_results.student_higher_check` fills `exam_year` only for STPM (an empty string for every other kind), so the merit line shows "(Diploma)" with no year. **Fix:** parse the result year off those documents and serve it as `exam_year`; the web helper `higherExamYear` already reads it (small web change: drop the third-route null in `ApplicantCards`). Same rules as TD-733: bump `MODEL_VERSION`, owner's yes before any re-read, never re-extract locally; same sprint. *(A - S)*
+
+### [TD-736] An owed higher-results cap can set Unsure while an amber line leads - low
+
+**Raised 2026-11-23 (laptop session; number given at landing, 25 Nov). Recorded in CHANGELOG only until now.** An owed higher-results cap can set the verdict band to Unsure while an amber line leads the reasons. **Fix:** make the leading line the one that set the band, with a test. *(A - S)*
+
+### [TD-737] The not-genuine caveat sits last when the genuineness step sets the band - low
+
+**Raised 2026-11-23 (laptop session; number given at landing, 25 Nov). Recorded in CHANGELOG only until now.** When the genuineness step sets the band, the not-genuine caveat is the last line, not the lead. **Fix:** lead with the caveat that set the band, with a test. *(A - S)*
+
+### [TD-738] `second_look.qc_checked_counts` has no caller outside tests - low
+
+**Raised in the F4 sprint (see CHANGELOG).** After the card dropped the "Checked by the QC" table, the counter is used only by `test_second_look.py`. **Fix:** remove it with its test, or reuse it. *(A - S)*
+
+### [TD-739] Web: `verdictReliability` and `OverrideSummary` have no live caller - low
+
+**Raised in the F4b sprint (see CHANGELOG).** Once the card was rewritten, only `officerCockpit.test.ts` uses `verdictReliability` and the override summary type. **Fix:** delete them with their tests, or bring them back into a card. *(A - S)*

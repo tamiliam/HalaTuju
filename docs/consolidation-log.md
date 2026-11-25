@@ -56,6 +56,7 @@ _Logged late on 2026-11-12 by catch-up sprint C1: the audit run (Waves 1-4, depl
 - 2026-11-12 Lane B org requests #54, #56, #57, #58, #59, #61, #62 — da14eac5a 44ee7d7f6 e2674743c 5afad21b0
 - 2026-11-12 Lane B org request #66, IIUM English offer letters — 6f203e7f1 a663a84e2 dc52986f3 d75b3e192 43ecb9210
 - 2026-11-12 Invitations I1 and I2 (one form per tab; one person per source) — 3bd60f90d ff3c6affa
+- 2026-11-25 LL5 replay human lens and coach grade — e8dc4270a 71bfd6c78 e398b0377 3b0a75e75 91aa0cb8a d84d2c37a 91b20e5f8 a89205c0c 5f12fc40c 5afdc6bba 6fc5c3a38 2650870c0 e598488c2 83c279264 996451c18 9f64020f7 f51501989 75cb1e21f 84a4991b3 8e6b033d2 b552db273 ed7e61b6d bc36d7937
 
 ## Reviews
 

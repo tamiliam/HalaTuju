@@ -131,7 +131,7 @@ are none and pin the income case with a test.
   `npm run gates`, `npm run bundle-budget -- --gate`, and `npm run mobile-check` if any UI changed.
 - Never re-extract documents. No production writes. Production reads only as `BEGIN READ ONLY` count probes;
   you should not need any.
-- Stage explicit paths only (never `git add -A`). No TD numbers: write `TD-NEW-<short-name>`.
+- Stage explicit paths only (never `git add -A`). No TD numbers: write a unique placeholder (TD, then NEW, then a short name, joined by hyphens).
 - Final commit trailers: `Phone-check: <one plain line>`, `Migration: none`, `Services: both` (or what is true),
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Subjects carry the word "sprint". Honest commit type.
 - CHANGELOG entry; `docs/decisions.md` entry for the 23 Nov rulings (replacing #19 for close names; #23 kept).

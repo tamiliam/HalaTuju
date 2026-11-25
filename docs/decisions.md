@@ -51,7 +51,7 @@ has stored `organisation.admin`). Brief: `docs/plans/2026-11-23-m4b-sponsor-cred
 - **Q-D, sponsor terms and emails (owner 23 Nov).** Readable with Sponsors: view; writing stays on Sponsors: edit.
   **Decision:** two read doors, `sponsor_terms_read` and `sponsor_emails_read` (`sponsors.view`); every GET on the terms
   and the emails reads them, every write keeps `sponsor_terms` / `sponsor_emails`. Closes the TD-498 remainder when
-  live. The web still shows the Emails and Terms tabs to editors only (TD-NEW-sponsor-reads-web).
+  live. The web still shows the Emails and Terms tabs to editors only (TD-724).
 - **Served, never derived (web).** The sponsor page draws each credit's `can_sign`, `blocked` and `can_void` from
   `credit_steps.served`; the screen derives only which step is next (a label). The four money role reads in
   `sponsorDetail.ts` are deleted, and the four money GATE-LEFT entries on the server (14 to 10, 4 money to 0).

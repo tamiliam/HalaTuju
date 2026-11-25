@@ -36,7 +36,7 @@ changes hands on day one.
   `expected_status` (the status the page already shows); after `_lock` the service refuses a mismatch with `stale`
   (409), before any other check. Wording (en / ms / ta, the Malay and Tamil are drafts): "This credit moved on while
   you were signing. Reload and check again." The field is optional on the server so an older web image keeps
-  working during the rollout (TD-NEW-credit-stale-optional makes it required once the web is live). Tests:
+  working during the rollout (TD-725 makes it required once the web is live). Tests:
   `TestTwoSignedInHolders` (service and HTTP 409), the web page test "says the credit moved on".
 - **SF2, the 0100 dependency:** the hard line above; `TestBefore0100`. No DB-reading system check.
 - **SF3, day-one counts (production, read-only, by the lead 24 Nov):** active custom key lists that store

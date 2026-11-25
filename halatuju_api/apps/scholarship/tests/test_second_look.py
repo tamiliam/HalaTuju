@@ -321,7 +321,7 @@ class TestCheckedByTheQcNumbers(TestCase):
 
     def test_the_counts(self):
         # F4: the card no longer shows the "Checked by the QC" table; the pure counts stay tested here
-        # on the organisation's rows (TD-NEW-1: the counter has no caller outside tests).
+        # on the organisation's rows (TD-738: the counter has no caller outside tests).
         body = sl.qc_checked_counts(self._in_org_records())
         total = body['total']
         self.assertEqual({k: total[k] for k in ('in_doubt', 'checked', 'not_checked', 'agreed', 'disagreed',
