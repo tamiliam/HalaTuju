@@ -68,7 +68,9 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
     (pypdf's text of the page is blank): pdfium must place NO text object at all. Review round 2: and no XObject
     the page draws carries /OC (`pdfium_type3.page_flags`, as `_op_ink`): an OC mark is not all optional content.
     Review round 3 part 2 (``words``, the SPM words op): and no text or form object under a mark carrying
-    /ActualText (`_own_text`). TD-740: and every text object lies on the page box pdfium draws (`_outside`)."""
+    /ActualText (`_own_text`). TD-740: and every text object lies on the page box pdfium draws (`_outside`); review
+    round 1: a Type3 box is its glyphs' d1 boxes, so every Type3 glyph shown keeps its ink inside its box and
+    paints, unless pypdf reads it as blank (`pdfium_type3.shown_ok`)."""
     import pypdfium2.raw as raw
     page = pdf[index]
     try:
@@ -78,7 +80,8 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
             raise _OverObjects('past the pdfium page-object cap')
         if annots < 0 or not all(_plain_link(page.raw, k) for k in range(annots)):
             return False
-        if _t3.page_flags(_DATA[0], index)[0]:     # OCR-20 r2: an XObject with /OC (an OCMD too), as `_op_ink`
+        oc_xobject, _xfa, _t3_ok, t3_any = _t3.page_flags(_DATA[0], index)   # OCR-20 r2: an XObject with /OC
+        if oc_xobject or (t3_any and not _t3.shown_ok(_DATA[0], index)):    # TD-740 r1: Type3 glyph boxes
             return False
         area = _page_box(raw, page.raw)                            # TD-740: where pdfium draws the page
         # (page or form object, is a form, under an OC mark, the holder's space to page space)

@@ -424,11 +424,12 @@ class TheReviewRound2Attacks(SimpleTestCase):
         for glyph in (b'1 0 0 0 1 1 d1 0 0 1 1 re f 0 70 60 1.5 re f',             # boxes far from the glyph
                       b'1 0 d0 0 0 1 1 re f',                                       # d0: may not paint at all
                       b'0 0 1 1 re f'):                                             # no d0 / d1 first
-            with self.subTest(glyph=glyph):
-                ex, why = _read(_with_type3(build('none'), glyph))
-                self.assertIsNone(ex)
-                self.assertEqual((why.get('lane'), why.get('reason')), (LANE, 'not_inked'), why)
-                self.assertIn('page:type3', why['ink_missing'])
+            with self.subTest(glyph=glyph):     # TD-740 r1: a shown glyph leaving its box hides the text layer
+                data = _with_type3(build('none'), glyph)   # before the lane (`pdfium_type3.shown_ok`); the
+                self.assertEqual(pdf_pages.pdf_text_layer(data), '')    # ink child still flags it
+                self.assertIsNone(_read(data)[0])
+                from apps.scholarship import pdf_ink
+                self.assertIs(pdf_ink.page1_ink(data)['type3_ok'], False)
 
     def test_every_operator_outside_the_list_is_refused(self):
         """A matrix, shading, XObject, inline image or stroke in a glyph: S-visible 1's own Type3 whitelist refuses
@@ -455,7 +456,7 @@ class TheReviewRound2Attacks(SimpleTestCase):
         inside = b'1 0 0 0 1 1 d1 0 0 %.3f %.3f re f' % (1 + tol / 2, 1 + tol / 2)
         outside = b'1 0 0 0 1 1 d1 0 0 %.3f 1 re f' % (1 + 2 * tol)
         self.assertEqual(_read(_with_type3(build('none'), inside))[1], {})
-        self.assertIn('page:type3', _read(_with_type3(build('none'), outside))[1]['ink_missing'])
+        self.assertEqual(pdf_pages.pdf_text_layer(_with_type3(build('none'), outside)), '')   # TD-740 r1
 
 
 def build_t3tol(iso=False):
