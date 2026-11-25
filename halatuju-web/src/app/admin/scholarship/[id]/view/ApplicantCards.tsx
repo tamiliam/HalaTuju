@@ -255,15 +255,19 @@ export function ApplicantCards({
               {/* Academic — school / merit / grades. Plans + notes are their own boxes below. */}
               <Card title={t('admin.scholarship.sec.academic')}>
                 {/* ONE slot layout for every route (owner mock, 2026-11-24; phone check 2026-11-25):
-                    rows top to bottom, each with its own thin top divider, two columns from `sm`.
+                    rows top to bottom, two columns from `sm`. ONE thin divider only, above the plans
+                    (owner 2026-11-25: no line per row, the old tight spacing).
                     SPM: [school | merit] · SPM grades · [programme | reporting date] · institution.
                     STPM: [school | merit] · [CGPA | MUET] · STPM grades · SPM prerequisites · plans.
                     Matric / Asasi / Diploma: [school | -] · [pre-U institution | merit] · [CGPA | MUET]
                     · SPM prerequisites · plans. A required slot with no value says N/A in a muted
                     colour, so an empty slot is never mistaken for a hidden one. */}
                 {(() => {
-                  const row = 'grid grid-cols-1 gap-x-4 gap-y-2.5 border-t border-ground-100 py-3 sm:grid-cols-2'
-                  const rowFull = 'border-t border-ground-100 py-3'
+                  // `acad-row` marks a slot row for the tests; it carries no style.
+                  const row = 'acad-row grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2'
+                  const rowFull = 'acad-row'
+                  // The one divider: 10 px row gap + 6 px = the old 16 px above the plans line.
+                  const plansRow = `${row} mt-1.5 border-t border-ground-100 pt-3`
                   // The merit score carries its exam and YEAR in brackets on the SAME line, but ONLY
                   // once the year has been read off the results document (owner 2026-11-25):
                   // "85.4 (SPM 2024)". No year read -> the number alone, never "(SPM)". SPM: the
@@ -311,7 +315,7 @@ export function ApplicantCards({
                   const ownInst = ((app.chosen_programme?.institution as string)
                     || (spmRoute ? app.pre_u_institution : '') || '').trim()
                   return (
-                    <dl>
+                    <dl className="flex flex-col gap-2.5">
                       {third ? (<>
                         <div className={row}>{schoolField}<div /></div>
                         {/* Where they did the pre-U course. No tick yet: the only preUInstitution check
@@ -367,7 +371,7 @@ export function ApplicantCards({
                       </div>
                       {/* Plans: Chosen Programme + Reporting Date share a row, Institution its own. The
                           free-text memos live in Student's note. */}
-                      <div className={row}>
+                      <div className={plansRow}>
                         <Field
                           label={t('admin.scholarship.chosenProgramme')}
                           na={na}
