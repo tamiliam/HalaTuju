@@ -1,6 +1,6 @@
 # HalaTuju learning loop — roadmap for steps 1 to 3
 
-Status: APPROVED by the owner on 2026-11-18. Nothing is built yet. The owner sets the start date of each sprint.
+Status (25 Nov 2026): APPROVED by the owner on 2026-11-18. LL1, LL2, LL2b, LL3 and LL4 are LIVE (21 Nov). LL5 is DONE and LIVE (25 Nov, 16:00 batch). Two sprints were added on 25 Nov: LL6 (exam-file bucket) and LL7 (close the gap). The owner sets the start date of each sprint.
 
 Updated 2026-11-18 (same day, two owner ideas, owner chose option A):
 1. Humans make mistakes too. The tap means "is this fact true for the student?" (owner ruling A). The words on the box change (LL2). A second person checks a small list (new sprint LL2b).
@@ -53,7 +53,7 @@ The owner approved a plan for steps 1 to 3 of the audit list:
 
 ## Roadmap in one view
 
-Six small sprints. Code name **LL** (learning loop).
+Six small sprints were planned (LL1 to LL5 plus LL2b); LL6 and LL7 were added on 25 Nov. Code name **LL** (learning loop).
 
 | Sprint | Deliverable | Audit step | Size | Reviewer sees a change? | DB migration |
 |---|---|---|---|---|---|
@@ -63,8 +63,10 @@ Six small sprints. Code name **LL** (learning loop).
 | LL3 | Version guard + one version register | 3 (force) | Medium | No | None |
 | LL4 | Record what fed each decision | 3 (freeze) | Medium | No | One additive |
 | LL5 | Replay: score each version against human answers | 3 (replay) | Medium | No | None |
+| LL6 | Exam-file home in a Cloud Storage bucket (added 25 Nov) | 3 (replay) | Medium | No | None |
+| LL7 | Close the gap: the biggest error groups, one at a time (added 25 Nov, standing cycle) | 3 (replay) | Per round | Only if a rule sprint follows | None |
 
-**Why six:** each sprint is one deliverable that the owner can check alone.
+**Why six (before LL6 and LL7):** each sprint is one deliverable that the owner can check alone.
 Each sprint touches fewer than 20 files. LL1, LL2 and LL3 do not depend on each other.
 LL2b needs LL2 (the question must be clear before a second person judges the answers).
 LL4 needs LL3. LL5 needs LL4 and the A5 replay harness.
@@ -80,7 +82,7 @@ LL3 ──► LL4 ──► LL5 ◄── A5 replay harness (sprints R1, R2 — 
 **Built.** LL1, LL2, LL2b, LL3 and LL4 are built and reviewed. They were saved to `main` on 2026-11-19
 (landing order: the Requests work, then the OCR-first work, then this stack). Nothing is published.
 Before a publish the owner applies migration `0218_application_verdict_context` by hand and does the phone checks.
-**Left.** LL5 only; it starts when LL4 is live.
+**Left (as of 19 Nov).** LL5 only; it starts when LL4 is live. Update 25 Nov: LL1-LL4 live since 21 Nov; LL5 live 25 Nov; left are LL6 and LL7 (and the five owner phone checks).
 
 **Who owns what (owner ruling 2026-11-19).**
 - The **HalaTuju lead session** owns the A5 replay: branch `a5` (R1 + R2, built 13-14 Nov) and the R3 run.
@@ -112,7 +114,7 @@ After migration 0218 the application table has one new column (`ai_verdict_conte
 
 ---
 
-## Sprint LL1 — Scoreboard on — DONE (2026-11-18; saved to `main` 2026-11-19, not published)
+## Sprint LL1 — Scoreboard on — DONE (2026-11-18; LIVE 21 Nov)
 
 Built: an "AI prediction" section on the Programme Overview and the Organisation Overview (`/admin/organisation/programmes`): green and too-careful counts per fact, by engine version, by month (trend), the doubt table, how often the QC agreed with the reviewer, and by reviewer (leads only). Counts always shown; under 30 cases reads "few cases". A reviewer sees assigned applicants only. The old hidden card is deleted. No migration. Detail: `CHANGELOG.md` (LL1 entry), the Guide and FAQ ("What does the AI prediction block mean?"), `halatuju_api/apps/scholarship/prediction_metrics.py` and `audit.py`.
 
@@ -125,7 +127,7 @@ Open known gaps:
 
 ---
 
-## Sprint LL2 — One clear question + one-tap reason on "green → fail" — DONE (2026-11-19; saved to `main` 2026-11-19, not published)
+## Sprint LL2 — One clear question + one-tap reason on "green → fail" — DONE (2026-11-19; LIVE 21 Nov)
 
 Built: the rating box reads "Check the four facts" with a one-line help (the tap is about the student, owner ruling A). Failing a fact the engine showed green asks "Why is this fact not true?" with five reasons (`engine_wrong`, `read_wrong`, `new_information`, `programme_rule`, `other`), stored in `officer_verdict.fail_reasons`; a soft warning shows when a fact failed and the decision is accept. The reason counts show on the AI prediction card. No migration. The server never refuses a missing reason; the web holds Save. Detail: `CHANGELOG.md` (LL2 server and web entries), `apps/scholarship/fail_reasons.py`, the Guide and FAQ. The approved strings are in the message files.
 
@@ -136,7 +138,7 @@ Open known gaps:
 
 ---
 
-## Sprint LL2b — Human check (a second look) — DONE (2026-11-19; saved to `main` 2026-11-19, not published)
+## Sprint LL2b — Human check (a second look) — DONE (2026-11-19; LIVE 21 Nov)
 
 Built: the QC (also the funder) checks the facts in doubt inside the QC step. A "Facts in doubt" block shows on the QC panel only when a fact is in doubt (AI green and reviewer fail, or a failed fact with an accept); doing nothing agrees with the reviewer, one tap disagrees (`officer_verdict.qc_fact_checks`, and the `qc_decision` activity meta). The AI prediction card shows the "checked by the QC" counts, and leads see them by reviewer. The second look never changes a decision. No migration. Detail: `CHANGELOG.md` (LL2b entries), `apps/scholarship/second_look.py`, the QC Guide section "Facts in doubt", `docs/decisions.md` (2026-11-19).
 
@@ -152,7 +154,7 @@ Open known gaps:
 
 ---
 
-## Sprint LL3 — Version guard + one version register — DONE (2026-11-19; saved to `main` 2026-11-19, not published)
+## Sprint LL3 — Version guard + one version register — DONE (2026-11-19; LIVE 21 Nov)
 
 Built: `apps/scholarship/model_registry.py` lists 14 models (version constant, source files, cross-file pins); `apps/scholarship/model_versions/<model>.json` is one append-only log per model; `tests/test_model_versions.py` and `tests/test_model_digest.py` fail when a registered file or pin changes without a new version and log line, or when a `*VERSION` constant is neither registered nor excused. The digest is a hash of cleaned source text (not `ast.dump`, which differs between Python 3.11 and 3.13). `genuineness/ic.py` and `supporting_doc.py` now carry `MODEL_VERSION = '1.0.0'` and each new result stores it; no back-fill. Brought up to main's verdict-engine bump before the first merge; two digests were re-seeded with dated notes (main moved the IPTS reason texts into constants, same text). Detail: `CHANGELOG.md` (LL3 entry), `docs/decisions.md`, `docs/technical-debt.md` (TD-243, still open until live).
 
@@ -165,7 +167,7 @@ Open known gaps:
 
 ---
 
-## Sprint LL4 — Record what fed each decision — DONE (2026-11-19; saved to `main` 2026-11-19, not published)
+## Sprint LL4 — Record what fed each decision — DONE (2026-11-19; LIVE 21 Nov)
 
 Built: `apps/scholarship/verdict_context.py` builds a PII-free record `{schema, documents, models, fingerprint, key_check}`, stored in `ScholarshipApplication.ai_verdict_context` in the same save as `ai_verdict_snapshot`. The fingerprint is an HMAC over the live documents, the declared fields, the profile fields, the intake rules and the stage facts the engine reads (key derived from `SECRET_KEY`, no new env var). A record that cannot be built never blocks a decision (`{schema, error}`). No serializer lists the column. Old rows keep `{}` (no back-fill). Migration `0218_application_verdict_context` (additive, hand-written SQL in its docstring): THE OWNER APPLIES IT BEFORE THE PUBLISH, otherwise every application load fails. Detail: `CHANGELOG.md` (LL4 entry), the model's `help_text` and the migration docstring (there is no separate schema document).
 
@@ -180,79 +182,67 @@ Open known gaps:
 
 ---
 
-## Sprint LL5 — Replay: score each version against human answers
+## Sprint LL5 — Replay: score each version against human answers — DONE and LIVE (25 Nov 2026, 16:00 batch; main `a2036dd51`, ll5 `e3343b325`)
 
-**Goal.** One PII-free report: for each engine version, "wrong green" and "too careful" on the same set of past cases.
+Built: one PII-free report that scores each engine version against human answers, as a lens on the A5 replay harness (`halatuju_api/apps/scholarship/eval/replay/`). It has an exam lens (today's engine over frozen decided cases, against the QC-checked answer), a coach grade (each version against the gradeable version before it), a monthly score line per version, a points score, a noise margin and a count of malformed records. The lens is OFF unless asked (`--human-lens`). Reading guide: `docs/replay-human-lens.md`. Retrospective: `docs/retrospectives/retrospective-2026-11-24-ll5-replay-human-lens.md`. Decisions: `docs/decisions.md` (LL5 entries).
 
-**Scope.**
-- Do **not** build a second harness. Add one lens to the A5 replay harness
-  ([2026-11-13-a5-replay-design.md](2026-11-13-a5-replay-design.md); code at `halatuju_api/apps/scholarship/eval/replay/`).
-- The lens runs today's engine over decided cases whose evidence fingerprint (LL4) did not change, and compares the result with `officer_verdict`.
-- Same five read-only safety layers as A5 (read-only role, `BEGIN READ ONLY`, always roll back, statement filter, no keys). Session pooler port 5432, never 6543.
-- Where a second look by the QC exists (LL2b), the report uses it as the checked answer. The report shows both scores.
-- LL2b's numbers undercount overturned facts on sent-back cases (a reviewer re-record drops the answers); count those from the `qc_decision` activity meta (`qc_disagreed`, `doubt_*`), which survives.
-- Output: counts and hashes only.
-- When it runs: after a release that changes a model version, and once a week. Not before every publish.
-  Reason: production data cannot be copied to a home machine, and the candidate code is not on a server before `live` moves.
-- A short workflow note says how to read the report and when a result blocks the next release.
+The lens has NOT run on real data yet. It runs only after LL6, the owner's derived key, the owner's yes and a time agreed with the release lead (never on an R3 run day or in a release slot).
 
-**Depends on.** A5 sprints R1 and R2 and LL4. R1 and R2 are built on branch `a5` (13-14 Nov), not on `main`.
-The HalaTuju lead session owns `a5` and the R3 run (owner ruling 2026-11-19). LL5 starts when that code is on `main`.
-Cases decided before LL4 have no fingerprint. They enter the report as "evidence state unknown".
-The replay runs with "today" set to `verdict_decided_at` and the stage as at the decision (LL4 known gaps: the clock and the stage), or reports the clock-dependent cases apart.
+Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C); phase C took 8 parts plus a fix round. The exam-file home moved out into LL6.
 
-**Acceptance.**
-- A dry run on a local test database gives the expected counts.
-- The owner runs the job once. The report shows a score for each version.
-- No PII in the output (test).
+### Open items carried forward (from LL5; later sprints need these)
 
-**Complexity.** Medium. About 10 files. Opus builds.
+- **Exam-file home** is now LL6 (owner decision 2 = B, a Cloud Storage bucket). Owner steps: `2026-11-13-a5-replay-owner-steps.md`.
+- **Derived key.** The replay holds a one-way DERIVED key (`REPLAY_FINGERPRINT_KEY`, 64 hex characters), never `SECRET_KEY`; the job refuses to start with a non-empty `SECRET_KEY`. The owner makes the derived key by hand, once (owner decision 3). No helper tool is built.
+- **Noise and floors (owner rulings R1, R3).** Guard level 1 in 20; score margin 2 standard errors; a floor of 5 facts in a monthly cell (a small-number guard, not a privacy rule); a version needs 40 facts to be graded (final).
+- **Interview Fails stay in** the grade and both guards (owner ruling R2). The extra line is "score without interview Fails".
+- **Exam file** holds plain application ids and one decision time per id (allowed by the release lead, 24 Nov), plus the exam's own fields. Freezing happens only on request (`--human-lens-freeze`); a lost exam file is never replaced without a person asking.
+- **Records and stage.** A record with fewer than 4 fields counts as malformed (`too_short`). The stage is not stored at the decision, so recovery is by an in-review twin only; past-award and decided-group twins are counted by reason, not scored.
+- **Result files** `human_lens.json` and `coach_grade.json` skip the scrubber; allow-lists guard them in the child (before writing) and in the parent (when reading).
+- **One answer of truth** for the exam score: the QC-checked answer (a Fail the QC overturned counts as a Pass; count in `qc_turned_to_pass`). The plan said two scores. The coach grade keeps the reviewer's stored answer. The owner's "second answer" tap idea (decision 1) is PARKED (25 Nov: "We park it for now. Let AI anticipate Evaluator assessments.").
+- **No QC activity count** in the report (the plan's `qc_decision` meta count was not built). LL2b's screen numbers still undercount sent-back cases (TD-681).
+- **`read_wrong` is an old code.** No longer offered; a request that still sends it is saved as Other for one release (removal: TD-704).
+- **Nothing runs the lens on a timetable.** It runs only when the owner starts the job.
+- **Acceptance "the owner runs the job once"** is NOT done; it needs the owner's yes and now sits after LL6 (the proof run).
+- Model files: any change needs a version bump (LL3 guard).
 
-**What changed while building (24 Nov 2026).** The plan above is kept as written. These are the
-differences. The detail is in `docs/decisions.md` (the LL5 entries) and the reading guide is
-`docs/replay-human-lens.md`.
-- **The scope grew.** Beside the exam lens, LL5 added a coach grade (each engine version against the
-  gradeable version before it, on its own decided cases), a monthly score line per version, a points
-  score (`ai_score` marks), a noise margin (owner ruling R1: a guard level of 1 in 20 and a score
-  margin of 2 standard errors) and a count of malformed records by kind (`malformed_by_error`).
-- **More phases than planned.** The work was split into phases A (coach grade), B1 (derived key),
-  B2a and B2b (exam set and lens), C1 (wiring), C1b and C1c (safety), C2 to C2d (coach grade in the
-  replay, and the report) and C3 (these words).
-- **A floor of 5 facts** guards small numbers in a monthly cell (and a side). It is a small-number
-  guard, not a privacy rule. A version needs 40 facts to be graded (owner ruling R3, final).
-- **A derived key.** The replay holds a one-way DERIVED key (`REPLAY_FINGERPRINT_KEY`), never the
-  master key `SECRET_KEY`. The job refuses to start if it is given a `SECRET_KEY` that is not empty.
-- **Interview Fails stay in.** Owner ruling R2: the AI also asks questions through Check 2, so
-  interview Fails STAY in the grade and in both guards. The optional extra line is named "score without
-  interview Fails".
-- **The exam file** holds plain application ids and one decision time per id (allowed by the release
-  lead on 24 Nov), plus the exam's own fields (name, format, size, freeze time, key check, digest).
-- **Freezing happens only on request** (`--human-lens-freeze`). A lost exam file is never replaced
-  without a person asking.
-- **A too-short record** (fewer than 4 fields) counts as malformed (`too_short`), not as undecided.
-- **The stage is not stored at the decision.** So recovery is by an in-review twin only. Past-award
-  cases and decided-group twins are not scored; they are counted by reason.
-- **The two result files are not scrubbed.** `human_lens.json` and `coach_grade.json` skip the
-  scrubber. Allow-lists guard them on both sides: in the child before writing, and in the parent when
-  reading.
-- **The exam-file home in production is still OPEN.** See "Where the exam file lives in production" in
-  [2026-11-13-a5-replay-owner-steps.md](2026-11-13-a5-replay-owner-steps.md). Until the owner decides,
-  the lens does not run on real data.
-- **One answer of truth for the exam score, not two.** The plan said the report shows both scores:
-  one against the reviewer's answer, one against the QC-checked answer. What was built is ONE answer
-  of truth for the exam score: the QC-checked answer. In it, a Fail that the QC overturned counts as
-  a Pass. Beside it is one count, `qc_turned_to_pass`. Each exam still prints two score lines (the
-  score, and the score without interview Fails), and both use the QC-checked answer. The coach grade
-  keeps the reviewer's stored answer, and it scores different cases. Which answer is the truth for a
-  Fail the QC overturned is an open owner decision.
-- **No QC activity count.** The plan said the report counts QC activity from the `qc_decision` meta
-  (line 193). That was not built. The report has no QC activity count.
-- **`read_wrong` is an old code now.** The plan names the LL2 reason `read_wrong` (line 107). It is no
-  longer offered. For one release, a request that still sends it is saved as Other (removal is
-  tracked as TD-704).
-- **Nothing runs the lens on a timetable.** The plan said it runs after a release that changes a model
-  version, and once a week. Nothing schedules it. It runs only when the owner starts the job.
-- **Acceptance.** "The owner runs the job once" still stands and is NOT done. It needs the owner's yes.
+---
+
+## Sprint LL6 — Exam-file home in a Cloud Storage bucket (added 25 Nov 2026; owner decision 2 = B)
+
+**Goal.** The frozen exam file lives in a bucket, not on a home machine, so the lens can run on real data from the replay job and a lost file is never silently replaced.
+
+**Phases.**
+- P1: the store child `eval/replay/exam_store.py` plus tests. BUILT 25 Nov (commit `74553a2c7` on branch `ll6`); adversarial review in progress.
+- P2: `exam_home.py`, the parent wiring and the result codes.
+- P3: docs. Owner steps for making the bucket, the access grant, and the corrected by-hand recipe for the derived key.
+- Proof run, after P3: a plain fetch on the EMPTY bucket plus an overwrite check on a DUMMY object. No real exam file is touched.
+
+**Needs the owner.** Make the bucket and the access grant (steps in P3). Make the derived key by hand, once (owner decision 3; no helper tool). A direct yes for the proof run, at a time agreed with the release lead, after the bucket exists.
+
+**Not in this sprint.** The first lens run on live data. It comes only after LL6, the key, the owner's yes and a time agreed with the lead; never on an R3 run day or in a release slot.
+
+**Done when.** P1 to P3 are reviewed and landed by the release lead; the proof run passed; the owner steps doc is updated.
+
+---
+
+## Sprint LL7 — Close the gap (added 25 Nov 2026; a standing cycle)
+
+**Goal.** Shrink the biggest error groups, one at a time, with evidence.
+
+**Steps (each round).**
+1. After each score run, the session lists the 3 largest error groups.
+2. The owner picks one.
+3. Find the cause first: read-only, counts only.
+4. Only if a rule change pays, a small rule sprint with a hostile review. Anything touching eligibility, money or identity is its own sprint: adversarial review, then the owner's phone check.
+
+**Round 1 (25 Nov).** Group "AI said Certain, reviewer failed" (9 facts, all in one programme). Six scattered causes, no single cause. The candidate rule "an open item on a fact caps it at Probable" was tested on all decided cases and does NOT pay: 71 correct Certains lowered to catch 8 wrong ones, minus 15 points under the owner's points rules. No rule change from round 1.
+
+**Next step = the owner's choice:** look at group 2 ("Rule not met" but the reviewer passed, 9 facts), or wait for about 50 new cases that carry fail reasons.
+
+**Routine.** After two rounds by hand, a routine (a workflow plus one counting tool) will be proposed. Nothing is created without asking.
+
+**Done when.** It is a standing cycle. Each round ends with a short list to the owner and either "no rule change" or a rule sprint. After two rounds a routine is proposed.
 
 ---
 
@@ -264,7 +254,7 @@ Every agent call names its model. The lead stays thin. One phase for each build 
 |---|---|
 | Explore the code, run the gates and the test queue | Haiku |
 | Build LL1 and LL2 (routine: display, words, one tap) | Sonnet |
-| Build LL2b, LL3, LL4, LL5 (decision flow, identity scoring files, replay safety) | Opus |
+| Build LL2b, LL3, LL4, LL5, LL6 (decision flow, identity scoring files, replay safety, exam-file store) | Opus |
 | Read the diff of LL1 and LL2 (a fresh agent, not the builder) | Sonnet |
 | Read the diff of LL2b, LL3, LL4, LL5 (fresh agent, adversarial review before the push) | Opus |
 | Look at a picture or a PDF (Stitch screen, screenshot) | A short-lived agent |
@@ -277,7 +267,10 @@ Every agent call names its model. The lead stays thin. One phase for each build 
 4. LL2b: the second person is the QC (settled 2026-11-18). Phone check. Say yes to the publish.
 5. LL3: say yes to the publish.
 6. LL4: apply one migration by hand. Say yes to the publish.
-7. LL5: run the replay job. Read one report.
+7. LL5: DONE and live (25 Nov). Its first run on real data waits for LL6.
+8. LL6: make the bucket and the access grant; make the derived key by hand once; say yes to the proof run at an agreed time.
+9. LL7: each round, pick one of the 3 error groups.
+10. Still owed: five phone checks (LL1, LL2, LL2b, LL4, withdraw card).
 
 ## Not in this plan
 
@@ -297,5 +290,5 @@ Every agent call names its model. The lead stays thin. One phase for each build 
 
 ## After approval
 
-- Add LL1–LL5 (and LL2b) to the HalaTuju queue. The owner sets the dates.
+- Add LL1–LL7 (and LL2b) to the HalaTuju queue. The owner sets the dates.
 - Start LL1 with `Settings/_workflows/sprint-start.md`.
