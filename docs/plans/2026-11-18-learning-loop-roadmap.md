@@ -230,7 +230,7 @@ Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C
 1. Step 2b: make the derived key once, by hand. No helper tool exists and none will be built (owner decision).
 2. Step 4b: make the bucket and give the replay service account its two bucket-level roles.
 3. Step 4c: the proof-first run on the EMPTY bucket, with a dummy object. First, the job's image is built again with LL6 in it (step 4c, first box). It needs the owner's direct yes and a time agreed with the release lead; never on a release slot and never on an R3 run day.
-4. The proof-first run (4c) is itself a full lens run on production data, with no freeze. It needs the owner's yes, never on a release slot (11:00, 16:00, 21:00 MYT) or an R3 run day. After it passes, the first FREEZE run follows on a fresh yes from the owner.
+4. The proof-first run (4c) is itself a full lens run on production data, with no freeze. It needs the owner's yes, never on a release slot (11:00, 16:00, 21:00 MYT) or an R3 run day. After step 4c has passed (the job run and the by-hand checks), the first FREEZE run follows on a fresh yes from the owner.
 
 **Not in this sprint.** The proof-first run and the first freeze run.
 
