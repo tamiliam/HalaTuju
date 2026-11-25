@@ -38,6 +38,13 @@ publish window; release note `docs/releases/access-s4-scholars-release-note-draf
 - Tests: the access matrix gains `admin_invited_a`, `scholars_viewer_a`, `scholars_manager_a`, `manage_only_a` and
   `test_scholar_files_open_by_switch` (no existing cell changed); `test_s4_nobody_changes.py` (no group seat, key or
   door moves but the grant); the factory applies 0101 (`pre_s4=True` stops before it).
+- **Review fix round (98ce9078d):** money past the award asks View scholars + Payments: Prepare (reading the case
+  alone no longer admits); only placing a hold and lifting it back to on track are money moves, every other sub-state
+  change asks Manage (`hold_is_money_move`); the cockpit's hold control follows the same door; a closed file offers no
+  Resend of discipline, suspension or termination letters. 0101: a re-run is bounded by the cutover (rows created,
+  first seen, restored or edited after it are skipped and listed by a RE-RUN PRE-CHECK), PRE/POST checks add
+  `org_admin_without_manage` (expect 0), and the reverse deletes only the audit rows of rows it reverts. New debt:
+  TD-NEW-disbursement-403-cross-org, TD-NEW-hold-unlocked-read.
 
 ### refactor: sprint M4b review round 1 - stale-step refusal, readers see no staff emails, pre-0100 pinned (2026-11-24)
 
