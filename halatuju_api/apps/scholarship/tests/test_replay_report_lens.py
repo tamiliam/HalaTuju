@@ -388,3 +388,16 @@ def test_an_unknown_code_falls_back_to_fixed_words():
     assert R.words_for(R.GRADE_WORDS, PLANT) == R.OTHER_WORDS and R.words_for(R.GRADE_WORDS, ['x']) == R.OTHER_WORDS
     assert R.counts_in_words({'certain': 1, PLANT: 2, 'zz': 3}, R.BAND_WORDS) == 'Certain 1, unlisted kind 5'
     assert R.counts_in_words({}, R.BAND_WORDS) == 'none'
+
+
+@pytest.mark.parametrize('code, words', ((L.FROZEN_ELSEWHERE, 'another run froze this exam first'),
+                                         (L.NOT_KEPT, 'the frozen exam was not kept in the bucket')))
+def test_a_parent_refusal_prints_its_exact_words_and_no_score(clean_lens, code, words):
+    assert R.REFUSAL_WORDS[code] == words
+    lens = copy.deepcopy(clean_lens)
+    lens['exams'][L.EXAM_1] = L.refused_exam(L.EXAM_1, lens['engine_version'], code)
+    assert LS.human_lens_result_allowed(lens)
+    text = text_of(lens, coach_rows.coach_debug_refusal())
+    exam_1 = part(text, '#### exam-1', '#### exam-old')
+    assert f'- not run: {code}. Meaning: {words}. This is not a pass.' in exam_1
+    assert 'Score' not in exam_1 and 'Validity' not in exam_1

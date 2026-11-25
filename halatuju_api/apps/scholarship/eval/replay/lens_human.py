@@ -77,6 +77,15 @@ DEBUG_ON = 'debug_on'   # the database door refuses the whole run: Django DEBUG 
 KEY_BLANK, KEY_CHECKS_MIXED = 'key_blank', 'candidate_key_checks_differ'
 KEY_CHECK_MISSING, CANDIDATES_NOT_CURRENT = 'current_key_check_missing', 'candidate_key_check_not_current'
 KEY_CHECK_DIFFERS_EXAM, KEY_CHECK_DIFFERS_CASES = 'key_check_differs_from_exam', 'key_check_differs_from_cases'
+# Set only by the parent process (the exam bucket): another run froze first; the frozen exam was not kept.
+FROZEN_ELSEWHERE, NOT_KEPT = 'frozen_elsewhere', 'not_kept'
+# The codes `refused_exam` takes: every refusal except exam_missing (that block also carries a count).
+PLAIN_REFUSALS = frozenset({
+    UNREADABLE, UNKNOWN_FIELD, MISSING_FIELD, WRONG_EXAM_NAME, WRONG_FORMAT, BAD_FIELD_TYPE, NON_INTEGER_ID,
+    DUPLICATE_ID, SIZE_MISMATCH, DIGEST_MISMATCH, ID_BELOW_ONE, EMPTY_EXAM, BAD_DECIDED_AT, BAD_FROZEN_AT,
+    BAD_KEY_CHECK, FOLDER_MISSING, INSIDE_GIT_REPO, ALREADY_FROZEN, FOLDER_NOT_WRITABLE, FOLDER_NOT_ABSOLUTE,
+    DEBUG_ON, KEY_BLANK, KEY_CHECKS_MIXED, KEY_CHECK_MISSING, CANDIDATES_NOT_CURRENT, KEY_CHECK_DIFFERS_EXAM,
+    KEY_CHECK_DIFFERS_CASES, FROZEN_ELSEWHERE, NOT_KEPT})
 VALIDITY = ('valid', 'evidence_changed', 'could_not_recompute', 'missing', 'context_changed',
             'no_longer_decided', 'decided_again')
 RECOVERED_BY_TWIN = 'twin'   # the case row's ``recompute_note`` vocabulary: this, or a reason below
@@ -441,6 +450,16 @@ def _blank_exam(name: str, version: str) -> dict:
 def _exam_refused(out: dict, code: str) -> dict:
     out.update(refusal=code, status=f'refused: {code}')
     return out
+
+
+def refused_exam(name: str, version: str, code: str) -> dict:
+    """The refusal block of exam ``name`` for the parent process: the shape this module builds for its own
+    refusals, no score, not frozen. Only a code in `PLAIN_REFUSALS`; the error text never holds the value."""
+    if name not in EXAM_NAMES:
+        raise ValueError('refused_exam: unknown exam name')
+    if code not in PLAIN_REFUSALS:
+        raise ValueError('refused_exam: unknown refusal code')
+    return _exam_refused(_blank_exam(name, version), code)
 
 
 def _exam_missing(out: dict, pool: list, of: str) -> dict:
