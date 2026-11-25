@@ -172,7 +172,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         from ..academic_engine import _school_match
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         f = vf.get('fields') if isinstance(vf.get('fields'), dict) else {}
-        school = slip_school(f)
+        school = slip_school(f, vf)
         profile = getattr(getattr(obj, 'application', None), 'profile', None)
         return {'school': school,
                 'school_status': _school_match(school, (getattr(profile, 'school', '') or '').strip())}

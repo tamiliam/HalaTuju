@@ -42,13 +42,23 @@ def printed_subject_count(fields: dict):
 _SLIP_SCHOOL = re.compile(r'^\s*SEKOLAH\s*:\s*(\S.*?)\s*$', re.IGNORECASE)
 
 
-def slip_school(fields: dict) -> str:
-    """The school the SPM slip PRINTS ("SEKOLAH : SMK CONVENT"), or '' — read from what the stored
+#: TD-741: the slip school a one-off OCR backfill (`reread_academic_ocr`) stores BESIDE an old read
+#: (`vision_fields.slip_school_read`, never in its fields). DISPLAY ONLY: `slip_school` is its one reader,
+#: so no subject count, printed line or verdict input moves when it is written.
+SLIP_SCHOOL_READ = 'slip_school_read'
+
+
+def slip_school(fields: dict, vision_fields: dict | None = None) -> str:
+    """The school the SPM slip PRINTS ("SEKOLAH : SMK CONVENT"), or '' — first the backfilled school
+    beside the read (``vision_fields[SLIP_SCHOOL_READ]``, TD-741), else from what the stored
     record kept of the page, the same two sources as ``printed_subject_count``: a local read's
     grouped lines (``_debug_rows``), else a Gemini fallback's word capture, regrouped into rows with
     ``academic_engine._group_rows`` (TD-733). Anchored on ``SEKOLAH :`` at the START of a row, never a
     bare substring ("PERSEKOLAHAN" on STPM pages and "ALIRAN SEKOLAH" are not it).
     Nothing is re-read; no stored text, or a certificate read (no rows), gives ''."""
+    kept = vision_fields.get(SLIP_SCHOOL_READ) if isinstance(vision_fields, dict) else None
+    if isinstance(kept, str) and kept.strip():
+        return kept.strip()
     rows = fields.get('_debug_rows')
     if not isinstance(rows, list):
         diag = fields.get('_slip_ocr_diag')
