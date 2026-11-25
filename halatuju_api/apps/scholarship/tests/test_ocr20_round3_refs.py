@@ -69,6 +69,24 @@ class AReferenceWithABytePdfiumReadsAnotherWayRefusesTheFile(SimpleTestCase):
                 with self.subTest(byte=hex(b), place=name):
                     self.assertTrue(_refused(pdf))
 
+    def test_a_nul_after_a_number_in_a_content_stream_keeps_the_text(self):
+        """Regression (wider compare: 20 genuine STPM files lost their text layer): in a content stream NUL ends a
+        number and is white space to pypdf's content loop and to pdfium alike, and there are no references. (A NUL
+        after an OPERATOR is another matter: `pdf_content_bytes` hides that page.)"""
+        g = b'BT /F1 24\x00Tf 72\x00700\x00Td (GENUINE) Tj ET\n'
+        l_ = b'BT /F1 24 Tf 72 600\x00\x00Td (LULUS) Tj ET\n'
+        pdf = _pdf(_stream(g + l_))
+        self.assertEqual(_words(pdf), ['GENUINE', 'LULUS'])
+        self.assertEqual(_texts(pdf), KEEP)
+        self.assertNotIn(0, pdf_dict_keys._CONTENT_DISAGREE)
+        self.assertEqual(pdf_dict_keys._CONTENT_DISAGREE, frozenset(b'\x0b\x80\xff'))
+
+    def test_the_other_bytes_after_a_number_in_a_content_stream_still_lose_page_one(self):
+        for b in b'\x0b\x80\xff':
+            with self.subTest(byte=hex(b)):
+                texts = _texts(_pdf(_stream(b'BT /F1 24' + bytes([b]) + b'Tf 72 700 Td (GENUINE) Tj ET\n' + L)))
+                self.assertNotEqual(texts[:1], KEEP[:1])
+
     def test_controls_keep_the_exact_read(self):
         for name, pdf in (('array_spaces', _array(b'8 0 R')),
                           ('array_agreed_white_space', _array(b'8\t0\x0cR\r\n')),
