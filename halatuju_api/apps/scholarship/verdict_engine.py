@@ -115,7 +115,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-25.4 — TD-718 repair round 4: in the household STR de-dupe only an approval a household card MATCHED (name or NRIC; the twin of promotion._str_matched(counting=True)) is tier 2; every other approval (not judged yet, pending, or a stranger's) is tier 1 with rejections and unread pages, where the base order decides. Round 3's stranger tier 0 is removed.
 #   2026-11-25.5 — TD-718 repair round 5: tier 2 needs the page's OWN recipient name or NRIC to hit a household IC card (str_route.str_recipient_hits_a_household_card, no IC-number chain); a match that comes only through the birth-certificate chain (which reads the newest live STR, not the page being ranked) is tier 1, so an outsider's approval can no longer borrow the family's newer page's match and bury it.
 #   2026-11-25.6 — merge train (2026-11-25): TD-718 (.5) rebased onto request #78 (2026-11-23.1), which merged first; the source now holds both, no rule change of its own.
-VERDICT_ENGINE_VERSION = '2026-11-25.6'   # TD-718 on top of #78 (above).
+#   2026-11-25.7 — request #85 (landed on the 21:00 train with TD-718): salary_doc 1.3.0 — a payslip with >=2 statutory deductions and no wage label now reads genuine/private, so the mother's/father's income proof counts for the same documents. The verdict engine's own files are unchanged (same digest as 2026-11-25.6).
+VERDICT_ENGINE_VERSION = '2026-11-25.7'   # #85 slip statutory on top of TD-718 (above).
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

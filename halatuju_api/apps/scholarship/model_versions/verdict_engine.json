@@ -48,5 +48,10 @@
     "digest": "1be99b990d36b3cfc3d793368452b89b9bcd2a0b477b736af9a34a09c48f2135",
     "note": "Merge train (2026-11-25): TD-718 (2026-11-25.5) rebased onto request #78 (2026-11-23.1), which merged first at 16:00. The source now holds both changes; no rule change of its own. The TD-718 entries 2026-11-24.1 to 2026-11-25.5 were never published; their digests are of the source before #78. Bumped, not re-seeded: never re-seed a digest without a bump.",
     "also_ok": []
+  },
+  "2026-11-25.7": {
+    "digest": "1be99b990d36b3cfc3d793368452b89b9bcd2a0b477b736af9a34a09c48f2135",
+    "note": "Request #85 (2026-11-24), landed on the 21:00 train after TD-718: salary_doc 1.3.0 reads a payslip with >=2 statutory deductions and no wage label as genuine/private (it was not_salary), so the earner's income proof counts and the salary route's facts move for the same documents (owner 2026-11-14: a fact that moves bumps this version). The verdict engine's own files are unchanged, hence the same digest as 2026-11-25.6. On the laptop branch this was numbered 2026-11-24.1, which TD-718 already used; re-set at landing.",
+    "also_ok": []
   }
 }

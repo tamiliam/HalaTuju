@@ -9460,6 +9460,16 @@ work address, each holding a switch) can record a credit on one and check or app
 (read-only count before the fix). **Fix:** store the signer's staff row id beside each signature and compare the
 person behind it (a migration, migrate-first; owner's call, pairs with TD-726). *(A - S)*
 
+### [TD-NEW-netpay-not-salary] A payslip with a read net pay figure but no statutory deduction is still "not a salary slip" - low
+
+**Raised 2026-11-24 by request #85 (laptop session, number placeholder until the desk numbers it).** #85 fixed slips
+with two or more statutory deductions. A read-only count on 24 Nov found 9 more live `not_salary` payslips with zero
+statutory markers (and one with one) where the reader did pick up a net pay figure. The scorer looks only at its label
+words, so these stay "not a salary slip" and the family is asked again for that earner's income. **Owner to rule:**
+should a read net pay figure (from the field reader) stop the "no payslip fields" reject (for example, read as an
+informal slip, suspect) the way the statutory deductions now do? If yes: a salary_doc bump and a re-score from stored
+fields, like `rescore_salary_statutory`. *(A - S)*
+
 ### [TD-728] Editing a run's item and cancelling a run do not lock the actor's row first - low
 
 **Raised 2026-11-19 by the sprint M4a review (nit; laptop session, number placeholder until the desk numbers it).**
