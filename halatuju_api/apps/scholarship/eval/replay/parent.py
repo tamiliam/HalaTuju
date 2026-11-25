@@ -48,6 +48,14 @@ even when the run would exit 0: a report that cannot be shown is not a pass. No 
 (the output is as before), on the fatal path (exit 3) or on an argument error (exit 2, which
 `--counts-only` with `--human-lens` is): there is no result to show. Any other error in the render is
 the fatal path.
+
+THE EXAM HOME IN A BUCKET (LL6). `--human-lens-exam-bucket NAME` (a CLI argument only; never with
+`--human-lens-exam-folder`) keeps the exams in one private bucket instead of a folder. `main` asks
+`exam_home.fetch` for them (a private temp folder in the workdir, set as the exam folder; any failure is
+the fatal path, exit 3, before any child starts), runs as before, then `exam_home.keep` uploads a NEWLY
+frozen exam, ONLY with `--human-lens-freeze`; its fixed lines (`exam_home.ALL_HOME_LINES`) follow the
+LL5 block, and an exam frozen here but not kept exits 4. The temp folder is removed in a ``finally``.
+Without the flag nothing of this runs and the output is as before.
 """
 import argparse
 import importlib
@@ -58,7 +66,7 @@ import sys
 import time
 from collections import Counter, defaultdict
 
-from . import coach_result_schema, guards, lens_result_schema, netguard, report_lens
+from . import coach_result_schema, exam_home, guards, lens_result_schema, netguard, report_lens
 from . import scrub as scrub_module
 from .child import (COACH_GRADE_FILE, HUMAN_LENS_ENV, HUMAN_LENS_FILE, HUMAN_LENS_FOLDER_ENV,
                     HUMAN_LENS_FREEZE_ENV, parse_instant, setup_django)
@@ -268,18 +276,25 @@ def parse_args(argv):
     ap.add_argument('--human-lens', action='store_true', help='run the human lens (off by default)')
     ap.add_argument('--human-lens-exam-folder', default='', help='the exam folder: absolute, outside git')
     ap.add_argument('--human-lens-freeze', action='store_true', help='freeze a missing exam file')
+    ap.add_argument('--human-lens-exam-bucket', default=None, metavar='NAME',
+                    help='the exam home: a private Cloud Storage bucket (LL6), instead of an exam folder')
     args = ap.parse_args(argv)
     parse_instant(args.instant)
     if len(args.months.split(',')) != 2:
         ap.error('--months takes exactly two months')
-    if (args.human_lens_freeze or args.human_lens_exam_folder) and not args.human_lens:
-        ap.error('--human-lens-freeze and --human-lens-exam-folder need --human-lens')
-    if args.human_lens and not args.human_lens_exam_folder:     # fail fast, not after hours of engines
-        ap.error('--human-lens needs --human-lens-exam-folder')
+    folder, bucket = args.human_lens_exam_folder, args.human_lens_exam_bucket   # bucket: None = not given
+    if (args.human_lens_freeze or folder or bucket is not None) and not args.human_lens:
+        ap.error('--human-lens-freeze, --human-lens-exam-folder and --human-lens-exam-bucket need --human-lens')
+    if folder and bucket is not None:                           # one exam home, never two
+        ap.error('use one of --human-lens-exam-folder or --human-lens-exam-bucket')
+    if args.human_lens and not (folder or bucket is not None):  # fail fast, not after hours of engines
+        ap.error('--human-lens needs --human-lens-exam-folder or --human-lens-exam-bucket')
     if args.human_lens and args.counts_only:                    # no lens would run: refuse, not a silent 0
         ap.error('--counts-only and --human-lens cannot be used together')
-    if args.human_lens and not os.path.isabs(args.human_lens_exam_folder):  # the child's own rule (isabs)
+    if args.human_lens and folder and not os.path.isabs(folder):    # the child's own rule (isabs)
         ap.error('--human-lens-exam-folder must be an absolute path')       # fixed words: never the value
+    if bucket is not None and not exam_home.bucket_name_ok(bucket):
+        ap.error('--human-lens-exam-bucket is not a plain bucket name')     # fixed words: never the value
     return args
 
 
@@ -446,13 +461,22 @@ def main(argv=None):
         guards.check_environment(os.environ)            # the checks come BEFORE Django: its setup queries
         guards.check_database_url(os.environ.get(guards.DB_ENV))
         setup_django()
-        result = run_replay(args, env=os.environ)
-        code = replay_exit_code(result)
-        if args.human_lens and not args.counts_only:    # after the JSON lines; built whole, then one print
-            block, failed = lens_report_block(result)
-            print(block)
-            if failed:
+        home = exam_home.fetch(args) if args.human_lens_exam_bucket is not None else None   # LL6: exit 3
+        try:
+            result = run_replay(args, env=os.environ)
+            result, home_lines, home_failed = exam_home.keep(home, args, result)   # no home: as before
+            code = replay_exit_code(result)
+            if args.human_lens and not args.counts_only:    # after the JSON lines; built whole, then one print
+                block, failed = lens_report_block(result)
+                print(block)
+                if failed:
+                    code = HUMAN_LENS_FAILED_EXIT
+            if home_lines:                                  # fixed lines only (`exam_home.ALL_HOME_LINES`)
+                print('\n'.join(home_lines))
+            if home_failed:
                 code = HUMAN_LENS_FAILED_EXIT
+        finally:
+            exam_home.clean(home)                           # the temp folder, whatever happened
     except SystemExit:
         raise
     except BaseException as exc:                        # by class name only, never the message

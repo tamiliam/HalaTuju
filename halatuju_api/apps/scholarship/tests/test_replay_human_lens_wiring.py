@@ -506,3 +506,182 @@ def test_main_exits_4_on_a_coach_error_and_0_on_its_refusal(main_stubbed, tmp_pa
         clean_lens = lens_human_rows.run_human_lens_on_database(str(tmp_path), child.parse_instant(INSTANT))
     result = {'same': {'same': 1}, parent.HUMAN_LENS_KEY: clean_lens, parent.COACH_GRADE_KEY: coach}
     assert main_stubbed(result, lens_flags) == code
+
+
+# ── LL6 P2b: the exam home in a bucket (`exam_home`), wired into ``main`` ─────────────────────────────
+SECRET_BUCKET = 'exams-sitiaminah-987654321'       # a valid name that must never be echoed
+
+
+def test_the_bucket_flag_rules_in_order_with_fixed_words(main_recorded, tmp_path):
+    from apps.scholarship.eval.replay import exam_home
+    assert exam_home.bucket_name_ok(SECRET_BUCKET)
+    work = str(tmp_path / 'work')
+    cases = [
+        (('--human-lens-exam-bucket', SECRET_BUCKET),
+         '--human-lens-freeze, --human-lens-exam-folder and --human-lens-exam-bucket need --human-lens'),
+        (('--human-lens', '--human-lens-exam-folder', str(tmp_path), '--human-lens-exam-bucket', SECRET_BUCKET),
+         'use one of --human-lens-exam-folder or --human-lens-exam-bucket'),
+        (('--human-lens', '--human-lens-freeze'),
+         '--human-lens needs --human-lens-exam-folder or --human-lens-exam-bucket'),
+        (('--human-lens', '--human-lens-exam-bucket', SECRET_BUCKET, '--counts-only'),
+         '--counts-only and --human-lens cannot be used together'),
+        (('--human-lens', '--human-lens-exam-folder', 'Siti_Aminah_exams'),
+         '--human-lens-exam-folder must be an absolute path'),
+    ]
+    for bad in ('Siti_Aminah', 'Siti Aminah', 'gs://sitiaminah', 'sitiaminah/987654321', '', 'ab',
+                'sitiaminah..987654321', '-sitiaminah'):
+        cases.append((('--human-lens', f'--human-lens-exam-bucket={bad}'),
+                      '--human-lens-exam-bucket is not a plain bucket name'))
+    for flags, words in cases:
+        code, out, err, calls = main_recorded('--workdir', work, *flags)
+        assert code == 2 and calls == [] and out == ''
+        assert err.rstrip('\n').endswith('error: ' + words), flags
+        assert 'siti' not in err.lower() and '987654321' not in err and 'gs:' not in err
+    assert not (tmp_path / 'work').exists()
+
+
+def test_the_bucket_comes_from_the_command_line_only(tmp_path, monkeypatch):
+    monkeypatch.setenv('HUMAN_LENS_EXAM_BUCKET', SECRET_BUCKET)
+    with pytest.raises(SystemExit):
+        _args(tmp_path, '--human-lens')
+    args = _args(tmp_path, '--human-lens', '--human-lens-exam-bucket', SECRET_BUCKET)
+    assert (args.human_lens_exam_bucket, args.human_lens_exam_folder) == (SECRET_BUCKET, '')
+    assert _args(tmp_path).human_lens_exam_bucket is None
+    assert _args(tmp_path, '--human-lens', '--human-lens-exam-folder', str(tmp_path)).human_lens_exam_bucket is None
+
+
+@pytest.fixture
+def main_bucket(monkeypatch, request, capsys, caplog, tmp_path):
+    """``run(*flags, replay=None)`` -> (exit code, stdout, stderr, calls, store): the real ``main`` on a
+    bucket run, the store child faked, ``run_replay`` running the real lens on the fetched folder."""
+    import logging
+
+    from apps.scholarship.eval.replay import exam_home
+    from apps.scholarship.tests.test_replay_exam_home import EVAL_DIR, FakeStore, coach
+    from apps.scholarship.tests.test_replay_lens_result_schema import cases_rich, run as lens_run
+    request.addfinalizer(lambda level=logging.root.manager.disable: logging.disable(level))
+    monkeypatch.setattr(guards, 'check_environment', lambda env: True)
+    monkeypatch.setattr(guards, 'check_database_url', lambda url: ('localhost', 5432))
+    monkeypatch.setattr(parent, 'setup_django', lambda: None)
+    store, calls = FakeStore(), []
+    monkeypatch.setattr(exam_home, 'spawn_store', store)
+    work = tmp_path / 'work'
+
+    def default_replay(args):
+        lens = lens_run(cases_rich(), args.human_lens_exam_folder, freeze=args.human_lens_freeze)
+        return {'same': {'same': 1}, parent.HUMAN_LENS_KEY: lens, parent.COACH_GRADE_KEY: coach()}
+
+    def run(*flags, replay=default_replay):
+        def run_replay(args, env):
+            calls.append(('run_replay', args.human_lens_exam_folder))
+            return replay(args)
+        monkeypatch.setattr(parent, 'run_replay', run_replay)
+        capsys.readouterr()
+        caplog.clear()
+        try:
+            code = parent.main(['--instant', INSTANT, '--months', '2026-11,2026-12', '--workdir', str(work),
+                                '--harness-dir', str(EVAL_DIR), '--human-lens',
+                                '--human-lens-exam-bucket', SECRET_BUCKET, *flags])
+        except SystemExit as stop:
+            code = stop.code
+        out, err = capsys.readouterr()
+        text = out + err + caplog.text
+        assert SECRET_BUCKET not in text and 'sitiaminah' not in text       # never the bucket's name
+        assert all(line in exam_home.ALL_HOME_LINES for line in out.splitlines() if 'exam home' in line)
+        assert list(work.glob('exams-*')) == []                             # the temp folder, always gone
+        return code, out, err
+    run.store, run.calls, run.work = store, calls, work
+    return run
+
+
+def _home_lines(out):
+    return [line for line in out.splitlines() if 'exam home' in line]
+
+
+def _never(_args):
+    raise AssertionError('a replay child was started')
+
+
+@pytest.mark.parametrize('answer', ['fetch_failed', 'refused', 'timeout', 'bad_line'])
+def test_main_a_failed_fetch_exits_3_before_any_replay_child(main_bucket, answer):
+    import subprocess
+    raw = {'timeout': subprocess.TimeoutExpired(['x'], 120),
+           'bad_line': (0, b'{"code": "absent", "id": 987654321}\n')}
+    main_bucket.store.answers[('fetch', lens_human.EXAM_1)] = raw.get(answer, answer)
+    code, out, err = main_bucket('--human-lens-freeze', replay=_never)
+    assert code == 3 and err == '' and _home_lines(out) == [] and main_bucket.calls == []
+    fatal = json.loads(out.splitlines()[-1])
+    assert fatal['event'] == 'fatal' and 'ExamFetchFailed' in json.dumps(fatal)
+    assert '987654321' not in out and 'fetch_failed' not in json.dumps(fatal)
+    assert main_bucket.store.asked() == [('fetch', lens_human.EXAM_1)]
+
+
+def test_main_a_freeze_run_on_an_empty_bucket_keeps_both_and_exits_0(main_bucket):
+    code, out, err = main_bucket('--human-lens-freeze')
+    assert code == 0 and err == '' and parent.LENS_REPORT_START in out
+    assert _home_lines(out) == ['exam home: exam-1 frozen and kept in the bucket',
+                                'exam home: exam-old frozen and kept in the bucket']
+    assert out.rstrip('\n').splitlines()[-2:] == _home_lines(out)          # after the report block
+    assert main_bucket.store.asked('put') == [('put', n) for n in lens_human.EXAM_NAMES]
+    folder = main_bucket.calls[0][1]                                       # the lens read the temp folder
+    assert os.path.dirname(folder) == os.path.abspath(str(main_bucket.work))
+    assert os.path.basename(folder).startswith('exams-') and not os.path.exists(folder)
+
+
+def test_main_a_lost_race_withholds_the_score_and_exits_0(main_bucket):
+    main_bucket.store.answers[('put', lens_human.EXAM_1)] = 'frozen_elsewhere'
+    code, out, err = main_bucket('--human-lens-freeze')
+    assert code == 0 and 'another run froze this exam first' in out
+    assert _home_lines(out) == ['exam home: exam-1 was frozen by another run first; the next run sits that one',
+                                'exam home: exam-old frozen and kept in the bucket']
+
+
+@pytest.mark.parametrize('answer', ['put_failed', 'not_verified', 'refused', 'timeout'])
+def test_main_a_put_that_fails_is_blocking_exit_4(main_bucket, answer):
+    import subprocess
+    timeout = subprocess.TimeoutExpired(['x'], 120)
+    main_bucket.store.answers[('put', lens_human.EXAM_OLD)] = timeout if answer == 'timeout' else answer
+    code, out, err = main_bucket('--human-lens-freeze')
+    assert code == parent.HUMAN_LENS_FAILED_EXIT == 4 and err == ''
+    assert _home_lines(out) == ['exam home: exam-1 frozen and kept in the bucket',
+                                'exam home: exam-old NOT kept in the bucket. BLOCKING. '
+                                'Run again with --human-lens-freeze.']
+    assert 'the frozen exam was not kept in the bucket' in out
+
+
+def test_main_a_coach_error_on_a_freeze_run_uploads_nothing_and_exits_4(main_bucket):
+    from apps.scholarship.tests.test_replay_lens_result_schema import cases_rich, run as lens_run
+
+    def coach_broke(args):
+        lens = lens_run(cases_rich(), args.human_lens_exam_folder, freeze=True)
+        return {'same': {'same': 1}, parent.HUMAN_LENS_KEY: lens, parent.COACH_GRADE_KEY: {'error': 'schema'}}
+    code, out, err = main_bucket('--human-lens-freeze', replay=coach_broke)
+    assert code == 4 and main_bucket.store.asked('put') == []
+    assert len(_home_lines(out)) == 2 and all('NOT kept' in line for line in _home_lines(out))
+
+
+def test_main_a_replay_that_raises_uploads_nothing_and_still_removes_the_folder(main_bucket):
+    import subprocess
+
+    def boom(args):
+        assert os.path.isdir(args.human_lens_exam_folder)
+        raise subprocess.TimeoutExpired(['child'], 1)
+    code, out, err = main_bucket('--human-lens-freeze', replay=boom)
+    assert code == 3 and _home_lines(out) == [] and 'TimeoutExpired' in out
+    assert main_bucket.store.asked('put') == [] and len(main_bucket.store.asked('fetch')) == 2
+
+
+def test_main_a_normal_bucket_run_scores_the_stored_exams_and_uploads_nothing(main_bucket, tmp_path):
+    from apps.scholarship.tests.test_replay_exam_home import copies_from, frozen_source
+    src = frozen_source(tmp_path)
+    for name in lens_human.EXAM_NAMES:
+        main_bucket.store.answers[('fetch', name)] = copies_from(src)
+    for flags in ((), ('--human-lens-freeze',)):                           # nothing new: nothing to keep
+        code, out, err = main_bucket(*flags)
+        assert code == 0 and err == '' and _home_lines(out) == [] and parent.LENS_REPORT_START in out
+    assert main_bucket.store.asked('put') == []
+
+
+def test_main_a_normal_run_on_an_empty_bucket_uploads_nothing(main_bucket):
+    code, out, err = main_bucket()
+    assert _home_lines(out) == [] and main_bucket.store.asked('put') == [] and err == ''
