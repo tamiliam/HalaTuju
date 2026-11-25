@@ -309,8 +309,8 @@ class RereadAcademicOcr(TestCase):
         real = cmd._acad_write
         with mock.patch(FETCH, return_value=b'img'), mock.patch(WORDS, return_value=_ok()), \
                 mock.patch.object(cmd, '_acad_write',
-                                  side_effect=lambda d, k, v: (_ for _ in ()).throw(DatabaseError('x'))
-                                  if d.pk == a.pk else real(d, k, v)):
+                                  side_effect=lambda d, k, v, *rest: (_ for _ in ()).throw(DatabaseError('x'))
+                                  if d.pk == a.pk else real(d, k, v, *rest)):
             out = self._run('--apply')
         self.assertIn(f'skipped write_error_DatabaseError=1 ids=[{a.pk}]', out)
         self.assertIn(f'slip_school: written=1 ids=[{b.pk}]', out)
@@ -327,6 +327,52 @@ class RereadAcademicOcr(TestCase):
             out = self._run('--apply')
         self.assertEqual(self._vf(slip), fresh)
         self.assertIn('skipped changed=1', out)
+
+    # ── review round 3: the write re-checks the case and the document under the row lock ──
+    def _decide_meanwhile(self, *a, **kw):
+        type(self.app).objects.filter(pk=self.app.pk).update(ai_verdict_context={'schema': 1, 'fingerprint': 'f'})
+        return b'img'
+
+    def test_a_case_decided_after_selection_is_not_written(self):
+        slip = self._slip()
+        with mock.patch(FETCH, side_effect=self._decide_meanwhile), mock.patch(WORDS, return_value=_ok()):
+            out = self._run('--apply')
+        self.assertNotIn(SLIP_SCHOOL_READ, self._vf(slip))
+        self.assertIn(f'skipped decided_record=1 ids=[{slip.pk}]', out)
+        self.assertIn('APPLIED: written=0 skipped=1', out)
+
+    def test_a_case_decided_after_selection_is_written_with_include_decided(self):
+        slip = self._slip()
+        with mock.patch(FETCH, side_effect=self._decide_meanwhile), mock.patch(WORDS, return_value=_ok()):
+            out = self._run('--apply', '--include-decided')
+        self.assertEqual(self._vf(slip)[SLIP_SCHOOL_READ], SCHOOL)
+        self.assertIn(f'slip_school: written=1 ids=[{slip.pk}]', out)
+
+    def test_a_document_superseded_after_selection_is_never_written(self):
+        slip = self._slip()
+
+        def _supersede_meanwhile(*a, **kw):
+            ApplicantDocument.objects.filter(pk=slip.pk).update(superseded_at=timezone.now())
+            return b'img'
+        with mock.patch(FETCH, side_effect=_supersede_meanwhile), mock.patch(WORDS, return_value=_ok()):
+            out = self._run('--apply', '--include-decided')
+        self.assertNotIn(SLIP_SCHOOL_READ, self._vf(slip))
+        self.assertIn(f'skipped superseded=1 ids=[{slip.pk}]', out)
+
+    def test_a_blank_page_read_is_a_known_skip_but_an_outage_is_read_again(self):
+        blank, outage = self._slip(), self._slip()
+        ApplicantDocument.objects.filter(pk=blank.pk).update(vision_name_match='unreadable',
+                                                             vision_error='no text read')
+        ApplicantDocument.objects.filter(pk=outage.pk).update(vision_name_match='unreadable',
+                                                              vision_error='quota exceeded')
+        out = self._run()
+        self.assertIn('slip_school: fresh=1 known_skip=1 already_filled=0', out)
+        self.assertIn('slip_school known_skip unreadable_read=1', out)
+        with mock.patch(FETCH, return_value=b'img') as fetch, mock.patch(WORDS, return_value=_ok()):
+            self._run('--apply')
+        self.assertEqual(fetch.call_count, 1)
+        self.assertNotIn(SLIP_SCHOOL_READ, self._vf(blank))
+        self.assertEqual(self._vf(outage)[SLIP_SCHOOL_READ], SCHOOL)
 
     # ── the digital-PDF path ──
     def test_a_digital_pdf_transcript_is_read_from_its_text_layer_for_free(self):

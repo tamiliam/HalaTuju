@@ -38,7 +38,13 @@ KNOWN SKIPS, decided from the stored read WITHOUT a Vision call, so a re-run doe
 a decided case (above), a higher result in the slip slot (``wrong_slip.higher_kind``), a slip whose
 stored page text prints no school, a certificate read, a page the slip gate refused BY THE DOCUMENT
 (``_slip_ocr_diag.by == 'document'``; the pre-2026-11-18 profile-driven refusals carry no 'by' and are
-read) or a non-SPM title, and a higher document whose detected kind is not the held one.
+read) or a non-SPM title, a higher document whose detected kind is not the held one, and a page an
+earlier OCR already read as blank (``unreadable_read``: ``vision_name_match='unreadable'`` with
+``vision_error='no text read'``; an 'unreadable' left by an outage is read again).
+
+AT THE WRITE, under the document's row lock: a document superseded since it was selected is never
+written (``superseded``), and a case decided since it was selected is not written either
+(``decided_record``, unless ``--include-decided``). Both are counted in the summary.
 
 RE-BILLING. A document that is READ and then skipped (no year, no school, a slip that does not lock, a
 certificate page, an outage) is still "fresh" to the next run, which reads and bills it AGAIN unless
@@ -58,7 +64,9 @@ USAGE (dry run is the DEFAULT: counts only, no OCR, no write, no spend):
 ``--max-cost-usd`` (default 2.0): each read is estimated at one page x US$0.0015 and the run stops
 before the next read would pass the cap; the running spend is printed per document. On the job, run
 SLICES of ``--max-cost-usd 0.5`` (about 330 reads) so each run ends well inside the 3600s task timeout,
-resuming each from the last one's ``resume_after_id``. Output is counts
+resuming each from the last one's ``resume_after_id``. A run KILLED before its summary (a timeout)
+prints no ``resume_after_id``: resume from the id on its last ``doc N ... spend_usd=`` line (each such
+line is printed after that document is done). Output is counts
 and document ids only — never a name, IC, school, college or OCR text.
 
 RUN IT SERVICE-SIDE, NEVER FROM A LOCAL CHECKOUT (a laptop has no Storage access: every blob would
@@ -70,12 +78,13 @@ alone would run the job with its STORED args (send_pending_decision_emails).
 gcloud run jobs execute release-decisions --region asia-southeast1 --wait --account tamiliam@gmail.com --project gen-lang-client-0871147736 --args=manage.py,reread_academic_ocr
 
     2. Pilot, 20 documents (check the log: written / skipped counts and ids; spot-check a few rows):
-gcloud run jobs execute release-decisions --region asia-southeast1 --wait --account tamiliam@gmail.com --project gen-lang-client-0871147736 --task-timeout=3600s --update-env-vars=BILLING_USAGE_ENABLED=true --args=manage.py,reread_academic_ocr,--apply,--limit,20
+gcloud run jobs execute release-decisions --region asia-southeast1 --wait --account tamiliam@gmail.com --project gen-lang-client-0871147736 --task-timeout=3600s --args=manage.py,reread_academic_ocr,--apply,--limit,20
 
     3. The rest, one US$0.5 slice per run. Before pasting, replace RESUME_ID with the number printed
-       after ``resume_after_id=`` on the LAST line of the previous run's log; repeat until the dry run
-       shows fresh=0 (or only documents already read and skipped):
-gcloud run jobs execute release-decisions --region asia-southeast1 --wait --account tamiliam@gmail.com --project gen-lang-client-0871147736 --task-timeout=3600s --update-env-vars=BILLING_USAGE_ENABLED=true --args=manage.py,reread_academic_ocr,--apply,--after-id,RESUME_ID,--max-cost-usd,0.5
+       after ``resume_after_id=`` on the LAST line of the previous run's log (a killed run has none:
+       use the id on its last ``doc N ... spend_usd=`` line); repeat until the dry run shows fresh=0
+       (or only documents already read and skipped):
+gcloud run jobs execute release-decisions --region asia-southeast1 --wait --account tamiliam@gmail.com --project gen-lang-client-0871147736 --task-timeout=3600s --args=manage.py,reread_academic_ocr,--apply,--after-id,RESUME_ID,--max-cost-usd,0.5
 
 RETRIES. The ``release-decisions`` job is configured with ``maxRetries: 1`` (run_cron_job.py,
 docs/technical-debt.md; not re-read off the live job here), and ``gcloud run jobs execute`` has no
@@ -85,8 +94,9 @@ can spend up to TWICE ``--max-cost-usd``. Do not lower the job's retries for thi
 
 Env the job needs, by name: ``SUPABASE_URL`` and ``SUPABASE_SERVICE_ROLE_KEY`` (Storage; on the job),
 the database env (on the job), Cloud Vision through the job's service account (or
-``GOOGLE_CLOUD_VISION_API_KEY`` if the service sets one), and ``BILLING_USAGE_ENABLED=true`` so the reads
-are metered (it only warns when off). ``DOC_GENUINENESS_CHECK_ENABLED`` is NOT needed: nothing is scored
+``GOOGLE_CLOUD_VISION_API_KEY`` if the service sets one). ``BILLING_USAGE_ENABLED`` is NOT needed: the
+usage meter is unconditional (``usage.py``: the flag gates only the read endpoint and UI), so every
+Vision read here is metered under source ``academic_reread``. ``DOC_GENUINENESS_CHECK_ENABLED`` is NOT needed: nothing is scored
 and the stored ``authenticity`` is never touched. If the pilot shows every read as ``blob_missing`` or
 ``ocr_error``, stop: the job cannot reach Storage or Vision (nothing was written).
 """
@@ -141,6 +151,13 @@ def _acad_decided(doc) -> bool:
     vision_fields), and the LL5 human lens would mark the case 'evidence_changed'."""
     ctx = getattr(getattr(doc, 'application', None), 'ai_verdict_context', None)
     return isinstance(ctx, dict) and bool(ctx)
+
+
+def _acad_blank_page(doc) -> bool:
+    """An earlier OCR of this same (immutable) blob SUCCEEDED and read no text: the upload's name check
+    stored ``vision_name_match='unreadable'`` with ``vision_error='no text read'`` (`vision.match`). A
+    paid re-read would find nothing again. An 'unreadable' with any other error was an outage: read it."""
+    return doc.vision_name_match == 'unreadable' and (doc.vision_error or '') == 'no text read'
 
 
 def _acad_reread_kind(doc):
@@ -227,13 +244,23 @@ def _acad_value(doc, kind):
         return None, f'error_{type(exc).__name__}', 1
 
 
-def _acad_write(doc, kind, value) -> str:
-    """Merge ONE key into the stored read, under a row lock, only if the stored read is still EQUAL to
-    the one classified (any concurrent write wins). 'written' | 'changed'."""
+def _acad_write(doc, kind, value, include_decided=False) -> str:
+    """Merge ONE key into the stored read, under a row lock, only if the document is still current, its
+    case still undecided (unless ``include_decided``) and the stored read still EQUAL to the one
+    classified (any concurrent write wins). 'written' | 'changed' | 'superseded' | 'decided_record'."""
+    from apps.scholarship.models import ScholarshipApplication
     if not value:
         return 'changed'           # never an empty value (defence in depth; callers already skip)
     with transaction.atomic():
-        row = ApplicantDocument.objects.select_for_update().only('id', 'vision_fields').get(pk=doc.pk)
+        row = (ApplicantDocument.objects.select_for_update().only('id', 'vision_fields', 'application_id')
+               .filter(pk=doc.pk, superseded_at__isnull=True).first())
+        if row is None:
+            return 'superseded'    # replaced since it was selected: never write onto an old upload
+        if not include_decided:    # decided since it was selected: its LL4 fingerprint must not move
+            ctx = (ScholarshipApplication.objects.filter(pk=row.application_id)
+                   .values_list('ai_verdict_context', flat=True).first())
+            if isinstance(ctx, dict) and ctx:
+                return 'decided_record'
         if row.vision_fields != doc.vision_fields:
             return 'changed'
         new = copy.deepcopy(row.vision_fields)
@@ -258,7 +285,9 @@ class Command(BaseCommand):
         parser.add_argument('--limit', type=int, default=0, help='Read at most N documents (0 = no limit).')
         parser.add_argument('--ids', default='', help='Comma-separated document ids (only these).')
         parser.add_argument('--after-id', type=int, default=0,
-                            help='Only documents with an id above this (resume past the last run).')
+                            help='Only documents with an id above this: the resume_after_id a run prints '
+                                 'last, or, for a run killed before its summary, the id on its last '
+                                 '"doc N ... spend_usd=" line.')
         parser.add_argument('--include-decided', action='store_true',
                             help='Also fill documents of applications with a recorded decision context '
                                  '(default: skipped; it moves their LL4 evidence fingerprint).')
@@ -286,13 +315,14 @@ class Command(BaseCommand):
             kind, state = got
             if state == FRESH and not opts['include_decided'] and _acad_decided(doc):
                 state = 'decided_record'
+            elif state == FRESH and _acad_blank_page(doc):
+                state = 'unreadable_read'
             counts[kind][state] = counts[kind].get(state, 0) + 1
             if state == FRESH:
                 targets.append((doc, kind))
         return targets, counts
 
     def handle(self, *args, **opts):
-        from django.conf import settings
         cap, limit = max(0.0, opts['max_cost_usd']), max(0, opts['limit'] or 0)
         targets, counts = self._targets(opts)
         out = self.stdout.write
@@ -306,18 +336,16 @@ class Command(BaseCommand):
         planned = targets[:limit] if limit else targets
         affordable = min(len(planned), int(round(cap / VISION_PAGE_USD, 6)))
         out('(fresh = not yet filled: it includes any document an earlier run read and skipped, which a '
-            're-run reads and bills again unless --after-id starts past it)')
+            're-run reads and bills again unless --after-id starts past it; a run killed before its '
+            'summary resumes from the id on its last "doc N ... spend_usd=" line)')
         if not opts['apply']:
             out(f'DRY RUN: nothing read, nothing written. would_read={affordable} '
                 f'est_cost_usd={affordable * VISION_PAGE_USD:.4f} cap_usd={cap:.4f}'
                 + (f' (cap stops {len(planned) - affordable} more)' if affordable < len(planned) else ''))
             return
-        if not getattr(settings, 'BILLING_USAGE_ENABLED', False):
-            self.stderr.write('reread_academic_ocr: BILLING_USAGE_ENABLED is off - these Vision reads will '
-                              'not be metered (set BILLING_USAGE_ENABLED=true on the job).')
-        self._apply(planned, cap, opts['after_id'] or 0)
+        self._apply(planned, cap, opts['after_id'] or 0, opts['include_decided'])
 
-    def _apply(self, planned, cap, after_id):
+    def _apply(self, planned, cap, after_id, include_decided=False):
         out = self.stdout.write
         spend, written, skipped, stopped, last = 0.0, {SLIP: [], HIGHER: []}, {}, False, after_id
         for doc, kind in planned:
@@ -327,7 +355,7 @@ class Command(BaseCommand):
             value, why, pages = _acad_value(doc, kind)
             spend += pages * VISION_PAGE_USD
             try:
-                result = _acad_write(doc, kind, value) if value else why
+                result = _acad_write(doc, kind, value, include_decided) if value else why
             except Exception as exc:    # a DB error on one row: counted, and the summary still prints
                 result = f'write_error_{type(exc).__name__}'
             if result == 'written':
