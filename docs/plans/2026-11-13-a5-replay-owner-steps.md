@@ -371,6 +371,7 @@ How the run shows it, and what it cannot show:
 
 **By-hand checks with a dummy object.** These few commands look at the bucket itself, for what the job's
 output cannot show. They upload ONE tiny dummy file that holds a fixed sentence and no data of any person.
+They are a part of step 4c: step 4c has passed only when the job run above AND these checks have passed.
 
 - **Who types them.** The owner. The release lead may type them instead only if the owner says so in the
   yes for step 4c.
