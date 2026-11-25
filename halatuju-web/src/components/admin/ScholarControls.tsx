@@ -7,7 +7,13 @@ import {
   type ClosureReason, type MaintenanceSubstate, type ScholarFile,
 } from '@/lib/admin-api'
 
-const SUBSTATES: readonly MaintenanceSubstate[] = ['on_track', 'probation', 'on_hold', 'ready_to_close']
+export const SUBSTATES: readonly MaintenanceSubstate[] = ['on_track', 'probation', 'on_hold', 'ready_to_close']
+
+/** The server's `hold_is_money_move` (views_admin/base.py): placing a hold, or lifting it to on track.
+ *  drift-test: halatuju-web/src/lib/__tests__/holdMoneyMoveDrift.test.ts */
+export function isHoldMoneyMove(current: string | null | undefined, target: string): boolean {
+  return target === 'on_hold' || (current === 'on_hold' && target === 'on_track')
+}
 
 /** Refusal codes the two doors answer, each with its own sentence (the rest read generically). */
 const KNOWN_ERRORS = [
@@ -49,8 +55,9 @@ export default function ScholarControls({ file, token, onChanged }: {
   // `on_track` are money moves (`can_hold`: View scholars + Payments: Prepare); every other change
   // needs Manage scholar files (`can_set_substate`), and a move out of a hold also needs Prepare
   // (`can_hold` implies it). An offer only; the door judges again.
+  // drift-test: halatuju-web/src/lib/__tests__/holdMoneyMoveDrift.test.ts
   const current = file.maintenance_substate
-  const moneyMove = (s: MaintenanceSubstate) => s === 'on_hold' || (current === 'on_hold' && s === 'on_track')
+  const moneyMove = (s: MaintenanceSubstate) => isHoldMoneyMove(current, s)
   const may = (s: MaintenanceSubstate) => moneyMove(s)
     ? !!c.can_hold
     : !!c.can_set_substate && (current !== 'on_hold' || !!c.can_hold)
