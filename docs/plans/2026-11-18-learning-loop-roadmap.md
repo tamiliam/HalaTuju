@@ -1,6 +1,6 @@
 # HalaTuju learning loop — roadmap for steps 1 to 3
 
-Status (25 Nov 2026): APPROVED by the owner on 2026-11-18. LL1, LL2, LL2b, LL3 and LL4 are LIVE (21 Nov). LL5 is DONE and LIVE (25 Nov, 16:00 batch). Two sprints were added on 25 Nov: LL6 (exam-file bucket) and LL7 (close the gap). The owner sets the start date of each sprint.
+Status (25 Nov 2026): APPROVED by the owner on 2026-11-18. LL1, LL2, LL2b, LL3 and LL4 are LIVE (21 Nov). LL5 is DONE and LIVE (25 Nov, 16:00 batch). Two sprints were added on 25 Nov: LL6 (exam-file bucket) and LL7 (close the gap). LL6 was built and reviewed on 25 Nov 2026 and has NOT yet run against a real bucket (the bucket does not exist yet). LL7 rounds 1 and 2 are done, with no rule change. The owner sets the start date of each sprint.
 
 Updated 2026-11-18 (same day, two owner ideas, owner chose option A):
 1. Humans make mistakes too. The tap means "is this fact true for the student?" (owner ruling A). The words on the box change (LL2). A second person checks a small list (new sprint LL2b).
@@ -208,21 +208,33 @@ Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C
 
 ---
 
-## Sprint LL6 — Exam-file home in a Cloud Storage bucket (added 25 Nov 2026; owner decision 2 = B)
+## Sprint LL6 — Exam-file home in a Cloud Storage bucket (added 25 Nov 2026; owner decision 2 = B) — BUILT and reviewed 25 Nov 2026; NOT yet run against a real bucket
 
-**Goal.** The frozen exam file lives in a bucket, not on a home machine, so the lens can run on real data from the replay job and a lost file is never silently replaced.
+**State.** Built and reviewed on 25 Nov 2026. NOT yet run against a real bucket. The bucket does not exist yet. Landing it is the release lead's step.
+
+**Goal.** The frozen exam file lives in one private Cloud Storage bucket, not on a home machine, so the lens can run on real data from the replay job and a lost file is never silently replaced. Why: the lens scores the AI on a frozen exam file, and a local folder dies with the Cloud Run job's container, so a frozen exam could not survive between runs (owner decision, 24-25 Nov 2026).
+
+**What was built (a "store child").**
+- The replay parent and the replay child keep their network guard and their settings unchanged. A separate small child, `python -m replay.exam_store fetch|put` (`eval/replay/exam_store.py`), is the ONLY part that talks to the network. It holds no database url, no key and no salt, and answers with one fixed code. `exam_home.py` is the parent glue.
+- New flag: `--human-lens-exam-bucket NAME`. A command-line argument, never an environment variable; its value is never printed. Argument errors never echo a typed value.
+- Two new refusal codes with words: `frozen_elsewhere` and `not_kept`.
+- Safety rules: nothing is uploaded without `--human-lens-freeze`; only a NEW exam is uploaded; a kept exam is never replaced (create-only upload plus a default hold on the bucket); a failed fetch stops the run (exit 3) and is never read as "no exam yet"; an upload that failed or could not be verified is `not_kept` (exit 4); a lost race is `frozen_elsewhere` (that score is withheld, exit 0); the temp folder is always removed.
+- Reading guide: `docs/replay-human-lens.md` ("The bucket (LL6)", "Exit codes"). Accepted limits: the same note, "Accepted limits of the bucket (LL6)".
 
 **Phases.**
-- P1: the store child `eval/replay/exam_store.py` plus tests. BUILT 25 Nov (commit `74553a2c7` on branch `ll6`); adversarial review in progress.
-- P2: `exam_home.py`, the parent wiring and the result codes.
-- P3: docs. Owner steps for making the bucket, the access grant, and the corrected by-hand recipe for the derived key.
-- Proof run, after P3: a plain fetch on the EMPTY bucket plus an overwrite check on a DUMMY object. No real exam file is touched.
+- P1: the store child and its tests. BUILT. Adversarial review: 2 rounds. Round 1 FAIL (a missing bucket was read as "no exam yet"); fixed; round 2 PASS.
+- P2: `exam_home.py`, the flag in the parent, the two refusal codes and their words. BUILT. Adversarial review: 2 rounds. Round 1 FAIL (a typo in the new flag let the argument parser echo the bucket name); fixed; round 2 PASS.
+- P3: docs. The owner steps (2b the by-hand key, 4b the bucket and its access, 4c the proof-first run), the lens reading guide, this roadmap, the Next Sprint block, the changelog and the decisions log.
 
-**Needs the owner.** Make the bucket and the access grant (steps in P3). Make the derived key by hand, once (owner decision 3; no helper tool). A direct yes for the proof run, at a time agreed with the release lead, after the bucket exists.
+**Needs the owner, in order** (all in `docs/plans/2026-11-13-a5-replay-owner-steps.md`):
+1. Step 2b: make the derived key once, by hand. No helper tool exists and none will be built (owner decision).
+2. Step 4b: make the bucket and give the replay service account its two bucket-level roles.
+3. Step 4c: the proof-first run on the EMPTY bucket, with a dummy object. It needs the owner's direct yes and a time agreed with the release lead; never on a release slot.
+4. Then the first lens run on real data: it needs the owner's yes; never on a release slot (11:00, 16:00, 21:00 MYT) and never on an R3 run day.
 
-**Not in this sprint.** The first lens run on live data. It comes only after LL6, the key, the owner's yes and a time agreed with the lead; never on an R3 run day or in a release slot.
+**Not in this sprint.** The first lens run on live data.
 
-**Done when.** P1 to P3 are reviewed and landed by the release lead; the proof run passed; the owner steps doc is updated.
+**Done when.** The proof run has passed, the first lens run has the owner's yes, and the owner steps doc matches what was done.
 
 ---
 
@@ -238,9 +250,20 @@ Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C
 
 **Round 1 (25 Nov).** Group "AI said Certain, reviewer failed" (9 facts, all in one programme). Six scattered causes, no single cause. The candidate rule "an open item on a fact caps it at Probable" was tested on all decided cases and does NOT pay: 71 correct Certains lowered to catch 8 wrong ones, minus 15 points under the owner's points rules. No rule change from round 1.
 
-**Next step = the owner's choice:** look at group 2 ("Rule not met" but the reviewer passed, 9 facts), or wait for about 50 new cases that carry fail reasons.
+**Round 2 (25 Nov 2026).** Group 2 = the 9 facts where the AI said "Rule not met" and the reviewer passed. Result: NO rule change. The causes found overlap:
+- (a) Until 19 Nov 2026 the Pass and Fail buttons sat under the title "Rate AI Prediction" with no stated meaning. The meaning "Pass = this fact is true for the student" first appears on 19 Nov. In all 7 declined cases among the 9, the decline reason names the same fact that the reviewer passed. (The wording is proven. That it caused the passes is likely.)
+- (b) 8 of the 9 come from 4 reviewers who had never pressed Fail. (Proven.)
+- (c) Reviewers never SAW "Rule not met" when they decided: that band reached the web on 18 Nov and the server on 22 Nov, and the score applies today's band to old snapshots. (Proven.)
+- (d) Staff waived the offer request before deciding (2 of the 9). (Proven.)
+- (e) Policy became firm after the decision (1 of the 9). (Proven.)
+- Per rule: the income rule was right in 4 of 5; the "offer not official" rule was right in 3 of 4. A candidate change (household size confirm to Unsure) was worth only +6 points: rejected.
+- Lesson: reviewer answers from before 19 Nov 2026 are a weak teacher.
 
-**Routine.** After two rounds by hand, a routine (a workflow plus one counting tool) will be proposed. Nothing is created without asking.
+**Owner decision (25 Nov 2026): WAIT for clean cases.** Round 3 runs only when 50 decided cases from 19 Nov 2026 onward exist (32 on 25 Nov). No scorecard split is built. Until then every report marks the old score as "weak". Round 3 does not start early.
+
+**Next step.** Round 3, at 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov).
+
+**Routine (open idea, not decided, nothing built).** After two rounds by hand, a routine (a workflow plus one counting tool) may be proposed to the owner. Nothing is created without asking.
 
 **Done when.** It is a standing cycle. Each round ends with a short list to the owner and either "no rule change" or a rule sprint. After two rounds a routine is proposed.
 
@@ -267,9 +290,9 @@ Every agent call names its model. The lead stays thin. One phase for each build 
 4. LL2b: the second person is the QC (settled 2026-11-18). Phone check. Say yes to the publish.
 5. LL3: say yes to the publish.
 6. LL4: apply one migration by hand. Say yes to the publish.
-7. LL5: DONE and live (25 Nov). Its first run on real data waits for LL6.
-8. LL6: make the bucket and the access grant; make the derived key by hand once; say yes to the proof run at an agreed time.
-9. LL7: each round, pick one of the 3 error groups.
+7. LL5: DONE and live (25 Nov). Its first run on real data waits for LL6 (built and reviewed 25 Nov; not yet run against a real bucket).
+8. LL6: make the derived key by hand once (step 2b); make the bucket and the access grant (step 4b); say yes to the proof run at an agreed time (step 4c).
+9. LL7: rounds 1 and 2 are done. Round 3 waits for 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov); then pick one of the 3 error groups.
 10. Still owed: five phone checks (LL1, LL2, LL2b, LL4, withdraw card).
 
 ## Not in this plan

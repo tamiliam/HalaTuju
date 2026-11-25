@@ -1,5 +1,21 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-25 — LL6: exam files live in one private Cloud Storage bucket, reached through a store child
+
+Branch ll6, not pushed. Built and reviewed 25 Nov 2026 (two adversarial rounds each for P1 and P2); NOT yet run against a real bucket, and the bucket does not exist yet. Reading guide: `docs/replay-human-lens.md`.
+
+- **Home of the exam file: one private Cloud Storage bucket (owner, 24 Nov 2026; owner decision 2 = B).** The lens scores the AI on a frozen exam file. A local folder dies with the Cloud Run job's container, so a frozen exam could not survive between runs. A bucket does, and a default hold on it keeps a kept exam from being replaced.
+- **The "store child" shape.** The replay parent and the replay child keep their network guard and their settings unchanged. A separate small child, `python -m replay.exam_store fetch|put`, is the only part that talks to the network. It holds no database url, no key and no salt, and answers with one fixed code. Why: the lens child holds the database login, the key and the case rows, and the parent's environment holds the database url, so neither may also hold a Storage token. Keeping the network in a child with nothing to leak leaves the guard on the replay whole. `exam_home.py` is the parent glue.
+- **Rules built in.** Nothing is uploaded without `--human-lens-freeze`; only a NEW exam is uploaded; an upload is create-only. A failed fetch stops the run (exit 3) and is never read as "no exam yet". An upload that failed or could not be verified is `not_kept` (exit 4). A lost race is `frozen_elsewhere`: that score is withheld (exit 0). The bucket name is a command-line argument, never an environment variable, and is never printed.
+- **The derived key is made by the owner, by hand, once; no helper tool is built (owner, 24 Nov 2026).** This sharpens the LL5 line "the owner makes the key" above. The recipe is in owner step 2b.
+
+## 2026-11-25 — LL7: wait for clean cases before round 3; no scorecard split (owner)
+
+Owner decision, 25 Nov 2026, after round 2 (group 2, "Rule not met" but the reviewer passed: no rule change).
+- **Decision.** Round 3 runs only when 50 decided cases from 19 Nov 2026 onward exist (32 on 25 Nov). No scorecard split is built. Until then every report marks the old score as "weak". Round 3 is not started early.
+- **Why.** Until 19 Nov 2026 the Pass and Fail buttons carried no stated meaning, 8 of the 9 round-2 facts came from 4 reviewers who had never pressed Fail, and reviewers did not see the "Rule not met" band when they decided. Reviewer answers from before 19 Nov are a weak teacher, so no rule is changed on them. A split of the scorecard would build machinery to read answers we do not yet trust.
+- **Open idea (not decided, nothing built).** After two rounds by hand, a routine (a workflow plus one counting tool) may be proposed to the owner.
+
 ## 2026-11-25 — Membership comes first: an invitee who has not signed in is not an org admin (owner ruling)
 
 Owner ruling, 25 Nov: "A person becomes an admin, reviewer or mentor by being a member first. Even if the invitation
