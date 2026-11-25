@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-25 — A "working" tick the family details disagree with: ask, warn, owe the same (request #84)
+
+Bug, no charge; analysis 190 (posted 24 Nov). No earlier ruling on earner ticks against the family details was found.
+- **The two answers.** The income step's salary-route ticks are `income_working_members` (father, mother, guardian,
+  brother, sister). The family details are the structured roster: `father_name` / `father_occupation`,
+  `mother_name` / `mother_occupation`, and the `other_family_members` pool (`{role, occupation}`, role guardian /
+  brother / sister).
+- **The one rule** is `family.earner_tick_conflicts`: a tick disagrees when every listing of that member carries a
+  `NON_EARNING` occupation (homemaker, retired, unemployed, unable, deceased, no_contact) → `not_working`, or when the
+  details do not list the member (father/mother: no name and no occupation; others: no pool entry of that role) →
+  `not_listed`. A listing with no occupation, or `other`, does not disagree. No structured roster at all → nothing is
+  compared. `family.earner_tick_warnings` narrows it to the SAVED salary-route ticks (the STR route's one earner is whose
+  STR it is, which a non-working parent may hold, so it is not compared).
+- **Served, not derived.** The student payload carries `earner_tick_conflicts` (per member); the officer payload carries
+  `earner_tick_warnings`. The income step holds a disagreeing tick behind a non-blocking question (confirm saves it,
+  cancel leaves it unticked; nothing is ever unticked for the student) and keeps a note beside a saved one. The case page
+  shows the warning in place of a plain "Earns", and a ticked member the details do not list gets its own line.
+- **What is owed does not move.** The posted text promises a check and a warning only. The blockers and the verdict do not
+  read the rule, so a confirmed tick still owes an IC and proof of income (`TestWhatIsOwedDoesNotMove`). No version bump:
+  nothing the verdict engine reads changed.
+- **Open cases:** computed live, no migration and no data written. Read-only count 25 Nov: 31 of the 167 open
+  salary-route cases have at least one disagreeing tick (22 not-working ticks, 16 not-listed ticks).
+
 ## 2026-11-25 — Membership comes first: an invitee who has not signed in is not an org admin (owner ruling)
 
 Owner ruling, 25 Nov: "A person becomes an admin, reviewer or mentor by being a member first. Even if the invitation

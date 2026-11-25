@@ -242,6 +242,7 @@
     "notify_email",
     "contact_phone",
     "income_shown",
+    "earner_tick_conflicts",
     "form_data",
     "intake_snapshot"
    ],

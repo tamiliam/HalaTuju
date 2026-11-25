@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: sprint #84 - a working tick the family details disagree with (2026-11-25)
+
+Branch req84-earner-ticks, not pushed. Migration: none. Services: both. Brief:
+`docs/plans/2026-11-25-req84-earner-ticks-brief.md`; ruling in `docs/decisions.md` (25 Nov 2026, #84).
+- **One rule:** `family.earner_tick_conflicts` (per member: `not_working` with the roster's occupation, or `not_listed`);
+  `family.earner_tick_warnings` for the saved salary-route ticks. Served on the student payload
+  (`earner_tick_conflicts`) and the officer payload (`earner_tick_warnings`).
+- **Student:** the income step asks before saving a disagreeing tick (`EarnerTickCheck.tsx`) and keeps a note beside a
+  saved one. New strings `scholarship.docs.income.wizard.earnerCheck.*` and
+  `admin.scholarship.familyAnswers.tickDisagrees` / `tickNotListed`; Malay and Tamil are drafts for Sol's read.
+- **Officer:** the Family & finances card warns instead of a plain "Earns".
+- **Unchanged:** blockers and the verdict (pinned); no version bump. 31 of 167 open salary-route cases benefit.
+
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 
 Branch access-s4-scholars, not pushed. Migration: none. Services: web. The server half is S4a (above).

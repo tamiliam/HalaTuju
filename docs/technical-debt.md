@@ -9808,3 +9808,11 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 ### [TD-739] Web: `verdictReliability` and `OverrideSummary` have no live caller - low
 
 **Raised in the F4b sprint (see CHANGELOG).** Once the card was rewritten, only `officerCockpit.test.ts` uses `verdictReliability` and the override summary type. **Fix:** delete them with their tests, or bring them back into a card. *(A - S)*
+
+### [TD-NEW-earner-tick-confirm-unstored] A student's "yes, they work" on a disagreeing tick is not stored - low
+
+**Raised 2026-11-25 by request #84 (laptop session, number placeholder until the desk numbers it).** The income step now
+asks before saving a "working" tick the family details disagree with, but the answer is not recorded: the case page warns
+the same whether the student confirmed the tick after the question or saved it before #84 shipped (31 open cases on
+25 Nov). Not built because the promise was a check and a warning, and storing the answer needs a model field. **Fix:**
+record the confirmation per member (additive JSON field) and let the officer's warning say "the student confirmed". *(A - S)*
