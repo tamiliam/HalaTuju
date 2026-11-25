@@ -1672,7 +1672,8 @@
         "nameMismatch": "Name doesn't match — re-check",
         "reviewing": "We'll review this",
         "matchesProof": "Matches the {doc}",
-        "proofMismatch": "Doesn't match the {doc}"
+        "proofMismatch": "Doesn't match the {doc}",
+        "wrongCard": "Doesn't fit the birth certificate: wrong card, or the number was misread"
       },
       "incomeProofCheck": {
         "name": "Name",

@@ -113,8 +113,12 @@ export function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key:
   }
   const matchTag = (status?: string) => {
     const kind = status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : 'none'
+    // TD-742 (ruling 3): a truly wrong card stays red for the student, said against the birth
+    // certificate (the card's anchor), and owning that the number may just be misread.
     const label =
-      status === 'match' && proofDoc
+      status === 'mismatch' && chk.display_wrong_card
+        ? t('scholarship.docs.incomeIcCheck.wrongCard')
+      : status === 'match' && proofDoc
         ? t('scholarship.docs.incomeIcCheck.matchesProof', { doc: proofDoc })
         : status === 'mismatch' && proofDoc
           ? t('scholarship.docs.incomeIcCheck.proofMismatch', { doc: proofDoc })

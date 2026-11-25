@@ -1672,7 +1672,8 @@
         "nameMismatch": "Nama tidak sepadan — semak semula",
         "reviewing": "Kami akan semak ini",
         "matchesProof": "Sepadan dengan {doc}",
-        "proofMismatch": "Tidak sepadan dengan {doc}"
+        "proofMismatch": "Tidak sepadan dengan {doc}",
+        "wrongCard": "Tidak sepadan dengan sijil kelahiran: kad salah, atau nombor tersalah baca"
       },
       "incomeProofCheck": {
         "name": "Nama",

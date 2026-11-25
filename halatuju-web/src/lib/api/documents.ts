@@ -196,10 +196,11 @@ export interface IncomeIcCheck {
   chain_verified?: boolean
   wrong_card?: boolean
   // TD-742 (ruling 3): what the card shows. A disagreement with the proof shows on the PROOF, so
-  // these are 'match' or 'no_ref'; `display_wrong_card` only when the card's own number is far from
-  // the chained number, or its own row is red against the birth certificate. Fall back to the above.
-  display_proof_name_status?: 'match' | 'no_ref'
-  display_proof_nric_status?: 'match' | 'no_ref'
+  // these are 'match' or 'no_ref', and 'mismatch' only on the field that makes this a wrong card;
+  // `display_wrong_card` only when the card's own number is far from the chained number, or its own
+  // row is red against the birth certificate. Fall back to the above.
+  display_proof_name_status?: 'match' | 'mismatch' | 'no_ref'
+  display_proof_nric_status?: 'match' | 'mismatch' | 'no_ref'
   display_wrong_card?: boolean
   // The CLUSTER coach verdict for this member (relationship + coherence across their IC +
   // income proofs); '' when the cluster is consistent. Drives the single per-member coach.

@@ -7,7 +7,8 @@ read, and ``doc_match_verdict``) is unchanged by the display layer. All names an
 import copy
 from types import SimpleNamespace
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
+from django.utils import timezone
 
 from apps.scholarship.doc_parse import parse_by_labels
 from apps.scholarship.income_engine import (student_bc_check, student_income_ic_check,
@@ -15,8 +16,10 @@ from apps.scholarship.income_engine import (student_bc_check, student_income_ic_
 from apps.scholarship.link_display import (NOT_READ, bc_display, income_ic_display,
                                            income_proof_display, str_display)
 from apps.scholarship.name_guard import clean_person_name, name_not_read, pick_name
+from apps.scholarship.read_errors import IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL
 from apps.scholarship.resolution import doc_match_verdict
 from apps.scholarship.serializers.documents import ApplicantDocumentSerializer
+from apps.scholarship.tests.factories import create_document, make_application, make_cohort, make_student
 from apps.scholarship.tests.test_doc_parse import _KWSP, _LETTER
 
 _STUDENT = 'KAVI A/L RAMAN'
@@ -132,6 +135,20 @@ class TestNameGuard(SimpleTestCase):
         self.assertEqual(clean_person_name(None), '')
         self.assertEqual(clean_person_name(''), '')
 
+    def test_more_label_words_are_not_read(self):
+        for junk in ('NO KP', 'NO K/P', 'TIDAK BERKENAAN', 'NAMA PASANGAN', 'LULUS', 'CARUMAN',
+                     'NAMA PENERIMA :'):
+            self.assertEqual(clean_person_name(junk), '', junk)
+
+    def test_a_leading_nama_label_is_dropped_before_judging(self):
+        self.assertEqual(clean_person_name('NAMA : LIM AH KOW'), 'LIM AH KOW')
+        self.assertEqual(clean_person_name('nama: NG MEI LING'), 'NG MEI LING')
+
+    def test_short_real_names_and_name_particles_still_work(self):
+        for real in ('LIM AH KOW', 'NG MEI LING', 'S. RAJU', 'KAVI A/L RAMAN', _MOTHER,
+                     'SITI BINTI ALI', 'ALI BIN AHMAD'):
+            self.assertEqual(clean_person_name(real), real)
+
     def test_pick_name_skips_junk_and_says_when_only_junk_was_found(self):
         self.assertEqual(pick_name(':', None, _MOTHER), (_MOTHER, False))
         self.assertEqual(pick_name(':', 'NAMA', ''), ('', True))
@@ -222,9 +239,11 @@ class TestRealWrongCard(SimpleTestCase):
         self.bc, self.str_doc = _bc(), _str()
         _app([self.ic, self.bc, self.str_doc])
 
-    def test_card_says_wrong_card(self):
+    def test_card_says_wrong_card_and_its_rows_stay_red(self):
         out = income_ic_display(self.ic, student_income_ic_check(self.ic))
         self.assertTrue(out['display_wrong_card'])
+        self.assertEqual((out['display_proof_name_status'], out['display_proof_nric_status']),
+                         ('mismatch', 'mismatch'))
 
     def test_str_and_bc_compared_with_the_chain_anchor_stay_green(self):
         out = str_display(self.str_doc, student_str_check(self.str_doc))
@@ -277,3 +296,137 @@ class TestDecisionsUnchanged(SimpleTestCase):
                         self.assertTrue(all(k.startswith('display_') for k in added))
                         self.assertFalse(set(added) & set(chk))
             self.assertEqual(_decisions(docs), before)
+
+
+# ── Round 1 (adversarial review of b45c502fa): the same rulings on REAL model rows ─
+_AMBER_OR_RED = {'mismatch', 'check', 'check_near', 'check_name', 'check_both', 'check_one'}
+
+
+class RealRowsBase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = make_cohort(year=2026)
+
+    def _app(self, route='str'):
+        return make_application(
+            'submitted', cohort=self.cohort, student=make_student(name=_STUDENT), income_route=route,
+            income_earner='mother', income_working_members=['mother'] if route == 'salary' else [],
+            father_name=_FATHER, mother_name=_MOTHER, father_occupation='private',
+            mother_occupation='private' if route == 'salary' else 'homemaker',
+            other_family_members=[], siblings_in_school=0, siblings_in_tertiary=0)
+
+    def _doc(self, app, doc_type, member='', *, vf=None, name='', nric=''):
+        return create_document(
+            application=app, doc_type=doc_type, household_member=member,
+            storage_path=f'fake/{doc_type}/{member or "household"}/{app.id}/{name or "x"}',
+            vision_fields=vf or {}, vision_name=name, vision_nric=nric, vision_run_at=timezone.now())
+
+    def _bc(self, app, *, mother=_MOTHER, mother_nric=_MOTHER_NRIC):
+        return self._doc(app, 'birth_certificate', vf={
+            'fields': {'bc_child_name': _STUDENT, 'bc_mother_name': mother, 'bc_mother_nric': mother_nric,
+                       'bc_father_name': _FATHER, 'bc_father_nric': _FATHER_NRIC},
+            'student_verdict': 'ok', 'authenticity': {'status': 'genuine'}})
+
+    def _ic(self, app, *, name=_MOTHER, nric=_MOTHER_NRIC, deferred=False):
+        vf = {}
+        if deferred:
+            vf = {IC_SECOND_OPINION_ERROR: 'skipped', IC_SECOND_OPINION_UNTIL: timezone.now().timestamp() + 86400}
+        return self._doc(app, 'parent_ic', 'mother', vf=vf, name=name, nric=nric)
+
+    def _str(self, app, *, name=_MOTHER, nric=_MOTHER_NRIC):
+        return self._doc(app, 'str', vf={'fields': {
+            'status': 'Lulus', 'year': '2026', 'source_type': 'semakan_status',
+            'recipient_name': name, 'recipient_nric': nric}})
+
+    def _slip(self, app, *, name=_MOTHER, nric=_MOTHER_NRIC):
+        return self._doc(app, 'salary_slip', 'mother', vf={
+            'fields': {'name': name, 'nric': nric, 'gross': 'RM 1,500.00', 'period': '10/2026'},
+            'student_verdict': 'ok'})
+
+    def _mother_row(self, bc):
+        return bc_display(bc, student_bc_check(bc))['display_mother_status']
+
+
+class TestRealRowsBlocker1(RealRowsBase):
+    """A row built on a missing or junk name never outranks or overrides: no amber from it."""
+
+    def test_case_177_shape_without_a_mother_ic_gives_no_amber(self):
+        app = self._app()
+        bc, str_doc = self._bc(app), self._str(app, name=':')
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'match')        # decision, today's
+        self.assertNotIn(self._mother_row(bc), _AMBER_OR_RED)
+        out = str_display(str_doc, student_str_check(str_doc))
+        self.assertEqual((out['display_name_status'], out['display_nric_status']), (NOT_READ, 'match'))
+
+    def test_bc_own_mother_name_junk_reads_not_read(self):
+        app = self._app()
+        bc = self._bc(app, mother=':')
+        self._ic(app)
+        self._str(app)
+        self.assertEqual(self._mother_row(bc), NOT_READ)
+
+    def test_junk_proof_name_beside_a_good_card_does_not_beat_it(self):
+        app = self._app()
+        bc = self._bc(app)
+        self._ic(app)
+        self._str(app, name='NO KP')
+        self.assertEqual(self._mother_row(bc), 'match')
+
+    def test_half_read_card_that_disagrees_gives_no_amber(self):
+        app = self._app()
+        bc = self._bc(app)
+        self._ic(app, name=_STRANGER, deferred=True)
+        self.assertNotIn(self._mother_row(bc), _AMBER_OR_RED)
+
+
+class TestRealRowsBlocker2(RealRowsBase):
+    """While the chain holds, only green (compared and agreeing) or grey, never 'check_name'."""
+
+    def test_chain_with_a_blank_bc_parent_name_and_no_card(self):
+        app = self._app()
+        self._bc(app, mother='')
+        str_doc = self._str(app)
+        sc = student_str_check(str_doc)
+        out = str_display(str_doc, sc)
+        self.assertNotIn(out['display_name_status'], _AMBER_OR_RED)
+        self.assertNotIn(out['display_nric_status'], _AMBER_OR_RED)
+
+    def test_card_name_junk_without_a_chain_reads_not_read_not_add_ic(self):
+        app = self._app()
+        self._ic(app, name=':')
+        str_doc = self._str(app)
+        out = str_display(str_doc, student_str_check(str_doc))
+        self.assertEqual((out['display_name_status'], out['display_nric_status']), (NOT_READ, 'match'))
+
+
+class TestRealRowsBlocker3(RealRowsBase):
+    """A truly wrong card stays visible: red rows on the card, and the proof is not blamed."""
+
+    def test_fathers_card_in_the_mother_slot(self):
+        app = self._app()
+        bc, str_doc = self._bc(app), self._str(app)
+        ic = self._ic(app, name=_FATHER, nric=_FATHER_NRIC)
+        out = income_ic_display(ic, student_income_ic_check(ic))
+        self.assertTrue(out['display_wrong_card'])
+        self.assertEqual(out['display_proof_nric_status'], 'mismatch')
+        self.assertEqual(out['display_proof_name_status'], 'mismatch')
+        sd = str_display(str_doc, student_str_check(str_doc))
+        self.assertEqual((sd['display_name_status'], sd['display_nric_status']), ('match', 'match'))
+        self.assertEqual(self._mother_row(bc), 'match')
+
+
+class TestRealRowsStrangerSecondSlip(RealRowsBase):
+    """Lead ruling (round 1): the chain was held by the first slip; a second slip that is someone
+    else's shows red on THAT slip (ruling 3). The decision stays as today until Phase 2."""
+
+    def test_second_slip_red_in_the_display_and_decisions_unchanged(self):
+        app = self._app(route='salary')
+        bc, ic = self._bc(app), self._ic(app)
+        first, second = self._slip(app), self._slip(app, name=_STRANGER, nric=_STRANGER_NRIC)
+        docs = [bc, ic, first, second]
+        before = _decisions(docs)
+        out = income_proof_display(second, student_income_proof_check(second))
+        self.assertEqual((out['display_name_status'], out['display_nric_status']), ('mismatch', 'mismatch'))
+        out = income_proof_display(first, student_income_proof_check(first))
+        self.assertEqual((out['display_name_status'], out['display_nric_status']), ('match', 'match'))
+        self.assertEqual(_decisions(docs), before)

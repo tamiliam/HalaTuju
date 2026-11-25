@@ -65,6 +65,14 @@ parent IC show amber "Wrong card" and a red Name row, while the STR itself showe
 - **L2-1 narrowed, for DISPLAY only.** The IC-number chain (#9, 2026-06-29) still forces 'match' in the decisions. On
   screen it now confirms only what it compared: a document's own value equal to the birth certificate's parent row shows
   green; a value not read shows grey. The BC father row stays outside the bands (#23); the student's own IC stays strict.
+- **Review round 1 (25 Nov), how the display draws the rulings.** A reference whose name is blank or junk gives no say on
+  another document (no amber, no red); while the chain holds the chain only ever upgrades to green, never paints amber.
+  A card whose own number is far from the chained number is the wrong card: it gives no say elsewhere, and the student
+  and officer both see it red on the card ("does not fit the birth certificate: wrong card, or the number was
+  misread"). A row left uncompared because the card itself was not read shows "not read", not "add their IC".
+- **Stranger second slip (lead ruling, 25 Nov): this IS ruling 3.** When the chain is held by the first slip and a second
+  slip in the group is someone else's, the red shows on THAT slip in the display. The decision stays as today (the
+  chain's forced match covers the group) until Phase 2 moves decisions to the bands.
 
 ## 2026-11-25 — Membership comes first: an invitee who has not signed in is not an org admin (owner ruling)
 

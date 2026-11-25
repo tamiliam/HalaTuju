@@ -19,7 +19,7 @@ Rules (each is a reason the value is "not read"):
 
 * fewer than ``MIN_LETTERS`` letters (request #66 precedent: the school-leaving reader's 4-letter
   floor);
-* every word a known label word (``LABEL_WORDS``);
+* every word a known label word (``LABEL_WORDS``), after a leading "NAMA :" label is dropped;
 * an IC number inside the value is split off and the rest judged on its own.
 
 Pure: no Django, no I/O, so the readers can import it at module level.
@@ -38,7 +38,8 @@ LABEL_WORDS = frozenset({
     'KAD', 'PENGENALAN', 'NO', 'IC', 'MYKAD', 'NRIC', 'BARU', 'LAMA',
     'STATUS', 'SEMASA', 'FASA', 'BAYARAN', 'TARIKH', 'ALAMAT', 'ADDRESS',
     'AHLI', 'PENYATA', 'SULIT', 'DAN', 'PERSENDIRIAN', 'KWSP', 'EPF', 'STR', 'SARA',
-    'JUMLAH', 'BIL', 'MAKLUMAT',
+    'JUMLAH', 'BIL', 'MAKLUMAT', 'KP', 'K', 'P', 'PASANGAN', 'LULUS', 'DILULUSKAN', 'CARUMAN',
+    'TIDAK', 'BERKENAAN',
 })
 
 #: An IC number as printed (12 digits, dashes or spaces optional).
@@ -46,6 +47,8 @@ _NRIC_RE = re.compile(r'\d{6}\s*-?\s*\d{2}\s*-?\s*\d{4}')
 _LEAD_JUNK = re.compile(r'^[\W\d_]+')
 _TRAIL_JUNK = re.compile(r'[\s:;,|()\-]+$')
 _LATIN_WORD = re.compile(r'[A-Za-z]+')
+#: A printed "NAMA :" label (with its usual second word) the reader kept in front of the value.
+_LABEL_PREFIX = re.compile(r'^NAMA(\s+(PENERIMA|AHLI|PENUH|PASANGAN))?\s*:\s*', re.IGNORECASE)
 
 
 def clean_person_name(raw) -> str:
@@ -53,7 +56,8 @@ def clean_person_name(raw) -> str:
     A real name comes back with any glued-on IC number removed, leading punctuation dropped and
     spaces collapsed; nothing else about it changes."""
     s = _NRIC_RE.sub(' ', str(raw or ''))
-    s = _TRAIL_JUNK.sub('', _LEAD_JUNK.sub('', ' '.join(s.split())))
+    s = _LABEL_PREFIX.sub('', ' '.join(s.split()))
+    s = _TRAIL_JUNK.sub('', _LEAD_JUNK.sub('', s))
     if sum(ch.isalpha() for ch in s) < MIN_LETTERS:
         return ''
     words = _LATIN_WORD.findall(s.upper())
