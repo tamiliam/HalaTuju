@@ -1487,6 +1487,15 @@
             "brother": "Abang",
             "sister": "Kakak"
           },
+          "earnerCheck": {
+            "askNotWorking": "Anda menanda {who} sebagai bekerja, tetapi butiran keluarga anda menyatakan: {status}.",
+            "askNotListed": "Anda menanda {who} sebagai bekerja, tetapi butiran keluarga anda tidak menyenaraikan orang ini.",
+            "askCheck": "Sila semak. Jika butiran keluarga anda sudah lapuk, kemas kini juga. Kami meminta IC dan bukti pendapatan bagi setiap orang yang ditanda di sini.",
+            "confirm": "Ya, mereka bekerja",
+            "cancel": "Tidak, jangan tanda",
+            "noteNotWorking": "{who} ditanda sebagai bekerja, tetapi butiran keluarga anda menyatakan: {status}. Sila semak jawapan mana yang betul dan betulkan yang satu lagi.",
+            "noteNotListed": "{who} ditanda sebagai bekerja, tetapi butiran keluarga anda tidak menyenaraikan orang ini. Sila semak jawapan mana yang betul dan betulkan yang satu lagi."
+          },
           "icHelp": {
             "father": "Gambar MyKad bapa anda. Kami menggunakannya untuk mengesahkan dokumen pendapatan yang biasanya dikeluarkan atas namanya.",
             "mother": "Gambar MyKad ibu anda. Kami menggunakannya untuk mengesahkan dokumen pendapatan yang biasanya dikeluarkan atas namanya.",
@@ -4728,7 +4737,9 @@
         "notWorkingSince": "Tidak bekerja sejak {since}",
         "reason": "Sebab: {reason}",
         "earners": "Pencari nafkah",
-        "noEarner": "Tiada yang dinamakan"
+        "noEarner": "Tiada yang dinamakan",
+        "tickDisagrees": "Ditanda sebagai berpendapatan, tetapi butiran keluarga menyatakan: {status}",
+        "tickNotListed": "{role}: ditanda sebagai berpendapatan, tetapi tiada dalam butiran keluarga"
       },
       "call": {
         "needs": "Telefon dikongsi: hubungi ibu bapa",

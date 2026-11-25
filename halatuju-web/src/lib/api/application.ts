@@ -173,7 +173,15 @@ export interface ScholarshipApplication {
    * does not recognise. Absent means "no served answer", never "nothing is shown".
    */
   income_shown?: IncomeShownMap | null
+  /** Request #84: per member, what a "working" tick would disagree with in the family details —
+   *  served by `family.earner_tick_conflicts`; absent member = no disagreement. Optional: an older
+   *  api revision does not send it (then nothing is asked). */
+  earner_tick_conflicts?: EarnerTickConflicts | null
 }
+
+export type WorkingMemberRole = 'father' | 'mother' | 'guardian' | 'brother' | 'sister'
+export type EarnerTickConflict = { kind: 'not_working'; occupation: string } | { kind: 'not_listed' }
+export type EarnerTickConflicts = Partial<Record<WorkingMemberRole, EarnerTickConflict>>
 
 export async function submitScholarshipApplication(
   payload: Record<string, unknown>,

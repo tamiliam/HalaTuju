@@ -43,6 +43,7 @@ import IncomeClusterCoach from '../IncomeClusterCoach'
 import MemberIncomeGroup from '../scholarship/MemberIncomeGroup'
 import { docKey, CollapsibleSection } from './cards'
 import { useFailedSaves, SaveFailedAlert, ANSWER_FIELDS } from './failedSaves'
+import { useEarnerTickCheck } from './EarnerTickCheck'
 
 // ── Income wizard (Check-1 item 3) ────────────────────────────────────────
 // A few questions → the dynamic document checklist (compulsory + optional), drift-test: halatuju-web/src/lib/__tests__/incomeWizardDrift.test.ts
@@ -330,10 +331,11 @@ export default function IncomeWizard({
   // Salary route — toggle a working household member in/out of the multi-select.
   const MEMBER_OPTIONS: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
   const members = ans.income_working_members
+  // #84: a tick the family details disagree with is asked about before it is saved (EarnerTickCheck).
+  const tickCheck = useEarnerTickCheck({ conflicts: app.earner_tick_conflicts, members, t, saveMembers: (next) => save({ income_working_members: next }) })
   const toggleMember = (m: WorkingMember) => {
     setTouchedMembers(true)   // #1: the student is now choosing — stop syncing from the roster
-    const next = members.includes(m) ? members.filter((x) => x !== m) : [...members, m]
-    save({ income_working_members: next })
+    tickCheck.toggle(m)
   }
 
   // STR-route checklist display order: income evidence first, then the earner IC,
@@ -419,6 +421,7 @@ export default function IncomeWizard({
               )
             })}
           </div>
+          {tickCheck.node}
         </Question>
       )}
 

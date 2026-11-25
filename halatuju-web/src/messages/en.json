@@ -1487,6 +1487,15 @@
             "brother": "Elder brother",
             "sister": "Elder sister"
           },
+          "earnerCheck": {
+            "askNotWorking": "You are ticking {who} as working, but your family details say: {status}.",
+            "askNotListed": "You are ticking {who} as working, but your family details do not list this person.",
+            "askCheck": "Please check. If your family details are out of date, update them too. We ask for an IC and proof of income for everyone ticked here.",
+            "confirm": "Yes, they work",
+            "cancel": "No, leave unticked",
+            "noteNotWorking": "{who} is ticked as working, but your family details say: {status}. Please check which answer is right and correct the other.",
+            "noteNotListed": "{who} is ticked as working, but your family details do not list this person. Please check which answer is right and correct the other."
+          },
           "icHelp": {
             "father": "A photo of your father's MyKad. We use it to verify the income documents that are usually issued in their name.",
             "mother": "A photo of your mother's MyKad. We use it to verify the income documents that are usually issued in their name.",
@@ -4728,7 +4737,9 @@
         "notWorkingSince": "Not working since {since}",
         "reason": "Reason: {reason}",
         "earners": "Household earners",
-        "noEarner": "No one named"
+        "noEarner": "No one named",
+        "tickDisagrees": "Ticked as earning, but the family details say: {status}",
+        "tickNotListed": "{role}: ticked as earning, but not in the family details"
       },
       "call": {
         "needs": "Shared phone: call parent",
