@@ -259,7 +259,7 @@ class UitmWiringTest(SimpleTestCase):
                 mock.patch('apps.scholarship.pdf_ink.ink_missing', return_value=[]) as ink:
             self.assertEqual(offer_exact._not_inked({'fields': run()['locked']}, b'', layout(), 'ua:UiTM'), [])
             self.assertEqual(ink.call_args.kwargs['lane'], 'ua:UiTM')
-            self.assertEqual(offer_exact._not_inked({'fields': {}}, b'', '', 'ua:UKM'), ['no_targets'])   # no reader
+            self.assertEqual(offer_exact._not_inked({'fields': {}}, b'', '', 'ua:UMK'), ['no_targets'])   # no reader (UKM has one since OCR-14 phase 4)
 
     @override_settings(OCR_FIRST_LANES=[])
     def test_lane_off_by_default(self):

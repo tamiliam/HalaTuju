@@ -1,4 +1,4 @@
-"""OCR-13/14: the UiTM, UUM, UM, UPSI and UNIMAS branches of `offer_parse.diagnose`, here rather than in `offer_parse`
+"""OCR-13/14: the UiTM, UUM, UM, UPSI, UNIMAS, UTHM and UKM branches of `offer_parse.diagnose`, here rather than in `offer_parse`
 (its 600-line cap). No behaviour change in the move (UiTM, UUM). `diagnose` passes each result through
 `offer_parse._rules_exit` (Asasi)."""
 from __future__ import annotations
@@ -273,4 +273,56 @@ def diagnose_uthm(out: dict, text: str, page1_text: str, page1_layout: str, page
         out['guard'] = reason
     else:
         out['locked'] = {**fields, '_family': 'uthm', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
+    return out
+
+
+def diagnose_ukm(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
+    """The UKM branch of `diagnose` (OCR-14 phase 4), in `diagnose_uthm`'s order: a portal page refuses
+    (`offer_parse_ukm.ukm_portal`: the one "Portal Semakan Kemasukan ke UKM" sentence every letter prints is no
+    tell; any other is); a scan refuses (``no_layout``); the drawn page texts; `read_ukm`; the owner phrases; the
+    whole letter (`offer_parse_ukm.ukm_letter_refusal`: status words, any IC-like number but the read IC, withdrawal
+    words); ``foreign_letters``; ``name_not_plain``; the read IC not printed exactly once in page 1's plain layer
+    (``ic_not_plain``); any other IC-like number in page 1's plain layer or any page text (``ic_printed``); last, any
+    later page with text (``later_page``). UKM PRINTS the IC: the lock carries it (source ``label``) and the usual IC
+    guard applies (`offer_exact.exact_read`). `diagnose` passes the result through `_rules_exit`."""
+    from .offer_parse import _SPACES, _ZERO_WIDTH, PARSER_VERSION
+    from .offer_owner_words import missing
+    from .offer_parse_ukm import LANE, read_ukm, ukm_ic_copies, ukm_ic_elsewhere, ukm_later_pages, ukm_letter_refusal
+    from .offer_parse_ukm import ukm_portal
+    from .offer_parse_university import name_in_plain
+    from .offer_ums_refusal import foreign_letters, page_texts_refusal
+    out['portal'] = ukm_portal(text)
+    if out['portal']:
+        return out
+    if not page1_layout.strip():
+        out['guard'] = 'no_layout'
+        return out
+    if not page1_text.strip():
+        out['guard'] = 'no_plain_layer'
+        return out
+    pages = [_SPACES.sub(' ', _ZERO_WIDTH.sub('', t or '')) for t in (page_texts or ())]
+    fields, reason = read_ukm(page1_layout)
+    out['fields'], out['titled'] = fields, fields is not None
+    nric = (fields or {}).get('candidate_nric', '')
+    early = page_texts_refusal(pages)
+    if not early and not reason:
+        out['owner_words_missing'] = missing(LANE, page1_layout, text_pdf=True)
+        early = 'owner_words_missing' if out['owner_words_missing'] else ''
+    reason = early or reason or ukm_letter_refusal(text, nric)
+    if not reason and foreign_letters(text, page1_text, page1_layout, *pages):
+        reason = 'foreign_letters'
+    if not reason and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
+        reason = 'name_not_plain'
+    if not reason and ukm_ic_copies(page1_text, nric) != 1:
+        reason = 'ic_not_plain'
+    if not reason and (ukm_ic_elsewhere(page1_text, nric) or any(ukm_ic_elsewhere(p, nric) for p in pages)):
+        reason = 'ic_printed'
+    if not reason:
+        reason = ukm_later_pages(pages[1:])
+    if reason.startswith('empty:'):
+        out['empty_required'] = reason[len('empty:'):].split(',')
+    elif reason:
+        out['guard'] = reason
+    else:
+        out['locked'] = {**fields, '_family': 'ukm', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
     return out

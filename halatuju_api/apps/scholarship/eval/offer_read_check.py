@@ -119,7 +119,7 @@ KNOWN_FORMAT_FAMILIES = ('stpm', 'matriculation', 'polytechnic')
 RULES_LANES = {'universiti malaysia sabah': 'ua:UMS', 'uitm': 'ua:UiTM', 'universiti teknologi mara': 'ua:UiTM',
                'universiti utara malaysia': 'ua:UUM', 'universiti malaya': 'ua:UM',
                'universiti pendidikan sultan idris': 'ua:UPSI', 'universiti malaysia sarawak': 'ua:UNIMAS',
-               'universiti tun hussein onn malaysia': 'ua:UTHM'}
+               'universiti tun hussein onn malaysia': 'ua:UTHM', 'universiti kebangsaan malaysia': 'ua:UKM'}
 
 
 def rules_read(family, answer) -> bool:
