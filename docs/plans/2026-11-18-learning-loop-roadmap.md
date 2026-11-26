@@ -261,11 +261,13 @@ Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C
 
 **Owner decision (25 Nov 2026): WAIT for clean cases.** Round 3 runs only when 50 decided cases from 19 Nov 2026 onward exist (32 on 25 Nov). No scorecard split is built. Until then every report marks the old score as "weak". Round 3 does not start early.
 
-**Next step.** Round 3, at 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov).
+**Next step.** Round 3, at 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov; 36 on 26 Nov).
 
-**Routine (open idea, not decided, nothing built).** After two rounds by hand, a routine (a workflow plus one counting tool) may be proposed to the owner. Nothing is created without asking.
+**Routine (approved by the owner on 26 Nov 2026).** Two parts:
+- The workflow `Settings/_workflows/halatuju-close-the-gap.md` (in the workspace repo, not in this repo). It fixes the method of a round: count the clean cases, the score run, the 3 largest error groups, the owner's pick, one reader for the cause, a second reader for the sums, the "does it pay" test, the close.
+- A gap table inside the lens result (`eval/replay/lens_gap.py`; reading guide `docs/replay-human-lens.md`). The real scoring code counts the error groups by band, by fact, by doubt code and by programme, and names the 3 largest. No new script. Until a lens run has given a gap table, a round uses hand counts and says so.
 
-**Done when.** It is a standing cycle. Each round ends with a short list to the owner and either "no rule change" or a rule sprint. After two rounds a routine is proposed.
+**Done when.** It is a standing cycle. Each round ends with a short list to the owner and either "no rule change" or a rule sprint. The routine was proposed after two rounds and approved on 26 Nov 2026.
 
 ---
 
@@ -292,7 +294,7 @@ Every agent call names its model. The lead stays thin. One phase for each build 
 6. LL4: apply one migration by hand. Say yes to the publish.
 7. LL5: DONE and live (25 Nov). Its first run on real data waits for LL6 (built and reviewed 25 Nov; not yet run against a real bucket).
 8. LL6: make the derived key by hand once (step 2b); make the bucket and the access grant (step 4b); say yes to the proof run at an agreed time (step 4c).
-9. LL7: rounds 1 and 2 are done. Round 3 waits for 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov); then pick one of the 3 error groups.
+9. LL7: rounds 1 and 2 are done. The routine is approved (26 Nov 2026). Round 3 waits for 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov; 36 on 26 Nov); then pick one of the 3 error groups.
 10. Still owed: five phone checks (LL1, LL2, LL2b, LL4, withdraw card).
 
 ## Not in this plan

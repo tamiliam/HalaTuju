@@ -257,10 +257,14 @@ score counts, so its numbers add up to the score.
   from a closed list: every code the verdict engine can write (`DOUBT_CODES` in
   `eval/replay/lens_gap.py`). A test fails when the engine and the list differ. Any other code is
   counted as "unlisted kind" and never printed.
+  This table can differ from the doubt-code table of the AI audit page. The audit page counts a fact
+  when its stored status is not "verified". The gap table counts a fact when its band is not Certain.
+  A "verified" fact with a lower band is in the gap table only.
 - "Gap by programme": the same counts for each programme, shown by its number. "no programme" is a case
   with none.
 - Counts only. The table holds no case id, name or free text. A result without a gap table, or with a
-  key not in the closed list, fails the check ("schema").
+  key not in the closed list, fails the check ("schema"). A result with more than 50 programmes fails
+  it too (`GAP_MAX_PROGRAMMES` in `eval/replay/lens_gap.py`).
 
 **Two refusals that only a bucket run gives.** The parent sets them after the run (the lens itself
 never does). The exam part then shows "not run: <code>", "Status: refused: <code>", "Frozen: no" and no
