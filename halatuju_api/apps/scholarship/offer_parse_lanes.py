@@ -1,4 +1,4 @@
-"""OCR-13/14: the UiTM, UUM, UM, UPSI, UNIMAS, UTHM and UKM branches of `offer_parse.diagnose`, here rather than in `offer_parse`
+"""OCR-13/14: the UiTM, UUM, UM, UPSI, UNIMAS, UTHM, UKM and UTeM branches of `offer_parse.diagnose`, here rather than in `offer_parse`
 (its 600-line cap). No behaviour change in the move (UiTM, UUM). `diagnose` passes each result through
 `offer_parse._rules_exit` (Asasi)."""
 from __future__ import annotations
@@ -325,4 +325,57 @@ def diagnose_ukm(out: dict, text: str, page1_text: str, page1_layout: str, page_
         out['guard'] = reason
     else:
         out['locked'] = {**fields, '_family': 'ukm', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
+    return out
+
+
+def diagnose_utem(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
+    """The UTeM branch of `diagnose` (OCR-14 phase 5), in `diagnose_ukm`'s order: a portal page refuses (the plain
+    `offer_parse._PORTAL_TELL`, no excuse); a scan refuses (``no_layout``); the drawn page texts (no excuse: a page
+    that draws no text refuses, ``hidden_page``); `read_utem`; the owner phrases; the whole letter
+    (`offer_parse_utem.utem_letter_refusal`: status words, any IC-like number but the read IC, withdrawal words but
+    the one genuine note); ``foreign_letters``; ``name_not_plain``; the read IC not printed exactly once in page 1's
+    plain layer (``ic_not_plain``); any other IC-like number in page 1's plain layer or any page text
+    (``ic_printed``); last, any later page with text (``later_page``). UTeM PRINTS the IC with no label: the lock
+    carries it as source ``other``, so `offer_exact.exact_read`'s IC guard keeps it only when it is exactly the
+    profile IC. `diagnose` passes the result through `_rules_exit`."""
+    from .offer_parse import _PORTAL_TELL, _SPACES, _ZERO_WIDTH, PARSER_VERSION
+    from .offer_owner_words import missing
+    from .offer_parse_university import name_in_plain
+    from .offer_parse_utem import LANE, read_utem, utem_ic_copies, utem_ic_elsewhere, utem_later_pages
+    from .offer_parse_utem import utem_letter_refusal
+    from .offer_ums_refusal import foreign_letters, page_texts_refusal
+    out['portal'] = bool(_PORTAL_TELL.search(text or ''))
+    if out['portal']:
+        return out
+    if not page1_layout.strip():
+        out['guard'] = 'no_layout'
+        return out
+    if not page1_text.strip():
+        out['guard'] = 'no_plain_layer'
+        return out
+    pages = [_SPACES.sub(' ', _ZERO_WIDTH.sub('', t or '')) for t in (page_texts or ())]
+    fields, reason = read_utem(page1_layout)
+    out['fields'], out['titled'] = fields, fields is not None
+    nric = (fields or {}).get('candidate_nric', '')
+    early = page_texts_refusal(pages)
+    if not early and not reason:
+        out['owner_words_missing'] = missing(LANE, page1_layout, text_pdf=True)
+        early = 'owner_words_missing' if out['owner_words_missing'] else ''
+    reason = early or reason or utem_letter_refusal(text, nric)
+    if not reason and foreign_letters(text, page1_text, page1_layout, *pages):
+        reason = 'foreign_letters'
+    if not reason and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
+        reason = 'name_not_plain'
+    if not reason and utem_ic_copies(page1_text, nric) != 1:
+        reason = 'ic_not_plain'
+    if not reason and (utem_ic_elsewhere(page1_text, nric) or any(utem_ic_elsewhere(p, nric) for p in pages)):
+        reason = 'ic_printed'
+    if not reason:
+        reason = utem_later_pages(pages[1:])
+    if reason.startswith('empty:'):
+        out['empty_required'] = reason[len('empty:'):].split(',')
+    elif reason:
+        out['guard'] = reason
+    else:
+        out['locked'] = {**fields, '_family': 'utem', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
     return out
