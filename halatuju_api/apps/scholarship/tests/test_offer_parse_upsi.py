@@ -191,6 +191,8 @@ class UpsiNeverLocksTest(SimpleTestCase):
         self.assertEqual(run(layout(report='14 September 2030'))['guard'], 'dates_not_sane')
         self.assertEqual(why(run(layout(report='31 September 2027'))), 'empty:reporting_date')
         self.assertEqual(why(run(layout(report='14/09/2027'))), 'empty:reporting_date')
+        fields, _why = read_upsi(layout(report='31 September 2027'))     # review r2: a blank date, a blank label
+        self.assertEqual((fields['reporting_date'], fields['reporting_date_label']), ('', ''))
         self.assertEqual(run(layout(report='1 Ogos 2027', offer='12 September 2027'))['guard'], 'dates_not_sane')
         self.assertEqual(run(layout(intake='Semester 1 Sesi 2027/2029'))['guard'], 'dates_not_sane')
         self.assertEqual(why(run(layout(intake='Sesi 2027/2028'))), 'empty:intake')

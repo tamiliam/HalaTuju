@@ -175,6 +175,12 @@ class UitmRefusalTest(SimpleTestCase):
         self.assertEqual(why(run(layout(date='5 OKT 2027'))), 'empty:reporting_date')
         self.assertIsNotNone(run(layout(date='5/9/2027'))['locked'])
 
+    def test_r2_a_blank_reporting_date_has_a_blank_label(self):
+        # OCR-14 review r2: the label travels with its date (a UiTM lock needs the date, so no lock changes).
+        fields, _why = read_uitm(layout(date='31/02/2027'))
+        self.assertEqual((fields['reporting_date'], fields['reporting_date_label']), ('', ''))
+        self.assertEqual(read_uitm(layout())[0]['reporting_date_label'], 'Tarikh')
+
     def test_second_program_line_on_page_one_refuses(self):
         d = run(layout(extra=['Program' + ' ' * 23 + 'CS240']))
         self.assertEqual(d['guard'], 'programme_twice')

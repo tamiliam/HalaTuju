@@ -246,7 +246,8 @@ def read_uitm(source: str):
         'candidate_name': name, 'candidate_nric': nric, 'candidate_nric_source': 'label' if nric else 'none',
         'programme': programme, 'programme_code': code, 'institution': INSTITUTION, 'campus': campus,
         'stream': '', 'intake': intake, 'reporting_date': house_date(printed) if _valid_dmy(printed) else '',
-        'reporting_date_label': 'Tarikh', 'reporting_venue': '', 'offer_date': '', 'issuer': ISSUER,
+        'reporting_date_label': 'Tarikh' if _valid_dmy(printed) else '',   # review r2: a blank date, a blank label
+        'reporting_venue': '', 'offer_date': '', 'issuer': ISSUER,
     }
     if why_head and not why_head.startswith('empty:'):
         return fields, why_head

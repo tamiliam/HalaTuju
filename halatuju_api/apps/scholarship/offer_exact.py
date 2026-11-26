@@ -22,9 +22,10 @@ would derive. Each returns the stored-read dict, or None (→ the AI reader, `of
      "Exact" chip (review L2). On a GOVERNMENT-family lock the reporting date (with its label) and the offer
      date keep merge-preserve (decision 2026-07-10): a blank keeps the prior value — the reporting-date bonus
      depends on it — and so does a parser date `pathway_engine.parse_reporting_date` cannot read when the prior
-     one it can (M4). A UNIVERSITY rules-lane lock writes them whole too (OCR-14 review r1): a lane that reads
-     no date (UNIMAS prints no reporting date; UMK's head date is not proven to be the offer date) must never
-     keep an earlier AI date under a deterministic capture.
+     one it can (M4). So does a UNIVERSITY rules-lane lock, except for the fields its lane NEVER reads by design
+     (`NEVER_READ`, OCR-14 review r2: UNIMAS prints no reporting date; UMK's head date is not proven to be the
+     offer date; UiTM prints no offer date): those are written blank, so no earlier AI date survives under a
+     deterministic capture. Every other lane and field merges exactly as before (a live lane must not change).
 """
 from __future__ import annotations
 
@@ -45,6 +46,12 @@ OWNED = ('candidate_name', 'candidate_nric', 'candidate_nric_source', 'programme
 ISSUER_PRINTS_NO_IC = frozenset({'ua:UUM', 'ua:UPSI', 'ua:UNIMAS', 'ua:UTHM'})
 #: Merge-preserve: the parser's value wins only when it read one (the label travels with its date).
 PRESERVED = (('reporting_date', 'reporting_date_label'), ('offer_date',))
+#: OCR-14 review r2: per rules lane, the `PRESERVED` fields its reader NEVER reads by design (it always writes them
+#: blank). Only these are written blank over the prior AI read; every other lane and field keeps merge-preserve
+#: as before review r1 (a live lane's kept AI date must not move a genuineness band).
+NEVER_READ = {'ua:UNIMAS': frozenset({'reporting_date', 'reporting_date_label'}),   # UNIMAS prints no reporting date
+              'ua:UMK': frozenset({'offer_date'}),     # the head TARIKH is a print date, never stored
+              'ua:UiTM': frozenset({'offer_date'})}    # UiTM prints no offer date (offer_parse_uitm, always '')
 
 
 def pdf_layers(image, content_type='') -> tuple:
@@ -74,15 +81,16 @@ def _reads(date) -> bool:
 
 def merge_over(prior_fields, govt: dict, rules_lane: str = '') -> dict:
     """The lock merged over the prior read: `OWNED` whole, `PRESERVED` only where the parser read it — and a
-    reporting date only when it parses, or the prior one does not (review M4). A rules-lane lock (``rules_lane``
-    set, OCR-14 review r1) writes `PRESERVED` whole too, blank included: no AI date under a deterministic read."""
+    reporting date only when it parses, or the prior one does not (review M4). The fields ``rules_lane`` never
+    reads (`NEVER_READ`, OCR-14 review r2) are written blank, always: no AI date under a deterministic read."""
     out = dict(prior_fields) if isinstance(prior_fields, dict) else {}
     out.update({k: govt.get(k, '') or '' for k in OWNED})
+    never = NEVER_READ.get(rules_lane or '', frozenset())
+    out.update({k: '' for group in PRESERVED for k in group if k in never})
     for group in PRESERVED:
-        mine = (govt.get(group[0]) or '').strip()
-        if rules_lane:
-            out.update({k: govt.get(k, '') or '' for k in group})
+        if group[0] in never:
             continue
+        mine = (govt.get(group[0]) or '').strip()
         if not mine:
             continue
         if group[0] == 'reporting_date' and not _reads(mine) and _reads(out.get('reporting_date')):

@@ -201,7 +201,8 @@ def read_upsi(source: str):
         'candidate_name': name, 'candidate_nric': '', 'candidate_nric_source': 'none',
         'programme': programme, 'programme_code': code, 'institution': INSTITUTION, 'campus': '',
         'stream': '', 'intake': intake, 'reporting_date': house_date(printed) if _ymd(printed) else '',
-        'reporting_date_label': _REPORT_LABEL, 'reporting_venue': '', 'offer_date': offer_date, 'issuer': ISSUER,
+        'reporting_date_label': _REPORT_LABEL if _ymd(printed) else '',   # review r2: a blank date, a blank label
+        'reporting_venue': '', 'offer_date': offer_date, 'issuer': ISSUER,
     }
     for why in (why_head, why_prog, why_intake):
         if why:

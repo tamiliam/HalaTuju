@@ -124,14 +124,51 @@ class TestTheMerge(SimpleTestCase):
     def test_no_prior_read(self):
         self.assertEqual(merge_over(None, {})['campus'], '')
 
-    def test_r1_a_rules_lane_lock_writes_the_dates_whole_blank_included(self):
-        # OCR-14 review r1: a university rules lock never keeps an earlier AI date under a deterministic read.
-        f = merge_over(self.STALE, {'reporting_date': '', 'reporting_date_label': '', 'offer_date': ''}, 'ua:UNIMAS')
-        self.assertEqual((f['reporting_date'], f['reporting_date_label'], f['offer_date']), ('', '', ''))
-        f = merge_over(self.STALE, {'reporting_date': '31/02/2031', 'reporting_date_label': 'x'}, 'ua:UMS')
-        self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('31/02/2031', 'x'))   # never the AI's
-        f = merge_over(self.STALE, {}, '')                                  # a government lock: merge-preserve
-        self.assertEqual((f['reporting_date'], f['offer_date']), ('1 Jan 2031', '2 Jan 2031'))
+    def test_r2_only_a_never_read_field_is_written_blank_over_the_ai_read(self):
+        # OCR-14 review r2: UNIMAS (no reporting date), UMK and UiTM (no offer date) blank ONLY what they never read.
+        blank = {'reporting_date': '', 'reporting_date_label': '', 'offer_date': ''}
+        f = merge_over(self.STALE, blank, 'ua:UNIMAS')
+        self.assertEqual((f['reporting_date'], f['reporting_date_label'], f['offer_date']), ('', '', '2 Jan 2031'))
+        f = merge_over(self.STALE, {**blank, 'reporting_date': '8 Jun 2031', 'reporting_date_label': 'L'}, 'ua:UNIMAS')
+        self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('', ''))   # never a date it cannot read
+        for lane in ('ua:UMK', 'ua:UiTM'):
+            f = merge_over(self.STALE, blank, lane)
+            self.assertEqual((f['reporting_date'], f['reporting_date_label'], f['offer_date']),
+                             ('1 Jan 2031', 'Tarikh Pendaftaran', ''), lane)
+        self.assertEqual(merge_over(None, blank, 'ua:UNIMAS')['reporting_date'], '')
+
+    def test_r2_every_other_lane_and_field_merges_exactly_as_at_b0b5ea0f3(self):
+        # The merge as it was before review r1 (b0b5ea0f3), for every older lane and the government families.
+        def before(prior_fields, govt):
+            from apps.scholarship.offer_exact import OWNED, PRESERVED, _reads
+            out = dict(prior_fields) if isinstance(prior_fields, dict) else {}
+            out.update({k: govt.get(k, '') or '' for k in OWNED})
+            for group in PRESERVED:
+                mine = (govt.get(group[0]) or '').strip()
+                if not mine or (group[0] == 'reporting_date' and not _reads(mine)
+                                and _reads(out.get('reporting_date'))):
+                    continue
+                out.update({k: govt.get(k, '') or '' for k in group})
+            return out
+        priors = (None, {}, self.STALE, {**self.STALE, 'reporting_date': '31/02/2031'},
+                  {'reporting_date': 20310601, 'offer_date': None})
+        dates = ({}, {'reporting_date': '', 'reporting_date_label': 'Tarikh', 'offer_date': ''},
+                 {'reporting_date': '8 Jun 2031', 'reporting_date_label': 'L', 'offer_date': '3 Mar 2031'},
+                 {'reporting_date': '31/02/2031', 'reporting_date_label': 'x', 'offer_date': ''},
+                 {'reporting_date': '  ', 'reporting_date_label': 'y', 'offer_date': ' 4 Apr 2031 '})
+        never = {'ua:UiTM': {'offer_date'}, 'ua:UMK': {'offer_date'},
+                 'ua:UNIMAS': {'reporting_date', 'reporting_date_label'}}
+        for lane in ('', 'ua:UMS', 'ua:UM', 'ua:UPSI', 'ua:UUM', 'ua:UiTM', 'ua:UTHM', 'ua:UKM', 'ua:UTeM', 'ua:USM',
+                     'ua:UniSZA', 'ua:UNIMAS', 'ua:UMK', 'ua:NOPE'):
+            skip = never.get(lane, set())
+            for prior in priors:
+                for govt in dates:
+                    with self.subTest(lane=lane, prior=prior, govt=govt):
+                        got = merge_over(prior, {'campus': 'C', **govt}, lane)
+                        want = before(prior, {'campus': 'C', **govt})
+                        self.assertEqual({k: v for k, v in got.items() if k not in skip},
+                                         {k: v for k, v in want.items() if k not in skip})
+                        self.assertEqual({got[k] for k in skip}, {''} if skip else set())
 
 
 class TestPageOne(SimpleTestCase):

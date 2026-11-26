@@ -294,6 +294,36 @@ class UnimasFooterExcuseTest(SimpleTestCase):
                 self.assertEqual(ums_letter_refusal(text), 'not_an_offer')
         self.assertFalse(not_official_said('Surat tawaran rasmi ini sah.'))
 
+    def test_r2_every_not_official_wording_refuses_on_every_lane(self):
+        # OCR-14 review r2: the other ways a letter says it is not an official offer (made-up sentences).
+        import importlib
+
+        from apps.scholarship.offer_ums_refusal import letter_refusal as ums_letter_refusal
+        from apps.scholarship.offer_ums_refusal import not_official_said
+        from apps.scholarship.tests.test_offer_parser import MATRIC, POLY, STPM
+        wordings = ('Surat ini bukanlah surat tawaran rasmi.', 'Ini bukan surat tawaran yang rasmi.',
+                    'Ini bukan tawaran rasmi.', 'Surat ini tidak merupakan surat tawaran rasmi.',
+                    'This is not an official offer letter.', 'BUKANLAH  SURAT TAWARAN YANG RASMI',
+                    'n o t  a n  o f f i c i a l  o f f e r', 'Surat ini tidak  merupakan tawaran rasmi.')
+        for text in wordings:
+            with self.subTest(text=text):
+                self.assertTrue(not_official_said(text))
+                self.assertEqual(ums_letter_refusal(text), 'not_an_offer')
+                self.assertEqual(letter_refusal(plain(layout()) + '\n' + text), 'not_an_offer')   # UNIMAS too
+                for fam in (STPM, MATRIC, POLY):
+                    self.assertEqual(offer_parse.diagnose(fam + '\n' + text)['guard'], 'not_an_offer')
+        for lane in ('uitm', 'uum', 'um', 'upsi', 'uthm', 'ukm', 'utem', 'usm'):
+            mod = importlib.import_module('apps.scholarship.tests.test_offer_parse_' + lane)
+            for text in wordings[:5]:
+                with self.subTest(lane=lane, text=text):
+                    d = mod.run(mod.layout() + '\n' + text)
+                    self.assertEqual((d['locked'], d['guard']), (None, 'not_an_offer'))
+        for fine in ('Surat tawaran rasmi ini sah.', 'Tawaran rasmi anda.', 'This is an official offer letter.',
+                     'Tidak merupakan masalah. Tawaran rasmi dilampirkan.'):
+            with self.subTest(fine=fine):
+                self.assertFalse(not_official_said(fine))
+        self.assertIsNotNone(run()['locked'])                    # the one UNIMAS footer pair still locks
+
     def test_the_government_families_refuse_it_too(self):
         from apps.scholarship.tests.test_offer_parser import MATRIC, POLY, STPM
         for text in (STPM, MATRIC, POLY):

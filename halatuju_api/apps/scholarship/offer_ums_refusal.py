@@ -45,11 +45,17 @@ _WITHDRAWN = re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}T
                         r'TIDAK\s{1,3}(?:(?:AKAN|LAGI|DAPAT|BOLEH)\s{1,3})?DI\s{0,3}TERUSKAN|'
                         r'(?:DI|TER)?\s{0,3}TANGGUH\w*|DI\s{0,3}TUNDA\w*|'
                         r'AKAN\s{1,3}(?:DI\s{0,3})?(?:MAKLUM|UMUM|TETAP|BERITAHU)\w*|'
-                        r'BUKAN\s{1,3}(?:MERUPAKAN\s{1,3})?SURAT\s{1,3}TAWARAN\s{1,3}RASMI)\b', re.IGNORECASE)
+                        r'(?:BUKAN(?:LAH)?\s{1,3}(?:MERUPAKAN\s{1,3})?|TIDAK\s{1,3}MERUPAKAN\s{1,3})'
+                        r'(?:SURAT\s{1,3})?TAWARAN\s{1,3}(?:YANG\s{1,3})?RASMI|'
+                        r'NOT\s{1,3}AN\s{1,3}OFFICIAL\s{1,3}OFFER)\b', re.IGNORECASE)
 #: OCR-14 (owner 26 Nov): a letter that says it is NOT an official offer ("bukan (merupakan) surat tawaran rasmi")
 #: never locks, on EVERY lane; the government families ask `not_official_said`. Only UNIMAS excuses its one
-#: measured footer copy (`offer_parse_unimas._FOOTER`), taken out before this check.
-_NOT_OFFICIAL_STEMS = ('BUKANMERUPAKANSURATTAWARANRASMI', 'BUKANSURATTAWARANRASMI')
+#: measured footer copy (`offer_parse_unimas._FOOTER`), taken out before this check. Review r2: also BUKANLAH and
+#: TIDAK MERUPAKAN, with or without SURAT and YANG ("bukan tawaran rasmi", "bukan surat tawaran yang rasmi"), and
+#: the English "not an official offer (letter)".
+_NOT_OFFICIAL_STEMS = tuple(neg + surat + 'TAWARAN' + yang + 'RASMI'
+                            for neg in ('BUKAN', 'BUKANMERUPAKAN', 'BUKANLAH', 'BUKANLAHMERUPAKAN', 'TIDAKMERUPAKAN')
+                            for surat in ('', 'SURAT') for yang in ('', 'YANG')) + ('NOTANOFFICIALOFFER',)
 #: Round 5 (LOW D): a deferral ("ditangguhkan", "ditunda") or a date still to come ("akan dimaklumkan
 #: kemudian") on ANY page refuses, also in the squeezed and dotless forms. Measured: none is on any page of the
 #: 58 cached UMS letters. A bare DITUNDA is never a stem: squeezed, "di Tun Datu" holds it.

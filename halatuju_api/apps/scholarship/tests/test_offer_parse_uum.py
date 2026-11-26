@@ -224,6 +224,8 @@ class UumNeverLocksTest(SimpleTestCase):
         self.assertEqual(run(layout(date='14 September 2030'))['guard'], 'dates_not_sane')
         self.assertEqual(why(run(layout(date='31 September 2027'))), 'empty:reporting_date')
         self.assertEqual(why(run(layout(date='14/09/2027'))), 'empty:reporting_date')
+        fields, _why = read_uum(layout(date='31 September 2027'))        # review r2: a blank date, a blank label
+        self.assertEqual((fields['reporting_date'], fields['reporting_date_label']), ('', ''))
         self.assertEqual(run(layout(offer=' 2 Oktober 2027'))['guard'], 'dates_not_sane')   # offered after
         bad = 'TAWARAN KEMASUKAN KE UNIVERSITI UTARA MALAYSIA SESI 2027/2029'
         self.assertEqual(run(layout(title=bad))['guard'], 'dates_not_sane')
