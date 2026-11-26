@@ -38,6 +38,33 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UiT
 - Debt: TD-NEW-ocr13-uitm-wrapped-names, TD-NEW-ocr13-uitm-wrap-edge; TD-NEW-ocr13-diploma stays open.
   Tests: `test_offer_parse_uitm.py`.
 
+### feat: OCR-13 phase 3 - the UUM rules reader, a lock with no IC (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UUM` stays OFF (off by default; `OCR_FIRST_LANES`).
+- **Owner decision (26 Nov), "Lock without IC", ua:UUM only:** UUM letters print no IC (the 6-digit number after the
+  name is not one). `offer_exact.ISSUER_PRINTS_NO_IC` lets that lane lock with the IC stored blank (source "none"), as an
+  AI read with no IC is stored; a prior AI IC cannot survive the lock. Every other lane still refuses a lock without an IC
+  (tests for UMS and UiTM). A UUM lock that carries an IC refuses. The 6-digit number is never stored or matched.
+- **Downstream:** a blank IC from a UUM lock is judged exactly as a blank IC from an AI read: `pathway_engine._ic_status`
+  gives "unreadable" (never "match"), the cockpit chip is red, and no code gives a rules capture an identity pass.
+- **Reader:** new `offer_parse_uum.py` reads a digital UUM degree letter (SARJANA MUDA only) from its page-1 layout: name,
+  programme (up to 2 wrapped lines), intake as printed, reporting date, offer date. It refuses a scan (no layout), a
+  non-degree programme (Diploma, Asasi, Pra, Sijil, Foundation, Certificate, Persediaan, Matrik), an English "Admission"
+  letter (no_title), a PENGESAHAN letter (status_letter), any 12-digit IC-like number on any page (ic_printed), and a later
+  page with another programme, another registration date or an unknown shape.
+- **Wiring:** `family_of` reads 'uum'; the UiTM and UUM branches of `diagnose` moved to the new `offer_parse_lanes.py`
+  (offer_parse.py's 600-line cap, no behaviour change); the owner-phrase ink pairs have one home
+  (`offer_owner_words.owner_ink_targets`); `offer_exact` lane switch, refusal note and ink check; eval layout hook and
+  `RULES_LANES`. offer_parse 2.4.0 digest updated in place; offer_reader digest unchanged.
+- **Dry run (local, free, lanes UMS, UiTM and UUM on):** no UUM letter is held out (0 of 20 needed), so the lane stays AI.
+  All splits: UUM 4 letters, 4 locked, 0 wrong name / IC / institution / programme; intake 2 of 4 differ from the
+  hand-checked answers (the letters print "SEMESTER PERTAMA SESI ..."; two answers say only "SESI ..."), open question
+  for the owner. UMS and UiTM unchanged: held-out 33/22/100%/0 and 9/1/100%/0; all splits 62/44/100%/0 and 18/3/100%/0.
+- **Owner folders (text layer):** uum/ 33 letters, 20 lock; 5 English Admission letters refuse (no_title), 3 PENGESAHAN
+  letters refuse (status_letter), 5 scans have no text layer (in production they refuse no_layout). diploma/, asasi/,
+  confirmation/ and fail/ lock 0 of 43.
+- Debt: TD-NEW-ocr13-uum-intake-answers, TD-NEW-ocr13-uum-heldout. Tests: `test_offer_parse_uum.py`.
+
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
 

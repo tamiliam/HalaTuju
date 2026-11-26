@@ -147,7 +147,7 @@ def page1_layout_of(eval_dir, key, route):
     page1 = page1_text_layer(data, 'application/pdf')
     if not page1.strip():
         return ''
-    uitm = offer_parse.family_of(pdf_text_layer(data)) == 'uitm'     # as `offer_exact`: the whole text's family
+    uitm = offer_parse.family_of(pdf_text_layer(data)) in ('uitm', 'uum')     # as `offer_exact`: the whole text's family
     return pdf_page1_layout(data) if is_ums(page1.upper()) or uitm else ''
 
 

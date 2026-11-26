@@ -50,8 +50,8 @@
     "also_ok": []
   },
   "2.4.0": {
-    "digest": "c11f19f6d714b6e03c1660091d2e83eef5adf6f5476dcd6f199768c5f08f171c",
-    "note": "2026-11-26: OCR-13 phase 2: new offer_parse_uitm (lane 'ua:UiTM', off by default). family_of reads 'uitm'; _diagnose_uitm locks a digital UiTM degree letter from its page-1 layout (degree code third character '2', plain SARJANA MUDA name, later pages checked); a scan refuses no_layout. offer_exact lane switch, refusal note and ink check are per lane. UMS and the government families read as before.",
+    "digest": "1d9fbae077ad1faf0fc79a97f7d6362d7a8ca295c7ef925f14db29ba8135aa4c",
+    "note": "2026-11-26: OCR-13 phase 2: new offer_parse_uitm (lane 'ua:UiTM', off by default). family_of reads 'uitm'; _diagnose_uitm locks a digital UiTM degree letter from its page-1 layout (degree code third character '2', plain SARJANA MUDA name, later pages checked); a scan refuses no_layout. offer_exact lane switch, refusal note and ink check are per lane. UMS and the government families read as before. Phase 3 (same day, unshipped, digest updated in place): new offer_parse_uum (lane 'ua:UUM', off by default). family_of reads 'uum'; _diagnose_uum locks a digital UUM degree letter (SARJANA MUDA only) from its page-1 layout. Owner decision 26 Nov, 'Lock without IC' for ua:UUM only: UUM prints no IC, so offer_exact.ISSUER_PRINTS_NO_IC lets that lane lock with the IC stored blank (source none), as an AI read with no IC; the 6-digit number after the name is never stored; any 12-digit IC-like number on any page refuses (ic_printed). Every other lane still refuses a lock without an IC. English Admission letters (no_title) and PENGESAHAN letters (status_letter) never lock. The UiTM and UUM branches of diagnose moved to the new offer_parse_lanes.py (offer_parse.py's 600-line cap; no behaviour change), and the owner-phrase ink pairs have one home (offer_owner_words.owner_ink_targets). UMS, UiTM and the government families read as before.",
     "also_ok": []
   }
 }

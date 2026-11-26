@@ -9815,6 +9815,16 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Raised in OCR-13 phase 1 (see CHANGELOG).** The owner's words and the UiTM Asasi excuse are in; nothing dispatches to the four lanes, so every letter still goes to the AI. Held-out letters (UiTM 9, UPSI 4, UM 3, UUM 0) are under Gate 1's 20, so a reader cannot be switched on yet. Also open: 13 of 30 UPSI sample PDFs have no text layer; image letters were not measured (Vision is paid); one UiTM sample prints the office label in a different form and refuses (safe). **Fix:** phase 2: one reader per lane (files under 600 lines), dispatch in `diagnose`, `offer_exact` and the ink targets, the eval layout hook and `RULES_LANES`, versions 2.11.0 and 2.4.0, then the dry run each month until a lane reaches 20. *(A - M)*
 
+**Phase 3 (26 Nov):** the UiTM and UUM readers are built; UPSI and UM still have none.
+
+### [TD-NEW-ocr13-uum-intake-answers] OCR-13: two UUM hand-checked answers shorten the intake - low (owner question)
+
+**Raised in OCR-13 phase 3 (see CHANGELOG).** All 4 corpus UUM letters print "SEMESTER PERTAMA SESI YYYY/YYYY" and the reader stores it as printed. The hand-checked answers for d1705 and d1746 say only "SESI YYYY/YYYY" (d3502 and d3997 keep SEMESTER PERTAMA), so the dry run scores 2 intakes wrong. Intake is not a guarded field; name, IC, institution and programme are 0 wrong. **Fix:** owner rules which form is right; then either correct the two answers or have the reader drop the semester words. *(A - S)*
+
+### [TD-NEW-ocr13-uum-heldout] OCR-13: no UUM letter is held out, so the UUM lane cannot pass Gate 1 - medium
+
+**Raised in OCR-13 phase 3 (see CHANGELOG).** The corpus holds 4 UUM letters, all in dev; Gate 1 needs 20 held-out locks. The owner sample (uum/ 33: 20 lock, 5 English Admission letters, 3 PENGESAHAN letters, 5 scans) has no answers, so its values are not scored. **Fix:** add hand-checked UUM letters to the held-out split, then re-run the dry run. *(A - M)*
+
 ### [TD-NEW-ocr13-uitm-wrapped-names] OCR-13: UiTM names that wrap onto two lines are refused - low
 
 **Raised in OCR-13 phase 2 (see CHANGELOG).** The UiTM reader refuses a student name printed over two lines: about 5 of the 11 digital UiTM letters in the owner sample. The owner has no rule for two-line names, so they stay refused and go to the AI as before. **Fix:** an owner rule for two-line names, then a reader step with adversarial tests. *(A - S)*

@@ -15,6 +15,8 @@ would derive. Each returns the stored-read dict, or None (→ the AI reader, `of
      "NAME (IC)" line; `other` for the first-IC-anywhere fallback, corroborate-only). **A blanked IC means NO
      lock**: a blank IC merged over a prior read would keep the prior AI number under an "Exact" chip, and
      the AI read has its own guard. No text-layer backstop here (the parser either read an IC or did not lock).
+     The one exception (OCR-13, owner): a lane whose issuer prints no IC (`ISSUER_PRINTS_NO_IC`, UUM) locks with
+     the IC blank, as its AI read stores it, and refuses if its lock carries one.
   3. **The merge** over the prior read. The parser OWNS the identity and shape keys (`OWNED`) and writes them
      whole, blank included, so a stale AI campus / code / IC source / address / venue cannot survive under an
      "Exact" chip (review L2). The reporting date (with its label) and the offer date keep merge-preserve
@@ -32,6 +34,11 @@ logger = logging.getLogger(__name__)
 OWNED = ('candidate_name', 'candidate_nric', 'candidate_nric_source', 'programme', 'programme_code',
          'institution', 'campus', 'stream', 'intake', 'issuer', '_offer_parser_version',
          'candidate_address', 'reporting_venue', 'aliran', 'bidang_pengkhususan', 'elektif')
+#: OCR-13 (owner, 26 Nov: "Lock without IC", UUM only): the rules lanes whose issuer prints NO IC on the letter.
+#: Only these may lock with a blank IC, and they must: a lock on such a lane that carries an IC refuses. The
+#: blank IC is stored as the AI read stores it ('' and source 'none'): `pathway_engine._ic_status` reads it as
+#: 'unreadable' (never 'match'), the same for both readers. Every other lane keeps "a blanked IC means NO lock".
+ISSUER_PRINTS_NO_IC = frozenset({'ua:UUM'})
 #: Merge-preserve: the parser's value wins only when it read one (the label travels with its date).
 PRESERVED = (('reporting_date', 'reporting_date_label'), ('offer_date',))
 
@@ -77,7 +84,7 @@ def merge_over(prior_fields, govt: dict) -> dict:
 
 
 def _lane_module(family: str):
-    """The rules-lane reader module for a university family (`offer_parse.family_of`): 'ums' or 'uitm'
+    """The rules-lane reader module for a university family (`offer_parse.family_of`): 'ums', 'uitm' or 'uum'
     (OCR-13); None for any other family. Each module gives LANE, ``ink_targets`` and its reader."""
     if family == 'ums':
         from . import offer_parse_university as mod
@@ -85,11 +92,14 @@ def _lane_module(family: str):
     if family == 'uitm':
         from . import offer_parse_uitm as mod
         return mod
+    if family == 'uum':
+        from . import offer_parse_uum as mod
+        return mod
     return None
 
 
 def _rules_family(text) -> str:
-    """The university rules family `offer_parse.diagnose` reads ``text`` as ('ums', 'uitm'), else ''."""
+    """The university rules family `offer_parse.diagnose` reads ``text`` as ('ums', 'uitm', 'uum'), else ''."""
     from .offer_parse import family_of
     fam = family_of(text)
     return fam if _lane_module(fam) is not None else ''
@@ -99,14 +109,14 @@ def _note_ums_refusal(why, text, reason: str) -> None:
     """Fill ``why`` (the caller's dict, or None) with a rules read's refusal (review round 2): the lane and
     ``read_<reason>`` ('read_no_layout', 'read_not_an_offer', 'read_empty:programme', ...), the same shape as
     `rules_lane_verdict`'s ``rules_fallback``. A letter with the UMS title (as before), or one `family_of` reads
-    as UiTM (OCR-13); a letter no rules lane exists for records nothing."""
+    as UiTM or UUM (OCR-13); a letter no rules lane exists for records nothing."""
     from .offer_parse_university import LANE, is_ums
     if not isinstance(why, dict):
         return
     if is_ums((text or '').upper()):
         why.update(lane=LANE, reason=f'read_{reason}')
-    elif _rules_family(text) == 'uitm':
-        why.update(lane=_lane_module('uitm').LANE, reason=f'read_{reason}')
+    elif _rules_family(text) in ('uitm', 'uum'):
+        why.update(lane=_lane_module(_rules_family(text)).LANE, reason=f'read_{reason}')
 
 
 def _guard_reason(d: dict) -> str:
@@ -145,11 +155,15 @@ def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profi
     govt.pop('_family', None)
     lane = govt.pop('rules_lane', '')
     check = guard_nric(govt, profile_nric=profile_nric, page1_text=page1 or text or '')
-    if not (govt.get('candidate_nric') or '').strip():
-        _note_ums_refusal(why, text, 'nric_guard')
+    no_ic = lane in ISSUER_PRINTS_NO_IC
+    if bool((govt.get('candidate_nric') or '').strip()) == no_ic:
+        _note_ums_refusal(why, text, 'nric_guard')   # no IC read; or an IC on a lane whose issuer prints none
         return None
+    if no_ic:
+        govt['candidate_nric'], govt['candidate_nric_source'] = '', 'none'   # as the AI read stores it
     prior_fields = prior.get('fields') if isinstance(prior, dict) else None
-    inputs = {'reader': 'deterministic', 'nric_check': check, **({'rules_lane': lane} if lane else {})}
+    inputs = {'reader': 'deterministic', 'nric_check': check, **({'rules_lane': lane} if lane else {}),
+              **({'nric_not_printed': True} if no_ic else {})}
     return {'fields': merge_over(prior_fields, govt), 'warnings': [], 'error': '', 'capture': 'deterministic',
             'rules_lane': lane, 'offer_reader_inputs': inputs}
 
@@ -244,10 +258,11 @@ def _not_inked(ex, image, layout, lane) -> list:
     rendered page 1; [] when every one does. A lane with no `ink_targets` reader, or any fault, refuses."""
     try:                                         # each lane's own `ink_targets` (OCR-13)
         from .pdf_ink import ink_missing, page1_ink
-        mod = next((m for m in (_lane_module('ums'), _lane_module('uitm')) if m.LANE == lane), None)
+        mod = next((m for m in map(_lane_module, ('ums', 'uitm', 'uum')) if m.LANE == lane), None)
         if mod is None:
             return ['no_targets']
-        phrases, values = mod.ink_targets(ex.get('fields'), layout)
+        targets = getattr(mod, 'ink_targets', None) or mod.uum_ink_targets   # UUM: its own name (one-home rule)
+        phrases, values = targets(ex.get('fields'), layout)
         return ink_missing(page1_ink(image), phrases, values, lane=lane)   # a Type3 font: `TYPE3_LANES`
     except Exception:  # fail closed: the AI reads the letter, as it always could
         logger.exception('rules lane %s: the ink check failed; the AI reads the letter', lane)

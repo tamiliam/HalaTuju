@@ -187,6 +187,16 @@ def _shown(lane: str, text: str) -> set:
     return shown
 
 
+def owner_ink_targets(lane: str, page1_layout: str, labels: dict, optional, printed: dict) -> tuple:
+    """(phrases, values) for the ink check (`pdf_ink.ink_missing`): the owner phrases ``page1_layout`` shows
+    (``p<n>``), and each ``labels`` field's value as ``printed``; an ``optional`` one only when read. A required value
+    left blank stays in, so the ink check refuses it. OCR-13: the one home for this rule (UUM uses it)."""
+    shown = _shown(lane, page1_layout or '')
+    phrases = [(f'p{k + 1}', p) for k, p in enumerate(OWNER_WORDS[lane]) if k in shown]
+    values = [(label, printed[k]) for k, label in labels.items() if k not in optional or str(printed[k]).strip()]
+    return phrases, values
+
+
 def _merged(spans) -> list:
     """Sorted spans merged into disjoint ones (two overlapping phrases cover their union: refusing more is safe)."""
     out = []

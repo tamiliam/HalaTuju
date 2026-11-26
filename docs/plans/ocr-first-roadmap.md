@@ -89,7 +89,7 @@ Every sprint now has one name: **OCR-** and a number. The number is the run orde
 | OCR-10 | SPM slips off 2.5 | S5 | Live 23 Nov 21:00 |
 | OCR-11 | An all-empty AI answer means "cannot read" | Blank-gap 1 | Live 23 Nov 21:00 (debt TD-701 follows) |
 | OCR-12 | The hidden-object fix (a wrong object generation must not hide an object from the gate) | the gen fix | BUILT 24 Nov; 3 review rounds + owner-chosen fixes (0x80/0xff white space, '#' name escapes); census 12 of 870 to Vision; head 289953f4b, awaits landing |
-| OCR-13 | The next four universities | S2 | Phase 1 and the UiTM reader BUILT 26 Nov (lanes off). UiTM held-out locks 1 of 9 (3 of 18 all splits, 0 wrong) against the 20 needed, so it stays AI. UUM next, with the owner's 26 Nov decision "Lock without IC" (UUM letters print no IC; the IC comes from the student's own IC upload; UUM only); then UPSI and UM |
+| OCR-13 | The next four universities | S2 | Phase 1, the UiTM reader and the UUM reader BUILT 26 Nov (lanes off). UiTM held-out locks 1 of 9 (3 of 18 all splits, 0 wrong) against the 20 needed, so it stays AI. UUM (owner's 26 Nov decision "Lock without IC", UUM only): 0 held-out letters; all splits 4 of 4 lock, 0 wrong guarded fields (intake answers open, TD-NEW-ocr13-uum-intake-answers); owner sample 20 of 33 lock, 0 of 43 non-degree letters. UPSI and UM next |
 | OCR-14 | The remaining public universities | S3 | To build |
 | OCR-15 | The parent IC | S7 | To build |
 | OCR-16 | The genuineness jobs off 2.5 | S8 | To build |
