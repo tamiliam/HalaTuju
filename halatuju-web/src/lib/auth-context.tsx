@@ -14,10 +14,10 @@ import { isAnonymousAuthSuppressed } from '@/lib/sessionPolicy'
 import { getSession, getSupabase } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import { browserMovesUp } from '@/lib/qualification'
-import { dropStaleLocalResults } from '@/lib/heldResultsLocal'
+import { dropLocalHeldResults, serverHoldsSpmOnly } from '@/lib/heldResultsLocal'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, isStalePendingAction, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION, KEY_OWNER, rememberBursaryFile, clearStudentTab, claimStudentData } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_RESULTS_COMPLETED_AT, KEY_PENDING_AUTH_ACTION, isStalePendingAction, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION, KEY_OWNER, rememberBursaryFile, clearStudentTab, claimStudentData } from '@/lib/storage'
 
 /** TD-458: the real (non-anonymous) user id of a session, else null. */
 const realUserId = (s: Session | null) => (s && !s.user?.is_anonymous && s.user?.id) || null
@@ -255,8 +255,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The sign-in sync is about to send it — so the hydrate must NOT overwrite its results first.
     // Pre-U sprint, review round 2: a switch to SPM (maybe on another device) left this browser's
     // older STPM / third-route copies behind - they go BEFORE the move-up check, or they would read
-    // as a move up and the next sync would send them back.
-    dropStaleLocalResults(localStorage, profile)
+    // as a move up and the next sync would send them back. Only when the server holds SPM only with
+    // the switch's stamp and this browser's tertiary form was not completed AFTER it (no time, or an
+    // older one - NaN compares false). The exam keys are written straight back below. Never-switched
+    // profiles have no stamp. Inline, not a helper: /scholarship/apply's first-load budget.
+    const cleared = Date.parse(profile.held_results_cleared_at as string)
+    if (cleared > 0 && !(Date.parse(localStorage.getItem(KEY_RESULTS_COMPLETED_AT) as string) > cleared) && serverHoldsSpmOnly(profile)) {
+      dropLocalHeldResults(localStorage)
+      for (const k of [KEY_RESULTS_COMPLETED_AT, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE]) localStorage.removeItem(k)
+    }
     const pendingUp = browserMovesUp(localStorage, profile.results_held)
     // TD-069: the STPM path's SPM prerequisites, for the same reason. Its aliran picks are not
     // stored — the STPM form derives them from these grades minus the core and the electives.
