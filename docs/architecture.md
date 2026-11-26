@@ -103,8 +103,10 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
   thresholds and the "born in" state rule (`allowed_birth_states`), and has four states, one final.
   From criteria Sprint 2 the gate reads its `criteria` (JSON, nullable): the rules as one tree
   (`apps/scholarship/criteria.py`; results, merit, income and born-in sections, the course-start
-  flag). NULL means "read from the requirement columns" (`criteria.tree_of`). The columns stay; the old
-  admin form rebuilds the tree from them on every save.
+  flag). NULL keeps today's meaning: the requirement columns read live, exactly the old gate
+  (`criteria.tree_of`). `build_criteria_trees --apply` stores the trees (intake 5's CGPA trap
+  switches off there, not at deploy). The columns stay; the old admin form rebuilds a STORED tree
+  from them on a requirement save and leaves a NULL one NULL.
 - **Roles** (`PartnerAdmin.role`): super, org_admin, admin, reviewer, qc, finance, partner. Sponsors
   are a separate identity. Fences: `_AdminBase` (`_org_scoped` / `_org_allows`), the gift narrowing
   (`?programme=`), assignment for reviewers. Full matrix: `docs/scholarship/role-matrix.md`; review:

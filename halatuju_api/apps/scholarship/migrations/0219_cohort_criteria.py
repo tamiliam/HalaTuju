@@ -3,10 +3,13 @@ AND/OR tree (`apps.scholarship.criteria`), and the fill from today's columns.
 
 ADDITIVE: one NULLABLE JSON column, then a data step that stores `criteria.from_legacy(cohort)`
 (`criteria.build_trees`) on every intake whose `criteria` is NULL (on the `migrate` path, i.e. dev
-and test; production uses the hand SQL below and `build_criteria_trees`). NULL is SAFE ON ITS OWN: the gate
-reads it through `criteria.tree_of`, which builds the very same tree from the columns at read time,
-so an intake the fill has not reached (or one the old image creates between migrate and deploy)
-keeps its meaning. The requirement columns stay; nothing is dropped.
+and test; production uses the hand SQL below and `build_criteria_trees`). NULL KEEPS TODAY'S MEANING:
+the gate reads it through `criteria.tree_of`, which builds today's gate from the columns at read time
+(`from_legacy(cohort, keep_empty_spm=True)` = `shortlisting.evaluate_columns` exactly), so an intake
+the fill has not reached (or one the old image creates between migrate and deploy) decides exactly as
+before. It is NOT the tree the fill stores: on the CGPA-trap shape (intake 5: a PNGK floor and no SPM
+bar) the stored tree switches the SPM group off (owner ruling 2026-11-25), so intake 5 changes at the
+fill, never at the deploy. The requirement columns stay; nothing is dropped.
 
 The fill refuses WHOLE (ValueError naming intake ids and codes, nothing written) if any intake's tree
 fails `criteria.validate_tree` (a wrong-case birth state, a start-year list of junk only). Run
@@ -31,9 +34,11 @@ rewrite, no db_default needed (the old image never names the column, and NULL is
     INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0219_cohort_criteria', now());
     COMMIT;
 
-The hand SQL leaves every row NULL (= today's columns, read live). The fill is a SEPARATE, later step
-with its own yes: `python manage.py build_criteria_trees` (dry run, lists what it would store) then
-`--apply` (one transaction). It changes no outcome; it only makes the tree the stored source of truth.
+The hand SQL leaves every row NULL (= today's columns, read live; no decision moves). The fill is a
+SEPARATE, later step with its own yes: `python manage.py build_criteria_trees` (dry run, lists what it
+would store) then `--apply` (one transaction). It makes the tree the stored source of truth, and it
+is THE step that switches intake 5's CGPA trap off (class b in `replay_criteria`: an SPM-only student
+there moves from pass to refused); every other live intake keeps its outcomes.
 
 Post-check: `SELECT count(*) FROM scholarship_cohorts WHERE criteria IS NOT NULL` is 0 after the SQL,
 and the number of intakes after the fill.
@@ -106,7 +111,7 @@ class Migration(migrations.Migration):
                 migrations.AddField(
                     model_name='scholarshipcohort',
                     name='criteria',
-                    field=models.JSONField(blank=True, default=None, help_text="The intake's criteria tree (results, merit, income, born-in sections; course-start flag). NULL = read from the requirement columns.", null=True),
+                    field=models.JSONField(blank=True, default=None, help_text="The intake's criteria tree (results, merit, income, born-in sections; course-start flag). NULL keeps today's meaning: read live from the requirement columns.", null=True),
                 ),
             ],
         ),

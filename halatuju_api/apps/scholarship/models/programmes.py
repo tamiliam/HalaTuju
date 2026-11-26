@@ -386,12 +386,14 @@ class ScholarshipCohort(models.Model):
     )
     # Criteria editor Sprint 2 (2026-11-26): the intake's rules as ONE AND/OR tree
     # (`apps.scholarship.criteria`, shape in docs/decisions.md). The shortlisting gate reads it
-    # through `criteria.tree_of`: NULL = not built yet, read as `from_legacy` of the columns above,
-    # which stay (the old admin form still writes them and rebuilds this tree on save).
+    # through `criteria.tree_of`: NULL = not built yet, read as TODAY'S meaning of the columns
+    # above (`evaluate_columns` exactly; intake 5's CGPA trap switches only at
+    # `build_criteria_trees --apply`). The columns stay; the old admin form writes them and
+    # rebuilds this tree on save only where one is already stored.
     criteria = models.JSONField(
         null=True, blank=True, default=None,
         help_text="The intake's criteria tree (results, merit, income, born-in sections; course-start "
-                  "flag). NULL = read from the requirement columns.",
+                  "flag). NULL keeps today's meaning: read live from the requirement columns.",
     )
     # (TD-226, 2026-11: `bucket_b_margin` left the model, read by nothing. Its column stays in the
     # database until a later scholarship migration drops it (not 0212: that number went to

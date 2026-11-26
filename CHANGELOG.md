@@ -709,6 +709,15 @@ Invisible to users. Owner rulings of 26 Nov: intake 5 keeps its SPM group off; o
 - Part 2, model register: criteria, criteria_read, shortlisting, birth_state, results_route and verdict_context join the verdict engine's files; `VERDICT_ENGINE_VERSION` 2026-11-25.7 to 2026-11-26.1. results_route leaves the second-level known gaps; its filing helpers, the StpmCourse table and the register itself are recorded with reasons.
 - Part 2, tests: new `test_criteria_accessors.py` (each accessor equals its column reader for intakes 1, 3, 4, 5, programme 7 and edge shapes; the switched readers answer as before; the headroom at and around each line; fingerprints unchanged; a stored tree wins; a stored `{'all': []}` switches every reader off). `test_shortlisting.py` amended for ruling 1: clearing only the SPM boxes leaves the PNGK floor, so an SPM holder is refused; "no requirement at all" clears the floor too.
 - Part 2, not done (TD-772, narrowed): the silent model defaults and the remaining column readers. TD-771 sharpened, still open for the owner.
+- Review R1 fix (adversarial review): intake 5 changed at DEPLOY, not at `--apply`. `tree_of`'s NULL fallback built plain `from_legacy`, which drops the SPM group on intake 5's shape, so the gate switched as soon as the image went live. Now:
+  - `tree_of` reads a NULL row as today's gate: `from_legacy(cohort, keep_empty_spm=True)` (never stored; `validate_tree` refuses it). `build_trees` still stores plain `from_legacy`, so intake 5 switches only at `build_criteria_trees --apply`, with its own owner yes.
+  - `replay_criteria` judges a NULL row with the tree --apply would store (and validates that tree), not the fallback.
+  - Old admin form: a requirement save rebuilds the tree only where one is already STORED; a NULL row stays NULL, and a new year is created NULL (today's meaning, read live). Without this, a requirement save on intake 5 through the old form after deploy would have stored the switched-off tree with no --apply.
+  - Deploy notes: the deploy and the hand SQL change no decision. `build_criteria_trees --apply` is the step that moves intake 5 (class b). After --apply, a year the old form creates stays NULL until another --apply (TD-774).
+  - Migration 0219 docstring, `ScholarshipCohort.criteria` help_text (model and migration state), `build_criteria_trees` docstring, architecture.md and decisions.md now say "NULL keeps today's meaning".
+  - `VERDICT_ENGINE_VERSION` 2026-11-26.1 to 2026-11-26.2 (26.1 never went live).
+  - Tests: new `test_a_null_tree_is_todays_gate_exactly` (the live gate with `criteria` NULL equals `evaluate_columns` on the whole grid, intake 5's shape included); `test_criteria_storage.py`: the hold tests use a STORED tree, a NULL tree holds and changes nothing, create leaves NULL, a requirement save on a NULL row leaves it NULL; `test_shortlisting.py`: the floor-only shape passes with no stored tree and is refused with one.
+  - New TD-774: `tree_of` does not re-validate a stored tree (must validate on read before the Sprint 3 editor ships).
 
 ### Criteria editor S1: the criteria-tree engine and a read-only replay (2026-11-25, TD-722)
 

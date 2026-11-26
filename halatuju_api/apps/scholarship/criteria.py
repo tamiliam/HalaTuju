@@ -475,7 +475,8 @@ def from_legacy(cohort, keep_empty_spm=False):
       with no SPM bar (`has_spm_bar` false) has NO SPM group, so SPM-only students do not qualify.
       Today such an intake passes them (#921); intake 5 (bpb-deg-dip-2026) is the one live case.
       So `validate_tree(from_legacy(c))` never meets `VOID_SPM_DOOR`. ``keep_empty_spm=True`` keeps the
-      group (the replay's ``--plain`` view) for COMPARISON ONLY: that tree is the trap left on, and
+      group: the trap left on, i.e. TODAY'S gate. It is what `tree_of` reads for a NULL row (so a
+      deploy changes no decision) and the replay's ``--plain`` view. It is NEVER STORED:
       `validate_tree` refuses it.
     * Otherwise the SPM group is present whenever the results section is. No academic value at
       all -> no section.
@@ -484,8 +485,9 @@ def from_legacy(cohort, keep_empty_spm=False):
       (`start_year.rule_on` / `stored_years`) -> the flag. Empty -> none.
 
     ⚠ THE STORED TREE IS THE SOURCE OF TRUTH from Sprint 2. Only three callers build from the
-    columns: migration 0219 (`build_trees`), the NULL fallback (`tree_of`), and the OLD admin
-    form's save (`views_admin.intake_years`), which is still the only editor and can only express
+    columns: migration 0219 / `build_criteria_trees` (`build_trees`), the NULL fallback (`tree_of`,
+    with ``keep_empty_spm=True``), and the OLD admin form's save (`views_admin.intake_years`, only
+    on a row that already HAS a stored tree), which is still the only editor and can only express
     what the columns express. Once the criteria editor can store a tree the columns cannot say
     (an 'any' / 'all' choice, a merit for post-SPM holders), that form must stop rebuilding it -
     otherwise a save would undo the choice."""
@@ -525,20 +527,31 @@ tree_for_migration = from_legacy
 
 def tree_of(cohort):
     """The intake's rules as the gate reads them (Sprint 2): the STORED tree, else - ``criteria``
-    still NULL (a row the image before Sprint 2 created between migrate and deploy, or one not yet
-    built) - `from_legacy` of its columns, the same tree a build would store. ``{'all': []}`` is a
-    stored "nothing checked" and is never replaced."""
+    still NULL (not built yet: every row until ``build_criteria_trees --apply``, a row the image
+    before Sprint 2 created between migrate and deploy, a year the old form created) - TODAY'S
+    MEANING of its columns: `from_legacy(cohort, keep_empty_spm=True)`, which the equivalence grid
+    proves is the columns gate exactly (`test_plain_is_todays_gate_exactly`).
+
+    ⚠ NOT the tree a build stores. On the CGPA-trap shape (intake 5: a PNGK floor and no SPM bar)
+    the stored tree switches the SPM group OFF (owner ruling 2026-11-25), and that switch is
+    `build_criteria_trees --apply`'s, with its own owner yes - never a deploy's (adversarial review
+    R1, 2026-11-26). The fallback tree is never stored: `validate_tree` refuses it (`VOID_SPM_GROUP`).
+
+    ``{'all': []}`` is a stored "nothing checked" and is never replaced. A stored tree is NOT
+    re-validated here (TD-774)."""
     stored = getattr(cohort, 'criteria', None)
     # A dict only: a stub or a test double (a Mock answers every attribute) is read from its columns.
-    return stored if isinstance(stored, dict) else from_legacy(cohort)
+    return stored if isinstance(stored, dict) else from_legacy(cohort, keep_empty_spm=True)
 
 
 def build_trees(cohorts, save):
     """Sprint 2's fill: ``from_legacy`` for every intake whose ``criteria`` is NULL, refused whole
     (ValueError naming ids and codes, nothing written) when any tree fails `validate_tree`.
     ``save(cohort, tree)`` writes one row. Returns ``[(id, code)]`` filled. Used by migration
-    0219 and by the ``build_criteria_trees`` command (the old admin form rebuilds its own row with
-    `from_legacy` on every save - `views_admin.intake_years`)."""
+    0219 and by the ``build_criteria_trees`` command (the old admin form rebuilds an already-stored
+    row with `from_legacy` on a requirement save - `views_admin.intake_years`; a NULL row stays NULL).
+    Stores plain `from_legacy` - NOT `tree_of`'s NULL fallback - so intake 5's CGPA trap switches
+    off HERE (the owner's yes for --apply), never at deploy."""
     todo = [c for c in cohorts if getattr(c, 'criteria', None) is None]
     bad = refused_trees(todo)
     if bad:

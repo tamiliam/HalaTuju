@@ -9894,6 +9894,10 @@ or re-ask `pre_u_studied_at` when the completed tertiary kind changes. *(A - S)*
 
 **Raised in criteria Sprint 2 (see CHANGELOG).** Under ruling B a post-SPM holder on intakes 3 and 4 is never passed by their SPM grades, but the apply form does not say so. **Fix:** a hint on Step 3, after a Stitch mock-up and the owner's approval. *(A - S)*
 
+### [TD-774] Criteria Sprint 2: `tree_of` does not re-validate a stored tree - medium (before the Sprint 3 editor)
+
+**Raised in criteria Sprint 2's adversarial review R1 (see CHANGELOG).** `criteria.tree_of` returns whatever dict is stored in `ScholarshipCohort.criteria` and the gate evaluates it as is. Today only `build_criteria_trees` / migration 0219 and the old admin form write a tree, and both run `validate_tree` first, so nothing invalid can be stored. Once the Sprint 3 editor (or a hand SQL fix) can write a tree, a bad shape (a void SPM group, an unknown birth state, a malformed section) would reach the gate unchecked. Related: after the R1 fix the old form does not build a tree for a NULL row (a new year it creates stays NULL, read with today's meaning) - so a year created after `--apply` needs another `build_criteria_trees --apply` before its tree is stored. **Fix:** validate on read in `tree_of` (a refused stored tree is an error that reaches a person, never a silent fall back to the columns), and decide how the editor stores a new year's tree, before the Sprint 3 editor ships. *(A - S)*
+
 ### [TD-767] Pre-U sprint: the polytechnic list is empty - low
 
 **Raised in the pre-U sprint (see CHANGELOG).** `halatuju-web/src/data/polytechnics.ts` has no entries; no list of

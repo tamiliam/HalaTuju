@@ -57,9 +57,18 @@ def _requirements_from(data):
 
 
 def _rebuild_criteria(c):
-    """Set ``c.criteria`` to the tree its columns mean (`criteria.from_legacy`). Returns
-    `criteria.validate_tree`'s problems (nothing set when there are any). Never saves."""
+    """Set ``c.criteria`` to the tree its columns mean (`criteria.from_legacy`) - ONLY when the row
+    already HAS a stored tree. Returns `criteria.validate_tree`'s problems (nothing set when there
+    are any). Never saves.
+
+    ⚠ A NULL ROW STAYS NULL (adversarial review R1, 2026-11-26). The gate reads NULL as TODAY'S
+    meaning of the columns (`criteria.tree_of`), and storing `from_legacy` here would switch the
+    CGPA trap off on a save (intake 5: a PNGK floor and no SPM bar) - a decision change the owner
+    ruled belongs to `build_criteria_trees --apply` alone, with its own yes. So a new year, and a
+    save on an intake not yet built, keep reading the columns live (they are always current)."""
     from .. import criteria
+    if c.criteria is None:
+        return []
     tree = criteria.from_legacy(c)
     problems = criteria.validate_tree(tree)
     if not problems:
@@ -158,8 +167,9 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
             programme=p, owning_organisation=p.organisation,
             code=code, name=name, year=year, is_active=True, is_open=False, **reqs, **window,
         )
-        # Criteria Sprint 2: the gate reads the TREE. Built from the very columns just set (model
-        # defaults included), so the new year means exactly what its requirement boxes say.
+        # Criteria Sprint 2: a new year is created with NO stored tree (`_rebuild_criteria` leaves
+        # NULL as NULL), so the gate reads its requirement boxes live with today's meaning
+        # (`criteria.tree_of`); `build_criteria_trees --apply` stores its tree later (TD-774).
         problems = _rebuild_criteria(c)
         if problems:
             return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': 'criteria'},
@@ -221,10 +231,11 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
         moved = {f: (getattr(c, f), v) for f, v in reqs.items() if getattr(c, f) != v}
         for f, v in reqs.items():
             setattr(c, f, v); changed.append(f)
-        if reqs:
+        if reqs and c.criteria is not None:
             # Criteria Sprint 2: this form is still the only editor, so a save of its boxes
-            # REBUILDS the stored tree from the columns (`criteria.from_legacy`) - otherwise the gate,
+            # REBUILDS a STORED tree from the columns (`criteria.from_legacy`) - otherwise the gate,
             # which reads the tree, would keep the old bar while the screen shows the new one.
+            # A NULL tree is left NULL: the gate already reads the new boxes live (R1 fix).
             if _rebuild_criteria(c):
                 return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': 'criteria'},
                                 status=status.HTTP_400_BAD_REQUEST)

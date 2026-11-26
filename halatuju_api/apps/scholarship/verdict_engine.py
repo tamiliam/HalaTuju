@@ -117,7 +117,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-25.6 — merge train (2026-11-25): TD-718 (.5) rebased onto request #78 (2026-11-23.1), which merged first; the source now holds both, no rule change of its own.
 #   2026-11-25.7 — request #85 (landed on the 21:00 train with TD-718): salary_doc 1.3.0 — a payslip with >=2 statutory deductions and no wage label now reads genuine/private, so the mother's/father's income proof counts for the same documents. The verdict engine's own files are unchanged (same digest as 2026-11-25.6).
 #   2026-11-26.1 — criteria editor Sprint 2: the gate files (criteria, criteria_read, shortlisting, birth_state, results_route, verdict_context) join the register; the readers outside the gate read the stored criteria tree through criteria_read (the columns when none is stored). Same answers today: the tree is built from the columns. The intake-5 class is the only ruled change (part 1).
-VERDICT_ENGINE_VERSION = '2026-11-26.1'   # criteria S2: gate files registered (above).
+#   2026-11-26.2 — criteria Sprint 2, adversarial review R1: a NULL criteria tree is read as TODAY'S gate (criteria.tree_of falls back to from_legacy with keep_empty_spm=True, the columns gate exactly), so the deploy changes no decision; intake 5's CGPA trap switches off only when build_criteria_trees --apply stores the tree. The old admin form rebuilds only an already-stored tree.
+VERDICT_ENGINE_VERSION = '2026-11-26.2'   # criteria S2 R1: NULL tree = today's gate (above).
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

@@ -67,5 +67,10 @@
     "digest": "40af5667e3ca0d64921cf719b2b40e16533661704bc1026e771a5c0a909e25c3",
     "note": "Criteria editor Sprint 2 (part 2): the gate files join the register (criteria, criteria_read, shortlisting, birth_state, results_route, verdict_context). The gate already reads the stored criteria tree (part 1); the readers outside it (results_route.gift_asks_higher, income_engine.amounts income_test_configured and income_headroom, verdict_context.intake_values, the born-in surfaces through birth_state.cohort_rule) now read the same tree through criteria_read, falling back to the columns when no tree is stored. The tree is built from the columns (from_legacy), so every verdict answer and every evidence fingerprint is unchanged (test_criteria_accessors: cohorts 1, 3, 4, 5, programme 7). The only gate answer change in the sprint is the owner-ruled intake-5 class (part 1). TD-771 (exactly at the per-person line) kept as is for the owner.",
     "also_ok": []
+  },
+  "2026-11-26.2": {
+    "digest": "e0a1d4a32c0308e54c4e2e32bd02081da28d14e40e4499fcc254743a0fd44a8c",
+    "note": "Criteria editor Sprint 2, adversarial review R1 (2026-11-26.1 never went live): a NULL criteria tree is read as TODAY'S gate - criteria.tree_of falls back to from_legacy(cohort, keep_empty_spm=True), the columns gate exactly on the whole equivalence grid (test_a_null_tree_is_todays_gate_exactly) - so the deploy changes no decision. Intake 5's CGPA trap (a PNGK floor, no SPM bar) switches off only when build_criteria_trees --apply stores plain from_legacy, with its own owner yes. The old admin form rebuilds only an already-stored tree; a NULL row (and a new year) stays NULL. The replay judges a NULL row with the tree --apply would store.",
+    "also_ok": []
   }
 }

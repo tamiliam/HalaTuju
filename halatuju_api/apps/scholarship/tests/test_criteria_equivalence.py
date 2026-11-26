@@ -181,6 +181,21 @@ class TestEquivalence(SimpleTestCase):
         found = _run(keep_empty_spm=True)
         self.assertEqual(set(found), {'same'}, {k: v[:5] for k, v in found.items() if k != 'same'})
 
+    def test_a_null_tree_is_todays_gate_exactly(self):
+        # Adversarial review R1 (2026-11-26): with `criteria` NULL - every live row from deploy until
+        # `build_criteria_trees --apply` - the LIVE gate (`shortlisting.evaluate`, through `tree_of`)
+        # must be the columns gate exactly, on every shape, intake 5's (a floor, no SPM bar) included.
+        # Intake 5's switch belongs to --apply alone.
+        diffs = []
+        for (cname, c), r, i, n in itertools.product(COHORTS.items(), RESULTS, INCOME, NRICS):
+            null = SimpleNamespace(**{**vars(c), 'criteria': None})
+            a = _app(r, i, n)
+            if shortlisting.evaluate(a, null) != shortlisting.evaluate_columns(a, null):
+                diffs.append((cname, r, i, n))
+        self.assertEqual(diffs, [], diffs[:5])
+        # ...while the tree --apply stores DOES move intake 5 (so the grid is not vacuous).
+        self.assertTrue(_run()[CLASS_B])
+
     def test_the_hard_gates_agree(self):
         for gates in (dict(consent_to_contact=False), dict(intends_tertiary_2026=False), dict(upu_status='ipts')):
             for cname, c in COHORTS.items():

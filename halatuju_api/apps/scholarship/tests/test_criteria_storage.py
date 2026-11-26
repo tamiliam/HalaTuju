@@ -1,9 +1,10 @@
 """Criteria editor Sprint 2 - the stored tree (`ScholarshipCohort.criteria`).
 
-Proves: a NULL tree means the columns (`tree_of` falls back to `from_legacy`); the gate
-(`shortlisting.evaluate`) reads the STORED tree; migration 0219's fill and `build_criteria_trees` store
-`from_legacy` on NULL rows only and refuse whole; `rescore_pending_decisions` HOLDS an already-scored
-decision the tree would change (owner ruling 6); and the old admin form rebuilds the tree on save."""
+Proves: a NULL tree keeps today's meaning (`tree_of` falls back to `from_legacy(keep_empty_spm=True)`,
+the columns gate exactly); the gate (`shortlisting.evaluate`) reads the STORED tree; migration 0219's
+fill and `build_criteria_trees` store `from_legacy` on NULL rows only and refuse whole;
+`rescore_pending_decisions` HOLDS an already-scored decision a STORED tree would change (owner ruling
+6); and the old admin form rebuilds a stored tree on save but leaves a NULL one NULL (review R1)."""
 import importlib
 from io import StringIO
 
@@ -45,7 +46,7 @@ class TestTheGateReadsTheStoredTree(TestCase):
 
     def test_null_means_the_columns(self):
         self.assertIsNone(self.cohort.criteria)
-        self.assertEqual(criteria.tree_of(self.cohort), criteria.from_legacy(self.cohort))
+        self.assertEqual(criteria.tree_of(self.cohort), criteria.from_legacy(self.cohort, keep_empty_spm=True))
         self.assertEqual(shortlisting.evaluate(self.low, self.cohort),
                          shortlisting.evaluate_columns(self.low, self.cohort))
         self.assertEqual(shortlisting.evaluate(self.low, self.cohort).verdict, 'rejected')
@@ -112,9 +113,24 @@ class TestRescoreHoldsWhatTheTreeWouldChange(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        # intake 5's shape: a PNGK floor and no SPM bar (the CGPA trap, switched off by the tree)
+        # intake 5's shape: a PNGK floor and no SPM bar (the CGPA trap, switched off by the STORED
+        # tree - what `build_criteria_trees --apply` writes; a NULL row keeps today's meaning)
         cls.degree = make_cohort(code='deg-shape', min_stpm_pngk=3.0, min_spm_a_count=None,
                                  min_spm_bplus_count=None, income_ceiling=5860, per_capita_ceiling=1584)
+        ScholarshipCohort.objects.filter(pk=cls.degree.pk).update(criteria=criteria.from_legacy(cls.degree))
+        cls.degree.refresh_from_db()
+
+    def test_a_null_tree_changes_nothing_before_the_apply(self):
+        # Adversarial review R1: the deploy must not switch intake 5. With criteria NULL the gate is
+        # today's gate, so rescoring holds and changes nothing.
+        ScholarshipCohort.objects.filter(pk=self.degree.pk).update(criteria=None)
+        self.degree.refresh_from_db()
+        app = _apply(self.degree, exam_type='spm', grades=STRONG)
+        self.assertEqual(shortlisting.evaluate(app, self.degree), shortlisting.evaluate_columns(app, self.degree))
+        self.assertEqual(shortlisting.evaluate(app, self.degree).verdict, 'shortlisted')
+        score_application(app)
+        result = rescore_pending_decisions()
+        self.assertEqual((result['held'], result['changed']), ([], []))
 
     def test_an_already_scored_class_b_decision_is_held_and_untouched(self):
         app = _apply(self.degree, exam_type='spm', grades=STRONG)
@@ -166,14 +182,29 @@ class TestTheOldFormRebuildsTheTree(TestCase):
     def _year(self, c):
         return f'/api/v1/admin/scholarship/intake-years/{c.id}/'
 
-    def test_create_stores_the_tree_its_boxes_mean(self):
+    def test_create_leaves_the_tree_null_so_the_boxes_keep_todays_meaning(self):
+        # Adversarial review R1: the old form never turns a NULL row into a stored tree (that would
+        # switch the CGPA trap off on intake 5's shape without the --apply yes).
         r = self.client.post(f'/api/v1/admin/scholarship/programmes/{self.programme.id}/years/',
-                             {'code': 'form-new', 'name': 'form-new', 'year': 2027, 'min_stpm_pngk': 2.5},
+                             {'code': 'form-new', 'name': 'form-new', 'year': 2027, 'min_stpm_pngk': 2.5,
+                              'min_spm_a_count': None, 'min_spm_bplus_count': None},
                              format='json')
         self.assertEqual(r.status_code, 201)
         c = ScholarshipCohort.objects.get(code='form-new')
-        self.assertIsNotNone(c.criteria)
-        self.assertEqual(c.criteria, criteria.from_legacy(c))
+        self.assertIsNone(c.criteria)
+        self.assertEqual(criteria.tree_of(c), criteria.from_legacy(c, keep_empty_spm=True))
+
+    def test_a_requirement_change_on_a_null_row_leaves_it_null(self):
+        c = make_cohort(programme=self.programme, is_active=True, is_open=False, code='form-null',
+                        min_stpm_pngk=2.0, min_spm_a_count=None, min_spm_bplus_count=None)
+        r = self.client.patch(self._year(c), {'min_stpm_pngk': 3.0}, format='json')
+        self.assertEqual(r.status_code, 200)
+        c.refresh_from_db()
+        self.assertEqual(c.min_stpm_pngk, 3.0)
+        self.assertIsNone(c.criteria)
+        groups = criteria.tree_of(c)['all'][0]['own']
+        self.assertEqual([g['route'] for g in groups], ['post_spm', 'spm'])   # the trap stays on
+        self.assertEqual(groups[0]['all'][0]['value'], 3.0)
 
     def test_a_requirement_change_rebuilds_and_a_name_change_does_not(self):
         c = make_cohort(programme=self.programme, is_active=True, is_open=False, code='form-old',

@@ -294,8 +294,9 @@ def evaluate(application, cohort):
     """Return a ShortlistResult for the application against the intake's criteria TREE.
 
     Criteria editor Sprint 2: the gate reads `ScholarshipCohort.criteria` (`criteria.tree_of`: the
-    stored tree, or - while it is NULL - the tree built from the old columns, so a row the old
-    server wrote keeps its meaning). The columns gate below stays as `evaluate_columns`: the
+    stored tree, or - while it is NULL - today's meaning of the old columns, exactly
+    `evaluate_columns`; so the deploy changes no decision, and intake 5's switch waits for
+    `build_criteria_trees --apply`). The columns gate below stays as `evaluate_columns`: the
     replay's yardstick and the guard in `rescore_pending_decisions` (owner ruling 6)."""
     from . import criteria     # criteria imports this module at the top
     return criteria.evaluate(application, criteria.tree_of(cohort))

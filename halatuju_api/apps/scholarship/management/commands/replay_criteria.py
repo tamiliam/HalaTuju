@@ -1,6 +1,7 @@
-"""READ-ONLY: the old columns gate (`shortlisting.evaluate_columns`) against the criteria tree
-the gate now reads (`criteria.tree_of`: the STORED tree, or the columns' tree while it is NULL), per
-intake.
+"""READ-ONLY: the old columns gate (`shortlisting.evaluate_columns`) against the criteria tree, per
+intake: the STORED tree, or - while it is NULL - the tree `build_criteria_trees --apply` WOULD store
+(`criteria.from_legacy`). A NULL row's live gate (`criteria.tree_of`) is today's gate exactly, so the
+run shows what --apply would change, not what the gate does today.
 
 Criteria editor Sprint 1 (2026-11-25), extended in Sprint 2 (2026-11-26). For every application with
 an intake, both engines judge the same live profile. Each intake line says where its tree came from
@@ -23,8 +24,8 @@ and 4 - and Sprint 1's classes a1 / a2 no longer exist; any such pass is `unexpe
 
 Anything else is `unexpected` (or `reason_only` when only the wording moved) and is a bug in
 the engine until shown otherwise. The course-start flag is compared too (`start_year.reading`
-against the tree's flag); a differing flag needs a look. Every intake's tree (`tree_of`) is also put
-through `criteria.validate_tree`; a refused tree (a wrong-case birth state, junk-only start years)
+against the tree's flag); a differing flag needs a look. Every intake's tree (stored, or the one
+--apply would store) is also put through `criteria.validate_tree`; a refused tree (a wrong-case birth state, junk-only start years)
 is listed by id and code and needs a look.
 
 ⚠ PRIVACY: prints intake ids / codes, statuses, counts and application ids ONLY - never a name,
@@ -93,8 +94,9 @@ def replay(cohort_codes=None, plain=False):
     """``{cohort_id: {'code', 'total', 'source', 'stored_differs', 'classes': Counter, 'flags': Counter,
     'refused': [problems], 'ids': {class: {'pending'|'decided': [ids]}}, 'statuses': {class: Counter}}}``.
     Pure reads. ``source`` is 'stored' or 'columns' (`criteria.tree_of`); ``stored_differs`` is True when
-    a stored tree is not `from_legacy(cohort)`. ``refused`` is `validate_tree(tree_of(cohort))`, whatever
-    ``plain`` says. An unknown intake code raises CommandError."""
+    a stored tree is not `from_legacy(cohort)`. ``refused`` is `validate_tree` of the stored tree, or of
+    `from_legacy(cohort)` while NULL (what --apply would store), whatever ``plain`` says. An unknown
+    intake code raises CommandError."""
     cohorts = ScholarshipCohort.objects.all().order_by('id')
     if cohort_codes:
         cohorts = cohorts.filter(code__in=cohort_codes)
@@ -103,13 +105,16 @@ def replay(cohort_codes=None, plain=False):
             raise CommandError(f'unknown intake code(s): {", ".join(missing)}')
     out = {}
     for cohort in cohorts:
-        gate_tree = criteria.tree_of(cohort)
-        tree = criteria.from_legacy(cohort, keep_empty_spm=True) if plain else gate_tree
         stored = getattr(cohort, 'criteria', None)
+        # The tree to judge: the STORED one, or - while NULL - the one `build_criteria_trees --apply`
+        # WOULD store (`from_legacy`), so the run shows what --apply changes. NOT `tree_of`'s NULL
+        # fallback: that is today's gate exactly (keep_empty_spm) and `validate_tree` refuses it.
+        target = stored if isinstance(stored, dict) else criteria.from_legacy(cohort)
+        tree = criteria.from_legacy(cohort, keep_empty_spm=True) if plain else target
         row = {'code': cohort.code, 'total': 0, 'classes': Counter(), 'flags': Counter(),
                'source': 'stored' if stored is not None else 'columns',
                'stored_differs': stored is not None and stored != criteria.from_legacy(cohort),
-               'refused': criteria.validate_tree(gate_tree),
+               'refused': criteria.validate_tree(target),
                'ids': defaultdict(lambda: {'pending': [], 'decided': []}), 'statuses': defaultdict(Counter)}
         apps = (ScholarshipApplication.objects.filter(cohort=cohort)
                 .select_related('profile', 'cohort').order_by('id'))
