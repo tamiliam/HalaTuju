@@ -11,6 +11,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from .. import birth_state, credit_steps
+from ..criteria import StoredTreeRefused
 from .. import pool
 from ..models import Donation, ScholarshipApplication, Sponsor, Sponsorship
 from ..services.decline import held_decline_restore_target
@@ -132,6 +133,9 @@ _HELD_BY_HELD_DECLINE = ('This student has a decline on hold that would return t
                          'Recommended on an intake with a "Born in" rule. Let the decline go, or '
                          'cancel it first, then release the lock.')
 
+_HELD_BY_RULES_ERROR = ('This student has an application on an intake whose stored entry rules '
+                        'could not be read. Fix the rules of that intake first, then release the lock.')
+
 
 def _held_by_birth_state_rule(profile):
     """Why the IC lock may not be released (TD-371), or '' when it may. Read through
@@ -149,7 +153,14 @@ def _held_by_birth_state_rule(profile):
                   .filter(profile=profile, status__in=('recommended', 'rejected'))
                   .select_related('cohort'))
     for a in candidates:
-        if not birth_state.stored_keys(birth_state.cohort_rule(a.cohort)):
+        try:
+            rule = birth_state.cohort_rule(a.cohort)
+        except StoredTreeRefused:
+            # TD-774 (Sprint 3b): an intake whose STORED criteria tree is refused cannot say
+            # whether it has a "Born in" rule. Hold the lock and say why (the refusal is already
+            # logged at ERROR by `tree_of`) - never a server error, never a silent release.
+            return _HELD_BY_RULES_ERROR
+        if not birth_state.stored_keys(rule):
             continue
         if a.status == 'recommended':
             return _HELD_BY_RECOMMENDED

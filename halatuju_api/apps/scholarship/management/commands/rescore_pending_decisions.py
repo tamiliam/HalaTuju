@@ -26,3 +26,9 @@ class Command(BaseCommand):
                 f"HELD (stored decision kept; the criteria tree would decide differently): "
                 f"{len(result['held'])} → {result['held']}"
             )
+        if result.get('refused_intakes'):
+            # TD-774 (criteria Sprint 3b): an intake whose stored rules are refused is skipped whole.
+            self.stderr.write(
+                f"SKIPPED (stored entry rules refused; no row of these intakes re-scored): "
+                f"{result['refused_intakes']}"
+            )

@@ -155,6 +155,7 @@ describe('rejectionChip (owner 2026-11-23): the ONE second chip, labelled from t
     ['interview', 'admin.scholarship.rejectionChip.interview'],
     ['qc', 'admin.scholarship.rejectionChip.qc'],
     ['contractual', 'admin.scholarship.rejectionChip.contractual'],
+    ['rules_error', 'admin.scholarship.rejectionChip.rules_error'],
     ['ineligible', 'admin.scholarship.reject.category.ineligible'],
   ])('%s -> %s', (code, key) => {
     expect(rejectionChip({ rejection_chip: code })).toBe(key)

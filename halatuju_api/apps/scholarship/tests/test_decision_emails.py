@@ -7,6 +7,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.courses.models import StudentProfile
+from apps.scholarship.criteria_new import FORMER_MODEL_DEFAULTS
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import score_application, rescore_pending_decisions
 
@@ -127,7 +128,8 @@ class TestSilentScoring(TestCase):
 
     def test_score_sets_verdict_and_due_at_per_verdict(self):
         cohort = ScholarshipCohort.objects.create(
-            code='b40-x', name='X', year=2026, success_delay_hours=2, decline_delay_hours=48)
+            code='b40-x', name='X', year=2026, success_delay_hours=2, decline_delay_hours=48,
+            **FORMER_MODEL_DEFAULTS)   # the old model-default bars, stated (criteria Sprint 3b)
         # Shortlisted: STR + at-floor grades (4 A + 1 B+) → due after the ORGANISATION's
         # `shortlist_email_delay_minutes`. ⚠ SUPERSEDED 2026-10-07 (org-timing Sprint 1): this
         # used to assert the cohort's own `success_delay_hours=2`. The delay is an organisation

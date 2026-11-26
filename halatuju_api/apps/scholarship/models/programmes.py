@@ -321,18 +321,20 @@ class ScholarshipCohort(models.Model):
     # wins, silently. One column cannot. The admin screen ticks a box by writing a value and
     # unticks it by clearing one.
     #
-    # Defaults are kept so that existing rows and every test fixture behave exactly as before —
-    # a NEW cohort still arrives with the flagship's floor and is edited from there.
+    # ⚠ NO DEFAULT BARS (criteria Sprint 3b, TD-772, 2026-11-26). Until then a NEW intake silently
+    # arrived with the flagship's bars (4 / 5 / 2.9 / RM1,584) whatever its creator meant; now a
+    # value left blank is NO rule. Existing rows kept their stored values (migration 0220 is
+    # state-only). The test factory and harnesses state the old bars (`criteria_new.FORMER_MODEL_DEFAULTS`).
     min_spm_a_count = models.IntegerField(
-        null=True, blank=True, default=4,
+        null=True, blank=True,
         help_text="Minimum SPM grades at A- or better (A+/A/A- all count). NULL = not applied.",
     )
     min_spm_bplus_count = models.IntegerField(
-        null=True, blank=True, default=5,
+        null=True, blank=True,
         help_text="Minimum SPM grades at B+ or better — the TOTAL strong count, not the extra "
                   "beyond the A's (4 A- plus 1 more B+ is stored as 5). NULL = not applied.",
     )
-    # Request #30 (2026-10-06). ⚠ NO DEFAULT, UNLIKE THE TWO ABOVE: it arrived blank on every
+    # Request #30 (2026-10-06). ⚠ NO DEFAULT (the two above lost theirs in Sprint 3b): it arrived blank on every
     # existing intake year, and a new one starts blank too, so nobody's eligibility moves until an
     # admin types a number.
     min_spm_credit_count = models.IntegerField(
@@ -342,7 +344,7 @@ class ScholarshipCohort(models.Model):
                   "NULL = not applied.",
     )
     min_stpm_pngk = models.FloatField(
-        null=True, blank=True, default=2.9,
+        null=True, blank=True,
         help_text="Minimum STPM PNGK. NULL = not applied.",
     )
     min_merit_score = models.FloatField(
@@ -358,7 +360,7 @@ class ScholarshipCohort(models.Model):
                   "NULL together with per_capita_ceiling = the financial test is not applied.",
     )
     per_capita_ceiling = models.IntegerField(
-        null=True, blank=True, default=1584,
+        null=True, blank=True,
         help_text="Per-capita monthly income ceiling in RM (household_income / household_size). "
                   "SAFETY NET only — applies to non-STR applicants whose gross income is ABOVE income_ceiling, "
                   "rescuing large households. RM5,860 B40 ceiling / 3.7 avg household = RM1,584 (DOSM 2024). "

@@ -132,7 +132,11 @@ class Command(BaseCommand):
         )
 
         guar_name, guar_nric, guar_phone = 'Rahmah Binti Ahmad', '700101-10-5555', '013-1112222'
-        cohort = ScholarshipCohort.objects.create(code='e2e', name='B40 E2E', year=2026)
+        # The bars the model used to default (criteria Sprint 3b removed them), stated so the walk
+        # keeps its meaning; its tree stays NULL (read live from these columns, `criteria.tree_of`).
+        from apps.scholarship.criteria_new import FORMER_MODEL_DEFAULTS
+        cohort = ScholarshipCohort.objects.create(code='e2e', name='B40 E2E', year=2026,
+                                                  **FORMER_MODEL_DEFAULTS)
 
         # The org that OWNS the student + the contract template. Distinct from the
         # referring partner (the witness) below. Seed + deploy a template so the

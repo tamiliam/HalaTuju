@@ -39,7 +39,11 @@ def build_doc_fixture(doc_type, snap=None, ctx=None):
     from apps.courses.models import StudentProfile
     from .models import ScholarshipApplication, ScholarshipCohort, ApplicantDocument
     ctx = ctx or {}
-    cohort = ScholarshipCohort.objects.create(code=f'eval-{uuid.uuid4().hex[:8]}', name='eval', year=2026)
+    # The bars the model used to default (criteria Sprint 3b removed them), stated so the eval
+    # verdicts keep their meaning.
+    from .criteria_new import FORMER_MODEL_DEFAULTS
+    cohort = ScholarshipCohort.objects.create(code=f'eval-{uuid.uuid4().hex[:8]}', name='eval', year=2026,
+                                              **FORMER_MODEL_DEFAULTS)
     profile = StudentProfile.objects.create(
         supabase_user_id=f'eval-{uuid.uuid4()}',
         nric=ctx.get('profile_nric', '') or '',
@@ -97,7 +101,11 @@ def build_application_with_docs(app_ctx, docs, profile_fields=None, app_fields=N
     from apps.courses.models import StudentProfile
     from .models import ScholarshipApplication, ScholarshipCohort, ApplicantDocument
     app_ctx = app_ctx or {}
-    cohort = ScholarshipCohort.objects.create(code=f'eval-{uuid.uuid4().hex[:8]}', name='eval', year=2026)
+    # The bars the model used to default (criteria Sprint 3b removed them), stated so the eval
+    # verdicts keep their meaning.
+    from .criteria_new import FORMER_MODEL_DEFAULTS
+    cohort = ScholarshipCohort.objects.create(code=f'eval-{uuid.uuid4().hex[:8]}', name='eval', year=2026,
+                                              **FORMER_MODEL_DEFAULTS)
     profile = StudentProfile(
         supabase_user_id=f'eval-{uuid.uuid4()}',
         nric=app_ctx.get('profile_nric', '') or '', name=app_ctx.get('profile_name', '') or '')

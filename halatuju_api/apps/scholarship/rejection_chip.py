@@ -25,11 +25,12 @@ The codes (the web's `lib/applicationStatus.rejectionChipKey` labels them):
 ⚠ THE LIST NEVER ASKS PER ROW. `qc_rejected_ids` reads the qc rows for a whole page in ONE query,
 and only for the page's `interview` declines; the list view hands the set to its serializer.
 """
+from .criteria import StoredTreeRefused
 from . import birth_state
 
 #: The chip codes, in the order the Guide lists them.
 CHIPS = ('merit', 'need', 'state', 'ineligible', 'shortlisted', 'before_interview', 'interview',
-         'qc', 'contractual')
+         'qc', 'contractual', 'rules_error')
 
 _SIMPLE = {'merit': 'merit', 'need': 'need', 'incomplete': 'shortlisted',
            'pre_interview': 'before_interview', 'contractual': 'contractual'}
@@ -74,8 +75,14 @@ def chip(app, qc_rejected=None):
     `qc_rejected_ids`; omitted, this one case is looked up (the cockpit's single read)."""
     if app.status != 'rejected':
         profile = getattr(app, 'profile', None)
-        fails = birth_state.meets_rule(getattr(profile, 'nric', '') if profile else '',
-                                       birth_state.cohort_rule(app.cohort)) is False
+        try:
+            rule = birth_state.cohort_rule(app.cohort)
+        except StoredTreeRefused:
+            # TD-774 (Sprint 3b): an intake whose STORED criteria tree is refused fails THIS ROW,
+            # visibly ('rules_error', the refusal already logged at ERROR by `tree_of`) - never
+            # the whole application list, which serves every intake's cases on one page.
+            return 'rules_error'
+        fails = birth_state.meets_rule(getattr(profile, 'nric', '') if profile else '', rule) is False
         return 'state' if fails else ''
     category = app.rejection_category or ''
     if category in _SIMPLE:

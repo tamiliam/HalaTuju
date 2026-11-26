@@ -61,7 +61,7 @@ export const SYNTHETIC_STATUSES = ['reopened'] as const
  *  drift-test: halatuju-web/src/lib/__tests__/applicationStatusDrift.test.ts */
 export const REJECTION_CHIPS = [
   'merit', 'need', 'state', 'ineligible', 'shortlisted', 'before_interview', 'interview', 'qc',
-  'contractual',
+  'contractual', 'rules_error',
 ] as const
 
 /** The i18n key of the ONE chip shown beside a case's status (case header, list table, phone

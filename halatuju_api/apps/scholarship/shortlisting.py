@@ -282,15 +282,21 @@ def _income_ok(profile, cohort):
         return False, '', f'income RM{inc:.0f} > RM{ceiling}'
     size = getattr(profile, 'household_size', None) if profile else None
     if not size or size <= 0:
-        return False, '', (f'income RM{inc:.0f} > RM{ceiling} '
-                           f'and household size not provided')
+        return False, '', f'{income_above(inc, ceiling)} and household size not provided'
     per_capita = inc / size
     if per_capita < pc_ceiling:
         above = f' > RM{ceiling} but' if ceiling is not None else ','
         return True, 'B', (f'income RM{inc:.0f}{above} per-capita '
                            f'RM{per_capita:.0f} < RM{pc_ceiling} (per-person line)')
-    return False, '', (f'income RM{inc:.0f} > RM{ceiling} and per-capita '
+    return False, '', (f'{income_above(inc, ceiling)} and per-capita '
                        f'RM{per_capita:.0f} >= RM{pc_ceiling}')
+
+
+def income_above(inc, ceiling):
+    """The opening of an income refusal: "income RM X > RM <household line>", or - a gift with
+    only a per-person line (criteria Sprint 3b) - "income RM X" alone, never "> RMNone". Shared
+    with `criteria.income_ok`, so both gates word a refusal identically (replay_criteria compares)."""
+    return f'income RM{inc:.0f} > RM{ceiling}' if ceiling is not None else f'income RM{inc:.0f}'
 
 
 def evaluate(application, cohort):

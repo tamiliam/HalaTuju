@@ -4,6 +4,7 @@ Resolving a programme/round, creating an application, scoring and releasing it.
 Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+import logging
 from datetime import timedelta
 
 from django.utils import timezone
@@ -15,6 +16,8 @@ from ..models import ScholarshipApplication, ScholarshipCohort
 from ..shortlisting import evaluate
 from .errors import AmbiguousOpenCohort
 from .profile_sync import _APP_FIELDS, build_intake_snapshot, sync_profile_fields
+
+logger = logging.getLogger('apps.scholarship.services')
 
 
 
@@ -352,15 +355,31 @@ def rescore_pending_decisions():
     verdict is what the old columns gate still says, but which the tree would decide differently
     (today only intake 5's SPM-only students, the CGPA trap switched off) is HELD: not re-scored,
     its stored decision kept, its id listed under 'held' for a person to look at. Never silent.
-    A fresh scoring (submit, or an unscored row) always uses the tree."""
+    A fresh scoring (submit, or an unscored row) always uses the tree.
+
+    TD-774 (criteria Sprint 3b): an intake whose STORED tree is refused (`StoredTreeRefused`) is
+    checked BEFORE any of its rows is touched and skipped WHOLE - logged at ERROR, listed under
+    'refused_intakes' ({id, code}) - and the other intakes carry on. Never half-applied."""
+    from ..criteria import StoredTreeRefused, tree_of
     from ..shortlisting import evaluate_columns
     pending = list(
         ScholarshipApplication.objects
         .filter(status='submitted', decision_released_at__isnull=True)
         .select_related('cohort', 'profile', 'owning_organisation__configuration')
     )
-    changed, held = [], []
+    changed, held, refused, refused_ids, skipped = [], [], [], set(), 0
+    for cohort in {a.cohort_id: a.cohort for a in pending if a.cohort_id}.values():
+        try:
+            tree_of(cohort)
+        except StoredTreeRefused:
+            logger.error('rescore_pending_decisions: intake %s (%s) skipped whole: its stored '
+                         'criteria tree is refused', cohort.id, cohort.code)
+            refused.append({'id': cohort.id, 'code': cohort.code})
+            refused_ids.add(cohort.id)
     for application in pending:
+        if application.cohort_id in refused_ids:
+            skipped += 1
+            continue
         before = application.verdict
         if before:
             new = evaluate(application, application.cohort)
@@ -374,4 +393,5 @@ def rescore_pending_decisions():
                 'id': application.id, 'from': before or '(unscored)',
                 'to': result.verdict, 'reason': result.reason,
             })
-    return {'rescored': len(pending) - len(held), 'changed': changed, 'held': held}
+    return {'rescored': len(pending) - len(held) - skipped, 'changed': changed, 'held': held,
+            'refused_intakes': refused}

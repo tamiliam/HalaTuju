@@ -24,8 +24,8 @@ order: consent, intent, IPTS, born in, D5, results, income - exactly `shortlisti
 
 ⚠ Reasons and categories are byte-identical to `shortlisting.evaluate` for every legacy shape
 (`from_legacy`), outside the two owner-ruled differences (decisions.md 2026-11-25), because a reviewer and the decline email read them. The formatting therefore
-keeps today's quirks on purpose ("3 at A- (need 4)" has no "or better"; "RMNone" when only the
-per-person ceiling is set). Sprint 2 removes the duplication by making `shortlisting` call this.
+keeps today's quirks on purpose ("3 at A- (need 4)" has no "or better"). The old "> RMNone" for a
+gift with only a per-person line is gone from both gates (Sprint 3b, `shortlisting.income_above`). Sprint 2 removes the duplication by making `shortlisting` call this.
 """
 import logging
 
@@ -34,7 +34,7 @@ from apps.courses import public as courses_public
 from . import start_year as _start_year
 from .birth_state import STATE_KEYS, stored_keys
 from .birth_state import check as check_birth_state
-from .shortlisting import ShortlistResult, _count, spm_merit
+from .shortlisting import ShortlistResult, _count, income_above, spm_merit
 
 logger = logging.getLogger(__name__)
 
@@ -381,12 +381,12 @@ def income_ok(profile, section):
     if pc_ceiling is None:
         return False, '', f'income RM{inc:.0f} > RM{ceiling}'
     if not size or size <= 0:
-        return False, '', f'income RM{inc:.0f} > RM{ceiling} and household size not provided'
+        return False, '', f'{income_above(inc, ceiling)} and household size not provided'
     per_capita = inc / size
     if per_capita < pc_ceiling:
         above = f' > RM{ceiling} but' if ceiling is not None else ','
         return True, 'B', f'income RM{inc:.0f}{above} per-capita RM{per_capita:.0f} < RM{pc_ceiling} (per-person line)'
-    return False, '', f'income RM{inc:.0f} > RM{ceiling} and per-capita RM{per_capita:.0f} >= RM{pc_ceiling}'
+    return False, '', f'{income_above(inc, ceiling)} and per-capita RM{per_capita:.0f} >= RM{pc_ceiling}'
 
 
 # ── The whole tree ──────────────────────────────────────────────────────────────────────────

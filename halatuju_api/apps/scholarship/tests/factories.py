@@ -281,6 +281,12 @@ def make_cohort(*, programme=_UNSET, **kw):
     kw.setdefault('code', unique_suffix('cohort-'))
     kw.setdefault('name', 'Test Bursary Programme 2026')
     kw.setdefault('year', 2026)
+    # Criteria Sprint 3b: the model no longer gives a new intake the flagship's bars (a blank is
+    # no rule). The factory states them, so every test written against the old defaults keeps its
+    # meaning; pass a bar as None for an intake without it.
+    from apps.scholarship.criteria_new import FORMER_MODEL_DEFAULTS
+    for field, value in FORMER_MODEL_DEFAULTS.items():
+        kw.setdefault(field, value)
     if programme is not None:
         kw.setdefault('owning_organisation', programme.organisation)
     return ScholarshipCohort.objects.create(programme=programme, **kw)

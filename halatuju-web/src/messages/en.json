@@ -4265,7 +4265,8 @@
         "before_interview": "before interview",
         "interview": "interview",
         "qc": "qc",
-        "contractual": "contractual"
+        "contractual": "contractual",
+        "rules_error": "rules error"
       },
       "bornState": "Born: {state}",
       "reviewActions": "Review & actions",
@@ -4943,7 +4944,7 @@
           "str_recipient_mismatch": "The STR recipient isn't the declared earner — the name/IC on the STR doesn't match the earner's IC. Confirm.",
           "income_unverified_needs_interview": "Income can't be document-verified (informal / no payslip) — confirm during the interview via household size, dependents and lifestyle. Do NOT block.",
           "income_per_capita_ok": "Per-capita income RM{amount} is below this gift's income limit (RM{ceiling}) — within the threshold.",
-          "income_above_b40_line": "Per-capita income RM{amount} is over this gift's income limit (RM{ceiling}) — recommend reject on income; override only if the interview surfaces genuine qualifying circumstances.",
+          "income_above_b40_line": "Per-capita income RM{amount} is not under this gift's income limit (RM{ceiling} per person) — recommend reject on income; override only if the interview surfaces genuine qualifying circumstances.",
           "income_not_means_tested": "This gift applies no household income limit, so income is not an eligibility test here — the documents are on file for your judgement, not for a threshold.",
           "income_salary_probable": "Salary documents put gross household income ~RM{amount}/month clearly under this gift's income limit — supports approval; confirm the household at interview.",
           "income_salary_unsure": "Gross household income ~RM{amount}/month sits near this gift's income limit — not a clear pass. Confirm the household composition (size, and whether another member is working) at interview to establish the true gross and per-capita before approving.",

@@ -87,5 +87,10 @@
     "digest": "8cdebcfe1928fde777fc4b99c808990c13cee86d1f79b37530ee1d9e2f373905",
     "note": "Criteria Sprint 3a part 2 (owner, 26 Nov). income_headroom's 'thin' margin is the gift's own per-person line (or, with only a household line, that line divided by the household size) instead of a fixed RM1,584: on intakes 3/4/5 (RM1,180 / RM1,000 / RM900) a household with breach room between that line and RM1,584 moves from 'unsure' to 'probable' - officer income band only. A gift with only a household line is judged on it (was 'unknown'). The gate's income reasons (criteria.income_ok and shortlisting._income_ok, worded identically) name the gift's own lines, never 'B40' - reason text only. No shortlist answer changes.",
     "also_ok": []
+  },
+  "2026-11-26.5": {
+    "digest": "326e65515c64cb53ebdf0addb7a9ef81db774a96899b93130ef4a67a3bfb0c56",
+    "note": "Criteria Sprint 3b. income_headroom reads the income section's join: under 'all' (both lines must pass, as criteria.income_ok) the band is 'over' when EITHER line fails and the margin is graded on the stricter line; a household size of 0 or below is 'unknown' (the gate already refuses it). The refusal reason for a gift with only a per-person line no longer says '> RMNone' (criteria.income_ok and shortlisting._income_ok, worded identically via shortlisting.income_above). No live intake has an 'all' section or a per-person-only line; no shortlist answer changes.",
+    "also_ok": []
   }
 }

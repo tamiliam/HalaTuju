@@ -327,8 +327,9 @@ def ic_held_by_birth_state_rule(profile):
     if not recommended:
         return False
     bs = _scholarship('birth_state')
-    return any(bs.stored_keys(getattr(a.cohort, 'allowed_birth_states', None))
-               for a in recommended)
+    # Criteria Sprint 3b (TD-772): the intake's born-in rule as the gate reads it (the stored
+    # criteria tree, else the column) - `birth_state.cohort_rule`.
+    return any(bs.stored_keys(bs.cohort_rule(a.cohort)) for a in recommended)
 
 
 def _audit_self_change(profile, was, now):
@@ -348,7 +349,7 @@ def _audit_self_change(profile, was, now):
     bs = _scholarship('birth_state')
     before, after = bs.birth_state_from_nric(was), bs.birth_state_from_nric(now)
     fails = [a.id for a in applications
-             if bs.meets_rule(now, getattr(a.cohort, 'allowed_birth_states', None)) is False]
+             if bs.meets_rule(now, bs.cohort_rule(a.cohort)) is False]
     logger.info('AUDIT nric_self_change profile_id=%s app_ids=%s birth_state_changed=%s '
                 'rule_fails=%s', profile.pk, ','.join(str(a.id) for a in applications),
                 'no' if before[:2] == after[:2] else 'yes',

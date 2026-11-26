@@ -356,7 +356,17 @@ class TestIncome(SimpleTestCase):
         self.assertEqual(criteria.income_ok(prof(household_income=6000, household_size=4), self.sec('any', self.PP)),
                          (True, 'B', 'income RM6000, per-capita RM1500 < RM1584 (per-person line)'))
         self.assertEqual(criteria.income_ok(prof(household_income=6000, household_size=None), self.sec('any', self.PP)),
-                         (False, '', 'income RM6000 > RMNone and household size not provided'))
+                         (False, '', 'income RM6000 and household size not provided'))
+        # Sprint 3b: a per-person-only refusal names no household line ("> RMNone" is gone), and
+        # the columns gate words it identically.
+        self.assertEqual(criteria.income_ok(prof(household_income=8000, household_size=4), self.sec('any', self.PP)),
+                         (False, '', 'income RM8000 and per-capita RM2000 >= RM1584'))
+        from apps.scholarship.shortlisting import _income_ok
+        only_pp = SimpleNamespace(income_ceiling=None, per_capita_ceiling=1584)
+        self.assertEqual(_income_ok(prof(household_income=8000, household_size=4), only_pp),
+                         (False, '', 'income RM8000 and per-capita RM2000 >= RM1584'))
+        self.assertEqual(_income_ok(prof(household_income=6000, household_size=None), only_pp),
+                         (False, '', 'income RM6000 and household size not provided'))
 
     def test_all_needs_both(self):
         s = self.sec('all', self.CEIL, self.PP)

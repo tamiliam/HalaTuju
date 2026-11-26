@@ -33,10 +33,8 @@ def income_ceilings(cohort):
     None, None)`` when it is absent (the means test is not applied). Today's columns:
     ``(income_ceiling, per_capita_ceiling, 'any')``.
 
-    ⚠ `income_engine.amounts.income_headroom` grades the margin on the 'any' meaning (B40 while
-    gross <= the more generous of the two lines). Every tree `from_legacy` builds is 'any'; an
-    'all' income section is not storable until the editor (criteria Sprint 3) and the headroom
-    reader learn it together (TD-772)."""
+    ``mode`` is the section's join: 'any' (either line passes; every tree `from_legacy` builds)
+    or 'all' (both must pass). `income_engine.amounts.income_headroom` reads both (Sprint 3b)."""
     if cohort is None:
         return None, None, None
     income = section(tree_of(cohort), 'income')
@@ -45,6 +43,54 @@ def income_ceilings(cohort):
     mode, tests = _mode(income)
     by = {t.get('test'): t.get('rm') for t in tests or []}
     return by.get('household_income_max'), by.get('income_per_person_under'), mode
+
+
+#: The requirement columns, in the order the admin screens serve them (`views_admin.gifts`).
+COLUMN_FIELDS = ('min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count', 'min_stpm_pngk',
+                 'min_merit_score', 'income_ceiling', 'per_capita_ceiling')
+#: The SPM grade_count rules the columns can say: "at least N at A- / B+ / C or better".
+_GRADE_COLUMN = {'A-': 'min_spm_a_count', 'B+': 'min_spm_bplus_count', 'C': 'min_spm_credit_count'}
+
+
+def column_values(cohort):
+    """The intake's rules as the old requirement columns would say them, READ FROM THE TREE
+    (criteria Sprint 3b, TD-772): ``{column: value}`` for `COLUMN_FIELDS` plus
+    ``allowed_birth_states`` (keys) and ``allowed_start_years`` (years). None / [] = no rule.
+
+    Every reader that used to read the columns (the admin intake rows, the seed's report, the
+    courses claim) reads them here, so a stored tree wins over contradicting columns. With no
+    stored tree it is the columns themselves (`tree_of`'s NULL fallback round-trips them), and a
+    tree built by `from_legacy` round-trips too (the four live intakes, `test_criteria_readers`).
+
+    ⚠ A tree can say what the columns cannot (an 'all' join, a post-SPM merit, a grade count at
+    another grade). Those parts have no column and are left out here: read the tree itself
+    (`criteria.tree_of`) where the whole rule matters."""
+    out = dict.fromkeys(COLUMN_FIELDS)
+    out['allowed_birth_states'], out['allowed_start_years'] = [], []
+    if cohort is None:
+        return out
+    tree = tree_of(cohort)
+    results = section(tree, 'results')
+    for g in (_mode(results)[1] if results else None) or []:
+        for t in g.get('all', []):
+            if g.get('route') == 'post_spm' and t.get('test') == 'min_pngk':
+                out['min_stpm_pngk'] = t.get('value')
+            elif g.get('route') == 'spm' and t.get('test') == 'grade_count':
+                col = _GRADE_COLUMN.get(t.get('grade_or_better'))
+                if col:
+                    out[col] = t.get('at_least')
+    merit = section(tree, 'merit')
+    for t in (_mode(merit)[1] if merit else None) or []:
+        if t.get('test') == 'min_upu_merit':
+            out['min_merit_score'] = t.get('value')
+    income = section(tree, 'income')
+    for t in (_mode(income)[1] if income else None) or []:
+        col = {'household_income_max': 'income_ceiling', 'income_per_person_under': 'per_capita_ceiling'}.get(t.get('test'))
+        if col:
+            out[col] = t.get('rm')
+    out['allowed_birth_states'] = birth_states(tree)
+    out['allowed_start_years'] = start_years(tree)
+    return out
 
 
 def birth_state_keys(cohort):

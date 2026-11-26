@@ -7,6 +7,7 @@ Part of the `views_admin` package. Every name below is re-exported from
 import logging
 import math
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -64,8 +65,9 @@ def _rebuild_criteria(c):
     ⚠ A NULL ROW STAYS NULL (adversarial review R1, 2026-11-26). The gate reads NULL as TODAY'S
     meaning of the columns (`criteria.tree_of`), and storing `from_legacy` here would switch the
     CGPA trap off on a save (intake 5: a PNGK floor and no SPM bar) - a decision change the owner
-    ruled belongs to `build_criteria_trees --apply` alone, with its own yes. So a new year, and a
-    save on an intake not yet built, keep reading the columns live (they are always current)."""
+    ruled belongs to `build_criteria_trees --apply` alone, with its own yes. So a save on an
+    intake not yet built keeps reading the columns live (they are always current). A NEW year is
+    different: it stores its tree at create (`criteria_new.stamp_new`, Sprint 3b)."""
     from .. import criteria
     if c.criteria is None:
         return []
@@ -167,10 +169,12 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
             programme=p, owning_organisation=p.organisation,
             code=code, name=name, year=year, is_active=True, is_open=False, **reqs, **window,
         )
-        # Criteria Sprint 2: a new year is created with NO stored tree (`_rebuild_criteria` leaves
-        # NULL as NULL), so the gate reads its requirement boxes live with today's meaning
-        # (`criteria.tree_of`); `build_criteria_trees --apply` stores its tree later (TD-774).
-        problems = _rebuild_criteria(c)
+        # Criteria Sprint 3b (TD-774, decisions.md 2026-11-26 "A new intake year stores its tree
+        # when it is created"): the tree is built HERE from the boxes sent (`criteria_new.stamp_new`;
+        # a box left blank is no rule - the model has no silent bars any more), so a year created
+        # after `build_criteria_trees --apply` is never left NULL with the old meaning by accident.
+        from .. import criteria_new
+        problems = criteria_new.stamp_new(c)
         if problems:
             return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': 'criteria'},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -183,11 +187,16 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
 class AdminIntakeYearDetailView(_ProgrammeScopedBase):
     """PATCH one intake year — its name, its requirements, and whether it is taking applications."""
 
-    def _cohort_or_404(self, admin, pk):
+    def _cohort_or_404(self, admin, pk, lock=False):
         from ..models import ScholarshipCohort
-        c = (ScholarshipCohort.objects
-             .select_related('programme', 'programme__organisation')
-             .filter(pk=pk, programme__in=self._programmes_for(admin)).first())
+        qs = ScholarshipCohort.objects.select_related('programme', 'programme__organisation')
+        if lock:
+            # TD-774 (Sprint 3b): the row this save rewrites is LOCKED for the transaction, so
+            # `build_criteria_trees --apply` (which locks the rows it fills) and this save run one
+            # after the other - a tree can no longer be built from values read before the other
+            # one wrote. `of=('self',)`: only the intake row, never its gift or organisation.
+            qs = qs.select_for_update(of=('self',))
+        c = qs.filter(pk=pk, programme__in=self._programmes_for(admin)).first()
         if c is None:
             return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return c, None
@@ -196,7 +205,11 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
         admin, err = self._gate(request)
         if err:
             return err
-        c, err = self._cohort_or_404(admin, pk)
+        with transaction.atomic():
+            return self._patch(request, admin, pk)
+
+    def _patch(self, request, admin, pk):
+        c, err = self._cohort_or_404(admin, pk, lock=True)
         if err:
             return err
 

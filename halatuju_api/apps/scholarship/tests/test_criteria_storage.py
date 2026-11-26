@@ -12,7 +12,7 @@ from django.apps import apps as django_apps
 from django.core.management import CommandError, call_command
 from django.test import TestCase, override_settings
 
-from apps.scholarship import criteria, shortlisting
+from apps.scholarship import criteria, criteria_new, shortlisting
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import rescore_pending_decisions, score_application
 from apps.scholarship.tests.factories import (
@@ -215,17 +215,24 @@ class TestTheOldFormRebuildsTheTree(TestCase):
     def _year(self, c):
         return f'/api/v1/admin/scholarship/intake-years/{c.id}/'
 
-    def test_create_leaves_the_tree_null_so_the_boxes_keep_todays_meaning(self):
-        # Adversarial review R1: the old form never turns a NULL row into a stored tree (that would
-        # switch the CGPA trap off on intake 5's shape without the --apply yes).
+    def test_create_stores_the_tree_from_the_given_values_only(self):
+        # Criteria Sprint 3b (decisions.md 2026-11-26 "A new intake year stores its tree when it
+        # is created"): plain `from_legacy` of what the creator typed. A new year has no decisions
+        # to keep, so it starts on the stored meaning; a value left out is NO rule (no model default).
         r = self.client.post(f'/api/v1/admin/scholarship/programmes/{self.programme.id}/years/',
-                             {'code': 'form-new', 'name': 'form-new', 'year': 2027, 'min_stpm_pngk': 2.5,
-                              'min_spm_a_count': None, 'min_spm_bplus_count': None},
+                             {'code': 'form-new', 'name': 'form-new', 'year': 2027, 'min_stpm_pngk': 2.5},
                              format='json')
         self.assertEqual(r.status_code, 201)
         c = ScholarshipCohort.objects.get(code='form-new')
-        self.assertIsNone(c.criteria)
-        self.assertEqual(criteria.tree_of(c), criteria.from_legacy(c, keep_empty_spm=True))
+        self.assertEqual((c.min_spm_a_count, c.min_spm_bplus_count, c.per_capita_ceiling), (None, None, None))
+        self.assertEqual(c.criteria, criteria.from_legacy(c))
+        self.assertEqual([g['route'] for g in criteria.tree_of(c)['all'][0]['own']], ['post_spm'])
+        self.assertIsNone(criteria.section(c.criteria, 'income'))
+
+    def test_a_new_cohort_has_no_bars_unless_given(self):
+        c = ScholarshipCohort.objects.create(programme=self.programme, code='bare', name='bare', year=2027)
+        c.refresh_from_db()
+        self.assertEqual([getattr(c, f) for f in criteria_new.FORMER_MODEL_DEFAULTS], [None] * 4)
 
     def test_a_requirement_change_on_a_null_row_leaves_it_null(self):
         c = make_cohort(programme=self.programme, is_active=True, is_open=False, code='form-null',

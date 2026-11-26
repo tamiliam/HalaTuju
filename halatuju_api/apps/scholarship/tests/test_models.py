@@ -20,10 +20,11 @@ class TestScholarshipModels(TestCase):
 
     def test_cohort_str_and_defaults(self):
         self.assertIn('b40-2026', str(self.cohort))
-        self.assertEqual(self.cohort.min_spm_a_count, 4)
-        self.assertEqual(self.cohort.min_spm_bplus_count, 5)
-        self.assertEqual(self.cohort.min_stpm_pngk, 2.9)
-        self.assertEqual(self.cohort.per_capita_ceiling, 1584)
+        # Criteria Sprint 3b (TD-772): no silent bars - a cohort created without them has none.
+        self.assertIsNone(self.cohort.min_spm_a_count)
+        self.assertIsNone(self.cohort.min_spm_bplus_count)
+        self.assertIsNone(self.cohort.min_stpm_pngk)
+        self.assertIsNone(self.cohort.per_capita_ceiling)
         self.assertEqual(self.cohort.success_delay_hours, 48)
         self.assertEqual(self.cohort.decline_delay_hours, 48)
         self.assertTrue(self.cohort.is_open)

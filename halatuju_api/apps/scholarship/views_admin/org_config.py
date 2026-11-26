@@ -227,7 +227,8 @@ class AdminProgrammeConfigurationView(_AdminBase):
     source can never take a fixed code), `other` is refused (`fixed_source_locked`). Same audit line.
 
     No per-gift "asks for STPM-level results" switch (owner ruling D16c, 2026-10-27, superseding
-    D16): that is inferred from the intake's `min_stpm_pngk` (`results_route.gift_asks_higher`).
+    D16): that is inferred from the intake's PNGK floor, read from its criteria tree
+    (`results_route.gift_asks_higher` -> `criteria_read.asks_post_spm_results`).
     """
 
     def _gate(self, request):

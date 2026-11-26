@@ -8,11 +8,10 @@ Part of the `views_admin` package. Every name below is re-exported from
 from django.db.models import IntegerField, OuterRef, Q, Subquery
 
 from .. import branding
-from ..birth_state import stored_keys
 from ..closure import ever_awarded_q
 from ..intake_round import round_state
 from ..models import Donation, ScholarshipApplication
-from ..start_year import FIELD as START_YEARS_FIELD, stored_years
+from ..start_year import FIELD as START_YEARS_FIELD
 
 
 # ── Gift programmes and their intake years (Sabah S2b, 2026-09-02) ───────────────────────────────
@@ -341,7 +340,16 @@ def _cohort_row(c):
         # ⚠ THE BIRTH STATES ARE READ AS THE GATE READS THEM (`birth_state.stored_keys`, TD-373):
         # a hand-edited bare string or wrong-case key is served as a list, so the Rules tab shows
         # it ticked rather than nothing, and the next Save cannot silently clear a live rule.
-        'requirements': {**{f: getattr(c, f) for f in REQUIREMENT_FIELDS},
-                         BIRTH_STATES_FIELD: stored_keys(getattr(c, BIRTH_STATES_FIELD)),
-                         START_YEARS_FIELD: stored_years(getattr(c, START_YEARS_FIELD))},
+        # ⚠ CRITERIA SPRINT 3b (TD-772): every value is read from the criteria tree the gate reads
+        # (`criteria_read.column_values`: the stored tree, else the columns), so the Rules tab
+        # shows the rule that decides, never a stale column beside a stored tree.
+        'requirements': _requirements_row(c),
     }
+
+
+def _requirements_row(c):
+    from ..criteria_read import column_values
+    values = column_values(c)
+    return {**{f: values[f] for f in REQUIREMENT_FIELDS},
+            BIRTH_STATES_FIELD: values[BIRTH_STATES_FIELD],
+            START_YEARS_FIELD: values[START_YEARS_FIELD]}

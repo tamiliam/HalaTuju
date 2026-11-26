@@ -197,17 +197,27 @@ def income_headroom(application, members):
     # that line alone (it used to band 'unknown' without a per-person line), and the 'thin'
     # yardstick is the gift's own per-person figure (`_per_person_line`), never a fixed RM1,584.
     from apps.scholarship.criteria_read import income_ceilings
-    gross_ceiling, pc_ceiling, _mode = income_ceilings(getattr(application, 'cohort', None))
+    gross_ceiling, pc_ceiling, mode = income_ceilings(getattr(application, 'cohort', None))
     size = getattr(getattr(application, 'profile', None), 'household_size', None)
     pc, all_known = income_per_capita(application, members)
-    if pc is None or not size or not (gross_ceiling or pc_ceiling):
+    # Sprint 3b (review carry-over): a size of 0 OR BELOW is no size - the gate refuses it
+    # ("household size not provided"), so the officer band must not grade a margin on it.
+    if pc is None or not size or size <= 0 or not (gross_ceiling or pc_ceiling):
         return 'unknown', {'all_known': all_known}
     gross = pc * size
-    # The more generous line (either may be absent - code-health S4 #14 made this the shared
-    # test for BOTH routes).
-    ceiling = max([c for c in (gross_ceiling, (pc_ceiling or 0) * size) if c])
+    # An 'all' income section with both lines (Sprint 3b; `criteria.income_ok`'s 'all'): BOTH
+    # must pass, so the binding line is the STRICTER one and 'over' comes when EITHER fails.
+    # Otherwise ('any', or one line) the more generous line (either may be absent - code-health
+    # S4 #14 made this the shared test for BOTH routes).
+    both = mode == 'all' and gross_ceiling is not None and pc_ceiling is not None
+    lines = [c for c in (gross_ceiling, (pc_ceiling or 0) * size) if c]
+    ceiling = min(lines) if both else max(lines)
     breach_room = ceiling - gross
-    per_person_line = _per_person_line(gross_ceiling, pc_ceiling, size)
+    # Under 'all' the binding per-person share is the STRICTER of the two (the household line
+    # divided by the size, or the per-person line), so the officer copy "per-capita RM a is not
+    # under RM b" is true whichever line failed.
+    per_person_line = (min(float(pc_ceiling), float(gross_ceiling) / size) if both
+                       else _per_person_line(gross_ceiling, pc_ceiling, size))
     ctx = {'gross': int(round(gross)), 'per_capita': int(round(pc)), 'size': size,
            'breach_room': int(round(breach_room)), 'all_known': all_known,
            'gross_ceiling': int(gross_ceiling or 0), 'per_capita_ceiling': int(per_person_line)}
@@ -215,7 +225,7 @@ def income_headroom(application, members):
     # Absent line = not tested, exactly as the gate (`criteria.income_ok`) reads `None`.
     passes_household = gross_ceiling is not None and round(gross, 6) <= gross_ceiling
     passes_per_person = pc_ceiling is not None and pc < pc_ceiling
-    if not (passes_household or passes_per_person):
+    if not ((passes_household and passes_per_person) if both else (passes_household or passes_per_person)):
         return 'over', ctx
     if not all_known or breach_room < per_person_line:
         return 'unsure', ctx
