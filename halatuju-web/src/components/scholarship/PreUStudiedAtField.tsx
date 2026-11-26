@@ -39,13 +39,10 @@ export default function PreUStudiedAtField({ resultsHeld, value, onChange, varia
     return () => { live = false }
   }, [])
 
-  const tip = variant === 'apply'
-    ? t(`scholarship.preU.tipApply.${resultsHeld === 'matric' || resultsHeld === 'asasi' || resultsHeld === 'diploma' ? resultsHeld : 'stpm'}`)
-    : t('scholarship.preU.tipProfile')
   return (
     <div>
-      <FieldLabel required={variant === 'apply'}>{t('scholarship.preU.label')}</FieldLabel>
-      <p className="mb-2 rounded-lg bg-primary-50 px-3 py-2 text-sm text-ground-700">{tip}</p>
+      {/* One general line (STPM, Matriculation, Asasi, Diploma) in the site's "i" tip, for both variants. */}
+      <FieldLabel required={variant === 'apply'} tip={t('scholarship.preU.tip')}>{t('scholarship.preU.label')}</FieldLabel>
       {focused && (
         <div className="mb-2 flex flex-wrap gap-1.5" data-testid="pre-u-chips">
           {PRE_U_ROUTES.map((r) => (

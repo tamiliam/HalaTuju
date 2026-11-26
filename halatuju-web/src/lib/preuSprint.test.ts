@@ -223,8 +223,7 @@ describe('i18n keys exist in en, ms and ta', () => {
   const KEYS = [
     'onboarding.school', 'onboarding.switchSpmTitle', 'onboarding.switchSpmHeld', 'onboarding.switchSpmRemove',
     'onboarding.switchSpmNothing', 'onboarding.switchSpmConfirm', 'onboarding.switchSpmLocked',
-    'scholarship.preU.label', 'scholarship.preU.tipApply.stpm', 'scholarship.preU.tipApply.matric',
-    'scholarship.preU.tipApply.asasi', 'scholarship.preU.tipApply.diploma', 'scholarship.preU.tipProfile',
+    'scholarship.preU.label', 'scholarship.preU.tip',
     'scholarship.preU.chip.form6', 'scholarship.preU.chip.matric', 'scholarship.preU.chip.university',
     'scholarship.preU.chip.poly', 'scholarship.preU.placeholder', 'scholarship.preU.useAsTyped',
     'scholarship.apply.error.preUStudiedAt', 'scholarship.apply.field.school', 'scholarship.apply.tip.school',

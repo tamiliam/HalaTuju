@@ -947,13 +947,7 @@
   "scholarship": {
     "preU": {
       "label": "Institusi pra-U",
-      "tipApply": {
-        "stpm": "Tempat anda menamatkan STPM.",
-        "matric": "Tempat anda menamatkan Matrikulasi.",
-        "asasi": "Tempat anda menamatkan Asasi.",
-        "diploma": "Tempat anda menamatkan Diploma."
-      },
-      "tipProfile": "Tempat anda menamatkan STPM, Matrikulasi, Asasi atau Diploma.",
+      "tip": "Tempat anda menamatkan STPM, Matrikulasi, Asasi atau Diploma.",
       "chip": {
         "form6": "Sekolah Tingkatan 6",
         "matric": "Matrikulasi",

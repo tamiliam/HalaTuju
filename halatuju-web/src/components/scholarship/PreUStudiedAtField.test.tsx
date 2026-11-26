@@ -64,14 +64,11 @@ describe('PreUStudiedAtField', () => {
     expect(screen.getByText('scholarship.preU.chip.form6').getAttribute('aria-pressed')).toBe('false')
   })
 
-  it('uses the route tip on apply and the general tip on the profile', async () => {
-    await draw('stpm', 'apply')
-    expect(screen.getByText('scholarship.preU.tipApply.stpm')).toBeTruthy()
-  })
-
-  it('uses the general tip on the profile', async () => {
-    await draw('diploma', 'profile')
-    expect(screen.getByText('scholarship.preU.tipProfile')).toBeTruthy()
+  it.each(['apply', 'profile'] as const)('puts the one general line inside the "i" tip on %s', async (variant) => {
+    await draw('diploma', variant)
+    // the tip lives in the InfoTip bubble, not as a shaded box under the label
+    expect(screen.getByRole('button', { name: 'scholarship.preU.tip' })).toBeTruthy()
+    expect(document.querySelector('p.bg-primary-50')).toBeNull()
   })
 
   it('offers free text as typed', async () => {

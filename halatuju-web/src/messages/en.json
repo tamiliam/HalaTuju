@@ -947,13 +947,7 @@
   "scholarship": {
     "preU": {
       "label": "Pre-U institution",
-      "tipApply": {
-        "stpm": "Where you completed your STPM.",
-        "matric": "Where you completed your Matriculation.",
-        "asasi": "Where you completed your Asasi (Foundation).",
-        "diploma": "Where you completed your Diploma."
-      },
-      "tipProfile": "Where you completed your STPM, Matriculation, Asasi or Diploma.",
+      "tip": "Where you completed your STPM, Matriculation, Asasi or Diploma.",
       "chip": {
         "form6": "Form 6 schools",
         "matric": "Matriculation",

@@ -9902,11 +9902,9 @@ or re-ask `pre_u_studied_at` when the completed tertiary kind changes. *(A - S)*
 
 **Raised in criteria Sprint 2's adversarial review R1 (see CHANGELOG).** `criteria.tree_of` returns whatever dict is stored in `ScholarshipCohort.criteria` and the gate evaluates it as is. Today only `build_criteria_trees` / migration 0219 and the old admin form write a tree, and both run `validate_tree` first, so nothing invalid can be stored. Once the Sprint 3 editor (or a hand SQL fix) can write a tree, a bad shape (a void SPM group, an unknown birth state, a malformed section) would reach the gate unchecked. Related: after the R1 fix the old form does not build a tree for a NULL row (a new year it creates stays NULL, read with today's meaning) - so a year created after `--apply` needs another `build_criteria_trees --apply` before its tree is stored. **Fix:** validate on read in `tree_of` (a refused stored tree is an error that reaches a person, never a silent fall back to the columns), and decide how the editor stores a new year's tree, before the Sprint 3 editor ships. **Also (review R2):** `build_criteria_trees --apply` writes with `filter(criteria__isnull=True).update(...)` and no `select_for_update`, so an admin requirement save during the run can leave a tree built from the old values. Until fixed, run `--apply` with no admin edits under way and run `replay_criteria` straight after (a mismatch shows as "STORED TREE DIFFERS FROM COLUMNS"). **Fix:** `select_for_update()` on the command's queryset. *(A - S)*
 
-### [TD-767] Pre-U sprint: the polytechnic list is empty - low
+### [TD-767] Pre-U sprint: the polytechnic list is empty ✅ RESOLVED (2026-11-26)
 
-**Raised in the pre-U sprint (see CHANGELOG).** `halatuju-web/src/data/polytechnics.ts` has no entries; no list of
-polytechnics was found in the repo, so the Polytechnics chip offers free text only. **Fix:** add the official
-polytechnic list (source to be chosen by the owner). *(A - S)*
+**Raised in the pre-U sprint (see CHANGELOG).** `halatuju-web/src/data/polytechnics.ts` had no entries, so the Polytechnics chip offered free text only. **Resolved:** filled with the 36 public polytechnics from the Ministry of Higher Education's "Senarai Institusi Pengajian Tinggi Awam (Politeknik)" (see CHANGELOG).
 
 ### [TD-764] OCR-13: 4 UPSI letters are held out and 2 lock, so the UPSI lane cannot pass Gate 1 - medium
 

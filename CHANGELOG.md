@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: pre-U line in an "i" tip, and the polytechnic list (TD-767) (2026-11-26)
+
+Branch preu-tips, not pushed. Services: web.
+- The "Pre-U institution" line now sits in the site's "i" tip (`FieldLabel` `tip` / `InfoTip`) on the profile and on /scholarship/apply Step 3, no longer a shaded box. One string for both, naming STPM, Matriculation, Asasi and Diploma (`scholarship.preU.tip`, en/ms/ta); the per-route `tipApply.*` and `tipProfile` strings are removed.
+- `data/polytechnics.ts` holds the 36 public polytechnics (official Malay names, abbreviation as hint; no community colleges). Source: the Ministry of Higher Education's "Senarai Institusi Pengajian Tinggi Awam (Politeknik)", https://biasiswa.mohe.gov.my/sukan/doc/SENARAI%20INSTITUSI%20PENGAJIAN%20TINGGI%20AWAM(POLITEKNIK).pdf. Still in the lazy `pu` chunk, so the first-load budget is unchanged. TD-767 closed.
+
 ### fix: false "Course switched" note when the same university is written two ways (2026-11-26)
 
 Branch fix-fake-switch, not pushed. Services: api.
