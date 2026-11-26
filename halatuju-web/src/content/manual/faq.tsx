@@ -232,6 +232,16 @@ export const FAQ: Record<Audience, QA[]> = {
         there is no such footer to match, so the heading names the round.</>,
     },
     {
+      q: <>How do I change which students pass a gift&rsquo;s <strong>rules</strong>?</>,
+      a: <>Open the gift&rsquo;s <strong>Programme Settings</strong> and the <strong>Rules</strong> tab. Each test
+        has a switch: a test switched off is not applied. Switch on the results the gift accepts (post-SPM,
+        SPM, or both) and set their values; income, born-in and course start are optional. The screen lists
+        anything that would stop a save, and <strong>Save</strong> waits until it is fixed. A saved change
+        applies at once, to students already in as well. A student outside the course-start years is
+        flagged for the reviewer, never declined. If a colleague saved first, press <strong>Reload</strong>
+        and make your change again.</>,
+    },
+    {
       q: <>Can a gift stop offering <strong>Facebook / WhatsApp</strong> or <strong>Halatuju.xyz</strong> as
         &ldquo;Who referred you?&rdquo;</>,
       a: <>Yes, each on its own, for one gift at a time. Open the gift&rsquo;s <strong>Programme Settings</strong>; under

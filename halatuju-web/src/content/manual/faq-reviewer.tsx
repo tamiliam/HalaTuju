@@ -12,6 +12,13 @@ export const REVIEWER_FAQ: QA[] = [
         money or the programme&rsquo;s overall figures on it; those belong to the people who run the gift.</>,
     },
     {
+      q: <>Who sets the <strong>rules</strong> a student must pass, and can they change mid-round?</>,
+      a: <>Your organisation admin sets them on the gift&rsquo;s Rules tab. A change applies from the moment it
+        is saved, to students already in as well, so a student may be shortlisted, or not, under the new
+        rules. A student outside the gift&rsquo;s course-start years is flagged for you to look at, never
+        declined.</>,
+    },
+    {
       q: <>An STPM student&rsquo;s Academic card now shows <strong>SPM prerequisites</strong>. What are they?</>,
       a: <>The SPM grades an STPM student enters alongside her STPM results, because many degree courses also
         set SPM requirements. Since 2 October 2026 they are saved to her profile instead of only to her

@@ -452,26 +452,76 @@ describe('creating a round with criteria (criteria editor Sprint 4)', () => {
     mockApi.saveIntakeYearCriteria.mockResolvedValue({ ...stamped, changed: true })
   })
 
-  it('creates the year with no requirement keys, then saves the tree with its digest', async () => {
+  // The view's required key list (views_admin/intake_years.py: REQUIREMENT_FIELDS plus the two
+  // list keys). A create missing any one is refused, missing_requirement.
+  const VIEW_REQUIRED = [
+    'min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count', 'min_stpm_pngk', 'min_merit_score',
+    'income_ceiling', 'per_capita_ceiling', 'allowed_birth_states', 'allowed_start_years',
+  ]
+  const bodyOf = () => mockApi.createAdminIntakeYear.mock.calls[0][1] as Record<string, unknown>
+
+  it('sends every requirement key the view requires, from the editor (null or [] when off)', async () => {
+    const born = { all: [{ section: 'born_in', any: ['sabah', 'sarawak'] }] }
+    mockApi.getIntakeYearCriteria.mockResolvedValue({ ...stamped, criteria: born })
     await loaded()
     fill()
     fireEvent.click(screen.getByTestId('new-born-sarawak'))
     fireEvent.click(screen.getByTestId('new-born-sabah'))
     fireEvent.click(screen.getByText('admin.years.createClosed'))
-    await waitFor(() => expect(mockApi.saveIntakeYearCriteria).toHaveBeenCalled())
-    const body = mockApi.createAdminIntakeYear.mock.calls[0][1] as Record<string, unknown>
-    expect(Object.keys(body).sort()).toEqual(['closes_on', 'code', 'name', 'opens_on', 'year'])
-    const [id, tree, digest] = mockApi.saveIntakeYearCriteria.mock.calls[0]
-    expect([id, digest]).toEqual([11, 'd0'])
-    expect(tree).toEqual({ all: [{ section: 'born_in', any: ['sabah', 'sarawak'] }] })
+    await waitFor(() => expect(mockApi.getIntakeYearCriteria).toHaveBeenCalled())
+    expect(Object.keys(bodyOf()).sort())
+      .toEqual(['closes_on', 'code', 'name', 'opens_on', 'year', ...VIEW_REQUIRED].sort())
+    expect(bodyOf()).toMatchObject({
+      allowed_birth_states: ['sabah', 'sarawak'], allowed_start_years: [], min_stpm_pngk: null,
+      min_spm_credit_count: null, income_ceiling: null, per_capita_ceiling: null, min_merit_score: null,
+    })
+    // The columns said the whole tree, so nothing more is sent.
+    expect(mockApi.saveIntakeYearCriteria).not.toHaveBeenCalled()
   })
 
-  it('saves no criteria when nothing is switched on', async () => {
+  it('PATCHes the whole tree with its digest when the columns cannot say it', async () => {
+    // An 'all' income join has no column: the create stores 'any', so the editor's tree follows.
+    mockApi.getIntakeYearCriteria.mockResolvedValue({ ...stamped, criteria: { all: [
+      { section: 'income', any: [{ test: 'household_income_max', rm: 5000 }, { test: 'income_per_person_under', rm: 900 }] }] } })
     await loaded()
     fill()
+    fireEvent.click(screen.getByTestId('new-household-switch'))
+    fireEvent.change(screen.getByTestId('new-household-value'), { target: { value: '5000' } })
+    fireEvent.click(screen.getByTestId('new-per-person-switch'))
+    fireEvent.change(screen.getByTestId('new-per-person-value'), { target: { value: '900' } })
+    fireEvent.click(screen.getByTestId('new-income-join-all'))
     fireEvent.click(screen.getByText('admin.years.createClosed'))
-    await waitFor(() => expect(mockApi.createAdminIntakeYear).toHaveBeenCalled())
-    expect(mockApi.saveIntakeYearCriteria).not.toHaveBeenCalled()
+    await waitFor(() => expect(mockApi.saveIntakeYearCriteria).toHaveBeenCalled())
+    expect(bodyOf()).toMatchObject({ income_ceiling: 5000, per_capita_ceiling: 900 })
+    const [id, tree, digest] = mockApi.saveIntakeYearCriteria.mock.calls[0]
+    expect([id, digest]).toEqual([11, 'd0'])
+    expect(tree).toEqual({ all: [{ section: 'income', all: [
+      { test: 'household_income_max', rm: 5000 }, { test: 'income_per_person_under', rm: 900 }] }] })
+  })
+
+  it('refuses an empty tree on screen: Create sleeps and says why', async () => {
+    await loaded()
+    fill()
+    expect((screen.getByText('admin.years.createClosed') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByTestId('new-problems').textContent).toContain('admin.criteria.problem.empty')
+    fireEvent.click(screen.getByText('admin.years.createClosed'))
+    expect(mockApi.createAdminIntakeYear).not.toHaveBeenCalled()
+  })
+
+  it('shows a refused create in the admin language, unknown reasons under technical detail', async () => {
+    mockApi.createAdminIntakeYear.mockRejectedValue(Object.assign(new Error('x'), {
+      code: 'bad_criteria', status: 400,
+      body: { problems: ['the tree checks nothing, so every student would pass: add at least one section', 'zzz new rule'] },
+    }))
+    await loaded()
+    fill()
+    fireEvent.click(screen.getByTestId('new-born-sabah'))
+    fireEvent.click(screen.getByText('admin.years.createClosed'))
+    await waitFor(() => expect(screen.getByTestId('new-server-problems').textContent)
+      .toContain('admin.criteria.problem.empty'))
+    expect(screen.getByTestId('new-server-problems').textContent).not.toContain('the tree checks nothing')
+    expect(screen.getByTestId('new-server-problems-technical').textContent).toContain('admin.criteria.technical')
+    expect(screen.getByTestId('new-server-problems-technical').textContent).toContain('zzz new rule')
   })
 
   it('says so when the year is made but its criteria are not', async () => {

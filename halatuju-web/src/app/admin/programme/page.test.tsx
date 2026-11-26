@@ -68,6 +68,9 @@ beforeEach(() => {
     programme: { id: 1, code: 'bp', name_en: 'BrightPath Bursary', is_active: true },
     years: [],
   })
+  // The Rules tab asks the criteria API, which answers a gift with no year as no_intake_year.
+  mockApi.getProgrammeCriteria.mockRejectedValue(
+    Object.assign(new Error('no_intake_year'), { code: 'no_intake_year', status: 404 }))
   mockApi.getProgrammeConfiguration.mockResolvedValue(CONFIG)
   mockApi.saveProgrammeConfiguration.mockImplementation(async (items) => ({
     ...CONFIG,

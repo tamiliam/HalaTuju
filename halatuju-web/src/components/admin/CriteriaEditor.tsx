@@ -13,8 +13,9 @@
 
 import { useT } from '@/lib/i18n'
 import Toggle from '@/components/Toggle'
+import InfoTip from '@/components/InfoTip'
 import { BIRTH_STATES, toggleBirthState } from '@/lib/birthStates'
-import { GRADES, type EditorState, type Grade, type GradeRow, type ResultsJoin, type IncomeJoin } from '@/lib/criteriaTree'
+import { GRADES, nextGrade, serverProblemKey, type Problem, type EditorState, type Grade, type GradeRow, type ResultsJoin, type IncomeJoin } from '@/lib/criteriaTree'
 
 type T = (key: string, vars?: Record<string, string>) => string
 
@@ -94,6 +95,31 @@ function Group({ title, on, onToggle, testId, children, disabled }: {
   )
 }
 
+/** The server's `bad_criteria` problems, in the admin's language: a known string shows the
+ *  screen's own reason; an unknown one is shown as sent, under a "technical detail" label. */
+export function ServerProblemList({ problems, testId }: { problems: string[]; testId: string }) {
+  const { t } = useT()
+  const known = [...new Set(problems.map(serverProblemKey).filter((k): k is Problem => k !== null))]
+  const unknown = problems.filter((p) => serverProblemKey(p) === null)
+  return (
+    <div className="mt-3 text-sm text-critical-600" data-testid={testId}>
+      {known.length > 0 && (
+        <ul className="list-disc pl-5">
+          {known.map((k) => <li key={k}>{t(`admin.criteria.problem.${k}`)}</li>)}
+        </ul>
+      )}
+      {unknown.length > 0 && (
+        <div className="mt-2" data-testid={`${testId}-technical`}>
+          <p className="text-xs font-medium text-ground-600">{t('admin.criteria.technical')}</p>
+          <ul className="list-disc pl-5 font-mono text-xs">
+            {unknown.map((p) => <li key={p}>{p}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const RESULTS_JOINS: readonly ResultsJoin[] = ['own', 'all', 'any']
 const INCOME_JOINS: readonly IncomeJoin[] = ['any', 'all']
 
@@ -138,7 +164,7 @@ export default function CriteriaEditor({ state, onChange, disabled = false, idPr
                 )}
               </div>
               <button type="button" disabled={disabled} data-testid={`${idPrefix}-add-grade`}
-                onClick={() => set({ rows: [...state.rows, { count: '', grade: 'C' }] })}
+                onClick={() => set({ rows: [...state.rows, { count: '', grade: nextGrade(state.rows) }] })}
                 className="mt-2 text-sm font-medium text-brand-ink hover:underline">
                 {t('admin.criteria.grades.add')}
               </button>
@@ -169,8 +195,10 @@ export default function CriteriaEditor({ state, onChange, disabled = false, idPr
       </section>
 
       <section>
-        <h3 className="text-sm font-semibold text-ground-900">{t('admin.criteria.bornIn.title')}</h3>
-        <p className="mt-1 text-xs text-ground-500">{t('admin.criteria.bornIn.hint')}</p>
+        <h3 className="flex items-center gap-1 text-sm font-semibold text-ground-900">
+          {t('admin.criteria.bornIn.title')}
+          <InfoTip text={t('admin.criteria.bornIn.hint')} />
+        </h3>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {BIRTH_STATES.map((s) => (
             <div key={s.key} className="flex items-center gap-3 text-sm">
@@ -183,15 +211,20 @@ export default function CriteriaEditor({ state, onChange, disabled = false, idPr
         </div>
       </section>
 
-      {/* The course-start card: no heading (owner). It only flags a student, never declines. */}
-      <div className="rounded-xl border border-ground-200 p-3">
-        <label htmlFor={`${idPrefix}-start-years`} className="text-sm font-medium text-ground-800">
-          {t('admin.criteria.startYears')}
-        </label>
-        <p className="text-xs text-ground-500">{t('admin.criteria.startYearsHint')}</p>
-        <input id={`${idPrefix}-start-years`} type="text" value={state.startYears} disabled={disabled}
-          onChange={(e) => set({ startYears: e.target.value })} data-testid={`${idPrefix}-start-years`}
-          className="mt-2 w-full max-w-xs rounded-lg border border-ground-300 px-3 py-2 text-sm" />
+      {/* The course-start card: no heading (owner), its own switch (v9). It only flags a student,
+          never declines. */}
+      <div className="flex flex-wrap items-start gap-3 rounded-xl border border-ground-200 p-3" data-testid={`${idPrefix}-start`}>
+        <Toggle on={state.startOn} onChange={(v) => set({ startOn: v })} label={t('admin.criteria.startYears')}
+          disabled={disabled} testId={`${idPrefix}-start-switch`} />
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1 text-sm font-medium text-ground-800">
+            <label htmlFor={`${idPrefix}-start-years`}>{t('admin.criteria.startYears')}</label>
+            <InfoTip text={t('admin.criteria.startYearsHint')} />
+          </p>
+          <input id={`${idPrefix}-start-years`} type="text" value={state.startYears} disabled={disabled || !state.startOn}
+            onChange={(e) => set({ startYears: e.target.value })} data-testid={`${idPrefix}-start-years`}
+            className="mt-2 w-full max-w-xs rounded-lg border border-ground-300 px-3 py-2 text-sm disabled:bg-ground-100 disabled:text-ground-400" />
+        </div>
       </div>
     </div>
   )

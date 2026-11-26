@@ -11,6 +11,7 @@ Branch criteria-ui, not pushed. Services: web. No migration.
 - **Saves** send the tree plus the GET digest; 409 criteria_changed shows a reload. Every API error code has a message; the server's problems list always shows. Boxes the server would refuse (blank or out-of-range values, a post-SPM group with no CGPA floor, results with no test, the void-SPM traps, an empty tree) disable Save with the reason.
 - **Notices:** criteria_not_built is a calm notice with the editor locked; a refused stored tree, or one the screen cannot show exactly, locks Save. Intake rows with rules_error_open show a close-this-intake prompt.
 - **i18n:** new admin.criteria block in en/ms/ta. Manual (org admin) updated.
+- **Review R1 fixes:** the new-intake create sends every requirement key the API requires (null or [] when off), read from the editor tree; when the columns cannot say the tree, the full tree is PATCHed with the digest. An empty tree is refused on screen. digest_required offers a reload, like criteria_changed; a bare 404 says not found. The server's bad_criteria reasons show in the admin's language, unknown ones under "Technical detail". Two grade rows at one grade are caught; text that is not a number says "out of range", not "blank"; a new grade row takes an unused grade. The course-start card has its own switch; the born-in hint is an "i" tip. Old intakeYears requirement helpers and unused i18n keys deleted; Tamil wording made polite throughout. Guide and FAQ (org admin, reviewer) entries added.
 
 ### fix: criteria Sprint 3 review R1 (2026-11-27)
 

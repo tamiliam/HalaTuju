@@ -85,7 +85,7 @@ function ItemRow({ item, value, onChange, t }: {
           <p className="mt-1 text-xs text-ground-600">{t('admin.programme.config.heavyNote')}</p>
         )}
         {/* Neutral on purpose (D16c): this screen is per GIFT, while what is asked follows each
-            INTAKE's minimum STPM CGPA (blank = SPM-only) — set on the Rules tab. */}
+            INTAKE's results rules (post-SPM results switched off = SPM-only) — set on the Rules tab. */}
         {academic && (
           <p className="mt-1 text-xs text-ground-600" data-testid="academic-note">
             {t('admin.programme.config.academic.note')}

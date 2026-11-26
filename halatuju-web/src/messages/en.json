@@ -8062,7 +8062,6 @@
       "oneOpen": "Applications are accepted only while a round is open. One round per gift programme may be open at a time.",
       "oneOpenNamed": "{code} is currently accepting applications. One round per gift programme may be open at a time; close it before opening another.",
       "reqTitle": "Shortlisting requirements",
-      "reqHint": "Select the tests this programme applies and set a value for each. A test that is not selected is not applied.",
       "col": {
         "year": "Year",
         "name": "What students see",
@@ -8077,24 +8076,6 @@
         "name": "What students see",
         "opensOn": "Opens on",
         "closesOn": "Closes on"
-      },
-      "req": {
-        "spmA": "SPM - minimum grades at A- or better",
-        "spmB": "SPM - further grades at B+ or better",
-        "spmBHint": "in addition to those above",
-        "spmC": "SPM - total grades at C or better",
-        "spmCHint": "including the A and B grades above",
-        "bornIn": "Born in",
-        "bornInHint": "Read from the IC number. Leave all unticked to accept students born anywhere.",
-        "startYears": "Course started in",
-        "startYearsHint": "Years separated by commas, e.g. 2025, 2026. Read from the offer letter once it is uploaded, so a student outside these years is flagged for the reviewer, never declined automatically. Leave empty to accept any start year.",
-        "pngk": "STPM - minimum PNGK",
-        "pngkHint": "Leave blank to make the intake SPM-only: students submit the SPM results slip, and STPM, Matriculation, Asasi or Diploma holders are tested on the SPM grades above.",
-        "merit": "Minimum merit point",
-        "meritHint": "UPU score out of 100. SPM applicants only.",
-        "income": "Household income at most (RM per month)",
-        "perPerson": "or, above that, income per person under (RM)",
-        "perPersonHint": "rescues a large household above the ceiling"
       },
       "error": {
         "badCode": "The short code may use lower case letters, numbers and hyphens only.",
@@ -8647,16 +8628,15 @@
       "chooseHint": "You run more than one, so we will not guess. Choose one - you can also switch it from the trail at the top of the page."
     },
     "rules": {
-      "subtitle": "The criteria for this gift. A test that is not selected is not applied.",
       "editing": "Criteria for {year} — {name}.",
       "liveWarning": "A change to the criteria takes effect on save and applies to every application, including those already submitted. Unlike \"What we ask for\", the criteria are not frozen at submission, so a re-run would assess earlier applicants against the new value. Take care during an open intake.",
-      "untickNote": "Clear a test to stop applying it. An empty value means the test is not applied.",
       "noYear": "This gift has no intake year. The criteria are held on the intake year, so create one first.",
       "saved": "Saved",
       "goToYear": "Create an intake year",
       "rulesError": "The stored rules for this intake cannot be read, so the boxes below are blank and cannot be saved. They need a technical correction: please contact the technical team."
     },
     "criteria": {
+      "technical": "Technical detail",
       "results": "Results",
       "join": {
         "label": "Student must pass",
@@ -8699,18 +8679,21 @@
         "hint": "Read from the IC number. Leave every state switched off to accept students born anywhere."
       },
       "startYears": "Course started in",
-      "startYearsHint": "Years separated by commas, e.g. 2025, 2026. A student outside these years is flagged for the reviewer, never declined. Leave empty to accept any start year.",
-      "foot": "Switch a test off to stop applying it. A section with no test switched on is not applied.",
+      "startYearsHint": "Years separated by commas, e.g. 2025, 2026. A student outside these years is flagged for the reviewer, never declined. Switch it off to accept any start year.",
+      "foot": "Switch a test off to stop applying it. Income, born-in and course start with nothing switched on are not applied. Results that are switched on must check something.",
       "notReady": "The criteria settings for this intake are not ready yet. The rules shown are the ones in force today and they keep applying; you can change them here once the settings are ready.",
       "cannotShow": "These rules include something this screen cannot show, so they cannot be changed here. Please contact the technical team.",
       "reload": "Reload",
       "closePrompt": "The rules for this open intake cannot be read. Close this intake to stop new applications, then contact the technical team.",
       "createRulesFailed": "The intake year was created, but its criteria were not saved. Open the Rules tab to set them.",
       "problem": {
+        "gradeTwice": "Two grade rules use the same grade. Change one of them, or remove it.",
+        "meritNeedsFloor": "A post-SPM merit point needs a minimum PNGK / CGPA in the post-SPM results. Switch that on, or switch the merit point off.",
+        "yearsBlank": "Enter at least one course-start year, or switch it off.",
         "pngkBlank": "Enter the minimum PNGK / CGPA, or switch it off.",
-        "pngkRange": "The minimum PNGK / CGPA must be between 0 and 4.00.",
+        "pngkRange": "The minimum PNGK / CGPA must be a number from 0 to 4.00.",
         "meritBlank": "Enter the minimum merit point, or switch it off.",
-        "meritRange": "The minimum merit point must be between 0 and 100.",
+        "meritRange": "The minimum merit point must be a number from 0 to 100.",
         "countBlank": "Enter the number of subjects in every grade rule, or remove the rule.",
         "countRange": "The number of subjects must be a whole number from 0 to 20.",
         "incomeBlank": "Enter the income amount, or switch it off.",
@@ -8720,9 +8703,10 @@
         "voidSpmDoor": "With \"any one of these\", the SPM results need a grade rule above 0, or every SPM holder would pass. Add one, or switch SPM results off.",
         "voidSpmGroup": "The SPM results need a grade rule or a merit point above 0, or every SPM holder would pass. Add one, or switch SPM results off.",
         "postNoFloor": "Post-SPM results need a minimum PNGK / CGPA. Switch it on, or switch post-SPM results off.",
-        "resultsNoTest": "The results switched on check nothing. Add a test, or switch them off."
+        "resultsNoTest": "The results switched on check nothing. Add a test or a merit point, or switch them off."
       },
       "error": {
+        "digestRequired": "The screen could not confirm these are the latest rules. Reload and try again.",
         "generic": "The change could not be saved. No changes were made.",
         "badCriteria": "These criteria were refused. No changes were made. The reasons are listed below.",
         "rulesError": "The stored rules for this intake cannot be read. They need a technical correction. No changes were made.",

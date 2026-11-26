@@ -139,6 +139,30 @@ describe('on/off is the site Toggle', () => {
   })
 })
 
+describe('the course-start card has its own switch', () => {
+  it('off when no years are stored: the box sleeps', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    expect(isOn('rules-start')).toBe(false)
+    expect((screen.getByTestId('rules-start-years') as HTMLInputElement).disabled).toBe(true)
+  })
+
+  it('on for intake 5; switched on with no year it asks for one; a year saves the flag', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    fireEvent.click(sw('rules-start'))
+    expect(within(screen.getByTestId('rules-problems')).getByText('admin.criteria.problem.yearsBlank')).toBeTruthy()
+    fireEvent.change(screen.getByTestId('rules-start-years'), { target: { value: '2026' } })
+    save()
+    await waitFor(() => expect(mockApi.saveProgrammeCriteria).toHaveBeenCalledTimes(1))
+    expect(mockApi.saveProgrammeCriteria.mock.calls[0][2].flag)
+      .toEqual([{ test: 'course_start_year', allowed: [2026] }])
+  })
+
+  it('intake 5 loads with it on', async () => {
+    withCriteria(payload(TREE_5)); await loaded()
+    expect(isOn('rules-start')).toBe(true)
+  })
+})
+
 describe('the save', () => {
   it('sends the whole tree, the year shown and the digest', async () => {
     withCriteria(payload(TREE_1)); await loaded()
@@ -200,12 +224,42 @@ describe('every refusal has its message', () => {
       .toBe('admin.criteria.error.forbidden'))
   })
 
-  it('bad_criteria lists the server problems', async () => {
+  it('a 404 with no code says the intake was not found', async () => {
     withCriteria(payload(TREE_1)); await loaded()
-    mockApi.saveProgrammeCriteria.mockRejectedValueOnce(apiError('bad_criteria', 400, { problems: ['spm: too many'] }))
+    mockApi.saveProgrammeCriteria.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 404 }))
     fireEvent.change(screen.getByTestId('rules-household-value'), { target: { value: '6000' } })
     save()
-    await waitFor(() => expect(within(screen.getByTestId('rules-server-problems')).getByText('spm: too many')).toBeTruthy())
+    await waitFor(() => expect(screen.getByTestId('rules-save-error').textContent)
+      .toBe('admin.criteria.error.notFound'))
+  })
+
+  it('bad_criteria lists the server problems in the admin language; unknown ones as technical detail', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    mockApi.saveProgrammeCriteria.mockRejectedValueOnce(apiError('bad_criteria', 400, { problems: [
+      'results: a post-SPM group needs a min_pngk floor',
+      'merit: min_merit (the post-SPM merit) needs a post-SPM group with a min_pngk floor',
+      'spm: too many',
+    ] }))
+    fireEvent.change(screen.getByTestId('rules-household-value'), { target: { value: '6000' } })
+    save()
+    await waitFor(() => expect(screen.getByTestId('rules-server-problems')).toBeTruthy())
+    const list = screen.getByTestId('rules-server-problems')
+    expect(within(list).getByText('admin.criteria.problem.postNoFloor')).toBeTruthy()
+    expect(within(list).getByText('admin.criteria.problem.meritNeedsFloor')).toBeTruthy()
+    expect(list.textContent).not.toContain('min_pngk floor')
+    const technical = screen.getByTestId('rules-server-problems-technical')
+    expect(within(technical).getByText('admin.criteria.technical')).toBeTruthy()
+    expect(within(technical).getByText('spm: too many')).toBeTruthy()
+  })
+
+  it('digest_required offers a reload too', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    mockApi.saveProgrammeCriteria.mockRejectedValueOnce(apiError('digest_required', 400))
+    fireEvent.change(screen.getByTestId('rules-household-value'), { target: { value: '6000' } })
+    save()
+    await waitFor(() => expect(screen.getByTestId('rules-stale').textContent)
+      .toContain('admin.criteria.error.digestRequired'))
+    expect(screen.getByTestId('rules-save-error').textContent).toBe('admin.criteria.error.digestRequired')
   })
 
   it('criteria_changed offers a reload that fetches the latest', async () => {

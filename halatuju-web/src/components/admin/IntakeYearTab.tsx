@@ -57,8 +57,8 @@ import InfoBox from '@/components/InfoBox'
 import Sheet from '@/components/Sheet'
 import { formatDate } from '@/lib/formatDate'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
-import CriteriaEditor from '@/components/admin/CriteriaEditor'
-import { stateToTree, EMPTY_STATE, type EditorState } from '@/lib/criteriaTree'
+import CriteriaEditor, { ServerProblemList } from '@/components/admin/CriteriaEditor'
+import { columnsFor, sameStoredTree, stateToTree, EMPTY_STATE, type EditorState } from '@/lib/criteriaTree'
 import {
   getIntakeYearCriteria, saveIntakeYearCriteria,
   getAdminIntakeYears, createAdminIntakeYear, updateAdminIntakeYear, finishAdminIntakeYear,
@@ -195,6 +195,8 @@ export default function IntakeYearTab() {
   // server stamps an empty tree; a non-empty one is then saved through the criteria API.
   const [draft, setDraft] = useState<EditorState>(EMPTY_STATE)
   const [rulesNotice, setRulesNotice] = useState('')
+  /** The server's bad_criteria problems for a refused create, in the admin's language. */
+  const [createProblems, setCreateProblems] = useState<string[]>([])
   /** The round being edited, and the boxes for it. Null = the dialog is shut. */
   const [editing, setEditing] = useState<AdminIntakeYear | null>(null)
   const [edit, setEdit] = useState(EMPTY_EDIT)
@@ -254,30 +256,46 @@ export default function IntakeYearTab() {
   }
 
   const newTree = useMemo(() => stateToTree(draft), [draft])
-  const newTreeEmpty = newTree.tree.all.length === 0 && !newTree.tree.flag
-  const newProblems = newTreeEmpty ? [] : newTree.problems
+  // An empty tree is refused here too (the API answers 400 bad_criteria, "the tree checks
+  // nothing"): Create stays off with the reason shown, before any request.
+  const newProblems = newTree.problems
 
   const create = async () => {
     if (programmeId === null || newProblems.length) return
-    setRulesNotice('')
+    setRulesNotice(''); setCreateProblems([])
     const made: { year?: AdminIntakeYear } = {}
-    const ok = await run(async () => { made.year = await createAdminIntakeYear(programmeId, {
-      code: form.code.trim().toLowerCase(), name: form.name.trim(), year: Number(form.year),
-      // ⚠ A BLANK BOX SENDS null, NOT '' — "no window stated" is a real answer and must reach the
-      // server as one. Sending an empty string would make an unstated window look like a failed
-      // parse; sending nothing at all would make it impossible to CLEAR one later.
-      opens_on: form.opens_on || null,
-      closes_on: form.closes_on || null,
-    }, { token: token! }) })
+    const ok = await run(async () => {
+      try {
+        made.year = await createAdminIntakeYear(programmeId, {
+          code: form.code.trim().toLowerCase(), name: form.name.trim(), year: Number(form.year),
+          // ⚠ A BLANK BOX SENDS null, NOT '' — "no window stated" is a real answer and must reach the
+          // server as one. Sending an empty string would make an unstated window look like a failed
+          // parse; sending nothing at all would make it impossible to CLEAR one later.
+          opens_on: form.opens_on || null,
+          closes_on: form.closes_on || null,
+          // ⚠ EVERY REQUIREMENT KEY IS SENT (views_admin/intake_years.py: a missing key is refused,
+          // missing_requirement). They are the editor's tree said in the columns (null / [] = off).
+          ...columnsFor(newTree.tree),
+        }, { token: token! })
+      } catch (e) {
+        const sent = (e as { body?: { problems?: unknown } })?.body?.problems
+        setCreateProblems(Array.isArray(sent) ? sent.filter((x): x is string => typeof x === 'string') : [])
+        throw e
+      }
+    })
     if (!ok) return
     setOpen(false); setForm(EMPTY_FORM); setDraft(EMPTY_STATE)
+    // The columns cannot say every tree (an 'all' join, a post-SPM merit, a count at another
+    // grade). When the stored tree is not the editor's, the whole tree is PATCHed with the digest.
     // The year exists now whatever happens next; a criteria save that fails says so plainly
     // rather than undoing the year.
-    if (!newTreeEmpty && made.year) {
+    if (made.year) {
       try {
         const cur = await getIntakeYearCriteria(made.year.id, { token: token! })
-        await saveIntakeYearCriteria(made.year.id, newTree.tree, cur.digest, { token: token! })
-        await load()
+        if (!sameStoredTree(cur.criteria, newTree.tree)) {
+          await saveIntakeYearCriteria(made.year.id, newTree.tree, cur.digest, { token: token! })
+          await load()
+        }
       } catch {
         setRulesNotice(t('admin.criteria.createRulesFailed'))
       }
@@ -571,6 +589,7 @@ export default function IntakeYearTab() {
                 {newProblems.map((p) => <li key={p}>{t(`admin.criteria.problem.${p}`)}</li>)}
               </ul>
             )}
+            {createProblems.length > 0 && <ServerProblemList problems={createProblems} testId="new-server-problems" />}
 
             {error && <p className="mt-3 text-sm text-critical-600">{error}</p>}
         </Sheet>

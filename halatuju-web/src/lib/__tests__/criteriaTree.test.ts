@@ -1,6 +1,7 @@
 // The criteria tree <-> editor boxes (criteria editor Sprint 4).
 import {
-  canShow, errorKey, sameTree, stateToTree, treeToState, EMPTY_STATE, GRADES, type CriteriaTree,
+  canShow, columnsFor, errorKey, nextGrade, sameStoredTree, sameTree, serverProblemKey, stateToTree,
+  treeToState, EMPTY_STATE, GRADES, REQUIREMENT_KEYS, type CriteriaTree,
 } from '../criteriaTree'
 import { LIVE_TREES, PENINSULA, TREE_3, TREE_5 } from '@/test/criteriaShapes'
 
@@ -23,7 +24,7 @@ describe('the live intakes', () => {
   it('intake 5 has its SPM group off and the course-start years', () => {
     const s = treeToState(TREE_5)
     expect([s.spmOn, s.postOn, s.pngk]).toEqual([false, true, '3'])
-    expect(s.startYears).toBe('2025, 2026')
+    expect([s.startOn, s.startYears]).toEqual([true, '2025, 2026'])
     expect(s.bornIn).toEqual(PENINSULA)
     expect([s.householdOn, s.household, s.perPersonOn, s.perPerson, s.incomeJoin])
       .toEqual([true, '5860', true, '900', 'any'])
@@ -68,11 +69,43 @@ describe('the boxes the server would refuse', () => {
     expect(stateToTree({ ...base, household: '5860.5' }).problems).toContain('incomeRange')
     expect(stateToTree({ ...base, spmOn: true, rows: [{ count: '', grade: 'C' }] }).problems).toContain('countBlank')
     expect(stateToTree({ ...base, spmOn: true, rows: [{ count: '21', grade: 'C' }] }).problems).toContain('countRange')
-    expect(stateToTree({ ...base, startYears: '2025, 20x6' }).problems).toContain('years')
+    expect(stateToTree({ ...base, startOn: true, startYears: '2025, 20x6' }).problems).toContain('years')
+  })
+  it('text that is not a number is out of range, never blank', () => {
+    const pngk = stateToTree({ ...base, postOn: true, pngkOn: true, pngk: 'abc' }).problems
+    expect(pngk).toContain('pngkRange')
+    expect(pngk).not.toContain('pngkBlank')
+    const merit = stateToTree({ ...base, spmOn: true, rows: [{ count: '3', grade: 'C' }], spmMeritOn: true, spmMerit: 'x' }).problems
+    expect(merit).toContain('meritRange')
+    expect(merit).not.toContain('meritBlank')
+    const count = stateToTree({ ...base, spmOn: true, rows: [{ count: 'two', grade: 'C' }] }).problems
+    expect(count).toContain('countRange')
+    expect(count).not.toContain('countBlank')
+    const income = stateToTree({ ...base, household: 'lots' }).problems
+    expect(income).toContain('incomeRange')
+    expect(income).not.toContain('incomeBlank')
+  })
+  it('two grade rows at the same grade', () => {
+    const rows = [{ count: '2', grade: 'A-' as const }, { count: '3', grade: 'A-' as const }]
+    expect(stateToTree({ ...base, spmOn: true, rows }).problems).toContain('gradeTwice')
+    expect(stateToTree({ ...base, spmOn: true, rows: [rows[0], { count: '3', grade: 'C' }] }).problems).toEqual([])
+  })
+  it('a new grade row takes the lowest grade not used', () => {
+    expect(nextGrade([])).toBe('C')
+    expect(nextGrade([{ count: '1', grade: 'C' }])).toBe('C+')
+    expect(nextGrade(GRADES.map((grade) => ({ count: '1', grade })))).toBe('C')
+  })
+  it('course start switched on needs a year; switched off it is not applied', () => {
+    expect(stateToTree({ ...base, startOn: true, startYears: ' ' }).problems).toContain('yearsBlank')
+    const off = stateToTree({ ...base, startOn: false, startYears: '2025' })
+    expect(off.problems).toEqual([])
+    expect(off.tree.flag).toBeUndefined()
   })
   it('a post-SPM group needs its floor; results must test something', () => {
     expect(stateToTree({ ...base, postOn: true }).problems).toContain('postNoFloor')
     expect(stateToTree({ ...base, spmOn: true }).problems).toContain('resultsNoTest')
+    // The API rule (NO_RESULTS_RULE): a merit section is a test, so the results are not empty.
+    expect(stateToTree({ ...base, spmOn: true, spmMeritOn: true, spmMerit: '80' }).problems).not.toContain('resultsNoTest')
   })
   it('the void SPM traps', () => {
     const both = { ...base, postOn: true, pngkOn: true, pngk: '3', spmOn: true, rows: [{ count: '0', grade: 'C' as const }] }
@@ -81,11 +114,11 @@ describe('the boxes the server would refuse', () => {
     expect(stateToTree({ ...both, resultsJoin: 'own', spmMeritOn: true, spmMerit: '80' }).problems).toEqual([])
   })
   it('years are sorted and once each', () => {
-    expect(stateToTree({ ...base, startYears: '2026, 2025 2026' }).tree.flag)
+    expect(stateToTree({ ...base, startOn: true, startYears: '2026, 2025 2026' }).tree.flag)
       .toEqual([{ test: 'course_start_year', allowed: [2025, 2026] }])
   })
   it('sameTree ignores text that means the same', () => {
-    expect(sameTree({ ...base, startYears: '2025,2026' }, { ...base, startYears: '2025, 2026' })).toBe(true)
+    expect(sameTree({ ...base, startOn: true, startYears: '2025,2026' }, { ...base, startOn: true, startYears: '2025, 2026' })).toBe(true)
   })
 })
 
@@ -95,11 +128,64 @@ describe('error codes', () => {
     ['rule_year_changed', 'ruleYearChanged'], ['criteria_changed', 'criteriaChanged'],
     ['rules_beyond_columns', 'beyondColumns'], ['not_found', 'notFound'], ['no_intake_year', 'notFound'],
     ['network_failure', 'network'], ['criteria_required', 'generic'], ['unknown_field', 'generic'],
-    ['intake_id_required', 'generic'], ['something_new', 'generic'],
+    ['intake_id_required', 'generic'], ['something_new', 'generic'], ['digest_required', 'digestRequired'],
   ])('%s -> %s', (code, key) => {
     expect(errorKey(code)).toBe(`admin.criteria.error.${key}`)
   })
   it('a 403 without a known code', () => {
     expect(errorKey(undefined, 403)).toBe('admin.criteria.error.forbidden')
+  })
+  it('a 404 without a code (criteria_tree.py: a missing intake)', () => {
+    expect(errorKey(undefined, 404)).toBe('admin.criteria.error.notFound')
+  })
+})
+
+describe('the server refusal reasons, in the admin language', () => {
+  // The strings criteria.py and criteria_write.py send in a bad_criteria problems list.
+  it.each([
+    ['the tree checks nothing, so every student would pass: add at least one section', 'empty'],
+    ['results: no group holds a rule, so every student passes it - add a rule, or a merit section', 'resultsNoTest'],
+    ['results: a post-SPM group needs a min_pngk floor', 'postNoFloor'],
+    ['merit: min_merit (the post-SPM merit) needs a post-SPM group with a min_pngk floor', 'meritNeedsFloor'],
+    ['results: an SPM group with no rule that can fail, beside a post-SPM group under "any", lets every SPM holder in', 'voidSpmDoor'],
+    ['results: an SPM group with no rule that can fail, beside a post-SPM group, lets every SPM holder in', 'voidSpmGroup'],
+    ['spm: grade_count repeated', 'gradeTwice'],
+    ['spm: grade_count at_least must be 20 or fewer', 'countRange'],
+    ['income: household_income_max needs a whole number rm from 0 to 100000', 'incomeRange'],
+    ['income: income_per_person_under needs a whole number rm from 0 to 100000', 'incomeRange'],
+    ['post_spm: min_pngk needs a number value from 0 to 4', 'pngkRange'],
+    ['merit: min_upu_merit needs a number value from 0 to 100', 'meritRange'],
+    ['merit: min_merit needs a number value from 0 to 100', 'meritRange'],
+    ['course_start_year needs allowed: [...]', 'years'],
+  ])('%s', (p, key) => {
+    expect(serverProblemKey(p)).toBe(key)
+  })
+  it('an unknown string has no key (shown under technical detail)', () => {
+    expect(serverProblemKey('results: something brand new')).toBeNull()
+  })
+})
+
+describe('the create body: the tree said in the requirement columns', () => {
+  it('an empty tree sends every key, as no rule', () => {
+    const c = columnsFor({ all: [] })
+    expect(Object.keys(c).sort()).toEqual([...REQUIREMENT_KEYS].sort())
+    expect(c.allowed_birth_states).toEqual([])
+    expect(c.allowed_start_years).toEqual([])
+    expect(c.min_stpm_pngk).toBeNull()
+  })
+  it('intake 3 and intake 5 read as their columns', () => {
+    expect(columnsFor(TREE_3)).toMatchObject({
+      min_spm_a_count: 0, min_spm_bplus_count: 0, min_spm_credit_count: 3, min_stpm_pngk: 2,
+      min_merit_score: 0, allowed_birth_states: ['sabah', 'wp_labuan'],
+    })
+    expect(columnsFor(TREE_5)).toMatchObject({
+      min_stpm_pngk: 3, income_ceiling: 5860, per_capita_ceiling: 900, allowed_start_years: [2025, 2026],
+    })
+  })
+  it('order alone does not make two stored trees differ', () => {
+    const shuffled: CriteriaTree = { all: [TREE_3.all[2], TREE_3.all[0], TREE_3.all[1], TREE_3.all[3]] }
+    expect(sameStoredTree(shuffled, TREE_3)).toBe(true)
+    expect(sameStoredTree(null, TREE_3)).toBe(false)
+    expect(sameStoredTree(TREE_5, TREE_3)).toBe(false)
   })
 })

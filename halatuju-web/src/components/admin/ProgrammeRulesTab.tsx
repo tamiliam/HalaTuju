@@ -33,13 +33,13 @@ import { useLatest } from '@/lib/useLatest'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
-import CriteriaEditor from '@/components/admin/CriteriaEditor'
+import CriteriaEditor, { ServerProblemList } from '@/components/admin/CriteriaEditor'
 import SaveBar, { SAVE_BAR_PRIMARY } from '@/components/admin/SaveBar'
 import {
   getProgrammeCriteria, saveProgrammeCriteria, type AdminIntakeYear, type CriteriaPayload,
 } from '@/lib/admin-api'
 import {
-  canShow, errorKey, sameTree, stateToTree, treeToState, EMPTY_STATE, type EditorState,
+  canShow, errorKey, sameTree, stateToTree, treeToState, EMPTY_STATE, RELOAD_CODES, type EditorState,
 } from '@/lib/criteriaTree'
 
 type Outcome = { kind: 'idle' } | { kind: 'saved' } | { kind: 'error'; message: string }
@@ -71,7 +71,7 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
   /** The server's own reasons for refusing a tree (bad_criteria), shown as it sends them. */
   const [serverProblems, setServerProblems] = useState<string[]>([])
   /** Another admin saved first (409 criteria_changed): offer a reload, never overwrite. */
-  const [stale, setStale] = useState(false)
+  const [stale, setStale] = useState<string | null>(null)
   /**
    * ⚠ ITS OWN LOADING FLAG, AND NOT THE ONE FROM `useSelectedProgramme`: that one goes false as
    * soon as the PROGRAMMES have arrived, strictly earlier than the rules — keying the empty state
@@ -95,7 +95,7 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
       const d = await getProgrammeCriteria(programmeId, { token })
       setPayload(d); setNoYear(false)
       const s = treeToState(d.criteria)
-      setDraft(s); setSaved(s); setServerProblems([]); setStale(false)
+      setDraft(s); setSaved(s); setServerProblems([]); setStale(null)
       if (!keepOutcome) setOutcome({ kind: 'idle' })
     } catch (e) {
       const code = (e as { code?: string })?.code
@@ -138,7 +138,7 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
       setOutcome({ kind: 'error', message: t(errorKey(err?.code, err?.status)) })
       const sent = err?.body?.problems
       setServerProblems(Array.isArray(sent) ? sent.filter((p): p is string => typeof p === 'string') : [])
-      if (err?.code === 'criteria_changed') setStale(true)
+      if (err?.code && RELOAD_CODES.includes(err.code)) setStale(err.code)
       // Another year started taking applications: show the rules of the year that is now in force.
       if (err?.code === 'rule_year_changed') await load(true)
     } finally {
@@ -214,14 +214,12 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
       )}
 
       {serverProblems.length > 0 && (
-        <ul className="mt-3 list-disc pl-5 text-sm text-critical-600" data-testid="rules-server-problems">
-          {serverProblems.map((p) => <li key={p}>{p}</li>)}
-        </ul>
+        <ServerProblemList problems={serverProblems} testId="rules-server-problems" />
       )}
 
       {stale && (
         <div className="mt-3" data-testid="rules-stale">
-          <InfoBox kind="warning">{t('admin.criteria.error.criteriaChanged')}</InfoBox>
+          <InfoBox kind="warning">{t(errorKey(stale))}</InfoBox>
           <button type="button" onClick={() => { void load() }} data-testid="rules-reload"
             className="mt-2 rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-800">
             {t('admin.criteria.reload')}

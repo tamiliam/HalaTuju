@@ -110,6 +110,11 @@ don't download, share or keep applicant details.
 **I'm stuck or something looks wrong with my account — whom do I contact?**
 Email the HalaTuju team at **tamiliam@gmail.com** and we'll help.
 
+**Who sets the rules a student must pass, and can they change mid-round?**
+Your organisation admin sets them on the gift's Rules tab. A change applies from the moment it is saved,
+to students already in as well, so a student may be shortlisted, or not, under the new rules. A student
+outside the gift's course-start years is flagged for you to look at, never declined.
+
 ## Reviewing
 
 **Why do I only see some applicants?**

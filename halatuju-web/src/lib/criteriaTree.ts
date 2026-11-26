@@ -52,6 +52,7 @@ export interface EditorState {
   perPersonOn: boolean
   perPerson: string
   bornIn: string[]
+  startOn: boolean
   startYears: string
 }
 
@@ -63,7 +64,7 @@ export const EMPTY_STATE: EditorState = {
   resultsJoin: 'own', postOn: false, pngkOn: false, pngk: '', postMeritOn: false, postMerit: '',
   spmOn: false, rows: [], spmMeritOn: false, spmMerit: '',
   incomeJoin: 'any', householdOn: false, household: '', perPersonOn: false, perPerson: '',
-  bornIn: [], startYears: '',
+  bornIn: [], startOn: false, startYears: '',
 }
 
 const str = (v: unknown) => (typeof v === 'number' ? String(v) : '')
@@ -118,18 +119,21 @@ export function treeToState(tree: CriteriaTree | null | undefined): EditorState 
     }
   }
   const flag = asList(tree?.flag).find((f) => f.test === 'course_start_year')
-  if (flag) s.startYears = asList(flag.allowed).map(String).join(', ')
+  if (flag) { s.startOn = true; s.startYears = asList(flag.allowed).map(String).join(', ') }
   return s
 }
 
 /** One reason the boxes cannot be saved: an i18n key under `admin.criteria.problem`. */
 export type Problem =
   | 'pngkBlank' | 'pngkRange' | 'meritBlank' | 'meritRange' | 'countBlank' | 'countRange'
-  | 'incomeBlank' | 'incomeRange' | 'years' | 'empty' | 'voidSpmDoor' | 'voidSpmGroup'
-  | 'postNoFloor' | 'resultsNoTest'
+  | 'incomeBlank' | 'incomeRange' | 'years' | 'yearsBlank' | 'empty' | 'voidSpmDoor' | 'voidSpmGroup'
+  | 'postNoFloor' | 'resultsNoTest' | 'meritNeedsFloor' | 'gradeTwice'
 
 const num = (s: string) => (s.trim() === '' ? NaN : Number(s.trim()))
 const isWhole = (n: number) => Number.isInteger(n) && n >= 0
+/** Blank and not-a-number are different messages: "abc" is out of range, not blank. */
+const blank = (s: string) => s.trim() === ''
+const outside = (n: number, max: number) => Number.isNaN(n) || n < 0 || n > max
 
 /** The boxes -> the tree to save, with every reason it may not be saved (`[]` = it may). The tree
  *  is canonical: sections, groups and tests in the order `from_legacy` writes them. */
@@ -143,16 +147,17 @@ export function stateToTree(s: EditorState): { tree: CriteriaTree; problems: Pro
     const tests: Json[] = []
     if (s.pngkOn) {
       const v = num(s.pngk)
-      if (Number.isNaN(v)) problems.add('pngkBlank')
-      else if (v < 0 || v > PNGK_MAX) problems.add('pngkRange')
+      if (blank(s.pngk)) problems.add('pngkBlank')
+      else if (outside(v, PNGK_MAX)) problems.add('pngkRange')
       tests.push({ test: 'min_pngk', value: v })
     }
     groups.push({ route: 'post_spm', all: tests })
   }
   if (s.spmOn) {
+    if (new Set(s.rows.map((r) => r.grade)).size < s.rows.length) problems.add('gradeTwice')
     const tests = s.rows.map((r) => {
       const n = num(r.count)
-      if (Number.isNaN(n)) problems.add('countBlank')
+      if (blank(r.count)) problems.add('countBlank')
       else if (!isWhole(n) || n > COUNT_MAX) problems.add('countRange')
       return { test: 'grade_count', at_least: n, grade_or_better: r.grade }
     })
@@ -161,8 +166,8 @@ export function stateToTree(s: EditorState): { tree: CriteriaTree; problems: Pro
   const meritTest = (on: boolean, value: string, test: string) => {
     if (!on) return
     const v = num(value)
-    if (Number.isNaN(v)) problems.add('meritBlank')
-    else if (v < 0 || v > MERIT_MAX) problems.add('meritRange')
+    if (blank(value)) problems.add('meritBlank')
+    else if (outside(v, MERIT_MAX)) problems.add('meritRange')
     merit.push({ test, value: v })
   }
   meritTest(s.spmOn && s.spmMeritOn, s.spmMerit, 'min_upu_merit')
@@ -175,7 +180,7 @@ export function stateToTree(s: EditorState): { tree: CriteriaTree; problems: Pro
   const rm = (on: boolean, value: string, test: string) => {
     if (!on) return
     const v = num(value)
-    if (Number.isNaN(v)) problems.add('incomeBlank')
+    if (blank(value)) problems.add('incomeBlank')
     else if (!isWhole(v) || v > RM_MAX) problems.add('incomeRange')
     income.push({ test, rm: v })
   }
@@ -188,7 +193,8 @@ export function stateToTree(s: EditorState): { tree: CriteriaTree; problems: Pro
   if (states.length) sections.push({ section: 'born_in', any: states })
 
   const tree: CriteriaTree = { all: sections }
-  const tokens = s.startYears.split(/[\s,]+/).filter(Boolean)
+  const tokens = s.startOn ? s.startYears.split(/[\s,]+/).filter(Boolean) : []
+  if (s.startOn && !tokens.length) problems.add('yearsBlank')
   if (tokens.length) {
     const years = tokens.map(Number)
     if (years.some((y) => !Number.isInteger(y) || y < YEAR_MIN || y > YEAR_MAX)) problems.add('years')
@@ -197,9 +203,10 @@ export function stateToTree(s: EditorState): { tree: CriteriaTree; problems: Pro
 
   if (!sections.length) problems.add('empty')
 
-  // The server's write rules (Sprint 3 review R1): a post-SPM group needs its minimum CGPA (a
-  // post-SPM merit is read from it), and a results section must test something unless a merit
-  // section binds its students.
+  // The server's write rules (Sprint 3 review R1, criteria_write.py): a post-SPM group needs its
+  // minimum CGPA (NO_PNGK_FLOOR; the post-SPM merit is read from it, MERIT_NEEDS_FLOOR), and a
+  // results section whose groups hold no test is refused unless a merit section is present
+  // (NO_RESULTS_RULE, `empty_problems`) - the same test, on the same tree.
   if (s.postOn && !s.pngkOn) problems.add('postNoFloor')
   if (groups.length && groups.every((g) => asList(g.all).length === 0) && !merit.length) {
     problems.add('resultsNoTest')
@@ -245,14 +252,17 @@ export function canShow(tree: CriteriaTree | null | undefined): boolean {
   return canonical(stateToTree(treeToState(tree)).tree) === canonical(tree)
 }
 
-/** Whether two sets of boxes say the same tree (the Save button's "is there a change"). */
+/** Whether two sets of boxes say the same tree (the Save button's "is there a change"). The
+ *  course-start switch counts by itself: switched on with no year yet is a change, so its
+ *  reason ("enter a year") shows. */
 export function sameTree(a: EditorState, b: EditorState): boolean {
-  return canonical(stateToTree(a).tree) === canonical(stateToTree(b).tree)
+  return a.startOn === b.startOn && canonical(stateToTree(a).tree) === canonical(stateToTree(b).tree)
 }
 
 /** An API error code -> its i18n key under `admin.criteria.error`. Unknown codes are generic. */
 export const ERROR_KEYS: Record<string, string> = {
   criteria_required: 'generic',
+  digest_required: 'digestRequired',
   unknown_field: 'generic',
   intake_id_required: 'generic',
   bad_criteria: 'badCriteria',
@@ -270,5 +280,94 @@ export const ERROR_KEYS: Record<string, string> = {
 export function errorKey(code: string | undefined, status?: number): string {
   if (code && ERROR_KEYS[code]) return `admin.criteria.error.${ERROR_KEYS[code]}`
   if (status === 403) return 'admin.criteria.error.forbidden'
+  // criteria_tree.py answers a missing intake with a bare 404 {error: 'not_found'} and no code.
+  if (status === 404) return 'admin.criteria.error.notFound'
   return 'admin.criteria.error.generic'
 }
+
+/** The codes after which the screen offers a reload (the rules shown may be out of date). */
+export const RELOAD_CODES = ['criteria_changed', 'digest_required']
+
+/** A problem string from the server's `bad_criteria` list (criteria.py, criteria_write.py) -> the
+ *  same reason the screen gives (`admin.criteria.problem.*`), so it reads in the admin's language.
+ *  null = a string this screen does not know: show it as it is, under "technical detail". */
+const SERVER_PROBLEMS: [RegExp, Problem][] = [
+  [/^the tree checks nothing/, 'empty'],
+  [/^results: no group holds a rule/, 'resultsNoTest'],
+  [/^results: a post-SPM group needs a min_pngk floor/, 'postNoFloor'],
+  [/^merit: min_merit \(the post-SPM merit\) needs a post-SPM group/, 'meritNeedsFloor'],
+  [/^results: an SPM group with no rule that can fail, beside a post-SPM group under "any"/, 'voidSpmDoor'],
+  [/^results: an SPM group with no rule that can fail, beside a post-SPM group, lets/, 'voidSpmGroup'],
+  [/^spm: grade_count repeated/, 'gradeTwice'],
+  [/: grade_count at_least must be/, 'countRange'],
+  [/: (household_income_max|income_per_person_under) needs a whole number rm/, 'incomeRange'],
+  [/: min_pngk needs a number value/, 'pngkRange'],
+  [/: (min_merit|min_upu_merit) needs a number value/, 'meritRange'],
+  [/^course_start_year needs allowed/, 'years'],
+]
+
+export function serverProblemKey(p: string): Problem | null {
+  for (const [re, key] of SERVER_PROBLEMS) if (re.test(p)) return key
+  return null
+}
+
+/** The grade a new row starts at: the lowest one not already used (C first), so adding a row
+ *  never makes a repeat by itself. */
+export function nextGrade(rows: GradeRow[]): Grade {
+  const used = new Set(rows.map((r) => r.grade))
+  return [...GRADES].reverse().find((g) => !used.has(g)) ?? 'C'
+}
+
+const GRADE_COLUMN: Record<string, string> = { 'A-': 'min_spm_a_count', 'B+': 'min_spm_bplus_count', C: 'min_spm_credit_count' }
+
+/** EVERY requirement key the intake-year create needs (views_admin/intake_years.py: a missing key
+ *  is refused, `missing_requirement`; null / [] = no rule). */
+export const REQUIREMENT_KEYS = [
+  'min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count', 'min_stpm_pngk',
+  'min_merit_score', 'income_ceiling', 'per_capita_ceiling', 'allowed_birth_states', 'allowed_start_years',
+] as const
+
+export type Columns = Record<string, number | string[] | number[] | null>
+
+/** ``tree`` said in the old requirement columns, read the way the API's
+ *  `criteria_read.column_values` reads it. Parts with no column (an 'all' income join, a post-SPM
+ *  merit, a count at another grade, a non-'own' results join) are left out: the create then PATCHes
+ *  the whole tree (`IntakeYearTab`). */
+export function columnsFor(tree: CriteriaTree): Columns {
+  const out: Columns = {}
+  for (const k of REQUIREMENT_KEYS) out[k] = null
+  out.allowed_birth_states = []
+  out.allowed_start_years = []
+  for (const sec of asList(tree.all)) {
+    const [, items] = modeOf(sec)
+    if (sec.section === 'results') {
+      for (const g of items) {
+        for (const t of asList(g.all)) {
+          const col = GRADE_COLUMN[t.grade_or_better as string]
+          if (g.route === 'post_spm' && t.test === 'min_pngk') out.min_stpm_pngk = t.value as number
+          else if (g.route === 'spm' && t.test === 'grade_count' && col) out[col] = t.at_least as number
+        }
+      }
+    } else if (sec.section === 'merit') {
+      const upu = find(items, 'min_upu_merit')
+      if (upu) out.min_merit_score = upu.value as number
+    } else if (sec.section === 'income') {
+      const h = find(items, 'household_income_max')
+      if (h) out.income_ceiling = h.rm as number
+      const pp = find(items, 'income_per_person_under')
+      if (pp) out.per_capita_ceiling = pp.rm as number
+    } else if (sec.section === 'born_in') {
+      out.allowed_birth_states = asList(sec.any) as unknown as string[]
+    }
+  }
+  const flag = asList(tree.flag).find((f) => f.test === 'course_start_year')
+  if (flag) out.allowed_start_years = asList(flag.allowed) as unknown as number[]
+  return out
+}
+
+/** Whether two stored trees mean the same thing (order aside): the create's "did the columns say
+ *  it all, or must the whole tree be PATCHed" check. */
+export function sameStoredTree(a: CriteriaTree | null | undefined, b: CriteriaTree): boolean {
+  return !!a && canonical(a) === canonical(b)
+}
+
