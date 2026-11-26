@@ -9857,7 +9857,7 @@ loses a write (both below).
 **Remainder: clock behind.** If a switched student's phone clock is behind by more than the time since the switch,
 a genuine move back to STPM is dropped by the server (`results_switch.py`, around line 121). `/onboarding/profile`
 reloads the profile after the sync (`page.tsx`, around line 227), so the login hydrate (`auth-context.tsx`, around
-lines 291-295) erases the STPM grades they just entered, with no message. Who: only switched students moving back
+lines 262-266) erases the STPM grades they just entered, with no message. Who: only switched students moving back
 with a badly wrong clock. Recovery: set the phone to automatic time and enter the results again. The data errs
 towards SPM, their last explicit choice; eligibility never runs on stale data.
 
