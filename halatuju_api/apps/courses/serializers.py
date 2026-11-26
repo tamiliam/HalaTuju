@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 from rest_framework import serializers
 
-from . import angka_giliran as ag_index, results_switch
+from . import angka_giliran as ag_index, quiz_signals, results_switch
 from .exam_questions import QUALIFICATIONS, THIRD_ROUTE, is_tertiary, results_held
 from .models import Course, FieldTaxonomy, Institution, CourseRequirement, CourseTag, MascoOccupation, StudentProfile
 
@@ -332,6 +332,9 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     clear_held_results = serializers.BooleanField(required=False, write_only=True)
     results_completed_at = serializers.DateTimeField(required=False, allow_null=True, write_only=True)
     angka_giliran = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_student_signals(self, value):   # #81: an empty quiz never wipes a saved one
+        return quiz_signals.keep_saved(getattr(self.instance, 'student_signals', None), value)
 
     def validate_angka_giliran(self, value):
         """Either shape, normalised. The value already stored passes unchanged, so a resend never

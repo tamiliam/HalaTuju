@@ -659,7 +659,7 @@ class MineTests(_Base):
         cases = {c['id']: c for c in self._body('ov-rev')['mine']['cases']}
         self.assertEqual(set(cases[self.r_soon.id]),
                          {'id', 'ref', 'applicant_name', 'status',
-                          'assigned_at', 'due_at', 'band'})
+                          'assigned_at', 'due_at', 'band', 'returned_by_qc'})
         self.assertEqual(cases[self.r_soon.id]['band'], 'due_soon')
         self.assertEqual(cases[self.r_over.id]['band'], 'overdue')
         self.assertEqual(cases[self.r_open.id]['band'], 'open')

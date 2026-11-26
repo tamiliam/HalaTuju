@@ -93,6 +93,9 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
     # #73: the caller has a note from the other side here they have not seen (the list's EXISTS column,
     # `staff_notifications.with_new_note`); False wherever the column was not asked for.
     new_note = serializers.SerializerMethodField()
+    # #86: an open QC send-back (`review_sla.returned_by_qc`, the list's EXISTS column) - the
+    # "Returned by QC" mark; False wherever the column was not asked for.
+    returned_by_qc = serializers.SerializerMethodField()
     # Owner 2026-11-23: the ONE second chip beside the status (`rejection_chip.py`). The list view
     # puts the page's QC-rejected ids in the context (`qc_rejected_ids`, one query for the page);
     # without them this row is looked up alone.
@@ -111,7 +114,7 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
             # When set, the list pill shows "Reopened" (overriding accepted/rejected).
             'decision_reopened_at',
             'rejection_category',
-            'new_note',
+            'new_note', 'returned_by_qc',
             'rejection_chip',
         ]
 
@@ -121,6 +124,9 @@ class AdminApplicationListSerializer(ServesTheHandover, _gift.ServesTheCaseGifts
 
     def get_new_note(self, obj):
         return bool(getattr(obj, 'new_note', False))
+
+    def get_returned_by_qc(self, obj):
+        return bool(getattr(obj, 'returned_by_qc', False))
 
     def get_ready_on(self, obj):
         from ..services import ready_on

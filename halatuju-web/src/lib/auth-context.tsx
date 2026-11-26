@@ -297,7 +297,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (Object.keys(demo).length > 0) {
       localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
     }
-    if (profile.student_signals) {
+    // #81: `{}` (no quiz yet) is truthy; cached, the next sign-in sync sent it back over a saved quiz.
+    if (profile.student_signals && Object.keys(profile.student_signals).length > 0) {
       localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
     }
     // STPM data (and the exam, the completion, the third route) — left alone on a pending move up

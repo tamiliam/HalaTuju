@@ -587,15 +587,14 @@ def mine(scope, admin, *, now, clocks, organisation_id=None, programme=None, coh
     as how long a student waited, not as how fast this reviewer is.
     """
     from .pool import pool_ref
-    from .review_sla import AWAITING_VERDICT, review_band, review_due
+    from .review_sla import REVIEWERS_TURN, returned_by_qc, review_band, review_due
     from .views_admin import _reviewer_workloads
-
-    cases = []
-    counts = {'open': 0, 'due_soon': 0, 'overdue': 0}
-    rows = (scope.filter(AWAITING_VERDICT, assigned_to=admin)
-            .values_list('id', 'profile__name', 'status', 'assigned_at'))
-    for app_id, name, status, assigned_at in rows:
-        band = review_band(assigned_at, now=now, clocks=clocks)
+    cases, counts = [], {'open': 0, 'due_soon': 0, 'overdue': 0}
+    # #81 + #86: the reviewer's TURN (a returned or stuck case too); only an undecided one has a clock.
+    rows = (returned_by_qc(scope.filter(REVIEWERS_TURN, assigned_to=admin)).values_list(
+        'id', 'profile__name', 'status', 'assigned_at', 'verdict_decided_at', 'returned_by_qc'))
+    for app_id, name, status, assigned_at, decided_at, returned in rows:
+        band = review_band(assigned_at, now=now, clocks=clocks) if decided_at is None else None
         # ⚠ `open` IS THE WHOLE POPULATION, and the band names are NOT keys to index by — the
         # band `'open'` shares its name with the total, so `counts[band] += 1` would count an
         # untroubled case twice. Spelled out rather than clever.
@@ -607,17 +606,17 @@ def mine(scope, admin, *, now, clocks, organisation_id=None, programme=None, coh
         # ⚠ THROUGH `review_due`, NOT `assigned_at + clocks[0]`. Writing the arithmetic out here
         # would be exactly the fourth copy `review_sla` was created to prevent — and the one the
         # reviewer actually READS, so it is the worst place of all to let it drift.
-        due_at = review_due(assigned_at, clocks=clocks)
+        due_at = review_due(assigned_at, clocks=clocks) if band else None
         cases.append({
             'id': app_id,
             'ref': pool_ref(app_id) or '',
             'applicant_name': name or '',
             'status': status,
             'assigned_at': assigned_at.isoformat(),
-            'due_at': due_at.isoformat(),
-            'band': band,
+            'due_at': due_at.isoformat() if due_at else None,
+            'band': band, 'returned_by_qc': returned,
         })
-    cases.sort(key=lambda c: (c['due_at'], c['id']))
+    cases.sort(key=lambda c: (c['due_at'] is None, c['due_at'] or '', c['id']))
     work = _reviewer_workloads(
         [admin], organisation_id=organisation_id, programme=programme,
         cohort=cohort).get(admin.id, {})

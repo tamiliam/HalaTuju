@@ -43,6 +43,41 @@ AWAITING_VERDICT = (
     & ~Q(status__in=TERMINAL)
 )
 
+#: The QC stage: a reviewer has submitted and the case waits for a checker. Never the reviewer's turn.
+QC_STAGE = {'interviewed'}
+
+#: ⚠ **THE REVIEWER'S TURN — the "My open" population (requests #81 + #86, 27 Nov 2026).** Assigned,
+#: not terminal, not at QC, and EITHER no verdict saved, OR reopened by QC and not yet re-decided
+#: (`decision_reopened_at` is cleared by the re-decision, `reopen.close_reopen_with_change`), OR a
+#: verdict saved that never moved the case to QC (case 513: the Approve's submit was refused).
+#: `AWAITING_VERDICT` missed the last two because both keep their `verdict_decided_at` stamp, so
+#: both cases dropped off the reviewer's list while still theirs to finish.
+#:
+#: ⚠ ONLY `programme_overview.mine` (the count and its rows) and `in_band(..., 'open')` read this.
+#: The nudges (`send_review_nudges`) and the due-soon / overdue bands stay on `AWAITING_VERDICT`:
+#: their clock is `assigned_at`, which would call a case QC returned today "overdue" at once and
+#: email the reviewer so (TD-NEW-REOPEN-NUDGE).
+#:
+#: ⚠ NO VERDICT TEST, ON PURPOSE. The three arms are, between them, every verdict state a case
+#: before QC can be in (none saved / saved and reopened / saved and stuck), so their union is just
+#: "before QC": a verdict test here could only drop one of them again, which is the bug.
+REVIEWERS_TURN = (
+    Q(assigned_to__isnull=False)
+    & Q(assigned_at__isnull=False)
+    & ~Q(status__in=TERMINAL | QC_STAGE)
+)
+
+
+def returned_by_qc(queryset):
+    """``queryset`` with ``returned_by_qc``: an OPEN reopen that took the case back from AWAITING QC
+    (`reopened_from='interviewed'`, the QC's send-back). Served for the "Returned by QC" mark on
+    My open (#86); one EXISTS column, no query per row."""
+    from django.db.models import Exists, OuterRef
+
+    from .models import DecisionReopen
+    return queryset.annotate(returned_by_qc=Exists(DecisionReopen.objects.filter(
+        application=OuterRef('pk'), closed_at__isnull=True, reopened_from='interviewed')))
+
 
 def clocks(org):
     """`(sla_days, soon_days, grace_days)` for one organisation.
@@ -110,10 +145,11 @@ def in_band(queryset, band, *, now, clocks):
     but not overdue. The boundaries are `review_band`'s own, `now == due` being overdue.
 
     `band='open'` is the WHOLE awaiting-verdict population (the `my_open` card's count: every band
-    is a subset of it), so it is the `AWAITING_VERDICT` filter itself, not a copy of it."""
-    qs = queryset.filter(AWAITING_VERDICT)
+    is a subset of it), so it is the `REVIEWERS_TURN` filter itself, not a copy of it (#81 + #86: a
+    case QC returned, or one whose verdict saved without reaching QC, is still the reviewer's)."""
     if band == 'open':
-        return qs
+        return queryset.filter(REVIEWERS_TURN)
+    qs = queryset.filter(AWAITING_VERDICT)
     sla, soon = clocks[0], clocks[1]
     overdue_at = now - timedelta(days=sla)
     if band == 'overdue':

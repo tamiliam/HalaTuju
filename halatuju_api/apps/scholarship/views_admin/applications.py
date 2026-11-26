@@ -16,7 +16,7 @@ from halatuju.pagination import FlexiblePageNumberPagination
 from apps.courses import public as courses_public
 from .. import award_withdrawal_chain as withdrawal_chain
 from .. import reopen as reopen_service
-from .. import staff_activity, staff_notifications
+from .. import review_sla, staff_activity, staff_notifications
 from .. import rejection_chip, surface_gates   # rejection_chip: the list's QC rejects in ONE query
 from ..document_snapshot import document_snapshot, snapshot_unless_open
 from ..models import Referee, ScholarshipApplication
@@ -153,16 +153,15 @@ class AdminApplicationListView(_AdminBase):
             from ..services.queries_sla import assignable_now
             qs = assignable_now(qs)
         if request.GET.get('band') in ('overdue', 'due_soon', 'open'):
-            from .. import review_sla
             sla_org = None if admin.is_super else admin.owning_organisation
             if sla_org is None and programme is not None:
                 sla_org = programme.organisation
             qs = review_sla.in_band(qs, request.GET['band'], now=timezone.now(),
                                     clocks=review_sla.clocks(sla_org))
         qs = withdrawal_chain.narrow_list(qs, request.GET.get('withdrawal'), admin)   # A1.13b: the card's rule
-        # TD-162: every row's first-assignment readiness; #73: the caller's "New note" mark. EXISTS columns.
+        # TD-162: first-assignment readiness; #73: the caller's "New note"; #86: "Returned by QC". EXISTS columns.
         from ..services.queries_sla import with_open_student_tasks
-        qs = staff_notifications.with_new_note(with_open_student_tasks(qs), admin)
+        qs = review_sla.returned_by_qc(staff_notifications.with_new_note(with_open_student_tasks(qs), admin))
         # Sorting (?sort=name|source|status|submitted|assigned|merit, ?dir=asc|desc). Default (no sort) = newest
         # submitted first, as before. Name sorts in the DB; merit is COMPUTED (no
         # column), so we materialise the filtered set, sort in Python, then paginate

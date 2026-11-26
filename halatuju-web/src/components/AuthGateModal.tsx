@@ -170,7 +170,9 @@ export default function AuthGateModal() {
         if (typeof p.coqScore === 'number') syncData.coq_score = p.coqScore
       }
       const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
-      if (signals) syncData.student_signals = JSON.parse(signals)
+      const parsedSignals = signals ? JSON.parse(signals) : null
+      // #81: an empty cache is never sent (the server also refuses it over a saved quiz).
+      if (parsedSignals && Object.keys(parsedSignals).length > 0) syncData.student_signals = parsedSignals
       // exam_type + the recorded completion + the WHOLE completed list (+ the third route's fields),
       // as one set — and ONLY when the server records no completion yet: a stale browser must
       // never overwrite one (`signInResultsFields`, S2b review).
