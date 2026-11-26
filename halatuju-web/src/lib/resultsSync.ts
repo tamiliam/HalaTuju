@@ -14,9 +14,10 @@
  * third-route kind: an SPM or STPM student's sync never touches them.
  */
 import { syncProfile, type SyncProfileData } from '@/lib/api'
-import { browserMovesUp, completedQualificationsFor, isThirdRoute } from '@/lib/qualification'
+import { browserMovesUp, completedQualificationsFor, isTertiary, isThirdRoute } from '@/lib/qualification'
 import {
-  KEY_EXAM_TYPE, KEY_HIGHER_CGPA, KEY_HIGHER_INSTITUTION, KEY_HIGHER_KOKO, KEY_RESULTS_EXAM_TYPE,
+  KEY_EXAM_TYPE, KEY_HIGHER_CGPA, KEY_HIGHER_INSTITUTION, KEY_HIGHER_KOKO, KEY_RESULTS_COMPLETED_AT,
+  KEY_RESULTS_EXAM_TYPE,
 } from '@/lib/storage'
 
 type Readable = Pick<Storage, 'getItem'>
@@ -36,6 +37,10 @@ export function resultsSyncFields(store: Readable): Partial<SyncProfileData> {
   if (completed.length === 0) return out
   out.results_exam_type = recorded
   out.completed_qualifications = completed
+  // Pre-U sprint, review round 2: when the form was completed - after a switch to SPM the server
+  // takes a tertiary completion only if it is newer than the switch (`results_switch`).
+  const completedAt = store.getItem(KEY_RESULTS_COMPLETED_AT)
+  if (completedAt && isTertiary(recorded)) out.results_completed_at = completedAt
   if (isThirdRoute(recorded)) {
     out.higher_cgpa = num(store.getItem(KEY_HIGHER_CGPA))
     const diploma = recorded === 'diploma'

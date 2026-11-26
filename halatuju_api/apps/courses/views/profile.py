@@ -225,6 +225,7 @@ class ProfileView(APIView):
             # to SPM is refused because an application rests on the held results (`results_switch`).
             'pre_u_studied_at': profile.pre_u_studied_at,
             'held_results_locked': results_switch.held_results_locked(profile),
+            'held_results_cleared_at': profile.held_results_cleared_at,   # round 2: the switch's stamp
             'chosen_programme': profile.chosen_programme,
             'pathways_considered': profile.pathways_considered,
             'uncertainty_reasons': profile.uncertainty_reasons,

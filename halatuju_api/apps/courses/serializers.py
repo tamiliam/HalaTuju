@@ -327,9 +327,10 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     stpm_koko = serializers.FloatField(required=False, allow_null=True, min_value=0, max_value=10)
     # C4: sent (true) only by the onboarding STPM step's own save, never by a sign-in resend.
     stpm_koko_confirmed = serializers.BooleanField(required=False, write_only=True)
-    # Pre-U sprint: the switch to SPM's one explicit signal (`results_switch`); no model max_length
-    # on the index, so a spaced STPM index reaches `validate_angka_giliran` and is normalised there.
+    # Pre-U sprint: the switch's signal and the tertiary form's completion time (`results_switch`);
+    # no model max_length on the index, so a spaced STPM index is normalised in validate_angka_giliran.
     clear_held_results = serializers.BooleanField(required=False, write_only=True)
+    results_completed_at = serializers.DateTimeField(required=False, allow_null=True, write_only=True)
     angka_giliran = serializers.CharField(required=False, allow_blank=True)
 
     def validate_angka_giliran(self, value):
@@ -588,7 +589,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             # Pathway / "Your Plans" (profile-level home; two-way synced with an open app).
             'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
             'chosen_programme', 'pathways_considered', 'uncertainty_reasons', 'uncertainty_note',
-            'pre_u_studied_at', 'clear_held_results',   # pre-U sprint: NOT pathway fields
+            'pre_u_studied_at', 'clear_held_results', 'results_completed_at',   # pre-U: NOT pathway
         ]
         # NRIC only changes via the validated claim endpoint (/profile/claim-nric/),
         # never an unchecked PUT or sync — closes the soft-NRIC write gap.

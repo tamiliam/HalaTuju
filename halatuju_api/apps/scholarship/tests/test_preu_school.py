@@ -1,5 +1,7 @@
 """Pre-U sprint (2026-11-26): the Angka Giliran's two shapes, the "pre-U studied at" field, and the
 STPM / higher -> SPM switch's one explicit signal (`apps.courses.results_switch`)."""
+from datetime import timedelta
+
 from django.test import SimpleTestCase, TestCase
 
 from apps.courses import angka_giliran as ag
@@ -130,7 +132,7 @@ class TestTheSwitchToSpm(TestCase):
         from apps.courses.results_switch import held_results_locked
         app = make_application('submitted', student=make_student(**STPM_HOLDER))
         self.assertTrue(held_results_locked(app.profile))
-        for status in ('withdrawn', 'expired', 'rejected'):
+        for status in ('withdrawn', 'expired', 'rejected'):   # rejected and not reopened
             with self.subTest(status=status):
                 type(app).objects.filter(pk=app.pk).update(status=status)
                 self.assertFalse(held_results_locked(app.profile))
@@ -150,6 +152,18 @@ class TestTheSwitchToSpm(TestCase):
         type(app).objects.filter(pk=app.pk).update(status='rejected')
         p = _save(app.profile, {**SPM_SAVE, 'clear_held_results': True})
         self.assertEqual(eq.results_held(p), 'spm')
+        self.assertIsNotNone(p.held_results_cleared_at)           # round 2: the switch's stamp
+
+    def test_a_reopened_rejected_application_still_locks(self):
+        """Review round 2: a reopened rejection stays 'rejected' with decision_reopened_at set."""
+        from django.utils import timezone
+        from apps.courses.results_switch import held_results_locked
+        app = make_application('submitted', student=make_student(**STPM_HOLDER))
+        type(app).objects.filter(pk=app.pk).update(status='rejected', decision_reopened_at=timezone.now())
+        self.assertTrue(held_results_locked(app.profile))
+        s = ProfileUpdateSerializer(app.profile, data={**SPM_SAVE, 'clear_held_results': True}, partial=True)
+        self.assertFalse(s.is_valid())
+        self.assertEqual(s.errors['clear_held_results'][0].code, 'held_results_locked')
 
     def test_the_switch_also_clears_the_koko_ask_marker_and_keeps_spm_valid_fields(self):
         p = make_student(**STPM_HOLDER, stpm_koko_unconfirmed=True, muet_band=4,
@@ -165,6 +179,11 @@ def _switched():
     p = _save(make_student(**STPM_HOLDER), {**SPM_SAVE, 'clear_held_results': True})
     p.refresh_from_db()
     return p
+
+
+def _after(p, seconds=60):
+    """A completion time this long after the switch's stamp (negative = before it)."""
+    return (p.held_results_cleared_at + timedelta(seconds=seconds)).isoformat()
 
 
 class TestTheClearedResultsStayCleared(TestCase):
@@ -197,9 +216,10 @@ class TestTheClearedResultsStayCleared(TestCase):
         self._assert_spm_only(p)
 
     def test_a_genuine_move_to_stpm_still_saves(self):
-        p = _save(_switched(), {'exam_type': 'stpm', 'results_exam_type': 'stpm',
-                                'completed_qualifications': ['spm', 'stpm'], 'grades': SPM,
-                                'stpm_grades': STPM, 'stpm_cgpa': 3.5})
+        p = _switched()
+        p = _save(p, {'exam_type': 'stpm', 'results_exam_type': 'stpm', 'results_completed_at': _after(p),
+                      'completed_qualifications': ['spm', 'stpm'], 'grades': SPM,
+                      'stpm_grades': STPM, 'stpm_cgpa': 3.5})
         p.refresh_from_db()
         self.assertEqual(eq.results_held(p), 'stpm')
         self.assertEqual(p.stpm_grades, STPM)
@@ -207,13 +227,48 @@ class TestTheClearedResultsStayCleared(TestCase):
     def test_a_genuine_move_to_matriculation_still_saves(self):
         from django.test import override_settings
         with override_settings(THIRD_ROUTE_OPEN=True):
-            p = _save(_switched(), {'exam_type': 'matric', 'results_exam_type': 'matric',
-                                    'completed_qualifications': ['spm', 'matric'], 'grades': SPM,
-                                    'higher_cgpa': 3.6, 'stpm_grades': STPM})
+            p = _switched()
+            p = _save(p, {'exam_type': 'matric', 'results_exam_type': 'matric',
+                          'results_completed_at': _after(p),
+                          'completed_qualifications': ['spm', 'matric'], 'grades': SPM,
+                          'higher_cgpa': 3.6, 'stpm_grades': STPM})
         p.refresh_from_db()
         self.assertEqual(eq.results_held(p), 'matric')
         self.assertEqual(p.higher_cgpa, 3.6)
         self.assertEqual(p.stpm_grades, {})                 # a matric write never revives STPM
+
+    def test_a_stale_device_completion_is_ignored(self):
+        """Review round 2: a second device still RECORDS STPM, completed before the switch (or with
+        no time at all, an older web release) — the completion and its results are dropped."""
+        for when in ('before', 'none'):
+            with self.subTest(when=when):
+                p = _switched()
+                data = {'exam_type': 'stpm', 'results_exam_type': 'stpm', 'grades': SPM,
+                        'completed_qualifications': ['spm', 'stpm'], 'stpm_grades': STPM,
+                        'stpm_cgpa': 3.5, 'name': 'F'}
+                if when == 'before':
+                    data['results_completed_at'] = _after(p, -3600)
+                p = _save(p, data)
+                self._assert_spm_only(p)
+                self.assertEqual((p.exam_type, p.results_exam_type, p.name), ('spm', 'spm', 'F'))
+
+    def test_a_stale_device_cannot_overwrite_a_later_move_back(self):
+        p = _switched()
+        p = _save(p, {'results_exam_type': 'stpm', 'results_completed_at': _after(p),
+                      'completed_qualifications': ['spm', 'stpm'], 'stpm_grades': STPM, 'stpm_cgpa': 3.5})
+        p = _save(p, {'results_exam_type': 'stpm', 'results_completed_at': _after(p, -60),
+                      'completed_qualifications': ['spm', 'stpm'], 'stpm_grades': {'PA': 'C'},
+                      'stpm_cgpa': 2.0})
+        p.refresh_from_db()
+        self.assertEqual((eq.results_held(p), p.stpm_grades, p.stpm_cgpa), ('stpm', STPM, 3.5))
+
+    def test_a_never_switched_student_needs_no_completion_time(self):
+        p = make_student(**STPM_HOLDER)
+        self.assertIsNone(p.held_results_cleared_at)
+        p = _save(p, {'results_exam_type': 'stpm', 'completed_qualifications': ['spm', 'stpm'],
+                      'stpm_grades': {'PA': 'B'}, 'stpm_cgpa': 3.0})
+        self.assertEqual((p.stpm_grades, p.stpm_cgpa), ({'PA': 'B'}, 3.0))
+        self.assertIsNone(p.held_results_cleared_at)
 
     def test_an_spm_student_with_no_history_moves_to_stpm_as_before(self):
         p = make_student(exam_type='spm', grades=SPM, results_exam_type='spm',

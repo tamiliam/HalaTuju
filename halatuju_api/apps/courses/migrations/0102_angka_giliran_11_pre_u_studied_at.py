@@ -15,6 +15,11 @@ class Migration(migrations.Migration):
             name='pre_u_studied_at',
             field=models.CharField(blank=True, default='', max_length=255),
         ),
+        migrations.AddField(
+            model_name='studentprofile',
+            name='held_results_cleared_at',
+            field=models.DateTimeField(blank=True, null=True),
+        ),
         migrations.AlterField(
             model_name='studentprofile',
             name='angka_giliran',

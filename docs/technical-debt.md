@@ -9838,7 +9838,7 @@ A student whose application uses those results sees "contact us" and Back only, 
 one extra query (`held_results_locked`).
 **Fix:** decide with the owner which residue to clear, and add a contact link to the locked message. *(A - M)*
 
-### [TD-768] Pre-U sprint: a device that never re-loaded the profile can still undo the switch at sign-in - low
+### [TD-768] Pre-U sprint: a device that never re-loaded the profile can still undo the switch at sign-in - low - FIXED 2026-11-26 (review round 2)
 
 **Raised in pre-U review round 1 (see CHANGELOG).** After the switch the server drops a resend of the old STPM /
 third-route results unless the same write records that exam as completed, and the login hydrate clears the
@@ -9846,6 +9846,29 @@ browser's copies. But a second device that still records STPM (results_exam_type
 hydrates sends that completion with its grades, and the server reads it as a genuine move back to STPM, the same as
 a real one. Telling the two apart needs a server marker of the switch (for example a cleared-at time the sync
 compares against). **Fix:** add the marker and refuse an older device's tertiary completion. *(A - M)*
+
+**Fixed in pre-U review round 2.** The switch stamps `held_results_cleared_at` (served on GET /profile). The STPM
+and third-route Continue buttons store when the form was completed, and both sync doors send it as
+`results_completed_at`. On a stamped profile the server drops a tertiary completion (with its exam, list and
+results) unless it was completed after the stamp, and the login hydrate drops the browser's older copies BEFORE
+the pending-move-up check. What remains is small: the completion time comes from the student's own clock, so a
+device whose clock runs behind by more than the time since the switch has its real move back dropped (they enter
+it again); and an STPM form started after the switch but not yet finished is cleared if the profile re-loads
+mid-form.
+
+### [TD-769] Pre-U sprint: a wrong "pre-U studied at" can be replaced but never blanked - low
+
+**Raised in pre-U review round 2 (see CHANGELOG).** `results_switch.keep_stored_on_blank` keeps a stored
+`pre_u_studied_at` when a write sends a blank (only the switch to SPM clears it), so a student cannot empty a
+wrong value, only type another. Acceptable for now: the apply form requires the field for a pre-U student.
+**Fix:** let the /profile page clear it on an explicit blank (not the sign-in sync). *(A - S)*
+
+### [TD-770] Pre-U sprint: an STPM to Matriculation move keeps the Form 6 school as where Matriculation was done - low
+
+**Raised in pre-U review round 2 (see CHANGELOG).** `_one_higher_qualification` clears the STPM results when a
+student completes the Matriculation / Asasi / Diploma form, but `pre_u_studied_at` stays, so the officer sees the
+Form 6 school as where Matriculation was completed until the student changes it on the apply form. **Fix:** clear
+or re-ask `pre_u_studied_at` when the completed tertiary kind changes. *(A - S)*
 
 ### [TD-767] Pre-U sprint: the polytechnic list is empty - low
 

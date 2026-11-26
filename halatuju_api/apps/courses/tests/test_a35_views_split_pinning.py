@@ -255,7 +255,7 @@ NEW_PROFILE = {
     'mother_name': '', 'mother_occupation': '', 'mother_occupation_other': '',
     'other_family_members': [], 'siblings_in_school': None, 'siblings_in_tertiary': None,
     'pathway_certainty': '', 'chosen_pathway': '', 'pre_u_track': '', 'pre_u_institution': '',
-    'pre_u_studied_at': '', 'held_results_locked': False,   # pre-U sprint
+    'pre_u_studied_at': '', 'held_results_locked': False, 'held_results_cleared_at': None,   # pre-U
     'chosen_programme': {}, 'pathways_considered': [], 'uncertainty_reasons': [], 'uncertainty_note': '',
     'merit_score': None, 'pathway': '', 'application_open': False, 'exam_type': 'spm',
     'results_exam_type': '', 'results_held': 'spm', 'stpm_grades': {}, 'stpm_cgpa': None,

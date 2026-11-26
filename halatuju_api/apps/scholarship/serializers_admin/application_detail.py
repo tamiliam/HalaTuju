@@ -19,7 +19,7 @@ from .handover import ServesTheHandover
 class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks, ServesTheDetailPeople, _gift.ServesTheGift, _dmail.ServesTheDecisionMail, _family.ServesTheFamilyAnswers, _stpm.ServesTheStpmMarks, _notes.ServesTheStudentsResultsNotes, serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     school = serializers.SerializerMethodField()
-    pre_u_studied_at = serializers.SerializerMethodField()   # pre-U sprint: served, not yet shown
+    pre_u_studied_at = serializers.SerializerMethodField()   # pre-U sprint: the Academic box's Pre-U institution
     # NRIC shown in full so the admin can compare it to the uploaded MyKad at verify time.
     nric = serializers.CharField(source='profile.nric', read_only=True)
     nric_verified = serializers.BooleanField(source='profile.nric_verified', read_only=True)

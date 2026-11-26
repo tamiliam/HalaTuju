@@ -1176,6 +1176,7 @@
      "pre_u_track",
      "pre_u_institution",
      "pre_u_studied_at",
+     "held_results_cleared_at",
      "chosen_programme",
      "pathways_considered",
      "uncertainty_reasons",

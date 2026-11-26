@@ -9,9 +9,10 @@ import { render, waitFor } from '@testing-library/react'
 
 import { AuthProvider } from '@/lib/auth-context'
 import {
-  KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_KOKO_SCORE, KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ,
-  KEY_STPM_CGPA, KEY_STPM_GRADES,
+  KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_KOKO_SCORE, KEY_RESULTS_COMPLETED_AT,
+  KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_STPM_GRADES,
 } from '@/lib/storage'
+import { resultsSyncFields, signInResultsFields } from '@/lib/resultsSync'
 
 let mockProfile: Record<string, unknown> = {}
 jest.mock('next/navigation', () => ({ usePathname: () => '/dashboard' }))
@@ -56,28 +57,66 @@ it('with no pending move up the hydrate writes the server answer as before', asy
   expect(JSON.parse(localStorage.getItem(KEY_SPM_PREREQ) as string)).toEqual({ bm: 'C' })
 })
 
-// Pre-U sprint, review round 1 (finding 3): after the switch to SPM (maybe on another device) the
-// server holds SPM only — this browser's old STPM / third-route copies are dropped, so no later sync
-// sends them back up.
-it('an SPM-only server profile drops the stale local STPM and third-route copies', async () => {
-  localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+// Pre-U sprint, review rounds 1 and 2: after the switch to SPM (maybe on another device) the server
+// holds SPM only and carries the switch's stamp. A browser copy not completed after the stamp is
+// dropped BEFORE the pending-move-up check, so no later sync sends it back up.
+const STAMP = '2026-11-26T08:00:00Z'
+const SERVER_SWITCHED = {
+  ...SERVER_SPM, stpm_grades: {}, completed_qualifications: ['spm'], held_results_cleared_at: STAMP,
+}
+
+it.each([
+  ['no completion time', null],
+  ['a completion time before the switch', '2026-11-25T08:00:00.000Z'],
+])('a stale local STPM completion (%s) is dropped although it reads as a move up', async (_l, at) => {
+  localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
+  localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
+  if (at) localStorage.setItem(KEY_RESULTS_COMPLETED_AT, at)
   localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A' }))
   localStorage.setItem(KEY_STPM_CGPA, '3.42')
   localStorage.setItem(KEY_KOKO_SCORE, '8')
   localStorage.setItem(KEY_HIGHER_CGPA, '3.1')
-  mockProfile = { ...SERVER_SPM, stpm_grades: {}, completed_qualifications: ['spm'] }
+  mockProfile = SERVER_SWITCHED
   render(<AuthProvider><div>app</div></AuthProvider>)
   await waitFor(() => expect(localStorage.getItem(KEY_STPM_GRADES)).toBeNull())
-  expect(localStorage.getItem(KEY_STPM_CGPA)).toBeNull()
-  expect(localStorage.getItem(KEY_KOKO_SCORE)).toBeNull()
-  expect(localStorage.getItem(KEY_HIGHER_CGPA)).toBeNull()
+  expect([KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_HIGHER_CGPA, KEY_RESULTS_COMPLETED_AT]
+    .map((k) => localStorage.getItem(k))).toEqual([null, null, null, null])
+  expect(localStorage.getItem(KEY_RESULTS_EXAM_TYPE)).toBe('spm')         // the server's, so no move up
+  expect(localStorage.getItem(KEY_EXAM_TYPE)).toBe('spm')
+  expect(resultsSyncFields(localStorage).results_exam_type).toBe('spm')  // the next sync sends SPM
   expect(localStorage.getItem(KEY_GRADES)).not.toBeNull()                 // the SPM results stay
+})
+
+it('an STPM entry completed after the switch is kept and sent with its time', async () => {
+  localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
+  localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
+  localStorage.setItem(KEY_RESULTS_COMPLETED_AT, '2026-11-26T09:00:00.000Z')
+  localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A' }))
+  mockProfile = SERVER_SWITCHED
+  render(<AuthProvider><div>app</div></AuthProvider>)
+  await waitFor(() => expect(localStorage.getItem(KEY_GRADES)).not.toBeNull())
+  expect(localStorage.getItem(KEY_RESULTS_EXAM_TYPE)).toBe('stpm')
+  expect(JSON.parse(localStorage.getItem(KEY_STPM_GRADES) as string)).toEqual({ PA: 'A' })
+  expect(signInResultsFields(localStorage, SERVER_SWITCHED)).toMatchObject({
+    results_exam_type: 'stpm', results_completed_at: '2026-11-26T09:00:00.000Z',
+  })
+})
+
+it('a student who never switched (no stamp) keeps the local copies as before', async () => {
+  localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
+  localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
+  localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A' }))
+  mockProfile = { ...SERVER_SWITCHED, held_results_cleared_at: null }
+  render(<AuthProvider><div>app</div></AuthProvider>)
+  await waitFor(() => expect(localStorage.getItem(KEY_GRADES)).not.toBeNull())
+  expect(localStorage.getItem(KEY_RESULTS_EXAM_TYPE)).toBe('stpm')
+  expect(JSON.parse(localStorage.getItem(KEY_STPM_GRADES) as string)).toEqual({ PA: 'A' })
 })
 
 it('a server that still holds STPM results keeps the local copies', async () => {
   localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
   localStorage.setItem(KEY_STPM_CGPA, '3.42')
-  mockProfile = { ...SERVER_SPM, completed_qualifications: ['spm'] }     // stpm_grades on file
+  mockProfile = { ...SERVER_SWITCHED, stpm_grades: { PA: 'C' } }           // stpm_grades on file
   render(<AuthProvider><div>app</div></AuthProvider>)
   await waitFor(() => expect(localStorage.getItem(KEY_GRADES)).not.toBeNull())
   expect(localStorage.getItem(KEY_STPM_CGPA)).toBe('3.42')

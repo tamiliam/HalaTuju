@@ -34,8 +34,8 @@ Branch preu-school, not pushed. Migration: 0102_angka_giliran_11_pre_u_studied_a
   Back only; the server refuses the clear and the sync resends without it. Debt: TD-766.
 - Tests: `test_preu_school.py`; `lib/preuSprint.test.ts`, `PreUStudiedAtField.test.tsx`,
   `onboarding/exam-type/page.switch.test.tsx`, the ApplicantCards academicSlots and thirdRoute tests.
-- **Review round 1 fixes:** a CLOSED application now locks the switch too (it may have been awarded; a rejected,
-  withdrawn or expired one does not), and the locked copy says "open, closed or awarded" in all three locales. The
+- **Review round 1 fixes:** a CLOSED application now locks the switch too (it may have been awarded; a rejected
+  (not reopened, round 2), withdrawn or expired one does not), and the locked copy says "open, closed or awarded" in all three locales. The
   dialog's yes lives in sessionStorage and expires 30 minutes after it is given, so a later grades save without a
   fresh yes never sends the clear. Cleared results stay cleared: on an SPM-only profile the server drops incoming
   STPM / third-route fields unless the same write records that exam as completed (another device's resend, or a
@@ -44,6 +44,16 @@ Branch preu-school, not pushed. Migration: 0102_angka_giliran_11_pre_u_studied_a
   back to the results the server still holds. The clear also removes `stpm_koko_unconfirmed`. A blank
   `pre_u_studied_at` on the profile PUT no longer wipes a stored one, and the picker's first chip follows results
   that arrive after it mounts. The orphan keys `preUCollegeRead` and `readFromResults` are removed. Debt: TD-768.
+- **Review round 2 fixes:** the switch stamps `held_results_cleared_at` (new column, folded into migration 0102;
+  served on GET /profile). The STPM and third-route Continue buttons store when the form was completed
+  (`halatuju_results_completed_at`), and both sync doors send it as `results_completed_at`. On a stamped profile
+  the server drops a tertiary completion, with its exam, list and results, unless it was completed after the stamp;
+  the login hydrate drops the browser's older copies and resets its exam to the server's BEFORE the pending-move-up
+  check, so a second device that still records STPM no longer puts it back (closes TD-768). A student who never
+  switched has no stamp and sees no change (the round-1 hydrate drop now needs the stamp too). A rejected case
+  that has been reopened (`decision_reopened_at` set) now locks the switch. The officer detail comment on
+  `pre_u_studied_at` is corrected. Debt: TD-769 (the field cannot be blanked), TD-770 (STPM to Matriculation keeps
+  the Form 6 school).
 - Guide and FAQ: the Academic box answer gives the new order and explains the Pre-U institution slot (where they
   completed pre-U, asked on the form, no tick yet; older STPM cases show the Form 6 school); the typed college stays
   the destination; the reviewer role page has a short paragraph on the slot.

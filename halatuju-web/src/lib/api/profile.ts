@@ -55,6 +55,8 @@ export interface StudentProfile {
   pre_u_studied_at?: string
   /** Pre-U sprint: an application is in play, so the server refuses a switch to SPM. */
   held_results_locked?: boolean
+  /** Pre-U sprint, review round 2: when the switch to SPM cleared the held results (ISO), or null. */
+  held_results_cleared_at?: string | null
   nric?: string
   address?: string
   postal_code?: string
@@ -229,6 +231,8 @@ export interface SyncProfileData {
   pre_u_studied_at?: string
   /** Pre-U sprint: sent ONLY by the SPM grades save after they confirmed the switch dialog. */
   clear_held_results?: boolean
+  /** Pre-U sprint, review round 2: when this browser completed its STPM / third-route form (ISO). */
+  results_completed_at?: string
   nric?: string
   referral_source?: string
   exam_type?: string

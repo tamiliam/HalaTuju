@@ -42,6 +42,9 @@ export const KEY_EXAM_TYPE = 'halatuju_exam_type'
  * editors when their form is finished, and synced to `profile.results_exam_type`.
  */
 export const KEY_RESULTS_EXAM_TYPE = 'halatuju_results_exam_type'
+/** Pre-U sprint, review round 2: when the STPM / third-route form was completed (ISO time), set
+ *  beside KEY_RESULTS_EXAM_TYPE and synced as `results_completed_at` (`lib/heldResultsLocal`). */
+export const KEY_RESULTS_COMPLETED_AT = 'halatuju_results_completed_at'
 
 /** Third results route (S2b): the Matriculation / Asasi / Diploma CGPA AS PRINTED (number as string).
  *  Which of the three is KEY_EXAM_TYPE / KEY_RESULTS_EXAM_TYPE. The overall CGPA is never stored

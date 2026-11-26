@@ -11,11 +11,13 @@ import {
   CONFIRM_TTL_MS, applyHeldClear, confirmSpmSwitch, dropLocalHeldResults, forgetSpmSwitch, heldResultsSummary,
   markSpmSaved, needsSpmSwitchDialog, restoreAfterRefusedClear, serverHoldsSpmOnly, settleHeldClear,
 } from '@/lib/resultsSwitch'
-import { signInResultsFields, syncProfileSafely } from '@/lib/resultsSync'
+import { markTertiaryCompleted } from '@/lib/heldResultsLocal'
+import { resultsSyncFields, signInResultsFields, syncProfileSafely } from '@/lib/resultsSync'
 import * as api from '@/lib/api'
 import type { SyncProfileData } from '@/lib/api'
 import {
-  KEY_CLEAR_HELD_PENDING, KEY_EXAM_TYPE, KEY_HIGHER_CGPA, KEY_RESULTS_EXAM_TYPE, KEY_STPM_CGPA, KEY_STPM_GRADES,
+  KEY_CLEAR_HELD_PENDING, KEY_EXAM_TYPE, KEY_HIGHER_CGPA, KEY_RESULTS_COMPLETED_AT, KEY_RESULTS_EXAM_TYPE,
+  KEY_STPM_CGPA, KEY_STPM_GRADES,
 } from '@/lib/storage'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
@@ -180,6 +182,15 @@ describe('STPM-to-SPM switch', () => {
     dropLocalHeldResults(localStorage)
     expect(localStorage.getItem(KEY_STPM_GRADES)).toBeNull()
     expect(localStorage.getItem(KEY_HIGHER_CGPA)).toBeNull()
+  })
+  it('the onboarding door sends a tertiary completion with its time, and never an SPM one', () => {
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
+    markTertiaryCompleted(localStorage)
+    const at = localStorage.getItem(KEY_RESULTS_COMPLETED_AT) as string
+    expect(Number.isNaN(Date.parse(at))).toBe(false)
+    expect(resultsSyncFields(localStorage)).toMatchObject({ results_exam_type: 'stpm', results_completed_at: at })
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    expect('results_completed_at' in resultsSyncFields(localStorage)).toBe(false)
   })
   it('the sign-in door never carries the clear, even with a ready flag', () => {
     confirmSpmSwitch(sessionStorage)
