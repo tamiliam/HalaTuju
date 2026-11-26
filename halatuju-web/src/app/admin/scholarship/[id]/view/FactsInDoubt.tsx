@@ -5,8 +5,9 @@
  * SERVER put in doubt (`second_look.in_doubt`: the AI said green and the reviewer failed it, or the
  * reviewer failed it and still chose Approve). The QC may answer each fact with Pass or Fail; nothing
  * is chosen at the start, a second tap on the chosen button clears it, and a fact left alone records
- * nothing. Each fact shows four rows: AI said, Reviewer (Fail and its reason), Decision (the reviewer's
- * overall Recommend or Decline) and Your verdict. It never blocks, delays or confirms a decision.
+ * nothing. Each fact shows three rows: AI said, Reviewer (Fail and its reason) and Your verdict. The
+ * reviewer's overall Recommend or Decline is not repeated here (the QC panel shows it). It never blocks,
+ * delays or confirms a decision.
  *
  * ⚠ The browser decides nothing here: which facts show, and what is stored on Accept / Reopen / Reject,
  * are the server's. "AI said" is the AI Prediction card's own band word (`factBandOf`). Pass is sent as
@@ -69,17 +70,10 @@ function VerdictRow({ fact, t, answer, busy, onChoose }: {
   )
 }
 
-/** The reviewer's overall decision as a word, from the stored verdict; null for any other value. */
-const DECISION_KEY: Record<string, string> = {
-  accept: 'admin.scholarship.recordVerdict.approve',
-  decline: 'admin.scholarship.recordVerdict.decline',
-}
-
-function FactRow({ item, t, band, overall, answer, busy, onChoose }: {
-  item: SecondLookFact; t: T; band: FactBand; overall: string | undefined; answer: QcAnswer | undefined
+function FactRow({ item, t, band, answer, busy, onChoose }: {
+  item: SecondLookFact; t: T; band: FactBand; answer: QcAnswer | undefined
   busy: boolean; onChoose: (a: QcAnswer) => void
 }) {
-  const decisionKey = overall ? DECISION_KEY[overall] : undefined
   return (
     <div data-testid={`doubt-${item.fact}`} className="space-y-2 rounded-lg border border-ground-200 bg-ground-0 p-2.5">
       <p className="text-sm font-medium text-ground-900">{t(`admin.scholarship.verdict.fact.${item.fact}`)}</p>
@@ -93,12 +87,6 @@ function FactRow({ item, t, band, overall, answer, busy, onChoose }: {
           <span className={FAIL}>{t('admin.scholarship.recordVerdict.factFail')}</span>
           {item.reason && <> ({t(`admin.scholarship.recordVerdict.failReason.${item.reason}`)})</>}
         </dd>
-        {decisionKey && <>
-          <dt className="text-ground-600">{t('admin.scholarship.qcDecision.secondLook.decision')}</dt>
-          <dd className="min-w-0">
-            <span className={`${PILL} border-ground-300 bg-ground-100 text-ground-700`}>{t(decisionKey)}</span>
-          </dd>
-        </>}
         <VerdictRow fact={item.fact} t={t} answer={answer} busy={busy} onChoose={onChoose} />
       </dl>
     </div>
@@ -106,9 +94,8 @@ function FactRow({ item, t, band, overall, answer, busy, onChoose }: {
 }
 
 /** The block. Draws nothing when no fact is in doubt. `answers` = the QC's Pass / Fail per fact. */
-export function FactsInDoubt({ items, t, bands, overall, answers, setAnswers, busy }: {
+export function FactsInDoubt({ items, t, bands, answers, setAnswers, busy }: {
   items: readonly SecondLookFact[]; t: T; bands: AdminScholarshipDetail['ai_fact_bands']
-  overall: string | undefined
   answers: Readonly<Record<string, QcAnswer>>
   setAnswers: (next: Record<string, QcAnswer>) => void; busy: boolean
 }) {
@@ -128,7 +115,7 @@ export function FactsInDoubt({ items, t, bands, overall, answers, setAnswers, bu
       </h3>
       <p className="text-xs text-ground-600">{t('admin.scholarship.qcDecision.secondLook.help')}</p>
       {items.map((item) => (
-        <FactRow key={item.fact} item={item} t={t} band={factBandOf(bands, item.fact, item.ai_status)} overall={overall}
+        <FactRow key={item.fact} item={item} t={t} band={factBandOf(bands, item.fact, item.ai_status)}
           answer={answers[item.fact]} busy={busy} onChoose={(v) => choose(item.fact, v)} />
       ))}
     </section>

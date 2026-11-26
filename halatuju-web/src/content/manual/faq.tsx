@@ -117,8 +117,8 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>What is the <strong>Facts in doubt</strong> box?</>,
-      a: <>A second look at the facts the reviewer failed where the AI was certain, or where the reviewer still
-        recommended the student. Each fact shows what the AI said (the same word as the AI prediction card), the reviewer&rsquo;s Fail with the reason, and the reviewer&rsquo;s overall decision, Recommend or Decline. It also appears on a declined case. You may tap
+      a: <>A second look at the facts the reviewer failed where the AI had passed the fact when the reviewer decided, or where the reviewer still
+        recommended the student. Each fact shows what the AI says now (the same word as the AI prediction card) and the reviewer&rsquo;s Fail with the reason. It also appears on a declined case. You may tap
         <strong> Pass</strong> or <strong>Fail</strong> on a fact; nothing is chosen at the start, and a second tap
         on the chosen button removes your answer. Your answer goes with <strong>Accept</strong>,
         <strong> Confirm decline</strong>, <strong>Reopen</strong> or <strong>Reject</strong> and never holds the decision up. A fact you do not

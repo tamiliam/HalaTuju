@@ -5307,11 +5307,10 @@
         "reverifyButton": "Sahkan semula IC",
         "secondLook": {
           "title": "Fakta yang diragui",
-          "help": "Penyemak menggagalkan fakta ini. Sama ada AI yakin, atau penyemak tetap mengesyorkan pelajar itu. Anda boleh memberikan keputusan anda sendiri bagi setiap fakta. Ini tidak wajib.",
+          "help": "Penyemak menggagalkan fakta ini. Sama ada AI telah meluluskan fakta itu, atau penyemak tetap mengesyorkan pelajar itu. Anda boleh memberikan keputusan anda sendiri bagi setiap fakta. Ini tidak wajib.",
           "aiSaid": "Kata AI",
           "reviewer": "Penyemak",
-          "yourVerdict": "Keputusan anda",
-          "decision": "Syor"
+          "yourVerdict": "Keputusan anda"
         }
       },
       "caveats": {

@@ -5307,11 +5307,10 @@
         "reverifyButton": "Re-verify IC",
         "secondLook": {
           "title": "Facts in doubt",
-          "help": "The reviewer failed these facts. Either the AI was certain, or the reviewer still recommended the student. You may give your own verdict on each fact. It is optional.",
+          "help": "The reviewer failed these facts. Either the AI had passed the fact, or the reviewer still recommended the student. You may give your own verdict on each fact. It is optional.",
           "aiSaid": "AI said",
           "reviewer": "Reviewer",
-          "yourVerdict": "Your verdict",
-          "decision": "Decision"
+          "yourVerdict": "Your verdict"
         }
       },
       "caveats": {

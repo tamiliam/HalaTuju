@@ -60,11 +60,12 @@ export const roleQc: ManualChapter = {
       title: 'Facts in doubt',
       body: (
         <>Above the buttons, a small <strong>Facts in doubt</strong> box lists only the facts where the reviewer
-        and the AI did not agree: the AI said green and the reviewer said Fail, or the reviewer said Fail but
-        still recommended the student. Each fact has up to four rows: <strong>AI said</strong> (the same word as
+        and the AI did not agree: the AI had passed the fact when the reviewer decided and the reviewer said
+        Fail, or the reviewer said Fail but still recommended the student. Each fact has three rows: <strong>AI said</strong> (the same word as
         the AI prediction card for that fact), <strong>Reviewer</strong> (Fail, with the reviewer&rsquo;s reason
-        in brackets when one was given), <strong>Decision</strong> (the reviewer&rsquo;s overall decision,
-        Recommend or Decline) and a <strong>Your verdict</strong> row with two buttons, <strong>Pass</strong> and <strong>Fail</strong>.
+        in brackets when one was given) and a <strong>Your verdict</strong> row with two buttons, <strong>Pass</strong> and <strong>Fail</strong>.
+        The word beside <strong>AI said</strong> is what the AI says now, and in a few cases it differs from what
+        the AI said when the reviewer decided (for example, a new document arrived after that).
         Giving a verdict is optional. Nothing is chosen at the start; tap a button to choose it, tap the chosen
         button again to remove your answer, or tap the other button to change it. Your answer is sent with your
         Accept, Confirm decline, Reopen or Reject. A fact you did not touch records nothing. On

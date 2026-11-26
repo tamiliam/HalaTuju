@@ -53,7 +53,7 @@ const accept = () => fireEvent.click(screen.getByRole('button', { name: 'admin.s
 const sent = (api: ReturnType<typeof asQc>['api']) => api.recordQcDecision.mock.calls[0][1]
 
 describe('LL2b: the block on the QC panel', () => {
-  it('lists each fact in doubt: AI said, Reviewer, Decision, Your verdict, in that order', async () => {
+  it('lists each fact in doubt: AI said, Reviewer, Your verdict, in that order', async () => {
     asQc(TWO)
     await loaded()
     expect(within(block()!).getByText(`${K}.title`)).toBeTruthy()
@@ -62,7 +62,7 @@ describe('LL2b: the block on the QC panel', () => {
     expect(within(identity).getByText('admin.scholarship.verdict.fact.identity')).toBeTruthy()
     expect(within(identity).getByText('admin.scholarship.verdict.band.certain')).toBeTruthy()
     const labels = Array.from(identity.querySelectorAll('dt')).map((d) => d.textContent)
-    expect(labels).toEqual([`${K}.aiSaid`, `${K}.reviewer`, `${K}.decision`, `${K}.yourVerdict`])
+    expect(labels).toEqual([`${K}.aiSaid`, `${K}.reviewer`, `${K}.yourVerdict`])
     expect(within(identity).queryByText(`${K}.reviewerSaid`)).toBeNull()
     expect(within(identity).queryByText('admin.scholarship.recordVerdict.failReasonLabel')).toBeNull()
     expect(within(identity).queryByText(new RegExp(`${K}.butDecision`))).toBeNull()
@@ -84,16 +84,20 @@ describe('LL2b: the block on the QC panel', () => {
     expect(row.textContent).toBe(`${FAILK} (admin.scholarship.recordVerdict.failReason.interview_differs)`)
   })
 
-  it('the Decision row says Recommend for an accept, on every fact', async () => {
+  it('no Decision row and no Recommend / Decline pill inside the box', async () => {
     asQc(TWO)
     await loaded()
+    const box = block()!
+    expect(within(box).queryByText(`${K}.decision`)).toBeNull()
+    expect(within(box).queryByText(APPROVE)).toBeNull()
+    expect(within(box).queryByText(DECLINE)).toBeNull()
     for (const fact of ['identity', 'income']) {
-      expect(within(screen.getByTestId(`doubt-${fact}`)).getByText(`${K}.decision`)).toBeTruthy()
-      expect(within(screen.getByTestId(`doubt-${fact}`)).getByText(APPROVE)).toBeTruthy()
+      const labels = Array.from(screen.getByTestId(`doubt-${fact}`).querySelectorAll('dt')).map((d) => d.textContent)
+      expect(labels).toEqual([`${K}.aiSaid`, `${K}.reviewer`, `${K}.yourVerdict`])
     }
   })
 
-  it('a declined case still draws the box, and the Decision row says Decline', async () => {
+  it('a declined case still draws the box, with no Decline pill inside it', async () => {
     renderCockpit({
       role: 'qc', stage: 'awaiting_qc', writes: { can_qc: true },
       build: { outcome: 'decline', qc_refusal: null, ai_fact_bands: { identity: 'certain', income: 'unsure' },
@@ -102,24 +106,8 @@ describe('LL2b: the block on the QC panel', () => {
     await loaded()
     expect(block()).toBeTruthy()
     expect(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.confirmDecline' })).toBeTruthy()
-    for (const fact of ['identity', 'income']) {
-      expect(within(screen.getByTestId(`doubt-${fact}`)).getByText(DECLINE)).toBeTruthy()
-      expect(within(screen.getByTestId(`doubt-${fact}`)).queryByText(APPROVE)).toBeNull()
-    }
-  })
-
-  it('any other overall value: no Decision row', async () => {
-    renderCockpit({
-      role: 'qc', stage: 'awaiting_qc', writes: { can_qc: true },
-      build: { outcome: 'recommend', qc_refusal: null, second_look: TWO,
-        officer_verdict: { identity: 'fail', income: 'fail', overall: 'pending' } },
-    })
-    await loaded()
-    expect(block()).toBeTruthy()
-    const identity = screen.getByTestId('doubt-identity')
-    expect(within(identity).queryByText(`${K}.decision`)).toBeNull()
-    expect(within(identity).queryByText(APPROVE)).toBeNull()
-    expect(within(identity).queryByText(DECLINE)).toBeNull()
+    expect(within(block()!).queryByText(DECLINE)).toBeNull()
+    expect(within(block()!).queryByText(`${K}.decision`)).toBeNull()
   })
 
   it('the AI line is the served band word, never the raw status', async () => {
