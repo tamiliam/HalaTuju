@@ -96,15 +96,13 @@ Saved to main. Services: web.
 - `data/polytechnics.ts` holds the 36 public polytechnics (official Malay names, abbreviation as hint; no community colleges). Source: the Ministry of Higher Education's "Senarai Institusi Pengajian Tinggi Awam (Politeknik)", https://biasiswa.mohe.gov.my/sukan/doc/SENARAI%20INSTITUSI%20PENGAJIAN%20TINGGI%20AWAM(POLITEKNIK).pdf. Still in the lazy `pu` chunk, so the first-load budget is unchanged. TD-767 closed.
 - Bundle: `applyPlanPatch` moved to its own leaf `lib/applyPlanPatch.ts` (still re-exported from `lib/planPicker`), so /scholarship/apply no longer carries the whole picker rules module in its first load. No behaviour change.
 
+### fix: case 1048 - a near-miss name on a handwritten income declaration reads "close", not red (2026-11-27)
 
-
-
-
-
-
-
-
-
+Branch fix-1048-declaration, not pushed. Services: api. Verdict engine 2026-11-27.1.
+- New `income_engine/declaration_name.py`: when a salary-slip-slot document was seen as a declaration (doc_seen = declaration) and its name is one small misread from the earner's IC (same number of parts, one part at most 2 letters off, 4+ letters, same first letter, not a reversed patronymic), `student_income_proof_check` and `link_display.income_proof_display` say name_status `close` instead of `mismatch`.
+- `close` acts like `unreadable`: never red, never a match. Some applications may move from name_mismatch to review (owner accepted). Typed payslips, EPFs and `vision._tokens_close` are unchanged.
+- Tests: `tests/test_declaration_name_close.py` (case 1048's shape with made-up names; a typed payslip one letter off stays red).
+- Not in this change: the declaration's own read class (employer/period warnings), the web chip colour and label, the FAQ text (web).
 
 ### fix: false "Course switched" note when the same university is written two ways (2026-11-26)
 

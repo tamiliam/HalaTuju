@@ -115,5 +115,10 @@
     "digest": "846c41b985f111d85fb96b149ae9485d7bd1f77c0881c095358bcdaf329806b1",
     "note": "Criteria Sprint 3 review R1 (should-fix 3). verdict_context.intake_values hashes the income section's join as income_mode when it is not 'any' (income_engine.amounts.income_headroom reads it), so a switch from 'any' to 'all' moves the verdict fingerprint. Every tree from_legacy builds is 'any' and has no income_mode key, so every fingerprint taken today is unchanged; no shortlist answer changes.",
     "also_ok": []
+  },
+  "2026-11-27.3": {
+    "digest": "6233106b5a419d2707be74e58efa0c41c21289974711d07665d33209e0a7c84c",
+    "note": "Case 1048 (2026-11-27): student_income_proof_check (and its display twin link_display.income_proof_display) turn a name_status of mismatch into close when the salary-slip-slot document was seen as a declaration (doc_seen = declaration, the handwritten Surat Akuan Pengesahan Pendapatan) and the name is a near miss: same number of parts (2+), all agree under the tolerant matcher but one, and that pair is 4+ letters, same first letter, at most 2 edits apart, and not a reversed patronymic (income_engine/declaration_name.py). Every consumer compares name_status with match / mismatch only, so close falls through like no_ref / unreadable: never red, never a match. Some verdicts move from name_mismatch to review (owner accepted). Typed payslips, EPFs and names further apart are unchanged; vision._tokens_close is not loosened.",
+    "also_ok": []
   }
 }

@@ -141,7 +141,8 @@ def income_proof_display(doc, chk):
     ic_name, ic_nric, deferred = _card(ic)
     if _off_chain(ic_nric, anchor):
         ic, ic_name, ic_nric, deferred = None, '', '', False
-    name_st = _name_bucket(name, ic_name)
+    from .income_engine.declaration_name import soften
+    name_st = soften(doc, _name_bucket(name, ic_name), name, ic_name)   # case 1048: 'close'
     nric_st = 'no_ref' if not (nric and ic_nric) else ('match' if nric_match(nric, ic_nric) else 'mismatch')
     if deferred:                                   # TD-390: half a read proves no mismatch
         name_st, nric_st = ('no_ref' if s == 'mismatch' else s for s in (name_st, nric_st))

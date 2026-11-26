@@ -494,7 +494,8 @@ def student_income_proof_check(doc):
     ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
     ic_nric = (getattr(ic, 'vision_nric', '') or '').strip() if ic else ''
 
-    name_status = _name_bucket(name, ic_name)
+    from .declaration_name import soften
+    name_status = soften(doc, _name_bucket(name, ic_name), name, ic_name)   # case 1048: 'close'
     nric_status = _nric_bucket(nric, ic_nric)
     if ic is not None and ic_second_opinion_deferred(ic):   # TD-390: half a read proves no mismatch
         name_status, nric_status = ('no_ref' if s == 'mismatch' else s for s in (name_status, nric_status))
