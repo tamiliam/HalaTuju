@@ -343,7 +343,12 @@ def _cohort_row(c):
         # ⚠ CRITERIA SPRINT 3b (TD-772): every value is read from the criteria tree the gate reads
         # (`criteria_read.column_values`: the stored tree, else the columns), so the Rules tab
         # shows the rule that decides, never a stale column beside a stored tree.
-        'requirements': _requirements_row(c),
+        'requirements': (reqs := _requirements_row(c)),
+        # TD-774 item 4 (criteria Sprint 3): an intake TAKING APPLICATIONS whose stored rules are
+        # refused. Submits on it already fail closed and opening it is refused; this flag is the
+        # prompt to close it now (closing is always allowed). The Rules tab shows the rules-error
+        # box for that round today; the Sprint 4 editor shows a "close now" prompt from this flag.
+        'rules_error_open': bool(c.is_open and reqs.get('rules_error')),
     }
 
 

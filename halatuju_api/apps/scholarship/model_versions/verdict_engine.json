@@ -105,5 +105,10 @@
         "note": "OCR-14 on the criteria 3b base (2026-11-27): ua:UNIMAS and ua:UTHM join offer_exact.ISSUER_PRINTS_NO_IC and pathway_engine._NO_IC_ISSUER_NAMES, so a blank IC on their letters says 'not_printed' instead of 'unreadable'; verdict_pathway reads 'not_printed' exactly as 'unreadable' (as the 25.7 and 26.2 OCR-14 entries), so no verdict answer changes. Same source change as the d8fc306e entry under 2026-11-26.2, on the new base."
       }
     ]
+  },
+  "2026-11-27.1": {
+    "digest": "047b9a18721cbf8635b1c841fc93d858c89d7b42722f6696863159a69b7196cf",
+    "note": "Criteria Sprint 3 (TD-774 item 2). criteria.tree_of refuses a stored criteria value that is not a dict (a list, string or number) with StoredTreeRefused, as it refuses a malformed dict, instead of quietly reading the columns; only a NULL row (or a non-JSON stand-in) reads the columns. No live intake stores such a value; no shortlist answer changes.",
+    "also_ok": []
   }
 }

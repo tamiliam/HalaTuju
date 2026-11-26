@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: criteria Sprint 3 - admin API for the criteria tree, TD-774 items 1-4 (2026-11-27)
+
+Branch criteria-api, not pushed. Services: api. No migration. Verdict engine 2026-11-27.1. Web: no change.
+- **Routes** (gate `programmes.edit`, the caller's own gifts; another tenant's intake is 404): `GET/PATCH admin/scholarship/intake-years/<pk>/criteria/` (one year) and `GET/PATCH admin/scholarship/programmes/<pk>/criteria/` (the gift's rule year: the open year, else the newest; 404 `no_intake_year`). GET answers `{intake: {id, code, name, year, is_open}, stored, criteria, rules_error, beyond_columns}` (+ `problems` when the stored tree is refused, `criteria` then null). PATCH body `{criteria}` (the rule-year route also needs `intake_id`, the year the screen showed) replaces the whole tree and answers the same shape plus `changed`.
+- **Refusals:** 400 `criteria_required`, `unknown_field` (+ `fields`), `bad_criteria` (+ `problems`), `intake_id_required`; 409 `rules_error` (stored tree refused; AUDIT error line), `criteria_not_built` (NULL row: the first tree is `build_criteria_trees --apply`'s), `rule_year_changed` (+ `intake_id`).
+- **Write checks** (`criteria_write.write_problems`, on top of `validate_tree`): no empty tree; finite numbers; PNGK up to 4.00, merit up to 100, grade counts up to 20, income in whole ringgit up to RM100,000; start years whole, once each, in order.
+- **Columns stay consistent:** a save rewrites the old requirement columns to `column_values` of the new tree, so the old form and every reader show it. A tree the columns cannot say (`beyond_columns`, e.g. an 'all' income join) saves whole; the old form's requirement save then answers 409 `rules_beyond_columns` (TD-774 item 1). A no-op PATCH saves and logs nothing.
+- **Audit:** `intake_year_updated` (fields) and `intake_year_criteria_set` (old and new tree, compact sorted JSON).
+- **TD-774:** (2) a stored list, string or number is refused (`tree_of`, `_stored_tree_refused`), never read from the columns; (3) the IC-hold text says the intake needs a technical correction; (4) each intake row carries `rules_error_open` (open with refused rules) for a "close now" prompt.
+- **Tests:** new `test_criteria_api.py` (both routes, every bad class, the 409s, audit, 403/404, no-op for intakes 1/3/4/5 with every reader the same); `test_criteria_storage` rebuild test now stores a tree the columns can say, plus a 409 test.
+
 ### fix: criteria Sprint 3b - every reader reads the stored tree (TD-772), no silent default bars, a new year stores its tree (TD-774) (2026-11-26)
 
 Branch criteria-s3b, not pushed. Services: api, web. Migration: 0220_cohort_no_default_bars (state-only; sqlmigrate prints a no-op). Verdict engine 2026-11-26.5.

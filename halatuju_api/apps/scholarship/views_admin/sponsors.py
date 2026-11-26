@@ -134,7 +134,8 @@ _HELD_BY_HELD_DECLINE = ('This student has a decline on hold that would return t
                          'cancel it first, then release the lock.')
 
 _HELD_BY_RULES_ERROR = ('This student has an application on an intake whose stored entry rules '
-                        'could not be read. Fix the rules of that intake first, then release the lock.')
+                        'could not be read. The intake needs a technical correction first: contact '
+                        'the technical team, then release the lock.')
 
 
 def _held_by_birth_state_rule(profile):

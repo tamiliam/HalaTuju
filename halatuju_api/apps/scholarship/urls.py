@@ -85,7 +85,7 @@ from .views_admin import (
     AdminScopeListView, AdminProgrammeConfigurationView,
     AdminProgrammeListView, AdminProgrammeDetailView, AdminApplyCopyDraftView, AdminMyProgrammesView,
     AdminMyPendingView, AdminIntakeYearListView, AdminIntakeYearDetailView,
-    AdminIntakeYearFinishView,
+    AdminIntakeYearFinishView, AdminIntakeYearCriteriaView, AdminProgrammeCriteriaView,
     AdminOrganisationThemeView,
     AdminOrganisationThemePublishView,
     AdminOrganisationThemeRevertView,
@@ -531,6 +531,9 @@ urlpatterns = [
     # ⚠ ITS OWN ROUTE because it is TERMINAL and takes a typed confirmation — see
     # `AdminIntakeYearFinishView`. Never fold this into the PATCH above.
     path('admin/scholarship/intake-years/<int:pk>/finish/', AdminIntakeYearFinishView.as_view()),
+    # Criteria editor Sprint 3: the whole criteria tree, read and saved (`views_admin.criteria_tree`).
+    path('admin/scholarship/intake-years/<int:pk>/criteria/', AdminIntakeYearCriteriaView.as_view()),
+    path('admin/scholarship/programmes/<int:pk>/criteria/', AdminProgrammeCriteriaView.as_view()),
     path('admin/scholarship/organisation/theme/', AdminOrganisationThemeView.as_view()),
     path('admin/scholarship/organisation/theme/publish/', AdminOrganisationThemePublishView.as_view()),
     path('admin/scholarship/organisation/theme/revert/', AdminOrganisationThemeRevertView.as_view()),

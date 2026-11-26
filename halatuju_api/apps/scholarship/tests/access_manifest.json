@@ -2523,6 +2523,34 @@
    "note": "object cohort_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
   },
   {
+   "route": "api/v1/admin/scholarship/intake-years/<int:pk>/criteria/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "cohort_a",
+   "flags": [],
+   "note": "object cohort_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/intake-years/<int:pk>/criteria/",
+   "method": "patch",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "cohort_a",
+   "flags": [],
+   "note": "object cohort_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+  },
+  {
    "route": "api/v1/admin/scholarship/intake-years/<int:pk>/finish/",
    "method": "post",
    "allow": [
@@ -3101,6 +3129,34 @@
   {
    "route": "api/v1/admin/scholarship/programmes/<int:pk>/apply-copy/draft/",
    "method": "post",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "gift_a",
+   "flags": [],
+   "note": "object gift_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/programmes/<int:pk>/criteria/",
+   "method": "get",
+   "allow": [
+    "super",
+    "org_admin_a"
+   ],
+   "hide": [
+    "org_admin_b"
+   ],
+   "object": "gift_a",
+   "flags": [],
+   "note": "object gift_a: reached by super, org_admin_a; refused to reviewer_a2, org_admin_b, student_b, sponsor_b"
+  },
+  {
+   "route": "api/v1/admin/scholarship/programmes/<int:pk>/criteria/",
+   "method": "patch",
    "allow": [
     "super",
     "org_admin_a"

@@ -249,13 +249,34 @@ class TestTheOldFormRebuildsTheTree(TestCase):
     def test_a_requirement_change_rebuilds_and_a_name_change_does_not(self):
         c = make_cohort(programme=self.programme, is_active=True, is_open=False, code='form-old',
                         min_stpm_pngk=2.0)
-        ScholarshipCohort.objects.filter(pk=c.pk).update(criteria={'all': []})
+        stored = criteria.from_legacy(c)   # a tree the columns can say (TD-774 item 1)
+        ScholarshipCohort.objects.filter(pk=c.pk).update(criteria=stored)
         r = self.client.patch(self._year(c), {'name': 'Renamed'}, format='json')
         self.assertEqual(r.status_code, 200)
         c.refresh_from_db()
-        self.assertEqual(c.criteria, {'all': []})
+        self.assertEqual(c.criteria, stored)
         r = self.client.patch(self._year(c), {'min_stpm_pngk': 2.75}, format='json')
         self.assertEqual(r.status_code, 200)
         c.refresh_from_db()
         self.assertEqual(c.criteria, criteria.from_legacy(c))
         self.assertEqual(criteria.tree_of(c)['all'][0]['own'][0]['all'][0]['value'], 2.75)
+
+    def test_a_tree_the_columns_cannot_say_is_never_rebuilt_from_them(self):
+        # TD-774 item 1: the old form would have rebuilt a different tree from the columns and
+        # silently dropped what they cannot say. It refuses instead; a name change still saves.
+        c = make_cohort(programme=self.programme, is_active=True, is_open=False, code='form-beyond',
+                        min_stpm_pngk=2.0)
+        stored = criteria.from_legacy(c)
+        stored['all'] = [s for s in stored['all'] if s['section'] != 'income']   # differs from columns
+        self.assertNotEqual(stored, criteria.from_legacy(c))
+        ScholarshipCohort.objects.filter(pk=c.pk).update(criteria=stored)
+        with self.assertLogs('apps.scholarship.views_admin', level='ERROR') as logs:
+            r = self.client.patch(self._year(c), {'min_stpm_pngk': 2.75}, format='json')
+        self.assertEqual((r.status_code, r.data['error']), (409, 'rules_beyond_columns'))
+        self.assertIn('intake_year_rules_beyond_columns_refused', logs.output[0])
+        c.refresh_from_db()
+        self.assertEqual((c.criteria, c.min_stpm_pngk), (stored, 2.0))
+        r = self.client.patch(self._year(c), {'name': 'Renamed'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        c.refresh_from_db()
+        self.assertEqual((c.name, c.criteria), ('Renamed', stored))

@@ -549,8 +549,10 @@ def tree_of(cohort):
     reaches a person, and is NEVER silently read from the columns instead: that would judge the
     intake by rules nobody stored."""
     stored = getattr(cohort, 'criteria', None)
-    # A dict only: a stub or a test double (a Mock answers every attribute) is read from its columns.
-    if not isinstance(stored, dict):
+    # TD-774 (criteria Sprint 3): any JSON value but NULL is a stored tree - a hand-edited list,
+    # string or number is refused below (validate_tree refuses every non-dict), never read from the
+    # columns. Only NULL, a stub or a test double (a Mock answers every attribute) reads its columns.
+    if not isinstance(stored, (dict, list, str, int, float)):
         return from_legacy(cohort, keep_empty_spm=True)
     problems = validate_tree(stored)
     if problems:

@@ -318,6 +318,22 @@ def r73_added_cells(shape):
     return {R73_COUNT: 403 if shape in R73_DOOR_REFUSED else 200}
 
 
+#: Criteria Sprint 3 (2026-11-27): the criteria-tree API (`views_admin.criteria_tree`). FOUR NEW routes, so NEW
+#: cells, measured. Their door and fence are the intake-year screens' own (`_ProgrammeScopedBase`: `programmes.edit`,
+#: the caller's gifts), so each GET reads exactly what the gift's year list GET reads; a PATCH that passes the door
+#: gets the probe's empty body refused (400 `criteria_required`), otherwise the same refusal. Nobody's cell moves.
+CRIT_ROUTES = ('api/v1/admin/scholarship/intake-years/<int:pk>/criteria/',
+               'api/v1/admin/scholarship/programmes/<int:pk>/criteria/')
+CRIT_SAME_AS = 'GET api/v1/admin/scholarship/programmes/<int:pk>/years/'
+
+
+def crit_added_cells(row):
+    seen = row[CRIT_SAME_AS]
+    cells = {f'GET {r}': seen for r in CRIT_ROUTES}
+    cells.update({f'PATCH {r}': 400 if seen == 200 else seen for r in CRIT_ROUTES})
+    return cells
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -516,6 +532,7 @@ def _expected_row(shape):
         row[probe] = now
     row.update(nudges_added_cells(row))
     row.update(m1a_added_cells(row))
+    row.update(crit_added_cells(row))
     return row
 
 

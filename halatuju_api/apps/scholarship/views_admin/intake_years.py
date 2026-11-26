@@ -83,9 +83,22 @@ def _stored_tree_refused(c):
     TD-774): a dict that `validate_tree` finds problems in. Such an intake must not have its
     requirements saved nor be opened (adversarial review R2, 2026-11-27): the list shows its row
     with every value null, and a save from those blank boxes would rebuild a tree from nulled
-    columns - a nearly OPEN rule set, saved quietly. Its rules need a technical correction first."""
+    columns - a nearly OPEN rule set, saved quietly. Its rules need a technical correction first.
+
+    TD-774 (criteria Sprint 3): a stored value that is not a dict at all (a hand-edited list or
+    string) is refused too, as `tree_of` refuses it - `validate_tree` refuses every non-dict."""
     from .. import criteria
-    return isinstance(c.criteria, dict) and bool(criteria.validate_tree(c.criteria))
+    return c.criteria is not None and bool(criteria.validate_tree(c.criteria))
+
+
+def _tree_beyond_columns(c):
+    """True when the intake's STORED tree is not the tree its columns mean (`criteria.from_legacy`)
+    - it says something the columns cannot (an 'all' income join, a post-SPM merit, a grade count
+    at another grade; saved through the criteria API), or the columns were changed under it.
+    TD-774 (criteria Sprint 3): the old form's save would rebuild the tree from the columns and
+    silently drop that part, so it is refused (409 ``rules_beyond_columns``) instead."""
+    from .. import criteria
+    return isinstance(c.criteria, dict) and c.criteria != criteria.from_legacy(c)
 
 
 def _rules_error(c, admin, action):
@@ -264,6 +277,13 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
             # TD-774 (adversarial review R2): refused WHOLE, nothing saved - the name and window
             # in the same body included. A body without requirement keys still goes through.
             return _rules_error(c, admin, 'requirements')
+        if reqs and _tree_beyond_columns(c):
+            # TD-774 item 1: refused WHOLE, nothing saved, like the refusal above. The tree is
+            # edited through the criteria API (`criteria_tree`), which keeps it whole.
+            logger.error('AUDIT intake_year_rules_beyond_columns_refused cohort=%s by=%s',
+                         c.code, admin.email or '')
+            return Response({'error': 'rules_beyond_columns', 'code': 'rules_beyond_columns'},
+                            status=status.HTTP_409_CONFLICT)
         # ⚠ CAPTURE THE OLD VALUE BEFORE WRITING. A threshold decides who is shortlisted, and
         # `shortlisting.evaluate()` reads them LIVE (through the criteria tree rebuilt below) — unlike the documents and questions,
         # which are frozen per application at submit (`requirements_snapshot`). So a change here

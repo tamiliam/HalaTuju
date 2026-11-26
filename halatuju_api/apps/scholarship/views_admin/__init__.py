@@ -51,6 +51,7 @@ from .intake_years import (
     _requirements_from, AdminIntakeYearDetailView, AdminIntakeYearFinishView,
     AdminIntakeYearListView,
 )
+from .criteria_tree import AdminIntakeYearCriteriaView, AdminProgrammeCriteriaView
 from .invoices import (
     _InvoiceBase, _invoice_money, _invoice_payload, AdminInvoiceActionView, AdminInvoicePdfView,
     AdminInvoiceIssuerView, AdminInvoicesView, AdminOrgBillingDetailsView,
