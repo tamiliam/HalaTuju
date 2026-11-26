@@ -1,4 +1,4 @@
-"""OCR-13: the UiTM, UUM and UM branches of `offer_parse.diagnose`, here rather than in `offer_parse` (its 600-line
+"""OCR-13: the UiTM, UUM, UM and UPSI branches of `offer_parse.diagnose`, here rather than in `offer_parse` (its 600-line
 cap). No behaviour change in the move (UiTM, UUM). `diagnose` passes each result through `offer_parse._rules_exit` (Asasi)."""
 from __future__ import annotations
 
@@ -131,4 +131,50 @@ def diagnose_um(out: dict, text: str, page1_text: str, page1_layout: str, page_t
         out['guard'] = reason
     else:
         out['locked'] = {**fields, '_family': 'um', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
+    return out
+
+
+def diagnose_upsi(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
+    """The UPSI branch of `diagnose` (OCR-13 phase 5), in `diagnose_uum`'s order: a scan refuses (``no_layout``);
+    the drawn page texts; `read_upsi`; the owner phrases; the whole letter (`offer_parse_upsi.upsi_letter_refusal`:
+    status words, ANY IC-like number, withdrawal words); ``foreign_letters``; ``name_not_plain``; any IC-like number
+    in page 1's plain layer (``ic_printed``); last, the later pages. UPSI prints no IC (the matric is not one): the
+    lock carries a blank IC (`offer_exact.ISSUER_PRINTS_NO_IC`). `diagnose` passes the result through `_rules_exit`."""
+    from .offer_parse import _SPACES, _ZERO_WIDTH, PARSER_VERSION
+    from .offer_owner_words import missing
+    from .offer_parse_university import name_in_plain
+    from .offer_parse_upsi import LANE, read_upsi, upsi_later_pages, upsi_letter_refusal, upsi_printed_date
+    from .offer_parse_uum import ic_printed
+    from .offer_ums_refusal import foreign_letters, page_texts_refusal
+    if out['portal']:
+        return out
+    if not page1_layout.strip():
+        out['guard'] = 'no_layout'
+        return out
+    if not page1_text.strip():
+        out['guard'] = 'no_plain_layer'
+        return out
+    pages = [_SPACES.sub(' ', _ZERO_WIDTH.sub('', t or '')) for t in (page_texts or ())]
+    fields, reason = read_upsi(page1_layout)
+    out['fields'], out['titled'] = fields, fields is not None
+    early = page_texts_refusal(pages)
+    if not early and not reason:
+        out['owner_words_missing'] = missing(LANE, page1_layout, text_pdf=True)
+        early = 'owner_words_missing' if out['owner_words_missing'] else ''
+    reason = early or reason or upsi_letter_refusal(text)
+    if not reason and foreign_letters(text, page1_text, page1_layout, *pages):
+        reason = 'foreign_letters'
+    if not reason and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
+        reason = 'name_not_plain'
+    if not reason and (ic_printed(page1_text) or any(ic_printed(p) for p in pages[:1])):
+        reason = 'ic_printed'
+    if not reason:
+        reason = upsi_later_pages(pages[1:], fields['programme'], fields['programme_code'],
+                                  upsi_printed_date(page1_layout))
+    if reason.startswith('empty:'):
+        out['empty_required'] = reason[len('empty:'):].split(',')
+    elif reason:
+        out['guard'] = reason
+    else:
+        out['locked'] = {**fields, '_family': 'upsi', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
     return out

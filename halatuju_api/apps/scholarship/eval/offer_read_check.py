@@ -117,7 +117,8 @@ KNOWN_FORMAT_FAMILIES = ('stpm', 'matriculation', 'polytechnic')
 #: The universities the rules read too (OCR-first S1, `offer_parse_university`): the answer's tidied
 #: institution, lower case (the dry run's lane name) -> the lock's ``rules_lane``.
 RULES_LANES = {'universiti malaysia sabah': 'ua:UMS', 'uitm': 'ua:UiTM', 'universiti teknologi mara': 'ua:UiTM',
-               'universiti utara malaysia': 'ua:UUM', 'universiti malaya': 'ua:UM'}
+               'universiti utara malaysia': 'ua:UUM', 'universiti malaya': 'ua:UM',
+               'universiti pendidikan sultan idris': 'ua:UPSI'}
 
 
 def rules_read(family, answer) -> bool:

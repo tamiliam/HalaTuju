@@ -88,6 +88,32 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UM`
   is not a PDF. asasi/ holds 2 UM letters: both refuse (not_degree). diploma/, asasi/, confirmation/ and fail/ lock 0.
 - Debt: TD-NEW-ocr13-um-heldout. Tests: `test_offer_parse_um.py`.
 
+### feat: OCR-13 phase 5 - the UPSI rules reader (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UPSI` stays OFF (off by default; `OCR_FIRST_LANES`).
+- **Reader:** new `offer_parse_upsi.py` reads a digital Malay UPSI degree letter (SARJANA MUDA only) from its page-1 layout:
+  name (the line after "No. Matrik"), programme and its code ("Program : XXNN - ..."), intake as printed ("Semester N Sesi
+  YYYY/YYYY"), reporting date ("Tarikh Mendaftar"), and the offer date when it can be read (optional). Institution
+  "UNIVERSITI PENDIDIKAN SULTAN IDRIS", as the hand-checked answers say.
+- **No IC (owner, 26 Nov: "Same as UUM"):** `ua:UPSI` joins `ua:UUM` in `offer_exact.ISSUER_PRINTS_NO_IC` (nothing else
+  added); a UPSI lock stores the IC blank (source 'none'). The matric number (a letter and 11 digits) is not an IC and is
+  never stored, matched or ink-checked. Any 12-digit IC-like number on any page refuses (`ic_printed`).
+- **Refuses:** a scan (no layout), an English letter (no Malay title), a PENGESAHAN or status letter, Asasi and every other
+  non-degree programme, a missing owner word, dates that do not fit the session, any withdrawal wording other than the
+  letter's own conditional note (read past word for word), and a later page that is not UPSI's or names another programme,
+  programme code or reporting date. A lower-case web address on page 2 (its path holds "sarjanamuda") is read past by the
+  programme comparison only.
+- **Wiring:** `family_of` reads 'upsi'; `offer_parse_lanes.diagnose_upsi`; `offer_exact` lane module, refusal note and ink
+  check; eval layout hook and `RULES_LANES` ('universiti pendidikan sultan idris' to 'ua:UPSI'). offer_parse 2.4.0 digest
+  updated in place; offer_reader digest unchanged.
+- **Dry run (local, free, lanes UMS, UiTM, UUM, UM and UPSI on):** UPSI held-out 4 letters, 2 locked, 100% agreement, 0 wrong
+  (need 20 locks for Gate 1, so it stays AI). All splits 7 letters, 2 locked, 0 wrong name / IC / institution / programme;
+  the other 5 have no text layer or no PDF. UMS, UiTM, UUM and UM unchanged: held-out 33/22/100%/0, 9/1, 3/1; all splits
+  62/44/100%/0, 18/3, UUM 4 of 4 (0 wrong guarded fields), UM 9/2.
+- **Owner folders (text layer):** upsi/ 12 of 30 lock (the other 18 have no text layer or are another template and do not
+  read as UPSI). diploma/, asasi/, confirmation/ and fail/ lock 0 (no UPSI letter among them).
+- Debt: TD-NEW-ocr13-upsi-heldout. Tests: `test_offer_parse_upsi.py`.
+
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
 

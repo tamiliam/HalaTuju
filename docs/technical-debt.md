@@ -9819,6 +9819,12 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Phase 4 (26 Nov):** the UM reader is built (lane off). Only UPSI has no reader; UPSI is paused by the owner.
 
+**Phase 5 (26 Nov):** the UPSI reader is built (lane off). All four lanes now have a reader; what stays open is Gate 1 (each lane's held-out letters, see the -heldout items) and the image letters that were never measured.
+
+### [TD-NEW-ocr13-upsi-heldout] OCR-13: 4 UPSI letters are held out and 2 lock, so the UPSI lane cannot pass Gate 1 - medium
+
+**Raised in OCR-13 phase 5 (see CHANGELOG).** The corpus holds 7 UPSI answers (4 held out); 2 lock (both held out), 0 wrong. The other 5 have no text layer or no PDF, so they go to the AI. The owner's upsi/ sample locks 12 of 30 (18 have no text layer or are another template). One sample prints its offer date in a shape the reader does not read, so that lock leaves the optional offer date blank. **Fix:** add hand-checked UPSI degree letters to the held-out split, then re-run the dry run. *(A - M)*
+
 ### [TD-NEW-ocr13-um-heldout] OCR-13: 3 UM letters are held out and 1 locks, so the UM lane cannot pass Gate 1 - medium
 
 **Raised in OCR-13 phase 4 (see CHANGELOG).** The corpus holds 9 UM answers (3 held out); 2 of the 8 PDFs lock (1 held out). The rest go to the AI as they should: 1 scan, 2 letters without the Malay title (one Asasi), 2 Asasi letters, 1 English letter, and 1 answer has no PDF. English UM letters never read as the UM family, so a UM English reader would be a new lane. The reporting date is never printed on page 1 ("RUJUK LAMPIRAN"), so a UM lock always leaves it blank. **Fix:** add hand-checked UM degree letters to the held-out split, then re-run the dry run. *(A - M)*

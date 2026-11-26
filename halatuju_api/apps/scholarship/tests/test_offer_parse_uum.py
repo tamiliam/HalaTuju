@@ -212,7 +212,7 @@ class NoIcLockTest(SimpleTestCase):
     """Owner, 26 Nov: "Lock without IC" for ua:UUM ONLY; every other lane keeps "a blanked IC means NO lock"."""
 
     def test_only_uum_prints_no_ic(self):
-        self.assertEqual(offer_exact.ISSUER_PRINTS_NO_IC, frozenset({'ua:UUM'}))
+        self.assertEqual(offer_exact.ISSUER_PRINTS_NO_IC, frozenset({'ua:UUM', 'ua:UPSI'}))
 
     def test_ums_and_uitm_still_refuse_without_an_ic(self):
         for lane in ('ua:UMS', 'ua:UiTM', ''):

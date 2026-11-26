@@ -44,7 +44,7 @@ OWNER_WORDS = {
         'Tarikh Lapor Diri',
         'Saudara/i akan mengikuti program pengajian',
     ),
-    # OCR-13 (owner, 20 Nov). The lanes stay OFF: no layout reader dispatches to them yet (OCR-13 phase 2).
+    # OCR-13 (owner, 20 Nov). Read by `offer_parse_upsi` (OCR-13 phase 5; the lane is off by default).
     # Universiti Pendidikan Sultan Idris. 3: the owner typed "UNIVERSII"; letters print UNIVERSITI. An English
     # "official confirmation letter" shows none of these and goes to the AI.
     'ua:UPSI': (
