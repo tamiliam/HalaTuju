@@ -1968,11 +1968,19 @@ class TestCodeHealthS4IncomeConsistency(TestCase):
         self.assertEqual(f['status'], 'verified')
         self.assertIn('income_per_capita_ok', _codes(f['evidence']))
 
-    def test_exactly_at_ceiling_is_not_over(self):
-        # #14 boundary: per-capita exactly RM1,584 (gross 6,336 > 5,860 so the safety net
-        # binds) — breach_room == 0 → still B40 (the old strict < called it over).
+    def test_exactly_on_the_per_person_line_is_over(self):
+        # TD-771 (owner ruling, 26 Nov 2026), reversing #14's boundary: per person exactly
+        # RM1,584 (gross 6,336 > 5,860, so only the per-person line could pass it) is NOT under
+        # the line - the gate refuses it, so the officer band is 'over' too.
         app = self._app(size=4)
         self._father(app, 'RM6,336')
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('income_above_b40_line', _codes(f['unresolved']))
+
+    def test_one_ringgit_under_the_per_person_line_is_not_over(self):
+        app = self._app(size=4)
+        self._father(app, 'RM6,335')
         f = _facts(app)['income']
         self.assertEqual(f['status'], 'verified')
 

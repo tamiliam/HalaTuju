@@ -108,6 +108,10 @@ class TestL1OneAccountVettingIsOneRow(_Backfill):
 class TestL2AQcRejectIsOneRow(_Backfill):
 
     def test_the_reopen_inside_a_qc_reject_is_dropped(self):
+        # TD-775: the factory's reviewer is created in the same instant as the factory's stamps
+        # (Windows' clock tick), so the back-fill could credit them. Make them clearly later.
+        if self.app.assigned_to_id:
+            _created(self.app.assigned_to, timezone.now() + timedelta(hours=1))
         reopen = DecisionReopen.objects.create(application=self.app, reopened_by='qc@example.test',
                                                reason='x')
         DecisionReopen.objects.filter(pk=reopen.pk).update(created_at=LONG_AGO)

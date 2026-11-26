@@ -350,7 +350,8 @@ def last_fingerprint(org, kind):
     from .models import PartnerEmailLog
     row = (PartnerEmailLog.objects
            .filter(organisation=org, kind=kind, ok=True)
-           .order_by('-sent_at').values_list('fingerprint', flat=True).first())
+           .order_by('-sent_at', '-id')  # TD-775: a tie on the time reads the later row
+           .values_list('fingerprint', flat=True).first())
     return row or ''
 
 

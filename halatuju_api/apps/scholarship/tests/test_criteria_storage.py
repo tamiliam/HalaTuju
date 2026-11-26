@@ -62,6 +62,23 @@ class TestTheGateReadsTheStoredTree(TestCase):
         self.cohort.criteria = {'all': []}
         self.assertEqual(criteria.tree_of(self.cohort), {'all': []})
 
+    def test_a_refused_stored_tree_is_an_error_never_the_columns(self):
+        """TD-774: a stored tree `validate_tree` refuses is logged and raised - the gate never
+        quietly judges the intake on its columns instead."""
+        for bad in ({'all': [{'section': 'born_in', 'any': ['Sabah']}]},      # wrong-case state
+                    {'all': [{'section': 'nonsense', 'any': [1]}]},           # unknown section
+                    {'all': 'x'}):                                            # malformed
+            with self.subTest(tree=bad):
+                self.cohort.criteria = bad
+                with self.assertLogs('apps.scholarship.criteria', 'ERROR') as logs, \
+                        self.assertRaises(criteria.StoredTreeRefused) as caught:
+                    criteria.tree_of(self.cohort)
+                self.assertEqual((caught.exception.cohort_id, caught.exception.code),
+                                 (self.cohort.id, self.cohort.code))
+                self.assertIn(f'intake {self.cohort.id}', logs.output[0])
+                with self.assertRaises(criteria.StoredTreeRefused):
+                    shortlisting.evaluate(self.low, self.cohort)
+
 
 class TestTheFill(TestCase):
     @classmethod
@@ -98,6 +115,22 @@ class TestTheFill(TestCase):
         out = StringIO()
         call_command('build_criteria_trees', '--apply', stdout=out)
         self.assertIn('stored 0 tree(s)', out.getvalue())
+
+    def test_apply_locks_the_rows_and_a_dry_run_does_not(self):
+        """TD-774: --apply reads the intakes with select_for_update (inside its transaction), so an
+        admin requirement save cannot commit new columns between the read and the write."""
+        from unittest import mock
+
+        from django.db.models.query import QuerySet
+        real = QuerySet.select_for_update
+        with mock.patch.object(QuerySet, 'select_for_update', autospec=True,
+                               side_effect=lambda qs, *a, **k: real(qs, *a, **k)) as locked:
+            call_command('build_criteria_trees', stdout=StringIO())
+            self.assertEqual(locked.call_count, 0)
+            call_command('build_criteria_trees', '--apply', stdout=StringIO())
+            self.assertEqual(locked.call_count, 1)
+            self.assertIs(locked.call_args[0][0].model, ScholarshipCohort)
+        self._expect_filled()
 
     def test_one_refused_tree_refuses_the_whole_fill(self):
         bad = make_cohort(code='fill-bad', allowed_birth_states=['Sabah'])

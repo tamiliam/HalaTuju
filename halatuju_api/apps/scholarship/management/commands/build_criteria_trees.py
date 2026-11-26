@@ -10,8 +10,8 @@ Already-scored decisions are HELD by `rescore_pending_decisions` (owner ruling 6
 already has a tree is never touched. If any tree fails `criteria.validate_tree`, nothing is written
 and the intakes are named (id and code only).
 
-DRY RUN BY DEFAULT: lists what it would store. ``--apply`` writes, in one transaction, only with the
-owner's yes (production data). Prints intake ids and codes only.
+DRY RUN BY DEFAULT: lists what it would store. ``--apply`` writes, in one transaction with every
+intake row locked (``select_for_update``, TD-774), only with the owner's yes (production data). Prints intake ids and codes only.
 
     python manage.py build_criteria_trees            # dry run
     python manage.py build_criteria_trees --apply
@@ -36,7 +36,14 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                done = criteria.build_trees(list(ScholarshipCohort.objects.order_by('id')), save)
+                rows = ScholarshipCohort.objects.order_by('id')
+                if opts['apply']:
+                    # TD-774: lock every intake row for the whole read-build-write, so an admin
+                    # requirement save cannot commit new columns between our read and our write
+                    # (it waits for this transaction). Still open: a save that READ the row before
+                    # the lock and writes after it (the admin form takes no lock) - see TD-774.
+                    rows = rows.select_for_update()
+                done = criteria.build_trees(list(rows), save)
         except ValueError as e:
             raise CommandError(str(e)) from e
         verb = 'stored' if opts['apply'] else 'would store'

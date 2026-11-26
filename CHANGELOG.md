@@ -4,9 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: criteria Sprint 3a - officer income band matches the gate (TD-771), stored trees checked on read (TD-774), flaky test times (TD-775) (2026-11-26)
+
+Branch criteria-s3a, not pushed. Services: api. No migration. Verdict engine 2026-11-26.3.
+- **TD-771 (owner ruling):** `income_headroom` now says 'over' only when the household line fails (gross above it) AND the per-person line fails (per person on or above it), from the gift's own lines. Before, per person exactly on the line with gross above the household line read 'unsure' (thin) for the officer while the gate refused it. Shortlist unchanged. Boundary tests: on each line, one ringgit either side, intake 1 with 5 people on RM7,920, per-person-only and household-only gifts, a stored tree that differs from the columns. `test_verdict_engine` boundary test updated (RM6,336 for 4 is now a gap; RM6,335 passes).
+- **TD-774 (part):** `criteria.tree_of` validates a stored tree on read; a refused tree is logged and raises `StoredTreeRefused`, never falls back to the columns. `build_criteria_trees --apply` locks the rows (`select_for_update`) inside its transaction. Still open: the editor's new-year tree (3b) and the unlocked admin PATCH.
+- **TD-775:** explicit, distinct timestamps in `test_partner_comms`, `test_staff_activity_review` and `test_decision_reopen`; `partner_comms.last_fingerprint` orders by `-sent_at, -id`. Web `view.decisionMissing.test.tsx` not touched.
+
 ### fix: pre-U line in an "i" tip, and the polytechnic list (TD-767) (2026-11-26)
 
-Branch preu-tips, not pushed. Services: web.
+Saved to main. Services: web.
 - The "Pre-U institution" line now sits in the site's "i" tip (`FieldLabel` `tip` / `InfoTip`) on the profile and on /scholarship/apply Step 3, no longer a shaded box. One string for both, naming STPM, Matriculation, Asasi and Diploma (`scholarship.preU.tip`, en/ms/ta); the per-route `tipApply.*` and `tipProfile` strings are removed.
 - `data/polytechnics.ts` holds the 36 public polytechnics (official Malay names, abbreviation as hint; no community colleges). Source: the Ministry of Higher Education's "Senarai Institusi Pengajian Tinggi Awam (Politeknik)", https://biasiswa.mohe.gov.my/sukan/doc/SENARAI%20INSTITUSI%20PENGAJIAN%20TINGGI%20AWAM(POLITEKNIK).pdf. Still in the lazy `pu` chunk, so the first-load budget is unchanged. TD-767 closed.
 - Bundle: `applyPlanPatch` moved to its own leaf `lib/applyPlanPatch.ts` (still re-exported from `lib/planPicker`), so /scholarship/apply no longer carries the whole picker rules module in its first load. No behaviour change.

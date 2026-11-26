@@ -27,12 +27,16 @@ order: consent, intent, IPTS, born in, D5, results, income - exactly `shortlisti
 keeps today's quirks on purpose ("3 at A- (need 4)" has no "or better"; "RMNone" when only the
 per-person ceiling is set). Sprint 2 removes the duplication by making `shortlisting` call this.
 """
+import logging
+
 from apps.courses import public as courses_public
 
 from . import start_year as _start_year
 from .birth_state import STATE_KEYS, stored_keys
 from .birth_state import check as check_birth_state
 from .shortlisting import ShortlistResult, _count, spm_merit
+
+logger = logging.getLogger(__name__)
 
 #: SPM grades, best first. "N at G or better" counts every grade up to and including G. SPM has
 #: no C- (`shortlisting.CREDIT_GRADES`); D, E, G and anything unknown never count.
@@ -537,11 +541,32 @@ def tree_of(cohort):
     `build_criteria_trees --apply`'s, with its own owner yes - never a deploy's (adversarial review
     R1, 2026-11-26). The fallback tree is never stored: `validate_tree` refuses it (`VOID_SPM_GROUP`).
 
-    ``{'all': []}`` is a stored "nothing checked" and is never replaced. A stored tree is NOT
-    re-validated here (TD-774)."""
+    ``{'all': []}`` is a stored "nothing checked" and is never replaced.
+
+    TD-774: a STORED tree is validated on every read. One `validate_tree` refuses is logged at
+    error level and raised as `StoredTreeRefused` (intake id, code and the generic problems) - it
+    reaches a person, and is NEVER silently read from the columns instead: that would judge the
+    intake by rules nobody stored."""
     stored = getattr(cohort, 'criteria', None)
     # A dict only: a stub or a test double (a Mock answers every attribute) is read from its columns.
-    return stored if isinstance(stored, dict) else from_legacy(cohort, keep_empty_spm=True)
+    if not isinstance(stored, dict):
+        return from_legacy(cohort, keep_empty_spm=True)
+    problems = validate_tree(stored)
+    if problems:
+        err = StoredTreeRefused(getattr(cohort, 'id', None), getattr(cohort, 'code', ''), problems)
+        logger.error('%s', err)
+        raise err
+    return stored
+
+
+class StoredTreeRefused(ValueError):
+    """An intake's STORED criteria tree fails `validate_tree` (TD-774). Raised by `tree_of`, never
+    swallowed: the gate must not judge anyone on an intake whose stored rules are malformed."""
+
+    def __init__(self, cohort_id, code, problems):
+        self.cohort_id, self.code, self.problems = cohort_id, code, list(problems)
+        super().__init__(f'stored criteria tree refused for intake {cohort_id} {code}: '
+                         + '; '.join(self.problems))
 
 
 def build_trees(cohorts, save):

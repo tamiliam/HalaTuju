@@ -181,14 +181,18 @@ def income_headroom(application, members):
                    wage to breach → confident-enough for 🔵 (interview confirms; GREEN is reserved
                    for a corroborated household, which the family roster will later supply).
 
-    B40 holds while gross ≤ max(gross_ceiling, per_capita_ceiling × size) — the gross ceiling is
-    primary, the per-capita ceiling a safety net above it. ``breach_room`` is how much more monthly
+    The income test holds while gross ≤ the gift's household line OR gross ÷ size < its
+    per-person line (TD-771: on the household line passes, on the per-person line does not) —
+    the household line is primary, the per-person line a safety net above it. ``breach_room`` is how much more monthly
     income would tip the household out; grading by it is what separates #13 (thin → unsure) from the
     SARA case (large → probable). ``ctx`` carries the figures for the verdict copy / interview note."""
     # Criteria Sprint 2: the ceilings of the tree the gate reads ('any' meaning, see
-    # `criteria.income_ceilings`). ⚠ TD-771: "exactly at the per-person line" is B40 here
-    # (breach_room 0 is not 'over') but fails the gate (per-capita must be UNDER). Kept as is
-    # until the owner rules which side the line falls.
+    # `criteria.income_ceilings`), so every figure is the gift's own rule, never a universal one.
+    # TD-771 (owner ruling, 26 Nov 2026): the income test passes on EITHER line, exactly as the
+    # gate (`criteria.income_ok`) reads it - the household line passes ON the line (at most RM X),
+    # the per-person line does NOT (income per person must be UNDER RM Y). 'over' only when BOTH
+    # fail. A gift with only a household line still bands 'unknown' here (the officer places it;
+    # no live intake has that shape - open, see TD-771).
     from apps.scholarship.criteria_read import income_ceilings
     gross_ceiling, pc_ceiling, _mode = income_ceilings(getattr(application, 'cohort', None))
     size = getattr(getattr(application, 'profile', None), 'household_size', None)
@@ -196,15 +200,18 @@ def income_headroom(application, members):
     if pc is None or not size or not pc_ceiling:
         return 'unknown', {'all_known': all_known}
     gross = pc * size
-    # The more generous (binding) test. A cohort without a gross ceiling configured falls
-    # back to the per-capita safety net alone (code-health S4 #14 made this the shared
-    # B40 test for BOTH routes, so it must tolerate either ceiling being absent).
+    # The more generous line. A cohort without a household line falls back to the per-person
+    # line alone (code-health S4 #14 made this the shared test for BOTH routes, so it must
+    # tolerate either line being absent).
     ceiling = max([c for c in (gross_ceiling, pc_ceiling * size) if c])
     breach_room = ceiling - gross
     ctx = {'gross': int(round(gross)), 'per_capita': int(round(pc)), 'size': size,
            'breach_room': int(round(breach_room)), 'all_known': all_known,
            'gross_ceiling': int(gross_ceiling or 0), 'per_capita_ceiling': int(pc_ceiling)}
-    if breach_room < 0:
+    # `gross` is pc x size, so round away the float noise before comparing it with a ringgit line.
+    passes_household = gross_ceiling is not None and round(gross, 6) <= gross_ceiling
+    passes_per_person = pc < pc_ceiling
+    if not (passes_household or passes_per_person):
         return 'over', ctx
     if not all_known or breach_room < _HEADROOM_THIN_RM:
         return 'unsure', ctx

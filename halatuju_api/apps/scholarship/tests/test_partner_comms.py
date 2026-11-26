@@ -636,13 +636,26 @@ class TestPartnerEmailEndpoints(TestCase):
 
 class TestLastFingerprint(TestCase):
     def test_reads_the_newest_successful_send(self):
+        # TD-775: explicit, distinct times (Windows' clock tick could make two now() calls equal).
         org = _org('smc', email='smc@example.org')
-        PartnerEmailLog.objects.create(organisation=org, kind='weekly_summary', ok=True,
-                                       fingerprint='old', recipients=['a@b.c'])
+        now = timezone.now()
+        old = PartnerEmailLog.objects.create(organisation=org, kind='weekly_summary', ok=True,
+                                             fingerprint='old', recipients=['a@b.c'])
         newest = PartnerEmailLog.objects.create(organisation=org, kind='weekly_summary', ok=True,
                                                 fingerprint='new', recipients=['a@b.c'])
-        PartnerEmailLog.objects.filter(pk=newest.pk).update(sent_at=timezone.now())
+        PartnerEmailLog.objects.filter(pk=old.pk).update(sent_at=now - timedelta(days=1))
+        PartnerEmailLog.objects.filter(pk=newest.pk).update(sent_at=now)
         self.assertEqual(partner_comms.last_fingerprint(org, 'weekly_summary'), 'new')
+
+    def test_a_tie_on_the_send_time_reads_the_later_row(self):
+        """TD-775: two sends logged at the same instant order by id, never at random."""
+        org = _org('smc', email='smc@example.org')
+        now = timezone.now()
+        for fp in ('first', 'second'):
+            row = PartnerEmailLog.objects.create(organisation=org, kind='weekly_summary', ok=True,
+                                                 fingerprint=fp, recipients=['a@b.c'])
+            PartnerEmailLog.objects.filter(pk=row.pk).update(sent_at=now)
+        self.assertEqual(partner_comms.last_fingerprint(org, 'weekly_summary'), 'second')
 
     def test_never_sent_is_blank(self):
         org = _org('smc', email='smc@example.org')

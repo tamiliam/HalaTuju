@@ -77,5 +77,10 @@
         "note": "fix-fake-switch: offer_pathway_switch feeds only the reviewer switch banner and chip, never a verdict item (verdict_pathway.py NB); answers unchanged"
       }
     ]
+  },
+  "2026-11-26.3": {
+    "digest": "b1257ffcbee48cd8f55d091c5f81ba10e7965caa02d99add997e7c23ed278e1f",
+    "note": "Criteria Sprint 3a. TD-771 (owner ruling 26 Nov): income_headroom bands 'over' only when BOTH of the gift's own lines fail, exactly as the gate (criteria.income_ok): on the household line passes, on the per-person line does not. Intake 1, 5 people on RM7,920 (RM1,584 each) moves from 'unsure' to 'over' - officer income band only. TD-774: tree_of validates a stored tree and raises StoredTreeRefused (logged), never a silent fall back to the columns. No shortlist answer changes.",
+    "also_ok": []
   }
 }

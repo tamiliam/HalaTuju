@@ -29,7 +29,19 @@ def _stored(c):
 
 
 def _both(c):
-    return (('columns', SimpleNamespace(**dict(vars(c), criteria=None))), ('stored', _stored(c)))
+    """The columns read, and the stored read - unless `validate_tree` refuses the shape (the
+    junk-only start years): such a tree is never stored, and reading one raises (TD-774)."""
+    columns = ('columns', SimpleNamespace(**dict(vars(c), criteria=None)))
+    if criteria.validate_tree(criteria.from_legacy(c)):
+        return (columns,)
+    return (columns, ('stored', _stored(c)))
+
+
+class TestARefusedStoredShapeRaises(SimpleTestCase):
+    def test_the_junk_start_years_shape_cannot_be_read_when_stored(self):
+        with self.assertLogs('apps.scholarship.criteria', 'ERROR'), \
+                self.assertRaises(criteria.StoredTreeRefused):
+            criteria_read.start_years_rule(_stored(SHAPES['start_years_junk']))
 
 
 def _app(c):
@@ -63,8 +75,9 @@ class TestAccessorsMatchTheColumns(SimpleTestCase):
                                          birth_state.meets_rule(nric, c.allowed_birth_states))
 
     def test_income_headroom_is_unchanged_at_and_around_each_line(self):
-        """Every band and figure as the column reader gave them, TD-771's at-the-line case included
-        (per-capita exactly at the line is B40 here; the gate refuses it - left for the owner)."""
+        """Every band and figure as the column reader gave them, with TD-771's ruling applied
+        (26 Nov): per-person exactly ON its line is not met, so with the household line also
+        failed the band is 'over', as the gate refuses it."""
         for name in ('cohort_1', 'cohort_3', 'cohort_4', 'cohort_5', 'defaults', 'programme_7',
                      'pc_only', 'gross_only', 'nothing'):
             c = SHAPES[name]
@@ -77,7 +90,7 @@ class TestAccessorsMatchTheColumns(SimpleTestCase):
 
     @staticmethod
     def _column_headroom(c, pc):
-        """Today's income_headroom, verbatim, on the columns (the pre-switch reader)."""
+        """The pre-switch income_headroom on the columns, with TD-771's 'over' = both lines fail."""
         gross_ceiling, pc_ceiling, size = c.income_ceiling, c.per_capita_ceiling, 4
         if pc is None or not pc_ceiling:
             return 'unknown', {'all_known': True}
@@ -87,7 +100,8 @@ class TestAccessorsMatchTheColumns(SimpleTestCase):
         ctx = {'gross': int(round(gross)), 'per_capita': int(round(pc)), 'size': size,
                'breach_room': int(round(room)), 'all_known': True,
                'gross_ceiling': int(gross_ceiling or 0), 'per_capita_ceiling': int(pc_ceiling)}
-        if room < 0:
+        household_ok = gross_ceiling is not None and gross <= gross_ceiling
+        if not household_ok and not pc < pc_ceiling:
             return 'over', ctx
         return ('unsure' if room < amounts._HEADROOM_THIN_RM else 'probable'), ctx
 

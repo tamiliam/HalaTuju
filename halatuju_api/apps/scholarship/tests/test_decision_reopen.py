@@ -418,12 +418,16 @@ class TestDecisionTrailSerializer(TestCase):
         self.assertTrue(ro['resulted_in_change'])
 
     def test_returns_most_recent_reopen(self):
-        DecisionReopen.objects.create(
+        # TD-775: explicit, distinct reopen times (Windows' clock tick could make them equal).
+        now = timezone.now()
+        first = DecisionReopen.objects.create(
             application=self.app, reviewer=self.reviewer, reopened_by='qc@x.com',
-            reason='first', closed_at=timezone.now())
-        DecisionReopen.objects.create(
+            reason='first', closed_at=now)
+        latest = DecisionReopen.objects.create(
             application=self.app, reviewer=self.reviewer, reopened_by='qc@x.com',
             reason='second and latest')
+        DecisionReopen.objects.filter(pk=first.pk).update(created_at=now - datetime.timedelta(hours=1))
+        DecisionReopen.objects.filter(pk=latest.pk).update(created_at=now)
         self.assertEqual(self._data()['last_decision_reopen']['reason'], 'second and latest')
 
 
