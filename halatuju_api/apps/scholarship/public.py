@@ -37,6 +37,6 @@ __all__ = [
     'ApplicantDocument', 'DECIDED_STATUSES', 'Invitation', 'PROFILE_FAMILY_FIELDS',
     'PROFILE_PATHWAY_FIELDS', 'Programme', 'birth_state', 'constants', 'copy_family_roster',
     'copy_pathway', 'emails', 'gemini', 'identity', 'invitations', 'mentoring',
-    'StoredTreeRefused', 'reviewer_profile_complete', 'staff_footprint', 'staff_lifecycle', 'staff_mentor', 'staff_work',
-    'usage', 'whatsapp',
+    'StoredTreeRefused', 'reviewer_profile_complete', 'staff_footprint', 'staff_lifecycle',
+    'staff_mentor', 'staff_work', 'usage', 'whatsapp',
 ]

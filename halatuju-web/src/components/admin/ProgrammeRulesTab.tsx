@@ -74,6 +74,10 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
 
   const programmeId = programme?.id ?? null
   const year = useMemo(() => ruleYear(years), [years])
+  // TD-774 (adversarial review R2): the server could not read this intake's STORED rules, so the
+  // row arrives with every value null. Those blank boxes are NOT "no rules" - saving them would
+  // store a nearly open rule set - so the tab says so and never saves (the server refuses too).
+  const rulesError = year?.requirements?.rules_error === true
 
   const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
   const load = useCallback(async () => {
@@ -118,7 +122,7 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
   }
 
   const save = async () => {
-    if (!year || !token) return
+    if (!year || !token || rulesError) return
     setBusy(true); setOutcome({ kind: 'idle' })
     try {
       await updateAdminIntakeYear(year.id, draftToRequirements(draft), { token })
@@ -128,7 +132,8 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
       const code = (e as { code?: string })?.code
       setOutcome({
         kind: 'error',
-        message: t(`admin.years.error.${code === 'bad_year' ? 'badYear' : 'generic'}`),
+        message: t(`admin.years.error.${code === 'bad_year' ? 'badYear'
+          : code === 'rules_error' ? 'rulesError' : 'generic'}`),
       })
     } finally {
       setBusy(false)
@@ -184,6 +189,12 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
         <InfoBox kind="warning">{t('admin.rules.liveWarning')}</InfoBox>
       </div>
 
+      {rulesError && (
+        <div className="mt-4" data-testid="rules-error">
+          <InfoBox kind="block">{t('admin.rules.rulesError')}</InfoBox>
+        </div>
+      )}
+
       <div className="mt-4">
         <RequirementFields draft={draft} onChange={setDraft} idPrefix="rules" />
       </div>
@@ -195,7 +206,7 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
           full while the other three tabs carried that same fact as a hover title. The sentence is
           gone; the button still sleeps, which is the half of request #6's ruling that matters. */}
       <SaveBar status={statusLine()}>
-        <button type="button" onClick={save} disabled={busy || !dirty || !year}
+        <button type="button" onClick={save} disabled={busy || !dirty || !year || rulesError}
           title={!dirty ? t('common.nothingToSave') : undefined}
           className={SAVE_BAR_PRIMARY}>
           {t('common.save')}

@@ -28,8 +28,9 @@ export const basicsStatuses: ManualChapter = {
             <em> state</em>, <em>ineligible</em>, <em>shortlisted</em>, <em>before interview</em>,
             <em> interview</em>, <em>qc</em> or <em>contractual</em>. A case that is not rejected may carry
             a <em>rules error</em> chip: its intake&rsquo;s saved entry rules could not be read, so nothing
-            about that rule is shown for it. Ask an admin to fix the intake&rsquo;s rules on the gift&rsquo;s
-            Rules tab.</li>
+            about that rule is shown for it. The saved rules need a technical correction: contact the
+            technical team. The gift&rsquo;s Rules tab shows a warning for that intake and will not save,
+            and the intake cannot be opened until it is corrected.</li>
           </ul>
           <span className="mt-2 block">Most review work happens on <em>Awaiting review</em> and
           <em> Interviewing</em>; QC work is on <em>Interviewed</em> (awaiting QC).</span></>

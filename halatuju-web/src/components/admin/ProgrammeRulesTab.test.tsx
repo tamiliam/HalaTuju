@@ -443,3 +443,42 @@ describe('the loader does not re-read when `t` changes identity (A3.15)', () => 
     expect(mockApi.getAdminIntakeYears).toHaveBeenCalledTimes(before)
   })
 })
+
+// TD-774 (criteria Sprint 3b, adversarial review R2): a row whose STORED rules the server could
+// not read arrives with every value null. Those blank boxes are not "no rules", so the tab says so
+// and its Save never wakes - typing one value must not send a nearly open rule set.
+describe('an intake whose stored rules cannot be read', () => {
+  const refused = () => year({
+    requirements: {
+      min_spm_a_count: null, min_spm_bplus_count: null, min_spm_credit_count: null,
+      min_stpm_pngk: null, min_merit_score: null, income_ceiling: null, per_capita_ceiling: null,
+      allowed_birth_states: [], allowed_start_years: [], rules_error: true,
+    },
+  })
+
+  it('shows the warning and keeps Save asleep after an edit', async () => {
+    withYears([refused()])
+    await loaded()
+    expect(screen.getByTestId('rules-error').textContent).toContain('admin.rules.rulesError')
+    fireEvent.change(box('rules-i'), { target: { value: '5860' } })
+    expect(save().disabled).toBe(true)
+    fireEvent.click(save())
+    expect(mockApi.updateAdminIntakeYear).not.toHaveBeenCalled()
+  })
+
+  it('a readable intake shows no such warning', async () => {
+    withYears([year()])
+    await loaded()
+    expect(screen.queryByTestId('rules-error')).toBeNull()
+  })
+
+  it('names the refusal when the server answers rules_error', async () => {
+    mockApi.updateAdminIntakeYear.mockRejectedValueOnce(
+      Object.assign(new Error('rules_error'), { code: 'rules_error' }))
+    withYears([year()])
+    await loaded()
+    fireEvent.change(box('rules-a'), { target: { value: '3' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(screen.getByText('admin.years.error.rulesError')).toBeTruthy())
+  })
+})

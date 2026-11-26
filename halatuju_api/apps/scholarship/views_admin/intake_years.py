@@ -78,6 +78,22 @@ def _rebuild_criteria(c):
     return problems
 
 
+def _stored_tree_refused(c):
+    """True when the intake's STORED tree is one `criteria.tree_of` refuses (`StoredTreeRefused`,
+    TD-774): a dict that `validate_tree` finds problems in. Such an intake must not have its
+    requirements saved nor be opened (adversarial review R2, 2026-11-27): the list shows its row
+    with every value null, and a save from those blank boxes would rebuild a tree from nulled
+    columns - a nearly OPEN rule set, saved quietly. Its rules need a technical correction first."""
+    from .. import criteria
+    return isinstance(c.criteria, dict) and bool(criteria.validate_tree(c.criteria))
+
+
+def _rules_error(c, admin, action):
+    logger.error('AUDIT intake_year_rules_error_refused cohort=%s action=%s by=%s',
+                 c.code, action, admin.email or '')
+    return Response({'error': 'rules_error', 'code': 'rules_error'}, status=status.HTTP_409_CONFLICT)
+
+
 #: The requirements that are a FLOAT (a PNGK, a merit point). Every other one is a whole count.
 _FLOAT_REQUIREMENTS = ('min_stpm_pngk', 'min_merit_score')
 
@@ -244,6 +260,10 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
         if bad:
             return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
                             status=status.HTTP_400_BAD_REQUEST)
+        if reqs and _stored_tree_refused(c):
+            # TD-774 (adversarial review R2): refused WHOLE, nothing saved - the name and window
+            # in the same body included. A body without requirement keys still goes through.
+            return _rules_error(c, admin, 'requirements')
         # ⚠ CAPTURE THE OLD VALUE BEFORE WRITING. A threshold decides who is shortlisted, and
         # `shortlisting.evaluate()` reads them LIVE (through the criteria tree rebuilt below) — unlike the documents and questions,
         # which are frozen per application at submit (`requirements_snapshot`). So a change here
@@ -276,6 +296,9 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
             if want and c.finished_at:
                 return Response({'error': 'round_finished', 'code': 'round_finished'},
                                 status=status.HTTP_400_BAD_REQUEST)
+            if want and not c.is_open and _stored_tree_refused(c):
+                # TD-774: never start taking applications on rules nobody can read. Closing stays.
+                return _rules_error(c, admin, 'open')
             if want:
                 # ⚠⚠ ONE OPEN ROUND PER **GIFT PROGRAMME** — NOT PER ORGANISATION (owner,
                 # 2026-09-06: *"Only one round is open for a gift programme. But if the org has two

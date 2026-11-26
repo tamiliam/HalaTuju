@@ -214,6 +214,59 @@ class TestARefusedTreeNeverBreaksTheRulesTab(TestCase):
         self._flagged(r.data['requirements'])
         self.assertIsNotNone(r.data['finished_at'])
 
+    # Adversarial review R2 (2026-11-27): the blank boxes a refused row shows must never be saved
+    # as a nearly OPEN rule set, and the intake must not be opened on rules nobody can read.
+    def _patch(self, c, body):
+        return self.client.patch(f'/api/v1/admin/scholarship/intake-years/{c.id}/', body, format='json')
+
+    def _columns(self, c):
+        c.refresh_from_db()
+        return ({f: getattr(c, f) for f in (*REQUIREMENT_FIELDS, 'allowed_birth_states',
+                                            'allowed_start_years')}, c.criteria, c.name)
+
+    def test_a_requirements_save_on_a_refused_intake_is_refused_and_changes_nothing(self):
+        before = self._columns(self.bad)
+        for body in (no_rules(income_ceiling=5860), {'income_ceiling': 5860, 'name': 'Renamed'},
+                     dict.fromkeys(REQUIREMENT_FIELDS)):
+            with self.assertLogs('apps.scholarship.views_admin', 'ERROR'):
+                r = self._patch(self.bad, body)
+            self.assertEqual((r.status_code, r.data['code']), (409, 'rules_error'))
+            self.assertEqual(self._columns(self.bad), before)
+        self.assertEqual(before[1], BAD)
+
+    def test_a_name_only_save_on_a_refused_intake_goes_through(self):
+        with self.assertLogs('apps.scholarship.criteria', 'ERROR'):
+            r = self._patch(self.bad, {'name': 'Renamed'})
+        self.assertEqual(r.status_code, 200)
+        self._flagged(r.data['requirements'])
+        cols, tree, name = self._columns(self.bad)
+        self.assertEqual((tree, name), (BAD, 'Renamed'))
+
+    def test_a_refused_intake_cannot_be_opened_but_can_be_closed(self):
+        with self.assertLogs('apps.scholarship.views_admin', 'ERROR'):
+            r = self._patch(self.bad, {'is_open': True})
+        self.assertEqual((r.status_code, r.data['code']), (409, 'rules_error'))
+        self.bad.refresh_from_db()
+        self.assertIs(self.bad.is_open, False)
+        ScholarshipCohort.objects.filter(pk=self.bad.pk).update(is_open=True)
+        with self.assertLogs('apps.scholarship.criteria', 'ERROR'):
+            r = self._patch(self.bad, {'is_open': False})
+        self.assertEqual(r.status_code, 200)
+        self.bad.refresh_from_db()
+        self.assertIs(self.bad.is_open, False)
+
+    def test_a_healthy_intake_still_saves_and_rebuilds_its_tree(self):
+        ScholarshipCohort.objects.filter(pk=self.good.pk).update(
+            criteria=criteria.from_legacy(self.good))
+        r = self._patch(self.good, {'income_ceiling': 6000})
+        self.assertEqual(r.status_code, 200, r.data)
+        self.good.refresh_from_db()
+        self.assertEqual(self.good.income_ceiling, 6000)
+        self.assertEqual(self.good.criteria, criteria.from_legacy(self.good))
+        self.assertEqual(r.data['requirements']['income_ceiling'], 6000)
+        r = self._patch(self.good, {'is_open': True})
+        self.assertEqual(r.status_code, 200, r.data)
+
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestARefusedTreeNeverBreaksTheStudentsProfile(TestCase):

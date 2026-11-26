@@ -8105,6 +8105,7 @@
         "notActive": "The gift programme must be live before a round can open.",
         "generic": "The change could not be saved. No changes were made.",
         "windowBackwards": "The closing date cannot come before the opening date.",
+        "rulesError": "The stored rules for this intake cannot be read. They need a technical correction before they can be changed or the round opened. No changes were made.",
         "badOpensOn": "Enter a valid opening date.",
         "badClosesOn": "Enter a valid closing date.",
         "roundFinished": "This round was closed for good and cannot be reopened.",
@@ -8652,7 +8653,8 @@
       "untickNote": "Clear a test to stop applying it. An empty value means the test is not applied.",
       "noYear": "This gift has no intake year. The criteria are held on the intake year, so create one first.",
       "saved": "Saved",
-      "goToYear": "Create an intake year"
+      "goToYear": "Create an intake year",
+      "rulesError": "The stored rules for this intake cannot be read, so the boxes below are blank and cannot be saved. They need a technical correction: please contact the technical team."
     },
     "people": {
       "title": "Team",

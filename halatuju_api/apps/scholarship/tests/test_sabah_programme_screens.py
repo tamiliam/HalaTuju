@@ -281,7 +281,7 @@ class TestIntakeYears(_Case):
         self.assertEqual(c.programme_id, self.prog_a.id)
         self.assertEqual(c.owning_organisation_id, self.org_a.id)
 
-    def test_requirements_are_stored_and_a_missing_one_is_NOT_APPLIED(self):
+    def test_requirements_are_stored_and_an_explicit_null_is_NOT_APPLIED(self):
         r = self._post(self.admin_a, self._years(self.prog_a), {
             'code': 'sab-a-2029', 'name': 'A 2029', 'year': 2029, **no_rules(),
             'min_spm_a_count': 4, 'min_spm_bplus_count': 5,

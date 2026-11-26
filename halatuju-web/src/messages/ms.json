@@ -8105,6 +8105,7 @@
         "notActive": "Program hadiah mesti aktif sebelum sesuatu pusingan boleh dibuka.",
         "generic": "Perubahan tidak dapat disimpan. Tiada perubahan dibuat.",
         "windowBackwards": "Tarikh tutup tidak boleh sebelum tarikh buka.",
+        "rulesError": "Syarat yang disimpan bagi pengambilan ini tidak dapat dibaca. Ia perlu dibetulkan secara teknikal sebelum boleh diubah atau pusingan dibuka. Tiada perubahan dibuat.",
         "badOpensOn": "Masukkan tarikh pembukaan yang sah.",
         "badClosesOn": "Masukkan tarikh penutupan yang sah.",
         "roundFinished": "Pusingan ini telah ditamatkan sepenuhnya dan tidak boleh dibuka semula.",
@@ -8652,7 +8653,8 @@
       "untickNote": "Kosongkan ujian untuk berhenti mengenakannya. Nilai kosong bermaksud ujian itu tidak dikenakan.",
       "noYear": "Hadiah ini tiada tahun pengambilan. Kriteria disimpan pada tahun pengambilan, jadi ciptakan satu terlebih dahulu.",
       "saved": "Disimpan",
-      "goToYear": "Cipta tahun pengambilan"
+      "goToYear": "Cipta tahun pengambilan",
+      "rulesError": "Syarat yang disimpan bagi pengambilan ini tidak dapat dibaca, jadi kotak di bawah kosong dan tidak boleh disimpan. Ia perlu dibetulkan secara teknikal: sila hubungi pasukan teknikal."
     },
     "people": {
       "title": "Pasukan",

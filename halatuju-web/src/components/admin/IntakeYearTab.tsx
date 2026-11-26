@@ -238,7 +238,9 @@ export default function IntakeYearTab() {
                       : c === 'round_finished' ? 'roundFinished'
                         : c === 'still_open' ? 'stillOpen'
                           : c === 'already_finished' ? 'alreadyFinished'
-                            : c === 'confirm_mismatch' ? 'confirmMismatch' : 'generic'
+                            : c === 'confirm_mismatch' ? 'confirmMismatch'
+                              // TD-774: an intake whose stored rules cannot be read is never opened.
+                              : c === 'rules_error' ? 'rulesError' : 'generic'
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true); setError('')
