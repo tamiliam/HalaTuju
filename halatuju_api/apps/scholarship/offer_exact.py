@@ -15,7 +15,7 @@ would derive. Each returns the stored-read dict, or None (→ the AI reader, `of
      "NAME (IC)" line; `other` for the first-IC-anywhere fallback, corroborate-only). **A blanked IC means NO
      lock**: a blank IC merged over a prior read would keep the prior AI number under an "Exact" chip, and
      the AI read has its own guard. No text-layer backstop here (the parser either read an IC or did not lock).
-     The one exception (OCR-13, owner): a lane whose issuer prints no IC (`ISSUER_PRINTS_NO_IC`, UUM, UPSI) locks with
+     The one exception (OCR-13/14, owner): a lane whose issuer prints no IC (`ISSUER_PRINTS_NO_IC`) locks with
      the IC blank, as its AI read stores it, and refuses if its lock carries one.
   3. **The merge** over the prior read. The parser OWNS the identity and shape keys (`OWNED`) and writes them
      whole, blank included, so a stale AI campus / code / IC source / address / venue cannot survive under an
@@ -34,11 +34,12 @@ logger = logging.getLogger(__name__)
 OWNED = ('candidate_name', 'candidate_nric', 'candidate_nric_source', 'programme', 'programme_code',
          'institution', 'campus', 'stream', 'intake', 'issuer', '_offer_parser_version',
          'candidate_address', 'reporting_venue', 'aliran', 'bidang_pengkhususan', 'elektif')
-#: OCR-13 (owner, 26 Nov: "Lock without IC" for UUM, "Same as UUM" for UPSI; no other): the rules lanes whose issuer prints NO IC on the letter.
+#: OCR-13 (owner, 26 Nov: "Lock without IC" for UUM, "Same as UUM" for UPSI; OCR-14, owner 26 Nov: "Same as UUM"
+#: for UNIMAS and UTHM; no other): the rules lanes whose issuer prints NO IC on the letter.
 #: Only these may lock with a blank IC, and they must: a lock on such a lane that carries an IC refuses. The
 #: blank IC is stored as the AI read stores it ('' and source 'none'): `pathway_engine._ic_status` reads it as
 #: 'unreadable' (never 'match'), the same for both readers. Every other lane keeps "a blanked IC means NO lock".
-ISSUER_PRINTS_NO_IC = frozenset({'ua:UUM', 'ua:UPSI'})
+ISSUER_PRINTS_NO_IC = frozenset({'ua:UUM', 'ua:UPSI', 'ua:UNIMAS', 'ua:UTHM'})
 #: Merge-preserve: the parser's value wins only when it read one (the label travels with its date).
 PRESERVED = (('reporting_date', 'reporting_date_label'), ('offer_date',))
 

@@ -77,7 +77,7 @@ class AnEmptyOfferAnswerIsAFailedRead(SimpleTestCase):
             ex = orr.read_offer('', image=_png(), content_type='image/png')
         self.assertGreaterEqual(gem.call_count, 1)
         self.assertEqual((ex['error'], ex['fields']), (EMPTY_ANSWER, {}))
-        self.assertEqual(ex['offer_reader_version'], '2.11.0')
+        self.assertEqual(ex['offer_reader_version'], '2.12.0')
         self.assertEqual(_verdict('offer_letter', ex)['student_verdict'], 'unreadable')
 
     def test_the_marked_white_page_with_an_ic_in_its_footer_is_still_a_failed_read(self):

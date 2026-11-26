@@ -94,12 +94,66 @@ OWNER_WORDS = {
         'Tawaran ini adalah MUKTAMAD',
         'Jabatan Perkhidmatan Akademik',
     ),
+    # OCR-14 (owner, 20 Nov; memory halatuju_owner_words). The lanes stay OFF: no layout reader dispatches to
+    # them yet (OCR-14 phase 2 on). Universities with no owner words stay AI.
+    'ua:UKM': (            # Universiti Kebangsaan Malaysia. 4 as printed (owner yes, 20 Nov).
+        'PUSAT PENGURUSAN AKADEMIK', 'Rujukan', 'TAWARAN KEMASUKAN',
+        'Dengan sukacitanya saya bagi pihak Universiti Kebangsaan Malaysia', 'NO. KAD PENGENALAN',
+        'PROGRAM PENGAJIAN', 'TEMPOH PENGAJIAN', 'TARIKH LAPOR DIRI', 'Tawaran yang diberikan adalah MUKTAMAD',
+    ),
+    'ua:UMK': (            # Universiti Malaysia Kelantan. 8-10 may fall on PAGE 2 (break before Tarikh/MUSTAHAK).
+        'PUSAT PENGURUSAN AKADEMIK', 'No. KAD PENGENALAN', 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA KELANTAN',
+        'Tahniah, sukacita dimaklumkan anda telah ditawarkan tempat', 'Program', 'Tempoh', 'Tarikh', 'MUSTAHAK',
+        'Tawaran ini adalah tertakluk kepada syarat-syarat tawaran kemasukan', 'Tawaran ini adalah MUKTAMAD',
+    ),
+    'ua:UMPSA': (          # Universiti Malaysia Pahang Al-Sultan Abdullah: the 2026/27 layout ONLY (2024 -> AI).
+        'RUJ. KAMI (OUR REF)', '(NO. K/P:',
+        'TAWARAN KEMASUKAN KE PROGRAM SARJANA MUDA UNIVERSITI MALAYSIA PAHANG AL-SULTAN ABDULLAH',
+        'Dimaklumkan bahawa Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA) mengucapkan tahniah',
+        'PROGRAM PENGAJIAN', 'TEMPOH PENGAJIAN', 'TARIKH PENDAFTARAN KOLEJ KEDIAMAN',
+        'Program yang ditawarkan adalah MUKTAMAD', 'Pusat Pemasaran dan Kemasukan',
+    ),
+    'ua:UniMAP': (         # Universiti Malaysia Perlis (1 degree sample: far below the gate).
+        'PUSAT PENGURUSAN AKADEMIK', 'Rujukan Kami', 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA PERLIS',
+        'Sukacita saya bagi pihak Universiti Malaysia Perlis', 'Program Pengajian', 'Tempoh Pengajian',
+        'Tarikh Pendaftaran', 'Tawaran ini adalah muktamad',
+    ),
+    'ua:UNIMAS': (         # Universiti Malaysia Sarawak: the 2026/27 layout ONLY (2023/24, "PEJABAT PENDAFTAR" -> AI).
+        'Pejabat Timbalan Naib Canselor', 'Tawaran kemasukan Ke Universiti Malaysia Sarawak',
+        'Tahniah! Saudara/saudari adalah ditawarkan tempat', 'Program', 'Tempoh Pengajian', 'Pendaftar',
+    ),
+    'ua:UniSZA': (         # Universiti Sultan Zainal Abidin.
+        'Rujukan', 'TAWARAN KEMASUKAN KE UNIVERSITI SULTAN ZAINAL ABIDIN',
+        'Dengan sukacitanya dimaklumkan bahawa saudara/i ditawarkan mengikuti program', 'Program Pengajian',
+        'Tempoh Pengajian', 'Tarikh', 'Tawaran ini adalah MUKTAMAD', 'Pendaftar',
+    ),
+    'ua:UPM': (            # Universiti Putra Malaysia.
+        'PEJABAT TIMBALAN NAIB CANSELOR', 'Rujukan', 'TAWARAN KEMASUKAN KE UNIVERSITI PUTRA MALAYSIA',
+        'Sukacita dimaklumkan bahawa anda ditawarkan masuk ke Universiti Putra Malaysia', 'Program', 'Tarikh',
+    ),
+    'ua:USM': (            # Universiti Sains Malaysia. 1 is in the letterhead PICTURE (`OPTIONAL_ON_TEXT_PDF`).
+        'Jabatan Pendaftar', 'No.Rujukan',
+        'TAWARAN KEMASUKAN PROGRAM IJAZAH SARJANA MUDA, UNIVERSITI SAINS MALAYSIA',
+        'Tahniah, saudara/i telah berjaya ditawarkan tempat untuk mengikuti program Ijazah Sarjana Muda (Penuh Masa)',
+        'PROGRAM PENGAJIAN', 'TEMPOH PENGAJIAN', 'TARIKH LAPOR DIRI/MASA',
+        'Program pengajian yang ditawarkan kepada saudara/i ini adalah muktamad', 'Pendaftar',
+    ),
+    'ua:UTeM': (           # Universiti Teknikal Malaysia Melaka. NO Asasi excuse (measured: `_EXCUSED_LINE`).
+        'PEJABAT PENDAFTAR', 'Rujukan Kami (Our Ref)', 'TAWARAN KEMASUKAN KE UNIVERSITI TEKNIKAL MALAYSIA MELAKA',
+        'Tahniah, sukacita dimaklumkan bahawa', 'Program Pengajian', 'Tarikh', 'Bahagian Pengurusan Akademik',
+    ),
+    'ua:UTHM': (           # Universiti Tun Hussein Onn Malaysia.
+        'PEJABAT PENGURUSAN AKADEMIK', 'Rujukan Kami(Our Ref.)',
+        'TAWARAN KEMASUKAN KE UNIVERSITI TUN HUSSEIN ONN MALAYSIA',
+        'Tahniah diucapkan kepada saudara/i kerana ditawarkan tempat', 'Program & Kod Program',
+        'Tempoh Program (Tahun)', 'Tarikh', 'Tawaran ini adalah MUKTAMAD',
+    ),
 }
 
 #: Per issuer (rules lane): the phrase numbers NOT required on a PDF read from its TEXT LAYER, because that
 #: issuer prints them as part of its letterhead picture (owner, 20 Nov: UMS phrase 1). A scan (OCR of the page
-#: image) still needs every phrase.
-OPTIONAL_ON_TEXT_PDF = {'ua:UMS': (1,)}
+#: image) still needs every phrase. OCR-14: USM phrase 1 (owner, 20 Nov).
+OPTIONAL_ON_TEXT_PDF = {'ua:UMS': (1,), 'ua:USM': (1,)}
 
 #: Words that keep a letter off EVERY rules lane (university or government family): the AI reads it instead (owner,
 #: 20 Nov: "For now, let AI handle Asasi. When there a larger sample, we can consider switching."). Asasi is a
@@ -124,7 +178,10 @@ _AI_ONLY_GLUED = ((re.compile(r'ASAS[I1L|]'), AI_ONLY_WORDS['ASASI']),)
 #: look-alike letters) still refuses. Only the label words are blanked: the numbers stay. A UiTM letter's PARSED
 #: programme is checked on its own (`programme_ai_only`), so a label-shaped programme value still refuses.
 #: The one sample that prints the label another way ("... (Asasi & Diploma)") refuses: refusing more is safe.
-#: No other lane has an excuse.
+#: No other lane has an excuse. OCR-14 phase 1 measured UTeM the same way (shapes and counts only): none of the
+#: owner's 10 UTeM degree letters, nor the corpus's degree letter, prints ASASI on page 1. The UTeM letters that do
+#: are DIPLOMA letters, whose faculty field names "Sekolah Asasi Teknikal dan Pengajian Diploma", and two of them
+#: show all 7 UTeM owner phrases: for those the Asasi exit is the owner-words barrier, so UTeM gets NO excuse.
 _PHONE = r'\(?\+?\d{2,4}\)?[^\S\n]?-?[^\S\n]?\d{3,4}'     # "(603) 5544 ...", "03-5544 ..."
 _EXCUSED_LINE = {'ua:UiTM': re.compile(r'(?aim)(?:^|(?<=[^\S\n]{3}))[^\S\n]*ASASI[^\S\n]{1,3}&[^\S\n]{1,3}DIPLOMA'
                                        r'[^\S\n]{0,3}:(?=[^\S\n]{0,3}' + _PHONE +

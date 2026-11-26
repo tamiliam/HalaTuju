@@ -240,7 +240,7 @@ class UpsiLaterPagesTest(SimpleTestCase):
 
 class UpsiNoIcAndWiringTest(SimpleTestCase):
     def test_upsi_prints_no_ic_next_to_uum_only(self):
-        self.assertEqual(offer_exact.ISSUER_PRINTS_NO_IC, frozenset({'ua:UUM', 'ua:UPSI'}))
+        self.assertEqual(offer_exact.ISSUER_PRINTS_NO_IC, frozenset({'ua:UUM', 'ua:UPSI', 'ua:UNIMAS', 'ua:UTHM'}))
 
     def test_lock_stores_a_blank_ic_over_a_prior_ai_ic(self):
         lay = layout()

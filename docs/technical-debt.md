@@ -9942,6 +9942,14 @@ or re-ask `pre_u_studied_at` when the completed tertiary kind changes. *(A - S)*
 
 **Raised in OCR-13 phase 1 (see CHANGELOG).** UiTM diploma and degree letters share one layout: 4 diploma sample PDFs show all 8 owner phrases and pass the Asasi check. **Fix:** the phase 2 UiTM reader must lock only a degree programme (refuse "Diploma" in the programme field and an unmatched course), with adversarial tests; the lane must not go on without it. **Stays open (phase 2):** the reader refuses the 4 digital diploma letters correctly, but the corpus diplomas are scans, so the refusal is not yet tested on a corpus diploma with a text layer. *(A - S)*
 
+### [TD-NEW-ocr14-readers] OCR-14: ten more university lanes have owner words but no page-1 reader - medium
+
+**Raised in OCR-14 phase 1 (see CHANGELOG).** The owner's words for UKM, UMK, UMPSA, UniMAP, UNIMAS, UniSZA, UPM, USM, UTeM and UTHM are in; nothing dispatches to them, so every such letter still goes to the AI. Held-out letters per lane (UNIMAS 7, UKM, UMK, UMPSA, UniSZA, UPM and UTeM 1 each, USM, UTHM and UniMAP 0) are far under Gate 1's 20. UPM's 8 samples are all scans or have no text layer, so a UPM reader has nothing to read; UniMAP has 1 degree sample. USM phrase 5 ("PROGRAM PENGAJIAN") is also printed inside phrase 8, so phrase 8 alone shows it: a USM reader must read the label itself. UMK and UMPSA phrases may fall on page 2. **Fix:** one reader per phase, UNIMAS first (split plan in the CHANGELOG), each with its own adversarial tests and versions, lanes off until Gate 1. *(A - L)*
+
+### [TD-NEW-ocr14-diploma] OCR-14: UTeM and UniMAP diploma letters show every owner phrase - high (before either lane goes on)
+
+**Raised in OCR-14 phase 1 (see CHANGELOG).** 2 UTeM diploma letters show all 7 UTeM owner phrases, and 1 diploma letter shows all 8 UniMAP phrases. The UTeM ones refuse today only because their faculty field names "Sekolah Asasi Teknikal dan Pengajian Diploma" (the Asasi exit; UTeM gets no excuse for that reason). **Fix:** a UTeM or UniMAP reader must lock only a degree programme (refuse "Diploma" in the programme field and an unmatched course), with adversarial tests; neither lane may go on without it. *(A - S)*
+
 ### [TD-740] PDF text layer: text placed off the page by a plain cm or Td is still read - medium - FIXED 2026-11-25
 
 **Raised 2026-11-25 by the OCR-20 review round 3 (pre-existing, not new with round 3). Owner: new item, after OCR-20 and before OCR-18 step 1. Fixed 2026-11-25 (branch td-740-offpage): refuse, by pdfium's own placement (`pdfium_place.py`); see decisions.md 25 Nov, TD-740.** Text placed far off the page by a plain `cm` or `Td` (e.g. 5000 5000) keeps the exact read: pypdf reads it, pdfium does not draw it, and page 1 still counts as drawn. Round-3 probe p2i is the same class (positions only). Fix idea: have the exact read refuse, or drop, text whose position lies outside the page box, judged against pdfium's own placement.

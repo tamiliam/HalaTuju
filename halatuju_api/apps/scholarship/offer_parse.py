@@ -346,7 +346,9 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # Phase 3 (same day, same unreleased version): 'uum', `diagnose_uum` (`offer_parse_uum`), a lock with no IC.
 # Phase 4 (same day, same unreleased version): 'um', `diagnose_um` (`offer_parse_um`), the IC guard as usual.
 # Phase 5 (same day, same unreleased version): 'upsi', `diagnose_upsi` (`offer_parse_upsi`), a lock with no IC.
-PARSER_VERSION = '2.4.0'
+# 2.5.0 (OCR-14 phase 1, 2026-11-26) — owner words for ten more lanes (UTeM measured: no Asasi excuse), and
+# UNIMAS / UTHM in `offer_exact.ISSUER_PRINTS_NO_IC`. No reader dispatches to them yet: every letter reads as before.
+PARSER_VERSION = '2.5.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)

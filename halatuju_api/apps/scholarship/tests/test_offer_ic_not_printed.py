@@ -1,5 +1,5 @@
 """OCR-13: the offer-letter IC status 'not_printed' — a blank IC on a letter from an issuer that prints
-no IC by design (offer_exact.ISSUER_PRINTS_NO_IC: UUM and UPSI only). Grey "Not printed" on the chip;
+no IC by design (offer_exact.ISSUER_PRINTS_NO_IC: UUM, UPSI; OCR-14: UNIMAS, UTHM). Grey "Not printed" on the chip;
 every decision reader treats it exactly as 'unreadable', so no verdict moves (owner 2026-11-26).
 Synthetic values only (made-up names and numbers)."""
 import re
@@ -16,6 +16,7 @@ OTHER_NRIC = '980202-10-1234'
 NAME = 'ZORBEX QUENTARO BIN ALFEN'
 UUM, UPSI = 'UNIVERSITI UTARA MALAYSIA', 'UNIVERSITI PENDIDIKAN SULTAN IDRIS'
 UNIMAS, UTHM = 'UNIVERSITI MALAYSIA SARAWAK', 'UNIVERSITI TUN HUSSEIN ONN MALAYSIA'
+UM = 'UNIVERSITI MALAYA'
 
 
 def _np_doc(institution='', nric='', verdict='ok', inputs=None):
@@ -46,14 +47,16 @@ class NotPrintedStatusTest(SimpleTestCase):
         self.assertEqual(_np_ic(institution='', inputs=dict(LOCK, rules_lane='ua:UPSI')), 'not_printed')
 
     def test_a_lock_flag_needs_the_deterministic_reader(self):
-        self.assertEqual(_np_ic(institution=UNIMAS, inputs=dict(LOCK, reader='gemini')), 'unreadable')
-        self.assertEqual(_np_ic(institution=UNIMAS, inputs=dict(LOCK, nric_not_printed='yes')), 'unreadable')
-        self.assertEqual(_np_ic(institution=UNIMAS, inputs=dict(LOCK, rules_lane='ua:UNIMAS')), 'unreadable')
+        self.assertEqual(_np_ic(institution=UM, inputs=dict(LOCK, reader='gemini')), 'unreadable')
+        self.assertEqual(_np_ic(institution=UM, inputs=dict(LOCK, nric_not_printed='yes')), 'unreadable')
+        self.assertEqual(_np_ic(institution=UM, inputs=dict(LOCK, rules_lane='ua:UM')), 'unreadable')
+        self.assertEqual(_np_ic(institution=UM, inputs=dict(LOCK, rules_lane='ua:UKM')), 'unreadable')
         with mock.patch('apps.scholarship.offer_exact.ISSUER_PRINTS_NO_IC', frozenset({'ua:UPSI'})):
             self.assertEqual(_np_ic(institution='', inputs=LOCK), 'unreadable')
 
     def test_other_issuers_keep_unreadable(self):
-        for inst in (UNIMAS, UTHM, 'UNIMAS', 'UTHM', 'UNIVERSITI MALAYA', ''):
+        for inst in (UM, 'UNIVERSITI KEBANGSAAN MALAYSIA', 'UNIVERSITI TEKNIKAL MALAYSIA MELAKA', 'UTeM', 'UKM',
+                     'UNIVERSITI MALAYSIA SABAH', ''):
             with self.subTest(inst=inst):
                 self.assertEqual(_np_ic(institution=inst), 'unreadable')
 
@@ -81,7 +84,11 @@ class NoIcIssuerResolverTest(SimpleTestCase):
     def test_near_names_never_resolve(self):
         for near in ('UNIVERSITI UTARA MALAYSIAN', 'UUM SINTOK', 'UNIVERSITI UTARA MALAYSIA, SINTOK, KEDAH',
                      'UNIVERSITI PENDIDIKAN SULTAN IDRISS', 'UNIVERSITI PENDIDIKAN SULTAN', 'UPSI TANJONG MALIM',
-                     'UNIMAS', 'UTHM', 'UM', 'UUMM', 'KOLEJ UNIVERSITI UTARA MALAYSIA', '', None, 123):
+                     'UM', 'UUMM', 'KOLEJ UNIVERSITI UTARA MALAYSIA', '', None, 123,
+                     'UNIVERSITI MALAYSIA SARAWAKK', 'UNIMAS KOTA SAMARAHAN', 'UNIVERSITI MALAYSIA',
+                     'UNIVERSITI MALAYSIA SARAWAK, KOTA SAMARAHAN', 'UNIVERSITI TUN HUSSEIN ONN',
+                     'UNIVERSITI TUN HUSSEIN ONN MALAYSIA KAMPUS PAGOH', 'UTHM PAGOH', 'UTHMM', 'UNIMASS',
+                     'KOLEJ KEDIAMAN UNIVERSITI TUN HUSSEIN ONN MALAYSIA', 'UNIVERSITI MALAYSIA SABAH'):
             with self.subTest(near=near):
                 self.assertEqual(pe.no_ic_issuer_lane(near), '')
 
@@ -93,7 +100,7 @@ class NoIcIssuerResolverTest(SimpleTestCase):
     def test_the_map_names_only_the_approved_issuers(self):
         from apps.scholarship.offer_exact import ISSUER_PRINTS_NO_IC
         self.assertEqual(set(pe._NO_IC_ISSUER_NAMES.values()), set(ISSUER_PRINTS_NO_IC))
-        self.assertEqual(set(ISSUER_PRINTS_NO_IC), {'ua:UUM', 'ua:UPSI'})
+        self.assertEqual(set(ISSUER_PRINTS_NO_IC), {'ua:UUM', 'ua:UPSI', 'ua:UNIMAS', 'ua:UTHM'})
 
 
 def _np_chk(name, ic, programme=''):
@@ -167,3 +174,83 @@ class EveryIcReaderKnowsNotPrintedTest(SimpleTestCase):
                         bad.append(f'{rel}:{n}')
         self.assertGreater(seen, 5)
         self.assertEqual(bad, [])
+
+
+class Ocr14UnimasUthmTest(SimpleTestCase):
+    """OCR-14 (owner, 26 Nov: "Same as UUM" for UNIMAS and UTHM): the IC chip of their letters goes grey through
+    'not_printed'; a printed IC still matches or mismatches; nothing else moves."""
+
+    def test_ai_read_blank_ic_is_not_printed(self):
+        for inst in (UNIMAS, UTHM, 'UNIMAS', 'UTHM', 'Universiti Malaysia Sarawak', 'universiti tun hussein onn malaysia',
+                     'UNIVERSITI MALAYSIA SARAWAK (UNIMAS)', 'Universiti Tun Hussein Onn Malaysia, UTHM'):
+            with self.subTest(inst=inst):
+                self.assertEqual(_np_ic(institution=inst), 'not_printed')
+
+    def test_rules_lock_blank_ic_is_not_printed(self):
+        for lane in ('ua:UNIMAS', 'ua:UTHM'):
+            with self.subTest(lane=lane):
+                self.assertEqual(_np_ic(institution='', inputs=dict(LOCK, rules_lane=lane)), 'not_printed')
+                self.assertEqual(_np_ic(institution='', inputs=dict(LOCK, rules_lane=lane, reader='gemini')),
+                                 'unreadable')
+
+    def test_a_printed_ic_still_matches_or_mismatches(self):
+        for inst in (UNIMAS, UTHM):
+            with self.subTest(inst=inst):
+                self.assertEqual(_np_ic(institution=inst, nric=NRIC), 'match')
+                self.assertEqual(_np_ic(institution=inst, nric=OTHER_NRIC), 'mismatch')
+                self.assertEqual(_np_ic(institution=inst, verdict='review_manually'), 'pending')
+
+    def test_exact_names_resolve_to_their_lane(self):
+        self.assertEqual(pe.no_ic_issuer_lane(UNIMAS), 'ua:UNIMAS')
+        self.assertEqual(pe.no_ic_issuer_lane('UNIVERSITI MALAYSIA SARAWAK UNIMAS'), 'ua:UNIMAS')
+        self.assertEqual(pe.no_ic_issuer_lane(UTHM), 'ua:UTHM')
+        self.assertEqual(pe.no_ic_issuer_lane(' uthm '), 'ua:UTHM')
+        with mock.patch('apps.scholarship.offer_exact.ISSUER_PRINTS_NO_IC', frozenset({'ua:UUM', 'ua:UPSI'})):
+            self.assertEqual(pe.no_ic_issuer_lane(UNIMAS), '')
+            self.assertEqual(pe.no_ic_issuer_lane(UTHM), '')
+
+
+def _lock(lane, nric=''):
+    """A diagnose result that locked on ``lane`` (made-up values), for the exact_read IC tests."""
+    return {'family': 'x', 'locked': {'candidate_name': NAME, 'candidate_nric': nric,
+                                      'candidate_nric_source': 'label' if nric else 'none',
+                                      'programme': 'SARJANA MUDA SAINS', 'institution': 'X', 'rules_lane': lane,
+                                      '_family': 'x'},
+            'guard': None, 'empty_required': [], 'portal': False}
+
+
+class Ocr14NoIcLockTest(SimpleTestCase):
+    """A UNIMAS or UTHM lock (phase 2 readers) stores the IC blank and refuses when it carries one."""
+    DIAG = 'apps.scholarship.offer_parse.diagnose'
+
+    def test_blank_ic_locks_and_is_stored_blank(self):
+        from apps.scholarship import offer_exact
+        prior = {'fields': {'candidate_nric': NRIC, 'candidate_nric_source': 'label'}}
+        for lane in ('ua:UNIMAS', 'ua:UTHM'):
+            with self.subTest(lane=lane), mock.patch(self.DIAG, return_value=_lock(lane)):
+                ex = offer_exact.exact_read('x', prior=prior, profile_nric=NRIC)
+                self.assertIsNotNone(ex)
+                self.assertEqual((ex['fields']['candidate_nric'], ex['fields']['candidate_nric_source']), ('', 'none'))
+                self.assertIs(ex['offer_reader_inputs']['nric_not_printed'], True)
+                self.assertEqual(ex['offer_reader_inputs']['rules_lane'], lane)
+
+    def test_a_lock_carrying_an_ic_refuses(self):
+        from apps.scholarship import offer_exact
+        for lane in ('ua:UNIMAS', 'ua:UTHM'):
+            for ic in (NRIC, OTHER_NRIC, '990101145678'):
+                with self.subTest(lane=lane, ic=ic), mock.patch(self.DIAG, return_value=_lock(lane, ic)):
+                    self.assertIsNone(offer_exact.exact_read('x', profile_nric=NRIC))
+
+    def test_other_new_lanes_still_need_an_ic(self):
+        from apps.scholarship import offer_exact
+        for lane in ('ua:UKM', 'ua:UMK', 'ua:UMPSA', 'ua:UniMAP', 'ua:UniSZA', 'ua:UPM', 'ua:USM', 'ua:UTeM'):
+            with self.subTest(lane=lane), mock.patch(self.DIAG, return_value=_lock(lane)):
+                self.assertIsNone(offer_exact.exact_read('x', profile_nric=NRIC))
+
+    def test_ic_printed_refuses_every_ic_shape(self):
+        # The phase 2 UNIMAS / UTHM readers reuse offer_parse_uum.ic_printed (made-up numbers).
+        from apps.scholarship.offer_parse_uum import ic_printed
+        for ic in (NRIC, '990101145678', '990101 14 5678', 'No. K/P : 990101-14-5678'):
+            with self.subTest(ic=ic):
+                self.assertTrue(ic_printed(ic))
+        self.assertFalse(ic_printed('Tel : 082-583 000'))

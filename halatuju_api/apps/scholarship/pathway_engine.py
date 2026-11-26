@@ -107,7 +107,9 @@ def _ic_status(candidate_nric: str, profile_nric: str, extracted: bool, not_prin
 #: both ("... SULTAN IDRIS (UPSI)"). A near name, a campus tail or a hostel line never resolves (-> 'unreadable').
 _NO_IC_ISSUER_NAMES = {name: lane for full, acr, lane in (
     ('UNIVERSITI UTARA MALAYSIA', 'UUM', 'ua:UUM'),
-    ('UNIVERSITI PENDIDIKAN SULTAN IDRIS', 'UPSI', 'ua:UPSI')) for name in (full, acr, f'{full} {acr}')}
+    ('UNIVERSITI PENDIDIKAN SULTAN IDRIS', 'UPSI', 'ua:UPSI'),
+    ('UNIVERSITI MALAYSIA SARAWAK', 'UNIMAS', 'ua:UNIMAS'),              # OCR-14 (owner 26 Nov: "Same as UUM")
+    ('UNIVERSITI TUN HUSSEIN ONN MALAYSIA', 'UTHM', 'ua:UTHM')) for name in (full, acr, f'{full} {acr}')}
 
 
 def no_ic_issuer_lane(institution) -> str:
