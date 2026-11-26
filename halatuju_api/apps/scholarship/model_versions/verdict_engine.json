@@ -77,6 +77,10 @@
     "note": "Criteria editor Sprint 2, adversarial review R1 (2026-11-26.1 never went live): a NULL criteria tree is read as TODAY'S gate - criteria.tree_of falls back to from_legacy(cohort, keep_empty_spm=True), the columns gate exactly on the whole equivalence grid (test_a_null_tree_is_todays_gate_exactly) - so the deploy changes no decision. Intake 5's CGPA trap (a PNGK floor, no SPM bar) switches off only when build_criteria_trees --apply stores plain from_legacy, with its own owner yes. The old admin form rebuilds only an already-stored tree; a NULL row (and a new year) stays NULL. The replay judges a NULL row with the tree --apply would store.",
     "also_ok": [
       {
+        "digest": "d8fc306e1476cd61efbbef2b2f51f8203efa2054c9f6b722db7cf2bf54deb04f",
+        "note": "OCR-14 on the criteria base (2026-11-27): ua:UNIMAS and ua:UTHM join offer_exact.ISSUER_PRINTS_NO_IC and pathway_engine._NO_IC_ISSUER_NAMES, so a blank IC on their letters says 'not_printed' instead of 'unreadable'; verdict_pathway reads 'not_printed' exactly as 'unreadable' (as the 25.7 OCR-13/OCR-14 entries), so no verdict answer changes. Same source change as the 0a9f1bb6 entry under 2026-11-25.7, on the new base."
+      },
+      {
         "digest": "0fc1562571cca50c17779a4434991be4d587f8c571f70ed756282429b1b88259",
         "note": "fix-fake-switch: offer_pathway_switch feeds only the reviewer switch banner and chip, never a verdict item (verdict_pathway.py NB); answers unchanged"
       }
