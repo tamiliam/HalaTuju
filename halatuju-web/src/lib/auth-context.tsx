@@ -14,6 +14,7 @@ import { isAnonymousAuthSuppressed } from '@/lib/sessionPolicy'
 import { getSession, getSupabase } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import { browserMovesUp } from '@/lib/qualification'
+import { dropLocalHeldResults, serverHoldsSpmOnly } from '@/lib/heldResultsLocal'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
 import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, isStalePendingAction, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION, KEY_OWNER, rememberBursaryFile, clearStudentTab, claimStudentData } from '@/lib/storage'
@@ -290,6 +291,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     // STPM data (and the exam, the completion, the third route) — left alone on a pending move up
     if (pendingUp) return
+    // Pre-U sprint, review round 1: the server holds SPM only (the switch cleared the rest, maybe
+    // on another device) — this browser's old STPM / third-route copies go too, so no later sync
+    // can send them back up.
+    if (serverHoldsSpmOnly(profile)) dropLocalHeldResults(localStorage)
     if (profile.stpm_grades && Object.keys(profile.stpm_grades).length > 0) {
       localStorage.setItem(KEY_STPM_GRADES, JSON.stringify(profile.stpm_grades))
     }

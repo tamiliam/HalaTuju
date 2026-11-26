@@ -47,7 +47,7 @@ export default function InstitutionPicker({
   // (the pre-U picker, 2026-11-26). Off by default, so every other picker is unchanged.
   customRow?: boolean
   // Told when the box gains focus and (after the blur commit) loses it — for chips drawn
-  // beside the box that show only while she is in the field.
+  // beside the box that show only while they are in the field.
   onFocusChange?: (focused: boolean) => void
 }) {
   const { t } = useT()

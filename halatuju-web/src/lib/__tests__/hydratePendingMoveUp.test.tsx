@@ -9,7 +9,8 @@ import { render, waitFor } from '@testing-library/react'
 
 import { AuthProvider } from '@/lib/auth-context'
 import {
-  KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ, KEY_STPM_GRADES,
+  KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_KOKO_SCORE, KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ,
+  KEY_STPM_CGPA, KEY_STPM_GRADES,
 } from '@/lib/storage'
 
 let mockProfile: Record<string, unknown> = {}
@@ -53,4 +54,31 @@ it('with no pending move up the hydrate writes the server answer as before', asy
   render(<AuthProvider><div>app</div></AuthProvider>)
   await waitFor(() => expect(localStorage.getItem(KEY_RESULTS_EXAM_TYPE)).toBe('stpm'))
   expect(JSON.parse(localStorage.getItem(KEY_SPM_PREREQ) as string)).toEqual({ bm: 'C' })
+})
+
+// Pre-U sprint, review round 1 (finding 3): after the switch to SPM (maybe on another device) the
+// server holds SPM only — this browser's old STPM / third-route copies are dropped, so no later sync
+// sends them back up.
+it('an SPM-only server profile drops the stale local STPM and third-route copies', async () => {
+  localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+  localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A' }))
+  localStorage.setItem(KEY_STPM_CGPA, '3.42')
+  localStorage.setItem(KEY_KOKO_SCORE, '8')
+  localStorage.setItem(KEY_HIGHER_CGPA, '3.1')
+  mockProfile = { ...SERVER_SPM, stpm_grades: {}, completed_qualifications: ['spm'] }
+  render(<AuthProvider><div>app</div></AuthProvider>)
+  await waitFor(() => expect(localStorage.getItem(KEY_STPM_GRADES)).toBeNull())
+  expect(localStorage.getItem(KEY_STPM_CGPA)).toBeNull()
+  expect(localStorage.getItem(KEY_KOKO_SCORE)).toBeNull()
+  expect(localStorage.getItem(KEY_HIGHER_CGPA)).toBeNull()
+  expect(localStorage.getItem(KEY_GRADES)).not.toBeNull()                 // the SPM results stay
+})
+
+it('a server that still holds STPM results keeps the local copies', async () => {
+  localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+  localStorage.setItem(KEY_STPM_CGPA, '3.42')
+  mockProfile = { ...SERVER_SPM, completed_qualifications: ['spm'] }     // stpm_grades on file
+  render(<AuthProvider><div>app</div></AuthProvider>)
+  await waitFor(() => expect(localStorage.getItem(KEY_GRADES)).not.toBeNull())
+  expect(localStorage.getItem(KEY_STPM_CGPA)).toBe('3.42')
 })

@@ -300,7 +300,7 @@ export interface ApplyFormState {
   // NRIC is edited here but saved via the validated claim path, not the payload.
   name: string
   school: string
-  preUStudiedAt: string   // pre-U sprint: where she COMPLETED her pre-U (tertiary only; profile)
+  preUStudiedAt: string   // pre-U sprint: where they COMPLETED their pre-U (tertiary only; profile)
   nric: string
   referringOrg: ReferringOrg
   homeState: string

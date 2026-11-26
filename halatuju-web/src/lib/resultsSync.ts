@@ -52,7 +52,7 @@ export function resultsSyncFields(store: Readable): Partial<SyncProfileData> {
  * yet (blank `results_exam_type` and an empty `completed_qualifications`) — an anonymous student's
  * first onboarding reaching the server. A recorded completion is never overwritten from here:
  * never demoted, never moved sideways — with ONE exception (round 2, finding B): a form completed
- * in this browser that moves her UP (held SPM → STPM / Matriculation / Asasi / Diploma) is sent,
+ * in this browser that moves them UP (held SPM → STPM / Matriculation / Asasi / Diploma) is sent,
  * or a returning SPM student who entered new results while signed out would lose them. A move
  * between two tertiary kinds is NOT sent: we cannot tell which form is newer. The results forms
  * themselves (`onboarding/profile`) still send it.
@@ -90,7 +90,7 @@ function isThirdRouteClosed(err: unknown): boolean {
  * ⚠ RELEASE SAFETY (S2b review). The profile sync, with ONE retry if the api refuses the third
  * route as shut (an api revision or env switch behind this web release): the third-route fields,
  * the completed list and any third-route exam / marker are dropped and the REST of the sync is
- * sent again — her name, grades and family details are never lost to a switch. Logged, so the
+ * sent again — their name, grades and family details are never lost to a switch. Logged, so the
  * mismatch is visible. Any other failure is thrown as before.
  */
 async function syncThirdRouteSafely(data: SyncProfileData, options: { token: string }) {
@@ -107,7 +107,7 @@ async function syncThirdRouteSafely(data: SyncProfileData, options: { token: str
   }
 }
 
-/** Pre-U sprint: the server refused the explicit clear (her application uses those results). */
+/** Pre-U sprint: the server refused the explicit clear (their application uses those results). */
 function isHeldClearRefused(err: unknown): boolean {
   const e = err as { status?: number; fieldErrors?: unknown } | null
   return !!e && e.status === 400 && JSON.stringify(e.fieldErrors ?? '').includes('clear_held_results')
@@ -116,8 +116,9 @@ function isHeldClearRefused(err: unknown): boolean {
 /**
  * The profile sync both doors use. Pre-U sprint: when the server refuses `clear_held_results` as
  * locked (an application arrived after the dialog was shown), the clear is DELETED FROM `data` —
- * so the caller can see it was not taken (`settleHeldClear`) — and the rest is sent again, under
- * the never-demote guard as before. Then the third-route retry above, as before.
+ * so the caller can see it was not taken, tell the student and put the browser back on the held
+ * results (`onboarding/profile`, review round 1) — and the rest is sent again, under the
+ * never-demote guard as before. Then the third-route retry above, as before.
  */
 export async function syncProfileSafely(data: SyncProfileData, options: { token: string }) {
   try {
@@ -125,7 +126,6 @@ export async function syncProfileSafely(data: SyncProfileData, options: { token:
   } catch (err) {
     if (!data.clear_held_results || !isHeldClearRefused(err)) throw err
     delete data.clear_held_results
-    console.warn('profile sync: clear_held_results refused (held_results_locked) — resent without it')
     return syncThirdRouteSafely(data, options)
   }
 }

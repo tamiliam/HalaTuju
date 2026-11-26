@@ -4,14 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### feat: pre-U sprint - Secondary School, where she completed pre-U, the STPM Angka Giliran, and the switch to SPM (2026-11-26)
+### feat: pre-U sprint - Secondary School, where they completed pre-U, the STPM Angka Giliran, and the switch to SPM (2026-11-26)
 
 Branch preu-school, not pushed. Migration: 0102_angka_giliran_11_pre_u_studied_at (additive). Services: both.
 - **Labels:** "School" is now "Secondary School" (ms "Sekolah Menengah", ta "இடைநிலைப் பள்ளி") on onboarding, apply
   and the profile; the apply tip reads "The secondary school where you sat for SPM."; "(optional)" is gone from the
   onboarding profile. The officer label was already "Secondary school" in all three locales (not renamed).
-- **New field `pre_u_studied_at`:** where she COMPLETED STPM, Matriculation, Asasi or Diploma. It is NOT
-  `pre_u_institution` (the destination; for STPM the Form 6 school she attended, ruling TD-734). No pathway or
+- **New field `pre_u_studied_at`:** where they COMPLETED STPM, Matriculation, Asasi or Diploma. It is NOT
+  `pre_u_institution` (the destination; for STPM the Form 6 school they attended, ruling TD-734). No pathway or
   verdict engine reads it. Synced from the profile and the application (about-me fields, intake snapshot); the
   officer detail serves it.
 - **Picker:** `PreUStudiedAtField` (InstitutionPicker + four route chips: Form 6 schools, Matriculation, public
@@ -29,12 +29,24 @@ Branch preu-school, not pushed. Migration: 0102_angka_giliran_11_pre_u_studied_a
   (`lib/angkaGiliran.ts`) and the API (`apps/courses/angka_giliran.py`, serializer validator). New helper text.
 - **Switch to SPM:** a student the server says holds STPM or third-route results is asked "Switch to SPM results?"
   on /onboarding/exam-type. Yes only records the choice; the explicit `clear_held_results` is sent only by the
-  onboarding/profile sync after her SPM grades are saved (never the sign-in door). The never-demote guard still
+  onboarding/profile sync after their SPM grades are saved (never the sign-in door). The never-demote guard still
   protects every other write. A student with an application in play (`held_results_locked`) is told so and offered
   Back only; the server refuses the clear and the sync resends without it. Debt: TD-766.
 - Tests: `test_preu_school.py`; `lib/preuSprint.test.ts`, `PreUStudiedAtField.test.tsx`,
   `onboarding/exam-type/page.switch.test.tsx`, the ApplicantCards academicSlots and thirdRoute tests.
-- Guide and FAQ: unchanged (no reviewer feature changed beyond the Academic box layout).
+- **Review round 1 fixes:** a CLOSED application now locks the switch too (it may have been awarded; a rejected,
+  withdrawn or expired one does not), and the locked copy says "open, closed or awarded" in all three locales. The
+  dialog's yes lives in sessionStorage and expires 30 minutes after it is given, so a later grades save without a
+  fresh yes never sends the clear. Cleared results stay cleared: on an SPM-only profile the server drops incoming
+  STPM / third-route fields unless the same write records that exam as completed (another device's resend, or a
+  lost response's resend, no longer brings them back), and the login hydrate removes the browser's stale copies.
+  A refused clear is no longer silent: the student sees the dialog's locked words in a toast and the browser goes
+  back to the results the server still holds. The clear also removes `stpm_koko_unconfirmed`. A blank
+  `pre_u_studied_at` on the profile PUT no longer wipes a stored one, and the picker's first chip follows results
+  that arrive after it mounts. The orphan keys `preUCollegeRead` and `readFromResults` are removed. Debt: TD-768.
+- Guide and FAQ: the Academic box answer gives the new order and explains the Pre-U institution slot (where they
+  completed pre-U, asked on the form, no tick yet; older STPM cases show the Form 6 school); the typed college stays
+  the destination; the reviewer role page has a short paragraph on the slot.
 
 ### feat: OCR-13 phase 1 - the owner's words for UPSI, UUM, UiTM and UM, and UiTM's Asasi office line (2026-11-26)
 

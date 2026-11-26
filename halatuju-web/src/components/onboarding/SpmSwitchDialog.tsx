@@ -3,9 +3,10 @@
 /**
  * "Switch to SPM results?" — shown on /onboarding/exam-type when a student the SERVER says holds
  * STPM / Matriculation / Asasi / Diploma results taps SPM (pre-U sprint, 2026-11-26). Saying yes
- * only RECORDS the choice (`lib/resultsSwitch`): nothing is removed until she saves her SPM grades.
- * When her application uses those results (`held_results_locked`), the server would refuse the
- * clear, so the dialog says so up front and offers only Back.
+ * only RECORDS the choice (`lib/resultsSwitch`): nothing is removed until they save their SPM grades.
+ * When an application of theirs uses those results (`held_results_locked`: open, closed or awarded;
+ * a rejected, withdrawn or expired one does not), the server would refuse the clear, so the dialog
+ * says so up front and offers only Back.
  */
 import { Fragment, useRef } from 'react'
 import { useT } from '@/lib/i18n'

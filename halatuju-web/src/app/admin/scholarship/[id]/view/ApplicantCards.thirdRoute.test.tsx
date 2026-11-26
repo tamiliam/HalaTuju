@@ -4,7 +4,7 @@
  * Third results route S2b — the reviewer's Academic card for a Matriculation / Asasi / Diploma
  * holder: "Matriculation · CGPA 3.47" (the SERVER's overall CGPA — the same line the sponsor card
  * carries), the CGPA as printed and the co-curriculum score beside it (a Diploma: where it is
- * from, instead), the MUET band, the served 0-100 merit, and her SPM grades under "SPM prerequisites".
+ * from, instead), the MUET band, the served 0-100 merit, and their SPM grades under "SPM prerequisites".
  * Never "MATRIC", never an STPM grade list, never the SPM exam year on a merit SPM did not produce.
  */
 import { cleanup, render, screen } from '@testing-library/react'
@@ -73,13 +73,11 @@ const READ_DOC = (institution: string) => ({
 })
 
 // Pre-U sprint (owner, 2026-11-26): the slip's college read is NOT a field any more — it will be a
-// tick on her stated pre-U institution in a later step. The slot shows where she says she studied.
-it('a Matriculation card shows her stated pre-U institution; the slip read is no longer its own row', () => {
+// tick on their stated pre-U institution in a later step. The slot shows where they say they studied.
+it('a Matriculation card shows their stated pre-U institution; the slip read is no longer its own row', () => {
   renderWith({ ...MATRIC, pre_u_studied_at: 'Kolej Matrikulasi Pahang',
     documents: [READ_DOC('KOLEJ MATRIKULASI JOHOR')] } as never)
   expect(value('admin.scholarship.preUStudiedAt')).toBe('KOLEJ MATRIKULASI PAHANG')
-  expect(screen.queryByText('admin.scholarship.preUCollegeRead')).toBeNull()
-  expect(screen.queryByText('admin.scholarship.readFromResults')).toBeNull()
   expect(screen.queryByText('KOLEJ MATRIKULASI JOHOR')).toBeNull()
   expect(screen.queryAllByRole('img')).toHaveLength(0)
 })
@@ -95,7 +93,7 @@ it('the typed college (the NEXT one) moves to the Institution row, Stated by stu
   expect(screen.getAllByText('admin.scholarship.statedByStudent').length).toBeGreaterThan(0)
 })
 
-it('shows her SPM grades (the block) under "SPM prerequisites", as an STPM card names them (owner, 2026-11-16)', () => {
+it('shows their SPM grades (the block) under "SPM prerequisites", as an STPM card names them (owner, 2026-11-16)', () => {
   renderWith(MATRIC)
   expect(screen.getByText('admin.scholarship.spmPrereq')).toBeTruthy()
   expect(screen.queryByText('admin.scholarship.spmGrades')).toBeNull()
@@ -108,7 +106,7 @@ it('an SPM student keeps the plain "SPM grades" label', () => {
   expect(screen.queryByText('admin.scholarship.spmPrereq')).toBeNull()
 })
 
-it('her SPM chips carry the slip tick, as an SPM student\'s do (owner, 2026-10-30)', () => {
+it('their SPM chips carry the slip tick, as an SPM student\'s do (owner, 2026-10-30)', () => {
   const app = {
     status: 'shortlisted', grades: {}, documents: [], guardians: [], consents: [], top_choices: [],
     chosen_pathway: '', chosen_programme: {}, pathway_certainty: 'sure', pathways_considered: [],
@@ -148,9 +146,9 @@ it('an STPM card has one CGPA slot, the MUET band and no Pre-U institution row',
   expect(screen.getByText('admin.scholarship.stpmGrades')).toBeTruthy()
 })
 
-// Request #62, owner 2026-11-06: three exclusive routes. A third-route student's SPM chips are her
+// Request #62, owner 2026-11-06: three exclusive routes. A third-route student's SPM chips are their
 // SPM prereq ONLY — an earlier SPM-page entry in `grades` is never drawn, never merged over it.
-it('draws only her SPM prereq, never her earlier `grades` (three exclusive routes)', () => {
+it('draws only their SPM prereq, never their earlier `grades` (three exclusive routes)', () => {
   renderWith({ ...MATRIC, grades: { math: 'D', eng: 'C' } })
   expect(screen.getByText('math')).toBeTruthy()
   expect(screen.getByText('B+')).toBeTruthy()          // the prereq's Matematik, not `grades`' D

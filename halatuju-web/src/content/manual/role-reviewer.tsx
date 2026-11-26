@@ -75,7 +75,11 @@ export const roleReviewer: ManualChapter = {
         slip the system read by AI is amber, to be checked by eye, and any other difference is red; a grade the
         read could not reach is named on the card with no tick; the CGPA says <strong>not calculated</strong> when she entered fewer than Pengajian Am
         + three grades &mdash; she is then asked to add the rest (and, where her co-curriculum score could not be
-        worked out cleanly, to confirm it); both requests close by themselves when she saves her STPM results page. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
+        worked out cleanly, to confirm it); both requests close by themselves when they save their STPM results page.
+        For an STPM, Matriculation, Asasi or Diploma student, the Academic card&rsquo;s <strong>Pre-U
+        institution</strong> slot, beside the merit score, shows where the student says they completed their pre-U
+        (the form asks them). It has no tick yet; a later step will check it against their results slip. An older
+        STPM case with nothing there shows the Form 6 school they gave earlier. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
         results uploads those results instead of an SPM slip; the Documents drawer names them by kind
         (for example <strong>STPM results</strong>); STPM results are checked for genuineness like an SPM slip, and a screenshot of
         the online results-checker page is flagged as not the real slip. Matriculation and polytechnic transcripts are checked

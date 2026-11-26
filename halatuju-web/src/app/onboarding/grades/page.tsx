@@ -265,7 +265,7 @@ export default function GradesInputPage() {
       // completely, and stay broken with nothing on screen to explain it.
       localStorage.setItem(KEY_EXAM_TYPE, 'spm')
       localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
-      markSpmSaved(localStorage)   // pre-U sprint: a confirmed STPM-to-SPM switch is now ready to send
+      markSpmSaved(sessionStorage)   // pre-U sprint: a confirmed STPM-to-SPM switch is now ready to send
       router.push('/onboarding/profile')
     }
   }

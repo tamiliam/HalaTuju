@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  *
  * Pre-U sprint: the "Pre-U institution" field. The route chips and the list open only while the
- * box has focus; the first chip follows her results; free text is offered as typed.
+ * box has focus; the first chip follows their results; free text is offered as typed.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { readWeb } from '@/test/sourceGuard'
@@ -48,10 +48,19 @@ describe('PreUStudiedAtField', () => {
     expect(screen.queryByTestId('pre-u-chips')).toBeNull()
   })
 
-  it('opens the chip that follows her results', async () => {
+  it('opens the chip that follows their results', async () => {
     await draw('matric')
     fireEvent.focus(screen.getByRole('combobox'))
     expect(screen.getByText('scholarship.preU.chip.matric').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByText('scholarship.preU.chip.form6').getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('the first chip follows results that arrive after mount (review round 1)', async () => {
+    const { rerender } = render(<PreUStudiedAtField resultsHeld={undefined} value="" onChange={jest.fn()} variant="apply" />)
+    await act(async () => { await Promise.resolve() })
+    rerender(<PreUStudiedAtField resultsHeld="diploma" value="" onChange={jest.fn()} variant="apply" />)
+    fireEvent.focus(screen.getByRole('combobox'))
+    expect(screen.getByText('scholarship.preU.chip.poly').getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByText('scholarship.preU.chip.form6').getAttribute('aria-pressed')).toBe('false')
   })
 

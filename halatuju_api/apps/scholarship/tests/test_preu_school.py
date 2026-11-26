@@ -130,8 +130,108 @@ class TestTheSwitchToSpm(TestCase):
         from apps.courses.results_switch import held_results_locked
         app = make_application('submitted', student=make_student(**STPM_HOLDER))
         self.assertTrue(held_results_locked(app.profile))
-        type(app).objects.filter(pk=app.pk).update(status='withdrawn')
-        self.assertFalse(held_results_locked(app.profile))
+        for status in ('withdrawn', 'expired', 'rejected'):
+            with self.subTest(status=status):
+                type(app).objects.filter(pk=app.pk).update(status=status)
+                self.assertFalse(held_results_locked(app.profile))
+
+    def test_a_closed_application_still_locks(self):
+        """Review round 1: a closed case may have been awarded on the held results."""
+        from apps.courses.results_switch import held_results_locked
+        app = make_application('submitted', student=make_student(**STPM_HOLDER))
+        type(app).objects.filter(pk=app.pk).update(status='closed')
+        self.assertTrue(held_results_locked(app.profile))
+        s = ProfileUpdateSerializer(app.profile, data={**SPM_SAVE, 'clear_held_results': True}, partial=True)
+        self.assertFalse(s.is_valid())
+        self.assertEqual(s.errors['clear_held_results'][0].code, 'held_results_locked')
+
+    def test_a_rejected_application_may_switch(self):
+        app = make_application('submitted', student=make_student(**STPM_HOLDER))
+        type(app).objects.filter(pk=app.pk).update(status='rejected')
+        p = _save(app.profile, {**SPM_SAVE, 'clear_held_results': True})
+        self.assertEqual(eq.results_held(p), 'spm')
+
+    def test_the_switch_also_clears_the_koko_ask_marker_and_keeps_spm_valid_fields(self):
+        p = make_student(**STPM_HOLDER, stpm_koko_unconfirmed=True, muet_band=4,
+                         spm_prereq_grades={'bm': 'A'})
+        p = _save(p, {**SPM_SAVE, 'clear_held_results': True})
+        p.refresh_from_db()
+        self.assertIsNone(p.stpm_koko_unconfirmed)
+        self.assertEqual((p.muet_band, p.spm_prereq_grades), (4, {'bm': 'A'}))
+
+
+def _switched():
+    """A former STPM holder after the switch to SPM went through."""
+    p = _save(make_student(**STPM_HOLDER), {**SPM_SAVE, 'clear_held_results': True})
+    p.refresh_from_db()
+    return p
+
+
+class TestTheClearedResultsStayCleared(TestCase):
+    """Review round 1: a stale browser copy of the cleared STPM / third-route results never
+    comes back; a genuine move back to that exam still saves."""
+
+    def _assert_spm_only(self, p):
+        p.refresh_from_db()
+        self.assertEqual(eq.results_held(p), 'spm')
+        self.assertEqual((p.stpm_grades, p.stpm_cgpa, p.stpm_koko), ({}, None, None))
+        self.assertEqual((p.higher_cgpa, p.higher_koko), (None, None))
+        self.assertEqual(p.completed_qualifications, ['spm'])
+
+    def test_a_second_device_resend_is_ignored(self):
+        # Device 2 hydrated 'spm' from the server but still holds its STPM keys.
+        p = _save(_switched(), {**SPM_SAVE, 'stpm_grades': STPM, 'stpm_cgpa': 3.5, 'stpm_koko': 8,
+                                'name': 'D'})
+        self._assert_spm_only(p)
+        self.assertEqual(p.name, 'D')                       # the rest of the sync still saves
+
+    def test_a_sign_in_resend_without_the_results_set_is_ignored(self):
+        p = _save(_switched(), {'stpm_grades': STPM, 'stpm_cgpa': 3.5, 'higher_cgpa': 3.9})
+        self._assert_spm_only(p)
+
+    def test_a_lost_response_resend_is_ignored(self):
+        # The clear went through but the answer was lost: the same browser syncs again, with its
+        # STPM keys and the SPM completion it recorded on the grades page, and no clear.
+        p = _switched()
+        p = _save(p, {**SPM_SAVE, 'stpm_grades': STPM, 'stpm_cgpa': 3.5, 'stpm_koko_confirmed': True})
+        self._assert_spm_only(p)
+
+    def test_a_genuine_move_to_stpm_still_saves(self):
+        p = _save(_switched(), {'exam_type': 'stpm', 'results_exam_type': 'stpm',
+                                'completed_qualifications': ['spm', 'stpm'], 'grades': SPM,
+                                'stpm_grades': STPM, 'stpm_cgpa': 3.5})
+        p.refresh_from_db()
+        self.assertEqual(eq.results_held(p), 'stpm')
+        self.assertEqual(p.stpm_grades, STPM)
+
+    def test_a_genuine_move_to_matriculation_still_saves(self):
+        from django.test import override_settings
+        with override_settings(THIRD_ROUTE_OPEN=True):
+            p = _save(_switched(), {'exam_type': 'matric', 'results_exam_type': 'matric',
+                                    'completed_qualifications': ['spm', 'matric'], 'grades': SPM,
+                                    'higher_cgpa': 3.6, 'stpm_grades': STPM})
+        p.refresh_from_db()
+        self.assertEqual(eq.results_held(p), 'matric')
+        self.assertEqual(p.higher_cgpa, 3.6)
+        self.assertEqual(p.stpm_grades, {})                 # a matric write never revives STPM
+
+    def test_an_spm_student_with_no_history_moves_to_stpm_as_before(self):
+        p = make_student(exam_type='spm', grades=SPM, results_exam_type='spm',
+                         completed_qualifications=['spm'])
+        p = _save(p, {'results_exam_type': 'stpm', 'completed_qualifications': ['spm', 'stpm'],
+                      'stpm_grades': STPM, 'stpm_cgpa': 3.5})
+        self.assertEqual(eq.results_held(p), 'stpm')
+
+
+class TestTheBlankPreUStudiedAtOnThePut(TestCase):
+    def test_a_blank_never_wipes_a_stored_one(self):
+        p = _save(make_student(pre_u_studied_at='SMK A'), {'pre_u_studied_at': '  ', 'name': 'E'})
+        p.refresh_from_db()
+        self.assertEqual(p.pre_u_studied_at, 'SMK A')
+
+    def test_a_change_to_another_one_passes(self):
+        p = _save(make_student(pre_u_studied_at='SMK A'), {'pre_u_studied_at': 'SMK B'})
+        self.assertEqual(p.pre_u_studied_at, 'SMK B')
 
     def test_the_signal_is_never_a_column(self):
         p = _save(make_student(), {'clear_held_results': True, 'name': 'C'})

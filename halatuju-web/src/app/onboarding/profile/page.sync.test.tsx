@@ -14,16 +14,24 @@ import { getProfile, syncProfile } from '@/lib/api'
 import {
   KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_HIGHER_INSTITUTION, KEY_HIGHER_KOKO, KEY_PROFILE,
   KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_STPM_GRADES, KEY_KOKO_SCORE,
-  KEY_STPM_KOKO_CONFIRMED,
+  KEY_STPM_KOKO_CONFIRMED, KEY_CLEAR_HELD_PENDING,
 } from '@/lib/storage'
+import { confirmSpmSwitch, markSpmSaved } from '@/lib/resultsSwitch'
 
 const push = jest.fn()
 
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
-jest.mock('@/lib/auth-context', () => ({
-  useAuth: () => ({ token: 'tkn', isAnonymous: false, refreshProfile: jest.fn(() => Promise.resolve()) }),
+let mockAuthProfile: Record<string, unknown> | null = null
+const mockShowToast = jest.fn()
+jest.mock('@/lib/i18n', () => ({
+  useT: () => ({ t: (k: string, p?: Record<string, string>) => (p?.route ? `${k}|${p.route}` : k), locale: 'en' }),
 }))
+jest.mock('@/lib/auth-context', () => ({
+  useAuth: () => ({
+    token: 'tkn', isAnonymous: false, refreshProfile: jest.fn(() => Promise.resolve()), profile: mockAuthProfile,
+  }),
+}))
+jest.mock('@/components/ToastContext', () => ({ useToast: () => ({ showToast: mockShowToast }) }))
 jest.mock('@/lib/api', () => ({
   getProfile: jest.fn(),
   syncProfile: jest.fn(() => Promise.resolve({})),
@@ -53,6 +61,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   localStorage.clear()
   sessionStorage.clear()
+  mockAuthProfile = null
   // Bumi coverage Sprint B: a Malaysian answers Bumiputera before continuing.
   ;(getProfile as jest.Mock).mockResolvedValue({ gender: 'female', bumiputera: false })
   localStorage.setItem(KEY_PROFILE, JSON.stringify({ gender: 'female', bumiputera: false }))
@@ -157,4 +166,53 @@ it('C4: a stored score with no fresh STPM-step save carries no confirmation', as
   const sent = await finish()
   expect(sent.stpm_koko).toBe(8)
   expect(sent.stpm_koko_confirmed).toBeUndefined()
+})
+
+// Pre-U sprint, review round 1 (finding 6): a refused clear is never silent, and this browser goes
+// back to the results the server still holds.
+describe('the switch to SPM at the sync', () => {
+  const switchReady = () => {
+    mockAuthProfile = { results_held: 'stpm', stpm_cgpa: 3.42 }
+    localStorage.setItem(KEY_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_GRADES, JSON.stringify(SPM))
+    localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A' }))
+    confirmSpmSwitch(sessionStorage)
+    markSpmSaved(sessionStorage)
+  }
+
+  it('a taken clear: sent once, the local STPM copies removed, no message', async () => {
+    switchReady()
+    const sent = await finish()
+    expect(sent.clear_held_results).toBe(true)
+    expect(sent).not.toHaveProperty('stpm_grades')
+    await waitFor(() => expect(localStorage.getItem(KEY_STPM_GRADES)).toBeNull())
+    expect(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
+    expect(localStorage.getItem(KEY_RESULTS_EXAM_TYPE)).toBe('spm')
+    expect(mockShowToast).not.toHaveBeenCalled()
+  })
+
+  it("a refused clear tells the student in the dialog's words and restores the held route", async () => {
+    switchReady()
+    syncMock.mockRejectedValueOnce(Object.assign(new Error('API error: 400'), {
+      status: 400, fieldErrors: { clear_held_results: ['Your application uses the results you hold.'] },
+    }))
+    await finish()
+    await waitFor(() => expect(syncMock).toHaveBeenCalledTimes(2))
+    expect(syncMock.mock.calls[1][0]).not.toHaveProperty('clear_held_results')
+    await waitFor(() => expect(mockShowToast).toHaveBeenCalledWith('onboarding.switchSpmLocked|STPM', 'error'))
+    expect(localStorage.getItem(KEY_EXAM_TYPE)).toBe('stpm')
+    expect(localStorage.getItem(KEY_RESULTS_EXAM_TYPE)).toBe('stpm')
+    expect(localStorage.getItem(KEY_STPM_GRADES)).not.toBeNull()          // kept: the server still holds them
+    expect(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
+  })
+
+  it('no fresh yes: an SPM save sends no clear', async () => {
+    mockAuthProfile = { results_held: 'stpm' }
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_GRADES, JSON.stringify(SPM))
+    sessionStorage.setItem(KEY_CLEAR_HELD_PENDING, JSON.stringify({ state: 'ready', at: Date.now() - 31 * 60 * 1000 }))
+    const sent = await finish()
+    expect(sent).not.toHaveProperty('clear_held_results')
+  })
 })

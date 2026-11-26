@@ -25,12 +25,13 @@ export const REVIEWER_FAQ: QA[] = [
         line above it; two slots share a row on a wider screen and stack on a phone. <strong>SPM:</strong>
         <strong> Secondary school</strong> and <strong>Merit score</strong>; their <strong>SPM grades</strong>;
         <strong> Chosen programme</strong> and <strong>Reporting date</strong>; <strong>Institution</strong>.
-        <strong> STPM:</strong> Secondary school and Merit score; <strong>CGPA</strong> and <strong>MUET</strong>;
-        their <strong>STPM grades</strong>; their <strong>SPM prerequisites</strong>; then the programme, reporting date
-        and institution rows. <strong>Matriculation, Asasi or Diploma:</strong> Secondary school alone; then
-        <strong> Pre-U college</strong> (read from their uploaded results, with a grey note and no tick: the college
-        they attended is not asked) and Merit score; CGPA and MUET; SPM prerequisites; then the programme,
-        reporting date and institution rows. Secondary school is always in capitals, as their documents print it. The
+        <strong> STPM, Matriculation, Asasi or Diploma</strong> (since 26 November 2026): Secondary school on a
+        row of its own; <strong>Pre-U institution</strong> and Merit score; <strong>CGPA</strong> and <strong>MUET</strong>;
+        their <strong>STPM grades</strong> (STPM only); their <strong>SPM prerequisites</strong>; then the programme,
+        reporting date and institution rows. <strong>Pre-U institution</strong> is where the student says they
+        completed their STPM, Matriculation, Asasi or Diploma &mdash; the form asks them. It carries no tick yet (a
+        later step will tick it against their results slip). An older STPM case with this field empty shows the
+        Form 6 school they gave earlier. Secondary school is always in capitals, as their documents print it. The
         merit score carries its exam and, where we have read it, the year in brackets on the same line &mdash;
         <em>85.4 (SPM 2024)</em> from their SPM slip, <em>92.1 (STPM 2025)</em> from their STPM results, and for a
         Matriculation, Asasi or Diploma student their qualification and the year their transcript&rsquo;s session ends,
@@ -39,7 +40,8 @@ export const REVIEWER_FAQ: QA[] = [
         25 November 2026 show a Matriculation, Asasi or Diploma year only when their title prints the session. A grey
         <strong> Stated by student</strong> line under the programme or institution means no offer letter confirms it
         yet. For a Matriculation, Asasi or Diploma student, the college they typed is the next one they plan to attend,
-        so it appears on the institution row as <strong>Stated by student</strong>. <strong>N/A</strong> in a muted colour means the slot is required but empty: nothing was entered or read.
+        so it appears on the institution row as <strong>Stated by student</strong>. That is not the
+        <strong> Pre-U institution</strong> slot, which is where they completed their pre-U. <strong>N/A</strong> in a muted colour means the slot is required but empty: nothing was entered or read.
         It is not a mismatch. The reporting date always shows, and reads N/A until a date is stored or read from their
         offer letter.</>,
     },
@@ -49,8 +51,8 @@ export const REVIEWER_FAQ: QA[] = [
         instead of STPM. They count as <strong>STPM-equivalent</strong>: the gift&rsquo;s minimum CGPA is
         tested on their overall CGPA, and their merit is that CGPA ÷ 4 × 100, as for an STPM student. The card
         uses the same slots as every other student (see the next question): their merit score, with their qualification
-        and transcript year in brackets where we can read it, a <strong>Pre-U college</strong> row (read from their
-        uploaded results, no tick), their <strong>CGPA</strong> as printed on their results
+        and transcript year in brackets where we can read it, a <strong>Pre-U institution</strong> slot (where they
+        say they completed it, as asked on the form; no tick yet), their <strong>CGPA</strong> as printed on their results
         (Matriculation and Asasi: their overall CGPA is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall
         CGPA is its CGPA as it is &mdash; the co-curriculum score no longer has a line of its own), their
         <strong> MUET</strong> band and the SPM grades they entered, under <strong>SPM prerequisites</strong>
@@ -60,12 +62,12 @@ export const REVIEWER_FAQ: QA[] = [
     },
     {
       q: <>Which <strong>results</strong> must a student upload, and what does the Academic card check?</>,
-      a: <>It follows the course she has chosen. Bound for a <strong>university degree</strong> with STPM,
-        Matriculation, Asasi or Diploma results, she uploads those results (<strong>required</strong>); her SPM
-        slip is <strong>optional</strong> and never stops her submitting. A student with only SPM results who
-        chose a degree must upload higher results too (a degree needs them), as well as her SPM slip. On a <strong>post-SPM pathway</strong>
+      a: <>It follows the course they have chosen. Bound for a <strong>university degree</strong> with STPM,
+        Matriculation, Asasi or Diploma results, they upload those results (<strong>required</strong>); their SPM
+        slip is <strong>optional</strong> and never stops them submitting. A student with only SPM results who
+        chose a degree must upload higher results too (a degree needs them), as well as their SPM slip. On a <strong>post-SPM pathway</strong>
         (Matriculation, Form 6, Polytechnic, ILKBS, PISMP and so on) only the <strong>SPM results slip</strong> is
-        required. With no course chosen yet, it follows the results she holds. An application keeps the
+        required. With no course chosen yet, it follows the results they hold. An application keeps the
         requirement it was submitted under &mdash; but one submitted before the higher-results upload existed (26 October 2026) by a degree-bound student holding STPM, Matriculation, Asasi or Diploma results, with none uploaded, shows that slot as <strong>Missing</strong>, its Academic card is at most <strong>Probable</strong> (&ldquo;STPM results not on file&rdquo;), and the system asks her for them (raised while the case is Completed, instead of the semester-result request); nothing sends it back to her. The Academic card checks the higher results&rsquo; name, which
         results they are and the CGPA (and, for STPM, the subject grades) against what she entered; an SPM slip
         is compared only if one is on file. STPM results (slip or certificate) are checked for genuineness like an SPM slip: a screenshot of the online results-checker page is flagged, and her Documents page asks her to re-upload the real document (after she submits, request it yourself); a printout of the MPM results web page (PDF, scan or photo) or a certified copy is fine. On the cockpit, an STPM student&rsquo;s grades carry <strong>one tick</strong> after the subjects when every grade matches her STPM results (as SPM grades do), and her CGPA (worked out from her grades: Pengajian Am + her best three others) a tick when it matches; a small <strong>&ne;</strong> marker sits beside a grade or the CGPA that differs &mdash; hover over it for the document&rsquo;s grade or PNGK; no tick means no results read yet, or a subject not on the document, and <strong>not calculated</strong> beside the CGPA means fewer than Pengajian Am + three grades were entered, so the figure shown is the one she typed. A marker is a prompt to read the document yourself; it does not change the verdict on its own. After she submits, the system also asks her (in her Action Centre, while the case is Completed) to <strong>add her remaining STPM subjects</strong> when she entered fewer than Pengajian Am + three, and to <strong>confirm her co-curriculum score</strong> when the one on file could not be worked out cleanly; each opens her STPM results page and closes by itself once she saves there. An STPM CGPA counts as matching the document only within 0.01 (since 28 October 2026); Matriculation, Asasi and Diploma keep 0.05, as their prints may round to one decimal.

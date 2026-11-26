@@ -121,7 +121,7 @@ export default function HigherGradesPage() {
     localStorage.setItem(KEY_EXAM_TYPE, kind)
     // Completed, so it is a RESULT and not merely a selection — see results_exam_type.
     localStorage.setItem(KEY_RESULTS_EXAM_TYPE, kind)
-    forgetSpmSwitch(localStorage)   // pre-U sprint: completing this route cancels a pending switch to SPM
+    forgetSpmSwitch(sessionStorage)   // pre-U sprint: completing this route cancels a pending switch to SPM
     // One higher qualification at a time (S3a, D11/D13): the server clears the STPM entries too.
     keepOneHigherLocally('third', localStorage)
     router.push('/onboarding/profile')

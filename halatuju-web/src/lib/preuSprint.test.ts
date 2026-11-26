@@ -8,8 +8,8 @@ import { ANGKA_GILIRAN_MAX, isValidAngkaGiliran, normaliseAngkaGiliran } from '@
 import { preUStudiedAtPrefill, showsPreUStudiedAt } from '@/lib/preUStudiedAt'
 import { firstPreURoute } from '@/lib/preULists'
 import {
-  applyHeldClear, confirmSpmSwitch, forgetSpmSwitch, heldResultsSummary, markSpmSaved,
-  needsSpmSwitchDialog, settleHeldClear,
+  CONFIRM_TTL_MS, applyHeldClear, confirmSpmSwitch, dropLocalHeldResults, forgetSpmSwitch, heldResultsSummary,
+  markSpmSaved, needsSpmSwitchDialog, restoreAfterRefusedClear, serverHoldsSpmOnly, settleHeldClear,
 } from '@/lib/resultsSwitch'
 import { signInResultsFields, syncProfileSafely } from '@/lib/resultsSync'
 import * as api from '@/lib/api'
@@ -23,7 +23,7 @@ import ta from '@/messages/ta.json'
 
 jest.mock('@/lib/api', () => ({ ...jest.requireActual('@/lib/api'), syncProfile: jest.fn() }))
 
-beforeEach(() => { localStorage.clear(); jest.clearAllMocks() })
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); jest.clearAllMocks() })
 
 describe('Angka Giliran', () => {
   it('accepts the SPM and the STPM shapes, and a blank', () => {
@@ -48,7 +48,7 @@ describe('pre-U field rules', () => {
     for (const r of ['stpm', 'matric', 'asasi', 'diploma']) expect(showsPreUStudiedAt(r)).toBe(true)
     for (const r of ['spm', '', null, undefined, 'other']) expect(showsPreUStudiedAt(r)).toBe(false)
   })
-  it('opens the chip that follows her results', () => {
+  it('opens the chip that follows their results', () => {
     expect(firstPreURoute('stpm')).toBe('form6')
     expect(firstPreURoute('matric')).toBe('matric')
     expect(firstPreURoute('asasi')).toBe('university')
@@ -76,56 +76,114 @@ describe('STPM-to-SPM switch', () => {
     expect(heldResultsSummary({ results_held: 'matric', higher_cgpa: 3.9 }, () => 'Matriculation'))
       .toEqual({ route: 'Matriculation', summary: 'Matriculation CGPA 3.90' })
   })
+  // Review round 1: the flag lives in sessionStorage (flagStore), the results in localStorage.
   it('sends no clear without a confirmed switch AND a saved SPM form', () => {
     localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
     const p = payload()
-    expect(applyHeldClear(p, localStorage)).toBe(false)           // no dialog yes
+    expect(applyHeldClear(p, sessionStorage, localStorage)).toBe(false)   // no dialog yes
     expect(p.clear_held_results).toBeUndefined()
-    confirmSpmSwitch(localStorage)
-    expect(applyHeldClear(p, localStorage)).toBe(false)           // yes, but the grades not saved
-    markSpmSaved(localStorage)
+    confirmSpmSwitch(sessionStorage)
+    expect(applyHeldClear(p, sessionStorage, localStorage)).toBe(false)   // yes, but the grades not saved
+    markSpmSaved(sessionStorage)
     localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
-    expect(applyHeldClear(p, localStorage)).toBe(false)           // ready, but the completion is not SPM
+    expect(applyHeldClear(p, sessionStorage, localStorage)).toBe(false)   // ready, but the completion is not SPM
     expect(p.stpm_cgpa).toBe(3.42)
   })
   it('sends the clear, without the STPM fields, once confirmed and saved', () => {
-    confirmSpmSwitch(localStorage)
-    markSpmSaved(localStorage)
+    confirmSpmSwitch(sessionStorage)
+    markSpmSaved(sessionStorage)
     localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
     const p = payload()
-    expect(applyHeldClear(p, localStorage)).toBe(true)
+    expect(applyHeldClear(p, sessionStorage, localStorage)).toBe(true)
     expect(p.clear_held_results).toBe(true)
     expect(p.stpm_grades).toBeUndefined()
     expect(p.stpm_cgpa).toBeUndefined()
     expect(p.higher_cgpa).toBeUndefined()
     expect(p.grades).toEqual({ bm: 'A' })
   })
-  it('an SPM save with no confirmed switch records nothing', () => {
-    markSpmSaved(localStorage)
+  it('keeps the flag in sessionStorage only, never localStorage', () => {
+    confirmSpmSwitch(sessionStorage)
     expect(localStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
+    expect(JSON.parse(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING) as string).state).toBe('confirmed')
+    // An old localStorage flag (the earlier build) is never read.
+    sessionStorage.clear()
+    localStorage.setItem(KEY_CLEAR_HELD_PENDING, 'ready')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    expect(applyHeldClear(payload(), sessionStorage, localStorage)).toBe(false)
+  })
+  it('a yes older than 30 minutes is not honoured: a later grades save sends no clear', () => {
+    const t0 = 1_000_000
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    confirmSpmSwitch(sessionStorage, t0)
+    markSpmSaved(sessionStorage, t0 + CONFIRM_TTL_MS + 1)               // the save comes too late
+    expect(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
+    expect(applyHeldClear(payload(), sessionStorage, localStorage, t0 + CONFIRM_TTL_MS + 2)).toBe(false)
+  })
+  it('a ready flag also expires 30 minutes after the yes', () => {
+    const t0 = 2_000_000
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    confirmSpmSwitch(sessionStorage, t0)
+    markSpmSaved(sessionStorage, t0 + 60_000)
+    expect(applyHeldClear(payload(), sessionStorage, localStorage, t0 + CONFIRM_TTL_MS - 1)).toBe(true)
+    expect(applyHeldClear(payload(), sessionStorage, localStorage, t0 + CONFIRM_TTL_MS + 1)).toBe(false)
+  })
+  it('a malformed flag is ignored', () => {
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    sessionStorage.setItem(KEY_CLEAR_HELD_PENDING, 'ready')
+    expect(applyHeldClear(payload(), sessionStorage, localStorage)).toBe(false)
+  })
+  it('an SPM save with no confirmed switch records nothing', () => {
+    markSpmSaved(sessionStorage)
+    expect(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
   })
   it('Back (or another route) forgets the switch', () => {
-    confirmSpmSwitch(localStorage)
-    forgetSpmSwitch(localStorage)
-    markSpmSaved(localStorage)
-    expect(localStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
+    confirmSpmSwitch(sessionStorage)
+    forgetSpmSwitch(sessionStorage)
+    markSpmSaved(sessionStorage)
+    expect(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
   })
   it('settle removes the local STPM keys only when the server took the clear', () => {
     localStorage.setItem(KEY_STPM_GRADES, '{"pa":"A"}')
     localStorage.setItem(KEY_STPM_CGPA, '3.42')
     localStorage.setItem(KEY_HIGHER_CGPA, '3.1')
-    confirmSpmSwitch(localStorage)
-    settleHeldClear(localStorage, false)
+    confirmSpmSwitch(sessionStorage)
+    settleHeldClear(sessionStorage, localStorage, false)
     expect(localStorage.getItem(KEY_STPM_GRADES)).not.toBeNull()
-    expect(localStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
-    settleHeldClear(localStorage, true)
+    expect(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
+    settleHeldClear(sessionStorage, localStorage, true)
     expect(localStorage.getItem(KEY_STPM_GRADES)).toBeNull()
     expect(localStorage.getItem(KEY_STPM_CGPA)).toBeNull()
     expect(localStorage.getItem(KEY_HIGHER_CGPA)).toBeNull()
   })
+  it('a refused clear puts this browser back on the results the server still holds', () => {
+    localStorage.setItem(KEY_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_STPM_GRADES, '{"pa":"A"}')
+    restoreAfterRefusedClear(localStorage, 'stpm')
+    expect(localStorage.getItem(KEY_EXAM_TYPE)).toBe('stpm')
+    expect(localStorage.getItem(KEY_RESULTS_EXAM_TYPE)).toBe('stpm')
+    expect(localStorage.getItem(KEY_STPM_GRADES)).toBe('{"pa":"A"}')
+    restoreAfterRefusedClear(localStorage, 'spm')                          // never "restores" to SPM
+    expect(localStorage.getItem(KEY_EXAM_TYPE)).toBe('stpm')
+  })
+  it('reads an SPM-only server profile (the state the switch leaves) for the hydrate clear', () => {
+    const spmOnly = { results_held: 'spm', completed_qualifications: ['spm'], stpm_grades: {} }
+    expect(serverHoldsSpmOnly(spmOnly)).toBe(true)
+    expect(serverHoldsSpmOnly({ ...spmOnly, stpm_cgpa: 3.4 })).toBe(false)
+    expect(serverHoldsSpmOnly({ ...spmOnly, higher_cgpa: 3.1 })).toBe(false)
+    expect(serverHoldsSpmOnly({ ...spmOnly, stpm_grades: { pa: 'A' } })).toBe(false)
+    expect(serverHoldsSpmOnly({ ...spmOnly, completed_qualifications: [] })).toBe(false)   // nothing completed yet
+    expect(serverHoldsSpmOnly({ results_held: 'stpm', completed_qualifications: ['spm', 'stpm'] })).toBe(false)
+    expect(serverHoldsSpmOnly(null)).toBe(false)
+    localStorage.setItem(KEY_STPM_GRADES, '{"pa":"A"}')
+    localStorage.setItem(KEY_HIGHER_CGPA, '3.1')
+    dropLocalHeldResults(localStorage)
+    expect(localStorage.getItem(KEY_STPM_GRADES)).toBeNull()
+    expect(localStorage.getItem(KEY_HIGHER_CGPA)).toBeNull()
+  })
   it('the sign-in door never carries the clear, even with a ready flag', () => {
-    confirmSpmSwitch(localStorage)
-    markSpmSaved(localStorage)
+    confirmSpmSwitch(sessionStorage)
+    markSpmSaved(sessionStorage)
     localStorage.setItem(KEY_EXAM_TYPE, 'spm')
     localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
     const out = signInResultsFields(localStorage, { results_exam_type: '', completed_qualifications: [] })
@@ -170,5 +228,7 @@ describe('i18n keys exist in en, ms and ta', () => {
     expect(get(en, 'scholarship.apply.field.school')).toBe('Secondary School')
     expect(get(en, 'scholarship.apply.tip.school')).toBe('The secondary school where you sat for SPM.')
     expect(get(en, 'onboarding.switchSpmTitle')).toBe('Switch to SPM results?')
+    // Review round 1: a closed (maybe awarded) application locks the switch too, and the copy says so.
+    expect(get(en, 'onboarding.switchSpmLocked')).toContain('open, closed or awarded')
   })
 })

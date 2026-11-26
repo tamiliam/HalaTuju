@@ -400,7 +400,7 @@ describe('applyFormError — Plans pathway question', () => {
     expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }))).toBe('chosenPathway')
     expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: 'poly' }))).toBeNull()
   })
-  it('pre-U sprint: a tertiary student must name where she completed her pre-U; SPM need not', () => {
+  it('pre-U sprint: a tertiary student must name where they completed their pre-U; SPM need not', () => {
     for (const ex of ['stpm', 'matric', 'asasi', 'diploma'] as const)
       expect(applyFormError(baseForm({ preUStudiedAt: '  ', pathwayCertainty: 'sure', chosenPathway: '' }), ex)).toBe('preUStudiedAt')
     expect(applyFormError(baseForm({ preUStudiedAt: '' }), 'spm')).toBeNull()

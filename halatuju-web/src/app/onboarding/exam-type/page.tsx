@@ -27,24 +27,24 @@ export default function ExamTypePage() {
   }
 
   // Pre-U sprint: a student the SERVER says holds STPM / third-route results is asked first. A yes
-  // only records the choice; the results go when she saves her SPM grades (`lib/resultsSwitch`).
+  // only records the choice; the results go when they save their SPM grades (`lib/resultsSwitch`).
   const handleSelectSPM = () => {
     if (needsSpmSwitchDialog(profile)) { setSwitchOpen(true); return }
-    forgetSpmSwitch(localStorage)
+    forgetSpmSwitch(sessionStorage)
     goSPM()
   }
-  const confirmSwitch = () => { confirmSpmSwitch(localStorage); setSwitchOpen(false); goSPM() }
-  const backFromSwitch = () => { forgetSpmSwitch(localStorage); setSwitchOpen(false) }
+  const confirmSwitch = () => { confirmSpmSwitch(sessionStorage); setSwitchOpen(false); goSPM() }
+  const backFromSwitch = () => { forgetSpmSwitch(sessionStorage); setSwitchOpen(false) }
 
   const handleSelectSTPM = () => {
-    forgetSpmSwitch(localStorage)
+    forgetSpmSwitch(sessionStorage)
     localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
     router.push('/onboarding/stpm-grades')
   }
 
   // Third results route (S2b): which of Matriculation / Asasi / Diploma is chosen ON the results
   // page, so the tap only opens it — the page writes the exam type when its form is completed.
-  const handleSelectHigher = () => { forgetSpmSwitch(localStorage); router.push('/onboarding/higher-grades') }
+  const handleSelectHigher = () => { forgetSpmSwitch(sessionStorage); router.push('/onboarding/higher-grades') }
 
   return (
     <main className="min-h-screen bg-ground-50">

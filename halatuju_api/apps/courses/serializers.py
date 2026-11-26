@@ -355,14 +355,12 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         student's whole profile sync over it would trade a display fault for a data-loss one.
         """
         inst = self.instance
-        results_switch.apply_spm_switch(inst, attrs)      # before every rule below (module note)
+        switched = results_switch.apply_spm_switch(inst, attrs)   # before every rule below
+        results_switch.ignore_stale_held_resend(inst, attrs)      # cleared results stay cleared
         self._refuse_third_route_while_closed(attrs)
 
-        # A blank school never wipes a stored one (the /profile page and the sign-in sync both send
-        # `school` whatever it holds). A first school, or a change to another non-blank one, passes.
-        if 'school' in attrs and not (attrs['school'] or '').strip() \
-                and (getattr(inst, 'school', '') or '').strip():
-            attrs.pop('school')
+        # A blank school (or pre-U institution) never wipes a stored one; the switch's clear may.
+        results_switch.keep_stored_on_blank(inst, attrs, switched)
 
         def _merged(field):
             return attrs[field] if field in attrs else getattr(inst, field, None)

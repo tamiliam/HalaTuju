@@ -296,7 +296,7 @@ class ProfileGetPins(TestCase):
                     ic_card_name='ARUN A/L RAJU', contact_email='other@example.test',
                     contact_email_verified=False, merit_score=40.6, application_open=True,
                     coq_score=7.5, stream_subjects=['phy', 'chem'],
-                    held_results_locked=True)   # pre-U sprint: an open application holds her results
+                    held_results_locked=True)   # pre-U sprint: an open application holds their results
         self.assertEqual(dict(d), want)
 
     def test_a_card_that_disagrees_is_flagged_and_not_verified(self):

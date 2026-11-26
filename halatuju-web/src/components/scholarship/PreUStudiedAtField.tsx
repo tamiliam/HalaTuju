@@ -1,17 +1,17 @@
 'use client'
 
 /**
- * "Pre-U institution" — where she COMPLETED her STPM, Matriculation, Asasi or Diploma (pre-U
+ * "Pre-U institution" — where they COMPLETED their STPM, Matriculation, Asasi or Diploma (pre-U
  * sprint, 2026-11-26; the profile's `pre_u_studied_at`, NOT the destination `pre_u_institution`).
  * One field for apply step 3 (required) and the profile (not required).
  *
  * At rest: the label, the Tip box and the box. While the box has focus: the four route chips
- * (the first follows her results, `firstPreURoute`) and the search list, which ends with
+ * (the first follows their results, `firstPreURoute`) and the search list, which ends with
  * 'Not in the list? Use "x" as typed' (free text is allowed).
  *
  * The lists (the Form 6 list is ~15 kB gz) are fetched when the field is drawn, never in the
  * route's first-load JS — `loadPreULists`. Until they arrive (or if the chunk fails) the box still
- * takes free text, so she is never stuck. The caller decides WHETHER to draw it (`showsPreUStudiedAt`).
+ * takes free text, so they are never stuck. The caller decides WHETHER to draw it (`showsPreUStudiedAt`).
  */
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
@@ -29,6 +29,9 @@ export default function PreUStudiedAtField({ resultsHeld, value, onChange, varia
   const [lists, setLists] = useState<PreULists | null>(null)
   const [route, setRoute] = useState<PreURoute>(() => firstPreURoute(resultsHeld))
   const [focused, setFocused] = useState(false)
+  // Review round 1: the held results often arrive after mount (the profile loads late) — the first
+  // chip follows them then too. A chip they tapped stays until the results themselves change.
+  useEffect(() => { setRoute(firstPreURoute(resultsHeld)) }, [resultsHeld])
 
   useEffect(() => {
     let live = true

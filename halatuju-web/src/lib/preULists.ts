@@ -11,7 +11,7 @@
 export type PreURoute = 'form6' | 'matric' | 'university' | 'poly'
 export const PRE_U_ROUTES: PreURoute[] = ['form6', 'matric', 'university', 'poly']
 
-/** The chip that opens first, from the results she holds. */
+/** The chip that opens first, from the results they hold. */
 export function firstPreURoute(resultsHeld: unknown): PreURoute {
   if (resultsHeld === 'matric') return 'matric'
   if (resultsHeld === 'asasi') return 'university'

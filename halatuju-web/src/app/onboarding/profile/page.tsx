@@ -17,7 +17,8 @@ import { hasApplyReturn, clearApplyReturn, popOnboardingReturn, peekOnboardingRe
 import { peekApplyDraft } from '@/lib/applyDraftPeek'   // the apply form's draft, during the edit-results detour
 import { applyPagePath } from '@/lib/applyPagePath'
 import { isMalaysian } from '@/lib/bumiputera'
-import { applyHeldClear, settleHeldClear } from '@/lib/resultsSwitch'
+import { applyHeldClear, heldResultsSummary, restoreAfterRefusedClear, settleHeldClear } from '@/lib/resultsSwitch'
+import { useToast } from '@/components/ToastContext'
 import Toggle from '@/components/Toggle'
 
 const MALAYSIAN_STATES = [
@@ -30,7 +31,8 @@ const MALAYSIAN_STATES = [
 export default function ProfileInputPage() {
   const router = useRouter()
   const { t } = useT()
-  const { token, isAnonymous, refreshProfile, session } = useAuth()
+  const { token, isAnonymous, refreshProfile, session, profile } = useAuth()
+  const { showToast } = useToast()
   const uid = session?.user?.id
   const [gender, setGender] = useState<string>('')
   const [nationality, setNationality] = useState<string>('malaysian')
@@ -206,14 +208,22 @@ export default function ProfileInputPage() {
         } catch { /* ignore */ }
       }
 
-      // Pre-U sprint: the ONE door that may send the explicit clear — she confirmed the switch to SPM
-      // and saved her SPM grades (`lib/resultsSwitch`). It also drops this browser's STPM fields.
-      const sentClear = applyHeldClear(syncPayload, localStorage)
+      // Pre-U sprint: the ONE door that may send the explicit clear — they confirmed the switch to SPM
+      // and saved their SPM grades (`lib/resultsSwitch`). It also drops this browser's STPM fields.
+      const sentClear = applyHeldClear(syncPayload, sessionStorage, localStorage)
 
       try {
         await syncProfileSafely(syncPayload, { token })
         localStorage.removeItem(KEY_STPM_KOKO_CONFIRMED)
-        settleHeldClear(localStorage, sentClear && !!syncPayload.clear_held_results)
+        const refused = sentClear && !syncPayload.clear_held_results
+        settleHeldClear(sessionStorage, localStorage, sentClear && !refused)
+        if (refused) {
+          // Review round 1: the server kept the held results (an application rests on them).
+          // This browser goes back to them too, and the student is told in the dialog's words.
+          restoreAfterRefusedClear(localStorage, profile?.results_held)
+          const { route } = heldResultsSummary(profile ?? {}, (k) => t(`onboarding.higherKind.${k}`))
+          showToast(t('onboarding.switchSpmLocked', { route }), 'error')
+        }
         await refreshProfile()
       } catch {
         // Continue even if sync fails — localStorage has the data

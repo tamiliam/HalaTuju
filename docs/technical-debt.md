@@ -9831,11 +9831,21 @@ and shows the tick, as the secondary school's tick does. *(A - S)*
 ### [TD-766] Pre-U sprint: the switch to SPM leaves some STPM residue, and a locked student has no contact path - medium
 
 **Raised in the pre-U sprint (see CHANGELOG).** The explicit clear removes the held STPM / third-route results, but
-not: the STPM documents on file, `stpm_koko_unconfirmed`, `muet_band`, `spm_prereq_grades`, `spm_elective_subjects`,
-`spm_stream`, or `pre_u_institution`. A student whose application uses those results sees "contact us" and Back only,
-with no link. If an application appears after the dialog, the server refuses the clear and the sync resends
-without it (the student is not told on that screen). GET /profile makes one extra query (`held_results_locked`).
+not: the STPM documents on file, `muet_band`, `spm_prereq_grades`, `spm_elective_subjects`, `spm_stream`, or
+`pre_u_institution` (`stpm_koko_unconfirmed` is cleared since review round 1). Neither `muet_band` nor
+`spm_prereq_grades` can raise an STPM-only Check-2 ask on an SPM profile: those asks need the STPM results held.
+A student whose application uses those results sees "contact us" and Back only, with no link. GET /profile makes
+one extra query (`held_results_locked`).
 **Fix:** decide with the owner which residue to clear, and add a contact link to the locked message. *(A - M)*
+
+### [TD-768] Pre-U sprint: a device that never re-loaded the profile can still undo the switch at sign-in - low
+
+**Raised in pre-U review round 1 (see CHANGELOG).** After the switch the server drops a resend of the old STPM /
+third-route results unless the same write records that exam as completed, and the login hydrate clears the
+browser's copies. But a second device that still records STPM (results_exam_type 'stpm') and signs in before it
+hydrates sends that completion with its grades, and the server reads it as a genuine move back to STPM, the same as
+a real one. Telling the two apart needs a server marker of the switch (for example a cleared-at time the sync
+compares against). **Fix:** add the marker and refuse an older device's tertiary completion. *(A - M)*
 
 ### [TD-767] Pre-U sprint: the polytechnic list is empty - low
 

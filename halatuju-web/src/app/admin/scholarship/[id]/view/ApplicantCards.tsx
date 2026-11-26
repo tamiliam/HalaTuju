@@ -317,7 +317,7 @@ export function ApplicantCards({
                     pre_u_institution: destRoute ? app.pre_u_institution : undefined }
                   const ownInst = ((app.chosen_programme?.institution as string)
                     || (destRoute ? app.pre_u_institution : '') || '').trim()
-                  // Pre-U institution = where she COMPLETED her pre-U (`pre_u_studied_at`). An older STPM
+                  // Pre-U institution = where they COMPLETED their pre-U (`pre_u_studied_at`). An older STPM
                   // case has none: its typed pre_u_institution IS the Form 6 school attended (TD-734), so
                   // it shows here as is, no note (owner, 2026-11-26). The slip's own college read is not a
                   // field: it will be a tick on this row in a later step (`higherCollegeRead`).

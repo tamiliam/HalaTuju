@@ -122,7 +122,8 @@ export const KEY_SPONSOR_PENDING = 'halatuju_sponsor_pending'
  *  arrival and read at register time so attribution survives the sign-in round-trip. */
 export const KEY_SPONSOR_REF = 'halatuju_sponsor_ref'
 
-/** Pre-U sprint: '' / 'confirmed' / 'ready' — the STPM-to-SPM switch she confirmed (`lib/resultsSwitch`). */
+/** Pre-U sprint: the STPM-to-SPM switch they confirmed (`lib/resultsSwitch`) — in SESSIONSTORAGE,
+ *  as {state: 'confirmed' | 'ready', at}, good for 30 minutes after the yes (review round 1). */
 export const KEY_CLEAR_HELD_PENDING = 'halatuju_clear_held_pending'
 
 // ── Display constants ────────────────────────────────────────────────

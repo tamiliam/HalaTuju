@@ -52,7 +52,7 @@ const GRADES = 'admin.scholarship.spmGrades'
 const PREREQ = 'admin.scholarship.spmPrereq'
 const STPMG = 'admin.scholarship.stpmGrades'
 const CGPA = 'admin.scholarship.cgpa'
-const PRE_U = 'admin.scholarship.preUStudiedAt'   // pre-U sprint: where she COMPLETED it (board 6)
+const PRE_U = 'admin.scholarship.preUStudiedAt'   // pre-U sprint: where they COMPLETED it (board 6)
 const PLANS = ['admin.scholarship.chosenProgramme', 'admin.scholarship.reportingDate', 'admin.scholarship.institution']
 const slotOrder = () => labels().slice(labels().indexOf(SCHOOL), labels().indexOf(PLANS[2]) + 1)
 

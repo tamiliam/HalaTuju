@@ -27,7 +27,7 @@ jest.mock('@/lib/i18n', () => ({
   }),
 }))
 
-beforeEach(() => { localStorage.clear(); push.mockClear(); profile = null })
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); push.mockClear(); profile = null })
 const tapSpm = () => fireEvent.click(screen.getByText('SPM').closest('button') as HTMLButtonElement)
 
 describe('exam-type: the switch to SPM', () => {
@@ -37,10 +37,10 @@ describe('exam-type: the switch to SPM', () => {
     tapSpm()
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(push).toHaveBeenCalledWith('/onboarding/grades')
-    expect(localStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
+    expect(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
   })
 
-  it('an STPM student is asked first, with her held results', () => {
+  it('an STPM student is asked first, with their held results', () => {
     profile = { results_held: 'stpm', stpm_cgpa: 3.42 }
     render(<ExamTypePage />)
     tapSpm()
@@ -56,7 +56,8 @@ describe('exam-type: the switch to SPM', () => {
     render(<ExamTypePage />)
     tapSpm()
     fireEvent.click(screen.getByText('onboarding.switchSpmConfirm'))
-    expect(localStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBe('confirmed')
+    expect(JSON.parse(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING) as string).state).toBe('confirmed')
+    expect(localStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()   // review round 1: never localStorage
     expect(localStorage.getItem(KEY_EXAM_TYPE)).toBe('spm')
     expect(push).toHaveBeenCalledWith('/onboarding/grades')
   })
@@ -67,7 +68,7 @@ describe('exam-type: the switch to SPM', () => {
     tapSpm()
     fireEvent.click(screen.getByText('common.back', { selector: '[role="dialog"] button' }))
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(localStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
+    expect(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
     expect(localStorage.getItem(KEY_EXAM_TYPE)).toBeNull()
     expect(push).not.toHaveBeenCalled()
   })
@@ -81,9 +82,9 @@ describe('exam-type: the switch to SPM', () => {
   })
 
   it('choosing STPM instead forgets a pending switch', () => {
-    localStorage.setItem(KEY_CLEAR_HELD_PENDING, 'confirmed')
+    sessionStorage.setItem(KEY_CLEAR_HELD_PENDING, JSON.stringify({ state: 'confirmed', at: Date.now() }))
     render(<ExamTypePage />)
     fireEvent.click(screen.getByText('STPM').closest('button') as HTMLButtonElement)
-    expect(localStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
+    expect(sessionStorage.getItem(KEY_CLEAR_HELD_PENDING)).toBeNull()
   })
 })

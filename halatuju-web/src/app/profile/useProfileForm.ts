@@ -83,7 +83,7 @@ export function useProfileForm() {
   const [angkaGiliran, setAngkaGiliran] = useState('')
   // Guided school (optional) — shown in the Application Tracking card above Angka Giliran.
   const [school, setSchool] = useState('')
-  // Where she completed her pre-U (profile-only; seeded with the TD-734 STPM prefill).
+  // Where they completed their pre-U (profile-only; seeded with the TD-734 STPM prefill).
   const [preUStudiedAt, setPreUStudiedAt] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [contactEmailVerified, setContactEmailVerified] = useState(false)

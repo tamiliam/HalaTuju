@@ -7,7 +7,7 @@
  * `halatuju_api/data/` carry the word "Politeknik" without a campus. Nothing was typed from
  * memory and nothing was read from live. Until the owner supplies the list (or an export of the
  * catalogue's Politeknik institutions is checked in), the chip shows only the "Not in the list?
- * Use it as typed" row, so a Diploma student still names her polytechnic in free text.
+ * Use it as typed" row, so a Diploma student still names their polytechnic in free text.
  */
 export interface Polytechnic {
   name: string

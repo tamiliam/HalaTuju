@@ -384,7 +384,7 @@ class TestWhatTheImageAlreadyServingNeeds(_World):
             'results_held',
             # STPM CGPA sprint C2 (2026-10-28): ADDED — the STPM merit's co-curriculum score
             'stpm_koko',
-            # Pre-U sprint (2026-11-26): ADDED — where she completed her pre-U (profile-only)
+            # Pre-U sprint (2026-11-26): ADDED — where they completed their pre-U (profile-only)
             'pre_u_studied_at'})
         self.assertEqual(app.intake_snapshot['profile']['referral_source'], 'smc')
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer

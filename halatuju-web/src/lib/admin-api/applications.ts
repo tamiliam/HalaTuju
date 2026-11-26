@@ -289,7 +289,7 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields, Served
    * worth of missing suffix than a permanent megabyte. `view.preUTrack.test.tsx` holds both.
    */
   pre_u_track_label?: string | null
-  pre_u_institution: string; pre_u_studied_at?: string   // pre-U sprint: where she COMPLETED it (profile)
+  pre_u_institution: string; pre_u_studied_at?: string   // pre-U sprint: where they COMPLETED it (profile)
   uncertainty_reasons: string[]
   uncertainty_note: string
   pathways_considered: string[]
