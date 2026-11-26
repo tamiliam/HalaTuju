@@ -18,6 +18,14 @@ SAME = [
     ('UTM', 'Universiti Teknologi Malaysia'),
     ('UNIVERSITI MALAYSIA SABAH', 'UMS Kampus Antarabangsa Labuan'),
     ('UNIVERSITI PENDIDIKAN SULTAN IDRIS (UPSI)', 'UPSI'),
+    # a fragment of the same place (live case 196)
+    ('Antarabangsa Labuan', 'Universiti Malaysia Sabah Kampus Antarabangsa Labuan'),
+    # the hostel line names the same university as the bare acronym
+    ('Kolej Kediaman Tun Pengiran Ahmad Raffae, UMS Kota Kinabalu, Sabah', 'UMS'),
+    # the same university on both sides is never an institution switch, whatever the campus words:
+    # the note is for a COURSE switch (the programme compare still catches that)
+    ('UiTM Shah Alam', 'Universiti Teknologi MARA Kampus Dengkil'),
+    ('UiTM Shah Alam', 'UiTM Cawangan Selangor'),
 ]
 SWITCHED = [
     ('KOLEJ MATRIKULASI KEJURUTERAAN JOHOR',
@@ -25,7 +33,7 @@ SWITCHED = [
     ('SEKOLAH MENENGAH KEBANGSAAN MAJAKIR, JLN MAJAKIR, KG SG PADANG, 89608 PAPAR, SABAH',
      'Universiti Malaysia Sabah, Kampus Antarabangsa Labuan'),
     ('Universiti Teknologi Malaysia', 'Universiti Pendidikan Sultan Idris'),
-    ('UiTM Shah Alam', 'Universiti Teknologi MARA Kampus Dengkil'),     # two campuses of one university
+    ('POLITEKNIK NILAI', 'KUALA LUMPUR'),
 ]
 
 
@@ -39,6 +47,10 @@ class TestInstitutionsDiffer(TestCase):
         for was, now in SWITCHED:
             for a, b in ((was, now), (now, was)):
                 self.assertTrue(institutions_differ(a, b), (a, b))
+
+    def test_an_empty_side_is_not_a_switch(self):
+        for a, b in (('', 'UPSI'), ('UPSI', ''), ('  ', 'Politeknik Nilai'), ('', '')):
+            self.assertFalse(institutions_differ(a, b), (a, b))
 
     def test_every_ua_name_has_its_aliases(self):
         self.assertEqual(set(_UA_NAMES), set(_UA_ALIASES))

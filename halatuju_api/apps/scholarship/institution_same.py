@@ -5,12 +5,11 @@ university written two ways ("UNIVERSITI PENDIDIKAN SULTAN IDRIS" and "UPSI") sh
 as a switch. ``institutions_differ`` is the switch test: True only when the two lines name genuinely
 DIFFERENT institutions.
 
-Order: (1) the old token compare, a shared distinctive word means the same place; (2) both lines resolved
+Order: (1) both lines resolved
 to a public university (full name, English name or acronym, whole words, from the one list of the 20 UA
 names in ``genuineness.offer_signatures`` plus their acronyms), else to ONE catalogue institution through
-``offer_course_match.CampusReader``. Two lines on the same university are the same unless BOTH name a
-campus and the campuses share no word (one side naming no campus is not a switch). A line neither
-route can place falls back to the token result. Pure read.
+``offer_course_match.CampusReader``. Two lines on the same university are never a switch, whatever the
+campus words. A line neither route can place falls back to the token result. Pure read.
 """
 from __future__ import annotations
 
@@ -83,37 +82,36 @@ def _catalogue_key(text: str, index):
     return f'cat:{next(iter(ids))}' if len(ids) == 1 else ''
 
 
-def _campus_words(text: str, phrases) -> set:
-    """What a line names beyond the university itself: its distinctive words minus the university's
-    own name / acronym words and any bracketed acronym. Empty = the line names no campus."""
-    own = set()
-    for p in phrases:
-        own |= distinctive_tokens(p)
-    own |= {p.lower() for p in phrases}
-    return distinctive_tokens(school_name_core(text)) - own
+def _words_of(text: str) -> set:
+    return distinctive_tokens(school_name_core(text))
 
 
 def institutions_differ(a: str, b: str) -> bool:
-    """True only when the two offer-letter institution lines name genuinely different institutions."""
+    """True only when the two offer-letter institution lines name genuinely different institutions.
+    The same university on both sides is never a switch, whatever the campus words (the note is for a
+    COURSE switch; a campus move shows in the programme compare)."""
     if not (a or '').strip() or not (b or '').strip():
         return False                                     # nothing to compare
-    ka, pa = _ua_key(a)
-    kb, pb = _ua_key(b)
-    # A university named on either side is decided by identity, not by a shared place word (a Sabah
-    # school and UMS share only "sabah"); otherwise a shared distinctive word means the same place.
-    if not (ka or kb) and _field_status(a, b) != 'clash':
-        return False
+    ka, _pa = _ua_key(a)
+    kb, _pb = _ua_key(b)
     if ka and kb:
-        if ka != kb:
-            return True                                  # two different public universities
-        ca, cb = _campus_words(a, pa), _campus_words(b, pb)
-        return bool(ca and cb and not (ca & cb))         # different campuses of one university
+        return ka != kb                                  # two public universities: same or different
     if ka or kb:
-        return True                                      # a university against something else
+        # One line names a university, the other does not. A fragment of the same place ("Antarabangsa
+        # Labuan" against "UMS Kampus Antarabangsa Labuan") is no switch; a line with words the
+        # university line lacks (a Sabah school against UMS, sharing only "sabah") is.
+        resolved, other = (a, b) if ka else (b, a)
+        ow = _words_of(other)
+        return bool(ow) and not ow <= _words_of(resolved)
+    token = _field_status(a, b) == 'clash'
+    if not token:
+        return False                                     # a shared distinctive word: the same place
     try:
         from .offer_course_match import catalogue_index
         index = catalogue_index()
         ca, cb = _catalogue_key(a, index), _catalogue_key(b, index)
     except Exception:                                    # the catalogue is an aid, never a gate
-        return True
-    return not (ca and cb and ca == cb)
+        return token
+    if ca and cb:
+        return ca != cb                                  # the catalogue placed both lines
+    return token                                         # cannot place a line: the old token result
