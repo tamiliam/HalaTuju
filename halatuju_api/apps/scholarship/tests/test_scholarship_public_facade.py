@@ -19,6 +19,7 @@ SCHOLARSHIP_HOMES = {
     'PROFILE_PATHWAY_FIELDS': 'apps.scholarship.family',
     'copy_family_roster': 'apps.scholarship.family',
     'copy_pathway': 'apps.scholarship.family',
+    'StoredTreeRefused': 'apps.scholarship.criteria',
 }
 SCHOLARSHIP_MODULES = (
     'birth_state', 'constants', 'emails', 'gemini', 'identity', 'invitations', 'mentoring',

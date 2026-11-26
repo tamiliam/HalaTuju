@@ -240,7 +240,8 @@ def _scholarship(name):
     at start-up)."""
     from apps.scholarship import public as scholarship_public
     return {'birth_state': scholarship_public.birth_state, 'emails': scholarship_public.emails,
-            'whatsapp': scholarship_public.whatsapp}[name]
+            'whatsapp': scholarship_public.whatsapp,
+            'StoredTreeRefused': scholarship_public.StoredTreeRefused}[name]
 
 
 def _twilio_verify():
@@ -327,9 +328,20 @@ def ic_held_by_birth_state_rule(profile):
     if not recommended:
         return False
     bs = _scholarship('birth_state')
+    refused = _scholarship('StoredTreeRefused')
     # Criteria Sprint 3b (TD-772): the intake's born-in rule as the gate reads it (the stored
     # criteria tree, else the column) - `birth_state.cohort_rule`.
-    return any(bs.stored_keys(bs.cohort_rule(a.cohort)) for a in recommended)
+    for a in recommended:
+        try:
+            if bs.stored_keys(bs.cohort_rule(a.cohort)):
+                return True
+        except refused:
+            # ⚠ FAIL CLOSED (adversarial review, Sprint 3b): an intake whose STORED tree is refused
+            # cannot say whether it has a "Born in" rule, so the IC is HELD - the same answer as
+            # the admin break-glass (`sponsors._HELD_BY_RULES_ERROR`). Never a 500 on /profile,
+            # never a silent release. The refusal is already logged at ERROR by `tree_of`.
+            return True
+    return False
 
 
 def _audit_self_change(profile, was, now):
@@ -347,13 +359,23 @@ def _audit_self_change(profile, was, now):
     if not applications:
         return
     bs = _scholarship('birth_state')
+    refused = _scholarship('StoredTreeRefused')
     before, after = bs.birth_state_from_nric(was), bs.birth_state_from_nric(now)
-    fails = [a.id for a in applications
-             if bs.meets_rule(now, bs.cohort_rule(a.cohort)) is False]
+    fails, unreadable = [], []
+    for a in applications:
+        try:
+            if bs.meets_rule(now, bs.cohort_rule(a.cohort)) is False:
+                fails.append(a.id)
+        except refused:
+            # ⚠ Sprint 3b review: this runs AFTER `profile.save()` (no ATOMIC_REQUESTS), so raising
+            # would commit the new IC and show the student a 500. An intake whose stored tree is
+            # refused is recorded as `rule_unreadable` on the audit line instead.
+            unreadable.append(a.id)
     logger.info('AUDIT nric_self_change profile_id=%s app_ids=%s birth_state_changed=%s '
-                'rule_fails=%s', profile.pk, ','.join(str(a.id) for a in applications),
+                'rule_fails=%s rule_unreadable=%s', profile.pk,
+                ','.join(str(a.id) for a in applications),
                 'no' if before[:2] == after[:2] else 'yes',
-                ','.join(map(str, fails)) or 'none')
+                ','.join(map(str, fails)) or 'none', ','.join(map(str, unreadable)) or 'none')
 
 
 # ── The metered send ────────────────────────────────────────────────────────────────────────

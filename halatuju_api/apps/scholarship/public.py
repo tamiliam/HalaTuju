@@ -22,6 +22,7 @@ from . import (
     birth_state, constants, emails, gemini, identity, invitations, mentoring, staff_footprint,
     staff_lifecycle, staff_mentor, staff_work, usage, whatsapp,
 )
+from .criteria import StoredTreeRefused
 from .family import (
     DECIDED_STATUSES,
     PROFILE_FAMILY_FIELDS,
@@ -36,6 +37,6 @@ __all__ = [
     'ApplicantDocument', 'DECIDED_STATUSES', 'Invitation', 'PROFILE_FAMILY_FIELDS',
     'PROFILE_PATHWAY_FIELDS', 'Programme', 'birth_state', 'constants', 'copy_family_roster',
     'copy_pathway', 'emails', 'gemini', 'identity', 'invitations', 'mentoring',
-    'reviewer_profile_complete', 'staff_footprint', 'staff_lifecycle', 'staff_mentor', 'staff_work',
+    'StoredTreeRefused', 'reviewer_profile_complete', 'staff_footprint', 'staff_lifecycle', 'staff_mentor', 'staff_work',
     'usage', 'whatsapp',
 ]

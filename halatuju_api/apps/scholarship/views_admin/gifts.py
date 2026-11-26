@@ -348,8 +348,20 @@ def _cohort_row(c):
 
 
 def _requirements_row(c):
+    """The Rules tab's values for one intake, read from the tree the gate reads.
+
+    ⚠ A REFUSED STORED TREE FAILS THIS ROW ONLY (adversarial review, Sprint 3b). `tree_of` raises
+    `StoredTreeRefused` (already logged at ERROR); raising here would 500 the whole intake list -
+    the only screen where an admin can fix it - and the finish view, after `finished_at` is saved.
+    So the row says ``rules_error: True`` with every value null (the chip's behaviour), never a
+    guessed value. A readable row carries no ``rules_error`` key."""
+    from ..criteria import StoredTreeRefused
     from ..criteria_read import column_values
-    values = column_values(c)
+    try:
+        values = column_values(c)
+    except StoredTreeRefused:
+        return {**dict.fromkeys(REQUIREMENT_FIELDS), BIRTH_STATES_FIELD: None,
+                START_YEARS_FIELD: None, 'rules_error': True}
     return {**{f: values[f] for f in REQUIREMENT_FIELDS},
             BIRTH_STATES_FIELD: values[BIRTH_STATES_FIELD],
             START_YEARS_FIELD: values[START_YEARS_FIELD]}

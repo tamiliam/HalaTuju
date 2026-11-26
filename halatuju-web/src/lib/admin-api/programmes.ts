@@ -31,6 +31,10 @@ export interface ProgrammeRequirements {
    *  year. The same list switch: empty = not applied. Optional only because an api older than H3
    *  does not serve it. */
   allowed_start_years?: number[]
+  /** Criteria Sprint 3b review: true when the intake's STORED criteria tree could not be read
+   *  (`StoredTreeRefused`). Every value above is then served null (the lists too), never a guess;
+   *  absent on a readable row. Display only, never sent. */
+  rules_error?: boolean
 }
 
 /** What the screens SEND for the requirements: a number, null (untick), or — for a box holding a
@@ -38,7 +42,8 @@ export interface ProgrammeRequirements {
  *  NaN-turned-null as "switch this rule off" (`intakeYears.num`). The birth-state and start-year
  *  lists are sent whole, `[]` to clear; an entry the server does not accept is refused, never dropped. */
 export type RequirementsPayload = {
-  [K in Exclude<keyof ProgrammeRequirements, 'allowed_birth_states' | 'allowed_start_years'>]:
+  [K in Exclude<keyof ProgrammeRequirements,
+    'allowed_birth_states' | 'allowed_start_years' | 'rules_error'>]:
     number | string | null
 } & { allowed_birth_states: string[]; allowed_start_years: (number | string)[] }
 

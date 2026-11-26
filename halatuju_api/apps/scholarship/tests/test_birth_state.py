@@ -24,7 +24,7 @@ from apps.scholarship.services import release_decision, rescore_pending_decision
 from apps.scholarship.shortlisting import evaluate
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_programme,
-    make_student,
+    make_student, no_rules,
 )
 
 #: The owner's code list, restated here on purpose rather than imported: the module's table is
@@ -310,7 +310,7 @@ class TestTheAdminScreens(TestCase):
         return make_cohort(programme=self.programme, is_active=True, is_open=False, **kw)
 
     def _create(self, code, **body):
-        return self.client.post(self._years(), {'code': code, 'name': code, 'year': 2027, **body},
+        return self.client.post(self._years(), {'code': code, 'name': code, 'year': 2027, **no_rules(**body)},
                                 format='json')
 
     def test_create_stores_and_serves_it_in_platform_order(self):

@@ -13,7 +13,7 @@ from rest_framework.test import APIClient
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship.models import Programme, ScholarshipCohort
 from apps.scholarship.tests.factories import (
-    make_application, make_cohort, make_student,
+    make_application, make_cohort, make_student, no_rules,
 )
 from apps.scholarship.tests.factories import TEST_JWT_SECRET, auth_token as _make_token
 
@@ -268,7 +268,7 @@ class TestIntakeYears(_Case):
         # `is_open` defaults to True on the model, so creating a year would otherwise let real
         # students in with the same press. Opening is its own deliberate action.
         r = self._post(self.admin_a, self._years(self.prog_a),
-                       {'code': 'sab-a-2027', 'name': 'A 2027', 'year': 2027})
+                       {'code': 'sab-a-2027', 'name': 'A 2027', 'year': 2027, **no_rules()})
         self.assertEqual(r.status_code, 201)
         self.assertFalse(r.data['is_open'])
 
@@ -276,14 +276,14 @@ class TestIntakeYears(_Case):
         # An application denormalises `owning_organisation` from its cohort, so a cohort carrying
         # one and not the other files students under the wrong fence. It is DERIVED, never asked.
         self._post(self.admin_a, self._years(self.prog_a),
-                   {'code': 'sab-a-2028', 'name': 'A 2028', 'year': 2028})
+                   {'code': 'sab-a-2028', 'name': 'A 2028', 'year': 2028, **no_rules()})
         c = ScholarshipCohort.objects.get(code='sab-a-2028')
         self.assertEqual(c.programme_id, self.prog_a.id)
         self.assertEqual(c.owning_organisation_id, self.org_a.id)
 
     def test_requirements_are_stored_and_a_missing_one_is_NOT_APPLIED(self):
         r = self._post(self.admin_a, self._years(self.prog_a), {
-            'code': 'sab-a-2029', 'name': 'A 2029', 'year': 2029,
+            'code': 'sab-a-2029', 'name': 'A 2029', 'year': 2029, **no_rules(),
             'min_spm_a_count': 4, 'min_spm_bplus_count': 5,
             'income_ceiling': 5860, 'per_capita_ceiling': 1584,
             'min_stpm_pngk': None, 'min_merit_score': None,

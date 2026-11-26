@@ -20,7 +20,7 @@ from apps.scholarship.shortlisting import (
 )
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_programme,
-    make_student,
+    make_student, no_rules,
 )
 
 #: Every SPM grade there is, best first (SPM has no C-).
@@ -209,7 +209,7 @@ class TestTheAdminScreens(TestCase):
         return make_cohort(programme=self.programme, is_active=True, is_open=False, **kw)
 
     def _create(self, code, **body):
-        return self.client.post(self._years(), {'code': code, 'name': code, 'year': 2027, **body},
+        return self.client.post(self._years(), {'code': code, 'name': code, 'year': 2027, **no_rules(**body)},
                                 format='json')
 
     def test_create_stores_and_serves_it(self):

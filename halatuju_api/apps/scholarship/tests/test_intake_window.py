@@ -22,6 +22,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship.models import Programme, ScholarshipCohort
+from apps.scholarship.tests.factories import no_rules
 from apps.scholarship.tests.test_api import TEST_JWT_SECRET, _make_token
 
 
@@ -46,7 +47,7 @@ class TestIntakeWindow(TestCase):
 
     def _create(self, **extra):
         self._auth()
-        body = {'code': 'win-2027', 'name': 'Win 2027', 'year': 2027}
+        body = {'code': 'win-2027', 'name': 'Win 2027', 'year': 2027, **no_rules()}
         body.update(extra)
         return self.client.post(
             f'/api/v1/admin/scholarship/programmes/{self.prog.id}/years/',

@@ -55,3 +55,25 @@ class TestScholarshipModels(TestCase):
         self.assertEqual(count_spm_a_grades(None), 0)
         # Case-insensitive + whitespace tolerant
         self.assertEqual(count_spm_a_grades({'a': 'a+', 'b': ' A '}), 2)
+
+
+class TestTheFlagshipSeedStatesItsBars(TestCase):
+    """Sprint 3b review: the model has no silent bars any more, so the flagship's 2026-05-24 bars
+    (4 A- / 5 B+ / PNGK 2.9 / RM5,860 / RM1,584) must come from the seed itself, and the tree it
+    stores must read back the same values the gate reads."""
+
+    def test_the_seed_gives_the_settled_bars_and_a_tree_that_says_them(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from apps.scholarship import criteria, criteria_read
+        call_command('seed_b40_2026_cohort', stdout=StringIO())
+        c = ScholarshipCohort.objects.get(code='b40-2026')
+        bars = ('min_spm_a_count', 'min_spm_bplus_count', 'min_stpm_pngk', 'income_ceiling',
+                'per_capita_ceiling')
+        self.assertEqual(tuple(getattr(c, f) for f in bars), (4, 5, 2.9, 5860, 1584))
+        self.assertIsNotNone(c.criteria)
+        self.assertEqual(criteria.validate_tree(c.criteria), [])
+        values = criteria_read.column_values(c)
+        self.assertEqual(tuple(values[f] for f in bars), (4, 5, 2.9, 5860, 1584))

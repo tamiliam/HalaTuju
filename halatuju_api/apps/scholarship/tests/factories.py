@@ -292,6 +292,17 @@ def make_cohort(*, programme=_UNSET, **kw):
     return ScholarshipCohort.objects.create(programme=programme, **kw)
 
 
+def no_rules(**rules):
+    """A body for the intake-year CREATE that sends EVERY requirement key (Sprint 3b review: a key
+    left out is refused, `missing_requirement`), each one stated as "no rule" (null / []), with
+    ``rules`` laid over it. Spread it into the POST: ``{'code': ..., **no_rules(income_ceiling=5860)}``."""
+    from apps.scholarship.views_admin.gifts import (
+        BIRTH_STATES_FIELD, REQUIREMENT_FIELDS, START_YEARS_FIELD,
+    )
+    return {**dict.fromkeys(REQUIREMENT_FIELDS), BIRTH_STATES_FIELD: [], START_YEARS_FIELD: [],
+            **rules}
+
+
 _M0097 = import_module('apps.courses.migrations.0097_store_admin_v2_keys')
 _M0098 = import_module('apps.courses.migrations.0098_store_org_admin_keys')
 _M0099 = import_module('apps.courses.migrations.0099_grant_scholars_approve')

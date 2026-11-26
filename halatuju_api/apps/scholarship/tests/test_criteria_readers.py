@@ -11,15 +11,20 @@ from types import SimpleNamespace
 from unittest import mock
 
 from django.core.management import call_command
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
+
+from apps.courses.profile_claim import NRIC_LOCKED, handle_claim, ic_held_by_birth_state_rule
 
 from apps.scholarship import birth_state, criteria, criteria_read, rejection_chip
 from apps.scholarship.income_engine import amounts
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import rescore_pending_decisions, score_application
-from apps.scholarship.tests.factories import make_application, make_cohort, make_student
+from apps.scholarship.tests.factories import (
+    TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_programme,
+    make_student, no_rules,
+)
 from apps.scholarship.tests.test_criteria import COHORT_1, COHORT_3, COHORT_4, COHORT_5, cohort
-from apps.scholarship.views_admin.gifts import _requirements_row
+from apps.scholarship.views_admin.gifts import REQUIREMENT_FIELDS, _requirements_row
 from apps.scholarship.views_admin.sponsors import _HELD_BY_RULES_ERROR, _held_by_birth_state_rule
 
 LIVE = {'1': COHORT_1, '3': COHORT_3, '4': COHORT_4, '5': COHORT_5}
@@ -165,3 +170,125 @@ class TestTheSeedReportsTheTree(TestCase):
         call_command('seed_b40_2026_cohort', stdout=out)
         self.assertIn('min_spm_a_count=1,', out.getvalue())
         self.assertIn('per_capita_ceiling=RM700', out.getvalue())
+
+
+SABAH_IC, SELANGOR_IC = '080505-12-1234', '080505-10-1234'
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestARefusedTreeNeverBreaksTheRulesTab(TestCase):
+    """Sprint 3b review, finding 1: one refused intake must not 500 the gift's intake list (the
+    only screen where it can be fixed), nor the finish view after `finished_at` is saved."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.programme = make_programme()
+        cls.admin = make_admin('org_admin', owning_org=cls.programme.organisation)
+        cls.good = make_cohort(programme=cls.programme, code='rt-good', is_open=False,
+                               income_ceiling=5860)
+        cls.bad = make_cohort(programme=cls.programme, code='rt-bad', is_open=False)
+        ScholarshipCohort.objects.filter(pk=cls.bad.pk).update(criteria=BAD)
+
+    def setUp(self):
+        self.client = authed_client(self.admin)
+
+    def _flagged(self, reqs):
+        self.assertIs(reqs['rules_error'], True)
+        for f in (*REQUIREMENT_FIELDS, 'allowed_birth_states', 'allowed_start_years'):
+            self.assertIsNone(reqs[f], f)
+
+    def test_the_list_serves_every_year_and_flags_the_refused_one(self):
+        with self.assertLogs('apps.scholarship.criteria', 'ERROR'):
+            r = self.client.get(f'/api/v1/admin/scholarship/programmes/{self.programme.id}/years/')
+        self.assertEqual(r.status_code, 200)
+        rows = {y['code']: y['requirements'] for y in r.data['years']}
+        self._flagged(rows['rt-bad'])
+        self.assertNotIn('rules_error', rows['rt-good'])
+        self.assertEqual(rows['rt-good']['income_ceiling'], 5860)
+
+    def test_finishing_a_refused_intake_answers_with_its_row(self):
+        with self.assertLogs('apps.scholarship.criteria', 'ERROR'):
+            r = self.client.post(f'/api/v1/admin/scholarship/intake-years/{self.bad.id}/finish/',
+                                 {'confirm': 'rt-bad'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self._flagged(r.data['requirements'])
+        self.assertIsNotNone(r.data['finished_at'])
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestARefusedTreeNeverBreaksTheStudentsProfile(TestCase):
+    """Sprint 3b review, finding 2: the IC hold FAILS CLOSED (held, as the admin break-glass), and
+    the own-IC audit records the intake as `rule_unreadable` instead of raising after the save."""
+
+    def _on_bad(self, stage):
+        student = make_student(nric=SABAH_IC)
+        app = make_application(stage, student=student,
+                               cohort=make_cohort(allowed_birth_states=['sabah']))
+        student.refresh_from_db()
+        student.nric_verified = False
+        student.save(update_fields=['nric_verified'])
+        ScholarshipCohort.objects.filter(pk=app.cohort_id).update(criteria=BAD)
+        return app, student
+
+    def test_the_ic_hold_fails_closed(self):
+        app, student = self._on_bad('recommended')
+        uid = student.supabase_user_id
+        with self.assertLogs('apps.scholarship.criteria', 'ERROR'):
+            self.assertIs(ic_held_by_birth_state_rule(student), True)
+        with self.assertLogs('apps.scholarship.criteria', 'ERROR'):
+            self.assertEqual(handle_claim(uid, uid, {'nric': SELANGOR_IC}), (NRIC_LOCKED, 403))
+        student.refresh_from_db()
+        self.assertEqual(student.nric, SABAH_IC)
+        with self.assertLogs('apps.scholarship.criteria', 'ERROR'):
+            r = authed_client(uid).get('/api/v1/profile/')
+        self.assertEqual(r.status_code, 200)
+        self.assertIs(r.json()['nric_locked'], True)
+
+    def test_the_audit_line_records_the_intake_as_rule_unreadable(self):
+        app, student = self._on_bad('shortlisted')
+        uid = student.supabase_user_id
+        with self.assertLogs('apps.courses.profile_claim', 'INFO') as logs, \
+                self.assertLogs('apps.scholarship.criteria', 'ERROR'):
+            self.assertEqual(handle_claim(uid, uid, {'nric': SELANGOR_IC}), ({'status': 'created'}, 200))
+        line = next(m for m in logs.output if 'AUDIT nric_self_change' in m)
+        self.assertIn(f'rule_fails=none rule_unreadable={app.id}', line)
+        student.refresh_from_db()
+        self.assertEqual(student.nric, SELANGOR_IC)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestCreateNeedsEveryRequirementKey(TestCase):
+    """Sprint 3b review, finding 3 (owner rule: a blank or missing value never silently becomes a
+    permissive default): a create that leaves a requirement key OUT is refused, naming the keys;
+    an explicit null is still "no rule"."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.programme = make_programme()
+        cls.admin = make_admin('org_admin', owning_org=cls.programme.organisation)
+
+    def _create(self, code, **body):
+        return authed_client(self.admin).post(
+            f'/api/v1/admin/scholarship/programmes/{self.programme.id}/years/',
+            {'code': code, 'name': code, 'year': 2027, **body}, format='json')
+
+    def test_a_partial_or_empty_body_is_refused_naming_the_missing_keys(self):
+        r = self._create('ck-partial', income_ceiling=5860, per_capita_ceiling=1584)
+        self.assertEqual((r.status_code, r.data['code']), (400, 'missing_requirement'))
+        self.assertEqual(set(r.data['fields']),
+                         set(REQUIREMENT_FIELDS) - {'income_ceiling', 'per_capita_ceiling'}
+                         | {'allowed_birth_states', 'allowed_start_years'})
+        r = self._create('ck-empty')
+        self.assertEqual((r.status_code, r.data['code']), (400, 'missing_requirement'))
+        self.assertEqual(len(r.data['fields']), len(REQUIREMENT_FIELDS) + 2)
+        self.assertFalse(ScholarshipCohort.objects.filter(code__in=('ck-partial', 'ck-empty')).exists())
+
+    def test_a_full_body_with_explicit_nulls_creates_with_no_rule_for_those(self):
+        r = self._create('ck-full', **no_rules(income_ceiling=5860, min_stpm_pngk=2.5))
+        self.assertEqual(r.status_code, 201, r.data)
+        c = ScholarshipCohort.objects.get(code='ck-full')
+        self.assertEqual((c.min_spm_a_count, c.min_spm_bplus_count, c.per_capita_ceiling), (None, None, None))
+        self.assertEqual(c.criteria, criteria.from_legacy(c))
+        self.assertEqual(criteria_read.income_ceilings(c)[:2], (5860, None))
+        self.assertIsNone(r.data['requirements']['per_capita_ceiling'])
+        self.assertNotIn('rules_error', r.data['requirements'])

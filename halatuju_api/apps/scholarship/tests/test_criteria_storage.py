@@ -17,7 +17,7 @@ from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import rescore_pending_decisions, score_application
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_programme,
-    make_student,
+    make_student, no_rules,
 )
 
 MID = {'bm': 'A-', 'eng': 'B+', 'math': 'C', 'hist': 'C+', 'moral': 'D'}
@@ -220,7 +220,7 @@ class TestTheOldFormRebuildsTheTree(TestCase):
         # is created"): plain `from_legacy` of what the creator typed. A new year has no decisions
         # to keep, so it starts on the stored meaning; a value left out is NO rule (no model default).
         r = self.client.post(f'/api/v1/admin/scholarship/programmes/{self.programme.id}/years/',
-                             {'code': 'form-new', 'name': 'form-new', 'year': 2027, 'min_stpm_pngk': 2.5},
+                             {'code': 'form-new', 'name': 'form-new', 'year': 2027, **no_rules(min_stpm_pngk=2.5)},
                              format='json')
         self.assertEqual(r.status_code, 201)
         c = ScholarshipCohort.objects.get(code='form-new')

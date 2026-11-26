@@ -147,6 +147,18 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
             return Response({'error': 'code_taken', 'code': 'code_taken'},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        # ⚠ EVERY REQUIREMENT KEY MUST BE SENT ON CREATE (adversarial review, Sprint 3b; owner rule:
+        # a blank or missing value never silently becomes a permissive default). The new year's tree
+        # is built from the boxes sent (`stamp_new` below), so a key left OUT would mean "no rule"
+        # without anyone having said so - an empty POST would make an open intake. An explicit null
+        # still means "no rule" (that IS a statement); a missing key is refused, naming the keys.
+        # The web create form always sends all of them (`intakeYears.draftToRequirements`).
+        missing = [f for f in (*REQUIREMENT_FIELDS, BIRTH_STATES_FIELD, START_YEARS_FIELD)
+                   if f not in request.data]
+        if missing:
+            return Response({'error': 'missing_requirement', 'code': 'missing_requirement',
+                             'fields': missing}, status=status.HTTP_400_BAD_REQUEST)
+
         reqs, bad = _requirements_from(request.data)
         if bad:
             return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},

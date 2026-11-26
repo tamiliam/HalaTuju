@@ -20,7 +20,9 @@ The codes (the web's `lib/applicationStatus.rejectionChipKey` labels them):
 * ``interview``             — any other `interview` decline: QC confirmed the reviewer's decline,
                               or an older decline with no QC row at all.
 * ``contractual``           — category `contractual`.
-* ``''``                    — no chip (a rejected case with a blank category, or nothing to say).
+* ``rules_error``           — a case that is NOT rejected on an intake whose STORED criteria tree
+                              is refused (`criteria.StoredTreeRefused`, TD-774): this row only.
+* ``''``                  — no chip (a rejected case with a blank category, or nothing to say).
 
 ⚠ THE LIST NEVER ASKS PER ROW. `qc_rejected_ids` reads the qc rows for a whole page in ONE query,
 and only for the page's `interview` declines; the list view hands the set to its serializer.

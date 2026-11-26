@@ -14,7 +14,7 @@ from apps.scholarship.models import ApplicantDocument, ScholarshipCohort
 from apps.scholarship.resolution import CODE_TO_TICKET
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_programme,
-    make_student,
+    make_student, no_rules,
 )
 from apps.scholarship.verdict_engine import build_verdict
 
@@ -272,13 +272,13 @@ class TheGiftEditorDoor(TestCase):
 
     def test_create_stores_and_serves_it_in_order(self):
         r = self.client.post(self._years(), {'code': 'sy-new', 'name': 'sy', 'year': 2027,
-                                             'allowed_start_years': [2026, 2025]}, format='json')
+                                             **no_rules(allowed_start_years=[2026, 2025])}, format='json')
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data['requirements']['allowed_start_years'], [2025, 2026])
         self.assertEqual(ScholarshipCohort.objects.get(code='sy-new').allowed_start_years, [2025, 2026])
 
     def test_create_without_it_is_empty_and_the_list_serves_it(self):
-        self.client.post(self._years(), {'code': 'sy-none', 'name': 'sy', 'year': 2027}, format='json')
+        self.client.post(self._years(), {'code': 'sy-none', 'name': 'sy', 'year': 2027, **no_rules()}, format='json')
         self.assertEqual(ScholarshipCohort.objects.get(code='sy-none').allowed_start_years, [])
         row = self.client.get(self._years()).data['years'][0]
         self.assertEqual(row['requirements']['allowed_start_years'], [])
