@@ -5309,9 +5309,9 @@
           "title": "Facts in doubt",
           "help": "The reviewer failed these facts. Either the AI was certain, or the reviewer still recommended the student. You may give your own verdict on each fact. It is optional.",
           "aiSaid": "AI said",
-          "reviewerSaid": "Reviewer said",
+          "reviewer": "Reviewer",
           "yourVerdict": "Your verdict",
-          "butDecision": "but the decision is {decision}"
+          "decision": "Decision"
         }
       },
       "caveats": {

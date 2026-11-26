@@ -61,13 +61,14 @@ export const roleQc: ManualChapter = {
       body: (
         <>Above the buttons, a small <strong>Facts in doubt</strong> box lists only the facts where the reviewer
         and the AI did not agree: the AI said green and the reviewer said Fail, or the reviewer said Fail but
-        still recommended the student. Each one shows what the AI said, what the reviewer said and their
-        reason. The AI line shows the same word as the AI prediction card for that fact. Under each fact is a
-        <strong> Your verdict</strong> row with two buttons, <strong>Pass</strong> and <strong>Fail</strong>.
+        still recommended the student. Each fact has up to four rows: <strong>AI said</strong> (the same word as
+        the AI prediction card for that fact), <strong>Reviewer</strong> (Fail, with the reviewer&rsquo;s reason
+        in brackets when one was given), <strong>Decision</strong> (the reviewer&rsquo;s overall decision,
+        Recommend or Decline) and a <strong>Your verdict</strong> row with two buttons, <strong>Pass</strong> and <strong>Fail</strong>.
         Giving a verdict is optional. Nothing is chosen at the start; tap a button to choose it, tap the chosen
         button again to remove your answer, or tap the other button to change it. Your answer is sent with your
-        Accept, Reopen or Reject. A fact you did not touch records nothing. On <strong>Accept</strong>, both a
-        Pass and a Fail are recorded. On <strong>Reopen</strong> or <strong>Reject</strong>, only a Pass is
+        Accept, Confirm decline, Reopen or Reject. A fact you did not touch records nothing. On
+        <strong> Accept</strong> or <strong>Confirm decline</strong>, both a Pass and a Fail are recorded. On <strong>Reopen</strong> or <strong>Reject</strong>, only a Pass is
         recorded; a Fail is not kept. The box never changes the case, the reviewer&rsquo;s answer, the AI&rsquo;s
         result, the award or what the student sees, and it never blocks or delays your decision. Your Accept and
         Reopen decisions are counted as <strong>QC accepted</strong> and <strong>QC sent back</strong> in the

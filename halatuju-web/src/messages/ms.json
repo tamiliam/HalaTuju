@@ -5309,9 +5309,9 @@
           "title": "Fakta yang diragui",
           "help": "Penyemak menggagalkan fakta ini. Sama ada AI yakin, atau penyemak tetap mengesyorkan pelajar itu. Anda boleh memberikan keputusan anda sendiri bagi setiap fakta. Ini tidak wajib.",
           "aiSaid": "Kata AI",
-          "reviewerSaid": "Kata penyemak",
+          "reviewer": "Penyemak",
           "yourVerdict": "Keputusan anda",
-          "butDecision": "tetapi keputusannya {decision}"
+          "decision": "Syor"
         }
       },
       "caveats": {

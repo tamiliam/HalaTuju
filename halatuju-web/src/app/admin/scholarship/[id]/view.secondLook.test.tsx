@@ -24,10 +24,10 @@ const block = () => screen.queryByTestId('facts-in-doubt')
 
 const TWO: SecondLook = {
   in_doubt: [
-    // The AI was sure (green), the reviewer failed it and gave no reason: "Not given".
+    // The AI was sure (green), the reviewer failed it and gave no reason.
     { fact: 'identity', ai_status: 'verified', ai_green: true, reviewer: 'fail', reason: null,
       groups: ['ai_green_reviewer_fail'] },
-    // The AI was in doubt, the reviewer failed it and still chose Recommend: no Reason row.
+    // The AI was in doubt, the reviewer failed it and still chose Recommend.
     { fact: 'income', ai_status: 'review', ai_green: false, reviewer: 'fail', reason: null,
       groups: ['failed_but_accepted'] },
   ],
@@ -42,6 +42,8 @@ const asQc = (second_look?: SecondLook, ai_fact_bands: Record<string, string> = 
 
 const PASS = 'admin.scholarship.recordVerdict.factPass'
 const FAILK = 'admin.scholarship.recordVerdict.factFail'
+const APPROVE = 'admin.scholarship.recordVerdict.approve'
+const DECLINE = 'admin.scholarship.recordVerdict.decline'
 const choice = (fact: string, which: 'Pass' | 'Fail') =>
   within(screen.getByTestId(`doubt-${fact}`)).getByTestId(`doubt-${fact}-fact${which}`)
 const pass = (fact: string) => fireEvent.click(choice(fact, 'Pass'))
@@ -51,31 +53,73 @@ const accept = () => fireEvent.click(screen.getByRole('button', { name: 'admin.s
 const sent = (api: ReturnType<typeof asQc>['api']) => api.recordQcDecision.mock.calls[0][1]
 
 describe('LL2b: the block on the QC panel', () => {
-  it('lists each fact in doubt with the AI, the reviewer and the reason', async () => {
+  it('lists each fact in doubt: AI said, Reviewer, Decision, Your verdict, in that order', async () => {
     asQc(TWO)
     await loaded()
     expect(within(block()!).getByText(`${K}.title`)).toBeTruthy()
     expect(within(block()!).getByText(`${K}.help`)).toBeTruthy()
     const identity = screen.getByTestId('doubt-identity')
     expect(within(identity).getByText('admin.scholarship.verdict.fact.identity')).toBeTruthy()
-    expect(within(identity).getByText(`${K}.aiSaid`)).toBeTruthy()
     expect(within(identity).getByText('admin.scholarship.verdict.band.certain')).toBeTruthy()
-    expect(within(identity).getByText(`${K}.reviewerSaid`)).toBeTruthy()
-    expect(within(identity).getAllByText('admin.scholarship.recordVerdict.factFail')).toHaveLength(2)   // the reviewer's word + the Fail button
-    expect(within(identity).getByText('admin.scholarship.recordVerdict.failReasonLabel')).toBeTruthy()
-    expect(within(identity).getByText('admin.programmeOverview.aiPrediction.notGiven')).toBeTruthy()
+    const labels = Array.from(identity.querySelectorAll('dt')).map((d) => d.textContent)
+    expect(labels).toEqual([`${K}.aiSaid`, `${K}.reviewer`, `${K}.decision`, `${K}.yourVerdict`])
+    expect(within(identity).queryByText(`${K}.reviewerSaid`)).toBeNull()
+    expect(within(identity).queryByText('admin.scholarship.recordVerdict.failReasonLabel')).toBeNull()
     expect(within(identity).queryByText(new RegExp(`${K}.butDecision`))).toBeNull()
+    expect(within(identity).queryByText(/but the decision is/)).toBeNull()
   })
 
-  it('a reason given shows the LL2 label; a failed-but-recommended fact says so and has no Reason row', async () => {
-    asQc({ ...TWO, in_doubt: [{ ...TWO.in_doubt[0], reason: 'documents_differ' }, TWO.in_doubt[1]] })
+  it('the Reviewer row: no reason prints only Fail, no brackets', async () => {
+    asQc(TWO)
     await loaded()
-    expect(within(screen.getByTestId('doubt-identity'))
-      .getByText('admin.scholarship.recordVerdict.failReason.documents_differ')).toBeTruthy()
-    const income = screen.getByTestId('doubt-income')
-    expect(within(income).getByText(new RegExp(`${K}.butDecision`))).toBeTruthy()
-    expect(within(income).queryByText('admin.scholarship.recordVerdict.failReasonLabel')).toBeNull()
-    expect(within(income).getByText('admin.scholarship.verdict.band.unsure')).toBeTruthy()
+    const row = screen.getByTestId('doubt-identity').querySelectorAll('dd')[1]
+    expect(row.textContent).toBe(FAILK)
+    expect(row.textContent).not.toContain('(')
+  })
+
+  it('the Reviewer row: a reason prints Fail (reason)', async () => {
+    asQc({ ...TWO, in_doubt: [{ ...TWO.in_doubt[0], reason: 'interview_differs' }, TWO.in_doubt[1]] })
+    await loaded()
+    const row = screen.getByTestId('doubt-identity').querySelectorAll('dd')[1]
+    expect(row.textContent).toBe(`${FAILK} (admin.scholarship.recordVerdict.failReason.interview_differs)`)
+  })
+
+  it('the Decision row says Recommend for an accept, on every fact', async () => {
+    asQc(TWO)
+    await loaded()
+    for (const fact of ['identity', 'income']) {
+      expect(within(screen.getByTestId(`doubt-${fact}`)).getByText(`${K}.decision`)).toBeTruthy()
+      expect(within(screen.getByTestId(`doubt-${fact}`)).getByText(APPROVE)).toBeTruthy()
+    }
+  })
+
+  it('a declined case still draws the box, and the Decision row says Decline', async () => {
+    renderCockpit({
+      role: 'qc', stage: 'awaiting_qc', writes: { can_qc: true },
+      build: { outcome: 'decline', qc_refusal: null, ai_fact_bands: { identity: 'certain', income: 'unsure' },
+        second_look: TWO },
+    })
+    await loaded()
+    expect(block()).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.confirmDecline' })).toBeTruthy()
+    for (const fact of ['identity', 'income']) {
+      expect(within(screen.getByTestId(`doubt-${fact}`)).getByText(DECLINE)).toBeTruthy()
+      expect(within(screen.getByTestId(`doubt-${fact}`)).queryByText(APPROVE)).toBeNull()
+    }
+  })
+
+  it('any other overall value: no Decision row', async () => {
+    renderCockpit({
+      role: 'qc', stage: 'awaiting_qc', writes: { can_qc: true },
+      build: { outcome: 'recommend', qc_refusal: null, second_look: TWO,
+        officer_verdict: { identity: 'fail', income: 'fail', overall: 'pending' } },
+    })
+    await loaded()
+    expect(block()).toBeTruthy()
+    const identity = screen.getByTestId('doubt-identity')
+    expect(within(identity).queryByText(`${K}.decision`)).toBeNull()
+    expect(within(identity).queryByText(APPROVE)).toBeNull()
+    expect(within(identity).queryByText(DECLINE)).toBeNull()
   })
 
   it('the AI line is the served band word, never the raw status', async () => {

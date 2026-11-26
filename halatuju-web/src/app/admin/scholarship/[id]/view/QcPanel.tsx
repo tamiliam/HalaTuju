@@ -109,7 +109,7 @@ export function QcPanel({
               {canQc && <> {t('admin.scholarship.qcDecision.gapFloorSuper')}</>}
             </p>
           )}
-          <FactsInDoubt items={doubt} t={t} bands={app.ai_fact_bands} answers={answers} busy={!!busy}
+          <FactsInDoubt items={doubt} t={t} bands={app.ai_fact_bands} overall={app.officer_verdict?.overall} answers={answers} busy={!!busy}
             setAnswers={(facts) => setTaps({ round, facts })} />
           {!qcReopenOpen && !qcOverrideOpen ? (
             <div className="grid grid-cols-2 gap-2">

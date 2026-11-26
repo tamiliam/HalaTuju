@@ -14,6 +14,7 @@ Branch qc-fact-verdict, not pushed. Web only. No migration. No change under hala
 - **Decision recorded:** `docs/decisions.md` (2026-11-19 second look): silence no longer records "agreed".
 - **Note for the numbers:** an Accept with nothing answered now stores no answer, so the fact reads "not checked" on the AI card's QC counts (before, it counted as checked and agreed). Answers stored earlier are unchanged.
 - Tests: `view.secondLook.test.tsx` updated and extended (band label, nothing selected, Pass, Fail, clear, absent key, fallback).
+- **Rows, follow-up:** each fact now reads AI said, Reviewer (the red Fail, then the reason in brackets only when one was given), Decision (a neutral pill, Recommend or Decline, from `officer_verdict.overall`; no row for any other value) and Your verdict. The old "but the decision is ..." text and the separate Reason row are gone (keys `butDecision`, `reviewerSaid` removed; `reviewer` and `decision` added in en, ms, ta). The label column is `max-content` wide and the value column wraps, at every width. Guide and FAQ now say a Confirm decline records the answers like Accept.
 
 ### feat: pre-U sprint - Secondary School, where they completed pre-U, the STPM Angka Giliran, and the switch to SPM (2026-11-26)
 

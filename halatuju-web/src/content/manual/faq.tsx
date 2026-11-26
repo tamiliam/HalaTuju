@@ -118,11 +118,11 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>What is the <strong>Facts in doubt</strong> box?</>,
       a: <>A second look at the facts the reviewer failed where the AI was certain, or where the reviewer still
-        recommended the student. The AI line shows the same word as the AI prediction card. You may tap
+        recommended the student. Each fact shows what the AI said (the same word as the AI prediction card), the reviewer&rsquo;s Fail with the reason, and the reviewer&rsquo;s overall decision, Recommend or Decline. It also appears on a declined case. You may tap
         <strong> Pass</strong> or <strong>Fail</strong> on a fact; nothing is chosen at the start, and a second tap
         on the chosen button removes your answer. Your answer goes with <strong>Accept</strong>,
-        <strong> Reopen</strong> or <strong>Reject</strong> and never holds the decision up. A fact you do not
-        touch records nothing. On Accept a Pass and a Fail are recorded; on Reopen or Reject only a Pass is. It
+        <strong> Confirm decline</strong>, <strong>Reopen</strong> or <strong>Reject</strong> and never holds the decision up. A fact you do not
+        touch records nothing. On Accept or Confirm decline a Pass and a Fail are recorded; on Reopen or Reject only a Pass is. It
         never changes the case, the reviewer&rsquo;s answer, the AI&rsquo;s result, the award or what the student
         sees. The <strong>QC accepted</strong> and <strong>QC sent back</strong> counts in the
         <strong> By reviewer</strong> table come from your Accept or Reopen itself, not from this box.</>,
