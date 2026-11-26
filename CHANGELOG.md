@@ -30,6 +30,13 @@ Branch req84-earner-ticks, not pushed. Migration: none. Services: both. Brief:
   switch holds its Confirm while a question is open; on the income step only a tick that changes stops the roster sync
   (a "No" does not). New `IncomeWizard.earnerTicks.test.tsx` mounts the real wizard; TD-NEW-earner-tick-followups logs the rest. No new strings.
 
+### fix: Academic box - one divider, the old tight rows (2026-11-25)
+
+Owner phone check after the 21:00 publish: every row had its own top line and 12 px padding, so the box read as
+split and tall. Now the rows sit 10 px apart with no line, and ONE thin line sits above Chosen programme (16 px, as
+before a52b7c957). Rows and their order are unchanged. Test: `ApplicantCards.academicSlots.test.tsx` pins one
+divider, on the plans row, and no row padding. Migration: none. Services: web.
+
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 
 Branch access-s4-scholars, not pushed. Migration: none. Services: web. The server half is S4a (above).

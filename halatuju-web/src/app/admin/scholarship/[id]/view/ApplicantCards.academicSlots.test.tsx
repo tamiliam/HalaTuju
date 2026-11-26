@@ -40,8 +40,8 @@ function renderWith(extra: Record<string, unknown>, vtip: (f: string) => string 
 const dd = (label: string) => screen.getByText(label).parentElement?.querySelector('dd')?.textContent
 // The label of every slot, in document order - pins the row order.
 const labels = () => Array.from(document.querySelectorAll('dt')).map((d) => d.textContent)
-// A slot's row: the thin top divider sits on every row.
-const rowOf = (label: string) => screen.getByText(label).closest('div.border-t')
+// A slot's row (marked `acad-row`). Only the plans row carries the one thin divider.
+const rowOf = (label: string) => screen.getByText(label).closest('div.acad-row')
 
 const slip = { doc_type: 'results_slip', academic_check: { exam_year: '2025', exam_year_status: 'current' } }
 const higher = { doc_type: 'higher_results', higher_check: { exam_year: '2025', exam_year_status: 'current' } }
@@ -68,8 +68,10 @@ describe('Academic box slots', () => {
     expect(rowOf(GRADES)).not.toBe(rowOf(PLANS[0]))
     expect(rowOf(PLANS[0])).not.toBe(rowOf(PLANS[2]))
     const rows = Array.from(screen.getByText(SCHOOL).closest('dl')!.children)
-    expect(rows).toHaveLength(4)                                          // a divider per row
-    for (const r of rows) expect(r.className).toContain('border-t')
+    expect(rows).toHaveLength(4)
+    // ONE divider only, above the plans (owner 2026-11-25); no row has its own padding.
+    expect(rows.filter((r) => r.className.includes('border-t'))).toEqual([rowOf(PLANS[0])])
+    for (const r of rows) expect(r.className).not.toMatch(/\bpy-/)
     for (const k of [CGPA, 'MUET', PRE_U, STPMG, PREREQ]) expect(screen.queryByText(k)).toBeNull()
   })
 
