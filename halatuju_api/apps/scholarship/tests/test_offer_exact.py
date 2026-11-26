@@ -124,6 +124,15 @@ class TestTheMerge(SimpleTestCase):
     def test_no_prior_read(self):
         self.assertEqual(merge_over(None, {})['campus'], '')
 
+    def test_r1_a_rules_lane_lock_writes_the_dates_whole_blank_included(self):
+        # OCR-14 review r1: a university rules lock never keeps an earlier AI date under a deterministic read.
+        f = merge_over(self.STALE, {'reporting_date': '', 'reporting_date_label': '', 'offer_date': ''}, 'ua:UNIMAS')
+        self.assertEqual((f['reporting_date'], f['reporting_date_label'], f['offer_date']), ('', '', ''))
+        f = merge_over(self.STALE, {'reporting_date': '31/02/2031', 'reporting_date_label': 'x'}, 'ua:UMS')
+        self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('31/02/2031', 'x'))   # never the AI's
+        f = merge_over(self.STALE, {}, '')                                  # a government lock: merge-preserve
+        self.assertEqual((f['reporting_date'], f['offer_date']), ('1 Jan 2031', '2 Jan 2031'))
+
 
 class TestPageOne(SimpleTestCase):
     OTHER = 'QORIN A/L VESTRAN\nK/P: 130405100211\n'      # another person's identity lines

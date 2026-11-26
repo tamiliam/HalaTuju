@@ -94,9 +94,20 @@ class UmkLockTest(SimpleTestCase):
         self.assertEqual(lock['intake'], INTAKE)
         self.assertEqual((lock['reporting_date'], lock['reporting_date_label']), ('13 Sep 2026', 'Tarikh'))
         self.assertEqual((lock['reporting_venue'], lock['campus'], lock['stream']), ('', '', ''))
-        self.assertEqual(lock['offer_date'], OFFER_ON)
+        self.assertEqual(lock['offer_date'], '')           # review r1: the head TARIKH is never stored
         self.assertEqual(lock['institution'], 'UNIVERSITI MALAYSIA KELANTAN')
         self.assertEqual(lock['_offer_parser_version'], offer_parse.PARSER_VERSION)
+
+    def test_r1_the_head_date_is_never_stored_and_blanks_a_prior_ai_offer_date(self):
+        # OCR-14 review r1: the head "TARIKH" may be the print date, so the lock writes the offer date BLANK over
+        # an earlier AI value; the head date still gates the lock (dates_not_sane).
+        lay = layout()
+        p1 = plain(lay)
+        ex = offer_exact.exact_read(p1, from_text_layer=True, page1_layer=p1, page1_layout=lay, page_texts=[p1],
+                                    profile_nric=NRIC, prior={'fields': {'offer_date': '1 Jul 2026'}})
+        self.assertIsNotNone(ex)
+        self.assertEqual(ex['fields']['offer_date'], '')
+        self.assertIsNone(run(layout(dated_row=' ' * 95 + 'TARIKH:    20/10/2026'))['locked'])   # after the report
 
     def test_value_shapes_that_still_lock(self):
         for name, value in (('Program', 'SARJANA MUDA PERNIAGAAN (PERUNCITAN) DENGAN KEPUJIAN'),

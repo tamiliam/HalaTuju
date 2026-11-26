@@ -176,7 +176,8 @@ def parser_diagnosis(text, route='vision', page1_layer='', profile_nric='', page
     guard = ('no_page1_layer' if from_layer and not (page1_layer or '').strip() and d['locked'] else
              d['guard'] or ('ic_guard' if d['locked'] and ex is None else None))
     return {'detected': d['family'], 'titled': d['titled'], 'empty_required': d['empty_required'],
-            'guard': guard, 'locked': ex is not None, 'fields': ex['fields'] if ex else None}
+            'guard': guard, 'locked': ex is not None, 'fields': ex['fields'] if ex else None,
+            'rules_lane': (ex or {}).get('rules_lane') or ''}
 
 
 def replay_letter(text, route, stored_fields, profile_nric='', page1_layer='', page1_layout='', page_texts=None):
@@ -188,7 +189,7 @@ def replay_letter(text, route, stored_fields, profile_nric='', page1_layer='', p
              'fields': None})
     if diag['locked']:
         outcome, capture, source = 'locked', 'deterministic', 'parser_merged_over_stored'
-        fields = merge_over(stored_fields, diag['fields'])
+        fields = merge_over(stored_fields, diag['fields'], diag.get('rules_lane') or '')
     else:
         outcome = 'fallback' if usable else 'no_text'
         capture = 'ai_stand_in' if usable else 'no_text'

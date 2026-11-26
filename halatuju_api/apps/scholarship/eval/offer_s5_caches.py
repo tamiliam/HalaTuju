@@ -49,7 +49,7 @@ def s5_cache(eval_dir, key, profile_nric=''):
     base = {'offer_parser_version': PARSER_VERSION, 'text_route': route,
             'stored_capture': str(vf.get('capture') or 'none')}
     if ex is not None:
-        return {**base, 's5': 'locked', 'fields': merge_over(stored, ex['fields']),
+        return {**base, 's5': 'locked', 'fields': merge_over(stored, ex['fields'], ex.get('rules_lane') or ''),
                 'nric_check_eval': ex['offer_reader_inputs']['nric_check']}
     if vf.get('capture') != 'deterministic':
         return None

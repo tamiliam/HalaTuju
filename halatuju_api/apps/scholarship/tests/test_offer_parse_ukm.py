@@ -35,7 +35,7 @@ ROWS = (('NO. KAD PENGENALAN', IC), ('NO. PENDAFTARAN', REG), ('FAKULTI', 'FAKUL
         ('YURAN PENDAFTARAN', 'RM 1,234.50'), ('JENIS AMBILAN', 'AKADEMIK'))
 PORTAL = ('Untuk maklumat lanjut, sila rujuk Panduan Pendaftaran Pelajar Baharu yang boleh dicetak di Portal Semakan '
           'Kemasukan ke', 'UKM dipautan http://appsmu.ukm.my/edaftar/.')
-TEL = 'Tel: +603-89215555/5556/5557/5558 E-mel: akad@ukm.edu.my Web: www.ukm.my/akademik'
+TEL = 'Tel: +603-89115555/8301/8402/8403/8404 E-mel: akad@ukm.edu.my Web: www.ukm.my/akademik'
 BODY = ('Maklumat Yuran Pengajian adalah seperti berikut:', 'Yuran Pengajian Semester' + ' ' * 20 + 'RM 1,000.00',
         'Tawaran yang diberikan adalah MUKTAMAD dan tidak boleh dirayu.',
         'Sekiranya saudara/i tidak mendaftar sehingga tarikh tersebut, maka tawaran ini akan terbatal.', *PORTAL,
@@ -197,12 +197,13 @@ class UkmIcTest(SimpleTestCase):
         self.assertFalse(ex['offer_reader_inputs'].get('nric_not_printed'))
 
     def test_the_footer_phone_excuse_is_narrow(self):
-        """The footer's "Tel: +60N-NNNNNNNN/NNNN" reads as an IC to the wide check; only that exact run, once, is
-        taken out."""
+        """The footer's "Tel: +603-8911NNNN/8NNN" reads as an IC to the wide check; only the measured switchboard
+        run (review r1), once, is taken out: any other phone-shaped run is not excused."""
         self.assertFalse(ukm_ic_elsewhere(TEL, NRIC))
         self.assertTrue(ukm_ic_elsewhere(TEL + '\n' + TEL, NRIC))
-        for other in ('Tel: 89215555/5556', 'Faks: +603-89215555/5556', 'Tel: +603-89215555/5556/14-5678',
-                      'Tel: +603-899010/14/5678'):
+        for other in ('Tel: 89115555/8301', 'Faks: +603-89115555/8301', 'Tel: +603-89115555/8301/14-5678',
+                      'Tel: +603-899010/14/5678', 'Tel: +603-88021234/5678', 'Tel: +603-89215555/8301',
+                      'Tel: +603-89115555/5678', 'Tel: +604-89115555/8301'):
             with self.subTest(other=other):
                 self.assertTrue(ukm_ic_elsewhere(other, NRIC))
                 self.assertIsNone(run(layout(footer=FOOTER[:3] + (other,)))['locked'])

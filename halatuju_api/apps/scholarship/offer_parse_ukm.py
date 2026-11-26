@@ -76,10 +76,11 @@ _FEE = re.compile(r'^RM ?\d{1,3}(?:,\d{3})*\.\d{2}$')
 _HOUR = r'\d{1,2}[:.]\d{2} (?:Pagi|Tengah Hari|Petang)'
 _REPORT_VALUE = re.compile(r'^(\d{2}/\d{2}/20\d{2})(?: \( ?' + _HOUR + r' - ' + _HOUR + r' ?\))?$')
 _PRINT_STAMP = re.compile(r'(?:^|\s)Tarikh Cetak : \d{2}/\d{2}/20\d{2}$')
-#: The footer's phone numbers ("Tel: +60N-NNNNNNNN/NNNN/..."): an 8-digit number and its 4-digit extensions, which
-#: `ic_printed`'s wide shapes read as an IC ("NNNNNNNN/NNNN" is 6 + 2 + 4). Taken out, in exactly this shape, before
-#: the IC-elsewhere check; printed more than once on a page, it refuses (`ukm_ic_elsewhere`).
-_TEL = re.compile(r'Tel: \+60\d-\d{8}(?:/\d{4}){1,12}(?![\d/])')
+#: The footer's phone numbers: the university switchboard ("Tel: +603-8911NNNN") and its 4-digit extensions, which
+#: `ic_printed`'s wide shapes read as an IC ("NNNNNNNN/NNNN" is 6 + 2 + 4). Pinned to the measured run (OCR-14 review
+#: r1: every owner and corpus footer is +603-8911 with 1-12 extensions 81NN-84NN), so a phone-shaped IC run is not
+#: excused. Taken out before the IC-elsewhere check; printed more than once on a page, it refuses (`ukm_ic_elsewhere`).
+_TEL = re.compile(r'Tel: \+603-8911\d{4}(?:/8[1-4]\d{2}){1,12}(?![\d/])')
 #: The one portal sentence every UKM letter prints ("... dicetak di Portal Semakan Kemasukan ke UKM ..."), which
 #: `offer_parse._PORTAL_TELL` reads as a portal page. Taken out before the plain portal check (`ukm_portal`).
 _PORTAL_WORDS = ('sila rujuk Panduan Pendaftaran Pelajar Baharu yang boleh dicetak di Portal Semakan Kemasukan ke '

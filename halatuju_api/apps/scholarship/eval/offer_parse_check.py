@@ -94,7 +94,7 @@ def check_corpus(eval_dir, base=DEFAULT_BASE, split_file=orc.SPLIT_PATH):
         pipe = None
         if answer and base_read is not None:
             ai = base_read.get('fields') or (base_read.get('vision_fields') or {}).get('fields') or {}
-            read = merge_over(ai, fields) if fields else ai
+            read = merge_over(ai, fields, (ex or {}).get('rules_lane') or '') if fields else ai
             pipe = orc.fully_exact(orc.score_letter(answer, read, family))
         rows.append({'key': key, 'split': 'heldout' if key in heldout else 'dev', 'family': family,
                      'kind': rp.input_kind3(eval_dir, key, route),

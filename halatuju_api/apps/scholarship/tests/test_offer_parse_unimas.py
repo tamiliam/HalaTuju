@@ -245,6 +245,25 @@ class UnimasNoIcAndWiringTest(SimpleTestCase):
         self.assertTrue(ex['offer_reader_inputs']['nric_not_printed'])
         self.assertFalse(any(MATRIC in str(v) for v in ex['fields'].values()))
 
+    def test_r1_lock_writes_a_blank_reporting_date_over_a_prior_ai_date(self):
+        # OCR-14 review r1 (the reviewer's case): an earlier AI read took the hostel note's date as the reporting
+        # date; the UNIMAS lock (which reads none) must blank it, never keep it under a deterministic capture.
+        venue = (label('Lokasi Pendaftaran dan', 'Semakan kolej kediaman mulai 20 Ogos 2027 jam 10 pagi di'),
+                 '     Kolej Kediaman' + ' ' * 20 + 'https://kolej.unimas.my/eKolej')
+        lay = layout(venue=venue)
+        p1 = plain(lay)
+        prior = {'fields': {'reporting_date': '20 Aug 2027', 'reporting_date_label': 'Lokasi Pendaftaran',
+                            'offer_date': '1 Jan 2027', 'candidate_nric': '990101-14-5678',
+                            'candidate_nric_source': 'label'}}
+        ex = offer_exact.exact_read(p1, from_text_layer=True, page1_layer=p1, prior=prior, profile_nric='',
+                                    page1_layout=lay, page_texts=[p1])
+        self.assertIsNotNone(ex)
+        self.assertEqual(ex['capture'], 'deterministic')
+        f = ex['fields']
+        self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('', ''))
+        self.assertEqual(f['offer_date'], '12 Ogos 2027')                       # the lane's own read wins
+        self.assertEqual((f['candidate_nric'], f['candidate_nric_source']), ('', 'none'))
+
     def test_ink_targets_hold_no_ic_no_matric_no_date(self):
         phrases, values = ink_targets(run()['locked'], layout())
         self.assertEqual(len(phrases), 6)

@@ -19,9 +19,12 @@ would derive. Each returns the stored-read dict, or None (→ the AI reader, `of
      the IC blank, as its AI read stores it, and refuses if its lock carries one.
   3. **The merge** over the prior read. The parser OWNS the identity and shape keys (`OWNED`) and writes them
      whole, blank included, so a stale AI campus / code / IC source / address / venue cannot survive under an
-     "Exact" chip (review L2). The reporting date (with its label) and the offer date keep merge-preserve
-     (decision 2026-07-10): a blank keeps the prior value — the reporting-date bonus depends on it — and so
-     does a parser date `pathway_engine.parse_reporting_date` cannot read when the prior one it can (M4).
+     "Exact" chip (review L2). On a GOVERNMENT-family lock the reporting date (with its label) and the offer
+     date keep merge-preserve (decision 2026-07-10): a blank keeps the prior value — the reporting-date bonus
+     depends on it — and so does a parser date `pathway_engine.parse_reporting_date` cannot read when the prior
+     one it can (M4). A UNIVERSITY rules-lane lock writes them whole too (OCR-14 review r1): a lane that reads
+     no date (UNIMAS prints no reporting date; UMK's head date is not proven to be the offer date) must never
+     keep an earlier AI date under a deterministic capture.
 """
 from __future__ import annotations
 
@@ -69,13 +72,17 @@ def _reads(date) -> bool:
     return isinstance(date, str) and parse_reporting_date(date) is not None
 
 
-def merge_over(prior_fields, govt: dict) -> dict:
+def merge_over(prior_fields, govt: dict, rules_lane: str = '') -> dict:
     """The lock merged over the prior read: `OWNED` whole, `PRESERVED` only where the parser read it — and a
-    reporting date only when it parses, or the prior one does not (review M4)."""
+    reporting date only when it parses, or the prior one does not (review M4). A rules-lane lock (``rules_lane``
+    set, OCR-14 review r1) writes `PRESERVED` whole too, blank included: no AI date under a deterministic read."""
     out = dict(prior_fields) if isinstance(prior_fields, dict) else {}
     out.update({k: govt.get(k, '') or '' for k in OWNED})
     for group in PRESERVED:
         mine = (govt.get(group[0]) or '').strip()
+        if rules_lane:
+            out.update({k: govt.get(k, '') or '' for k in group})
+            continue
         if not mine:
             continue
         if group[0] == 'reporting_date' and not _reads(mine) and _reads(out.get('reporting_date')):
@@ -194,7 +201,7 @@ def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profi
     prior_fields = prior.get('fields') if isinstance(prior, dict) else None
     inputs = {'reader': 'deterministic', 'nric_check': check, **({'rules_lane': lane} if lane else {}),
               **({'nric_not_printed': True} if no_ic else {})}
-    return {'fields': merge_over(prior_fields, govt), 'warnings': [], 'error': '', 'capture': 'deterministic',
+    return {'fields': merge_over(prior_fields, govt, lane), 'warnings': [], 'error': '', 'capture': 'deterministic',
             'rules_lane': lane, 'offer_reader_inputs': inputs}
 
 

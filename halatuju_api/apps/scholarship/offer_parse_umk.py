@@ -17,7 +17,7 @@ Page 1, as measured on the owner's 4 text letters (masked shapes only; the corpu
 
 * the letterhead, six lines (`_LETTERHEAD`); the name alone at the left (`offer_parse_uitm.name_ended` must prove
   it ended); one to four address lines; then, in the right-hand column on lines of their own, "NO. KAD
-  PENGENALAN:<IC>", "NO. MATRIK: <matric>" and "TARIKH: DD/MM/YYYY" (the offer date); "Saudara/i,". A head whose
+  PENGENALAN:<IC>", "NO. MATRIK: <matric>" and "TARIKH: DD/MM/YYYY"; "Saudara/i,". A head whose
   name or address shares its line with the right-hand column (one owner letter) refuses (``no_head``);
 * the title "TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA KELANTAN SEMESTER SEPTEMBER SESI AKADEMIK YYYY/YYYY" on one
   or two lines (the intake is what follows "KELANTAN ");
@@ -26,6 +26,11 @@ Page 1, as measured on the owner's 4 text letters (masked shapes only; the corpu
   DENGAN KEPUJIAN" degree), Tahun (must be "PERTAMA"), Fakulti ("FAKULTI ..."), Tempoh ("N SEMESTER");
 * "Sila mendaftar pada tarikh, masa dan tempat seperti berikut:-", then the reporting row "Tarikh: DD MON YYYY"
   (an English month abbreviation, as measured), then "Masa: h:mmAM hingga h:mmPM", then "Tempat" (never read).
+
+The head "TARIKH" may be the date the portal printed the letter, not the offer date (OCR-14 review r1: nothing on
+the page says which), so it is NEVER stored: the offer date is locked BLANK (written over any earlier AI value,
+`offer_exact.merge_over`). It must still be a real date in the session's window, not after the reporting date
+(``dates_not_sane``), and it is still ink-checked as printed (`umk_ink_targets`).
 
 The reporting date is read ONLY from that labelled row straight after that sentence. Any other value refuses, and so
 does any date on the page but the offer date and that row. One owner letter stops page 1 after Tempoh (its reporting
@@ -259,7 +264,7 @@ def read_umk(source: str):
         'programme': programme, 'programme_code': '', 'institution': INSTITUTION, 'campus': '',
         'stream': '', 'intake': intake, 'reporting_date': house_date(printed) if printed else '',
         'reporting_date_label': 'Tarikh' if printed else '', 'reporting_venue': '',
-        'offer_date': offer_date, 'issuer': ISSUER,
+        'offer_date': '', 'issuer': ISSUER,      # the head TARIKH is never stored (module docstring)
     }
     for why in (why_head, why_table, why_values):
         if why:
@@ -309,8 +314,8 @@ def umk_later_pages(pages) -> str:
     return 'later_page' if any((p or '').strip() for p in pages or ()) else ''
 
 
-#: S-visible 2 (`pdf_ink.ink_missing`): the field -> ink label for every value read off page 1 (the IC and the
-#: reporting date as printed).
+#: S-visible 2 (`pdf_ink.ink_missing`): the field -> ink label for every value read off page 1 (the IC, the
+#: reporting date and the head TARIKH as printed; the head TARIKH under 'offer_date', though that field stays blank).
 INK_LABELS = {'candidate_name': 'v:name', 'candidate_nric': 'v:nric', 'programme': 'v:programme',
               'intake': 'v:intake', 'reporting_date': 'v:date', 'offer_date': 'v:offer_date'}
 #: Every value is required (the template prints them all).
@@ -321,20 +326,23 @@ NOT_PRINTED = ('candidate_nric_source', 'programme_code', 'institution', 'campus
 
 
 def _umk_printed(page1_layout: str) -> tuple:
-    """(printed IC, printed reporting date "D MON YYYY") exactly as page 1 prints them, ('', '') when not read."""
+    """(printed IC, printed reporting date "D MON YYYY", printed head TARIKH "DD/MM/YYYY") exactly as page 1 prints
+    them, ('', '', '') when not read."""
     got = _umk_read(_uum_lines(page1_layout))
     if got is None:
-        return '', ''
+        return '', '', ''
     _years, _intake, head, (rows, _r, why_table), (_p, why_values) = got
-    return (head[1] if not head[5] else ''), (rows.get('report', '') if not why_table and not why_values else '')
+    return ((head[1] if not head[5] else ''), (rows.get('report', '') if not why_table and not why_values else ''),
+            head[2])
 
 
 def umk_ink_targets(fields, page1_layout) -> tuple:
     """(phrases, values) a UMK lock relied on, as (label, text) pairs: the owner phrases page 1's layout shows
-    (``p<n>``) and every field read off the page (`INK_LABELS`; the IC and the reporting date as printed). A
-    required value left blank stays in, so the ink check refuses it."""
+    (``p<n>``) and every field read off the page (`INK_LABELS`; the IC, the reporting date and the head TARIKH as
+    printed). A required value left blank stays in, so the ink check refuses it."""
     from .offer_owner_words import owner_ink_targets
     f = fields if isinstance(fields, dict) else {}
-    printed_ic, printed = _umk_printed(page1_layout)
-    values = {**{k: f.get(k) or '' for k in INK_LABELS}, 'candidate_nric': printed_ic, 'reporting_date': printed}
+    printed_ic, printed, head_date = _umk_printed(page1_layout)
+    values = {**{k: f.get(k) or '' for k in INK_LABELS}, 'candidate_nric': printed_ic, 'reporting_date': printed,
+              'offer_date': head_date}
     return owner_ink_targets(LANE, page1_layout, INK_LABELS, INK_OPTIONAL, values)
