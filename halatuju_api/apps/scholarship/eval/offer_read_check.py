@@ -120,7 +120,8 @@ RULES_LANES = {'universiti malaysia sabah': 'ua:UMS', 'uitm': 'ua:UiTM', 'univer
                'universiti utara malaysia': 'ua:UUM', 'universiti malaya': 'ua:UM',
                'universiti pendidikan sultan idris': 'ua:UPSI', 'universiti malaysia sarawak': 'ua:UNIMAS',
                'universiti tun hussein onn malaysia': 'ua:UTHM', 'universiti kebangsaan malaysia': 'ua:UKM',
-               'universiti teknikal malaysia melaka': 'ua:UTeM', 'universiti sains malaysia': 'ua:USM'}
+               'universiti teknikal malaysia melaka': 'ua:UTeM', 'universiti sains malaysia': 'ua:USM',
+               'universiti malaysia kelantan': 'ua:UMK'}
 
 
 def rules_read(family, answer) -> bool:
