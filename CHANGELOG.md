@@ -32,6 +32,7 @@ Branch preu-school, not pushed. Migration: 0102_angka_giliran_11_pre_u_studied_a
   onboarding/profile sync after their SPM grades are saved (never the sign-in door). The never-demote guard still
   protects every other write. A student with an application in play (`held_results_locked`) is told so and offered
   Back only; the server refuses the clear and the sync resends without it. Debt: TD-766.
+- **Bundle gate:** `/scholarship/apply` was 0.064 kB over its first-load budget; `firstTooLongField` and `APPLY_FIELD_LABEL_KEYS` moved to the leaf `lib/applyTooLong.ts`, fetched by the page only on the too-long error path (no behaviour change, budget unchanged).
 - Tests: `test_preu_school.py`; `lib/preuSprint.test.ts`, `PreUStudiedAtField.test.tsx`,
   `onboarding/exam-type/page.switch.test.tsx`, the ApplicantCards academicSlots and thirdRoute tests.
 - **Review round 1 fixes:** a CLOSED application now locks the switch too (it may have been awarded; a rejected

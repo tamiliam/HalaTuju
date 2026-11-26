@@ -29,7 +29,6 @@ import {
   hasApplyReturn,
   clearApplyReturn,
   APPLY_RETURN_KEY,
-  firstTooLongField,
   showsActionCentre,
   isFundedStatus,
   type ApplyFormState,
@@ -63,6 +62,7 @@ import { enterApplyPage, setApplyProgramme, clearApplyProgramme } from '@/lib/ap
 import type { StudentProfile, ScholarshipApplication, ApplicationCompleteness } from '@/lib/api'
 import { collegesForTrack } from '@/data/matric-colleges'
 import { stpmSchoolsForStream, STPM_SCHOOLS } from '@/data/stpm-schools'
+import { firstTooLongField } from '@/lib/applyTooLong'
 
 function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
   return {

@@ -32,8 +32,6 @@ import {
   HELP_OPTIONS,
   OTHER_SCHOLARSHIP_OPTIONS,
   type ApplyFormState,
-  firstTooLongField,
-  APPLY_FIELD_LABEL_KEYS,
 } from '@/lib/scholarship'
 import { applyPlanPatch } from '@/lib/planPicker'
 import { sameLettersAsCard } from '@/lib/cardName'
@@ -303,8 +301,13 @@ export default function ScholarshipApplyPage() {
       const fe = (err as { fieldErrors?: Record<string, unknown> }).fieldErrors
       if (fe && fe.school) { setServerError(t('scholarship.apply.error.school')); setTab('personal'); return }
       // If a field was rejected for length, name the exact question to shorten.
-      const key = firstTooLongField((err as { fieldErrors?: unknown }).fieldErrors)
-      const labelKey = key ? APPLY_FIELD_LABEL_KEYS[key] : null
+      // (Fetched here, on the error path, not in the page's first-load JS.)
+      let labelKey: string | null = null
+      try {
+        const { firstTooLongField, APPLY_FIELD_LABEL_KEYS } = await import('@/lib/applyTooLong')
+        const key = firstTooLongField((err as { fieldErrors?: unknown }).fieldErrors)
+        labelKey = key ? APPLY_FIELD_LABEL_KEYS[key] : null
+      } catch { /* chunk failed: the generic message below */ }
       if (labelKey) {
         setServerError(t('scholarship.apply.error.tooLong', { field: t(labelKey) }))
       } else {
