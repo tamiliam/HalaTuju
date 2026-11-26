@@ -1,6 +1,6 @@
 # HalaTuju learning loop — roadmap for steps 1 to 3
 
-Status (25 Nov 2026): APPROVED by the owner on 2026-11-18. LL1, LL2, LL2b, LL3 and LL4 are LIVE (21 Nov). LL5 is DONE and LIVE (25 Nov, 16:00 batch). Two sprints were added on 25 Nov: LL6 (exam-file bucket) and LL7 (close the gap). LL6 was built and reviewed on 25 Nov 2026 and has NOT yet run against a real bucket (the bucket does not exist yet). LL7 rounds 1 and 2 are done, with no rule change. The owner sets the start date of each sprint.
+Status (26 Nov 2026): APPROVED by the owner on 2026-11-18. LL1, LL2, LL2b, LL3 and LL4 are LIVE (21 Nov). LL5 is DONE and LIVE (25 Nov, 16:00 batch). Two sprints were added on 25 Nov: LL6 (exam-file bucket) and LL7 (close the gap). LL6 is LIVE (26 Nov 2026, main ee2d58f7b) and closed as a build; it has NOT yet run against a real bucket (the bucket does not exist yet; the owner steps 2b, 4b and 4c are open). LL7 rounds 1 and 2 are done, with no rule change; its routine is approved (26 Nov). The owner sets the start date of each sprint.
 
 Updated 2026-11-18 (same day, two owner ideas, owner chose option A):
 1. Humans make mistakes too. The tap means "is this fact true for the student?" (owner ruling A). The words on the box change (LL2). A second person checks a small list (new sprint LL2b).
@@ -208,7 +208,7 @@ Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C
 
 ---
 
-## Sprint LL6 — Exam-file home in a Cloud Storage bucket (added 25 Nov 2026; owner decision 2 = B) — BUILT and reviewed 25 Nov 2026; NOT yet run against a real bucket
+## Sprint LL6 — Exam-file home in a Cloud Storage bucket (added 25 Nov 2026; owner decision 2 = B) — LIVE 26 Nov 2026 (main ee2d58f7b); NOT yet run against a real bucket
 
 **State.** Built and reviewed on 25 Nov 2026. NOT yet run against a real bucket. The bucket does not exist yet. Landing it is the release lead's step.
 
@@ -261,7 +261,7 @@ Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C
 
 **Owner decision (25 Nov 2026): WAIT for clean cases.** Round 3 runs only when 50 decided cases from 19 Nov 2026 onward exist (32 on 25 Nov). No scorecard split is built. Until then every report marks the old score as "weak". Round 3 does not start early.
 
-**Next step.** Round 3, at 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov; 36 on 26 Nov).
+**Next step.** Round 3, at 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov; 42 on 26 Nov).
 
 **Routine (approved by the owner on 26 Nov 2026).** Two parts:
 - The workflow `Settings/_workflows/halatuju-close-the-gap.md` (in the workspace repo, not in this repo). It fixes the method of a round: count the clean cases, the score run, the 3 largest error groups, the owner's pick, one reader for the cause, a second reader for the sums, the "does it pay" test, the close.
@@ -292,9 +292,9 @@ Every agent call names its model. The lead stays thin. One phase for each build 
 4. LL2b: the second person is the QC (settled 2026-11-18). Phone check. Say yes to the publish.
 5. LL3: say yes to the publish.
 6. LL4: apply one migration by hand. Say yes to the publish.
-7. LL5: DONE and live (25 Nov). Its first run on real data waits for LL6 (built and reviewed 25 Nov; not yet run against a real bucket).
+7. LL5: DONE and live (25 Nov). Its first run on real data waits for the LL6 owner steps (LL6 is live since 26 Nov; not yet run against a real bucket).
 8. LL6: make the derived key by hand once (step 2b); make the bucket and the access grant (step 4b); say yes to the proof run at an agreed time (step 4c).
-9. LL7: rounds 1 and 2 are done. The routine is approved (26 Nov 2026). Round 3 waits for 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov; 36 on 26 Nov); then pick one of the 3 error groups.
+9. LL7: rounds 1 and 2 are done. The routine is approved (26 Nov 2026). Round 3 waits for 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov; 42 on 26 Nov); then pick one of the 3 error groups.
 10. Still owed: five phone checks (LL1, LL2, LL2b, LL4, withdraw card).
 
 ## Not in this plan
