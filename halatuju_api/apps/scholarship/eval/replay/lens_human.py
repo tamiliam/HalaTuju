@@ -77,6 +77,15 @@ DEBUG_ON = 'debug_on'   # the database door refuses the whole run: Django DEBUG 
 KEY_BLANK, KEY_CHECKS_MIXED = 'key_blank', 'candidate_key_checks_differ'
 KEY_CHECK_MISSING, CANDIDATES_NOT_CURRENT = 'current_key_check_missing', 'candidate_key_check_not_current'
 KEY_CHECK_DIFFERS_EXAM, KEY_CHECK_DIFFERS_CASES = 'key_check_differs_from_exam', 'key_check_differs_from_cases'
+# Set only by the parent process (the exam bucket): another run froze first; the frozen exam was not kept.
+FROZEN_ELSEWHERE, NOT_KEPT = 'frozen_elsewhere', 'not_kept'
+# The codes `refused_exam` takes: every refusal except exam_missing (that block also carries a count).
+PLAIN_REFUSALS = frozenset({
+    UNREADABLE, UNKNOWN_FIELD, MISSING_FIELD, WRONG_EXAM_NAME, WRONG_FORMAT, BAD_FIELD_TYPE, NON_INTEGER_ID,
+    DUPLICATE_ID, SIZE_MISMATCH, DIGEST_MISMATCH, ID_BELOW_ONE, EMPTY_EXAM, BAD_DECIDED_AT, BAD_FROZEN_AT,
+    BAD_KEY_CHECK, FOLDER_MISSING, INSIDE_GIT_REPO, ALREADY_FROZEN, FOLDER_NOT_WRITABLE, FOLDER_NOT_ABSOLUTE,
+    DEBUG_ON, KEY_BLANK, KEY_CHECKS_MIXED, KEY_CHECK_MISSING, CANDIDATES_NOT_CURRENT, KEY_CHECK_DIFFERS_EXAM,
+    KEY_CHECK_DIFFERS_CASES, FROZEN_ELSEWHERE, NOT_KEPT})
 VALIDITY = ('valid', 'evidence_changed', 'could_not_recompute', 'missing', 'context_changed',
             'no_longer_decided', 'decided_again')
 RECOVERED_BY_TWIN = 'twin'   # the case row's ``recompute_note`` vocabulary: this, or a reason below
@@ -362,72 +371,6 @@ def freeze_exam(folder, name: str, application_ids, decided_at, now, key_check=N
     return exam, None
 
 
-def _small(line: dict) -> dict:
-    """The small-number rule: under `coach_grade.CELL_MIN_FACTS` facts, the count only."""
-    from apps.scholarship.coach_grade import CELL_MIN_FACTS
-    if line['facts'] < CELL_MIN_FACTS:
-        return {'label': line['label'], 'facts': line['facts'], 'too_few': True}
-    return dict(line, too_few=False)
-
-
-def _fails_table(records) -> dict:
-    """Fails by AI band x reviewer reason (scored facts only), interview Fails in their own block."""
-    from apps.scholarship import ai_score, fail_reasons
-    from apps.scholarship.coach_grade import CELL_MIN_FACTS
-    from apps.scholarship.fact_bands import BANDS
-    codes = [c for c in fail_reasons.CODES if c != fail_reasons.INTERVIEW_DIFFERS] + [NOT_GIVEN]
-    table = {band: dict.fromkeys(codes, 0) for band in BANDS}
-    interview = dict.fromkeys(BANDS, 0)
-    total = 0
-    for snapshot, verdict, _version in records:
-        for fact, band, officer in ai_score.decided_facts(snapshot, verdict):
-            if band is None or officer != 'fail':
-                continue
-            total += 1
-            reason = fail_reasons.given(verdict, fact) or NOT_GIVEN
-            if reason == fail_reasons.INTERVIEW_DIFFERS:
-                interview[band] += 1
-            else:
-                table[band][reason] += 1
-    other = sum(row[fail_reasons.OTHER] for row in table.values())
-    share = {'count': other, 'of': total, 'too_few': total < CELL_MIN_FACTS}
-    if not share['too_few']:
-        share['pct'] = ai_score.percent(other, total)
-    return {'fails': total, 'by_band_and_reason': table, 'interview_by_band': interview,
-            'share_other': share}
-
-
-def _exam_score(rows: list) -> dict:
-    """The score, the extra line and the Fails table of the VALID cases, every mark through `ai_score`."""
-    from apps.scholarship import ai_score, fail_reasons
-    from apps.scholarship.fact_bands import CERTAIN, PROBABLE, UNSURE
-    records = [(row['snapshot'], row['answer'], row['version']) for row in rows]
-    marks = ai_score.score_marks(records)
-    covered = generous_wrong = left_out = 0
-    without = []
-    for snapshot, verdict, version in records:
-        kept = dict(verdict)
-        for fact, band, officer in ai_score.decided_facts(snapshot, verdict):
-            if band is None:
-                continue
-            covered += band != UNSURE
-            generous_wrong += officer == 'fail' and band in (CERTAIN, PROBABLE)
-            if officer == 'fail' and fail_reasons.given(verdict, fact) == fail_reasons.INTERVIEW_DIFFERS:
-                del kept[fact]
-                left_out += 1
-        without.append((snapshot, kept, version))
-    other = ai_score.score_marks(without)
-    score = {'label': 'score', 'facts': marks['facts'], 'points': marks['points'], 'best': marks['best'],
-             'score_pct': marks['score_pct'], 'not_scored': marks['not_scored'],
-             'outcomes': {o: marks[o] for o in ai_score.OUTCOMES},
-             'coverage': {'count': covered, 'of': marks['facts']},
-             'generous_wrong': {'count': generous_wrong, 'of': marks['facts']}}
-    extra = {'label': EXTRA_LINE_LABEL, 'facts': other['facts'], 'points': other['points'],
-             'best': other['best'], 'score_pct': other['score_pct'], 'left_out': left_out}
-    return {'score': _small(score), 'score_without_interview_fails': _small(extra),
-            'fails': _fails_table(records), 'limits': [f'a score on {marks["facts"]} facts', DROP_OUTS_LIMIT]}
-
-
 def _blank_exam(name: str, version: str) -> dict:
     return {'exam': name, 'label': WEAK_LABEL if name == EXAM_OLD else EXAM_1_LABEL, 'frozen': False,
             'status': '', 'size': None, 'digest': None, 'frozen_at': None, 'key_check': None,
@@ -441,6 +384,16 @@ def _blank_exam(name: str, version: str) -> dict:
 def _exam_refused(out: dict, code: str) -> dict:
     out.update(refusal=code, status=f'refused: {code}')
     return out
+
+
+def refused_exam(name: str, version: str, code: str) -> dict:
+    """The refusal block of exam ``name`` for the parent process: the shape this module builds for its own
+    refusals, no score, not frozen. Only a code in `PLAIN_REFUSALS`; the error text never holds the value."""
+    if name not in EXAM_NAMES:
+        raise ValueError('refused_exam: unknown exam name')
+    if code not in PLAIN_REFUSALS:
+        raise ValueError('refused_exam: unknown refusal code')
+    return _exam_refused(_blank_exam(name, version), code)
 
 
 def _exam_missing(out: dict, pool: list, of: str) -> dict:
@@ -489,7 +442,8 @@ def _sit_exam(out: dict, exam: dict, by_id: dict, shape: str) -> dict:
         out.update(valid_split={'matched_directly': len(valid) - twin, 'recovered_by_twin': twin},
                    could_not_recompute_reasons=reasons)
     out['qc_turned_to_pass'] = sum(row['qc_turned'] for row in valid)
-    scored = _exam_score(valid)
+    from .lens_score import exam_score   # inside the function: this module's top imports stay standard library
+    scored = exam_score(valid)
     out.update({k: scored[k] for k in ('score', 'score_without_interview_fails', 'fails')})
     out['known_limits'] = out['known_limits'] + scored['limits']
     return out

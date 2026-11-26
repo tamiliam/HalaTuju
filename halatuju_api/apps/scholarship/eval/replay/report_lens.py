@@ -74,6 +74,8 @@ REFUSAL_WORDS = {
     'candidate_key_check_not_current': 'the candidate cases do not carry the current key check',
     'key_check_differs_from_exam': 'the current key check differs from the exam file',
     'key_check_differs_from_cases': 'the cases carry a key check that differs from the exam file',
+    'frozen_elsewhere': 'another run froze this exam first',
+    'not_kept': 'the frozen exam was not kept in the bucket',
 }
 VALIDITY_WORDS = {
     'valid': 'still valid', 'evidence_changed': 'evidence changed', 'could_not_recompute': 'could not recompute',

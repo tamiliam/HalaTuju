@@ -275,3 +275,50 @@ def test_a_json_bool_in_a_nested_count_slot_is_refused(rich, tmp_path, path):
     assert b'true' in raw or b'false' in raw
     assert S.parse_human_lens_bytes(raw) == {'error': 'schema'}
     assert S.checked_result_text(planted) == S.SCHEMA_TEXT
+
+
+# ── LL6: refusal codes set by the parent, and the public `refused_exam` ──────────────────────────────
+PARENT_CODES = (L.FROZEN_ELSEWHERE, L.NOT_KEPT, L.KEY_BLANK)
+
+
+@pytest.mark.parametrize('code', PARENT_CODES)
+@pytest.mark.parametrize('name', L.EXAM_NAMES)
+def test_refused_exam_passes_the_schema_and_has_no_score(rich, name, code):
+    result = copy.deepcopy(rich)
+    block = L.refused_exam(name, result['engine_version'], code)
+    result['exams'][name] = block
+    assert block['refusal'] == code and block['status'] == f'refused: {code}'
+    assert block['frozen'] is False and block['score'] is None and block['digest'] is None
+    assert S.human_lens_result_allowed(result)
+
+
+@pytest.mark.parametrize('code', (L.FROZEN_ELSEWHERE, L.NOT_KEPT))
+def test_a_parent_refusal_that_keeps_a_score_fails_the_schema(rich, code):
+    result = copy.deepcopy(rich)
+    block = result['exams'][L.EXAM_1]
+    assert block['score'] is not None
+    block.update(refusal=code, status=f'refused: {code}', frozen=False)
+    assert not S.human_lens_result_allowed(result)
+
+
+def test_refused_exam_matches_the_blocks_the_module_builds_itself(tmp_path):
+    own = run(cases_rich(), tmp_path, blank=True)['exams'][L.EXAM_1]
+    assert own['refusal'] == L.KEY_BLANK
+    assert L.refused_exam(L.EXAM_1, own['engine_version'], L.KEY_BLANK) == own
+
+
+@pytest.mark.parametrize('bad', (PLANTED_NAME, '', None, 7, L.EXAM_MISSING))
+def test_refused_exam_takes_only_a_known_code_and_never_echoes_it(bad):
+    with pytest.raises(ValueError) as caught:
+        L.refused_exam(L.EXAM_1, VERSION, bad)
+    assert PLANTED_NAME not in str(caught.value) and str(caught.value) == 'refused_exam: unknown refusal code'
+
+
+def test_refused_exam_takes_only_a_known_exam_name():
+    with pytest.raises(ValueError) as caught:
+        L.refused_exam(PLANTED_NAME, VERSION, L.NOT_KEPT)
+    assert PLANTED_NAME not in str(caught.value)
+
+
+def test_the_codes_refused_exam_takes_are_every_schema_code_but_exam_missing():
+    assert L.PLAIN_REFUSALS == S.REFUSAL_CODES - {L.EXAM_MISSING}

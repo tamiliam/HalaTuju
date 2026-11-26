@@ -15,44 +15,102 @@ The lens is a report. It decides nothing by itself.
 
 ## How to run it
 
-The lens is OFF by default. Three flags control it. They come from `parse_args` in `parent.py`.
+The lens is OFF by default. Four flags control it. They come from `parse_args` in `parent.py`.
 
 | Flag | What it does |
 |------|--------------|
 | `--human-lens` | Turns the lens and the coach grade on. Without it, the output is exactly as before. |
-| `--human-lens-exam-folder <folder>` | The folder that holds the exam files. It must be a full (absolute) path. It must not be inside a git repository. `--human-lens` without this flag is an argument error (exit code 2). |
-| `--human-lens-freeze` | Allows the lens to write a missing exam file. Off by default. Without it, nothing is ever written to the exam folder. |
+| `--human-lens-exam-folder <folder>` | One of the two exam homes: a folder that holds the exam files. It must be a full (absolute) path. It must not be inside a git repository. |
+| `--human-lens-exam-bucket NAME` | The other exam home (LL6), the one for production: a private Cloud Storage bucket. A command-line argument only, never an environment variable. NAME must be a plain bucket name: 3 to 63 characters, lower-case letters, digits, `-` and `_`, starting and ending with a letter or digit, no dots. |
+| `--human-lens-freeze` | Allows the lens to freeze a missing exam. Off by default. Without it, nothing is frozen and nothing is uploaded to the bucket. (A bucket run still writes the exams it fetches into the run's private temp folder.) |
 
-These are argument errors (exit code 2). The job stops before any child starts and before any file is
-touched:
+`--human-lens` needs exactly ONE exam home: the folder or the bucket, never both.
 
-- `--human-lens` without `--human-lens-exam-folder`;
-- the folder flag or the freeze flag without `--human-lens`;
-- `--counts-only` together with `--human-lens`. They cannot be used together. Run the counts first
-  without the lens, then the lens run on its own;
-- a folder that is not a full (absolute) path, for example `exams` or `./exams`. The parent uses the
-  same rule as the `new` child (Python's `os.path.isabs`). The message does not repeat the folder.
-  The child still refuses such a folder too (`folder_not_absolute`), as a second lock.
+Before these rules, as before LL6, come Python's own argument errors (see "Argument errors" below) and
+then the older checks on `--instant` and `--months`. An `--instant` that is not an ISO time with a
+timezone stops the job as a fatal error: exit code 3 and a `fatal` line naming `ValueError`. A
+`--months` that is not exactly two months gives "--months takes exactly two months" (exit code 2).
+
+Then come the parent's own argument errors for the lens (exit code 2), checked in this order. The job
+stops before any child starts and before any file is touched. The error text is fixed; it never repeats
+a folder or a bucket name:
+
+1. The freeze, folder or bucket flag without `--human-lens`:
+   "--human-lens-freeze, --human-lens-exam-folder and --human-lens-exam-bucket need --human-lens".
+2. The folder flag and the bucket flag together:
+   "use one of --human-lens-exam-folder or --human-lens-exam-bucket".
+3. `--human-lens` with neither:
+   "--human-lens needs --human-lens-exam-folder or --human-lens-exam-bucket".
+4. `--counts-only` together with `--human-lens`: "--counts-only and --human-lens cannot be used
+   together". Run the counts first without the lens, then the lens run on its own.
+5. A folder that is not a full (absolute) path, for example `exams` or `./exams`:
+   "--human-lens-exam-folder must be an absolute path". The parent uses the same rule as the `new` child
+   (Python's `os.path.isabs`). The child still refuses such a folder too (`folder_not_absolute`), as a
+   second lock.
+6. A bucket name that is not plain (an empty value or a name with a dot included):
+   "--human-lens-exam-bucket is not a plain bucket name".
 
 `--counts-only` without the lens works exactly as before.
 
-A freeze happens only with `--human-lens-freeze`. A normal run never writes an exam file.
-An exam file that already exists is never replaced.
+### Argument errors
+
+Any OTHER argument error, one that Python's argument reader raises itself (an unknown flag, an
+ambiguous short form, a flag with its value missing, a required flag missing, a bad value), now reads
+only `bad arguments (details withheld)`, with exit code 2. It never repeats what was typed. So:
+
+- **Type every flag name in FULL.** The reader still accepts a shortened flag name when only one flag
+  starts that way, but do not rely on it.
+- **`--human-lens-exam=...` is now ambiguous.** It used to mean the folder flag. Now two flags start
+  that way, so it is an argument error (exit code 2).
+- **A flag typed with ONE dash** (for example `-human-lens-exam-bucket`) is read as `-h`, the help flag.
+  The job prints its help text and EXITS 0 having done nothing. This was so before LL6 too. So exit 0
+  alone does not prove that a run happened: check that the JSON lines and the lens block are there.
+
+### Freezing
+
+A freeze happens only with `--human-lens-freeze`. A normal run never freezes an exam and never uploads
+anything. (A bucket run still writes the exams it fetches into its private temp folder.) An exam file that already exists is never replaced.
 If an exam file is lost, a normal run says so (`exam_missing`). It does not make a new one.
+
+### The bucket (LL6)
+
+With `--human-lens-exam-bucket`, the parent:
+
+1. makes a private temp folder inside its work folder and fetches both exams from the bucket into it.
+   Each exam must come back as fetched or as absent (the bucket answered and holds no such object).
+   Anything else stops the run (exit 3) before any replay child starts. A failed fetch is never treated
+   as "no exam yet";
+2. runs the replay as before, with the lens reading its exams from that temp folder;
+3. only on a `--human-lens-freeze` run: uploads each exam that was absent at the start, whose file is in
+   the temp folder now, and whose checked lens block shows it frozen with no refusal. The upload is
+   create-only: it asks Cloud Storage to refuse it when the object already exists. An exam that was
+   fetched is never uploaded;
+4. on a freeze run, prints one fixed "exam home" line for each exam that was absent at the start and
+   that this run froze (its file is there, or its block says frozen); see "The exam home lines";
+5. removes the temp folder, whatever happened.
+
+The Cloud Storage work is done by a separate store child (`python -m replay.exam_store fetch|put`),
+never by the parent or the lens. It is the only part that talks to Cloud Storage; the replay itself
+still talks to the database.
 
 With the lens on, only the `new` child gets the fingerprint key (`REPLAY_FINGERPRINT_KEY`).
 With the lens off, no child gets it.
 
 The standing rules:
 
-- The first run on live data needs the owner's yes. The first freeze is part of that run.
+- The first lens run on live data is the proof-first run (owner steps, step 4c). It needs the owner's
+  yes. It has no freeze. The first freeze run comes later, on a fresh yes.
 - The run time is agreed with the release lead.
 - Never run it in a release slot (11:00, 16:00 or 21:00 MYT).
 - Never run it beside a migration or a deploy (see the hard rule in step 5 of
   `docs/plans/2026-11-13-a5-replay-owner-steps.md`).
 - Never run it on an R3 run day.
-- The lens must not run on real data until the owner decides where the exam file lives. The two
-  options are in the owner-steps doc, in the section "Where the exam file lives in production".
+- The owner decided where the exam file lives in production: a private Cloud Storage bucket (LL6;
+  owner-steps doc, step 5b). The proof-first run (step 4c) is the first lens run on real data. It has
+  no freeze, so it freezes and uploads nothing. It needs the bucket (step 4b), a job image that holds
+  LL6 (step 4c, first box) and the owner's yes, and is never on a release slot (11:00, 16:00, 21:00 MYT)
+  or an R3 run day. No other lens run, and no freeze run, happens until step 4c has passed and the owner
+  says yes again.
 
 ## Where to find the result
 
@@ -73,16 +131,40 @@ A block with a start line but no end line is NOT a result. The output may have b
 was printing, and a fatal line could follow half a block. Treat a block with no end line as a failure.
 
 There is no block when the lens is off, after an argument error (exit code 2; `--counts-only` with
-`--human-lens` is one), or after a fatal error (exit code 3).
+`--human-lens` is one), or after a fatal error (exit code 3; a failed bucket fetch is one).
 
-The job's exit codes:
+### The exam home lines (bucket runs only)
 
-| Exit code | Meaning |
-|-----------|---------|
+On a `--human-lens-exam-bucket` run with `--human-lens-freeze`, fixed "exam home" lines may follow
+the block, AFTER the line `=== LL5 lens report end ===`. Read them too. They come from
+`exam_home.HOME_LINES`; `<exam>` is `exam-1` or `exam-old`. A run without `--human-lens-freeze` prints
+none.
+
+| Line | Meaning |
+|------|---------|
+| `exam home: <exam> frozen and kept in the bucket` | This run froze the exam and it is now in the bucket. The score stands. Exit code 0 (unless something else failed). |
+| `exam home: <exam> was frozen by another run first; the next run sits that one` | Another run kept its own exam under this name first. This run's score for that exam is withheld (the block says "not run: frozen_elsewhere"). Exit code 0. |
+| `exam home: <exam> NOT kept in the bucket. BLOCKING. Run again with --human-lens-freeze.` | This run froze the exam but could not keep it, or could not prove it was kept. The block says "not run: not_kept". Exit code 4. |
+
+### Exit codes
+
+| Exit code | When |
+|-----------|------|
 | 0 | The run finished. This does NOT mean pass. Read the block. A refusal also exits 0. For example, with a missing or blank fingerprint key exam-1 gets no score, and the exit code is still 0. The block says "not run: key_blank" if an exam-1 file exists (or a freeze run has enough candidate cases). Otherwise it says "not run: exam_missing" or "the exam is not frozen yet". |
+| 0 | Bucket, normal run, empty bucket: the block says "not run: exam_missing". Nothing is uploaded. |
+| 0 | Bucket, freeze run that froze an exam and kept it: the score, and the line "frozen and kept in the bucket". |
+| 0 | Bucket, a stored exam that is corrupt: the lens refuses it (for example "not run: digest_mismatch"). It is never frozen again and never replaced or uploaded. |
+| 0 | Bucket, freeze run that lost a race: "not run: frozen_elsewhere". That exam's score is withheld. |
+| 0 | A coach pair graded "fail" (unchanged: a fail is a result, not a job error). |
+| 0 | Help printed: a flag typed with one dash is read as `-h`. Nothing ran. See "Argument errors". |
 | 2 | An argument error. Nothing ran. |
 | 3 | A fatal error. There is no block. A fingerprint key that is set but is not 64 hex characters (a newline or a space in it, for example) is one: the job stops at its set-up, before any child starts. |
-| 4 | A lens or coach-grade error, or a report that could not be shown. |
+| 3 | Bucket: the fetch failed (no token, no rights, no such bucket, a network error, a 120 s timeout of the store child, a stored object over 16 MiB, a download whose size or md5 differs from what the bucket reports). A `fatal` line names `ExamFetchFailed`. No replay child is started. A failed fetch is never treated as "no exam yet". |
+| 3 | A replay child ran over its time limit. The keep step never runs, so nothing is uploaded. |
+| 4 | A lens or coach-grade error, or a report that could not be shown. With a lens or coach-grade error nothing is uploaded; on a bucket freeze run with a lens error, each exam file newly made in this run also gets the BLOCKING "NOT kept" line. (A report that could not be shown is found only after the keep step has run, so on a freeze run an exam may already be in the bucket: read the exam home lines.) |
+| 4 | Bucket, freeze run: an upload that failed or could not be verified: "not run: not_kept" and the BLOCKING exam home line. |
+| 4 | Bucket, freeze run with a coach-grade ERROR: each exam newly frozen in this run is marked "not_kept" (not uploaded) and gets the BLOCKING line. |
+| 4 | Bucket, freeze run where the lens block says an exam is frozen but no exam file exists, or a new exam file exists but its block is a refusal: that exam is "not_kept" and gets the BLOCKING line. Nothing is uploaded for it. |
 
 ## How to read it
 
@@ -158,6 +240,17 @@ Each exam part shows:
 - "Known limits": the limits of this exam's score, for example "a score on N facts" and "drop-outs
   shrink the exam". exam-old also shows its weaker label here.
 
+**Two refusals that only a bucket run gives.** The parent sets them after the run (the lens itself
+never does). The exam part then shows "not run: <code>", "Status: refused: <code>", "Frozen: no" and no
+score.
+
+- `frozen_elsewhere`, "another run froze this exam first". Another run kept its own exam in the bucket
+  under this name first. Nothing to repair: the next run fetches that exam and scores it.
+- `not_kept`, "the frozen exam was not kept in the bucket". This run froze the exam but could not keep
+  it, or could not prove it was kept. BLOCKING (exit code 4). Run a freeze run again. If the upload had
+  in fact landed, that run fetches the stored exam and scores it; if not, it freezes a new exam, which
+  may hold other cases.
+
 ### 3. The coach grade
 
 The heading is "Coach grade". If it failed, there is one line: "coach grade failed: <code>. BLOCKING."
@@ -217,9 +310,11 @@ These lines carry the word BLOCKING:
 - a lens error: "lens failed: <code>. BLOCKING.";
 - a coach-grade error: "coach grade failed: <code>. BLOCKING.";
 - a report that could not be shown: "lens report failed. BLOCKING.";
-- each coach pair graded fail: "<previous> to <new>: fail. BLOCKING." with its reasons.
+- each coach pair graded fail: "<previous> to <new>: fail. BLOCKING." with its reasons;
+- on a bucket run, after the block: "exam home: <exam> NOT kept in the bucket. BLOCKING. Run again with
+  --human-lens-freeze."
 
-The first three make the job exit with code 4.
+The first three and the last make the job exit with code 4.
 
 **Exit code 0 does not mean pass.** A coach pair graded fail prints BLOCKING, but the job still exits
 with code 0, because a fail is a result, not a job error. So read the block, not only the exit code.
@@ -268,9 +363,46 @@ release goes ahead. This tool only reports.
 - Two runs that share one work folder (the default is `/tmp/replay`) can read each other's result
   files. Never run two at once in one folder.
 
+## Accepted limits of the bucket (LL6)
+
+- An upload whose answer is lost (a network error, a request timeout, a 429 or a 5xx) is tried ONE
+  more time. If the first try had in fact landed, the second gets 412 ("it exists"); the store child
+  then reads the stored object's size and md5, finds them equal to its own, and reports it kept. The
+  run still ends as "NOT kept" (exit code 4) when that cannot finish: both tries lose their answer; the
+  read of the stored size and md5 (after a 412, or after an answer that lacks them) fails; or the store
+  child runs past its 120 s limit and the parent stops it. If the upload had in fact landed, the next
+  run finds the exam in the bucket, fetches it and scores it.
+- When two freeze runs race, the one that loses gets `frozen_elsewhere` for that exam. Its coach grade
+  is still printed as normal.
+- The size and md5 check is made after the upload. If an object lands but does not match, it stays in
+  the bucket (the service account cannot delete or replace it) and the run shows "NOT kept". The next
+  run fetches it and the lens checks it as it checks any exam file. Only the owner can remove it, after
+  releasing its hold (owner steps, step 6).
+- The exams hold plain application ids and one decision time per id. The bucket is private. A deleted
+  object stays in soft delete for 7 days. That is a bucket setting the owner can see in the console; it
+  is not proven by the job.
+- If the SECRET_KEY is changed after exam-1 is frozen, the old derived-key version must be kept, or the
+  stored fingerprints no longer match (owner steps, step 2b).
+- The temp folder is removed at the end of every run. If the removal fails, nothing is said; the
+  container is thrown away after the run.
+- Each store child has 120 seconds. A slow but healthy bucket answer past that limit is a failure.
+- If the work folder were inside a git repository, the lens would refuse with `inside_git_repo`. That
+  is safe: it freezes nothing.
+
+## What does NOT change with the bucket
+
+- A run with `--human-lens-exam-folder` works as before, apart from the argument changes in "Argument
+  errors" (withheld error texts; `--human-lens-exam=...` is now ambiguous).
+- No change to the network guard, the Django settings, the read-only guards or the Dockerfile.
+- The lens and the replay children still reach only the database, as before; never Cloud Storage.
+- The store child holds no database url, no fingerprint key and no salt.
+- No token, bucket name or application id is printed. The exam home lines name only `exam-1` or
+  `exam-old`.
+
 ## Safety
 
-- Read-only: one read-only session; no save, no network, no AI call.
+- Read-only: one read-only session; no save, no AI call. The lens itself has no network. On a bucket
+  run, only the store child (started by the parent) talks to the metadata server and Cloud Storage.
 - Counts only: no case id, no name and no free-text reason in the block.
 - Under Django `DEBUG`, both the exam lens and the coach grade refuse before any query (`debug_on`).
 - The fingerprint key is never printed. Only its 8-character key check is shown.

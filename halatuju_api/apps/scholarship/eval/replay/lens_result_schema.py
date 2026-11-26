@@ -93,7 +93,7 @@ REFUSAL_CODES = frozenset({
     L.BAD_DECIDED_AT, L.BAD_FROZEN_AT, L.BAD_KEY_CHECK, L.EXAM_MISSING, L.FOLDER_MISSING, L.INSIDE_GIT_REPO,
     L.ALREADY_FROZEN, L.FOLDER_NOT_WRITABLE, L.FOLDER_NOT_ABSOLUTE, L.DEBUG_ON, L.KEY_BLANK,
     L.KEY_CHECKS_MIXED, L.KEY_CHECK_MISSING, L.CANDIDATES_NOT_CURRENT, L.KEY_CHECK_DIFFERS_EXAM,
-    L.KEY_CHECK_DIFFERS_CASES})
+    L.KEY_CHECK_DIFFERS_CASES, L.FROZEN_ELSEWHERE, L.NOT_KEPT})
 EXAM_LABELS = {L.EXAM_1: L.EXAM_1_LABEL, L.EXAM_OLD: L.WEAK_LABEL}
 SCORE_LABEL = 'score'
 #: The verdict engine's version form (`verdict_engine.VERDICT_ENGINE_VERSION`, e.g. 2026-11-18.2).
@@ -156,7 +156,7 @@ def engine_version_ok(value) -> bool:
 
 
 def _score_block_ok(block, label, full_keys, extra_counts, outcomes) -> bool:
-    """A score line: the count only under the small-number rule, else every figure (`lens_human._small`)."""
+    """A score line: the count only under the small-number rule, else every figure (`lens_score._small`)."""
     if block is None:
         return True
     if not _keys_are(block, SMALL_LINE_KEYS, full_keys) or block['label'] != label or not _is_count(block['facts']):
