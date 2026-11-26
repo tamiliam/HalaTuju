@@ -37,10 +37,12 @@ Saved to main. Services: web.
 - Bundle: `applyPlanPatch` moved to its own leaf `lib/applyPlanPatch.ts` (still re-exported from `lib/planPicker`), so /scholarship/apply no longer carries the whole picker rules module in its first load. No behaviour change.
 
 
+
 ### fix: false "Course switched" note when the same university is written two ways (2026-11-26)
 
 Branch fix-fake-switch, not pushed. Services: api.
 - `offer_pathway_switch` now judges the institution side by `institution_same.institutions_differ`: a university written in full on one letter and as an acronym (or English name, or with a campus tail) on the other is not a switch. Different universities still are; the same university is never an institution switch (a real course change shows in the programme compare).
+
 
 
 
@@ -57,6 +59,7 @@ Branch qc-fact-verdict, not pushed. Web only. No migration. No change under hala
 - **Rows, follow-up:** each fact now reads AI said, Reviewer (the red Fail, then the reason in brackets only when one was given) and Your verdict (an interim Decision row was added and then removed, see the next bullet). The old "but the decision is ..." text and the separate Reason row are gone (keys `butDecision`, `reviewerSaid` removed; `reviewer` added in en, ms, ta). The label column is `max-content` wide and the value column wraps, at every width. Guide and FAQ now say a Confirm decline records the answers like Accept.
 - **Owner decision, no Decision row:** the box sits inside the QC panel, which already shows whether the reviewer recommended or declined, so each fact shows exactly three rows: AI said, Reviewer, Your verdict. The `overall` prop and the key `qcDecision.secondLook.decision` are removed (en, ms, ta). The box still draws on a declined case. Test: no Decision row and no Recommend or Decline pill inside the box.
 - **Help sentence made always true:** a fact enters the box when the STORED AI status was verified at the time the reviewer decided (`second_look.py`, `audit.py`), but the word beside AI said is the LIVE band (`ai_fact_bands`), so it is not always Certain. The help now reads "Either the AI had passed the fact, or the reviewer still recommended the student" (en, ms, ta); Guide and FAQ say the same, and the Guide adds that the word beside AI said is what the AI says now and can differ from what it said when the reviewer decided.
+
 
 
 
@@ -116,6 +119,49 @@ Branch preu-school, not pushed. Migration: 0102_angka_giliran_11_pre_u_studied_a
   completed pre-U, asked on the form, no tick yet; older STPM cases show the Form 6 school); the typed college stays
   the destination; the reviewer role page has a short paragraph on the slot.
 
+### feat: OCR-14 phase 3 - the UTHM page-1 reader (2026-11-26)
+
+Branch ocr-14-unis, not pushed. Migration: none. Services: api. The lane stays OFF (`ua:UTHM` not in
+`OCR_FIRST_LANES`), so no letter reads differently and no verdict changes.
+- **Reader:** `offer_parse_uthm.read_uthm` reads a UTHM degree letter in either measured layout: the letterhead
+  "Pejabat Pengurusan Akademik", then only Tel, Faks and two EMPTY Rujukan rows, then "Tarikh : DD Month YYYY" (the
+  offer date); the name is the next line, all capitals, and must end (`name_ended` on the next line: NO'MAN / NO-MAN
+  refuse); the title once, with the session ("SESI AKADEMIK yyyyyyyy", or "[SEMESTER n ]SESI yyyyyyyy" on the next
+  line); the greeting, then the eleven table rows in order (programme "SARJANA MUDA ... DENGAN KEPUJIAN", up to 2 wraps
+  under its value, a trailing bracket code to `programme_code`; Peringkat "SARJANA MUDA"; a "FAKULTI ..." faculty; a
+  matric of shape XX999999; Syarat "LAMPIRAN A"), then the course match. Wired as phase 2 wired UNIMAS
+  (`offer_parse.family_of` / `diagnose`, `offer_parse_lanes.diagnose_uthm`, `offer_exact` lane module, refusal note
+  and ink targets, `offer_read_check.RULES_LANES`, `offer_replay.page1_layout_of`).
+- **Reporting date:** read only from the "Tarikh" row straight after the sentence "... diminta datang untuk mendaftar
+  pada tarikh, tempat dan masa seperti butiran berikut:", with the Tempat and Masa rows after it, and only as
+  "DD MONTH YYYY (DAY)" with the right Malay day name. No sentence: left blank. A sentence that reads any other way,
+  or ANY other date on the page (a venue, a note), refuses. The venue is never read.
+- **Never written:** the IC (stored blank, source none: UTHM is in `ISSUER_PRINTS_NO_IC`), the matric number and the
+  e-mail built from it, the campus (left blank). Refuses: diploma, Asasi and any non-degree programme, level or
+  faculty (and the words DIPLOMA, ASASI, PERSEDIAAN, FOUNDATION or SIJIL anywhere on page 1), confirmation, fail and
+  withdrawn letters, a filled Rujukan row (two owner samples print a 12-digit number there), any 12-digit IC-shaped
+  number on any page (`ic_printed` on every text the lock uses), an unfilled template field ("{...}"), any later page,
+  a scan, and any layout that does not match.
+- **Portal tell:** no excuse. The UTHM greeting "Tahniah diucapkan" does not match `offer_parse._PORTAL_TELL`; any
+  tell refuses as before.
+- **Versions:** offer_parse 2.5.0, digest and note updated in place; offer_reader 2.12.0 docstring only (digest
+  unchanged); verdict_engine unchanged.
+- **Measured (local, free; all seven lanes on):** UTHM 1/4 over all splits (0 held-out), agreement 100%, 0 wrong (the
+  other three corpus letters are diploma scans). UMS 22/33 and 44/62, UiTM 1/9 and 3/18, UM 0/3 and 1/9, UPSI 2/4 and
+  2/7, UUM 2/4, UNIMAS 2/7 and 3/13: unchanged, 0 wrong. Owner samples: UTHM locks
+  10 of the 17 text letters in the uthm folder (18 PDFs; the rest refuse: a later page 2, a portal tell 2, an
+  IC-shaped number 2, not an offer 1, a scan 1; none refuses on the page-wide non-degree words). All 10: IC blank,
+  institution UTHM, the name a whole line of the plain layer, the programme on the page, a labelled reporting date.
+  0 UTHM locks in any other folder; 0 locks of any lane in the asasi, confirmation, diploma and fail folders.
+- **For the reviewer:** (1) the campus is left blank, so a programme the catalogue offers on two UTHM campuses gives an
+  ambiguous course match and refuses (safe; owner may want the Kampus row read later). (2) The bracket code (format B,
+  e.g. "(BEE)") goes to `programme_code`, as in S4; `offer_course_match.programme_line` drops non-UPU codes, so it
+  does not steer the match. (3) The page-wide DIPLOMA / ASASI / PERSEDIAAN / FOUNDATION / SIJIL word check may refuse
+  a degree letter whose footer names one of those words; none of the measured letters does. (4) When no reporting
+  date is read, `offer_exact.merge_over` keeps the prior AI read's reporting date (the existing PRESERVED rule).
+- Debt: TD-NEW-ocr14-uthm-heldout. Tests: `test_offer_parse_uthm.py` (28 tests).
+
+
 ### feat: OCR-14 phase 2 - the UNIMAS page-1 reader (2026-11-26)
 
 Branch ocr-14-unis, not pushed. Migration: none. Services: api. The lane stays OFF (`ua:UNIMAS` not in
@@ -144,6 +190,7 @@ Branch ocr-14-unis, not pushed. Migration: none. Services: api. The lane stays O
   reporting date, `offer_exact.merge_over` keeps the prior AI read's reporting date (the existing PRESERVED rule, not
   changed here). (3) The scratch catalogue holds no UNIMAS courses, so the dry run shows course match "none".
 - Debt: TD-NEW-ocr14-unimas-heldout. Tests: `test_offer_parse_unimas.py` (25 tests, 52 subtests).
+
 
 
 ### feat: OCR-14 phase 1 - the owner's words for ten more universities; UNIMAS and UTHM print no IC (2026-11-26)
@@ -179,6 +226,7 @@ dispatches to them yet, so every letter reads as before.
 
 
 
+
 ### feat: OCR-13 phase 1 - the owner's words for UPSI, UUM, UiTM and UM, and UiTM's Asasi office line (2026-11-26)
 
 Branch ocr-13-unis, not pushed. Migration: none. Services: api. Lanes stay OFF: no layout reader dispatches to them yet.
@@ -194,6 +242,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. Lanes stay OFF: 
 - **Measured (local, free):** held-out letters per lane UiTM 9, UPSI 4, UM 3, UUM 0, so no lane can reach Gate 1 (20)
   on the current corpus. UMS unchanged. Debt: TD-758, TD-759.
   Tests: `test_offer_owner_words_ocr13.py`.
+
 
 
 
@@ -214,6 +263,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UiT
   Corpus UiTM letters in this check: 13, 3 lock.
 - Debt: TD-760, TD-NEW-ocr13-uitm-wrap-edge; TD-759 stays open.
   Tests: `test_offer_parse_uitm.py`.
+
 
 
 
@@ -246,6 +296,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UUM
 
 
 
+
 ### feat: OCR-13 phase 4 - the UM rules reader (2026-11-26)
 
 Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UM` stays OFF (off by default; `OCR_FIRST_LANES`).
@@ -268,6 +319,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UM`
 - **Owner folders (text layer):** um/ 2 letters lock; 1 scan and 1 letter without the title do not read as UM, and 1 file
   is not a PDF. asasi/ holds 2 UM letters: both refuse (not_degree). diploma/, asasi/, confirmation/ and fail/ lock 0.
 - Debt: TD-763. Tests: `test_offer_parse_um.py`.
+
 
 
 
@@ -296,6 +348,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UPS
 - **Owner folders (text layer):** upsi/ 12 of 30 lock (the other 18 have no text layer or are another template and do not
   read as UPSI). diploma/, asasi/, confirmation/ and fail/ lock 0 (no UPSI letter among them).
 - Debt: TD-764. Tests: `test_offer_parse_upsi.py`.
+
 
 
 
@@ -330,6 +383,7 @@ below).
 
 
 
+
 ### fix: OCR-13 review round 1 fixes - a name must be proven to end, a wider IC refusal, pathway_engine in the digest (2026-11-26)
 
 Branch ocr-13-unis, not pushed. Migration: none. Services: api. Versions unchanged (offer_reader 2.11.0, offer_parse
@@ -360,8 +414,10 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. Versions unchang
 
 
 
+
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
+
 
 
 
@@ -390,12 +446,14 @@ Branch req84-earner-ticks, not pushed. Migration: none. Services: both. Brief:
 
 
 
+
 ### fix: Academic box - one divider, the old tight rows (2026-11-25)
 
 Owner phone check after the 21:00 publish: every row had its own top line and 12 px padding, so the box read as
 split and tall. Now the rows sit 10 px apart with no line, and ONE thin line sits above Chosen programme (16 px, as
 before a52b7c957). Rows and their order are unchanged. Test: `ApplicantCards.academicSlots.test.tsx` pins one
 divider, on the plans row, and no row padding. Migration: none. Services: web.
+
 
 
 
@@ -413,6 +471,7 @@ Branch school-guard, not pushed. Migration: none. Services: both.
 
 
 
+
 ### fix: Offer letter - a grey "IC number" chip when the issuer prints no IC (2026-11-26)
 
 Web half of OCR-13's API status 'not_printed' (UUM and UPSI leave the IC off their letters by design).
@@ -424,9 +483,11 @@ Test: `checklistsPathway.notPrinted.test.tsx` (grey, field name, no raw key, all
 
 
 
+
 ### LL7 - gap table in the lens result (2026-11-26)
 
 LL7: gap table in the lens result; owner approved 26 Nov 2026; no change to the frozen exam file, flags or exit codes. Branch ll7, not pushed. Migration: none. Each frozen exam's block gains `gap` (new `eval/replay/lens_gap.py`, called from `lens_score.exam_score`): `groups` (band x answer: facts, points from `ai_score.POINTS`, lost = 2 x facts - points, too small under `GAP_MIN_FACTS` = 10), `by_fact`, `by_doubt_code` (facts not Certain; codes read as the AI audit page reads them, keys from the closed list `DOUBT_CODES` or the one key `unlisted_code`), `by_programme` (from the application's `programme_id`, a new tenth case field) and `top` (the 3 largest groups by lost; a too-small group, or one that lost nothing, is not ranked). The invariant (the lost points add up to 2 x facts marked - the score's points) is checked when the block is built (a mismatch raises) and again by the allow-list. The allow-list (`lens_result_schema.py`) now requires `gap` on a frozen exam, so a result without it fails as `schema`; the lens result has no version field, and the parent clears and rewrites the result in the same run, so no old result is read. `report_lens.py` prints the gap lines once per frozen exam, after the "Share of "other"" line; every old line is unchanged. Docs: the gap table in `docs/replay-human-lens.md`. Tests: new `test_replay_lens_gap.py`; `test_replay_lens_human.py`, `test_replay_lens_human_rows.py` and `test_replay_lens_result_schema.py` updated for the new field and key.
+
 
 
 
@@ -456,6 +517,7 @@ Branch access-s4-scholars, not pushed. Migration: none. Services: web. The serve
   or the hold door (`maintenance_controls.can_hold`) allows a move, offering each by the scholar file's rule
   (`mayMoveSubstate`, exported from `ScholarControls`), so someone holding View scholars and Payments: Prepare without
   Manage can hold a payable student who has no file. An older payload behaves as before.
+
 
 
 
@@ -490,6 +552,7 @@ publish window; release note `docs/releases/access-s4-scholars-release-note-draf
 
 
 
+
 ### TD-742 linkage Phase 1 - one document's fault never paints another (owner ruling, 2026-11-25)
 
 Not pushed. Migration: none. Services: both. Display only: no decision, gate, owed line, verdict, stranger rule or Action Centre hold changes.
@@ -500,6 +563,7 @@ Not pushed. Migration: none. Services: both. Display only: no decision, gate, ow
 - Review round 1 fixes: a blank or junk reference name gives no amber and never beats a real comparison (the birth certificate row now ranks grey last and drops junk or half-read references); under the chain only green or grey, never `check_name`; a card far from the chained number gives no say elsewhere and stays red on its own rows for the student, while the officer keeps the amber "Wrong card" fact (new key `scholarship.docs.incomeIcCheck.wrongCard`, en / ms / ta, owning a possible misread number); a row the card could not be compared with because the card was not read shows "not read"; more label words (KP, K/P, PASANGAN, LULUS, DILULUSKAN, CARUMAN, TIDAK, BERKENAAN) and a leading "NAMA :" label is dropped before judging. Review round 2: a name made only of joining words (BIN, BINTI, A/L, A/P, ANAK, S/O, D/O) is not read; the reviewer FAQ says "Not read" also covers a check whose parent IC was not read. Stranger second slip recorded as ruling 3 in `docs/decisions.md`. Tests: 11 more in `test_td742_link_display.py` on real model rows (one per blocker, junk proof name, BC own name junk, half-read card, blank BC parent name, card name junk, stranger second slip) and guard units; jest: 2 in new `IncomeIcChecklist.test.tsx`.
 
 - fix: case list shows the status only; the state warning chip moved to the case page (owner 2026-11-25). Not pushed. Migration: none. Services: web.
+
 
 
 
@@ -515,10 +579,12 @@ Code-standards gate fix (refactor, no behaviour change): `exam_home.keep` is now
 
 
 
+
 ### An invite not yet accepted does not count as an org admin (owner ruling, 2026-11-25)
 
 Not pushed. Migration: none. Services: api, web (manual text only).
 - Review gap: a super could revoke the signed-in org admin, then cancel the invitee who held the only org-admin powers left. Owner ruling: an invitee who has not signed in is not a member, so never an org admin. The last-admin count (`staff_delete_rules._org_admins` / `_live_org_admin`, read by `is_sole_org_admin`, `powers_holder_ids`, `sole_org_admin_ids` and `lock_org_admins_of`) now counts only active org admins who have signed in (`first_seen_at` set). Archive, Revoke, Delete and unticking Organisation admin powers refuse the last signed-in org admin with today's responses (400 `last_org_admin`, 409 `last_org_admin_powers`), even when an invitee holds pre-granted powers; the Team table marks them the same way. Cancel invitation is unchanged and needs no check. NULL stored permissions keep their meaning (holding the powers); inactive and archived org admins still do not count; lock order unchanged. `docs/decisions.md` records the ruling. Tests: 11 new in `test_m4a_org_admin_powers.py` (`AnInviteeIsNotAnOrgAdmin`); existing last-admin fixtures in `test_m4a_org_admin_powers.py`, `test_t2_review.py`, `test_org_admin_role.py` and `test_m1a_archive_restore.py` now stamp `first_seen_at` so their org admins count. Manual FAQ and org-admin guide: an invited admin counts only once signed in.
+
 
 
 
@@ -528,9 +594,11 @@ Branch ll5, not pushed. Migration: none. `--counts-only` with `--human-lens` is 
 
 
 
+
 ### LL5 phase C3 - how to read the lens report, owner steps, exam-home options (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Docs only, plus docstrings in `coach_grade.py` (no code change). New note `docs/replay-human-lens.md`: how to run the human lens, where to find its block, how to read it part by part, which lines block the next release (exit code 0 does not mean pass; a block with no end marker is a failure), and what the numbers cannot tell you. The owner-steps doc now says step 2b is the owner's alone, gives its order, and has a new section 5b with the two options for where the exam file lives in production (OPEN: the owner decides; until then the lens does not run on real data). The roadmap has a dated "What changed while building" block under Sprint LL5. `decisions.md` and the `coach_grade` docstrings now say who calls `coach_report` and that `leave_out_reasons` takes any iterable.
+
 
 
 
@@ -540,9 +608,11 @@ Branch ll5, not pushed. Migration: none. With `--human-lens` on, `python -m repl
 
 
 
+
 ### LL5 phase C2c - only error class names pass as malformed kinds (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. The coach grade allow-list now accepts a `malformed_by_error` kind only when it is a fixed label, `other_error`, or an error class name (`[A-Z][A-Za-z0-9]{0,59}` ending in `Error` or `Exception`); any other kind fails the result as `{"error": "schema"}`. The reader (`coach_rows.fold_odd_kinds`) first moves the count of any other kind into `other_error` on a shallow copy, so a real error class with an odd name still gives a report. One predicate, `coach_result_schema.malformed_kind_ok`, serves both. `coach_grade.py` is unchanged. New tests in `test_replay_coach_rows.py` and `test_replay_coach_result_schema.py`.
+
 
 
 
@@ -552,9 +622,11 @@ Branch ll5, not pushed. Migration: none. `report_md.render` takes two new option
 
 
 
+
 ### LL5 phase C2 - the coach grade reads decided cases in the replay (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Under the same `--human-lens` switch, the replay's `new` child now runs the coach grade right after the exam lens, in the same read-only session and network refusal, with no key, no exam folder and no new environment name. The new `eval/replay/coach_rows.py` reads every decided case in one SELECT of four columns and passes a version label on only when it is `pre-versioning` or has the engine version shape; under Django `DEBUG` it refuses before any query. The report goes to `coach_grade.json` after its own allow-list (`eval/replay/coach_result_schema.py`), and the parent returns it under the one new key `coach_grade`; any error there makes the replay exit 4. The header of `lens_result_schema.py` now lists every field that is not a whole number or a fixed code, with its rule (comment only). New tests in `test_replay_coach_result_schema.py` (45), `test_replay_coach_rows.py` (18, with a dry run) and `test_replay_human_lens_wiring.py` (11 more).
+
 
 
 
@@ -564,9 +636,11 @@ Branch ll5, not pushed. Migration: none. Four safety items in the replay's human
 
 
 
+
 ### LL5 phase C1b - the lens refuses under DEBUG and inside an open snapshot (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. Three safety items in the human lens's database door (`lens_human_rows.py`). With Django `DEBUG` on (Django then keeps and logs SQL with case ids), `run_human_lens_on_database` refuses the whole run with the new code `debug_on` before any query or file, with or without a freeze. When a document snapshot is open for any case, `human_lens_rows` raises the new `OpenSnapshotError` (its message holds no case data) before any engine work or twin; it is a RuntimeError, so no per-case catch turns it into a note, and the replay child lets it through as a fatal line and writes no lens file. Tests hold that a twin recovery leaves the shared profile's values and the real case's status as they were, with SELECT statements only. New tests in `test_replay_lens_human_rows.py` (6).
+
 
 
 
@@ -576,9 +650,11 @@ Branch ll5, not pushed. Migration: none. The replay parent has three new flags: 
 
 
 
+
 ### LL5 phase B2b - recover a moved-on case by an in-review twin, with reason counts (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. A case decided in review whose status later moved on (QC, award, funding, closure) was counted could not recompute. Now, when its in-review twin (an in-memory copy, never saved) reproduces the stored fingerprint exactly, it is valid and its fresh snapshot is built on that twin. A decided-group twin is never recovered. The case row gains one field, `recompute_note` (closed vocabulary; a wrong or misfitting value is refused), and exam-1 gains two additive output keys: `valid_split` (matched directly / recovered by twin) and `could_not_recompute_reasons` (past_award_stage, decided_group_twin, twin_not_unique, recompute_error, key_not_current). Validity still comes from the fingerprint compare alone. `time.time` was checked and cannot change a row; a test holds it (decisions.md).
+
 
 
 
@@ -588,9 +664,11 @@ Branch ll5, not pushed. Migration: none. Review round 1 (B1): the fingerprint's 
 
 
 
+
 ### LL5 phase B2b - the human lens's database half (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. New module `eval/replay/lens_human_rows.py` (nothing calls it yet): it reads every application through the ORM with SELECTs only, builds the lens's case rows, and hands them to `lens_human.run_human_lens` unchanged. For each decided case it recomputes the fingerprint and a fresh engine snapshot with the same public functions the live decision uses (`verdict_context.build_verdict_context`, `verdict_engine.build_verdict`), under the clock pinned to that case's decision time. It never guesses the stage at the decision: when the same evidence under another status gives the stored fingerprint, the case gets no fingerprint (could not recompute). The key counts as blank unless the derived-key setting is exactly 64 hex characters. No write, no file, no log line, no network; no id, name or key in its output (decisions.md).
+
 
 
 
@@ -601,6 +679,7 @@ Branch ll5, not pushed. Migration: none. New pure module `eval/replay/lens_human
 Round-1 review fixes: the folder is checked once per run, and a missing, non-folder, empty or non-path folder (`folder_missing`) or one inside a git repository (`inside_git_repo`) refuses both exams with nothing loaded or written; a folder that cannot take the write gives `folder_not_writable` instead of a crash. An exam file nested too deep to read gives `file_unreadable`; new load codes `empty_exam`, `id_below_one` and `bad_decided_at`. The freeze refusals for exam-1 now have one name each: `current_key_check_missing`, `candidate_key_checks_differ`, `candidate_key_check_not_current`. The exam file stores each case's decision time (`decided_at`, UTC, inside the digest; format stays 1, as no exam file exists yet), and a listed case decided again after the freeze is counted as `decided_again` and left out of that run's score. Where the exam file lives in production is still open (owner, phase C); until then the lens must not run on real data.
 
 Round-2 fixes (ruled by the release lead): an exam is frozen only when a run asks for it. `run_human_lens` takes `freeze` (True or False only, default False); a normal run never writes, and an exam with no file is refused with `exam_missing` and no score, while its status still shows the candidate count ("N of 50 candidates" for exam-1, "N candidate cases" for exam-old). So a deleted or lost exam file is never replaced by a new exam unless a person asks; the first freeze on real data needs the owner's yes, as part of the first lens run on live data. An existing exam file is still never overwritten in either mode. The exam file's `frozen_at` must now be in the same exact UTC form as `decided_at` (new load code `bad_frozen_at`), and exam-1's `key_check` must be 8 lower-case hex characters, the form `verdict_context.key_check` gives (new load code `bad_key_check`); both are checked before the digest, so a hand-edited, re-digested file cannot put free text into the output. A current key check of another form counts as none. The exam folder must be an absolute path (new code `folder_not_absolute`, for `.` and `pathlib.Path('')` too). A decision time that does not fit in UTC raises `BadCaseRow` naming `verdict_decided_at`, and a `now` that does not fit raises `ValueError` naming `now`. A failed removal of the temp file after a good link no longer fails the freeze. Besides counts, the output shows only the engine version, fixed labels, statuses and reason codes, and for a frozen exam its freeze time, its 8-character `key_check` (not the key) and the first 12 characters of its digest. Known limits added: one id can sit in both exam files; one wrong-shaped row stops the whole run; an odd shape inside a snapshot or verdict can raise an error that stops the run; a bare git repository, or a folder swapped for a link in the instant before the write, is not detected.
+
 
 
 
@@ -617,6 +696,7 @@ Branch ll5, not pushed. Migration: none. Services: api (no change in behaviour) 
 
 
 
+
 ### LL5 phase A - fix round after the margin review (2026-11-24)
 
 Branch ll5, not pushed. Migration: none. No rule, constant, floor or grade changed.
@@ -624,6 +704,7 @@ Branch ll5, not pushed. Migration: none. No rule, constant, floor or grade chang
 - **Fix round 2:** any ordinary error (`Exception`) while reading a record's fields or its decision time now means the record is left out and counted in `malformed_records` (this closes the zone, field-read and date-and-time-subclass crashes the review found); an error anywhere else in the report (apart from the facts reader's four error types) is a bug and is raised (tested on the tally, the Fisher test and the score comparison). The decision time is rebuilt as a plain UTC value inside the read. A record with fewer than 4 fields is now malformed (`too_short`), not "not decided". New key `malformed_by_error` = `{kind: count}`: the error's class name (never its message) or a fixed label (`too_short`, `not_a_datetime`, `no_offset`); the counts add up to `malformed_records`; an unexpected kind such as `NameError` means a bug, not bad data. Old against new on 400 seeded well-formed record sets: 0 differences apart from the new, empty key.
 - **Fix round 3:** the version key checks the value's real type before `str`'s own strip (real labels unchanged); an error class name that is not a plain identifier of at most 60 characters is counted as `other_error`. Wording made true in the module and in decisions.md. New tests: the facts-reader catch's four types, the error's own class name, first instants a second or a microsecond apart, a side of exactly 5, a guard chance equal to its alpha, a Pass holding a left-out reason. No rule, constant, floor or grade changed.
 - **Known limit recorded:** the false-alarm shares assume independent facts; one case's ~4 facts move together. Two reviewers' simulations (made-up cases, not real ones): an unchanged AI is graded `fail` about 4 to 10 in 100 with independent facts, 8 to 21 at 30% moving together, 15 to 28 at 60%; a real rise of generous-wrong from 5% to 15% at 40 facts a side is missed about 59 to 72 in 100. One grade is a prompt to look, not proof; widening the margin needs the owner's word.
+
 
 
 
@@ -635,6 +716,7 @@ Branch ll5, not pushed. Migration: none. Services: api only; still not wired to 
 - **R2:** the AI also asks questions through Check 2, so it does not only read documents. The extra line's key is now `without_left_out`, and its constant is now `INTERVIEW_FAILS`; grade and guards still count every Fail. **R3:** the floor of 40 is final.
 - **Review notes:** a malformed record is left out and counted in `malformed_records` (any other error still stops the report); a label equal to `(unknown version)` is unknown; digit runs of any length sort without `int()`; a bad `leave_out_reasons` raises ValueError.
 - **Tests:** `test_coach_grade.py` gains the margin hand checks (4 of 40 not broken, 5 of 40 broken), the firm-up case, the score margin edges, a seeded null test and a power test (1 of 100 against 15 of 100 fails); the zero-tolerance tests now test the margin.
+
 
 
 
@@ -651,9 +733,11 @@ Branch ll5, not pushed. Migration: none. Services: api only. Not wired to any pa
 
 
 
+
 ### STPM quiz total (2026-11-25)
 
 - fix: STPM quiz shows Question 1 of 9 and nine dots from the start (owner 2026-11-25). Not pushed. Migration: none. Services: web.
+
 
 
 
@@ -670,6 +754,7 @@ Not pushed. Migration: none. Services: api (a management command run in the rele
 
 
 
+
 ### Academic reads, phase B2: the transcript year on a third-route merit (TD-735, 2026-11-25)
 
 Not pushed. Migration: none. Services: api, web. No new AI call, no `MODEL_VERSION` bump, no backfill.
@@ -679,6 +764,7 @@ Not pushed. Migration: none. Services: api, web. No new AI call, no `MODEL_VERSI
 - Owner, 25 Nov ("a tick only"): the slip School chip B1 added to the Documents drawer is removed; the school still ticks on the Academic card from the certificate, then the slip (`slipSchoolVerified`). The certificate's own school chip is unchanged.
 - `verdict_engine.json` gets an `also_ok` digest (display only); `decisions.md` entry. Tests: new `test_transcript_year.py`; extended `test_slip_school`, `fieldVerification`, `officerCockpit`, `ApplicantCards.academicSlots` and `ApplicantCards.thirdRoute`.
 - Review nits: a span written as two session pairs ("SESI 2023/2024 - 2024/2025", a title "2024/2025 - 2025/2026") reads no year; a Matriculation / Asasi / Diploma year is served only when the detected kind equals the held kind (or none is held); the FAQ's Academic card and third-route answers use they/them throughout. Second `also_ok` digest (display only).
+
 
 
 
@@ -693,9 +779,11 @@ Not pushed. Migration: none. Services: api, web. No new AI call, no `MODEL_VERSI
 
 
 
+
 ### Academic box matches the approved slot layout (owner phone check, 2026-11-25)
 
 - fix: Academic box matches the approved slot layout; merit shows its exam and year in brackets; label Merit score (owner phone check 2026-11-25). Not pushed. Migration: none. Services: web.
+
 
 
 
@@ -708,6 +796,7 @@ Not pushed. Migration: none. Services: api, web.
 
 
 
+
 ### Case page: Estimated need moves above Reviewer Assessment (2026-11-24, TD-720)
 
 - Owner ask: the Estimated need & proposed bursary card now sits ABOVE the Reviewer Assessment
@@ -717,9 +806,11 @@ Not pushed. Migration: none. Services: api, web.
 
 
 
+
 ### fix: locked notes card says No notes recorded (TD-717, 2026-11-24)
 
 - When the review is finished and there are no notes, the Org admin and reviewer notes card now says "No notes recorded."; while notes can still be added it keeps "No notes yet.". New key `reviewerNotes.emptyClosed` (ms and ta are best-effort, awaiting translation review).
+
 
 
 
@@ -729,10 +820,12 @@ Not pushed. Migration: none. Services: api, web.
 
 
 
+
 ### fix: case list shows only Rejected, no second chip (TD-715, 2026-11-24)
 
 - The admin case list (phone cards and desktop table) now shows only "Rejected" on a rejected case; the second red chip (need, merit, before interview and so on) is gone from the list.
 - The chip stays on the case page header, and on a live case failing the state rule (a warning). Tests in `page.phone.test.tsx` pin both.
+
 
 
 
@@ -745,11 +838,13 @@ Not pushed. Migration: none. Services: api, web.
 
 
 
+
 ### fix: STPM quiz keeps the Q2 answer (TD-714, 2026-11-24)
 
 - The owner saw Q2 skipped on the STPM quiz: its dot stayed grey and "See My Results" stayed off. After the Q2 answer the page fetches Q3/Q4, then rebuilt the answer list from the render before the tap, which had no Q2 answer, so Q2 was wiped every time. It now keeps Q1/Q2 from the latest answers.
 - Same path: a second quick tap no longer starts a second Q3/Q4 lookup; Next on a phone waits for the lookup; Previous during the lookup is no longer undone by the auto-advance.
 - 4 new tests in `stpm/quiz/page.test.tsx`; all 4 fail on the old page.
+
 
 
 
@@ -787,6 +882,7 @@ Branch req85-slip-stat, not pushed. Migration: none. Services: api. Request #85 
 
 
 
+
 ### refactor: sprint M4b review round 1 - stale-step refusal, readers see no staff emails, pre-0100 pinned (2026-11-24)
 
 Branch access-s3-m4b, not pushed. Migration: none. Services: both. From the independent Opus adversarial review of
@@ -808,6 +904,7 @@ sprint M4b (no must-fix). **S3 serves only after courses/0100 has run and its po
 
 
 
+
 ### feat: sprint M4b — sponsor credits and the Vircle ID on Payments switches (2026-11-23)
 
 Branch access-s3-m4b, not pushed. Migration: none (lands with or after S2's courses 0100: before 0100 an organisation admin cannot approve a credit or correct a Vircle ID, see the seat table in the brief). Services: both. Programme ACCESS-BY-SWITCHES S3; owner rulings 23 Nov (Q-A to Q-D) in `docs/decisions.md`. Brief: `docs/plans/2026-11-23-m4b-sponsor-credits-brief.md`.
@@ -822,6 +919,7 @@ Branch access-s3-m4b, not pushed. Migration: none (lands with or after S2's cour
 - **Ledgers:** api GATE-LEFT 14 to 10 (money 4 to 0); one new SEPARATION lead read (`credit_steps.may_record`, owner Q-A); cross-app imports 155 to 153; web display-only M4 block emptied (floor 140 to 130 after the deletion, 137 hits). `programme_overview.py` 838 to 835 lines.
 - **Debt closed when live:** TD-498, TD-561, TD-664 (d); TD-503 wallet half. New: TD-724, TD-726.
 - **Tests:** new `test_m4b_sponsor_credits.py` (the seat table, Q-A to Q-D, the lock, the served flags, the card, the Vircle ID); M4b cells in `test_team_tables_matrix` and `test_access_matrix`; web `sponsorDetail.test.ts` and the sponsor page test rewritten for the served flags (the page reads no role for credits). New wording in en / ms / ta (two Organisation admin powers lines); the Malay and Tamil are drafts for a native read.
+
 
 
 
@@ -843,6 +941,7 @@ Branch req78-bc-bands, not pushed. Migration: none. Services: both. Request #78 
 
 
 
+
 ### refactor: sprint M4a review round - last Organisation admin powers holder kept through archive, revoke and delete (2026-11-19)
 
 Branch access-s2-m4a, not pushed. Migration: none (0100's hand SQL gains one read-only pre-check). Services: both. From the Opus adversarial review of sprint M4a.
@@ -850,6 +949,7 @@ Branch access-s2-m4a, not pushed. Migration: none (0100's hand SQL gains one rea
 - **0100 pre-check (should-fix 2):** the PRE-CHECK in the migration docstring and the hand SQL now also counts team rows that store `payments.view` (expect 0: the new image reads it, `stored_v2`).
 - **Seat change under Q2 (pinned, not changed):** a super who BUILT a run may now approve it when nobody else can (before S2 the fallback was the lead tier's, which a super is not; under Q2 anyone with Approve who did not sign it as maker may, and a super holds every key). A super who signed it as maker still never approves. Tests: `test_m4a_maker_checker.ASuperActsOnce` (2 new).
 - **Debt recorded (placeholders, laptop session):** TD-728 (`lock_actor` not in `set_item` or `cancel`), TD-729 (pre-existing: the last editor of a re-signed run is not barred from approving).
+
 
 
 
@@ -868,6 +968,7 @@ Branch access-s2-m4a, not pushed. Migration: courses 0100_store_org_admin_powers
 
 
 
+
 ### fix: sprint S1b Cancel invitation archives the invitee (2026-11-19)
 
 Branch access-s1b-cancel-archives, not pushed. Migration: none. Services: both. Programme ACCESS-BY-SWITCHES, owner ruling 19 Nov (`docs/decisions.md`); closes TD-615 when live.
@@ -876,6 +977,7 @@ Branch access-s1b-cancel-archives, not pushed. Migration: none. Services: both. 
 - **Owner ruling, 20 Nov: a re-invite after Cancel behaves as new.** The old revoked invitation stays off the Invitations list and its totals, even with `all=1`, once the address is invited again (`invitations.without_superseded`); a restored row that never signed in starts its `created_at` ("Joined") again and drops a mentor link with no scholar or meeting on record (`staff_archive.restore`). Every audit record is kept. Tests: api `test_s1b_reinvite_as_new.py` (a re-invited person served side by side with a brand-new one).
 - **Owner ruling, 23 Nov: a re-invite also tidies the Changes list and past mentor standing.** The person page's Changes list starts at the restore (rows before the reset `created_at` are left out, only when the row holds an invitation older than it: `views_admin/staff._since_joining_again`); a kept mentor link with a scholar or a meeting no longer reads "Mentored before": the Mentors page leaves out a mentor record stopped before the person joined again and Add to Mentors offers them as new, switching that same record back on (`staff_mentor.mentored_before_joining`). Read filters only: every permission-change, activity and scholar-side row is kept and the scholar's file reads as before. Tests: api `test_s1b_reinvite_as_new.py`.
 - **Also:** new TD placeholder `TD-730`; the cockpit test fixture serves `pre_award_end` for a pre-award close (S1 review nit). Tests: api `test_s1b_cancel_archives.py`; web `organisation/staff/page.test.tsx`.
+
 
 
 
@@ -890,6 +992,7 @@ Branch access-s1b-cancel-archives, not pushed. Migration: none. Services: both. 
 - Review fix, round 2: a Re-run may promote a copy only where the upload would have judged it. The upload's tag guard files a copy whose read names another family member under that member (a payslip under the father that now reads the mother's name, an STR under the mother that reads the father's IC number, a blank-tagged copy the name or the STR route's earner files under someone). A Re-run never re-tags, so it now skips such a copy: one skip line, every row as it was. The rule has one home, `upload_read._tag_guard_member`, shared with the upload. Open: the upload's salary slip → EPF re-slot cannot be asked at Re-run time (it needs the OCR text, which the Re-run does not hand on); see `docs/decisions.md`.
 - Review fix, round 3 (closes that open item): the upload may re-file a salary slip as an EPF statement by its text (`views._reslot_income_doc`, salary slip → EPF, one way only; no other type, STR included, is ever moved). A Re-run cannot ask that, so it now skips every salary slip copy, as it skips offer letters: one skip line, nothing written; the student uploads again, as before. The Re-run still compares again for every other type the upload judges, EPF and STR included. The skipped types sit in one named tuple, `upload_read._RESLOT_FROM_TYPES`, and a drift test fails if the re-slot starts moving a type the tuple does not name. Payslip tests that proved slot safety, the tag guard and the stored plan now use EPF copies; the father's-slot payslip defect test stays as a nothing-changes test.
 - Review fix, round 4 (the read side): a copy the upload's sample check marked as a SAMPLE / CONTOH is never promoted by a Re-run. The Re-run does not repeat that check and its fresh read drops the mark, so the Re-run view now asks for the mark before the re-read, and the re-judge skips a copy marked before or after it (one skip line, nothing written). A copy still in HEIC (the upload's HEIC fix failed) is skipped too. The FAQ now names every type a Re-run does not compare again. A replaced copy found marked at a Re-run is recorded on its own row (`read_plan['was_sample']`, that field only), so it stays out on every later Re-run although the first one's read dropped the mark; a Re-run on a live copy writes nothing new.
+
 
 
 
@@ -925,6 +1028,7 @@ Not pushed. Migration: none. Services: api, web.
 
 
 
+
 ### Criteria Sprint 2: the stored criteria tree, and the gate switched to it (2026-11-26, TD-722)
 
 Invisible to users. Owner rulings of 26 Nov: intake 5 keeps its SPM group off; on intakes 3 and 4 a post-SPM holder is judged on the CGPA floor only (B); every live intake keeps today's meaning (B+ as a total, cohort 3's stored 0s, the merit); merit is its own section; existing decisions must not change.
@@ -952,6 +1056,7 @@ Invisible to users. Owner rulings of 26 Nov: intake 5 keeps its SPM group off; o
 
 
 
+
 ### Criteria editor S1: the criteria-tree engine and a read-only replay (2026-11-25, TD-722)
 
 - New pure engine `apps/scholarship/criteria.py`: judges an application against an AND/OR criteria tree (results groups post-SPM and SPM, income, born in, course-start flag), with `validate_tree` and `from_legacy(cohort)`. The CGPA trap (owner ruling 25 Nov: SPM group OFF) is read from the shape, a PNGK floor with no SPM bar, not from an intake code; intake 5 is the one live case. Bars stored as 0 are kept as rules, as today, but only a count or merit above 0 counts as an SPM bar. Beside a floor the SPM group is an alternative door and a post-SPM holder using it faces every SPM test, the UPU merit included (review round 2: a merit-only door had let every post-SPM holder through); `validate` refuses an `any` SPM door that cannot fail anyone; `refused_trees` lists intakes whose converted tree would be refused. Nothing live reads it yet; Sprint 2 stores the tree and switches the gate. Semantics and worked examples: decisions.md, 2026-11-25.
@@ -960,10 +1065,12 @@ Invisible to users. Owner rulings of 26 Nov: intake 5 keeps its SPM group off; o
 
 
 
+
 ### STR reader accepts "Kekal Kelulusan Asal" as an approval (2026-11-24)
 
 - Case #945: a MySTR Semakan Status page showing "Status Permohonan Semasa: Kekal Kelulusan Asal" (the original approval stays) read no status, so it counted as unreadable and a thinner "Lulus Rayuan" dashboard stayed live over it. The rules reader (`doc_parse._STR_APPROVED`) now knows that exact phrase, in any case and spacing. "Kelulusan" alone (Menunggu, Dalam Proses, Tarikh Kelulusan) is still not an approval; rejections, the engine, the surface ceiling and the keep-better ranking are unchanged. No version bump: the STR reader sits in no registered model's digest (the model-version guard stays green).
 - Tests: `test_doc_parse.py` pins the phrase in both OCR orders, the near misses, the rejections, the engine reading the page `current` and ranking it above an approved dashboard, and (pinned, not designed) a page with "Rayuan: Ditolak" above the phrase: approval in label-then-value order, rejected in the labels-then-values order.
+
 
 
 
@@ -990,6 +1097,7 @@ Not pushed. Migration: none. Services: api. Phone-check: owner.
 
 
 
+
 ### PDF gate: annotations painting over text, the "sticker" gap (OCR-20, 2026-11-24)
 
 Not pushed. Migration: none. Services: api. Phone-check: owner.
@@ -1013,6 +1121,7 @@ Not pushed. Migration: none. Services: api. Phone-check: owner.
 
 
 
+
 ### PDF gate: one object per number (OCR-12 new design, 2026-11-24)
 
 Not pushed. Migration: none. Services: api. Phone-check: none.
@@ -1027,10 +1136,12 @@ Not pushed. Migration: none. Services: api. Phone-check: none.
 
 
 
+
 ### PDF gate: two open-time scans now charged (TD-710 gap 2, 2026-11-24)
 
 - As pypdf opens a file it reads a cross-reference stream's entries and, when it rebuilds a broken table, each object stream's index through its own copies, which the lookup-work budget did not see. A 68 KB crafted file held a reader 70 s and was accepted. `GateReader` now charges every read of those copies (same weights as object-stream parse reads); that file is refused in about 1.3 s. pypdf used outside the gate is unchanged. Parser version 2.3.3.
 - Gap 3 (folded in by the owner, same day): pypdf writes a log warning for every repair it makes, and a crafted file can ask for hundreds of thousands. That cost about 20 s per upload, uncharged, and about 240k log lines. pypdf's logger is now silenced (set to CRITICAL, a level pypdf never uses); the same file takes about 1.6 s and writes nothing. The four offline eval tools that set it back to ERROR now set CRITICAL too (the full suite caught the undo), and a test fails if any module sets a lower level. Parser version stays 2.3.3.
+
 
 
 
@@ -1047,6 +1158,7 @@ Not pushed. Migration: none. Services: api, web.
 
 
 
+
 ### Reject before interview uses the Reviewer Assessment box (2026-11-23)
 
 - Owner phone check, 23 Nov: the reject panel no longer draws its own four-fact Pass/Fail (a second copy of the box on the same page). It reads the ONE Reviewer Assessment box. While any fact there is unrated, the panel shows the plain red line "Record Pass or Fail for all four facts before you reject." and Reject (and "Yes, reject") stay greyed; once all four are rated the line goes and Reject is live.
@@ -1054,6 +1166,7 @@ Not pushed. Migration: none. Services: api, web.
 - No API change, no migration. The unused "factsTitle" words go from en, ms and ta. The org-admin Guide chapter "Rejecting before interview" and the FAQ follow.
 - Tests: PreInterviewReject.test.tsx, view.actions.test.tsx and AssignAndWitness.preInterviewSlot.test.tsx follow; new view.preInterviewOneBox.test.tsx pins one set of Pass/Fail, the red line and Reject following the box, the payload equal to the box, no recordVerdict, and the reloads.
 - Review fixes: the line is now the red error colour (it was amber). A stale refusal (a reviewer or a new status got there first) reloads the box as well as the case, so no unsaved taps sit beside a recommendation. The Guide says "Academic", as the box does, and says the facts can change until someone submits (Yes, reject, or a reviewer's recommendation).
+
 
 
 
@@ -1066,12 +1179,14 @@ Not pushed. Migration: none. Services: api, web.
 
 
 
+
 ### Web first-load JS: the profile and course words leave core (2026-11-23)
 
 Not pushed. Migration: none. Services: web. No behaviour or text change; no key leaves any file.
 - **Moved:** the `profile` namespace (5.3 kB raw, about 1.7 kB gz) joins the `scholarship` slice and the `courses` namespace (per-course blurbs, 2.7 kB raw, about 1 kB gz) joins the `discovery` slice, both cut at build time by `scripts/messages-slice-loader.js`. Every route that reads them already loaded that slice (`sliceReach.test.ts` proves it); the other routes no longer download them.
 - **Measured:** median 157.242 to 155.006 kB, worst route 248.994 to 247.859 kB. The ratchet then lowered the median line 157.5 to 156 (a lowering, as it asked; no line raised).
 - **Tests:** `messagesSlice.test.ts` and `sliceReach.test.ts` pin the new slice contents and reach rules.
+
 
 
 
@@ -1083,6 +1198,7 @@ Branch f4-ai-score, not pushed. Migration: none. Services: api only. Reads and d
 - **Who sees it:** the `ai_prediction` overview section is now `see_all` or `qc`, and `verdict-metrics` refuses 403 unless `b40_scope` is `all`, so a reviewer gets no card.
 - **Access tables follow the rule:** the permission golden table and overview pins drop the reviewer from the AI card; the access manifest drops reviewer_a and reviewer_a2 from `verdict-metrics`; the team-tables matrix declares that cell moved 200 to 403 for the shapes holding `review` without `see_all` (reviewer, reviewer_payments_check, finance_custom, reviewer_mentor). New test: `ai_team` is on the overview payload for a super (also one holding `qc`) and absent for org admin, admin and QC. Duplicate names in `ai_score.py` renamed (`score_marks`, `_mark_tally`, `_close_tally`) to keep one home per rule.
 - **Debt:** TD-738 `second_look.qc_checked_counts` now has no caller outside tests (remove or reuse). TD-739 (web, F4b) `verdictReliability` and the override summary type will have no live caller once the card is rewritten.
+
 
 
 
@@ -1098,12 +1214,14 @@ Branch f4-ai-score, not pushed. Migration: none. Services: web. Reads and displa
 
 
 
+
 ### fix: TD-710 review round 3 - lookup work charged while the file opens (2026-11-23)
 
 Branch td710-budget, not pushed. Migration: none. Services: api. offer_parse stays 2.3.2 (unshipped): digest and note updated in place.
 - **Fix (HIGH):** rows walked were charged through `reader.stream`, which pypdf sets only once the file is open, so a broken table size (`0 (x)`) that makes pypdf rebuild the table on open, with every stream saying /Length 1, walked n x n rows for free (16,000 streams: 60.6 s to open at 41 % of the cap; the gate ACCEPTED 8,000). `GateReader` now holds its counted bytes from before the open and charges every row, read and parse through them; an `OverBudget` that pypdf's recovery catches as it opens is raised again when pypdf returns. Gate, this machine, one run: 2,000 streams accepted in 0.23 s (25 % of the cap); 8,000 refused in 1.25 s; 16,000 refused in 1.40 s.
 - **Wording:** the packed-file headroom is restated from measurement: a genuine-shaped file is refused somewhere around 3,500-6,000 packed objects, by shape (`_packed_pdf`: 20 pages, 1,083 objects, 29 %; 40 pages, 2,163, 58 %; 70 pages, 3,783, refused), not at 6,000 annotations or 10,000+ parts. Accepted (finding 3): the nested-object-stream refusal may hit a rare damaged incremental file that reuses a number.
 - **Tests:** a 2,000-stream rebuild file is refused while it opens after fewer than 500 walks (was all 2,000, then opened), and the real gate refuses it; a refusal pypdf swallows as it opens still refuses; a 5-stream rebuild still opens as pypdf opens it.
+
 
 
 
@@ -1116,6 +1234,7 @@ Branch td710-budget, rebased on main b95d91a45, not pushed. Migration: none. Ser
 
 
 
+
 ### fix: TD-710 review round 2 - object-stream parse metered as it reads, nested object streams refused (2026-11-23)
 
 Branch td710-budget, not pushed. offer_parse stays 2.3.2 (unshipped): digest updated in place.
@@ -1124,6 +1243,7 @@ Branch td710-budget, not pushed. offer_parse stays 2.3.2 (unshipped): digest upd
 - **Not charged:** filter decoding (TD-712) and the cross-reference stream parsed on open.
 - **Open:** synthetic genuine-shaped files with many packed objects (500 pages x 38 links, 15.6 MB) use 10.6x the cap and are refused; owner decision. Round 2 census rerun pending.
 - **Tests:** 4 new in `tests/test_pdf_gate_lookup_work.py` (each fails on 834154f7b); the up-front charge tests removed.
+
 
 
 
@@ -1139,6 +1259,7 @@ Branch td710-budget, not pushed. Migration: none. Services: api. offer_parse sta
 
 
 
+
 ### fix: TD-710 - the PDF gate caps pypdf's lookup work (2026-11-23)
 
 Branch td710-budget (first built on TD-702's 90e8768a1), not pushed. Migration: none. Services: api. offer_parse 2.3.1 to 2.3.2 (outcomes for crafted PDFs change; version log entry added).
@@ -1149,10 +1270,12 @@ Branch td710-budget (first built on TD-702's 90e8768a1), not pushed. Migration: 
 
 
 
+
 ### TD-711 - cockpit tests no longer flake in the cloud build (2026-11-23)
 
 Test only. Migration: none. Services: web (build gate). No behaviour change.
 - The cockpit console guard's `afterEach` awaits `settleCockpit()` (`src/test/renderCockpit.tsx`): late async updates (notes card fetch, lazy parts) finish inside `act` before the console check. Cause of the 22 Nov and 23 Nov 16:00 web build failures in `view.failReasons.test.tsx`, whose `loaded()` helper now also settles before the first click.
+
 
 
 
@@ -1162,6 +1285,7 @@ Branch quiz-fixes, not pushed. Migration: none.
 - TD-709: the interviewer-assigned student email says no reply is needed and the interview times follow in a separate email.
 - TD-705: the STPM quiz showed a question mark for 56 of its 67 answer icons; the map now covers every icon name, and a test keeps the main and STPM maps in step with the data (missing and unused names both fail).
 - TD-708: on a phone, answering then tapping Next no longer skips a question (main and STPM quiz); one pending auto-advance, cancelled by Next, Previous and the dots.
+
 
 
 
@@ -1176,6 +1300,7 @@ Not pushed. Migration: none. Services: web. No behaviour change; one new error l
 
 
 
+
 ### fix: TD-702 - the PDF gate caps pypdf's whole-file searches (2026-11-23)
 
 Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse digest moved; version bumped to 2.3.1 (see the review-fixes entry below).
@@ -1186,12 +1311,14 @@ Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse diges
 
 
 
+
 ### fix: TD-702 review fixes - offer_parse 2.3.1, TD-710, header scan memory (2026-11-23)
 
 Branch td702-gate, not pushed. Migration: none. Services: api. offer_parse bumped 2.3.0 to 2.3.1 (outcomes for crafted PDFs change); the earlier also_ok entry on this branch is replaced by a real 2.3.1 log entry.
 - **Wording:** TD-702 now says only the three named shapes (missing numbers, wrong generation, comment rows) are fixed; the other three crafted shapes are new row TD-710 (short /Length, huge /Length, object-stream misses; all on main too; one lookup-work budget in GateReader, follow-up sprint). The "refused in under 1 s" note names the three shapes only.
 - **Memory:** the GateReader header scan builds its set with `finditer` instead of a full `findall` list (about 181 MB less peak on a 15 MB file packed with headers); same answers.
 - **Tests:** the parser version assertions read 2.3.1; the damaged-layer test in `test_offer_reader` also asserts the mock was called.
+
 
 
 
@@ -1208,6 +1335,7 @@ Branch fix-f3, not pushed. Migration: none. Services: api, web. No doc-recogniti
 
 
 
+
 ### F2 (fix plan) - server AI band + I-10 (2026-11-21)
 
 Branch fix-f2, not pushed. Migration: none. Services: api, web. No doc-recognition change (no MODEL_VERSION bump).
@@ -1218,6 +1346,7 @@ Branch fix-f2, not pushed. Migration: none. Services: api, web. No doc-recogniti
 - **Tests:** `tests/test_fact_bands.py` (parity table of every old jest case plus every disqualifier code and override, the soft-evidence drift guard moved here, the served fields, the I-10 floor cases); jest updated in `officerCockpit.test.ts`, `verdictTileHigherResults.test.ts`, `disqualifier-drift.test.ts`.
 - **Docs:** `docs/decisions.md` (new F2 entry; QC floor note), `docs/scholarship/verdict-confidence-bands.md`, `docs/testing.md`, `.claude/ARCHITECTURE_MAP.md`.
 - **Not changed (reported):** the overview AI Prediction aggregates count the raw snapshot status, a different measure (F4); `verdict_narrative._fact_band` and `eval/offer_s6_dry_run.py` keep their own simpler mirrors; comments in `verdict_engine.py` / `verdict_pathway.py` still name the deleted jest guard (model files under the digest guard, not edited).
+
 
 
 
@@ -1234,12 +1363,14 @@ Branch fix-f1, not pushed. Migration: none. Services: web, api.
 
 
 
+
 ### refactor: one home for the single-model Gemini seam, dup 1 to 0 (2026-11-19)
 
 Migration: none. Services: api. Closes audit item CH-07 (A3.11 "One Gemini helper"); no behaviour change.
 - **One seam:** `contracts._gemini_generate` is the only `_gemini_generate`. `apply_copy_draft` and `sponsor_terms` lost their own copies and call it through `gemini.generate_with_fallback`, mapping its two config refusals back to their own error class and codes (`ai_unconfigured` / `ai_unavailable` stay `DraftError`; `quiz_ai_*` stay `SponsorTermsError`). Same models, timeouts, images handling and metering (`usage_context` unchanged).
 - **Tests:** every `patch()` of a removed copy now targets `apps.scholarship.contracts._gemini_generate`; the three-seam characterisation test is one seam.
 - **Ratchet:** `budget.duplicated_names` is empty (`code-standards.json`); code_health `dup` reads 0. Docs: `docs/code-health.md`, closure table CH-07, roadmap A3.11, tenancy conventions.
+
 
 
 
@@ -1251,6 +1382,7 @@ Migration: none. Services: api. Closes audit item CH-07 (A3.11 "One Gemini helpe
 - `PARSER_VERSION` 2.2.0 -> 2.3.0, appended to `offer_parse.json` with its digest. `OFFER_READER_VERSION` stays 2.9.0 (its digest is unchanged). The roadmap now says "OCR-9 (was S-visible 2)".
 - Corpus, cached text only. Gate 1 held-out is the same as main: UMS 22/33, matriculation 4/4, polytechnic 4/4, STPM 2/2. Dev: UMS 22/29, matriculation 29/31 and STPM 31/31 are unchanged. Polytechnic goes from 26/26 to 22/26, and those 4 are exactly the Asasi rule's (with the rule switched off, dev matches main). 0 wrong anywhere. The ink check, measured with the `ua:UMS` lane on over all 526 offer-letter PDFs (the real render, in the child): every lock stays (132 with the check and 132 without; UMS 33 of 33), 0 not_inked, 0 errors.
 - Migration: none. Services: api.
+
 
 
 
@@ -1269,15 +1401,18 @@ A white or blank page (or one white apart from a footer mark such as "Page 1 of 
 
 
 
+
 ### test: OCR-7 - the install-pin check reads CRLF, any FROM line and extras pins (2026-11-21)
 
 - `_install_pins.py`: reads the lock and Dockerfile the same with LF, CRLF or lone CR; the FROM line matches in any case, with extra spaces, `--platform` flags and an `AS name`, and no matching line is a loud stop (never a silent pass); a pin with extras (`pypdf[extra]==6.21.4`) counts as the pypdf. Raised TD-700 (low, accepted by the lead): work-counted timing tests (`tests/_timing.py` `calls()`) miss a catastrophic regex backtrack inside one `re` call until the 60 s backstop pin. A test for each. The parse-count comment in `test_ocr_visible_paths.py` now says what the code counts (the page's parse plus the form's, when this pypdf reads it non-empty).
 
 
 
+
 ### docs: the OCR-first sprints get one name each, OCR-1 to OCR-17 (2026-11-21)
 
 - The roadmap names every sprint OCR- and its run number, with a table from the old names (S0, S4, S-visible, D1, Blank-gap 1, the gen fix). OCR-11 and OCR-12 build now (owner, 21 Nov).
+
 
 
 
@@ -1292,9 +1427,11 @@ Branch fix-pypdf621 (on 9e8b23f04). Test and tooling only, no production code ch
 
 
 
+
 ### docs: the render batch records what its reviews left open (2026-11-21)
 
 Three TD-pending rows from the adversarial reviews of the unfiltered-content fix and the blank-page guard: the guard misses a white page that carries any other mark and can trip on a few odd hidden-image shapes (medium); a reference with the wrong generation number hides an object from the render check (high, pre-existing); two small render-check edges (low). Docs only.
+
 
 
 
@@ -1310,10 +1447,12 @@ New test file `tests/test_pdf_blank_guard.py` (a cut JPX codestream renders whit
 
 
 
+
 ### fix: the render check reads a page whose content stream has no filter (it skipped every cap) (2026-11-21)
 
 Branch gate-unfiltered (on b47cc1c40). Found by the TD-692 adversarial review; present since c1d93982e7 (on main too). pypdf drops /Length from a stream's dictionary, so a page whose ONE content stream has no /Filter is an empty, falsy dictionary, and `pdf_render_check.page_cost` tested it by truthiness: the whole page walk was skipped and no cap applied (JPX work, JBIG2 whitelist, paint, images, ...). A hostile 3-page probe (three 4890 x 4890 16-bit JPX images a page, unfiltered content) passed the gate and was killed by the Linux child's 20 s limit; an unfiltered page drawing a JBIG2 image passed instead of being refused. Now an explicit `is not None` test: the probe is refused ("past the render jpx_work cap"), the JBIG2 page by the whitelist. Every other truthiness test on a pypdf object in the gate and its helpers (`pdf_render_check`, `pdf_pdfium_load`, `pdf_jpx`, `pdf_layer_guards`, `pdf_pages._resources`) was checked: each tests an array (/BBox, /Rect, /FontMatrix, /Functions, /DescendantFonts, /Differences) where an empty dictionary gives the same verdict as pdfium's, or a Python value, so no other site changed. New test file `tests/test_pdf_render_unfiltered.py` (JPX work cap, JBIG2 whitelist, paint cap, and a genuine letter with an unfiltered stream passes, is charged and renders); 4 of its 5 tests fail on b47cc1c40 (the three refusals, and the genuine letter's charge, all zero there). Census through `render_refusal` (870 PDFs, pages up to 30): 2 refused (the empty file and the JBIG2-mask letter, TD-697), unchanged. Services: api. No migration.
 - **Debt:** TD-pending (numbers not yet given): the JPX work under-charges a SIZ bit-depth lie and small code-blocks; the stacked image is blank for NL 0 JPX scans of 2+ pages; and item (5) on the one-page-per-child row: a 400 dpi A4 colour JPX page has about 1.3% headroom under the page cap.
+
 
 
 
@@ -1330,11 +1469,13 @@ New test file `tests/test_pdf_render_per_page.py` (JPX, DCT and Flate 3-page sca
 
 
 
+
 ### test: TD-693 - api tests pin their guards by the work counted, not by the machine's speed (2026-11-21)
 
 Branch td693-deterministic-timing. Cloud Build failed two tests on time alone (2.5 s against a 1.0 s limit; 18.9 s against 8.0 s). All 25 elapsed-time asserts in the api tests now count the work instead: pypdf parses and text extractions, form walks, pdfium children spawned, each child's time limit, the slot wait, the spent mark and the kill log, and the call count at size N and 2N for every linear-time claim. Time stays only as one 60 s backstop (`WALL_BACKSTOP_S` in `apps/scholarship/tests/_timing.py`). New lint `test_no_tight_wall_clock.py` fails on any elapsed-time assert under the backstop. Tests only, no app change. Services: api. No migration.
 - **Review fix:** the fan-out, few-form-calls and stream-cap tests now pin the guard they name (the other document budgets are lifted so only the named one can stop the walk; a new test pins the 400,000 per-stream cap); the pdfium budget test has start-up slack (5 s budget, the second child sleeps 60 s and is killed).
 - **Debt:** TD-693 RESOLVED; new TD-694 (pypdf text layer and parse_govt_offer have no time limit of their own in the web process, medium).
+
 
 
 
@@ -1349,6 +1490,7 @@ New: `pdf_jpx.py`, `eval/render_check_corpus.py` (counts and reasons only), `tes
 
 
 
+
 ### fix: S-visible round 11 - the render pre-filter refuses three crafted shapes the same on every machine (2026-11-20)
 
 Branch fix-pdfium-timing. A Cloud Build run failed `test_huge_spaced_text`: the Linux runner rendered it inside the 1 s limit the test relied on. `pdf_render_check` now refuses, before any pdfium child: a visible glyph drawn past 1,500 pt (`MAX_FONT_PT`; corpus 60), clipping paths nested past 64 (`MAX_CLIP_DEPTH`; corpus 6) or set past 5,000 on a page (`MAX_PAGE_CLIPS`; corpus 374), more than 500 annotations on a page (`MAX_PAGE_ANNOTS`; corpus 5), and walks every annotation's appearance stream like a form under the page's caps (it was not charged at all). Genuine cost: CORRECTED by TD-692 - the "0 of 832 fixture PDFs (1,205 pages)" first written here came from a `page_cost(limits=False)` probe, which skips the whitelists. Through the real gate (`render_refusal`, pages up to 30) over all 870 fixture PDFs this round refused 4 (1 empty file, 2 genuine letters with a JPEG2000 image, 1 with an ASCIIHex-encoded CFF font); none was refused by a round 11 cap. The crafted-file tests run with a 60 s limit and assert no child is spawned; the time-limit backstop is pinned by a stand-in worker that never answers. Services: api. No migration.
@@ -1356,9 +1498,11 @@ Branch fix-pdfium-timing. A Cloud Build run failed `test_huge_spaced_text`: the 
 
 
 
+
 ### feat: admin case page - the pre-submission cleanup also covers Submitted (owner, 2026-11-19)
 
 Branch cleanup-submitted. At 'submitted' the page now hides Rate AI Prediction, Interview Stage, Recommendation, the funding projection, the generated profile, the "Assign a reviewer" card and the "Org admin and reviewer notes" card (no note can exist before Awaiting review). Check 2 - Outstanding is also hidden at submitted and shortlisted unless it holds items. At Awaiting review with no reviewer assigned (and no reopen) Interview Stage, Estimated need, Recommendation (and decision bar) and the notes card are hidden until a reviewer is assigned (`isWaitingForReviewer`). Kept: header, applicant cards, AI Prediction, Documents, Blockers, Close the file. `isPreSubmissionStage` now answers for both statuses; TD-613 needs_new_holder behaviour unchanged. Migration: none. Services: web.
+
 
 
 
@@ -1378,6 +1522,7 @@ Branch access-s1-leftovers, not pushed. Migration: none. Services: both. Program
 
 
 
+
 ### fix: #75 and #73 phone-check follow-ups - reject form wording, one reviewer drop-down rule, plainer notes card (2026-11-20)
 
 Services: web. No migration.
@@ -1386,6 +1531,7 @@ Services: web. No migration.
 - Reject form: the details box is marked required for screen readers (`aria-required`); its counter is no longer a live region (the notes card's still is).
 - The notes card drops its intro line and the "Notes can't be edited or deleted" line (the server stays append-only). Guide and FAQ lines updated.
 - One character-count placement (`CharCount`: right-aligned, under the box) for the notes card and the reject form.
+
 
 
 
@@ -1414,12 +1560,14 @@ Branch ocr-s5, not pushed. Migration: none. Services: api. Decisions: `docs/deci
 
 
 
+
 ### fix: gift names are checked the same way on create as on rename (review of #71, 2026-11-19)
 
 Services: both. No migration.
 - Creating a gift with a name over 200 characters failed with a database error (a 500); it is now refused with `name_too_long`, and the create box stops at 200.
 - A name sent as a number (not text) failed with a 500 on create and rename; it is now refused with `bad_name`.
 - One helper (`_clean_name`) serves both calls.
+
 
 
 
@@ -1432,6 +1580,7 @@ Services: web. No migration.
 
 
 
+
 ### feat: change a gift programme's name (request #71, 2026-11-16)
 
 Services: both. No migration.
@@ -1439,6 +1588,7 @@ Services: both. No migration.
 - A "Change the name" item in the gift card's menu, next to "Change the short code", opens a box with the English name (required) and the Malay and Tamil names (optional; blank means the English name is used). It uses the same PATCH and the same `programmes.edit` gate as the code change; the short code and apply link do not change. en, ms and ta.
 - The PATCH now refuses a name over 200 characters (the model's cap) with `name_too_long`.
 - The Organisation admin guide explains the new menu item.
+
 
 
 
@@ -1453,12 +1603,14 @@ Branch req70, not pushed. No migration. Services: web.
 
 
 
+
 ### feat: say what is still missing before Recommend or Decline (request #70, 2026-11-16)
 
 Branch req70, not pushed. No migration, no API change. Services: web.
 - One rule: `decisionMissing` (`src/lib/cockpitStages.ts`) returns the ordered missing items (findings not submitted or N unanswered, unrated facts, empty conclusion); `isDecisionReady` is now `decisionMissing(...).length === 0`, so the list and the gate cannot disagree.
 - The Decision card shows "Still to do:" under the buttons, each item a button that scrolls to and focuses its place (interview stage, first unrated fact, conclusion box). Recommend and Decline are `aria-disabled` while not ready (busy stays `disabled`): a press shows the list as a focused `role="alert"` and acts on nothing. The phone decision bar asks the card for the same alert.
 - Words in en, ms, ta (`recordVerdict.missing.*`); `saveNeedsReady` retired (`findingsIncomplete` stays: the server-refusal text reads it). Reviewer Guide and FAQ explain the list.
+
 
 
 ### feat: OCR-first S-visible 2 - a rules lock needs real ink on page 1 (2026-11-20)
@@ -1478,6 +1630,7 @@ Branch ocr-svis2, not pushed. Migration: none. Services: api. The `ua:UMS` lane 
 
 
 
+
 ### docs: learning loop stack brought up to main and closed (2026-11-19)
 
 Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (entries below). Migration: `0218_application_verdict_context` (additive; the owner applies it BEFORE the publish). Services: both.
@@ -1489,6 +1642,7 @@ Branch ll2b, saved to main, NOT published. Covers LL1, LL2, LL2b, LL3 and LL4 (e
 - **Bundle trim:** the withdraw-award card now loads as its own chunk, and only for a case that has a withdraw request (the case page route was 250.595 kB against the 250 kB ceiling; now 248.648 kB; the median is 157.245 kB against 157.5). No budget was raised. The Opus review of the trim said "ship with notes"; its three notes are TD-686.
 - **Gates before the push (2026-11-19):** api 23,810 passed, 3 skipped, 0 failed. Web on the final commit: typecheck clean, lint 0 errors, i18n 8,479 keys in each of en, ms and ta, jest 539 suites and 8,016 tests passed. Bundle budget passes: the case page route is 248.689 kB (ceiling 250), first-load JS median 157.277 kB (budget 157.5). Phone check: 836 of 836 cells (10 timed out on a network-quiet wait in the full run and passed alone); the three `sandbox:cockpit-case` cells passed again after the trim. Mobile ledger: 101 routes, 69 measured, 69 green.
 - **Docs:** retrospective, decisions and lessons written; roadmap shortened to "Done" blocks for the five built sprints. LL5 (the learning report) is not built; it waits for LL4 to be live.
+
 
 
 
@@ -1505,12 +1659,14 @@ Branch ocr-s6, not pushed. No migration. Services: api. No verdict, need or elig
 
 
 
+
 ### refactor: OCR-8 rebased on main - the rules-lane page readers get their own module; the UMS speed tests count work (2026-11-21)
 
 Branch ocr-8-ums (OCR-8 = old S1 + S1c), rebased on main 667f40f68. No behaviour change; `ua:UMS` lane still off. Services: api. No migration.
 - **File length:** main's PDF safety fixes plus the branch's two readers took `pdf_pages.py` to 610 lines. `pdf_rules_page_texts` and `pdf_page1_layout` move unchanged to the new `pdf_rules_pages.py`; they read through `pdf_pages` by module attribute, so the visible-page check and every test patch of `pdf_pages.pdf_page_texts` still apply. Callers (`offer_exact`, `eval/offer_replay`) and test patch paths follow. Model digests unchanged (docstring-only edits in `offer_parse*.py`).
 - **TD-693 rule:** the branch's 5 elapsed-time asserts (`test_offer_owner_words` x3, `test_offer_parse_s5`, `test_offer_parse_university`) now count the work (`assert_linear` / `calls`, wall time only as the 60 s backstop), so `test_no_tight_wall_clock` passes. The 200,000-character hostile cases are still run at full size.
 - **Gate 1 after the rebase (cached corpus, counts only):** UMS held-out 22 of 33 locked, 100% agreement, 0 wrong; unchanged.
+
 
 
 
@@ -1538,6 +1694,7 @@ Branch ocr-s1c (on top of ocr-s1), not pushed. Migration: none. Services: api. T
 
 
 
+
 ### feat: OCR-first S1 - UMS offer letters read by fixed rules first, the AI as fallback (2026-11-19)
 
 Branch ocr-s1, not pushed. Migration: none. Services: api. Lane switch: env `OCR_FIRST_LANES` (comma list, read by `offer_exact.ocr_first_lanes`, not settings/base.py, which is at its size allowance) defaults to empty, so nothing changes live until `ua:UMS` is switched on.
@@ -1558,10 +1715,12 @@ Branch ocr-s1, not pushed. Migration: none. Services: api. Lane switch: env `OCR
 
 
 
+
 ### chore: request #69 migration follows request #73's 0216_two_way_notes (2026-11-19)
 
 Branch req69 on #75 and #73, not pushed. Migration: `0217_reviewerprofile_highest_position` (additive; renumbered from 0215, now depends on `0216_two_way_notes`; the column and its database default are unchanged). Services: api.
 - Push order is #75 (`0215_pre_interview_reject`), #73 (`0216_two_way_notes`), then #69, so the three migrations form one chain.
+
 
 
 
@@ -1574,6 +1733,7 @@ Branch req69, not pushed. Migration: `0215_reviewerprofile_highest_position` (ad
 
 
 
+
 ### refactor: request #69 review round - sponsor figures banded, only team members asked (2026-11-18)
 
 Branch req69, not pushed. Migration: `0215_reviewerprofile_highest_position` (additive; unchanged by this round). Services: both.
@@ -1582,6 +1742,7 @@ Branch req69, not pushed. Migration: `0215_reviewerprofile_highest_position` (ad
 - **Who counts:** a suspended mentor (`Mentor.deactivated_at`) no longer counts; a paused reviewer (`PartnerAdmin.paused_at`) still does; an archived row that is still `is_active` never did and is now tested.
 - **Words:** ms `admin.position.c_level` and `sponsorPortal.trust.volunteers.level.c_level` now read "Pengurusan tertinggi (C-level), pengasas atau pemilik perniagaan"; en, ms and ta `basedOn` carry "{n}+".
 - **Tests:** API: `test_req69_highest_position.py` (not asked and refused; band edges; bars withheld for one person and for everyone at one level; the exact count never in the payload; archived but active, suspended mentor, paused reviewer), `test_profile_completion.py`, `test_admin_me.py`; `test_role_is_display_only.py` lists `volunteer_positions.asked` as a DISPLAY (account kind) read. Web: `trust/volunteers.test.tsx` (headline, no bars), `profile/position.test.tsx` (not asked), `ShellBanners.position.test.tsx` (no item, no banner), `highestPosition-i18n.test.ts`; the trust sandbox fixture takes the new shape.
+
 
 
 
@@ -1599,6 +1760,7 @@ Branch req69, not pushed. Migration: `0215_reviewerprofile_highest_position` (ad
 
 
 
+
 ### feat: request #73 - two-way org admin and reviewer notes (2026-11-16)
 
 Branch req73, not pushed. Migration `0216_two_way_notes` (additive). Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #73). Analysis 167.
@@ -1608,6 +1770,7 @@ Branch req73, not pushed. Migration `0216_two_way_notes` (additive). Services: b
 - New table `staff_notifications` (one writer, `apps/scholarship/staff_notifications.py`): one row per person on the case except the writer, ids only, never the text. It drives a **New note** mark (dot plus words) by the student's name on the applications table (phone and desktop, per person, served as `new_note` on the list rows) and a bell line in `info` tone: "{count} students with a new note from a reviewer" (to the applications table) or "{count} student(s) with a new note from your org admin" (to the reviewer's own cases), a real link with a 44 px target. Opening the student's notes clears that person's mark. New `GET admin/scholarship/staff-notifications/count/` (one query).
 - An email goes to the OTHER side only (the assigned reviewer, or the org admin side), after the commit, in English, Malay and Tamil stacked; it never carries the note's text and links to the student's page.
 - Guides (Reviewer, Org admin, QC) and both FAQs updated. The bell line was added by the owner at no charge.
+
 
 
 
@@ -1626,9 +1789,11 @@ Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration 
 
 
 
+
 ### refactor: request #73 re-check 5 - the reviewer's stage asked again under the lock (2026-11-19)
 
 - `add_note` asks the reviewer side's case stage again on the locked row: an award that commits after the view's check, or an org admin who is also the assignee, is refused `notes_closed` even if the notes window is widened. The view's severed 403 now comes from `_deny_role()` (plus the code) and only after the fence, so an assignee who cannot read the case gets the fence's answer. No extra query. Decisions item 26. No migration (0216 unchanged).
+
 
 
 
@@ -1638,15 +1803,18 @@ Branch req73, a second commit on top of 994fb5ced, not pushed. No new migration 
 
 
 
+
 ### refactor: request #73 - staff notifications reach courses through the facade (2026-11-18)
 
 - `staff_notifications.py` reaches `staff_permissions` through `apps.courses.public` (re-exported there, re-export only) instead of a direct import, so the F2b courses-import guard stays at its frozen list after the rebase onto main. No behaviour change; migration `0216_two_way_notes` unchanged.
 
 
 
+
 ### test: request #73 re-check 3 - the email window, the savepoint and the second sweep pinned (2026-11-18)
 
 - Tests only (`test_staff_notifications.py`): the 10-minute email window in both directions, the assignment housekeeping's savepoint, and its second sweep. Two accepted gaps are recorded in `docs/decisions.md` item 24. No production code change.
+
 
 
 
@@ -1658,6 +1826,7 @@ Branch req73, a fourth commit on top of 7154d22e6, not pushed. No new migration 
 - The assignment housekeeping sweeps again after marking, so a reassignment in between leaves no stale mark. Accepted and recorded: if the reviewer opens the notes before the cron runs, the mark appears once and clears on the next open.
 - A read-only reader opening the notes no longer makes the bell ask again. Coming back to the tab asks once, not twice.
 - Tests: `test_staff_notifications.py` (one email after an assignment mark; a holder with no organisation; a real database error in the sweep, with the mail sent and the connection still working; the housekeeping run twice marks once); `ReviewerNotesCard.test.tsx` (a reader does not tell the bell); `useNewNoteCount.test.tsx` (focus and visibility are one ask).
+
 
 
 
@@ -1675,9 +1844,11 @@ Branch req73, a third commit on top of e1a6e5e42, not pushed. No new migration (
 
 
 
+
 ### refactor: request #75 - the profile-complete email no longer promises an interview (2026-11-19)
 
 Owner-approved wording (19 Nov). Students who finish their profile now read "If your application goes forward, we'll invite you to a short interview", and the closing line adds "or news about your application". Malay changes the same way. The email golden was updated by hand for these four strings only; `test_email_branding.py` passes.
+
 
 
 
@@ -1692,12 +1863,14 @@ Branch req75, rebased onto main 77a8e407f (POST-AWARD-CUT), not pushed. Migratio
 
 
 
+
 ### refactor: request #75 re-check 5 - reject door in one slot, remount wording corrected (2026-11-19)
 
 Branch req75, on top of e4c21d021 (main d42121307), not pushed. Migration `0215_pre_interview_reject` (additive, unchanged). Services: web. Decisions: `docs/decisions.md` (2026-11-19, Request #75 re-check 5).
 - Cockpit: "Reject before interview" sits in one slot of one Reviewer card whether or not the assign controls show (`AssignControls`), so a reload that flips the assign card while a reject is pending can no longer drop its success or refusal. The page looks the same.
 - Wording: prev/next already remounts the case page in production (Next keys the `[id]` segment); the per-case key and the stale-case guards from re-checks 2-4 are defence in depth for the `applicationId` prop (tests, sandbox) and any future in-place navigation. Re-checks 2-4 in `docs/decisions.md`, the #75 code comments and this file are corrected.
 - Tests: `AssignAndWitness.preInterviewSlot.test.tsx` +4 (reject pending, the assign card goes away or comes back, then the refusal or the success still shows).
+
 
 
 
@@ -1708,6 +1881,7 @@ Branch req75, on top of c4f98a3c8 (main 9be194f1a), not pushed. Migration `0215_
 - Cockpit: while the next case loads, the page shows its loading state instead of the previous case.
 - Cockpit: a dropped payload for an earlier case no longer clears the page's refusal.
 - Tests: `view.actions.test.tsx` +4 (confirm step gone on the next case; a late refusal reopens nothing; loading state while the next case loads; org reject panel closed and empty) and one changed (a stale refusal after Next reloads nothing); `view.decision.test.tsx` +2 (a verdict message, and a verdict save that lands after Next, say nothing on the next case).
+
 
 
 
@@ -1723,6 +1897,7 @@ Branch req75, on top of a9fccf12e (main ead73c7e9), not pushed. Migration `0215_
 
 
 
+
 ### refactor: request #75 re-check 2 - refusal kept to its case, unassign retries a moved holder (2026-11-17)
 
 Branch req75, on top of 2c1ee06e4, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-17, Request #75 re-check 2).
@@ -1730,6 +1905,7 @@ Branch req75, on top of 2c1ee06e4, not pushed. No migration. Services: both. Dec
 - Unassign locks the outgoing reviewer by the case's own holder id; if the locked case names someone else (a stale page), it runs once more with that reviewer locked first. No query budget moved.
 - Cockpit: an assign is followed by one reload; a failed reload after a good assign says "Assigned. Reload the page to see the latest." (new key `admin.scholarship.assign.reloadAfterAssign`, en/ms/ta), never "could not assign".
 - Tests: `test_reject_before_interview.py` 40 -> 44 (stale holder retried with the real one locked first; a second move still unassigns; one failing email never stops the others; a rolled-back teardown sends nothing); `view.actions.test.tsx` +1 and two tightened (the refusal stays on its case and takes focus; the `not_assignable` words read exactly).
+
 
 
 
@@ -1745,6 +1921,7 @@ Branch req75, on top of fc5d474ea, not pushed. No migration. Services: both. Dec
 
 
 
+
 ### refactor: request #75 review round - lock the case on assign, keep focus, tighter tests (2026-11-16)
 
 Branch req75, on top of 8317ae56f, not pushed. No migration. Services: both. Decisions: `docs/decisions.md` (2026-11-16, Request #75 review round).
@@ -1754,6 +1931,7 @@ Branch req75, on top of 8317ae56f, not pushed. No migration. Services: both. Dec
 - With no QC hold, "Are you sure?" says the email goes at once (en, ms, ta).
 - The record card no longer carries its own **Cancel decline**; the header's cool-off banner has the one. The header drops the category pill when the status pill already reads "Rejected before interview".
 - Tests: `test_reject_before_interview.py` 26 -> 35 (the reviewer re-check under the lock, both race directions, a moved row judged again with one event, an unassign, a refused unassign that never starts the teardown, the view's `qc` key check, the decline wording in en, ms and ta, another organisation's rejections, cancel clearing `pre_decline_status` and `pending_decline_by`); `PreInterviewReject.test.tsx` 16 -> 22; `view.rejectReason.test.tsx` +2 (the header pill).
+
 
 
 
@@ -1773,6 +1951,7 @@ Branch req75, not pushed. Migration `0215_pre_interview_reject` (additive). Serv
 
 
 
+
 ### fix: captcha repair - no raw captcha errors, no guest session on page load (2026-11-19)
 
 Branch captcha-repair, not pushed. Migration: none. Services: web. Owner decision 19 Nov: keep the Supabase captcha switch ON and repair the code. Google sign-in is untouched. The contact form's code is untouched, but its wait changes: it uses the same Turnstile fetch, so it can now wait up to 40 s before posting on the silent path (2 silent tries of 15 s after a 10 s script-load allowance), against 8 s before; 160 s with a visible challenge (was 128 s).
@@ -1787,9 +1966,11 @@ Branch captcha-repair, not pushed. Migration: none. Services: web. Owner decisio
 
 
 
+
 ### revert: Add source is back - withdrawn before it went live (2026-11-19)
 
 Owner, 19 Nov: the invite form already has "add a new source (name and short code)" (live since 30 Oct, bd22bfd7d), so the Add button on Sources is not needed. The three commits d6814f2ce, 79d00fee7 and dbbf1de88 are reverted; every file they touched is back to its live state. Nothing changes for users. TD-668 now names only the short-code check at the invite door. Migration: none.
+
 
 
 
@@ -1805,6 +1986,7 @@ Branch offer-private, not pushed. Migration: none. Services: api, web. Owner rul
 - **Review fix 2 (2026-11-19):** private names that hold a public one (IUMW: "University of Malaya-Wales", "Universiti Malaya-Wales", "IUMW") are now a NAME signal, so the public veto never spares them; the veto is read line by line, and on a line that also carries a company or tie-up word (`_PRIVATE_SIGNS`, `_TIE_UP`: Sdn Bhd, Berhad, Swasta, partner, rakan, kerjasama) a bare public type or English university name no longer vetoes ("Kolej Komuniti Swasta X", "Contoh College, partner of University of Science Malaysia" flag; "Politeknik Ungku Omar" and a public name beside a company word still do not). Tests for each.
 - **Review fix 3 (2026-11-19):** narrowed fix 2 so a real public letter can never flag: every public name (English, Malay, the University -> Universiti fold) always vetoes, and only a bare public type stops vetoing, only on a company-owned line (`_PRIVATE_SIGNS` and no partner word). "University of Malaya in collaboration with Petronas Berhad", "Kolej Komuniti Selayang, rakan industri: Proton Berhad" and the like are spared; "Kolej Komuniti Swasta X" and "IPG Academy Berhad" still flag. Accepted miss (safer than a false flag): "Contoh College, partner of University of Science Malaysia" is no longer flagged.
 - **Debt:** TD-665, TD-666, TD-667.
+
 
 
 
@@ -1832,12 +2014,14 @@ Branch ocr-visible, not pushed. Migration: none. Services: api. Owner decision 2
 
 
 
+
 ### feat: red tile names its reason: Rule not met vs Can't verify (2026-11-18)
 
 Branch rule-not-met, not pushed. Migration: none. Services: web. Display only; no API or engine change, the disqualifier list is untouched.
 - A cockpit card with a confident disqualifier (for example offer_not_official) is always red and reads "Rule not met", even when its status is Review (it could show blue or amber before). A card red for missing or unreadable proof still reads "Can't verify".
 - The tone legend shows both red words with a one-line meaning each (en, ms, ta). The reviewer Guide (colour code) and FAQ say the same.
 - Tests: new cases in `officerCockpit.test.ts`.
+
 
 
 
@@ -1851,6 +2035,7 @@ Branch ocr-s0, not pushed. Migration: none. Services: none. Eval tool only; noth
 
 
 
+
 ### feat: sprint S0b - keep the OCR text of each new upload (2026-11-18)
 
 Branch ocr-keep, not pushed. Migration: 0214 (additive, migrate first; Postgres DDL in its docstring). Services: api. OCR-first roadmap; owner said yes on 2026-11-18. Decisions: `docs/decisions.md` (2026-11-18).
@@ -1859,6 +2044,7 @@ Branch ocr-keep, not pushed. Migration: 0214 (additive, migrate first; Postgres 
 - **Private:** no reverse accessor, no serializer, admin or export, never copied into `vision_fields`. No reader behaviour change, so no `OFFER_READER_VERSION` or `MODEL_VERSION` bump.
 - **Tests:** new `test_ocr_keep.py` (stored on a read by both choke points and both sources, end to end through the upload read; blank read; storage error; deleted with the document, by Remove and with the application; serializer and allowed-modules guard).
 - **Review fix round:** the kept text is capped at 200,000 characters (`ocr_keep.MAX_CHARS`; the head, plus a marker saying it was cut). The write now runs through `transaction.on_commit(..., robust=True)`: the document key is DEFERRABLE INITIALLY DEFERRED, so a savepoint inside a caller's transaction did not cover it and a bad row could have failed the caller's own COMMIT; now it runs after that commit, in its own transaction, and a document deleted meanwhile stores nothing. `ocr_document` reads a PDF's text layer once (it read it twice to name the source); its answers are unchanged. 0214's SQL gains `SET LOCAL lock_timeout = '5s'` and the rollback order (image first, then the table); the model notes that the database `ON DELETE CASCADE` lives only in that hand-run SQL. +9 tests.
+
 
 
 
@@ -1879,6 +2065,7 @@ Branch offer-course-proof. Migration: none. Services: api, web. Owner rules R1-R
 
 
 
+
 ### feat: apply step 4, the waiting branch needs the three degrees and "where are you right now" (2026-11-18)
 
 Branch apply-plans-required. Migration: none. Services: web. Owner: "make the three options compulsory and where are you also compulsory."
@@ -1886,6 +2073,7 @@ Branch apply-plans-required. Migration: none. Services: web. Owner: "make the th
 - **Form:** PathwayPicker shows the required marks on both labels when `apply` is set; /profile does not pass `apply`, so it is unchanged. The heading now reads "Which 3 degrees did you apply for?" (en / ms / ta; ms / ta first drafts for Sol).
 - **Server:** none. The submit serializer does not validate the 'sure' fields either, so nothing to mirror; students who already submitted are untouched.
 - **Tests:** `scholarship.test.ts` (each field missing / present, sure branch, SPM exemption, error order) and `page.plans.test.tsx` (required mark).
+
 
 
 
@@ -1901,6 +2089,7 @@ Branch ocr-s4, not pushed. Migration: none. Services: api. Decisions: `docs/deci
 - **Fix round (adversarial review):** school-level slips (PT3 / PMR / UPSR) and a trial paper carry the parser's own marker and SPM-shaped bands, so they locked as SPM with wrong grades; they are now refused by title (the trial / offer / registration list is `wrong_slip._NOT_A_RESULT`, reused). Also refused: SIJIL PELAJARAN MALAYSIA (VOKASIONAL) and SPM(V) / SPM (V); short codes are whole words with no letter or digit either side (UEC1234, STAM2, SMK DIPLOMAT, STAMPED, SVMX are not titles). The OCR text the caller holds is checked before word boxes are bought, so a misfiled non-SPM page costs no Vision words call (`test_vision_split_pins` call pin dated). TD-324 in `docs/decisions.md` now points to the S4 entry. Corpus counts unchanged (0 locked slips refused, 0 grade differences); one more never-locked "other" page is now refused.
 - **Fix round 2 (review LOWs):** the trial / offer / registration list (`_NOT_A_RESULT`) is read in the title zone only - the rows above the first graded subject row, or for OCR text the first 8 lines up to the first core subject - as `wrong_slip` reads it in the exam title alone, so a footer, a portal menu or a scanner's "trial version" stamp never refuses a real slip. The non-SPM exam titles (PT3, PMR, UPSR, SPM(V), STPM, ...) still read the whole page: no footer risk seen (0 of 82 locked slips refused). For a digital PDF the text pre-check reads page 1's text layer only, the word boxes' page (none on page 1: the word boxes decide). Corpus counts unchanged.
 - **Fix round 3 (review LOW, touches grades):** PERCUBAAN (and so PEPERIKSAAN PERCUBAAN) is read on the whole page again, in both the OCR-text and the word-box check, so a trial slip stamped "percubaan" only below its grades never locks with trial grades. The title-zone limit stays for the English words (TRIAL, OFFER, REGISTRATION) and TAWARAN / PENDAFTARAN / LAPOR DIRI: a "TRIAL VERSION" footer still reaches the parser. Corpus counts unchanged (0 of 82 locked slips refused).
+
 
 
 
@@ -1920,12 +2109,14 @@ Branch post-award-cut. Migration: none. Services: api, web. Decisions: `docs/dec
 
 
 
+
 ### fix: a red verdict tile names the reason it is red (2026-11-18)
 
 Branch fix-tile-disqualifier-leads. Migration: none. Services: web. Display only; no verdict, band or amount changes.
 - **The bug (#804, owner 2026-11-18):** the Pathway tile was red ("Can't verify") because the course started in a year the gift does not accept, but its one-line subtitle read "No pathway chosen yet": the subtitle took the first unresolved line, and the start-year line came second.
 - **The fix:** `factSubtitleItem` (`cockpitVerdict.ts`) lets a confident disqualifier (`CONFIDENT_DISQUALIFIERS`: not an official offer, income over the limit, funded or overseas programme, start year outside) lead the subtitle. The other lines show in the detail list below the tiles, as before.
 - **Tests:** new `disqualifier-drift.test.ts` pins the web list to `award.CONFIDENT_DISQUALIFIERS` in both directions and covers the #804 order.
+
 
 
 
@@ -1941,6 +2132,7 @@ Branch reader-260, not pushed. Migration: none. Services: api. Decisions: `docs/
 
 
 
+
 ### fix: the recent-letter ask applies to confirmation letters only, never to offer letters (2026-11-18)
 
 Branch fix-recent-letter-confirm. Migration: none. Services: both. Owner, 2026-11-18: "The recent requirement only applies to confirmation letter. Not to offer letters." Decisions: `docs/decisions.md` (H3b ruling).
@@ -1949,6 +2141,7 @@ Branch fix-recent-letter-confirm. Migration: none. Services: both. Owner, 2026-1
 - **The ask's words:** the student task and the email title now read "Upload your offer letter or a recent confirmation letter" (en / ms / ta; ms / ta first drafts for Sol). Either upload closes it (owner, 2026-11-18: "If old, asks for the offer letter or confirmation letter that is more recent").
 - **Words:** module docstring, Reviewer Guide / FAQ, and the en / ms / ta student and settings strings no longer say offer letter for this ask (ms / ta first drafts for Sol).
 - **Tests:** `test_recent_letter.py` reworked for confirmation-only.
+
 
 
 
@@ -1965,6 +2158,7 @@ Branch ll1, NOT merged to main, not published. Migration: none. Services: both. 
 
 
 
+
 ### feat: sprint LL3 - a version guard and one version register for every AI model (2026-11-19)
 
 Branch ll3 (on top of ll1), NOT merged to main, not published. Migration: none. Services: api. Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL3 as built). Debt: TD-243 updated (fixed in code, open until merged and live).
@@ -1975,6 +2169,7 @@ Branch ll3 (on top of ll1), NOT merged to main, not published. Migration: none. 
 - **Old results:** no back-fill. A stored result without `model_version` reads exactly as before (tests prove it for the verdict, the anomaly engine and the serializer, which still serves only status, reason and doc_seen).
 - **Tests:** 8 new; the two stored-key-set pins in `test_genuineness_api.py` now include `model_version`.
 - **Brought up to main 0dea7e809 (2026-11-19, before the first merge):** main's IPTS rule bumped the verdict engine to `2026-11-18.2`; it is logged, `offer_private.py` joins the verdict engine's files; the genuineness names it reads (from `genuineness/offer_issuers.py`) are NOT pinned, they are a recorded known gap (`offer_issuers.py:*`), so a change to an IPTS opening moves the `results_doc` version but not the verdict engine version. Main also changed `results_doc` source (reason openings moved into `offer_issuers` constants, same text) without a bump: the `results_doc` and `school_leaving_doc` digests are re-seeded with a dated note, and `school_leaving_doc` now pins `PRIVATE_ARM_OPENING`. No version constant changed here.
+
 
 
 
@@ -1990,6 +2185,7 @@ Branch ll4 (on top of ll3), NOT merged to main, not published. Migration: `0218_
 
 
 
+
 ### feat: sprint LL2 (server) - the reason for failing a green fact is stored and counted (2026-11-19)
 
 Branch ll2 (on top of ll4), NOT merged to main, not published. Migration: none. Services: api (the web part follows). Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL2 as built, server).
@@ -1997,6 +2193,7 @@ Branch ll2 (on top of ll4), NOT merged to main, not published. Migration: none. 
 - **Record:** `record-verdict` accepts a top-level `fail_reasons` `{fact: code}`. A bad shape, fact or code is a 400 `bad_fail_reasons` and nothing is saved. A reason is kept only where the reviewer failed the fact AND this request's fresh snapshot says `verified`; the rest are dropped. A missing reason still saves. Stored as `officer_verdict.fail_reasons` (always written, `{}` when none, like the other keys). No migration.
 - **Count:** `audit.override_metrics` gains `fail_reasons` (per fact, per code, zero-filled) and `fail_reasons_not_given` (per fact), over green to fail decisions only. Same scope and fence as LL1; served by `verdict-metrics/` and the Overview `ai_prediction` section unchanged.
 - **Tests:** 13 in `test_fail_reasons.py`.
+
 
 
 
@@ -2013,6 +2210,7 @@ Branch ll2, NOT merged to main, not published. Migration: none. Services: web. R
 
 
 
+
 ### feat: sprint LL2b (server) - the QC's second look at facts in doubt is stored and counted (2026-11-19)
 
 Branch ll2b (on top of ll2), NOT merged to main, not published. Migration: none. Services: api (the web part follows). Roadmap: `docs/plans/2026-11-18-learning-loop-roadmap.md` (LL2b as built, server).
@@ -2021,6 +2219,7 @@ Branch ll2b (on top of ll2), NOT merged to main, not published. Migration: none.
 - **Count:** `verdict-metrics/` and the Overview `ai_prediction` gain `qc_checked` (total and per fact: in doubt, checked, not checked, agreed, disagreed, and for AI-green facts "AI wrong" / "AI right, reviewer wrong", checked by the QC; `few` under 30). `by_reviewer` (leads only) gains `qc_checked` and `qc_overturned`. Same fence and scope as LL1. Old QC decisions count as not checked.
 - **Tests:** 21 in `test_second_look.py`.
 - **Tests:** 16 new (`view.failReasons.test.tsx`, `AiPredictionReasons.test.tsx`). `view.decisionBar.test.tsx`: one fixture now stores its reasons (a recorded decline with failed green facts is correctly held back without them).
+
 
 
 
@@ -2038,11 +2237,13 @@ Branch ll2b, NOT merged to main, not published. Migration: none. Services: web. 
 
 
 
+
 ### fix: Academic verdict tile shows the truth about higher results (2026-11-17)
 
 Branch vcard, display only (engine statuses untouched). Migration: none. Services: web.
 - **Subtitle:** on a tile that is not green, a real unresolved problem leads, else the not-checked line (`factSubtitleItem`), so a blue tile no longer reads as proved. en/ms/ta `higher_results_not_checked` now read "Genuineness of higher results is NOT checked yet."
 - **Tone:** `higher_results_not_checked` is not proof (frontend-only `NOT_PROOF_EVIDENCE`; `SOFT_EVIDENCE` and its drift test untouched). Unreadable higher results is red; a different kind (`kind_differs`, `is_spm`) caps at amber. Red beats amber beats blue.
+
 
 
 
@@ -2055,11 +2256,13 @@ Branch thanks-scholars, not pushed. Migration: none. Services: both. Decisions: 
 
 
 
+
 ### fix: sprint THANKS review round - the review POST keeps the case fence; a decision locks the row; a non-text body is 400 (2026-11-16)
 
 Branch thanks, not pushed. Migration: none. Services: both. Decisions: `docs/decisions.md` (2026-11-16, THANKS, review round).
 - **Server:** `POST admin/graduation-messages/<pk>/review/` now puts the message's case through the case read fence (`_scoped_application`, the GET's) before the body is read. Outside it (no such message, another organisation, a case not assigned to an assigned-only key holder) the answer is one 404; an empty action no longer tells a real message from a missing one. Approve and reject lock the message row (`select_for_update` inside `transaction.atomic`) and read its current status, so two staff cannot both decide. A `scrubbed_text`, `review_note` or `action` that is not a string is 400 (`bad_text` / `bad_action`), never 500.
 - **Tests:** `test_thanks_graduation_review.py` 14 -> 24 (the unassigned reviewer and the finance row given `review` get 404 with the message unchanged; a see_all holder and the assigned reviewer decide; non-string bodies; a stale copy meets the landed decision; the decision's SQL carries FOR UPDATE). Access manifest: the POST now names `grad_message_a`, refuses `reviewer_a2` (404). `team_matrix_thanks.py` docstring says what the 404 means. New query budget: the case's thank-you read is 5 queries for one message and for three (`test_query_budgets.py`, two `_admitted` records).
+
 
 
 
@@ -2070,6 +2273,7 @@ Branch thanks, not pushed. Migration: none. Services: both. Decisions: `docs/dec
 - **Web:** the case page (`/admin/scholarship/[id]`) draws a "Graduation thank-you" card (`view/GraduationThanksCard.tsx`) when the served `page_keys` hold `review`. Pending: the sponsor text (starts as the student's words, editable), Approve and send, Reject with an optional note. Blocked: the reason and Reject only. The server's refusals are said in words (`scrubbed_leak` plainly). Strings in en, ms and ta.
 - **Tests:** new `test_thanks_graduation_review.py` (14); the access matrix declares the new route and the one moved cell (`team_matrix_thanks.py`); `access_manifest.json`, `test_org_fence.py` and `test_route_web_callers.py` updated (the review POST now has a web caller). Web: `GraduationThanksCard.test.tsx` and `view.graduationThanks.test.tsx`. Sandbox surface `cockpit-thanks` (a Review holder's case page with a waiting and a held-back thank-you) joins the case page's mobile-check cells.
 - **Wording:** web comments and the A10 allowlist reason that still named `SECTIONS_BY_ROLE` / TD-621 now name `sections_for` (keys). No count moved.
+
 
 
 
@@ -2091,9 +2295,11 @@ Branch labels, not pushed. No migration. Services: both (api; web test only sinc
 
 
 
+
 ### fix: invitation forms block an empty gift choice (2026-11-16)
 
 Small change, branch invite-gift-guard, not pushed. No migration. Services: web. The Mentor, Sponsor and Reviewer invite forms (Organisation, Invitations) no longer send when Every gift is off and no gift is picked (`programme_ids: []` would have meant every gift). Send is disabled and a short warning shows beside the switches (one shared message, `admin.invitations.giftChoiceRequired`, in English, Malay and Tamil; it replaces `sponsorGiftRequired`). The Sponsor form's old guard (only with two or more gifts, on press) now behaves the same as the other two. API unchanged. Tests: each form blocked, Every gift allowed, one gift allowed.
+
 
 
 
@@ -2105,6 +2311,7 @@ Branch f2b-stage2, not pushed. No migration. Services: api. Import routing only,
 - Tests (`test_courses_public_facade.py`): each door is the home module; a source scan keeps the direct imports from returning; the ready() recorders sit on the real module; three fresh-process import-order checks (courses public first, scholarship apps first, reports views first).
 - Guard (owner-approved addition): `test_cross_app_private_imports.py` now fails any NEW direct scholarship to courses import (non-test files) outside an allowlist of 154 (file, module, name) entries, with a stale-entry floor, a only-shrinks ceiling and a synthetic-violation self-test. The 154 entries are the 20 distinct edges code_health counts, spelt per file.
 - Left alone on purpose: `org_config`, `staff_permissions`, the `staff_tables` module (one edge each).
+
 
 
 
@@ -2121,6 +2328,7 @@ Branch gem2-a, not pushed. No migration. Services: api. Decision: `docs/decision
 
 
 
+
 ### refactor: sprint TOGGLES - HalaTuju uses toggles, not tick boxes (2026-11-16)
 
 Branch toggles, not pushed. No migration. Services: web. Decision: `docs/decisions.md` (2026-11-16, toggles not tick boxes). Release-note draft: `docs/releases/toggles-release-note-draft.md`. Cosmetic only; no copy, i18n key or behaviour changed.
@@ -2132,11 +2340,13 @@ Branch toggles, not pushed. No migration. Services: web. Decision: `docs/decisio
 
 
 
+
 ### fix: sprint NAVKEYS review round 2 - a contract reader reads; the billing page wiring is pinned (2026-11-16)
 
 Review round 2, on main, not live. No migration. Services: web. Release-note draft updated.
 - Contract detail (`/admin/contracts/[id]`): every template write on the server (config, clauses, quiz, schedule, vetting, submit, deploy, revert) asks `contracts_write` (`_ContractsBase._contract_admin`). The page now reads `holdsDoor(role, 'contracts_write')` and hands it to ConfigForm, ClauseEditor, QuizEditor, ScheduleEditor and DeployPanel (`mayWrite`, required). A `contracts.view` reader sees the template as a non-draft reads (fields disabled, no Save, quiz generation, vetting, submit or revert), a note saying why (`admin.contracts.readerNote`, en, ms, ta), and keeps the preview and the validation checklist (GETs). "No longer a draft" now shows only for a template that is not a draft.
 - Page-wiring tests: new `contracts/[id]/page.test.tsx` and `organisation/settings/page.test.tsx`, and a billing `page.test.tsx` describe, pin the doors each page asks (`contracts_write`; `billing_read` for the Settings tab, `billing_write` for its Save and for "We have paid"). Each was checked by swapping in the wrong door: the test fails.
+
 
 
 
@@ -2147,6 +2357,7 @@ Review round, on main, not live. No migration. Services: both. Decisions: `docs/
 - API tests: a `billing.view`-only member reads the invoices and the bill-to but gets 403 on declare and on the bill-to save, and another tenant's code is still 404; the organisation admin still declares. `test_access_matrix.GRANTED_DIFFERS` lists the two writes; `test_permission_catalogue_v2` holds the new door.
 - Web: `pageDoors.DOOR_KEYS` mirrors `billing_write`. The "We have paid" form shows only with `billing_write` (`InvoicesSection` / `InvoicePaymentPanel` take `mayDeclare`); the bill-to fields are read only with no Save without it. Organisation settings shows its Billing tab only with `billing_read`. Contracts shows "New version" only with `contracts_write`.
 - Menu: Programmes also admits on `programme_settings` (A10 class LANDING); Guide and FAQ are DISPLAY. No preset moved (`navkeysPresetPin`), plus a hand-grant test for Programmes.
+
 
 
 
@@ -2161,9 +2372,11 @@ On main, not live. No migration. Services: both (the review round adds the serve
 
 
 
+
 ### fix: third-route SPM grades labelled SPM prerequisites on the review card (2026-11-16)
 
 Small-change lane. No migration. Services: web. A Matriculation, Asasi or Diploma student's SPM chips on the Academic card now read "SPM prerequisites" (`admin.scholarship.spmPrereq`, already in en, ms, ta), as on an STPM card; SPM students keep "SPM grades". Reviewer FAQ line updated. Owner request, 2026-11-16.
+
 
 
 
@@ -2173,6 +2386,7 @@ Services: web. No migration, no api change.
 - Why: on `/admin/requests/[id]` the "Reason" line sat inside the Quote panel, which renders only when `quote_hours` is set. A request declined before it was quoted (the usual case: #60 and #63 on 15 Nov) stored its reason but showed it to nobody, neither the organisation nor the owner.
 - The reason now renders as its own panel (`data-testid="decline-reason"`) above the Quote panel whenever the status is `declined` and a reason exists; a quoted-then-declined request shows it once. Line breaks are kept. The page stays at its oversize-ledger allowance (644 lines).
 - Tests: `page.test.tsx` "the decline reason" (unquoted, for the org and the owner; quoted, shown once; absent when not declined or withdrawn without a reason). Three of the four fail on the old page.
+
 
 
 
@@ -2186,6 +2400,7 @@ Branch td631, on top of d89c41f13, not pushed. No migration. Services: web (the 
 
 
 
+
 ### refactor: sprint TD-631 - Surveys, Development and Announcements open on their view key (2026-11-15)
 
 Branch td631, not pushed. No migration. Services: web. Decisions: `docs/decisions.md` (2026-11-15, TD-631 builder calls, pending architect). Release-note draft: `docs/releases/td631-release-note-draft.md`.
@@ -2194,6 +2409,7 @@ Branch td631, not pushed. No migration. Services: web. Decisions: `docs/decision
 - The menu rows for Announcements, Surveys and Development ride the read doors, so a `.view`-only person is offered the page they can open.
 - No api change: the server already answered every GET with `.view` and refused every write without `.edit`. New `halatuju_api/apps/scholarship/tests/test_td631_view_only_engagement.py` pins both halves (12 reads, 18 writes).
 - Tests: view-only, edit and no-keys cases in the five component tests and `scholars/[id]/page.test.tsx`; `teamTablesT5cDoors` row-door list updated. TD-631 resolved.
+
 
 
 
@@ -2217,6 +2433,7 @@ Branch req67-align-tidy, not pushed. Owner 15 Nov ("Fix first"), bug under #67, 
 
 
 
+
 ### refactor: sprint TD-623 - the web reads the served keys only; the role is a label (2026-11-15)
 
 Branch td623, not pushed. No migration. Services: web. Decisions: `docs/decisions.md` (2026-11-15, TD-623 builder calls, pending architect). Release-note draft: `docs/releases/td623-release-note-draft.md`.
@@ -2231,12 +2448,14 @@ Branch td623, not pushed. No migration. Services: web. Decisions: `docs/decision
 
 
 
+
 ### perf: student-help bundle trim - the Action Centre is its own chunk; its words ride the Documents slice (2026-11-17)
 
 Branch sh-trim (for student-help), not pushed. No migration. No api change. Services: web.
 - Words: the Action Centre's newer and Action-Centre-only strings (replace, sections, why, decline buttons, set-aside, retry, officer hold, load error, locked and waiting headers) and the sample viewer moved from `scholarship.actionCentre.*` / `scholarship.docs.*` to `documentsTab.actionCentre.*` / `documentsTab.sample.*` / `documentsTab.lockedNote` (same words in all three languages). The decline reasons stay in `scholarship.*` because the officer's case page reads them.
 - Code: `components/LazyActionCentre.tsx` loads the Action Centre by `import()` on `/scholarship/application` (page and next-steps). The Action Centre imports the Documents slice and waits for the slice of the language on screen before it draws, so a Malay or Tamil reader never sees those words in English first. A failed chunk shows the existing network-error line in place.
 - Readings (local exact build): `/scholarship/apply` 201.107 to 198.628 kB (line 198.8), `/profile` 202.785 to 200.306 (200.8), `/scholarship/application` 226.831 to 209.363 (line LOWERED by the ratchet, 218.7 to 210), median 157.091 to 157.104 (157.5). No line raised.
+
 
 
 
@@ -2249,11 +2468,13 @@ Branch sh-trim2 (for student-help), not pushed. No migration. No api change. Ser
 
 
 
+
 ### chore: merge train B - student-help (H4 to H9) rebased onto merge train A (2026-11-17)
 
 Branch student-help, not pushed. Migration renamed `0212_document_replace_count` to `0213_document_replace_count` (depends on `0212_cohort_allowed_start_years`; same table, same DDL). Services: both (api + web).
 - Conflicts: `docs/technical-debt.md` (both sides append at the end: merge train A's TD-640 to TD-647 and TD-635 to TD-639, then student-help's TD-648 to TD-659) and `check2_queries.py` (imports: main's `recent_letter` and `check2_confirms`, plus student-help's `optional_asks`).
 - Debt: no renumbering needed (main ends at TD-647; student-help holds TD-648 to TD-659). New TD-660 (the H6 consent-gate source-walk test reads only two modules).
+
 
 
 
@@ -2267,6 +2488,7 @@ Branch student-help, not pushed. No migration. Services: both (api + web).
 
 
 
+
 ### fix: student-help fix round 3 - before consent, a slot holding the consent gate gets four more uploads, then support (2026-11-17)
 
 Branch student-help, not pushed. No migration. Services: both (api + web).
@@ -2274,6 +2496,7 @@ Branch student-help, not pushed. No migration. Services: both (api + web).
 - The signal: new `services.consent_blockers.consent_blocking_slots` maps the live `consent_blockers` codes back to the copies that raise them (`document_red_blockers` / `document_unreadable_blockers` gain `per_doc=True`; not-an-offer, own-IC identity reds, a stranger's STR) and to the `<type>_missing` codes, so a slot emptied by Remove counts too. Read lazily, only before consent and only once a slot has used its four.
 - The list serves `replace_support`; `replaces_left` includes the allowance. Web: new `documentReplace.replaceLimitKey` / `replaceRefusalText`; the Documents tab, Action Centre Replace and the request card show the new `scholarship.actionCentre.replaceLimitSupport` line (ms and ta English placeholders for Sol).
 - Tests: new `test_document_replace_blocker.py` (6: uploads 5 to 8, the 9th refused with support; emptied slot; copy passes; after consent; non-blocking copy); `documentReplace.test.ts`, `ScholarshipDocuments.replace.test.tsx`, `ActionCentre.replace.test.tsx`. Debt: TD-654 (a memberless officer ask opens every member slot), TD-655 (member choice multiplies the cap), TD-656 (Done card counter on a hand-resolved request), TD-657 (eager SlotBook in the serializer).
+
 
 
 
@@ -2288,6 +2511,7 @@ Branch student-help, not pushed. Migration 0213 (was 0212; renumbered at the Bat
 
 
 
+
 ### fix: student-help review round - the replace cap survives Remove; no "I don't have this" after the lock; a returned copy keeps Replace (2026-11-17)
 
 Branch student-help, not pushed. Migration 0213 (was 0212) changed (still unshipped): adds the `document_slot_replaces` table beside `replace_count`. Services: both (api + web).
@@ -2295,6 +2519,7 @@ Branch student-help, not pushed. Migration 0213 (was 0212) changed (still unship
 - `ActionCard`: "I don't have this" is hidden whenever documents are locked (the server answers `querying_closed`). Test in `ActionCentre.replace.test.tsx`.
 - `documentReplace.isSettledDoc`: a rejected (returned) copy is not settled, so Replace stays with 3 used, as the server allows. Test in `documentReplace.test.ts`.
 - Debt: TD-649 (parallel uploads can both pass the cap), TD-650 (post-lock type exemption is by type + stage), TD-651 (hidden Check 2 item can be declined by API); numbered 635-637 before fix round 2. The screen and server STR blank-member counting difference is left (the screen flag is only a hint).
+
 
 
 
@@ -2310,6 +2535,7 @@ Branch student-help, not pushed. No migration. Services: both (api + web).
 
 
 
+
 ### feat: student-help H8 - Sample documents (2026-11-17)
 
 Branch student-help, not pushed. No migration, no api change. Services: web only. Designs: `docs/designs/student-help/` (mock_4, `sample-generators/`).
@@ -2320,12 +2546,14 @@ Branch student-help, not pushed. No migration, no api change. Services: web only
 
 
 
+
 ### feat: student-help H7 - "I don't have this" on optional document asks (2026-11-17)
 
 Branch student-help, not pushed. No migration. Services: both (api + web). Designs: `docs/designs/student-help/` (mock_2).
 - Api: `DOC_SPECS` gains an `optional` marker (per-member EPF, water and electricity bill re-asks, school-leaving certificate). New `optional_asks.py` holds the per-document reason lists and `decline`. The resolve endpoint takes `reason` (+ `note`) on an optional doc ask only; a required doc ask still refuses it (`reason_not_allowed`), an unknown reason is `invalid_reason`, "Other" without words is `note_required`. The reason is kept in `params` (not `resolution_text`, so no AI prompt quotes it). A declined ask closes and `sync_check2_queries` never re-opens it; the admin Ask again clears the decline. The serializer serves `decline_reasons`. A declined ask is closed, so it no longer exempts H6's replace cap. No verdict, award or money file changed: these asks are only read to decide whether to ask.
 - Web: Upload plus "I don't have this" on an optional card; the reasons show only after that tap, as tap buttons; "Other" opens a required text box; Cancel goes back to Upload. Bill titles gain "(optional)" (en). The reviewer's Outstanding panel shows the reason and note. One line each in the Reviewer FAQ and Reviewer Guide. ms and ta carry English placeholders until Sol translates at merge.
 - Tests: `test_optional_asks.py` (15), a cockpit case in `test_admin_scholarship.py`, `DeclineOptional.test.tsx` (6), `OutstandingPanel.declined.test.tsx` (3).
+
 
 
 
@@ -2341,6 +2569,7 @@ Round 3 (review fail): the cap never blocks any document ask the student can see
 
 
 
+
 ### feat: student-help H5 - Action Centre redesign + locked Documents tab (2026-11-16)
 
 Branch student-help, not pushed. No migration. Services: both (api + web). Designs: `docs/designs/student-help/` (mock_1, stitch_3).
@@ -2353,12 +2582,14 @@ Branch student-help, not pushed. No migration. Services: both (api + web). Desig
 
 
 
+
 ### feat: student-help H4 - Action Centre split + documents stage lock (2026-11-16)
 
 Branch student-help, not pushed. No migration. Services: both (api + web). Decisions: `docs/decisions.md` (2026-11-16).
 - Web: `ActionCentre.tsx` (715 lines) split with NO visible change (moves only): `action-centre/ActionCard.tsx` (the ticket card), `action-centre/StatusCards.tsx` (Set aside, Done, Officer hold), `action-centre/KindIcon.tsx`; `ActionCentre.tsx` keeps the page-level component. Its oversize ledger entry is removed; the rule-15, pill-count and F2a theme guards now list the new files.
 - Api: the student's document sign-upload, record (POST) and delete (DELETE) refuse once `services.querying_locked` is true, with HTTP 409 `documents_locked` and a plain `message` (`views/document_lock.py`). A reopened decision unlocks it again. Still open after the lock: the post-award bank statement (awarded / active), a funded student's semester results and the two late higher-results asks (interviewing / interviewed). Reviewer / admin document paths are in `views_admin` and do not use these views, so they are unchanged.
 - Tests: `test_documents_stage_lock.py` (allowed before, refused at and after, reopen, the exemptions); `test_documents.py` unchanged and green.
+
 
 
 
@@ -2376,11 +2607,13 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 
 
 
+
 ### release: 19 Nov 11:00 MYT window - pathway sprint, S0b OCR text table, OCR-first S4, Rule not met label (2026-11-19)
 - live 9be194f1a..d42121307 (pushed 11:00 MYT; owner's yes "Make all of main live - yeS", 18 Nov, given when main was d42121307). api halatuju-api-01312-k8l, web halatuju-web-01133-gj8, both 100% traffic (rollback api-01311-xkx, web-01132-vw4). Both builds green first time; release-decisions job image d42121307; api health 200.
 - Migration 0214 (applicant_document_ocr_text) applied by hand before the push (Help Me session; post-checks clean: RLS on, FK cascade, 1 policy, ledger row). Rollback order: old image first, then the 0214 DROP TABLE block. Services both.
 - Not in this release (on main, not approved for live): POST-AWARD-CUT (77a8e407f) and the IPTS rule (a2b846282).
 - Owner phone checks: pending (#804 Pathway card + course linked; /scholarship/apply waiting branch; Rule not met vs Can't verify; S4 SPM slip on a non-SPM profile fills grades, a PERCUBAAN slip does not).
+
 
 
 
@@ -2393,12 +2626,14 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 
 
 
+
 ### release: hotfix - the recent-letter ask only when there is no offer letter (2026-11-18)
 - live d183eac52..2447c9583 (pushed about 14:55 MYT, hotfix lane, owner's yes "Hotfix as soon as it is ready and checked"). api halatuju-api-01310-5lq, web halatuju-web-01131-9f6, both 100% traffic (rollback api-01309-wzn, web-01130-cxj). Both builds green; release-decisions job image 2447c9583; api health 200. Main merge 901400605.
 - Gates before the push: api 22893 passed, 3 skipped; web 7826 passed, i18n 8336 keys; first-load JS median 157.14 kB (budget 157.5).
 - Migration none. Services both. Owner phone check: case 666 shows no recent-letter ask.
 - Deploy count: Batch A (H3b) 3rd deploy, one over the cap of 2; owner-approved hotfix.
 - Live after the push: 3 open recent_letter_needed asks (804, 822, 750), all raised by the old code before 07:28 UTC, all on offer letters only. The new code resolves them at the next Check 2 sync (case open, student page or the query-email job).
+
 
 
 
@@ -2409,8 +2644,10 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 
 
 
+
 ### release: 17 Nov 21:00 MYT window - Batch A (help H1-H3) pushed; api build red (2026-11-17)
 - live 266a1b946..754633ff8 (pushed 21:00 MYT). Migration 0212_cohort_allowed_start_years applied by hand at about 20:55 (owner yes). Web built green (web-01129-574). The api build failed on one test (test_start_year_money: xdist could not send a datetime.date in a subTest label), so the api stayed on api-01308-4z9 until the 18 Nov 11:00 window. Only effect: the admin start-years box did not save.
+
 
 
 
@@ -2420,9 +2657,11 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 
 
 
+
 ### release: 17 Nov 11:00 MYT window - LABELS published (2026-11-17)
 - live e4d81a8fc..d991c39e8 (pushed 11:00 MYT). api halatuju-api-01307-76l, web halatuju-web-01127-g47, both 100% traffic (rollback api-01306-pgs, web-01126-5dd). Both builds green; release-decisions job image d991c39e8; api health 200; site 200.
 - No migration, no data step. LABELS: 1st deploy (web change is a test file only). THANKS not included: own window (16:00 with THANKS-SCHOLARS). Owner phone check sent with the release report. Window closed.
+
 
 
 
@@ -2432,9 +2671,11 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 
 
 
+
 ### release: 16 Nov 16:00 MYT window - NAVKEYS and TOGGLES published (2026-11-16)
 - live b3b4c6114..119ffd0d3 (pushed 16:00 MYT). api halatuju-api-01305-cfk, web halatuju-web-01126-5dd, both 100% traffic. Both builds green; release-decisions job image 119ffd0d3; api health 200; site 200.
 - No migration, no data step. NAVKEYS (c556294b2, 823162bee, c54e49b22) and TOGGLES (119ffd0d3): 1st deploy. Owner phone check sent with the release report. Window closed.
+
 
 
 
@@ -2444,9 +2685,11 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 
 
 
+
 ### release: 15 Nov 21:00 MYT window - TD-613 published (2026-11-15)
 - live 36c6982dc..4619e1af1 (pushed 20:59 MYT). api halatuju-api-01303-hc4, web halatuju-web-01124-5x6, both 100% traffic. Both builds green (web gates; api tests, push, deploy, release job sync; release-decisions job image 4619e1af1); api health 200; site 200.
 - No migration, no data step. TD-613: 1st deploy. TD-623 (on main) not included: own window. Owner phone check sent with the release report. Window closed.
+
 
 
 
@@ -2454,6 +2697,7 @@ Branch td613, not pushed. No migration. Services: both. Decisions: `docs/decisio
 - live d07880294..36c6982dc (pushed 15:58 MYT). api halatuju-api-01302-2z8, web halatuju-web-01123-z9c, both 100% traffic. Both builds green (web gates + bundle-budget gate; api tests, push, deploy, release job sync; release-decisions job image 36c6982dc); api health 200; site 200.
 - Migration 0099_grant_scholars_approve (additive) by hand, migrate-first: pre-check 0098 listed / 0099 not, 2 org admins without the key; step 2 at 2026-11-15 07:47:53 UTC (2 rows + 2 audit rows + ledger row); step 4 guarded block after the new api took all traffic; post-deploy check 0 rows, left_as_set 0, 2 of 2 org admins hold scholars.approve.
 - #67 scope 3: 1st deploy. M3c: 1st deploy. F2b stage 1: 1st deploy. Owner phone check sent with the release report. Window closed.
+
 
 
 
@@ -2467,9 +2711,11 @@ Branch help-h3, not pushed. help-h1, then help-h2, then help-h3 rebased in that 
 
 
 
+
 ### docs: H3b tidy - course-start condition in the setting and reviewer text, Waive-not-Resolve line, TD-647 (2026-11-16)
 
 Branch help-h3, not pushed. Copy and debt log only; no logic change. en.json setting and reviewer line now say the course should already have started; FAQ and Reviewer Guide say to use Waive, not Resolve; **TD-647** logs the known soft limits; TD-645 marked "decide before go-live (owner)".
+
 
 
 
@@ -2484,6 +2730,7 @@ Branch help-h3, not pushed. No migration. Money files byte-identical; `VERDICT_E
 
 
 
+
 ### feat: sprint H3b - an old offer or confirmation letter asks for a recent confirmation letter (soft) (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9 (no verdict can change). decisions.md H3b.
@@ -2491,6 +2738,7 @@ Branch help-h3, not pushed. No migration. Money files byte-identical; `VERDICT_E
 - **The ask.** New `recent_letter.py`: a live offer / confirmation letter dated before today minus `recent_letter_window_months` (new org tunable, Check 2 group, default 3) raises the Check 2 doc request `recent_letter_needed`. Exactly N months is recent; one day more is old. Unreadable date, a recent confirmation letter on file (live or kept out), or a failing letter: no ask. Never blocks, never fails, never touches a verdict or money. An old letter re-sent leaves it open.
 - **Copy.** Student item, reviewer line, setting label and the `months` unit in en; ms / ta first drafts for Sol; `query_item_titles` entry. Reviewer Guide (role-reviewer.tsx, reviewer-guide-content.md) and FAQ (faq-reviewer.tsx) updated.
 - **Tests.** New `test_recent_letter.py` (window edges, unreadable dates, letter on file, tunable, resolution, never blocks); the org-config tab fixture row. **TD-643** logged (branch number).
+
 
 
 
@@ -2502,6 +2750,7 @@ Branch help-h3, not pushed. No migration. Money files byte-identical to main; `V
 - **Misspelt months by one rule**: same first letter, within 2 edits of an 8+ letter month name or 1 edit of a 6-7 letter one ("Febuary", "Feburary", "Januay", "Agust", "Septmber"); Pebruari and Mach by name. March / April / Julai left out ("match", "mulai").
 - **FAQ** (faq-reviewer.tsx) states all three. **TD-642** logged (branch number).
 - **Tests.** `ThirteenthReview` in the new `test_start_year_review13.py`, every reviewer input; old tests that expected 2023 updated. Probe table: 2 of 366 rows moved, outside -> unknown. Corpus split unchanged, 245 / 26 / 15.
+
 
 
 
@@ -2518,6 +2767,7 @@ Branch help-h3, not pushed. No migration. Money files byte-identical to main; `V
 
 
 
+
 ### fix: H3a eleventh review - simplify: only admission phrases start a course; a month on a session line is never ignored (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9. Lead's rule (decisions.md, eleventh review), for a session line with no reporting date:
@@ -2528,6 +2778,7 @@ Branch help-h3, not pushed. No migration. Money files byte-identical to main; `V
 - **E. Unchanged:** a bare session = first year, second for Sesi 2 / II, Semester 2 / II, Ambilan 2.
 - **FAQ.** The reviewer answer on "Course started in" states the rule.
 - **Tests.** `EleventhReviewSimplified` (one test per case) and a long-line speed test in `test_start_year_gift_reading.py`; 10 of 366 probe rows moved, all to unknown. Corpus split 245 / 26 / 15 (was 246 / 26 / 14): one letter inside -> unknown.
+
 
 
 
@@ -2543,6 +2794,7 @@ Branch help-h3, not pushed. No migration. Money files byte-identical to main; `V
 
 
 
+
 ### fix: H3a ninth review - when in doubt, unknown: a session line reads one date only straight after a start word (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money files byte-identical to main; `VERDICT_ENGINE_VERSION` stays 2026-11-15.9.
@@ -2554,6 +2806,7 @@ Branch help-h3, not pushed. No migration. Money files byte-identical to main; `V
 
 
 
+
 ### fix: H3a eighth review - a month reads on its intake word's line; more exam forms; odd letters never crash; a stray year beside a session is passed over (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money untouched (as below); `VERDICT_ENGINE_VERSION` unchanged.
@@ -2562,6 +2815,7 @@ Branch help-h3, not pushed. No migration. Money untouched (as below); `VERDICT_E
 - **Odd letters.** "FİRST YEAR", "ſecond semester", "Ambilan DİS" no longer raise: ASCII-only month / ordinal / intake-word patterns and skip-on-miss lookups.
 - **Stray year beside a session.** A reference or update year ("Rujukan UPU/2024/77", "dikemaskini 1/12/2024") is passed over; a year after an intake word, or a month-year inside the session, still reads.
 - **Tests.** New cases (and an odd-letter fuzz) in `test_start_year_gift_reading.py`; 10 probe rows re-classed. Corpus split unchanged: 246 / 26 / 14.
+
 
 
 
@@ -2577,6 +2831,7 @@ Branch help-h3, not pushed. No migration. Money untouched (as below).
 
 
 
+
 ### fix: H3a owner ruling - the gift reads the reporting date, else one year, else a session's first year (2026-11-16)
 
 Branch help-h3, not pushed. No migration. Money untouched: `pathway_engine.py`, `verdict_pathway.py`, `course_start.py`, `vision/` and `funding_estimate.py` are byte-identical to main; `award.py` differs only by H3a's `pathway_start_year_outside` flag in `CONFIDENT_DISQUALIFIERS` (the amount code is main's); `test_start_year_money.py` passes. Supersedes the second- and fifth-review readers below.
@@ -2586,6 +2841,7 @@ Branch help-h3, not pushed. No migration. Money untouched: `pathway_engine.py`, 
 - **Tests.** `test_start_year_gift_reading.py` rewritten (one test per corpus shape, later terms, readmission, exam years); new `test_start_year_gift_probes.py` (366 review probes h3r4-h3r6 re-classed with the owner's answers); `test_start_year_rule.py` end-to-end expectations moved to the owner's rule.
 - **Docs.** decisions.md H3a owner-ruling entry (corpus counts, the sanitize limit); reviewer FAQ start-year answer; TD-640 / TD-641 notes name `gift_reading`.
 - **Version.** `VERDICT_ENGINE_VERSION` stays 2026-11-15.9 (unpushed; help-h2 is .10).
+
 
 
 
@@ -2601,6 +2857,7 @@ Branch help-h3, not pushed. No migration. Money untouched (`pathway_engine.py`, 
 
 
 
+
 ### fix: H3a second review - the gift's start-year rule fails a case only when it is sure (2026-11-15)
 
 Branch help-h3, not pushed. No migration. The money is untouched (still byte-identical to main). Lead's rule: only "outside" changes a result, so it must be SURE; "inside" needs a clear first-year signal; any doubt is the reviewer line.
@@ -2613,6 +2870,7 @@ Branch help-h3, not pushed. No migration. The money is untouched (still byte-ide
 
 
 
+
 ### fix: H3a rebuild - the money keeps main's start year; the gift gets its own careful reader (2026-11-15)
 
 Branch help-h3, not pushed. No migration. Money and eligibility work. Supersedes the two H3a session entries below for the money.
@@ -2621,6 +2879,7 @@ Branch help-h3, not pushed. No migration. Money and eligibility work. Supersedes
 - **Docs.** decisions.md H3a: the two readings (the "no STPM case newly stops at QC" claim is now true: the money is main's). Reviewer FAQ start-year entry lists the cases left to the reviewer. Student copy unchanged. TD-640 closed; TD-641 logged (main's money takes a session's first year; not fixed, by rule).
 - **Version.** `VERDICT_ENGINE_VERSION` 2026-11-15.9 (.8 is the H2 branch's). `MODEL_VERSION` unchanged.
 - **Tests.** New `test_start_year_money.py`: main's reader frozen as an oracle over 35 letters, checked against `course_start_year`, `intake_year`, `course_start_unknown`, the award and the funding estimate, plus a guard that no money module reads `session_year`. New `test_start_year_gift_reading.py`: the reviewer's probe cases and the lead's list. `test_start_year_rule.py`: the session tests that pinned the old shared reading now assert main's money year (2024) beside the gift's verdict; an officer's date no longer rescues a Semester 3 letter on the gift (lead's ruling); a bare session outside the gift names both years.
+
 
 
 
@@ -2636,6 +2895,7 @@ Branch help-h3, not pushed. No migration. Money and eligibility work.
 - **Logged.** TD-640: a polytechnic "Sesi II 2024/2025" (a December 2024 start) with no reporting date reads 2025.
 - **Version.** `VERDICT_ENGINE_VERSION` 2026-11-15.7 (.6 is the H2 branch's). `MODEL_VERSION` unchanged.
 - **Tests.** `test_start_year_rule.py` class `ReviewFixes` (11 tests): Semester 3 with a date, end to end with the stored date; an officer's date; date ranges and real sessions; the STPM range sized RM1,000; the three bare-session cases; bare-session money unchanged (award and funding estimate).
+
 
 
 
@@ -2659,6 +2919,7 @@ Branch help-h3, not pushed, on top of H3a. No migration.
 
 
 
+
 ### feat: H3a - a gift can limit the course-start years it accepts (2026-11-15)
 
 Branch help-h3, not pushed. Migration 0212 (additive, MIGRATE-FIRST, hand-written DDL in its docstring; scholarship ledger 211 -> 212).
@@ -2678,9 +2939,11 @@ Branch help-h3, not pushed. Migration 0212 (additive, MIGRATE-FIRST, hand-writte
 
 
 
+
 ### release: 15 Nov 11:00 MYT window - M3b, SUP1 and the E8 width fix published (2026-11-15)
 - live 902c4ac60..d07880294. api halatuju-api-01301-mlh, web halatuju-web-01122-44p, both 100% traffic. Both builds green (api tests, push, deploy, release job sync); api health 200; site 200.
 - No migration (0098 Block C re-check read-only = 0 rows off). M3b: 1st deploy. SUP1: 1st deploy. E8 width fix: M2d follow-ups 2nd deploy. #67 scope 3 held back (bundle-budget gate) for the 16:00 window. Owner phone check sent with the release report. Window closed.
+
 
 
 
@@ -2706,6 +2969,7 @@ Branch help-h2, not pushed. Owner ruling 2026-11-15, option B (`docs/decisions.m
 
 
 
+
 ### fix: student help H1 - a village head's stamp counts wherever it sits in the approver's part of the form (2026-11-15)
 
 Branch help-h1, not pushed. Application #552 (the same shape on 4 documents in 2 applications): a signed Ketua Kampung income form, his name stamp on the approver's Nama / Alamat lines, the printed "Cop Rasmi" box left empty, no letterhead. The picture read said "no stamp" because the box was empty, so the form was refused "no issuing body" (`income_doc_unapproved`).
@@ -2715,6 +2979,7 @@ Branch help-h1, not pushed. Application #552 (the same shape on 4 documents in 2
 - Unchanged: printed or typed text is not a stamp; an empty box alone is not a stamp; handwriting is not a stamp, so a handwritten title with no stamp still fails; the approval rules (`approval_missing`) are not touched.
 - Only NEW picture reads see the change. Stored reads (including #552's) keep their answer until they are re-read, which is a paid call and needs the owner's yes. Nothing re-reads them automatically.
 - Genuineness `MODEL_VERSION` 1.27.0 -> 1.28.0. No migration, no web change. Tests: `TheApproverStampAnywhereInItsSection` in `test_income_declarations.py`; the A2.7a version pin in `test_offer_pages_and_lines.py` now checks "at least 1.27.0". Decision: `docs/decisions.md` (2026-11-15, student help H1).
+
 
 
 
@@ -2728,6 +2993,7 @@ Branch f2b1, not pushed. Import-only: no behaviour change, no migration, no web 
 
 
 
+
 ### feat: sprint M3c - the organisation admin grants its keys; the web reads the served keys (2026-11-15)
 
 Branch m3c, not pushed. Migration `0099_grant_scholars_approve` (additive, by hand, migrate-first; steps in `docs/releases/m3c-granting-release-note-draft.md`). Decisions: `docs/decisions.md` (2026-11-15, M3c).
@@ -2735,6 +3001,7 @@ Branch m3c, not pushed. Migration `0099_grant_scholars_approve` (additive, by ha
 - web (part 2, list W): pages read the served keys, not the role: Team Add / Remove and the person pages on `manage_team`; Add Mentor, mentor and sponsor invitations on `invitations`; a gift acceptance on `sponsors.approve`; the sponsor review buttons on the served `may_vet`; Requests answer / comment on `requests.edit`, accept / withdraw on `requests.approve`. The permission editor draws a padlock only for `not_held`. New row "Suspend or end a scholarship" (`scholars.approve`). The Payments row says the seats come with the role. E3 wording "Give cases to reviewers and nudge them. Never to yourself." and copy for `self_assign`. E5: the Mentor tab shows, read-only, to anyone who may view Invitations. E8: Announcements, Surveys and Development use the full console width. Guide and FAQ lines on what an organisation admin does. All in en / ms / ta.
 - Review round: the Invitations Mentor kind serves an allowlist (`MENTOR_TAB_FIELDS`: id, name, email, status, manageable), never the Mentors page's full record (F1); the release note's step-4 re-run of 0099 skips a row a person changed since step 2, with a no-edits warning (F2); the sponsors list offers no vetting button until the server answers `may_vet` (F3); a rollback line; TD-629 (unticking a v2 payments key on an organisation admin is a no-op until M4).
 - Not done: TD-623 (the web role fallbacks and the A10 web scan), proposed as part 3.
+
 
 
 
@@ -2749,9 +3016,11 @@ Branch m3c, not pushed. Migration `0099_grant_scholars_approve` (additive, by ha
 
 
 
+
 ### fix: M3b web drift tests and the settings.edit string (2026-11-14)
 
 Three web tests were left red by sprint M3b. `officerGateDrift.test.ts` still pinned the old role checks: the org-reject view now pins `surface_gates.may_decide` (the `students.approve` door, with no role arm left), and the assignment rule now pins the E3 self-assign refusal (`caller.pk == target.pk`) and the `assign` door (`students.edit`) in place of `caller.role == 'org_admin'`, both checked against the server door table too. `namespaces-i18n.test.ts` read the permission key `settings.edit` in `lib/pageDoors.ts` as a message key (it shares the `settings` namespace name); that one file is now skipped by the scan, so no new copy was added in any language and no Tamil review is needed. Tests only, no API or gate change, no migration.
+
 
 
 
@@ -2765,9 +3034,11 @@ Three web tests were left red by sprint M3b. `officerGateDrift.test.ts` still pi
 
 
 
+
 ### fix: Announcements, Surveys and Development draw at the wide width, like Scholars (2026-11-14)
 
 Owner's M2d phone check, item 4 (E8). The three pages lead with a many-column table but were not in `WIDE_ROUTES`, so `AppShell` gave them the reading width (896px) and they looked narrow beside Scholars (1280px). `lib/pageWidth.ts` now lists `/admin/programme/announcements`, `/surveys` and `/development` as wide; their new-item forms keep their own `max-w-3xl` card. `pageWidth.test.ts` pins all three beside Scholars. Web only, no migration. M2d follow-ups: 2nd deploy.
+
 
 
 
@@ -2783,9 +3054,11 @@ Saved to main; waits for a release window. No migration. Fresh review and Opus a
 
 
 
+
 ### release: 14 Nov 21:00 MYT window - M2d follow-ups and F2 (cross-app doors) published (2026-11-14)
 - live cdb6d54be..902c4ac60. api halatuju-api-01300-7np (F2 packages 1 and 2, import-only), web halatuju-web-01121-x6g (M2d follow-ups E4, E6, E7, E8, E10). Both builds green; api health ok; site 200.
 - No migration. M2d follow-ups: 1st deploy. F2: 1st deploy. Owner phone check for M2d sent with the release report. Window closed.
+
 
 
 
@@ -2794,8 +3067,10 @@ Saved to main; waits for a release window. No migration. Fresh review and Opus a
 
 
 
+
 ### F2 package 2 - courses and reports come through the doors (2026-11-14)
 Import-only. `apps/scholarship/public.py` now also re-exports invitations, mentoring, staff_footprint, staff_lifecycle, staff_mentor, staff_work, usage, gemini, Invitation and reviewer_profile_complete; courses (views_admin, profile_claim, org_config_registry, models/organisations, views/profile, views/verification) and reports (report_engine, views, prompts) reach scholarship and courses through `public` instead of file by file. Cross-app reading: courses to scholarship 21 to 1, reports to courses 9 to 1, reports to scholarship 2 to 1 (total 109 to 80 with package 1 still to land). No logic, value or order changed; the facade pin test lists the new names; the door skip list (DOOR_ALLOWED) is emptied and pinned at 0.
+
 
 
 
@@ -2809,6 +3084,7 @@ Import-only. `apps/scholarship/public.py` now also re-exports invitations, mento
 
 
 
+
 ### release: 14 Nov 16:00 MYT window - M3a and TD-617 web published (2026-11-14)
 - live 0fb384a76..cdb6d54be. api halatuju-api-01299-m7s (TD-617 + M3a), web halatuju-web-01120-5ld (TD-617 copy and FAQ).
 - Migration courses 0098 by hand, migrate-first: owner ran pre-check, DATA block and check; re-ran DATA block and check after the api took 100% (no change, 0 rows). Window closed.
@@ -2817,12 +3093,15 @@ Import-only. `apps/scholarship/public.py` now also re-exports invitations, mento
 
 
 
+
 ### docs: release train - at most 3 publishes a day (11:00, 16:00, 21:00 MYT), commit trailers, TD numbers from the tool (2026-11-14)
+
 
 
 
 ### fix: TD-617 re-check - a 'pismp' code with entered STPM/matric results is asked before submit, as it is owed after (2026-11-14)
 - `results_route._q7_widening_withheld` withholds on the 'pismp' code only when `higher_owed.declared_kind` is empty (IPG or UPSI) and `is_pismp` holds, so a stale 'pismp' code at UPSI (not PISMP) is asked before submit as it is owed after; SPM-only PISMP (IPG) stays not asked, not owed. `VERDICT_ENGINE_VERSION` 2026-11-14.3; money pin unchanged. Test: `PismpCodeWithHigherResultsIsAsked`.
+
 
 
 
@@ -2835,6 +3114,7 @@ Import-only. `apps/scholarship/public.py` now also re-exports invitations, mento
 
 
 
+
 ### fix: TD-617 owner ruling - an SPM-only PISMP student is never owed higher results; ADP and overseas preparation turn Pathway red (2026-11-14)
 - Branch td617 (local, not pushed, not deployed). Owner ruling 2026-11-14, option 1. No migration.
 - PISMP (`results_route.is_pismp`: the code 'pismp', a PISMP or Perguruan name, or an IPG) with SPM only is never owed higher results: `higher_owed._needs_higher` (after submit) and `results_route.higher_need` (before submit). A PISMP student who has entered STPM or Matriculation results keeps today's checks; a UPSI "Ijazah Sarjana Muda Pendidikan" is unchanged.
@@ -2844,8 +3124,10 @@ Import-only. `apps/scholarship/public.py` now also re-exports invitations, mento
 
 
 
+
 ### docs: deploy method switched - triggers fire on the live branch, a push to main only saves (2026-11-14)
 - Owner decision 14 Nov 2026. Docs and cloudbuild header comments only; trigger exports saved in `docs/infra/`.
+
 
 
 
@@ -2854,6 +3136,7 @@ Import-only. `apps/scholarship/public.py` now also re-exports invitations, mento
 - `mykad._layout_read` reads the card's layout from the word boxes of the same Vision call (`_vision_document_text` now returns `words`; no extra call): the name is the left-aligned lines from under the IC number down to the blank line; the address read skips them, and falls back to the lines after the blank line when no postcode is read. De-rotated, so a tilted or sideways photo reads the same. Taken only when it contains the line-order name (adds parts, never swaps the name), every name line is one Vision itself printed, and the name ends at the blank line (both guards from the corpus check: glued or stray words, and an address line taken as a name line). The blank line is measured against the card's typical line spacing, not its tightest (apps 358, 573, 602). Parents' cards too.
 - The postcode may be glued to the town (`47000SUNGAI`); "A / L" is closed up to "A/L". `extract_text` still returns text and error only.
 - Stored reads change on the next read of a card; no verdict logic change, `VERDICT_ENGINE_VERSION` unchanged. Tests: `test_req67_ic_layout.py` (24).
+
 
 
 
@@ -2874,6 +3157,7 @@ Saved on main 2026-11-14, NOT published; 0098 runs by hand only with the `live` 
   again; `test_m3_migration_0098.py` pins the jsonb-null, ledger and warning text and the double round trip; the
   lead-tier scan counts every read of `is_lead_tier` / `_is_lead_tier` / `lead_reviews` / `LEAD_ROLE` (a call or a
   reference), re-pinned.
+
 
 
 
@@ -2907,6 +3191,7 @@ D1-D7 as recommended, A1-A12 as decided). Server only. Nobody's access changes.
 
 
 
+
 ### chore: W1 page weight - dated re-baseline of the first-load lines (2026-11-13)
 
 Branch w1 (local, not pushed, not deployed). Owner ruling 2026-11-13: the four lines raised for Next 15 / React 19
@@ -2914,6 +3199,7 @@ Branch w1 (local, not pushed, not deployed). Owner ruling 2026-11-13: the four l
 /profile 200.3, /scholarship/apply 198.5, /scholarship/application 218.4, median 157.0. `code-standards.json` budget:
 /profile 202.2 -> 200.8, median 157.6 -> 157.5; /scholarship/application 218.6 -> 218.7 (owner ruling 13 Nov, option 1: 0.1 kB, part of this dated re-baseline, keeps the 0.25 kB room); /scholarship/apply unchanged. TD-506 closed; W1
 acceptance marked met. No app code changed.
+
 
 
 
@@ -2963,6 +3249,7 @@ design of record the mock-up the owner approved on 2026-11-13. No migration, no 
 
 
 
+
 ### feat: sprint M2c - the Members tab and the lifecycle rules (2026-11-13)
 
 Branch m2c (local, not pushed, not deployed). Brief `docs/plans/2026-11-13-m2c-members-tab-brief.md`; owner
@@ -2995,6 +3282,7 @@ rulings R1-R5 (decisions.md "Members tab and the lifecycle rules"; R6 is M3). No
 
 
 
+
 ### fix: sprint F1 - adversarial review fixes (2026-11-13)
 
 Branch f1 (local, not pushed). Verdict engine 2026-11-13.4 (was .3). decisions.md 2026-11-13 "F1 adversarial review".
@@ -3004,6 +3292,7 @@ Branch f1 (local, not pushed). Verdict engine 2026-11-13.4 (was .3). decisions.m
 - `higher_results_grade_uncertain` is on the interview agenda (copy EN/MS/TA). Reviewer manual: the not-equal marker is always amber.
 - Q7 spelling: "American Degree Programme(s)" (British) is the same programme as "American Degree Program" for the before-submit ask; "American Degree Transfer Program" and plain "Degree Programme" unchanged. Reviewer FAQ reworded ("keep the earlier rule"; a saved catalogue course decides by the course, not the name). Verdict engine NOT bumped (still .4, unshipped on this branch; no money code touched).
 - Tests: matrix rows for the printed-count short read, the AI skipped row and a +/- alone; behaviour tests replace a docstring grep and a self-built table; Q5 and Q8 pinned.
+
 
 
 
@@ -3017,8 +3306,10 @@ Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f
 
 
 
+
 ### fix: advisor action 5, sprint R2 re-check - a softened band or a one-sided degree-bound is never A (2026-11-14)
 - `rulings.py`: a status may stay or fall from Certain / Probable only (a move out of red is B, bar the R-56 / F1-Q4 twin swaps); degree rulings need degree-bound on BOTH sides, and any case fact that changes between sides makes the record B; a new test runs the real `classify_pathway` adapter to an R-DEG7-PATHWAY match (5 tests fail on the previous head).
+
 
 
 
@@ -3038,6 +3329,7 @@ Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f
 
 
 
+
 ### feat: advisor action 5, sprint R2 - adapters, normaliser, ruling catalogue, comparer and report (2026-11-14)
 - Branch a5; not pushed, not deployed, the replay not run. R1 guards unchanged (salt, frozen registry, INT_KEYS, commit shape, URL check, counts after joins, side files, REPEATABLE READ READ ONLY).
 - `eval/replay/adapters.py`: an adapter per engine (29), cases per family (application, live document by type, payable application x month, profile, sponsor, sponsor x programme); application records carry non-personal `facts` the rulings read. `gaps.generate_interview_gaps` (a Gemini call) is replaced by the hash of its deterministic `_flags_summary` input.
@@ -3050,6 +3342,7 @@ Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f
 
 
 
+
 ### fix: advisor action 5, sprint R1 second re-check - seven replay findings closed (2026-11-13)
 - `guards`: the database host is checked URL-DECODED (dj_database_url decodes `h1%2Ch2` to `h1,h2`, which libpq tries as two hosts) and must be one DNS name or IPv4 address; a host list, a socket path, IPv6 brackets and odd labels are refused.
 - `scrub`: a commit-hash shape leaves as written only under `old_commit` / `new_commit` in the TOP-LEVEL `start` event, and never when it is all digits; an int leaves as written only under a key in `INT_KEYS` (case counts, totals, exit / record / drop counts, the case `key`), so a landline or a split IC held as numbers is `!dropped`; the registry strips `_ . : / -` before checking a code and refuses any run of 6+ digits or 1-2 letters with 7-9 digits (so `UP6500001`-style course codes now leave as keyed hashes).
@@ -3059,11 +3352,13 @@ Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f
 
 
 
+
 ### refactor: advisor action 5, sprint R1 re-check round - nine replay findings closed (2026-11-13)
 - `scrub`: a Decimal / float at or above 10**8 leaves as `!dropped` (the text-amount cap); a commit-hash shape leaves as written only under `old_commit` / `new_commit`; the `!dropped_keys` count is capped below 10**8. The code registry is frozen once `engine_map` is imported (a later `register_codes` raises `RegistryFrozen`) and refuses codes shaped like an IC, phone, passport or a 6+ digit number. A child refuses to start (`SaltMissing`) without the parent's `REPLAY_SCRUB_SALT`; it never makes its own.
 - `parent`: the case counts run before any child starts; every `*.jsonl` left in the workdir is deleted before spawning; on any error or timeout once a child has started, every child still running is killed.
 - `guards`: a URL naming more than one host (a comma in the host part) is refused.
 - Tests: one per finding in `test_replay_guards.py` and `test_replay_harness.py`, each failing on the previous head; a static test that every `register_codes(...)` in the replay package passes a literal of string literals.
+
 
 
 
@@ -3077,6 +3372,7 @@ Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f
 
 
 
+
 ### feat: advisor action 5, sprint R1 - the past-case replay harness and its safety layers (2026-11-13)
 - Design (owner-approved 2026-11-13): `docs/plans/2026-11-13-a5-replay-design.md`. Branch a5; not pushed, not deployed; inert without the replay job (nothing in the live api imports it).
 - `apps/scholarship/eval/replay/`: `guards` (preflight refuses any writing, paying or sending key by name; the URL must be `replay_ro` on the session pooler 5432, 6543 refused; every transaction REPEATABLE READ, READ ONLY proved by SHOW; snapshot export and join; the non-read filter reuses `offer_s4_dry_run.refuse_writes` and adds locking and writing reads; always rolled back; each case in a rolled-back savepoint; Storage, Gemini, the meter and email shut), `netguard` (no connection but the database), `scrub` (only codes, amounts, hashes, ids and months leave; errors by class name), `clock` (one pinned instant), `settings` (the job's settings; every key blanked), `parent` / `child` (old, new, new-again in separate venvs with a minimal environment; same / differs / could_not_run / noise), `engine_map` (all 29 engines resolve in v3.1.0 and main; adapters are R2).
@@ -3085,10 +3381,12 @@ Branch f1 (local, not pushed, not deployed). Rule table `docs/plans/2026-11-13-f
 
 
 
+
 ### fix: request #67 - an offer letter with a read slip and extra name parts reads "partly matches", not "different name" (2026-11-13)
 - The offer letter's read echoed one letter AND the letter printed more name parts than the profile. Each slip alone was tolerated, but together the strict check said `mismatch` and the #48 rescue accepted only a full tolerant `match`, so `offer_letter_mismatch` blocked the student's own letter.
 - `pathway_engine._name_status` now keeps the tolerant matcher's `partial` too: amber for the reviewer, never a block. A genuinely different name still mismatches. Offer letter only; read-time only, so no re-read is needed.
 - `VERDICT_ENGINE_VERSION` 2026-11-13.1. Tests: 3 in `test_pathway_engine.py` (bite-tested: the two partial cases fail on the old code).
+
 
 
 ### test: advisor action 4, part 1 - the role-by-endpoint access matrix (2026-11-13)
@@ -3122,6 +3420,7 @@ Branch a4 (not pushed, not deployed). Tests only; no app source, permission, set
 - Not covered by this matrix: maker-checker inside payment runs and credits (M4's own tests).
 - Found, not fixed (known bug, pinned): PUT `/api/v1/profile/` answers 500 to every signed-in non-student (staff and sponsors).
 - docs: `docs/security/2026-11-13-supabase-policy-review.md`.
+
 
 
 
@@ -3162,6 +3461,7 @@ architect decisions D1-D12 (decisions.md "Admin permissions are stored v2 page k
 
 
 
+
 ### fix: the weekly document backup runs as a Cloud Run job (TD-612, 2026-11-12)
 
 API only; no migration, no web change. The weekly `backup-documents` run was cut off at the 300 s request
@@ -3175,9 +3475,11 @@ System health light read "has not run".
 - test: `test_run_cron_job.py`.
 
 
+
 ### docs: v3.1.0 project audit closed (2026-11-12)
 
 Docs only, branch g15, not pushed. Closing section in `docs/audits/2026-11-05-project-audit.md`: baseline, interim and final readings, targets met and not met, named later sprints W1, F1, Gemini duplicate and F2 with the owner's dates; `td_open` 169 against 110 not met, no sprint set. Final reading taken read-only; the Trend row is held back on purpose (writing it would reset the `xapp` and `std` limits without the owner's yes), so `docs/code-health.md` is unchanged. Freeze lifted in `docs/roadmap.md`.
+
 
 
 
@@ -3212,9 +3514,11 @@ Branch m2a (local, not pushed, not deployed). Web only; no API file changed, no 
 
 
 
+
 ### refactor: C2 - one home for banned_phrases, render and unknown_placeholders (2026-11-12)
 
 The partner and sponsor comms wrappers now bind the shared `email_templates.family_*` functions instead of carrying three same-named copies each (code health `dup` 4 to 1; only the Gemini-lane `_gemini_generate` is left). No behaviour change, public names unchanged, pinned first by `test_c2_pins.py`. Three `duplicated_names` entries removed from the `code-standards.json` budget; nothing raised.
+
 
 
 
@@ -3228,6 +3532,7 @@ Branch c3 (not pushed; tests only, no app source changed, no budget raised). gua
 - skipped: files whose source marker names them as the drift test (decisionReopenOffer, incomeWizard, interviewCompleteness, profileClaimCodes, referralSources, adminApplicationDetail), and structural guards that read the tree by nature (fonts, imports, env, mobile, theme, sandbox, cloudbuild).
 - C3b (A3.16b, same branch): stale test-file names in three comments fixed (ReviewerNotesCard.tsx, reviewer_notes.py, docSeen.ts now name the *Drift files); drift halves split out of decisionReopenOffer, interviewCompleteness, profileClaimCodes, referralSources (new *Drift.test.ts), incomeWizard (into incomeWizardDrift), adminApplicationDetail.test.ts renamed to adminApplicationDetailDrift.test.ts. `drift-test:` markers, the api-side guard manifest and docs/testing.md follow. Same assertions, comments only in source. guard% 9 -> 8.
 - TD-415 and TD-065 not done.
+
 
 
 
@@ -3254,6 +3559,7 @@ M1b; their own entries are below.
 
 
 
+
 ### fix: TD-444 - staff invitations record who sent them (2026-11-11)
 
 API only; no migration. `courses/views_admin._record_invitation` takes `invited_by` from its caller instead of a
@@ -3262,6 +3568,7 @@ API only; no migration. `courses/views_admin._record_invitation` takes `invited_
 - test: `apps/courses/tests/test_td444_invited_by.py` (invite stores the sender; Resend by another admin keeps it; a
   Resend with no open invitation stores the resender).
 - docs: TD-444 resolved.
+
 
 
 
@@ -3301,6 +3608,7 @@ Branch m1b (local, not pushed, not deployed). Web only; no API file changed. Roa
 
 
 
+
 ### fix: A48 - the account menu's language row no longer runs off the right edge (2026-11-11)
 
 Branch a48. `DisplaySegments` buttons: `min-w-0`, `px-2`, `text-center leading-tight`, no `whitespace-nowrap`, so
@@ -3308,6 +3616,7 @@ Branch a48. `DisplaySegments` buttons: `min-w-0`, `px-2`, `text-center leading-t
 mobile-check suite has no signed-in menu).
 Owner 2026-11-12: no two lines - the language row shows "B. Melayu" (`LOCALE_SHORT_LABELS`, that row only; aria-label
 stays "Bahasa Melayu"), `whitespace-nowrap` is back; the A48 mobile-check spec also asserts one line per button.
+
 
 
 
@@ -3342,9 +3651,11 @@ Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.
 
 
 
+
 ### A4.4 Cockpit and overview leftovers (2026-11-11)
 
 - TD-438 fixed (header photo link refreshed every 50 minutes), TD-126 fixed (scheduling screenshots in the Guide, FAQ points to them), TD-502 partly fixed (sponsors card opens the pending list). TD-444 skipped (file owned by another lane); TD-228 trigger not reached; TD-503 waits for the owner.
+
 
 
 
@@ -3367,6 +3678,7 @@ Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.
 
 
 
+
 ### A4.6 - sponsor side and walks (2026-11-11, branch a46, not pushed)
 
 - TD-074: the sponsor pool detail, fund and my-students routes take the opaque S-XXXXXX ref, matched only inside the sponsor's own fence; a raw id, a guessed ref or another sponsor's ref all get the same 404. The card no longer sends the raw id; the new-student email links by ref. No migration.
@@ -3375,9 +3687,11 @@ Branch m1b-api (not pushed, not deployed; no migration). Closes most of TD-606.
 
 
 
+
 ### A4.7 Tests, tooling and data (2026-11-11, branch a47; not pushed; no migration, no budget raised)
 - TD-345 FIXED: local student apply recipe in `docs/testing.md`, pinned by `TestSeedLocalStudentPath`. TD-478 CLOSED (one sighting, no repeat). TD-058 CLOSED: "managed by Supabase" decided as final, with the revisit triggers (no SQL run).
 - CO-12: `vocabularyGateDrift.test.ts` gates the payment-run status pill and the call-language options. The mirror ledger was already empty. TD-385 waits for owner approval D11 (workspace tool; not touched).
+
 
 
 
@@ -3402,6 +3716,7 @@ Branch g13 (not pushed, not deployed; no migration, no budget raised).
 
 
 
+
 ### A4.3 - phone layout leftovers (2026-11-11, branch a43, not pushed)
 
 - TD-457 fixed: `AppHeader` is marked `data-app-header`; the saved compare measures it into `--header-height` (`lib/headerHeight.ts`, kept out of the shared chunk) and its
@@ -3420,6 +3735,7 @@ Branch g13 (not pushed, not deployed; no migration, no budget raised).
 
 
 
+
 ### A4.2 Language - five language fixes (2026-11-11)
 
 Branch a42 (not pushed, not deployed). TD-388: `/onboarding/grades` and `/settings` render `contentLocale`, so a
@@ -3430,6 +3746,7 @@ preview also serves `payment_schedule_parts`, and the page composes the schedule
 (the signed agreement still freezes the English line). TD-346: "applications open" is now "applications with us" in
 all three languages. Not built: TD-077 (needs a Stitch-approved badge), TD-469 and TD-472 (owner's call).
 Tests: `a42Language.test.ts`, `settings/page.hydration.test.tsx`, one API test in `test_award_signing_progress.py`.
+
 
 
 
@@ -3444,6 +3761,7 @@ Branch a41 (not pushed, not deployed). No migration.
 - TD-454: a Google student on her NRIC step sees her name and Log out in the header; account links stay gated.
 - TD-462: the bank-statement upload refuses a too-big or wrong-format file before uploading.
 - TD-338 not built: needs an owner design call.
+
 
 
 
@@ -3465,6 +3783,7 @@ Follow-up commit:
 
 
 
+
 ### refactor: Gemini Phase 1 review - an overall deadline for the fallback runner (2026-11-11)
 
 Branch gemini-phase1 (not pushed, not deployed; no migration). Follow-ups from a review of the Phase 1 commit.
@@ -3477,6 +3796,7 @@ Branch gemini-phase1 (not pushed, not deployed; no migration). Follow-ups from a
 - Docs: the runner's rule restated accurately; a mistyped admin `model` on the contracts quiz endpoint now falls back.
 - Tests (`test_gemini_fallback.py`): a fake-clock deadline, the client's timeout only on the runner's path, the
   all-fail Word imports (contracts and sponsor terms), sponsor terms with no key, and the triage meter.
+
 
 
 
@@ -3502,6 +3822,7 @@ which supersedes the contract module's "Owner decision 4: NO downgrade fallback"
 
 
 
+
 ### refactor: courses and reports reach scholarship / courses through facades (audit A3.13, 2026-11-11)
 
 Branch a313 (not pushed, not deployed; no migration, no behaviour change).
@@ -3524,12 +3845,14 @@ Branch a313 (not pushed, not deployed; no migration, no behaviour change).
 
 
 
+
 ### chore: audit A3.14, Python suppressions (2026-11-11)
 
 Branch a314 (not pushed, not deployed; no behaviour change, comments only).
 - Removed the 11 source-side `# type: ignore` on lazy imports of untyped libraries (googleapiclient, google.cloud, openpyxl); mypy is not run here. `type_ignore` budget 11 -> 0. The 2 in tests stay, narrowed to a code with a reason.
 - 60 bare `# noqa` now read `# noqa: CODE — reason` (BLE001 best-effort handlers, F401 re-exports, E402 import order, E731 test helpers, F403 fixture). Bare count 67 -> 7; the 7 left sit in files other sessions own (courses views_admin, backfill_admin_seen) and in test_code_standards.py.
 - `noqa` budget unchanged at 80: reasoned suppressions still count towards it.
+
 
 
 
@@ -3540,6 +3863,7 @@ Branch a315 (not pushed, not deployed; no API change).
 - Each changed hook has a jest test that re-renders with a new `t` and asserts the loader did not refire (checked to fail if `t` is added to the deps). The 15 kept disables (blob and signed-URL images, the theme boot script, three deliberate fire-once or fire-on-step effects, the auth gate and the income wizard) now each carry a written reason.
 - Both `: any` were prose inside comments or visible manual text; the manual wording of one sentence changed slightly (role-org-admin.tsx).
 - code-standards.json: counts.eslint_disable 42 -> 15, any 2 -> 0, eslint_disable_without_reason emptied, two stale _moved records removed; the scanner floor test 20 -> 10. Nothing raised, baseline untouched.
+
 
 
 
@@ -3583,6 +3907,7 @@ Branch a317 (not pushed, not deployed). One scholarship migration, 0211, NOT app
 
 
 
+
 ### fix: Supabase receipts with a tax line (TPTHYS-00012, 2026-11-11)
 
 Branch fix-supabase-receipt-tax (not pushed, not deployed; no migration).
@@ -3595,6 +3920,7 @@ Branch fix-supabase-receipt-tax (not pushed, not deployed; no migration).
   (it previously cut the figure to `27`).
 - Tests: `apps/scholarship/tests/test_invoice_parsers_supabase_tax.py`, with a fixture from the receipt's
   extracted text (amounts, labels, receipt number and dates only).
+
 
 
 
@@ -3649,6 +3975,7 @@ Every new behaviour is opt-in on the request (`to_no_group`, `archive`), so toda
 
 
 
+
 ### refactor: scholarship reaches the exam_questions names through a courses public facade, and a guard against new private cross-app imports (audit A3.12 part 1, 2026-11-10)
 
 Branch a312 (not pushed, not deployed; no migration, behaviour kept).
@@ -3657,6 +3984,7 @@ Branch a312 (not pushed, not deployed; no migration, behaviour kept).
 - test: `test_cross_app_private_imports.py` fails on a new `from <other app> import _x` (ast scan, relative imports resolved, all three apps). Allowlist of 18 exact triples (11 scholarship to courses; 7 courses to scholarship, all in courses tests, found by the scan). Floor: every allowlisted import must be found. Self-test with synthetic violations. `test_courses_public_facade.py` pins identity and both patch directions.
 - Reading: `xapp` 98 before and after (scholarship to courses 69, unchanged). The metric counts distinct (module, name) edges, so re-routing the same names through one module moves no count. It falls only when part 2 shrinks the set of names. No budget matched, none lowered.
 - TD-414 is PARTLY met (scholarship to `exam_questions` only; reports, `stpm_pngk`, `stpm_engine` and a test that the facade is the only door remain). Left open.
+
 
 
 
@@ -3669,6 +3997,7 @@ Branch a311 (not pushed, not deployed; no migration, no budget change).
 
 
 
+
 ### refactor: management commands split or retired, repair doors closed (audit A3.10, 2026-11-10)
 
 Branch a310 (not pushed, not deployed; no migration, no data change, no command run against a database).
@@ -3678,6 +4007,7 @@ Branch a310 (not pushed, not deployed; no migration, no data change, no command 
 - TD-234 closed: `NO_DOOR` is empty; the eleven remaining repair commands are in `DOCUMENTED_ROUTE` (release-decisions job args override, CLAUDE.md item 12).
 - test: `test_a310_command_pins.py` (path-covering classifier corpus, full-output golden for the sync command); the door guard gained a test that `NO_DOOR` stays empty.
 - code-standards.json: the three long_functions rows, the classify_stpm_fields oversize row and the two retired test-file rows leave the budget. Nothing raised.
+
 
 
 
@@ -3694,9 +4024,11 @@ Branch a37 (not pushed, not deployed; no migration, behaviour kept).
 
 
 
+
 ### chore: lower the /profile first-load budget after the split (audit A3.9, 2026-11-10)
 
 `first_load_js["/profile"]` 205.5 -> 202.2 kB (build 204.527 -> 200.231). Nothing raised. /scholarship/apply passes with 0.264 kB of room against its 198.8 line, unchanged.
+
 
 
 
@@ -3706,9 +4038,11 @@ Branch a39 (not pushed, not deployed; no migration, no model). `src/app/profile/
 
 
 
+
 ### test: pin the profile page before it is split (audit A3.9, 2026-11-10)
 
 `page.sections.test.tsx`: 50 tests with `page.bumi.test.tsx` over the five sections, the edit and save paths, the IC flags and the i18n keys.
+
 
 
 
@@ -3718,9 +4052,11 @@ Branch a38 (not pushed, not deployed; no migration, no new model; behaviour unch
 
 
 
+
 ### feat: team-membership small change - InfoTip above the page; no phone on Team → Admins (O9); the org admin's name opens their page (O10); no email in the person header (O11) (2026-11-10)
 
 Branch team-membership (not pushed, not deployed; web only, no API change, no migration, no new UI text). Roadmap `docs/plans/2026-11-10-team-membership-roadmap.md` item 1; decisions.md 2026-11-10 entry. **InfoTip:** the bubble is a portal on `document.body`, `position: fixed`, so a table frame no longer cuts it off (the greyed Delete's reason on Team → Reviewers); it keeps the 8 px screen clamp and the caret on the `i`, follows its trigger on scroll and resize, and a tap on the bubble no longer counts as a tap outside. Still its own lazy chunk. **O9:** `StaffTable` draws no phone when it is the Team page's Admins table (`team`); the Reviewers table and the platform's staff screens keep theirs. **O10:** an `org_admin` row links to the person page when the row says `manageable === true` (a super); an organisation admin viewing their own or a fellow org admin's row still gets plain text, because the permissions GET answers 404 there by design (opening it is a fence change, a sprint). The org admin's page offers no Revoke, no Remove and no dead Delete. **O11:** `PersonHeader` no longer prints the email under the name; it stays in About, and a nameless person is still headed by their email. Tests: InfoTip (portal, clamps, scroll/resize, Escape), StaffActions (the reason drawn above a `TableFrame`), StaffAdmin (O9 both ways), reviewers page (O10 four ways), the person page (O11 header, nameless heading, O10 org admin page). **Review follow-ups:** the InfoTip bubble flips above its `i` (caret on the bottom edge) when there is no room below, closes when its `i` leaves the screen or its scrolling frame, and stays open when a mouse moves from the `i` onto it; `StaffTable` now hides the phone unless `showPhone` is passed (the platform's organisations and partners screens pass it; the Team page does not), instead of keying off `team`.
+
 
 
 
@@ -3730,9 +4066,11 @@ Branch stpm-rank (not pushed, not deployed; no migration, no model, no web chang
 
 
 
+
 ### feat: sprint T1 - the Assign picker offers only Reviewers who cover the case's gift (2026-11-09)
 
 Branch t1-assign-picker (not pushed, not deployed; no migration, no new model). Owner D7. `may_assign_to` now admits only someone in the Reviewers table (`staff_tables.in_reviewers`) who can hold the case, for every caller; an org admin only their own organisation's. The R1 super override is retired for assigning: a super can no longer give a case to an admin with `see_all`, an org admin outside Reviewers, or another super (refused `not_reviewer`, served `assignable: false`). R1 still decides who may HOLD a case (`is_review_target` unchanged), so held cases stay with their holders. Re-picking the current holder (and only the holder) skips the new rule: an active holder is the existing no-op, and a paused or revoked holder is refused as before. An org admin may now assign their own QC-preset person (in Reviewers). The applications list rows serve `gift_ids` (no extra query), and the list dropdown hides anyone not assignable or of another gift, keeps the current holder, and shows a legend "✓ speaks the student's language · ⚠ does not" (en / ms / ta; new component `AssignListPicker.tsx`; page.tsx 600 to 568 lines on the old base; 570 after the merge with main, which had 599). The case page picker is unchanged (it already reads `assignable` and greys another gift). Production: one awarded case held by an org admin and one rejected case held by a super stay as they are. Tests: test_assign_reviewers_only.py (new), test_permission_presets.py (golden rows `t1`), test_permission_combinations.py, test_assignment.py; jest AssignListPicker.test.tsx (new), officerGateDrift.test.ts. Review round: the legend has an id and each Assign select points at it (`aria-describedby`); the desktop table shows it once, under the table, and each phone row keeps it under its dropdown. The Tamil legend now reads "✓ மாணவரின் மொழி பேசத் தெரியும் · ⚠ பேசத் தெரியாது". New tests: the holder skip spares only the holder, a paused holder is still refused, and a moved case serves both gift ids.
+
 
 
 
@@ -3742,9 +4080,11 @@ Branch a34 (not pushed; tests and docs only, no production code changed). Mutati
 
 
 
+
 ### refactor: audit G9 / sprint A3.4 - the verdict, Action Centre and help engines split by moving code (TD-361 part, TD-262 note) (2026-11-10)
 
 Branch a34 (not pushed, not deployed; no migration, no new model; behaviour unchanged; MODEL_VERSION not changed). Eligibility logic, so moves and extracts only: no rule, threshold, wording or order changed. **Golden cases first:** `tests/test_a34_golden_verdicts.py` and `tests/test_a34_golden_documents.py` drive 223 synthetic cases (income verdict 46, the other facts and caps 42, `doc_match_verdict` 71, `verdict_for_document` 64; no real student data) through every branch and compare each verdict, band, reason code and collaborator call with `fixtures/a34_golden_verdicts.json`, recorded on the unsplit code and committed alone. **Splits:** `verdict_engine.py` (941 lines) is 562: the identity fact moved to `verdict_identity.py`, the pathway fact's offer-letter reading to `verdict_pathway.py` (the no-offer branch stays, because the web drift test reads its SOFT line there), the declared STR route of `_verdict_income` to `verdict_income_str.py` as four named steps (`_verdict_income` 210 -> 74 lines), and the flat genuineness cap to `verdict_caps.py`. `resolution.doc_match_verdict` (177 lines) is now a picker over `resolution_doc_match.DOC_MATCH_CHECKS`, one check per document type. `help_engine.verdict_for_document` (152 lines) hands the document to `help_verdict.HELP_VERDICT_CHECKS` (`help_engine.py` 618 -> 486). Every old name stays where callers import it; collaborators are still imported inside each function, so every existing patch string still lands (no test patch changed). **TD-262:** the only consolidation the owner's rulings already fix: the STR route's state tuples now read the shared `STR_COACH_STATES` / `STR_NOT_THIS_YEAR_STATES` (same members; pinned by `test_income_str_consistency.test_a34_str_state_tuples`). Option 4 waits on D7; W1 stands. **Guards:** the person-red drift guard now reads every tabled type's check in `resolution_doc_match`; the superseded-documents guard reads the four new verdict modules. `code-standards.json`: two oversize and three long-function lines leave `budget`; baseline untouched; no `_moved` record. Docs: TD-361 part, TD-262 note, ARCHITECTURE_MAP.
+
 
 
 
@@ -3754,9 +4094,11 @@ Structure only, no behaviour change, no migration. `apps/courses/views.py` (2,18
 
 
 
+
 ### refactor: audit G9 / A3.6 - the course engine, the ranking engine and the sponsor-profile engine split by moving (2026-11-10)
 
 Branch a36 (not pushed, not deployed; API only, no migration, no rule change; PROMPT_VERSION not changed). **Goldens first:** `apps/courses/tests/test_a36_engine_goldens.py` pins eligibility for 755 courses against 35 grade profiles (26,425 pairs), the fit score for every course against 16 signal profiles, a 1,520-pair pre-U grid and the full ranking per profile; `apps/scholarship/tests/test_a36_profile_goldens.py` pins, for four synthetic students, every prompt the sponsor profile sends (draft, final with and without a draft, sponsor-card blurb) and the result tags, with the model mocked. Both were committed green on the old code and pass unchanged after. **Splits (code moved unchanged):** `apps/courses/engine.py` (640) is 374 lines, the grade classes and helpers in `engine_grades.py` and the two subject-group rules in `engine_subject_rules.py`; `check_eligibility` (290 lines) is an ordered list of named steps. `apps/courses/ranking_engine.py` (814) is 559 lines, the tuning knobs in `ranking_constants.py` and the Asasi / Matric / STPM scorers in `ranking_pre_u.py`; `calculate_fit_score` (333 lines) is named steps, itself 71 lines. `apps/scholarship/profile_engine.py` (1,043) is 394 lines, the prompt text in `profile_prompts.py` and the per-line input readers in `profile_inputs.py`; the Gemini seam, `PROMPT_VERSION`, the claim gates and `_build_prompt` stay. Every old name is re-exported, so imports and `mock.patch` strings are unchanged. **TD-434:** a drift pin only (`test_a36_tvet_pathway_drift.py`, 3 tests over 300 synthetic TVET rows: today's first-category-else-`tvet` rule is pinned per course, so a refactor cannot change it silently and the TD-434 fix must update the test on purpose); the map rule is not changed and TD-434 stays open. `code-standards.json`: three `oversize_files` and two `long_functions` rows leave the budget; baseline untouched; no `_moved` record.
+
 
 
 
@@ -3773,9 +4115,11 @@ Branch s1-scholars-access, cut from p1-activity-box (not pushed). **Migration `c
 
 
 
+
 ### refactor: audit G8 / A3.3 - the officer cockpit split by concern; TD-477 and TD-480 closed (2026-11-09)
 
 Branch a33 (not pushed, not deployed; web only, no migration, no new i18n keys). Structure-only: `lib/officerCockpit.ts` (1633 lines) is now a 16-line barrel re-exporting `cockpitVerdict`, `cockpitDocFacts`, `cockpitIncome`, `cockpitStages` and `cockpitTrail` (each under 600 lines, code moved unchanged); `admin/scholarship/[id]/view.tsx` (1108 lines) is 391, its state and handlers moved to `view/useVerdict`, `useInterview`, `useRequests`, `usePostAward`, `useCaseActions` and `deriveCockpit` over one `cockpitCtx`. Imports still work. **TD-477:** one shared Previous / Next hook (`lib/useListSteps`) used by the requests page and the cockpit; the cockpit now reads `useListNav` (list written via `writeListNav`), shows "n of m" and answers the arrow keys. **TD-480:** the nudge, cancel-decline and hold-award questions use the site Sheet (`view/ConfirmSheet`; money ones not dismissible by a stray tap), same wording; the referral source name is visible text on a phone. Not changed: the contractual-decline `window.prompt` (typed text), the viewer's own Prev / Next. Tests: `view.confirmSheets.test.tsx` (6), `view.prevNext.test.tsx` (4), `view.decision.test.tsx` updated, `mobileStandard` caller list updated. `code-standards.json`: the two `oversize_files` entries removed (budget only down).
+
 
 
 
@@ -3785,9 +4129,11 @@ Structure only, no behaviour change, no migration. `apps/scholarship/views.py` (
 
 
 
+
 ### refactor: audit G8 / sprint A3.1 — vision.py becomes the vision package (TD-361 part) (2026-11-09)
 
 Branch a31 (not pushed, not deployed; no migration, no new model; behaviour unchanged; MODEL_VERSION and PARSER_VERSION not changed). `apps/scholarship/vision.py` (2,319 lines, the audit's second hotspot) is now `apps/scholarship/vision/`: `names`, `mykad`, `schemas`, `match`, `judge`, `sanitize`, `gemini_read`, `ocr`, `ic`, `field_extraction` and `authenticity`, under an `__init__.py` that re-exports every name the old module had. The largest module is 329 lines. The bodies moved unchanged, except `_run_field_extraction_impl` (306 lines): it is now one read helper per document family (`_read_results_slip`, `_read_offer_letter`, `_read_birth_certificate`, `_read_labelled_doc`), `_build_read_result`, `_store_field_read` (the clobber guard), and one genuineness scorer per type in `authenticity.py` (`add_read_authenticity`). They make the same calls in the same order, and the longest function is 35 lines. **Patch targets:** inside the package every seam (Storage, Cloud Vision, Gemini, and each function a test or an eval command patches) is called through the package (`from .. import vision as _v`), so all of the roughly 290 existing `apps.scholarship.vision.X` patch strings, and `patch.object(vision, ...)`, still reach every caller. No test patch string changed. **Pins first:** 44 tests in `tests/test_vision_split_pins.py` were committed green on the single file before the move: every old name, each read branch, each genuineness branch, the AI and OCR outage, the clobber guard, the IC second-opinion outage, the PDF paths and the judge. **Guards:** `ai_registry` `doc_read` now names `vision/gemini_read.py`, and the exam_type reader guard names `vision/field_extraction.py`. `code-standards.json`: both vision lines leave `budget`; baseline untouched; no `_moved` record. Docs: TD-361 marked part done (views.py and officerCockpit.ts remain); ARCHITECTURE_MAP lists the modules.
+
 
 
 
@@ -3813,6 +4159,7 @@ Branch p1-activity-box (not pushed; no migration). On a scholar's file (`/admin/
   - **Sandbox:** stub handlers now receive the request URL, and the activity surfaces honour `?page`, `?show` and `?counts=0`, with older filler rows so the Activity tab has a second page.
   - **Tests:** API: the signer raising and the signer returning nothing (GET 200, POST 201, no photo); `storage` catching a reset, a dropped connection, a half-read reply and a timeout; the email served only for an unknown writer; the pinned query count; `?counts=0`. Web: a Save and a "Show older" overlapping, a clamped last page, a filter switch mid-"Show older", a failed save, an unknown email shown as written, `counts: false` from the side panel, Save under System, focus after Save, a token refresh, the labelled region. The web test now resets its mocks between tests, so an unused one-off answer cannot leak.
   - **Older drift cleaned up:** the mobile baseline's six `sandbox:m8-organisation` cells (360/390 × en/ms/ta) belonged to a surface removed in 9f13e12e; they are deleted and the ledger regenerated.
+
 
 
 
@@ -3851,9 +4198,11 @@ Branch t3-person-page (not pushed; no migration). The owner's items 3, 4 and 5 o
 
 
 
+
 ### refactor: staff nudges sprint B review — overdue banner off Billing, steadier dismissal, neutral profile line (2026-11-09)
 
 Review of 7572f061 (no money, fence or rule defect). The red banner is not shown on `/admin/billing` (the chip says it there) and is not asked for there or for a super; it is asked afresh on leaving Billing. "Hidden until the next sign-in" is now a per-tab `sessionStorage` mark (steady when the account's `last_sign_in_at` moves on another device; cleared by `adminSignOut`) plus the stamp in `localStorage` for other tabs of the same sign-in (`lib/topBanner.ts` `clearSignInDismissals`). The profile banner's second line is neutral for every role: "Adding it/them completes your profile." (en/ms/ta; ⚠ ms/ta language review). Tests: `topBanner.test.ts`, `ShellBanners.overdue.test.tsx`, `test_invoice_overdue.py` (+3: a void invoice in the count, an org_admin with no organisation, qc / partner / source_partner / mentor refused).
+
 
 
 
@@ -3863,9 +4212,11 @@ Branch staff-nudges (not merged; main is under audit). Brief `docs/plans/2026-11
 
 
 
+
 ### feat: staff nudges sprint A — profile completion bar and profile banner (2026-11-08)
 
 Branch staff-nudges (not merged; main is under audit). Brief `docs/plans/2026-11-08-staff-nudges.md`, Phase A (sprints 1+2), owner decisions 1-4, 7. No migration. **API:** new `apps/scholarship/profile_completion.py`, the ONE rule: per-role items of equal weight (everyone: photo, name, job title, About, phone; a `review` holder or a mentor also qualifications as one item, a language at conversational or better in EN/BM/TA, a four-part address; a mentor also the mentoring area), done / total / percent (rounded down) and `important_missing` (photo, phone, a mentor's area; never the address). Served as `completion` on `GET` and `PATCH admin/me/` and on the `admin/me/photo/` answers; None for a super. **Web:** a completion card at the top of My Profile (bar, "N of M done", ticks, links that scroll to the card; one line at 100%; `components/adminProfile/CompletionCard.tsx`, in the cards chunk); the console's top-banner SLOT under the top bar (`components/admin/ShellBanners.tsx` behind `LazyShellBanners.tsx`, one banner at a time; `TopBanner.tsx`; dismissals `lib/topBanner.ts`, per browser and account, `days` or `signIn` scope) with the blue profile banner: names what is missing, "Complete profile", not on My Profile, X hides it 7 days. The completion rides on the provider's existing once-per-session `admin/me/` read (`profileCompletion` on the auth context); the Profile page hands every new answer back. New keys (en, ms, ta) `admin.myProfile.completion.*`, `admin.nudge.*` — ⚠ the Malay and Tamil need a language review. Tests: API `test_profile_completion.py` (19); web `topBanner.test.ts`, `ShellBanners.test.tsx`, `CompletionCard.test.tsx`, `app/admin/profile/completion.test.tsx`.
+
 
 
 
@@ -3875,9 +4226,11 @@ Branch g7 (the A2.8a + A2.6 + A2.7a/b merge onto A2.8b; not pushed, not deployed
 
 
 
+
 ### fix: A2.8b - every anomaly is routed, the STR non-earner IC check, the eval reads genuineness (TD-111/119/121, CO-10) (2026-11-09)
 
 Branch a28b (not pushed, not deployed; no migration, no new model; MODEL_VERSION not changed, the change is appended to the 1.27.0 history in genuineness/results_doc.py). TD-119: on the STR route a non-earner parent's IC was cross-checked against an STR that names only the declared earner, so a genuine card read as a mismatch; now only the earner's card is checked against the STR (the relationship check is unchanged; regression test test_td119_non_earner_str_card.py). The other corpus misses are relabelled by owner ruling (a5, IC chain) or explained in labels.json corpus_known; the a16 parent IC is left as an owner design case. TD-111: test_anomaly_coverage_critic.py finds every anomaly flag from the engine and fails on any flag with no officer reason line (en/ms/ta) or decision path; all 19 are routed. TD-121: eval_doc_recognition --auto-ok reads the stored genuineness score, walks only doc-type folders, reads the owner offer rulings and the labels.json corpus notes, and takes --labels. CO-10 re-checked (audit row updated); S7 untouched. Eval: before 554/567 genuine passed, 6/10 counter caught; after 540/550 (all 10 misses explained), 24/27 caught. Offer genuineness 286/287 and offer parse EXACT 96 / WRONG 0, unchanged.
+
 
 
 
@@ -3893,9 +4246,11 @@ Third-check fixes (A2.8a, same branch). (1) A kept-out copy the re-read moved to
 
 
 
+
 ### fix: A2.6 - no student is told by silence; decision emails, notices and counts (TD-355/357/358/359/430/350/370/406) (2026-11-09)
 
 Branch a26 (not pushed, not deployed; no migration, no new model). A decision email that failed used to leave a status on her screen and no email, for ever. `services/decision_mail.py` derives the owed-email state from the stamps the sends already write (no new column) in one rule, `untold_reason`: the decision cron now retries each unsent decline or engine reveal on a fixed schedule (15 min, 1 h, 6 h, 24 h, 48 h, 72 h after the decision, each slot centred on its offset so cron jitter cannot double or skip one, so a failing send is metered about six times), then stops (TD-355, TD-357). `send_pending_decision_emails` no longer stops the run on one application's error. An embargoed decline whose send keeps failing is NEVER released without its email (review ruling): she keeps seeing her old stage, the release is tried on EVERY run for 72 hours after it falls due (a cron that was down still sends it at once), then once a day; the cockpit banner shows from the moment the release is due so an officer can tell her another way. The sweep's row lock is `of=('self',)` (PostgreSQL refuses FOR UPDATE over a nullable join). The cockpit shows an admin-only banner (`decision_mail` on the admin detail read, en/ms/ta) when she was never emailed: no address, or the send is failing (TD-358). The send stamp is re-saved in its own short write if the release loop's transaction rolls back (TD-359, partial: the window with the database down at that instant stays open). The weekly partner mail counts a cool-off decline at the stage the student is shown, by the one `student_facing_status` rule (TD-430). `_current_application` accepts an embargoed decline, so the upload door matches what she sees (TD-350); where two applications come back it still refuses (lead ruling: a lock-out is recoverable, a document filed under the wrong foundation is not), so an embargoed decline in one cohort plus a live application in another still refuses. The officer banner for an embargoed unsent decline is never aged out by the 90-day lookback. The query-reminder dry run uses the live sweep's own due rule `query_reminder_is_due` (TD-370). A later non-closing offer upload lifts the not-checked hold of the request it answers, and only that hold (TD-406). TD-356 was already fixed by TD-486 (recorded origin); a regression test now pins it. TD-363 is deferred: no existing field holds the closed-from status.
+
 
 
 
@@ -3905,11 +4260,13 @@ Branch a27b (not pushed). Only TD-448 shipped. MODEL_VERSION stays 1.27.0 (A2.7a
 
 
 
+
 ### fix: sprint A2.7a - offer reader live gaps, lines (TD-451, TD-452, TD-474, TD-447) (2026-11-09)
 
 Review fix (Medium): the type filter rejects only a campus that opens with the OTHER type, so "KK PERWIRA, UNIVERSITI TUN HUSSEIN ONN" names UTHM again (it had stopped naming it, and the course went unmatched). Regression test added; the residual "KK" = Kolej Kediaman risk is recorded under TD-452.
 
 Branch a27a (not pushed). MODEL_VERSION 1.26.0 -> 1.27.0; offer_parse PARSER_VERSION 2.0.0 -> 2.0.1. No migration, no new model. `offer_course_match.CampusReader`: a short type form opening the line is read as the type ("KK KLANG" is Kolej Komuniti Klang, "POLY ..." Politeknik, "METRO KUANTAN" Politeknik METrO Kuantan; whole word only, so POLYTECHNIC / METROPOLITAN are untouched), so such a line names its campus by the whole name (TD-452); a line that opens with "Kolej Komuniti" or "Politeknik" names by words only a campus of that type, so "KK BAGAN DATUK" is no longer Politeknik Bagan Datuk (TD-451); an apostrophe in a campus name is dropped ("Mu'adzam" is "muadzam"), so "POLY SULTAN ABDUL HALIM MUADZAM SHAH" names its own campus and not Politeknik Muadzam Shah. `offer_parse._read_block`: a one-word line straight above a postcode line is the town, never the wrapped end of the institution (TD-474; on the corpus no wrap sits above a postcode, so no read changes). `confirmation._confirmed_place`: the hostel line is read against the LETTER's own course, else the stored pick, so a stale stored course no longer leaves a hostel as the institution (TD-447); with no issuer the line is kept at once. TD-491 (multi-page scoring) measured and deferred (see technical-debt.md). Offline eval: 286 / 287 before and after (the one miss pre-existing); offer_parse_check unchanged (96 EXACT, 0 WRONG). Tests: `test_offer_pages_and_lines.py` (new); version pins in `test_offer_parse_s5.py`, `test_offer_exact.py`, `test_offer_parser.py`; `test_req66_iium_english_offer.py` now pins 1.26.0 or later.
+
 
 
 
@@ -3952,11 +4309,13 @@ Branch t2-revoke-delete (not pushed; no migration, model comments only). Owner, 
 
 
 
+
 ### perf: A2.3b - the first-assign profile draft leaves the assign request (TD-586) (2026-11-08)
 
 Review fixes: the 04:00 `backfill_assigned_profiles` and the `autogenerate_ready_profiles` sweep now skip a row queued as 'drafting' (it belongs to the cron queue, so it is never paid for twice); the manual Generate button is unchanged. `profile_finalise._claimable` is now public `claimable` (no behaviour change). New tests: a fresh claim blocks a second worker, a stale one can be taken again; the backfill and the sweep leave a queued draft alone.
 
 Branch a23b (not pushed). With `CHECK2_AUTO_GENERATE` on, the first assignment of a case no longer calls Gemini for the sponsor-profile draft before it replies. `assign_reviewer` only queues it (`apps/scholarship/assign_draft.py::queue_first_draft`): `finalise_state` 'drafting' on the A2.1 queue columns of `sponsor_profiles`, so **no migration and no new Scheduler job**. The `finalise-profiles` cron (`run_pending_finalise`, every 5 minutes) writes it after the verdict finalises (`draft_pending`) with the same `generate_ready_profile`, so the stored draft is unchanged: claim before the paid call, 3 attempts then back to no draft (where a failed inline draft left it; Generate still works), skipped while Gemini reads are down, dropped while the flag is off, no row claimed once the run is 210 s old. A re-assign, or assign-unassign-assign, never queues twice; a draft written meanwhile (Generate) is never paid for twice; the finalise worker leaves a drafting row alone. The assign reply is unchanged. Web: the case's profile card says "The profile draft is being written..." while it waits (`admin.scholarship.profileDrafting`, en/ms/ta). Tests: `test_assign_draft.py` 13 (the three handoff tests move there from `test_admin_scholarship.py`), `GeneratedProfile.finalise.test.tsx` +2.
+
 
 
 
@@ -3966,9 +4325,11 @@ Branch a23b (not pushed). With `CHECK2_AUTO_GENERATE` on, the first assignment o
 
 
 
+
 ### docs: request #54 ruling - a declared_str informal wage counts toward the household documents total and the tick (2026-11-08)
 
 Owner ruling: KEEP, by design. No code change. Recorded in `docs/decisions.md`.
+
 
 
 
@@ -3978,9 +4339,11 @@ Merge of a21, a22, a23 onto g6a (not pushed). The four `admin/me/` routes move u
 
 
 
+
 ### refactor: the sponsor signup memberships move out of sponsorship.py (2026-11-08)
 
 Branch invitations-consistency (not pushed). The merge of main put `apps/scholarship/sponsorship.py` at 1040 lines, over its `oversize_files` allowance (999 + 20). `signup_programmes_for(sponsor, *, freeze=False)`, `open_signup_memberships` and `settle_signup_memberships` move, unchanged, to the new `apps/scholarship/sponsor_signup.py` (65 lines); `sponsorship.py` is now 988. The per-gift writers (`sync_account_membership`, `set_programme_membership`, the `rejected_by_hand_at` stamp and their `select_for_update`) stay in `sponsorship.py`. No re-export: the callers (`views_sponsor.py` registration, `views_admin/sponsors.py` vetting) and three test files import `sponsor_signup`; comments, the role matrix and the architecture map name the new home. No behaviour change.
+
 
 
 
@@ -3990,9 +4353,11 @@ Branch invitations-consistency (not pushed), after merging main, which took `020
 
 
 
+
 ### fix: sprint I3 third review — existing hand rejections stamped, gifts fit the waiting row, memberships locked (2026-11-08)
 
 Branch invitations-consistency (not pushed). **Migration `scholarship.0207_invitation_gifts` gains a data step** (still unapplied): it stamps `rejected_by_hand_at` (with `vetted_at`, else now) on every membership REJECTED while its sponsor account is not; re-runnable, reverse a no-op; the hand SQL gains the UPDATE, a pre-check count and a post-check (0 rejected-without-stamp on a non-rejected account). Production today has no such row. **API:** an organisation-less super naming gifts on another organisation's waiting row is 400 `gift_not_in_invitation_org` (the row kept its organisation while taking the other tenant's gifts); `sync_account_membership` and `set_programme_membership` read the membership FOR UPDATE (no savepoint, so no extra query) and decide under the lock. Tests: `test_sponsor_multi_gift_invite.py` 39.
+
 
 
 
@@ -4002,9 +4367,11 @@ Branch invitations-consistency, on the I4 fix (not pushed). **Migration `scholar
 
 
 
+
 ### fix: sprint I3 review — sponsor invite gifts (2026-11-08)
 
 Branch invitations-consistency, on I4 (not pushed). The adversarial review of I3 (decisions.md, the I3 entry). **Migration `scholarship.0207_invitation_gifts` extended** (not yet applied anywhere; still additive): new nullable column `invitations.every_gift_resolved_at`; the hand SQL, checks and rollback in its docstring are updated. **API:** (1) a bare sponsor invite is a resend only for the inviter's own organisation's waiting invitation (or an organisation-less super's); another organisation's is a fresh choice, and `set_gifts` replaces the gifts, flag and resolution outright. (2) Every gift resolves exactly once, at registration, stamped even when it resolves to none; vetting reads the frozen rows and resolves only an invitation never frozen (rollback). (3) Account vetting never changes a REJECTED gift membership (`sync_account_membership`); the suspend / reinstate cascade stays because the credit gate reads the membership. (4) New `sponsor_invite_gifts.nameable`: an admin with an organisation, a super too, names and is offered only its gifts. Docstring and comment tidies in `views_admin/sources.py` and `source_invite.py`; `.claude/ARCHITECTURE_MAP.md` brought up to I3. Tests: `test_sponsor_multi_gift_invite.py` +9 (29).
+
 
 
 
@@ -4014,9 +4381,11 @@ Branch invitations-consistency, on I3 (not pushed). Roadmap `docs/plans/2026-11-
 
 
 
+
 ### feat: A sponsor invitation can name several gifts or Every gift (I3, 2026-11-08)
 
 Branch invitations-consistency, on I2 (not pushed). Roadmap `docs/plans/2026-11-08-invitations-consistency-roadmap.md`, sprint I3: owner ruling 1 and open point B (decisions.md). **Migration `scholarship.0207_invitation_gifts`** (additive): `invitations.every_gift` boolean default false, new table `invitation_gifts` (invitation, programme, unique pair, RLS + `service_role` policy), backfill of one row per sponsor invitation that already names a gift. ⚠ **MIGRATE-FIRST BY HAND before the push** — the SQL, checks and rollback are in the migration's docstring; Security Advisor after. **API:** new `sponsor_invite_gifts.py` (`choose` / `set_gifts` the one writer, `Invitation.programme` kept as the rollback mirror / `stated` / `joined_on_registration`). The sponsor invite takes `programme_ids` (`[]` = Every gift), the old `programme_id`, or nothing (a waiting invitation keeps its gifts — a resend never re-homes; else the sole active gift, or 400 `programme_required`); ids must be ACTIVE gifts in the admin's reach (else 404), an org-less super cannot send Every gift and may not span organisations (400). Waiting rows gain `gifts` and `every_gift`. `sponsorship.signup_programme_for` became `signup_programmes_for` (a list); its three callers make one PENDING membership per gift: registration (`views_sponsor` ×2) through `open_signup_memberships` (create-only: idempotent, never a downgrade), account vetting (`views_admin/sponsors`) through `settle_signup_memberships`. Every gift = the gifts active in the invitation's organisation when they register, frozen into rows then; a gift started later is not joined. The stranger rule is unchanged. **Web:** the Sponsor tab uses the reviewer `GiftTickList` with Every gift, always shown; nothing ticked to start (one gift: pre-ticked); with two or more a choice is required before sending; sends `programme_ids`; a failed send now shows a banner. The waiting table lists each invitation's gifts or "Every gift" under the name. Both tick lists are `role="group"` + `aria-labelledby`. `reviewerGifts` gains `NO_GIFT`, `nothingTicked`, `sponsorStartTicks` and `tickGift(…, allowNone)`. Keys added `admin.invitations.{sponsorGiftLabel, sponsorGiftRequired, sponsorGiftHelp, inviteFailed}`; removed the dropdown's `giftLabel` / `giftChoose`. Tests: `test_sponsor_multi_gift_invite.py` (20), `test_sponsor_into_gift.py` / `test_td214_cancel_invitation.py` updated to the list; web `staff/page.test.tsx` (sponsor gift block rewritten, 9 cases), `reviewerGifts.test.ts` (+2). ⚠ **The owner's phone check before go-live** (it decides which students a sponsor may browse). Tamil and Malay strings need language review.
+
 
 
 
@@ -4026,9 +4395,11 @@ Branch invitations-consistency, on I1 (not pushed; no migration). Roadmap `docs/
 
 
 
+
 ### feat: Invitations — one form and one waiting table on every tab (I1, 2026-11-08)
 
 Branch invitations-consistency (not pushed; web only, no API change, no migration). Roadmap `docs/plans/2026-11-08-invitations-consistency-roadmap.md`, sprint I1. All five Invite-as tabs on Organisation → Invitations now share one form layout (new `components/admin/InviteForm.tsx`: a label above every box, the tab's note under the fields, Send Invite at the left beneath it) and one waiting table (`InvitationsTable`, which gains an optional lead column, `TH` headings, phone cards via `TableFrame phoneRows`, and per-row `canResend`). Admin's note moved under the fields; Reviewer's gift help became its note; the Sponsor note box has a label ("Personal note"). Source and Mentor waiting lists render through `InvitationsTable` (Source with the source name first; "Waiting (date)", pages, a red "Cancel invitation"); Mentor's link now reads "Cancel invitation" but still calls the mentor revoke, with its confirm. Mentor's note shortened (en/ms/ta). Source's "Signed in" table untouched (I2). Unused keys `admin.invitations.source.col.sent` and `admin.invitations.mentor.col.*` removed; `pageWidth` exemption for `InvitationsTable` dropped (it has phone cards now). Tests: rendered per-tab form and table checks in `staff/page.test.tsx` (11), `MentorInvite.test.tsx` (+3), `SourceInvite.test.tsx` (+2); placeholder lookups changed to label lookups. Tamil strings need language review.
+
 
 
 
@@ -4038,9 +4409,11 @@ Branch req66 (not pushed to main; no migration; api only). App 523's genuine IIU
 
 
 
+
 ### chore: API build time limit 30 -> 45 minutes (2026-11-08)
 
 Branch build-timeout (no migration, no app code). `halatuju_api/cloudbuild.yaml` `timeout` goes from 1800s to 2700s. The test step now takes about 28 minutes, so the G5 build 5aad760c timed out during Deploy after test, Build and Push were green; Deploy and SyncReleaseJob were finished by hand with the same image (halatuju-api-01269-b2g). Takes effect on the next API build.
+
 
 
 
@@ -4049,6 +4422,7 @@ Branch build-timeout (no migration, no app code). `halatuju_api/cloudbuild.yaml`
 Branch req55 (not pushed to main; ⚠ MIGRATION `scholarship/0205_reviewer_notes`, MIGRATE-FIRST by hand: SQL in the migration docstring and in `docs/plans/2026-11-07-req55-reviewer-notes.md`). The org admin writes notes for the reviewer on the application page instead of texting them. New table `reviewer_notes` (model `ReviewerNote`: application, body ≤ 2,000, author + `author_email`, created_at; RLS on, `service_role` policy). New endpoint `GET/POST admin/scholarship/applications/<pk>/reviewer-notes/` through `_AdminBase`: read = the detail GET's fence (`_scoped_application`: super, org_admin, admin, qc, the assigned reviewer; unassigned reviewer / finance / partner 403, other organisation 404); write = super + org_admin (`writer_only` otherwise). Window: Awaiting review or Interviewing, until the reviewer records an Approve or Decline (`interview_completeness.decision_gate_applies`; a hold is not a decision; a reopen to Interviewing reopens it), else `notes_closed`; blank `empty_body`, over 2,000 `too_long`. Append-only: no edit or delete endpoint, `save()` refuses an update. Separate fetch, so the applicant-detail GET stays at 38 queries. No activity row (the note is its own record, as merchant-flag notes). `staff_footprint` counts the author's stamp. Web: `view/ReviewerNotesCard.tsx` directly under Reviewer assigned (a slot in `AssignAndWitness`): org admin sees the list, "Add a note", live counter ("97 / 2,000"), the append-only line and Add note; reviewer / QC a read-only list or "No notes from your org admin."; the box follows the served `can_add`. Guide (`role-org-admin`, `role-reviewer`, `role-qc`) and FAQ (org admin, reviewer) updated; role matrix and architecture schema list updated. Tests: `test_reviewer_notes.py` (permissions matrix, window, limit, append-only, never in student / sponsor / admin-detail payloads, only listed modules may name the model), web `ReviewerNotesCard.test.tsx`, `view.reviewerNotes.test.tsx`. Malay and Tamil strings need language review.
 
 Review follow-ups (request #55): (R1) a NUL or a lone surrogate in the body is a coded 400 `bad_body` (en/ms/ta), not a 500; (R2) a JSON body that is not an object is `empty_body`, not a 500; (R3) `add_note` locks the application row (`status_lock.lock_application_for`) and re-checks the window before inserting, so a note cannot land after a decision recorded at the same moment; (R4) the invisible set is spelled out (`reviewer_notes._INVISIBLE`: whitespace, zero-width and direction marks, U+00AD, U+115F/1160, U+180E, U+2800, U+3164, U+FFA0, BOM) and the card's counter trims with the same class, guarded by a drift test, so the 2,000 boundary and the blank check agree; (R5) the notes read writes `AUDIT reviewer_notes_read admin_id= app_id=` (ids only); (R6) the card says when a refresh fails while keeping the notes it has, and keeps a note's spaces (`whitespace-pre-wrap`); (R7) the rollback note in the migration and the brief: once notes exist, roll forward, never back. The reopen behaviour is unchanged pending the owner's ruling.
+
 
 
 
@@ -4061,6 +4435,7 @@ Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migr
 - The Malay and Tamil labels reuse the words the Admins and Reviewers tabs already use (Batalkan / Pulihkan, நீக்கு / மீட்டெடு), so the three tabs read alike in every language.
 
 Tests: `MentorsAdmin.test.tsx`, three new (offered and brought back through `resume`; not offered when not manageable; a refusal is shown).
+
 
 
 
@@ -4081,9 +4456,11 @@ Unused keys removed (en/ms/ta): `admin.mentors.note`, `staffNote`, `waiting`, `s
 
 
 
+
 ### chore: Team's Add Admin / Add Reviewer button moves onto the tab row (2026-11-08)
 
 Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migration, web only). Owner: the button sat on a row of its own. On `admin/organisation/reviewers` it now sits at the right end of the tab row (Admins, Reviewers, Mentors, Emails, Terms), sized like a tab (44 px on a phone), and outside the tablist, because a button there is not a tab to a screen reader. `PanelTabs` is unchanged (19 pages use it). Test: `page.test.tsx` "Add sits on the tab row".
+
 
 
 
@@ -4093,15 +4470,18 @@ Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migr
 
 
 
+
 ### chore: the Reviewers table drops the Languages column and the gift chips under a name (2026-11-07)
 
 Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migration, web only). Owner: both are on the reviewer's own page, and a gift is edited there, never from the table. `admin/organisation/reviewers/page.tsx` loses the Languages column (desktop) and the language chips (phone card), and the gift chips with their pencil (both layouts); the list no longer keeps the gift choices. The reviewer page (`[id]/page.tsx`) is unchanged and still shows languages and edits gifts. Tests: the list asserts no Languages column, no language or fourth-language chip, and no gift chip or pencil even with two gifts; the four list gift-chip tests are replaced (the editor stays covered in `[id]/page.test.tsx`); a new profile test pins the languages line with the fourth language.
 
 
 
+
 ### chore: Team tables no longer show "Only table: revoke instead" (2026-11-07)
 
 Branch chore-team-drop-last-table-note (pushed as a branch, not to main; no migration, web only). Owner: the note added nothing — Revoke already sits beside it. `RemoveControl` (`components/admin/TeamTables.tsx`) now draws nothing for the `last_table` code; the API still serves the code and still refuses the remove. `admin.team.note.last_table` dropped from en / ms / ta. The other two notes (`mentors_only`, `has_open_cases`) are unchanged. Test: `reviewers/page.test.tsx` now asserts no note and no Remove link for a person's only table.
+
 
 
 ### fix: Sprint A1.13 - award withdrawal and the one course-start read point (TD-198 / CO-09, TD-465 part 2) (2026-11-08)
@@ -4155,6 +4535,7 @@ Branch a113 (not pushed; no migration, no model change beyond a new activity eve
 
 
 
+
 ### fix: Sprint A1.12 - metering (TD-459, TD-428, TD-460 part b) (2026-11-07)
 
 Branch a112 (not pushed; no migration, no model change). Goal: what we bill and report matches what was used. Forward-only; no back-billing.
@@ -4164,6 +4545,7 @@ Branch a112 (not pushed; no migration, no model change). Goal: what we bill and 
 - **Not built, owner decisions (status lines in the register):** TD-422 (per-source busy-meter map), TD-425 (how a stranded correction carries), TD-174 (which senders an organisation pays for), TD-245 (needs a new table).
 - Tests: `test_usage.py` (+5), `test_offer_fresh_read.py` (meter now counts thinking), `test_email_verification.py` (+1); jest `IncomeWizard.saveFailed.test.tsx` (9, new). Tamil and Malay strings need language review.
 - New debt from the delta review (not fixed): TD-583 (stale `ans` in the wizard's `saveDeclared`), TD-584 (two course-catalogue commands call Gemini unmetered).
+
 
 
 
@@ -4177,9 +4559,11 @@ Copy fix: the `profile_failed` refusal no longer says "run finalise again" (the 
 
 
 
+
 ### fix: Sprint A2.2 - reprocess-ic-vision stays inside its time (TD-518, SP-02, SP-14) (2026-11-07)
 
 Branch a22 (not pushed; no migration, no model change, no env var needed). The hourly sweep ran p50 200 s and hit the service's 300 s limit (a 504 at 10:00 UTC). `reprocess_unread_ic_documents(time_budget=)` now stops cleanly between documents once the budget is spent (default 80 s, `REPROCESS_TIME_BUDGET_SECONDS`; `--time-budget` on the command) and the batch is 100, not 200 (`REPROCESS_BATCH_LIMIT`). Resume: the queue is the cursor (documents are stamped before they are read, so the next run starts at the first one not reached; none skipped, none read twice); the approval re-read pool, which can re-pick its own failures, resumes after the last document reached (shared-cache key, no migration). A stop adds `stopped_early` and `left` to the result and the command line; a full run is unchanged. What the job decides for any document, extraction and `MODEL_VERSION` are untouched. SP-14 is met by the time budget; a separate Cloud Run Job was not adopted (it would bypass `cron_health`; no infra change). Review: neither the Vision nor the Gemini client sets a per-read timeout, so the budget is 80 s (room for one slow read) and the gap is TD-585. Tests: `test_reprocess_time_budget.py` (5).
+
 
 
 
@@ -4190,6 +4574,7 @@ Branch a23 (not pushed; migration `0210_read_and_notify_queues`, written, not ru
 **Review fixes (2026-11-08, adversarial review BLOCK; no recognition change, MODEL_VERSION unchanged).** (1) A queued read is now judged against the slot's live copy AS IT IS NOW (the slot's live rows join the staged-against set; the pick is the existing SNAPSHOT_ORDER one), not the copy the upload saw; the plan's copy is the fallback only for an empty slot. Before, with an empty IC slot and two uploads both read by the cron, a mismatched second upload was judged against "nothing" and buried the good first one. (2) The assign-emails cron closes an event unsent (`notify_state` '', counted `stale`) when the case has been reassigned or unassigned since: only the current reviewer is mailed, and the student never hears an old interviewer's name. (3) The stuck-documents sweep no longer reads an IC or parent IC that is superseded with a later document over it (replaced, or its read dropped for a newer decided upload): no paid Vision call for a copy no verdict uses. TD-590 records that a retry after a failure past the paid call pays again (no code change). Tests: `test_upload_read.py` +1, `test_assign_notify.py` (reassign test now expects only the current reviewer, +1 unassign test), `test_reprocess_ic.py` +1.
 
 Second pass (2026-11-08): the empty-slot fallback to the plan's copy is dropped. A slot is empty only when that copy was moved out (collapse/dedupe) or deleted, so judging against it used a dead copy and left an unusable upload staged over an empty slot; the read now judges against nothing, as the old inline code did (+1 test in `test_upload_read.py`). Accepted Low: R1 -> R2 -> R1 reassignment before the assign-emails cron still mails R1 twice.
+
 
 
 
@@ -4207,9 +4592,11 @@ Branch a24 (not pushed; no migration, no model, no env var). Same responses, fie
 
 
 
+
 ### fix: a reviewer can move a booked interview to later the same day (TD-137) (2026-11-07)
 
 Branch fix/reviewer-reschedule-lead (not pushed; no migration). Reported by an interviewer the same day: moving a booked 1:30 pm interview to 3, 5 and 6 pm failed with "Could not save. Please try again." The picker's 2-hour reschedule notice (TD-137, 2026-06-21) was UI-only on the belief that the server accepted any future slot; the propose door has checked the organisation's 24-hour notice since 2026-06-19, so every same-day reschedule was refused as `too_soon`. The propose door now applies `RESCHEDULE_MIN_LEAD_HOURS` (2, new in `constants.py`) only when `reschedule` is sent AND the interview is booked; a first proposal still meets the full notice. The card names a `too_soon` refusal ("…at least N hours from now", en/ms/ta) instead of the bare error. Tests: `test_reviewer_reschedule_lead.py` (6; the same-day move fails on the old code), web `InterviewScheduleCard.test.tsx` (3, rendered), `rescheduleLeadDrift.test.ts` (the picker's copy is the server's number, and the door reads it). Tamil string needs language review.
+
 
 
 
@@ -4219,9 +4606,11 @@ Branch fix-higher-undeclared-followup (not pushed to main; no migration). Owner,
 
 
 
+
 ### fix: a degree student under a stale STPM code is paid on the university schedule (2026-11-07)
 
 Branch fix-degree-schedule, stacked on fix-degree-estimate (not pushed to main; no migration). Owner, #251: the cockpit already treats it as post-STPM (STPM results owed), so it must not be paid on the STPM schedule. `contracts.pick_schedule_row` (shared by templates and `default_schedule`) now reads `award._sized_as_stpm`: a degree-bound student whose `chosen_pathway` is still 'stpm' takes the `university` row (10 × RM200 = RM2,000, the same as its award) instead of STPM's 15 payments (RM3,000) or the continuing 5 (RM1,000). A Form 6 student is unchanged. Every live template and the default carry a `university` row. Tests: +2 in `test_default_schedule.py` (one fails on the old code). Review follow-up (pkg-laptop): the remap applies only while the stored `award_amount` is empty or RM2,000; a stored award never resizes, so a degree-bound student already holding RM3,000 / RM1,000 on the 'stpm' code keeps the STPM row (payments match the award and the agreement). Latent (no live case today). Docstrings in `award.proposed_award_amount` and `contracts.schedule_row_for` corrected. Tests: +3 in `test_default_schedule.py` (two fail on the unguarded code).
+
 
 
 
@@ -4231,9 +4620,11 @@ Branch fix-degree-estimate (not pushed to main; no migration). Owner decisions 1
 
 
 
+
 ### fix: every degree student must have higher results on file; declare AND upload (2026-11-07)
 
 Branch fix-higher-owed-spm (not pushed to main; no migration). Owner, apps 158 / 168 / 247, widened the same day. `higher_owed` now owes the higher results for a submitted, degree-bound application before Recommended on an intake that asks for them: (1) declared SPM only — kind `UNSPECIFIED`, the drawer slot and the new reason `higher_results_not_declared` name all four, Academic at best Unsure, and a new Check-2 ask `higher_results_declare_requested` (enter the results on the exam-type page AND upload; an upload alone never closes it); (2) a legacy row with STPM grades entered but a recorded SPM completion, which #388's rule missed — owed as 'stpm', #388's slot, cap and ask, the upload carries 'stpm'; (3) an undeclared upload on file reads at best Unsure with `higher_results_undeclared`, also for snapshots frozen after S3a. Degree-bound also counts a degree course name when there is no catalogue course, even under a stale post-SPM pathway code (`destination()` unchanged). UA diploma, PISMP, D16c intakes and Recommended-or-later are exempt. These two asks alone may also be raised while interviewing / interviewed (owner, the same day: `higher_owed.may_raise`); every other ask keeps the Completed-stage rule. `answers_higher_ask` refuses an upload detected as an SPM slip. `VERDICT_ENGINE_VERSION` 2026-11-07.1. Tests: `test_higher_owed_spm_only.py` (34), two #388 tests updated for the reversed ruling, web `higherOwed.test.tsx` and `ActionCentre.stpmAsks.test.tsx`. Tamil strings need language review.
+
 
 
 
@@ -4249,6 +4640,7 @@ Branch a19b, on a19 (not pushed; web + two hand-apply SQL files; no migration, n
 - **TD-550 (new):** the owner's steps: apply the two SQL files (suggested SEC-14 then SEC-11), check the five headers on the live web after G4, rule on web HSTS.
 - Tests: `searchTermHeader.test.ts`, `sharedPhoneOwner.test.tsx`, `securityHeaders.test.ts` (new).
 - **Review fix (TD-458, MEDIUM):** React mounts the pages before the provider's effects, so a page such as `/onboarding/grades` copied the last student's grades into its state before the wipe, and its Continue wrote them back untagged for the next sign-in to upload. `claimStudentData` now returns true when it wipes, and the provider then re-keys its children so every page is rebuilt from the wiped storage. Not a synchronous first-render check: a lapsed session still sits in storage as its owner's (expired) until the refresh fails, the same as a returning student's. Normal paths never wipe, so never rebuild. 4 tests added (15 in the file).
+
 
 
 
@@ -4270,12 +4662,14 @@ Branch a19 (not pushed; API only; no migration, no SQL, no model change). Safe t
 
 
 
+
 ### fix: Sprint A1.10b - retire the legacy super flag, and the editor's QC rule (TD-064, TD-499) (2026-11-07)
 
 - TD-064: `role` is the only super marker. `PartnerAdmin.is_super_admin` is gone from the model and from every reader and writer in courses and scholarship; `is_super` reads the role. The API key `is_super_admin` stays, computed from the role. Migration `courses/0093_retire_partneradmin_is_super_admin` (state-only for the field): re-makes the two CHECKs without the flag and gives the column a DB default. ⚠ DEPLOY ORDER: run the pre-check SELECTs, the owner applies STEP 1 (SQL in the migration docstring) BEFORE the push, then push; after the new image serves all traffic, STEP 2 drops the column by hand. Do not demote a super between the steps.
 - TD-064 review follow-ups: no new or demoted super between STEP 1 and STEP 2 (rollback safety); follow-up migration 0094 (DROP COLUMN IF EXISTS, state no-op) to add after STEP 2; legacy-super-flag tests renamed or removed; stale help_text and CLAUDE.md text fixed.
 - TD-499: the web permission editor now matches the server: Quality check brings See all students, which stays ticked and locked while Quality check is on; See all students off no longer strips Quality check. The unused `admin.permEditor.qcHint` message is removed (en, ms, ta).
 - Tests: `test_td064_role_only_super.py` (new); about 70 API test fixtures switched from the flag to `role='super'`; `PermissionEditor.test.tsx` TD-499 block.
+
 
 
 
@@ -4286,6 +4680,7 @@ Branch a110a (not pushed; no migration). RD-03: no production door calls the uni
 Review follow-ups (A1.10a): (1) web: the wallet-credit check button and the "awaiting finance" line follow the key `payments_approve` (`hasPerm`), not the `finance` label, as the server does (`sponsorDetail.creditActions`). (2) A keyed admin who records and signs a credit as maker is no longer the only possible checker: the check is armed per credit, only when an active holder who has NOT signed that credit exists (`payments_chain.credit_check_required(org, credit)`), so a sole keyed admin's credit goes straight to the organisation admin; with a second keyed person the check stays required and the same person still cannot sign twice. Sponsor detail sends each credit's `check_required` so the screen agrees. (3) The permission editor names a new consequence `credit_check_on` when giving `payments_approve` to the first active holder (signed in or not, as the arming rule counts). (4) A reopen treats a revoked assignee as unable to review (`reviewer_cannot_review`); a reopen back to QC is still allowed. Tests: `test_wallet_credit`, `test_sponsor_detail`, `test_permission_editor`, `test_decision_reopen`; jest `sponsorDetail.test.ts`, `sponsors/[id]/page.test.tsx`.
 
 Tidy-up (A1.10a): the four new page-read doors are renamed apart (`may_read_announcements`, `may_read_surveys`, `may_read_development`, `may_read_mentoring`) to satisfy the one-rule-one-home test; the reopen refusal for a reviewer who cannot review now also says to Restore a revoked one; TD-560 and TD-561 logged.
+
 
 
 
@@ -4300,6 +4695,7 @@ Branch a111a (not pushed; no migration). Built to the owner's rulings of 2026-11
 - TD-496 closed (owner ruling B): retired the unused graduation-messages list (`AdminGraduationMessageListView`, route `admin/graduation-messages/`, its tests); the review POST is untouched. No hits in 30 days of logs, no web caller.
 
 Tests: `test_a111b_decline_and_close_gates.py` (new), `test_close_stalled.py`, `test_reject_buckets.py`, `test_td481_awaiting_qc_decline.py`, `test_a111a_reject_reason_qc_refusal.py`, `test_staff_activity.py` updated; jest `closeOfferDrift.test.ts`, `view.close.test.tsx`.
+
 
 
 
@@ -4319,9 +4715,11 @@ Tests: `test_a111a_footprint.py` (11), `test_a111a_evidence.py` (6), `test_a111a
 
 
 
+
 ### fix: G3 gate fixes - audit logger name and bundle weight (2026-11-07)
 
 Not pushed; no migration. `income_engine/freshness.py` now logs under the written-out name `apps.scholarship.income_engine` instead of `getLogger(__name__)` (the audit-logger test refuses `__name__`). `uploadContentType.ts` keeps its extension table inside the function: a top-level const made the module count as having side effects, so the `@/lib/api` barrel could no longer drop the documents client from pages that never use it, adding about 2.8 kB to the median route's first-load JS. Median back to 156.631 kB (live 156.627; budget 157.6). Behaviour unchanged.
+
 
 
 
@@ -4333,11 +4731,13 @@ Review follow-up (lock order): the offer rows are now locked BEFORE the call row
 
 
 
+
 ### fix: sprint A1.7 - uploads cannot overwrite a stored file; iPhone request screenshots are converted (TD-467 / SEC-18, TD-173, 2026-11-06)
 
 Branch a17 (not pushed; no migration, no live setting changed). The student document door and the request-attachment door now sign upload URLs with `create_signed_upload_url(path, upsert=False)`, as the development modules already did, and the two web clients (`uploadFileToSignedUrl`, `uploadOrgRequestAttachment`) stop sending `x-upsert: true`. A signed URL can no longer write over the file at its key. No flow relied on overwriting: every sign issues a fresh key. TD-173: a HEIC / HEIF request attachment is converted to JPEG at record by the same `imaging.convert_heic_to_jpeg` as the documents (soft; a failed conversion keeps the original). The private bucket's type list and 25 MB cap are written, from a read-only look at the live objects, in `docs/security/2026-11-06-b40-documents-bucket-limits.sql` and are NOT applied (owner step; TD-467 stays open for it). Tests: `test_a17_upload_no_overwrite.py` (12; 6 fail on the old code), web `uploadNoUpsert.test.ts` (3; all fail on the old code).
 
 Follow-up: the four upload clients now send the Content-Type through `uploadContentType` (web `lib/uploadContentType.ts`: browser type, else by file extension, else octet-stream), so a typeless .heic still passes the bucket list; the SQL list also gains image/jpg, image/avif and the heic/heif sequences (SVG stays out).
+
 
 
 
@@ -4351,11 +4751,13 @@ Review follow-ups (A1.8): the eval fixture `build_application_with_docs` gives a
 
 
 
+
 ### feat: a reviewer covers a list of gifts, not one (owner design) (2026-11-07)
 
 API and web; migration `courses 0092_reviewergift` (new table `reviewer_gifts`; NOT yet applied live, it needs the owner's yes and goes BEFORE the deploy). A reviewer's gifts are now `ReviewerGift` rows; no rows means every gift and is the default. `POST admin/reviewers/<pk>/programme/` takes `{"programme_ids": [...]}` and refuses a gift from another organisation with a 404 (audited). The case's gifts are `application.programme` and `cohort.programme` as one set (TD-531 b); a reviewer outside them is still refused with `gift_mismatch` 400; QC is unchanged. Web: Team -> Reviewers shows gift chips (or one blue "Every gift" chip) and a pencil pop-over with an "Every gift (default)" tick plus one tick per own-organisation gift; the reviewer invite form uses the same tick list, "Every gift" ticked, with "Match reviewers to gifts by their strengths and interests."; the case-assign picker greys a reviewer as "Does not cover <gift>". `PartnerAdmin.programme` is now a write-only mirror (TD-540 drops it). Tests: `test_multi_gift_reviewers.py` and updated API tests; `reviewerGifts.test.ts`, the reviewers, staff and cockpit tests. TD-531 fixed, TD-540 raised.
 
 **Review follow-ups (adversarial review: SHIP).** (1) Set-gifts now answers 404 to a non-super admin with no organisation (it used to resolve every organisation's reviewers); regression test added; the same gap on the other reviewer endpoints is logged as TD-541, not fixed. (2) The web reads a reviewer's `gifts` as `?? []`, so an old API response cannot crash the cell (jest added). (3) Plan doc gains Deploy steps (migration first, API before web, the read-only backfill check). (4) TD-542 (picker reads the application's gift only) and TD-543 (audit gaps) logged.
+
 
 
 
@@ -4365,9 +4767,11 @@ The cockpit ticked Household income whenever every earner was read, even outside
 
 
 
+
 ### fix: request #58 - a mentor's My Profile Save keeps their qualifications, languages and address (2026-11-06)
 
 Web only; no server change. The profile page's second save step sent the reviewer's pause switch for everybody, so the server refused it with `not_reviewable` for a mentor or a staff member who mentors without reviewing, nothing on that step saved, and the page showed the raw code. The pause is now sent only for someone who reviews cases (`reviewsCases`, the rule that shows the switch) and only when it changed. A refusal on any step reads in words: new `admin.myProfile.error.not_reviewable` (en/ms/ta; Tamil awaits language review), and an unknown code falls back to "Failed to update." instead of the raw code. `updateReviewerProfile` goes through `adminMutate` so its refusals carry a code. Tests: `admin/profile/page.test.tsx` (rendered: mentor and staff mentor send no pause, both steps save, no raw code), `test_request58_profile_save.py` (mentor, staff mentor and reviewer through the real endpoints; a non-reviewer's pause still refused). Decision: `docs/decisions.md`.
+
 
 
 
@@ -4377,9 +4781,11 @@ Web only. `AppShell` skips the payment-runs count for a super admin with no orga
 
 
 
+
 ### feat: the Matric / Asasi / Diploma CGPA entered carries a tick when the uploaded results read the same CGPA (owner) (2026-11-06)
 
 Web only. `fieldVerifications` → `higherCgpa` from the live higher-results upload's CGPA chip (`cgpa_status` 'match', within 0.05); `ApplicantCards` shows it beside "CGPA entered". New source label `admin.scholarship.verified.source.higherResults` (en/ms/ta; Tamil awaits review). Tests: `fieldVerification.test.ts`, `ApplicantCards.thirdRoute.test.tsx`.
+
 
 
 
@@ -4389,9 +4795,11 @@ Web only. `fieldVerifications` → `higherCgpa` from the live higher-results upl
 
 
 
+
 ### fix: request #62 follow-up - the cockpit's SPM grades tick needs the subjects to check out too (2026-11-06)
 
 Web only, no server change. `fieldVerifications` ticks `grades` only when the results slip reports BOTH `subjects` and `results` as a clean match; before, `results` alone earned it, so app 262 (a typed Add Maths not on the slip, flagged "please check") still showed the tick beside her SPM prerequisites (owner: a tick means every value checks out). Tests: `fieldVerification.test.ts`. The STPM tick likewise needs `stpm_marks.all_subjects` == 'match' (served from `student_higher_check.grades_status`), so a printed STPM subject she did not enter withholds it. Tests: `test_stpm_marks.py`, `ApplicantCards.stpmMarks.test.tsx`.
+
 
 
 
@@ -4405,9 +4813,11 @@ Branch a13 (not pushed; no migration, no data change). A reviewer invite must ch
 
 
 
+
 ### fix: request #61 - a decision save that loses its answer says it may already be saved; engine_error has its own message (2026-11-06)
 
 Web only, not pushed, no server change. `adminMutate` marks a fetch that gets no response (`code: 'network_failure'`, `status: 0`, browser message kept); the cockpit's record-verdict save shows "Your decision may already be saved. Reload the page and check before pressing again." instead of Safari's "Load failed" (`officerCockpit.verdictSaveErrorText`), and a finalise `engine_error` gets `finaliseEngineError` instead of `finaliseNoDraft`. en/ms/ta; Tamil awaits language review.
+
 
 
 
@@ -4417,15 +4827,18 @@ Branch req62 (not pushed; no migration; `VERDICT_ENGINE_VERSION` 2026-11-06.5; `
 
 
 
+
 ### fix: request #62 - every SPM reader uses the SPM prereq for STPM/Matric/Diploma/Asasi students (owner 2026-11-06)
 
 Branch req62 (not pushed; no migration, no data change; `PROMPT_VERSION` not bumped - see review 3). The AI profile and gap prompts, `spm_a_count`, `english_only_email`, the PISMP aliran / STPM bidang defaults, the pool's academic band and the SPM merit read through `exam_questions.spm_grades_for`; a tertiary holder with no prereq reads "not declared (optional for this route)" in the two prompts. Tests: `test_spm_readers_prereq_only.py`, the `PROMPT_VERSION` pin in `test_third_route.py`.
 
 
 
+
 ### fix: request #62 review 2 - nothing compared means nothing shown; no tick without a checked subject
 
 Branch req62 (not pushed; no migration; `VERDICT_ENGINE_VERSION` 2026-11-06.4). No raw `not_compared` key on the student checklist (its rows are absent), `results` 'not_compared' (grey in the cockpit), a prereq of unknown keys / blank grades is not compared, no "All 0 grades match", a short read ticks only when every entered subject was graded, no `grades_unverified` hold without a prereq, a singular "1 grade matches" in en/ms/ta. Tests: `test_three_exclusive_spm_routes.py` (NothingComparedNothingShown), `slipExtra.test.tsx`, `officerCockpit.test.ts`.
+
 
 
 
@@ -4437,11 +4850,13 @@ Branch req62 (not pushed; no migration, no data change; `VERDICT_ENGINE_VERSION`
 
 
 
+
 ### fix: request #62 - a typed subject not on the results slip is flagged (please check); English slip names folded
 
 Branch req62 (not pushed; no migration, no data change; `VERDICT_ENGINE_VERSION` 2026-11-06.1). Decisions: `docs/decisions.md` "Request #62".
 
 - `compare_academics` returns `extra` (typed, not on a fully read slip); the verdict raises `academic_extra_subjects`, the ladder counts it like a missing subject, the slip check reads `subjects` 'mismatch', and the cockpit chip, the student's checklist and the coach (`slip_subjects_extra`) show it in en/ms/ta. Never a submission block. English slip names (MATHEMATICS, PHYSICS, ...) now match the Malay subjects. A short read (fewer rows than the slip's printed subject total, or a compulsory subject absent) never raises it. Tests: `test_slip_extra_subjects.py`, `view.slipExtra.test.tsx`, `ScholarshipDocuments/slipExtra.test.tsx`.
+
 
 
 
@@ -4464,6 +4879,7 @@ Tests: `test_lifecycle_lock.py` (17 regression tests fail on the old code and pa
 
 
 
+
 ### fix: Sprint A1.4 - no money moves on a status read earlier (TD-383 part 1: TD-367, TD-365, TD-420) (2026-11-06)
 
 Branch a14 (not pushed; no migration, no model change; api only). New choke-point `apps/scholarship/status_lock.py`: `lock_application_for` / `lock_applications_for` lock the application row inside the caller's transaction, re-read it, refuse unless the status is in the caller's set, and copy the fresh fields onto the caller's object. Lock order: payment run, then application rows by pk, then child rows. Used by:
@@ -4476,6 +4892,7 @@ No amounts, rules or flows changed. Tests: `test_status_lock.py` (each race stag
 
 
 
+
 ### chore: Sprint A1.1 - Next 15 upgrade (2026-11-06)
 
 **Owner-approved budget raise (2026-11-06, option A).** Next 15 + React 19 grew the shared JavaScript under every route from 88.5 to 104 kB, so the four first-load lines in `halatuju-web/code-standards.json` were raised to the new build plus 2 kB, rounded down: median 146.5 -> 158.6 (build 156.627), /profile 195 -> 205.5 (203.576), /scholarship/apply 189 -> 199.7 (197.703), /scholarship/application 209 -> 218.6 (216.684). The owner approved + 3 kB; the ratchet's existing 2 kB slack refuses a line more than 2 kB over the build, and no other rule was changed. `scripts/bundle-budget.js` leaves out Next 15's root metadata route handlers (`/manifest.webmanifest` and kin, only with their `/route` manifest entry); tests in `bundleBudgetReader.test.ts` show a real page row is still checked and any other row without a page entry still refused.
@@ -4483,6 +4900,7 @@ No amounts, rules or flows changed. Tests: `test_status_lock.py` (each race stag
 Earlier the same day the sprint had stopped at the bundle gate:
 
 Web moves from Next 14.2.35 to 15.5.29, React 18 to 19.2.9 (types and eslint-config-next to match). React 19 ref and JSX types fixed in nine files; five plain admin/sponsor login links became next/link (Next 15's lint now checks App Router routes); the sandbox surface page reads its segment with useParams (params is a Promise in Next 15). Three apply-page tests now wait for the restored draft step and the seeded referral answer, which React 19 commits a render later. Gates pass (419 suites, 6530 tests, 7730 keys). npm audit 30 (1 critical, 4 high) -> 28 (0 critical, 1 high: postcss 8.4.31 pinned inside next, build time only). **The bundle gate is red:** the shared chunk under every route rose 88.5 -> 104 kB, so the median (~157 against 146.5), /profile (204 against 195), /scholarship/apply (198 against 189) and /scholarship/application (217 against 209) are all over budget, and `scripts/bundle-budget.js` refuses Next 15's new `/manifest.webmanifest` row (no page entry). Budgets not changed; needs the owner's ruling.
+
 
 
 
@@ -4497,15 +4915,18 @@ Branch a12 (not pushed; no migration; api only). `pip-audit -r requirements.lock
 
 
 
+
 ### docs: Sprint A0.3 - documents brought up to date (2026-11-05)
 
 Docs only, no code, not pushed. `docs/roadmap.md` rewritten at v3.1.0; live flag table (26 switches, read off the running services, secrets by name only) in `docs/deployment.md`; every plan file has a Status line and 88 finished or superseded ones are in `docs/plans/archive/` (links updated); `halatuju_api/CLAUDE.md` cut from 30.5k to under 20k characters with the detail moved into `docs/` (nothing deleted); TD-522 resolved (`td_open` 208 -> 207).
 
 
 
+
 ### docs: Sprint A0.2 - debt register swept and the Consolidation Review (2026-11-05)
 
 Docs only, no code, not pushed. 25 register entries closed on file:line evidence (11 FIXED, 6 STALE, 8 MERGED), 4 UNSURE ones left open with a note; `td_open` 233 -> 208. Open Items Index regenerated (208 pointers). Consolidation Review written, Pending cleared, 25 unlogged commits logged. Project CLAUDE.md gains the commit-type rule.
+
 
 
 
@@ -4521,6 +4942,7 @@ Branch sec-a (not pushed; no migration, no data change, api only). Decisions: `d
 
 
 
+
 ### fix: money - STPM cases with an unknown course start year stop for QC instead of an automatic RM3,000 (TD-465)
 
 Money hotfix during the audit freeze (live defect confirmed by an audit verifier). Not pushed; no migration.
@@ -4533,9 +4955,11 @@ Money hotfix during the audit freeze (live defect confirmed by an audit verifier
 
 
 
+
 ### chore: TD-066 temp help box removed
 
 - TD-066 closed (owner ruling "Remove the box"): the TEMP tech-support help box (with its personal mobile number) is removed from the student application page, with its message key in en, ms and ta; a guard test keeps it out.
+
 
 
 
@@ -4545,8 +4969,10 @@ Money hotfix during the audit freeze (live defect confirmed by an audit verifier
 
 
 
+
 ### Requests (Lane B)
 - Request #57 (wording only; no rule, permission or refusal changed): inviting an existing team member (organisation admin, admin or reviewer of the SAME organisation, not yet a mentor) as a mentor is still refused 409, now with code `already_team` and a message that points to Mentors, "Add Mentor" (the staff-member sheet). Any other existing sign-in keeps `already_staff`. Strings in en/ms/ta (`admin.mentors.error.already_team`); tests in `test_mentors.py` and `MentorInvite.test.tsx`.
+
 
 
 
@@ -4555,10 +4981,12 @@ Money hotfix during the audit freeze (live defect confirmed by an audit verifier
 
 
 
+
 ### Case 254 — the interview submit refusal is shown beside its button (bug, no charge; branch fix/interview-submit-refusal-inline, not deployed)
 - A reviewer pressed "Submit interview findings" with every agenda question unanswered; the refusal ("Answer every question before you submit") printed only at the foot of the right-hand Decision card, so from the Interview card nothing seemed to happen and Recommend/Decline stayed asleep. TD-253 says the refusal is given "in words"; out of sight it was not.
 - Interview save/submit errors now print inside the Interview card, under the buttons (`interviewError`, no longer the page `error`); a refusal clears as soon as the reviewer changes an answer.
 - New live line under the buttons: "Questions still to answer: N. Mark each one Resolved, write a short note such as “See conclusion”, or delete it." (`admin.scholarship.interview.stillToAnswer`, en/ms/ta; ms/ta marked for language check). Counted from the unsaved findings with the same rule the api applies (`missingAgendaItems`). No api change. Tests: two in `view.decision.test.tsx`.
+
 
 
 
@@ -4572,6 +5000,7 @@ Money hotfix during the audit freeze (live defect confirmed by an audit verifier
 ## v3.1.0 - 2026-11-05
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.
+
 
 
 
@@ -7040,6 +7469,7 @@ inserting profile rows because every new column has a database default), then AP
 
 
 
+
 ### S2 review fixes (adversarial review, 2026-10-31)
 
 - **Lead fix** — `supabase_admin.verify_password` treats only GoTrue's wrong-credential codes
@@ -7272,6 +7702,7 @@ backend change. NOT deployed.
   fetch), `sourceConsoleDrift.test.ts` (stages = `STAGE_LINES`, parts = `PARTS`, words in three locales),
   `set-password/page.test.tsx`; updated on purpose: `navigation.test.ts`, `adminLanding.test.ts`, the Invitations and
   Sources page tests, `sources-api.test.ts`, `AppShell.test.tsx`.
+
 
 
 
@@ -7825,6 +8256,7 @@ docstring; migrate BEFORE the deploy).
 
 
 
+
 ### Adversarial review fixes (2026-10-30)
 - **B1 / SF1 — non-final only on POSITIVE evidence** (lead decision, within the owner's intent): a
   page is ruled non-final only by a slip's or a polytechnic portal's own wording, or a transcript
@@ -7861,6 +8293,7 @@ docstring; migrate BEFORE the deploy).
 
 
 
+
 ### Re-review fixes (2026-10-30)
 - **Blocker — a bundled final transcript is never non-final:** before any ruling, if the text holds
   a WHOLE final transcript once slip / portal wording is ignored (Matriculation: the bilingual
@@ -7876,6 +8309,7 @@ docstring; migrate BEFORE the deploy).
   **Small intended change for STPM:** with two live higher-results uploads, the verdict (and its
   genuineness step) now reads an OLDER genuine one over a NEWER suspect or online-checker page,
   where before it read the newest.
+
 
 
 
@@ -12035,6 +12469,7 @@ skipped**, **jest 3,118 / 176 suites**. After: **pytest 7,185 / 3 skipped** (+68
 
 
 
+
 ### Changed
 
 - **`income_engine.has_valid_str` asks WHOSE STR it is.** It was currency-only (`current` /
@@ -12066,6 +12501,7 @@ skipped**, **jest 3,118 / 176 suites**. After: **pytest 7,185 / 3 skipped** (+68
 
 
 
+
 ### Added
 
 - **`tests/test_income_whose_str_vouches.py`** — the four callers plus the live and frozen
@@ -12091,6 +12527,7 @@ skipped**, **jest 3,118 / 176 suites**. After: **pytest 7,185 / 3 skipped** (+68
 
 
 
+
 ### Unchanged, by proof
 
 - The submission gate and every blocker code; `application_completeness`; the cash door's route
@@ -12106,6 +12543,7 @@ pushed or deployed.
 
 
 
+
 ### Added
 
 - **"All gifts" in the breadcrumb's gift menu** on Applications and the Programme Overview only,
@@ -12114,6 +12552,7 @@ pushed or deployed.
   the Overview's round goes with the gift. New key `admin.shell.allGifts` — "All gifts" /
   "Semua pemberian" / "எல்லாக் கொடைகள்" (the codebase's existing words for "every gift").
 - **The admin manual** (`basics-programme`) says where "All gifts" is offered.
+
 
 
 
@@ -12138,6 +12577,7 @@ heavier**; six routes may now cross the median budget before the median does. Ga
 
 
 
+
 ### Changed
 
 - **The three Supabase browser clients build ONLY the auth client** (`src/lib/supabaseAuthClient.ts`,
@@ -12152,6 +12592,7 @@ heavier**; six routes may now cross the median budget before the median does. Ga
 
 
 
+
 ### Added
 
 - **`npm run bundle-budget` prints a tightness note** on every run: the median's distance from its
@@ -12161,9 +12602,11 @@ heavier**; six routes may now cross the median budget before the median does. Ga
 
 
 
+
 ### Measured and not kept
 
 - **TD-289 (split `Toast.tsx`)**: 0.40 kB on `/`, under the 0.5 kB bar. Reverted; TD-289 stays open.
+
 
 
 
@@ -12178,6 +12621,7 @@ Baselines measured first, agreeing with the brief: **pytest 7,117 / 3 skipped**,
 168 suites**, bundle median **256 kB** / worst **339 kB**. After: **pytest 7,117 / 3 skipped**
 (web sprint; no api change), **jest 3,076 / 174 suites** (+55 tests, +6 suites), bundle median
 **256 kB** / worst **339 kB** — with no headroom (see TD-300). Not committed, pushed or deployed.
+
 
 
 
@@ -12199,6 +12643,7 @@ Baselines measured first, agreeing with the brief: **pytest 7,117 / 3 skipped**,
 
 
 
+
 ### Changed
 
 - **A gift asked for and not recognised is "no gift" on the money pages even on a single-gift
@@ -12208,12 +12653,14 @@ Baselines measured first, agreeing with the brief: **pytest 7,117 / 3 skipped**,
 
 
 
+
 ### Fixed
 
 - **TD-298 — a slow reply for the gift you left no longer overwrites the new one.** Payments and
   Applications drop a stale effect's replies; Spending gives every read a ticket and only the
   newest lands — the correction takes its ticket BEFORE the save, so a gift switch during the save
   skips its re-read (found by the sprint's own `/code-review`).
+
 
 
 
@@ -12250,6 +12697,7 @@ programme, that question shouldn't even arise."*
 
 
 
+
 ### Fixed
 
 - **Payments with two gifts and none chosen no longer offers a button the server can only
@@ -12257,6 +12705,7 @@ programme, that question shouldn't even arise."*
   from" with nowhere to say it. The page no longer draws any list, figure or button without a gift.
 - **The breadcrumb no longer lies on a payment run or an application.** It used to offer a switch
   the page ignored, and to ask "which gift?" in a fresh tab above a record that belongs to one.
+
 
 
 
@@ -12286,6 +12735,7 @@ programme, that question shouldn't even arise."*
 
 
 
+
 ### Added
 
 - New string `admin.payments.paysFrom` — en *"Pays from: {name}"*, ms *"Dibayar daripada:
@@ -12301,6 +12751,7 @@ programme, that question shouldn't even arise."*
 Baselines measured first: **pytest 7,086 / 3 skipped** and **jest 2,982 / 166 suites**, both
 agreeing with the brief. After: **pytest 7,104 / 3 skipped** (+18, all new) and **jest 2,982 /
 166** unchanged.
+
 
 
 
@@ -12330,6 +12781,7 @@ agreeing with the brief. After: **pytest 7,104 / 3 skipped** (+18, all new) and 
 
 
 
+
 ### Added
 
 - **`apps/scholarship/tests/test_document_snapshot.py` — the proof, and it is permanent.** The
@@ -12346,6 +12798,7 @@ agreeing with the brief. After: **pytest 7,104 / 3 skipped** (+18, all new) and 
 
 
 
+
 ### Unchanged, deliberately
 
 - **No verdict, band, gate, blocker or chase moved.** `VERDICT_ENGINE_VERSION` is NOT bumped, and
@@ -12359,6 +12812,7 @@ agreeing with the brief. After: **pytest 7,104 / 3 skipped** (+18, all new) and 
 
 
 
+
 ### Found while doing it (reported, not fixed)
 
 - **TD-292** — `ORDER BY uploaded_at DESC` carries no tie-breaker anywhere, so "the latest
@@ -12369,6 +12823,7 @@ agreeing with the brief. After: **pytest 7,104 / 3 skipped** (+18, all new) and 
   proven so: the same exception is raised with the snapshot switched off.
 - **TD-291** — the admin Requests list and the student's own read were profiled with the same
   harness and the numbers are in that entry. Neither was changed.
+
 
 
 
@@ -12481,6 +12936,7 @@ six standing WARNs at their documented readings (`fix%` 42, `big` 17, `long` 15,
 
 
 
+
 ### Fixed
 
 - **⛔ ELIGIBILITY — a declared income amount could raise a verdict on the strength of a STRANGER'S
@@ -12542,6 +12998,7 @@ six standing WARNs at their documented readings (`fix%` 42, `big` 17, `long` 15,
 
 
 
+
 ### Changed — cost
 
 - **The student reading her own application costs 22 → 7 queries** (STR route), **25 → 13** (salary,
@@ -12556,6 +13013,7 @@ six standing WARNs at their documented readings (`fix%` 42, `big` 17, `long` 15,
   when it can. `_stronger_income_fact` built the entire salary reading and then usually threw it
   away; its gate is a conjunction of two pure predicates, so the cheap one is now asked first. A
   reorder, not a shortcut — the second number is the proof.
+
 
 
 
@@ -12580,6 +13038,7 @@ six standing WARNs at their documented readings (`fix%` 42, `big` 17, `long` 15,
 
 
 
+
 ### Amended — two existing expectations, in the open
 
 Narrowing the student's `income_shown` map turned two rows of `test_income_shown.py` red. Neither
@@ -12596,6 +13055,7 @@ was bent back; each was read for what it was claiming and re-stated:
   against the officer's payload, which still carries all five. That is stricter, not weaker: a
   divergence in the ANSWER fails here as before, and a change to WHICH members she is served now
   fails where it can be read. Bite-checked: a payload that drops `unusable` turns it red.
+
 
 
 
@@ -12630,6 +13090,7 @@ ordinary means, so that a sprint six months from now cannot quietly undo them.
 
 
 
+
 ### Added
 
 - **`### THE RULES THE ARC HARVESTED` in `halatuju_api/CLAUDE.md`.** About 150 entries of
@@ -12652,6 +13113,7 @@ ordinary means, so that a sprint six months from now cannot quietly undo them.
 
 
 
+
 ### Changed
 
 - **`docs/code-health.md`'s header now describes the instrument, not a project in flight.** The arc
@@ -12663,6 +13125,7 @@ ordinary means, so that a sprint six months from now cannot quietly undo them.
   at their exact allowance, deploy state as a live fact to be read rather than inherited, and
   measuring your own baselines) and ranks the candidates: TD-282 first, then the four endpoints
   Phase 5 never measured, then TD-284, then a Phase 4b.
+
 
 
 
@@ -12705,6 +13168,7 @@ risk and its own sprint. See **TD-282**.
 
 
 
+
 ### Added
 
 - **A first-load-JS budget that ratchets** (`halatuju-web/scripts/bundle-budget.js`, closing
@@ -12736,6 +13200,7 @@ risk and its own sprint. See **TD-282**.
 
 
 
+
 ### Changed
 
 - **TD-280 closed - the Malay pre-U track label is SERVED, not computed in the browser.** The
@@ -12755,9 +13220,11 @@ risk and its own sprint. See **TD-282**.
 
 
 
+
 ### Fixed
 
 - Nothing. No behaviour changed anywhere except the additive payload field.
+
 
 
 
@@ -12791,6 +13258,7 @@ that every page carries.
 
 
 
+
 ### Changed
 
 - **`src/lib/messages.ts` (new) - the catalogue loader, and the ONE place `@/messages/*.json` is
@@ -12820,6 +13288,7 @@ that every page carries.
 
 
 
+
 ### Added
 
 - **`src/lib/__tests__/localeDelivery.test.tsx`** - the switcher, the fallback and the first
@@ -12829,6 +13298,7 @@ that every page carries.
   no production module outside a declared three-line exemption list may statically import a
   catalogue, the provider may import none at all, and `lib/applyCopy` must stay catalogue-free
   because a student page imports it. With a FLOOR on the files scanned (TD-276).
+
 
 
 
@@ -12859,6 +13329,7 @@ and **no importing file was changed.**
 
 
 
+
 ### Changed
 
 - **`apps/scholarship/emails.py` -> `apps/scholarship/emails/`** - 21 modules, largest
@@ -12884,6 +13355,7 @@ and **no importing file was changed.**
 
 
 
+
 ### Fixed
 
 - **Two guards that read these files by path, followed in the same change.**
@@ -12902,6 +13374,7 @@ and **no importing file was changed.**
 
 
 
+
 ### Added
 
 - **`apps/scholarship/tests/package_patch.py`** - `patch_engine(package, name)`. A name in a
@@ -12911,6 +13384,7 @@ and **no importing file was changed.**
   old one-module patch meant, **and asserts it patched at least one** - a name nobody holds any
   more is a move nobody followed, and an unpatched eligibility rule means the real rule ran and the
   test asserted nothing.
+
 
 
 
@@ -12951,6 +13425,7 @@ nothing is not a guard.**
 
 
 
+
 ### Added
 
 - **`halatuju_api/apps/scholarship/tests/source_walk.py`** and
@@ -12974,6 +13449,7 @@ nothing is not a guard.**
 - **`crossTreePaths.test.ts` - the same alarm pointed the other way.** Six api tests read
   `halatuju-web/**` by path, and a web-only sprint runs `npm run gates` and `next build`, never
   `pytest`. Same manifest, same floors, same cost: nothing.
+
 
 
 
@@ -13016,6 +13492,7 @@ nothing is not a guard.**
 
 
 
+
 ### Held
 
 pytest **7,043 passed / 3 skipped** (7,037 + 6 new guard tests) · jest **2,934 / 160 suites**
@@ -13033,6 +13510,7 @@ the fix, and in none of eight after.
 `apps/scholarship/models.py` (4,756 lines) and `apps/scholarship/services.py` (2,946) were the
 second and fourth largest files in the repository. They are now packages of 15 and 18 modules,
 every body lifted byte-for-byte from the lines it came from.
+
 
 
 
@@ -13072,6 +13550,7 @@ every body lifted byte-for-byte from the lines it came from.
 
 
 
+
 ### Fixed
 
 - **A source guard that had silently stopped looking.** `test_verdict_item_i18n.py` walked
@@ -13086,6 +13565,7 @@ every body lifted byte-for-byte from the lines it came from.
   site included, because `assertLogs` on a parent records whatever propagates up from its
   children. H11 found this hazard and wrote a guard for one package; the hazard was never
   package-specific.
+
 
 
 
@@ -13107,6 +13587,7 @@ debt at the new path is unlisted (which fails), and it cannot be added because a
 shrink. H11 paid for that by editing the frozen baseline and re-pinning `BASELINE_SHA256` by hand;
 H14 simply abandoned the move it had been asked to make. A ratchet that refuses the improvement it
 exists to encourage gets switched off, so it now has a fifth rule.
+
 
 
 
@@ -13132,6 +13613,7 @@ exists to encourage gets switched off, so it now has a fifth rule.
 
 
 
+
 ### Changed
 
 - **`IncomeWizard` MOVED, which is the acceptance test for the whole change.** It left
@@ -13149,6 +13631,7 @@ exists to encourage gets switched off, so it now has a fifth rule.
 
 
 
+
 ### Fixed
 
 - **TD-272 CLOSED.** H15 and H16 no longer have to plan a cut around a frozen ledger key.
@@ -13161,6 +13644,7 @@ against it: 2,359 lines out of the cockpit across fourteen modules and 900 lines
 documents tab across three, byte for byte, with every line that did NOT move listed in advance
 (the `'use client'` directive and the import header of each file - 108 lines in the cockpit, 44
 in the documents tab) rather than discovered afterwards.
+
 
 
 
@@ -13203,6 +13687,7 @@ in the documents tab) rather than discovered afterwards.
 
 
 
+
 ### Fixed
 
 - **TD-271 - the served `income_shown` field is declared where it belongs.** It sat on a local
@@ -13213,6 +13698,7 @@ in the documents tab) rather than discovered afterwards.
   `(app as ScholarshipApplication & ServesIncomeShown).income_shown` is simply `app.income_shown`.
   No runtime behaviour changed - the value read, and the `answerFor` validation it goes through,
   are identical.
+
 
 
 
@@ -13234,6 +13720,7 @@ and NOT ONE of the 231 files that import these two modules was edited.** Every m
 back off disk and compared with the original at `HEAD`: 6,586 lines across 42 modules, byte for
 byte, with the twenty lines that did NOT move (two file docstrings, two import headers) declared
 in advance rather than discovered afterwards.
+
 
 
 
@@ -13275,6 +13762,7 @@ in advance rather than discovered afterwards.
 
 
 
+
 ### Fixed
 
 - **`officerGateDrift.test.ts` had been dead since H11, and the web suite with it.** The test reads
@@ -13288,6 +13776,7 @@ in advance rather than discovered afterwards.
 
 
 
+
 ### Performance
 
 - **Not one route's First Load JS grew: 53 of 72 shrank and 19 were unchanged**, measured by
@@ -13298,9 +13787,11 @@ in advance rather than discovered afterwards.
 
 
 
+
 ### Added
 
 - Nothing. No new dependency, no new test, no new suppression.
+
 
 
 
@@ -13313,6 +13804,7 @@ in advance rather than discovered afterwards.
 **Moves only. No behaviour changed, no migration, no endpoint touched, `urls.py` byte-identical.**
 All twenty moved bodies were read back off disk and compared, line by line, with the original at
 `HEAD`: twenty YESes, 4,914 lines, not one character different.
+
 
 
 
@@ -13345,6 +13837,7 @@ All twenty moved bodies were read back off disk and compared, line by line, with
 
 
 
+
 ### Removed
 
 - **Nothing.** `interview_agenda_full` was NOT deleted. The roadmap and the brief both recorded it
@@ -13357,11 +13850,13 @@ All twenty moved bodies were read back off disk and compared, line by line, with
 
 
 
+
 ### Fixed
 
 - Nothing. No defect was fixed and none was introduced. One finding was written up rather than
   patched: **TD-268** (the cross-app import metric counts statements, so a split can only inflate
   it), recorded under `## Reviews` in `docs/code-health.md` with the arithmetic.
+
 
 
 
@@ -13377,6 +13872,7 @@ arithmetic). Five bite-checks, all five behaved. Web untouched.
 **Moves only. No behaviour changed, no migration, no endpoint touched, `urls.py` byte-identical.**
 The ten moved bodies were checked back off disk against the lines they came from and are
 byte-identical, the relative-import depth aside.
+
 
 
 
@@ -13404,6 +13900,7 @@ byte-identical, the relative-import depth aside.
 
 
 
+
 ### Added
 
 - **A guard on the audit logger's name** (`test_access_audit.py`), written because a bite-check
@@ -13415,6 +13912,7 @@ byte-identical, the relative-import depth aside.
 
 
 
+
 ### Fixed
 
 - Nothing. No defect was fixed and none was introduced. Two findings were written up rather than
@@ -13422,6 +13920,7 @@ byte-identical, the relative-import depth aside.
   sprint-close reading tool, recorded under `## Reviews` in `docs/code-health.md`.
 
 ## TD-262 F2 - the fourth way gets a real door - 2026-09-20
+
 
 
 
@@ -13442,6 +13941,7 @@ byte-identical, the relative-import depth aside.
 
 
 
+
 ### Fixed
 
 - **The trap with two jaws, and the two halves were one defect.** A family whose only payslip was
@@ -13458,6 +13958,7 @@ byte-identical, the relative-import depth aside.
 
 
 
+
 ### Changed
 
 - **Two files on the Phase-4 oversize list got SMALLER, per the standing rule.**
@@ -13471,6 +13972,7 @@ byte-identical, the relative-import depth aside.
   rows; 7,003 -> 7,019 pytest, 2,904 -> 2,913 jest. Five bite-checks, all five behaved.
 
 ## Overview phase 2, Sprint B - an organisation arranges its own Overview - 2026-09-19
+
 
 
 
@@ -13499,6 +14001,7 @@ byte-identical, the relative-import depth aside.
 
 
 
+
 ### Changed
 
 - **Drag-and-drop was dropped from the sprint, deliberately.** The phase-2 roadmap named "up/down
@@ -13509,6 +14012,7 @@ byte-identical, the relative-import depth aside.
   module, unused and still tested, with a comment saying why it is kept.
 
 ## Two owner rulings - the freeze lifts, and a payout account is counted in ASCII - 2026-09-19
+
 
 
 
@@ -13538,6 +14042,7 @@ byte-identical, the relative-import depth aside.
 
 
 
+
 ### Added
 
 - **Three api rows in `apps/scholarship/tests/test_bank_account.py`** - the three non-ASCII
@@ -13550,6 +14055,7 @@ byte-identical, the relative-import depth aside.
   file against the sprint that splits it, so a sprint-start can check the standing rule in one
   read. `vision.py` is flagged as deliberately out of scope, and the fifteen other 1,000-line files
   that no Phase-4 sprint owns are named so nobody goes looking.
+
 
 
 
@@ -13572,6 +14078,7 @@ Roadmap `docs/plans/archive/2026-09-18-code-health-roadmap.md`, sprint H10 of H1
 `unguarded_mirrors` ledger goes **41 -> 3**, and the three that remain are a recorded decision, not
 a backlog. **The "stabilised" checkpoint is now the owner's to call** - the roadmap carries a plain
 -language summary of what Phases 1-3 delivered and what H11-H19 would buy.
+
 
 
 
@@ -13600,6 +14107,7 @@ a backlog. **The "stabilised" checkpoint is now the owner's to call** - the road
 
 
 
+
 ### Changed
 
 - **`unguarded_mirrors` 41 -> 3.** 22 entries gained a drift test; 16 were comments that did not
@@ -13617,6 +14125,7 @@ a backlog. **The "stabilised" checkpoint is now the owner's to call** - the road
 
 
 
+
 ### Reported, not fixed
 
 - **TD-266** (medium) - `AdminResolutionItem` is a stale copy of the student-facing
@@ -13624,6 +14133,7 @@ a backlog. **The "stabilised" checkpoint is now the owner's to call** - the road
   `vircle_expected` are undeclared on the admin side. The end state is to delete one copy.
 - **TD-265** (low) - the finance funding summary computes a `programme` column on every row that no
   interface declares and no screen draws.
+
 
 
 
@@ -13642,6 +14152,7 @@ Roadmap `docs/plans/archive/2026-09-18-code-health-roadmap.md`, sprint H9 of H19
 rules that said they mirrored a backend rule now have a test that reads the backend's own source
 and fails if either side moves. Every one was characterised side by side first (the H8 rule), on
 the untouched tree, before anything was written.
+
 
 
 
@@ -13673,6 +14184,7 @@ the untouched tree, before anything was written.
 
 
 
+
 ### Changed
 
 - **The `unguarded_mirrors` ledger: 58 -> 41.** Seventeen entries discharged. `budget` only; the
@@ -13687,6 +14199,7 @@ the untouched tree, before anything was written.
 
 
 
+
 ### Reported, not fixed
 
 - **TD-264** (medium, money path) - the api counts payout-account digits with Unicode-aware
@@ -13694,6 +14207,7 @@ the untouched tree, before anything was written.
   a direct POST of five superscripts is accepted and stored as a payout target.
 - **TD-263** (low) - the Requests screen offers `requote` on a bug; the service refuses it.
   Unreachable today by one road only, and the drift test asserts that road.
+
 
 
 
@@ -15151,6 +15665,7 @@ sat unread for six weeks — it was the nav's one legitimate reserved slot.
 
 
 
+
 ### Nothing is typed by hand — the invoices read themselves (same day, second pass)
 
 Owner: *"I've placed all the invoices for Jul and Aug 26 in the Downloads/Billing folder… Don't
@@ -15198,6 +15713,7 @@ margins to everything.
   the second tenant makes it a decision somebody reviews rather than a default nobody noticed.
 
 **Second migration** (`0158`), additive: the `extracted` provenance choice.
+
 
 
 
@@ -17328,6 +17844,7 @@ disconnected flow."* It was not.
 
 
 
+
 ### Fixed
 - **Two sidebar rows had no icon, not one.** `orgSettings` (added 2026-09-03) and `faq` both fell
   back to `PATHS.dot` — silently, because a missing glyph must not throw inside the shell that
@@ -17348,6 +17865,7 @@ disconnected flow."* It was not.
 
 
 
+
 ### Changed
 - **Tabs are `Intake year · Rules · What we ask for`** — reversed from 2026-09-03, whose reason
   (*"who qualifies precedes what they are asked to send"*) is TRUE of reading a gift already running
@@ -17356,6 +17874,7 @@ disconnected flow."* It was not.
 - **⚠ ONE OPEN ROUND PER GIFT PROGRAMME, not per organisation** (owner: *"if the org has two
   programmes, there could be two open applications"*). The guard filtered on `owning_organisation`,
   so an organisation running two gifts could take applications for one of them only.
+
 
 
 
@@ -17385,6 +17904,7 @@ disconnected flow."* It was not.
   card's own counts would have gone GREEN for a gift held by a donation.
 - `adminMutate` tolerates **204 No Content** — a successful DELETE would have thrown on the happy
   path only: the write lands, the caller sees an error, a person presses again.
+
 
 
 
@@ -17576,6 +18096,7 @@ lists ARE the record.
 
 
 
+
 ### Fixed
 - `src/app/onboarding/grades/page.tsx` — no default stream, no pre-filled slots, `gradedOnly` on
   save and on the merit preview, and a hint where the four rows used to sit.
@@ -17643,6 +18164,7 @@ function).
 
 
 
+
 ### Fixed
 - `prepare_merit_inputs` tops an explicit stream designation up to two graded subjects
   (`apps/courses/engine.py`), with the reason written at the line so it is not "simplified" away.
@@ -17675,6 +18197,7 @@ and **said so** rather than quietly dropped.
 
 
 
+
 ### Changed
 - **`--ground-400` is the muted-INK stop now** (light `#656d7a`, dark `#b4bac4`), clearing 4.5 on
   a **well** — the tightest ground it sits on — in both modes. **The token was NAMED for its
@@ -17699,6 +18222,7 @@ and **said so** rather than quietly dropped.
 
 
 
+
 ### Added
 - **`--ground-placeholder`** (`#9ca3af`, both modes) — a ROLE, not a stop. Placeholders look
   exactly as they did, and are **exempt from the ink bar by design**: darkening one makes an empty
@@ -17711,12 +18235,14 @@ and **said so** rather than quietly dropped.
 
 
 
+
 ### Fixed
 - **The score number on a course card's merit bar** — **1.67** on `caution-400`. Its fill class
   and its `text-white` sit **twenty lines apart**, so no line-scanning codemod could ever have
   paired them. **Only the browser sweep saw it.**
 - The **"Awaiting QC"** chip (`bg-info-400 text-info-900`, 3.38 dark / 4.07 light). It carries
   TONE ink rather than white, so the codemod's pair rule never matched it.
+
 
 
 
@@ -17747,6 +18273,7 @@ recorded without an engineer writing SQL.
 
 
 
+
 ### Added
 - **A benefactor can be accepted into any of the organisation's gifts, or taken back.**
   `sponsorship.set_programme_membership` + `POST admin/sponsors/<pk>/membership/`
@@ -17765,6 +18292,7 @@ recorded without an engineer writing SQL.
   `show_in_apply`. A test pins that honestly.
 - `AdminReviewerProgrammeView` classified in `test_org_fence.py` (the guard refused the build
   until it was, as designed).
+
 
 
 
@@ -17792,6 +18320,7 @@ recorded without an engineer writing SQL.
 
 
 
+
 ### Fixed
 - **Three part-one tests still called the old `sync_account_membership` signature**, and one
   created its second gift ACTIVE — which under the new resolver is the *ambiguous* case, not the
@@ -17815,6 +18344,7 @@ on yet" is the state an org_admin spends the most time inside.
 
 
 
+
 ### Fixed
 - **`AdminScopeListView` filtered `is_active=True`**, so the breadcrumb could not offer the gift
   that had just been created. It now returns the caller's programmes whatever their state, each
@@ -17828,6 +18358,7 @@ on yet" is the state an org_admin spends the most time inside.
   into one expression, so an unrecognised code was dropped and the fallback then substituted a
   DIFFERENT gift. A pick is now honoured or resolves to nothing — never replaced.
   `useSelectedProgramme` had the same shape and got the same fix.
+
 
 
 
@@ -17852,6 +18383,7 @@ from the database rather than from the menu.
 
 
 
+
 ### Added
 - **Organisation -> Settings**, a tabbed shell mirroring Programme -> Configuration one level up.
 - **Programme -> Configuration -> Rules**, the first tab: the six shortlisting thresholds, editable
@@ -17868,6 +18400,7 @@ from the database rather than from the menu.
 
 
 
+
 ### Changed
 - **Gift programmes moved onto Organisation -> Overview.** The gifts an organisation runs are what
   it IS, and the row was a sidebar entry for a list of one.
@@ -17879,10 +18412,12 @@ from the database rather than from the menu.
 
 
 
+
 ### Removed
 - **Four reserved menu slots** -- `rules`, `years`, `reviewerScoping`, `fund`. Three guessed the
   shape of unscoped work and guessed wrongly. `billingRates` stays: its endpoint shipped, and only
   the page is missing.
+
 
 
 
@@ -17896,10 +18431,12 @@ from the database rather than from the menu.
 
 
 
+
 ### Raised
 - **TD-228** -- the ORGANISATION crumb still filters nothing; trigger is a second organisation.
 - **TD-229** -- a second gift would have its students sign the first gift's agreement.
   **Owner ruling owed:** one template per organisation, or one per gift?
+
 
 
 
@@ -17918,12 +18455,14 @@ i18n 4648 -> **4714 x 3**; build clean. Five guards bite-checked.
 
 
 
+
 ### Added
 - **Organisation -> Gift programmes** and **Programme -> Intake years** (the reserved slot). An
   `org_admin` can now create a gift and open its first year. Neither could be created anywhere
   before: no endpoint, no screen, and `scholarship` registers no models in Django admin.
 - **`min_merit_score`** — the UPU merit point out of 100, SPM applicants only, unticked on every
   cohort today.
+
 
 
 
@@ -17935,6 +18474,7 @@ i18n 4648 -> **4714 x 3**; build clean. Five guards bite-checked.
   value IS the switch** — deliberately no companion boolean, because two columns can disagree.
 - **The rejection reason is stated the way the rule is SET**: "4 at A- plus 1 more at B+", not
   "need 4 A- and 5 at B+", which the owner who wrote the rule read as nine subjects.
+
 
 
 
@@ -17954,6 +18494,7 @@ Two guards bite-checked. First sprint of `docs/plans/archive/2026-09-02-sabah-se
 
 
 
+
 ### Fixed
 - **⚠ A LATENT REGRESSION IN THE LIVE PAYOUT PATH, not a Sabah feature.** P2b made a run pay ONE
   gift and had the endpoint refuse `programme_required` rather than pick — correct. The screen
@@ -17964,6 +18505,7 @@ Two guards bite-checked. First sprint of `docs/plans/archive/2026-09-02-sabah-se
 
 
 
+
 ### Added
 - **A picker, only when there is something to pick.** One gift → no control and nothing sent, byte
   identical to today. Two → the operator states which, with **nothing preselected**. Options are
@@ -17971,6 +18513,7 @@ Two guards bite-checked. First sprint of `docs/plans/archive/2026-09-02-sabah-se
   for a super.
 - `programme_required` in en/ms/ta. Still reachable with the picker shipped — a programme created
   after the page loaded is not in the list. **ms/ta are first drafts.**
+
 
 
 
@@ -17990,6 +18533,7 @@ i18n 4646 → **4644 × 3**; build clean. One guard bite-checked.
 `"Konfigurasi"` are present; the deleted heading `"What your programme asks for"` appears **zero**
 times as a complete value (the phrase survives only inside the page subtitle, which was kept); the
 tab label `"What we ask for"` is still there, which is correct — the tab keeps its name.
+
 
 
 
@@ -18018,6 +18562,7 @@ eyeballed.**
 
 
 
+
 ### Added
 - **A theme switch a person can click.** `ThemeSelector` — Light / Dark / Auto, a `<select>` styled
   to match `LanguageSelector` exactly — on the public header (desktop + mobile), the landing nav,
@@ -18026,6 +18571,7 @@ eyeballed.**
 - **`ThemeWatcher`**, which renders nothing and keeps `auto` following the device for the life of
   the tab. It is mounted in the PROVIDER STACK rather than in the control, so a chromeless page —
   document upload, where someone sits for a long time — still flips at sunset.
+
 
 
 
@@ -18040,6 +18586,7 @@ eyeballed.**
   rewritten; F1b as originally scoped is **superseded, not deferred**.
 - **The sandbox dropped its own segmented toggle** and mounts the real control. It was legitimate
   chrome right up until the product had one.
+
 
 
 
@@ -18063,6 +18610,7 @@ lint **0**; i18n **4640 × 3**; build clean. Three guards bite-checked.
 
 
 
+
 ### Fixed
 - **⚠ EVERY FORM CONTROL WAS INVISIBLE IN DARK.** Text boxes, dropdowns and textareas measured
   `background: white` AND `color: white` — white text in a white box. Two independent halves,
@@ -18076,12 +18624,14 @@ lint **0**; i18n **4640 × 3**; build clean. Three guards bite-checked.
 
 
 
+
 ### Added
 - **`/sandbox/officer-cockpit`** and a complete `AdminScholarshipDetail` fixture (141 fields,
   nobody real). Deliberately mid-review, so most cards render at once.
 - **Two stylesheet guards** and a widened sandbox safety guard — it now scans every sandbox file
   rather than `fixtures/` only, and both NRIC spellings rather than the dashed one only. Its
   original form caught my `.test` emails immediately, which is the guard working.
+
 
 
 
@@ -18100,6 +18650,7 @@ Four guards bite-checked. Reviewed in a browser in both modes.
 
 
 
+
 ### Added
 - **`--brand-shape`** — `brand-500` in light, `brand-600` in dark. Every dot, progress bar, toggle
   track, spinner, selected-pill border and focus ring: 204 utilities. They were all on the IDENTITY
@@ -18109,6 +18660,7 @@ Four guards bite-checked. Reviewed in a browser in both modes.
 - **A guard forbidding any component from reading `var(--brand-500)` directly.** Added because
   reverting the SVG-prop fix during the bite-check produced **no failure at all** — which is how a
   missing guard announces itself.
+
 
 
 
@@ -18122,10 +18674,12 @@ Four guards bite-checked. Reviewed in a browser in both modes.
 
 
 
+
 ### Removed
 - **`DARK_EXEMPT`.** Every contrast pair is checked in every mode, with no exemptions anywhere.
   **Closing it added ZERO new refusals** — the same 11 colours pass and the same 7 refuse, for the
   same reasons, which is what distinguishes a role from a loosened bar. Now its own test.
+
 
 
 
@@ -18148,6 +18702,7 @@ across every pair the product renders found **two** faults, only one of which wa
 
 
 
+
 ### Changed
 - **The dark ramp's shade end travels much further** — `.15/.30/.45/.60` → `.45/.60/.75/.86`. F3b
   aimed it at white (right) and kept light's distances (wrong), so `brand-600` — which the app
@@ -18165,12 +18720,14 @@ across every pair the product renders found **two** faults, only one of which wa
 
 
 
+
 ### Added
 - **`filled_button_visible`** — the pair that stops the obvious wrong fix. Walking the button down
   the ramp DOES let white text read (`brand-400` measures 5.82) and drops it to **2.52** against its
   own card, so it stops looking like a button. Both bars are held at once now.
 - **Three guards pinning the three descriptions of the fill role together** (`globals.css`,
   `branding.ts`, `contrast.py`) — the F4 role-palette shape, caught before it could bite.
+
 
 
 
@@ -18181,10 +18738,12 @@ across every pair the product renders found **two** faults, only one of which wa
 
 
 
+
 ### ⚠ What a tenant may choose has narrowed by two
 `#010066` and `#111827` moved from PASSES to REFUSES. Both near-black, both failing only the dark
 link pairs. **They were never unreadable before because nobody could see the surface they are
 unreadable on.** No live organisation has a theme, so nothing in production is affected.
+
 
 
 
@@ -18209,6 +18768,7 @@ of it. Fourth sprint running that the plan's file table had aged.
 
 
 
+
 ### Added
 - **`src/lib/stpmSubjects.ts`** and **`src/lib/matricTracks.ts`** — one home each for two
   vocabularies that were declared TWICE, byte-identical, in `course/[id]` and the pathway pages.
@@ -18217,6 +18777,7 @@ of it. Fourth sprint running that the plan's file table had aged.
 - **Three guards that now cover the WHOLE TREE** — no raw colour, no raw hex, no arbitrary-value
   class, asserted over `walkFiles('src')` rather than a per-sprint file list. A page written next
   month is covered without anyone remembering to add it.
+
 
 
 
@@ -18239,6 +18800,7 @@ of it. Fourth sprint running that the plan's file table had aged.
 
 
 
+
 ### Removed
 - **The state tint on institution cards.** It gave a pastel background to six of Malaysia's sixteen
   states and grey to the other ten, and the codemod had just renamed four of the six onto TONES —
@@ -18257,6 +18819,7 @@ hex was simply gone.
 
 
 
+
 ### Added
 - **`courses/theme_versions.py`** — the lifecycle. `draft` (never served) → `publish` → `revert`,
   each `@transaction.atomic` and the ONLY sanctioned way to move a row between states. A publish is
@@ -18270,12 +18833,14 @@ hex was simply gone.
 
 
 
+
 ### Changed
 - **`OrganisationTheme` is a FK with per-state uniqueness**, not a `OneToOne`. One draft and one
   active per organisation; **as many archived as they like — that history IS the undo.**
 - **PUT saves a DRAFT**; DELETE discards it; what is live is untouched by both.
 - **`set_organisation_theme` publishes immediately, and `--clear` is now a REVERT.** The command is
   the operator's path, run deliberately from a shell; the screen is the careful one.
+
 
 
 
@@ -18297,6 +18862,7 @@ hex was simply gone.
 
 
 
+
 ### At deploy
 **MIGRATE-FIRST**: apply `courses/0072` (hand-written DDL in the docstring — it DROPS A1's
 `organisation_themes_organisation_id_key` and adds two partial unique indexes), record the ledger
@@ -18312,6 +18878,7 @@ sponsored-student page in July). pytest 5706 → **5738**; jest 1548 → **1573*
 
 **⚠ THIS DEPLOY IS VISIBLE, unlike the last seven.** 54 filled controls go one shade darker in
 light mode. See below for why.
+
 
 
 
@@ -18335,6 +18902,7 @@ light mode. See below for why.
 
 
 
+
 ### Changed
 - **54 filled controls moved `bg-primary-500` → `-600`** across 21 files. **The maths found them:**
   small white text on the lightest brand stop measures **3.98** for the platform's own colour, so
@@ -18342,6 +18910,7 @@ light mode. See below for why.
   control carries `-600`; these never moved. What stays on `-500` is dots, bars, toggles and
   `aria-hidden` icon circles — **shapes**, held to WCAG's 3:1, which is the one row in the pair
   table with a different bar.
+
 
 
 
@@ -18363,6 +18932,7 @@ light mode. See below for why.
 
 
 
+
 ### At deploy
 Push (api + web). No migrate-first, no env vars. **Say that 54 buttons go one shade darker** —
 this is the first Layer 1 deploy a person could notice. Post-check: as the BrightPath `org_admin`
@@ -18375,6 +18945,7 @@ and all six checks pass. Change nothing.
 11 files. Retro `docs/retrospectives/retrospective-2026-09-01-layer1-a1-tenant-theme.md`.
 pytest 5677 → **5706**; jest 1534 → **1548**. **Dark mode stays unreachable. Nothing a visitor
 sees changes** — BrightPath has no theme row, deliberately.
+
 
 
 
@@ -18395,6 +18966,7 @@ sees changes** — BrightPath has no theme row, deliberately.
 
 
 
+
 ### Changed
 - **`branding-context` paints a STORED set when there is one**, and still derives from the colour
   column when there is not — which is what makes this a no-op on deploy.
@@ -18402,6 +18974,7 @@ sees changes** — BrightPath has no theme row, deliberately.
   scope. Next inlines them at build time either way; a module constant can only be changed by
   re-importing, and re-importing under `jest.resetModules()` hands the provider a second copy of
   React with no hooks.
+
 
 
 
@@ -18427,6 +19000,7 @@ sees changes** — BrightPath has no theme row, deliberately.
 
 
 
+
 ### At deploy
 **MIGRATE-FIRST**: apply `courses/0071` (hand-written Postgres DDL + RLS in the migration
 docstring), record the ledger row, confirm the Security Advisor is clean, then push. No env vars.
@@ -18437,6 +19011,7 @@ Post-check: `GET /api/v1/branding/brightpath/` returns `"theme": null`.
 **Sprint.** No migration. Web only, 2 files. Retro
 `docs/retrospectives/retrospective-2026-09-01-layer1-f5-cockpit.md`. jest 1531 → **1534**.
 **Dark mode stays unreachable. Nothing a visitor sees changes.**
+
 
 
 
@@ -18461,12 +19036,14 @@ Post-check: `GET /api/v1/branding/brightpath/` returns `"theme": null`.
 
 
 
+
 ### Guards
 - **The cockpit's ceiling (544) is GONE, not lowered.** It is now inside the console's conversion
   walk like every other admin page — a ratchet over a converted surface is noise, the same reason
   F3 deleted the `src/components` one.
 - Four new pins, one per judgement call. Bite-checked with the F4 lesson applied: each fault was
   **injected and then verified present** before running the suite. Four faults, five guards fired.
+
 
 
 
@@ -18483,6 +19060,7 @@ judgement calls are pinned by tests, so the risk is low, but it is not zero and 
 **Sprint.** No migration. Web only, 46 files. Retro
 `docs/retrospectives/retrospective-2026-09-01-layer1-f4-admin-console.md`. jest 1518 → **1531**.
 **Dark mode stays unreachable. Nothing a visitor sees changes.**
+
 
 
 
@@ -18505,6 +19083,7 @@ judgement calls are pinned by tests, so the risk is low, but it is not zero and 
 
 
 
+
 ### Fixed — three copies of the role palette, silently desynchronised
 `StaffAdmin.tsx`, `organisation/reviewers/page.tsx` and `guide/page.tsx` each declared the same
 role→colour mapping, the third carrying the comment *"Reuse the Administration panel's role-badge
@@ -18515,6 +19094,7 @@ on the data. All three now call `roleBadgeClass()` from the new `src/lib/roleBad
 
 
 
+
 ### Guards
 - `assertConverted` over the console as a **directory walk**, so a new admin page is caught the day
   it is added; the cockpit is excluded by name and keeps a **ceiling of 544** until F5.
@@ -18522,6 +19102,7 @@ on the data. All three now call `roleBadgeClass()` from the new `src/lib/roleBad
   states. The `CATEGORICAL` closed list grew from 4 files to 9 — it **failed first**, which is
   exactly its job: adding a category palette has to be a deliberate act.
 - The hex scan now ignores **HTML numeric entities** — `&#128100;` is 👤 and reads as valid hex.
+
 
 
 
@@ -18542,11 +19123,13 @@ byte-identical.**
 
 
 
+
 ### The problem
 `--brand-50`…`900` are derived by mixing the brand colour toward two ends — white for the tints,
 black for the shades. Correct on a white page, exactly backwards on a dark one: `50`–`200` are
 95–70% WHITE, so a panel painted with one is a glaring pale patch (**101 uses across 40 files**),
 and `800`–`900` are 45–60% BLACK, so text in one is close to invisible.
+
 
 
 
@@ -18564,6 +19147,7 @@ and `800`–`900` are 45–60% BLACK, so text in one is close to invisible.
 
 
 
+
 ### The guard that said "never" now says what the ruling actually means
 `a THEME may never write the tenant brand` forbade the whole family — and so forbade the fix. It is
 replaced by four sharper properties: **`--brand-500` is byte-identical across modes** (the ruling:
@@ -18572,6 +19156,7 @@ ends per mode**; the dark block **agrees with `brandRamp()`** so a tenant gets t
 treatment; and the dark-page constant in `branding.ts` **cannot drift** from `globals.css`.
 Bite-checked: three faults injected (the light tint pasted into the dark block, the identity stop
 moved, the ground constant drifted) → all four guards fired.
+
 
 
 
@@ -18584,6 +19169,7 @@ moved, the ground constant drifted) → all four guards fired.
 **Sprint.** No migration. Web only, 24 files. Retro
 `docs/retrospectives/retrospective-2026-08-31-layer1-f3-student-surfaces.md`. jest 1509 → **1515**.
 **Dark mode stays unreachable.** Nothing a visitor sees changes.
+
 
 
 
@@ -18603,6 +19189,7 @@ moved, the ground constant drifted) → all four guards fired.
 
 
 
+
 ### Fixed — two more places colour hides, neither reachable by a class scan
 - **`bg-[#f8fafc]` — an arbitrary-value class setting the whole page ground**, in six files. It
   passes any check that looks for `bg-gray-50`, because it *is* a class and it is not on the list.
@@ -18611,6 +19198,7 @@ moved, the ground constant drifted) → all four guards fired.
   prop, so no codemod over class names will ever touch it. They were also a **hardcoded blue** —
   those icons never followed a tenant's brand, despite sitting inside `bg-primary-500` buttons.
   They read `rgb(var(--brand-500))` / `rgb(var(--ground-500))` now, so they follow both.
+
 
 
 
@@ -18623,6 +19211,7 @@ moved, the ground constant drifted) → all four guards fired.
   (`ScholarshipDocuments.tsx`), so the ratchet has done its job and the block is deleted.
 - Bite-checked: four faults injected → six guards fired across four distinct describes.
 - Mid-session flip test passed: a half-typed field survives the mode change.
+
 
 
 
@@ -18643,6 +19232,7 @@ the gap that would have blocked F7. Nothing a visitor sees changes — dark mode
 
 
 
+
 ### Added
 - **`--category-1…8`, a fifth token family**, in `globals.css` and wired through
   `tailwind.config.ts` as `bg-category-N-surface`, `text-category-N-ink`, `bg-category-N-dot`.
@@ -18660,6 +19250,7 @@ the gap that would have blocked F7. Nothing a visitor sees changes — dark mode
 
 
 
+
 ### Changed — the four category files converted, and two pre-existing collisions fixed
 - `PathwayTrackCard` (5 fields + 2 pathways), `RequirementsCard` (6 institution types + the
   language chip), `SpecialConditions` (7 entry conditions), `CareerPathways` (1 occupation chip).
@@ -18668,6 +19259,7 @@ the gap that would have blocked F7. Nothing a visitor sees changes — dark mode
 - **✅ `noColorblind` and `noDisability` were both red** — same bug in the conditions list. Fixed.
 - The merit indicator and the Special Conditions warning triangle stay **tones**: they are states,
   not categories, and that boundary is the whole point.
+
 
 
 
@@ -18692,6 +19284,7 @@ the gap that would have blocked F7. Nothing a visitor sees changes — dark mode
 
 
 
+
 ### Changed
 - **20 components fully repainted** onto the theme tokens — `AppHeader`, `AppFooter`,
   `SponsorLanding`, `SponsorDetailsForm`, `CourseCard`, `PathwayPicker`, `CourseDetailShared`,
@@ -18708,6 +19301,7 @@ the gap that would have blocked F7. Nothing a visitor sees changes — dark mode
 
 
 
+
 ### ⚠ A COLOUR THE VOCABULARY CANNOT NAME — 48 utilities left literal, on purpose
 Four files colour a **category** — a field of study, an institution type, an entry condition —
 where the colour means nothing except *"not the same as its neighbour"*. The theme has four tones
@@ -18721,6 +19315,7 @@ None of that would have failed a test. They are therefore still literal and **do
 mode**: a known, guarded gap, not an oversight. The product needs a fifth **categorical** family,
 and that is an owner decision — raised at the end of this sprint with a sandbox surface showing
 exactly what it looks like. **F7 must not flip the switch while these are literal.**
+
 
 
 
@@ -18750,6 +19345,7 @@ light-mode change noted below.
 
 
 
+
 ### Changed
 - **27 shared components repainted** — `ActionCentre`, `ScholarshipNextSteps`, `ScholarshipReview`,
   `AwardComprehensionQuiz`, `AuthGateModal`, `FamilyRosterFields`, `IncomeRouteSwitch`,
@@ -18770,6 +19366,7 @@ light-mode change noted below.
 
 
 
+
 ### Fixed — three dark-mode defects found by LOOKING, none of which a test would have reported
 - **The dark ground was inverted, not designed.** Reversing the ramp made `--ground-0` pure black
   while the page sat at `#111827`, so every card, input and modal read as a hole punched through
@@ -18783,6 +19380,7 @@ light-mode change noted below.
   for a text control is white and the page was white too. In dark it made every input and textarea
   a blazing white rectangle. Also converted: `.card`, `.btn-secondary`, `.grade-badge-*`
   (`orange` stays literal on the badge ramp, with the reason written beside it).
+
 
 
 
@@ -18810,6 +19408,7 @@ light-mode change noted below.
 
 **Sprint.** No migration. Backend 4 files, web 13 files. **LAYER 0 IS COMPLETE** (Sprints 1–5 +
 both 3a deferrals). Retro `docs/retrospectives/retrospective-2026-08-30-layer0-config-screen.md`.
+
 
 
 
@@ -18843,6 +19442,7 @@ both 3a deferrals). Retro `docs/retrospectives/retrospective-2026-08-30-layer0-c
   tests (`page.test.tsx`); nav role snapshot updated.
 - **Sandbox surfaces `programme-config` and `programme-config-lean`** (`WithAdminAuth` harness;
   `AdminAuthContext` exported for the sandbox only). Reviewed in the browser 2026-08-30.
+
 
 
 
@@ -19752,6 +20352,7 @@ was the entire production step). Two deploys — `469858f` then `1f4f8d6a`.
 
 
 
+
 ### Pause — a volunteer can step back without giving up their place
 
 - **`PartnerAdmin.paused_at`, NOT `is_active`.** Revoking blocks the admin lookup entirely, so a
@@ -19771,6 +20372,7 @@ was the entire production step). Two deploys — `469858f` then `1f4f8d6a`.
   timestamp. Refused for anyone never assigned work: a "Paused" pill on a finance admin is a control
   that changes nothing.
 - Reviewer Guide + FAQ updated in the same commit, leading with what pause does **not** take away.
+
 
 
 
@@ -19801,6 +20403,7 @@ one stored body could not say both without one of them reading wrongly.
   dotted key** in all three locales since 1 August. The copy is written for all six kinds, and the
   editor now renders nothing rather than a key on a miss. **TD-212** raised for the model name,
   which no longer describes three of its four audiences.
+
 
 
 
@@ -20738,6 +21341,7 @@ is converted, so nobody can put half the product into a mode it has not been pai
 
 
 
+
 ### The approach, in one sentence
 Colours become names with meanings — *ground*, *positive*, *information*, *caution*, *critical* —
 and dark mode is the same set read from the other end. It is one reversal rather than several
@@ -20745,6 +21349,7 @@ hundred separate decisions, which is what makes it possible to finish rather tha
 
 Light mode is unchanged, to the pixel. That is not a hope: the values were generated from the
 colours already in use rather than retyped.
+
 
 
 
@@ -20760,6 +21365,7 @@ the exercise.
 from ordinary styling, so its three colours sat as raw values inside the page and stayed light while
 everything around them inverted. Fixed, and the guard widened so the next one is caught rather than
 noticed.
+
 
 
 
@@ -20780,6 +21386,7 @@ page renders it.
 
 
 
+
 ### The two sides had already drifted, in production
 The web app said two documents were compulsory — identity card and results slip. The rule that
 actually blocks a submission required four: those two, the offer letter, and proof of household
@@ -20788,6 +21395,7 @@ final step, with nothing on the page explaining why.
 
 Nobody changed either side carelessly. The rule simply existed in two places, and one of them moved.
 There is now one description of it, on the server, and the page reads it.
+
 
 
 
@@ -20800,6 +21408,7 @@ withdrawn a document students can upload today. It is now recorded in both place
 
 
 
+
 ### What an organisation can now do without us
 Switch a document off and its card disappears — and if it was the only one in its section, the
 heading goes too, rather than leaving a title over an empty space. Promote an optional document and
@@ -20809,10 +21418,12 @@ Half an income assessment is not something anyone designed.
 
 
 
+
 ### Nothing changes for BrightPath
 The catalogue holds no per-programme choices, so all 143 live applications resolve to the same
 defaults the page used to hard-code. The one visible difference is the offer letter and the income
 section now carrying the compulsory marker they always deserved.
+
 
 
 
@@ -20831,6 +21442,7 @@ existing test needed editing.
 
 
 
+
 ### Fixed before it could ship — a hole that would have opened every submission gate
 Wiring the gates left one case unguarded: an application that belongs to a programme, where the
 catalogue has nothing in it yet. That resolved to *"this programme requires nothing"*, which would have
@@ -20844,6 +21456,7 @@ An empty catalogue now means *"not configured yet"* and falls back to the previo
 *"nothing is required"*. Four tests were written from production's actual shape rather than from what
 the code was supposed to do, and the guard was then switched off to watch them fail before being
 restored.
+
 
 
 
@@ -20868,6 +21481,7 @@ as they were, so the two can be compared before either is removed.
 
 
 
+
 ### Added
 - **A catalogue** of everything an application can ask for: eight documents, ten questions. It is a
   list we maintain and translate — an organisation chooses from it and never writes its own. A
@@ -20878,6 +21492,7 @@ as they were, so the two can be compared before either is removed.
   household income, the family details, and consent.
 - **One place that answers "what does this programme ask for?"**, so the rules can move there one
   at a time in the next two sprints rather than all at once.
+
 
 
 
@@ -20898,6 +21513,7 @@ super, so publish was closed to him.
 
 
 
+
 ### Changed
 - **Publish opens from super-only to super OR org_admin**, with **no same-author check** — the owner
   weighed a two-person rule that would always be the same two people and chose to trust them. See
@@ -20907,6 +21523,7 @@ super, so publish was closed to him.
   something that is no longer true, and the ROLE rule belongs in the view. It still defaults to
   False so a bare shell call cannot publish by accident.
 - The Deploy tab's `superOnly` copy becomes `publisherOnly` and now names both roles.
+
 
 
 
@@ -20920,6 +21537,7 @@ super, so publish was closed to him.
 The sponsor-facing half. **No migration** (`0134` already carries everything). **Ships DARK behind
 `SPONSOR_TERMS_ENABLED`**, which is unset, so nothing changes for the eight sponsors using the
 portal today.
+
 
 
 
@@ -20949,12 +21567,14 @@ portal today.
 
 
 
+
 ### Fixed — the privacy notice was unreachable from inside the portal
 §12 says *"as set out in our privacy notice"*, but section bodies are plain text with no links, the
 sponsor portal has its own footer that never linked it, and the only route was a link beside the
 registration checkbox seen once. Now: a **link in the portal footer**, and a standing link on both
 terms surfaces — in the page chrome, so section bodies stay plain text. The notice's date also said
 *June 2026* despite gaining its sponsor section in T1; corrected to July.
+
 
 
 
@@ -20976,6 +21596,7 @@ said nothing about what each field was for. **No backend change; no migration.**
 
 
 
+
 ### Changed
 - **The checkpoint returns INLINE under its clause** (owner: *"I like the concept of having the quiz
   just after the clause"*), reversing T2.1's move to a separate form. `CheckpointEditor` types every
@@ -20992,10 +21613,12 @@ said nothing about what each field was for. **No backend change; no migration.**
 
 
 
+
 ### Removed
 - `QuizTab.tsx` and `TermsSectionEditor.tsx` — both replaced, both deleted rather than left to
   confuse the next reader. `TermsSectionEditor` had been orphaned since T2.1 and was still what a
   cached browser was showing.
+
 
 
 
@@ -21012,6 +21635,7 @@ Sprint 1 of the configuration-layers roadmap (`docs/plans/archive/2026-07-28-con
 BrightPath's UI/UX team can now open a URL and work with the real screens, without repo access and
 without a single real person's data in front of them. `/sandbox` mounts the actual components
 against invented data — same components, same loading states, same code path as production.
+
 
 
 
@@ -21032,6 +21656,7 @@ against invented data — same components, same loading states, same code path a
 
 
 
+
 ### Fixed
 **The student auth stack no longer mints an anonymous account on the sandbox.** The first browser
 check produced two failed signup calls: the sandbox has its own provider stack that deliberately
@@ -21045,6 +21670,7 @@ privileged-console rule, which means something different.
 Owner, comparing the Terms tab against the Contract Templates screen: adopt that layout, give the
 editor **Clauses / Quiz / Preview / Deploy** (no sub-clauses), and let a Word document be uploaded.
 **No migration; no change to the terms already seeded.**
+
 
 
 
@@ -21064,6 +21690,7 @@ editor **Clauses / Quiz / Preview / Deploy** (no sub-clauses), and let a Word do
 
 
 
+
 ### Added
 - **Word import.** `sponsor_terms.import_docx` reuses the contract module's parsing — which reads
   Word's OWN list numbering out of the XML rather than guessing from text, with Gemini only as a
@@ -21074,6 +21701,7 @@ editor **Clauses / Quiz / Preview / Deploy** (no sub-clauses), and let a Word do
   makes anyone read it. Nothing is lost — a `1.1` becomes a paragraph inside section 1, its own
   heading kept as a lead-in — and a leading sub-clause with no parent still becomes its own section
   rather than vanishing.
+
 
 
 
@@ -21088,6 +21716,7 @@ editor **Clauses / Quiz / Preview / Deploy** (no sub-clauses), and let a Word do
 
 
 
+
 ### Notes
 - **3775 scholarship pytest** (+7) · **1107 jest** / 72 suites (+3) · `next build` exit 0.
 - ⚠ **`tsc --noEmit` was run BEFORE the build this time**, per the lesson from T2's failed api
@@ -21099,6 +21728,7 @@ editor **Clauses / Quiz / Preview / Deploy** (no sub-clauses), and let a Word do
 The authoring half of the sponsor-terms roadmap. **Migration `0134` APPLIED migrate-first** (three
 tables, RLS on, one `service_role` policy each, `django_migrations` row inserted and verified).
 **Nothing here is sponsor-facing** — the wizard, the acceptance and the gate are T3.
+
 
 
 
@@ -21122,11 +21752,13 @@ tables, RLS on, one `service_role` policy each, `django_migrations` row inserted
 
 
 
+
 ### Deliberately not copied from the contract module
 The payment schedule, the counterparty/signing apparatus, the lawyer attestation, `.docx` import,
 PDF rendering, and the three-level clause hierarchy. Sections are flat, which removes
 `normalise_levels`, `clause_numbers`, `MAX_QUIZ_LEVEL`, the ancestor/descendant resolution and
 indent/outdent along with it.
+
 
 
 
@@ -21142,12 +21774,14 @@ indent/outdent along with it.
 
 
 
+
 ### Added — the guards themselves
 - **`admin-sponsors-i18n.test.ts`**, which did not exist: hundreds of `admin.sponsors.*` leaves,
   including all ~59 from S3, had no key-existence guard at all.
 - **`sponsorAuth` added to `sponsor-i18n.test.ts`'s namespaces**, which is what surfaced the nine.
 - Both skip **co-located `.test.tsx` files and comments**, because a test asserting a key is ABSENT
   and a doc comment naming a deliberately-nonexistent key are not usages.
+
 
 
 
@@ -21167,6 +21801,7 @@ by "the existing donation terms", which did not exist.
 
 
 
+
 ### Added
 - **`docs/scholarship/sponsor-terms-draft.md`** — thirteen short sections, British English, second
   person, six marked as quiz checkpoints. Written to be *read*, not to be defensive. Load-bearing
@@ -21180,12 +21815,14 @@ by "the existing donation terms", which did not exist.
 
 
 
+
 ### Changed
 - **`/terms`' Sponsors section** no longer ends *"(More detailed sponsor terms to follow.)"* — it
   states the gift, the nomination, and that we cannot issue a tax-deductible receipt.
 - **Five strings across en/ms/ta** now say *you nominate, we award* rather than describing a sponsor
   handing money to a student: the giving-statement intro and gifts note, the award confirmation, and
   the landing FAQ's "Can I choose who I support?".
+
 
 
 
@@ -21200,6 +21837,7 @@ describes a conduit holding someone else's money. Owner adopted the correction 2
 already read *"It becomes the charity's — it can't be withdrawn, only redirected"* — and is untouched.
 Rewriting every warm sentence would turn the product into a legal notice, which is the opposite of
 what the owner asked for ("we want them; we don't want to scare them away").
+
 
 
 
@@ -21221,6 +21859,7 @@ addresses. Production was never affected: `halatuju.xyz` cannot be spelled two w
 
 
 
+
 ### Fixed
 - **A sign-in now always starts on the canonical address.** Open a console login page on a loopback
   IP and it moves to `localhost` before anything begins; since the return address is built from
@@ -21232,6 +21871,7 @@ addresses. Production was never affected: `halatuju.xyz` cannot be spelled two w
 
 The callback pages are deliberately *not* guarded: a sign-in that legitimately begins on
 `127.0.0.1` also returns there and works fine, and redirecting it would create the very bug.
+
 
 
 
@@ -21264,6 +21904,7 @@ disagree about which level a page belongs to.
 
 
 
+
 ### Fixed — a data error, not a display one
 **Organisation 11 was named "BrightPath Bursary". It is the ORGANISATION; "BrightPath Bursary" is
 the PROGRAMME.** Renamed to `BrightPath` in production (its `code` was already `brightpath`).
@@ -21274,6 +21915,7 @@ where `org_short_name` was already `'BrightPath'`, so no student, sponsor or con
 **The duplicate-crumb suppression added earlier the same day is REVERTED.** It treated a misnamed
 row as a display problem and hid the symptom. With correct data the collision cannot occur, and if
 two names ever match again that is a signal someone misnamed something — worth seeing.
+
 
 
 
@@ -21301,6 +21943,7 @@ into.
 
 
 
+
 ### Fixed
 - **A tenant OWNS an active programme, or has an active `org_admin`.** Both, not either alone:
   ownership alone loses a tenant created moments before its programme (the create form makes org +
@@ -21312,6 +21955,7 @@ into.
   after itself, so it read `BrightPath Bursary / BrightPath Bursary`. Suppressed only when the two
   are identical AND neither is switchable — the moment there is a choice, both crumbs show even if
   the current pair matches, or the switcher would vanish exactly when it starts to matter.
+
 
 
 
@@ -21335,12 +21979,14 @@ never fired** — one organisation still owns everything; this was a decision, n
 
 
 
+
 ### Added
 - `GET /api/v1/admin/scholarship/scopes/` — the organisations and programmes a caller may look at.
   super sees all; everyone else their own; **partner sees nothing** (a referral organisation is
   attribution, never an access scope); an admin with no organisation gets empty lists, not a 500.
 - `ScopeSwitcher` in the breadcrumb. Programme codes are `Programme.code` — the same vocabulary
   PF-1 settled on for `/scholarship/apply?p=<code>`.
+
 
 
 
@@ -21353,10 +21999,12 @@ never fired** — one organisation still owns everything; this was a decision, n
 
 
 
+
 ### Verification
 `pytest` **4968** (full scope) · `jest` **1047** / 68 suites · i18n **4153 x 3** · build compiled.
 **No migration.** The endpoint derives from the same `owning_organisation` the org fence uses, so
 it cannot widen access: a client ignoring it entirely reaches identical data.
+
 
 
 
@@ -21377,6 +22025,7 @@ recently — silently, into the wrong organisation's hands.
 
 
 
+
 ### Fixed
 - **The backend refuses rather than guesses.** `AmbiguousApplication` (409, `application_ambiguous`).
   Deliberately a DRF `APIException` rather than this module's usual explicit `Response` — the house
@@ -21389,6 +22038,7 @@ recently — silently, into the wrong organisation's hands.
 
 
 
+
 ### Verification
 `pytest` **4957** (full scope) · `jest` **1039** / 67 suites · i18n **4151 x 3** · build compiled.
 **No migration.** Inert today and provably so: the `(cohort, profile)` constraint excludes only
@@ -21397,6 +22047,7 @@ have to create a second programme to reach the bug at all.
 
 One test exists purely to protect the restart case: an `expired` application beside a live one must
 not read as ambiguous, or every student who ever restarted would be locked out by this fix.
+
 
 
 
@@ -21413,6 +22064,7 @@ migration, no new endpoint.**
 
 
 
+
 ### Added
 - **`lib/tableView.ts`** — the threshold, clamped paging, and three comparators that each exist
   because the obvious version is wrong for this data: money arrives as a **string** (`'9000.00'`
@@ -21423,6 +22075,7 @@ migration, no new endpoint.**
   column exists to find work. Money, counts and dates open descending; text opens ascending.
 - **`lib/usePagedRows.ts`** — page state that resets to 1 when the row count changes, so filtering
   to "pending" while on page 3 cannot blank the table.
+
 
 
 
@@ -21455,6 +22108,7 @@ commits so the safety half did not wait on a product decision.
 
 
 
+
 ### Fixed
 - **It refuses rather than guesses** (`AmbiguousOpenCohort`). The apply path returns
   `409 programme_required` and logs at ERROR — an operator problem, not a student one.
@@ -21462,6 +22116,7 @@ commits so the safety half did not wait on a product decision.
   fixing only the apply path would have moved the bug: it told every visitor about whichever round
   sorted first. It now shares the resolver, stays truthfully "open", and refuses to NAME a
   programme it cannot identify.
+
 
 
 
@@ -21476,6 +22131,7 @@ commits so the safety half did not wait on a product decision.
 
 
 
+
 ### Verification
 `pytest` **4947** (scholarship + courses + reports — full scope); `jest` **997** / 65 suites;
 i18n **4149 x 3**; `next build` compiled. **No migration.** Baselines moved because sponsor S3
@@ -21483,6 +22139,7 @@ merged mid-sprint; this sprint's delta is 25 backend + 6 frontend tests.
 
 The reproduction is in the tests: `test_no_application_is_created_under_an_arbitrary_organisation`
 returned **201** against the pre-fix code, creating the wrong-tenant row.
+
 
 
 
@@ -21502,6 +22159,7 @@ live service, so the pre-S3 senders still do the work and nothing a sponsor rece
 
 
 
+
 ### Added
 - **`SponsorEmailTemplate` + `SponsorEmailLog`** (migration `0133`, RLS at deploy) — the siblings
   of the partner pair. One row per kind: **one switch per EMAIL, not per sponsor.**
@@ -21517,6 +22175,7 @@ live service, so the pre-S3 senders still do the work and nothing a sponsor rece
 
 
 
+
 ### Changed
 - **`email_templates.py`** — the block-splitting renderer is now SHARED. `partner_comms.render`
   delegates to it and its 113 email goldens pass unmodified, which is the regression guard.
@@ -21524,6 +22183,7 @@ live service, so the pre-S3 senders still do the work and nothing a sponsor rece
   save-call, error mapper and i18n prefix. It gained a jsdom test neither copy had.
 - A block that fills to nothing is now DROPPED rather than rendered as an empty paragraph, so a
   template can carry an optional token (the invite's personal note) on its own line.
+
 
 
 
@@ -21556,6 +22216,7 @@ hub became four pages, and the sidebar became a 48px rail. 863 -> 968 jest.
 
 
 
+
 ### Changed
 - **N3a (org/programme switchers) is PARKED with a trigger**, not cancelled: build it when a second
   organisation exists in production with an active programme. Until then it is a dropdown with one
@@ -21576,6 +22237,7 @@ spec: the owner approved an interactive mock-up
 
 
 
+
 ### Added
 - **The rail.** The sidebar rests at 48px of icons and opens to 216px when pointed at or tabbed
   into. It opens *over* the page: a spacer holds the collapsed width, so nothing reflows under the
@@ -21586,6 +22248,7 @@ spec: the owner approved an interactive mock-up
 - **`G` then a letter jumps** to a page — 14 routes carry one. The armed `G` expires after 1.2s so
   a forgotten keystroke cannot navigate later, and a wrong second key disarms rather than waiting.
 - **Two icons** for the pin, in the existing single-colour family.
+
 
 
 
@@ -21600,9 +22263,11 @@ spec: the owner approved an interactive mock-up
 
 
 
+
 ### Removed
 - **Per-group collapse.** It existed to shorten a long wide sidebar; the rail is short by
   construction, and two collapse mechanisms in one component is one too many.
+
 
 
 
@@ -21610,6 +22275,7 @@ spec: the owner approved an interactive mock-up
 `npx jest` 968 passed (63 suites, +35); `check-i18n` 4090 keys x 3; `next build` compiled, 66 pages.
 24 files.
 No backend, no migration, no new dependency.
+
 
 
 
@@ -21645,6 +22311,7 @@ existed only because there was no sidebar to reach its parts. There is one now.
 
 
 
+
 ### Added
 - **Four pages** — `/admin/organisation` (overview), `/admin/organisation/staff`,
   `/admin/organisations` (tenants, super), `/admin/partners` (referral orgs, super).
@@ -21652,6 +22319,7 @@ existed only because there was no sidebar to reach its parts. There is one now.
   actions, so one page becoming four did not become four staff tables. Every component at module
   scope: a sub-component declared inside its parent remounts the subtree and steals focus from the
   invite inputs, which this exact file had suffered before.
+
 
 
 
@@ -21666,6 +22334,7 @@ existed only because there was no sidebar to reach its parts. There is one now.
 
 
 
+
 ### Known / owed
 - **Manual screenshots are stale.** The prose is corrected; the images still show a page that no
   longer exists. The manifest is annotated — re-capturing is an owner task.
@@ -21673,6 +22342,7 @@ existed only because there was no sidebar to reach its parts. There is one now.
   Supabase names the Next.js remedy (cookie storage via `@supabase/ssr`); it touches live auth for
   every admin and owes its own sprint. A separate commit makes the callback state its own failure
   reason rather than "please try again".
+
 
 
 
@@ -21690,6 +22360,7 @@ new route** (the controls live on the sponsor detail page).
 
 
 
+
 ### Added
 - **Record a credit** — a maker-only panel on the credits block: gift, amount, bank
   reference. The reference is mandatory because it is the only thread back to the money and
@@ -21704,11 +22375,13 @@ new route** (the controls live on the sponsor detail page).
 
 
 
+
 ### Changed
 - **`memberships` on the sponsor detail payload now carries `programme_id`.** The creditable
   set is "gifts the sponsor was ACCEPTED into", which is the memberships list and not the
   wallet ledger: a sponsor accepted into a gift they have not yet given to holds no wallet,
   and that is exactly the case a first credit is recorded for.
+
 
 
 
@@ -21723,6 +22396,7 @@ new route** (the controls live on the sponsor detail page).
 - **Every mutation re-reads the whole record.** The response carries the updated credit, but
   confirming one also moves the wallet tiles, `available` and the pending caveat — patching
   the row locally would leave the money on screen disagreeing with the money in the database.
+
 
 
 
@@ -21749,6 +22423,7 @@ that was quietly dropped. **No migration.**
 
 
 
+
 ### Fixed
 - **A referral was only ever attributed to the link.** `attribute_referral` fires when
   someone registers through `/sponsor?ref=<code>` — and most people don't: they read the
@@ -21762,6 +22437,7 @@ that was quietly dropped. **No migration.**
   only been recorded since 2026-07-27, so a null means *no record*, not *never came back*.
   The copy now reads "No sign-in recorded" (en/ms/ta) with a tooltip saying since when.
   The mechanism itself was verified working before the copy was changed.
+
 
 
 
@@ -21780,6 +22456,7 @@ that was quietly dropped. **No migration.**
 
 
 
+
 ### Notes
 - `students` is counted in its **own aggregate query**, deliberately not a second
   `annotate()` beside the money: two multi-valued joins in one queryset multiply each
@@ -21794,6 +22471,7 @@ that was quietly dropped. **No migration.**
 Second of three sprints on the console navigation. N1 turned the menu into data; N2 turns it
 into a shell. Design of record:
 <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1cb157a6>.
+
 
 
 
@@ -21820,12 +22498,14 @@ into a shell. Design of record:
 
 
 
+
 ### Changed
 - **`admin/layout.tsx` is now only a guard — 220 lines to 60.** The role ternary, the
   hand-written active-route rule, the badge fetch and two copies of the nav markup are gone.
 - **`manualRole()` delegates the super rule to `effectiveRole`** — the last of seventeen copies.
   The rest stays explicit deliberately: `effectiveRole` falls back to `reviewer`, which is right
   for a menu and wrong for a manual, whose fallback must be "no role chapter at all".
+
 
 
 
@@ -21836,9 +22516,11 @@ into a shell. Design of record:
 
 
 
+
 ### Fixed
 - **The sidebar heading printed the scope label twice** for any account with no organisation
   ("Organisation  Organisation"). Caught by the new per-role render test, not by review.
+
 
 
 
@@ -21853,6 +22535,7 @@ dependency.
 Three connected arcs. The through-line: **the platform could not say what it cost**, so no fee
 could be set honestly. It can now, to the SKU, for both providers — and the two biggest lines
 turned out to be waste, both removed before any price was derived from them.
+
 
 
 
@@ -21880,6 +22563,7 @@ turned out to be waste, both removed before any price was derived from them.
 
 
 
+
 ### Fixed
 - **Tenant-raised email and AI were billed to the platform, not the tenant.** Measured: **18 of
   18** email events were org-NULL, so an invoice generated that day would have under-charged the
@@ -21897,6 +22581,7 @@ turned out to be waste, both removed before any price was derived from them.
   in the HTTP cron endpoint 22 of its 23 siblings use; the scheduler now calls that. The Job is
   left **dormant, not deleted** (Jobs bill per execution, so the saving is banked and rollback is
   one edit). Also retires the documented stale-image hazard.
+
 
 
 
@@ -21919,6 +22604,7 @@ Design of record: <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1
 
 
 
+
 ### Added
 - **`src/lib/navigation.ts`** — every admin route, grouped by the scope it belongs to
   (Platform / Organisation / Programme / utility), each carrying its i18n key, the roles that may
@@ -21930,6 +22616,7 @@ Design of record: <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1
   page; dark-ship probe semantics; and a drift guard that reads the app router off disk so a new
   admin page with no menu home fails the build.
 - Four nav group headings in en/ms/ta (parity 3976). Malay and Tamil are first drafts.
+
 
 
 
@@ -21948,6 +22635,7 @@ Design of record: <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1
 
 
 
+
 ### Changed
 - The role chain in `admin/layout.tsx` (8 link objects, seven branches) is deleted; the bar renders
   from the registry. The sponsor badge no longer re-derives who may see it.
@@ -21955,6 +22643,7 @@ Design of record: <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1
   the layout, 13 admin pages, `sessionPolicy.ts`, the login page and the OAuth callback. Route-level
   guards now ask `canAccess()`. Anything finer than "may you open this page" — `canCreate` on
   Payments, `canManage` on Administration, the cockpit predicates — deliberately stays local.
+
 
 
 
@@ -21975,6 +22664,7 @@ Three specific holes: crediting a wallet still needed a developer (the P4b sign-
 been live since migration `0125` with **no frontend**, so every RM of the RM172,000 was keyed
 in by hand); a sponsor was approved and never told; and `last_seen_at` did not exist anywhere
 in the codebase, so a dormant sponsor was indistinguishable from an active one.
+
 
 
 
@@ -22011,6 +22701,7 @@ in the codebase, so a dormant sponsor was indistinguishable from an active one.
 
 
 
+
 ### Changed
 - **The sponsors list can now be scanned, not just read.** `Organisation` dropped — empty on
   all nine production rows, and it cost a quarter of the table. Its space pays for **Given**
@@ -22027,6 +22718,7 @@ in the codebase, so a dormant sponsor was indistinguishable from an active one.
   card. Every money string the API emits is now the same shape.
 - **`_credit_dict` reused** rather than re-spelled for the detail page — two copies of a money
   payload is two places for the next column to be added to only one.
+
 
 
 
@@ -22051,6 +22743,7 @@ for: *"I want this feature activated, even though there are no emails at present
 
 
 
+
 ### Live changes (no code)
 - **`PARTNER_COMMS_ENABLED=1`** on `halatuju-api` (`--update-env-vars`, revision
   `halatuju-api-00882-xwm`). The platform gate is open; **the per-email switches are now the only
@@ -22066,6 +22759,7 @@ for: *"I want this feature activated, even though there are no emails at present
 
 
 
+
 ### Changed
 - **The Sources page is now two panels, one badge each** (owner ruling): **Organisations** is the
   default and the registry is what you land on; **Partner emails** is a deliberate second click.
@@ -22078,6 +22772,7 @@ for: *"I want this feature activated, even though there are no emails at present
 - Two banner lines reworded in all three locales: the programme-switch line no longer implies this
   screen can throw that switch, and "add an email to an organisation **below**" now points at the
   Organisations badge instead of a table that is no longer underneath it.
+
 
 
 
@@ -22105,6 +22800,7 @@ Cloud Scheduler job exists yet. NO migration (S1's `0128` already covers it).
 
 
 
+
 ### Added
 - **`partner_comms.render(kind, template, context)`** — a stored template becomes
   `(subject, text, html)`. The body splits on blank lines; a block that is exactly a structural
@@ -22126,6 +22822,7 @@ Cloud Scheduler job exists yet. NO migration (S1's `0128` already covers it).
 
 
 
+
 ### The four rules that hold everywhere in the sender
 Each is a way this would otherwise fail *quietly*:
 - **Every attempt is logged, including a skip** — `no_recipient` / `unchanged` / `nobody_waiting` /
@@ -22140,12 +22837,14 @@ Each is a way this would otherwise fail *quietly*:
 
 
 
+
 ### The quiet-week rule, split deliberately
 - `weekly_summary` **skips** when the counts are identical to the last successful send — an
   unchanged scoreboard is not news, and identical emails train a reader to ignore them.
 - `shortlisted_followup` skips **only when nobody is waiting**. An unchanged list of stragglers is
   exactly who needs chasing, so it goes out again. Pinned by a test asserting the summary goes
   quiet and the chase list does not, on the same unchanged week.
+
 
 
 
@@ -22176,6 +22875,7 @@ contract."*
 
 
 
+
 ### Added
 - **`partner_comms.py` — the one seam.** `KINDS` + per-kind placeholder allowlists,
   `qualifying_partners()`, `partner_applications(org)`, `chip_tally()`, `stage_counts(org)`,
@@ -22197,6 +22897,7 @@ contract."*
 
 
 
+
 ### Changed
 - **Enablement is a property of the TEMPLATE, not an (org, kind) pair** (owner: *"if the email
   template is active, it goes out to all qualifying partners. It is either, or."*). That removed a
@@ -22209,6 +22910,7 @@ contract."*
 
 
 
+
 ### The two owner rulings that are enforced in code, not remembered
 - **The bursary is theirs too.** A partner organisation co-owns this programme and may market it as
   its own, so the students are the **organisation's** — never "the students you send us" (conduit),
@@ -22217,6 +22919,7 @@ contract."*
   seeds are asserted to pass it, and the award email says out loud: *"this is {org_name}'s
   achievement as much as ours — please do share the news as your own."*
 - **HTML by default**, through the existing `_html_email_shell`, with a plain-text alternative.
+
 
 
 
@@ -22243,6 +22946,7 @@ contract."*
   the application system-side and asserts the date does not move. A superseded upload doesn't count.
 - **A failed send never reads as a success.** `last_fingerprint` and the screen's "last sent" both
   filter `ok=True`, so a no-recipient skip cannot suppress the next real send as "unchanged".
+
 
 
 
@@ -22317,6 +23021,7 @@ items), so this was built additive-then-read with the "nothing moves" invariant 
 
 
 
+
 ### Added
 - **`PaymentRun.programme`** (migration `0126`, additive + nullable) and a backfill (`0127`) that
   derives each existing run's gift **from the students already in it** — asserting nothing new.
@@ -22324,6 +23029,7 @@ items), so this was built additive-then-read with the "nothing moves" invariant 
   not a grouping: grouping is a layout change to a live finance screen and owes a design pass.
 - **`test_payment_programme.py`** (18 tests) — the narrowing, the org fence holding above it, the
   skipped-list channel, and the backfill invariant expressed as behaviour.
+
 
 
 
@@ -22340,6 +23046,7 @@ items), so this was built additive-then-read with the "nothing moves" invariant 
   than by a test. Narrowing the ITEMS is not narrowing the RUN: without this, a student of another
   gift (never a candidate) would have read as "skipped by this run". A legacy run with no
   programme keeps the pre-P2b whole-org view.
+
 
 
 
@@ -22400,6 +23107,7 @@ database. P4b removes the developer from the money path.
 
 
 
+
 ### Added
 - **Three admin endpoints**, org-fenced on the programme's organisation:
   `GET/POST admin/scholarship/credits/` (ledger + record), `POST .../<pk>/sign/` (whichever step is
@@ -22412,6 +23120,7 @@ database. P4b removes the developer from the money path.
 
 
 
+
 ### Changed
 - **`sign_admin_credit` is now ONE function mirroring `payments.sign`**, replacing P4a's three
   (`sign_` / `finance_check_` / `confirm_`). One mirrored function against one function is what stops
@@ -22421,6 +23130,7 @@ database. P4b removes the developer from the money path.
   `same_signer` / `finance_check_required`).
 - **`record_admin_credit` stamps no signature** — recording opens the chain, signing is a separate act
   with a typed name, the same separation payments keeps between `create_run` and `sign`.
+
 
 
 
@@ -22440,6 +23150,7 @@ database. P4b removes the developer from the money path.
   so a draft credit appeared on the sponsor's own giving statement as money we hold — and a draft
   could conjure a wallet for a programme they had been given nothing in. All three now narrow through
   `visible_donations`; a source guard fails CI if a fourth surface reads donations directly.
+
 
 
 
@@ -24315,6 +25026,7 @@ An owner live-review arc off real records (#66, #56, #50, #21; org_admin testing
 
 
 
+
 ### Fixed
 - **Cockpit assign dropdown renders the CURRENT assignee whatever their role** (`ec9279ed`) —
   #66 (assigned to Suresh as `qc`, later promoted `org_admin`) read "Unassigned": the option list
@@ -24333,6 +25045,7 @@ An owner live-review arc off real records (#66, #56, #50, #21; org_admin testing
 
 
 
+
 ### Changed
 - **"Prefers TA" → "Prefers Tamil"** (`ea7e15ce`) — the list's preferred-call-language note spells
   the language out via the existing `scholarship.apply.callLang.*` keys (trilingual, NO new keys);
@@ -24345,12 +25058,14 @@ An owner live-review arc off real records (#66, #56, #50, #21; org_admin testing
 
 
 
+
 ### Data / operations (Supabase MCP, audited)
 - **#50 duplicate live offers collapsed** — the genuine UniMAP PDF (doc 1065, p=1.0) is the sole
   live offer; the suspect WhatsApp photo (doc 1046, p=0.40) superseded to OLD/REPLACED. Offers are
   an un-deduped type and this pair pre-dated stage-judge-promote.
 - **RM20,000 manual credit → sponsor Bharathan Nair** (donation id 4; reference mirrors the
   Chong Lee Min precedent). Wallet RM20,000, no holdings.
+
 
 
 
@@ -24565,6 +25280,7 @@ retro `docs/retrospectives/retrospective-2026-07-15-undeclared-pathway.md`; deci
 
 
 
+
 ### Changed
 - **`verdict_engine._verdict_pathway`** — for a **genuine official** offer + a **true non-declaration**
   (`offer_official_status == 'genuine'` + new `_no_declared_pathway`), the pathway now sits at
@@ -24580,6 +25296,7 @@ retro `docs/retrospectives/retrospective-2026-07-15-undeclared-pathway.md`; deci
   system item).
 - **Action Centre**: `pathway_undeclared` renders an **"Update on your profile"** link; the
   `pathway_confirm` copy is now neutral (works for both the undeclared and the clash cases).
+
 
 
 
@@ -24665,8 +25382,10 @@ One sprint, one deploy, **no migration**. The organisation roles gained the writ
 
 
 
+
 ### Added
 - **A newly-invited reviewer now lands on /admin/profile and is held there until their compulsory profile fields are filled.** Previously reviewers landed on the B40 Applications list with an empty profile. New backend `reviewer_onboarding.reviewer_profile_complete()` (reviewer-only; `True` for every other role) is surfaced as `reviewer_profile_complete` on `GET /api/v1/admin/role/`. Compulsory set (owner's call): name + highest qualification + university + graduation year + field of study + **at least one language at conversational/fluent** + phone. Frontend: pure `adminLanding()` + `mustCompleteProfile()` (`lib/adminLanding.ts`) drive the login/callback landing AND a guard in the admin layout that bounces an incomplete reviewer back to /admin/profile from any other admin page (the profile/set-password/auth/login pages are exempt, so it can't loop). The profile page shows a live "still needed" banner, `*` markers on the required fields, and — on the save that completes it — refreshes the role and forwards them to /admin/scholarship. No migration.
+
 
 
 
@@ -24678,6 +25397,7 @@ One sprint, one deploy, **no migration**. The organisation roles gained the writ
 Delegation of BrightPath staff management to its programme lead, plus a platform-PII security
 fix. Two sprints, one deploy (`courses/0064` choices-only, migrate-first). Retro
 `docs/retrospectives/retrospective-2026-07-15-admin-panel-org-admin.md`.
+
 
 
 
@@ -24695,11 +25415,13 @@ fix. Two sprints, one deploy (`courses/0064` choices-only, migrate-first). Retro
 
 
 
+
 ### Fixed (security)
 - **Platform surface partition**: `get_partner_students`' ALL-students branch is now SUPER-ONLY.
   Previously any B40 `admin`/org role could fetch the platform-wide student directory (every
   course-selector student's PII) by direct API call — the nav hid it but the backend didn't gate
   it. Fixes Dashboard/Students/export/detail; Course-Data views also super-only.
+
 
 
 
@@ -24719,6 +25441,7 @@ pill. Deployed `50149446` (api+web) + `06e38dee` (api hardening); NO migration; 
 
 
 
+
 ### Added
 - **`doc_parse._parse_school_leaving`** — a deterministic label-anchored parser for the standard
   numbered form (Nama Murid / No. Kad Pengenalan / Kelakuan / school header). Reads → **"Exact"**;
@@ -24735,6 +25458,7 @@ pill. Deployed `50149446` (api+web) + `06e38dee` (api hardening); NO migration; 
   School/Behaviour = read) plus a value line with the school, conduct, and **leadership notes**;
   `school_leaving_cert` added to the capture-badge deterministic-first default list. i18n en/ms/ta
   (Tamil first-draft).
+
 
 
 
@@ -24766,8 +25490,10 @@ pill. Deployed `50149446` (api+web) + `06e38dee` (api hardening); NO migration; 
 
 
 
+
 ### Changed
 - **The cockpit rejection record now shows the full decision thread instead of a lone "Declined by …" line.** When a case was declined after a QC reopen, the record read only "Declined by {name}" while the justification box still showed the *reviewer's recommendation* text — so an all-verified case declined on merit looked self-contradictory, and the QC's actual reason (recorded on the reopen) was invisible (the #51 case: Kaneswaran recommended → Ve. Elanjelian reopened on a 5A- merit reason → declined). The rejected record now renders **Recommended by {reviewer} → Reopened by {who} · {date} — "{reason}" → Declined by {who} · {date}** when a reopen exists; a straight reviewer decline with no reopen keeps the single line. Display-only — no student email, no new categories, no migration.
+
 
 
 
@@ -24780,6 +25506,7 @@ The *Sijil Berhenti Sekolah* had NO genuineness check — the green "Verified" c
 fields read. Adds a deterministic signature scorer, extends the extraction variables, and makes the
 keep-better replacement real for this type (owner request). Deployed `af6ef919`; NO migration; retro
 `docs/retrospectives/retrospective-2026-07-15-school-leaving-cert-genuineness.md`.
+
 
 
 
@@ -24798,6 +25525,7 @@ keep-better replacement real for this type (owner request). Deployed `af6ef919`;
 
 
 
+
 ### Changed
 - **Keep-better is now real for this type.** Wired into `vision_fields.authenticity` →
   `income_engine._doc_genuine_rank` → `promotion.doc_quality`, so a genuine cert outranks a
@@ -24807,6 +25535,7 @@ keep-better replacement real for this type (owner request). Deployed `af6ef919`;
 - **`_collapse_duplicate_docs`** — an academic single-per-person doc (school_leaving_cert /
   semester_result) requested twice by an officer opened two `request_code` slots, leaving two live
   copies (app #66). Now collapses to the single best live copy across request codes.
+
 
 
 
@@ -24825,6 +25554,7 @@ the only organisation — every fenced query returns exactly today's rows, and t
 passed at every sprint with no edits to existing tests. Roadmap
 `docs/plans/archive/2026-07-14-platform-roadmap-draft.md`; retro
 `docs/retrospectives/retrospective-2026-07-15-platform-phase1-fencing.md`.
+
 
 
 
@@ -24847,6 +25577,7 @@ passed at every sprint with no edits to existing tests. Roadmap
 
 
 
+
 ### Notes
 - Deploy discipline: TWO checkpoints. Checkpoint 1 (S2+S3a DDL) applied MIGRATE-FIRST via Supabase
   MCP (runbook `docs/plans/archive/2026-07-15-phase1-checkpoint1-migrate-first.md`) then pushed; Checkpoint 2
@@ -24859,6 +25590,7 @@ passed at every sprint with no edits to existing tests. Roadmap
 
 First sprint of the multi-tenant platform roadmap (`docs/plans/archive/2026-07-14-platform-roadmap-draft.md`).
 Behaviourally INVISIBLE: columns are written and seeded but nothing reads them yet.
+
 
 
 
@@ -24880,6 +25612,7 @@ Behaviourally INVISIBLE: columns are written and seeded but nothing reads them y
 
 
 
+
 ### Notes
 - Serializer exposure of the new columns was consciously DEFERRED to Sprint 10: the only org
   endpoint today (`AdminOrgsView`) is an invite dropdown with no consumer for tenant config.
@@ -24890,6 +25623,7 @@ Behaviourally INVISIBLE: columns are written and seeded but nothing reads them y
 
 The durable-invite core was built on the remote station; the two refinements below were added and the
 whole thing merged + deployed together (build `4b79d13`). No migration.
+
 
 
 
@@ -24906,6 +25640,7 @@ whole thing merged + deployed together (build `4b79d13`). No migration.
   long, never-emailed value once it is unchanged past `PARTNER_TEMP_PASSWORD_TTL_DAYS` (default 7) — so
   the emailed copy stops working everywhere, not just in the UI. It never touches a partner who has set
   their own password, nor a Google / no-UID account. Smoke-tested on prod (checked 15, expired 0).
+
 
 
 
@@ -24928,6 +25663,7 @@ whole thing merged + deployed together (build `4b79d13`). No migration.
 
 
 
+
 ### Fixed
 - **Set-password failed with "Current password required when setting new password" (found in the live
   click-through).** The set-password page changed the password client-side (`auth.updateUser({password})`),
@@ -24943,6 +25679,7 @@ whole thing merged + deployed together (build `4b79d13`). No migration.
 
 
 
+
 ### Notes
 - **No migration.** The invite/resend/Google/expiry click-through is the owner's live check; the
   set-password step above was fixed after the first attempt surfaced the re-auth policy.
@@ -24950,6 +25687,7 @@ whole thing merged + deployed together (build `4b79d13`). No migration.
 ## Check-2 gaps found in applicant #117 — four fixes + a guardrail — 2026-07-14
 
 A live review of applicant #117 surfaced four defects, three of them systemic. No migration.
+
 
 
 
@@ -24961,9 +25699,11 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **A retired / unable-to-work parent's pension is no longer invisible to the means test (12 applications).** A `retired` parent sits in `family.NON_EARNING`, so the income check read "satisfied" — the pension was neither asked for nor counted, understating income. Mirroring #126: **ask first** (a new `pension_amount_unknown` clarify, member-named), hear the answer (`pension_claim`, negation-first), and **only on an explicit "yes"** ask for the statement (`father/mother_pension_proof_missing`, reusing the `salary_slip` slot — no new doc type, no migration; the extraction prompt already accepts a pension/benefit statement). New `family.BENEFIT_OCC`; en/ms/ta copy (Tamil a first draft, queued for owner review). *Not in scope (owner's call): feeding the pension figure into the per-capita computation — ask-and-evidence first, re-banding is a clean separate follow-up.*
 - **A registry guardrail: `set(CLARIFY_SPECS) == set(_CLARIFY_ORDER)`.** `sync_check2_queries` iterates `_CLARIFY_ORDER`, not `CLARIFY_SPECS` — a clarify present in the spec but missing from the order is raised **never**, silently, with no error anywhere. The test now fails loudly on any drift (this plan added a code to both; the next one may forget).
+
 
 
 
@@ -24974,9 +25714,11 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **`halatuju-web/src/lib/applicationStatus.ts` — the single source of truth for the officer-facing status vocabulary.** One label per status (via i18n key) and one tone per status, imported by every admin surface. Exports `APPLICATION_STATUSES` (the 13 real statuses in funnel order, mirroring `models.py`), `SYNTHETIC_STATUSES` (`reopened`), `statusLabelKey`, `statusTone` (complete literal Tailwind classes), `hasStatusTone`, and `displayStatus` (the `decision_reopened_at ? 'reopened' : status` rule that was duplicated in both pages). Pure module — returns keys, the caller does `t(...)`.
 - **`src/lib/__tests__/applicationStatus.test.ts` — a guardrail the old i18n orphan test could not provide.** The cockpit's literal `` t(`admin.scholarship.statuses.${s}`) `` makes the whole `statuses.` prefix look dynamic, so every key under it counted as "used" whether or not anything read it. The new test asserts label parity across en/ms/ta (and no unknown key), an explicit tone for every status, and — via a source scan for `STATUS_LABELS`/`STATUS_TONE`/`statusBadge` — that neither admin screen regrows a local map.
+
 
 
 
@@ -24990,6 +25732,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **An informal earner's suppressed payslip request could not re-open when the student said he DID have one (#126).** The ask-first rule (2026-07-08) suppresses a payslip/EPF demand for an informal earner (a fisherman has none — demanding one dead-ends him, #130), but the suppression was keyed on the OCCUPATION CODE, so it never lifted. #126's father is a 'driver' (informal); the student replied *"he has payslip, I should upload it?"* and **nothing happened**, while an unevidenced RM3,900 household income stood as his means test. The answer is now read once, deterministically, at the moment it is given (`income_engine.payslip_claim`) and stored on the item; an explicit **yes** re-opens the request and the chain resumes. **Negation is checked first** ("he has NO payslip" contains 'payslip') so the #130 fisherman is never re-trapped; `no`/`unclear` leave the suppression untouched.
 - **A genuine parent's income document read as a stranger's.** The document coach's reference names were student + `guardians` (often just one recorded parent), so #126's mother's own EPF read `name_mismatch` purely because his FATHER was the guardian. Bills/STR had been patched by *excluding* them from the check; EPF/payslips were left behind. New `vision.reference_names()` widens the set to the **roster parents/members** — fixing the cause — and is the single definition used by both the upload and re-extract paths (which had drifted apart once before).
@@ -24998,10 +25741,12 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Changed
 - **The payslip now decides whether to ask for the EPF — `salary_doc` MODEL_VERSION 1.0.0 → 1.1.0.** If the slip carries a KWSP deduction line, the earner contributes and the statement exists → **ask**; if the slip is read and shows no KWSP line → **don't** (never demand a document he cannot produce); if the slip isn't scored → fall back to the occupation heuristic. The occupation gate becomes the fallback, not the rule (as the rule it would never ask #126's 'driver' father for his EPF even after his payslip arrived). `salary_doc` now records `kwsp` separately in markers (the statutory count couldn't tell a KWSP line from a SOCSO one). **Bands/families unchanged — this adds a marker, it re-scores nothing.** Existing slips carry no `kwsp` key → `unknown` → fallback, so **no current ask changes until a slip is next read.**
 
 ## Query / assignment stage-gates — the machine and the officer ask only when there is a review to do — 2026-07-13
+
 
 
 
@@ -25013,10 +25758,12 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **Vircle eWallet onboarding, merged into the award email.** The bursary is paid through Vircle, so an awarded student must install the app and hold an active account before money can move. A student awarded from now on gets **one** email — the good news *and* the one thing to do (install Vircle → confirm in the Action Centre), with the installation guide PDF attached (`_send_html` gains an `attachments` param). Copy is owner-cleared: the primary adult account is named a *"Parent account"* plainly; eligibility is by birth **year** (born 2008 or earlier) and a younger student is routed to `help@` (a parent registers, the child is added); the physical-MyKad ID check and the OS-floor activation risk are called out as **warnings**, not asides. The old two-email seam (award, then a separate Vircle email) is gone; the standalone Vircle email is kept for the 22 already-awarded students and manual re-sends. Amount, sponsor identity and bank-details ask remain deliberately **out** of this email (guarded by tests) — the formal offer + bursary contract still follow as their own step.
 - **A `vircle_setup_pending` Action-Centre confirm task**, behind `VIRCLE_SETUP_ENABLED` (default **OFF / dark**). Raised on the SEND, by the caller — never by a sync — so it can never appear for a student whose email failed, nor drop unannounced in front of the 22 already-awarded students when the flag flips. Two carve-outs it needs: the resolve endpoint is exempt from `querying_locked` (an awarded student is past the interview), and the task is excluded from the funded set-aside sweep. The student's mobile is the only join key to their Vircle account, so it is pre-filled, validated (`normalise_msisdn`) and stored normalised. **Vircle tells us nothing back — a confirmation is a CLAIM, not a verification; no surface calls it "verified".** Ground truth arrives when the first payment succeeds or bounces.
 - **A generated relay sheet** (`sheets.py` + `vircle.py`) — a mirror of the DB in *My Drive / 03 Vircle*, rewritten each run so it can never drift: the list handed to Vircle, and the chase list. **Least privilege:** when `VIRCLE_SHEET_ID` pins the sheet (the normal case) it requests the `spreadsheets` scope only and never builds a Drive client; the broader `drive` scope is requested only in the unpinned fallback, and the Drive API is left disabled on the project so access can't be granted by accident. Fails quietly if the delegation scopes are absent (the DB stays the record). Columns are owner-set (Application · Name · NRIC · Email · Emailed on · Confirmed on · Mobile); the sync clears **only the generated columns** so the owner's side-notes survive, and rows sort by `awarded_at` (first-come-first-served, append-only) so notes never drift off their student.
+
 
 
 
@@ -25025,6 +25772,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 - **The relay sheet labelled the 30 never-emailed students "Emailed, not confirmed"** — reading as "we told them and they're ignoring us" when the truth is "we never asked", exactly how a student gets dropped off a chase list. New honest buckets driven by whether the setup task exists (i.e. whether the email actually sent): *Not yet emailed* vs *Emailed, awaiting confirmation*, action-first ordering, pinned by tests.
 
 ## Private/IPTS offer arms disqualified + course-switch note + SPM exam-year fix — 2026-07-10
+
 
 
 
@@ -25045,6 +25793,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **Course-switch notification (any → any).** When the live offer replaced a genuinely different prior
   offer (poly → uni, public → private, …), an always-visible blue **info banner** on the verdict card
@@ -25053,6 +25802,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   (the band is NOT downgraded — a student may legitimately move STPM → matriculation → a UA diploma);
   a switch INTO a private arm is red on its own via the genuineness veto, not via the switch.
   `pathway_engine.offer_pathway_switch`; `switched_from` on the offer's `pathway_check`.
+
 
 
 
@@ -25071,6 +25821,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **An Air Selangor water bill read `Current`/grey with no Period, and re-running had no effect.** A
   water bill from a clean PDF locks onto the DETERMINISTIC parser (`doc_parse._parse_water`, capture
@@ -25085,6 +25836,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   Gemini). Takes effect on Re-run / new upload. +2 pytest.
 
 ## Reviewer & sponsor live-bug batch — 2026-07-10
+
 
 
 
@@ -25109,12 +25861,14 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **First web component-test harness** (jest-environment-jsdom + @testing-library/react; per-file
   jsdom docblock so the global node env is untouched; `tsconfig.jest.json` sets `jsx: react-jsx`),
   with a regression test for the sponsor fund→refresh behaviour. Unblocks TD-065.
 
 ## LAP water bills: date from the meter reading (they have no Tarikh Bil) — 2026-07-10
+
 
 
 
@@ -25134,6 +25888,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **The key values the AI read off a utility bill now show inline in the officer cockpit** (owner
   request) so the reviewer gets the picture without opening the document: a labelled line —
@@ -25150,6 +25905,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Changed
 - **The bill "warnings" note is now written for the reviewer, not the extractor.** The extraction
   `warnings` were surfaced verbatim to the officer in engineer register — field names in quotes
@@ -25163,6 +25919,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   pytest + 491 jest.
 
 ## Utility-bill recency is now a 3-tier traffic light on the officer chip — 2026-07-10
+
 
 
 
@@ -25184,6 +25941,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **SPM certificate parser** (`academic_engine.parse_spm_cert` + `ensure_exam_year`) — a certificate
   flattens into separate subject/grade blocks (paired by index), which the slip parser can't read, so
@@ -25197,6 +25955,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Changed
 - **Capture-confidence badge**: labels shortened `Exact read`/`AI read` → `Exact`/`AI`; now shown on
   EVERY read doc (field-extracted + IC); untagged docs default by type (deterministic-first →
@@ -25206,9 +25965,11 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - The missing exam-year chip on SPM certificates (the driving report) — root cause was an STPM student's
   SPM cert being skipped by the SPM parser's `exam_type` gate, then Gemini dropping the bottom-of-page year.
+
 
 
 
@@ -25216,6 +25977,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 - 54 existing govt offers backfilled to Exact (cached OCR + REST PATCH; 0 failures; reporting_date preserved).
 
 ## Water-bill genuineness signature model + Extraction-v2 — 2026-07-10
+
 
 
 
@@ -25248,6 +26010,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **Latent duplicate-key bug in `vision._DOC_HINTS` (both `electricity_bill` and `water_bill`).** Each
   doc type had two hint entries, so Python's dict literal silently kept only the later one: the
@@ -25261,6 +26024,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **A `not_electricity_bill` bill now shows the red "Wrong type" chip in the officer cockpit** (like
   every other doc type). `officerCockpit.documentFacts` had one gap: the utility branch was the only
@@ -25271,6 +26035,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   Verified on #83 (a PBA water bill uploaded into the electricity slot). +2 jest (489 total).
 
 ## Electricity-bill genuineness signature model + Extraction-v2 — 2026-07-10
+
 
 
 
@@ -25304,6 +26069,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **First genuineness model for salary slips** (`genuineness/salary_doc.py`, `MODEL_VERSION 1.0.0`) —
   a statutory-payroll-grammar cascade (not a letterhead) over the OCR text → six families: `private`
@@ -25311,6 +26077,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   `informal` (suspect, low ceiling) · `not_salary` (MyKad-in-slot / no payslip fields → reject).
   Calibrated on 99 live slips (genuine 65 / suspect 26 / not_salary 8). Design:
   `docs/scholarship/salary-signature-model.md`.
+
 
 
 
@@ -25323,6 +26090,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **The #47 hole:** a MyKad uploaded into the salary-slip slot passed the income gate on slot
   presence alone. `income_engine.usable_salary_slip` (used by `member_cluster_complete` +
@@ -25332,6 +26100,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   route), so this never auto-downgrades a genuine family.
 
 ## Fix: utility-bill staleness — ask 3 months, accept 6; prefer Tarikh Bil — 2026-07-09
+
 
 
 
@@ -25357,6 +26126,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **`services.assign_reviewer(reviewer=None)` left `status` untouched**, so unassigning a reviewer
   from a case in `interviewing` left it stuck there with no owner — breaking the invariant
@@ -25377,6 +26147,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **The Phase-2 circuit-breaker now has a visible half.** When a student re-uploads past
   `DOC_STAGE_MAX_ATTEMPTS` without a usable document, the backend already stamps
@@ -25393,6 +26164,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   acknowledgement notes + the verdict-keyed doc coach).
 
 ## Phase 3: per-doc quality — offer-letter officialness in the promote decision — 2026-07-09
+
 
 
 
@@ -25426,6 +26198,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Changed
 - **The document upload flow is inverted from "replace-first" to "stage → judge → promote".** A KEY
   NAMED doc (`ic`, `parent_ic`, `str`, `salary_slip`, `epf`, `offer_letter`, `birth_certificate`,
@@ -25450,6 +26223,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **A parent-name STR no longer reads "name mismatch" on the doc row.** `doc_student_verdict`
   (`vision.py`) name-checked the STR recipient against **student + guardians only** (`_NAME_FIELD['str']`),
@@ -25462,6 +26236,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   2227 pytest.
 
 ## Fix: utility-bill upload loop (#130) — 2026-07-09
+
 
 
 
@@ -25486,6 +26261,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Changed
 - **STR re-ask (`str_not_current`) reworded** (owner, #126): "you sent" → "you uploaded"; "the
   recipient is" → "your family is"; and the payment-tab instruction now reads "the *Maklumat
@@ -25499,6 +26275,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   `check2_queries._clarify_params`). en/ms/ta. 2218 pytest + 484 jest.
 
 ## Utility-bill dedup + profile guardrails (laptop / B40 threshold) — 2026-07-08
+
 
 
 
@@ -25525,6 +26302,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **Eight student-facing task codes were missing from the frontend `KNOWN_CODES` registry**, so the
   Action Centre (student) and the officer "Outstanding" panel treated them as free-text officer
@@ -25539,6 +26317,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   its frontend registration. 484 jest.
 
 ## Check-2: sharper utility-bill handling — 2026-07-08
+
 
 
 
@@ -25568,6 +26347,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Changed
 - **Informal / self-employed earners are no longer chased for a payslip or EPF (#130).** A
   fisherman / hawker / e-hailing rider etc. (`family.INFORMAL_OCC` — the taxonomy's own
@@ -25594,6 +26374,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Changed
 - **Employed-EPF request copy** — direct ask, drops the "skip it if…" tail: "If your father has an
   EPF (KWSP) statement, upload it alongside his payslip. It would help confirm his income."
@@ -25606,6 +26387,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   2163 pytest + 482 jest.
 
 ## STR keep-better guard → quality ranking — 2026-07-08
+
 
 
 
@@ -25623,6 +26405,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **A junk STR re-upload never displaces a recognised proof (#83)** — a re-upload reading
   wrong_type/unreadable (SALINAN, old copy, unknown page) while the live doc is a recognised STR
@@ -25630,6 +26413,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   (#83's student superseded her Lulus Semakan with a 2023 copy, four times, dropping herself from
   Probable to breached). A RECOGNISED new document still replaces normally (a current Ditolak must
   displace an old Lulus). Same philosophy as the extraction clobber guard. #83's data restored.
+
 
 
 
@@ -25644,6 +26428,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **Check-2 auto-requests the latest semester result (CGPA)** from past-intake continuing students:
   chosen pathway multi-year (STPM / PISMP / Poly / UA diploma) AND the offer's normalised
@@ -25653,6 +26438,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   satisfied. #56's "still enrolled?" review item is now automated. 2157 pytest.
 
 ## Live-review fixes: #71 grades, #27 income — 2026-07-08
+
 
 
 
@@ -25676,6 +26462,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **Reporting-date BONUS (MODEL_VERSION 1.5.0)** — a validated official registration summons lifts
   the offer's effective genuineness step one band in the verdict ladder (suspect→treated-genuine,
@@ -25695,6 +26482,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Fixed
 - **Pathway chip counted as a variable** — red when the offer clashes with the declaration OR the
   document is not a genuine official offer (an interview slip / pemakluman / private-IPTS letter
@@ -25708,12 +26496,14 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 
 
+
 ### Added
 - **`reextract-offers` cron** — targeted batch re-score of offers with missing/below-genuine (<0.70)
   authenticity under the current MODEL_VERSION; run against the live cohort (all 88 offers scored).
 - 2141 scholarship pytest + 480 jest.
 
 ## Genuineness score-band + red-chip ladder — 2026-07-07
+
 
 
 
@@ -25734,6 +26524,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 
 
 
@@ -25761,6 +26552,7 @@ SUBMISSION GATE was stricter than, or contradicted, the verification VERDICT —
 
 
 
+
 ### 2026-07-08 — "One clean cluster is enough" income gate + Gopal honesty + OCR name-guard (BE + FE; NO migration)
 
 Off applicant #19 (NATHIYAA), who was trapped at submission by an *extraneous, misread* second-parent
@@ -25784,6 +26576,7 @@ IC on the salary route while her mother's cluster was complete.
 
 No migration. NATHIYAA is unblocked automatically (her mother's cluster is clean). +9 pytest; 2176
 scholarship pytest + i18n parity green. **▶ OWNER:** MS/TA refine of the new neutral coach line.
+
 
 
 
@@ -25814,6 +26607,7 @@ the new attribution strings.
 
 
 
+
 ### 2026-07-08 — Fix: document upload picker unresponsive on some Android browsers (FE only)
 
 Reported by a shortlisted applicant (Vivo Y39 5G): tapping "Choose file" in the Documents
@@ -25827,6 +26621,7 @@ step did nothing — no file picker opened.
 - **Note** — this does NOT rescue true in-app/mini browsers (Gmail/WhatsApp WebViews), which
   often can't open a file chooser at all; the standing advice there is to open the site in
   Chrome. Applicants affected by that are told so directly.
+
 
 
 
@@ -25844,6 +26639,7 @@ student forward instead of leaving them to find the next step in the rail themse
 - **Single source of truth** — the per-step completeness rule moved into a new exported
   `isStepComplete()` in `lib/scholarship.ts`, shared by both the step-rail's done-ticks
   and the advance gate (they can no longer drift apart). +3 unit tests.
+
 
 
 
@@ -25871,6 +26667,7 @@ cards) with a graded, downgrade-only ladder over `('verified','review','recommen
   (present → cropped-official → Probable; absent → notification → Unsure) + read the **issuer department**
   (Jabatan Pemasaran / Pendidikan Berterusan → private wing → Unsure). Data cleanups: #107 has a stale
   duplicate offer scan to supersede; #12's private-wing offer is unscored.
+
 
 
 
@@ -25913,6 +26710,7 @@ IC — both household members).
   jest + tsc clean. Spec `docs/scholarship/str-proof-spec.md` §8 updated (STR-precedence top rule).
 
 
+
 ### 2026-07-06 — Pre-submit STR cluster: default earner, grouped box, green-when-complete, key-leak fix (FE only)
 
 Polishing the apply-form income wizard's STR route to match the salary route:
@@ -25932,6 +26730,7 @@ Polishing the apply-form income wizard's STR route to match the salary route:
   `scholarship.docs.strCheck.wrong_type`; added both labels (en/ms/ta).
 
 No backend, no migration; jest 465, type-check clean.
+
 
 
 
@@ -25962,6 +26761,7 @@ Scholarship pytest 2114, jest 465. No migration.
 
 
 
+
 ### 2026-07-06 — Officer Check-2 Outstanding shows the FULL instruction the student saw (FE only)
 
 The officer list showed only an auto-request's concise title (e.g. "Confirm your STR is approved and being
@@ -25970,6 +26770,7 @@ only to the student's Action Centre. The reviewer couldn't see exactly what was 
 Check-2 Outstanding renders the full description under the title (markdown emphasis stripped for a clean
 read; hidden when an item has no description or it just repeats the title), so the reviewer sees exactly
 what the student was asked next to the student's answer. Manual requests already showed their full text.
+
 
 
 
@@ -25992,6 +26793,7 @@ stayed correct (a visible divergence waiting to happen).
 
 **Tests** — blank-STR resolution + STR tag-correction (backend); blank-tagged STR files under its recipient
 (FE). Scholarship pytest 2112, jest 465. No migration.
+
 
 
 
@@ -26023,6 +26825,7 @@ required) + 1 filing case. Scholarship pytest 2111, jest 464. No migration.
 
 
 
+
 ### 2026-07-06 — P3: a valid STR settles B40 on the salary route too (#45/#63 seam; no migration)
 
 Shipped the deferred P3 (the #63 route-seam). A family with a valid STR **and** a working member gets
@@ -26048,6 +26851,7 @@ unrelated fall-through). Scholarship pytest 2108. No migration, backend only.
 
 
 
+
 ### 2026-07-06 — Live-review batch #125: STR dedup (household-level), no interview echoes, detailed STR request (no migration)
 
 Three fixes off a live review of applicant #125.
@@ -26070,6 +26874,7 @@ Three fixes off a live review of applicant #125.
   dates — so a dateless "Lulus" screenshot no longer reads as sufficient. EN/MS/TA (Tamil first-draft).
 
 **Tests** — STR cross-member dedup + interview-agenda no-echo; jest 463, scholarship pytest 2103; golden masters intact.
+
 
 
 
@@ -26102,6 +26907,7 @@ header should show a lifecycle timeline once a case is recommended / active.
 **Tests**
 - `formatDate` unit suite; `headerTimeline` phase-selection suite; backend `test_lifecycle_timestamps.py`
   (stamp_first set-if-null + fund/finalise/first-payout stamping). Jest 463, scholarship pytest 2102.
+
 
 
 
@@ -26163,6 +26969,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Cockpit Decision box split into three cards (2026-07-04, frontend-only).** The single "Decision" card
   is now three: **Rate AI verification** (the four Pass/Fail facts + the AI's suggested verdict, topmost) ·
@@ -26171,6 +26978,7 @@ pytest + 455 jest**; golden masters intact.
   make-your-case placeholder; "Save verdict & generate final profile" → **Save & generate final profile**).
   Pure regroup + i18n rename (en/ms/ta) — no backend, no migration; the slider still drives `award_amount`
   and the textarea still stores `verdict_reason`. Locked/read-only state distributes across the three cards.
+
 
 
 
@@ -26279,6 +27087,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Persona strings (V6 #17, en/ms/ta — Tamil first-draft):** the Action-Centre Gopal greeting is
   rewritten to the lean coach register (drops the cheerleading "no rush / every step brings you
@@ -26306,6 +27115,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Route-seam evenness (V5 #10):** `docs/scholarship/str-proof-spec.md` §8 is now THE single
   route-seam truth table (bands-doc defers to it). `verdict_engine._verdict_income`:
@@ -26315,6 +27125,7 @@ pytest + 455 jest**; golden masters intact.
   - Salary-route thin-headroom binary green kept as a **documented deliberate exception** (annotated).
 - **Wrong-person offer (V5 #12):** `_verdict_pathway` bands `offer_name_mismatch` explicit 🟡
   `recommend` (was an accidental-amber `review`); amber not red, no submission block (decisions.md).
+
 
 
 
@@ -26341,6 +27152,7 @@ pytest + 455 jest**; golden masters intact.
     gap-clear, dedupes by satisfied gap, and carries firm-steward student + officer copy en/ms/ta
     (Tamil first-draft). The two academic doc-requests require a doc that READ (not mere presence).
   - Tests: 2055 scholarship pytest (+9) + 413 jest; tsc clean.
+
 
 
 
@@ -26540,12 +27352,14 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Added
 - **"Message your interviewer" — an always-open student → reviewer channel (TD-152).** Available in every
   interview state with NO cutoff (the pressure valve when reschedule/cancel are locked inside the 12h window,
   e.g. "I'm running late" an hour before the call). Stored on the new `InterviewMessage` model (migration
   `scholarship/0089`, RLS) for the cockpit thread + audit; the assigned reviewer is emailed best-effort
   (students never see reviewer contact details). Rate-limited 5/hour, 1000-char cap; en/ms/ta.
+
 
 
 
@@ -26579,6 +27393,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Added
 - **Household completeness (income model, Phase 2C).** Income-proof requests are now raised for
   **every working roster member**, not just the parents: `income_engine.household_status_gaps`
@@ -26608,6 +27423,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Review permission is now assignment-based (view-all admin can review its assigned students).**
   Decoupled "what you can SEE" (role) from "what you can ACT on" (assignment). A `role='admin'` keeps
@@ -26623,6 +27439,7 @@ pytest + 455 jest**; golden masters intact.
   2 tests updated (admin is now an assignable target).
 - **Partner admin nav trimmed** — Guide and FAQ removed from the `partner` role's menu (they remain for
   admin/super/reviewer).
+
 
 
 
@@ -26657,6 +27474,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **Students weren't notified of queries/doc-requests raised AFTER the initial email — they sat silent
   for days.** The student was emailed only twice, both keyed to submission (`send_due_query_emails`
@@ -26670,6 +27488,7 @@ pytest + 455 jest**; golden masters intact.
   `STUDENT_DOC_REQUEST_CODE` system doc, or any `check2` clarify/doc/confirm), so the batched hourly
   `send_due_query_emails` sweep re-announces it once. Flag-gated (`CHECK2_STUDENT_QUERIES_ENABLED`);
   never for `human`/resolved items; can't spam (creation is once-per-code). +6 pytest.
+
 
 
 
@@ -26688,12 +27507,14 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **Income verdict copy said "take-home" — corrected to gross / per-capita.** B40 is assessed on
   **gross** household income and the resulting **per-capita** figure, never net/take-home. The
   `income_salary_unsure` line now reads "gross household income … confirm the household composition
   (size, and whether another member is working) … to establish the true gross and per-capita";
   `income_salary_probable` clarified to "gross household income" (en/ms/ta).
+
 
 
 
@@ -26728,11 +27549,13 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **STR verdict no longer asserts "cropped" for a complete-but-misread page.** The `unreadable` copy said
   "This MySTR page is cropped — re-upload the full page", contradicting a doc that passed genuineness and
   plainly showed Lulus (#23). Reworded to "couldn't confirm this STR was approved — the status line didn't
   read and no payment is shown…" (en/ms/ta) — cropping is a genuineness judgment, not this state's claim.
+
 
 
 
@@ -26756,6 +27579,7 @@ pytest + 455 jest**; golden masters intact.
   Cockpit **TD-144 fixed** — four-party ticks read from the real loaded agreement. In-house e-signature
   only (no third-party); donor never named. A local E2E driver (`manage.py bursary_e2e`, all seams
   mocked) walks the whole chain; go-live + signer-provisioning docs under `docs/scholarship/`.
+
 
 
 
@@ -26811,6 +27635,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **Officer verdict detail leads with the active finding, not the supporting greens.** The income detail
   list rendered the ✓ confirmations first and buried the STR verdict (the primary income gate) last — so a
@@ -26842,12 +27667,14 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Added
 - **Award-panel embargo flag `AWARD_ACCEPTANCE_ENABLED` (default OFF).** The "View my award / one more
   step" panel on `/scholarship/application` (→ the accept + onboarding flow, not yet tested end-to-end) is
   now hidden until the flag is on. Exposed on the student award payload as `acceptance_enabled`; the FE
   gates `awardPanel()` on it. Re-enable at runtime with one env var (`AWARD_ACCEPTANCE_ENABLED=1`), no
   deploy — awarded students otherwise reach only their bank-details task.
+
 
 
 
@@ -26861,6 +27688,7 @@ pytest + 455 jest**; golden masters intact.
   `_award_offer_html` (the award/bank-invitation email, which renders via its own builder); plain-text
   unchanged. (On the award email this is additive to the owner's bank-details-phrase bold + Action-Centre
   button from `4e44962b`.)
+
 
 
 
@@ -26940,6 +27768,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **The Action Centre (and so the bank-details task) now renders for funded students.** The post-award
   bank-details capture created + served the upload task for an `awarded`/`active` student, but
@@ -26957,6 +27786,7 @@ pytest + 455 jest**; golden masters intact.
   is a fact off the offer, independent of the chosen pathway, so it's now written regardless of lock state
   (pathway *adoption* is still skipped when locked). Backfilled 5 affected prod rows via
   `backfill_reporting_dates`. +1 regression test.
+
 
 
 
@@ -26989,6 +27819,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Sponsor-profile polish (`PROMPT_VERSION 2026-06-29.2`).** Owner refinements on the sponsor-facing
   read: (a) the offer's **reporting date** is now fed into the pathway block so it can appear in the
@@ -27006,6 +27837,7 @@ pytest + 455 jest**; golden masters intact.
   of the prose; the S1–S3 household-income clarify answers already flow in via `_render_qa`.
   `PROMPT_VERSION 2026-06-18.1 → 2026-06-29.1` (stale-draft detection). No migration / FE / i18n. +6
   pytest. **Completes the reviewer-query automation roadmap (S1–S5).**
+
 
 
 
@@ -27057,6 +27889,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Standardised the offer-letter reporting date to `D Mon YYYY` (e.g. `22 Jun 2026`).** Offers
   print it a dozen ways — `22/06/2026`, `20 JUN 2026 (SABTU)`, `20 Julai 2026 Isnin`, `8 HINGGA 9
@@ -27075,6 +27908,7 @@ pytest + 455 jest**; golden masters intact.
   draggable only by a super**, always shows the amount, and Approve is no longer gated on manually
   setting one. `proposed_award_amount` is exposed on the admin serializer. No migration; the 24
   recommended students are re-priced to the rule on deploy (RM62,000 → RM54,000). +10 pytest.
+
 
 
 
@@ -27107,6 +27941,7 @@ pytest + 455 jest**; golden masters intact.
   = `-- (no-op)`, no DDL). `makemigrations scholarship --check` is now clean — sprints no longer have
   to hand-drop a stray cohort.name op from every generated migration. Deployed state-only (migration
   row recorded via MCP; no schema change).
+
 
 
 
@@ -27167,6 +28002,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Post-award lifecycle — Sprint 3: `awarded` + the bursary signing flow → `active`; `sponsored` retired.**
   Wires the award state machine onto the new statuses. `fund_student` now moves the app to **`awarded`**
@@ -27205,6 +28041,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Added
 - **Year-currency colouring + course-start date in the cockpit.** The results-slip chip's **SPM year**
   and a new **offer intake (course-start) year** chip are now coloured by currency vs the application's
@@ -27215,6 +28052,7 @@ pytest + 455 jest**; golden masters intact.
 - **Results-slip chip shows the SPM exam year.** The drawer now surfaces the OCR'd exam year as a
   muted data point after Results (e.g. "Name · Subjects · Results · SPM 2025"), so the officer can
   see which year's slip it is. Already extracted (`academic_check.exam_year`); now displayed.
+
 
 
 
@@ -27241,6 +28079,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Added
 - **Offer-validity submission gate — only a genuine OFFICIAL public-university offer qualifies
   (`MODEL_VERSION 1.1`).** Owner policy: we cannot support a student on a **conditional** offer, a
@@ -27264,6 +28103,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **BC genuineness no longer soft-flags plain birth certificates (text-only visual cap).** The BC scorer
   runs TEXT-only in prod (no image read is wired), yet its signature list weighted the `JATA NEGARA`
@@ -27271,6 +28111,7 @@ pytest + 455 jest**; golden masters intact.
   `suspect` (3/13 unseen BCs dipped to 0.63–0.67 in held-out testing) while catching zero fakes. Dropped
   both visual signatures so the text signatures score honestly; held-out re-run: 13/13 genuine. (Patterns
   kept in a comment as the ready escalation to a real BC visual read if ever needed.)
+
 
 
 
@@ -27295,6 +28136,7 @@ pytest + 455 jest**; golden masters intact.
 - **Decline emails are now HTML** (branded card + plain-text fallback), sent from `info@` with reply-to `help@`. The
   interview bucket already thanks the student for their time and for submitting their documents. `send_decline_email`
   routes through the shared HTML shell (`_send_html`). +1 test.
+
 
 
 
@@ -27349,6 +28191,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Security
 - **One active privileged scope per Google identity (except super admins).** A single Google identity may now hold
   only ONE of the partner console / sponsor portal at a time; signing into one **ends the other scope's local session**.
@@ -27359,6 +28202,7 @@ pytest + 455 jest**; golden masters intact.
   `lib/sessionPolicy.ts` (`enforceSingleScope` / `wasScopeSuperseded` / `consumeSuperseded`, `SUPERSEDED_KEY`), wired into
   both admin + sponsor callbacks/login pages and the sponsor portal layout guard. FE-only; +6 jest; i18n en/ms/ta
   (`admin.signedOutElsewhere`, `sponsorAuth.signedOutElsewhere`; Tamil first-draft).
+
 
 
 
@@ -27389,6 +28233,7 @@ pytest + 455 jest**; golden masters intact.
   (B40 families/applicants/income line — a real demographic), the internal cohort **code** `b40-2026`, code
   docstrings/`verbose_name`, history (retros/migrations), and **WhatsApp** copy (deferred — the live Meta templates are
   locked until re-approved). No migration.
+
 
 
 
@@ -27424,6 +28269,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **Partner OAuth-callback denial no longer signs the user out of the sponsor portal too.** When the Google user landing
   on the partner `/admin/auth/callback` was **not** a partner admin, the page called `supabase.auth.signOut()` with no
@@ -27446,6 +28292,7 @@ pytest + 455 jest**; golden masters intact.
   the grades editor) was a tappable shortcut in the card's view state but an inert span once you hit "Edit" — so merit
   looked editable from outside but not inside. The edit-state row is now the same tappable shortcut to `/onboarding/grades`
   (returns to /profile). FE-only.
+
 
 
 
@@ -27472,6 +28319,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **The SPM results-slip parser no longer emits a partial, mis-graded read for a two-column slip.** On a
   digital-PDF slip whose `GRED` column is a separate right-hand block (e.g. #66/doc912), the flattened OCR
@@ -27495,6 +28343,7 @@ pytest + 455 jest**; golden masters intact.
   `match` (OCR noise, not a different person); only a GROSS difference is a real `mismatch`. Identity
   stays anchored on the IC + profile NRIC (read reliably); the offer NRIC is soft corroboration, the
   name is the robust offer-side check. +2 tests.
+
 
 
 
@@ -27575,6 +28424,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Interview length set to ~30 minutes + copy aligned across the journey.** `INTERVIEW_DURATION_MIN` 45 → **30** (the
   booked slot + Google Meet event now match the student-facing copy; also removes the latent 45-min-on-30-min-step slot
@@ -27597,6 +28447,7 @@ pytest + 455 jest**; golden masters intact.
   `interview_booked_at` on **every** (re)booking so a reschedule re-gates correctly. Applies to all three channels
   (student email + WhatsApp + reviewer email). Net effect: book ≥24h ahead → 2 reminders; book 1–24h ahead → 1 (the 1h);
   book <1h ahead → 0 (the booking-confirmation email already went out). Backend-only, no migration. +5 tests.
+
 
 
 
@@ -27641,6 +28492,7 @@ pytest + 455 jest**; golden masters intact.
   tests (81 doc/resolution pytest); `next build` clean; 327 jest. Branch `feat/request-owned-doc-slots`.
   ⚠️ **Migration-number clash:** the `feat/whatsapp-comms` branch also adds `scholarship/0067` — whichever merges second
   must renumber to `0068`.
+
 
 
 
@@ -27735,6 +28587,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Sponsor portal redesign (R6) — Standing gift / AutoSponsor (the AutoInvest-style innovation).** A sponsor can set a
   **standing gift** on My Account: field/state preferences + an optional per-student cap + an on/off toggle. When a
@@ -27806,6 +28659,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Added
 - **Verdict-completion SLA with reviewer nudges + super-admin escalation (TD-131).** A verdict is due
   `assigned_at + REVIEW_SLA_DAYS` (10). A new daily cron (`send_review_nudges`, dark behind
@@ -27821,6 +28675,7 @@ pytest + 455 jest**; golden masters intact.
   "pick a time" email with a *moved-the-original-time* preface (HTML bilingual). There is deliberately **no reviewer
   self-cancel**: an emergency reschedules (keeps the candidate); a true hand-off is an admin reassignment. Backend:
   `propose_slots(..., release_booking=True)` + `reschedule` flag on the propose endpoint. +3 tests.
+
 
 
 
@@ -27910,6 +28765,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Added
 - **BC + EPF genuineness wired live + EPF income reverse-engineered (TD-122/TD-123, 2026-06-20).**
   Birth-certificate and EPF genuineness now come from the probabilistic SIGNATURE scorer in the live
@@ -27982,6 +28838,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **Undeclared slip subjects are a SOFT discrepancy, not a submission block.** A results-slip `subjects` mismatch
   means the OFFICIAL slip lists a subject the student didn't enter in their `/profile` — the slip is genuine, the
@@ -27992,6 +28849,7 @@ pytest + 455 jest**; golden masters intact.
   candidate name carried a `NAMA :`/`NAME -`/`CALON ` prefix (e.g. `NAMA : SANJANA A/P KALIANA KUMAR` vs the typed
   `SANJANA A/P KALIANAKUMAR`) is now stripped before the token-set match. (Surname OCR spacing was already handled by
   `name_match`'s glued-equal fallback.)
+
 
 
 
@@ -28028,6 +28886,7 @@ pytest + 455 jest**; golden masters intact.
   booking. This lets the scheduler run in parallel with the on-assignment email. The assignment email copy was also
   reconciled — it now tells the student they may be offered times to pick in HalaTuju (with an automatic Meet link),
   rather than only "the interviewer will contact you." Backend only, no migration.
+
 
 
 
@@ -28098,12 +28957,14 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Removed
 - **Retired spurious / legacy PISMP rows during the catalogue reconciliation (2026-06-18).** Removed PISMP courses
   that had no match in the official guide or were superseded: 8 SJKT, 10 combined SK+SJKC, the legacy SKPK `50PD06…`
   Perdana rows (SKPK is STPM-level only), the B/D/L Pendidikan Khas rows (swapped to `…H` — see Changed), and a
   duplicate Sains row (`…041S004`, kept `…041S00P`). Every retirement was backed up to `Downloads/*_retire_backup_2026-06-18.json`
   before deletion (fully restorable).
+
 
 
 
@@ -28131,6 +28992,7 @@ pytest + 455 jest**; golden masters intact.
 - **Assign-reviewer panel: "Reviewer assigned" + locked once decided (2026-06-18).** Once a decision is recorded the
   reviewer dropdown **locks** (the case is finished); it reads "Reviewer assigned" / "Reviewer: {name}" and only unlocks
   if the decision is Reopened.
+
 
 
 
@@ -28298,6 +29160,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Profile card heading "Sponsor profile (draft)" → "Student profile (draft)" (2026-06-16).** It's the student's
   profile; the sponsor is a reader, not the subject. i18n en/ms/ta; FE-only.
@@ -28371,6 +29234,7 @@ pytest + 455 jest**; golden masters intact.
   the `services.py` module split, a `@require_reviewer` decorator across ~23 admin handlers, the
   `services.record_verdict` extraction, an own-application mixin, and the income-rule single source — are deferred as
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
+
 
 
 
@@ -28457,6 +29321,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Cockpit restyle — brand-aligned visual pass (web-only, no behaviour change).** Matched the officer review
   cockpit to the halatuju.xyz brand: every action accent now uses the brand `primary` blue (`#137fec`) — the
@@ -28479,6 +29344,7 @@ pytest + 455 jest**; golden masters intact.
     subjects: {subjects}" and "Check your grade for {subject}", each pointing to the results page
     (halatuju.xyz/onboarding/grades) with a "mark this done" cue; two terse "…was hard to read" titles became
     action-led ("Re-upload a clearer …"). en/ms/ta.
+
 
 
 
@@ -28507,6 +29373,7 @@ pytest + 455 jest**; golden masters intact.
   (`gcloud run services update halatuju-api --timeout=300`). First post-deploy full run: 652 checked → **3 broken**,
   0 access-blocked, 126 couldn't-verify, 523 alive (incl. 33 insecure-cert). `check_url` gains a `--retries` flag
   (default 1 for targeted/manual runs).
+
 
 
 
@@ -28595,6 +29462,7 @@ pytest + 455 jest**; golden masters intact.
   slot targeting), and the misleading per-item "email the student" path was removed (raised items land in the Action Centre).
   1209 scholarship pytest, jest 306, `next build` clean, parity 2925×3. Shipped to `main` across `f5243a7` → `762b358`
   (2 web deploys + 1 review web deploy). Auto-draft/auto-finalise stay dark until `CHECK2_AUTO_GENERATE=1`.
+
 
 
 
@@ -28742,6 +29610,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **Unread uploads no longer greenlight their Action-Centre task + the income request names the exact document (no migration).**
   Two live-testing fixes. **(1) Upload race.** A re-uploaded document could auto-close its task before its scan finished:
@@ -28773,6 +29642,7 @@ pytest + 455 jest**; golden masters intact.
   copy was misleading (a student got it, then saw only Upload tasks). Both the raised + reminder emails (subject + body,
   en/ms/ta) now say *"a few things we need … {n} item(s) (a few questions and/or documents) … respond to each one,"*
   matching the Action Centre's *"A few things we need from you."* Copy-only; no logic change.
+
 
 
 
@@ -28840,6 +29710,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Course-data pipeline safety guards — a bad scrape can no longer wipe the STPM catalogue (no migration).** Two P0
   guards from the pipeline audit. (1) `scrape_mohe_stpm` now **fails loudly** if it scraped >5% fewer programmes than
@@ -28850,6 +29721,7 @@ pytest + 455 jest**; golden masters intact.
   (0 rows) would have deactivated the entire student-facing STPM catalogue with only the dry-run report as a human
   safeguard. +7 pytest (mass-deactivation aborts, `--force` overrides, small change applies, tiny-catalogue exempt,
   shortfall helper). SOP updated: `Settings/_workflows/stpm-requirements-update.md`.
+
 
 
 
@@ -28883,6 +29755,7 @@ pytest + 455 jest**; golden masters intact.
   stays well under the threshold; tune after observing real traffic. +3 pytest (emits one line with ids; carries no PII;
   denied 403 reads emit nothing). The list endpoint is deliberately not instrumented (paginated, high-volume,
   false-positive-prone); the document read-path is a future add-on.
+
 
 
 
@@ -28964,6 +29837,7 @@ pytest + 455 jest**; golden masters intact.
     letter. (App #63's existing record is corrected post-deploy — its extraction predates classification.)
   - Gates: **1010 scholarship + 1063 courses/reports pytest, 282 jest, next build clean, i18n parity 2474×3**; golden
     masters intact (SPM 5319 / STPM 2026). No migration. Retro `docs/retrospectives/retrospective-verification-accuracy-fixes.md`.
+
 
 
 
@@ -29107,6 +29981,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **B40 income gate: gross household income is now the primary test; per-capita is a safety net (deployed 2026-06-09).**
   Following the DOSM 2024 update (B40 line = RM5,860), a non-STR applicant whose **gross** monthly household income is
@@ -29142,6 +30017,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Deployed — B40 sponsor programme GO-LIVE (2026-06-09)
 - **The whole B40 Phase E/F sponsor programme went live** (Sprint 12, lawyer-gated go-live, owner-authorised with the
   current draft consent wording — the lawyer-vetted text + a `CONSENT_VERSION` bump land as a follow-up). The 25
@@ -29157,6 +30033,7 @@ pytest + 455 jest**; golden masters intact.
   not 500), web `/sponsor` 200. Resolved TD-093/095/098/100/102/106/107. **Still open (post-lawyer):** Tamil refine
   (TD-091/094/096/097/105/108), the lawyer consent-text + `CONSENT_VERSION` bump, real toyyibPay money (TD-075). Retro
   `docs/retrospectives/retrospective-sprint12-go-live.md`.
+
 
 
 
@@ -29188,6 +30065,7 @@ pytest + 455 jest**; golden masters intact.
   `admin.perPage` + `admin.scholarship.showingRange` (en/ms/ta). +12 pytest (7 courses, 5 scholarship) + 7 jest; `tsc`
   clean. Built on branch `feature/partner-pagination` (held local, no push). Rollout notes:
   `docs/partner-pagination-plan.md`.
+
 
 
 
@@ -29425,6 +30303,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **"Your story" save silently failing for students who wrote a real answer (prod incident, app #30).** The
   "What do your parents or guardians do for a living?" field (`parents_occupation`) was a `varchar(255)` column with **no
@@ -29460,6 +30339,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Removed
 - **Wider orphaned `admin.scholarship` i18n cleanup (TD-120, 2026-06-16).** Removed **77** unreferenced translation
   leaves across en/ms/ta (2654→2577×3) — left over from earlier cockpit redesigns, chiefly the retired **Verify & accept**
@@ -29481,6 +30361,7 @@ pytest + 455 jest**; golden masters intact.
   hasn't uploaded the letter" is superseded by the income wizard, which now *requires* the STR document on the STR route
   (consent gate v2). Removed the detector + its `_DETECTORS` registration, the `resolution.py` ticket mapping, the
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
+
 
 
 
@@ -29592,6 +30473,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **Identity verdict no longer goes amber on an IC registered‑address state difference (a false yellow).** A MyKad shows
   the *registered* state (e.g. KEDAH), which is the **least‑current** address on file — people relocate and the IC isn't
@@ -29651,6 +30533,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **IC numbers now display in the canonical `XXXXXX-XX-XXXX` format everywhere they're shown.** The student
   document checklists (identity IC, income earner IC, income proof, STR recipient) and the officer review cockpit
@@ -29675,6 +30558,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Added
 - **Application completion reminders + auto-close (the daily reminder job).** Shortlisted students who haven't completed
   their application now get an escalating reminder sequence, and stalled applications are eventually closed. Cadence (days
@@ -29690,6 +30574,7 @@ pytest + 455 jest**; golden masters intact.
   also points the student to the built-in AI helper (**Cikgu Gopal**) and a human fallback (`tamiliam@gmail.com`); one-time
   `backfill_reminder_anchors` command (anchors the existing shortlisted‑incomplete cohort to *today − 2 days* so R1 fires
   on the first run). Needs a new daily Cloud Scheduler (~9am Asia/KL). 753 scholarship + 1037 courses/reports pytest.
+
 
 
 
@@ -29768,6 +30653,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **STR-route salary slip / EPF now get the same earner-aware check as the salary route** (they were showing the old
   generic "the name doesn't match you — edit your profile" message). STR income proofs are stored UNTAGGED (single
@@ -29777,11 +30663,13 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **Every document is single-instance now — a re-upload replaces the existing one in the same slot** (user's call,
   2026-06-05; supersedes the S15 "several monthly salary slips / EPF" multi-instance decision). Replace is scoped to
   the `(doc_type, household_member)` pair, so re-uploading Mother's salary slip replaces Mother's, never Father's, and an
   untagged upload never touches the member-tagged income docs. Retired `DocumentListCreateView.MULTI_INSTANCE_DOC_TYPES`.
+
 
 
 
@@ -29888,6 +30776,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **Pathway: a Form-6 / STPM offer no longer false-clashes with the declared pathway.** A student who declared an STPM
   (Form 6) place saw "Offer … differs from the declared pathway — awaiting confirmation" even though the offer was for the
@@ -29936,6 +30825,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Changed
 - **SPM results slip is now read deterministically by positional OCR (Gemini becomes the fallback).** The slip is a
   standardised two-column table whose grade is printed twice — a letter (`A-`) and a Malay word-band (`Cemerlang`).
@@ -29954,6 +30844,7 @@ pytest + 455 jest**; golden masters intact.
   **STPM** (no Malay bands; a ruled grid with grade-points) is a separate follow-up — its slip still routes to Gemini
   for now. Backend only, no migration. _A temporary `_debug_rows` field stores the grouped OCR lines to diagnose a
   residual single-row grade mispair (Sharmila's PERTANIAN); to be removed once solved._
+
 
 
 
@@ -29978,6 +30869,7 @@ pytest + 455 jest**; golden masters intact.
     display name; it may seed a blank profile but never overwrites a name already on file. This closes the one path that
     could otherwise undo the promotion — a student whose session lapses and who re-signs-in through the anonymous auth
     gate would have re-pushed the Google handle. Explicit edits via `PUT /profile/` are unaffected.
+
 
 
 
@@ -30008,6 +30900,7 @@ pytest + 455 jest**; golden masters intact.
   parent IC + utility bills) and **Other** (optional: statement of intent, photo) — each with a status pill. Presentational
   only: no completeness change (the offer letter stays non-blocking; `documents_done` unchanged). No migration. i18n
   parity 1843 (en/ms/ta).
+
 
 
 
@@ -30161,6 +31054,7 @@ pytest + 455 jest**; golden masters intact.
 
 
 
+
 ### Fixed
 - **Officer cockpit polish + application-pipeline quick wins (verification-verdict 2nd deploy).** (1) The officer
   cockpit (verdict tiles + the sticky **Record your verdict** panel) now renders **directly under the applicant
@@ -30207,6 +31101,7 @@ pytest + 455 jest**; golden masters intact.
   - Backend only (no migration, no frontend). +7 tests; full backend suite 1468 green.
 
 ## [2.26.1] — Remove orphaned sponsor register-interest page + stack (TD-072b) (2026-06-01)
+
 
 
 
@@ -30645,6 +31540,7 @@ A user reported that the SPM apply-form stream dropdowns offered far fewer subje
 
 
 
+
 ### Changed
 - **Subject model (`subjects.ts`): single `category` → `streams` list.** A subject can now belong to more than one stream pool (e.g. the sciences appear under both Science and Technical, matching the official SPM elective grouping) while remaining electable. Derived exports (`SPM_CORE_SUBJECTS`, `SPM_STREAM_POOLS`, `SPM_ALL_ELECTIVE_SUBJECTS`, `SPM_PREREQ_STREAM_POOLS`) keep their names and shapes — **no consuming page changed.**
 - **Arts stream pool: 9 → 38 subjects.** Adds the full non-Islamic official list — languages (Arabic, Iban, Kadazandusun, Punjabi, Semai), literatures (English, Chinese, Tamil, Communicative Malay), performing & visual arts (Dance, Choreography, Acting, Scenography, Music subjects, 2D/3D Fine Art, Graphic/Industrial/Craft Design, Creative Multimedia, Script Writing, Performing Arts Production, Art History & Management), and Bible Knowledge.
@@ -30653,10 +31549,12 @@ A user reported that the SPM apply-form stream dropdowns offered far fewer subje
 
 
 
+
 ### Added
 - Two new subject keys with labels: `bahasa_punjabi` (Punjabi Language) and `bible_knowledge` (Bible Knowledge).
 - `subjects.test.ts` (12 tests): pool composition counts, Islamic-exclusion, sciences-in-both-pools, the "selected-as-stream-subject disappears-from-electives" dedup invariant, and label coverage for every selectable subject.
 - `test_merit_pools.py` (7 tests): pool membership mirrors the frontend, and arts/technical stream subjects land in Sec2 (30%) not Sec3 (10%).
+
 
 
 
@@ -31073,6 +31971,7 @@ wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail belo
 
 
 
+
 ### P1 — storage foundation (backend, 2026-05-26)
 - **7 new optional fields** on `ScholarshipApplication` (migration `0010_plans_redesign_fields`):
   `pathway_certainty`, `chosen_pathway`, `pre_u_track`, `pre_u_institution`, `chosen_programme` (json),
@@ -31083,6 +31982,7 @@ wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail belo
   fields don't touch the decision or the `courses` eligibility engine (reused read-only by later sprints).
 - Tests: +2 (sure + uncertain branch round-trip, snapshot, read serializer). Scholarship suite **95 passed**;
   migration applies cleanly on SQLite.
+
 
 
 
@@ -31106,6 +32006,7 @@ wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail belo
 
 
 
+
 ### P3 — Decided-course picker for programme pathways (frontend, 2026-05-26)
 - When a student picks a **programme pathway** (Foundation / Public university / Polytechnic / Community
   college / Teaching-PISMP / ILJTM / ILKBS), the "decided" branch now reveals a **single-select, type-to-search
@@ -31126,6 +32027,7 @@ wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail belo
 
 
 
+
 ### P4 — Institution pathways: Matriculation track→college + STPM stream→school (frontend, 2026-05-26)
 - The two non-programme pathways now have their decided sub-flows (replacing the P3 institution stub):
   - **Matriculation** → **track** chips (only the tracks the student qualifies for, from `/calculate/pathways/`
@@ -31141,6 +32043,7 @@ wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail belo
 - Tests: +9 (`isInstitutionPathway`, `eligibleMatricTracks`, `collegesForTrack`, `stpmSchoolsForStream`, the
   track/stream + institution validation, payload mapping). Frontend suite **93 passed**; `next build` clean
   (`/scholarship/apply` 37.2 kB); i18n parity 1144 keys. Branch only — not deployed.
+
 
 
 
@@ -31163,12 +32066,14 @@ wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail belo
 
 
 
+
 ### Changed
 - **Field order in My Family** — "Number of people in your household" now comes *before* "Combined monthly household
   income", so the student counts the household first and then totals that group's income (the old order asked them to
   "add up the income of everyone you counted" before they'd counted anyone).
 - **Tips work in concert** — the household tip now ends "Next, you'll total this group's monthly income"; the income
   tip now reads "everyone you counted **above**". (en/ms/ta)
+
 
 
 
@@ -31180,9 +32085,11 @@ wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail belo
 
 
 
+
 ### Fixed
 - **Duplicate tooltip** — the `i` bubble dropped its native `title` attribute, which had been showing a second, drab
   browser tooltip on hover. Hover (desktop) and click/tap (mobile) now open the same custom popover.
+
 
 
 
@@ -31195,8 +32102,10 @@ wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail belo
 
 
 
+
 ### Tests
 - +8 unit tests (`formatPhone`, `isValidPhone`, phone/parent-phone validation). i18n parity **1121 → 1122** keys.
+
 
 
 
@@ -31208,6 +32117,7 @@ wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail belo
   Family (label left, switch right) instead of a lone checkbox. `Toggle` extracted to `components/Toggle.tsx`.
 
 ## [2.1.3] — Apply-form: friendlier help bubble (2026-05-25)
+
 
 
 
@@ -31223,6 +32133,7 @@ to `main` (`9aa5d9e`).
 
 
 
+
 ### Added
 - **Searchable School field** — the free-text School input is now a search-as-you-type field over all **2,480
   Malaysian secondary schools** (`PERINGKAT = Menengah`: SMK, SBP, SMKA, KV, KT6, SM SABK, etc.), each shown with its
@@ -31235,6 +32146,7 @@ to `main` (`9aa5d9e`).
 
 
 
+
 ### Changed
 - **IC number auto-masks** to `XXXXXX-XX-XXXX` as digits are typed (`formatNric`). Previously a student could type 12
   bare digits that silently failed the `NRIC_RE` check on submit; the mask produces exactly the format the validator
@@ -31242,9 +32154,11 @@ to `main` (`9aa5d9e`).
 
 
 
+
 ### Follow-ups (same day)
 - School field tip now reads "where you sat for SPM **or STPM**" (was SPM only); the search placeholder shows a
   sample name — "Start typing, e.g. SMK Vivekananda" (a real entry) — so the SMK abbreviation/format is clear. (en/ms/ta)
+
 
 
 
@@ -31257,6 +32171,7 @@ to `main` (`9aa5d9e`).
 
 Small production follow-ups after the B40 redesign went live. All `halatuju-web` only; deployed to halatuju.xyz via
 push to `main` (3 commits: `6706837`, `9d7224d`, plus the earlier OG/hero fixes).
+
 
 
 
@@ -31273,12 +32188,14 @@ push to `main` (3 commits: `6706837`, `9d7224d`, plus the earlier OG/hero fixes)
 
 
 
+
 ### Added
 - **"Want to support a student?"** donor section — **Get in touch** → `mailto:info@halatuju.xyz?subject=Sponsor enquiry`;
   "Funds are administered by MyNadi Foundation" with a link to yayasanmynadi.org. **Section 44(6) tax line omitted**
   until MyNadi's status is confirmed.
 - **"About this programme"** section — partners credited; the partner whose registered name contains "Indian" is shown
   as the **acronym "CUMIG" only**, to keep the word off the public page (MyNadi 44(6) non-discrimination).
+
 
 
 
@@ -31289,6 +32206,7 @@ push to `main` (3 commits: `6706837`, `9d7224d`, plus the earlier OG/hero fixes)
 
 The B40 redesign (S7–S12a) is **live in production**. `feature/b40-redesign` merged to `main` (release merge
 `55c2c36`); both Cloud Run services rebuilt + deployed; health checks 200.
+
 
 
 
@@ -31306,10 +32224,12 @@ The B40 redesign (S7–S12a) is **live in production**. `feature/b40-redesign` m
 
 
 
+
 ### Deferred (must do before promoting)
 - **Cloud Scheduler → `send_pending_decision_emails`** — not wired (no applicants while the site is unpromoted).
   Required before the programme is promoted, or shortlist/decline reveal emails won't fire.
 - **Vision OCR** → post-launch S13 (new Google Vision key + cost sign-off).
+
 
 
 
@@ -31319,6 +32239,7 @@ The B40 redesign (S7–S12a) is **live in production**. `feature/b40-redesign` m
 ## [Unreleased] — B40 Redesign · Sprint 12a: apply-form desktop responsiveness (2026-05-24)
 
 The desktop layout for the apply form (the item deferred from S9). Frontend only; on `feature/b40-redesign`, not deployed.
+
 
 
 
@@ -31332,9 +32253,11 @@ The desktop layout for the apply form (the item deferred from S9). Frontend only
 
 
 
+
 ### Notes
 - The `/scholarship/application` cards (received/accepted) already read fine centred at `max-w-2xl` — left as-is.
   `ScholarshipNextSteps` (post-shortlist follow-up) wasn't touched; can get a desktop pass later if needed.
+
 
 
 
@@ -31344,6 +32267,7 @@ The desktop layout for the apply form (the item deferred from S9). Frontend only
 ## [Unreleased] — B40 Redesign · Sprint 11b: applicant application states + login banner (2026-05-24)
 
 The applicant-facing half of S11. Frontend only; on `feature/b40-redesign`, not deployed.
+
 
 
 
@@ -31357,6 +32281,7 @@ The applicant-facing half of S11. Frontend only; on `feature/b40-redesign`, not 
 
 
 
+
 ### Tests
 - Frontend jest unchanged (49 — display + one fetch, no new pure logic). Backend unchanged (1100). `next build`
   clean; i18n 1107-key parity.
@@ -31365,6 +32290,7 @@ The applicant-facing half of S11. Frontend only; on `feature/b40-redesign`, not 
 
 The human verification gate for MyNadi admins. Backend + admin frontend; on `feature/b40-redesign`, not deployed.
 (Applicant application-page states + login banner split to S11b.)
+
 
 
 
@@ -31382,10 +32308,12 @@ The human verification gate for MyNadi admins. Backend + admin frontend; on `fea
 
 
 
+
 ### Fixed
 - **TD-054 resolved**: NRIC uniqueness is now enforced at the single verify-&-accept point — if another profile
   already has that NRIC *verified*, the endpoint returns `409 nric_conflict` for the admin to resolve (the soft-NRIC
   "clash surfaces at verification" design), instead of the old claim transfer-path PK collision.
+
 
 
 
@@ -31397,6 +32325,7 @@ The human verification gate for MyNadi admins. Backend + admin frontend; on `fea
 
 The second half of the apply form. Frontend only (every field was already accepted by `ApplicationCreateSerializer`
 since S7); on `feature/b40-redesign`, not deployed.
+
 
 
 
@@ -31414,9 +32343,11 @@ since S7); on `feature/b40-redesign`, not deployed.
 
 
 
+
 ### Changed
 - The apply form's single `intended_pathway` select is replaced by the `pathways_considered` multi-select; the
   `notes` free-text is replaced by `anything_else`. `intends_tertiary_2026` kept (engine hard gate) as a checkbox.
+
 
 
 
@@ -31424,6 +32355,7 @@ since S7); on `feature/b40-redesign`, not deployed.
 - The post-submit **"Application received"** screen already works (S8's silent-score keeps status `submitted`, so the
   application page shows the neutral "received — we'll be in touch" card; the follow-up only appears once shortlisted).
   No auto-advance.
+
 
 
 
@@ -31437,12 +32369,14 @@ without losing in-progress edits. Frontend only; on `feature/b40-redesign`, not 
 
 
 
+
 ### Changed
 - **My Results "edit / add results"** now routes through the **full onboarding** (`/onboarding/exam-type` → grades
   → … → "a few more details") instead of `/profile` or `/quiz`, so the profile ends up complete for course
   recommendations too.
 - The **final onboarding step** is context-aware: entered from the apply form, its button reads **"Save & return
   to application"** and routes back to `/scholarship/apply` (otherwise unchanged → dashboard).
+
 
 
 
@@ -31455,6 +32389,7 @@ without losing in-progress edits. Frontend only; on `feature/b40-redesign`, not 
 
 
 
+
 ### Tests
 - Frontend jest **44 → 49** (stash/restore round-trip, marker set/clear, SSR no-op). Backend unchanged (1095).
 
@@ -31462,6 +32397,7 @@ without losing in-progress edits. Frontend only; on `feature/b40-redesign`, not 
 
 Apply-form rebuild, first half. Inline-editable **About Me** + **My Family**, commit-on-submit. Frontend +
 small backend write-back; on `feature/b40-redesign`, not deployed. Mobile-first (desktop layout is S12).
+
 
 
 
@@ -31479,6 +32415,7 @@ small backend write-back; on `feature/b40-redesign`, not deployed. Mobile-first 
 
 
 
+
 ### Added
 - **My Family**: parent/guardian **name + phone** (stored in `profile.guardians`) and **preferred call language**
   (en/ms/ta/mixed → `profile.preferred_call_language`); `i` tooltips on income, household, STR, JKM.
@@ -31491,12 +32428,14 @@ small backend write-back; on `feature/b40-redesign`, not deployed. Mobile-first 
 
 
 
+
 ### Tests
 - Backend **1093 → 1095** (About-Me/Family write-back + referring-org FK resolution). Frontend jest **37 → 44**.
 
 ## [Unreleased] — B40 Redesign · Sprint 8: decision engine + silent-score + delayed reveal (2026-05-24)
 
 The deterministic decision engine (final policy calls settled). Backend only; on `feature/b40-redesign`, not deployed.
+
 
 
 
@@ -31514,10 +32453,12 @@ The deterministic decision engine (final policy calls settled). Backend only; on
 
 
 
+
 ### Added
 - Cohort: `per_capita_ceiling` (1584), `min_spm_bplus_count` (5), `success_delay_hours` (2), `decline_delay_hours`
   (48); defaults `min_spm_a_count` 5→4, `min_stpm_pngk` 3.0→2.9.
 - Application: `verdict`, `decision_due_at`, `decision_released_at`. Migration scholarship `0008`.
+
 
 
 
@@ -31533,6 +32474,7 @@ Foundation for the decision-engine redesign + apply-form rebuild (6-sprint roadm
 
 
 
+
 ### Added
 - **`StudentProfile.nric_verified`** (Bool), **`coq_score`** (Float — co-curricular score now persisted,
   was transient), **`preferred_call_language`**. Profile GET returns all three.
@@ -31544,10 +32486,12 @@ Foundation for the decision-engine redesign + apply-form rebuild (6-sprint roadm
 
 
 
+
 ### Changed
 - **Soft-NRIC (supersedes "IC immutable"):** uniqueness now enforced **only when verified**
   (`unique_verified_nric` replaces `unique_nric_when_set`); NRIC is **read-only on PUT/sync** (claim path
   only); the claim endpoint **blocks a change once verified** (403 `nric_locked`). See `docs/decisions.md`.
+
 
 
 
@@ -31558,6 +32502,7 @@ Foundation for the decision-engine redesign + apply-form rebuild (6-sprint roadm
 ## [Unreleased] — B40 Assistance Programme · Phase 1.5c public landing + follow-up route (2026-05-22)
 
 Added the public marketing landing and gave the post-submission follow-up its own page.
+
 
 
 
@@ -31578,6 +32523,7 @@ Added the public marketing landing and gave the post-submission follow-up its ow
 
 
 
+
 ### Tests / verification
 - Jest **37 pass**; `next build` green (`/scholarship`, `/scholarship/application`, `/scholarship/apply`
   all compile). Live render check on `next dev` confirmed the landing renders (hero image, value cards,
@@ -31587,6 +32533,7 @@ Added the public marketing landing and gave the post-submission follow-up its ow
 
 Rebuilt the student apply flow to the profile-canonical API and the Stitch-approved design
 (landing soft sign-in gate + tabbed 5-section form).
+
 
 
 
@@ -31612,6 +32559,7 @@ Rebuilt the student apply flow to the profile-canonical API and the Stitch-appro
 
 
 
+
 ### Tests
 - `scholarship.test.ts` updated to the new shape (20 pass); full Jest **37 pass**; `next build` green
   (`/scholarship/apply` compiles). Not deployed.
@@ -31619,6 +32567,7 @@ Rebuilt the student apply flow to the profile-canonical API and the Stitch-appro
 ## [Unreleased] — B40 Assistance Programme · Phase 1.5a source-of-truth refactor (2026-05-22)
 
 Made the HalaTuju profile the single source of truth for applicant data, plus de-Gmailed email.
+
 
 
 
@@ -31641,6 +32590,7 @@ Made the HalaTuju profile the single source of truth for applicant data, plus de
 
 
 
+
 ### Tests
 - Full backend suite **1086 pass**. Updated `test_shortlisting`/`test_api`/`test_models`/
   `test_admin_scholarship` for the profile-canonical shape; removed the obsolete
@@ -31649,6 +32599,7 @@ Made the HalaTuju profile the single source of truth for applicant data, plus de
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 6b (2026-05-22) — Phase 1 build complete
 
 MyNadi admin console UI (frontend) — completes Sprint 6 and the Phase 1 build.
+
 
 
 
@@ -31662,8 +32613,10 @@ MyNadi admin console UI (frontend) — completes Sprint 6 and the Phase 1 build.
 
 
 
+
 ### Tests
 - Frontend suite **37 pass**; check-i18n PASS; `next build` — both admin pages compile.
+
 
 
 
@@ -31678,6 +32631,7 @@ AI sponsor-profile drafting + MyNadi admin API (backend; the admin console UI is
 
 
 
+
 ### Added
 - **`SponsorProfile` model** (OneToOne application; `draft_markdown`/`edited_markdown`, status
   draft→approved→published, `model_used`, timestamps; migration 0005, RLS).
@@ -31689,6 +32643,7 @@ AI sponsor-profile drafting + MyNadi admin API (backend; the admin console UI is
 
 
 
+
 ### Tests
 - 9 new (`test_admin_scholarship.py`, Gemini mocked). Full backend suite **1086 pass, 0 fail**;
   golden masters unchanged.
@@ -31696,6 +32651,7 @@ AI sponsor-profile drafting + MyNadi admin API (backend; the admin console UI is
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 5b (2026-05-22)
 
 Document upload + referee + consent UI (frontend) — completes Sprint 5.
+
 
 
 
@@ -31712,8 +32668,10 @@ Document upload + referee + consent UI (frontend) — completes Sprint 5.
 
 
 
+
 ### Tests
 - 2 new helper tests (frontend suite **37 pass**); check-i18n PASS; `next build` success.
+
 
 
 
@@ -31724,6 +32682,7 @@ Document upload + referee + consent UI (frontend) — completes Sprint 5.
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 5a (2026-05-22)
 
 Document vault + referee + e-consent (backend; frontend is 5b).
+
 
 
 
@@ -31740,9 +32699,11 @@ Document vault + referee + e-consent (backend; frontend is 5b).
 
 
 
+
 ### Tests
 - 18 new (`test_consent.py` 9, `test_documents.py` 9). Full backend suite **1077 pass, 0 fail**;
   golden masters unchanged.
+
 
 
 
@@ -31753,6 +32714,7 @@ Document vault + referee + e-consent (backend; frontend is 5b).
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 4b (2026-05-21)
 
 Post-shortlist next-steps flow (frontend) — completes Sprint 4.
+
 
 
 
@@ -31770,8 +32732,10 @@ Post-shortlist next-steps flow (frontend) — completes Sprint 4.
 
 
 
+
 ### Tests
 - 5 new helper tests (frontend suite **35 pass**); check-i18n PASS; `next build` success.
+
 
 
 
@@ -31782,6 +32746,7 @@ Post-shortlist next-steps flow (frontend) — completes Sprint 4.
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 4a (2026-05-21)
 
 Post-shortlist data layer: funding need + deeper info + completeness (backend; frontend is 4b).
+
 
 
 
@@ -31798,12 +32763,14 @@ Post-shortlist data layer: funding need + deeper info + completeness (backend; f
 
 
 
+
 ### Tests
 - 11 new (`test_details.py`). Full backend suite **1059 pass, 0 fail**; golden masters unchanged.
 
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 3 (2026-05-21)
 
 Mechanical shortlisting engine + Bucket A/B + pass/fail decision emails.
+
 
 
 
@@ -31821,6 +32788,7 @@ Mechanical shortlisting engine + Bucket A/B + pass/fail decision emails.
 
 
 
+
 ### Changed
 - Submitting now triggers an instant shortlist: a qualifying applicant receives the acknowledgement
   *and* a congratulations email; a rejected applicant receives only the acknowledgement, with the
@@ -31828,9 +32796,11 @@ Mechanical shortlisting engine + Bucket A/B + pass/fail decision emails.
 
 
 
+
 ### Tests
 - 25 new (`test_shortlisting.py` 19, `test_decision_emails.py` 6) + updated intake tests. Full
   backend suite **1048 pass, 0 fail**; SPM/STPM golden masters unchanged.
+
 
 
 
@@ -31841,6 +32811,7 @@ Mechanical shortlisting engine + Bucket A/B + pass/fail decision emails.
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 2 (2026-05-21)
 
 Native application form + single front door (frontend), wired to the Sprint 1 intake API.
+
 
 
 
@@ -31859,9 +32830,11 @@ Native application form + single front door (frontend), wired to the Sprint 1 in
 
 
 
+
 ### Tests
 - 13 new (`src/lib/__tests__/scholarship.test.ts`); full frontend suite **30 pass** (17 + 13).
 - check-i18n PASS; `next build` success (`/scholarship/apply` compiles + prerenders).
+
 
 
 
@@ -31874,6 +32847,7 @@ Native application form + single front door (frontend), wired to the Sprint 1 in
 New `apps/scholarship/` app — the financing extension's intake backbone. Phase 1 carries
 no sponsor or money flow (those are Phases 2-3). See `docs/scholarship/b40-assistance-prd.md`
 and `docs/scholarship/b40-phase1-roadmap.md`.
+
 
 
 
@@ -31900,12 +32874,14 @@ and `docs/scholarship/b40-phase1-roadmap.md`.
 
 
 
+
 ### Tests
 - 17 new tests (`apps/scholarship/tests/`): models + defaults + partial-unique constraint +
   A-count helper (test_models.py, 4); intake create/ack-email/snapshot/consent/duplicate/
   closed-round/anonymous/no-profile/list-own/detail/cross-user-404/auth (test_api.py, 13).
 - Full backend suite: **1023 passed, 0 failures** (1006 existing + 17 new); SPM/STPM golden
   masters unchanged.
+
 
 
 
@@ -31917,6 +32893,7 @@ and `docs/scholarship/b40-phase1-roadmap.md`.
 
 
 
+
 ### Changed
 - **Partner admin CSV export expanded from 7 columns to 27** (`/api/v1/admin/students/export/`). Now carries every field admins see in the dashboard detail view: identity (Name, IC, Angka Giliran, Email, Phone, School), demographics (Gender, Nationality), address (Address, Postal Code, City, State), eligibility context (Family Income, Siblings, Colorblind, Disability), academic (Exam Type, SPM Grades, STPM Grades, STPM CGPA, MUET Band), preferences (Financial Pressure, Travel Willingness), attribution (Referral Source, Referred By Org), and timestamps (Date Joined, Last Sign-In).
 - `_fetch_auth_emails` → `_fetch_auth_data`: now fetches `last_sign_in_at` alongside `email` from `auth.users` in the same query.
@@ -31924,10 +32901,12 @@ and `docs/scholarship/b40-phase1-roadmap.md`.
 
 
 
+
 ### Added
 - **`Email` and `Last Sign-In` columns** joined from Supabase Auth's `auth.users` by `supabase_user_id`. Anonymous-only users (no email or phone) appear as blank in those columns; everyone else has them populated.
 - JSON fields (SPM Grades, STPM Grades) are compactly stringified; empty `{}` renders as blank.
 - Booleans render as `Yes`/`No` for human readability.
+
 
 
 

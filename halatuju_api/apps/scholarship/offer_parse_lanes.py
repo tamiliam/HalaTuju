@@ -226,3 +226,51 @@ def diagnose_unimas(out: dict, text: str, page1_text: str, page1_layout: str, pa
     else:
         out['locked'] = {**fields, '_family': 'unimas', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
     return out
+
+
+def diagnose_uthm(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
+    """The UTHM branch of `diagnose` (OCR-14 phase 3), in `diagnose_unimas`'s order: a portal page refuses (the
+    plain `offer_parse._PORTAL_TELL`, no excuse: the UTHM greeting "Tahniah diucapkan" is not a tell); a scan
+    refuses (``no_layout``); the drawn page texts; `read_uthm`; the owner phrases; the whole letter
+    (`offer_parse_uthm.uthm_letter_refusal`: status words, ANY IC-like number, withdrawal words); ``foreign_letters``;
+    ``name_not_plain``; any IC-like number in page 1's plain layer or any page text (``ic_printed``); last, any later
+    page with text (``later_page``). UTHM prints no IC (the matric is not one): the lock carries a blank IC
+    (`offer_exact.ISSUER_PRINTS_NO_IC`). `diagnose` passes the result through `_rules_exit`."""
+    from .offer_parse import _PORTAL_TELL, _SPACES, _ZERO_WIDTH, PARSER_VERSION
+    from .offer_owner_words import missing
+    from .offer_parse_university import name_in_plain
+    from .offer_parse_uthm import LANE, read_uthm, uthm_later_pages, uthm_letter_refusal
+    from .offer_parse_uum import ic_printed
+    from .offer_ums_refusal import foreign_letters, page_texts_refusal
+    out['portal'] = bool(_PORTAL_TELL.search(text or ''))
+    if out['portal']:
+        return out
+    if not page1_layout.strip():
+        out['guard'] = 'no_layout'
+        return out
+    if not page1_text.strip():
+        out['guard'] = 'no_plain_layer'
+        return out
+    pages = [_SPACES.sub(' ', _ZERO_WIDTH.sub('', t or '')) for t in (page_texts or ())]
+    fields, reason = read_uthm(page1_layout)
+    out['fields'], out['titled'] = fields, fields is not None
+    early = page_texts_refusal(pages)
+    if not early and not reason:
+        out['owner_words_missing'] = missing(LANE, page1_layout, text_pdf=True)
+        early = 'owner_words_missing' if out['owner_words_missing'] else ''
+    reason = early or reason or uthm_letter_refusal(text)
+    if not reason and foreign_letters(text, page1_text, page1_layout, *pages):
+        reason = 'foreign_letters'
+    if not reason and not name_in_plain(fields['candidate_name'], page1_text, page1_layout):
+        reason = 'name_not_plain'
+    if not reason and (ic_printed(page1_text) or any(ic_printed(p) for p in pages)):
+        reason = 'ic_printed'
+    if not reason:
+        reason = uthm_later_pages(pages[1:])
+    if reason.startswith('empty:'):
+        out['empty_required'] = reason[len('empty:'):].split(',')
+    elif reason:
+        out['guard'] = reason
+    else:
+        out['locked'] = {**fields, '_family': 'uthm', 'rules_lane': LANE, '_offer_parser_version': PARSER_VERSION}
+    return out

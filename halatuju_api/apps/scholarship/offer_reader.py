@@ -123,7 +123,8 @@ lane is off, or the catalogue match is not unique. Prompt and schema unchanged.
 UniMAP, UNIMAS, UniSZA, UPM, USM, UTeM and UTHM (offer_parse 2.5.0; measured, UTeM needs no Asasi excuse).
 UNIMAS and UTHM print no IC (owner, 26 Nov: "Same as UUM"): a blank IC there shows "Not printed". Phase 2 adds
 the UNIMAS rules reader (`offer_parse_unimas`, lane 'ua:UNIMAS', off by default; current layout degree letters
-only); this reader stays the fallback whenever it refuses or the lane is off. The other nine lanes still come here.
+only); phase 3 the UTHM one (`offer_parse_uthm`, lane 'ua:UTHM', off by default; degree letters only). This
+reader stays the fallback whenever they refuse or a lane is off. The other eight lanes still come here.
 Prompt and schema unchanged.
 
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
