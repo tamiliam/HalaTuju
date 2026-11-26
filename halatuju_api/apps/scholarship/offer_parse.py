@@ -567,8 +567,11 @@ def _diagnose_govt(out: dict, fam: str, text: str, page1_text: str, up: str) -> 
     # correctly). A bare N.N. token is NEVER a valid stream / institution / programme.
     from .card_display import looks_like_clause_number, looks_like_date
     slots = ('stream', 'institution', 'programme')
+    from .offer_ums_refusal import not_official_said
     if out['guard']:
         pass
+    elif not_official_said(text) or not_official_said(page1_text):
+        out['guard'] = 'not_an_offer'           # OCR-14 (owner 26 Nov): "bukan surat tawaran rasmi" never locks
     elif any(looks_like_clause_number(fields.get(k, '')) for k in slots):
         out['guard'] = 'clause_number'
     # ⚠⚠ THE #125 / #142 FAULT HAPPENED TWICE BECAUSE THE FIRST FIX WAS SCOPED TO ONE PARSER. A DATE

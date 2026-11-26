@@ -25,6 +25,9 @@ Page 1 of the 2026/27 layout, as measured on the corpus and the owner's samples 
 UNIMAS prints no reporting date (owner: none printed): it is left blank and never guessed. "Lokasi Pendaftaran" is
 a place, or a note to check a web page by a date; it is never read. A UNIMAS letter is one page (measured: every
 corpus and sample letter): any later page refuses (``later_page``).
+
+The footer "Surat tawaran ini bukan merupakan surat tawaran rasmi ..." with "UNTUK SEMAKAN" is excused once, as an
+exact pair (owner, 26 Nov; `_footer_out`); every other lane refuses a letter that says it is not official.
 """
 import re
 
@@ -63,6 +66,15 @@ _ANY_CODE = re.compile(r'(?<![A-Za-z0-9])[A-Z]{2}\d{7}(?![0-9])')
 _GREETING_WORDS = ('Tahniah! Saudara/saudari adalah ditawarkan tempat untuk mengikuti pengajian Ijazah Sarjana Muda '
                    'di Universiti Malaysia Sarawak')
 _GREETING = re.compile(r'\s{1,40}'.join(re.escape(w) for w in _GREETING_WORDS.split()))
+#: The footer every UNIMAS letter prints, with "UNTUK SEMAKAN" alone on its own line (owner, 26 Nov: allowed on
+#: UNIMAS; measured on the text extraction of 10/10 corpus and 4/4 sample letters of this family: each once, the
+#: sentence in this case with ONE space between its words and its full stop, "UNTUK SEMAKAN" in capitals). Its
+#: "bukan merupakan surat tawaran rasmi" refuses on every lane (`offer_ums_refusal._NOT_OFFICIAL_STEMS`): here the
+#: PAIR is taken out, exactly once each, before that check. One without the other, a second copy of either, or any
+#: other wording refuses (``not_an_offer``).
+_FOOTER = re.compile(re.escape('Surat tawaran ini bukan merupakan surat tawaran rasmi dan hanya boleh digunakan '
+                               'sebagai rujukan sahaja.'))
+_FOR_CHECKING = re.compile(r'(?<![^\n])UNTUK SEMAKAN(?![^\n])')
 
 
 def is_unimas(up: str) -> bool:
@@ -187,9 +199,18 @@ def read_unimas(source: str):
     return fields, ''
 
 
+def _footer_out(text: str):
+    """``text`` with ONE footer sentence (`_FOOTER`) and ONE "UNTUK SEMAKAN" line (`_FOR_CHECKING`) taken out, or
+    None when they are not a pair (one without the other) or "UNTUK SEMAKAN" is still there in any spacing."""
+    rest, footers = _FOOTER.subn(' ', text, count=1)
+    rest, checks = _FOR_CHECKING.subn(' ', rest, count=1)
+    return None if footers != checks or 'UNTUKSEMAKAN' in _SQUEEZE_OUT.sub('', rest.upper()) else rest
+
+
 def unimas_letter_refusal(text: str) -> str:
     """The whole letter (every page): 'too_long', 'status_letter', 'ic_printed', 'not_an_offer'
-    (`offer_ums_refusal._withdrawn_one`, the head being the lines up to the title), or ''."""
+    (`offer_ums_refusal._withdrawn_one` once the one footer pair is taken out (`_footer_out`; not a pair refuses),
+    the head being the lines up to the title), or ''."""
     text = text or ''
     folded = fold_lookalikes(text)
     if len(text) > MAX_LETTER_CHARS or len(folded) > MAX_LETTER_CHARS:
@@ -201,8 +222,8 @@ def unimas_letter_refusal(text: str) -> str:
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     at = next((i for i, ln in enumerate(lines) if _one_space(ln).upper().startswith(_TITLE.upper())), -1)
     head = lines[:at + 1] if at >= 0 else []
-    return 'not_an_offer' if any(_withdrawn_one(one, hd) for one, hd in
-                                 ((text, head), (folded, [fold_lookalikes(h) for h in head]))) else ''
+    rests = [(_footer_out(one), hd) for one, hd in ((text, head), (folded, [fold_lookalikes(h) for h in head]))]
+    return 'not_an_offer' if any(rest is None or _withdrawn_one(rest, hd) for rest, hd in rests) else ''
 
 
 def unimas_later_pages(pages) -> str:

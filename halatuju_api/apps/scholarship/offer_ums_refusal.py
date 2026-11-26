@@ -44,7 +44,12 @@ _WITHDRAWN = re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}T
                         r'REVOKED|TIDAK\s{1,3}AKTIF|TIDAK\s{1,3}TERPAKAI|DITARIK|'
                         r'TIDAK\s{1,3}(?:(?:AKAN|LAGI|DAPAT|BOLEH)\s{1,3})?DI\s{0,3}TERUSKAN|'
                         r'(?:DI|TER)?\s{0,3}TANGGUH\w*|DI\s{0,3}TUNDA\w*|'
-                        r'AKAN\s{1,3}(?:DI\s{0,3})?(?:MAKLUM|UMUM|TETAP|BERITAHU)\w*)\b', re.IGNORECASE)
+                        r'AKAN\s{1,3}(?:DI\s{0,3})?(?:MAKLUM|UMUM|TETAP|BERITAHU)\w*|'
+                        r'BUKAN\s{1,3}(?:MERUPAKAN\s{1,3})?SURAT\s{1,3}TAWARAN\s{1,3}RASMI)\b', re.IGNORECASE)
+#: OCR-14 (owner 26 Nov): a letter that says it is NOT an official offer ("bukan (merupakan) surat tawaran rasmi")
+#: never locks, on EVERY lane; the government families ask `not_official_said`. Only UNIMAS excuses its one
+#: measured footer copy (`offer_parse_unimas._FOOTER`), taken out before this check.
+_NOT_OFFICIAL_STEMS = ('BUKANMERUPAKANSURATTAWARANRASMI', 'BUKANSURATTAWARANRASMI')
 #: Round 5 (LOW D): a deferral ("ditangguhkan", "ditunda") or a date still to come ("akan dimaklumkan
 #: kemudian") on ANY page refuses, also in the squeezed and dotless forms. Measured: none is on any page of the
 #: 58 cached UMS letters. A bare DITUNDA is never a stem: squeezed, "di Tun Datu" holds it.
@@ -56,7 +61,7 @@ _WITHDRAWN_STEMS = ('DIBATALKAN', 'PEMBATALAN', 'TIDAKBERJAYA', 'DITARIKBALIK', 
                     'CANCELLED', 'CANCELED', 'REVOKED', 'TIDAKAKTIF', 'TIDAKTERPAKAI', 'TIDAKDITERUSKAN',
                     'TIDAKAKANDITERUSKAN', 'TIDAKLAGIDITERUSKAN', 'TIDAKDAPATDITERUSKAN', 'TIDAKBOLEHDITERUSKAN',
                     'TIDAKAKANLAGIDITERUSKAN', 'TIDAKDAPATLAGIDITERUSKAN', 'TIDAKBOLEHLAGIDITERUSKAN',
-                    'TANGGUH', 'AKANDIMAKLUMKAN', 'AKANDIUMUMKAN', 'AKANDITETAPKAN', 'AKANDIBERITAHU')
+                    'TANGGUH', 'AKANDIMAKLUMKAN', 'AKANDIUMUMKAN', 'AKANDITETAPKAN', 'AKANDIBERITAHU') + _NOT_OFFICIAL_STEMS
 #: Review round 3 (LOW-2): every character that is not a letter or digit is taken out ("D/I/B/A/T/A/L/K/A/N").
 _SQUEEZE_OUT = re.compile(r'[\W_]')
 #: Owner words review round 2 (fix 2): Cyrillic and Greek letters that look like Latin ones, folded to their
@@ -213,6 +218,13 @@ def status_said(s: str) -> bool:
     round 5, LOW C: also with every character that is not a letter or digit taken out)."""
     s = s or ''
     return bool(_STATUS.search(s)) or _STATUS_KEY in _SQUEEZE_OUT.sub('', s.upper())
+
+
+def not_official_said(s: str) -> bool:
+    """True when ``s`` (raw or folded) says it is not an official offer (`_NOT_OFFICIAL_STEMS`), in any spacing
+    (every character that is not a letter or digit taken out) and with look-alike letters folded."""
+    keys = [_SQUEEZE_OUT.sub('', one.upper()) for one in (s or '', fold_lookalikes(s or ''))]
+    return any(stem in key for key in keys for stem in _NOT_OFFICIAL_STEMS)
 
 
 def _excused(text: str, m) -> bool:

@@ -22,6 +22,7 @@ CODE = 'UW6481001'
 PROGRAMME = 'Sarjana Muda Sains Komputer dan Teknologi Maklumat dengan Kepujian'
 GREETING = (L + 'Tahniah!    Saudara/saudari     adalah   ditawarkan    tempat    untuk   mengikuti    pengajian    '
             'Ijazah  Sarjana')
+FOOTER = 'Surat tawaran ini bukan merupakan surat tawaran rasmi dan hanya boleh digunakan sebagai rujukan sahaja.'
 
 
 def label(name, value):
@@ -49,7 +50,7 @@ def layout(name_line=None, first=L + 'Pejabat Timbalan Naib Canselor', title=TIT
         '     Sarjana Muda Sains Komputer dan    RM1,234.00', '     Teknologi Maklumat dengan Kepujian -',
         '     ' + fee_code, L + 'Sekian, terima kasih.', L + 'Qarim Velto bin Duran', L + 'Pendaftar',
         ' ' * 95 + 'UNTUK SEMAKAN',
-        L + '**Surat tawaran ini bukan merupakan surat tawaran rasmi dan hanya boleh digunakan sebagai rujukan sahaja.',
+        L + '**' + FOOTER,
         L + '**Surat ini dijana oleh komputer, oleh itu tandatangan tidak diperlukan.',
         '94300 Kota Samarahan, Sarawak, MALAYSIA', 'Tel +60 82 581 000/1234', 'E-mel admisi@unimas.my',
     ]
@@ -230,6 +231,76 @@ class UnimasNeverLocksTest(SimpleTestCase):
         self.assertEqual(later_pages_refusal(['Universiti Malaysia Sarawak\nLampiran']), 'later_page')
         self.assertEqual(later_pages_refusal(['', '  ']), '')
         self.assertEqual(run(page2='Universiti Malaysia Sarawak\nLampiran')['guard'], 'later_page')
+
+
+class UnimasFooterExcuseTest(SimpleTestCase):
+    """Owner, 26 Nov: the UNIMAS footer "Surat tawaran ini bukan merupakan surat tawaran rasmi ..." with "UNTUK
+    SEMAKAN" is allowed on UNIMAS, as ONE exact pair; every other lane refuses the not-official sentence."""
+
+    def test_one_footer_pair_locks(self):
+        self.assertIn(FOOTER, layout())
+        self.assertIn('UNTUK SEMAKAN', layout())
+        self.assertEqual(letter_refusal(plain(layout())), '')
+        self.assertIsNotNone(run()['locked'], why(run()))
+
+    def test_a_second_copy_of_either_refuses(self):
+        for extra in (L + '**' + FOOTER, ' ' * 95 + 'UNTUK SEMAKAN', L + FOOTER + ' UNTUK SEMAKAN'):
+            with self.subTest(extra=extra):
+                lay = layout(extra=(extra,))
+                self.assertEqual(letter_refusal(plain(lay)), 'not_an_offer')
+                self.assertIsNone(run(lay)['locked'])     # here "SEMAKAN" + "Tawaran" also reads as a portal
+
+    def test_a_changed_wording_refuses(self):
+        for old, new in ((FOOTER, FOOTER.replace('bukan merupakan', 'bukan')),
+                         (FOOTER, FOOTER.replace('rujukan sahaja', 'semakan sahaja')),
+                         (FOOTER, FOOTER.replace('Surat tawaran ini', 'Surat ini')),
+                         (FOOTER, FOOTER.replace('surat tawaran rasmi', 'surat  tawaran rasmi')),
+                         (FOOTER, FOOTER.upper()), (FOOTER, FOOTER[:-1]),
+                         ('UNTUK SEMAKAN', 'UNTUK  SEMAKAN'), ('UNTUK SEMAKAN', 'Untuk Semakan'),
+                         ('UNTUK SEMAKAN', 'SALINAN UNTUK SEMAKAN')):
+            with self.subTest(new=new):
+                self.assertEqual(letter_refusal(plain(layout()).replace(old, new)), 'not_an_offer')
+                if '  ' not in new:                              # the test's plain layer folds spaces
+                    self.assertIsNone(run(layout().replace(old, new))['locked'])
+
+    def test_one_without_the_other_refuses(self):
+        for gone in (L + '**' + FOOTER + '\n', ' ' * 95 + 'UNTUK SEMAKAN\n'):
+            with self.subTest(gone=gone.strip()):
+                lay = layout().replace(gone, '')
+                self.assertEqual(letter_refusal(plain(lay)), 'not_an_offer')
+                self.assertIsNone(run(lay)['locked'])
+
+    def test_no_footer_at_all_is_no_excuse_needed(self):
+        lay = layout().replace(L + '**' + FOOTER + '\n', '').replace(' ' * 95 + 'UNTUK SEMAKAN\n', '')
+        self.assertEqual(letter_refusal(plain(lay)), '')
+
+    def test_every_other_lane_refuses_the_not_official_sentence(self):
+        import importlib
+
+        from apps.scholarship.offer_ums_refusal import letter_refusal as ums_letter_refusal
+        from apps.scholarship.offer_ums_refusal import not_official_said
+        for lane in ('uitm', 'uum', 'um', 'upsi', 'uthm', 'ukm', 'utem', 'usm', 'umk', 'unisza'):
+            mod = importlib.import_module('apps.scholarship.tests.test_offer_parse_' + lane)
+            for line in ('**' + FOOTER, 'Surat ini bukan surat tawaran rasmi.'):
+                with self.subTest(lane=lane, line=line):
+                    lay = mod.layout() + '\n' + line
+                    d = mod.run(lay)
+                    self.assertIsNone(d['locked'])
+                    if lane not in ('umk', 'unisza'):           # their test letters refuse for an earlier reason
+                        self.assertEqual(d['guard'], 'not_an_offer')
+        for text in (FOOTER, 'BUKAN  MERUPAKAN SURAT TAWARAN RASMI', 'b u k a n surat tawaran rasmi'):
+            with self.subTest(text=text):
+                self.assertTrue(not_official_said(text))
+                self.assertEqual(ums_letter_refusal(text), 'not_an_offer')
+        self.assertFalse(not_official_said('Surat tawaran rasmi ini sah.'))
+
+    def test_the_government_families_refuse_it_too(self):
+        from apps.scholarship.tests.test_offer_parser import MATRIC, POLY, STPM
+        for text in (STPM, MATRIC, POLY):
+            with self.subTest(family=offer_parse.family_of(text)):
+                self.assertIsNotNone(offer_parse.diagnose(text)['locked'])
+                d = offer_parse.diagnose(text + '\n' + FOOTER)
+                self.assertEqual((d['locked'], d['guard']), (None, 'not_an_offer'))
 
 
 class UnimasNoIcAndWiringTest(SimpleTestCase):
