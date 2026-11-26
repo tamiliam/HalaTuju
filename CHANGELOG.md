@@ -17,7 +17,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. Lanes stay OFF: 
 - **Exit:** `offer_parse._rules_exit` reads the lock's `rules_lane` and uses the per-lane check. UMS and government
   locks behave as before. No version bump yet (it comes with the readers in phase 2).
 - **Measured (local, free):** held-out letters per lane UiTM 9, UPSI 4, UM 3, UUM 0, so no lane can reach Gate 1 (20)
-  on the current corpus. UMS unchanged. Debt: TD-NEW-ocr13-readers, TD-NEW-ocr13-diploma.
+  on the current corpus. UMS unchanged. Debt: TD-758, TD-759.
   Tests: `test_offer_owner_words_ocr13.py`.
 
 ### feat: OCR-13 phase 2 - the UiTM rules reader (2026-11-26)
@@ -35,7 +35,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UiT
 - **Owner folders (UiTM reader, lane on):** uitm/ 22 letters, 6 lock (5 wrapped name, 1 owner word missing, 1 second programme,
   1 no title, 8 not a UiTM layout); diploma/, asasi/, confirmation/ and fail/ lock 0 of 43 (4 diploma letters refuse as not a degree).
   Corpus UiTM letters in this check: 13, 3 lock.
-- Debt: TD-NEW-ocr13-uitm-wrapped-names, TD-NEW-ocr13-uitm-wrap-edge; TD-NEW-ocr13-diploma stays open.
+- Debt: TD-760, TD-NEW-ocr13-uitm-wrap-edge; TD-759 stays open.
   Tests: `test_offer_parse_uitm.py`.
 
 ### feat: OCR-13 phase 3 - the UUM rules reader, a lock with no IC (2026-11-26)
@@ -63,7 +63,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UUM
 - **Owner folders (text layer):** uum/ 33 letters, 20 lock; 5 English Admission letters refuse (no_title), 3 PENGESAHAN
   letters refuse (status_letter), 5 scans have no text layer (in production they refuse no_layout). diploma/, asasi/,
   confirmation/ and fail/ lock 0 of 43.
-- Debt: TD-NEW-ocr13-uum-intake-answers, TD-NEW-ocr13-uum-heldout. Tests: `test_offer_parse_uum.py`.
+- Debt: TD-761, TD-762. Tests: `test_offer_parse_uum.py`.
 
 ### feat: OCR-13 phase 4 - the UM rules reader (2026-11-26)
 
@@ -86,7 +86,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UM`
   UMS, UiTM and UUM unchanged: held-out 33/22/100%/0 and 9/1/100%/0; all splits 62/44/100%/0, 18/3/100%/0, UUM 4 of 4.
 - **Owner folders (text layer):** um/ 2 letters lock; 1 scan and 1 letter without the title do not read as UM, and 1 file
   is not a PDF. asasi/ holds 2 UM letters: both refuse (not_degree). diploma/, asasi/, confirmation/ and fail/ lock 0.
-- Debt: TD-NEW-ocr13-um-heldout. Tests: `test_offer_parse_um.py`.
+- Debt: TD-763. Tests: `test_offer_parse_um.py`.
 
 ### feat: OCR-13 phase 5 - the UPSI rules reader (2026-11-26)
 
@@ -112,7 +112,7 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UPS
   62/44/100%/0, 18/3, UUM 4 of 4 (0 wrong guarded fields), UM 9/2.
 - **Owner folders (text layer):** upsi/ 12 of 30 lock (the other 18 have no text layer or are another template and do not
   read as UPSI). diploma/, asasi/, confirmation/ and fail/ lock 0 (no UPSI letter among them).
-- Debt: TD-NEW-ocr13-upsi-heldout. Tests: `test_offer_parse_upsi.py`.
+- Debt: TD-764. Tests: `test_offer_parse_upsi.py`.
 
 ### feat: OCR-13 - a new offer IC status 'not_printed' for UUM and UPSI; verdicts unchanged (2026-11-26)
 

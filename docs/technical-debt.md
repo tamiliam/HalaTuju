@@ -9811,7 +9811,7 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Raised in the F4b sprint (see CHANGELOG).** Once the card was rewritten, only `officerCockpit.test.ts` uses `verdictReliability` and the override summary type. **Fix:** delete them with their tests, or bring them back into a card. *(A - S)*
 
-### [TD-NEW-ocr13-readers] OCR-13: the UPSI, UUM, UiTM and UM lanes have owner words but no page-1 reader - medium
+### [TD-758] OCR-13: the UPSI, UUM, UiTM and UM lanes have owner words but no page-1 reader - medium
 
 **Raised in OCR-13 phase 1 (see CHANGELOG).** The owner's words and the UiTM Asasi excuse are in; nothing dispatches to the four lanes, so every letter still goes to the AI. Held-out letters (UiTM 9, UPSI 4, UM 3, UUM 0) are under Gate 1's 20, so a reader cannot be switched on yet. Also open: 13 of 30 UPSI sample PDFs have no text layer; image letters were not measured (Vision is paid); one UiTM sample prints the office label in a different form and refuses (safe). **Fix:** phase 2: one reader per lane (files under 600 lines), dispatch in `diagnose`, `offer_exact` and the ink targets, the eval layout hook and `RULES_LANES`, versions 2.11.0 and 2.4.0, then the dry run each month until a lane reaches 20. *(A - M)*
 
@@ -9821,27 +9821,27 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Phase 5 (26 Nov):** the UPSI reader is built (lane off). All four lanes now have a reader; what stays open is Gate 1 (each lane's held-out letters, see the -heldout items) and the image letters that were never measured.
 
-### [TD-NEW-ocr13-upsi-heldout] OCR-13: 4 UPSI letters are held out and 2 lock, so the UPSI lane cannot pass Gate 1 - medium
+### [TD-764] OCR-13: 4 UPSI letters are held out and 2 lock, so the UPSI lane cannot pass Gate 1 - medium
 
 **Raised in OCR-13 phase 5 (see CHANGELOG).** The corpus holds 7 UPSI answers (4 held out); 2 lock (both held out), 0 wrong. The other 5 have no text layer or no PDF, so they go to the AI. The owner's upsi/ sample locks 12 of 30 (18 have no text layer or are another template). One sample prints its offer date in a shape the reader does not read, so that lock leaves the optional offer date blank. **Fix:** add hand-checked UPSI degree letters to the held-out split, then re-run the dry run. *(A - M)*
 
-### [TD-NEW-ocr13-um-heldout] OCR-13: 3 UM letters are held out and 1 locks, so the UM lane cannot pass Gate 1 - medium
+### [TD-763] OCR-13: 3 UM letters are held out and 1 locks, so the UM lane cannot pass Gate 1 - medium
 
 **Raised in OCR-13 phase 4 (see CHANGELOG).** The corpus holds 9 UM answers (3 held out); 2 of the 8 PDFs lock (1 held out). The rest go to the AI as they should: 1 scan, 2 letters without the Malay title (one Asasi), 2 Asasi letters, 1 English letter, and 1 answer has no PDF. English UM letters never read as the UM family, so a UM English reader would be a new lane. The reporting date is never printed on page 1 ("RUJUK LAMPIRAN"), so a UM lock always leaves it blank. **Fix:** add hand-checked UM degree letters to the held-out split, then re-run the dry run. *(A - M)*
 
-### [TD-NEW-ocr13-uum-intake-answers] OCR-13: two UUM hand-checked answers shorten the intake - low (owner question)
+### [TD-761] OCR-13: two UUM hand-checked answers shorten the intake - low (owner question)
 
 **Raised in OCR-13 phase 3 (see CHANGELOG).** All 4 corpus UUM letters print "SEMESTER PERTAMA SESI YYYY/YYYY" and the reader stores it as printed. The hand-checked answers for d1705 and d1746 say only "SESI YYYY/YYYY" (d3502 and d3997 keep SEMESTER PERTAMA), so the dry run scores 2 intakes wrong. Intake is not a guarded field; name, IC, institution and programme are 0 wrong. **Fix:** owner rules which form is right; then either correct the two answers or have the reader drop the semester words. *(A - S)*
 
-### [TD-NEW-ocr13-uum-heldout] OCR-13: no UUM letter is held out, so the UUM lane cannot pass Gate 1 - medium
+### [TD-762] OCR-13: no UUM letter is held out, so the UUM lane cannot pass Gate 1 - medium
 
 **Raised in OCR-13 phase 3 (see CHANGELOG).** The corpus holds 4 UUM letters, all in dev; Gate 1 needs 20 held-out locks. The owner sample (uum/ 33: 20 lock, 5 English Admission letters, 3 PENGESAHAN letters, 5 scans) has no answers, so its values are not scored. **Fix:** add hand-checked UUM letters to the held-out split, then re-run the dry run. *(A - M)*
 
-### [TD-NEW-ocr13-uitm-wrapped-names] OCR-13: UiTM names that wrap onto two lines are refused - low
+### [TD-760] OCR-13: UiTM names that wrap onto two lines are refused - low
 
 **Raised in OCR-13 phase 2 (see CHANGELOG).** The UiTM reader refuses a student name printed over two lines: about 5 of the 11 digital UiTM letters in the owner sample. The owner has no rule for two-line names, so they stay refused and go to the AI as before. **Fix:** an owner rule for two-line names, then a reader step with adversarial tests. *(A - S)*
 
-### [TD-NEW-ocr13-diploma] OCR-13: UiTM diploma letters show every UiTM owner phrase - high (before the UiTM lane goes on)
+### [TD-759] OCR-13: UiTM diploma letters show every UiTM owner phrase - high (before the UiTM lane goes on)
 
 **Raised in OCR-13 phase 1 (see CHANGELOG).** UiTM diploma and degree letters share one layout: 4 diploma sample PDFs show all 8 owner phrases and pass the Asasi check. **Fix:** the phase 2 UiTM reader must lock only a degree programme (refuse "Diploma" in the programme field and an unmatched course), with adversarial tests; the lane must not go on without it. **Stays open (phase 2):** the reader refuses the 4 digital diploma letters correctly, but the corpus diplomas are scans, so the refusal is not yet tested on a corpus diploma with a text layer. *(A - S)*
 
