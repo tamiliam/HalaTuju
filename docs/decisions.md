@@ -21532,6 +21532,7 @@ signatory and no office line after it (rule 5 has no anchor). A "… Group" / "K
 **Decision:** The QC (also the funder) is the second look. A "Facts in doubt" block shows on the QC panel only when a fact is in doubt (AI green and reviewer fail, or a failed fact with an accept). Doing nothing records "agreed" for the shown facts; one tap records "disagreed". A fact that was not shown gets no answer. The numbers say "checked by the QC", never "true". The second look never changes a decision.
 **Why:** one person made all 70 QC decisions and backs each with money, so the design had to cost him almost nothing. Alternatives considered: a new review page or a sampled list. Rejected: more work for the same person.
 **Revisit if:** more than one QC per organisation exists, or silence turns out to hide disagreement (compare with the taps).
+**Superseded in part (owner, 2026-11-26, qc-fact-verdict):** silence no longer records "agreed". Nothing is chosen at the start; the QC may tap Pass (sent as "disagreed") or Fail (sent as "agreed") on each fact, a second tap clears, and an untouched fact records nothing, so it reads "not checked". The box shows the AI Prediction card's band word. On Reopen or Reject only a Pass is stored (server rule, unchanged). It still never changes a decision.
 
 ## 2026-11-19 - One human feed for "the reader was wrong" (LL2 reasons and LL2b QC answers); no second store
 

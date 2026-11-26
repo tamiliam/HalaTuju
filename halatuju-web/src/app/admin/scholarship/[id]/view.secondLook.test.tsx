@@ -2,10 +2,11 @@
  * @jest-environment jsdom
  *
  * LL2b: "Facts in doubt" — the QC's second look, inside the QC panel. The SERVER decides which facts
- * are in doubt (`second_look.in_doubt`); the panel lists them, remembers the QC's "Disagree" taps,
- * and sends an answer for EVERY fact shown as `fact_checks` on the decision ("disagreed" tapped,
- * "agreed" untouched). With no fact in doubt — or old data with no `second_look` key — no block shows
- * and the request carries no `fact_checks` key at all, exactly as before. Made-up names only.
+ * are in doubt (`second_look.in_doubt`); the panel lists them, shows the AI's band word, and lets the QC
+ * answer each fact Pass ("disagreed") or Fail ("agreed"); nothing is chosen at the start, a second tap
+ * clears, and an untouched fact is absent from `fact_checks`. With no fact answered, or no fact in
+ * doubt, or old data with no `second_look` key, the request carries no `fact_checks` key at all,
+ * exactly as before. Made-up names only.
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
@@ -33,12 +34,19 @@ const TWO: SecondLook = {
   answers: null,
 }
 
-const asQc = (second_look?: SecondLook) => renderCockpit({
-  role: 'qc', stage: 'awaiting_qc', writes: { can_qc: true },   // S1: the QC panel draws from the served flag
-  build: { outcome: 'recommend', qc_refusal: null, ...(second_look ? { second_look } : {}) },
-})
+const asQc = (second_look?: SecondLook, ai_fact_bands: Record<string, string> = { identity: 'certain', income: 'unsure' }) =>
+  renderCockpit({
+    role: 'qc', stage: 'awaiting_qc', writes: { can_qc: true },   // S1: the QC panel draws from the served flag
+    build: { outcome: 'recommend', qc_refusal: null, ai_fact_bands, ...(second_look ? { second_look } : {}) },
+  })
 
-const disagree = (fact: string) => within(screen.getByTestId(`doubt-${fact}`)).getByRole('button')
+const PASS = 'admin.scholarship.recordVerdict.factPass'
+const FAILK = 'admin.scholarship.recordVerdict.factFail'
+const choice = (fact: string, which: 'Pass' | 'Fail') =>
+  within(screen.getByTestId(`doubt-${fact}`)).getByTestId(`doubt-${fact}-fact${which}`)
+const pass = (fact: string) => fireEvent.click(choice(fact, 'Pass'))
+const fail = (fact: string) => fireEvent.click(choice(fact, 'Fail'))
+const pressed = (fact: string, which: 'Pass' | 'Fail') => choice(fact, which).getAttribute('aria-pressed')
 const accept = () => fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.accept' }))
 const sent = (api: ReturnType<typeof asQc>['api']) => api.recordQcDecision.mock.calls[0][1]
 
@@ -51,9 +59,9 @@ describe('LL2b: the block on the QC panel', () => {
     const identity = screen.getByTestId('doubt-identity')
     expect(within(identity).getByText('admin.scholarship.verdict.fact.identity')).toBeTruthy()
     expect(within(identity).getByText(`${K}.aiSaid`)).toBeTruthy()
-    expect(within(identity).getByText('admin.scholarship.verdict.status.verified')).toBeTruthy()
+    expect(within(identity).getByText('admin.scholarship.verdict.band.certain')).toBeTruthy()
     expect(within(identity).getByText(`${K}.reviewerSaid`)).toBeTruthy()
-    expect(within(identity).getByText('admin.scholarship.recordVerdict.factFail')).toBeTruthy()
+    expect(within(identity).getAllByText('admin.scholarship.recordVerdict.factFail')).toHaveLength(2)   // the reviewer's word + the Fail button
     expect(within(identity).getByText('admin.scholarship.recordVerdict.failReasonLabel')).toBeTruthy()
     expect(within(identity).getByText('admin.programmeOverview.aiPrediction.notGiven')).toBeTruthy()
     expect(within(identity).queryByText(new RegExp(`${K}.butDecision`))).toBeNull()
@@ -67,24 +75,55 @@ describe('LL2b: the block on the QC panel', () => {
     const income = screen.getByTestId('doubt-income')
     expect(within(income).getByText(new RegExp(`${K}.butDecision`))).toBeTruthy()
     expect(within(income).queryByText('admin.scholarship.recordVerdict.failReasonLabel')).toBeNull()
-    expect(within(income).getByText('admin.scholarship.verdict.status.review')).toBeTruthy()
+    expect(within(income).getByText('admin.scholarship.verdict.band.unsure')).toBeTruthy()
   })
 
-  it('a tap presses Disagree, hides the quiet line; a second tap undoes it', async () => {
+  it('the AI line is the served band word, never the raw status', async () => {
+    // status `recommend` with the served band `unsure`: the card says Unsure, so the box must too.
+    asQc({ ...TWO, in_doubt: [{ ...TWO.in_doubt[0], ai_status: 'recommend', ai_green: false }, TWO.in_doubt[1]] },
+      { identity: 'unsure', income: 'ruleNotMet' })
+    await loaded()
+    const identity = screen.getByTestId('doubt-identity')
+    expect(within(identity).getByText('admin.scholarship.verdict.band.unsure')).toBeTruthy()
+    expect(within(identity).queryByText(/verdict\.status\./)).toBeNull()
+    expect(within(screen.getByTestId('doubt-income')).getByText('admin.scholarship.verdict.band.ruleNotMet')).toBeTruthy()
+  })
+
+  it('a missing band falls back as the card does: unverifiable for a gap, else unsure', async () => {
+    asQc({ ...TWO, in_doubt: [{ ...TWO.in_doubt[0], ai_status: 'gap' }, { ...TWO.in_doubt[1], ai_status: 'verified' }] },
+      {})
+    await loaded()
+    expect(within(screen.getByTestId('doubt-identity')).getByText('admin.scholarship.verdict.band.unverifiable')).toBeTruthy()
+    expect(within(screen.getByTestId('doubt-income')).getByText('admin.scholarship.verdict.band.unsure')).toBeTruthy()
+  })
+
+  it('nothing is selected at the start: two buttons, no old toggle or quiet line', async () => {
     asQc(TWO)
     await loaded()
     const identity = screen.getByTestId('doubt-identity')
-    expect(disagree('identity').getAttribute('aria-pressed')).toBe('false')
-    expect(disagree('identity').textContent).toBe(`${K}.disagree`)
-    expect(within(identity).getByText(`${K}.agree`)).toBeTruthy()
-    fireEvent.click(disagree('identity'))
-    expect(disagree('identity').getAttribute('aria-pressed')).toBe('true')
-    expect(disagree('identity').textContent).toBe(`${K}.undo`)
+    expect(within(identity).getByText(`${K}.yourVerdict`)).toBeTruthy()
+    expect(within(identity).getAllByRole('button')).toHaveLength(2)
+    expect(choice('identity', 'Pass').textContent).toBe(PASS)
+    expect(choice('identity', 'Fail').textContent).toBe(FAILK)
+    expect(pressed('identity', 'Pass')).toBe('false')
+    expect(pressed('identity', 'Fail')).toBe('false')
+    expect(within(identity).queryByText(`${K}.disagree`)).toBeNull()
     expect(within(identity).queryByText(`${K}.agree`)).toBeNull()
-    expect(disagree('income').getAttribute('aria-pressed')).toBe('false')
-    fireEvent.click(disagree('identity'))
-    expect(disagree('identity').getAttribute('aria-pressed')).toBe('false')
-    expect(within(identity).getByText(`${K}.agree`)).toBeTruthy()
+  })
+
+  it('a tap selects; the other button moves it; a tap on the selected one clears it', async () => {
+    asQc(TWO)
+    await loaded()
+    pass('identity')
+    expect(pressed('identity', 'Pass')).toBe('true')
+    expect(pressed('identity', 'Fail')).toBe('false')
+    expect(pressed('income', 'Pass')).toBe('false')
+    fail('identity')
+    expect(pressed('identity', 'Pass')).toBe('false')
+    expect(pressed('identity', 'Fail')).toBe('true')
+    fail('identity')
+    expect(pressed('identity', 'Pass')).toBe('false')
+    expect(pressed('identity', 'Fail')).toBe('false')
   })
 
   it('no fact in doubt, or old data with no key: no block', async () => {
@@ -106,63 +145,70 @@ describe('LL2b: the block on the QC panel', () => {
   })
 })
 
-// Review round: every shown fact is now sent ("agreed" untouched, "disagreed" tapped), so the server
-// never answers a fact this tab did not show. The five tests below used to expect the taps only.
 describe('LL2b: what the decision sends', () => {
-  it('Accept with no taps sends "agreed" for every fact shown', async () => {
+  it('Accept with nothing answered sends no fact_checks key at all', async () => {
     const { api } = asQc(TWO)
     await loaded()
     accept()
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
-    expect(sent(api)).toEqual(expect.objectContaining({ decision: 'accept',
-      fact_checks: { identity: 'agreed', income: 'agreed' } }))
+    expect('fact_checks' in sent(api)).toBe(false)
   })
 
-  it('Accept after a tap sends the tapped fact as "disagreed" and the other as "agreed"', async () => {
+  it('Pass is sent as "disagreed" and an untouched fact is absent', async () => {
     const { api } = asQc(TWO)
     await loaded()
-    fireEvent.click(disagree('income'))
+    pass('income')
+    accept()
+    await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
+    expect(sent(api).fact_checks).toEqual({ income: 'disagreed' })
+  })
+
+  it('Fail is sent as "agreed"', async () => {
+    const { api } = asQc(TWO)
+    await loaded()
+    fail('identity')
+    pass('income')
     accept()
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
     expect(sent(api).fact_checks).toEqual({ identity: 'agreed', income: 'disagreed' })
   })
 
-  it('a tap then undo sends "agreed" for that fact', async () => {
+  it('an answer then a second tap clears it: no answer at all, no key', async () => {
     const { api } = asQc(TWO)
     await loaded()
-    fireEvent.click(disagree('identity'))
-    fireEvent.click(disagree('identity'))
+    pass('identity')
+    pass('identity')
     accept()
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
-    expect(sent(api).fact_checks).toEqual({ identity: 'agreed', income: 'agreed' })
+    expect('fact_checks' in sent(api)).toBe(false)
   })
 
-  it('Reopen carries the taps too', async () => {
+  it('Reopen carries the answers too', async () => {
     const { api } = asQc(TWO)
     await loaded()
-    fireEvent.click(disagree('identity'))
+    pass('identity')
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.reopen' }))
-    expect(disagree('identity').getAttribute('aria-pressed')).toBe('true')   // still shown, still held
+    expect(pressed('identity', 'Pass')).toBe('true')   // still shown, still held
     fireEvent.change(screen.getByPlaceholderText('admin.scholarship.qcDecision.commentsPlaceholder'),
       { target: { value: 'The income letter is for the wrong year.' } })
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.reopenConfirm' }))
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
     expect(sent(api)).toEqual(expect.objectContaining({ decision: 'reopen',
-      fact_checks: { identity: 'disagreed', income: 'agreed' } }))
+      fact_checks: { identity: 'disagreed' } }))
   })
 
-  it('Reject carries the taps too', async () => {
+  it('Reject carries the answers too', async () => {
     const { api } = asQc(TWO)
     await loaded()
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.reopen' }))
-    fireEvent.click(disagree('income'))
+    pass('income')
     fireEvent.click(screen.getByRole('switch'))
     fireEvent.change(screen.getByPlaceholderText('admin.scholarship.qcDecision.rejectPlaceholder'),
       { target: { value: 'Not eligible for this programme.' } })
     fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.qcDecision.rejectConfirm' }))
     await waitFor(() => expect(api.recordQcDecision).toHaveBeenCalled())
     expect(sent(api)).toEqual(expect.objectContaining({ decision: 'reject',
-      fact_checks: { identity: 'agreed', income: 'disagreed' } }))
+      fact_checks: { income: 'disagreed' } }))
   })
 
   it('taps do not carry from one application to the next', () => {
@@ -176,12 +222,12 @@ describe('LL2b: what the decision sends', () => {
       qcOverrideReason: '', setQcOverrideReason: jest.fn(),
     }
     const { rerender } = render(<QcPanel app={first} {...props} />)
-    fireEvent.click(disagree('identity'))
-    expect(disagree('identity').getAttribute('aria-pressed')).toBe('true')
+    pass('identity')
+    expect(pressed('identity', 'Pass')).toBe('true')
     rerender(<QcPanel app={next} {...props} />)
-    expect(disagree('identity').getAttribute('aria-pressed')).toBe('false')
+    expect(pressed('identity', 'Pass')).toBe('false')
     accept()
-    expect(doQcDecision).toHaveBeenCalledWith('accept', undefined, { identity: 'agreed', income: 'agreed' })
+    expect(doQcDecision).toHaveBeenCalledWith('accept', undefined, undefined)
   })
 
   it('no block shown: the request carries no fact_checks key at all', async () => {

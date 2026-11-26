@@ -253,7 +253,7 @@ export const roleReviewer: ManualChapter = {
         do</strong> list says <em>Record the reporting date</em> and Approve stays greyed. Decline needs no date:
         once you choose Decline the line leaves the list, and a press on Approve shows it again.
         QC sees a Fail on a green fact, or a Fail you still approved, again under <strong>Facts in doubt</strong>
-        and says whether they agree with you.
+        and may give their own Pass or Fail on each (it is optional).
         QC cannot accept a recommendation while a fact is still red or shows <em>Rule not met</em>, unless QC
         records a reason for going ahead.</span>
           <span className="mt-2 block">In the <strong>Decision</strong>

@@ -62,13 +62,17 @@ export const roleQc: ManualChapter = {
         <>Above the buttons, a small <strong>Facts in doubt</strong> box lists only the facts where the reviewer
         and the AI did not agree: the AI said green and the reviewer said Fail, or the reviewer said Fail but
         still recommended the student. Each one shows what the AI said, what the reviewer said and their
-        reason. <strong>Doing nothing means you agree with the reviewer.</strong> If you do not, tap
-        <strong> Disagree with the reviewer</strong> on that fact; tap it again to undo. Your answer is sent with
-        your Accept, Reopen or Reject. On <strong>Accept</strong>, a fact you did not touch is recorded as
-        &ldquo;agreed&rdquo;. On <strong>Reopen</strong> or <strong>Reject</strong>, only a Disagree tap is
-        recorded; a fact you did not touch records nothing. It never blocks or delays your decision. Your
-        Accept and Reopen decisions are counted as <strong>QC accepted</strong> and <strong>QC sent back</strong>
-        in the <strong>By reviewer</strong> table of the AI prediction card, which organisation admins see.</>
+        reason. The AI line shows the same word as the AI prediction card for that fact. Under each fact is a
+        <strong> Your verdict</strong> row with two buttons, <strong>Pass</strong> and <strong>Fail</strong>.
+        Giving a verdict is optional. Nothing is chosen at the start; tap a button to choose it, tap the chosen
+        button again to remove your answer, or tap the other button to change it. Your answer is sent with your
+        Accept, Reopen or Reject. A fact you did not touch records nothing. On <strong>Accept</strong>, both a
+        Pass and a Fail are recorded. On <strong>Reopen</strong> or <strong>Reject</strong>, only a Pass is
+        recorded; a Fail is not kept. The box never changes the case, the reviewer&rsquo;s answer, the AI&rsquo;s
+        result, the award or what the student sees, and it never blocks or delays your decision. Your Accept and
+        Reopen decisions are counted as <strong>QC accepted</strong> and <strong>QC sent back</strong> in the
+        <strong> By reviewer</strong> table of the AI prediction card, which organisation admins see; those two
+        counts come from the decision itself, not from this box.</>
       ),
     },
     {

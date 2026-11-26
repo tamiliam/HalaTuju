@@ -129,8 +129,8 @@ export interface QcDecisionPayload {
   decision: 'accept' | 'reopen' | 'reject'
   comments?: string
   override_reason?: string
-  /** LL2b: only the QC's taps, as "disagreed"; `{}` = agrees with the reviewer on every fact
-   *  in doubt. Left out when no fact was in doubt (the request as before LL2b). */
+  /** LL2b: only the facts the QC answered: "disagreed" = Pass (the QC disagrees with the reviewer's
+   *  Fail), "agreed" = Fail. Left out when no fact was answered (the request as before LL2b). */
   fact_checks?: Record<string, 'agreed' | 'disagreed'>
 }
 

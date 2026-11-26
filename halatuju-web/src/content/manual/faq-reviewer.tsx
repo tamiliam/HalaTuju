@@ -259,8 +259,8 @@ export const REVIEWER_FAQ: QA[] = [
         this is true. <strong>Fail</strong> = no, or not proven. Every Fail asks <strong>Why?</strong>, with
         <em> Other</em> already chosen; change it if a better reason fits. If you Approve
         while a fact is on Fail, you see a warning, but you can still go ahead. QC then takes a second look at
-        those facts (a Fail on a green fact, or a Fail you still approved) and either agrees with you or taps
-        <strong> Disagree</strong>. Your decisions are counted as QC accepted or QC sent back; leads see
+        those facts (a Fail on a green fact, or a Fail you still approved) and may give their own
+        <strong> Pass</strong> or <strong>Fail</strong>; it is optional. Your decisions are counted as QC accepted or QC sent back; leads see
         those counts, to support reviewers, not to rank them. You do not see the AI prediction card yourself.</>,
     },
     {

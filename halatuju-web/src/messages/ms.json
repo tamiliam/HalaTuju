@@ -5307,12 +5307,10 @@
         "reverifyButton": "Sahkan semula IC",
         "secondLook": {
           "title": "Fakta yang diragui",
-          "help": "Penyemak dan AI tidak sependapat tentang fakta ini. Anda bersetuju dengan penyemak melainkan anda menekan Tidak setuju.",
+          "help": "Penyemak menggagalkan fakta ini. Sama ada AI yakin, atau penyemak tetap mengesyorkan pelajar itu. Anda boleh memberikan keputusan anda sendiri bagi setiap fakta. Ini tidak wajib.",
           "aiSaid": "Kata AI",
           "reviewerSaid": "Kata penyemak",
-          "disagree": "Tidak setuju dengan penyemak",
-          "undo": "Anda tidak setuju. Tekan untuk batal.",
-          "agree": "Anda bersetuju dengan penyemak.",
+          "yourVerdict": "Keputusan anda",
           "butDecision": "tetapi keputusannya {decision}"
         }
       },

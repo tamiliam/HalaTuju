@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: QC "Facts in doubt" - the AI word matches the card, and the QC answers Pass or Fail (2026-11-26)
+
+Branch qc-fact-verdict, not pushed. Web only. No migration. No change under halatuju_api.
+- **AI said** now shows the AI Prediction card's own band word (`factBandOf(app.ai_fact_bands, ...)`, keys `verdict.band.*`, same tone colours); the raw status word is no longer printed. A fact the AI called `recommend` with band `unsure` reads Unsure.
+- **Your verdict:** the "Disagree" toggle and the "You agree with the reviewer" line are gone. Each fact has two buttons, Pass and Fail (the reviewer's own words and look). Nothing is chosen at the start; a second tap clears; Pass is sent as `disagreed`, Fail as `agreed`. An untouched fact is not sent. With no answer at all the request has no `fact_checks` key (the server then writes nothing).
+- **Words:** new `secondLook.yourVerdict`; new help sentence (the true reason, and the answer is optional) in en, ms, ta; removed the unused keys `disagree`, `undo`, `agree`.
+- **Guide and FAQ** (QC role page, QC FAQ, reviewer FAQ and role page) rewritten to match; the loose "counted as QC accepted or QC sent back" wording is fixed: those counts come from the Accept or Reopen itself.
+- **Decision recorded:** `docs/decisions.md` (2026-11-19 second look): silence no longer records "agreed".
+- **Note for the numbers:** an Accept with nothing answered now stores no answer, so the fact reads "not checked" on the AI card's QC counts (before, it counted as checked and agreed). Answers stored earlier are unchanged.
+- Tests: `view.secondLook.test.tsx` updated and extended (band label, nothing selected, Pass, Fail, clear, absent key, fallback).
+
 ### feat: pre-U sprint - Secondary School, where they completed pre-U, the STPM Angka Giliran, and the switch to SPM (2026-11-26)
 
 Branch preu-school, not pushed. Migration: 0102_angka_giliran_11_pre_u_studied_at (additive). Services: both.

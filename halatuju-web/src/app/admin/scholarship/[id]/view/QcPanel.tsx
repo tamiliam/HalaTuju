@@ -12,7 +12,9 @@ import type { AdminScholarshipDetail, QcDecisionPayload } from '@/lib/admin-api'
 
 import type { T } from './shared'
 import Toggle from '@/components/Toggle'
-import { FactsInDoubt, factChecksFor, inDoubtOf } from './FactsInDoubt'
+import { FactsInDoubt, factChecksFor, inDoubtOf, type QcAnswer } from './FactsInDoubt'
+
+const NO_ANSWERS: Readonly<Record<string, QcAnswer>> = {}
 
 /** TD-483: the cockpit's words for a QC-door refusal code (`qc_separation.MESSAGES`), or null for a
  * code it does not know (the caller then shows the server's English sentence). */
@@ -54,14 +56,16 @@ export function QcPanel({
   qcOverrideReason: string
   setQcOverrideReason: Dispatch<SetStateAction<string>>
 }) {
-  // LL2b: the QC's "Disagree" taps on the facts in doubt, kept for THIS case and THIS verdict round
-  // only (another application, or a new verdict after a reopen, starts with no taps). With no fact in
-  // doubt no block shows and no `fact_checks` key is sent — the request is exactly as before LL2b.
+  // LL2b: the QC's Pass / Fail answers on the facts in doubt, kept for THIS case and THIS verdict round
+  // only (another application, or a new verdict after a reopen, starts with none). With no fact in
+  // doubt, or none answered, no `fact_checks` key is sent: the server then writes nothing (an empty
+  // object would store an empty answer set), exactly as before LL2b.
   const round = `${app.id}:${app.verdict_decided_at ?? ''}`
-  const [taps, setTaps] = useState<{ round: string; facts: string[] }>({ round, facts: [] })
-  const tapped = taps.round === round ? taps.facts : []
+  const [taps, setTaps] = useState<{ round: string; facts: Record<string, QcAnswer> }>({ round, facts: {} })
+  const answers = taps.round === round ? taps.facts : NO_ANSWERS
   const doubt = inDoubtOf(app)
-  const checks = doubt.length > 0 ? factChecksFor(doubt, tapped) : undefined
+  const given = factChecksFor(doubt, answers)
+  const checks = Object.keys(given).length > 0 ? given : undefined
   const decide = (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) =>
     doQcDecision(decision, overrideReason, checks)
   return (<>
@@ -105,8 +109,8 @@ export function QcPanel({
               {canQc && <> {t('admin.scholarship.qcDecision.gapFloorSuper')}</>}
             </p>
           )}
-          <FactsInDoubt items={doubt} t={t} tapped={tapped} busy={!!busy}
-            setTapped={(facts) => setTaps({ round, facts })} />
+          <FactsInDoubt items={doubt} t={t} bands={app.ai_fact_bands} answers={answers} busy={!!busy}
+            setAnswers={(facts) => setTaps({ round, facts })} />
           {!qcReopenOpen && !qcOverrideOpen ? (
             <div className="grid grid-cols-2 gap-2">
               <button

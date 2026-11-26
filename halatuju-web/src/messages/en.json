@@ -5307,12 +5307,10 @@
         "reverifyButton": "Re-verify IC",
         "secondLook": {
           "title": "Facts in doubt",
-          "help": "The reviewer and the AI did not agree on these facts. You agree with the reviewer unless you tap Disagree.",
+          "help": "The reviewer failed these facts. Either the AI was certain, or the reviewer still recommended the student. You may give your own verdict on each fact. It is optional.",
           "aiSaid": "AI said",
           "reviewerSaid": "Reviewer said",
-          "disagree": "Disagree with the reviewer",
-          "undo": "You disagree. Tap to undo.",
-          "agree": "You agree with the reviewer.",
+          "yourVerdict": "Your verdict",
           "butDecision": "but the decision is {decision}"
         }
       },

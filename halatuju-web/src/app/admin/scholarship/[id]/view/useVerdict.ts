@@ -233,7 +233,7 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
   // reviewer at 'interviewing' with the gaps comments (emailed to the assigned reviewer).
   // V5 gap floor: while a verdict fact is red the server refuses accept (verdict_gap_floor);
   // a super passes it with overrideReason, which the server records.
-  // LL2b: `factChecks` = the QC's taps on the "Facts in doubt" block; undefined when no block shows.
+  // LL2b: `factChecks` = the QC's Pass / Fail answers in the "Facts in doubt" block; undefined when none is given.
   const doQcDecision = async (
     decision: 'accept' | 'reopen' | 'reject', overrideReason?: string,
     factChecks?: QcDecisionPayload['fact_checks'],
