@@ -72,18 +72,21 @@ const READ_DOC = (institution: string) => ({
   doc_type: 'higher_results', superseded_at: null, higher_check: { institution },
 })
 
-it('a Matriculation card shows the college read off the results, with the muted note and no tick (TD-734)', () => {
-  renderWith({ ...MATRIC, documents: [READ_DOC('KOLEJ MATRIKULASI PAHANG')] } as never)
-  expect(value('admin.scholarship.preUCollegeRead')).toBe('KOLEJ MATRIKULASI PAHANG')
-  expect(screen.getByText('admin.scholarship.readFromResults')).toBeTruthy()
-  expect(screen.queryByText('admin.scholarship.preUInstitution')).toBeNull()
+// Pre-U sprint (owner, 2026-11-26): the slip's college read is NOT a field any more — it will be a
+// tick on her stated pre-U institution in a later step. The slot shows where she says she studied.
+it('a Matriculation card shows her stated pre-U institution; the slip read is no longer its own row', () => {
+  renderWith({ ...MATRIC, pre_u_studied_at: 'Kolej Matrikulasi Pahang',
+    documents: [READ_DOC('KOLEJ MATRIKULASI JOHOR')] } as never)
+  expect(value('admin.scholarship.preUStudiedAt')).toBe('KOLEJ MATRIKULASI PAHANG')
+  expect(screen.queryByText('admin.scholarship.preUCollegeRead')).toBeNull()
+  expect(screen.queryByText('admin.scholarship.readFromResults')).toBeNull()
+  expect(screen.queryByText('KOLEJ MATRIKULASI JOHOR')).toBeNull()
   expect(screen.queryAllByRole('img')).toHaveLength(0)
 })
 
-it('with no college read, the slot says N/A and shows no note (the typed college is not shown there)', () => {
+it('with no stated pre-U institution, the slot says N/A (the typed college is the NEXT one, not shown there)', () => {
   renderWith({ ...MATRIC, pre_u_institution: 'KM Selangor' } as never)
-  expect(value('admin.scholarship.preUCollegeRead')).toBe('admin.scholarship.na')
-  expect(screen.queryByText('admin.scholarship.readFromResults')).toBeNull()
+  expect(value('admin.scholarship.preUStudiedAt')).toBe('admin.scholarship.na')
 })
 
 it('the typed college (the NEXT one) moves to the Institution row, Stated by student', () => {
@@ -127,7 +130,7 @@ it('a Diploma: the bare merit, no bracket, no year, no "Diploma from" or co-curr
     higher_koko: null, higher_institution_type: 'public', merit_score: 70 })
   expect(value('admin.scholarship.meritScore')).toBe('70')
   expect(value('admin.scholarship.cgpa')).toBe('2.80')
-  expect(screen.getByText('admin.scholarship.preUCollegeRead')).toBeTruthy()
+  expect(screen.getByText('admin.scholarship.preUStudiedAt')).toBeTruthy()
   expect(screen.queryByText('admin.scholarship.diplomaFrom')).toBeNull()
   expect(screen.queryByText('admin.scholarship.higherKoko')).toBeNull()
 })

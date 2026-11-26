@@ -573,6 +573,12 @@
     "getStartedFree": "Get Started — It's Free"
   },
   "onboarding": {
+    "switchSpmTitle": "Switch to SPM results?",
+    "switchSpmHeld": "You entered <b>{route}</b> results before: <b>{summary}</b>",
+    "switchSpmRemove": "If you continue with SPM, these {route} results will be removed when you save your SPM grades.",
+    "switchSpmNothing": "If you stop before you save, nothing changes.",
+    "switchSpmConfirm": "Yes, continue with SPM",
+    "switchSpmLocked": "Your application uses these {route} results, so they cannot be removed here. Please contact us if they need to change.",
     "streamTitle": "What stream did you take?",
     "streamSubtitle": "This helps us show you the right subjects for grade entry.",
     "scienceStream": "Science",
@@ -633,7 +639,7 @@
     "profileSubtitleNew": "A few more details to personalise your recommendations.",
     "state": "State",
     "selectState": "Select your state",
-    "school": "School",
+    "school": "Secondary School",
     "optional": "optional",
     "specialNeeds": "Special Needs",
     "coqScore": "Co-curricular Score",
@@ -939,6 +945,24 @@
     "quizNext": "Next"
   },
   "scholarship": {
+    "preU": {
+      "label": "Pre-U institution",
+      "tipApply": {
+        "stpm": "Where you completed your STPM.",
+        "matric": "Where you completed your Matriculation.",
+        "asasi": "Where you completed your Asasi (Foundation).",
+        "diploma": "Where you completed your Diploma."
+      },
+      "tipProfile": "Where you completed your STPM, Matriculation, Asasi or Diploma.",
+      "chip": {
+        "form6": "Form 6 schools",
+        "matric": "Matriculation",
+        "university": "Public universities",
+        "poly": "Polytechnics"
+      },
+      "placeholder": "Search or type the name",
+      "useAsTyped": "Not in the list? Use \"{typed}\" as typed"
+    },
     "nav": "{programmeName}",
     "finishSignIn": "Finish signing in",
     "apply": {
@@ -1081,6 +1105,7 @@
         "tooLong": "Your answer to “{field}” is too long. Please shorten it and try again.",
         "name": "Please enter your full name.",
         "school": "Please enter your school.",
+        "preUStudiedAt": "Please enter where you completed your pre-U studies.",
         "nric": "Please enter a valid IC number (format XXXXXX-XX-XXXX).",
         "nricTaken": "This IC number is already linked to another account. Please check it.",
         "org": "Please tell us who referred you.",
@@ -1101,7 +1126,7 @@
       },
       "field": {
         "name": "Full name (as in your IC)",
-        "school": "School",
+        "school": "Secondary School",
         "ic": "IC number",
         "email": "Contact email",
         "org": "Who referred you?",
@@ -1159,7 +1184,7 @@
       },
       "tip": {
         "name": "Your full name as in your IC.",
-        "school": "The school where you sat for SPM or STPM.",
+        "school": "The secondary school where you sat for SPM.",
         "ic": "Used to confirm your identity. You can edit it until it's verified.",
         "org": "The organisation or coordinator who told you about this programme.",
         "state": "The state where you normally live. We save this to your profile when you submit, so you only need to update it in one place.",
@@ -3067,7 +3092,7 @@
       "neither": "We may have misread your card, or it may need to be re-uploaded. Please contact us and we'll sort it out.",
       "nameFromCard": "If your card is right, use the name on your IC below."
     },
-    "school": "School",
+    "school": "Secondary School",
     "email": "Email Address",
     "emailVerifyNote": "A verification link will be sent to your new email",
     "phoneVerifyNote": "We'll send a one-time code to your number to confirm it's yours.",
@@ -3083,8 +3108,8 @@
     "whatsappOn": "On",
     "whatsappOff": "Off",
     "angkaGiliran": "Angka Giliran",
-    "angkaGiliranHelper": "Your university application reference number (e.g. AB123C456)",
-    "angkaGiliranInvalid": "Wrong format — must be AB123C456 (2 letters, 3 digits, 1 letter, 3 digits)",
+    "angkaGiliranHelper": "Your SPM or STPM index number (e.g. AB123C456 for SPM, AB1234/5678 for STPM)",
+    "angkaGiliranInvalid": "Wrong format — use AB123C456 (SPM) or AB1234/5678 (STPM)",
     "optional": "optional",
     "applicationTracking": "Application Tracking",
     "notSet": "Not set — tap to add",
@@ -4833,6 +4858,7 @@
       "cgpa": "CGPA",
       "preUCollegeRead": "Pre-U college",
       "readFromResults": "Read from the uploaded results",
+      "preUStudiedAt": "Pre-U institution",
       "na": "N/A",
       "statedByStudent": "Stated by student",
       "examName": { "spm": "SPM", "stpm": "STPM" },

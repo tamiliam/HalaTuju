@@ -51,6 +51,10 @@ export interface StudentProfile {
   name_card_takeable?: boolean
   name?: string
   school?: string
+  /** Pre-U sprint: where she COMPLETED her pre-U (not `pre_u_institution`, the destination). */
+  pre_u_studied_at?: string
+  /** Pre-U sprint: an application is in play, so the server refuses a switch to SPM. */
+  held_results_locked?: boolean
   nric?: string
   address?: string
   postal_code?: string
@@ -222,6 +226,9 @@ export interface SyncProfileData {
   preferred_state?: string
   name?: string
   school?: string
+  pre_u_studied_at?: string
+  /** Pre-U sprint: sent ONLY by the SPM grades save after she confirmed the switch dialog. */
+  clear_held_results?: boolean
   nric?: string
   referral_source?: string
   exam_type?: string

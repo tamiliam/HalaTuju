@@ -12,6 +12,7 @@ import { KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
 
 const push = jest.fn()
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
+jest.mock('@/lib/auth-context', () => ({ useAuth: () => ({ profile: null }) }))   // pre-U sprint: the switch dialog reads it
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 jest.mock('@/components/BrandLogo', () => ({ __esModule: true, default: () => null }))
 jest.mock('@/components/ProgressStepper', () => ({ __esModule: true, default: () => null }))

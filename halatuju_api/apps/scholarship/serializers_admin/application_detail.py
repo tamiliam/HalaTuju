@@ -19,6 +19,7 @@ from .handover import ServesTheHandover
 class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks, ServesTheDetailPeople, _gift.ServesTheGift, _dmail.ServesTheDecisionMail, _family.ServesTheFamilyAnswers, _stpm.ServesTheStpmMarks, _notes.ServesTheStudentsResultsNotes, serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     school = serializers.SerializerMethodField()
+    pre_u_studied_at = serializers.SerializerMethodField()   # pre-U sprint: served, not yet shown
     # NRIC shown in full so the admin can compare it to the uploaded MyKad at verify time.
     nric = serializers.CharField(source='profile.nric', read_only=True)
     nric_verified = serializers.BooleanField(source='profile.nric_verified', read_only=True)
@@ -184,7 +185,7 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
     class Meta:
         model = ScholarshipApplication
         fields = [
-            'id', 'name', 'school', 'nric', 'nric_verified', 'profile_id', 'qualification',
+            'id', 'name', 'school', 'pre_u_studied_at', 'nric', 'nric_verified', 'profile_id', 'qualification',
             'spm_a_count', 'merit_score', 'stpm_pngk', 'overall_cgpa', 'household_income',
             'household_size',
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',

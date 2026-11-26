@@ -15,7 +15,7 @@ import {
   formatAddress,
   expandMatricInstitution,
 } from '@/lib/scholarship'
-import { higherCollegeRead, higherExamYear, spmExamYear } from '@/lib/officerCockpit'
+import { higherExamYear, spmExamYear } from '@/lib/officerCockpit'
 import { formatDate } from '@/lib/formatDate'
 import { isApplyStage } from '@/lib/applicationStatus'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
@@ -258,10 +258,10 @@ export function ApplicantCards({
                     rows top to bottom, two columns from `sm`. ONE thin divider only, above the plans
                     (owner 2026-11-25: no line per row, the old tight spacing).
                     SPM: [school | merit] · SPM grades · [programme | reporting date] · institution.
-                    STPM: [school | merit] · [CGPA | MUET] · STPM grades · SPM prerequisites · plans.
-                    Matric / Asasi / Diploma: [school | -] · [pre-U institution | merit] · [CGPA | MUET]
-                    · SPM prerequisites · plans. A required slot with no value says N/A in a muted
-                    colour, so an empty slot is never mistaken for a hidden one. */}
+                    STPM / Matric / Asasi / Diploma (owner, pre-U sprint 2026-11-26, board 6):
+                    [secondary school, full row] · [pre-U institution | merit] · [CGPA | MUET]
+                    · STPM grades (STPM only) · SPM prerequisites · plans. A required slot with no value
+                    says N/A in a muted colour, so an empty slot is never mistaken for a hidden one. */}
                 {(() => {
                   // `acad-row` marks a slot row for the tests; it carries no style.
                   const row = 'acad-row grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2'
@@ -317,18 +317,18 @@ export function ApplicantCards({
                     pre_u_institution: destRoute ? app.pre_u_institution : undefined }
                   const ownInst = ((app.chosen_programme?.institution as string)
                     || (destRoute ? app.pre_u_institution : '') || '').trim()
-                  // TD-734: the college the higher-results document prints, shown as read, no tick.
-                  const collegeRead = third ? higherCollegeRead(app.documents) : ''
+                  // Pre-U institution = where she COMPLETED her pre-U (`pre_u_studied_at`). An older STPM
+                  // case has none: its typed pre_u_institution IS the Form 6 school attended (TD-734), so
+                  // it shows here as is, no note (owner, 2026-11-26). The slip's own college read is not a
+                  // field: it will be a tick on this row in a later step (`higherCollegeRead`).
+                  const preUShown = ((app.pre_u_studied_at || '').trim()
+                    || (isStpm ? (app.pre_u_institution || '').trim() : '')).toUpperCase()
+                  const preUField = <Field label={t('admin.scholarship.preUStudiedAt')} value={preUShown || null} na={na} />
                   return (
                     <dl className="flex flex-col gap-2.5">
-                      {third ? (<>
-                        <div className={row}>{schoolField}<div /></div>
-                        {/* The college the uploaded results print (TD-734). Read, not asked: no tick. */}
-                        <div className={row}>
-                          <Field label={t('admin.scholarship.preUCollegeRead')} value={collegeRead || null} na={na}
-                            noteTone="muted" note={collegeRead ? t('admin.scholarship.readFromResults') : undefined} />
-                          {meritField}
-                        </div>
+                      {isStpm || third ? (<>
+                        <div className={rowFull}>{schoolField}</div>
+                        <div className={row}>{preUField}{meritField}</div>
                       </>) : (
                         <div className={row}>{schoolField}{meritField}</div>
                       )}

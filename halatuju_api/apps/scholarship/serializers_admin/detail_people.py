@@ -31,6 +31,11 @@ class ServesTheDetailPeople:
     def get_school(self, obj):
         return getattr(obj.profile, 'school', '') if obj.profile else ''
 
+    def get_pre_u_studied_at(self, obj):
+        """Pre-U sprint: where pre-U was COMPLETED, as the student states it (display only: no match
+        against a slip yet, and never the destination `pre_u_institution`)."""
+        return getattr(obj.profile, 'pre_u_studied_at', '') if obj.profile else ''
+
     def get_birth_state(self, obj):
         from ..birth_state import for_cockpit
         return for_cockpit(getattr(obj.profile, 'nric', '') if obj.profile else '',

@@ -69,6 +69,7 @@ function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
     // About Me — all required
     name: 'Priya',
     school: 'SMK Taman Desa',
+    preUStudiedAt: 'SMK Seri Puteri',   // pre-U sprint: required for a tertiary student only
     nric: '080101-14-1234',
     referringOrg: 'cumig',
     homeState: 'Selangor',
@@ -398,6 +399,11 @@ describe('applyFormError — Plans pathway question', () => {
   it('a decided SPM leaver must pick a pathway', () => {
     expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }))).toBe('chosenPathway')
     expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: 'poly' }))).toBeNull()
+  })
+  it('pre-U sprint: a tertiary student must name where she completed her pre-U; SPM need not', () => {
+    for (const ex of ['stpm', 'matric', 'asasi', 'diploma'] as const)
+      expect(applyFormError(baseForm({ preUStudiedAt: '  ', pathwayCertainty: 'sure', chosenPathway: '' }), ex)).toBe('preUStudiedAt')
+    expect(applyFormError(baseForm({ preUStudiedAt: '' }), 'spm')).toBeNull()
   })
   it('exempts STPM students from the pathway requirement (their degree branch is separate)', () => {
     expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }), 'stpm')).toBeNull()

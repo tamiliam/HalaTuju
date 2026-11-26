@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from ..bumiputera import foreign_never_bumi, nationality_payload
+from .. import results_switch
 from ..exam_questions import results_held, third_route_payload
 from ..models import StudentProfile
 from ..serializers import ProfileUpdateSerializer
@@ -220,6 +221,10 @@ class ProfileView(APIView):
             'chosen_pathway': profile.chosen_pathway,
             'pre_u_track': profile.pre_u_track,
             'pre_u_institution': profile.pre_u_institution,
+            # Pre-U sprint: where pre-U was COMPLETED (not a pathway field), and whether the switch
+            # to SPM is refused because an application rests on the held results (`results_switch`).
+            'pre_u_studied_at': profile.pre_u_studied_at,
+            'held_results_locked': results_switch.held_results_locked(profile),
             'chosen_programme': profile.chosen_programme,
             'pathways_considered': profile.pathways_considered,
             'uncertainty_reasons': profile.uncertainty_reasons,

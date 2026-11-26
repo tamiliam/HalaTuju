@@ -93,7 +93,7 @@ function isThirdRouteClosed(err: unknown): boolean {
  * sent again — her name, grades and family details are never lost to a switch. Logged, so the
  * mismatch is visible. Any other failure is thrown as before.
  */
-export async function syncProfileSafely(data: SyncProfileData, options: { token: string }) {
+async function syncThirdRouteSafely(data: SyncProfileData, options: { token: string }) {
   try {
     return await syncProfile(data, options)
   } catch (err) {
@@ -104,5 +104,28 @@ export async function syncProfileSafely(data: SyncProfileData, options: { token:
     if (isThirdRoute(rest.results_exam_type)) delete rest.results_exam_type
     console.warn('profile sync: third_route_closed — resent without the third-route results')
     return syncProfile(rest, options)
+  }
+}
+
+/** Pre-U sprint: the server refused the explicit clear (her application uses those results). */
+function isHeldClearRefused(err: unknown): boolean {
+  const e = err as { status?: number; fieldErrors?: unknown } | null
+  return !!e && e.status === 400 && JSON.stringify(e.fieldErrors ?? '').includes('clear_held_results')
+}
+
+/**
+ * The profile sync both doors use. Pre-U sprint: when the server refuses `clear_held_results` as
+ * locked (an application arrived after the dialog was shown), the clear is DELETED FROM `data` —
+ * so the caller can see it was not taken (`settleHeldClear`) — and the rest is sent again, under
+ * the never-demote guard as before. Then the third-route retry above, as before.
+ */
+export async function syncProfileSafely(data: SyncProfileData, options: { token: string }) {
+  try {
+    return await syncThirdRouteSafely(data, options)
+  } catch (err) {
+    if (!data.clear_held_results || !isHeldClearRefused(err)) throw err
+    delete data.clear_held_results
+    console.warn('profile sync: clear_held_results refused (held_results_locked) — resent without it')
+    return syncThirdRouteSafely(data, options)
   }
 }

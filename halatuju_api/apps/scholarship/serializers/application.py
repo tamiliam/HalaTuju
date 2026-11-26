@@ -55,6 +55,8 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
     preferred_call_language = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=10)
     referral_source = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=50)
     guardians = serializers.JSONField(required=False, write_only=True, validators=[form_guardians_shape])
+    # Pre-U sprint: synced to the profile (like `school`); never the pathway's pre_u_institution.
+    pre_u_studied_at = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=255)
 
     class Meta:
         model = ScholarshipApplication
@@ -63,7 +65,7 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
             'household_income', 'household_size', 'receives_str', 'receives_jkm',
             # About Me + My Family profile fields (write-only; synced to profile)
             'name', 'school', 'preferred_state', 'contact_phone',
-            'preferred_call_language', 'referral_source', 'guardians',
+            'preferred_call_language', 'referral_source', 'guardians', 'pre_u_studied_at',
             'intended_pathway', 'intends_tertiary_2026',
             'consent_to_contact', 'form_data',
             # Plans + Support intake (Sprint 7) — all optional (blank/default on the model)

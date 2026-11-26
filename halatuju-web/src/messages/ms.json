@@ -573,6 +573,12 @@
     "getStartedFree": "Mulakan — Percuma"
   },
   "onboarding": {
+    "switchSpmTitle": "Tukar kepada keputusan SPM?",
+    "switchSpmHeld": "Anda telah memasukkan keputusan <b>{route}</b> sebelum ini: <b>{summary}</b>",
+    "switchSpmRemove": "Jika anda teruskan dengan SPM, keputusan {route} ini akan dipadam apabila anda menyimpan gred SPM anda.",
+    "switchSpmNothing": "Jika anda berhenti sebelum menyimpan, tiada apa yang berubah.",
+    "switchSpmConfirm": "Ya, teruskan dengan SPM",
+    "switchSpmLocked": "Permohonan anda menggunakan keputusan {route} ini, jadi ia tidak boleh dipadam di sini. Sila hubungi kami jika ia perlu diubah.",
     "streamTitle": "Aliran apa yang anda ambil?",
     "streamSubtitle": "Ini membantu kami menunjukkan subjek yang betul untuk kemasukan gred.",
     "scienceStream": "Sains",
@@ -633,7 +639,7 @@
     "profileSubtitleNew": "Beberapa butiran lagi untuk memperibadikan cadangan anda.",
     "state": "Negeri",
     "selectState": "Pilih negeri anda",
-    "school": "Sekolah",
+    "school": "Sekolah Menengah",
     "optional": "pilihan",
     "specialNeeds": "Keperluan Khas",
     "coqScore": "Markah Kokurikulum",
@@ -939,6 +945,24 @@
     "quizNext": "Seterusnya"
   },
   "scholarship": {
+    "preU": {
+      "label": "Institusi pra-U",
+      "tipApply": {
+        "stpm": "Tempat anda menamatkan STPM.",
+        "matric": "Tempat anda menamatkan Matrikulasi.",
+        "asasi": "Tempat anda menamatkan Asasi.",
+        "diploma": "Tempat anda menamatkan Diploma."
+      },
+      "tipProfile": "Tempat anda menamatkan STPM, Matrikulasi, Asasi atau Diploma.",
+      "chip": {
+        "form6": "Sekolah Tingkatan 6",
+        "matric": "Matrikulasi",
+        "university": "Universiti awam",
+        "poly": "Politeknik"
+      },
+      "placeholder": "Cari atau taip nama",
+      "useAsTyped": "Tiada dalam senarai? Guna \"{typed}\" seperti yang ditaip"
+    },
     "nav": "{programmeName}",
     "finishSignIn": "Selesaikan log masuk",
     "apply": {
@@ -1081,6 +1105,7 @@
         "tooLong": "Jawapan anda untuk “{field}” terlalu panjang. Sila pendekkan dan cuba lagi.",
         "name": "Sila masukkan nama penuh anda.",
         "school": "Sila masukkan sekolah anda.",
+        "preUStudiedAt": "Sila masukkan tempat anda menamatkan pengajian pra-U.",
         "nric": "Sila masukkan nombor IC yang sah (format XXXXXX-XX-XXXX).",
         "nricTaken": "Nombor IC ini sudah dikaitkan dengan akaun lain. Sila semak semula.",
         "org": "Sila beritahu kami siapa yang merujuk anda.",
@@ -1101,7 +1126,7 @@
       },
       "field": {
         "name": "Nama penuh (seperti dalam IC anda)",
-        "school": "Sekolah",
+        "school": "Sekolah Menengah",
         "ic": "Nombor IC",
         "email": "E-mel hubungan",
         "org": "Siapa yang merujuk anda?",
@@ -1159,7 +1184,7 @@
       },
       "tip": {
         "name": "Nama penuh anda seperti dalam IC.",
-        "school": "Sekolah tempat anda menduduki SPM atau STPM.",
+        "school": "Sekolah menengah tempat anda menduduki SPM.",
         "ic": "Digunakan untuk mengesahkan identiti anda. Anda boleh menyuntingnya sehingga ia disahkan.",
         "org": "Organisasi atau penyelaras yang memberitahu anda tentang program ini.",
         "state": "Negeri tempat anda biasa tinggal. Kami simpan ke profil anda apabila anda hantar, jadi anda hanya perlu kemas kini di satu tempat sahaja.",
@@ -3067,7 +3092,7 @@
       "neither": "Mungkin kami salah membaca kad anda, atau ia perlu dimuat naik semula. Sila hubungi kami dan kami akan uruskannya.",
       "nameFromCard": "Jika kad anda betul, gunakan nama pada IC anda di bawah."
     },
-    "school": "Sekolah",
+    "school": "Sekolah Menengah",
     "email": "Alamat Emel",
     "emailVerifyNote": "Pautan pengesahan akan dihantar ke emel baharu anda",
     "phoneVerifyNote": "Kami akan menghantar kod sekali guna ke nombor anda untuk mengesahkan ia milik anda.",
@@ -3083,8 +3108,8 @@
     "whatsappOn": "Hidup",
     "whatsappOff": "Mati",
     "angkaGiliran": "Angka Giliran",
-    "angkaGiliranHelper": "Nombor rujukan permohonan universiti anda (cth. AB123C456)",
-    "angkaGiliranInvalid": "Format salah — mestilah AB123C456 (2 huruf, 3 digit, 1 huruf, 3 digit)",
+    "angkaGiliranHelper": "Nombor indeks SPM atau STPM anda (cth. AB123C456 untuk SPM, AB1234/5678 untuk STPM)",
+    "angkaGiliranInvalid": "Format salah — gunakan AB123C456 (SPM) atau AB1234/5678 (STPM)",
     "optional": "pilihan",
     "applicationTracking": "Penjejakan Permohonan",
     "notSet": "Belum diisi — ketik untuk tambah",
@@ -4833,6 +4858,7 @@
       "cgpa": "PNGK",
       "preUCollegeRead": "Kolej pra-U",
       "readFromResults": "Dibaca daripada keputusan yang dimuat naik",
+      "preUStudiedAt": "Institusi pra-U",
       "na": "T/B",
       "statedByStudent": "Dinyatakan oleh pelajar",
       "examName": { "spm": "SPM", "stpm": "STPM" },

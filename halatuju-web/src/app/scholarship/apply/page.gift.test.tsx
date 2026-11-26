@@ -196,7 +196,7 @@ describe('submit still names the gift', () => {
   const complete: ApplyFormState = {
     // `other`, a fixed choice: since per-gift sources (2026-10-08) a source code these intakes do
     // not serve is cleared from the form (page.referral.test.tsx), and the form needs one.
-    name: 'Priya', school: 'SMK Taman Desa', nric: '080101-14-1234', referringOrg: 'other',
+    name: 'Priya', school: 'SMK Taman Desa', preUStudiedAt: '', nric: '080101-14-1234', referringOrg: 'other',
     homeState: 'Selangor', phone: '012-345 6789',
     householdIncome: '2500', householdSize: '5', receivesStr: true, receivesJkm: false,
     parentName: '', parentPhone: '', callLanguage: '',

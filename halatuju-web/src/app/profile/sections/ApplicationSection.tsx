@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { setOnboardingReturn } from '@/lib/scholarship'
 import { FieldValue, FieldLabel } from '@/components/profile/profileFields'
+import { showsPreUStudiedAt } from '@/lib/preUStudiedAt'
 import SectionCard, { PROFILE_ROWS, EditLoading } from './SectionCard'
 import type { SectionProps } from '../useProfileEditor'
 
@@ -11,7 +12,9 @@ import type { SectionProps } from '../useProfileEditor'
 export default function ApplicationSection({ f, ed, Edit }: SectionProps & { Edit?: ComponentType<SectionProps> }) {
   const { t } = useT()
   const router = useRouter()
-  const { pathwayForm, angkaGiliran, school, resultsPath, meritShown, meritLabel } = f
+  const { pathwayForm, angkaGiliran, school, resultsPath, meritShown, meritLabel, profileObj } = f
+  // The view shows what is SAVED (never the unsaved TD-734 prefill the edit box offers).
+  const preUStudiedAt = (profileObj?.pre_u_studied_at || '').trim()
   const { editingSection, startEditing } = ed
   return (
     <SectionCard
@@ -41,6 +44,12 @@ export default function ApplicationSection({ f, ed, Edit }: SectionProps & { Edi
               <FieldValue value="" t={t} />
             )}
           </div>
+          {showsPreUStudiedAt(profileObj?.results_held) && (
+            <div className="flex justify-between">
+              <FieldLabel label={t('scholarship.preU.label')} empty={!preUStudiedAt} />
+              {preUStudiedAt ? <span className="text-sm text-ground-900 text-right">{preUStudiedAt}</span> : <FieldValue value="" t={t} />}
+            </div>
+          )}
           {/* Merit — tap to the grades editor, then return here (not the
               course-guide recommendations). */}
           <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push(resultsPath) }}

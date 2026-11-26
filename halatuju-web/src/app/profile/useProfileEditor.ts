@@ -23,7 +23,7 @@ export function useProfileEditor(f: ProfileForm) {
   const { t } = useT()
   const { token, refreshProfile } = useAuth()
   const { showToast } = useToast()
-  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, state, setState, address, setAddress, postalCode, setPostalCode, city, setCity, email, setEmail, householdIncome, setHouseholdIncome, householdSize, setHouseholdSize, colorblind, setColorblind, disability, setDisability, nricDraft, setNricError, family, setFamily, pathwayForm, setPathwayForm, angkaGiliran, setAngkaGiliran, school, setSchool, contactEmail, setContactEmail, contactPhone, setContactPhone, whatsappOptIn, setWhatsappOptIn, loading, setSaving, savedBumiputera, icEditable, nameEditable, loadData, postcode } = f
+  const { name, setName, nric, gender, setGender, nationality, setNationality, bumiputera, setBumiputera, state, setState, address, setAddress, postalCode, setPostalCode, city, setCity, email, setEmail, householdIncome, setHouseholdIncome, householdSize, setHouseholdSize, colorblind, setColorblind, disability, setDisability, nricDraft, setNricError, family, setFamily, pathwayForm, setPathwayForm, angkaGiliran, setAngkaGiliran, school, setSchool, preUStudiedAt, setPreUStudiedAt, contactEmail, setContactEmail, contactPhone, setContactPhone, whatsappOptIn, setWhatsappOptIn, loading, setSaving, savedBumiputera, icEditable, nameEditable, loadData, postcode } = f
 
   // Optional "return to" target (e.g. ?next=/scholarship/apply) so an edit started
   // from the application flow can come straight back. Restricted to internal
@@ -119,6 +119,9 @@ export function useProfileEditor(f: ProfileForm) {
       disability,
       angka_giliran: angkaGiliran,
       school,
+      // Pre-U sprint: sent ONLY from the Application section, so another section's save never
+      // writes the shown STPM prefill (TD-734) the student has not confirmed.
+      ...(editingSection === 'application' ? { pre_u_studied_at: preUStudiedAt.trim() } : {}),
       // Structured family roster (the backend copies it onto an open application).
       father_name: family.fatherName.trim(),
       father_occupation: family.fatherOccupation,
@@ -177,7 +180,7 @@ export function useProfileEditor(f: ProfileForm) {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, bumiputera, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, whatsappOptIn, family, pathwayForm })
+    setSnapshot({ name, nric, gender, nationality, bumiputera, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, preUStudiedAt, contactEmail, contactPhone, whatsappOptIn, family, pathwayForm })
     setEditingSection(section)
   }
 
@@ -207,6 +210,7 @@ export function useProfileEditor(f: ProfileForm) {
     setDisability(snapshot.disability as boolean || false)
     setAngkaGiliran(snapshot.angkaGiliran as string || '')
     setSchool(snapshot.school as string || '')
+    setPreUStudiedAt(snapshot.preUStudiedAt as string || '')
     setContactEmail(snapshot.contactEmail as string || '')
     setContactPhone(snapshot.contactPhone as string || '')
     setWhatsappOptIn(snapshot.whatsappOptIn as boolean ?? true)

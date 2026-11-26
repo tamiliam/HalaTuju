@@ -30,6 +30,9 @@ _PROFILE_WRITEBACK_FIELDS = (
 _PROFILE_ABOUTME_FIELDS = (
     'name', 'school', 'preferred_state', 'contact_phone',
     'preferred_call_language',
+    # Pre-U sprint (2026-11-26): where STPM / Matric / Asasi / Diploma was completed. Profile-only,
+    # like `school` — never the pathway's `pre_u_institution` (the destination).
+    'pre_u_studied_at',
 )
 
 # Per-application fields that genuinely belong on the ScholarshipApplication row.
@@ -107,7 +110,7 @@ def sync_profile_fields(profile, data):
     for field in _PROFILE_WRITEBACK_FIELDS + _PROFILE_ABOUTME_FIELDS:
         if field in data and data[field] is not None:
             value = data[field]
-            if field == 'school' and not str(value).strip():
+            if field in ('school', 'pre_u_studied_at') and not str(value).strip():
                 continue    # a blank school never overwrites a stored one (nor sets a blank)
             if field == 'name':
                 if not identity.name_change_allowed(profile, value):
@@ -147,6 +150,7 @@ def build_intake_snapshot(profile, app_data):
         'profile': {
             'name': getattr(p, 'name', '') if p else '',
             'school': getattr(p, 'school', '') if p else '',
+            'pre_u_studied_at': getattr(p, 'pre_u_studied_at', '') if p else '',
             'preferred_state': getattr(p, 'preferred_state', '') if p else '',
             'contact_phone': getattr(p, 'contact_phone', '') if p else '',
             'preferred_call_language': getattr(p, 'preferred_call_language', '') if p else '',

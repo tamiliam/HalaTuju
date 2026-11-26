@@ -50,7 +50,7 @@ const ALLOWED = { allowed: true, reason: '', application_id: null }
 const profile = { ...sandboxProfileSpm, results_held: 'spm', nric: '080101-14-1234', nric_verified: true }
 
 const complete: ApplyFormState = {
-  name: 'Priya', school: 'SMK Taman Desa', nric: '080101-14-1234', referringOrg: 'other',
+  name: 'Priya', school: 'SMK Taman Desa', preUStudiedAt: '', nric: '080101-14-1234', referringOrg: 'other',
   homeState: 'Selangor', phone: '012-345 6789',
   householdIncome: '2500', householdSize: '5', receivesStr: true, receivesJkm: false,
   parentName: 'Rajan', parentPhone: '012-777 8888', callLanguage: '',

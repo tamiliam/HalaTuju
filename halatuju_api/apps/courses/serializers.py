@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 from rest_framework import serializers
 
+from . import angka_giliran as ag_index, results_switch
 from .exam_questions import QUALIFICATIONS, THIRD_ROUTE, is_tertiary, results_held
 from .models import Course, FieldTaxonomy, Institution, CourseRequirement, CourseTag, MascoOccupation, StudentProfile
 
@@ -326,6 +327,19 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     stpm_koko = serializers.FloatField(required=False, allow_null=True, min_value=0, max_value=10)
     # C4: sent (true) only by the onboarding STPM step's own save, never by a sign-in resend.
     stpm_koko_confirmed = serializers.BooleanField(required=False, write_only=True)
+    # Pre-U sprint: the switch to SPM's one explicit signal (`results_switch`); no model max_length
+    # on the index, so a spaced STPM index reaches `validate_angka_giliran` and is normalised there.
+    clear_held_results = serializers.BooleanField(required=False, write_only=True)
+    angka_giliran = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_angka_giliran(self, value):
+        """Either shape, normalised. The value already stored passes unchanged, so a resend never
+        400s a whole profile save over a number this rule did not check when it was saved."""
+        if value == getattr(self.instance, 'angka_giliran', None):
+            return value
+        if not ag_index.is_valid(value):
+            raise serializers.ValidationError('Use AB123C456 (SPM) or AB1234/5678 (STPM).')
+        return ag_index.normalise(value)
 
     def validate(self, attrs):
         """⚠ `results_exam_type` MUST BE BACKED BY RESULTS, and that is checked HERE — on the
@@ -341,6 +355,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         student's whole profile sync over it would trade a display fault for a data-loss one.
         """
         inst = self.instance
+        results_switch.apply_spm_switch(inst, attrs)      # before every rule below (module note)
         self._refuse_third_route_while_closed(attrs)
 
         # A blank school never wipes a stored one (the /profile page and the sign-in sync both send
@@ -575,6 +590,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             # Pathway / "Your Plans" (profile-level home; two-way synced with an open app).
             'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
             'chosen_programme', 'pathways_considered', 'uncertainty_reasons', 'uncertainty_note',
+            'pre_u_studied_at', 'clear_held_results',   # pre-U sprint: NOT pathway fields
         ]
         # NRIC only changes via the validated claim endpoint (/profile/claim-nric/),
         # never an unchecked PUT or sync — closes the soft-NRIC write gap.

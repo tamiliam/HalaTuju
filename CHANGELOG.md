@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: pre-U sprint - Secondary School, where she completed pre-U, the STPM Angka Giliran, and the switch to SPM (2026-11-26)
+
+Branch preu-school, not pushed. Migration: 0102_angka_giliran_11_pre_u_studied_at (additive). Services: both.
+- **Labels:** "School" is now "Secondary School" (ms "Sekolah Menengah", ta "இடைநிலைப் பள்ளி") on onboarding, apply
+  and the profile; the apply tip reads "The secondary school where you sat for SPM."; "(optional)" is gone from the
+  onboarding profile. The officer label was already "Secondary school" in all three locales (not renamed).
+- **New field `pre_u_studied_at`:** where she COMPLETED STPM, Matriculation, Asasi or Diploma. It is NOT
+  `pre_u_institution` (the destination; for STPM the Form 6 school she attended, ruling TD-734). No pathway or
+  verdict engine reads it. Synced from the profile and the application (about-me fields, intake snapshot); the
+  officer detail serves it.
+- **Picker:** `PreUStudiedAtField` (InstitutionPicker + four route chips: Form 6 schools, Matriculation, public
+  universities (20), polytechnics (empty list, TD-767)). Chips and list show only while the box has focus; the first
+  chip follows `results_held`; free text via 'Not in the list? Use "x" as typed'. Apply step 3: required, route tip.
+  Profile: not required, general tip. Shown only for results held STPM / Matric / Asasi / Diploma. For STPM an empty
+  box is prefilled (shown only, saved only with the form) from `pre_u_institution`. No back-fill. Apply loads the
+  field on demand (`LazyPreUStudiedAtField`) and its chips/lists live in `lib/preULists.ts`, apart from the two
+  first-load rules in `lib/preUStudiedAt.ts`: `/scholarship/apply` was 3 kB over its first-load budget otherwise
+  (the budget was not raised).
+- **Officer Academic box** (`ApplicantCards.tsx`), tertiary students: the secondary school alone on a row, then
+  Pre-U institution | Merit, then the rest as before. Old STPM cases with an empty new field show `pre_u_institution`.
+  The "Pre-U college read" row is removed (the slip tick is TD-765). SPM-only students: unchanged.
+- **Angka Giliran:** accepts AB123C456 (SPM) and AB1234/5678 (STPM); max length 11; one normaliser in the web
+  (`lib/angkaGiliran.ts`) and the API (`apps/courses/angka_giliran.py`, serializer validator). New helper text.
+- **Switch to SPM:** a student the server says holds STPM or third-route results is asked "Switch to SPM results?"
+  on /onboarding/exam-type. Yes only records the choice; the explicit `clear_held_results` is sent only by the
+  onboarding/profile sync after her SPM grades are saved (never the sign-in door). The never-demote guard still
+  protects every other write. A student with an application in play (`held_results_locked`) is told so and offered
+  Back only; the server refuses the clear and the sync resends without it. Debt: TD-766.
+- Tests: `test_preu_school.py`; `lib/preuSprint.test.ts`, `PreUStudiedAtField.test.tsx`,
+  `onboarding/exam-type/page.switch.test.tsx`, the ApplicantCards academicSlots and thirdRoute tests.
+- Guide and FAQ: unchanged (no reviewer feature changed beyond the Academic box layout).
+
 ### feat: OCR-13 phase 1 - the owner's words for UPSI, UUM, UiTM and UM, and UiTM's Asasi office line (2026-11-26)
 
 Branch ocr-13-unis, not pushed. Migration: none. Services: api. Lanes stay OFF: no layout reader dispatches to them yet.

@@ -1,8 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { useAuth } from '@/lib/auth-context'
+import SpmSwitchDialog from '@/components/onboarding/SpmSwitchDialog'
+import { confirmSpmSwitch, forgetSpmSwitch, needsSpmSwitchDialog } from '@/lib/resultsSwitch'
 import FlowHeader from '@/components/FlowHeader'
 import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { KEY_EXAM_TYPE } from '@/lib/storage'
@@ -14,20 +18,33 @@ const CHOICE = 'group relative overflow-hidden p-5 md:p-8 rounded-xl bg-ground-0
 export default function ExamTypePage() {
   const router = useRouter()
   const { t } = useT()
+  const { profile } = useAuth()
+  const [switchOpen, setSwitchOpen] = useState(false)
 
-  const handleSelectSPM = () => {
+  const goSPM = () => {
     localStorage.setItem(KEY_EXAM_TYPE, 'spm')
     router.push('/onboarding/grades')
   }
 
+  // Pre-U sprint: a student the SERVER says holds STPM / third-route results is asked first. A yes
+  // only records the choice; the results go when she saves her SPM grades (`lib/resultsSwitch`).
+  const handleSelectSPM = () => {
+    if (needsSpmSwitchDialog(profile)) { setSwitchOpen(true); return }
+    forgetSpmSwitch(localStorage)
+    goSPM()
+  }
+  const confirmSwitch = () => { confirmSpmSwitch(localStorage); setSwitchOpen(false); goSPM() }
+  const backFromSwitch = () => { forgetSpmSwitch(localStorage); setSwitchOpen(false) }
+
   const handleSelectSTPM = () => {
+    forgetSpmSwitch(localStorage)
     localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
     router.push('/onboarding/stpm-grades')
   }
 
   // Third results route (S2b): which of Matriculation / Asasi / Diploma is chosen ON the results
   // page, so the tap only opens it — the page writes the exam type when its form is completed.
-  const handleSelectHigher = () => router.push('/onboarding/higher-grades')
+  const handleSelectHigher = () => { forgetSpmSwitch(localStorage); router.push('/onboarding/higher-grades') }
 
   return (
     <main className="min-h-screen bg-ground-50">
@@ -128,6 +145,7 @@ export default function ExamTypePage() {
           </Link>
         </div>
       </div>
+      {switchOpen && profile && <SpmSwitchDialog profile={profile} onBack={backFromSwitch} onConfirm={confirmSwitch} />}
     </main>
   )
 }

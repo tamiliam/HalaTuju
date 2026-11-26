@@ -15,6 +15,7 @@ import {
   MAX_SPM_ELECTIVES,
 } from '@/lib/subjects'
 import { gradedOnly } from '@/lib/gradeEntry'
+import { markSpmSaved } from '@/lib/resultsSwitch'
 import { KEY_STREAM, KEY_ALIRAN, KEY_ELEKTIF, KEY_GRADES, KEY_PROFILE, KEY_MERIT, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
 
 const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
@@ -264,6 +265,7 @@ export default function GradesInputPage() {
       // completely, and stay broken with nothing on screen to explain it.
       localStorage.setItem(KEY_EXAM_TYPE, 'spm')
       localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+      markSpmSaved(localStorage)   // pre-U sprint: a confirmed STPM-to-SPM switch is now ready to send
       router.push('/onboarding/profile')
     }
   }

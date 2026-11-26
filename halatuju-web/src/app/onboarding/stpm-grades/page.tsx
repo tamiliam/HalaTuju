@@ -13,6 +13,7 @@ import { calculateCgpa, type StpmCgpaResult } from '@/lib/api'
 import SpmResultsBlock, { useSpmResultsBlock } from '@/components/SpmResultsBlock'
 import { keepOneHigherLocally } from '@/lib/resultsLocal'
 import { KEY_STPM_STREAM, KEY_STPM_GRADES, KEY_MUET_BAND, KEY_KOKO_SCORE, KEY_STPM_KOKO_CONFIRMED, KEY_STPM_CGPA, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
+import { forgetSpmSwitch } from '@/lib/resultsSwitch'
 
 type Stream = 'science' | 'arts'
 
@@ -152,6 +153,7 @@ export default function StpmGradesPage() {
     localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
     // Completed, so it is a RESULT and not merely a selection — see results_exam_type.
     localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
+    forgetSpmSwitch(localStorage)   // pre-U sprint: completing STPM cancels a pending switch to SPM
     // One higher qualification at a time (S3a, D11/D13): the server clears the third route's too.
     keepOneHigherLocally('stpm', localStorage)
     router.push('/onboarding/profile')

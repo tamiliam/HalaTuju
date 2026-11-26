@@ -78,7 +78,7 @@ const mount = (saved: string | null = '', chip = '') => {
 
 /** A complete form, as the results detour stashes it. */
 const STASHED: ApplyFormState = {
-  name: 'Priya', school: 'SMK Taman Desa', nric: '080101-14-1234', referringOrg: 'smc',
+  name: 'Priya', school: 'SMK Taman Desa', preUStudiedAt: '', nric: '080101-14-1234', referringOrg: 'smc',
   homeState: 'Selangor', phone: '012-345 6789',
   householdIncome: '2500', householdSize: '5', receivesStr: true, receivesJkm: false,
   parentName: '', parentPhone: '', callLanguage: '',

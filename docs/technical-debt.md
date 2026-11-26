@@ -9821,6 +9821,28 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Phase 5 (26 Nov):** the UPSI reader is built (lane off). All four lanes now have a reader; what stays open is Gate 1 (each lane's held-out letters, see the -heldout items) and the image letters that were never measured.
 
+### [TD-765] Pre-U sprint: the officer Academic box has no slip-read tick for the pre-U institution - low
+
+**Raised in the pre-U sprint (see CHANGELOG).** The "Pre-U college read" row was removed from the Academic box; the
+plan is a tick beside "Pre-U institution" when the results slip's college read matches it. `higher_results.py` and
+`higherCollegeRead` are left as they were. **Fix:** a later sprint compares the slip's read with `pre_u_studied_at`
+and shows the tick, as the secondary school's tick does. *(A - S)*
+
+### [TD-766] Pre-U sprint: the switch to SPM leaves some STPM residue, and a locked student has no contact path - medium
+
+**Raised in the pre-U sprint (see CHANGELOG).** The explicit clear removes the held STPM / third-route results, but
+not: the STPM documents on file, `stpm_koko_unconfirmed`, `muet_band`, `spm_prereq_grades`, `spm_elective_subjects`,
+`spm_stream`, or `pre_u_institution`. A student whose application uses those results sees "contact us" and Back only,
+with no link. If an application appears after the dialog, the server refuses the clear and the sync resends
+without it (the student is not told on that screen). GET /profile makes one extra query (`held_results_locked`).
+**Fix:** decide with the owner which residue to clear, and add a contact link to the locked message. *(A - M)*
+
+### [TD-767] Pre-U sprint: the polytechnic list is empty - low
+
+**Raised in the pre-U sprint (see CHANGELOG).** `halatuju-web/src/data/polytechnics.ts` has no entries; no list of
+polytechnics was found in the repo, so the Polytechnics chip offers free text only. **Fix:** add the official
+polytechnic list (source to be chosen by the owner). *(A - S)*
+
 ### [TD-764] OCR-13: 4 UPSI letters are held out and 2 lock, so the UPSI lane cannot pass Gate 1 - medium
 
 **Raised in OCR-13 phase 5 (see CHANGELOG).** The corpus holds 7 UPSI answers (4 held out); 2 lock (both held out), 0 wrong. The other 5 have no text layer or no PDF, so they go to the AI. The owner's upsi/ sample locks 12 of 30 (18 have no text layer or are another template). One sample prints its offer date in a shape the reader does not read, so that lock leaves the optional offer date blank. **Fix:** add hand-checked UPSI degree letters to the held-out split, then re-run the dry run. *(A - M)*

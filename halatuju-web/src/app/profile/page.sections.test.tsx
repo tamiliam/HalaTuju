@@ -487,11 +487,15 @@ describe('application section', () => {
     expect(updateMock.mock.calls[0][0]).toMatchObject({ school: 'SMK Contoh' })
   })
 
-  it('uppercases and trims Angka Giliran to nine characters', async () => {
+  it('uppercases, drops spaces and cuts Angka Giliran to eleven characters (the STPM shape fits)', async () => {
     await mount()
     editSection(4)
-    fireEvent.change(screen.getByPlaceholderText('AB123C456'), { target: { value: 'ab123c4567890' } })
-    expect((screen.getByPlaceholderText('AB123C456') as HTMLInputElement).value).toBe('AB123C456')
+    const box = () => screen.getByPlaceholderText('AB123C456') as HTMLInputElement
+    fireEvent.change(box(), { target: { value: 'ab 1234/5678xyz' } })
+    expect(box().value).toBe('AB1234/5678')
+    fireEvent.change(box(), { target: { value: 'ab123c4567890' } })
+    expect(box().value).toBe('AB123C45678')   // 11 characters, neither shape → flagged
+    expect(screen.getByText('profile.angkaGiliranInvalid')).toBeTruthy()
   })
 
   it('the plans row opens the picker, and a third-route holder reads the CGPA label', async () => {

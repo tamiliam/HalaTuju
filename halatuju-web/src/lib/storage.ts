@@ -122,6 +122,9 @@ export const KEY_SPONSOR_PENDING = 'halatuju_sponsor_pending'
  *  arrival and read at register time so attribution survives the sign-in round-trip. */
 export const KEY_SPONSOR_REF = 'halatuju_sponsor_ref'
 
+/** Pre-U sprint: '' / 'confirmed' / 'ready' — the STPM-to-SPM switch she confirmed (`lib/resultsSwitch`). */
+export const KEY_CLEAR_HELD_PENDING = 'halatuju_clear_held_pending'
+
 // ── Display constants ────────────────────────────────────────────────
 
 /** Student maintenance S3: '1' when the signed-in student has a "My Bursary" file. A DISPLAY HINT

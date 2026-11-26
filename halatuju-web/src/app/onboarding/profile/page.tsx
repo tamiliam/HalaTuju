@@ -17,6 +17,7 @@ import { hasApplyReturn, clearApplyReturn, popOnboardingReturn, peekOnboardingRe
 import { peekApplyDraft } from '@/lib/applyDraftPeek'   // the apply form's draft, during the edit-results detour
 import { applyPagePath } from '@/lib/applyPagePath'
 import { isMalaysian } from '@/lib/bumiputera'
+import { applyHeldClear, settleHeldClear } from '@/lib/resultsSwitch'
 import Toggle from '@/components/Toggle'
 
 const MALAYSIAN_STATES = [
@@ -205,9 +206,14 @@ export default function ProfileInputPage() {
         } catch { /* ignore */ }
       }
 
+      // Pre-U sprint: the ONE door that may send the explicit clear — she confirmed the switch to SPM
+      // and saved her SPM grades (`lib/resultsSwitch`). It also drops this browser's STPM fields.
+      const sentClear = applyHeldClear(syncPayload, localStorage)
+
       try {
         await syncProfileSafely(syncPayload, { token })
         localStorage.removeItem(KEY_STPM_KOKO_CONFIRMED)
+        settleHeldClear(localStorage, sentClear && !!syncPayload.clear_held_results)
         await refreshProfile()
       } catch {
         // Continue even if sync fails — localStorage has the data
@@ -314,7 +320,7 @@ export default function ProfileInputPage() {
           {!(returning && !returnPath && schoolKnown) && (
           <div className="mb-6" data-testid="onboarding-school">
             <label className="block text-sm font-medium text-ground-700 mb-2">
-              {t('onboarding.school')} <span className="text-ground-400 font-normal">({t('onboarding.optional')})</span>
+              {t('onboarding.school')}
             </label>
             <SchoolSelect value={school} onChange={setSchool} />
           </div>

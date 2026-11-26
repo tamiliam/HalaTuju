@@ -255,6 +255,7 @@ NEW_PROFILE = {
     'mother_name': '', 'mother_occupation': '', 'mother_occupation_other': '',
     'other_family_members': [], 'siblings_in_school': None, 'siblings_in_tertiary': None,
     'pathway_certainty': '', 'chosen_pathway': '', 'pre_u_track': '', 'pre_u_institution': '',
+    'pre_u_studied_at': '', 'held_results_locked': False,   # pre-U sprint
     'chosen_programme': {}, 'pathways_considered': [], 'uncertainty_reasons': [], 'uncertainty_note': '',
     'merit_score': None, 'pathway': '', 'application_open': False, 'exam_type': 'spm',
     'results_exam_type': '', 'results_held': 'spm', 'stpm_grades': {}, 'stpm_cgpa': None,
@@ -294,7 +295,8 @@ class ProfileGetPins(TestCase):
                     nric='070101-14-1234', identity_verified=True, ic_card_nric='070101-14-1234',
                     ic_card_name='ARUN A/L RAJU', contact_email='other@example.test',
                     contact_email_verified=False, merit_score=40.6, application_open=True,
-                    coq_score=7.5, stream_subjects=['phy', 'chem'])
+                    coq_score=7.5, stream_subjects=['phy', 'chem'],
+                    held_results_locked=True)   # pre-U sprint: an open application holds her results
         self.assertEqual(dict(d), want)
 
     def test_a_card_that_disagrees_is_flagged_and_not_verified(self):

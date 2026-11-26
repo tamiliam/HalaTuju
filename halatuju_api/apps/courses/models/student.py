@@ -79,8 +79,10 @@ class StudentProfile(models.Model):
         help_text="True once an admin verifies the NRIC against the uploaded MyKad "
                   "(then it locks). Until then the NRIC stays editable and is NOT "
                   "uniqueness-enforced. See docs/decisions.md (supersedes 'IC immutable').")
-    angka_giliran = models.CharField(max_length=9, blank=True, default='',
-                                     help_text="University application ref: AB123C456")
+    # Pre-U sprint (2026-11-26): 11, not 9 — an STPM index (AB1234/5678) is longer than an SPM one
+    # (AB123C456). Both shapes, one normaliser: `apps.courses.angka_giliran`.
+    angka_giliran = models.CharField(max_length=11, blank=True, default='',
+                                     help_text="SPM or STPM index number: AB123C456 or AB1234/5678")
 
     # Family background
     # TD-061: legacy `family_income` (coarse free-text range) + `siblings` count
@@ -130,6 +132,11 @@ class StudentProfile(models.Model):
     chosen_pathway = models.CharField(max_length=20, blank=True, default='')
     pre_u_track = models.CharField(max_length=30, blank=True, default='')
     pre_u_institution = models.CharField(max_length=255, blank=True, default='')
+    # Pre-U sprint (owner decision A, 2026-11-26): where the student COMPLETED STPM / Matriculation /
+    # Asasi / Diploma — the past, never the destination above. Profile-only (like `school`): the
+    # apply form writes it back through `profile_sync`; NOT a pathway field, so neither the two-way
+    # pathway copy nor the pathway / verdict engines read it.
+    pre_u_studied_at = models.CharField(max_length=255, blank=True, default='')
     chosen_programme = models.JSONField(default=dict, blank=True)
     pathways_considered = models.JSONField(default=list, blank=True)
     uncertainty_reasons = models.JSONField(default=list, blank=True)

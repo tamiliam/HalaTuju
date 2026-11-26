@@ -10,9 +10,11 @@ import { useT } from '@/lib/i18n'
 import SchoolSelect from '@/components/scholarship/LazySchoolSelect'
 import InfoTip from '@/components/InfoTip'
 import FieldLabel from '@/components/FieldLabel'
+import PreUStudiedAtField from '@/components/scholarship/LazyPreUStudiedAtField'   // pre-U sprint (fetched when drawn)
 import Toggle from '@/components/Toggle'
 import { submitScholarshipApplication, claimNric } from '@/lib/api'
 import { isThirdRoute, type Qualification } from '@/lib/qualification'
+import { showsPreUStudiedAt } from '@/lib/preUStudiedAt'
 import {
   profileToApplyDefaults,
   profileAcademicSummary,
@@ -57,6 +59,7 @@ const ERROR_TAB: Record<string, TabKey> = {
   name: 'personal', school: 'personal', nric: 'personal', nricTaken: 'personal',
   org: 'personal', state: 'personal', phone: 'personal',
   householdSize: 'family', householdSizeMax: 'family', income: 'family', parentPhone: 'family',
+  preUStudiedAt: 'results',
   pathwayCertainty: 'plans', chosenPathway: 'plans', chosenProgramme: 'plans',
   preUTrack: 'plans', preUInstitution: 'plans', topChoices: 'plans', uncertaintyReasons: 'plans',
   consent: 'support', declaration: 'support',
@@ -554,6 +557,9 @@ export default function ScholarshipApplyPage() {
             <button type="button" onClick={goEditResults} className="btn-primary inline-block">{t('scholarship.apply.noResultsCta')}</button>
           </div>
         )}
+        {showsPreUStudiedAt(academic.examType) && (<div className="mt-5">
+          <PreUStudiedAtField variant="apply" resultsHeld={academic.examType} value={form.preUStudiedAt} onChange={(v) => update('preUStudiedAt', v)} />
+        </div>)}
       </div>
     ),
     plans: (

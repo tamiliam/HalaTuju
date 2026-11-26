@@ -26,6 +26,8 @@ export default function InstitutionPicker({
   limit = 50,
   allowCustom = false,
   minChars = 0,
+  customRow = false,
+  onFocusChange,
 }: {
   options: InstitutionOption[]
   value: string
@@ -41,6 +43,12 @@ export default function InstitutionPicker({
   // free-text field like the reviewer's university, where the full list is just noise
   // and the value need not come from it — matches only appear once they're meaningful.
   minChars?: number
+  // With allowCustom: a last row 'Not in the list? Use "x" as typed' that keeps the typed text
+  // (the pre-U picker, 2026-11-26). Off by default, so every other picker is unchanged.
+  customRow?: boolean
+  // Told when the box gains focus and (after the blur commit) loses it — for chips drawn
+  // beside the box that show only while she is in the field.
+  onFocusChange?: (focused: boolean) => void
 }) {
   const { t } = useT()
   const [open, setOpen] = useState(false)
@@ -61,6 +69,9 @@ export default function InstitutionPicker({
       : options
   const matches = filtered.slice(0, limit)
   const truncated = filtered.length > matches.length
+  const typed = query.trim()
+  const offerTyped = allowCustom && customRow && !!typed
+    && !options.some((o) => o.name.toLowerCase() === typed.toLowerCase())
 
   const choose = (name: string) => {
     onChange(name)
@@ -85,11 +96,12 @@ export default function InstitutionPicker({
         aria-autocomplete="list"
         placeholder={placeholder ?? t('scholarship.apply.plan.schoolPlaceholder')}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); setActive(-1) }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => { setOpen(true); onFocusChange?.(true) }}
         onBlur={() => { blurTimer.current = setTimeout(() => {
           setOpen(false)
           if (allowCustom) { const v = query.trim(); if (v !== value) onChange(v) }
           else setQuery(value ?? '')
+          onFocusChange?.(false)
         }, 120) }}
         onKeyDown={(e) => {
           if (!open || matches.length === 0) return
@@ -122,13 +134,19 @@ export default function InstitutionPicker({
                 </li>
               ))}
             </ul>
-          ) : (
+          ) : !offerTyped && (
             <p className="px-3 py-2 text-xs text-ground-500">{t('scholarship.apply.plan.institutionNoMatch')}</p>
           )}
           {truncated && (
             <p className="border-t border-ground-100 px-3 py-2 text-xs text-ground-400">
               {t('scholarship.apply.plan.institutionMore')}
             </p>
+          )}
+          {offerTyped && (
+            <button type="button" onClick={() => choose(typed)}
+              className="block w-full border-t border-ground-100 px-3 py-2 text-left text-sm font-medium text-primary-600 hover:bg-ground-50">
+              {t('scholarship.preU.useAsTyped', { typed })}
+            </button>
           )}
         </div>
       )}

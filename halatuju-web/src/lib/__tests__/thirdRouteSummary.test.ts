@@ -38,7 +38,7 @@ describe('profileAcademicSummary on the third route', () => {
 
 describe('applyFormError on the third route', () => {
   const decided = (over: Partial<ApplyFormState>) => ({
-    ...profileToApplyDefaults(null), name: 'Priya', school: 'SMK X', nric: '080101-14-1234', referringOrg: 'cumig',
+    ...profileToApplyDefaults(null), name: 'Priya', school: 'SMK X', preUStudiedAt: 'KM Johor', nric: '080101-14-1234', referringOrg: 'cumig',
     homeState: 'Selangor', phone: '012-345 6789', householdIncome: '2500', householdSize: '5',
     consentToContact: true, declarationName: 'Priya', pathwayCertainty: 'sure', ...over,
   } as ApplyFormState)

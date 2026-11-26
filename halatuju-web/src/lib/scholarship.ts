@@ -7,6 +7,7 @@ import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
 import { cleanOtherMembers, type OtherMember } from '@/lib/familyRoster'
 import { safeSession, type StorageLike } from './applyReturn'
 import { asQualification, isThirdRoute, isTertiary, type Qualification } from './qualification'
+import { preUStudiedAtPrefill } from './preUStudiedAt'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
 // matching the backend's count_spm_a_grades and the B40 candidate profiles).
@@ -299,6 +300,7 @@ export interface ApplyFormState {
   // NRIC is edited here but saved via the validated claim path, not the payload.
   name: string
   school: string
+  preUStudiedAt: string   // pre-U sprint: where she COMPLETED her pre-U (tertiary only; profile)
   nric: string
   referringOrg: ReferringOrg
   homeState: string
@@ -345,6 +347,7 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
   return {
     name: profile?.name ?? '',
     school: profile?.school ?? '',
+    preUStudiedAt: preUStudiedAtPrefill(profile),   // stored, else the STPM prefill (TD-734)
     // Pre-filled values are masked too, so an older unformatted profile value
     // still displays as XXXXXX-XX-XXXX / 0XX-XXX XXXX.
     nric: formatNric(profile?.nric ?? ''),
@@ -431,6 +434,7 @@ export interface ApplicationPayload {
   // server-side). NRIC is NOT here — it goes through the claim path on submit.
   name: string
   school: string
+  pre_u_studied_at: string   // synced to the profile only (never the pathway fields)
   preferred_state: string
   contact_phone: string
   preferred_call_language: string
@@ -483,6 +487,7 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
   return {
     name: form.name.trim(),
     school: form.school.trim(),
+    pre_u_studied_at: form.preUStudiedAt.trim(),
     preferred_state: form.homeState,
     contact_phone: form.phone.trim(),
     preferred_call_language: form.callLanguage,
@@ -540,6 +545,7 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   // About Me — all required.
   if (!form.name.trim()) return 'name'
   if (!form.school.trim()) return 'school'
+  if (isTertiary(examType) && !form.preUStudiedAt.trim()) return 'preUStudiedAt'   // results tab
   if (!NRIC_RE.test(form.nric.trim())) return 'nric'
   if (!form.referringOrg) return 'org'
   if (!form.homeState) return 'state'
@@ -818,6 +824,7 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
 export const APPLY_FIELD_LABEL_KEYS: Record<string, string> = {
   name: 'scholarship.apply.field.name',
   school: 'scholarship.apply.field.school',
+  pre_u_studied_at: 'scholarship.preU.label',
   contact_phone: 'scholarship.apply.field.phone',
   preferred_state: 'scholarship.apply.field.state',
   declaration_name: 'scholarship.apply.declaration.signLabel',

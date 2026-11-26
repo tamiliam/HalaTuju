@@ -3,6 +3,7 @@
  * (incomplete counts, household validity, IC edit rights). A3.9: moved verbatim from `src/app/profile/page.tsx` (the 1,274-line page); no behaviour change.
  */
 import { useState, useCallback } from 'react'
+import { preUStudiedAtPrefill } from '@/lib/preUStudiedAt'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { formatIc } from '@/lib/ic-utils'
@@ -82,6 +83,8 @@ export function useProfileForm() {
   const [angkaGiliran, setAngkaGiliran] = useState('')
   // Guided school (optional) — shown in the Application Tracking card above Angka Giliran.
   const [school, setSchool] = useState('')
+  // Where she completed her pre-U (profile-only; seeded with the TD-734 STPM prefill).
+  const [preUStudiedAt, setPreUStudiedAt] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [contactEmailVerified, setContactEmailVerified] = useState(false)
   const [contactPhone, setContactPhone] = useState('')
@@ -172,6 +175,7 @@ export function useProfileForm() {
       })
       setAngkaGiliran(profileData.angka_giliran || '')
       setSchool(profileData.school || '')
+      setPreUStudiedAt(preUStudiedAtPrefill(profileData))
       setContactEmail(profileData.contact_email || '')
       setContactEmailVerified(profileData.contact_email_verified || false)
       setContactPhone(profileData.contact_phone || '')
@@ -295,6 +299,8 @@ export function useProfileForm() {
     setAngkaGiliran,
     school,
     setSchool,
+    preUStudiedAt,
+    setPreUStudiedAt,
     contactEmail,
     setContactEmail,
     contactEmailVerified,
