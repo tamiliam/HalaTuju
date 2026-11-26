@@ -283,7 +283,7 @@ def _accept_refusal(request, app):
     # be changed after it (a MyKad matching the new number then locks it). An IC that
     # fails the intake's CURRENT rule joins the floor (passed only with a recorded reason).
     if birth_state.meets_rule(getattr(app.profile, 'nric', '') if app.profile else '',
-                              getattr(app.cohort, 'allowed_birth_states', None)) is False:
+                              birth_state.cohort_rule(app.cohort)) is False:
         gap_facts.append(birth_state.FLOOR_FACT)
     # TD-375: only TEXT is a reason (`_text`); the floor's 400 answers anything else.
     override = _text(request.data.get('override_reason')) if gap_facts else ''

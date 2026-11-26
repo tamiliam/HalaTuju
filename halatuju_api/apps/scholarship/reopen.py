@@ -204,11 +204,11 @@ def cancel_reopen(app):
         raise ReopenError('not_reopened')
     target = _cancel_target(row, app.status)
     if target == 'recommended' and birth_state.ic_unlocked_for_rule(
-            app.profile, getattr(app.cohort, 'allowed_birth_states', None)):
+            app.profile, birth_state.cohort_rule(app.cohort)):
         raise ReopenError(birth_state.IC_UNLOCKED)
     if target == 'recommended' and birth_state.meets_rule(
             getattr(app.profile, 'nric', '') if app.profile else '',
-            getattr(app.cohort, 'allowed_birth_states', None)) is False:
+            birth_state.cohort_rule(app.cohort)) is False:
         raise ReopenError('birth_state_rule_failed')
 
     with transaction.atomic():

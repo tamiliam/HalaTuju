@@ -54,11 +54,11 @@ VERSIONS_DIR = f'{_APP}/model_versions'
 MODELS = {
     'verdict_engine': {
         'constant': (f'{_APP}/verdict_engine.py', 'VERDICT_ENGINE_VERSION'),
-        'files': [f'{_APP}/{name}.py' for name in (
-            'verdict_engine', 'verdict_identity', 'verdict_academic', 'verdict_income_salary',
-            'verdict_income_str', 'verdict_pathway', 'verdict_caps', 'verdict_ladder',
-            'start_year', 'higher_results', 'requirements', 'document_snapshot', 'offer_private',
-            'pathway_engine')] + [f'{_G}/bands.py', f'{_APP}/income_engine/*.py'],  # pathway_engine: OCR-13 rev 1
+        'files': [f'{_APP}/{name}.py' for name in (  # pathway_engine: OCR-13 rev 1; criteria on: criteria S2
+            'verdict_engine', 'verdict_identity', 'verdict_academic', 'verdict_income_salary', 'verdict_context',
+            'verdict_income_str', 'verdict_pathway', 'verdict_caps', 'verdict_ladder', 'pathway_engine',
+            'start_year', 'higher_results', 'requirements', 'document_snapshot', 'offer_private', 'criteria',
+            'criteria_read', 'shortlisting', 'birth_state', 'results_route')] + [f'{_G}/bands.py', f'{_APP}/income_engine/*.py'],
         'pins': [(f'{_G}/{mod}.py', n) for mod, names in (  # read by offer_private (IPTS) and pathway_engine
             ('offer_reading', ('_PRIVATE_BODIES', '_PRIVATE_SIGNS', '_TAG', '_TIE_UP', '_public_names')),
             ('offer_signatures', ('_IIUM_EN', '_UA_NAMES')), ('offer_confirmations', ('_NO_PRIVATE_WING',

@@ -64,7 +64,7 @@ _VERDICT_SECOND_LEVEL = [f'apps/scholarship/{name}.py:*' for name in (
     'academic_compare', 'academic_engine', 'card_display', 'exam_years', 'family',
     'genuineness/offer_issuers', 'higher_owed', 'income_declaration', 'income_shown',
     'income_str_ownership', 'name_order', 'offer_course_match', 'offer_pathway',
-    'pathway_match', 'read_errors', 'results_kind', 'results_route', 'services/__init__',
+    'pathway_match', 'read_errors', 'results_kind', 'services/__init__',
     'services/offer_link', 'session_year', 'stpm_names', 'str_check_memo', 'vision/__init__',
     'wrong_slip')]
 _VISION = 'apps/scholarship/vision/__init__.py'
@@ -91,11 +91,28 @@ _FIELD_READER = (
     'per-doc-type prompts, _FIELD_SCHEMAS and _DOC_HINTS, so a prompt or schema change there can move '
     "what the empty-read check sees without a bump. The OCR-11 pin holds only the reader's own check.")
 
+_RESULTS_FILING = (
+    'KNOWN GAP. results_route is listed since criteria Sprint 2 (it holds gift_asks_higher, the document '
+    'rule). These are its document-FILING helpers (which slot an upload lands in, which copy is kept): '
+    'second-level, as they were while the whole file was a known gap. A change can move a filed slot '
+    'without a bump.')
+_COURSE_TABLE = (
+    'The courses app table class (what is stored). The one query on it, destination(), is in '
+    'results_route, a listed file; the rows themselves are data that changes without a deploy.')
+_REGISTER_ITSELF = (
+    'The register: verdict_context stores the versions it lists beside each record. It never '
+    'changes an answer; a version bump moves the record, which is the point.')
+
 #: Per model: dependencies that are logic but are not (yet) in the model's files. A key
 #: `<dependency> via <importer>` excuses it only when that one file or pin imports it.
 _KNOWN_GAPS = {
     'verdict_engine': {
         **dict.fromkeys(_VERDICT_SECOND_LEVEL, _SECOND_LEVEL),
+        **{f'apps/scholarship/{dep} via apps/scholarship/results_route.py': _RESULTS_FILING for dep in (
+            'promotion.py:should_promote', 'resolution.py:sync_resolution_items',
+            'results_requests.py:requested_kind')},
+        'apps/courses/models/__init__.py:StpmCourse via apps/scholarship/results_route.py': _COURSE_TABLE,
+        'apps/scholarship/model_registry.py:MODELS via apps/scholarship/verdict_context.py': _REGISTER_ITSELF,
         'apps/courses/public.py:*': _COURSES,
         'apps/scholarship/stpm_parse.py:*': _OWN_MODEL,
         'apps/scholarship/matric_parse.py:*': _OWN_MODEL,

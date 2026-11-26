@@ -37,9 +37,9 @@ class ServesTheDetailPeople:
         return getattr(obj.profile, 'pre_u_studied_at', '') if obj.profile else ''
 
     def get_birth_state(self, obj):
-        from ..birth_state import for_cockpit
+        from ..birth_state import cohort_rule, for_cockpit
         return for_cockpit(getattr(obj.profile, 'nric', '') if obj.profile else '',
-                           getattr(obj.cohort, 'allowed_birth_states', None))
+                           cohort_rule(obj.cohort))
 
     def get_rejection_chip(self, obj):
         # The case header's second chip (owner 2026-11-23): the same rule as the list row.

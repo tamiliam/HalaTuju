@@ -62,7 +62,7 @@ def divert_reasons(application):
     rule). Empty — revert as before — on an unruled intake or a locked, passing IC."""
     reasons = []
     if birth_state.ic_unlocked_for_rule(application.profile,
-                                        getattr(application.cohort, 'allowed_birth_states', None)):
+                                        birth_state.cohort_rule(application.cohort)):
         reasons.append('ic_unlocked')
     if fails_birth_state_rule(application):
         reasons.append('rule_fails')
@@ -74,4 +74,4 @@ def fails_birth_state_rule(application):
     (`birth_state.meets_rule`); False when the intake has no rule."""
     profile = application.profile
     return birth_state.meets_rule(getattr(profile, 'nric', '') if profile else '',
-                                  getattr(application.cohort, 'allowed_birth_states', None)) is False
+                                  birth_state.cohort_rule(application.cohort)) is False

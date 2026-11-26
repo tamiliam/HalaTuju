@@ -55,7 +55,7 @@ def _accept_absolute_stop(app):
              'code': 'award_required'},
             status=status.HTTP_400_BAD_REQUEST)
     if birth_state.ic_unlocked_for_rule(app.profile,
-                                        getattr(app.cohort, 'allowed_birth_states', None)):
+                                        birth_state.cohort_rule(app.cohort)):
         return Response({'error': birth_state.IC_UNLOCKED_MESSAGE,
                          'code': birth_state.IC_UNLOCKED},
                         status=status.HTTP_400_BAD_REQUEST)

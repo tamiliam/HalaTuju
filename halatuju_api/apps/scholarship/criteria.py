@@ -529,7 +529,8 @@ def tree_of(cohort):
     built) - `from_legacy` of its columns, the same tree a build would store. ``{'all': []}`` is a
     stored "nothing checked" and is never replaced."""
     stored = getattr(cohort, 'criteria', None)
-    return stored if stored is not None else from_legacy(cohort)
+    # A dict only: a stub or a test double (a Mock answers every attribute) is read from its columns.
+    return stored if isinstance(stored, dict) else from_legacy(cohort)
 
 
 def build_trees(cohorts, save):

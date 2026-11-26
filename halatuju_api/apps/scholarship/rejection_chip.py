@@ -75,7 +75,7 @@ def chip(app, qc_rejected=None):
     if app.status != 'rejected':
         profile = getattr(app, 'profile', None)
         fails = birth_state.meets_rule(getattr(profile, 'nric', '') if profile else '',
-                                       getattr(app.cohort, 'allowed_birth_states', None)) is False
+                                       birth_state.cohort_rule(app.cohort)) is False
         return 'state' if fails else ''
     category = app.rejection_category or ''
     if category in _SIMPLE:

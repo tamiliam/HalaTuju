@@ -69,7 +69,9 @@ def gift_asks_higher(application) -> bool:
     cohort = getattr(application, 'cohort', None) if application is not None else None
     if cohort is None or not hasattr(cohort, 'min_stpm_pngk'):     # a stub carrying no floor field
         return True
-    return cohort.min_stpm_pngk is not None
+    # Criteria Sprint 2: read from the tree the gate reads (a post-SPM group = the column set).
+    from .criteria_read import asks_post_spm_results
+    return asks_post_spm_results(cohort)
 
 
 def destination(application) -> str:

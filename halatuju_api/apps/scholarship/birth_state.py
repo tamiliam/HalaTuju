@@ -171,6 +171,15 @@ def stored_keys(value):
     return [str(value)]
 
 
+def cohort_rule(cohort):
+    """The intake's born-in keys as the gate reads them (criteria Sprint 2, TD-772): the stored
+    criteria tree's born-in section, else the column. Pass it wherever a reader passed
+    ``cohort.allowed_birth_states``; for a tree built from the columns it is ``stored_keys`` of
+    the column, so `check`, `meets_rule` and `ic_unlocked_for_rule` answer exactly as before."""
+    from .criteria_read import birth_state_keys
+    return birth_state_keys(cohort)
+
+
 def _accepted(allowed):
     """The rule's keys in the platform order (a hand-stored unknown key last)."""
     keys = stored_keys(allowed)

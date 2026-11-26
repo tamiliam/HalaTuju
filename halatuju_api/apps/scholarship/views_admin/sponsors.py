@@ -149,7 +149,7 @@ def _held_by_birth_state_rule(profile):
                   .filter(profile=profile, status__in=('recommended', 'rejected'))
                   .select_related('cohort'))
     for a in candidates:
-        if not birth_state.stored_keys(getattr(a.cohort, 'allowed_birth_states', None)):
+        if not birth_state.stored_keys(birth_state.cohort_rule(a.cohort)):
             continue
         if a.status == 'recommended':
             return _HELD_BY_RECOMMENDED

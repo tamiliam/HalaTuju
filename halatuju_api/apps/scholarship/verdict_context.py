@@ -324,6 +324,14 @@ def intake_values(application):
                   cohort_id=application.cohort_id)
     years = values['allowed_start_years']
     values['allowed_start_years'] = stored_years(years) if rule_on(years) else None
+    # Criteria Sprint 2 (TD-772): the rule values are hashed as the engine now reads them, from the
+    # tree the gate reads (`criteria` accessors), under the SAME keys, so a fingerprint taken before
+    # the switch-over is unchanged for every intake whose tree is its columns' tree. The SPM bars,
+    # the merit and the born-in states stay out: the verdict engine reads none of them.
+    from .criteria_read import income_ceilings, pngk_floor, start_years_rule
+    values['income_ceiling'], values['per_capita_ceiling'], _mode = income_ceilings(cohort)
+    values['min_stpm_pngk'] = pngk_floor(cohort)
+    values['allowed_start_years'] = start_years_rule(cohort)
     return values
 
 

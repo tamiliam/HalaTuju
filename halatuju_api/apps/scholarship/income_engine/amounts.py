@@ -162,9 +162,9 @@ def income_test_configured(application):
     verdict tiles on both routes, and widening its return set would put every caller in
     scope of a wording sprint. This asks the cohort directly and changes no maths.
     """
-    cohort = getattr(application, 'cohort', None)
-    return bool(getattr(cohort, 'income_ceiling', None)
-                or getattr(cohort, 'per_capita_ceiling', None))
+    from apps.scholarship.criteria_read import income_ceilings
+    gross_ceiling, pc_ceiling, _mode = income_ceilings(getattr(application, 'cohort', None))
+    return bool(gross_ceiling or pc_ceiling)
 
 
 def income_headroom(application, members):
@@ -185,9 +185,12 @@ def income_headroom(application, members):
     primary, the per-capita ceiling a safety net above it. ``breach_room`` is how much more monthly
     income would tip the household out; grading by it is what separates #13 (thin → unsure) from the
     SARA case (large → probable). ``ctx`` carries the figures for the verdict copy / interview note."""
-    cohort = getattr(application, 'cohort', None)
-    gross_ceiling = getattr(cohort, 'income_ceiling', None)
-    pc_ceiling = getattr(cohort, 'per_capita_ceiling', None)
+    # Criteria Sprint 2: the ceilings of the tree the gate reads ('any' meaning, see
+    # `criteria.income_ceilings`). ⚠ TD-771: "exactly at the per-person line" is B40 here
+    # (breach_room 0 is not 'over') but fails the gate (per-capita must be UNDER). Kept as is
+    # until the owner rules which side the line falls.
+    from apps.scholarship.criteria_read import income_ceilings
+    gross_ceiling, pc_ceiling, _mode = income_ceilings(getattr(application, 'cohort', None))
     size = getattr(getattr(application, 'profile', None), 'household_size', None)
     pc, all_known = income_per_capita(application, members)
     if pc is None or not size or not pc_ceiling:

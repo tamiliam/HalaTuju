@@ -171,8 +171,15 @@ class TestOptionalRequirements(TestCase):
         # an admin clearing every box on a screen that shows which are ticked.
         weak = app(grades=_spm_grades(a=0, bplus=0, lower=9))
         self.assertEqual(evaluate(weak, cohort()).verdict, 'rejected')
+        # Amended 2026-11-26 (criteria Sprint 2, owner ruling 1): clearing only the SPM boxes
+        # leaves the PNGK floor, so the intake has no SPM group - the intake-5 class: an SPM
+        # holder is now refused there. "No requirement at all" clears the PNGK box too.
         self.assertEqual(
             evaluate(weak, cohort(min_spm_a_count=None, min_spm_bplus_count=None)).verdict,
+            'rejected')
+        self.assertEqual(
+            evaluate(weak, cohort(min_spm_a_count=None, min_spm_bplus_count=None,
+                                  min_stpm_pngk=None)).verdict,
             'shortlisted')
 
     def test_each_academic_requirement_can_be_dropped_on_its_own(self):

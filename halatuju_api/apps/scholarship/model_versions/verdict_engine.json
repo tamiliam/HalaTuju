@@ -62,5 +62,10 @@
         "note": "Merge of reviewed changes, 26 Nov 2026 batch (no rule change of its own): OCR-13 (the 22f7c66f entry above: pathway_engine, verdict_pathway and the offer_exact.ISSUER_PRINTS_NO_IC pin, not_printed read exactly as unreadable) plus the academic reads pins TD-733/TD-734 (higher_results._college_read, display only: the college the document prints, an issuer blanked) and TD-735 with its review nits (higher_results exam_year_read and stored_transcript_year, display only: a Matriculation / Asasi / Diploma transcript year beside the read for the merit bracket). TD-741 (one-off re-read, slip school and transcript year backfill) touches no file of this digest. The only changed files of this digest against the live base are pathway_engine.py, verdict_pathway.py and higher_results.py, each byte-identical to its reviewed commit's version apart from base drift. No verdict fact, ladder, blocker, ask or payment reads a higher document's exam_year or institution, so no verdict changes."
       }
     ]
+  },
+  "2026-11-26.1": {
+    "digest": "40af5667e3ca0d64921cf719b2b40e16533661704bc1026e771a5c0a909e25c3",
+    "note": "Criteria editor Sprint 2 (part 2): the gate files join the register (criteria, criteria_read, shortlisting, birth_state, results_route, verdict_context). The gate already reads the stored criteria tree (part 1); the readers outside it (results_route.gift_asks_higher, income_engine.amounts income_test_configured and income_headroom, verdict_context.intake_values, the born-in surfaces through birth_state.cohort_rule) now read the same tree through criteria_read, falling back to the columns when no tree is stored. The tree is built from the columns (from_legacy), so every verdict answer and every evidence fingerprint is unchanged (test_criteria_accessors: cohorts 1, 3, 4, 5, programme 7). The only gate answer change in the sprint is the owner-ruled intake-5 class (part 1). TD-771 (exactly at the per-person line) kept as is for the owner.",
+    "also_ok": []
   }
 }
