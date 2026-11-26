@@ -333,13 +333,17 @@ class TestTheGateIsNotReRunElsewhere(SimpleTestCase):
             src = path.read_text(encoding='utf-8')
             # a CALL with an argument (prose mentions read "evaluate()"); `page.evaluate(` is
             # Playwright's, in a scraper
+            # Criteria Sprint 2: the old columns gate (`evaluate_columns`) and the tree engine
+            # (`criteria.evaluate`) count as the gate too.
             if re.search(r'(?<![\w.])evaluate\(\s*\w|shortlisting\.evaluate\(\s*\w|'
+                         r'evaluate_columns\(\s*\w|criteria\.evaluate\(\s*\w|'
                          r'_academic_ok\(\s*\w', src):
                 callers.append(rel)
         # STPM CGPA sprint C2: the backfill PREVIEW asks the gate before/after for the owner's list
         # and writes no verdict — a declared read-only caller, not a re-run. Criteria editor S1:
         # `replay_criteria` compares the gate with the tree inside a rolled-back READ ONLY
-        # transaction — also a declared read-only caller.
+        # transaction — also a declared read-only caller. Criteria Sprint 2: `services/intake.py`
+        # also asks the old columns gate, read-only, to HOLD a decision the tree would change.
         self.assertEqual(sorted(callers), ['apps/scholarship/management/commands/backfill_stpm_cgpa.py',
                                            'apps/scholarship/management/commands/replay_criteria.py',
                                            'apps/scholarship/services/intake.py'])

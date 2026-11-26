@@ -291,7 +291,18 @@ def _income_ok(profile, cohort):
 
 
 def evaluate(application, cohort):
-    """Return a ShortlistResult for the application against the cohort thresholds."""
+    """Return a ShortlistResult for the application against the intake's criteria TREE.
+
+    Criteria editor Sprint 2: the gate reads `ScholarshipCohort.criteria` (`criteria.tree_of`: the
+    stored tree, or - while it is NULL - the tree built from the old columns, so a row the old
+    server wrote keeps its meaning). The columns gate below stays as `evaluate_columns`: the
+    replay's yardstick and the guard in `rescore_pending_decisions` (owner ruling 6)."""
+    from . import criteria     # criteria imports this module at the top
+    return criteria.evaluate(application, criteria.tree_of(cohort))
+
+
+def evaluate_columns(application, cohort):
+    """The pre-Sprint-2 gate on the cohort's columns. Return a ShortlistResult."""
     profile = getattr(application, 'profile', None)
 
     # 1. Hard gates → 'ineligible' (out of scope, not a merit/need shortfall)

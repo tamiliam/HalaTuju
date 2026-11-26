@@ -38,9 +38,21 @@ from .shortlisting import ShortlistResult, _count, spm_merit
 #: no C- (`shortlisting.CREDIT_GRADES`); D, E, G and anything unknown never count.
 GRADES = ('A+', 'A', 'A-', 'B+', 'B', 'C+', 'C')
 MODES = ('any', 'all')
-SECTIONS = ('results', 'income', 'born_in')
+#: The results section also takes 'own' (owner ruling B, 2026-11-26): each student is judged on the
+#: group for the results they HOLD - a post-SPM holder on the post-SPM group (the SPM group is no
+#: alternative door for them), an SPM holder on the SPM group. Today's gate, exactly; every migrated
+#: tree uses it. A post-SPM holder with no post-SPM group falls to the SPM group's grade rules
+#: (D16c, 'SPM-only intake: ...'); an SPM holder with no SPM group fails on the post-SPM group.
+RESULTS_MODES = ('own',) + MODES
+SECTIONS = ('results', 'merit', 'income', 'born_in')
 GROUPS = ('post_spm', 'spm')
-GROUP_TESTS = {'post_spm': ('min_pngk', 'min_merit'), 'spm': ('grade_count', 'min_upu_merit')}
+GROUP_TESTS = {'post_spm': ('min_pngk',), 'spm': ('grade_count',)}
+#: Merit is its OWN section, ANDed with results and applied to every student (owner ruling 4,
+#: 2026-11-26: "merit is not a subset of SPM"): ``min_upu_merit`` binds SPM holders (the UPU merit,
+#: `shortlisting.spm_merit`), ``min_merit`` binds post-SPM holders (the merit from the PNGK / CGPA,
+#: `merit_100`). A test that is absent is not checked for that kind of student, which is how today's
+#: ``min_merit_score`` (SPM applicants only, D3) migrates without changing anyone's answer.
+MERIT_TESTS = ('min_upu_merit', 'min_merit')
 INCOME_TESTS = ('household_income_max', 'income_per_person_under')
 FLAG_TESTS = ('course_start_year',)
 
@@ -52,8 +64,8 @@ def at_or_better(grades, grade):
 
 
 def _mode(node):
-    """``(mode, items)`` of a node holding exactly one of 'any' / 'all'."""
-    for m in MODES:
+    """``(mode, items)`` of a node holding exactly one of 'own' / 'any' / 'all'."""
+    for m in RESULTS_MODES:
         if m in node:
             return m, node[m]
     return None, None
@@ -74,6 +86,8 @@ def validate_tree(tree):
     if not isinstance(tree, dict) or set(tree) - {'all', 'flag'} or not isinstance(tree.get('all', []), list):
         return ['tree must be {all: [...], flag: [...]}']
     seen = set()
+    merit = section(tree, 'merit')
+    merit_tests = merit.get('all') if isinstance(merit, dict) and isinstance(merit.get('all'), list) else []
     for sec in tree.get('all', []):
         name = sec.get('section') if isinstance(sec, dict) else None
         if name not in SECTIONS:
@@ -86,11 +100,19 @@ def validate_tree(tree):
         if set(sec) != {'section', mode} or not isinstance(items, list) or not items:
             errs.append(f'section {name} needs one non-empty any/all list')
             continue
+        if mode == 'own' and name != 'results':
+            errs.append(f'section {name}: "own" is for results only')
+            continue
         if name == 'born_in':
             if mode != 'any' or any(s not in STATE_KEYS for s in items) or len(set(items)) != len(items):
                 errs.append('born_in must be any: [distinct state keys]')
         elif name == 'results':
-            errs += _validate_groups(items, mode)
+            errs += _validate_groups(items, mode, merit_tests)
+        elif name == 'merit':
+            if mode != 'all':
+                errs.append('merit must be all: [tests]')
+            else:
+                errs += _validate_tests(items, MERIT_TESTS, 'merit')
         else:
             errs += _validate_tests(items, INCOME_TESTS, 'income')
     flags = tree.get('flag', [])
@@ -106,12 +128,13 @@ def validate_tree(tree):
     return errs
 
 
-def spm_can_fail(tests):
-    """True when an SPM group holds a test that can fail someone who gave SPM grades: a grade count
-    above 0 or a UPU merit above 0. A 0 count or a 0 merit only asks that SPM grades be given."""
+def spm_can_fail(tests, merit_tests=()):
+    """True when an SPM group holds a grade count above 0, or ``merit_tests`` (the merit section's
+    tests - pass them only where that section binds the same students) a UPU merit above 0.
+    A 0 count or a 0 merit only asks that SPM grades be given."""
     return any((t.get('test') == 'grade_count' and _num(t.get('at_least')) and t['at_least'] > 0)
                or (t.get('test') == 'min_upu_merit' and _num(t.get('value')) and t['value'] > 0)
-               for t in tests if isinstance(t, dict))
+               for t in list(tests) + list(merit_tests) if isinstance(t, dict))
 
 
 #: Owner ruling 2026-11-25 (review round 2, c): a void SPM door beside a PNGK floor is refused.
@@ -119,12 +142,23 @@ VOID_SPM_DOOR = ('results: an SPM group with no rule that can fail, beside a pos
                  'would let every SPM holder through - add a rule to the SPM group or switch it off')
 
 
-def _validate_groups(groups, mode='any'):
+#: The same trap under 'own' (#921, the CGPA trap left on): an SPM group that cannot fail beside a
+#: post-SPM group, with no UPU merit above 0 either, passes every SPM holder.
+VOID_SPM_GROUP = ('results: an SPM group with no rule that can fail, beside a post-SPM group, lets every '
+                  'SPM holder through - add a rule to the SPM group or switch it off')
+
+
+def _validate_groups(groups, mode='any', merit_tests=()):
     errs, seen = [], set()
     by_route = {g.get('route'): g for g in groups if isinstance(g, dict)}
-    if (mode == 'any' and 'post_spm' in by_route and isinstance(by_route.get('spm', {}).get('all'), list)
-            and not spm_can_fail(by_route['spm']['all'])):
-        errs.append(VOID_SPM_DOOR)
+    spm_tests = by_route.get('spm', {}).get('all')
+    if 'post_spm' in by_route and isinstance(spm_tests, list):
+        # Under 'any' the SPM group is a door for post-SPM holders too, and the merit section's UPU
+        # merit does not bind them there, so only a grade count guards it.
+        if mode == 'any' and not spm_can_fail(spm_tests):
+            errs.append(VOID_SPM_DOOR)
+        elif mode == 'own' and not spm_can_fail(spm_tests, merit_tests):
+            errs.append(VOID_SPM_GROUP)
     for g in groups:
         route = g.get('route') if isinstance(g, dict) else None
         if route not in GROUPS or set(g) != {'route', 'all'} or not isinstance(g['all'], list):
@@ -179,13 +213,7 @@ def _post_spm_group(profile, held, tests, cgpa_of):
         return False, 'no post-SPM results' + (f' (PNGK floor {floor:g})' if floor is not None else '')
     failures = []
     for t in tests:
-        if t['test'] == 'min_pngk':
-            ok, why = _cgpa_test(profile, held, t['value'], cgpa_of)
-        else:
-            m = courses_public.merit_100(profile)
-            ok = m is not None and m >= t['value']
-            why = (f'post-SPM merit not available (need {t["value"]})' if m is None
-                   else f'post-SPM merit {m} below {t["value"]}')
+        ok, why = _cgpa_test(profile, held, t['value'], cgpa_of)
         if not ok:
             failures.append(why)
     return (not failures), '; '.join(failures)
@@ -214,36 +242,21 @@ def _cgpa_test(profile, held, floor, cgpa_of):
     return False, f'{label} CGPA {overall:.2f} below {floor:.2f}'
 
 
-def _spm_group(profile, held, tests, door=False):
-    """The SPM group on `spm_grades_for` (a post-SPM holder's SPM block only). No tests = passes.
-
-    A post-SPM holder is tested here in two shapes (owner, 2026-11-25):
-    * NO post-SPM group (``door`` False, D16c's SPM-only intake): the GRADE tests only - the UPU
-      merit stays SPM holders only (D3). Today's meaning, unchanged.
-    * BESIDE a post-SPM group (``door`` True - the SPM group is an alternative door): EVERY test,
-      the UPU merit included, on the merit `spm_merit` computes from their SPM grades; when it
-      cannot be computed the merit test fails. Otherwise a merit-only door would pass every
-      post-SPM holder and void the floor (review round 2, F1)."""
+def _spm_group(profile, held, tests):
+    """The SPM group's grade rules on `spm_grades_for` (a post-SPM holder's SPM block only). No
+    tests = passes. The UPU merit is not here: it is the merit section's (Sprint 2, owner ruling 4)
+    and binds SPM holders only, so a post-SPM holder tested here (D16c's SPM-only intake, or the
+    'any' door) faces the grade rules alone - today's D3 meaning, unchanged."""
     grades = courses_public.spm_grades_for(profile)
-    spm_held = not courses_public.is_tertiary(held)
-    merit_applies = spm_held or door
-    asked = [t for t in tests if t['test'] == 'grade_count' or merit_applies]
-    if not spm_held and not grades and asked:
+    if courses_public.is_tertiary(held) and not grades and tests:
         return False, 'SPM grades not provided'
-    a_rule = next((t['at_least'] for t in tests if t['test'] == 'grade_count' and t['grade_or_better'] == 'A-'), None)
+    a_rule = next((t['at_least'] for t in tests if t['grade_or_better'] == 'A-'), None)
     failures = []
     for t in tests:
-        if t['test'] == 'grade_count':
-            g, n = t['grade_or_better'], t['at_least']
-            have = at_or_better(grades, g)
-            if have < n:
-                failures.append(_grade_reason(have, g, n, a_rule))
-        elif merit_applies:
-            m, v = spm_merit(profile), t['value']
-            if m is None:
-                failures.append(f'merit point not available (need {v})')
-            elif m < v:
-                failures.append(f'merit point {m} below {v}')
+        g, n = t['grade_or_better'], t['at_least']
+        have = at_or_better(grades, g)
+        if have < n:
+            failures.append(_grade_reason(have, g, n, a_rule))
     return (not failures), '; '.join(failures)
 
 
@@ -262,22 +275,27 @@ def _grade_reason(have, grade, n, a_rule):
 def results_ok(profile, section, cgpa_of=courses_public.stpm_cgpa_of):
     """``(ok, reason)`` for the results section. ``section`` None = not checked (passes).
 
-    'any' fails with the reason of the student's OWN group (post-SPM for a post-SPM holder, else
-    SPM) when it is present, else of the group that is; 'all' joins every failing group's reason.
-    A post-SPM holder failing the SPM group with no post-SPM group present reads
-    'SPM-only intake: ...' (D16c's wording)."""
+    'own' judges the student on their OWN group only (`RESULTS_MODES`). 'any' fails with the reason
+    of the student's own group when it is present, else of the group that is; 'all' joins every
+    failing group's reason. A post-SPM holder failing the SPM group with no post-SPM group present
+    reads 'SPM-only intake: ...' (D16c's wording)."""
     if not section:
         return True, ''
     mode, groups = _mode(section)
     held = _held(profile)
-    door = any(x['route'] == 'post_spm' for x in groups)
+    tertiary = courses_public.is_tertiary(held)
+    by_route = {g['route']: g['all'] for g in groups}
+    has_floor = 'post_spm' in by_route
+    if mode == 'own':
+        own = 'post_spm' if (tertiary and has_floor) or 'spm' not in by_route else 'spm'
+        by_route = {own: by_route[own]}
     out = {}
-    for g in groups:
-        if g['route'] == 'post_spm':
-            out['post_spm'] = _post_spm_group(profile, held, g['all'], cgpa_of)
+    for route, tests in by_route.items():
+        if route == 'post_spm':
+            out['post_spm'] = _post_spm_group(profile, held, tests, cgpa_of)
         else:
-            ok, why = _spm_group(profile, held, g['all'], door=door)
-            if not ok and courses_public.is_tertiary(held) and not door:
+            ok, why = _spm_group(profile, held, tests)
+            if not ok and tertiary and not has_floor:
                 why = 'SPM-only intake: ' + why
             out['spm'] = (ok, why)
     if not out:
@@ -289,6 +307,40 @@ def results_ok(profile, section, cgpa_of=courses_public.stpm_cgpa_of):
         return True, ''
     own = 'post_spm' if courses_public.is_tertiary(held) else 'spm'
     return False, out[own][1] if own in out else next(iter(out.values()))[1]
+
+
+def merit_ok(profile, section):
+    """``(ok, reason)`` for the merit section (`MERIT_TESTS`): each test binds its own kind of
+    student only. ``section`` None = not checked (passes). Today's wording for the UPU merit."""
+    if not section:
+        return True, ''
+    tertiary = courses_public.is_tertiary(_held(profile))
+    failures = []
+    for t in section['all']:
+        v = t['value']
+        if t['test'] == 'min_upu_merit' and not tertiary:
+            m = spm_merit(profile)
+            if m is None:
+                failures.append(f'merit point not available (need {v})')
+            elif m < v:
+                failures.append(f'merit point {m} below {v}')
+        elif t['test'] == 'min_merit' and tertiary:
+            m = courses_public.merit_100(profile)
+            if m is None:
+                failures.append(f'post-SPM merit not available (need {v})')
+            elif m < v:
+                failures.append(f'post-SPM merit {m} below {v}')
+    return (not failures), '; '.join(failures)
+
+
+def academic_ok(profile, tree, cgpa_of=courses_public.stpm_cgpa_of):
+    """``(ok, reason)``: the results section AND the merit section - today's one 'academic floor'
+    step, the reasons joined in today's order (grade rules first, then the merit)."""
+    ok, why = results_ok(profile, section(tree, 'results'), cgpa_of)
+    mok, mwhy = merit_ok(profile, section(tree, 'merit'))
+    if ok and mok:
+        return True, ''
+    return False, '; '.join(w for w in ((why if not ok else ''), (mwhy if not mok else '')) if w)
 
 
 # ── Income ──────────────────────────────────────────────────────────────────────────────────
@@ -336,7 +388,7 @@ def income_ok(profile, section):
 
 def section(tree, name):
     """The section node called ``name``, or None (absent = not checked)."""
-    return next((s for s in (tree or {}).get('all', []) if s.get('section') == name), None)
+    return next((s for s in (tree or {}).get('all', []) if isinstance(s, dict) and s.get('section') == name), None)
 
 
 def birth_states(tree):
@@ -387,7 +439,7 @@ def evaluate(application, tree, cgpa_of=courses_public.stpm_cgpa_of):
               'Diploma institution not stated: only diplomas from public institutions count '
               'for this programme')
         return ShortlistResult('rejected', '', why, 'ineligible')
-    ok, why = results_ok(profile, section(tree, 'results'), cgpa_of)
+    ok, why = academic_ok(profile, tree, cgpa_of)
     if not ok:
         return ShortlistResult('rejected', '', f'academic floor: {why}', 'merit')
     ok, bucket, why = income_ok(profile, section(tree, 'income'))
@@ -407,17 +459,18 @@ def has_spm_bar(cohort):
 
 
 def from_legacy(cohort, keep_empty_spm=False):
-    """The tree that today's cohort columns mean. Results are joined by 'any' (owner ruling
-    2026-11-25), so a post-SPM holder below the PNGK floor who meets the SPM group now passes.
+    """The tree that today's cohort columns mean. Results are joined by 'own' (owner ruling B,
+    2026-11-26, superseding 25 Nov's 'any'): a post-SPM holder is judged on the PNGK / CGPA floor
+    only, never through the SPM group. ``min_merit_score`` becomes the merit section's
+    ``min_upu_merit`` (SPM holders only, D3; owner ruling 4: merit is its own section).
 
     * ``min_stpm_pngk`` set (0 included) -> a post-SPM group with min_pngk; NULL -> no post-SPM
       group (D16c: the intake is SPM-only and a post-SPM holder is tested on the SPM GRADE bars).
-    * A-, B+ (a TOTAL), credit (C) counts -> grade_count rules; ``min_merit_score`` ->
-      min_upu_merit (SPM holders only on a blank floor, D3; beside a floor it binds a post-SPM
-      holder who uses the SPM door too - `_spm_group`). NULL = no rule. A 0 is KEPT as a rule, exactly as
-      today: it never fails a count, but a post-SPM holder on a blank-floor intake with no SPM
-      grades fails "SPM grades not provided", an SPM holder with no merit fails a merit 0, and
-      the B+ wording reads "0 at A- plus N more at B+".
+    * A-, B+ (a TOTAL), credit (C) counts -> the SPM group's grade_count rules; ``min_merit_score``
+      -> the merit section's min_upu_merit (SPM holders only, D3). NULL = no rule. A 0 is KEPT as
+      a rule, exactly as today: it never fails a count, but a post-SPM holder on a blank-floor
+      intake with no SPM grades fails "SPM grades not provided", an SPM holder with no merit fails
+      a merit 0, and the B+ wording reads "0 at A- plus N more at B+".
     * THE CGPA TRAP, BY SHAPE (owner ruling 2026-11-25: the trap = SPM group OFF): a PNGK floor
       with no SPM bar (`has_spm_bar` false) has NO SPM group, so SPM-only students do not qualify.
       Today such an intake passes them (#921); intake 5 (bpb-deg-dip-2026) is the one live case.
@@ -430,24 +483,28 @@ def from_legacy(cohort, keep_empty_spm=False):
     * allowed_birth_states (`birth_state.stored_keys`) -> born_in; allowed_start_years
       (`start_year.rule_on` / `stored_years`) -> the flag. Empty -> none.
 
-    ⚠ A CONVERTER FOR THE MIGRATION AND THE REPLAY ONLY. Once Sprint 2 stores the tree, the tree
-    is the source of truth: a save must never rebuild it from the old columns (that would undo
-    an all/any choice or switch the SPM group back on)."""
+    ⚠ THE STORED TREE IS THE SOURCE OF TRUTH from Sprint 2. Only three callers build from the
+    columns: migration 0219 (`build_trees`), the NULL fallback (`tree_of`), and the OLD admin
+    form's save (`views_admin.intake_years`), which is still the only editor and can only express
+    what the columns express. Once the criteria editor can store a tree the columns cannot say
+    (an 'any' / 'all' choice, a merit for post-SPM holders), that form must stop rebuilding it -
+    otherwise a save would undo the choice."""
     def g(name):
         return getattr(cohort, name, None)
 
     spm = [{'test': 'grade_count', 'at_least': int(v), 'grade_or_better': grade}
            for v, grade in ((g('min_spm_a_count'), 'A-'), (g('min_spm_bplus_count'), 'B+'),
                             (g('min_spm_credit_count'), 'C')) if v is not None]
-    if g('min_merit_score') is not None:
-        spm.append({'test': 'min_upu_merit', 'value': g('min_merit_score')})
+    merit = g('min_merit_score')
     pngk = g('min_stpm_pngk')
     sections = []
-    if pngk is not None or spm:
+    if pngk is not None or spm or merit is not None:
         groups = [{'route': 'post_spm', 'all': [{'test': 'min_pngk', 'value': pngk}]}] if pngk is not None else []
         if pngk is None or has_spm_bar(cohort) or keep_empty_spm:
             groups.append({'route': 'spm', 'all': spm})
-        sections.append({'section': 'results', 'any': groups})
+        sections.append({'section': 'results', 'own': groups})
+    if merit is not None:
+        sections.append({'section': 'merit', 'all': [{'test': 'min_upu_merit', 'value': merit}]})
     income = [{'test': t, 'rm': g(col)} for t, col in (('household_income_max', 'income_ceiling'),
                                                        ('income_per_person_under', 'per_capita_ceiling'))
               if g(col) is not None]
@@ -464,6 +521,30 @@ def from_legacy(cohort, keep_empty_spm=False):
 
 #: Sprint 2's data migration stores exactly `from_legacy` (the CGPA trap is decided by shape).
 tree_for_migration = from_legacy
+
+
+def tree_of(cohort):
+    """The intake's rules as the gate reads them (Sprint 2): the STORED tree, else - ``criteria``
+    still NULL (a row the image before Sprint 2 created between migrate and deploy, or one not yet
+    built) - `from_legacy` of its columns, the same tree a build would store. ``{'all': []}`` is a
+    stored "nothing checked" and is never replaced."""
+    stored = getattr(cohort, 'criteria', None)
+    return stored if stored is not None else from_legacy(cohort)
+
+
+def build_trees(cohorts, save):
+    """Sprint 2's fill: ``from_legacy`` for every intake whose ``criteria`` is NULL, refused whole
+    (ValueError naming ids and codes, nothing written) when any tree fails `validate_tree`.
+    ``save(cohort, tree)`` writes one row. Returns ``[(id, code)]`` filled. Used by migration
+    0219 and by the ``build_criteria_trees`` command (the old admin form rebuilds its own row with
+    `from_legacy` on every save - `views_admin.intake_years`)."""
+    todo = [c for c in cohorts if getattr(c, 'criteria', None) is None]
+    bad = refused_trees(todo)
+    if bad:
+        raise ValueError('criteria trees refused: ' + '; '.join(f'{i} {code}: {errs}' for i, code, errs in bad))
+    for c in todo:
+        save(c, from_legacy(c))
+    return [(c.id, c.code) for c in todo]
 
 
 def refused_trees(cohorts):

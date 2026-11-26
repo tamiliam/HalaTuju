@@ -56,6 +56,17 @@ def _requirements_from(data):
     return out, bad
 
 
+def _rebuild_criteria(c):
+    """Set ``c.criteria`` to the tree its columns mean (`criteria.from_legacy`). Returns
+    `criteria.validate_tree`'s problems (nothing set when there are any). Never saves."""
+    from .. import criteria
+    tree = criteria.from_legacy(c)
+    problems = criteria.validate_tree(tree)
+    if not problems:
+        c.criteria = tree
+    return problems
+
+
 #: The requirements that are a FLOAT (a PNGK, a merit point). Every other one is a whole count.
 _FLOAT_REQUIREMENTS = ('min_stpm_pngk', 'min_merit_score')
 
@@ -143,10 +154,17 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
         # ⚠ CREATED CLOSED, ALWAYS. `is_open` defaults to True on the model, which would mean
         # creating a year opens applications in the same press. Opening is what lets real students
         # in; it gets its own deliberate action below.
-        c = ScholarshipCohort.objects.create(
+        c = ScholarshipCohort(
             programme=p, owning_organisation=p.organisation,
             code=code, name=name, year=year, is_active=True, is_open=False, **reqs, **window,
         )
+        # Criteria Sprint 2: the gate reads the TREE. Built from the very columns just set (model
+        # defaults included), so the new year means exactly what its requirement boxes say.
+        problems = _rebuild_criteria(c)
+        if problems:
+            return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': 'criteria'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        c.save(force_insert=True)
         logger.info('AUDIT intake_year_created cohort=%s programme=%s by=%s',
                     c.code, p.code, admin.email or '')
         return Response(_cohort_row(c), status=status.HTTP_201_CREATED)
@@ -192,7 +210,7 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
             return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
                             status=status.HTTP_400_BAD_REQUEST)
         # ⚠ CAPTURE THE OLD VALUE BEFORE WRITING. A threshold decides who is shortlisted, and
-        # `shortlisting.evaluate()` reads these columns LIVE — unlike the documents and questions,
+        # `shortlisting.evaluate()` reads them LIVE (through the criteria tree rebuilt below) — unlike the documents and questions,
         # which are frozen per application at submit (`requirements_snapshot`). So a change here
         # moves the bar for everybody still to be judged, and "which fields changed" does not
         # answer the only question anybody will ask afterwards: FROM WHAT, TO WHAT.
@@ -203,6 +221,14 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
         moved = {f: (getattr(c, f), v) for f, v in reqs.items() if getattr(c, f) != v}
         for f, v in reqs.items():
             setattr(c, f, v); changed.append(f)
+        if reqs:
+            # Criteria Sprint 2: this form is still the only editor, so a save of its boxes
+            # REBUILDS the stored tree from the columns (`criteria.from_legacy`) - otherwise the gate,
+            # which reads the tree, would keep the old bar while the screen shows the new one.
+            if _rebuild_criteria(c):
+                return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': 'criteria'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            changed.append('criteria')
 
         if 'is_open' in request.data:
             want = bool(request.data.get('is_open'))

@@ -71,10 +71,18 @@ class TestGradeOrBetter(SimpleTestCase):
         self.assertEqual(criteria.at_or_better({}, 'C'), 0)
 
 
+def merit(*tests):
+    return {'section': 'merit', 'all': list(tests)}
+
+
+UPU = lambda v: {'test': 'min_upu_merit', 'value': v}     # noqa: E731
+POSTM = lambda v: {'test': 'min_merit', 'value': v}       # noqa: E731
+
+
 class TestValidate(SimpleTestCase):
     def test_good_trees(self):
-        good = {'all': [results('any', post(PNGK3, {'test': 'min_merit', 'value': 80}),
-                                spm(gc(3, 'C'), {'test': 'min_upu_merit', 'value': 70})),
+        good = {'all': [results('any', post(PNGK3), spm(gc(3, 'C'))),
+                        merit(UPU(70), POSTM(80)),
                         {'section': 'income', 'all': [{'test': 'household_income_max', 'rm': 5860},
                                                       {'test': 'income_per_person_under', 'rm': 1584}]},
                         {'section': 'born_in', 'any': ['sabah', 'wp_labuan']}],
@@ -83,8 +91,19 @@ class TestValidate(SimpleTestCase):
         self.assertEqual(criteria.validate_tree({'all': []}), [])
         self.assertEqual(criteria.validate_tree({'all': [results('all', post(), spm())]}), [])
         self.assertEqual(criteria.validate_tree({'all': [results('any', spm())]}), [])     # blank floor shape
+        self.assertEqual(criteria.validate_tree({'all': [results('own', post(PNGK3), spm(gc(3, 'C')))]}), [])
         # a 0 count is today's "0 set" bar (asks only that SPM grades be given)
         self.assertEqual(criteria.validate_tree({'all': [results('any', spm(gc(0, 'A-')))]}), [])
+
+    def test_sprint_2_shapes_refused(self):
+        for tree in ({'all': [results('any', spm(UPU(70)))]},                 # merit left the groups
+                     {'all': [results('any', post(POSTM(80)))]},
+                     {'all': [merit()]}, {'all': [{'section': 'merit', 'any': [UPU(1)]}]},
+                     {'all': [merit(gc(3, 'C'))]}, {'all': [merit(UPU(1), UPU(2))]},
+                     {'all': [{'section': 'income', 'own': [{'test': 'household_income_max', 'rm': 1}]}]},
+                     {'all': [{'section': 'born_in', 'own': ['sabah']}]}, {'all': ['results']}):
+            with self.subTest(tree=tree):
+                self.assertNotEqual(criteria.validate_tree(tree), [])
 
     def test_bad_trees_are_refused_not_repaired(self):
         bad = [
@@ -110,73 +129,93 @@ class TestValidate(SimpleTestCase):
 
 
 class TestVoidSpmDoor(SimpleTestCase):
-    """Owner ruling 2026-11-25 (c): an SPM group that cannot fail anyone, beside a post-SPM group
-    under 'any', would let every SPM holder through - refused, never stored."""
-    MERIT0 = {'test': 'min_upu_merit', 'value': 0}
-
+    """Owner ruling 2026-11-25 (c): an SPM group that cannot fail anyone, beside a post-SPM group,
+    would let every SPM holder through - refused, never stored. Under 'any' only a grade count
+    guards the door (the merit section does not bind a post-SPM holder there); under 'own' a UPU
+    merit above 0 in the merit section counts too, because it binds every SPM holder."""
     def test_refused_under_any(self):
-        for door in (spm(), spm(gc(0, 'A-'), gc(0, 'C')), spm(self.MERIT0), spm(gc(0, 'C'), self.MERIT0)):
-            with self.subTest(door=door):
-                self.assertEqual(criteria.validate_tree({'all': [results('any', post(PNGK3), door)]}),
-                                 [criteria.VOID_SPM_DOOR])
+        for door, m in ((spm(), None), (spm(gc(0, 'A-'), gc(0, 'C')), None), (spm(), merit(UPU(80))),
+                        (spm(gc(0, 'C')), merit(UPU(0)))):
+            with self.subTest(door=door, m=m):
+                tree = {'all': [results('any', post(PNGK3), door)] + ([m] if m else [])}
+                self.assertEqual(criteria.validate_tree(tree), [criteria.VOID_SPM_DOOR])
         self.assertIn('would let every SPM holder through', criteria.VOID_SPM_DOOR)
-        self.assertIn('add a rule', criteria.VOID_SPM_DOOR)
-        self.assertIn('switch it off', criteria.VOID_SPM_DOOR)
+
+    def test_refused_under_own_unless_a_merit_above_0_binds_spm_holders(self):
+        for door, m, errs in ((spm(), None, [criteria.VOID_SPM_GROUP]),
+                              (spm(gc(0, 'C')), merit(UPU(0)), [criteria.VOID_SPM_GROUP]),
+                              (spm(), merit(POSTM(80)), [criteria.VOID_SPM_GROUP]),
+                              (spm(), merit(UPU(50)), []), (spm(gc(1, 'C')), None, [])):
+            with self.subTest(door=door, m=m):
+                tree = {'all': [results('own', post(PNGK3), door)] + ([m] if m else [])}
+                self.assertEqual(criteria.validate_tree(tree), errs)
+        self.assertIn('switch it off', criteria.VOID_SPM_GROUP)
 
     def test_a_rule_that_can_fail_makes_it_valid(self):
-        for door in (spm(gc(1, 'C')), spm({'test': 'min_upu_merit', 'value': 80}),
-                     spm(gc(0, 'A-'), gc(3, 'C'), self.MERIT0)):
+        for door in (spm(gc(1, 'C')), spm(gc(0, 'A-'), gc(3, 'C'))):
             with self.subTest(door=door):
                 self.assertEqual(criteria.validate_tree({'all': [results('any', post(PNGK3), door)]}), [])
 
     def test_not_refused_under_all_or_without_a_post_spm_group(self):
         self.assertEqual(criteria.validate_tree({'all': [results('all', post(PNGK3), spm(gc(0, 'C')))]}), [])
-        self.assertEqual(criteria.validate_tree({'all': [results('any', spm(gc(0, 'C'), self.MERIT0))]}), [])
+        self.assertEqual(criteria.validate_tree({'all': [results('own', spm(gc(0, 'C'))), merit(UPU(0))]}), [])
 
 
-class TestSpmDoorBesideAFloor(SimpleTestCase):
-    """Owner ruling 2026-11-25 (a): beside a post-SPM group the SPM group is an alternative door,
-    and a post-SPM holder who uses it faces EVERY SPM test, the UPU merit included (review round 2,
-    F1: floor 3.0 + merit 80 let STPM PNGK 1.0 with no SPM grades through)."""
-    MERIT80 = {'test': 'min_upu_merit', 'value': 80}
+class TestOwnRoute(SimpleTestCase):
+    """Owner ruling B (2026-11-26) for intakes 3 and 4: a post-SPM holder is judged on the CGPA
+    floor ONLY - the SPM group is never a second door for them - and an SPM holder on the SPM group."""
+    SEC = results('own', post(PNGK3), spm(gc(4, 'C')))
 
-    def test_floor_plus_merit_only_no_longer_passes_everyone(self):
-        sec = results('any', post(PNGK3), spm(self.MERIT80))
-        self.assertEqual(criteria.results_ok(stpm(1.0, spm_prereq_grades={}), sec), (False, 'PNGK 1.0 below 3.0'))
-        for merit, ok in ((80.0, True), (79.9, False), (None, False)):
-            with self.subTest(merit=merit), mock.patch('apps.scholarship.criteria.spm_merit', return_value=merit):
-                self.assertEqual(criteria.results_ok(stpm(1.0, spm_prereq_grades=WEAK), sec)[0], ok)
+    def test_post_spm_holder_below_the_floor_fails_even_with_strong_spm(self):
+        self.assertEqual(criteria.results_ok(stpm(1.0, spm_prereq_grades=STRONG), self.SEC),
+                         (False, 'PNGK 1.0 below 3.0'))
+        self.assertTrue(criteria.results_ok(stpm(1.0, spm_prereq_grades=STRONG), results('any', *self.SEC['own']))[0])
 
-    def test_credit_zero_plus_merit(self):
-        sec = results('any', post(PNGK3), spm(gc(0, 'C'), self.MERIT80))
-        self.assertFalse(criteria.results_ok(stpm(1.0, spm_prereq_grades={}), sec)[0])
+    def test_post_spm_holder_above_the_floor_passes_with_weak_spm(self):
+        self.assertEqual(criteria.results_ok(stpm(3.5, spm_prereq_grades=WEAK), self.SEC), (True, ''))
+
+    def test_spm_holder_is_judged_on_the_spm_group(self):
+        self.assertEqual(criteria.results_ok(prof(grades=WEAK), self.SEC), (False, '3 at C or better (need 4)'))
+        self.assertEqual(criteria.results_ok(prof(grades=STRONG), self.SEC), (True, ''))
+
+    def test_spm_holder_with_no_spm_group_fails_on_the_floor(self):
+        self.assertEqual(criteria.results_ok(prof(grades=STRONG), results('own', post(PNGK3))),
+                         (False, 'no post-SPM results (PNGK floor 3)'))
+
+    def test_post_spm_holder_with_no_floor_meets_the_grade_rules_d16c(self):
+        sec = results('own', spm(gc(4, 'C')))
+        self.assertEqual(criteria.results_ok(stpm(1.0, spm_prereq_grades=WEAK), sec),
+                         (False, 'SPM-only intake: 3 at C or better (need 4)'))
+        self.assertEqual(criteria.results_ok(stpm(1.0, spm_prereq_grades={}), sec),
+                         (False, 'SPM-only intake: SPM grades not provided'))
+
+
+class TestMeritSection(SimpleTestCase):
+    """Owner ruling 4 (2026-11-26): merit is its own AND section; each test binds its own kind of
+    student. Today's min_merit_score is the UPU merit, SPM holders only (D3)."""
+    def test_upu_merit_binds_spm_holders_only(self):
+        sec = merit(UPU(80))
         with mock.patch('apps.scholarship.criteria.spm_merit', return_value=70.0):
-            self.assertFalse(criteria.results_ok(stpm(1.0, spm_prereq_grades=WEAK), sec)[0])
-        with mock.patch('apps.scholarship.criteria.spm_merit', return_value=85.0):
-            self.assertTrue(criteria.results_ok(stpm(1.0, spm_prereq_grades=WEAK), sec)[0])
+            self.assertEqual(criteria.merit_ok(prof(grades=WEAK), sec), (False, 'merit point 70.0 below 80'))
+            self.assertEqual(criteria.merit_ok(stpm(1.0, spm_prereq_grades=WEAK), sec), (True, ''))
+        with mock.patch('apps.scholarship.criteria.spm_merit', return_value=None):
+            self.assertEqual(criteria.merit_ok(prof(grades={}), sec), (False, 'merit point not available (need 80)'))
 
-    def test_the_merit_is_spm_merit_on_their_spm_grades(self):
-        from apps.scholarship.shortlisting import spm_merit
-        p = stpm(1.0, spm_prereq_grades=STRONG)
-        m = spm_merit(p)
-        self.assertIsNotNone(m)
-        for need, ok in ((m, True), (m + 0.1, False)):
-            sec = results('any', post(PNGK3), spm({'test': 'min_upu_merit', 'value': need}))
-            self.assertEqual(criteria.results_ok(p, sec)[0], ok)
+    def test_post_spm_merit_binds_post_spm_holders_only(self):
+        sec = merit(POSTM(80))
+        with mock.patch('apps.scholarship.criteria.courses_public.merit_100', return_value=70.0):
+            self.assertEqual(criteria.merit_ok(stpm(3.5), sec), (False, 'post-SPM merit 70.0 below 80'))
+            self.assertEqual(criteria.merit_ok(prof(grades=WEAK), sec), (True, ''))
 
-    def test_all_mode_reason_names_the_merit(self):
-        sec = results('all', post(PNGK3), spm(self.MERIT80))
+    def test_academic_ok_joins_grades_then_merit_in_todays_order(self):
+        tree = {'all': [results('own', spm(gc(4, 'C'))), merit(UPU(80))]}
         with mock.patch('apps.scholarship.criteria.spm_merit', return_value=70.0):
-            self.assertEqual(criteria.results_ok(stpm(3.5, spm_prereq_grades=WEAK), sec),
+            self.assertEqual(criteria.academic_ok(prof(grades=WEAK), tree),
+                             (False, '3 at C or better (need 4); merit point 70.0 below 80'))
+            self.assertEqual(criteria.academic_ok(prof(grades=STRONG), tree),
                              (False, 'merit point 70.0 below 80'))
-        self.assertEqual(criteria.results_ok(stpm(3.5, spm_prereq_grades={}), sec),
-                         (False, 'SPM grades not provided'))
-
-    def test_blank_floor_keeps_d3(self):
-        sec = results('any', spm(self.MERIT80))
         with mock.patch('apps.scholarship.criteria.spm_merit', return_value=10.0):
-            self.assertEqual(criteria.results_ok(stpm(1.0, spm_prereq_grades={}), sec), (True, ''))
-            self.assertEqual(criteria.results_ok(stpm(1.0, spm_prereq_grades=WEAK), sec), (True, ''))
+            self.assertEqual(criteria.academic_ok(stpm(1.0, spm_prereq_grades=STRONG), tree), (True, ''))
 
 
 class TestResults(SimpleTestCase):
@@ -210,11 +249,11 @@ class TestResults(SimpleTestCase):
         self.assertEqual(criteria.results_ok(mat, sec), (False, 'Matriculation co-curriculum score not provided'))
 
     def test_min_merit_is_the_post_spm_merit_out_of_100(self):
-        sec = results('any', post({'test': 'min_merit', 'value': 80}))
-        for merit, want in ((80.0, (True, '')), (79.99, (False, 'post-SPM merit 79.99 below 80')),
-                            (None, (False, 'post-SPM merit not available (need 80)'))):
-            with self.subTest(merit=merit), mock.patch('apps.courses.public.merit_100', return_value=merit):
-                self.assertEqual(criteria.results_ok(stpm(3.5), sec), want)
+        sec = merit(POSTM(80))
+        for m, want in ((80.0, (True, '')), (79.99, (False, 'post-SPM merit 79.99 below 80')),
+                        (None, (False, 'post-SPM merit not available (need 80)'))):
+            with self.subTest(merit=m), mock.patch('apps.courses.public.merit_100', return_value=m):
+                self.assertEqual(criteria.merit_ok(stpm(3.5), sec), want)
 
     def test_grade_count_boundaries_for_every_grade(self):
         grades = {f's{i}': g for i, g in enumerate(criteria.GRADES)}     # one of each: n at G = index + 1
@@ -235,12 +274,12 @@ class TestResults(SimpleTestCase):
                          (False, '0 at B+ or better (need 5 at B+ or better)'))
 
     def test_upu_merit_boundaries_and_spm_holders_only(self):
-        sec = results('any', spm({'test': 'min_upu_merit', 'value': 70}))
-        for merit, want in ((70.0, (True, '')), (69.9, (False, 'merit point 69.9 below 70')),
-                            (None, (False, 'merit point not available (need 70)'))):
-            with self.subTest(merit=merit), mock.patch('apps.scholarship.criteria.spm_merit', return_value=merit):
-                self.assertEqual(criteria.results_ok(prof(), sec), want)
-                self.assertEqual(criteria.results_ok(stpm(2.0), sec), (True, ''))    # D3
+        sec = merit(UPU(70))
+        for m, want in ((70.0, (True, '')), (69.9, (False, 'merit point 69.9 below 70')),
+                        (None, (False, 'merit point not available (need 70)'))):
+            with self.subTest(merit=m), mock.patch('apps.scholarship.criteria.spm_merit', return_value=m):
+                self.assertEqual(criteria.merit_ok(prof(), sec), want)
+                self.assertEqual(criteria.merit_ok(stpm(2.0), sec), (True, ''))    # D3
 
     def test_empty_spm_group_passes_everyone(self):
         sec = results('any', spm())
@@ -384,24 +423,23 @@ def income(ceiling, pc):
 class TestFromLegacy(SimpleTestCase):
     def test_cohort_1_no_floor_is_spm_only(self):
         self.assertEqual(criteria.from_legacy(COHORT_1), {'all': [
-            results('any', spm(gc(4, 'A-'), gc(5, 'B+'))), income(5860, 1584)]})
+            results('own', spm(gc(4, 'A-'), gc(5, 'B+'))), income(5860, 1584)]})
 
     def test_cohort_3_keeps_its_zero_bars(self):
         self.assertEqual(criteria.from_legacy(COHORT_3), {'all': [
-            results('any', post(PNGK2), spm(gc(0, 'A-'), gc(0, 'B+'), gc(3, 'C'),
-                                            {'test': 'min_upu_merit', 'value': 0})),
+            results('own', post(PNGK2), spm(gc(0, 'A-'), gc(0, 'B+'), gc(3, 'C'))), merit(UPU(0)),
             income(5860, 1180), {'section': 'born_in', 'any': ['sabah', 'wp_labuan']}]})
 
     def test_cohort_4(self):
         self.assertEqual(criteria.from_legacy(COHORT_4), {'all': [
-            results('any', post(PNGK2), spm(gc(3, 'C'))), income(5860, 1000)]})
+            results('own', post(PNGK2), spm(gc(3, 'C'))), income(5860, 1000)]})
 
     def test_cohort_5_floor_with_no_spm_bar_is_the_cgpa_trap(self):
         self.assertEqual(criteria.from_legacy(COHORT_5), {'all': [
-            results('any', post(PNGK3)), income(5860, 900), {'section': 'born_in', 'any': PENINSULA}],
+            results('own', post(PNGK3)), income(5860, 900), {'section': 'born_in', 'any': PENINSULA}],
             'flag': [{'test': 'course_start_year', 'allowed': [2025, 2026]}]})
         plain = criteria.from_legacy(COHORT_5, keep_empty_spm=True)
-        self.assertEqual(plain['all'][0], results('any', post(PNGK3), spm()))
+        self.assertEqual(plain['all'][0], results('own', post(PNGK3), spm()))
         self.assertIs(criteria.tree_for_migration, criteria.from_legacy)
 
     def test_the_trap_is_decided_by_shape_not_by_code(self):
@@ -411,27 +449,27 @@ class TestFromLegacy(SimpleTestCase):
                            (cohort(min_stpm_pngk=2.5, min_spm_credit_count=1), True),
                            (cohort(code='bpb-deg-dip-2026', min_stpm_pngk=3.0, min_spm_credit_count=5), True)):
             with self.subTest(c=repr(c)):
-                groups = criteria.from_legacy(c)['all'][0]['any']
+                groups = criteria.from_legacy(c)['all'][0]['own']
                 self.assertEqual([g['route'] for g in groups], ['post_spm', 'spm'] if has_spm else ['post_spm'])
 
     def test_model_defaults(self):
         self.assertEqual(criteria.from_legacy(DEFAULTS), {'all': [
-            results('any', post({'test': 'min_pngk', 'value': 2.9}), spm(gc(4, 'A-'), gc(5, 'B+'))),
+            results('own', post({'test': 'min_pngk', 'value': 2.9}), spm(gc(4, 'A-'), gc(5, 'B+'))),
             {'section': 'income', 'any': [{'test': 'income_per_person_under', 'rm': 1584}]}]})
 
     def test_nothing_set_and_merit_and_every_tree_validates(self):
         self.assertEqual(criteria.from_legacy(cohort()), {'all': []})
-        self.assertEqual(criteria.from_legacy(cohort(min_merit_score=80.0))['all'][0],
-                         results('any', spm({'test': 'min_upu_merit', 'value': 80.0})))
+        self.assertEqual(criteria.from_legacy(cohort(min_merit_score=80.0))['all'],
+                         [results('own', spm()), merit(UPU(80.0))])
         for c in (COHORT_1, COHORT_3, COHORT_4, COHORT_5, DEFAULTS, cohort()):
             self.assertEqual(criteria.validate_tree(criteria.from_legacy(c)), [])
         for c in (COHORT_1, COHORT_3, COHORT_4, DEFAULTS, cohort()):
             self.assertEqual(criteria.validate_tree(criteria.from_legacy(c, keep_empty_spm=True)), [])
         # --plain on intake 5 is the trap left on: a comparison view that validate refuses.
         self.assertEqual(criteria.validate_tree(criteria.from_legacy(COHORT_5, keep_empty_spm=True)),
-                         [criteria.VOID_SPM_DOOR])
+                         [criteria.VOID_SPM_GROUP])
 
-    def test_from_legacy_never_builds_a_void_spm_door(self):
+    def test_from_legacy_never_builds_a_void_spm_group(self):
         # ruling (b): only a count or a merit above 0 counts as a bar.
         shapes = [dict(min_stpm_pngk=3.0, min_merit_score=80.0),
                   dict(min_stpm_pngk=3.0, min_spm_credit_count=0, min_merit_score=80.0),
@@ -443,8 +481,8 @@ class TestFromLegacy(SimpleTestCase):
                 self.assertEqual(criteria.validate_tree(criteria.from_legacy(cohort(**f))), [])
         self.assertTrue(criteria.has_spm_bar(COHORT_3))          # credit 3 keeps its group
         self.assertFalse(criteria.has_spm_bar(COHORT_5))
-        self.assertEqual([g['route'] for g in criteria.from_legacy(COHORT_3)['all'][0]['any']], ['post_spm', 'spm'])
-        self.assertEqual([g['route'] for g in criteria.from_legacy(COHORT_5)['all'][0]['any']], ['post_spm'])
+        self.assertEqual([g['route'] for g in criteria.from_legacy(COHORT_3)['all'][0]['own']], ['post_spm', 'spm'])
+        self.assertEqual([g['route'] for g in criteria.from_legacy(COHORT_5)['all'][0]['own']], ['post_spm'])
 
     def test_refused_trees_names_bad_intakes_by_id_and_code_only(self):
         good = cohort(code='ok', id=1, min_stpm_pngk=2.0)

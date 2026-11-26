@@ -345,19 +345,33 @@ def rescore_pending_decisions():
     applicants are judged by the new rule before their verdict goes out. Decisions
     already released (and emailed) are NEVER touched. A decision whose verdict stays the
     same keeps its send time; one whose verdict flips is re-timed from submitted_at by the
-    new verdict's current delay (TD-369). Returns a summary of any flips."""
+    new verdict's current delay (TD-369). Returns a summary of any flips.
+
+    ⚠ OWNER RULING 6 (criteria editor Sprint 2, 2026-11-26): existing decisions must not change by
+    the switch to the criteria tree. A pending application that was ALREADY SCORED, whose stored
+    verdict is what the old columns gate still says, but which the tree would decide differently
+    (today only intake 5's SPM-only students, the CGPA trap switched off) is HELD: not re-scored,
+    its stored decision kept, its id listed under 'held' for a person to look at. Never silent.
+    A fresh scoring (submit, or an unscored row) always uses the tree."""
+    from ..shortlisting import evaluate_columns
     pending = list(
         ScholarshipApplication.objects
         .filter(status='submitted', decision_released_at__isnull=True)
         .select_related('cohort', 'profile', 'owning_organisation__configuration')
     )
-    changed = []
+    changed, held = [], []
     for application in pending:
         before = application.verdict
+        if before:
+            new = evaluate(application, application.cohort)
+            old = evaluate_columns(application, application.cohort)
+            if new.verdict != old.verdict and before == old.verdict:
+                held.append(application.id)
+                continue
         result = score_application(application, rescore=True)
         if result.verdict != before:
             changed.append({
                 'id': application.id, 'from': before or '(unscored)',
                 'to': result.verdict, 'reason': result.reason,
             })
-    return {'rescored': len(pending), 'changed': changed}
+    return {'rescored': len(pending) - len(held), 'changed': changed, 'held': held}

@@ -20,3 +20,9 @@ class Command(BaseCommand):
             f"rescore_pending_decisions: {result['rescored']} pending re-scored; "
             f"{len(result['changed'])} changed → {result['changed']}"
         )
+        if result['held']:
+            # Owner ruling 6 (criteria Sprint 2): kept as decided, for a person to look at. Ids only.
+            self.stdout.write(
+                f"HELD (stored decision kept; the criteria tree would decide differently): "
+                f"{len(result['held'])} → {result['held']}"
+            )

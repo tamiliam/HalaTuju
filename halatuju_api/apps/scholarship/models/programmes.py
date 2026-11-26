@@ -384,6 +384,15 @@ class ScholarshipCohort(models.Model):
         help_text="Course-start years (e.g. [2025, 2026]) this intake accepts, read from the offer "
                   "letter's intake year. Empty list = not applied.",
     )
+    # Criteria editor Sprint 2 (2026-11-26): the intake's rules as ONE AND/OR tree
+    # (`apps.scholarship.criteria`, shape in docs/decisions.md). The shortlisting gate reads it
+    # through `criteria.tree_of`: NULL = not built yet, read as `from_legacy` of the columns above,
+    # which stay (the old admin form still writes them and rebuilds this tree on save).
+    criteria = models.JSONField(
+        null=True, blank=True, default=None,
+        help_text="The intake's criteria tree (results, merit, income, born-in sections; course-start "
+                  "flag). NULL = read from the requirement columns.",
+    )
     # (TD-226, 2026-11: `bucket_b_margin` left the model, read by nothing. Its column stays in the
     # database until a later scholarship migration drops it (not 0212: that number went to
     # `allowed_start_years`, H3a). `funding_envelope` is kept: the Programme roadmap
