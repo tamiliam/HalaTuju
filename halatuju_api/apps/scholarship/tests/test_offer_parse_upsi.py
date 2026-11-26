@@ -114,6 +114,21 @@ class UpsiNeverLocksTest(SimpleTestCase):
         # the real matric (a letter and 11 digits), alone or with a year or a date after it, is not an IC
         self.assertIsNotNone(run(page2=PAGE2 + '\n' + MATRIC + ' 2027\nNo. Matrik : ' + MATRIC + ' 12.05.2027')['locked'])
 
+    def test_every_ic_shape_refuses_raw_on_page_one_and_page_two(self):
+        """Review 2: dash look-alikes, a slash, long white-space runs and an IC split over two lines refuse on page 1's
+        raw layout and on a raw page 2; the matric before a date or a numbered line still locks."""
+        from apps.scholarship.tests.test_offer_parse_uum import IC_SHAPES
+        for ic in IC_SHAPES:
+            with self.subTest(ic=ic):
+                lay = layout(head_extra=(L + 'No. K/P :' + ' ' * 30 + ic,))
+                self.assertEqual(read_upsi(lay), (None, 'ic_printed'))
+                self.assertEqual(run(lay)['guard'], 'ic_printed')
+                page2 = PAGE2 + '\n' + ' ' * 40 + 'No. K/P' + ' ' * 31 + ':' + ' ' * 7 + ic + ' ' * 20 + 'Tel'
+                self.assertEqual(later_pages_refusal([page2], PROGRAMME, CODE, ''), 'ic_printed')
+                self.assertEqual(run(page2=page2)['guard'], 'ic_printed')
+        page2 = PAGE2 + '\n' + ' ' * 40 + 'No. Matrik :' + ' ' * 20 + MATRIC + '\n' + ' ' * 10 + '1. Bawa dokumen.'
+        self.assertIsNotNone(run(page2=page2 + '\n' + MATRIC + '\n' + '12.05.2027')['locked'])
+
     def test_english_letter_refuses(self):
         lay = layout(title='OFFER OF ADMISSION TO UNIVERSITI PENDIDIKAN SULTAN IDRIS (UPSI)')
         d = run(lay)

@@ -149,7 +149,9 @@ class UitmRefusalTest(SimpleTestCase):
                 d = run(layout(head=head))
                 self.assertIsNone(d['locked'])
                 self.assertIn(d['guard'], ('name_not_ended', 'name_shape'))
-        for nxt in (' ' * 84 + 'MAKLUMAT PENTING', 'TAMBUN INDAH' + ' ' * 50 + 'No. Pelajar'):
+        for nxt in (' ' * 84 + 'MAKLUMAT PENTING', 'TAMBUN INDAH' + ' ' * 50 + 'No. Pelajar',
+                    "NO'MAN ALFEN" + ' ' * 50 + 'No. Pelajar', 'NO’MAN' + ' ' * 50 + 'No. Pelajar',
+                    'NO-MAN ALFEN', "KG'AN", 'LOT-ANI ALFEN'):     # review 2: a name, not an address word
             with self.subTest(nxt=nxt):
                 head = HEAD[:3] + [nxt] + HEAD[4:]
                 self.assertEqual(run(layout(head=head))['guard'], 'name_not_ended')

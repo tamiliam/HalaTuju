@@ -29,8 +29,8 @@ English "Admission" letters print no Malay title (``no_title``); a letter that s
 import re
 
 from .offer_parse import _name_ok
-from .offer_parse_uitm import NOT_DEGREE, _PRA
-from .offer_ums_refusal import _SQUEEZE_OUT, _withdrawn_one, fold_lookalikes, status_said
+from .offer_parse_uitm import NOT_DEGREE, _PRA, name_ended
+from .offer_ums_refusal import _DATE_SEP, _SQUEEZE_OUT, _withdrawn_one, fold_lookalikes, status_said
 
 LANE = 'ua:UUM'
 INSTITUTION = 'UNIVERSITI UTARA MALAYSIA'
@@ -57,11 +57,18 @@ _PROGRAMME_LABEL = 'Program Pengajian'
 _SCHOOL_LABEL = 'Pusat Pengajian / Kolej'
 #: A word may open a bracket: "SARJANA MUDA SAINS DENGAN KEPUJIAN (TEKNOLOGI ...)".
 _DEGREE = re.compile(r"^SARJANA MUDA(?: \(?[A-Z][A-Z&,'/.()\-]*)+$")
-#: Any IC-like number: 6, 2 and 4 digits, with a '-', '.' or space between (spaces around it allowed: "990101 - 14
-#: - 5678", "990101.14.5678") or nothing (12 digits), or a longer digit run. Wider than `offer_parse._IC` on purpose:
-#: it only refuses. The 6-digit UUM bracket number and the UPSI matric (a letter and 11 digits) are too short for it.
-_SEP = r'(?:[ \t]{0,3}[-.][ \t]{0,3}|[ \t]{1,3})?'
+#: Any IC-like number: 6, 2 and 4 digits, with a dash-, dot- or slash-like mark between (`_DATE_SEP`: '-', '.', '/',
+#: en / em dash, minus, Unicode hyphens; any white space around it), any run of white space alone (page 2 keeps long
+#: runs; a line break too, so "990101-14-" ending a line and "5678" opening the next is one) or nothing (12 digits),
+#: or a longer digit run. Wider than `offer_parse._IC` on purpose: it only refuses. The 6-digit UUM bracket number
+#: and the UPSI matric (a letter and 11 digits) are too short for it (review round 2).
+_SEP = r'(?:\s*' + _DATE_SEP + r'\s*|\s+)?'
 _IC_ANY = re.compile(r'(?<!\d)[0-9]{6}' + _SEP + r'[0-9]{2}' + _SEP + r'[0-9]{4}(?!\d)')
+#: An IC broken inside a group ("99010" / "1-14-5678"), read on two neighbouring lines joined (`_split_ic`); its number
+#: may not follow a letter or digit (the UPSI matric, a letter and 11 digits, would borrow a digit from a numbered
+#: line below it).
+_DIGITS = frozenset('0123456789')
+_IC_JOINED = re.compile(r'(?<![0-9A-Za-z])[0-9]{6}' + _SEP + r'[0-9]{2}' + _SEP + r'[0-9]{4}(?!\d)')
 _DIGIT_RUN = re.compile(r'\d{12,}')
 _PENGESAHAN = re.compile(r'PENGESAHAN')
 #: A later page must be one of UUM's own; any other page goes to the AI.
@@ -122,7 +129,8 @@ def _value(line: str) -> str:
 
 def _head(lines, at):
     """(name, offer_date, reason): the one "Rujukan" line in the right-hand column before the title; the line
-    straight after it is "NAME (NNNNNN)" at the left margin. The bracket number is dropped, never kept."""
+    straight after it is "NAME (NNNNNN)" at the left margin, and the line after that must prove the name ended
+    (`offer_parse_uitm.name_ended`: the bracket alone does not, review round 2). The bracket number is dropped."""
     ref = [i for i, ln in enumerate(lines[:at]) if _indent(ln) >= 60 and _RUJUKAN.match(_one_space(ln))]
     if len(ref) != 1 or ref[0] + 1 >= at:
         return '', '', 'no_head'
@@ -137,6 +145,8 @@ def _head(lines, at):
     name = m.group(1).strip()
     if not _name_ok(name) or _LINKERS.search(name):
         return '', offer_date, 'name_shape'       # an unread or wrapped name ("... BINTI")
+    if not name_ended(lines[ref[0] + 2] if ref[0] + 2 < at else ''):
+        return '', offer_date, 'name_not_ended'   # the rest of the name may be on the next line
     if not any(_one_space(x) == 'Saudara/i,' for x in lines[ref[0] + 2:at]):
         return '', offer_date, 'no_head'
     return name, offer_date, ''
@@ -213,9 +223,19 @@ def _uum_dates_sane(intake: str, printed: str, offer_date: str) -> bool:
 
 
 def ic_printed(text: str) -> bool:
-    """True when ``text`` (raw or look-alike folded) prints any IC-like number: 12 digits in an IC's shape or a
-    longer digit run. UUM prints none, so one means another template: the AI reads it."""
-    return any(_IC_ANY.search(one) or _DIGIT_RUN.search(one) for one in (text or '', fold_lookalikes(text or '')))
+    """True when ``text`` (raw or look-alike folded) prints any IC-like number: 12 digits in an IC's shape (`_IC_ANY`;
+    also with a line break inside a group, `_split_ic`) or a longer digit run. UUM prints none, so one means another
+    template: the AI reads it."""
+    return any(_IC_ANY.search(one) or _DIGIT_RUN.search(one) or _split_ic(one)
+               for one in (text or '', fold_lookalikes(text or '')))
+
+
+def _split_ic(text: str) -> bool:
+    """True when two neighbouring non-blank lines, the first ending in a digit and the second opening with one, read
+    as an IC once joined (`_IC_JOINED`): an IC broken inside a group. Only the two lines are joined, so the line
+    after them never lengthens the number."""
+    lines = [ln.strip() for ln in (text or '').splitlines() if ln.strip()]
+    return any(a[-1] in _DIGITS and b[0] in _DIGITS and _IC_JOINED.search(a + b) for a, b in zip(lines, lines[1:]))
 
 
 def read_uum(source: str):

@@ -15,6 +15,17 @@ NAME = 'ZORBEX QUENTARO BIN ALFEN'
 BRACKET = '418273'                                # the 6-digit number UUM prints after the name: NOT an IC
 L, R = ' ' * 26, ' ' * 91
 PROGRAMME = 'SARJANA MUDA PERAKAUNAN DENGAN KEPUJIAN'
+#: Review 2: IC shapes that once locked with a blank IC (made-up numbers). Shared with the UPSI tests.
+IC_SHAPES = ('990101–14–5678', '990101—14—5678', '990101−14−5678',
+             '990101‐14‐5678', '990101‑14‑5678', '990101―14―5678', '990101/14/5678',
+             '990101 / 14 / 5678', '990101' + ' ' * 12 + '14' + ' ' * 9 + '5678', '990101\t14\t\t5678',
+             '990101 – 14' + ' ' * 6 + '5678', '990101-14-\n5678', '990101-\n' + ' ' * 30 + '14-5678',
+             '990101 14\n   5678', '99010\n1-14-5678', '9901011\n45678', '990101 14 5678')
+#: Numbers that are not ICs: none may refuse (the UUM bracket, the UPSI matric, phones, short bank numbers).
+NOT_IC_SHAPES = ('(' + BRACKET + ')', 'D20271234567 12.05.2027', 'D20271234567\n12.05.2027', 'D20271234567\n2027',
+                 'No. Matrik : D20271234567\n1. Saudara/i', '(603) 5544 3000', '012-345 6789', '+6012-345 6789',
+                 '04-928 4000', '60123456789', '1234 5678 9012', '12345678901 2027', '14/09/2027 2027',
+                 NAME + ' (' + BRACKET + ')\nNO 1 JALAN MAWAR')
 
 
 def layout(name_line=None, title=None, programme=':SARJANA MUDA PERAKAUNAN', wrap=(' ' * 40 + 'DENGAN KEPUJIAN',),
@@ -144,6 +155,32 @@ class UumNeverLocksTest(SimpleTestCase):
             with self.subTest(not_ic=not_ic):
                 self.assertFalse(ic_printed(not_ic))
 
+    def test_every_ic_shape_refuses_on_page_one_and_page_two(self):
+        """Review 2: dash look-alikes, a slash, long white-space runs (page 2 is not squeezed) and an IC split over
+        two lines all refuse, on page 1's raw layout and on a raw page 2."""
+        for ic in IC_SHAPES:
+            with self.subTest(ic=ic):
+                self.assertTrue(ic_printed(ic))
+                lay = layout(head_extra=['No. K/P :' + ' ' * 30 + ic])
+                self.assertEqual(read_uum(lay), (None, 'ic_printed'))
+                d = run(lay)
+                self.assertIsNone(d['locked'])
+                self.assertEqual(d['guard'], 'ic_printed')
+                page2 = PAGE2 + '\n' + ' ' * 40 + 'No. K/P' + ' ' * 31 + ':' + ' ' * 7 + ic + ' ' * 20 + 'Tel'
+                self.assertEqual(later_pages_refusal([page2], PROGRAMME, '14 September 2027'), 'ic_printed')
+                self.assertEqual(run(page2=page2)['guard'], 'ic_printed')
+                self.assertEqual(letter_refusal(lay + '\n' + page2), 'ic_printed')
+
+    def test_numbers_that_are_not_ics_still_lock(self):
+        """Review 2: the bracket, the UPSI matric before a date or a numbered line, phones and short bank numbers
+        never refuse, raw or with line breaks."""
+        for not_ic in NOT_IC_SHAPES:
+            with self.subTest(not_ic=not_ic):
+                self.assertFalse(ic_printed(not_ic))
+        page2 = PAGE2 + '\n' + '\n'.join(' ' * 30 + x + ' ' * 40 + 'Tel : 04-928 4000' for x in NOT_IC_SHAPES[:6])
+        self.assertIsNotNone(run(page2=page2)['locked'])
+        self.assertIsNotNone(run(layout(head_extra=[' ' * 60 + 'Tel :   04-928   4000']))['locked'])
+
     def test_an_ic_in_the_plain_layer_only_refuses(self):
         lay = layout()
         p1 = plain(lay) + '\n990101-14-5678'
@@ -168,6 +205,20 @@ class UumNeverLocksTest(SimpleTestCase):
                 lay = layout(name_line=first + '\n' + rest)
                 self.assertIsNone(run(lay)['locked'])
                 self.assertEqual(run(lay)['guard'], 'name_shape')
+
+    def test_the_bracket_alone_does_not_prove_the_name_ended(self):
+        """Review 2: "... BINTI MOHD (NNNNNN)" with the rest of the name on the next line refuses; the line after the
+        name must prove it ended (`offer_parse_uitm.name_ended`), as on UiTM, UM and UPSI."""
+        for rest in ('SALLEH', 'MOHD ALI', "NO'MAN", 'NO-MAN ALI', '    SALLEH'):
+            with self.subTest(rest=rest):
+                lay = layout(name_line='ZORBEX BINTI MOHD (' + BRACKET + ')\n' + rest)
+                d = run(lay)
+                self.assertIsNone(d['locked'])
+                self.assertEqual(d['guard'], 'name_not_ended')
+        for addr in ('KAMPUNG MAWAR', 'KG. MAWAR', 'LOT 12, JALAN MAWAR', 'B-1-12 TAMAN MAWAR', 'PETI SURAT 9'):
+            with self.subTest(addr=addr):
+                lock = run(layout().replace('\nNO 1 JALAN MAWAR\n', '\n' + addr + '\n'))['locked']
+                self.assertEqual(lock['candidate_name'], NAME)
 
     def test_dates_and_session(self):
         self.assertEqual(run(layout(date='14 September 2030'))['guard'], 'dates_not_sane')

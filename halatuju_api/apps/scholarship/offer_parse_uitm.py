@@ -64,9 +64,10 @@ _UITM_PAGE = re.compile(r'Bahagian\s{1,3}Pengambilan\s{1,3}Pelajar|uitm\.edu\.my
 #: Words the first address line opens with that never carry on a name (village, street, garden, lane, lot, house
 #: number, block, post box, floor, flats, quarters, estate). Measured 2026-11-26 on the samples whose head read: every
 #: UiTM and UPSI line after the name, and all but one UM one (a lone word, now refused), carries one of these, a digit
-#: or a comma.
+#: or a comma. Review round 2: the word may not run on into an apostrophe or a hyphen ("NO'MAN", "NO-MAN" are names);
+#: a dot still ends it ("KG. MAWAR", "NO.12" are real address starts).
 _ADDRESS_START = re.compile(r'^(?:KAMPUNG|KG|JALAN|JLN|TAMAN|TMN|LORONG|LRG|LOT|NO|BLOK|PETI SURAT|PERSIARAN|'
-                            r'TINGKAT|PANGSAPURI|KUARTERS|FELDA|LADANG|SIMPANG)(?![A-Z])')
+                            r"TINGKAT|PANGSAPURI|KUARTERS|FELDA|LADANG|SIMPANG)(?![A-Z'`´‘’ʼ\-‐-―−])")
 
 
 def is_uitm(up: str) -> bool:
