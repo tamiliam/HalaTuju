@@ -31,6 +31,8 @@ from __future__ import annotations
 
 import logging
 
+from . import offer_parse_uitm, offer_parse_umk, offer_parse_unimas
+
 logger = logging.getLogger(__name__)
 
 #: The keys the parser owns — written whole on a lock, blank or not. The last five are AI-only fields the
@@ -49,9 +51,9 @@ PRESERVED = (('reporting_date', 'reporting_date_label'), ('offer_date',))
 #: OCR-14 review r2: per rules lane, the `PRESERVED` fields its reader NEVER reads by design (it always writes them
 #: blank). Only these are written blank over the prior AI read; every other lane and field keeps merge-preserve
 #: as before review r1 (a live lane's kept AI date must not move a genuineness band).
-NEVER_READ = {'ua:UNIMAS': frozenset({'reporting_date', 'reporting_date_label'}),   # UNIMAS prints no reporting date
-              'ua:UMK': frozenset({'offer_date'}),     # the head TARIKH is a print date, never stored
-              'ua:UiTM': frozenset({'offer_date'})}    # UiTM prints no offer date (offer_parse_uitm, always '')
+NEVER_READ = {offer_parse_unimas.LANE: frozenset({'reporting_date', 'reporting_date_label'}),   # UNIMAS prints no reporting date
+              offer_parse_umk.LANE: frozenset({'offer_date'}),     # the head TARIKH is a print date, never stored
+              offer_parse_uitm.LANE: frozenset({'offer_date'})}    # UiTM prints no offer date (offer_parse_uitm, always '')
 
 
 def pdf_layers(image, content_type='') -> tuple:
