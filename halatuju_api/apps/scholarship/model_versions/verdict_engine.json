@@ -99,6 +99,11 @@
   "2026-11-26.5": {
     "digest": "326e65515c64cb53ebdf0addb7a9ef81db774a96899b93130ef4a67a3bfb0c56",
     "note": "Criteria Sprint 3b. income_headroom reads the income section's join: under 'all' (both lines must pass, as criteria.income_ok) the band is 'over' when EITHER line fails and the margin is graded on the stricter line; a household size of 0 or below is 'unknown' (the gate already refuses it). The refusal reason for a gift with only a per-person line no longer says '> RMNone' (criteria.income_ok and shortlisting._income_ok, worded identically via shortlisting.income_above). No live intake has an 'all' section or a per-person-only line; no shortlist answer changes.",
-    "also_ok": []
+    "also_ok": [
+      {
+        "digest": "3f51646dfadb1069cf7a1b75385e453ca8120a260a150d0802d889b1c1af9174",
+        "note": "OCR-14 on the criteria 3b base (2026-11-27): ua:UNIMAS and ua:UTHM join offer_exact.ISSUER_PRINTS_NO_IC and pathway_engine._NO_IC_ISSUER_NAMES, so a blank IC on their letters says 'not_printed' instead of 'unreadable'; verdict_pathway reads 'not_printed' exactly as 'unreadable' (as the 25.7 and 26.2 OCR-14 entries), so no verdict answer changes. Same source change as the d8fc306e entry under 2026-11-26.2, on the new base."
+      }
+    ]
   }
 }
