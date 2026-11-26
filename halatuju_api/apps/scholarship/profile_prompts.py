@@ -109,7 +109,7 @@ _EVERGREEN = (
 )
 
 
-PROFILE_PROMPT = """You are writing the profile of a B40 student applying for education \
+PROFILE_PROMPT = """You are writing the profile of a student from a low-income family applying for education \
 financial assistance in Malaysia. It is read first by the reviewer assessing the application, \
 and later by a prospective sponsor.
 
@@ -143,9 +143,9 @@ household income below — is only what the family REPORTS: present it as such (
 reports about RM…") and you MAY give it as context alongside the documented figure (e.g. base pay \
 vs a month with overtime), but never as "confirmed", and do NOT attribute a reported figure to a \
 specific earner or invent a breakdown. STR/JKM are gated the SAME way: a value of "yes" means a welfare DOCUMENT is on file, so \
-you MAY state the family receives it (this confirms B40 status, NOT an income figure). Any other \
+you MAY state the family receives it (this confirms the household's low-income status, NOT an income figure). Any other \
 value ("no" or "not established — do not claim") means there is NO proof on file — do NOT mention \
-STR/JKM at all and do NOT use it to affirm B40 status. If who earns what is unclear, describe the \
+STR/JKM at all and do NOT use it to affirm the household's low-income status. If who earns what is unclear, describe the \
 situation (a single earner, a parent unable to work) without inventing numbers. Do not make up a \
 story to reconcile the figures.
 
@@ -197,7 +197,7 @@ quiz does not obviously add something supportive, simply leave it out.
 """
 
 
-REFINE_PROMPT = """You are writing the FINAL profile of a B40 student applying for education \
+REFINE_PROMPT = """You are writing the FINAL profile of a student from a low-income family applying for education \
 financial assistance in Malaysia — the conclusive version a sponsor will read.
 
 You are given (1) a DRAFT written from the application, (2) the student's answers to our \
@@ -259,23 +259,24 @@ Interviewer's overall note: {overall_note}
 """
 
 
-# When the deterministic verdict flags household income ABOVE the B40 line yet the officer has
+# When the deterministic verdict flags household income ABOVE the gift's own income cut-off yet the officer has
 # recommended the student anyway, the FINAL profile must not read cut-and-dry: it should
 # acknowledge the income honestly and foreground the EXTENUATING CIRCUMSTANCES that make the case
 # exceptional — grounded ONLY in the officer's written conclusion + the student's own account,
 # never invented (owner decision 2026-07-08). The QC's own note is deliberately NOT relied upon
 # here: a QC often simply endorses the reviewer's view without adding detail.
 _BELOW_LINE_AFFIRM = (
-    "NOTE ON INCOME — this household has been VERIFIED as B40-eligible under the programme's means "
-    "test; its income is WITHIN the B40 range. Do NOT claim or imply the income is ABOVE the B40 "
-    "threshold, do NOT call the case borderline or exceptional on income grounds, and do NOT invent a "
-    "threshold comparison (you are not given the cut-off figure). Present the reported / documented "
-    "income plainly as a B40 household's income."
+    "NOTE ON INCOME — this household has been VERIFIED as within the programme's own income cut-off "
+    "under its means test. Do NOT claim or imply the income is ABOVE that cut-off, do NOT call the "
+    "case borderline or exceptional on income grounds, and do NOT invent a threshold comparison (you "
+    "are not given the cut-off figure). Present the reported / documented income plainly as the "
+    "income of a household within the programme's cut-off."
 )
 
 _ABOVE_LINE_EMPHASIS = (
-    "NOTE ON INCOME — this household's income reads ABOVE the usual B40 line, yet the officer has "
-    "recommended the student. Do NOT present this as a clean-cut B40 case and do NOT hide or "
+    "NOTE ON INCOME — this household's income reads ABOVE the programme's own income cut-off, yet "
+    "the officer has recommended the student. Do NOT present this as a clean-cut case on income and "
+    "do NOT hide or "
     "contradict the income. Acknowledge it honestly, then FOREGROUND the extenuating circumstances "
     "that make the case exceptional — drawing ONLY on the officer's conclusion and the student's own "
     "account below (e.g. a large household, a single or irregular earner, medical or caregiving "

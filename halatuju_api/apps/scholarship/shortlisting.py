@@ -271,9 +271,11 @@ def _income_ok(profile, cohort):
     if not inc:
         return False, '', 'no STR and household income not provided'
 
-    # B40 by gross income — at or below the ceiling is in, whatever the family size.
+    # The gift's household line — at or below it is in, whatever the family size. The wording
+    # names the gift's own lines, never "B40" (criteria S3a, owner 26 Nov 2026), and is identical
+    # to `criteria.income_ok` (replay_criteria compares the reasons).
     if ceiling is not None and inc <= ceiling:
-        return True, 'B', f'household income RM{inc:.0f} <= RM{ceiling} (B40)'
+        return True, 'B', f'household income RM{inc:.0f} <= RM{ceiling} (household line)'
 
     # Above the gross ceiling (or none set) — the large-family rescue, if this programme offers it.
     if pc_ceiling is None:
@@ -284,8 +286,9 @@ def _income_ok(profile, cohort):
                            f'and household size not provided')
     per_capita = inc / size
     if per_capita < pc_ceiling:
-        return True, 'B', (f'income RM{inc:.0f} above B40 ceiling but per-capita '
-                           f'RM{per_capita:.0f} < RM{pc_ceiling}')
+        above = f' > RM{ceiling} but' if ceiling is not None else ','
+        return True, 'B', (f'income RM{inc:.0f}{above} per-capita '
+                           f'RM{per_capita:.0f} < RM{pc_ceiling} (per-person line)')
     return False, '', (f'income RM{inc:.0f} > RM{ceiling} and per-capita '
                        f'RM{per_capita:.0f} >= RM{pc_ceiling}')
 

@@ -205,7 +205,7 @@ export const REVIEWER_FAQ: QA[] = [
         — always check it against the uploaded documents before relying on it.</>,
     },
     {
-      q: <>How do I judge the Income (B40) check? It&rsquo;s the hardest one.</>,
+      q: <>How do I judge the Income check? It&rsquo;s the hardest one.</>,
       a: <>Two routes. <strong>STR route:</strong> the proof is an <em>approved</em> MySTR record — a
         <strong> SALINAN application-record is not proof</strong>, and nor is a page whose status only says
         &ldquo;Permohonan Diterima&rdquo; or &ldquo;Dalam Proses&rdquo; (incl. &ldquo;Dalam Proses Kelulusan&rdquo;;
@@ -218,8 +218,12 @@ export const REVIEWER_FAQ: QA[] = [
         so the usual order decides: a dated page first, then the newest), nor an application details page that lists the
         applicant&rsquo;s age and address with no status (red &ldquo;Not an STR document&rdquo;); if the status isn&rsquo;t clearly
         &ldquo;Lulus&rdquo;, ask for the MySTR Semakan Status / Dashboard, or the approval letter.
-        <strong> Salary route:</strong> payslips / EPF, judged per head against the B40 line. When it&rsquo;s
-        genuinely borderline, that&rsquo;s what the interview is for — don&rsquo;t force a verdict on weak
+        <strong> Salary route:</strong> payslips / EPF, judged against the gift&rsquo;s own income cut-off:
+        household income at most the gift&rsquo;s limit, or (above that) income per person under its per-person
+        limit. Either one passes; exactly on the per-person limit does not. A household close to the cut-off
+        (less than one person&rsquo;s share of the gift&rsquo;s limit to spare) shows amber, because one
+        undeclared earner could tip it over. A gift with only one of the two limits is judged on that one.
+        When it&rsquo;s genuinely borderline, that&rsquo;s what the interview is for — don&rsquo;t force a verdict on weak
         evidence.</>,
     },
     {
@@ -254,7 +258,7 @@ export const REVIEWER_FAQ: QA[] = [
       q: <>What&rsquo;s the difference between rating Pass/Fail and approving?</>,
       a: <>The <strong>Pass/Fail</strong> on each fact records whether <em>that fact is right for the student</em>.
         <strong> Approve / Decline</strong> is your actual recommendation. They&rsquo;re separate: you can Pass all
-        four facts and still <strong>Decline</strong> — for instance, income verified but above the B40 line.
+        four facts and still <strong>Decline</strong> — for instance, income verified but above the gift&rsquo;s income cut-off.
         A Pass or Fail tap records the student&rsquo;s fact; it does not rate the AI. <strong>Pass</strong> = yes,
         this is true. <strong>Fail</strong> = no, or not proven. Every Fail asks <strong>Why?</strong>, with
         <em> Other</em> already chosen; change it if a better reason fits. If you Approve
@@ -267,7 +271,9 @@ export const REVIEWER_FAQ: QA[] = [
       q: <>What does each of the four facts ask me to prove?</>,
       a: <><strong>Identity</strong>: the student is who they say they are. <strong>Results</strong>: the results
         are real. <strong>Pathway</strong>: a real offer for a course this programme funds (a public IPTA or ILKA,
-        the right start year, not already funded, not abroad). <strong>Income</strong>: the family is B40.</>,
+        the right start year, not already funded, not abroad). <strong>Income</strong>: the family is within the
+        gift&rsquo;s own income cut-off (household income at most the gift&rsquo;s limit, or, above that, income
+        per person under its per-person limit).</>,
     },
     {
       q: <>Which reasons can I give when I <strong>Fail</strong> a fact?</>,
@@ -320,7 +326,7 @@ export const REVIEWER_FAQ: QA[] = [
       q: <>A card is red. How do I tell <strong>&ldquo;Can&rsquo;t verify&rdquo;</strong> from <strong>&ldquo;Rule not met&rdquo;</strong>?</>,
       a: <>Read the word under the card name. <strong>Can&rsquo;t verify</strong> means proof is missing or
         unreadable: ask for it or read the document yourself. <strong>Rule not met</strong> means a gift rule is
-        broken (income above the B40 line, a fully funded or overseas programme, a course starting outside the
+        broken (income above the gift&rsquo;s income cut-off, a fully funded or overseas programme, a course starting outside the
         allowed years, an offer from a private college or university (IPTS), or an offer that is not official). A card with a broken rule is always red, even when its
         status is Review. The legend under the cards explains both.</>,
     },
@@ -329,7 +335,7 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>Her chosen programme is the <strong>American Degree Program</strong> under MARA, which is fully funded,
         or a preparation programme for study abroad (&ldquo;Program Persediaan &hellip; Luar Negara&rdquo;, run by
         MARA, JPA or another sponsor). This gift supports neither (owner&rsquo;s ruling, 14 November 2026). It works like income above the
-        B40 line: the case is flagged and the usual recommendation is to decline, but it is not declined for you
+        gift&rsquo;s income cut-off: the case is flagged and the usual recommendation is to decline, but it is not declined for you
         and the amount is unchanged. Confirm at interview &mdash; if she is in fact on a different programme,
         say so in your conclusion. The &ldquo;American Degree Transfer Program&rdquo; and an ordinary
         &ldquo;Degree Programme&rdquo; are not affected.</>,
@@ -374,7 +380,7 @@ export const REVIEWER_FAQ: QA[] = [
         Lower Six, or an intake month and year: &ldquo;Semester 1&rdquo; is only her current semester); has
         several years, or only an exam year, and no reporting date; or has a misprinted year
         (&ldquo;2O25&rdquo;). Nothing is shown until the letter has been read. Hers
-        is outside the gift&rsquo;s years, so the case is flagged like income above the B40 line: the usual
+        is outside the gift&rsquo;s years, so the case is flagged like income above the gift&rsquo;s income cut-off: the usual
         recommendation is to decline, but it is not declined for you and the amount is unchanged. Confirm at
         interview. She sees a short line on her offer letter card naming the gift&rsquo;s years; it tells her a
         reviewer still decides. If the line says instead that the start year <strong>could not be read</strong>, nothing is

@@ -139,10 +139,12 @@ def income_per_capita(application, members):
     return total / size, all_known
 
 
-# A breach-room below this (RM/month) means one undeclared earner could plausibly push the
-# household over the B40 line — so an uncorroborated household size can't carry a confident pass.
-# Yardstick = the per-capita ceiling itself (≈ one more head at the line). (str-proof-spec.md §7.1.)
-_HEADROOM_THIN_RM = 1584.0
+# A breach-room below one person's share of the gift's line (RM/month) means one undeclared
+# earner could plausibly push the household over the gift's income cut-off - so an uncorroborated
+# household size can't carry a confident pass (str-proof-spec.md §7.1: "≈ one more head at the
+# line"). Criteria S3a (owner, 26 Nov 2026): the yardstick is the gift's OWN line - its
+# per-person line, or (a gift with only a household line) that line's share per person - never
+# a universal RM1,584. See `_per_person_line`.
 
 
 def income_test_configured(application):
@@ -150,7 +152,7 @@ def income_test_configured(application):
 
     ⚠ NOT the same question as "could we compute the household's income?", and until
     2026-09-10 the officer screen could not tell them apart. ``income_headroom`` returns
-    'unknown' for BOTH — see its ``not pc_ceiling`` guard — and 'unknown' prints
+    'unknown' for BOTH — see its no-line guard — and 'unknown' prints
     *"income can't be document-verified (informal / no payslip)"*. On a gift that runs no
     means test that sentence is simply false: the payslips may be perfectly readable.
 
@@ -191,28 +193,38 @@ def income_headroom(application, members):
     # TD-771 (owner ruling, 26 Nov 2026): the income test passes on EITHER line, exactly as the
     # gate (`criteria.income_ok`) reads it - the household line passes ON the line (at most RM X),
     # the per-person line does NOT (income per person must be UNDER RM Y). 'over' only when BOTH
-    # fail. A gift with only a household line still bands 'unknown' here (the officer places it;
-    # no live intake has that shape - open, see TD-771).
+    # fail. Criteria S3a (owner, 26 Nov 2026): a gift with only ONE of the two lines is judged on
+    # that line alone (it used to band 'unknown' without a per-person line), and the 'thin'
+    # yardstick is the gift's own per-person figure (`_per_person_line`), never a fixed RM1,584.
     from apps.scholarship.criteria_read import income_ceilings
     gross_ceiling, pc_ceiling, _mode = income_ceilings(getattr(application, 'cohort', None))
     size = getattr(getattr(application, 'profile', None), 'household_size', None)
     pc, all_known = income_per_capita(application, members)
-    if pc is None or not size or not pc_ceiling:
+    if pc is None or not size or not (gross_ceiling or pc_ceiling):
         return 'unknown', {'all_known': all_known}
     gross = pc * size
-    # The more generous line. A cohort without a household line falls back to the per-person
-    # line alone (code-health S4 #14 made this the shared test for BOTH routes, so it must
-    # tolerate either line being absent).
-    ceiling = max([c for c in (gross_ceiling, pc_ceiling * size) if c])
+    # The more generous line (either may be absent - code-health S4 #14 made this the shared
+    # test for BOTH routes).
+    ceiling = max([c for c in (gross_ceiling, (pc_ceiling or 0) * size) if c])
     breach_room = ceiling - gross
+    per_person_line = _per_person_line(gross_ceiling, pc_ceiling, size)
     ctx = {'gross': int(round(gross)), 'per_capita': int(round(pc)), 'size': size,
            'breach_room': int(round(breach_room)), 'all_known': all_known,
-           'gross_ceiling': int(gross_ceiling or 0), 'per_capita_ceiling': int(pc_ceiling)}
+           'gross_ceiling': int(gross_ceiling or 0), 'per_capita_ceiling': int(per_person_line)}
     # `gross` is pc x size, so round away the float noise before comparing it with a ringgit line.
+    # Absent line = not tested, exactly as the gate (`criteria.income_ok`) reads `None`.
     passes_household = gross_ceiling is not None and round(gross, 6) <= gross_ceiling
-    passes_per_person = pc < pc_ceiling
+    passes_per_person = pc_ceiling is not None and pc < pc_ceiling
     if not (passes_household or passes_per_person):
         return 'over', ctx
-    if not all_known or breach_room < _HEADROOM_THIN_RM:
+    if not all_known or breach_room < per_person_line:
         return 'unsure', ctx
     return 'probable', ctx
+
+
+def _per_person_line(gross_ceiling, pc_ceiling, size):
+    """One person's share of the gift's income cut-off (RM/month): its per-person line, or -
+    a gift with only a household line - that line divided by the household size. It is both the
+    'thin margin' yardstick (≈ one more head at the line) and the per-person figure the officer
+    copy quotes (``ctx['per_capita_ceiling']``), so neither ever names a line the gift lacks."""
+    return float(pc_ceiling) if pc_ceiling else float(gross_ceiling) / size

@@ -334,8 +334,14 @@ class TestIncome(SimpleTestCase):
 
     def test_any_is_todays_rescue_rule(self):
         s = self.sec('any', self.CEIL, self.PP)
-        self.assertEqual(criteria.income_ok(prof(household_income=5860), s)[:2], (True, 'B'))
-        self.assertEqual(criteria.income_ok(prof(household_income=7000, household_size=5), s)[:2], (True, 'B'))
+        # Criteria S3a (owner, 26 Nov 2026): the reasons name the gift's own lines, never "B40".
+        self.assertEqual(criteria.income_ok(prof(household_income=5860), s),
+                         (True, 'B', 'household income RM5860 <= RM5860 (household line)'))
+        self.assertEqual(criteria.income_ok(prof(household_income=7000, household_size=5), s),
+                         (True, 'B', 'income RM7000 > RM5860 but per-capita RM1400 < RM1584 (per-person line)'))
+        for r in (criteria.income_ok(prof(household_income=5860), s),
+                  criteria.income_ok(prof(household_income=7000, household_size=5), s)):
+            self.assertNotIn('B40', r[2])
         self.assertEqual(criteria.income_ok(prof(household_income=7920, household_size=5), s),
                          (False, '', 'income RM7920 > RM5860 and per-capita RM1584 >= RM1584'))
         self.assertEqual(criteria.income_ok(prof(household_income=7000, household_size=None), s),
@@ -348,7 +354,7 @@ class TestIncome(SimpleTestCase):
         self.assertEqual(criteria.income_ok(prof(household_income=5861), self.sec('all', self.CEIL)),
                          (False, '', 'income RM5861 > RM5860'))
         self.assertEqual(criteria.income_ok(prof(household_income=6000, household_size=4), self.sec('any', self.PP)),
-                         (True, 'B', 'income RM6000 above B40 ceiling but per-capita RM1500 < RM1584'))
+                         (True, 'B', 'income RM6000, per-capita RM1500 < RM1584 (per-person line)'))
         self.assertEqual(criteria.income_ok(prof(household_income=6000, household_size=None), self.sec('any', self.PP)),
                          (False, '', 'income RM6000 > RMNone and household size not provided'))
 

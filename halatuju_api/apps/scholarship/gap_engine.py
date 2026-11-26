@@ -45,7 +45,7 @@ GAP_SCHEMA = {
 }
 
 GAP_PROMPT = """You are helping an interviewer prepare to interview a shortlisted \
-B40 scholarship applicant. Today's date is {today} (Asia/Kuala Lumpur) — use it to judge \
+scholarship applicant. Today's date is {today} (Asia/Kuala Lumpur) — use it to judge \
 whether any date the applicant mentions is in the past or the future; NEVER describe a date \
 earlier than today as being "in the future". Read EVERYTHING below — the applicant's own words (which \
 may be in Malay, English, or Tamil), their academic record, the automated \
@@ -60,7 +60,7 @@ record leaves genuinely UNANSWERED (skip a bucket the data already settles):
      finish a degree? Good probes when unevidenced: their favourite vs hardest subject \
      (does it fit their results?), whether they sought help / had tuition when a subject \
      was hard, and how they pushed through setbacks. (Frame as warm curiosity, never a test.)
-  2. FINANCIAL NEED (the FULL household) — is the family genuinely B40, and can they keep \
+  2. FINANCIAL NEED (the FULL household) — is the family genuinely in need, and can they keep \
      this student in the programme? IMPORTANT — what the assistance IS: a MODEST, FIXED \
      monthly living-cost bursary (on the order of RM200 a month). It is a small top-up, NOT \
      a scholarship that covers fees, a laptop, or the full cost of study, and its amount is \

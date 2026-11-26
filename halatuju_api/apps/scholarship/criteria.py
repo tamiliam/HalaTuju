@@ -374,17 +374,18 @@ def income_ok(profile, section):
             return False, '', f'income RM{inc:.0f} <= RM{ceiling} but per-capita RM{per_capita:.0f} >= RM{pc_ceiling}'
         return True, 'B', (f'household income RM{inc:.0f} <= RM{ceiling} and per-capita '
                            f'RM{per_capita:.0f} < RM{pc_ceiling}')
-    # 'any' (and a single test, where 'any' and 'all' agree): today's rule, wording and all.
+    # 'any' (and a single test, where they agree): today's rule; the reasons name the gift's own
+    # lines, never "B40" (S3a), worded as `shortlisting._income_ok` (replay_criteria compares).
     if ceiling is not None and inc <= ceiling:
-        return True, 'B', f'household income RM{inc:.0f} <= RM{ceiling} (B40)'
+        return True, 'B', f'household income RM{inc:.0f} <= RM{ceiling} (household line)'
     if pc_ceiling is None:
         return False, '', f'income RM{inc:.0f} > RM{ceiling}'
     if not size or size <= 0:
         return False, '', f'income RM{inc:.0f} > RM{ceiling} and household size not provided'
     per_capita = inc / size
     if per_capita < pc_ceiling:
-        return True, 'B', (f'income RM{inc:.0f} above B40 ceiling but per-capita '
-                           f'RM{per_capita:.0f} < RM{pc_ceiling}')
+        above = f' > RM{ceiling} but' if ceiling is not None else ','
+        return True, 'B', f'income RM{inc:.0f}{above} per-capita RM{per_capita:.0f} < RM{pc_ceiling} (per-person line)'
     return False, '', f'income RM{inc:.0f} > RM{ceiling} and per-capita RM{per_capita:.0f} >= RM{pc_ceiling}'
 
 

@@ -32,6 +32,9 @@ const OFFICER_PREFIXES = [
   'admin.scholarship.verdict.',
   'admin.scholarship.agenda.',
   'admin.scholarship.anomaly.',
+  // Criteria Sprint 3a (owner, 26 Nov 2026): the reject-before-interview reasons too ("Not B40"
+  // became the gift's own income limit; the key `not_b40` stays, it is stored on decided rows).
+  'admin.scholarship.preInterview.',
 ] as const
 
 /**
@@ -48,6 +51,8 @@ const RETIRED = [
   'consistent with a B40 household',
   'M40/T20 consumption pattern',
   'unusual for a B40 student',
+  'Not B40',
+  'Bukan B40',
 ] as const
 
 function flatten(obj: unknown, prefix = '', out: Record<string, string> = {}): Record<string, string> {

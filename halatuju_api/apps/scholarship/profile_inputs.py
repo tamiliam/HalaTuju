@@ -384,7 +384,7 @@ _OFFICER_FACT_LABELS = {
     'identity': 'Identity',
     'academic': 'Academic record',
     'pathway': 'Pathway / offer',
-    'income': 'Household income (B40 need)',
+    'income': "Household income (within the gift's own income cut-off)",
 }
 
 

@@ -13,7 +13,7 @@ export const basicsFourChecks: ManualChapter = {
       body: (
         <>Every review comes down to <strong>four facts</strong>: <strong>Identity</strong>,
         <strong> Academic record</strong>, <strong>Pathway</strong> (their study plan or offer), and
-        <strong> Income (B40 need)</strong>. The &ldquo;Verification verdict&rdquo; on a case shows what the system
+        <strong> Income</strong> (within the gift&rsquo;s own income cut-off). The &ldquo;Verification verdict&rdquo; on a case shows what the system
         is confident about and what still needs a human eye.</>
       ),
       img: '/reviewer-guide/step3-checks.png',
@@ -31,7 +31,7 @@ export const basicsFourChecks: ManualChapter = {
             <li><strong className="text-critical-700">Red — Can&rsquo;t verify.</strong> The evidence is missing or
             unreadable — someone must act on it.</li>
             <li><strong className="text-critical-700">Red — Rule not met.</strong> A gift rule is broken (for example,
-            income above the B40 line, a fully funded or overseas programme, a course that started outside the
+            income above the gift&rsquo;s income cut-off, a fully funded or overseas programme, a course that started outside the
             allowed years, or an offer that is not official). The card is always red, even when proof was found.</li>
           </ul>
           <span className="mt-2 block">Green tiles you can move past quickly; the real work is the

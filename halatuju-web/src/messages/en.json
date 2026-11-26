@@ -5570,7 +5570,7 @@
         "unassignAsk": "To reject before interview, ask someone who assigns reviewers to set the reviewer back to Unassigned first.",
         "reasonPlaceholder": "Choose the main reason",
         "reasons": {
-          "not_b40": "Not B40",
+          "not_b40": "Income above the gift's income limit",
           "not_government_institution": "Not attending a government institution",
           "results_too_low": "Results too low",
           "programme_requirements": "Does not meet programme requirements",

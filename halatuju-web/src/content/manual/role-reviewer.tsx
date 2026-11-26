@@ -242,7 +242,8 @@ export const roleReviewer: ManualChapter = {
           <span className="block"><strong>Results</strong> — the results are real.</span>
           <span className="block"><strong>Pathway</strong> — a real offer for a course this programme funds: a public
           IPTA or ILKA, the right start year, not already funded, not abroad.</span>
-          <span className="block"><strong>Income</strong> — the family is B40.</span>
+          <span className="block"><strong>Income</strong> — the family is within the gift&rsquo;s own income cut-off: household
+          income at most the gift&rsquo;s limit, or (above that) income per person under its per-person limit.</span>
           <span className="mt-2 block">Every Fail asks <strong>Why?</strong> The reason is about the student, never
           about the AI. Tap one: <em>Proof is missing/unclear</em>, <em>Document looks false/altered</em>,
           <em> Document(s) show something different</em>, <em>Interview revealed something different</em>,
@@ -260,7 +261,7 @@ export const roleReviewer: ManualChapter = {
         card you then set a <strong>recommended assistance amount</strong>, write a short
         <strong> conclusion</strong>, select <strong>Approve</strong> or <strong>Decline</strong>, and click
         <strong> Save verdict &amp; generate final profile</strong>. You can Pass all four facts and still Decline
-        (for example, income is verified but sits above the B40 line, or the Pathway card is red with
+        (for example, income is verified but sits above the gift&rsquo;s income cut-off, or the Pathway card is red with
         &ldquo;Fully funded or overseas programme&rdquo;: the American Degree Program under MARA, or a preparation
         programme for study abroad run by MARA, JPA or another sponsor, or &ldquo;Course started in &hellip;&rdquo;:
         a start year the gift does not accept, or &ldquo;Offer from a private college or university (IPTS)&rdquo;:

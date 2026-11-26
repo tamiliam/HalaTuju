@@ -82,5 +82,10 @@
     "digest": "b1257ffcbee48cd8f55d091c5f81ba10e7965caa02d99add997e7c23ed278e1f",
     "note": "Criteria Sprint 3a. TD-771 (owner ruling 26 Nov): income_headroom bands 'over' only when BOTH of the gift's own lines fail, exactly as the gate (criteria.income_ok): on the household line passes, on the per-person line does not. Intake 1, 5 people on RM7,920 (RM1,584 each) moves from 'unsure' to 'over' - officer income band only. TD-774: tree_of validates a stored tree and raises StoredTreeRefused (logged), never a silent fall back to the columns. No shortlist answer changes.",
     "also_ok": []
+  },
+  "2026-11-26.4": {
+    "digest": "8cdebcfe1928fde777fc4b99c808990c13cee86d1f79b37530ee1d9e2f373905",
+    "note": "Criteria Sprint 3a part 2 (owner, 26 Nov). income_headroom's 'thin' margin is the gift's own per-person line (or, with only a household line, that line divided by the household size) instead of a fixed RM1,584: on intakes 3/4/5 (RM1,180 / RM1,000 / RM900) a household with breach room between that line and RM1,584 moves from 'unsure' to 'probable' - officer income band only. A gift with only a household line is judged on it (was 'unknown'). The gate's income reasons (criteria.income_ok and shortlisting._income_ok, worded identically) name the gift's own lines, never 'B40' - reason text only. No shortlist answer changes.",
+    "also_ok": []
   }
 }

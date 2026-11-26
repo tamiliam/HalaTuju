@@ -745,15 +745,29 @@ class TestIncomeHeadroomMatchesTheGate(SimpleTestCase):
         self._check(pc_only, [(6335, 4, 'unsure'), (6336, 4, 'over'), (6337, 4, 'over'),
                               (1000, 4, 'probable')])
 
-    def test_a_gift_with_only_the_household_line_is_left_to_the_officer(self):
-        # No per-person line: the band stays 'unknown' (the officer places it; no live intake has
-        # this shape - TD-771 notes it). It is never 'over', whatever the gate says.
+    def test_a_gift_with_only_the_household_line_is_judged_on_that_line(self):
+        # Criteria S3a (owner, 26 Nov 2026): no per-person line - the band is judged on the
+        # household line alone (it used to read 'unknown'). ON the line passes, as the gate.
+        # Thin yardstick = the line's share per person: RM5,860 / 4 = RM1,465.
         gross_only = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=None)
-        for gross in (5859, 5860, 5861):
-            with self.subTest(gross=gross):
-                self.assertEqual(self._band(gross, 4, gross_only), 'unknown')
-        self.assertTrue(self._gate_ok(5860, 4, gross_only))
-        self.assertFalse(self._gate_ok(5861, 4, gross_only))
+        self._check(gross_only, [(5859, 4, 'unsure'), (5860, 4, 'unsure'), (5861, 4, 'over'),
+                                 (4396, 4, 'unsure'), (4395, 4, 'probable'), (1000, 4, 'probable')])
+
+    def test_a_one_line_gift_quotes_only_its_own_line(self):
+        # The officer copy's per-person figure is never 0 / a line the gift lacks.
+        gross_only = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=None)
+        app = _app([_bill('salary_slip', {'gross_income': '8000'})], household_size=4)
+        app.cohort = gross_only
+        band, ctx = income_headroom(app, ['father'])
+        self.assertEqual((band, ctx['per_capita_ceiling'], ctx['gross_ceiling']), ('over', 1465, 5860))
+        pc_only = SimpleNamespace(income_ceiling=None, per_capita_ceiling=1180)
+        app.cohort = pc_only
+        band, ctx = income_headroom(app, ['father'])
+        self.assertEqual((band, ctx['per_capita_ceiling'], ctx['gross_ceiling']), ('over', 1180, 0))
+
+    def test_no_line_at_all_is_still_unknown(self):
+        nothing = SimpleNamespace(income_ceiling=None, per_capita_ceiling=None)
+        self.assertEqual(self._band(2000, 4, nothing), 'unknown')
 
     def test_the_lines_are_read_from_the_stored_tree(self):
         # A stored tree wins over the columns: its per-person line RM1,000 makes 5 on RM5,000
@@ -767,6 +781,36 @@ class TestIncomeHeadroomMatchesTheGate(SimpleTestCase):
         self.assertEqual(self._band(5000, 5, columns), 'probable')
         self.assertEqual(self._band(5000, 5, stored), 'over')
         self.assertFalse(self._gate_ok(5000, 5, stored))
+
+
+class TestThinMarginIsTheGiftsOwnLine(SimpleTestCase):
+    """Criteria S3a (owner, 26 Nov 2026): the 'thin' margin (breach room under which the band is
+    'unsure', not 'probable') is the gift's own per-person line, not a universal RM1,584. Each
+    live intake's line, at the boundary, for a household of 4: the breach room is the more
+    generous line (RM5,860, or 4 x RM1,584 = RM6,336 on intake 1) less the household's income;
+    thin exactly when it is under the intake's per-person line."""
+
+    INTAKES = {1: 1584, 3: 1180, 4: 1000, 5: 900}
+
+    def _band(self, gross, pc_line):
+        app = _app([_bill('salary_slip', {'gross_income': str(gross)})], household_size=4)
+        app.cohort = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=pc_line)
+        return income_headroom(app, ['father'])
+
+    def test_each_intake_thin_margin_is_its_own_per_person_line(self):
+        for intake, line in self.INTAKES.items():
+            on_the_margin = max(5860, 4 * line) - line   # breach room == the line: not thin
+            for gross, want in ((on_the_margin, 'probable'), (on_the_margin + 1, 'unsure'),
+                                (on_the_margin - 1, 'probable')):
+                with self.subTest(intake=intake, gross=gross):
+                    band, ctx = self._band(gross, line)
+                    self.assertEqual(band, want)
+                    self.assertEqual(ctx['per_capita_ceiling'], line)
+
+    def test_intake_5_no_longer_reads_thin_on_the_old_universal_yardstick(self):
+        # Breach room RM1,000: under the old RM1,584 it was 'unsure'; intake 5's line is RM900.
+        self.assertEqual(self._band(4860, 900)[0], 'probable')
+        self.assertEqual(self._band(5336, 1584)[0], 'unsure')   # intake 1: room RM1,000 < RM1,584
 
 
 def cohort_defaults():

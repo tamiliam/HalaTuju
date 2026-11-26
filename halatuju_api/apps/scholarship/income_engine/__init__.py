@@ -94,7 +94,7 @@ from .freshness import (
     income_dedup_rank, stale_income_proof
 )
 from .amounts import (
-    _HEADROOM_THIN_RM, _INCOME_CONVERT_STATUSES, _SGD_EMPLOYER_RE, _slip_is_sgd, _to_myr,
+    _INCOME_CONVERT_STATUSES, _SGD_EMPLOYER_RE, _slip_is_sgd, _to_myr,
     earner_monthly_income, income_headroom, income_per_capita, income_test_configured,
     sgd_to_myr_rate, slip_epf_divergence
 )

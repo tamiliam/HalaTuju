@@ -5570,7 +5570,7 @@
         "unassignAsk": "Untuk menolak sebelum temu duga, minta seseorang yang menugaskan penyemak untuk menetapkan penyemak kembali kepada Belum ditugaskan dahulu.",
         "reasonPlaceholder": "Pilih sebab utama",
         "reasons": {
-          "not_b40": "Bukan B40",
+          "not_b40": "Pendapatan melebihi had pemberian ini",
           "not_government_institution": "Tidak belajar di institusi kerajaan",
           "results_too_low": "Keputusan terlalu rendah",
           "programme_requirements": "Tidak memenuhi syarat program",

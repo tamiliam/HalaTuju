@@ -478,7 +478,9 @@ class TestAboveLineEmphasis(TestCase):
     def test_refine_includes_emphasis_when_above_line(self):
         prompt = self._capture_refine_prompt(above_line=True)
         self.assertIn(_ABOVE_LINE_EMPHASIS, prompt)
-        self.assertIn('ABOVE the usual B40 line', prompt)
+        # Criteria S3a (owner, 26 Nov 2026): the gift's own cut-off, never "B40".
+        self.assertIn("ABOVE the programme's own income cut-off", prompt)
+        self.assertNotIn('B40', prompt)
 
     def test_refine_affirms_b40_when_within_line(self):
         # Owner 2026-07-08 (#20): a below-line case gets a POSITIVE B40-verified note, not silence —
@@ -486,7 +488,8 @@ class TestAboveLineEmphasis(TestCase):
         prompt = self._capture_refine_prompt(above_line=False)
         self.assertNotIn(_ABOVE_LINE_EMPHASIS, prompt)
         self.assertIn(_BELOW_LINE_AFFIRM, prompt)
-        self.assertIn('VERIFIED as B40-eligible', prompt)
+        self.assertIn("VERIFIED as within the programme's own income cut-off", prompt)
+        self.assertNotIn('B40', prompt)
 
     def test_income_context_selects_by_line(self):
         with mock.patch('apps.scholarship.profile_engine._income_above_line', return_value=True):

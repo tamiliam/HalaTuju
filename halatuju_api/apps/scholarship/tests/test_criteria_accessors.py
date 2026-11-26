@@ -90,20 +90,24 @@ class TestAccessorsMatchTheColumns(SimpleTestCase):
 
     @staticmethod
     def _column_headroom(c, pc):
-        """The pre-switch income_headroom on the columns, with TD-771's 'over' = both lines fail."""
+        """The pre-switch income_headroom on the columns, with TD-771's 'over' = both lines fail
+        and criteria S3a's rulings: a one-line gift is judged on that line, and the 'thin'
+        yardstick is the gift's own per-person figure (its per-person line, else household line / size)."""
         gross_ceiling, pc_ceiling, size = c.income_ceiling, c.per_capita_ceiling, 4
-        if pc is None or not pc_ceiling:
+        if pc is None or not (gross_ceiling or pc_ceiling):
             return 'unknown', {'all_known': True}
         gross = pc * size
-        ceiling = max([x for x in (gross_ceiling, pc_ceiling * size) if x])
+        ceiling = max([x for x in (gross_ceiling, (pc_ceiling or 0) * size) if x])
         room = ceiling - gross
+        per_person = float(pc_ceiling) if pc_ceiling else float(gross_ceiling) / size
         ctx = {'gross': int(round(gross)), 'per_capita': int(round(pc)), 'size': size,
                'breach_room': int(round(room)), 'all_known': True,
-               'gross_ceiling': int(gross_ceiling or 0), 'per_capita_ceiling': int(pc_ceiling)}
+               'gross_ceiling': int(gross_ceiling or 0), 'per_capita_ceiling': int(per_person)}
         household_ok = gross_ceiling is not None and gross <= gross_ceiling
-        if not household_ok and not pc < pc_ceiling:
+        per_person_ok = pc_ceiling is not None and pc < pc_ceiling
+        if not household_ok and not per_person_ok:
             return 'over', ctx
-        return ('unsure' if room < amounts._HEADROOM_THIN_RM else 'probable'), ctx
+        return ('unsure' if room < per_person else 'probable'), ctx
 
     def test_the_fingerprint_intake_values_are_unchanged(self):
         """`verdict_context.intake_values` hashes the same values under the same keys, so no

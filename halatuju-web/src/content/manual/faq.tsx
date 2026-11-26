@@ -54,7 +54,7 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>What are the four checks?</>,
       a: <>Identity (is this really them), Academic record (do the grades match the slip), Pathway (is their study
-        plan or offer in order), and Income (are they genuinely B40 / in need).</>,
+        plan or offer in order), and Income (is the family within the gift&rsquo;s own income cut-off / genuinely in need).</>,
     },
     {
       q: <>Should I just trust the AI?</>,
