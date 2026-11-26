@@ -56,6 +56,10 @@
       {
         "digest": "22f7c66ff2940fae7ff8758ac859422aa07e44e6359b30192724cec30fb2b2a8",
         "note": "OCR-13 (2026-11-26): pathway_engine._ic_status now says 'not_printed' instead of 'unreadable' for a blank IC on a UUM / UPSI letter (offer_exact.ISSUER_PRINTS_NO_IC). verdict_pathway reads 'not_printed' exactly as 'unreadable' in its one IC rule, and every other reader keys on 'mismatch' only, so no verdict, ladder step, award or eligibility answer changes (parity test: test_offer_ic_not_printed.py). Review round 1 (updated in place): pathway_engine joined the model files, with pins on what it reads (offer_confirmations.CONFIRMATION_SEEN, results_doc._private_arm_offer, offer_exact.ISSUER_PRINTS_NO_IC); its CONFIRMATION_SEEN import now names the defining module, the same object as before, so no answer changes."
+      },
+      {
+        "digest": "af3a792e18957861bb481233d33b0e5f9b9cb562540d1b75e7f5abe093bc3d5f",
+        "note": "Merge of reviewed changes, 26 Nov 2026 batch (no rule change of its own): OCR-13 (the 22f7c66f entry above: pathway_engine, verdict_pathway and the offer_exact.ISSUER_PRINTS_NO_IC pin, not_printed read exactly as unreadable) plus the academic reads pins TD-733/TD-734 (higher_results._college_read, display only: the college the document prints, an issuer blanked) and TD-735 with its review nits (higher_results exam_year_read and stored_transcript_year, display only: a Matriculation / Asasi / Diploma transcript year beside the read for the merit bracket). TD-741 (one-off re-read, slip school and transcript year backfill) touches no file of this digest. The only changed files of this digest against the live base are pathway_engine.py, verdict_pathway.py and higher_results.py, each byte-identical to its reviewed commit's version apart from base drift. No verdict fact, ladder, blocker, ask or payment reads a higher document's exam_year or institution, so no verdict changes."
       }
     ]
   }
