@@ -154,7 +154,7 @@ Branch ocr-14-unis, not pushed. Migration: none. Services: api. Lanes stay OFF, 
   and the government families ask `not_official_said`. Measured: no non-UNIMAS letter in the corpus's rules families
   or the owner's text samples prints it.
 - **Versions:** offer_parse 2.5.0, digest and note updated in place; offer_reader unchanged.
-- Targeted suite (91 files): 2160 passed. Dry run and owner-sample re-count: not yet run (handed on).
+- Targeted suite (91 files): 2160 passed. Dry run and owner samples re-run: unchanged, 0 wrong (owner samples: lock counts only, wrong not measured).
 - Debt: TD-NEW-ocr14-unimas-heldout updated. Tests: `test_offer_parse_unimas.py` (UnimasFooterExcuseTest).
 
 
