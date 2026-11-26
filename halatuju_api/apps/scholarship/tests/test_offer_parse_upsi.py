@@ -104,13 +104,15 @@ class UpsiLockTest(SimpleTestCase):
 
 class UpsiNeverLocksTest(SimpleTestCase):
     def test_an_ic_shaped_number_refuses(self):
-        for ic in ('990101145678', '990101-14-5678'):
+        for ic in ('990101145678', '990101-14-5678', '990101 - 14 - 5678', '990101.14.5678', '990101 14 5678'):
             with self.subTest(ic=ic):
                 self.assertEqual(run(layout(head_extra=(L + 'No. K/P : ' + ic,)))['guard'], 'ic_printed')
                 self.assertEqual(run(page2=PAGE2 + '\n' + ic)['guard'], 'ic_printed')
                 self.assertEqual(letter_refusal(plain(layout()) + '\n' + ic), 'ic_printed')
                 self.assertEqual(later_pages_refusal([PAGE2 + '\n' + ic], PROGRAMME, CODE, ''), 'ic_printed')
         self.assertEqual(run(layout(matric_line=R + 'No. Matrik : D202712345678'))['guard'], 'ic_printed')
+        # the real matric (a letter and 11 digits), alone or with a year or a date after it, is not an IC
+        self.assertIsNotNone(run(page2=PAGE2 + '\n' + MATRIC + ' 2027\nNo. Matrik : ' + MATRIC + ' 12.05.2027')['locked'])
 
     def test_english_letter_refuses(self):
         lay = layout(title='OFFER OF ADMISSION TO UNIVERSITI PENDIDIKAN SULTAN IDRIS (UPSI)')
@@ -146,6 +148,24 @@ class UpsiNeverLocksTest(SimpleTestCase):
                 d = run(layout(name_line=name_line))
                 self.assertIsNone(d['locked'])
                 self.assertIn(d['guard'], ('name_shape', 'no_head'))
+
+    def test_a_name_must_be_proven_to_end(self):
+        """Review 1: the line after the name must prove it ended (a digit, a comma or an address word opens it); a
+        name broken over two lines, after a whole word or after a linker, never locks cut short. No IC is printed, so
+        a lock here is the name alone: it must be whole."""
+        for first, rest in (('ZORBEX QUENTARO', 'A/L ALFEN'), ('ZORBEX QUENTARO A/L', 'ALFEN'),
+                            ('ZORBEX QUENTARO', 'ANAK ALFEN'), ('ZORBEX QUENTARO BIN', 'ALFEN'), ('ZORBEX', 'QUENTARO')):
+            with self.subTest(first=first, rest=rest):
+                d = run(layout(name_line=L + first + '\n' + L + rest))
+                self.assertIsNone(d['locked'])
+                self.assertIn(d['guard'], ('name_not_ended', 'name_shape'))
+        for addr in ('KAMPUNG MAWAR', 'KG MAWAR', 'B-1-12 TAMAN MAWAR', 'A123B, JALAN 1/23', 'NO 9 ,', 'NO.12, JALAN 1/2'):
+            with self.subTest(addr=addr):
+                lay = layout().replace(L + 'NO 1 JALAN MAWAR', L + addr)
+                self.assertEqual(run(lay)['locked']['candidate_name'], NAME)
+        for nxt in ('MAWAR INDAH', 'SEKOLAH'):
+            with self.subTest(nxt=nxt):
+                self.assertEqual(run(layout().replace(L + 'NO 1 JALAN MAWAR', L + nxt))['guard'], 'name_not_ended')
 
     def test_head_must_hold(self):
         self.assertEqual(run(layout().replace('Rujukan Kami : UPSI/', 'Rujukan Kami : UUM/'))['guard'], 'no_head')

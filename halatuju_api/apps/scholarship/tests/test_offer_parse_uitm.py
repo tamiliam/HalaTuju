@@ -138,6 +138,29 @@ class UitmRefusalTest(SimpleTestCase):
         cut = HEAD[:2] + ['ZORBEX QUENTARO BIN' + ' ' * 30 + 'No. Kad Pengenalan' + ' ' * 17 + IC] + HEAD[3:]
         self.assertEqual(run(layout(head=cut))['guard'], 'name_shape')
 
+    def test_a_name_must_be_proven_to_end(self):
+        """Review 1: the line after the name must prove it ended (a digit, a comma or an address word opens it); a
+        name broken over two lines, after a whole word or after a linker, never locks cut short."""
+        ic_line = ' ' * 30 + 'No. Kad Pengenalan' + ' ' * 17 + IC
+        for first, rest in (('ZORBEX QUENTARO', 'BIN ALFEN'), ('ZORBEX QUENTARO', 'ALFEN'), ('ZORBEX A/L', 'QUENTARO'),
+                            ('ZORBEX QUENTARO BIN', 'ALFEN'), ('ZORBEX QUENTARO BINTI', 'ALFEN')):
+            with self.subTest(first=first, rest=rest):
+                head = HEAD[:2] + [first + ic_line, rest + ' ' * 50 + 'No. Pelajar'] + HEAD[3:]
+                d = run(layout(head=head))
+                self.assertIsNone(d['locked'])
+                self.assertIn(d['guard'], ('name_not_ended', 'name_shape'))
+        for nxt in (' ' * 84 + 'MAKLUMAT PENTING', 'TAMBUN INDAH' + ' ' * 50 + 'No. Pelajar'):
+            with self.subTest(nxt=nxt):
+                head = HEAD[:3] + [nxt] + HEAD[4:]
+                self.assertEqual(run(layout(head=head))['guard'], 'name_not_ended')
+        for addr in ('KAMPUNG MAWAR', 'KG. MAWAR', 'PETI SURAT 12, JALAN MAWAR', 'D-1-2, TINGKAT 1, BLOK A',
+                     'SG BUAH, KG MAWAR', 'TAMAN BUNGA LOT 12'):
+            with self.subTest(addr=addr):
+                head = HEAD[:3] + [addr + ' ' * 40 + 'No. Pelajar'] + HEAD[4:]
+                d = run(layout(head=head))
+                self.assertIsNotNone(d['locked'])
+                self.assertEqual(d['locked']['candidate_name'], NAME)
+
     def test_title_must_stand_alone(self):
         for head in (['SURAT', 'TAWARAN'] + HEAD[2:], HEAD[:1] + ['SURAT TAWARAN   KEMASUKAN'] + HEAD[2:],
                      ['UNTUK MAKLUMAN'] + HEAD):

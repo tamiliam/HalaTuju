@@ -129,13 +129,20 @@ class UumNeverLocksTest(SimpleTestCase):
         self.assertEqual(d['guard'], 'not_degree')                                # in the wrapped line too
 
     def test_any_ic_like_number_refuses(self):
-        for ic in ('990101-14-5678', '990101145678', '990101 14 5678', '1234567890123'):
+        for ic in ('990101-14-5678', '990101145678', '990101 14 5678', '1234567890123', '990101 - 14 - 5678',
+                   '990101.14.5678', '990101 . 14 . 5678', '990101-14 5678', '990101  14  5678'):
             with self.subTest(ic=ic):
                 self.assertTrue(ic_printed('No. K/P: ' + ic))
                 d = run(layout(head_extra=['No. K/P : ' + ic]))
                 self.assertIsNone(d['locked'])
                 self.assertEqual(d['guard'], 'ic_printed')
+                self.assertEqual(later_pages_refusal([PAGE2 + '\n' + ic], PROGRAMME, ''), 'ic_printed')
+                self.assertEqual(letter_refusal(plain(layout()) + '\n' + ic), 'ic_printed')
         self.assertFalse(ic_printed(NAME + ' (' + BRACKET + ') 06010 Tel : 04-928 4000'))
+        for not_ic in ('(' + BRACKET + ')', NAME + ' (' + BRACKET + ') 2027', 'No. Matrik : D20271234567',
+                       'D20271234567 2027', '99010114567', '990101-14-567', '12.05.2027', '(603) 5544 3000'):
+            with self.subTest(not_ic=not_ic):
+                self.assertFalse(ic_printed(not_ic))
 
     def test_an_ic_in_the_plain_layer_only_refuses(self):
         lay = layout()
@@ -151,6 +158,16 @@ class UumNeverLocksTest(SimpleTestCase):
                 d = run(layout(name_line=name_line))
                 self.assertIsNone(d['locked'])
                 self.assertIn(d['guard'], ('name_shape', 'no_head'))
+
+    def test_a_wrapped_name_never_locks(self):
+        """Review 1: the bracket number ends the name, so a name broken over two lines (after a whole word or after a
+        linker) has no bracket on its first line and refuses."""
+        for first, rest in (('ZORBEX QUENTARO', 'BIN ALFEN (' + BRACKET + ')'),
+                            ('ZORBEX QUENTARO BIN', 'ALFEN (' + BRACKET + ')')):
+            with self.subTest(first=first):
+                lay = layout(name_line=first + '\n' + rest)
+                self.assertIsNone(run(lay)['locked'])
+                self.assertEqual(run(lay)['guard'], 'name_shape')
 
     def test_dates_and_session(self):
         self.assertEqual(run(layout(date='14 September 2030'))['guard'], 'dates_not_sane')

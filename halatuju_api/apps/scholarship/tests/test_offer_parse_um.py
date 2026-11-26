@@ -154,6 +154,24 @@ class UmNeverLocksTest(SimpleTestCase):
                 self.assertIsNone(d['locked'])
                 self.assertIn(d['guard'], ('name_shape', 'no_head'))
 
+    def test_a_name_must_be_proven_to_end(self):
+        """Review 1: the line after the name must prove it ended (a digit, a comma or an address word opens it); a
+        name broken over two lines, after a whole word or after a linker, never locks cut short."""
+        for first, rest in (('ZORBEX QUENTARO', 'A/L ALFEN'), ('ZORBEX QUENTARO A/L', 'ALFEN'),
+                            ('ZORBEX QUENTARO', 'BIN ALFEN'), ('ZORBEX QUENTARO BINTI', 'ALFEN'), ('ZORBEX', 'QUENTARO')):
+            with self.subTest(first=first, rest=rest):
+                d = run(layout(name_line=L + first + '\n' + L + rest))
+                self.assertIsNone(d['locked'])
+                self.assertIn(d['guard'], ('name_not_ended', 'name_shape'))
+        for addr in ('KG, MAWAR', 'SEKOLAH MENENGAH MAWAR,', 'NO12,JALAN MAWAR', 'LOT 5 KAMPUNG MAWAR'):
+            with self.subTest(addr=addr):
+                lay = layout().replace(L + 'NO 1 JALAN MAWAR', L + addr)
+                self.assertEqual(run(lay)['locked']['candidate_name'], NAME)
+        for nxt in ('SEKOLAH', 'MAWAR INDAH', ' ' * 70 + '12 Julai 2027'):
+            with self.subTest(nxt=nxt):
+                lay = layout().replace(L + 'NO 1 JALAN MAWAR', nxt if nxt.startswith(' ') else L + nxt)
+                self.assertEqual(run(lay)['guard'], 'name_not_ended')
+
     def test_dates_and_session(self):
         self.assertEqual(run(layout(report='14 September 2030'))['guard'], 'dates_not_sane')
         self.assertEqual(why(run(layout(report='31 September 2027'))), 'empty:reporting_date')

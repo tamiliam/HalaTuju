@@ -28,7 +28,7 @@ English "Admission" letters print no Malay title (``no_title``); a letter that s
 """
 import re
 
-from .offer_parse import _IC, _name_ok
+from .offer_parse import _name_ok
 from .offer_parse_uitm import NOT_DEGREE, _PRA
 from .offer_ums_refusal import _SQUEEZE_OUT, _withdrawn_one, fold_lookalikes, status_said
 
@@ -57,8 +57,11 @@ _PROGRAMME_LABEL = 'Program Pengajian'
 _SCHOOL_LABEL = 'Pusat Pengajian / Kolej'
 #: A word may open a bracket: "SARJANA MUDA SAINS DENGAN KEPUJIAN (TEKNOLOGI ...)".
 _DEGREE = re.compile(r"^SARJANA MUDA(?: \(?[A-Z][A-Z&,'/.()\-]*)+$")
-#: Any IC-like number: 12 digits (dashes or a space allowed where an IC prints them), or a longer digit run.
-_IC_ANY = re.compile(r'(?<!\d)' + _IC + r'(?!\d)')
+#: Any IC-like number: 6, 2 and 4 digits, with a '-', '.' or space between (spaces around it allowed: "990101 - 14
+#: - 5678", "990101.14.5678") or nothing (12 digits), or a longer digit run. Wider than `offer_parse._IC` on purpose:
+#: it only refuses. The 6-digit UUM bracket number and the UPSI matric (a letter and 11 digits) are too short for it.
+_SEP = r'(?:[ \t]{0,3}[-.][ \t]{0,3}|[ \t]{1,3})?'
+_IC_ANY = re.compile(r'(?<!\d)[0-9]{6}' + _SEP + r'[0-9]{2}' + _SEP + r'[0-9]{4}(?!\d)')
 _DIGIT_RUN = re.compile(r'\d{12,}')
 _PENGESAHAN = re.compile(r'PENGESAHAN')
 #: A later page must be one of UUM's own; any other page goes to the AI.

@@ -63,7 +63,7 @@ _COURSES = (
 _VERDICT_SECOND_LEVEL = [f'apps/scholarship/{name}.py:*' for name in (
     'academic_compare', 'academic_engine', 'card_display', 'exam_years', 'family',
     'genuineness/offer_issuers', 'higher_owed', 'income_declaration', 'income_shown',
-    'income_str_ownership', 'name_order', 'offer_course_match', 'offer_pathway', 'pathway_engine',
+    'income_str_ownership', 'name_order', 'offer_course_match', 'offer_pathway',
     'pathway_match', 'read_errors', 'results_kind', 'results_route', 'services/__init__',
     'services/offer_link', 'session_year', 'stpm_names', 'str_check_memo', 'vision/__init__',
     'wrong_slip')]

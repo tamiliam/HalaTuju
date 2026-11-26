@@ -24,7 +24,7 @@ English letters print no Malay title (``no_title``). Later pages: `um_later_page
 import re
 
 from .offer_parse import _IC, _IC_END, _name_ok, _norm_nric, house_date
-from .offer_parse_uitm import NOT_DEGREE, _PRA
+from .offer_parse_uitm import NOT_DEGREE, _PRA, name_ended
 from .offer_parse_uum import _LINKERS, _WORD_DATE, _cols, _indent, _one_space, _uum_lines, _ymd
 from .offer_ums_refusal import _SQUEEZE_OUT, _withdrawn_one, fold_lookalikes, status_said
 
@@ -86,7 +86,8 @@ def _um_label_values(lines, label: str) -> list:
 
 def _um_head(lines, at):
     """(name, nric, printed_ic, offer_date, reason) from the lines before the title: "No Pendaftaran" first (the
-    offer date in its right-hand column), "Nombor K/P : IC" next, the name alone after it, "Saudara/i," later."""
+    offer date in its right-hand column), "Nombor K/P : IC" next, the name alone after it (the line after it must prove
+    the name ended: `offer_parse_uitm.name_ended`), "Saudara/i," later."""
     if at < 4:
         return '', '', '', '', 'no_head'
     first = _cols(lines[0])
@@ -103,6 +104,8 @@ def _um_head(lines, at):
     name = _one_space(ln)
     if _indent(ln) > 10 or len(_cols(ln)) != 1 or not _name_ok(name) or _LINKERS.search(name):
         return '', nric, printed_ic, offer_date, 'name_shape'   # an unread or wrapped name ("... BINTI")
+    if not name_ended(lines[3]):
+        return '', nric, printed_ic, offer_date, 'name_not_ended'   # the rest of the name may be on the next line
     if not any(_one_space(x) == 'Saudara/i,' for x in lines[3:at]):
         return name, nric, printed_ic, offer_date, 'no_head'
     return name, nric, printed_ic, offer_date, ''

@@ -132,8 +132,8 @@ below).
   rows show the new word at once; nothing is backfilled.
 - **Web (read only, not changed):** the officer chip (`offerFacts.ts`) maps `not_printed` to grey (`unknown`), and
   `documentPill` drops it, as the chip standard asks (a UUM / UPSI letter whose only amber chip was the blank IC can now
-  show "verified"). The student checklist (`checklistsPathway.tsx`) has no `status.not_printed` label yet:
-  TD-NEW-ocr13-not-printed-label, to land with or before the publish.
+  show "verified"). The student checklist label (`status.not_printed`) is built by the lead on branch offer-ic-label
+  (457d0e270) and lands with OCR-13.
 - **Dry run (local, free, 287 stored reads + 1,270 fresh reads in the corpus):** 63 moved `unreadable` to `not_printed`
   (UPSI 40, UUM 23); 0 other IC moves; 0 changes in the five decision readers (verdict_pathway, ladder red chips, help
   text, resolution, person-red keys).
@@ -142,6 +142,34 @@ below).
   answer does.
 - Tests: `test_offer_ic_not_printed.py` (statuses, resolver negatives, verdict parity, a guard that any IC reader comparing
   with `unreadable` also names `not_printed`); `test_offer_parse_uum.py` (a real UUM lock reads `not_printed`).
+
+### fix: OCR-13 review round 1 fixes - a name must be proven to end, a wider IC refusal, pathway_engine in the digest (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. Versions unchanged (offer_reader 2.11.0, offer_parse
+2.4.0, both unreleased: digests updated in place; verdict_engine 2026-11-25.7 keeps its OCR-13 `also_ok`, updated in place).
+- **A, a name broken over two lines (blocker):** the UiTM, UM and UPSI heads now lock a name only when the line straight
+  after it PROVES the name ended (`offer_parse_uitm.name_ended`): it starts under 20 in and its first column carries a
+  digit or a comma (a name has neither) or opens with an address word (KAMPUNG, KG, JALAN, TAMAN, LORONG, LOT, NO, BLOK,
+  PETI SURAT and a few more, measured on the samples). Anything else refuses `name_not_ended` and goes to the AI, so a name
+  cut after a whole word or after a linker never locks short. UiTM: the line after "name | No. Kad Pengenalan | IC"; UM:
+  the line after the name under "Nombor K/P"; UPSI: the line after the name under "No. Matrik". UUM is unchanged: its name
+  must end in the 6-digit bracket number on the same line, so a wrapped name already refuses (test added).
+- **B, ic_printed:** `offer_parse_uum._IC_ANY` (UPSI imports it) also refuses an IC with spaces around its separators
+  ("990101 - 14 - 5678"), dots or spaces as separators, and plain 12 digits, on page 1 and on later pages. The UUM
+  6-digit bracket number and the UPSI matric (a letter and 11 digits) still pass.
+- **C, digest:** `pathway_engine` joined the verdict_engine model files, with pins on what it reads
+  (`offer_confirmations.CONFIRMATION_SEEN`, `results_doc._private_arm_offer`, `offer_exact.ISSUER_PRINTS_NO_IC`). Its
+  `CONFIRMATION_SEEN` import now names the defining module (the same object as before).
+- **D, debt:** TD-NEW-ocr13-not-printed-label removed (the label is built on branch offer-ic-label, 457d0e270, and lands
+  with OCR-13). TD-NEW-ocr13-uitm-wrap-edge removed: fix A refuses every unproven name end, not only BIN / BINTI.
+- **Dry run (local, free, all five lanes on):** unchanged except UM, which loses 1 lock (a held-out letter whose next
+  line is one word with no proof): UM held-out 3 docs, 0 locked; all splits 9 / 1 / 100% / 0 wrong. UMS 33 / 22 / 100% /
+  0 and 62 / 44 / 100% / 0; UiTM 9 / 1 / 100% / 0 and 18 / 3 / 100% / 0; UUM 4 / 4, 0 wrong name, IC, institution or
+  course; UPSI 4 / 2 / 100% / 0 and 7 / 2 / 100% / 0. Owner folders: 0 university locks outside the right folder (uitm/ 6,
+  um/ 1, upsi/ 12, uum/ 20, ums/ 33).
+- Tests: `test_offer_parse_uitm.py`, `test_offer_parse_um.py`, `test_offer_parse_upsi.py` (a name broken after a whole
+  word or a linker refuses; a one-line name with each measured address start locks), `test_offer_parse_uum.py` (wrapped
+  name; the wider IC positives and negatives), `test_model_versions.py`.
 
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.

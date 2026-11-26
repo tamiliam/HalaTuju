@@ -260,7 +260,7 @@ def is_confirmation_letter(doc) -> bool:
     programme she is ON, which can differ from her offer — so it never writes a course pick
     (`offer_sync` autofill / realign, `offer_link` link / fill)."""
     from .genuineness.bands import stored_authenticity
-    from .genuineness.offer_rulings import CONFIRMATION_SEEN
+    from .genuineness.offer_confirmations import CONFIRMATION_SEEN
     return stored_authenticity(getattr(doc, 'vision_fields', None)).get('doc_seen', '') in CONFIRMATION_SEEN
 
 

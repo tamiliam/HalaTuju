@@ -29,6 +29,7 @@ English letters print no Malay title (``no_title``); a letter that says PENGESAH
 import re
 
 from .offer_parse import _name_ok, house_date
+from .offer_parse_uitm import name_ended
 from .offer_parse_um import um_not_degree
 from .offer_parse_uum import _LINKERS, _WORD_DATE, _cols, _indent, _one_space, _uum_lines, _ymd, ic_printed
 from .offer_ums_refusal import _SQUEEZE_OUT, _withdrawn_one, fold_lookalikes, status_said
@@ -112,7 +113,8 @@ def _upsi_one(lines, label: str, at) -> tuple:
 def _upsi_head(lines, at):
     """(name, offer_date, reason) from the lines before the title: ONE "Rujukan Kami : UPSI/..." line in the right-hand
     column, the "Tarikh" line after it (the offer date: its Gregorian part), ONE "No. Matrik" line after that, the
-    name alone straight after it, "Saudara/i," later. The matric is read past, never kept."""
+    name alone straight after it (the line after it must prove the name ended: `offer_parse_uitm.name_ended`),
+    "Saudara/i," later. The matric is read past, never kept."""
     ref = [i for i, ln in enumerate(lines[:at]) if _indent(ln) >= _RIGHT and _RUJUKAN.match(_one_space(ln))]
     mat = [i for i, ln in enumerate(lines[:at]) if _indent(ln) >= _RIGHT and _MATRIC.match(_one_space(ln))]
     if len(ref) != 1 or len(mat) != 1 or not ref[0] < mat[0] < at - 1:
@@ -126,6 +128,8 @@ def _upsi_head(lines, at):
     name = _one_space(ln)
     if _indent(ln) > 4 or len(_cols(ln)) != 1 or not _name_ok(name) or _LINKERS.search(name):
         return '', offer_date, 'name_shape'       # an unread or wrapped name ("... BINTI")
+    if not name_ended(lines[mat[0] + 2]):
+        return '', offer_date, 'name_not_ended'   # the rest of the name may be on the next line
     if not any(_one_space(x) == 'Saudara/i,' for x in lines[mat[0] + 2:at]):
         return '', offer_date, 'no_head'
     return name, offer_date, ''

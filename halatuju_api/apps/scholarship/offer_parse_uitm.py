@@ -61,6 +61,12 @@ _NOTE_CANCEL = re.compile(r'Tawaran\s{1,40}ini\s{1,40}adalah\s{1,40}terbatal\s{1
                           r'dipinda\s{1,40}secara\s{1,40}tidak\s{1,40}sah')
 #: A later page must be one of UiTM's own (its office footer or web address); any other page goes to the AI.
 _UITM_PAGE = re.compile(r'Bahagian\s{1,3}Pengambilan\s{1,3}Pelajar|uitm\.edu\.my', re.IGNORECASE)
+#: Words the first address line opens with that never carry on a name (village, street, garden, lane, lot, house
+#: number, block, post box, floor, flats, quarters, estate). Measured 2026-11-26 on the samples whose head read: every
+#: UiTM and UPSI line after the name, and all but one UM one (a lone word, now refused), carries one of these, a digit
+#: or a comma.
+_ADDRESS_START = re.compile(r'^(?:KAMPUNG|KG|JALAN|JLN|TAMAN|TMN|LORONG|LRG|LOT|NO|BLOK|PETI SURAT|PERSIARAN|'
+                            r'TINGKAT|PANGSAPURI|KUARTERS|FELDA|LADANG|SIMPANG)(?![A-Z])')
 
 
 def is_uitm(up: str) -> bool:
@@ -97,8 +103,20 @@ def _title_at(lines) -> int:
     return hits[0]
 
 
+def name_ended(line: str) -> bool:
+    """True only when ``line``, the line straight after a name, PROVES the name ended: it starts under 20 in and its
+    first column carries a digit or a comma (a name has neither: `_name_ok`) or opens with an address word
+    (`_ADDRESS_START`). Anything else (a missing line, the right-hand notes, "BIN ALFEN") may be the rest of a name
+    broken over two lines, so the reader refuses. Shared by the UiTM, UM and UPSI heads (OCR-13 review 1)."""
+    if not line or not line.strip() or len(line) - len(line.lstrip()) >= 20:
+        return False
+    first = ' '.join(_cols(line)[0].split()).upper()
+    return bool(re.search(r'[0-9,]', first) or _ADDRESS_START.match(first))
+
+
 def _head(lines, at):
-    """(name, nric, reason) from the line straight after the title: name | No. Kad Pengenalan | IC."""
+    """(name, nric, reason) from the line straight after the title: name | No. Kad Pengenalan | IC; the line after
+    it must prove the name ended (`name_ended`)."""
     if at + 1 >= len(lines):
         return '', '', 'no_head'
     cols = _cols(lines[at + 1])
@@ -109,6 +127,8 @@ def _head(lines, at):
         return name, '', 'empty:candidate_nric'
     if not _name_ok(name) or re.search(r'\b(?:BIN|BINTI|BT|BTE|A\s?/\s?[LP]|ANAK|AK)$', name):
         return name, _norm_nric(ic), 'name_shape'          # an unread or wrapped name ("... BINTI")
+    if not name_ended(lines[at + 2] if at + 2 < len(lines) else ''):
+        return name, _norm_nric(ic), 'name_not_ended'      # the rest of the name may be on the next line
     return name, _norm_nric(ic), ''
 
 

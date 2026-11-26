@@ -9825,10 +9825,6 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Raised in OCR-13 phase 5 (see CHANGELOG).** The corpus holds 7 UPSI answers (4 held out); 2 lock (both held out), 0 wrong. The other 5 have no text layer or no PDF, so they go to the AI. The owner's upsi/ sample locks 12 of 30 (18 have no text layer or are another template). One sample prints its offer date in a shape the reader does not read, so that lock leaves the optional offer date blank. **Fix:** add hand-checked UPSI degree letters to the held-out split, then re-run the dry run. *(A - M)*
 
-### [TD-NEW-ocr13-not-printed-label] OCR-13: the student offer checklist has no label for the IC status 'not_printed' - medium (before the publish)
-
-**Raised in OCR-13 'not_printed' (see CHANGELOG).** The API now sends `pathway_check.ic = 'not_printed'` for a blank IC on a UUM / UPSI letter. The officer chip already shows grey (`offerFacts.ts`; `documentPill` drops it). The student's `OfferLetterChecklist` (`checklistsPathway.tsx`) prints `scholarship.docs.pathwayCheck.status.<ic>`, and en / ms / ta have no `not_printed` key, so the badge would show a missing label (its tone falls to grey). **Fix:** a web change: add `not_printed` to `PathStatus` and the three message files ("Not printed", Malay, Tamil per the style guide), tone grey; ship it with or before the api. Also left as they were: the `offer_exact.py` comment at `ISSUER_PRINTS_NO_IC` still says the blank IC reads 'unreadable' (editing it moves the offer_parse digest); the AI-read resolver keys on the letter's institution, not on genuineness (harmless: `not_printed` decides exactly as `unreadable`); `eval/offer_s6_dry_run.py` is frozen history and maps `not_printed` to grey. *(A - S)*
-
 ### [TD-NEW-ocr13-um-heldout] OCR-13: 3 UM letters are held out and 1 locks, so the UM lane cannot pass Gate 1 - medium
 
 **Raised in OCR-13 phase 4 (see CHANGELOG).** The corpus holds 9 UM answers (3 held out); 2 of the 8 PDFs lock (1 held out). The rest go to the AI as they should: 1 scan, 2 letters without the Malay title (one Asasi), 2 Asasi letters, 1 English letter, and 1 answer has no PDF. English UM letters never read as the UM family, so a UM English reader would be a new lane. The reporting date is never printed on page 1 ("RUJUK LAMPIRAN"), so a UM lock always leaves it blank. **Fix:** add hand-checked UM degree letters to the held-out split, then re-run the dry run. *(A - M)*
@@ -9844,10 +9840,6 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 ### [TD-NEW-ocr13-uitm-wrapped-names] OCR-13: UiTM names that wrap onto two lines are refused - low
 
 **Raised in OCR-13 phase 2 (see CHANGELOG).** The UiTM reader refuses a student name printed over two lines: about 5 of the 11 digital UiTM letters in the owner sample. The owner has no rule for two-line names, so they stay refused and go to the AI as before. **Fix:** an owner rule for two-line names, then a reader step with adversarial tests. *(A - S)*
-
-### [TD-NEW-ocr13-uitm-wrap-edge] OCR-13: a UiTM name wrapping below the IC line is caught only when it ends in BIN or BINTI - low (known edge)
-
-**Raised in OCR-13 phase 2 (see CHANGELOG).** A name that wraps below the IC line is refused only when its first line ends in BIN or BINTI. Other endings are not recognised as wrapped. Recorded as a known edge: the review must check the refusal side (a letter with such a name must never lock a wrong name). **Fix:** refuse any text between the IC line and the next label that is not the expected label, or widen the endings with an owner rule. *(A - S)*
 
 ### [TD-NEW-ocr13-diploma] OCR-13: UiTM diploma letters show every UiTM owner phrase - high (before the UiTM lane goes on)
 
