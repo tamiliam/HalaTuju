@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>HalaTuju document chips — new look (mock-up)</title>
+<style>
+  :root{
+    --pos-50:#f0fdf4;--pos-100:#dcfce7;--pos-200:#bbf7d0;--pos-700:#15803d;
+    --cau-50:#fffbeb;--cau-100:#fef3c7;--cau-200:#fde68a;--cau-700:#b45309;--cau-800:#92400e;
+    --cri-50:#fef2f2;--cri-100:#fee2e2;--cri-200:#fecaca;--cri-700:#b91c1c;--cri-800:#991b1b;
+    --g-50:#f9fafb;--g-100:#f3f4f6;--g-200:#e5e7eb;--g-300:#d1d5db;--g-400:#9ca3af;--g-500:#585f6b;--g-600:#4b5563;--g-700:#374151;--g-800:#1f2937;
+    --cat-surface:#ede9fe;--cat-ink:#6d28d9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--g-100);color:var(--g-800)}
+  header.top{padding:20px 28px 8px}
+  header.top h1{font-size:18px;margin:0 0 4px}
+  header.top p{margin:0;font-size:13px;color:var(--g-500)}
+  .wrap{display:grid;grid-template-columns:minmax(400px,470px) minmax(360px,420px) 1fr;gap:24px;padding:16px 28px 16px;align-items:start}
+  .wide{padding:0 28px 40px}
+  .panel{background:#fff;border:1px solid var(--g-200);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .panel>h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--g-400);margin:0;padding:14px 16px 0}
+  .panel>.title{font-size:15px;font-weight:600;padding:4px 16px 10px;border-bottom:1px solid var(--g-100)}
+  ul{list-style:none;margin:0;padding:8px 12px 12px}
+
+  /* chips */
+  .chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600;line-height:16px;box-shadow:inset 0 0 0 1px var(--ring);background:var(--bg);color:var(--ink);white-space:nowrap}
+  .chip .sym{font-size:10px;font-weight:800}
+  .green{--bg:var(--pos-50);--ink:var(--pos-700);--ring:var(--pos-200)}
+  .amber{--bg:var(--cau-50);--ink:var(--cau-700);--ring:var(--cau-200)}
+  .red{--bg:var(--cri-50);--ink:var(--cri-700);--ring:var(--cri-200)}
+  .grey{--bg:var(--g-50);--ink:var(--g-500);--ring:var(--g-200)}
+  .plain{font-size:11px;color:var(--g-600);white-space:nowrap}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+
+  /* officer reason lines: one per amber/red chip, same colour */
+  .reasons{margin:6px 0 0;padding:0;list-style:none}
+  .reasons li{font-size:11.5px;line-height:1.45;display:flex;gap:6px;align-items:baseline}
+  .reasons li.amber{color:var(--cau-800)}
+  .reasons li.red{color:var(--cri-800)}
+  .reasons b{font-weight:700;white-space:nowrap}
+
+  /* pills */
+  .pill{border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;background:var(--pbg);color:var(--pink)}
+  .p-verified{--pbg:var(--pos-100);--pink:var(--pos-700)}
+  .p-check{--pbg:var(--cau-100);--pink:var(--cau-700)}
+  .p-problem{--pbg:var(--cri-100);--pink:var(--cri-700)}
+  .p-unread{--pbg:var(--g-100);--pink:var(--g-500)}
+  .new{font-size:9px;font-weight:700;color:var(--cri-700);margin-left:4px}
+
+  /* officer row */
+  .orow{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--g-100);border-radius:10px;padding:10px;margin-top:8px}
+  .orow.open{border-color:#93c5fd;box-shadow:0 0 0 2px #dbeafe}
+  .badge{flex:none;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .b-verified{background:var(--pos-50)}.b-check{background:var(--cau-50)}.b-problem{background:var(--cri-50)}.b-unread{background:var(--g-100)}
+  .name{font-size:14px;font-weight:500;color:var(--g-800)}
+  .name .arr{font-size:10px;color:var(--g-400)}
+  .cap{border-radius:999px;padding:2px 6px;font-size:9px;font-weight:500}
+  .cap.ai{background:var(--cat-surface);color:var(--cat-ink)}
+  .cap.exact{background:var(--g-100);color:var(--g-500)}
+  .line1{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .file{font-size:11px;color:var(--g-400);margin-top:1px}
+  .notes{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--g-400);cursor:help}
+  .notes svg{width:12px;height:12px}
+  .when{color:var(--g-400)}
+
+  /* student card */
+  .card{border:1px solid var(--g-200);border-radius:14px;padding:12px 14px;margin-top:10px;background:#fff}
+  .card .head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .card .head .name{font-weight:600}
+  .facts{margin-top:8px;border:1px solid var(--g-100);background:rgba(249,250,251,.6);border-radius:12px;padding:0 10px}
+  .fact{padding:8px 0;border-top:1px solid var(--g-100)}
+  .fact:first-child{border-top:0}
+  .fact .row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--g-700)}
+  .act{display:flex;gap:6px;align-items:flex-start;margin-top:6px;font-size:12px;border-radius:8px;padding:6px 8px}
+  .act.amber{background:var(--cau-50);color:var(--cau-800)}
+  .act.red{background:var(--cri-50);color:var(--cri-800)}
+  .act b{font-weight:700}
+  .act .who{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+
+  /* legend */
+  .legend table{width:100%;border-collapse:collapse;font-size:12px}
+  .legend td{padding:8px 16px;border-top:1px solid var(--g-100);vertical-align:top}
+  .legend td:first-child{width:130px}
+  .note{font-size:12px;color:var(--g-600);padding:10px 16px 14px;line-height:1.5}
+  .note b{color:var(--g-800)}
+
+  /* opened document */
+  .viewer{display:grid;grid-template-columns:1fr 460px;min-height:520px}
+  .docimg{background:var(--g-700);border-radius:0 0 0 14px;display:flex;align-items:center;justify-content:center;padding:24px}
+  .docimg .paper{width:300px;height:420px;background:#fff;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.35);padding:18px;font-size:10px;color:var(--g-400)}
+  .paper .bar{height:8px;background:var(--g-200);border-radius:4px;margin:8px 0}
+  .side{border-left:1px solid var(--g-200);padding:14px 18px;overflow:auto}
+  .side h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--g-400);margin:14px 0 6px}
+  .side h3:first-child{margin-top:0}
+  .vhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--g-100)}
+  .vhead .btns{display:flex;gap:8px;font-size:12px;color:var(--g-500)}
+  .check{border:1px solid var(--g-100);border-radius:10px;padding:8px 10px;margin-bottom:8px}
+  .check .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .check .why{font-size:12px;margin-top:6px;font-weight:600}
+  .check .why.amber{color:var(--cau-800)} .check .why.red{color:var(--cri-800)} .check .why.green{color:var(--pos-700)} .check .why.grey{color:var(--g-500)}
+  .cmp{display:grid;grid-template-columns:90px 1fr;gap:2px 10px;font-size:12px;margin-top:6px;color:var(--g-700)}
+  .cmp span:nth-child(odd){color:var(--g-400)}
+  .ainotes{font-size:12px;color:var(--g-700);margin:0;padding-left:18px;line-height:1.55}
+  .tag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px}
+  .tag.drawer{background:#dbeafe;color:#1d4ed8}
+  .tag.doc{background:var(--g-100);color:var(--g-600)}
+  .where td:first-child{width:200px;font-weight:600}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Document chips — new look (mock-up for approval)</h1>
+  <p>Sample data only. Chip text = the field name. Colour + symbol = the state. Officer drawer: one short line per amber/red chip. Opened document: the full detail.</p>
+</header>
+
+<div class="wrap">
+
+<!-- ============ OFFICER DRAWER ============ -->
+<section class="panel">
+  <h2>Officer screen — drawer</h2>
+  <div class="title">Documents</div>
+  <ul>
+    <li class="orow">
+      <span class="badge b-verified">💼</span>
+      <div style="flex:1;min-width:0">
+        <div class="line1"><span class="name">Salary slip <span class="arr">↗</span></span><span class="pill p-verified">Verified</span><span class="cap ai">AI</span><span class="notes" title="1 AI note — open the document to read it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>1</span></div>
+        <div class="file">(payslip_oct.pdf) <span class="when">· read 2 Nov, 14:05</span></div>
+        <div class="chips">
+          <span class="chip green"><span class="sym">✓</span>Name</span>
+          <span class="chip green"><span class="sym">✓</span>IC No</span>
+          <span class="plain">RM 2,350</span>
+          <span class="plain">Oct 2026</span>
+        </div>
+      </div>
+    </li>
+
+    <li class="orow">
+      <span class="badge b-problem">📑</span>
+      <div style="flex:1;min-width:0">
+        <div class="line1"><span class="name">EPF statement <span class="arr">↗</span></span><span class="pill p-problem">Problem</span><span class="new">NEW</span><span class="cap ai">AI</span></div>
+        <div class="file">(epf_2026.pdf) <span class="when">· read 2 Nov, 14:07</span></div>
+        <div class="chips">
+          <span class="chip red"><span class="sym">✕</span>Type</span>
+          <span class="chip green"><span class="sym">✓</span>Name</span>
+          <span class="chip green"><span class="sym">✓</span>IC No</span>
+          <span class="chip amber"><span class="sym">!</span>Contribution</span>
+        </div>
+        <ul class="reasons">
+          <li class="red"><b>Type:</b> This is not an EPF statement.</li>
+          <li class="amber"><b>Contribution:</b> Couldn't read the contribution.</li>
+        </ul>
+      </div>
+    </li>
+
+    <li class="orow open">
+      <span class="badge b-problem">💡</span>
+      <div style="flex:1;min-width:0">
+        <div class="line1"><span class="name">Electricity bill <span class="arr">↗</span></span><span class="pill p-problem">Problem</span><span class="cap ai">AI</span><span class="notes" title="3 AI notes — open the document to read them"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>3</span></div>
+        <div class="file">(bill_june.jpg) <span class="when">· read 25 Nov, 09:12</span></div>
+        <div class="chips">
+          <span class="chip amber"><span class="sym">!</span>Type</span>
+          <span class="chip red"><span class="sym">✕</span>Name</span>
+          <span class="chip red"><span class="sym">✕</span>Address</span>
+          <span class="chip amber"><span class="sym">!</span>Date</span>
+          <span class="plain">RM 84.20</span>
+        </div>
+        <ul class="reasons">
+          <li class="amber"><b>Type:</b> Looks like a payment screen, not a full bill.</li>
+          <li class="red"><b>Name:</b> Bill is in another person's name.</li>
+          <li class="red"><b>Address:</b> Address doesn't match the application.</li>
+          <li class="amber"><b>Date:</b> Bill is older than 3 months.</li>
+        </ul>
+      </div>
+    </li>
+
+    <li class="orow">
+      <span class="badge b-unread">✉️</span>
+      <div style="flex:1;min-width:0">
+        <div class="line1"><span class="name">Offer letter <span class="arr">↗</span></span><span class="pill p-unread">Unread</span><span class="cap ai">AI</span></div>
+        <div class="file">(offer_uum.pdf) <span class="when">· not read yet</span></div>
+        <div class="chips">
+          <span class="chip grey">IC No</span>
+          <span class="chip grey">Course</span>
+        </div>
+      </div>
+    </li>
+  </ul>
+  <div class="note">Grey chips and green chips get <b>no line</b>. AI notes that do not belong to a chip show only as a small grey speech-bubble with a count (hover: "1 AI note — open the document"). "read …" = when the document was last read (a Re-run updates it).</div>
+</section>
+
+<!-- ============ STUDENT ============ -->
+<section class="panel">
+  <h2>Student screen</h2>
+  <div class="title">My documents</div>
+  <div style="padding:0 12px 14px">
+
+    <div class="card">
+      <div class="head"><span class="name">Salary slip</span><span class="pill p-verified">Verified</span></div>
+      <div class="facts">
+        <div class="fact"><div class="row"><span class="chip green"><span class="sym">✓</span>Name</span></div></div>
+        <div class="fact"><div class="row"><span class="chip green"><span class="sym">✓</span>IC No</span></div></div>
+        <div class="fact"><div class="row"><span class="plain">Amount: RM 2,350</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head"><span class="name">EPF statement</span><span class="pill p-problem">Problem</span></div>
+      <div class="facts">
+        <div class="fact"><div class="row"><span class="chip red"><span class="sym">✕</span>Type</span></div>
+          <div class="act red"><span>📑</span><span><span class="who">You act</span>This is not an EPF statement. <b>Upload your EPF statement.</b></span></div></div>
+        <div class="fact"><div class="row"><span class="chip green"><span class="sym">✓</span>Name</span></div></div>
+        <div class="fact"><div class="row"><span class="chip green"><span class="sym">✓</span>IC No</span></div></div>
+        <div class="fact"><div class="row"><span class="chip amber"><span class="sym">!</span>Contribution</span></div>
+          <div class="act amber"><span>📷</span><span><span class="who">You act</span>We couldn't read the contribution. <b>Upload a clearer copy.</b></span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head"><span class="name">Electricity bill</span><span class="pill p-problem">Problem</span></div>
+      <div class="facts">
+        <div class="fact"><div class="row"><span class="chip amber"><span class="sym">!</span>Type</span></div>
+          <div class="act amber"><span>📄</span><span><span class="who">You act</span>This looks like a payment screen. <b>Upload the full bill.</b></span></div></div>
+        <div class="fact"><div class="row"><span class="chip red"><span class="sym">✕</span>Name</span></div>
+          <div class="act red"><span>👤</span><span><span class="who">You act</span>The bill is in another person's name. <b>Tell us who this person is in your family list.</b></span></div></div>
+        <div class="fact"><div class="row"><span class="chip red"><span class="sym">✕</span>Address</span></div>
+          <div class="act red"><span>🏠</span><span><span class="who">You act</span>The address doesn't match the one you gave. <b>Correct your address, or upload a bill for your home.</b></span></div></div>
+        <div class="fact"><div class="row"><span class="chip amber"><span class="sym">!</span>Date</span></div>
+          <div class="act amber"><span>📅</span><span><span class="who">You act</span>This bill is older than 3 months. <b>Add your latest bill.</b></span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head"><span class="name">Water bill</span><span class="pill p-check">Check</span></div>
+      <div class="facts">
+        <div class="fact"><div class="row"><span class="chip amber"><span class="sym">!</span>Name</span></div>
+          <div class="act amber"><span>🕑</span><span><span class="who">We act</span>The name is close but not exact. <b>We will check this — nothing to do.</b></span></div></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ LEGEND ============ -->
+<section class="panel legend">
+  <h2>The standard</h2>
+  <div class="title">What each colour means (both screens)</div>
+  <table>
+    <tr><td><span class="chip green"><span class="sym">✓</span>Field</span></td><td>Checked. It agrees.</td></tr>
+    <tr><td><span class="chip amber"><span class="sym">!</span>Field</span></td><td>A person must look: near match, couldn't read, missing, older date, date not shown.</td></tr>
+    <tr><td><span class="chip red"><span class="sym">✕</span>Field</span></td><td>Checked. It is wrong.</td></tr>
+    <tr><td><span class="chip grey">Field</span></td><td>Not checked yet, or nothing to compare.</td></tr>
+    <tr><td><span class="plain">RM 2,350</span></td><td>A value copied from the document. Never green.</td></tr>
+  </table>
+  <div class="title" style="border-top:1px solid var(--g-100);margin-top:6px">Document pill</div>
+  <table>
+    <tr><td><span class="pill p-problem">Problem</span> <span class="new">NEW</span></td><td>Any red chip.</td></tr>
+    <tr><td><span class="pill p-check">Check</span></td><td>Any amber chip (and no red).</td></tr>
+    <tr><td><span class="pill p-verified">Verified</span></td><td>All checked chips green.</td></tr>
+    <tr><td><span class="pill p-unread">Unread</span></td><td>Nothing checked yet.</td></tr>
+  </table>
+  <div class="title" style="border-top:1px solid var(--g-100);margin-top:6px">Where each kind of words shows</div>
+  <table class="where">
+    <tr><td>Chip</td><td>Field name only. Drawer, opened document and student screen.</td></tr>
+    <tr><td>Short reason <span class="tag drawer">Drawer</span></td><td>One line per amber/red chip. Same colour as the chip. Fixed words (English, Malay, Tamil).</td></tr>
+    <tr><td>Both values side by side <span class="tag doc">Opened</span></td><td>What the document says vs what the application says.</td></tr>
+    <tr><td>Names, IC numbers, addresses <span class="tag doc">Opened</span></td><td>Only in the opened document. Never in the drawer.</td></tr>
+    <tr><td>Full AI notes <span class="tag doc">Opened</span></td><td>Each sentence on its own line. The drawer shows only a small grey speech-bubble with the count.</td></tr>
+    <tr><td>Read time <span class="tag drawer">Drawer</span></td><td>Short: "read 25 Nov, 09:12". The year shows only when it is not this year: "read 25 Nov 2026, 09:12". Opened document: always the full date, plus the upload time.</td></tr>
+    <tr><td>Action line <span class="tag drawer">Student</span></td><td>Under each amber/red chip: who acts and what to do.</td></tr>
+  </table>
+</section>
+
+</div>
+
+<!-- ============ OPENED DOCUMENT ============ -->
+<div class="wide">
+<section class="panel">
+  <h2>Officer screen — the electricity bill, opened</h2>
+  <div class="vhead">
+    <span style="display:flex;gap:8px;align-items:center"><span class="name" style="font-weight:600">Electricity bill</span><span class="pill p-problem">Problem</span><span class="cap ai">AI</span><span class="when" style="font-size:12px">Read 25 Nov 2026, 09:12 · uploaded 24 Nov 2026, 21:40</span></span>
+    <span class="btns"><span>Open in new tab ↗</span><span>Re-run</span><span>✕ Close</span></span>
+  </div>
+  <div class="viewer">
+    <div class="docimg">
+      <div class="paper">the uploaded picture shows here
+        <div class="bar" style="width:60%"></div><div class="bar"></div><div class="bar" style="width:80%"></div>
+        <div class="bar" style="width:40%;margin-top:40px"></div><div class="bar" style="width:70%"></div>
+      </div>
+    </div>
+    <div class="side">
+      <h3>Checks</h3>
+
+      <div class="check">
+        <div class="top"><span class="chip amber"><span class="sym">!</span>Type</span></div>
+        <div class="why amber">Looks like a payment screen, not a full bill.</div>
+      </div>
+
+      <div class="check">
+        <div class="top"><span class="chip red"><span class="sym">✕</span>Name</span></div>
+        <div class="why red">Bill is in another person's name.</div>
+        <div class="cmp"><span>On the bill</span><span>Sample Name B</span><span>Application</span><span>Sample Name A (father), Sample Name C (mother)</span></div>
+      </div>
+
+      <div class="check">
+        <div class="top"><span class="chip red"><span class="sym">✕</span>Address</span></div>
+        <div class="why red">Address doesn't match the application.</div>
+        <div class="cmp"><span>On the bill</span><span>12, Jalan Sampel 1, Ipoh</span><span>Application</span><span>45, Jalan Sampel 9, Klang</span></div>
+      </div>
+
+      <div class="check">
+        <div class="top"><span class="chip amber"><span class="sym">!</span>Date</span></div>
+        <div class="why amber">Bill is older than 3 months.</div>
+        <div class="cmp"><span>Bill date</span><span>3 Jun 2026</span><span>Rule</span><span>Within 3 months of applying (from 26 Aug 2026)</span></div>
+      </div>
+
+      <div class="check">
+        <div class="top"><span class="plain">Amount</span></div>
+        <div class="cmp"><span>On the bill</span><span>RM 84.20</span></div>
+      </div>
+
+      <h3>AI notes (3)</h3>
+      <ol class="ainotes">
+        <li>This looks like a mobile payment screen rather than a complete electricity bill.</li>
+        <li>The premises address is not shown.</li>
+        <li>The current month's charges, billing dates, usage and tariff are not listed.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+</div>
+
+</body>
+</html>
