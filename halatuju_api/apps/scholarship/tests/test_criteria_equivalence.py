@@ -1,13 +1,16 @@
-"""Criteria editor Sprint 1 - today's gate and the tree agree, except where the owner ruled.
+"""Criteria editor Sprints 1-2 - the old columns gate and the tree agree, except where the owner ruled.
 
 Many synthetic students (every results route, still studying, missing results, weak and strong
 SPM grades, every income edge, three birth states) against many intake shapes (the live ones,
 the model defaults, blank floors, merit-only, per-person-only, a zero floor, a floor beside a
 merit-only SPM bar, a floor beside every bar at 0; a diploma with no institution stated and an
 application with no profile). For each pair:
-`shortlisting.evaluate(app, cohort)` vs `criteria.evaluate(app, from_legacy(cohort))`. The ONLY
-allowed differences are the owner's two classes (2026-11-25), classified by the replay command's
-own `classify_replay`, so the test and the live replay judge alike."""
+`shortlisting.evaluate_columns(app, cohort)` vs `criteria.evaluate(app, from_legacy(cohort))`. The
+ONLY allowed difference is the owner's class (b) (2026-11-25: intake 5's CGPA trap switched off) and
+its reason-only twin (b2), classified by the replay command's own `classify_replay`, so the test and
+the live replay judge alike. Sprint 2 (owner ruling B, 2026-11-26): results are judged 'own', so a
+post-SPM holder below the floor on intakes 3 and 4 is still refused - Sprint 1's classes a1 / a2 are
+gone. Finished Matric / Asasi / Diploma holders with a blank CGPA are in the grid too."""
 import itertools
 from types import SimpleNamespace
 
@@ -16,7 +19,7 @@ from django.test import SimpleTestCase
 from apps.courses.models import StudentProfile
 from apps.scholarship import criteria, shortlisting
 from apps.scholarship.management.commands.replay_criteria import (
-    CLASS_A1, CLASS_A2, CLASS_B, CLASS_B2, EXPECTED, UNEXPECTED, classify_replay)
+    CLASS_B, CLASS_B2, EXPECTED, classify_replay)
 from apps.scholarship.tests.test_criteria import COHORT_1, COHORT_3, COHORT_4, COHORT_5, DEFAULTS, cohort
 
 STRONG = {'bm': 'A+', 'eng': 'A', 'math': 'A', 'hist': 'A-', 'moral': 'B+', 'sci': 'B', 'geo': 'C'}
@@ -51,6 +54,13 @@ RESULTS = {
     'stpm_10_nospm': dict(exam_type='stpm', stpm_cgpa=1.0, spm_prereq_grades={}, **_DONE['stpm']),
     'stpm_10_strong': dict(exam_type='stpm', stpm_cgpa=1.0, spm_prereq_grades=STRONG, coq_score=10.0,
                            **_DONE['stpm']),
+    # Sprint 2 carry-over: FINISHED third-route results with the CGPA left blank.
+    'matric_nocgpa': dict(exam_type='matric', higher_cgpa=None, higher_koko=8, spm_prereq_grades=STRONG,
+                          **_DONE['matric']),
+    'asasi_nocgpa': dict(exam_type='asasi', higher_cgpa=None, higher_koko=5, spm_prereq_grades=MID,
+                         **_DONE['asasi']),
+    'dip_nocgpa': dict(exam_type='diploma', higher_cgpa=None, higher_institution_type='public',
+                       spm_prereq_grades=STRONG, **_DONE['diploma']),
     'no_profile': None,
     'still_stpm': dict(exam_type='stpm', grades=MID),
     'still_matric': dict(exam_type='matric', grades=STRONG),
@@ -108,7 +118,7 @@ def _grid(**opts):
     for (cname, c), r, i, n in itertools.product(COHORTS.items(), RESULTS, INCOME, NRICS):
         a = _app(r, i, n)
         tree = criteria.from_legacy(c, **opts)
-        cls = classify_replay(a, c, shortlisting.evaluate(a, c), criteria.evaluate(a, tree), tree)
+        cls = classify_replay(a, c, shortlisting.evaluate_columns(a, c), criteria.evaluate(a, tree), tree)
         found.setdefault(cls, []).append((cname, r, i, n))
     return found
 
@@ -118,10 +128,12 @@ class TestEquivalence(SimpleTestCase):
         found = _run()
         self.assertEqual(set(found) - EXPECTED, set(), {k: v[:5] for k, v in found.items() if k != 'same'})
         self.assertGreater(len(found['same']), 4000)
-        # (a1) below the floor, meets today's SPM bars; (a2) CGPA missing (here: no co-curriculum).
-        self.assertIn(('cohort_3', 'stpm_19_mid', 'b40', '050101-12-1234'), found[CLASS_A1])
-        self.assertIn(('cohort_4', 'asasi_low', 'str', '050101-10-1234'), found[CLASS_A1])
-        self.assertIn(('cohort_4', 'matric_nokoko', 'b40', '050101-10-1234'), found[CLASS_A2])
+        # Owner ruling B: below the floor, or CGPA missing, on intakes 3 and 4 - still refused,
+        # however strong the SPM grades (no SPM door for a post-SPM holder).
+        for x in (('cohort_3', 'stpm_19_mid', 'b40', '050101-12-1234'), ('cohort_4', 'asasi_low', 'str', '050101-10-1234'),
+                  ('cohort_4', 'matric_nokoko', 'b40', '050101-10-1234'), ('cohort_4', 'matric_nocgpa', 'b40', NRICS[0]),
+                  ('cohort_3', 'dip_nocgpa', 'b40', '050101-12-1234')):
+            self.assertIn(x, found['same'])
         # (b) only where a floor stands with no SPM bar that can fail - intake 5 and the every-bar-0
         # shape - and only for students with no final post-SPM result. (b2) is the same shape where
         # today already refuses on a 0 bar (no SPM grades / no merit): verdict kept, reason moves.
@@ -130,8 +142,9 @@ class TestEquivalence(SimpleTestCase):
         for cls, cohorts in ((CLASS_B, {'cohort_5', 'floor_all_zero'}), (CLASS_B2, {'floor_all_zero'})):
             self.assertEqual({c for c, *_ in found[cls]}, cohorts)
             self.assertTrue({r for _, r, _, _ in found[cls]} <= spm_only)
-        # Intake 5 has no SPM group, so its post-SPM holders below the floor are NOT loosened.
-        self.assertFalse([x for x in found[CLASS_A1] + found.get(CLASS_A2, []) if x[0] == 'cohort_5'])
+        # Every live cohort other than intake 5 agrees exactly with its columns.
+        for cname in ('cohort_1', 'cohort_3', 'cohort_4', 'defaults'):
+            self.assertFalse([x for k, v in found.items() if k != 'same' for x in v if x[0] == cname], cname)
 
     def test_every_tree_validates(self):
         for cname, c in COHORTS.items():
@@ -140,25 +153,18 @@ class TestEquivalence(SimpleTestCase):
 
     def test_a_floor_beside_a_merit_only_bar_is_not_void(self):
         # F1: STPM PNGK 1.0 with no SPM grades used to pass through the merit-only SPM door.
-        for cname in ('floor_merit_only', 'floor_credit0_merit'):
-            c = COHORTS[cname]
-            a = _app('stpm_10_nospm', 'b40', NRICS[0])
-            with self.subTest(cohort=cname):
-                r = criteria.evaluate(a, criteria.from_legacy(c))
-                self.assertEqual((r.verdict, r.category), ('rejected', 'merit'))
-                self.assertEqual(r, shortlisting.evaluate(a, c))
-        found = _run()
-        flagged = {(c, r) for c, r, *_ in found.get(CLASS_A1, []) + found.get(CLASS_A2, [])}
         for cname in ('floor_merit_only', 'floor_credit0_merit', 'floor_merit_low'):
-            self.assertNotIn((cname, 'stpm_10_nospm'), flagged)
-        # a genuine pass on the merit door (today's own merit test) is the owner's class a1
-        self.assertIn(('floor_merit_low', 'stpm_10_strong'), flagged)
+            c = COHORTS[cname]
+            for r in ('stpm_10_nospm', 'stpm_10_strong'):
+                a = _app(r, 'b40', NRICS[0])
+                with self.subTest(cohort=cname, results=r):
+                    got = criteria.evaluate(a, criteria.from_legacy(c))
+                    self.assertEqual((got.verdict, got.category), ('rejected', 'merit'))
+                    self.assertEqual(got, shortlisting.evaluate_columns(a, c))
 
     def test_a_floor_beside_every_bar_at_zero_has_no_spm_group(self):
-        groups = criteria.from_legacy(COHORTS['floor_all_zero'])['all'][0]['any']
+        groups = criteria.from_legacy(COHORTS['floor_all_zero'])['all'][0]['own']
         self.assertEqual([g['route'] for g in groups], ['post_spm'])
-        found = _run()
-        self.assertFalse([x for x in found.get(CLASS_A1, []) + found.get(CLASS_A2, []) if x[0] == 'floor_all_zero'])
 
     def test_diploma_unstated_and_no_profile_agree(self):
         found = _run()
@@ -169,18 +175,11 @@ class TestEquivalence(SimpleTestCase):
         self.assertTrue(criteria.evaluate(a, criteria.from_legacy(COHORT_4)).reason
                         .startswith('Diploma institution not stated'))
 
-    def test_plain_keeps_the_spm_group_and_an_automatic_pass_is_never_expected(self):
-        # --plain leaves the trap on: an SPM group that cannot fail beside a floor. Its post-SPM
-        # passes are automatic, so classify files them as unexpected, never as a1/a2 (ruling d).
+    def test_plain_is_todays_gate_exactly(self):
+        # --plain leaves the trap on (an SPM group that cannot fail beside a floor). Under 'own' a
+        # post-SPM holder never uses that group, so the plain tree is today's gate, byte for byte.
         found = _run(keep_empty_spm=True)
-        self.assertEqual(set(found) - {'same', CLASS_A1, CLASS_A2, UNEXPECTED}, set(),
-                         {k: v[:5] for k, v in found.items() if k != 'same'})
-        self.assertNotIn(CLASS_B, found)
-        self.assertNotIn(CLASS_B2, found)
-        self.assertIn(('cohort_5', 'asasi_low', 'str', '050101-10-1234'), found[UNEXPECTED])
-        self.assertEqual({c for c, *_ in found[UNEXPECTED]}, {'cohort_5', 'floor_all_zero'})
-        self.assertFalse([x for x in found.get(CLASS_A1, []) + found.get(CLASS_A2, [])
-                          if x[0] in ('cohort_5', 'floor_all_zero')])
+        self.assertEqual(set(found), {'same'}, {k: v[:5] for k, v in found.items() if k != 'same'})
 
     def test_the_hard_gates_agree(self):
         for gates in (dict(consent_to_contact=False), dict(intends_tertiary_2026=False), dict(upu_status='ipts')):
@@ -188,4 +187,4 @@ class TestEquivalence(SimpleTestCase):
                 a = _app('stpm_19_mid', 'b40', NRICS[0])
                 for k, v in gates.items():
                     setattr(a, k, v)
-                self.assertEqual(shortlisting.evaluate(a, c), criteria.evaluate(a, criteria.from_legacy(c)))
+                self.assertEqual(shortlisting.evaluate_columns(a, c), criteria.evaluate(a, criteria.from_legacy(c)))

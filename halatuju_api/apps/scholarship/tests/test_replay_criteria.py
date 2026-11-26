@@ -1,8 +1,9 @@
-"""Criteria editor Sprint 1 - the read-only replay command (`replay_criteria`).
+"""Criteria editor Sprints 1-2 - the read-only replay command (`replay_criteria`).
 
-Proves three things: the two owner-ruled classes are found and named; the output carries
-application ids and class names only (no name, NRIC, email, grade or income); and the run
-writes nothing - no INSERT / UPDATE / DELETE is sent and no row changes."""
+Proves: the owner-ruled class (b) is found and named, and intakes 3 / 4's shape now agrees exactly
+(owner ruling B); the STORED tree is what is compared, and a stored tree that is not its columns'
+tree needs a look; the output carries application ids and class names only (no name, NRIC, email,
+grade or income); and the run writes nothing - no INSERT / UPDATE / DELETE is sent and no row changes."""
 from io import StringIO
 
 from django.core.management import CommandError, call_command
@@ -11,7 +12,8 @@ from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
 from apps.courses.models import StudentProfile
-from apps.scholarship.management.commands.replay_criteria import CLASS_A1, CLASS_B, UNEXPECTED
+from apps.scholarship import criteria
+from apps.scholarship.management.commands.replay_criteria import CLASS_B, STORED_DIFFERS
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 
@@ -46,11 +48,10 @@ class TestReplayCommand(TestCase):
         call_command('replay_criteria', *args, stdout=out)
         return out.getvalue()
 
-    def test_finds_and_names_both_classes(self):
+    def test_finds_and_names_the_owner_class(self):
         out = self._run()
-        self.assertIn(f'cohort {self.loose.id} ({self.loose.code}): total=2; {CLASS_A1}=1, same=1', out)
-        self.assertIn(f'  {CLASS_A1}: pending (submitted, undecided)=1, decided=0 [submitted=1]\n'
-                      f'    pending: {self.below_floor.id}\n', out)
+        # owner ruling B: the post-SPM holder below the floor is refused by both engines
+        self.assertIn(f'cohort {self.loose.id} ({self.loose.code}): tree=columns; total=2; same=2', out)
         self.assertIn(f'  {CLASS_B}: pending (submitted, undecided)=1, decided=0 [submitted=1]\n'
                       f'    pending: {self.spm_only.id}\n', out)
         self.assertIn('start_year_flag_differs=0', out)
@@ -73,16 +74,31 @@ class TestReplayCommand(TestCase):
         self.assertNotIn(self.loose.code, out)
         self.assertIn('total=1; same=1', out)
 
-    def test_plain_files_an_automatic_pass_as_needing_a_look(self):
-        # --plain leaves the trap on (an SPM group that cannot fail beside the floor), so a
-        # post-SPM holder below the floor passes automatically: never an expected class.
-        auto = _apply(self.degree, exam_type='stpm', stpm_cgpa=1.0, spm_prereq_grades=MID,
-                      results_exam_type='stpm', completed_qualifications=['spm', 'stpm'])
+    def test_plain_never_passes_a_post_spm_holder_through_the_spm_group(self):
+        # --plain leaves the trap on (an SPM group that cannot fail beside the floor); under 'own'
+        # a post-SPM holder below the floor is still judged on the floor alone.
+        _apply(self.degree, exam_type='stpm', stpm_cgpa=1.0, spm_prereq_grades=MID,
+               results_exam_type='stpm', completed_qualifications=['spm', 'stpm'])
         out = self._run('--plain', '--cohort', 'deg-shape')
-        self.assertIn(f'  {UNEXPECTED}: pending (submitted, undecided)=1', out)
-        self.assertIn(f'    pending: {auto.id}', out)
-        self.assertNotIn(CLASS_A1, out)
-        self.assertIn('RESULT: 1 need a look', out)
+        self.assertIn('total=2; same=2', out)
+        self.assertIn('RESULT: only expected classes', out)
+
+    def test_the_stored_tree_is_compared_and_one_off_its_columns_needs_a_look(self):
+        ScholarshipCohort.objects.filter(pk=self.loose.pk).update(criteria=criteria.from_legacy(self.loose))
+        out = self._run('--cohort', self.loose.code)
+        self.assertIn('tree=stored; total=2; same=2', out)
+        self.assertNotIn(STORED_DIFFERS, out)
+        self.assertIn('stored_trees_differ=0', out)
+        # a stored tree that is NOT the columns' (here: the results section taken away) is what the
+        # gate reads, so the replay judges with it - and says it needs a look.
+        tree = criteria.from_legacy(self.loose)
+        tree['all'] = [sec for sec in tree['all'] if sec['section'] not in ('results', 'merit')]
+        ScholarshipCohort.objects.filter(pk=self.loose.pk).update(criteria=tree)
+        out = self._run('--cohort', self.loose.code)
+        self.assertIn(f'tree=stored; total=2; same=1, unexpected=1\n  {STORED_DIFFERS}\n', out)
+        self.assertIn(f'    pending: {self.below_floor.id}', out)
+        self.assertIn('stored_trees_differ=1', out)
+        self.assertIn('RESULT: 2 need a look', out)
 
     def test_a_floor_beside_a_merit_only_bar_is_not_an_open_door(self):
         c = make_cohort(code='merit-door', min_stpm_pngk=3.0, min_spm_a_count=None, min_spm_bplus_count=None,
@@ -97,7 +113,7 @@ class TestReplayCommand(TestCase):
         bad = make_cohort(code='bad-tree', min_stpm_pngk=None, min_spm_a_count=None, min_spm_bplus_count=None)
         ScholarshipCohort.objects.filter(pk=bad.pk).update(allowed_birth_states=['Sabah'])
         out = self._run('--cohort', 'bad-tree')
-        self.assertIn(f'cohort {bad.id} (bad-tree): total=0; no applications\n'
+        self.assertIn(f'cohort {bad.id} (bad-tree): tree=columns; total=0; no applications\n'
                       '  TREE REFUSED by validate: born_in must be any: [distinct state keys]\n', out)
         self.assertIn('trees_refused=1', out)
         self.assertIn('RESULT: 1 need a look', out)
