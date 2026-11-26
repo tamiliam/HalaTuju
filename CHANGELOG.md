@@ -158,7 +158,7 @@ Branch ocr-14-unis, not pushed. Migration: none. Services: api. The OCR-14 lanes
   surat tawaran yang rasmi", "bukan tawaran rasmi", "tidak merupakan surat tawaran rasmi" and "not an official offer
   (letter)", on every rules lane and the government families. The UNIMAS footer pair still locks.
 - **Versions:** offer_parse 2.5.0, digest and note updated in place (review r2); offer_reader unchanged.
-- **Measured:** dry run and owner samples still to be re-run (split plan). Tests: `test_offer_exact.py`,
+- **Measured:** dry run unchanged, 0 wrong; owner-sample lock counts unchanged. Tests: `test_offer_exact.py`,
   `test_offer_parse_unimas.py`, `test_offer_parse_uitm.py`, `test_offer_parse_upsi.py`, `test_offer_parse_uum.py`.
 
 
