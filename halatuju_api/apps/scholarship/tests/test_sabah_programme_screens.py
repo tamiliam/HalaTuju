@@ -268,7 +268,7 @@ class TestIntakeYears(_Case):
         # `is_open` defaults to True on the model, so creating a year would otherwise let real
         # students in with the same press. Opening is its own deliberate action.
         r = self._post(self.admin_a, self._years(self.prog_a),
-                       {'code': 'sab-a-2027', 'name': 'A 2027', 'year': 2027, **no_rules()})
+                       {'code': 'sab-a-2027', 'name': 'A 2027', 'year': 2027, **no_rules(income_ceiling=5860)})
         self.assertEqual(r.status_code, 201)
         self.assertFalse(r.data['is_open'])
 
@@ -276,7 +276,7 @@ class TestIntakeYears(_Case):
         # An application denormalises `owning_organisation` from its cohort, so a cohort carrying
         # one and not the other files students under the wrong fence. It is DERIVED, never asked.
         self._post(self.admin_a, self._years(self.prog_a),
-                   {'code': 'sab-a-2028', 'name': 'A 2028', 'year': 2028, **no_rules()})
+                   {'code': 'sab-a-2028', 'name': 'A 2028', 'year': 2028, **no_rules(income_ceiling=5860)})
         c = ScholarshipCohort.objects.get(code='sab-a-2028')
         self.assertEqual(c.programme_id, self.prog_a.id)
         self.assertEqual(c.owning_organisation_id, self.org_a.id)

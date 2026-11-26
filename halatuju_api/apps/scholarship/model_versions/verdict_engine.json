@@ -110,5 +110,10 @@
     "digest": "047b9a18721cbf8635b1c841fc93d858c89d7b42722f6696863159a69b7196cf",
     "note": "Criteria Sprint 3 (TD-774 item 2). criteria.tree_of refuses a stored criteria value that is not a dict (a list, string or number) with StoredTreeRefused, as it refuses a malformed dict, instead of quietly reading the columns; only a NULL row (or a non-JSON stand-in) reads the columns. No live intake stores such a value; no shortlist answer changes.",
     "also_ok": []
+  },
+  "2026-11-27.2": {
+    "digest": "846c41b985f111d85fb96b149ae9485d7bd1f77c0881c095358bcdaf329806b1",
+    "note": "Criteria Sprint 3 review R1 (should-fix 3). verdict_context.intake_values hashes the income section's join as income_mode when it is not 'any' (income_engine.amounts.income_headroom reads it), so a switch from 'any' to 'all' moves the verdict fingerprint. Every tree from_legacy builds is 'any' and has no income_mode key, so every fingerprint taken today is unchanged; no shortlist answer changes.",
+    "also_ok": []
   }
 }

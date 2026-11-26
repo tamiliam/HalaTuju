@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: criteria Sprint 3 review R1 (2026-11-27)
+
+Branch criteria-api, not pushed. Services: api. No migration. Verdict engine 2026-11-27.2 (the fingerprint changed). Web: the Sprint 4 editor must send `digest`.
+- **Blocker 1:** a save is refused when a post-SPM group has no `min_pngk` floor (`NO_PNGK_FLOOR`). Without one, the gate passes every post-SPM holder while `pngk_floor` reads None, so no higher-results document is asked for. `min_merit` (the post-SPM merit) is refused unless a post-SPM group has a floor (`MERIT_NEEDS_FLOOR`). The `from_legacy` shapes of live intakes 1 and 3-5 still pass (test).
+- **Should-fix 2:** a results section whose groups hold no rule is refused unless a merit section is present (`NO_RESULTS_RULE`). The empty-tree checks (`criteria_write.empty_problems`) now also run in the old form's rebuild (`intake_years._rebuild_criteria`) and in a new year's tree (`criteria_new.stamp_new`). Both answer 400 `bad_criteria` with `problems`. **Contract change:** creating an intake year with every requirement blank is now refused (it used to store a tree that lets everyone through). The create helpers in five test files (birth state, credit floor, intake window, Sabah screens, start year) now send one income rule, because what those tests check is not the rules.
+- **Should-fix 3:** `verdict_context.intake_values` adds `income_mode` when the income join is not 'any'. An 'all' join now moves the verdict fingerprint, while an 'any' intake's fingerprint stays the same. Registry digest updated, version 2026-11-27.2.
+- **Should-fix 4:** the rescore hold (ruling 6) only applies when the stored tree is the one the columns say (`same_tree(criteria, from_legacy)`). A tree beyond the columns is rescored, not held.
+- **Should-fix 5 (stale writes):** GET and PATCH answer `digest` (sha256 of the stored value, compact JSON with sorted keys). PATCH requires `digest` on both routes: missing or not a string gives 400 `digest_required`, and a value that no longer matches gives 409 `criteria_changed` (checked after the rule-year check). Nothing is saved in either case.
+- **Minor 6:** `same_tree` compares while ignoring order: sections, groups, tests and born-in states. Order alone no longer marks a tree `beyond_columns` or blocks the old form.
+- **Minor 7:** the rule-year route picks the year inside the row lock (`rule_year(..., lock=True)` locks every year of the gift).
+- **Docs:** TD-721 (spmgate f3b831e82) is marked retired by the criteria editor. TD-776 is added for the stale model help_text.
+
 ### feat: criteria Sprint 3 - admin API for the criteria tree, TD-774 items 1-4 (2026-11-27)
 
 Branch criteria-api, not pushed. Services: api. No migration. Verdict engine 2026-11-27.1. Web: no change.

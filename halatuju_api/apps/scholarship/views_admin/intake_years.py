@@ -69,13 +69,28 @@ def _rebuild_criteria(c):
     intake not yet built keeps reading the columns live (they are always current). A NEW year is
     different: it stores its tree at create (`criteria_new.stamp_new`, Sprint 3b)."""
     from .. import criteria
+    from ..criteria_write import empty_problems
     if c.criteria is None:
         return []
     tree = criteria.from_legacy(c)
-    problems = criteria.validate_tree(tree)
+    # Review R1 (Sprint 3), should-fix 2: every box cleared would store {'all': []} - a tree that
+    # checks nothing. Refused (`_tree_refusal`: 400 bad_criteria), as the criteria API refuses it.
+    problems = criteria.validate_tree(tree) or empty_problems(tree)
     if not problems:
         c.criteria = tree
     return problems
+
+
+def _tree_refusal(problems):
+    """The 400 for a tree a save would build and must not store: ``bad_criteria`` with the
+    problems when it checks nothing (`criteria_write.empty_problems`, review R1), else today's
+    ``bad_requirement`` on ``criteria``."""
+    from ..criteria_write import EMPTY_PROBLEMS
+    if all(p in EMPTY_PROBLEMS for p in problems):
+        return Response({'error': 'bad_criteria', 'code': 'bad_criteria', 'problems': problems},
+                        status=status.HTTP_400_BAD_REQUEST)
+    return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': 'criteria'},
+                    status=status.HTTP_400_BAD_REQUEST)
 
 
 def _stored_tree_refused(c):
@@ -98,7 +113,9 @@ def _tree_beyond_columns(c):
     TD-774 (criteria Sprint 3): the old form's save would rebuild the tree from the columns and
     silently drop that part, so it is refused (409 ``rules_beyond_columns``) instead."""
     from .. import criteria
-    return isinstance(c.criteria, dict) and c.criteria != criteria.from_legacy(c)
+    from ..criteria_write import same_tree
+    # Review R1 minor 6: order alone (sections, groups, tests, states) never counts.
+    return isinstance(c.criteria, dict) and not same_tree(c.criteria, criteria.from_legacy(c))
 
 
 def _rules_error(c, admin, action):
@@ -217,8 +234,7 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
         from .. import criteria_new
         problems = criteria_new.stamp_new(c)
         if problems:
-            return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': 'criteria'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return _tree_refusal(problems)
         c.save(force_insert=True)
         logger.info('AUDIT intake_year_created cohort=%s programme=%s by=%s',
                     c.code, p.code, admin.email or '')
@@ -301,9 +317,9 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
             # REBUILDS a STORED tree from the columns (`criteria.from_legacy`) - otherwise the gate,
             # which reads the tree, would keep the old bar while the screen shows the new one.
             # A NULL tree is left NULL: the gate already reads the new boxes live (R1 fix).
-            if _rebuild_criteria(c):
-                return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': 'criteria'},
-                                status=status.HTTP_400_BAD_REQUEST)
+            problems = _rebuild_criteria(c)
+            if problems:
+                return _tree_refusal(problems)
             changed.append('criteria')
 
         if 'is_open' in request.data:

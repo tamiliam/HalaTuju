@@ -164,6 +164,11 @@ class _Base(TestCase):
     def _rule_url(self, p=None):
         return f'/api/v1/admin/scholarship/programmes/{(p or self.programme).id}/criteria/'
 
+    def _send(self, url, c, body):
+        """PATCH ``body`` with the digest of ``c``'s stored tree as it is NOW (the screen's GET)."""
+        digest = criteria_write.digest(ScholarshipCohort.objects.get(pk=c.pk).criteria)
+        return self.client.patch(url, {**body, 'digest': digest}, format='json')
+
     def _old_form(self, c, body):
         return self.client.patch(f'/api/v1/admin/scholarship/intake-years/{c.id}/', body, format='json')
 
@@ -176,7 +181,7 @@ class TestGetOneIntake(_Base):
         self.assertEqual(r.data, {
             'intake': {'id': c.id, 'code': c.code, 'name': c.name, 'year': c.year, 'is_open': False},
             'stored': True, 'criteria': criteria.from_legacy(c), 'rules_error': False,
-            'beyond_columns': False})
+            'beyond_columns': False, 'digest': criteria_write.digest(c.criteria)})
 
     def test_a_null_row_serves_todays_column_meaning(self):
         c = self._cohort(COHORT_5, stored=False)
@@ -210,7 +215,7 @@ class TestPatchOneIntake(_Base):
                 c = self._cohort(shape)
                 before = readers(c)
                 with self.assertNoLogs(LOG, 'INFO'):
-                    r = self.client.patch(self._url(c), {'criteria': criteria.from_legacy(c)}, format='json')
+                    r = self._send(self._url(c), c, {'criteria': criteria.from_legacy(c)})
                 self.assertEqual(r.status_code, 200, r.data)
                 self.assertIs(r.data['changed'], False)
                 self.assertEqual(readers(c), before)
@@ -219,7 +224,7 @@ class TestPatchOneIntake(_Base):
         c = self._cohort(COHORT_4)
         old = c.criteria
         with self.assertLogs(LOG, 'INFO') as logs:
-            r = self.client.patch(self._url(c), {'criteria': GOOD}, format='json')
+            r = self._send(self._url(c), c, {'criteria': GOOD})
         self.assertEqual(r.status_code, 200, r.data)
         self.assertEqual((r.data['changed'], r.data['criteria'], r.data['beyond_columns']), (True, GOOD, False))
         c.refresh_from_db()
@@ -244,7 +249,7 @@ class TestPatchOneIntake(_Base):
         c = self._cohort(COHORT_1)
         tree = {'all': [*GOOD['all'], {'section': 'born_in', 'any': ['sabah', 'wp_labuan']}],
                 'flag': [{'test': 'course_start_year', 'allowed': [2025, 2026]}]}
-        r = self.client.patch(self._url(c), {'criteria': tree}, format='json')
+        r = self._send(self._url(c), c, {'criteria': tree})
         self.assertEqual(r.status_code, 200, r.data)
         c.refresh_from_db()
         self.assertEqual((c.allowed_birth_states, c.allowed_start_years), (['sabah', 'wp_labuan'], [2025, 2026]))
@@ -252,7 +257,7 @@ class TestPatchOneIntake(_Base):
 
     def test_a_tree_beyond_the_columns_saves_whole_and_the_old_form_then_refuses(self):
         c = self._cohort()
-        r = self.client.patch(self._url(c), {'criteria': BEYOND}, format='json')
+        r = self._send(self._url(c), c, {'criteria': BEYOND})
         self.assertEqual((r.status_code, r.data['beyond_columns']), (200, True))
         c.refresh_from_db()
         self.assertEqual(c.criteria, BEYOND)
@@ -268,7 +273,7 @@ class TestPatchOneIntake(_Base):
         before = (c.criteria, column_values(c))
         for name, tree in BAD_TREES.items():
             with self.subTest(case=name):
-                r = self.client.patch(self._url(c), {'criteria': tree}, format='json')
+                r = self._send(self._url(c), c, {'criteria': tree})
                 self.assertEqual((r.status_code, r.data['code']), (400, 'bad_criteria'))
                 self.assertTrue(r.data['problems'])
                 c.refresh_from_db()
@@ -277,7 +282,8 @@ class TestPatchOneIntake(_Base):
     def test_an_infinite_number_is_a_400(self):
         c = self._cohort()
         body = ('{"criteria": {"all": [{"section": "results", "own": [{"route": "post_spm", '
-                '"all": [{"test": "min_pngk", "value": 1e999}]}]}]}}')
+                '"all": [{"test": "min_pngk", "value": 1e999}]}]}]}, '
+                f'"digest": "{criteria_write.digest(c.criteria)}"}}')
         r = self.client.patch(self._url(c), body, content_type='application/json')
         self.assertEqual(r.status_code, 400)
         c.refresh_from_db()
@@ -285,10 +291,15 @@ class TestPatchOneIntake(_Base):
 
     def test_bad_bodies(self):
         c = self._cohort()
+        d = criteria_write.digest(c.criteria)
         for body, code in (([1, 2], 'criteria_required'), ({}, 'criteria_required'),
+                           ({'digest': d}, 'criteria_required'),
                            ({'tree': GOOD}, 'unknown_field'),
                            ({'criteria': GOOD, 'min_stpm_pngk': 2.0}, 'unknown_field'),
-                           ({'criteria': None}, 'bad_criteria')):
+                           ({'criteria': GOOD}, 'digest_required'),
+                           ({'criteria': GOOD, 'digest': ''}, 'digest_required'),
+                           ({'criteria': GOOD, 'digest': 5}, 'digest_required'),
+                           ({'criteria': None, 'digest': d}, 'bad_criteria')):
             with self.subTest(body=body):
                 r = self.client.patch(self._url(c), body, format='json')
                 self.assertEqual((r.status_code, r.data['code']), (400, code))
@@ -301,7 +312,7 @@ class TestPatchOneIntake(_Base):
             with self.subTest(value=value):
                 ScholarshipCohort.objects.filter(pk=c.pk).update(criteria=value)
                 with self.assertLogs(LOG, 'ERROR') as logs:
-                    r = self.client.patch(self._url(c), {'criteria': GOOD}, format='json')
+                    r = self._send(self._url(c), c, {'criteria': GOOD})
                 self.assertEqual((r.status_code, r.data['code']), (409, 'rules_error'))
                 self.assertIn('intake_year_rules_error_refused', logs.output[0])
                 self.assertIn('action=criteria', logs.output[0])
@@ -310,7 +321,7 @@ class TestPatchOneIntake(_Base):
 
     def test_a_null_row_is_a_409_until_the_build(self):
         c = self._cohort(stored=False)
-        r = self.client.patch(self._url(c), {'criteria': GOOD}, format='json')
+        r = self._send(self._url(c), c, {'criteria': GOOD})
         self.assertEqual((r.status_code, r.data['code']), (409, 'criteria_not_built'))
         c.refresh_from_db()
         self.assertIsNone(c.criteria)
@@ -336,11 +347,11 @@ class TestTheRuleYearRoute(_Base):
         for body in ({'criteria': GOOD}, {'criteria': GOOD, 'intake_id': str(new.id)},
                      {'criteria': GOOD, 'intake_id': True}):
             with self.subTest(body=body):
-                r = self.client.patch(self._rule_url(), body, format='json')
+                r = self._send(self._rule_url(), new, body)
                 self.assertEqual((r.status_code, r.data['code']), (400, 'intake_id_required'))
-        r = self.client.patch(self._rule_url(), {'criteria': GOOD, 'intake_id': old.id}, format='json')
+        r = self._send(self._rule_url(), old, {'criteria': GOOD, 'intake_id': old.id})
         self.assertEqual((r.status_code, r.data['code'], r.data['intake_id']), (409, 'rule_year_changed', new.id))
-        r = self.client.patch(self._rule_url(), {'criteria': GOOD, 'intake_id': new.id}, format='json')
+        r = self._send(self._rule_url(), new, {'criteria': GOOD, 'intake_id': new.id})
         self.assertEqual((r.status_code, r.data['changed']), (200, True))
         new.refresh_from_db(); old.refresh_from_db()
         self.assertEqual(new.criteria, GOOD)
@@ -349,14 +360,13 @@ class TestTheRuleYearRoute(_Base):
     def test_a_no_op_patch_on_the_rule_year(self):
         c = self._cohort(COHORT_5)
         before = readers(c)
-        r = self.client.patch(self._rule_url(), {'criteria': criteria.from_legacy(c), 'intake_id': c.id},
-                              format='json')
+        r = self._send(self._rule_url(), c, {'criteria': criteria.from_legacy(c), 'intake_id': c.id})
         self.assertEqual((r.status_code, r.data['changed']), (200, False))
         self.assertEqual(readers(c), before)
 
     def test_a_bad_tree_is_a_400_before_the_year_check(self):
         c = self._cohort()
-        r = self.client.patch(self._rule_url(), {'criteria': {'all': []}, 'intake_id': c.id}, format='json')
+        r = self._send(self._rule_url(), c, {'criteria': {'all': []}, 'intake_id': c.id + 999})
         self.assertEqual((r.status_code, r.data['code']), (400, 'bad_criteria'))
 
 
@@ -422,3 +432,172 @@ class TestTheOldFormAndItems1And4(_Base):
         ScholarshipCohort.objects.filter(pk=good.pk).update(is_open=True)
         r = self.client.get(f'/api/v1/admin/scholarship/programmes/{self.programme.id}/years/')
         self.assertIs({y['code']: y for y in r.data['years']}['flag-good']['rules_error_open'], False)
+
+
+# ── Review R1 (Sprint 3) fixes, one regression each ────────────────────────────────────────
+
+def merit(*tests):
+    return {'section': 'merit', 'all': list(tests)}
+
+
+#: The reviewer's blocker: a post-SPM group with no floor beside an SPM group.
+NO_FLOOR = {'all': [results('own', post(), spm(gc(5, 'A-')))]}
+
+
+class TestReviewR1WriteChecks(SimpleTestCase):
+    def test_blocker_1_a_post_spm_group_with_no_floor_is_refused(self):
+        self.assertEqual(criteria_write.write_problems(NO_FLOOR), [criteria_write.NO_PNGK_FLOOR])
+        self.assertIn(criteria_write.NO_PNGK_FLOOR, criteria_write.write_problems(
+            {'all': [results('any', post(), spm(gc(5, 'A-')))]}))
+
+    def test_blocker_1_a_post_spm_merit_needs_a_floor(self):
+        for tree in ({'all': [results('own', spm(gc(5, 'A-'))), merit({'test': 'min_merit', 'value': 60})]},
+                     {'all': [merit({'test': 'min_merit', 'value': 60})]},
+                     {'all': [income('any', 5000, 900), merit({'test': 'min_upu_merit', 'value': 70},
+                                                               {'test': 'min_merit', 'value': 60})]}):
+            with self.subTest(tree=tree):
+                self.assertIn(criteria_write.MERIT_NEEDS_FLOOR, criteria_write.write_problems(tree))
+        ok = {'all': [results('own', post(pngk(2.5)), spm(gc(5, 'A-'))), merit({'test': 'min_merit', 'value': 60})]}
+        self.assertEqual(criteria_write.write_problems(ok), [])
+
+    def test_blocker_1_every_live_shape_still_passes(self):
+        for name, c in LIVE.items():
+            with self.subTest(intake=name):
+                self.assertEqual(criteria_write.write_problems(criteria.from_legacy(c)), [])
+                self.assertEqual(criteria_write.empty_problems(criteria.from_legacy(c)), [])
+
+    def test_should_fix_2_a_results_section_with_no_rule_is_refused_without_a_merit(self):
+        for tree in ({'all': [results('own', spm())]}, {'all': [results('any', spm()), income('any', 5000, 900)]}):
+            with self.subTest(tree=tree):
+                self.assertEqual(criteria_write.write_problems(tree), [criteria_write.NO_RESULTS_RULE])
+        # from_legacy's own shape: no grade bar, a merit (an SPM group with no rule beside it)
+        with_merit = {'all': [results('own', spm()), merit({'test': 'min_upu_merit', 'value': 70})]}
+        self.assertEqual(criteria_write.write_problems(with_merit), [])
+        c = SimpleNamespace(**{**vars(COHORT_1), 'min_spm_a_count': None, 'min_spm_bplus_count': None,
+                               'min_merit_score': 70})
+        self.assertEqual(criteria.from_legacy(c)['all'][:2], with_merit['all'])
+
+    def test_minor_6_order_alone_is_not_beyond_the_columns(self):
+        c3 = criteria.from_legacy(COHORT_3)
+        shuffled = json.loads(json.dumps(c3))
+        shuffled['all'].reverse()
+        for s in shuffled['all']:
+            mode = next(k for k in s if k != 'section')
+            s[mode].reverse()
+            if s['section'] == 'results':
+                for g in s[mode]:
+                    g['all'].reverse()
+        shuffled['flag'] = []
+        self.assertNotEqual(shuffled, c3)
+        self.assertEqual(criteria_write.write_problems(shuffled), [])
+        self.assertTrue(criteria_write.same_tree(shuffled, c3))
+        self.assertFalse(criteria_write.says_more_than_columns(shuffled))
+        self.assertTrue(criteria_write.says_more_than_columns(BEYOND))
+        self.assertFalse(criteria_write.same_tree(c3, criteria.from_legacy(COHORT_4)))
+
+    def test_should_fix_5_the_digest_is_exact(self):
+        self.assertEqual(criteria_write.digest(GOOD), criteria_write.digest(json.loads(json.dumps(GOOD))))
+        self.assertNotEqual(criteria_write.digest(GOOD), criteria_write.digest(BEYOND))
+        self.assertNotEqual(criteria_write.digest(None), criteria_write.digest({'all': []}))
+        self.assertEqual(len(criteria_write.digest(None)), 64)
+
+
+class TestReviewR1Endpoints(_Base):
+    def test_blocker_1_the_reviewers_tree_is_a_400_and_never_saved(self):
+        c = self._cohort()
+        r = self._send(self._url(c), c, {'criteria': NO_FLOOR})
+        self.assertEqual((r.status_code, r.data['code'], r.data['problems']),
+                         (400, 'bad_criteria', [criteria_write.NO_PNGK_FLOOR]))
+        c.refresh_from_db()
+        self.assertEqual(c.criteria, criteria.from_legacy(c))
+
+    def test_should_fix_2_the_old_form_cannot_clear_every_rule(self):
+        c = self._cohort(COHORT_4)
+        before = c.criteria
+        clear = {f: None for f in ('min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count',
+                                   'min_stpm_pngk', 'min_merit_score', 'income_ceiling', 'per_capita_ceiling')}
+        r = self._old_form(c, {**clear, 'allowed_birth_states': [], 'allowed_start_years': []})
+        self.assertEqual((r.status_code, r.data['code'], r.data['problems']),
+                         (400, 'bad_criteria', [criteria_write.EMPTY_TREE]))
+        c.refresh_from_db()
+        self.assertEqual((c.criteria, c.min_stpm_pngk), (before, 2.0))
+
+    def test_should_fix_2_a_new_year_with_every_box_blank_is_refused(self):
+        body = {'code': 'blank-2027', 'name': 'Blank', 'year': 2027,
+                'min_spm_a_count': None, 'min_spm_bplus_count': None, 'min_spm_credit_count': None,
+                'min_stpm_pngk': None, 'min_merit_score': None, 'income_ceiling': None,
+                'per_capita_ceiling': None, 'allowed_birth_states': [], 'allowed_start_years': []}
+        r = self.client.post(f'/api/v1/admin/scholarship/programmes/{self.programme.id}/years/', body,
+                             format='json')
+        self.assertEqual((r.status_code, r.data['code'], r.data['problems']),
+                         (400, 'bad_criteria', [criteria_write.EMPTY_TREE]))
+        self.assertFalse(ScholarshipCohort.objects.filter(code='blank-2027').exists())
+
+    def test_should_fix_5_get_and_patch_serve_the_digest(self):
+        c = self._cohort()
+        for url in (self._url(c), self._rule_url()):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).data['digest'], criteria_write.digest(c.criteria))
+        r = self._send(self._url(c), c, {'criteria': GOOD})
+        self.assertEqual((r.status_code, r.data['digest']), (200, criteria_write.digest(GOOD)))
+
+    def test_should_fix_5_a_stale_digest_is_a_409_and_nothing_is_saved(self):
+        c = self._cohort()
+        seen = self.client.get(self._url(c)).data['digest']
+        self.assertEqual(self._old_form(c, {'income_ceiling': 6000}).status_code, 200)   # someone else
+        for url, extra in ((self._url(c), {}), (self._rule_url(), {'intake_id': c.id})):
+            with self.subTest(url=url):
+                r = self.client.patch(url, {'criteria': GOOD, 'digest': seen, **extra}, format='json')
+                self.assertEqual((r.status_code, r.data['code']), (409, 'criteria_changed'))
+                c.refresh_from_db()
+                self.assertEqual((c.criteria, c.income_ceiling), (criteria.from_legacy(c), 6000))
+        r = self.client.patch(self._url(c), {'criteria': GOOD, 'digest': criteria_write.digest(c.criteria)},
+                              format='json')
+        self.assertEqual(r.status_code, 200)
+
+    def test_should_fix_5_the_digest_is_required_on_both_routes(self):
+        c = self._cohort()
+        for url, extra in ((self._url(c), {}), (self._rule_url(), {'intake_id': c.id})):
+            with self.subTest(url=url):
+                r = self.client.patch(url, {'criteria': GOOD, **extra}, format='json')
+                self.assertEqual((r.status_code, r.data['code']), (400, 'digest_required'))
+
+    def test_minor_6_a_reordered_tree_leaves_the_old_form_working(self):
+        c = self._cohort(COHORT_4)
+        tree = {'all': list(reversed(c.criteria['all']))}
+        r = self._send(self._url(c), c, {'criteria': tree})
+        self.assertEqual((r.status_code, r.data['beyond_columns']), (200, False))
+        r = self._old_form(c, {'income_ceiling': 6000})
+        self.assertEqual(r.status_code, 200, r.data)
+
+    def test_minor_7_the_rule_year_is_chosen_under_the_lock(self):
+        from unittest import mock
+
+        from django.db.models.query import QuerySet
+
+        from apps.scholarship.views_admin.criteria_tree import rule_year
+        c = self._cohort()
+        real = QuerySet.select_for_update
+        with mock.patch.object(QuerySet, 'select_for_update', autospec=True,
+                               side_effect=lambda qs, *a, **k: real(qs, *a, **k)) as locked:
+            self.assertEqual(rule_year(self.programme), c)
+            self.assertEqual(locked.call_count, 0)
+            self.assertEqual(rule_year(self.programme, lock=True), c)
+            self.assertEqual(locked.call_count, 1)
+            self.assertIn('programme_id', str(locked.call_args[0][0].query))
+            r = self._send(self._rule_url(), c, {'criteria': GOOD, 'intake_id': c.id})
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(locked.call_count, 2)
+
+
+class TestReviewR1Fingerprint(SimpleTestCase):
+    def test_should_fix_3_the_income_join_moves_the_fingerprint(self):
+        from apps.scholarship import verdict_context
+
+        def values(tree):
+            cohort = SimpleNamespace(**{**vars(COHORT_4), 'year': 2026}, criteria=tree, id=1)
+            return verdict_context.intake_values(SimpleNamespace(cohort_id=1, cohort=cohort))
+        anyj, allj = values(GOOD), values(BEYOND)
+        self.assertNotIn('income_mode', anyj)
+        self.assertEqual(allj['income_mode'], 'all')
+        self.assertEqual({k: v for k, v in allj.items() if k != 'income_mode'}, anyj)

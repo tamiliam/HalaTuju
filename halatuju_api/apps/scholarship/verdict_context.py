@@ -329,7 +329,13 @@ def intake_values(application):
     # the switch-over is unchanged for every intake whose tree is its columns' tree. The SPM bars,
     # the merit and the born-in states stay out: the verdict engine reads none of them.
     from .criteria_read import income_ceilings, pngk_floor, start_years_rule
-    values['income_ceiling'], values['per_capita_ceiling'], _mode = income_ceilings(cohort)
+    values['income_ceiling'], values['per_capita_ceiling'], mode = income_ceilings(cohort)
+    # Review R1 (Sprint 3), should-fix 3: the income join is read by the engine
+    # (`income_engine.amounts.income_headroom`), so a switch from 'any' to 'all' must move the
+    # fingerprint. Hashed only when it is not 'any' (or absent), so every fingerprint taken on a
+    # tree `from_legacy` builds - always 'any' - is unchanged.
+    if mode not in (None, 'any'):
+        values['income_mode'] = mode
     values['min_stpm_pngk'] = pngk_floor(cohort)
     values['allowed_start_years'] = start_years_rule(cohort)
     return values

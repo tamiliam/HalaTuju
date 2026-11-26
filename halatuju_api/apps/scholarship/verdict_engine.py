@@ -122,7 +122,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-11-26.4 — criteria Sprint 3a part 2 (owner, 26 Nov): income_headroom's 'thin' margin is the gift's own per-person line (or its household line's share per person), not a fixed RM1,584 - intakes 3/4/5 read 'probable' sooner; a gift with only a household line is judged on it (was 'unknown'). The gate's income reasons name the gift's own lines, never "B40" (both engines word them identically). The shortlist is unchanged.
 #   2026-11-26.5 — criteria Sprint 3b: income_headroom reads an 'all' income section (both lines must pass: 'over' when EITHER fails, graded on the stricter line) and bands a household size of 0 or below 'unknown'. A per-person-only gift's refusal reason no longer says "> RMNone" (both gates). No live intake has an 'all' section, a per-person-only line or a size below 1; the shortlist is unchanged.
 #   2026-11-27.1 — criteria Sprint 3 (TD-774 item 2): tree_of refuses a stored criteria value that is not a dict (a hand-edited list, string or number) with StoredTreeRefused, as it refuses a malformed dict, instead of reading the columns. Nothing stores such a value today; no live answer changes.
-VERDICT_ENGINE_VERSION = '2026-11-27.1'   # criteria S3: a non-dict stored tree is refused (above).
+#   2026-11-27.2 — criteria Sprint 3 review R1 (should-fix 3): the verdict fingerprint (verdict_context.intake_values) hashes the income section's join as income_mode when it is not 'any', so a switch from 'any' to 'all' moves the fingerprint. Every tree from_legacy builds is 'any', so every fingerprint taken today is unchanged; no live answer changes.
+VERDICT_ENGINE_VERSION = '2026-11-27.2'   # criteria S3 R1: the income join is in the fingerprint (above).
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

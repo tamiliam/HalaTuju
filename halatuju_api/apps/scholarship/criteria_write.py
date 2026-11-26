@@ -10,11 +10,13 @@ refused before it decides anybody's money: a PNGK floor of 30 instead of 3.0, a 
 income line of RM58600000, a non-finite number (a JSON 1e999 parses as infinity, and an infinite
 floor fails everybody), a tree that checks nothing at all.
 """
+import hashlib
+import json
 import math
 from types import SimpleNamespace
 
 from . import start_year as _start_year
-from .criteria import _mode, from_legacy, validate_tree
+from .criteria import _mode, from_legacy, section, validate_tree
 from .criteria_read import column_values
 
 #: The top of each scale. A PNGK / CGPA is out of 4.00 (STPM, Matriculation, Asasi, Diploma read
@@ -28,6 +30,19 @@ COUNT_MAX = 20
 RM_MAX = 100_000
 
 EMPTY_TREE = 'the tree checks nothing, so every student would pass: add at least one section'
+#: Review R1 (Sprint 3), should-fix 2: a results section whose groups hold no rule passes everyone.
+NO_RESULTS_RULE = ('results: no group holds a rule, so every student passes it - add a rule, '
+                   'or a merit section')
+#: Review R1 (Sprint 3), blocker 1: a post-SPM group with no floor passes every post-SPM holder,
+#: even one with no CGPA, while `criteria_read.pngk_floor` reads None - so no higher-results
+#: document is asked for (`results_route.gift_asks_higher` is False). The gate and the document
+#: rules would split.
+NO_PNGK_FLOOR = 'results: a post-SPM group needs a min_pngk floor'
+#: The same split for the post-SPM merit: it binds post-SPM holders, whose results no document
+#: is asked for unless a post-SPM group has a floor.
+MERIT_NEEDS_FLOOR = 'merit: min_merit (the post-SPM merit) needs a post-SPM group with a min_pngk floor'
+#: The problems `empty_problems` gives: the old form answers them as 400 ``bad_criteria``.
+EMPTY_PROBLEMS = (EMPTY_TREE, NO_RESULTS_RULE)
 
 
 def _finite(v):
@@ -53,6 +68,21 @@ def _test_problems(t, where):
     return []
 
 
+def empty_problems(tree):
+    """``[EMPTY_TREE]`` / ``[NO_RESULTS_RULE]`` / ``[]`` for a tree `validate_tree` passes: does it
+    check anything at all? Run on EVERY save of a tree - the criteria API (`write_problems`), the
+    old form's rebuild (`intake_years._rebuild_criteria`) and a new year's tree
+    (`criteria_new.stamp_new`) - so no route stores a tree that lets everybody through.
+    `from_legacy` never builds a results section without a rule unless it adds a merit section."""
+    if not tree.get('all'):
+        return [EMPTY_TREE]
+    results = section(tree, 'results')
+    if (results and not any(g['all'] for g in _mode(results)[1])
+            and section(tree, 'merit') is None):
+        return [NO_RESULTS_RULE]
+    return []
+
+
 def write_problems(tree):
     """Every reason ``tree`` must not be SAVED, as short strings; ``[]`` means it may be.
 
@@ -64,9 +94,18 @@ def write_problems(tree):
     problems = validate_tree(tree)
     if problems:
         return problems
-    if not tree.get('all'):
-        return [EMPTY_TREE]
+    problems = empty_problems(tree)
+    if problems:
+        return problems
     out = []
+    results, merit = section(tree, 'results'), section(tree, 'merit')
+    groups = {g['route']: g['all'] for g in _mode(results)[1]} if results else {}
+    # `GROUP_TESTS['post_spm']` is ('min_pngk',) and a test is never repeated, so a post-SPM group
+    # has a floor exactly when it holds a test.
+    if 'post_spm' in groups and not groups['post_spm']:
+        out.append(NO_PNGK_FLOOR)
+    if merit and any(t['test'] == 'min_merit' for t in merit['all']) and not groups.get('post_spm'):
+        out.append(MERIT_NEEDS_FLOOR)
     for sec in tree['all']:
         name = sec['section']
         if name == 'born_in':
@@ -96,6 +135,48 @@ def columns_for(tree):
 def says_more_than_columns(tree):
     """True when the columns cannot say ``tree`` (`from_legacy` of `columns_for` is a different
     tree): an 'all' income join, a post-SPM merit, a grade count at A, B or C+, an SPM group that
-    is empty where `from_legacy` would leave it out, a post-SPM group with no floor. Such a tree is
-    saved whole; the OLD form then refuses to rebuild it (409 ``rules_beyond_columns``, TD-774)."""
-    return from_legacy(SimpleNamespace(**columns_for(tree))) != tree
+    is empty where `from_legacy` would leave it out. Order alone never counts (`same_tree`). Such
+    a tree is saved whole; the OLD form then refuses to rebuild it (409 ``rules_beyond_columns``, TD-774)."""
+    return not same_tree(from_legacy(SimpleNamespace(**columns_for(tree))), tree)
+
+
+def _canonical(tree):
+    """A valid ``tree`` with every order that means nothing sorted out (review R1, minor 6): the
+    sections (read by name, `criteria.section`), the results groups (read by route), the tests in
+    a list (each is checked; only a reason's wording follows their order) and the born-in states
+    (a set). An empty ``flag`` list is the same as none. The course-start years are kept as stored
+    (`write_problems` asks them in order)."""
+    def tests(ts):
+        return sorted(ts, key=lambda t: (t['test'], t.get('grade_or_better') or ''))
+    secs = []
+    for sec in tree.get('all', []):
+        mode, items = _mode(sec)
+        if sec['section'] == 'results':
+            items = sorted(({'route': g['route'], 'all': tests(g['all'])} for g in items),
+                           key=lambda g: g['route'])
+        elif sec['section'] == 'born_in':
+            items = sorted(items)
+        else:
+            items = tests(items)
+        secs.append({'section': sec['section'], mode: items})
+    out = {'all': sorted(secs, key=lambda s: s['section'])}
+    if tree.get('flag'):
+        out['flag'] = tree['flag']
+    return out
+
+
+def same_tree(a, b):
+    """True when ``a`` and ``b`` say the same rules, whatever order their parts are in. A tree
+    `validate_tree` refuses is compared exactly (its shape cannot be trusted to sort)."""
+    if validate_tree(a) or validate_tree(b):
+        return a == b
+    return _canonical(a) == _canonical(b)
+
+
+def digest(stored):
+    """The stale-write fingerprint of an intake's STORED criteria value (review R1, should-fix 5):
+    sha256 of its compact JSON with sorted keys. Served on GET and PATCH; a PATCH must send the
+    one it read, so a save made from a screen that is out of date is refused (409
+    ``criteria_changed``). Exact, not order-blind: any write to the column moves it."""
+    text = json.dumps(stored, sort_keys=True, separators=(',', ':'))
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()

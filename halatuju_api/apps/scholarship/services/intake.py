@@ -359,8 +359,15 @@ def rescore_pending_decisions():
 
     TD-774 (criteria Sprint 3b): an intake whose STORED tree is refused (`StoredTreeRefused`) is
     checked BEFORE any of its rows is touched and skipped WHOLE - logged at ERROR, listed under
-    'refused_intakes' ({id, code}) - and the other intakes carry on. Never half-applied."""
-    from ..criteria import StoredTreeRefused, tree_of
+    'refused_intakes' ({id, code}) - and the other intakes carry on. Never half-applied.
+
+    Review R1 (criteria Sprint 3), should-fix 4: the hold is for THE SWITCH-OVER only - an intake
+    whose stored tree is its columns' tree (`criteria_write.same_tree` with `from_legacy`). Once
+    the criteria API stores a tree the columns cannot say, the columns are a partial picture of the
+    rules: comparing against them would hold rows the edit is meant to re-score, so that intake's
+    rows are re-scored on the tree."""
+    from ..criteria import StoredTreeRefused, from_legacy, tree_of
+    from ..criteria_write import same_tree
     from ..shortlisting import evaluate_columns
     pending = list(
         ScholarshipApplication.objects
@@ -368,6 +375,7 @@ def rescore_pending_decisions():
         .select_related('cohort', 'profile', 'owning_organisation__configuration')
     )
     changed, held, refused, refused_ids, skipped = [], [], [], set(), 0
+    beyond_ids = set()
     for cohort in {a.cohort_id: a.cohort for a in pending if a.cohort_id}.values():
         try:
             tree_of(cohort)
@@ -376,12 +384,15 @@ def rescore_pending_decisions():
                          'criteria tree is refused', cohort.id, cohort.code)
             refused.append({'id': cohort.id, 'code': cohort.code})
             refused_ids.add(cohort.id)
+            continue
+        if cohort.criteria is not None and not same_tree(cohort.criteria, from_legacy(cohort)):
+            beyond_ids.add(cohort.id)
     for application in pending:
         if application.cohort_id in refused_ids:
             skipped += 1
             continue
         before = application.verdict
-        if before:
+        if before and application.cohort_id not in beyond_ids:
             new = evaluate(application, application.cohort)
             old = evaluate_columns(application, application.cohort)
             if new.verdict != old.verdict and before == old.verdict:

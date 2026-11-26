@@ -192,6 +192,27 @@ class TestRescoreHoldsWhatTheTreeWouldChange(TestCase):
         fresh = _apply(self.degree, exam_type='spm', grades=STRONG)
         self.assertEqual(score_application(fresh).verdict, new.verdict)
 
+    def test_a_tree_the_columns_cannot_say_is_rescored_not_held(self):
+        # Review R1 (criteria Sprint 3), should-fix 4: the hold is the switch-over's only. Once the
+        # criteria API stores a tree the columns cannot say (here: both income lines must pass),
+        # the columns are a partial picture, so the rows are re-scored on the tree, never held.
+        tree = criteria.from_legacy(self.degree)
+        tree['all'] = [({'section': 'income', 'all': s['any']} if s['section'] == 'income' else s)
+                       for s in tree['all']]
+        ScholarshipCohort.objects.filter(pk=self.degree.pk).update(criteria=tree)
+        self.degree.refresh_from_db()
+        app = _apply(self.degree, exam_type='spm', grades=STRONG)
+        old = shortlisting.evaluate_columns(app, self.degree)
+        new = shortlisting.evaluate(app, self.degree)
+        self.assertNotEqual(old.verdict, new.verdict)
+        ScholarshipApplication.objects.filter(pk=app.pk).update(
+            verdict=old.verdict, bucket=old.bucket, shortlist_reason=old.reason)
+        result = rescore_pending_decisions()
+        self.assertEqual(result['held'], [])
+        self.assertEqual([c['id'] for c in result['changed']], [app.id])
+        app.refresh_from_db()
+        self.assertEqual(app.verdict, new.verdict)
+
     def test_a_decision_both_engines_agree_on_is_rescored_as_before(self):
         app = _apply(self.degree, exam_type='stpm', stpm_cgpa=3.5, spm_prereq_grades=MID,
                      results_exam_type='stpm', completed_qualifications=['spm', 'stpm'])

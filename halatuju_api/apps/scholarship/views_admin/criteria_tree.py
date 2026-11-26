@@ -21,6 +21,12 @@ Refusals: 400 ``bad_criteria`` (with ``problems``) for any tree `criteria_write.
 refuses; 409 ``rules_error`` when the STORED tree is refused (a technical correction, never an edit
 from blank boxes); 409 ``criteria_not_built`` on an intake whose tree is not stored yet (its first
 tree is `build_criteria_trees --apply`'s, with its own owner yes - it may switch the CGPA trap off).
+
+STALE WRITES (review R1, should-fix 5). GET and PATCH serve ``digest`` (`criteria_write.digest`, a
+fingerprint of the STORED value). A PATCH must send the digest it read - REQUIRED on both routes
+(400 ``digest_required`` when missing or not a string) - and is refused 409 ``criteria_changed``
+when the stored tree has changed since (another editor, the old form, a build): reload, never
+overwrite a tree nobody on this screen has seen.
 """
 import json
 import logging
@@ -56,7 +62,7 @@ def criteria_payload(c):
     ``rules_error`` true and the generic ``problems`` - never a guessed tree."""
     out = {'intake': {'id': c.id, 'code': c.code, 'name': c.name, 'year': c.year, 'is_open': c.is_open},
            'stored': c.criteria is not None, 'criteria': None, 'rules_error': False,
-           'beyond_columns': False}
+           'beyond_columns': False, 'digest': criteria_write.digest(c.criteria)}
     if _stored_tree_refused(c):
         out.update(rules_error=True, problems=criteria.validate_tree(c.criteria))
         return out
@@ -66,11 +72,16 @@ def criteria_payload(c):
     return out
 
 
-def rule_year(programme):
+def rule_year(programme, lock=False):
     """The gift's rule year: the year taking applications, else the newest (year, then code) -
-    `ProgrammeRulesTab.ruleYear` on the list `AdminIntakeYearListView` serves. None when none."""
+    `ProgrammeRulesTab.ruleYear` on the list `AdminIntakeYearListView` serves. None when none.
+    ``lock``: every year of the gift is locked for the transaction BEFORE the choice is made
+    (review R1, minor 7), so a year opened in between cannot change which one is saved."""
     from ..models import ScholarshipCohort
-    years = list(ScholarshipCohort.objects.filter(programme=programme).order_by('-year', 'code'))
+    qs = ScholarshipCohort.objects.filter(programme=programme)
+    if lock:
+        qs = qs.select_for_update(of=('self',)).select_related('programme', 'programme__organisation')
+    years = list(qs.order_by('-year', 'code'))
     return next((y for y in years if y.is_open), years[0] if years else None)
 
 
@@ -96,7 +107,7 @@ class _CriteriaBase(_ProgrammeScopedBase):
             return self._patch(request, admin, pk)
 
     def _body_keys(self):
-        return {'criteria'}
+        return {'criteria', 'digest'}
 
     def _check_target(self, request, c):
         return None
@@ -114,6 +125,8 @@ class _CriteriaBase(_ProgrammeScopedBase):
             return _err('unknown_field', fields=unknown)
         if 'criteria' not in data:
             return _err('criteria_required')
+        if not isinstance(data.get('digest'), str) or not data['digest']:
+            return _err('digest_required')
         # A bad tree is a 400 whatever the intake's state - never saved (`write_problems`).
         tree = data['criteria']
         problems = criteria_write.write_problems(tree)
@@ -122,6 +135,8 @@ class _CriteriaBase(_ProgrammeScopedBase):
         err = self._check_target(request, c)
         if err:
             return err
+        if data['digest'] != criteria_write.digest(c.criteria):
+            return _err('criteria_changed', status.HTTP_409_CONFLICT)
         if _stored_tree_refused(c):
             logger.error('AUDIT intake_year_rules_error_refused cohort=%s action=criteria by=%s',
                          c.code, admin.email or '')
@@ -170,17 +185,13 @@ class AdminProgrammeCriteriaView(_CriteriaBase):
         p, err = self._programme_or_404(admin, pk)
         if err:
             return None, err
-        y = rule_year(p)
+        y = rule_year(p, lock=lock)
         if y is None:
             return None, _err('no_intake_year', status.HTTP_404_NOT_FOUND)
-        if lock:
-            from ..models import ScholarshipCohort
-            y = ScholarshipCohort.objects.select_for_update(of=('self',)).select_related(
-                'programme', 'programme__organisation').get(pk=y.pk)
         return y, None
 
     def _body_keys(self):
-        return {'criteria', 'intake_id'}
+        return {'criteria', 'digest', 'intake_id'}
 
     def _check_target(self, request, c):
         want = request.data.get('intake_id')

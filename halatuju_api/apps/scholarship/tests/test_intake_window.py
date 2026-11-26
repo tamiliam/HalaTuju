@@ -47,7 +47,7 @@ class TestIntakeWindow(TestCase):
 
     def _create(self, **extra):
         self._auth()
-        body = {'code': 'win-2027', 'name': 'Win 2027', 'year': 2027, **no_rules()}
+        body = {'code': 'win-2027', 'name': 'Win 2027', 'year': 2027, **no_rules(income_ceiling=5860)}
         body.update(extra)
         return self.client.post(
             f'/api/v1/admin/scholarship/programmes/{self.prog.id}/years/',

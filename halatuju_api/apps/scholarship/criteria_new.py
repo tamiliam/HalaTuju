@@ -23,8 +23,11 @@ def stamp_new(cohort):
     Plain `from_legacy`, as `build_criteria_trees --apply` stores it: a new year has no decisions
     to keep, so it starts on the stored meaning (a PNGK floor with no SPM bar has no SPM group),
     never on `tree_of`'s NULL fallback - and a year created after --apply is never left NULL."""
+    from .criteria_write import empty_problems
     tree = from_legacy(cohort)
-    problems = validate_tree(tree)
+    # Review R1 (Sprint 3), should-fix 2: a year whose boxes are all blank would store a tree that
+    # checks nothing (every student passes) - refused like the criteria API refuses it.
+    problems = validate_tree(tree) or empty_problems(tree)
     if not problems:
         cohort.criteria = tree
     return problems

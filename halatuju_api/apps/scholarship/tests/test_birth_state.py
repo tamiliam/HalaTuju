@@ -310,7 +310,7 @@ class TestTheAdminScreens(TestCase):
         return make_cohort(programme=self.programme, is_active=True, is_open=False, **kw)
 
     def _create(self, code, **body):
-        return self.client.post(self._years(), {'code': code, 'name': code, 'year': 2027, **no_rules(**body)},
+        return self.client.post(self._years(), {'code': code, 'name': code, 'year': 2027, **no_rules(**{'income_ceiling': 5860, **body})},
                                 format='json')
 
     def test_create_stores_and_serves_it_in_platform_order(self):
