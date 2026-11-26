@@ -57,14 +57,14 @@ MODELS = {
         'files': [f'{_APP}/{name}.py' for name in (
             'verdict_engine', 'verdict_identity', 'verdict_academic', 'verdict_income_salary',
             'verdict_income_str', 'verdict_pathway', 'verdict_caps', 'verdict_ladder',
-            'start_year', 'higher_results', 'requirements', 'document_snapshot', 'offer_private')]
-        + [f'{_G}/bands.py', f'{_APP}/income_engine/*.py'],
-        # what offer_private (main's IPTS rule, 2026-11-18) reads in the genuineness modules
-        'pins': [(f'{_G}/{mod}.py', n) for mod, names in (
+            'start_year', 'higher_results', 'requirements', 'document_snapshot', 'offer_private',
+            'pathway_engine')] + [f'{_G}/bands.py', f'{_APP}/income_engine/*.py'],  # pathway_engine: OCR-13 rev 1
+        'pins': [(f'{_G}/{mod}.py', n) for mod, names in (  # read by offer_private (IPTS) and pathway_engine
             ('offer_reading', ('_PRIVATE_BODIES', '_PRIVATE_SIGNS', '_TAG', '_TIE_UP', '_public_names')),
             ('offer_signatures', ('_IIUM_EN', '_UA_NAMES')), ('offer_confirmations', ('_NO_PRIVATE_WING',
-             '_POLY_DEPARTMENTS')), ('results_doc', ('_PRIVATE_ARM_PHRASES', '_norm_fold_upper_alnum')))
-            for n in names] + [(f'{_APP}/fact_bands.py', 'HIGHER_RESULTS_UNREADABLE')],  # #78 academic_red_first
+             '_POLY_DEPARTMENTS', 'CONFIRMATION_SEEN')), ('results_doc', ('_PRIVATE_ARM_PHRASES',
+             '_norm_fold_upper_alnum', '_private_arm_offer'))) for n in names]
+        + [(f'{_APP}/fact_bands.py', 'HIGHER_RESULTS_UNREADABLE'), (f'{_APP}/offer_exact.py', 'ISSUER_PRINTS_NO_IC')],
     },
     'results_doc': {
         'constant': (f'{_G}/results_doc.py', 'MODEL_VERSION'),

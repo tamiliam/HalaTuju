@@ -44,6 +44,56 @@ OWNER_WORDS = {
         'Tarikh Lapor Diri',
         'Saudara/i akan mengikuti program pengajian',
     ),
+    # OCR-13 (owner, 20 Nov). Read by `offer_parse_upsi` (OCR-13 phase 5; the lane is off by default).
+    # Universiti Pendidikan Sultan Idris. 3: the owner typed "UNIVERSII"; letters print UNIVERSITI. An English
+    # "official confirmation letter" shows none of these and goes to the AI.
+    'ua:UPSI': (
+        'BAHAGIAN HAL EHWAL AKADEMIK',
+        'Rujukan Kami',
+        'TAWARAN KEMASUKAN KE UNIVERSITI PENDIDIKAN SULTAN IDRIS (UPSI)',
+        'Sukacita dimaklumkan bahawa anda ditawarkan mengikuti program pengajian di UPSI',
+        'Program',
+        'Tempoh Pengajian',
+        'Tarikh Mendaftar',
+        'Sekiranya saudara/i didapati memberi maklumat salah/tidak benar/memanipulasi maklumat',
+        'Tawaran ini adalah muktamad',
+        'Ketua Timbalan Pendaftar',
+        'Surat tawaran ini merupakan surat tawaran rasmi.',
+    ),
+    # Universiti Utara Malaysia. English "Admission" letters and PENGESAHAN (senate confirmation) letters -> AI.
+    'ua:UUM': (
+        'JABATAN HAL EHWAL AKADEMIK',
+        'Rujukan',
+        'TAWARAN KEMASUKAN KE UNIVERSITI UTARA MALAYSIA',
+        'Tahniah kerana saudara/i berjaya dipilih',
+        'Program Pengajian',
+        'Tempoh Pengajian',
+        'Tarikh Pendaftaran Fizikal (UUM)',
+    ),
+    # Universiti Teknologi MARA. 7: the owner typed "Programme dan kampus"; letters print "Program dan kampus".
+    # 8: required, though text is sometimes printed over it (owner). UiTM prints DIPLOMA letters on the same
+    # layout: these words alone never tell a degree from a diploma (the layout reader must).
+    'ua:UiTM': (
+        'SURAT TAWARAN',
+        'Sukacita dimaklumkan bahawa anda ditawarkan tempat',
+        'Program',
+        'Tempoh Pengajian',
+        'Sila hadir mendaftar',
+        'Tarikh',
+        'Program dan kampus yang ditawarkan adalah MUKTAMAD',
+        'Bahagian Pengambilan Pelajar',
+    ),
+    # Universiti Malaya. 4 includes "berjaya" (7 of the owner's 8 samples print it); the English letter -> AI.
+    'ua:UM': (
+        'Nombor K/P',
+        'Tarikh',
+        'TAWARAN KEMASUKAN KE UNIVERSITI MALAYA',
+        'Tahniah saudara/i telah berjaya ditawarkan tempat',
+        'PROGRAM PENGAJIAN',
+        'TEMPOH PENGAJIAN',
+        'Tawaran ini adalah MUKTAMAD',
+        'Jabatan Perkhidmatan Akademik',
+    ),
 }
 
 #: Per issuer (rules lane): the phrase numbers NOT required on a PDF read from its TEXT LAYER, because that
@@ -62,6 +112,26 @@ _AI_ONLY = tuple((re.compile(r'(?<!\w)' + ' ?'.join(w) + r'(?!\w)'), g) for w, g
 #: look-alike fold (`offer_ums_refusal.fold_lookalikes`: a Cyrillic / Greek "АSASI" is ASASI), upper-cased, with
 #: every other character kept. Refusing more is the safe side: "ASASIAH" or "ASASINYA" refuse too (one AI call).
 _AI_ONLY_GLUED = ((re.compile(r'ASAS[I1L|]'), AI_ONLY_WORDS['ASASI']),)
+#: OCR-13 (roadmap Asasi note, 20 Nov): the ONE letterhead phrase a lane may print without it meaning an Asasi
+#: offer, per issuer. 17 of 18 UiTM letters print an "Asasi & Diploma" office line; measured on the owner's
+#: UiTM samples (OCR-13, shapes and counts only), the drawn page-1 layout shows it as a contact label in a
+#: telephone block: "Asasi & Diploma : (NNN) NNNN NNNN / NNNN ...", starting a layout column (below the title in 13 of 14
+#: layouts, so its place on the page is not used). Excused only in exactly that form (plain ASCII letters, any
+#: case; up to 3 spaces around '&' and ':'), starting a line or a layout column (3+ spaces before it), with
+#: NOTHING but telephone numbers after the colon up to the column's end (digits, spaces, '(', ')', '/', '-'), and
+#: only ONCE: ASASI anywhere else on the page (programme, offer sentence, another line, the label with no number
+#: or with words after it, words before it in its column, the phrase split over two lines, a second copy,
+#: look-alike letters) still refuses. Only the label words are blanked: the numbers stay. A UiTM letter's PARSED
+#: programme is checked on its own (`programme_ai_only`), so a label-shaped programme value still refuses.
+#: The one sample that prints the label another way ("... (Asasi & Diploma)") refuses: refusing more is safe.
+#: No other lane has an excuse.
+_PHONE = r'\(?\+?\d{2,4}\)?[^\S\n]?-?[^\S\n]?\d{3,4}'     # "(603) 5544 ...", "03-5544 ..."
+_EXCUSED_LINE = {'ua:UiTM': re.compile(r'(?aim)(?:^|(?<=[^\S\n]{3}))[^\S\n]*ASASI[^\S\n]{1,3}&[^\S\n]{1,3}DIPLOMA'
+                                       r'[^\S\n]{0,3}:(?=[^\S\n]{0,3}' + _PHONE +
+                                       r'(?:[^\S\n]{0,2}[\d()/\-])*[^\S\n]*(?:[^\S\n]{3}|$))')}
+#: OCR-13: an English-language letter's Asasi ("Foundation in Science"): looked for in the PROGRAMME field only —
+#: sponsor and fund names elsewhere on a page print "Foundation".
+_FOUNDATION_IN = re.compile(r'(?<!\w)FOUNDATION IN(?!\w)')
 
 
 #: Owner words review round 1 (LOW 5): the most text the phrases are looked for in, counted AFTER the unicode
@@ -117,6 +187,16 @@ def _shown(lane: str, text: str) -> set:
     return shown
 
 
+def owner_ink_targets(lane: str, page1_layout: str, labels: dict, optional, printed: dict) -> tuple:
+    """(phrases, values) for the ink check (`pdf_ink.ink_missing`): the owner phrases ``page1_layout`` shows
+    (``p<n>``), and each ``labels`` field's value as ``printed``; an ``optional`` one only when read. A required value
+    left blank stays in, so the ink check refuses it. OCR-13: the one home for this rule (UUM uses it)."""
+    shown = _shown(lane, page1_layout or '')
+    phrases = [(f'p{k + 1}', p) for k, p in enumerate(OWNER_WORDS[lane]) if k in shown]
+    values = [(label, printed[k]) for k, label in labels.items() if k not in optional or str(printed[k]).strip()]
+    return phrases, values
+
+
 def _merged(spans) -> list:
     """Sorted spans merged into disjoint ones (two overlapping phrases cover their union: refusing more is safe)."""
     out = []
@@ -161,6 +241,25 @@ def ai_only(text: str) -> str:
     spaced = (folded, _norm(looks))
     return (next((guard for pat, guard in _AI_ONLY if any(pat.search(s) for s in spaced)), '')
             or next((guard for pat, guard in _AI_ONLY_GLUED if pat.search(looks.upper())), ''))
+
+
+def ai_only_on_lane(lane: str, text: str) -> str:
+    """`ai_only` for a rules lane's page-1 text, with that lane's ONE excused letterhead label (`_EXCUSED_LINE`,
+    UiTM only) blanked first; any other lane: exactly `ai_only`. Two or more such labels: nothing is excused."""
+    pat = _EXCUSED_LINE.get(lane)
+    text = text or ''
+    if pat is not None and len(text) <= MAX_NORM_CHARS and len(pat.findall(text)) == 1:
+        text = pat.sub(' ', text, count=1)
+    return ai_only(text)
+
+
+def programme_ai_only(programme: str) -> str:
+    """The Asasi guard for a university lane's parsed PROGRAMME field: `ai_only`, or an English "Foundation in"
+    programme (`_FOUNDATION_IN`, folded as the phrases are); '' otherwise. Never applied to a whole page."""
+    guard = ai_only(programme)
+    if guard:
+        return guard
+    return AI_ONLY_WORDS['ASASI'] if _FOUNDATION_IN.search(_norm(programme or '')) else ''
 
 
 def page_of_each(lane: str, pages) -> dict:

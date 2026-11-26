@@ -341,7 +341,12 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # refused by the layer gate (owner: strict) and go to the Vision route; every other letter reads as before.
 # 2.3.6 (TD-740, 2026-11-25) — pdfium hides a page whose text object reaches past the page box it draws (CropBox
 # cut to the MediaBox, judged through every form's matrix): pypdf reads off-page text, pdfium never draws it.
-PARSER_VERSION = '2.3.6'
+# 2.4.0 (OCR-13 phase 2, 2026-11-26) — the UiTM rules lane: `family_of` reads 'uitm', `diagnose_uitm` locks a
+# digital UiTM degree letter from its page-1 layout (`offer_parse_uitm`, `offer_parse_lanes`); every other family reads as before.
+# Phase 3 (same day, same unreleased version): 'uum', `diagnose_uum` (`offer_parse_uum`), a lock with no IC.
+# Phase 4 (same day, same unreleased version): 'um', `diagnose_um` (`offer_parse_um`), the IC guard as usual.
+# Phase 5 (same day, same unreleased version): 'upsi', `diagnose_upsi` (`offer_parse_upsi`), a lock with no IC.
+PARSER_VERSION = '2.4.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)
@@ -452,12 +457,18 @@ def _rules_exit(out: dict, shown: str) -> dict:
     digital PDF's page-1 TEXT LAYER, not checked for visibility, a scan its own text) or whose parsed programme or
     stream says ASASI (whole, glued, spaced or OCR-misread)
     (`offer_owner_words.ai_only`) does not lock — guard ``asasi_ai_read`` — and the AI reads the letter (owner,
-    20 Nov: "For now, let AI handle Asasi"). A letter already refused keeps its own guard."""
-    from .offer_owner_words import ai_only
+    20 Nov: "For now, let AI handle Asasi"). A letter already refused keeps its own guard.
+    OCR-13: a UNIVERSITY lock (it carries ``rules_lane``) is judged per lane: its one excused letterhead line
+    blanked first (`ai_only_on_lane`; UiTM's "Asasi & Diploma" office line only), and an English "Foundation in"
+    programme counts as Asasi (`programme_ai_only`, the programme field only). The government families as before."""
+    from .offer_owner_words import ai_only, ai_only_on_lane, programme_ai_only
     lock = out['locked']
     if not lock:
         return out
-    guard = (ai_only(shown) or ai_only(lock.get('programme') or '') or ai_only(lock.get('stream') or ''))
+    lane = lock.get('rules_lane') or ''
+    guard = ((ai_only_on_lane(lane, shown) if lane else ai_only(shown))
+             or (programme_ai_only if lane else ai_only)(lock.get('programme') or '')
+             or ai_only(lock.get('stream') or ''))
     if guard:
         out['locked'], out['guard'] = None, guard
     return out
@@ -465,11 +476,17 @@ def _rules_exit(out: dict, shown: str) -> dict:
 
 def family_of(text: str) -> str:
     """The family `diagnose` reads ``text`` as: a government family ('stpm', 'matriculation', 'polytechnic'),
-    else 'ums' for the UMS offer title, else ''. ONE helper for `diagnose` and `offer_exact._ums_family`
+    else 'ums' for the UMS offer title, else 'uitm' for a UiTM offer, else 'uum' for a UUM admissions letter, else
+    'um' for a UM admissions letter, else 'upsi' for a UPSI one (OCR-13), else ''. ONE helper for `diagnose` and `offer_exact._ums_family`
     (S1c), so the lane switch and the parser never disagree on which letter is a UMS letter."""
+    from .offer_parse_uitm import is_uitm
     from .offer_parse_university import is_ums
+    from .offer_parse_um import is_um
+    from .offer_parse_upsi import is_upsi
+    from .offer_parse_uum import is_uum
     up = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or '')).upper()
-    return _detect(up) or ('ums' if is_ums(up) else '')
+    return _detect(up) or ('ums' if is_ums(up) else 'uitm' if is_uitm(up) else 'uum' if is_uum(up)
+                           else 'um' if is_um(up) else 'upsi' if is_upsi(up) else '')
 
 
 def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_texts=None) -> dict:
@@ -492,6 +509,11 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
         return _rules_exit(_diagnose_ums(out, text, page1_text, layout, page_texts),
                            layout if layout.strip() else text)
+    if fam in ('uitm', 'uum', 'um', 'upsi'):     # OCR-13: their branches live in `offer_parse_lanes`
+        from .offer_parse_lanes import diagnose_uitm, diagnose_um, diagnose_upsi, diagnose_uum
+        layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
+        branch = {'uitm': diagnose_uitm, 'uum': diagnose_uum, 'um': diagnose_um, 'upsi': diagnose_upsi}[fam]
+        return _rules_exit(branch(out, text, page1_text, layout, page_texts), layout if layout.strip() else text)
     if not fam:
         return out
     return _rules_exit(_diagnose_govt(out, fam, text, page1_text, up), page1_text if page1_text.strip() else text)

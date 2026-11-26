@@ -4,6 +4,173 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: OCR-13 phase 1 - the owner's words for UPSI, UUM, UiTM and UM, and UiTM's Asasi office line (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. Lanes stay OFF: no layout reader dispatches to them yet.
+- **Owner words:** `offer_owner_words.OWNER_WORDS` gains `ua:UPSI` (11), `ua:UUM` (7), `ua:UiTM` (8) and `ua:UM` (8),
+  the owner's exact words (allow-list only). A letter can lock only when every phrase shows and no AI-only word does.
+- **UiTM Asasi excuse:** `ai_only_on_lane(lane, text)` excuses exactly one UiTM letterhead contact label
+  ("Asasi & Diploma :" followed by a telephone block, at a column start). Any other ASASI (programme, sentence, a second
+  copy, spaced, glued, misread, look-alike letters, words after the number) still refuses; every other lane is unchanged.
+- **Foundation in:** `programme_ai_only` treats "Foundation in" in the programme field as Asasi (university lanes only;
+  government families are judged as before).
+- **Exit:** `offer_parse._rules_exit` reads the lock's `rules_lane` and uses the per-lane check. UMS and government
+  locks behave as before. No version bump yet (it comes with the readers in phase 2).
+- **Measured (local, free):** held-out letters per lane UiTM 9, UPSI 4, UM 3, UUM 0, so no lane can reach Gate 1 (20)
+  on the current corpus. UMS unchanged. Debt: TD-NEW-ocr13-readers, TD-NEW-ocr13-diploma.
+  Tests: `test_offer_owner_words_ocr13.py`.
+
+### feat: OCR-13 phase 2 - the UiTM rules reader (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UiTM` stays OFF (off by default; `OCR_FIRST_LANES`).
+- **Reader:** new `offer_parse_uitm.py` reads a digital UiTM degree letter from its page-1 layout (degree code third
+  character 2, a plain SARJANA MUDA name, later pages checked). It writes institution "UiTM", as the hand-checked answers do.
+  It refuses a scan (no layout), a diploma programme, a name wrapped over two lines, a second programme and any missing owner word.
+- **Wiring:** `family_of` reads 'uitm'; `_diagnose_uitm` in `offer_parse`; `offer_exact` lane switch, refusal note and ink check are per lane.
+  UMS and the government families read as before.
+- **Versions:** offer_reader 2.10.0 to 2.11.0, offer_parse 2.4.0 (registry entries added).
+- **Dry run (local, free, lanes UMS and UiTM on):** UiTM held-out 9 letters, 1 locked, 100% agreement, 0 wrong (need 20 locks
+  for Gate 1, so it stays AI). All splits 18 letters, 3 locked, 0 wrong. UMS unchanged: held-out 33 docs, 22 locked, 100%, 0 wrong;
+  all splits 62 / 44 / 100% / 0 wrong. Before this change 3 UiTM answers were wrong on institution (the reader wrote the long name).
+- **Owner folders (UiTM reader, lane on):** uitm/ 22 letters, 6 lock (5 wrapped name, 1 owner word missing, 1 second programme,
+  1 no title, 8 not a UiTM layout); diploma/, asasi/, confirmation/ and fail/ lock 0 of 43 (4 diploma letters refuse as not a degree).
+  Corpus UiTM letters in this check: 13, 3 lock.
+- Debt: TD-NEW-ocr13-uitm-wrapped-names, TD-NEW-ocr13-uitm-wrap-edge; TD-NEW-ocr13-diploma stays open.
+  Tests: `test_offer_parse_uitm.py`.
+
+### feat: OCR-13 phase 3 - the UUM rules reader, a lock with no IC (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UUM` stays OFF (off by default; `OCR_FIRST_LANES`).
+- **Owner decision (26 Nov), "Lock without IC", ua:UUM only:** UUM letters print no IC (the 6-digit number after the
+  name is not one). `offer_exact.ISSUER_PRINTS_NO_IC` lets that lane lock with the IC stored blank (source "none"), as an
+  AI read with no IC is stored; a prior AI IC cannot survive the lock. Every other lane still refuses a lock without an IC
+  (tests for UMS and UiTM). A UUM lock that carries an IC refuses. The 6-digit number is never stored or matched.
+- **Downstream:** a blank IC from a UUM lock is judged exactly as a blank IC from an AI read: `pathway_engine._ic_status`
+  gives "unreadable" (never "match"), the cockpit chip is red, and no code gives a rules capture an identity pass.
+- **Reader:** new `offer_parse_uum.py` reads a digital UUM degree letter (SARJANA MUDA only) from its page-1 layout: name,
+  programme (up to 2 wrapped lines), intake as printed, reporting date, offer date. It refuses a scan (no layout), a
+  non-degree programme (Diploma, Asasi, Pra, Sijil, Foundation, Certificate, Persediaan, Matrik), an English "Admission"
+  letter (no_title), a PENGESAHAN letter (status_letter), any 12-digit IC-like number on any page (ic_printed), and a later
+  page with another programme, another registration date or an unknown shape.
+- **Wiring:** `family_of` reads 'uum'; the UiTM and UUM branches of `diagnose` moved to the new `offer_parse_lanes.py`
+  (offer_parse.py's 600-line cap, no behaviour change); the owner-phrase ink pairs have one home
+  (`offer_owner_words.owner_ink_targets`); `offer_exact` lane switch, refusal note and ink check; eval layout hook and
+  `RULES_LANES`. offer_parse 2.4.0 digest updated in place; offer_reader digest unchanged.
+- **Dry run (local, free, lanes UMS, UiTM and UUM on):** no UUM letter is held out (0 of 20 needed), so the lane stays AI.
+  All splits: UUM 4 letters, 4 locked, 0 wrong name / IC / institution / programme; intake 2 of 4 differ from the
+  hand-checked answers (the letters print "SEMESTER PERTAMA SESI ..."; two answers say only "SESI ..."), open question
+  for the owner. UMS and UiTM unchanged: held-out 33/22/100%/0 and 9/1/100%/0; all splits 62/44/100%/0 and 18/3/100%/0.
+- **Owner folders (text layer):** uum/ 33 letters, 20 lock; 5 English Admission letters refuse (no_title), 3 PENGESAHAN
+  letters refuse (status_letter), 5 scans have no text layer (in production they refuse no_layout). diploma/, asasi/,
+  confirmation/ and fail/ lock 0 of 43.
+- Debt: TD-NEW-ocr13-uum-intake-answers, TD-NEW-ocr13-uum-heldout. Tests: `test_offer_parse_uum.py`.
+
+### feat: OCR-13 phase 4 - the UM rules reader (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UM` stays OFF (off by default; `OCR_FIRST_LANES`).
+- **Reader:** new `offer_parse_um.py` reads a digital Malay UM degree letter (SARJANA MUDA only) from its page-1 layout:
+  name (the line after "Nombor K/P"), IC (the "Nombor K/P" line), programme (up to 2 wrapped lines before FAKULTI), intake
+  as printed ("SEMESTER 1, SESI AKADEMIK ..."), offer date, and the reporting date only when a date is printed (every
+  measured letter prints "RUJUK LAMPIRAN", so it stays blank). Institution "UNIVERSITI MALAYA", as the hand-checked answers say.
+- **IC guard as usual:** UM prints the IC, so UM is not in `ISSUER_PRINTS_NO_IC`; a UM letter with no readable IC refuses.
+- **Refuses:** a scan (no layout), Asasi and every other non-degree word in the programme (Diploma, Asasi, Pra, Sijil,
+  Foundation, Certificate, Persediaan, Matrik), an English letter (no Malay title, or not a UM family at all), a letter
+  without the title once at the left margin, a status or withdrawn letter, a missing owner word, dates that do not fit the
+  session, and a later page that is not UM's or shows another IC, programme or reporting date. Footer words alone do not refuse.
+- **Wiring:** `family_of` reads 'um'; `offer_parse_lanes.diagnose_um`; `offer_exact` lane module, refusal note and ink
+  check; eval layout hook and `RULES_LANES` ('universiti malaya' to 'ua:UM'). offer_parse 2.4.0 digest updated in place;
+  offer_reader digest unchanged.
+- **Dry run (local, free, lanes UMS, UiTM, UUM and UM on):** UM held-out 3 letters, 1 locked, 100% agreement, 0 wrong
+  (need 20 locks for Gate 1, so it stays AI). All splits 9 letters, 2 locked, 0 wrong name / IC / institution / programme.
+  Of the other 7: 1 has no PDF, 1 scan, 2 without the title (one an Asasi letter), 2 Asasi letters (not_degree), 1 English.
+  UMS, UiTM and UUM unchanged: held-out 33/22/100%/0 and 9/1/100%/0; all splits 62/44/100%/0, 18/3/100%/0, UUM 4 of 4.
+- **Owner folders (text layer):** um/ 2 letters lock; 1 scan and 1 letter without the title do not read as UM, and 1 file
+  is not a PDF. asasi/ holds 2 UM letters: both refuse (not_degree). diploma/, asasi/, confirmation/ and fail/ lock 0.
+- Debt: TD-NEW-ocr13-um-heldout. Tests: `test_offer_parse_um.py`.
+
+### feat: OCR-13 phase 5 - the UPSI rules reader (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UPSI` stays OFF (off by default; `OCR_FIRST_LANES`).
+- **Reader:** new `offer_parse_upsi.py` reads a digital Malay UPSI degree letter (SARJANA MUDA only) from its page-1 layout:
+  name (the line after "No. Matrik"), programme and its code ("Program : XXNN - ..."), intake as printed ("Semester N Sesi
+  YYYY/YYYY"), reporting date ("Tarikh Mendaftar"), and the offer date when it can be read (optional). Institution
+  "UNIVERSITI PENDIDIKAN SULTAN IDRIS", as the hand-checked answers say.
+- **No IC (owner, 26 Nov: "Same as UUM"):** `ua:UPSI` joins `ua:UUM` in `offer_exact.ISSUER_PRINTS_NO_IC` (nothing else
+  added); a UPSI lock stores the IC blank (source 'none'). The matric number (a letter and 11 digits) is not an IC and is
+  never stored, matched or ink-checked. Any 12-digit IC-like number on any page refuses (`ic_printed`).
+- **Refuses:** a scan (no layout), an English letter (no Malay title), a PENGESAHAN or status letter, Asasi and every other
+  non-degree programme, a missing owner word, dates that do not fit the session, any withdrawal wording other than the
+  letter's own conditional note (read past word for word), and a later page that is not UPSI's or names another programme,
+  programme code or reporting date. A lower-case web address on page 2 (its path holds "sarjanamuda") is read past by the
+  programme comparison only.
+- **Wiring:** `family_of` reads 'upsi'; `offer_parse_lanes.diagnose_upsi`; `offer_exact` lane module, refusal note and ink
+  check; eval layout hook and `RULES_LANES` ('universiti pendidikan sultan idris' to 'ua:UPSI'). offer_parse 2.4.0 digest
+  updated in place; offer_reader digest unchanged.
+- **Dry run (local, free, lanes UMS, UiTM, UUM, UM and UPSI on):** UPSI held-out 4 letters, 2 locked, 100% agreement, 0 wrong
+  (need 20 locks for Gate 1, so it stays AI). All splits 7 letters, 2 locked, 0 wrong name / IC / institution / programme;
+  the other 5 have no text layer or no PDF. UMS, UiTM, UUM and UM unchanged: held-out 33/22/100%/0, 9/1, 3/1; all splits
+  62/44/100%/0, 18/3, UUM 4 of 4 (0 wrong guarded fields), UM 9/2.
+- **Owner folders (text layer):** upsi/ 12 of 30 lock (the other 18 have no text layer or are another template and do not
+  read as UPSI). diploma/, asasi/, confirmation/ and fail/ lock 0 (no UPSI letter among them).
+- Debt: TD-NEW-ocr13-upsi-heldout. Tests: `test_offer_parse_upsi.py`.
+
+### feat: OCR-13 - a new offer IC status 'not_printed' for UUM and UPSI; verdicts unchanged (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api (the web needs one label before this is published; see
+below).
+- **What:** the offer letter's IC check (`pathway_engine.student_offer_check` -> `ic`) now says `not_printed` when the IC is
+  blank and the letter comes from an issuer that prints no IC by design: `offer_exact.ISSUER_PRINTS_NO_IC`, UUM and UPSI
+  only (owner, 26 Nov). Chip standard: grey "Not printed". Every other issuer with a blank IC keeps `unreadable`.
+- **How the issuer is read (strict):** a rules lock that stored the IC blank by design (`offer_reader_inputs`: reader
+  `deterministic` and `nric_not_printed` true), or the letter's institution, folded (upper case, accents and punctuation
+  off), equal to one of six exact names: the full name, the acronym, or both (`pathway_engine.no_ic_issuer_lane`). Near
+  names, campus tails and other universities do not resolve. A lane counts only while it is in `ISSUER_PRINTS_NO_IC`.
+- **Verdicts unchanged:** `not_printed` is never a match. `verdict_pathway` reads it exactly as `unreadable` in its one IC
+  rule; every other reader (ladder red chips, help text, red keys, resolution, offer link and sync, backfills) keys on
+  `mismatch` only. verdict_engine 2026-11-25.7 gets an `also_ok` digest (no answer changes); no new version.
+- **Stored or computed:** `pathway_check` is computed when the document is served (`serializers/documents.py`), so old
+  rows show the new word at once; nothing is backfilled.
+- **Web (read only, not changed):** the officer chip (`offerFacts.ts`) maps `not_printed` to grey (`unknown`), and
+  `documentPill` drops it, as the chip standard asks (a UUM / UPSI letter whose only amber chip was the blank IC can now
+  show "verified"). The student checklist label (`status.not_printed`) is built by the lead on branch offer-ic-label
+  (457d0e270) and lands with OCR-13.
+- **Dry run (local, free, 287 stored reads + 1,270 fresh reads in the corpus):** 63 moved `unreadable` to `not_printed`
+  (UPSI 40, UUM 23); 0 other IC moves; 0 changes in the five decision readers (verdict_pathway, ladder red chips, help
+  text, resolution, person-red keys).
+- **Chip-standard Sprint 0 parity baseline:** take the baseline with this change in. On UUM / UPSI letters the IC chip is
+  grey "Not printed" (it was amber) and the document pill may change, but no verdict, ladder step, award or eligibility
+  answer does.
+- Tests: `test_offer_ic_not_printed.py` (statuses, resolver negatives, verdict parity, a guard that any IC reader comparing
+  with `unreadable` also names `not_printed`); `test_offer_parse_uum.py` (a real UUM lock reads `not_printed`).
+
+### fix: OCR-13 review round 1 fixes - a name must be proven to end, a wider IC refusal, pathway_engine in the digest (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. Versions unchanged (offer_reader 2.11.0, offer_parse
+2.4.0, both unreleased: digests updated in place; verdict_engine 2026-11-25.7 keeps its OCR-13 `also_ok`, updated in place).
+- **A, a name broken over two lines (blocker):** the UiTM, UM and UPSI heads now lock a name only when the line straight
+  after it PROVES the name ended (`offer_parse_uitm.name_ended`): it starts under 20 in and its first column carries a
+  digit or a comma (a name has neither) or opens with an address word (KAMPUNG, KG, JALAN, TAMAN, LORONG, LOT, NO, BLOK,
+  PETI SURAT and a few more, measured on the samples). Anything else refuses `name_not_ended` and goes to the AI, so a name
+  cut after a whole word or after a linker never locks short. UiTM: the line after "name | No. Kad Pengenalan | IC"; UM:
+  the line after the name under "Nombor K/P"; UPSI: the line after the name under "No. Matrik". UUM is unchanged: its name
+  must end in the 6-digit bracket number on the same line, so a wrapped name already refuses (test added).
+- **B, ic_printed:** `offer_parse_uum._IC_ANY` (UPSI imports it) also refuses an IC with spaces around its separators
+  ("990101 - 14 - 5678"), dots or spaces as separators, and plain 12 digits, on page 1 and on later pages. The UUM
+  6-digit bracket number and the UPSI matric (a letter and 11 digits) still pass.
+- **C, digest:** `pathway_engine` joined the verdict_engine model files, with pins on what it reads
+  (`offer_confirmations.CONFIRMATION_SEEN`, `results_doc._private_arm_offer`, `offer_exact.ISSUER_PRINTS_NO_IC`). Its
+  `CONFIRMATION_SEEN` import now names the defining module (the same object as before).
+- **D, debt:** TD-NEW-ocr13-not-printed-label removed (the label is built on branch offer-ic-label, 457d0e270, and lands
+  with OCR-13). TD-NEW-ocr13-uitm-wrap-edge removed: fix A refuses every unproven name end, not only BIN / BINTI.
+- **Dry run (local, free, all five lanes on):** unchanged except UM, which loses 1 lock (a held-out letter whose next
+  line is one word with no proof): UM held-out 3 docs, 0 locked; all splits 9 / 1 / 100% / 0 wrong. UMS 33 / 22 / 100% /
+  0 and 62 / 44 / 100% / 0; UiTM 9 / 1 / 100% / 0 and 18 / 3 / 100% / 0; UUM 4 / 4, 0 wrong name, IC, institution or
+  course; UPSI 4 / 2 / 100% / 0 and 7 / 2 / 100% / 0. Owner folders: 0 university locks outside the right folder (uitm/ 6,
+  um/ 1, upsi/ 12, uum/ 20, ums/ 33).
+- Tests: `test_offer_parse_uitm.py`, `test_offer_parse_um.py`, `test_offer_parse_upsi.py` (a name broken after a whole
+  word or a linker refuses; a one-line name with each measured address start locks), `test_offer_parse_uum.py` (wrapped
+  name; the wider IC positives and negatives), `test_model_versions.py`.
+
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
 

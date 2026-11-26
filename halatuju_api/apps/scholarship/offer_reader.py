@@ -114,6 +114,11 @@ stored "cannot read" (`unreadable`), never a stored 'ok' offer that says nothing
 model's answer, before the IC guard, so a text-layer IC backstop never makes an empty read whole. Prompt,
 schema, inputs and the calls made are unchanged.
 
+2.11.0 - OCR-13 PHASE 2, THE UiTM RULES LANE (2026-11-26). A digital UiTM degree offer letter can be read by
+fixed rules first (`offer_parse_uitm`, lane 'ua:UiTM', off by default); this reader stays the fallback whenever
+the rules refuse (a scan, a diploma / asasi / pre-diploma, a wrapped name, a second offer on a later page), the
+lane is off, or the catalogue match is not unique. Prompt and schema unchanged.
+
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in
 `vision_fields['offer_reader_inputs']`. Bump it on ANY change to the prompt, the schema, the inputs or
@@ -129,7 +134,7 @@ import re
 logger = logging.getLogger(__name__)
 
 #: Semantic version of the AI offer reader — see the module docstring.
-OFFER_READER_VERSION = '2.10.0'
+OFFER_READER_VERSION = '2.11.0'
 #: Pages of a PDF shown to Gemini: an e-registration slip can sit in front of the offer and the
 #: reporting date can be on page 2 (owner notes, S1); later pages are mostly reply forms.
 MAX_PAGES = 3

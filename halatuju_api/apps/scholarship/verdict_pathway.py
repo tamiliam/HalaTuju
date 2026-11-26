@@ -199,7 +199,8 @@ def offer_pathway_fact(application, offer):
     # A general NOTICE / wrong document (body read fine — issuer/programme present — but no name or
     # IC, e.g. a "your offer will be released later" memo) vs a genuinely blurry scan → grey/pending
     # (an under-read, capped at Probable), NOT a red chip. Only when identity didn't already flag.
-    elif chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'pending'):
+    # OCR-13: an IC 'not_printed' by design (UUM/UPSI) reads exactly as 'unreadable' — no verdict moves.
+    elif chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'not_printed', 'pending'):
         if read_deferred(offer.vision_fields):   # not read yet / our outage: no claim, no ask (2026-10-24)
             return _fact('pathway', 'review', evidence, [_item('offer_not_read_yet')])  # TD-396: officer-only
         if chk['programme'] or chk['institution']:
