@@ -49,6 +49,15 @@ Branch school-guard, not pushed. Migration: none. Services: both.
 - **Tests:** `test_submit_school_guard.py`, `TestBlankSchoolNeverWipes`, and jest in `page.sections.test.tsx` and `page.gate.test.tsx`;
   scholarship submit fixtures now give the student a school.
 
+### fix: Offer letter - a grey "IC number" chip when the issuer prints no IC (2026-11-26)
+
+Web half of OCR-13's API status 'not_printed' (UUM and UPSI leave the IC off their letters by design).
+Must land with or before that API change. The student offer card drew the missing key
+`scholarship.docs.pathwayCheck.status.not_printed`; it now shows a grey chip with the field name only
+(owner chip rule 2026-11-26: never the words "Not printed"). No new strings: it reuses the existing
+"IC number" label in en, ms and ta. `PathwayCheck.ic` type gains the word.
+Test: `checklistsPathway.notPrinted.test.tsx` (grey, field name, no raw key, all three languages).
+
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 
 Branch access-s4-scholars, not pushed. Migration: none. Services: web. The server half is S4a (above).

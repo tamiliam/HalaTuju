@@ -18,14 +18,15 @@ import type { ICCheckKind } from './checklists'
 // IC is the strong one) — then the offer's facts as soft data points: programme,
 // institution, who issued it (tells the pathway type), the date, and address.
 
-type PathStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending'
+// 'not_printed' (IC only): the issuer leaves the IC off its letters by design (UUM, UPSI).
+type PathStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending' | 'not_printed'
 
 function pathBadgeKind(s: PathStatus): ICCheckKind {
   if (s === 'match') return 'match'
   if (s === 'partial' || s === 'uncertain') return 'partial'
   if (s === 'mismatch') return 'mismatch'
   if (s === 'unreadable') return 'unreadable'
-  return 'none' // pending
+  return 'none' // pending, not_printed
 }
 
 export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
@@ -41,9 +42,14 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
       unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
       none: 'bg-ground-50 text-ground-500 ring-ground-200',
     }
+    // Owner chip rule (2026-11-26): a by-design missing IC shows a grey chip with the field name
+    // only, never the words "Not printed"; 'not_printed' is the API word, not a label.
+    const text = s === 'not_printed'
+      ? t('scholarship.docs.pathwayCheck.ic')
+      : t(`scholarship.docs.pathwayCheck.status.${s}`)
     return (
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
-        {t(`scholarship.docs.pathwayCheck.status.${s}`)}
+        {text}
       </span>
     )
   }

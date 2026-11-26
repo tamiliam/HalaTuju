@@ -336,7 +336,8 @@ export interface SchoolLeavingCheck {
 
 export interface PathwayCheck {
   name: SlipCheckStatus
-  ic: SlipCheckStatus
+  // 'not_printed': the issuer leaves the IC off its letters by design (UUM, UPSI; owner-approved).
+  ic: SlipCheckStatus | 'not_printed'
   candidate_name: string
   candidate_nric: string
   programme: string
