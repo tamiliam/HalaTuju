@@ -9434,7 +9434,7 @@ Fix: serve a flag for each control from the server's own door (as `can_write` is
 
 ### [TD-724] The sponsor Emails and Terms tabs still show only to editors on the web - low
 
-**Raised 2026-11-23 by sprint M4b (laptop session, number placeholder until the desk numbers it).** Owner Q-D (23 Nov)
+**Raised 2026-11-23 by sprint M4b (laptop session).** Owner Q-D (23 Nov)
 lets Sponsors: view read the sponsor terms and sponsor emails, and the server now serves both GETs on the read doors
 (`sponsor_terms_read`, `sponsor_emails_read`). The web still draws the two tabs from `holdsDoor(role, 'sponsor_emails')`
 (`src/app/admin/sponsors/page.tsx`), the editing door, so a viewer cannot open them yet. Not built in M4b because a
@@ -9443,7 +9443,7 @@ pair for each tab and draw a read-only view for a reader, inside the route's bud
 
 ### [TD-725] The credit sign request's `expected_status` is optional on the server - low
 
-**Raised 2026-11-24 by the sprint M4b review round 1 (laptop session, number placeholder until the desk numbers it).**
+**Raised 2026-11-24 by the sprint M4b review round 1 (laptop session).**
 `sign_admin_credit` refuses `stale` (409) only when the request names the status it saw; without it the old race
 remains (a second holder's check that waited on the lock confirms instead). Optional so an older web image keeps
 signing during the rollout. **Fix:** once the web that sends it is live, make `expected_status` required (400
@@ -9466,7 +9466,7 @@ person behind it (a migration, migrate-first; owner's call, pairs with TD-726). 
 
 ### [TD-743] A payslip with a read net pay figure but no statutory deduction is still "not a salary slip" - low
 
-**Raised 2026-11-24 by request #85 (laptop session, number placeholder until the desk numbers it).** #85 fixed slips
+**Raised 2026-11-24 by request #85 (laptop session).** #85 fixed slips
 with two or more statutory deductions. A read-only count on 24 Nov found 9 more live `not_salary` payslips with zero
 statutory markers (and one with one) where the reader did pick up a net pay figure. The scorer looks only at its label
 words, so these stay "not a salary slip" and the family is asked again for that earner's income. **Owner to rule:**
@@ -9817,17 +9817,17 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **As built (owner chose STRICT, 25 Nov):** a text object reaching more than 3 pt past the drawn page box (CropBox cut to the MediaBox), or with its centre off it, hides the page (Vision route). Accepted cost: 6 genuine fixtures (3 layouts) go to Vision. Review round 1 (Finding 1): a Type3 box is the glyph's d1 box, which can lie, so every Type3 code shown on the page must keep its ink inside its d1 box and paint, unless pypdf reads it as blank (`pdfium_type3.shown_ok`); the empty-glyph case is closed with it. Cost 0 of 54 Type3 fixture files. Review round 2: "paints" is now measured, not read from the operators: pdfium renders each shown Type3 glyph alone on a sheet at two scales, and its area (hairlines removed) must reach 0.5 % of its em square (`pdfium_type3.glyph_ink`; fails closed); a glyph that inks nothing may only show a code every candidate font reads as blank to both readers (pypdf's reading, and for pdfium the font's /ToUnicode mapping it to whitespace, or with no entry a whitespace byte; an unparseable /ToUnicode refuses). A form with /Parent and no /Resources (two resource views) and a /Pages node font name that clashes with the page's own (pypdf's layout mode) hide the page; a form drawn again under other resources is judged again. Round-2 cost: 0 beyond the accepted 6 (all 848 fixture files, every output compared); about 0.02 s a file on Type3 letters. Review round 3: pdfium decides blank codes. A glyph that inks nothing passes only when pdfium's own text page, reading the code alone on a text sheet at 1000 pt (`pdfium_type3.pdfium_blank`), gives whitespace or nothing, and pypdf reads whitespace; our own /ToUnicode reader only refuses. Every dictionary value the walks compare or follow is resolved first (`pdfium_type3._val`). Round-3 cost (measured): the wider compare, r3 against base, differs only in the 6 accepted files (higher_results 1, offer_letters_2026-11-01 4, results_split 1); timing on 43 offer letters 1.061 s a file (r2) to 1.077 s (r3). Review round 4 (edge (j) closed): pdfium drops a text OBJECT only when its whole box is degenerate, so a zero-box code with no ink read nothing ALONE on the sheet while `(LULUS) Tj` (even `(LL) Tj`) on the page read a letter through a CMap pdfium and pypdf read differently. Each code is now shown in a spread run (3 copies in one string, 500 pt of character spacing, `pdfium_type3.RUN`, `RUN_TC`) and is blank only when pdfium reads at least one character of its own and only whitespace, and pypdf reads whitespace; nothing read is refused. Round-4 cost: to be re-measured by the lead. **Still open:** (a) text wholly clipped away by a clip path (8 genuine files have some; a clip rule would cost 2), and by a form XObject's /BBox, which clips the form's content the same way (review round 1, Finding 2: a form with /BBox [0 0 1 1] around on-page text is not drawn yet reads; part of this same edge, not built); (b) clip paths that are not rectangles; (c) render mode 7 clips; (d) zero-size text placed at or past the edge; (e) slivers under 3 pt that overlap the edge (the lane's ink check covers tiny text); (f) a pdfium text-page character placed differently from its object box; (g) the glyph-sheet render is bounded only by the 1,440-glyph cap and the child's time and memory caps (a crafted file with many large glyph procedures costs up to that, then refuses); (h) a Type3 /Encoding /BaseEncoding is not read for blank codes (a code it alone names fails closed, so no hole, possible genuine cost only); (i) inside a form, pypdf's layout mode may still resolve a font name through the page's fonts where plain mode does not; the UMS lane's same-characters check between the layout and plain texts guards it, not a rule of its own; (j) CLOSED in review round 4 (was: a code pdfium's text page gives no character for counted as blank, beaten by a zero-box glyph that reads nothing alone on the sheet but reads in a run on the page): a code is now read in a spread run and nothing read is refused, so a run that still collapses (a negative /FontMatrix width cancelling the spacing) refuses, fail-closed (`test_td740_round4.py`). What remains rests on pdfium reading a code's Unicode the same wherever it is placed, a measured behaviour, so a pdfium upgrade must re-run the round-3 and round-4 tests; (k) other modules outside TD-740 (for example `pdf_pdfium_load._font`) still compare some values unresolved; each fails closed (a reference is not in its whitelist), so no hole, possible genuine cost only.
 
-### [TD-NEW-earner-tick-confirm-unstored] A student's "yes, they work" on a disagreeing tick is not stored - low
+### [TD-754] A student's "yes, they work" on a disagreeing tick is not stored - low
 
-**Raised 2026-11-25 by request #84 (laptop session, number placeholder until the desk numbers it).** The income step now
+**Raised 2026-11-25 by request #84 (laptop session).** The income step now
 asks before saving a "working" tick the family details disagree with, but the answer is not recorded: the case page warns
 the same whether the student confirmed the tick after the question or saved it before #84 shipped (31 open cases on
 25 Nov). Not built because the promise was a check and a warning, and storing the answer needs a model field. **Fix:**
 record the confirmation per member (additive JSON field) and let the officer's warning say "the student confirmed". *(A - S)*
 
-### [TD-NEW-earner-tick-followups] #84 follow-ups: the officer's earners line, a role listed twice, the question's wording - low
+### [TD-755] #84 follow-ups: the officer's earners line, a role listed twice, the question's wording - low
 
-**Raised 2026-11-25 by the #84 review round 2 (laptop session, number placeholder until the lead numbers it).** Logged, not built. **(a)** The officer's
+**Raised 2026-11-25 by the #84 review round 2 (laptop session).** Logged, not built. **(a)** The officer's
 Family & finances card still lists a disagreeing member plainly in its "Household earners" line, beside the new warning.
 **(b)** `family.earner_tick_conflicts` reports only the first listing's occupation when a role (brother, sister) is
 listed twice with different non-earning codes (for example "student" and "unemployed"). **(c)** Wording: `{who}` uses
@@ -9835,3 +9835,39 @@ the wizard's capitalised member labels mid-sentence; the Action Centre switch's 
 the switch's own; and the switch asks who "earns an income" while the question (and the wizard) says "working". A
 wording pass that needs
 Sol's Malay and Tamil read. *(C - S)*
+
+### [TD-747] STR parser: a stray mark on the "Status Pedalaman" label line, and OCR spelling variants, read rejected - low
+
+**Raised 2026-11-25 as STR fix follow-up (1) (TD-718 repair).** The parser (B5) can take a stray mark on the "Status Pedalaman" label line for a status word, and OCR spelling variants of the status words read rejected. Logged, not built; none blocks. **Fix:** ignore marks on that label line and add the spelling variants to the status vocabulary, with a fixture each. *(A - S)*
+
+### [TD-748] STR parser: an unknown icon glyph beside the two grid labels reads amber; "berjaya" and a cross-line "tidak layak" - low
+
+**Raised 2026-11-25 as STR fix follow-up (2).** (a) An unknown icon glyph next to both grid labels reads amber instead of being refused. (b) The old "berjaya" token ("Permohonan berjaya dihantar") may read approved. (c) A "tidak layak" split across two lines is not matched. Logged, not built. **Fix:** treat an unknown glyph by both labels as unreadable, drop or guard "berjaya", and let "tidak\s+layak" cross a line break. *(A - S)*
+
+### [TD-749] Household STR de-dupe: for the same member with a different request code, a newer rejection loses to an older matched approval - medium
+
+**Raised 2026-11-25 as STR fix follow-up (3).** In the household de-dupe the same member's newer rejection, filed under a different request code, loses to a tier-2 matched approval. Logged, not built. **Fix:** rank by member and recency before tier, or decide with the owner which one should win. *(B - M)*
+
+### [TD-750] Same-slot STR guard: an outsider's approval keeps the slot - medium
+
+**Raised 2026-11-25 as STR fix follow-up (4), from the STR fix's own review.** `promotion._str_matched` (same-slot guard) and the gate readers borrow the match through the BC chain, so an outsider's approval in the same slot keeps the slot. Overlaps TD-742 Phase 2 (see TD-753). Logged, not built. **Fix:** close it with the Phase 2 name-bucket work. *(B - M)*
+
+### [TD-751] STR de-dupe is not re-run when an IC lands; an outage-deferred STR stays unknown until the sweep - low
+
+**Raised 2026-11-25 as STR fix follow-up (5).** The household de-dupe does not run again when an IC card is added, and an STR deferred by an outage sits at the unknown tier 0 until the sweep. Re-run never runs the household de-dupe (by design; recorded here). Logged, not built. **Fix:** re-run the de-dupe on an IC landing, and shorten the wait for deferred reads. *(A - S)*
+
+### [TD-752] STR de-dupe nits: the household match runs twice; a stale round-4 header comment - low
+
+**Raised 2026-11-25 as STR fix follow-up (6).** The household match runs twice in `freshness._dedup_str_rank`, and `tests/test_td718_str_household_keep.py` keeps a stale round-4 header comment. **Fix:** compute the match once and correct the comment. *(A - S)*
+
+### [TD-753] TD-742 Phase 2: `buckets.py` `_name_bucket` counts a partial name as a match, so a one-word STR name goes green - medium
+
+**Raised 2026-11-25 as the Phase 2 follow-up of TD-742 linkage.** `_name_bucket` treats 'partial' as a match, so an STR whose recipient name is a single word can read green. Logged, not built (Phase 1 is display only). **Fix:** do not count 'partial' as a match in the bucket, with a regression test; it also closes TD-750. *(B - M)*
+
+### [TD-756] The PDF safety gate refuses a genuine MySTR print-to-PDF, so Re-run gets no image - medium
+
+**Raised 2026-11-25.** pdfium reports "function outside the whitelist" (`FUNCTION_TYPES` {2,3}) on a genuine MySTR print-to-PDF that read fine on 18 Nov, before the pdfium timing change (a90e70c31). The officer's Re-run then gets no image. Logged, not built. **Fix:** find which function type the print uses and decide with the owner whether to admit it; add the redacted fixture. *(B - M)*
+
+### [TD-757] A Re-run that fails with "no image" answers 200 and tells the officer nothing - low
+
+**Raised 2026-11-25.** When Re-run cannot get an image (see TD-756) the endpoint still answers 200 and the officer sees no message. Logged, not built. **Fix:** return a clear refusal status and show the officer a line saying why. *(A - S)*
