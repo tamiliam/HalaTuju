@@ -45,13 +45,13 @@ def snap(**bands):
 
 
 def case(aid, minute=None, ctx=None, recomputed='fp', verdict=None, qc=None, snapshot=None,
-         version='v-test', decided=True, note=None):
+         version='v-test', decided=True, note=None, programme=None):
     when = T0 + datetime.timedelta(minutes=aid if minute is None else minute) if decided else None
     return {'application_id': aid, 'verdict_decided_at': when,
             'stored_context': full_ctx() if ctx is None else ctx, 'recomputed_fingerprint': recomputed,
             'human_verdict': {'identity': 'pass'} if verdict is None else verdict, 'qc_answers': qc,
             'fresh_snapshot': snap(identity='certain') if snapshot is None else snapshot,
-            'engine_version': version, 'recompute_note': note}
+            'engine_version': version, 'recompute_note': note, 'programme_id': programme}
 
 
 def run(cases, folder, blank=False, kc=KC, freeze=True):

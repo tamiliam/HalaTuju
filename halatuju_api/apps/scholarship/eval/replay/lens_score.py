@@ -1,6 +1,7 @@
 """The human lens's SCORE of an exam's valid cases (moved out of `lens_human`, unchanged). PURE: no
 database, network, clock or environment read; the scoring modules are imported inside functions only.
 Every mark goes through the house points (`ai_score`). `lens_human._sit_exam` is the only caller.
+LL7 adds the gap table (`lens_gap`) of the same records, checked against the score's own sums.
 """
 from __future__ import annotations
 
@@ -42,8 +43,18 @@ def _fails_table(records) -> dict:
             'share_other': share}
 
 
+def _exam_gap(records, rows, marks) -> dict:
+    """LL7: the gap table of the same records (`lens_gap`); its sums must match the score, or it raises."""
+    from . import lens_gap
+    gap = lens_gap.gap_block(records, [row['programme'] for row in rows])
+    if not lens_gap.gap_sums_hold(gap, marks['facts'], marks['points']):
+        raise ValueError('gap: the groups do not add up to the score')
+    return gap
+
+
 def exam_score(rows: list) -> dict:
-    """The score, the extra line and the Fails table of the VALID cases, every mark through `ai_score`."""
+    """The score, the extra line, the Fails table and the gap table of the VALID cases, every mark
+    through `ai_score`."""
     from apps.scholarship import ai_score, fail_reasons
     from apps.scholarship.fact_bands import CERTAIN, PROBABLE, UNSURE
     records = [(row['snapshot'], row['answer'], row['version']) for row in rows]
@@ -70,4 +81,5 @@ def exam_score(rows: list) -> dict:
     extra = {'label': L.EXTRA_LINE_LABEL, 'facts': other['facts'], 'points': other['points'],
              'best': other['best'], 'score_pct': other['score_pct'], 'left_out': left_out}
     return {'score': _small(score), 'score_without_interview_fails': _small(extra),
-            'fails': _fails_table(records), 'limits': [f'a score on {marks["facts"]} facts', L.DROP_OUTS_LIMIT]}
+            'fails': _fails_table(records), 'gap': _exam_gap(records, rows, marks),
+            'limits': [f'a score on {marks["facts"]} facts', L.DROP_OUTS_LIMIT]}

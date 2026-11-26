@@ -104,7 +104,7 @@ def test_the_full_allowed_key_list_is_pinned():
     assert S.EXAM_KEYS == {'exam', 'label', 'frozen', 'status', 'size', 'digest', 'frozen_at', 'key_check',
                            'engine_version', 'refusal', 'cases_with_other_key_check', 'validity', 'still_valid',
                            'valid_split', 'could_not_recompute_reasons', 'qc_turned_to_pass', 'score',
-                           'score_without_interview_fails', 'fails', 'candidates', 'known_limits'}
+                           'score_without_interview_fails', 'fails', 'gap', 'candidates', 'known_limits'}
     assert S.EXAM_DEBUG_KEYS == {'exam', 'refusal', 'status'}
     assert S.SMALL_LINE_KEYS == {'label', 'facts', 'too_few'}
     assert S.SCORE_KEYS == {'label', 'facts', 'too_few', 'points', 'best', 'score_pct', 'not_scored', 'outcomes',

@@ -209,7 +209,7 @@ def test_a_blank_key_recomputes_nothing(keyed, desk):
 
 
 # ── T5: the row contract ──────────────────────────────────────────────────────────────────────────
-def test_every_row_has_the_nine_fields_and_the_stored_values(desk):
+def test_every_row_has_the_ten_fields_and_the_stored_values(desk):
     qc = {'identity': 'disagreed', 'income': 'agreed', 'academic': 'shrug', 'not_a_fact': 'agreed'}
     full = decide(desk)
     ScholarshipApplication.objects.filter(pk=full.pk).update(
@@ -232,6 +232,7 @@ def test_every_row_has_the_nine_fields_and_the_stored_values(desk):
         assert row['human_verdict'] == stored.officer_verdict
         assert row['qc_answers'] == second_look.stored(stored.officer_verdict)
         assert row['engine_version'] == verdict_engine.VERDICT_ENGINE_VERSION
+        assert row['programme_id'] == stored.programme_id   # LL7: the gap table's programme key
     assert rows[full.pk]['qc_answers'] == {'identity': 'disagreed', 'income': 'agreed'}
     assert rows[full.pk]['verdict_decided_at'].utcoffset() == datetime.timedelta(0)
     for app in (undecided, pre_interview):

@@ -16,6 +16,7 @@ THE CASE ROW (one plain dict per case, built by phase B2b). Exactly these keys:
 * ``fresh_snapshot`` the replayed verdict list, or None. ``engine_version`` text, the same in every row.
 * ``recompute_note`` on a decided FULL row only: `RECOVERED_BY_TWIN` with a fingerprint, else None; a
   `RECOMPUTE_REASONS` code when the fingerprint is None (it must be). It only splits the counts.
+* ``programme_id`` int from 1, or None (LL7): only the gap table reads it, as a count key.
 A wrong-shaped row raises `BadCaseRow` naming the field, never its value, and the whole run stops.
 
 THE TWO EXAMS, chosen by the stored context's shape, never by a date: ``exam-1`` (FULL context) is the
@@ -56,7 +57,8 @@ FAILED_CONTEXT_LINE = 'decided cases whose context record failed (in neither exa
 
 FULL, EMPTY, FAILED = 'full', 'empty', 'failed'
 CASE_FIELDS = ('application_id', 'verdict_decided_at', 'stored_context', 'recomputed_fingerprint',
-               'human_verdict', 'qc_answers', 'fresh_snapshot', 'engine_version', 'recompute_note')
+               'human_verdict', 'qc_answers', 'fresh_snapshot', 'engine_version', 'recompute_note',
+               'programme_id')
 _BASE_FIELDS = {'exam', 'format', 'application_ids', 'decided_at', 'size', 'frozen_at', 'digest'}
 _ALLOWED = {EXAM_1: _BASE_FIELDS | {'key_check'}, EXAM_OLD: _BASE_FIELDS}
 NOT_GIVEN = 'not_given'   # a Fail with no stored reason (old rows)
@@ -156,8 +158,11 @@ def _read_case(row) -> dict:
             else RECOMPUTE_REASONS)
     if note not in fits:
         raise BadCaseRow('recompute_note', 'is not a known note or does not fit the fingerprint')
-    return {'id': row['application_id'], 'when': when, 'context': context, 'shape': shape,
-            'recomputed': recomputed, 'note': note,
+    programme = _typed(row, 'programme_id', int, True)
+    if programme is not None and programme < 1:
+        raise BadCaseRow('programme_id', 'is below 1')
+    return {'programme': programme, 'id': row['application_id'], 'when': when, 'context': context,
+            'shape': shape, 'recomputed': recomputed, 'note': note,
             'has_verdict': bool(verdict and ai_score.decided_facts(None, verdict)),
             'answer': answer, 'qc_turned': turned,
             'snapshot': _typed(row, 'fresh_snapshot', list, True),
@@ -377,7 +382,7 @@ def _blank_exam(name: str, version: str) -> dict:
             'engine_version': version, 'refusal': None, 'cases_with_other_key_check': None,
             'validity': None, 'still_valid': None, 'valid_split': None, 'could_not_recompute_reasons': None,
             'qc_turned_to_pass': None, 'score': None,
-            'score_without_interview_fails': None, 'fails': None, 'candidates': None,
+            'score_without_interview_fails': None, 'fails': None, 'gap': None, 'candidates': None,
             'known_limits': [WEAK_LABEL] if name == EXAM_OLD else []}
 
 
@@ -444,7 +449,7 @@ def _sit_exam(out: dict, exam: dict, by_id: dict, shape: str) -> dict:
     out['qc_turned_to_pass'] = sum(row['qc_turned'] for row in valid)
     from .lens_score import exam_score   # inside the function: this module's top imports stay standard library
     scored = exam_score(valid)
-    out.update({k: scored[k] for k in ('score', 'score_without_interview_fails', 'fails')})
+    out.update({k: scored[k] for k in ('score', 'score_without_interview_fails', 'fails', 'gap')})
     out['known_limits'] = out['known_limits'] + scored['limits']
     return out
 

@@ -239,6 +239,28 @@ Each exam part shows:
   when there are too few.
 - "Known limits": the limits of this exam's score, for example "a score on N facts" and "drop-outs
   shrink the exam". exam-old also shows its weaker label here.
+- The gap table (LL7). It comes right after "Share of "other"". See below.
+
+**The gap table (LL7).** It shows where the AI lost its points. It uses exactly the facts that the
+score counts, so its numbers add up to the score.
+
+- "Gap": the rule for the table. For each group, lost = 2 x facts - points. 2 is the best mark for one
+  fact. So "lost" is what a perfect AI would have scored more. All the "lost" numbers add up to
+  2 x facts marked - the score's points. The lens checks this. If it does not hold, the run stops.
+- The table: one row for each AI band and reviewer answer (Pass or Fail). Each row shows the facts,
+  the points, the points lost and "Too small".
+- "Largest gaps": the 3 groups that lost the most, largest first. A group under 10 facts is too
+  small. It is shown in the table but never ranked. A group that lost nothing is not ranked either.
+- "Gap by fact": the same counts for each fact (identity, academic, pathway, income).
+- "Doubt codes": for facts the AI did not mark Certain, how often each doubt code came with a Pass and
+  with a Fail. A code listed twice on one fact counts twice, as on the AI audit page. The codes come
+  from a closed list: every code the verdict engine can write (`DOUBT_CODES` in
+  `eval/replay/lens_gap.py`). A test fails when the engine and the list differ. Any other code is
+  counted as "unlisted kind" and never printed.
+- "Gap by programme": the same counts for each programme, shown by its number. "no programme" is a case
+  with none.
+- Counts only. The table holds no case id, name or free text. A result without a gap table, or with a
+  key not in the closed list, fails the check ("schema").
 
 **Two refusals that only a bucket run gives.** The parent sets them after the run (the lens itself
 never does). The exam part then shows "not run: <code>", "Status: refused: <code>", "Frozen: no" and no

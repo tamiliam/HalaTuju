@@ -12,10 +12,13 @@ SAFETY RULES (a failure must never look like a result):
   a pass. A coach pair graded ``fail`` is BLOCKING. Too few facts is never a pass.
 * Every fixed code is printed through a label table below; a code missing from its table prints as
   `OTHER_WORDS`, never raw. The only text printed as it is: version labels, months, the frozen time,
-  digest and key check (each held to a strict shape by the allow-list), and the lens's own fixed lines
+  digest and key check (each held to a strict shape by the allow-list), the gap table's doubt codes (only
+  a code in the closed list `lens_gap.DOUBT_CODES`; any other prints as `OTHER_WORDS`) and programme keys
+  (digits only, held by the allow-list), and the lens's own fixed lines
   (labels, status, the still-valid sentence, the context-failed line, the known limits), which the
   allow-list rebuilds from fixed words and the result's own ints.
-* Numbers: every one is an int the result holds. The only sums are the summary's count of blocking
+* Numbers: every one is an int the result holds (and the gap table's fixed floor, `lens_gap.GAP_MIN_FACTS`;
+  the gap lines add nothing up). The only sums are the summary's count of blocking
   items and, for a key missing from a label table, the total of those counts (`counts_in_words`).
 """
 from __future__ import annotations
@@ -23,6 +26,7 @@ from __future__ import annotations
 import json
 
 from . import coach_result_schema as CS
+from . import lens_gap as G
 from . import lens_human as L
 from . import lens_result_schema as LS
 
@@ -93,6 +97,8 @@ FAIL_REASON_WORDS = {
     'proof_missing': 'proof missing', 'document_false': 'document false', 'documents_differ': 'documents differ',
     'interview_differs': 'interview differs', 'other': '"other"', 'not_given': 'no reason stored',
 }
+ANSWER_WORDS = {'pass': 'Pass', 'fail': 'Fail'}
+FACT_WORDS = {'identity': 'Identity', 'academic': 'Academic', 'pathway': 'Pathway', 'income': 'Income'}
 OUTCOME_WORDS = {'right_sure': 'right and sure', 'right_leaning': 'right but leaning', 'unsure': 'unsure',
                  'wrong_leaning': 'wrong but leaning', 'wrong_sure': 'wrong and sure'}
 GRADE_WORDS = {'pass': 'pass', 'fail': 'fail', 'no_change': 'no clear change'}
@@ -252,6 +258,54 @@ def _fails_lines(fails: dict) -> list:
                   f'- Share of "other" among the Fails: {_of(share)}{tail}.']
 
 
+# ── LL7: the gap table ────────────────────────────────────────────────────────────────────────────────
+def _gap_cells_text(table: dict) -> str:
+    """``Band Answer N`` for each cell above 0, in band then answer order; ``none`` when all are 0."""
+    parts = [f'{BAND_WORDS[band]} {ANSWER_WORDS[answer]} {table[band][answer]}'
+             for band in BAND_WORDS if band in table for answer in ANSWER_WORDS if table[band].get(answer)]
+    return ', '.join(parts) or 'none'
+
+
+def _doubt_code_words(code) -> str:
+    """A doubt code as it is when it is in the closed list (`lens_gap.DOUBT_CODES`), else `OTHER_WORDS`."""
+    return code if type(code) is str and code in G.DOUBT_CODES else OTHER_WORDS
+
+
+def _gap_top_text(top: list) -> str:
+    if not top:
+        return 'none ranked (each group is too small or lost nothing)'
+    return '; '.join(f'{rank}. {BAND_WORDS[e["band"]]}, {ANSWER_WORDS[e["answer"]]}: {e["lost"]} lost on '
+                     f'{e["facts"]} facts' for rank, e in enumerate(top, 1))
+
+
+def _gap_lines(gap: dict) -> list:
+    """The gap block, counts only, in a fixed form (`lens_gap`)."""
+    groups = gap['groups']
+    out = ['', f'- Gap: points lost against a perfect AI (lost = 2 x facts - points). A group under '
+           f'{G.GAP_MIN_FACTS} facts is too small and is not ranked.',
+           f'- Largest gaps: {_gap_top_text(gap["top"])}.', '',
+           '| Band | Answer | Facts | Points | Lost | Too small |', '|---|---|---|---|---|---|']
+    for band in (b for b in BAND_WORDS if b in groups):
+        for answer in ANSWER_WORDS:
+            cell = groups[band][answer]
+            out.append(f'| {BAND_WORDS[band]} | {ANSWER_WORDS[answer]} | {cell["facts"]} | {cell["points"]} '
+                       f'| {cell["lost"]} | {"yes" if cell["too_small"] else "no"} |')
+    out.append('')
+    out += [f'- Gap by fact, {FACT_WORDS[fact]}: {_gap_cells_text(gap["by_fact"][fact])}.'
+            for fact in FACT_WORDS if fact in gap['by_fact']]
+    for fact in FACT_WORDS:
+        codes = gap['by_doubt_code'].get(fact, {})
+        ordered = sorted(codes, key=lambda c: (c == G.OTHER_DOUBT_CODE, c))
+        text = '; '.join(f'{_doubt_code_words(c)} {codes[c]["passed"]} passed, {codes[c]["failed"]} failed'
+                         for c in ordered) or 'none'
+        out.append(f'- Doubt codes, {FACT_WORDS[fact]} (facts not Certain): {text}.')
+    programmes = gap['by_programme']
+    keys = sorted(programmes, key=lambda k: (k == G.NO_PROGRAMME, len(k), k))
+    out += [f'- Gap by programme, {"no programme" if k == G.NO_PROGRAMME else k}: '
+            f'{_gap_cells_text(programmes[k])}.' for k in keys] or ['- Gap by programme: none.']
+    return out
+
+
 def _sat_exam_lines(exam: dict) -> list:
     """The lines of an exam that sat (frozen)."""
     out = [f'- Validity: {counts_in_words(exam["validity"], VALIDITY_WORDS)}.', f'- {_capital(exam["still_valid"])}.']
@@ -265,7 +319,7 @@ def _sat_exam_lines(exam: dict) -> list:
     out += _exam_score_lines(exam['score'])
     extra = exam['score_without_interview_fails']
     out.append(f'- {_capital(extra["label"])}: {_second_line_text(extra)}')
-    return out + _fails_lines(exam['fails'])
+    return out + _fails_lines(exam['fails']) + _gap_lines(exam['gap'])
 
 
 def _exam_lines(name: str, exam: dict) -> list:

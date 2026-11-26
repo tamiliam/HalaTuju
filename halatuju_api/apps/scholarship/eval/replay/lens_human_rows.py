@@ -207,7 +207,7 @@ def _lens_row(app, current_key_check, version, build_verdict, status_codes) -> d
            'stored_context': app.ai_verdict_context, 'recomputed_fingerprint': None,
            'human_verdict': verdict if isinstance(verdict, dict) else None,
            'qc_answers': second_look.stored(verdict), 'fresh_snapshot': None, 'engine_version': version,
-           'recompute_note': None}
+           'recompute_note': None, 'programme_id': app.programme_id}
     if when is None:
         return row
     with clock.pinned_clock(when):

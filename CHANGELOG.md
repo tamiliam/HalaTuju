@@ -281,6 +281,10 @@ Must land with or before that API change. The student offer card drew the missin
 "IC number" label in en, ms and ta. `PathwayCheck.ic` type gains the word.
 Test: `checklistsPathway.notPrinted.test.tsx` (grey, field name, no raw key, all three languages).
 
+### LL7 - gap table in the lens result (2026-11-26)
+
+LL7: gap table in the lens result; owner approved 26 Nov 2026; no change to the frozen exam file, flags or exit codes. Branch ll7, not pushed. Migration: none. Each frozen exam's block gains `gap` (new `eval/replay/lens_gap.py`, called from `lens_score.exam_score`): `groups` (band x answer: facts, points from `ai_score.POINTS`, lost = 2 x facts - points, too small under `GAP_MIN_FACTS` = 10), `by_fact`, `by_doubt_code` (facts not Certain; codes read as the AI audit page reads them, keys from the closed list `DOUBT_CODES` or the one key `unlisted_code`), `by_programme` (from the application's `programme_id`, a new tenth case field) and `top` (the 3 largest groups by lost; a too-small group, or one that lost nothing, is not ranked). The invariant (the lost points add up to 2 x facts marked - the score's points) is checked when the block is built (a mismatch raises) and again by the allow-list. The allow-list (`lens_result_schema.py`) now requires `gap` on a frozen exam, so a result without it fails as `schema`; the lens result has no version field, and the parent clears and rewrites the result in the same run, so no old result is read. `report_lens.py` prints the gap lines once per frozen exam, after the "Share of "other"" line; every old line is unchanged. Docs: the gap table in `docs/replay-human-lens.md`. Tests: new `test_replay_lens_gap.py`; `test_replay_lens_human.py`, `test_replay_lens_human_rows.py` and `test_replay_lens_result_schema.py` updated for the new field and key.
+
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 
 Branch access-s4-scholars, not pushed. Migration: none. Services: web. The server half is S4a (above).

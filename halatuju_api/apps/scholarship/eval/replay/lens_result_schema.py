@@ -5,8 +5,8 @@ check stands in for it: a future lens change must never be able to put a case id
 THE RULE. Every dict has exactly one of a few fixed key sets for its level (a key that is unknown OR
 missing fails). A value is one of:
 * an int (``type(v) is int``: a bool or a float is NOT an int);
-* a bool only at ``frozen`` (exam block) and ``too_few`` (score lines, the share of Other), each tied to
-  the block's own shape;
+* a bool only at ``frozen`` (exam block), ``too_few`` (score lines, the share of Other) and ``too_small``
+  (a gap group), each tied to the block's own shape or facts;
 * None only where the lens leaves a field empty (a refused or unfrozen exam; the DEBUG refusal);
 * text that is a member of a fixed set of codes: refusal codes, exam names, labels, the limit line, and
   the error codes `FILE_ERROR_CODES`;
@@ -38,6 +38,11 @@ EVERY FIELD THAT IS NOT AN INT OR A FIXED CODE, with its rule (taken from the ch
   exactly when ``context_failed`` is None.
 * ``known_limits``: a list, exactly the weak label (exam-old only), then, when there is a score,
   ``a score on N facts`` (N = the score's facts) and `lens_human.DROP_OUTS_LIMIT`.
+* ``gap`` (LL7, `_gap_block_ok`): every key a band, an answer, a fact or a fixed word, except two KEY
+  kinds: a doubt code, which must be in `lens_gap.DOUBT_CODES` or be `lens_gap.OTHER_DOUBT_CODE`; and a
+  programme key, which is `lens_gap.NO_PROGRAMME` or `PROGRAMME_KEY_SHAPE` (digits), at most
+  `lens_gap.GAP_MAX_PROGRAMMES` of them. Each group equals `lens_gap.gap_cell` of its own facts; the sums
+  match the score (`lens_gap.gap_sums_hold`); ``top`` equals `lens_gap.gap_ranked` of the groups.
 * ``frozen`` (bool): True exactly when ``status`` is ``frozen``; False with any refusal.
 * ``too_few`` (bool): True exactly when the score line has the small key set, or the share of Other has
   no ``pct``.
@@ -74,7 +79,7 @@ ERROR_KEYS = frozenset({'error'})
 EXAM_KEYS = frozenset({'exam', 'label', 'frozen', 'status', 'size', 'digest', 'frozen_at', 'key_check',
                        'engine_version', 'refusal', 'cases_with_other_key_check', 'validity', 'still_valid',
                        'valid_split', 'could_not_recompute_reasons', 'qc_turned_to_pass', 'score',
-                       'score_without_interview_fails', 'fails', 'candidates', 'known_limits'})
+                       'score_without_interview_fails', 'fails', 'gap', 'candidates', 'known_limits'})
 #: The DEBUG refusal's exam block (`lens_human_rows`): nothing read, the exam refused.
 EXAM_DEBUG_KEYS = frozenset({'exam', 'refusal', 'status'})
 SMALL_LINE_KEYS = frozenset({'label', 'facts', 'too_few'})
@@ -104,7 +109,9 @@ _NOT_FROZEN_EXAM_1 = frozenset(f'not frozen yet: {n} of {L.EXAM_1_SIZE}' for n i
 _NOT_FROZEN_EXAM_OLD = 'not frozen yet: 0 cases'
 #: The fields an exam has only once it sat (frozen); None before.
 _SAT_FIELDS = ('size', 'digest', 'frozen_at', 'validity', 'still_valid', 'qc_turned_to_pass', 'score',
-               'score_without_interview_fails', 'fails')
+               'score_without_interview_fails', 'fails', 'gap')
+#: A programme key of the gap table (`lens_gap.by_programme`): a whole number from 1 in digits.
+PROGRAMME_KEY_SHAPE = re.compile(r'[1-9][0-9]{0,18}', re.ASCII)
 
 
 def lens_error_name(exc) -> str:
@@ -188,6 +195,73 @@ def _fails_block_ok(block, bands, reasons) -> bool:
     return 'pct' not in share or _is_count(share['pct'])
 
 
+def _gap_count(value) -> bool:
+    return type(value) is int and value >= 0
+
+
+def _gap_table_ok(table, bands) -> bool:
+    """band -> answer -> a count of 0 or more (`lens_gap.ANSWERS`)."""
+    from . import lens_gap as G
+    return _keys_are(table, bands) and all(
+        _keys_are(row, frozenset(G.ANSWERS)) and all(_gap_count(v) for v in row.values()) for row in table.values())
+
+
+def _gap_sums_match(tables, groups) -> bool:
+    """The cells of ``tables`` (checked tables) add up, cell by cell, to the facts of ``groups``."""
+    return all(sum(t[band][answer] for t in tables) == cell['facts']
+               for band, row in groups.items() for answer, cell in row.items())
+
+
+def _gap_doubt_ok(doubt, facts) -> bool:
+    """fact -> a code of the closed list (or the one other key) -> ``passed`` / ``failed``, not both 0."""
+    from . import lens_gap as G
+    allowed = G.DOUBT_CODES | {G.OTHER_DOUBT_CODE}
+    if not _keys_are(doubt, facts):
+        return False
+    return all(type(codes) is dict and all(
+        code in allowed and _keys_are(pair, G.DOUBT_COUNT_KEYS) and all(_gap_count(v) for v in pair.values())
+        and sum(pair.values()) > 0 for code, pair in codes.items()) for codes in doubt.values())
+
+
+def _gap_block_ok(gap, score, bands) -> bool:
+    """LL7: the gap table (`lens_gap`): fixed keys, each group rebuilt from its own facts, the sums tied to
+    the score (THE INVARIANT, `lens_gap.gap_sums_hold`), doubt codes from the closed list only, programme
+    keys in digits, and ``top`` rebuilt from the groups."""
+    from apps.scholarship import ai_score
+    from . import lens_gap as G
+    if not _keys_are(gap, G.GAP_KEYS) or not _keys_are(gap['groups'], bands):
+        return False
+    groups = gap['groups']
+    for band, row in groups.items():
+        if not _keys_are(row, frozenset(G.ANSWERS)):
+            return False
+        for answer, cell in row.items():
+            if not (_keys_are(cell, G.GROUP_KEYS) and all(type(cell[k]) is int for k in ('facts', 'points', 'lost'))
+                    and _gap_count(cell['facts']) and type(cell['too_small']) is bool):
+                return False
+            if cell != G.gap_cell(band, answer, cell['facts']):
+                return False
+    points = sum(c['points'] for r in groups.values() for c in r.values()) if score['too_few'] else score['points']
+    if not G.gap_sums_hold(gap, score['facts'], points):
+        return False
+    facts = frozenset(ai_score.FACTS)
+    by_fact, by_programme = gap['by_fact'], gap['by_programme']
+    if not (_keys_are(by_fact, facts) and all(_gap_table_ok(t, bands) for t in by_fact.values())
+            and _gap_sums_match(list(by_fact.values()), groups)):
+        return False
+    if type(by_programme) is not dict or len(by_programme) > G.GAP_MAX_PROGRAMMES:
+        return False
+    if not all(type(key) is str and (key == G.NO_PROGRAMME or PROGRAMME_KEY_SHAPE.fullmatch(key))
+               and _gap_table_ok(t, bands)
+               and sum(sum(r.values()) for r in t.values()) > 0 for key, t in by_programme.items()):
+        return False
+    if not (_gap_sums_match(list(by_programme.values()), groups) and _gap_doubt_ok(gap['by_doubt_code'], facts)):
+        return False
+    top = gap['top']
+    return (type(top) is list and all(_keys_are(e, G.TOP_GROUP_KEYS) and type(e['facts']) is int
+                                      and type(e['lost']) is int for e in top) and top == G.gap_ranked(groups))
+
+
 def _exam_status_ok(name, block) -> bool:
     """``status`` rebuilt from the block's own refusal, candidate count and frozen flag."""
     status, refusal, frozen = block['status'], block['refusal'], block['frozen']
@@ -236,7 +310,8 @@ def _sat_fields_ok(name, block, codes) -> bool:
             and block['score_without_interview_fails'] is not None
             and _score_block_ok(block['score_without_interview_fails'], L.EXTRA_LINE_LABEL, EXTRA_LINE_KEYS,
                                 ('left_out',), outcomes)
-            and block['fails'] is not None and _fails_block_ok(block['fails'], bands, reasons))
+            and block['fails'] is not None and _fails_block_ok(block['fails'], bands, reasons)
+            and block['gap'] is not None and _gap_block_ok(block['gap'], score, bands))
 
 
 def _exam_block_ok(name, block, version, codes) -> bool:
