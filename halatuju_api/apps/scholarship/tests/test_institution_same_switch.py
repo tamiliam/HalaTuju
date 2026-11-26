@@ -3,11 +3,11 @@ name, English name, with or without a campus tail). Pairs are the real live inst
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.courses.models import StudentProfile
 from apps.scholarship.genuineness.offer_signatures import _UA_NAMES
 from apps.scholarship.institution_same import _UA_ALIASES, institutions_differ
-from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.pathway_engine import offer_pathway_switch
+from apps.scholarship.tests.factories import make_application
 
 SAME = [
     ('UNIVERSITI PENDIDIKAN SULTAN IDRIS', 'UPSI'),
@@ -58,12 +58,7 @@ class TestInstitutionsDiffer(TestCase):
 
 class TestSwitchNoteEndToEnd(TestCase):
     def setUp(self):
-        cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        profile = StudentProfile.objects.create(
-            supabase_user_id='same-uni', name='TEST STUDENT', nric='080219-10-1512',
-            household_income=1800, household_size=4)
-        self.app = ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='profile_complete', chosen_pathway='poly')
+        self.app = make_application('submitted', chosen_pathway='poly')
 
     def _offer(self, institution, superseded):
         vf = {'fields': {'programme': 'Diploma Sains Komputer', 'institution': institution,

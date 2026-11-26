@@ -35,6 +35,10 @@ _NOT_LOGIC = {
     'apps/scholarship/models/__init__.py:*':
         'The ORM table classes: what is stored, not how it is judged. A field change comes with '
         'a migration and the rule that reads the field lives in a listed file.',
+    'apps/scholarship/institution_same.py:institutions_differ':
+        'Decides only whether the reviewer banner and offer chip say "Course switched" '
+        '(pathway_engine.offer_pathway_switch). That note is deliberately NOT a verdict item '
+        '(verdict_pathway.py NB), so it can never move a verdict answer.',
 }
 
 #: Listed files whose OWN imports the walk does not follow, each for a reason.

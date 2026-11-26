@@ -71,6 +71,11 @@
   "2026-11-26.2": {
     "digest": "e0a1d4a32c0308e54c4e2e32bd02081da28d14e40e4499fcc254743a0fd44a8c",
     "note": "Criteria editor Sprint 2, adversarial review R1 (2026-11-26.1 never went live): a NULL criteria tree is read as TODAY'S gate - criteria.tree_of falls back to from_legacy(cohort, keep_empty_spm=True), the columns gate exactly on the whole equivalence grid (test_a_null_tree_is_todays_gate_exactly) - so the deploy changes no decision. Intake 5's CGPA trap (a PNGK floor, no SPM bar) switches off only when build_criteria_trees --apply stores plain from_legacy, with its own owner yes. The old admin form rebuilds only an already-stored tree; a NULL row (and a new year) stays NULL. The replay judges a NULL row with the tree --apply would store.",
-    "also_ok": []
+    "also_ok": [
+      {
+        "digest": "0fc1562571cca50c17779a4434991be4d587f8c571f70ed756282429b1b88259",
+        "note": "fix-fake-switch: offer_pathway_switch feeds only the reviewer switch banner and chip, never a verdict item (verdict_pathway.py NB); answers unchanged"
+      }
+    ]
   }
 }
