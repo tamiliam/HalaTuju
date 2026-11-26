@@ -344,6 +344,7 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # 2.4.0 (OCR-13 phase 2, 2026-11-26) — the UiTM rules lane: `family_of` reads 'uitm', `diagnose_uitm` locks a
 # digital UiTM degree letter from its page-1 layout (`offer_parse_uitm`, `offer_parse_lanes`); every other family reads as before.
 # Phase 3 (same day, same unreleased version): 'uum', `diagnose_uum` (`offer_parse_uum`), a lock with no IC.
+# Phase 4 (same day, same unreleased version): 'um', `diagnose_um` (`offer_parse_um`), the IC guard as usual.
 PARSER_VERSION = '2.4.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
@@ -474,14 +475,16 @@ def _rules_exit(out: dict, shown: str) -> dict:
 
 def family_of(text: str) -> str:
     """The family `diagnose` reads ``text`` as: a government family ('stpm', 'matriculation', 'polytechnic'),
-    else 'ums' for the UMS offer title, else 'uitm' for a UiTM offer, else 'uum' for a UUM admissions letter (OCR-13),
-    else ''. ONE helper for `diagnose` and `offer_exact._ums_family`
+    else 'ums' for the UMS offer title, else 'uitm' for a UiTM offer, else 'uum' for a UUM admissions letter, else
+    'um' for a UM admissions letter (OCR-13), else ''. ONE helper for `diagnose` and `offer_exact._ums_family`
     (S1c), so the lane switch and the parser never disagree on which letter is a UMS letter."""
     from .offer_parse_uitm import is_uitm
     from .offer_parse_university import is_ums
+    from .offer_parse_um import is_um
     from .offer_parse_uum import is_uum
     up = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or '')).upper()
-    return _detect(up) or ('ums' if is_ums(up) else 'uitm' if is_uitm(up) else 'uum' if is_uum(up) else '')
+    return _detect(up) or ('ums' if is_ums(up) else 'uitm' if is_uitm(up) else 'uum' if is_uum(up)
+                           else 'um' if is_um(up) else '')
 
 
 def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_texts=None) -> dict:
@@ -504,10 +507,10 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
         return _rules_exit(_diagnose_ums(out, text, page1_text, layout, page_texts),
                            layout if layout.strip() else text)
-    if fam in ('uitm', 'uum'):                   # OCR-13: their branches live in `offer_parse_lanes`
-        from .offer_parse_lanes import diagnose_uitm, diagnose_uum
+    if fam in ('uitm', 'uum', 'um'):             # OCR-13: their branches live in `offer_parse_lanes`
+        from .offer_parse_lanes import diagnose_uitm, diagnose_um, diagnose_uum
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
-        branch = diagnose_uitm if fam == 'uitm' else diagnose_uum
+        branch = {'uitm': diagnose_uitm, 'uum': diagnose_uum, 'um': diagnose_um}[fam]
         return _rules_exit(branch(out, text, page1_text, layout, page_texts), layout if layout.strip() else text)
     if not fam:
         return out

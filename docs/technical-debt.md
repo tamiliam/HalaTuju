@@ -9817,6 +9817,12 @@ Repro (local scratchpad, not in git): `scratchpad/td702_review/attack.py <shortl
 
 **Phase 3 (26 Nov):** the UiTM and UUM readers are built; UPSI and UM still have none.
 
+**Phase 4 (26 Nov):** the UM reader is built (lane off). Only UPSI has no reader; UPSI is paused by the owner.
+
+### [TD-NEW-ocr13-um-heldout] OCR-13: 3 UM letters are held out and 1 locks, so the UM lane cannot pass Gate 1 - medium
+
+**Raised in OCR-13 phase 4 (see CHANGELOG).** The corpus holds 9 UM answers (3 held out); 2 of the 8 PDFs lock (1 held out). The rest go to the AI as they should: 1 scan, 2 letters without the Malay title (one Asasi), 2 Asasi letters, 1 English letter, and 1 answer has no PDF. English UM letters never read as the UM family, so a UM English reader would be a new lane. The reporting date is never printed on page 1 ("RUJUK LAMPIRAN"), so a UM lock always leaves it blank. **Fix:** add hand-checked UM degree letters to the held-out split, then re-run the dry run. *(A - M)*
+
 ### [TD-NEW-ocr13-uum-intake-answers] OCR-13: two UUM hand-checked answers shorten the intake - low (owner question)
 
 **Raised in OCR-13 phase 3 (see CHANGELOG).** All 4 corpus UUM letters print "SEMESTER PERTAMA SESI YYYY/YYYY" and the reader stores it as printed. The hand-checked answers for d1705 and d1746 say only "SESI YYYY/YYYY" (d3502 and d3997 keep SEMESTER PERTAMA), so the dry run scores 2 intakes wrong. Intake is not a guarded field; name, IC, institution and programme are 0 wrong. **Fix:** owner rules which form is right; then either correct the two answers or have the reader drop the semester words. *(A - S)*

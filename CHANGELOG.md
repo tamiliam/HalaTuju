@@ -65,6 +65,29 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UUM
   confirmation/ and fail/ lock 0 of 43.
 - Debt: TD-NEW-ocr13-uum-intake-answers, TD-NEW-ocr13-uum-heldout. Tests: `test_offer_parse_uum.py`.
 
+### feat: OCR-13 phase 4 - the UM rules reader (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UM` stays OFF (off by default; `OCR_FIRST_LANES`).
+- **Reader:** new `offer_parse_um.py` reads a digital Malay UM degree letter (SARJANA MUDA only) from its page-1 layout:
+  name (the line after "Nombor K/P"), IC (the "Nombor K/P" line), programme (up to 2 wrapped lines before FAKULTI), intake
+  as printed ("SEMESTER 1, SESI AKADEMIK ..."), offer date, and the reporting date only when a date is printed (every
+  measured letter prints "RUJUK LAMPIRAN", so it stays blank). Institution "UNIVERSITI MALAYA", as the hand-checked answers say.
+- **IC guard as usual:** UM prints the IC, so UM is not in `ISSUER_PRINTS_NO_IC`; a UM letter with no readable IC refuses.
+- **Refuses:** a scan (no layout), Asasi and every other non-degree word in the programme (Diploma, Asasi, Pra, Sijil,
+  Foundation, Certificate, Persediaan, Matrik), an English letter (no Malay title, or not a UM family at all), a letter
+  without the title once at the left margin, a status or withdrawn letter, a missing owner word, dates that do not fit the
+  session, and a later page that is not UM's or shows another IC, programme or reporting date. Footer words alone do not refuse.
+- **Wiring:** `family_of` reads 'um'; `offer_parse_lanes.diagnose_um`; `offer_exact` lane module, refusal note and ink
+  check; eval layout hook and `RULES_LANES` ('universiti malaya' to 'ua:UM'). offer_parse 2.4.0 digest updated in place;
+  offer_reader digest unchanged.
+- **Dry run (local, free, lanes UMS, UiTM, UUM and UM on):** UM held-out 3 letters, 1 locked, 100% agreement, 0 wrong
+  (need 20 locks for Gate 1, so it stays AI). All splits 9 letters, 2 locked, 0 wrong name / IC / institution / programme.
+  Of the other 7: 1 has no PDF, 1 scan, 2 without the title (one an Asasi letter), 2 Asasi letters (not_degree), 1 English.
+  UMS, UiTM and UUM unchanged: held-out 33/22/100%/0 and 9/1/100%/0; all splits 62/44/100%/0, 18/3/100%/0, UUM 4 of 4.
+- **Owner folders (text layer):** um/ 2 letters lock; 1 scan and 1 letter without the title do not read as UM, and 1 file
+  is not a PDF. asasi/ holds 2 UM letters: both refuse (not_degree). diploma/, asasi/, confirmation/ and fail/ lock 0.
+- Debt: TD-NEW-ocr13-um-heldout. Tests: `test_offer_parse_um.py`.
+
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
 

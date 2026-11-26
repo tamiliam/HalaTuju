@@ -84,8 +84,8 @@ def merge_over(prior_fields, govt: dict) -> dict:
 
 
 def _lane_module(family: str):
-    """The rules-lane reader module for a university family (`offer_parse.family_of`): 'ums', 'uitm' or 'uum'
-    (OCR-13); None for any other family. Each module gives LANE, ``ink_targets`` and its reader."""
+    """The rules-lane reader module for a university family (`offer_parse.family_of`): 'ums', 'uitm', 'uum' or
+    'um' (OCR-13); None for any other family. Each module gives LANE, ``ink_targets`` and its reader."""
     if family == 'ums':
         from . import offer_parse_university as mod
         return mod
@@ -95,11 +95,14 @@ def _lane_module(family: str):
     if family == 'uum':
         from . import offer_parse_uum as mod
         return mod
+    if family == 'um':
+        from . import offer_parse_um as mod
+        return mod
     return None
 
 
 def _rules_family(text) -> str:
-    """The university rules family `offer_parse.diagnose` reads ``text`` as ('ums', 'uitm', 'uum'), else ''."""
+    """The university rules family `offer_parse.diagnose` reads ``text`` as ('ums', 'uitm', 'uum', 'um'), else ''."""
     from .offer_parse import family_of
     fam = family_of(text)
     return fam if _lane_module(fam) is not None else ''
@@ -109,13 +112,13 @@ def _note_ums_refusal(why, text, reason: str) -> None:
     """Fill ``why`` (the caller's dict, or None) with a rules read's refusal (review round 2): the lane and
     ``read_<reason>`` ('read_no_layout', 'read_not_an_offer', 'read_empty:programme', ...), the same shape as
     `rules_lane_verdict`'s ``rules_fallback``. A letter with the UMS title (as before), or one `family_of` reads
-    as UiTM or UUM (OCR-13); a letter no rules lane exists for records nothing."""
+    as UiTM, UUM or UM (OCR-13); a letter no rules lane exists for records nothing."""
     from .offer_parse_university import LANE, is_ums
     if not isinstance(why, dict):
         return
     if is_ums((text or '').upper()):
         why.update(lane=LANE, reason=f'read_{reason}')
-    elif _rules_family(text) in ('uitm', 'uum'):
+    elif _rules_family(text) in ('uitm', 'uum', 'um'):
         why.update(lane=_lane_module(_rules_family(text)).LANE, reason=f'read_{reason}')
 
 
@@ -258,10 +261,11 @@ def _not_inked(ex, image, layout, lane) -> list:
     rendered page 1; [] when every one does. A lane with no `ink_targets` reader, or any fault, refuses."""
     try:                                         # each lane's own `ink_targets` (OCR-13)
         from .pdf_ink import ink_missing, page1_ink
-        mod = next((m for m in map(_lane_module, ('ums', 'uitm', 'uum')) if m.LANE == lane), None)
+        mod = next((m for m in map(_lane_module, ('ums', 'uitm', 'uum', 'um')) if m.LANE == lane), None)
         if mod is None:
             return ['no_targets']
-        targets = getattr(mod, 'ink_targets', None) or mod.uum_ink_targets   # UUM: its own name (one-home rule)
+        targets = (getattr(mod, 'ink_targets', None) or getattr(mod, 'uum_ink_targets', None)
+                   or mod.um_ink_targets)       # UUM, UM: their own names (one-home rule)
         phrases, values = targets(ex.get('fields'), layout)
         return ink_missing(page1_ink(image), phrases, values, lane=lane)   # a Type3 font: `TYPE3_LANES`
     except Exception:  # fail closed: the AI reads the letter, as it always could
