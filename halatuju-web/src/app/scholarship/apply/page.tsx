@@ -33,7 +33,7 @@ import {
   OTHER_SCHOLARSHIP_OPTIONS,
   type ApplyFormState,
 } from '@/lib/scholarship'
-import { applyPlanPatch } from '@/lib/planPicker'
+import { applyPlanPatch } from '@/lib/applyPlanPatch'
 import { sameLettersAsCard } from '@/lib/cardName'
 import { applyCard } from '@/lib/applyCopy'
 import { useApplyGate, applyPageExit } from '@/lib/useApplyGate'   // the SERVER's verdict; no web rule
