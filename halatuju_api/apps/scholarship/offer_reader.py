@@ -121,8 +121,10 @@ lane is off, or the catalogue match is not unique. Prompt and schema unchanged.
 
 2.12.0 - OCR-14 PHASE 1, TEN MORE UNIVERSITIES' OWNER WORDS (2026-11-26). The owner's words for UKM, UMK, UMPSA,
 UniMAP, UNIMAS, UniSZA, UPM, USM, UTeM and UTHM (offer_parse 2.5.0; measured, UTeM needs no Asasi excuse).
-No reader dispatches to these lanes yet, so every such letter still comes to this reader. UNIMAS and UTHM print no
-IC (owner, 26 Nov: "Same as UUM"): a blank IC there shows "Not printed". Prompt and schema unchanged.
+UNIMAS and UTHM print no IC (owner, 26 Nov: "Same as UUM"): a blank IC there shows "Not printed". Phase 2 adds
+the UNIMAS rules reader (`offer_parse_unimas`, lane 'ua:UNIMAS', off by default; current layout degree letters
+only); this reader stays the fallback whenever it refuses or the lane is off. The other nine lanes still come here.
+Prompt and schema unchanged.
 
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in

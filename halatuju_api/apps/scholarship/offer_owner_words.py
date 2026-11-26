@@ -94,8 +94,8 @@ OWNER_WORDS = {
         'Tawaran ini adalah MUKTAMAD',
         'Jabatan Perkhidmatan Akademik',
     ),
-    # OCR-14 (owner, 20 Nov; memory halatuju_owner_words). The lanes stay OFF: no layout reader dispatches to
-    # them yet (OCR-14 phase 2 on). Universities with no owner words stay AI.
+    # OCR-14 (owner, 20 Nov; memory halatuju_owner_words). The lanes stay OFF. Only UNIMAS has a layout reader
+    # (`offer_parse_unimas`, phase 2); the rest get theirs from phase 3 on. Universities with no owner words stay AI.
     'ua:UKM': (            # Universiti Kebangsaan Malaysia. 4 as printed (owner yes, 20 Nov).
         'PUSAT PENGURUSAN AKADEMIK', 'Rujukan', 'TAWARAN KEMASUKAN',
         'Dengan sukacitanya saya bagi pihak Universiti Kebangsaan Malaysia', 'NO. KAD PENGENALAN',

@@ -31,7 +31,7 @@
   },
   "2.12.0": {
     "digest": "f2412f9820a4bc3934d919645da73d555140f6d818eb1d1e5c7319cdd2099fea",
-    "note": "2026-11-26: OCR-14 phase 1: owner words for ten more universities (offer_parse 2.5.0); no rules reader dispatches to them yet, so their letters still come to this reader. UNIMAS and UTHM print no IC (owner 26 Nov, 'Same as UUM'): a blank IC there shows not printed. The listed files digest is unchanged (version line and docstring only); prompt and schema unchanged.",
+    "note": "2026-11-26: OCR-14 phase 1: owner words for ten more universities (offer_parse 2.5.0). Phase 2 (same day, in place): the UNIMAS rules lane ('ua:UNIMAS', off by default) reads a current-layout UNIMAS degree letter first; this reader stays the fallback, and the other nine lanes still come here. UNIMAS and UTHM print no IC (owner 26 Nov, 'Same as UUM'): a blank IC there shows not printed. The listed files digest is unchanged (version line and docstring only); prompt and schema unchanged.",
     "also_ok": []
   }
 }

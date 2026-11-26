@@ -348,6 +348,7 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # Phase 5 (same day, same unreleased version): 'upsi', `diagnose_upsi` (`offer_parse_upsi`), a lock with no IC.
 # 2.5.0 (OCR-14 phase 1, 2026-11-26) — owner words for ten more lanes (UTeM measured: no Asasi excuse), and
 # UNIMAS / UTHM in `offer_exact.ISSUER_PRINTS_NO_IC`. No reader dispatches to them yet: every letter reads as before.
+# Phase 2 (same day, same unreleased version): 'unimas', `diagnose_unimas` (`offer_parse_unimas`), a lock with no IC.
 PARSER_VERSION = '2.5.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
@@ -479,16 +480,18 @@ def _rules_exit(out: dict, shown: str) -> dict:
 def family_of(text: str) -> str:
     """The family `diagnose` reads ``text`` as: a government family ('stpm', 'matriculation', 'polytechnic'),
     else 'ums' for the UMS offer title, else 'uitm' for a UiTM offer, else 'uum' for a UUM admissions letter, else
-    'um' for a UM admissions letter, else 'upsi' for a UPSI one (OCR-13), else ''. ONE helper for `diagnose` and `offer_exact._ums_family`
-    (S1c), so the lane switch and the parser never disagree on which letter is a UMS letter."""
+    'um' for a UM admissions letter, else 'upsi' for a UPSI one (OCR-13), else 'unimas' for a UNIMAS one
+    (OCR-14), else ''. ONE helper for `diagnose` and `offer_exact._ums_family` (S1c), so the lane switch and the
+    parser never disagree on which letter is a UMS letter."""
     from .offer_parse_uitm import is_uitm
-    from .offer_parse_university import is_ums
     from .offer_parse_um import is_um
+    from .offer_parse_unimas import is_unimas
+    from .offer_parse_university import is_ums
     from .offer_parse_upsi import is_upsi
     from .offer_parse_uum import is_uum
     up = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or '')).upper()
     return _detect(up) or ('ums' if is_ums(up) else 'uitm' if is_uitm(up) else 'uum' if is_uum(up)
-                           else 'um' if is_um(up) else 'upsi' if is_upsi(up) else '')
+                           else 'um' if is_um(up) else 'upsi' if is_upsi(up) else 'unimas' if is_unimas(up) else '')
 
 
 def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_texts=None) -> dict:
@@ -511,10 +514,10 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
         return _rules_exit(_diagnose_ums(out, text, page1_text, layout, page_texts),
                            layout if layout.strip() else text)
-    if fam in ('uitm', 'uum', 'um', 'upsi'):     # OCR-13: their branches live in `offer_parse_lanes`
-        from .offer_parse_lanes import diagnose_uitm, diagnose_um, diagnose_upsi, diagnose_uum
+    if fam in ('uitm', 'uum', 'um', 'upsi', 'unimas'):     # OCR-13/14: their branches live in `offer_parse_lanes`
+        from . import offer_parse_lanes as lanes
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
-        branch = {'uitm': diagnose_uitm, 'uum': diagnose_uum, 'um': diagnose_um, 'upsi': diagnose_upsi}[fam]
+        branch = getattr(lanes, f'diagnose_{fam}')
         return _rules_exit(branch(out, text, page1_text, layout, page_texts), layout if layout.strip() else text)
     if not fam:
         return out
