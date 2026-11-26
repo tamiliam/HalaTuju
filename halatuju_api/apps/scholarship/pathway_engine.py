@@ -79,21 +79,57 @@ def _nric_close(a: str, b: str, max_edits: int = 2) -> bool:
     return prev[-1] <= max_edits
 
 
-def _ic_status(candidate_nric: str, profile_nric: str, extracted: bool) -> str:
-    """'match' / 'mismatch' / 'unreadable' / 'pending'.
+def _ic_status(candidate_nric: str, profile_nric: str, extracted: bool, not_printed: bool = False) -> str:
+    """'match' / 'mismatch' / 'unreadable' / 'not_printed' / 'pending'.
 
     Identity is ANCHORED on the IC (read reliably + matched to the profile in the IC path); the
     offer-letter NRIC is only soft corroboration. So an exact match OR an OCR-close near-match
     (``_nric_close`` — a dropped/garbled digit) is 'match'; only a GROSS difference is 'mismatch'
     (a genuinely different person). This prevents a flaky offer-NRIC OCR from raising a false
-    wrong-person flag while still catching a real one."""
+    wrong-person flag while still catching a real one.
+
+    OCR-13 (owner, 26 Nov): ``not_printed`` (`offer_ic_not_printed`) — the letter's issuer prints no IC
+    by design — turns a read letter's blank IC into 'not_printed' (grey "Not printed"), never 'match'.
+    Every consumer treats it exactly as 'unreadable'; no verdict, band or block moves."""
     if not candidate_nric:
-        return 'unreadable' if extracted else 'pending'
+        if not extracted:
+            return 'pending'
+        return 'not_printed' if not_printed else 'unreadable'
     if not profile_nric:
         return 'pending'
     if nric_match(candidate_nric, profile_nric) or _nric_close(candidate_nric, profile_nric):
         return 'match'
     return 'mismatch'
+
+
+#: OCR-13: the letter's institution line, folded (`_norm_fold_upper_alnum`), -> the rules lane of an issuer
+#: that prints NO IC (`offer_exact.ISSUER_PRINTS_NO_IC`). EXACT names only: the full name, the acronym, or
+#: both ("... SULTAN IDRIS (UPSI)"). A near name, a campus tail or a hostel line never resolves (-> 'unreadable').
+_NO_IC_ISSUER_NAMES = {name: lane for full, acr, lane in (
+    ('UNIVERSITI UTARA MALAYSIA', 'UUM', 'ua:UUM'),
+    ('UNIVERSITI PENDIDIKAN SULTAN IDRIS', 'UPSI', 'ua:UPSI')) for name in (full, acr, f'{full} {acr}')}
+
+
+def no_ic_issuer_lane(institution) -> str:
+    """The `ISSUER_PRINTS_NO_IC` lane an offer's institution line names exactly, or ''."""
+    from .genuineness.results_doc import _norm_fold_upper_alnum
+    from .offer_exact import ISSUER_PRINTS_NO_IC
+    lane = _NO_IC_ISSUER_NAMES.get(_norm_fold_upper_alnum(str(institution or '')).strip(), '')
+    return lane if lane in ISSUER_PRINTS_NO_IC else ''
+
+
+def offer_ic_not_printed(vision_fields) -> bool:
+    """True when the offer's issuer prints no IC by design (OCR-13): a rules lock that says so
+    (`offer_exact.exact_read`'s ``nric_not_printed``), or a read whose own institution line names a
+    `ISSUER_PRINTS_NO_IC` university exactly (`no_ic_issuer_lane`). Pure; reads stored fields only."""
+    from .offer_exact import ISSUER_PRINTS_NO_IC
+    vf = vision_fields if isinstance(vision_fields, dict) else {}
+    inputs = vf.get('offer_reader_inputs') if isinstance(vf.get('offer_reader_inputs'), dict) else {}
+    if inputs.get('reader') == 'deterministic' and inputs.get('nric_not_printed') is True \
+            and inputs.get('rules_lane') in ISSUER_PRINTS_NO_IC:
+        return True
+    f = vf.get('fields') if isinstance(vf.get('fields'), dict) else {}
+    return bool(no_ic_issuer_lane(f.get('institution')))
 
 
 # ── Reporting-date BONUS (owner 2026-07-08) — a positive per-issuer fingerprint ──────────
@@ -350,7 +386,7 @@ def student_offer_check(doc) -> dict:
 
     return {
         'name': _name_status(cn, pname, extracted),
-        'ic': _ic_status(cnric, pnric, extracted),
+        'ic': _ic_status(cnric, pnric, extracted, not_printed=offer_ic_not_printed(vf)),   # OCR-13
         'candidate_name': cn,
         'candidate_nric': cnric,
         'programme': programme,

@@ -52,6 +52,11 @@
   "2026-11-25.7": {
     "digest": "1be99b990d36b3cfc3d793368452b89b9bcd2a0b477b736af9a34a09c48f2135",
     "note": "Request #85 (2026-11-24), landed on the 21:00 train after TD-718: salary_doc 1.3.0 reads a payslip with >=2 statutory deductions and no wage label as genuine/private (it was not_salary), so the earner's income proof counts and the salary route's facts move for the same documents (owner 2026-11-14: a fact that moves bumps this version). The verdict engine's own files are unchanged, hence the same digest as 2026-11-25.6. On the laptop branch this was numbered 2026-11-24.1, which TD-718 already used; re-set at landing.",
-    "also_ok": []
+    "also_ok": [
+      {
+        "digest": "8643fb0116165b378e2f6e02f89d409d212700019704d9a7c14bc010d03909d7",
+        "note": "OCR-13 (2026-11-26): pathway_engine._ic_status now says 'not_printed' instead of 'unreadable' for a blank IC on a UUM / UPSI letter (offer_exact.ISSUER_PRINTS_NO_IC). verdict_pathway reads 'not_printed' exactly as 'unreadable' in its one IC rule, and every other reader keys on 'mismatch' only, so no verdict, ladder step, award or eligibility answer changes (parity test: test_offer_ic_not_printed.py)."
+      }
+    ]
   }
 }

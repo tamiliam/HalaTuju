@@ -114,6 +114,35 @@ Branch ocr-13-unis, not pushed. Migration: none. Services: api. The lane `ua:UPS
   read as UPSI). diploma/, asasi/, confirmation/ and fail/ lock 0 (no UPSI letter among them).
 - Debt: TD-NEW-ocr13-upsi-heldout. Tests: `test_offer_parse_upsi.py`.
 
+### feat: OCR-13 - a new offer IC status 'not_printed' for UUM and UPSI; verdicts unchanged (2026-11-26)
+
+Branch ocr-13-unis, not pushed. Migration: none. Services: api (the web needs one label before this is published; see
+below).
+- **What:** the offer letter's IC check (`pathway_engine.student_offer_check` -> `ic`) now says `not_printed` when the IC is
+  blank and the letter comes from an issuer that prints no IC by design: `offer_exact.ISSUER_PRINTS_NO_IC`, UUM and UPSI
+  only (owner, 26 Nov). Chip standard: grey "Not printed". Every other issuer with a blank IC keeps `unreadable`.
+- **How the issuer is read (strict):** a rules lock that stored the IC blank by design (`offer_reader_inputs`: reader
+  `deterministic` and `nric_not_printed` true), or the letter's institution, folded (upper case, accents and punctuation
+  off), equal to one of six exact names: the full name, the acronym, or both (`pathway_engine.no_ic_issuer_lane`). Near
+  names, campus tails and other universities do not resolve. A lane counts only while it is in `ISSUER_PRINTS_NO_IC`.
+- **Verdicts unchanged:** `not_printed` is never a match. `verdict_pathway` reads it exactly as `unreadable` in its one IC
+  rule; every other reader (ladder red chips, help text, red keys, resolution, offer link and sync, backfills) keys on
+  `mismatch` only. verdict_engine 2026-11-25.7 gets an `also_ok` digest (no answer changes); no new version.
+- **Stored or computed:** `pathway_check` is computed when the document is served (`serializers/documents.py`), so old
+  rows show the new word at once; nothing is backfilled.
+- **Web (read only, not changed):** the officer chip (`offerFacts.ts`) maps `not_printed` to grey (`unknown`), and
+  `documentPill` drops it, as the chip standard asks (a UUM / UPSI letter whose only amber chip was the blank IC can now
+  show "verified"). The student checklist (`checklistsPathway.tsx`) has no `status.not_printed` label yet:
+  TD-NEW-ocr13-not-printed-label, to land with or before the publish.
+- **Dry run (local, free, 287 stored reads + 1,270 fresh reads in the corpus):** 63 moved `unreadable` to `not_printed`
+  (UPSI 40, UUM 23); 0 other IC moves; 0 changes in the five decision readers (verdict_pathway, ladder red chips, help
+  text, resolution, person-red keys).
+- **Chip-standard Sprint 0 parity baseline:** take the baseline with this change in. On UUM / UPSI letters the IC chip is
+  grey "Not printed" (it was amber) and the document pill may change, but no verdict, ladder step, award or eligibility
+  answer does.
+- Tests: `test_offer_ic_not_printed.py` (statuses, resolver negatives, verdict parity, a guard that any IC reader comparing
+  with `unreadable` also names `not_printed`); `test_offer_parse_uum.py` (a real UUM lock reads `not_printed`).
+
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
 

@@ -244,7 +244,9 @@ class NoIcLockTest(SimpleTestCase):
                                     page1_layout=lay, page_texts=[p1])
         doc = SimpleNamespace(vision_fields={**ex, 'student_verdict': 'ok'}, doc_type='offer_letter',
                               application=SimpleNamespace(profile=SimpleNamespace(nric='990101-14-5678', name=NAME)))
-        self.assertNotEqual(student_offer_check(doc)['ic'], 'match')
+        self.assertEqual(student_offer_check(doc)['ic'], 'not_printed')   # OCR-13: grey, never 'match'
+        doc.vision_fields['fields']['institution'] = ''                  # the lock flag alone carries it
+        self.assertEqual(student_offer_check(doc)['ic'], 'not_printed')
 
 
 class UumWiringTest(SimpleTestCase):
