@@ -327,6 +327,8 @@ The three lines, word for word:
 
 **Not part of the report:** a note for the release lead. After TD-719 (degree living cost cut from RM1,200 to RM900 a month), a replay run that compares a tree from before TD-719 with a tree after it shows the monthly and total estimate of every case estimated as a degree as unexplained. This is expected. It stays so until a TD-719 ruling is added to the replay rulings; the release lead owns that ruling. It does not change the lens score or the coach grade: they do not read the funding estimate.
 
+**Read with care (criteria Sprint 2):** from the criteria tree switch, a fresh scoring on intake 5 (bpb-deg-dip-2026) refuses an SPM-only student whom the old columns gate passed (owner ruling of 25 Nov: the CGPA trap is switched off). A run that compares results from before the switch with results after it shows those students' shortlist verdict and reason as changed. This is expected. Decisions already stored are not changed: `rescore_pending_decisions` holds them and lists their ids.
+
 ## When a result blocks the next release
 
 **With no key there is no exam-1 score, and the exit code is still 0; read the block, not the exit code.** The block says "not run: key_blank" if an exam-1 file exists (or a freeze run has enough candidate cases). Otherwise it says "not run: exam_missing" or "the exam is not frozen yet".

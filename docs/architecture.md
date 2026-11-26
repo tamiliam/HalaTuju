@@ -101,6 +101,10 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
 - **Gift** (`scholarship_programmes`, code + aliases) owns intake years, the apply copy, the agreement
   template, payment runs and spending. **Intake year** (`scholarship_cohorts`) holds the academic
   thresholds and the "born in" state rule (`allowed_birth_states`), and has four states, one final.
+  From criteria Sprint 2 the gate reads its `criteria` (JSON, nullable): the rules as one tree
+  (`apps/scholarship/criteria.py`; results, merit, income and born-in sections, the course-start
+  flag). NULL means "read from the requirement columns" (`criteria.tree_of`). The columns stay; the old
+  admin form rebuilds the tree from them on every save.
 - **Roles** (`PartnerAdmin.role`): super, org_admin, admin, reviewer, qc, finance, partner. Sponsors
   are a separate identity. Fences: `_AdminBase` (`_org_scoped` / `_org_allows`), the gift narrowing
   (`?programme=`), assignment for reviewers. Full matrix: `docs/scholarship/role-matrix.md`; review:

@@ -9882,6 +9882,18 @@ student completes the Matriculation / Asasi / Diploma form, but `pre_u_studied_a
 Form 6 school as where Matriculation was completed until the student changes it on the apply form. **Fix:** clear
 or re-ask `pre_u_studied_at` when the completed tertiary kind changes. *(A - S)*
 
+### [TD-771] Criteria Sprint 2: income headroom counts "exactly at the line" as B40, the gate does not - low (owner question)
+
+**Raised in criteria Sprint 2 (see CHANGELOG).** `income_engine/amounts.income_headroom` treats gross equal to the ceiling as B40 (`breach_room < 0` is over), while the gate's per-person test is "under" (`<`). Only a household exactly on the line differs, and only on the officer's verdict, never the shortlist. **Fix:** owner rules which side "at the line" falls; align both and add a boundary test. *(A - S)*
+
+### [TD-772] Criteria Sprint 2: other readers still read the requirement columns, not the stored tree - medium
+
+**Raised in criteria Sprint 2 (see CHANGELOG).** The gate reads the tree; `results_route.gift_asks_higher`, `income_headroom`, `verdict_income_salary`, `verdict_context` INTAKE_FIELDS, the pool, `eval/replay/vocab_engine`, `birth_state`, `gifts`, `intake_years`' serialiser, `org_config` and the seed still read the columns. Safe while the old form is the only editor and rebuilds the tree on save; a column written any other way (a shell, a seed) leaves the gate on the old tree. The silent model defaults (4 / 5 / 2.9 / 1584) are also still on the columns. **Fix:** criteria Sprint 3 (accessors on the tree; defaults removed without changing rows; model registry and version bump). Must land before the editor can store a tree the columns cannot say. *(A - M)*
+
+### [TD-773] Criteria Sprint 2: /apply Step 3 does not say that a post-SPM holder is judged on the CGPA only - low
+
+**Raised in criteria Sprint 2 (see CHANGELOG).** Under ruling B a post-SPM holder on intakes 3 and 4 is never passed by their SPM grades, but the apply form does not say so. **Fix:** a hint on Step 3, after a Stitch mock-up and the owner's approval. *(A - S)*
+
 ### [TD-767] Pre-U sprint: the polytechnic list is empty - low
 
 **Raised in the pre-U sprint (see CHANGELOG).** `halatuju-web/src/data/polytechnics.ts` has no entries; no list of
