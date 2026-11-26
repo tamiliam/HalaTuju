@@ -25,8 +25,10 @@ VISION_TEXT = 'MAJLIS PEPERIKSAAN MALAYSIA SIJIL TINGGI PERSEKOLAHAN MALAYSIA TA
 
 
 def _show(text, mode=0, prefix=b''):
-    """One text object showing ``text`` in render mode ``mode``."""
-    return prefix + b'BT /F1 12 Tf ' + str(mode).encode() + b' Tr 20 150 Td (' + text.encode() + b') Tj ET'
+    """One text object showing ``text`` in render mode ``mode``, squeezed (Tz) to sit on the 300 pt page: text
+    past the page box hides the page (TD-740)."""
+    squeeze = b'%d Tz ' % max(1, min(100, 2800 // max(1, len(text))))
+    return prefix + b'BT /F1 12 Tf ' + squeeze + str(mode).encode() + b' Tr 20 150 Td (' + text.encode() + b') Tj ET'
 
 
 def _stream(dict_head, data):
@@ -120,7 +122,7 @@ class TheDetectionRule(SimpleTestCase):
         self.assertEqual(pdf_pages.pdf_text_layer(_pdf([_show(STPM_TEXT, mode=7)])), '')
 
     def test_a_mode_set_inside_q_is_restored_by_Q(self):
-        pdf = _pdf([b'q BT 3 Tr ET Q ' + b'BT /F1 12 Tf 20 150 Td (' + SPM_TEXT.encode() + b') Tj ET'])
+        pdf = _pdf([b'q BT 3 Tr ET Q ' + b'BT /F1 12 Tf 20 Tz 20 150 Td (' + SPM_TEXT.encode() + b') Tj ET'])
         self.assertIn('SIJIL PELAJARAN', pdf_pages.pdf_text_layer(pdf))
 
     def test_a_mode_left_set_after_ET_still_hides_the_next_text(self):
@@ -414,10 +416,11 @@ class TheOtherLayerReaders(SimpleTestCase):
         self.assertTrue(layered(DRAWN))
 
     def test_spm_cert_reader_never_reads_a_hidden_page_1s_own_characters(self):
-        # No pre_words (e.g. the Vision read failed): pdfium's text page would hold the invisible text.
+        # No pre_words (e.g. the Vision read failed): pdfium's text page holds the invisible text, but since
+        # OCR-20 review round 1 the words op runs the paint check on its own page and refuses it (two locks).
         from apps.scholarship import spm_cert_parse
         real = spm_cert_parse._pdf_words
-        self.assertTrue(real(HIDDEN))          # the premise: pdfium does see the hidden characters
+        self.assertEqual(real(HIDDEN), [])
         with patch.object(spm_cert_parse, '_pdf_words', wraps=real) as spy:
             self.assertIsNone(spm_cert_parse.parse_spm_cert('', None, HIDDEN))
             self.assertIsNone(spm_cert_parse.parse_spm_cert('', None, HIDDEN_FIRST))
@@ -458,4 +461,4 @@ class TheOtherLayerReaders(SimpleTestCase):
         self.assertLessEqual(len(pdf_pages._LAYER_MEMO), pdf_pages._LAYER_MEMO_SIZE)
 
     def test_model_version(self):
-        self.assertEqual(MODEL_VERSION, '1.35.0')   # S-visible took 1.31.0; OCR-11 (empty read) 1.32.0 to 1.35.0
+        self.assertEqual(MODEL_VERSION, '1.36.0')   # S-visible took 1.31.0; OCR-11 (empty read) 1.32.0 to 1.35.0; TD-701 1.36.0

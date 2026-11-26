@@ -195,6 +195,7 @@ class TheSameAnswersAsInProcess(SimpleTestCase):
                 page = doc[i]
                 scale = pdf_pages.raster_scale(page.get_width(), page.get_height())
                 out.append(pdfium_worker._png(page.render(scale=scale).to_pil()))
+            pdfium_worker._DATA[0] = pdf              # as the child sets it (OCR-20 r2: the words op reads /OC flags)
             words = pdfium_worker._op_words(doc, {}, [])['words']
             return out, len(doc), words
         finally:

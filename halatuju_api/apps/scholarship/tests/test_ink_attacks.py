@@ -104,8 +104,10 @@ def _rotated(data, degrees):
     return out.getvalue()
 
 
-ATTACKS = ('white', 'grey', 'alpha', 'covered', 'image', 'clip', 'tiny', 'offpage', 'cropbox', 'samecolour',
-           'fullimage', 'undertext', 'squeeze')
+ATTACKS = ('white', 'grey', 'alpha', 'covered', 'image', 'clip', 'tiny', 'samecolour', 'fullimage', 'undertext',
+           'squeeze')
+#: TD-740: text past the page box pdfium draws hides the page's text layer before any lane runs.
+OFF_THE_PAGE = ('offpage', 'cropbox')
 
 
 def _read(data):
@@ -135,6 +137,15 @@ class TheLaneOn(SimpleTestCase):
                 self.assertTrue(why['ink_missing'])
                 self.assertTrue(all(lab.startswith(('p', 'v:', 'page:')) for lab in why['ink_missing']))
 
+    def test_text_off_the_drawn_page_never_reaches_the_lock(self):
+        """TD-740: a line below the MediaBox or outside the CropBox is not drawn by pdfium, so the page has no text
+        layer at all (before TD-740 the lane's ink check caught it as 'not_inked')."""
+        for mode in OFF_THE_PAGE:
+            with self.subTest(mode=mode):
+                data = build(mode)
+                self.assertEqual(pdf_pages.pdf_text_layer(data), '')
+                self.assertIsNone(_read(data)[0])
+
     def test_text_inside_a_form_never_reaches_the_lock(self):
         """A line drawn inside a form XObject, white or black: S-visible 1 already refuses the text layer (the
         letter is no text-layer read), so neither locks and the ink check is not needed."""
@@ -151,9 +162,12 @@ class TheLaneOn(SimpleTestCase):
                     self.assertEqual(why.get('reason'), 'not_inked')
 
     def test_a_note_annotation_refuses_the_page(self):
-        ex, why = _read(build('note'))
-        self.assertIsNone(ex)
-        self.assertEqual(why['ink_missing'], ['page:annots'])
+        """OCR-20: the note hides the page's text layer before any lane runs; the ink check still flags it."""
+        data = build('note')
+        self.assertEqual(pdf_pages.pdf_text_layer(data), '')
+        self.assertIsNone(_read(data)[0])
+        from apps.scholarship import pdf_ink
+        self.assertIs(pdf_ink.page1_ink(data)['annots_ok'], False)
 
     def test_no_answer_from_the_child_is_no_lock(self):
         real = pdfium_run.ask
@@ -218,8 +232,8 @@ def _r1_line(c, mode, ln, y, strip):
 def _r1_over(c, mode, y, strip):
     if mode == 'squares':                            # a row of 60 pt black squares, text glyphs, over the line
         c.setFont('ZapfDingbats', 60)
-        for k in range(14):
-            c.drawString(24 + 42 * k, y - 15, 'n')
+        for k in range(14):                          # TD-740: all on the page (the row used to end 20 pt past
+            c.drawString(20 + 40 * k, y - 15, 'n')   # the right edge, which the layer gate now refuses first)
     elif mode == 'hyphens':                          # stroked hyphens, 16 pt wide, over the line
         t = c.beginText(26, y + 9)
         t.setFont('Courier', 9)
@@ -328,16 +342,22 @@ class TheReviewRound1Attacks(SimpleTestCase):
                     self.assertIn(label, why.get('ink_missing') or [], why)
 
     def test_a_link_drawing_its_own_appearance(self):
-        self._refused(build_r1('linkap'), 'p9')        # pdfium draws the white box: no ink under it
-
-    def test_optional_content_and_xfa(self):
-        for mode, label in (('ocimage', 'page:optional'), ('xfa', 'page:xfa')):
-            with self.subTest(mode=mode):
-                self._refused(build_r1(mode), label)
-        data = build_r1('ocmark')                   # S-visible 1 may refuse it first; the child flags it too
+        """pdfium draws the link's white box. OCR-20: a /Link with /AP hides the text layer before the lane; the
+        ink check flags the annotation too."""
+        data = build_r1('linkap')
+        self.assertEqual(pdf_pages.pdf_text_layer(data), '')
         self.assertIsNone(_read(data)[0])
         from apps.scholarship import pdf_ink
-        self.assertIs(pdf_ink.page1_ink(data)['optional'], True)
+        self.assertIs(pdf_ink.page1_ink(data)['annots_ok'], False)
+
+    def test_optional_content_and_xfa(self):
+        from apps.scholarship import pdf_ink
+        self._refused(build_r1('xfa'), 'page:xfa')
+        for mode in ('ocimage', 'ocmark'):     # OCR-20 r2: pdfium's paint check refuses an /OC image before the lane;
+            data = build_r1(mode)              # S-visible 1 may refuse ocmark first; the child flags both too
+            with self.subTest(mode=mode):
+                self.assertIsNone(_read(data)[0])
+                self.assertIs(pdf_ink.page1_ink(data)['optional'], True)
 
 
 def _with_type3(data, glyph: bytes, shown=b'BT /T3 9 Tf 30 30 Td (a) Tj ET'):
@@ -404,11 +424,12 @@ class TheReviewRound2Attacks(SimpleTestCase):
         for glyph in (b'1 0 0 0 1 1 d1 0 0 1 1 re f 0 70 60 1.5 re f',             # boxes far from the glyph
                       b'1 0 d0 0 0 1 1 re f',                                       # d0: may not paint at all
                       b'0 0 1 1 re f'):                                             # no d0 / d1 first
-            with self.subTest(glyph=glyph):
-                ex, why = _read(_with_type3(build('none'), glyph))
-                self.assertIsNone(ex)
-                self.assertEqual((why.get('lane'), why.get('reason')), (LANE, 'not_inked'), why)
-                self.assertIn('page:type3', why['ink_missing'])
+            with self.subTest(glyph=glyph):     # TD-740 r1: a shown glyph leaving its box hides the text layer
+                data = _with_type3(build('none'), glyph)   # before the lane (`pdfium_type3.shown_ok`); the
+                self.assertEqual(pdf_pages.pdf_text_layer(data), '')    # ink child still flags it
+                self.assertIsNone(_read(data)[0])
+                from apps.scholarship import pdf_ink
+                self.assertIs(pdf_ink.page1_ink(data)['type3_ok'], False)
 
     def test_every_operator_outside_the_list_is_refused(self):
         """A matrix, shading, XObject, inline image or stroke in a glyph: S-visible 1's own Type3 whitelist refuses
@@ -435,7 +456,7 @@ class TheReviewRound2Attacks(SimpleTestCase):
         inside = b'1 0 0 0 1 1 d1 0 0 %.3f %.3f re f' % (1 + tol / 2, 1 + tol / 2)
         outside = b'1 0 0 0 1 1 d1 0 0 %.3f 1 re f' % (1 + 2 * tol)
         self.assertEqual(_read(_with_type3(build('none'), inside))[1], {})
-        self.assertIn('page:type3', _read(_with_type3(build('none'), outside))[1]['ink_missing'])
+        self.assertEqual(pdf_pages.pdf_text_layer(_with_type3(build('none'), outside)), '')   # TD-740 r1
 
 
 def build_t3tol(iso=False):

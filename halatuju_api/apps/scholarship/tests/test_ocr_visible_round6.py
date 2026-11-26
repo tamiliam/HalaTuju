@@ -166,7 +166,9 @@ class WhatPdfiumLoadsWithAPage(SimpleTestCase):
         # the corpus's shapes: a small Type3 font, an ICC profile, an axial shading of exponential functions,
         # a soft mask, a huge image (pdfium decodes it only to paint: not charged)
         kept = {
-            'type3': _type3(4, 40, GLYPH),
+            # TD-740 r2: a glyph of real size (GLYPH's 10-unit triangle is under pdfium_type3.INK_MIN_SHARE, so
+            # it no longer counts as ink; this test is about what pdfium loads, not about ink)
+            'type3': _type3(4, 40, b'500 0 0 0 500 700 d1 0 0 500 700 re f'),
             'icc': _with(b'/ColorSpace << /CS0 6 0 R >>', b'/CS0 cs 0.5 0.5 0.5 sc 0 0 9 9 re f', {
                 6: b'[/ICCBased 7 0 R]', 7: _flate(b'<< /N 3', b'\x00' * 3_144)}),
             'shading': _with(b'/Shading << /Sh0 6 0 R >>', b'q /Sh0 sh Q', {
@@ -201,13 +203,14 @@ class TheStringLength(SimpleTestCase):
         # spaced, so no run of 1,024 bare bytes (a cap of its own) is what refuses them
         for show in (b'(' + b'A ' * 16_384 + b') Tj', b'<' + b'41 ' * 32_768 + b'> Tj'):
             with self.subTest(show=show[:3]):
-                self.assertFalse(_reads(_doc(b'BT /F1 12 Tf 20 150 Td ' + show + b' ET ' + TEXT, filtered=True)))
+                self.assertFalse(_reads(_doc(b'BT /F1 12 Tf 0.01 Tz 20 150 Td ' + show + b' ET ' + TEXT, filtered=True)))
 
     def test_a_string_under_the_cap_keeps_the_layer(self):
-        # the cap is on the RAW string (never shorter than its decoded bytes): 32,000 bytes pass
+        # the cap is on the RAW string (never shorter than its decoded bytes): 32,000 bytes pass (squeezed by Tz
+        # onto the page: text past the page box hides it, TD-740)
         for show in (b'(' + b'A ' * 16_000 + b') Tj', b'<' + b'41 ' * 10_000 + b'> Tj'):
             with self.subTest(show=show[:3]):
-                self.assertTrue(_reads(_doc(b'BT /F1 12 Tf 20 150 Td ' + show + b' ET ' + TEXT, filtered=True)))
+                self.assertTrue(_reads(_doc(b'BT /F1 12 Tf 0.01 Tz 20 150 Td ' + show + b' ET ' + TEXT, filtered=True)))
 
 
 class PdfiumOnlyInTheChild(SimpleTestCase):

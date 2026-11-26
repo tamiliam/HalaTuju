@@ -30,7 +30,8 @@ def _make_text_pdf(text='HELLO GRED A'):
         b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] "
         b"/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
     ]
-    stream = b"BT /F1 24 Tf 36 100 Td (" + text.encode() + b") Tj ET"
+    squeeze = b"%d Tz " % max(1, min(100, 1250 // max(1, len(text))))     # on the 300 pt page (TD-740)
+    stream = b"BT /F1 24 Tf " + squeeze + b"36 100 Td (" + text.encode() + b") Tj ET"
     objs.append(b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream")
     objs.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
     out = b"%PDF-1.4\n"

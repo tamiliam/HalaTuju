@@ -19,6 +19,9 @@ from collections import OrderedDict
 from typing import NamedTuple, Optional
 
 from . import pdf_pdfium_check, pdf_render_check, pdfium_run, pdfium_worker
+from .pdf_content_bytes import INLINE_IMAGE as _INLINE_IMAGE, content_bytes_check, unknown_operator
+from .pdf_annots import MAX_DOC_ANNOTS, annots_hide
+from .pdf_dict_keys import content_meter
 from .pdf_layer_guards import (_MAX_DOC_FONT_COST, GateReader, OverBudget as _OverBudget, _doc_may_switch_off,
                                bad_operands, charge_fonts, longest_literal, oc_hides, page_tree_check, raw_state_check,
                                shown_chars)
@@ -140,6 +143,7 @@ def _scale_args() -> list:
 # /Contents and from every XObject a `Do` names that is not an /Image (resources inherited up /Parent), out of
 # the string operands of Tj, ', " and TJ. Annotations, Type3 CharProcs, ActualText, patterns: never extracted.
 # Fix round 4 (`pdf_layer_guards`): exact operand counts, every font's maps charged, optional content judged.
+# OCR-20 (`pdf_annots`): annotations are DRAWN over the page, so a page listing any but a /Link with no /AP is hidden.
 #: Text render modes that paint: 0-2 and 4-6. 3 (invisible), 7 (clip only) and any other value hide the text.
 _DRAWN_MODES = frozenset((0, 1, 2, 4, 5, 6))
 _SHOW_OPS = frozenset((b'Tj', b'TJ', b"'", b'"'))
@@ -169,7 +173,6 @@ _MAX_STREAM_TOKENS = 400_000
 #: Characters handed to text-showing operators per document (pypdf decodes each). Real max: 7,373.
 _MAX_DOC_SHOWN_CHARS = 200_000
 _TOKEN_BOUNDARIES = bytes((0, 9, 10, 12, 13, 32)) + b'()<>[]{}/%'
-_INLINE_IMAGE = re.compile(rb'(?<![^\s\x00)\]>}])BI(?![^\s\x00/])')
 #: One string or ``<...>`` longer than this (raw, so never under its decoded length) is refused unparsed: pdfium
 #: keeps only a string's first 32,767 bytes (fix round 6), and pypdf parses a huge one in worse than linear time.
 #: Real max: 1,893 bytes. A bare token (name, number, operator) is quadratic in pypdf 5.9: 1,024 bytes. Real: 692.
@@ -190,7 +193,8 @@ class _Budget:
 
     def __init__(self):
         self.left = {'operations': _MAX_DOC_OPS, 'bytes': _MAX_DOC_BYTES, 'tokens': _MAX_DOC_TOKENS,
-                     'shown characters': _MAX_DOC_SHOWN_CHARS, 'font maps': _MAX_DOC_FONT_COST}
+                     'shown characters': _MAX_DOC_SHOWN_CHARS, 'font maps': _MAX_DOC_FONT_COST,
+                     'annotations': MAX_DOC_ANNOTS}
 
     def spend(self, what: str, n: int) -> None:
         self.left[what] -= n
@@ -215,8 +219,12 @@ def _parsed_ops(content, reader, cache: dict, budget: _Budget):
             raise _OverBudget('a content stream past the token limit')
         if _LONG_BARE.search(data) or _LONG_ANGLED.search(data) or longest_literal(data) > _MAX_TOKEN_BYTES:
             raise _OverBudget('a token past the size limit of one PDF')
+        content_bytes_check(content, data)    # OCR-20 r3: bytes pypdf and pdfium tokenise differently: raises
         raw_state_check(data, len(_INLINE_IMAGE.findall(data)))      # fix round 5: raises (hidden), unparsed
-        hit[3] = stream.operations
+        with content_meter(reader):       # OCR-20 r2: its dictionaries, arrays and names checked as read
+            hit[3] = stream.operations
+        if unknown_operator(hit[3]):      # OCR-20 r3: a word that is no PDF operator (`pdf_content_bytes`)
+            raise ValueError('an unknown operator')
         cache[id(content)] = hit
     else:
         _charge(budget, hit[2])
@@ -303,10 +311,12 @@ DRAWN, HIDDEN, OVER_BUDGET = 'drawn', 'hidden', 'over_budget'
 
 def _page_visibility(page, reader, budget: _Budget, cache: dict) -> str:
     """`DRAWN` when every character on the page is painted (or there is no text at all); `HIDDEN` when it
-    places ANY hidden text (render mode not 0-2 / 4-6, or text in a non-Form XObject) or that cannot be
-    decided; `OVER_BUDGET` when one of the document's budgets runs out on it (the whole PDF is then never
-    text-extracted)."""
+    places ANY hidden text (render mode not 0-2 / 4-6, or text in a non-Form XObject), lists an annotation
+    that may paint over it (`annots_hide`, OCR-20), or that cannot be decided; `OVER_BUDGET` when one of the
+    document's budgets runs out on it (the whole PDF is then never text-extracted)."""
     try:
+        if annots_hide(page, budget):
+            return HIDDEN
         contents = page.get('/Contents')
         contents = contents.get_object() if contents is not None else None
         if _is_null(contents):
@@ -398,13 +408,16 @@ def _layer_read(data: bytes, per_page: int = 0, opened: Optional[list] = None) -
         texts = tuple((reader.pages[i].extract_text() or '') if v == DRAWN else '' for i, v in zip(pages, seen))
     except Exception as e:  # noqa: BLE001 — a corrupt PDF has no text layer; logged, the caller falls back to OCR
         logger.warning('PDF text-layer extraction failed: %s', e)
-        return _LayerRead(n, visible, seen, None)
+        return _LayerRead(n, visible and not reader._counted.refused, seen, None)
     try:
         oc_off = _doc_may_switch_off(reader)
     except Exception:  # an unreadable optional-content dictionary may switch anything off
         oc_off = True
     flipped = pdf_pdfium_check.hidden_pages(data, n, {i: t for i, t, v in zip(pages, texts, seen) if v == DRAWN},
                                             oc_off, reader)
+    if reader._counted.refused:           # OCR-20 r1: refused by the gate's meter (a pypdf path may have swallowed it)
+        logger.warning('PDF text layer refused: %s', reader._counted.refused)
+        return _LayerRead(n, False, seen, ('',) * len(seen))
     if flipped:
         logger.warning('PDF text that pdfium does not paint: %d page(s)', len(flipped))
         seen = tuple(HIDDEN if i in flipped else v for i, v in zip(pages, seen))
@@ -450,8 +463,9 @@ def _layer_memo_clear() -> None:
 
 def first_page_drawn(data: bytes) -> bool:
     """True only when the PDF's text is usable at all (`_LayerRead.visible`: page 1 drawn, the walk within
-    budget) — exactly when `pdf_text_layer` may return text. The one case where a reader of page 1's own
-    characters (`spm_cert_parse._pdf_words`) sees what the page shows."""
+    budget, pdfium agreeing, the gate's meter never refused) — exactly when `pdf_text_layer` may return text. Then
+    a reader of page 1's own characters (`spm_cert_parse._pdf_words`) may read them; the ``words`` op checks the page
+    again on its own (`pdfium_worker._op_words`, OCR-20 r1)."""
     return _layer(data).visible
 
 

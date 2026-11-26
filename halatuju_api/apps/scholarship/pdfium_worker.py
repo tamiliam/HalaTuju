@@ -16,12 +16,13 @@ getting the safe answer. The module's top level imports only the standard
 library: the web process imports it for `raster_scale` alone.
 """
 import ctypes
+import functools
 import io
 import json
 import sys
 
 try:                                           # imported as part of the app (the web process, the tests)
-    from . import pdfium_ink_own as _own, pdfium_type3 as _t3
+    from . import pdfium_ink_own as _own, pdfium_place as _pl, pdfium_type3 as _t3
 except ImportError:                            # run as a script by `python -I`: load the siblings by path
     import importlib.util
     import os
@@ -32,8 +33,11 @@ except ImportError:                            # run as a script by `python -I`:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
-    _t3, _own = _sibling('pdfium_type3'), _sibling('pdfium_ink_own')
+    _t3, _own, _pl = _sibling('pdfium_type3'), _sibling('pdfium_ink_own'), _sibling('pdfium_place')
 T3_TOLERANCE, T3_MAX_BYTES, _type3_ok = _t3.T3_TOLERANCE, _t3.T3_MAX_BYTES, _t3.type3_ok
+# TD-740: where pdfium places each text object (`pdfium_place`)
+EDGE_PT, _IDENTITY, _page_box, _bounds, _matrix = _pl.EDGE_PT, _pl.IDENTITY, _pl.page_box, _pl.bounds, _pl.matrix
+_times, _through, _outside = _pl.times, _pl.through, _pl.outside
 
 #: Text render modes that paint (as ``pdf_pages._DRAWN_MODES``).
 DRAWN_MODES = frozenset((0, 1, 2, 4, 5, 6))
@@ -57,15 +61,36 @@ class _OverObjects(Exception):
     pass
 
 
-def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list, plain: frozenset) -> bool:
+def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list, plain: frozenset,
+            blank: bool = False, words: bool = False) -> bool:
     """True when every text object pdfium places on the page paints, outside optional content, and (when pypdf
-    found letters or digits there) pdfium places at least one text object."""
+    found letters or digits there) pdfium places at least one text object. OCR-20: and every annotation pdfium
+    lists on the page is a /Link with no /AP (`_plain_link`; each charged one object). Review round 1: ``blank``
+    (pypdf's text of the page is blank): pdfium must place NO text object at all. Review round 2: and no XObject
+    the page draws carries /OC (`pdfium_type3.page_flags`, as `_op_ink`): an OC mark is not all optional content.
+    Review round 3 part 2 (``words``, the SPM words op): and no text or form object under a mark carrying
+    /ActualText (`_own_text`). TD-740: and every text object lies on the page box pdfium draws (`_outside`); review
+    round 1: a Type3 box is its glyphs' d1 boxes, so every Type3 glyph shown keeps its ink inside its box and
+    paints, unless pypdf reads it as blank (`pdfium_type3.shown_ok`)."""
     import pypdfium2.raw as raw
     page = pdf[index]
     try:
-        texts, todo = 0, [(page.raw, False, False)]          # (page or form object, is a form, under an OC mark)
+        annots = raw.FPDFPage_GetAnnotCount(page.raw)
+        budget[0] -= max(annots, 0)
+        if budget[0] < 0:
+            raise _OverObjects('past the pdfium page-object cap')
+        if annots < 0 or not all(_plain_link(page.raw, k) for k in range(annots)):
+            return False
+        oc_xobject, _xfa, _t3_ok, t3_any = _t3.page_flags(_DATA[0], index)   # OCR-20 r2: an XObject with /OC
+        sheet = functools.partial(_pl.render_gray, type(pdf))               # TD-740 r2: glyph ink
+        chars = functools.partial(_pl.sheet_text, raw, type(pdf))          # TD-740 r3: pdfium reads blank codes
+        if oc_xobject or (t3_any and not _t3.shown_ok(_DATA[0], index, sheet, chars)):   # TD-740 r1: Type3 boxes
+            return False
+        area = _page_box(raw, page.raw)                            # TD-740: where pdfium draws the page
+        # (page or form object, is a form, under an OC mark, the holder's space to page space)
+        texts, todo = 0, [(page.raw, False, False, _IDENTITY)]
         while todo:
-            holder, is_form, under_oc = todo.pop()
+            holder, is_form, under_oc, to_page = todo.pop()
             count = raw.FPDFFormObj_CountObjects(holder) if is_form else raw.FPDFPage_CountObjects(holder)
             if count < 0:
                 raise ValueError('pdfium cannot count the objects')
@@ -79,14 +104,30 @@ def _paints(pdf, index: int, has_alnum: bool, oc_may_be_off: bool, budget: list,
                 kind = raw.FPDFPageObj_GetType(obj)
                 if kind == raw.FPDF_PAGEOBJ_TEXT:
                     texts += 1
-                    if (under_oc or _oc_marked(obj, oc_may_be_off, plain)
-                            or raw.FPDFTextObj_GetTextRenderMode(obj) not in DRAWN_MODES):
+                    if (blank or under_oc or _oc_marked(obj, oc_may_be_off, plain)
+                            or raw.FPDFTextObj_GetTextRenderMode(obj) not in DRAWN_MODES or (words and _own_text(obj))
+                            or _outside(_through(_bounds(raw, obj), to_page), area)):
                         return False
                 elif kind == raw.FPDF_PAGEOBJ_FORM:
-                    todo.append((obj, True, under_oc or _oc_marked(obj, oc_may_be_off, plain)))
+                    if words and _own_text(obj):
+                        return False
+                    todo.append((obj, True, under_oc or _oc_marked(obj, oc_may_be_off, plain),
+                                 _times(_matrix(raw, obj), to_page)))
         return texts > 0 or not has_alnum
     finally:
         page.close()
+
+
+def _plain_link(page, k: int) -> bool:
+    """True when the page's annotation ``k`` is a /Link with no /AP: the one kind that paints nothing (OCR-20)."""
+    import pypdfium2.raw as raw
+    annot = raw.FPDFPage_GetAnnot(page, k)
+    try:
+        return (bool(annot) and raw.FPDFAnnot_GetSubtype(annot) == raw.FPDF_ANNOT_LINK
+                and not raw.FPDFAnnot_HasKey(annot, b'AP'))
+    finally:
+        if annot:
+            raw.FPDFPage_CloseAnnot(annot)
 
 
 def _oc_marked(obj, oc_may_be_off: bool, plain: frozenset) -> bool:
@@ -106,6 +147,20 @@ def _oc_marked(obj, oc_may_be_off: bool, plain: frozenset) -> bool:
     return False
 
 
+def _own_text(obj) -> bool:
+    """True when a mark on the object (a BDC property list, inline or a /Properties resource) holds /ActualText,
+    or a mark pdfium cannot read in full: pdfium's text page then gives that text, not the glyphs drawn (probes
+    p4a, p4b: drawn 'D', words 'A+'). OCR-20 review round 3 part 2."""
+    import pypdfium2.raw as raw
+    for m in range(raw.FPDFPageObj_CountMarks(obj)):
+        mark = raw.FPDFPageObj_GetMark(obj, m)
+        count = raw.FPDFPageObjMark_CountParams(mark) if mark else -1
+        if count < 0 or any(_mark_text(raw.FPDFPageObjMark_GetParamKey, mark, k) in (None, 'ActualText')
+                            for k in range(count)):
+            return True
+    return False
+
+
 def _mark_text(call, mark, *index):
     """A mark's name or parameter key; None when pdfium cannot give it whole."""
     buf, size = ctypes.create_string_buffer(64), ctypes.c_ulong()
@@ -118,13 +173,13 @@ def _mark_text(call, mark, *index):
 
 def _op_paints(pdf, req, blobs):
     """{hidden: [page index, ...]}: every judged page pdfium does not paint in full, or cannot judge."""
-    pages = [(int(i), bool(a)) for i, a in req['pages']]
+    pages = [(int(p[0]), bool(p[1]), len(p) > 2 and bool(p[2])) for p in req['pages']]   # [index, has_alnum, blank]
     if len(pdf) != req['count']:
-        return {'hidden': [i for i, _ in pages]}
+        return {'hidden': [p[0] for p in pages]}
     budget, hidden, plain = [int(req['max_objects'])], [], frozenset(req['plain'])
-    for i, has_alnum in pages:
+    for i, has_alnum, blank in pages:
         try:
-            if not _paints(pdf, i, has_alnum, bool(req['oc_off']), budget, plain):
+            if not _paints(pdf, i, has_alnum, bool(req['oc_off']), budget, plain, blank):
                 hidden.append(i)
         except MemoryError:  # the whole child stops (`OUT_OF_MEMORY`): every judged page is then hidden
             raise
@@ -270,8 +325,26 @@ def _op_stack(pdf, req, blobs):
     return {'png': len(blobs) - 1}
 
 
+#: Page objects the ``words`` op walks on page 1 (forms included) before it reads a word (as `_op_paints`' cap).
+WORDS_MAX_OBJECTS = 20_000
+
+
 def _op_words(pdf, req, blobs):
-    """{words: [...]}: page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points)."""
+    """{words: [...]}: page 1 of a digital PDF as word boxes in the Vision shape (top-left origin, points).
+    OCR-20 review round 1, its own backstop: NO words (``refused``) unless page 1 passes `_paints` strictly — every
+    annotation a /Link with no /AP, every text object (forms' too) in a mode that paints (never 3 / 7) and under no
+    optional-content mark at all (any OC mark may be off) and no XObject with /OC (review round 2), within
+    `WORDS_MAX_OBJECTS`; and no text under /ActualText (`_own_text`, review round 3 part 2); and no text object off
+    the page box (`_outside`, TD-740: pdfium's text page lists a word placed off the page too). The whole page is
+    refused, not its hidden characters dropped: pdfium's text page (pypdfium2 4.30) does not say which object drew a character."""
+    try:
+        drawn = len(pdf) > 0 and _paints(pdf, 0, True, True, [WORDS_MAX_OBJECTS], frozenset(), words=True)
+    except MemoryError:
+        raise
+    except Exception:            # a page pdfium cannot judge gives no words
+        drawn = False
+    if not drawn:
+        return {'words': [], 'refused': True}
     page = pdf[0]
     height, tp = page.get_height(), page.get_textpage()
     out, cur = [], []
@@ -333,7 +406,7 @@ def _op_ink(pdf, req, blobs):
     can explain is taken off (review round 2b, the ring attack; a space: its own box, as is), ``area_px`` the
     box's pixels, ``inside`` the box within the rendered page, ``cover_h`` / ``cover_w`` the share of the box's
     height / width its ink's bounding box spans (review round 1, B2: a strip left uncovered). ``modes_ok``: every text object
-    fills (`INK_MODES`); ``annots_ok``: every annotation is a /Link; ``stray_px``: ink pixels more than
+    fills (`INK_MODES`); ``annots_ok``: every annotation is a /Link with no /AP; ``stray_px``: ink pixels more than
     `STRAY_PAD` from every character's box; ``optional``: page content in optional content (an OC mark, or an
     XObject with /OC: a viewer may show what pdfium hides, or hide what it shows); ``xfa``: an XFA form;
     ``type3_ok``: every Type3 glyph page 1 can draw paints only inside its own box (`_type3_ok`, review round 2);
@@ -423,14 +496,7 @@ def _ink(pdf, req):
     if not _own.own_ink(delta, seen, chars, width, height, int(req['delta']), turned):
         return {'error': 'cells'}
     stray =ImageChops.subtract(mask, near).histogram()[255]
-    annots_ok = True
-    for k in range(raw.FPDFPage_GetAnnotCount(page.raw)):
-        annot = raw.FPDFPage_GetAnnot(page.raw, k)
-        try:
-            annots_ok = annots_ok and bool(annot) and raw.FPDFAnnot_GetSubtype(annot) == raw.FPDF_ANNOT_LINK
-        finally:
-            if annot:
-                raw.FPDFPage_CloseAnnot(annot)
+    annots_ok = all(_plain_link(page.raw, k) for k in range(raw.FPDFPage_GetAnnotCount(page.raw)))   # OCR-20: no /AP
     oc_xobject, xfa, type3_ok, type3 = _t3.page_flags(_DATA[0], int(req['page']))
     return {'chars': chars, 'modes_ok': modes_ok, 'annots_ok': annots_ok, 'stray_px': stray,
             'optional': bool(optional or oc_xobject), 'xfa': xfa, 'type3_ok': bool(type3_ok), 'type3': bool(type3),
@@ -509,7 +575,7 @@ def _main() -> int:
     from PIL import Image
     Image.preinit()                        # Pillow's PNG writer loaded before the memory cap is set
     import pypdfium2 as pdfium
-    if any(op.get('op') in ('layout', 'ink') for op in request['ops']):
+    if any(op.get('op') in ('layout', 'ink', 'paints', 'words') for op in request['ops']):   # OCR-20 r2: page_flags
         import pypdf  # noqa: F401  (loaded before the memory cap, like Pillow)
         _DATA[0] = data
     _limit_memory(int(request.get('memory') or 0))
