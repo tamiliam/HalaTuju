@@ -62,7 +62,7 @@
         "note": "Merge of reviewed changes, 26 Nov 2026 batch (no rule change of its own): OCR-13 (the 22f7c66f entry above: pathway_engine, verdict_pathway and the offer_exact.ISSUER_PRINTS_NO_IC pin, not_printed read exactly as unreadable) plus the academic reads pins TD-733/TD-734 (higher_results._college_read, display only: the college the document prints, an issuer blanked) and TD-735 with its review nits (higher_results exam_year_read and stored_transcript_year, display only: a Matriculation / Asasi / Diploma transcript year beside the read for the merit bracket). TD-741 (one-off re-read, slip school and transcript year backfill) touches no file of this digest. The only changed files of this digest against the live base are pathway_engine.py, verdict_pathway.py and higher_results.py, each byte-identical to its reviewed commit's version apart from base drift. No verdict fact, ladder, blocker, ask or payment reads a higher document's exam_year or institution, so no verdict changes."
       },
       {
-        "digest": "ae2152c76d3f90d06e88aab32b6d2f6ab5742d851ff9d460de9f62581781f0a0",
+        "digest": "0a9f1bb6c7fe6ec23739509cb3676caab123b51d0fc820722f00f5266a41b517",
         "note": "OCR-14 phase 1 (2026-11-26, owner 26 Nov: UNIMAS and UTHM 'Same as UUM'): ua:UNIMAS and ua:UTHM join offer_exact.ISSUER_PRINTS_NO_IC and pathway_engine._NO_IC_ISSUER_NAMES, so a blank IC on their letters says 'not_printed' instead of 'unreadable'. As in OCR-13, verdict_pathway reads 'not_printed' exactly as 'unreadable' and every other reader keys on 'mismatch' only: no verdict, ladder step, award or eligibility answer changes (test_offer_ic_not_printed.py)."
       }
     ]

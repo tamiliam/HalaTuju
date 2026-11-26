@@ -261,7 +261,7 @@ dispatches to them yet, so every letter reads as before.
 - **not_printed proof (method of 06aa047b7):** old set vs new set over every stored read (287) and fresh / replay /
   s5_exact read (1275) in the corpus: 73 reads move unreadable -> not_printed (9 stored, 64 fresh), nothing else moves,
   0 changes in offer_pathway_fact, the ladder's pathway chips, the help verdict, red_keys or person_red. 0 verdict
-  changes. TD-NEW-ocr13-not-printed-label now covers UNIMAS and UTHM too.
+  changes. The OCR-13 not-printed label (landed with OCR-13) now covers UNIMAS and UTHM too.
 - **Measured (local, free):** owner sample folders, text letters that show every phrase: UKM 14/20, UMK 4/4, UMPSA 2/3,
   UniMAP 1/1 (plus one diploma), UNIMAS 3/4, UniSZA 3/3, UPM 0 (no text letters), USM 7/7, UTeM 9/9 (2 diplomas, refused
   by Asasi), UTHM 17/17. Corpus held-out / all: UNIMAS 7/13, UTeM 1/5, UTHM 0/4, UKM, UMK, UMPSA, UniSZA, UPM 1/2,
