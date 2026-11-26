@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: false "Course switched" note when the same university is written two ways (2026-11-26)
+
+Branch fix-fake-switch, not pushed. Services: api.
+- `offer_pathway_switch` now judges the institution side by `institution_same.institutions_differ`: a university written in full on one letter and as an acronym (or English name, or with a campus tail) on the other is not a switch. Different universities, and different campuses of one university, still are.
+
 ### fix: QC "Facts in doubt" - the AI word matches the card, and the QC answers Pass or Fail (2026-11-26)
 
 Branch qc-fact-verdict, not pushed. Web only. No migration. No change under halatuju_api.

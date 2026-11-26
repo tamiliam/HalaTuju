@@ -1,5 +1,9 @@
 # Architectural Decisions — HalaTuju
 
+## 2026-11-26 — A switch note needs two different institutions, not two different spellings
+
+The reviewer's "Course switched" note compared the old and new offer with the bare token matcher, so "UNIVERSITI PENDIDIKAN SULTAN IDRIS" against "UPSI" (no shared word) read as a switch. The institution side now resolves each line to a public university (the 20 names in `_UA_NAMES` plus their acronyms and English names, in `institution_same.py`), else to one catalogue institution via `CampusReader`; a university named on either side is decided by identity, not by a shared place word. One side naming no campus is not a switch; two different campuses of one university is. A line neither route can place keeps the old token result. Display only; the programme compare is unchanged.
+
 ## 2026-11-25 — LL6: exam files live in one private Cloud Storage bucket, reached through a store child
 
 Branch ll6, not pushed. Built and reviewed 25 Nov 2026 (two adversarial rounds each for P1 and P2); NOT yet run against a real bucket, and the bucket does not exist yet. Reading guide: `docs/replay-human-lens.md`.

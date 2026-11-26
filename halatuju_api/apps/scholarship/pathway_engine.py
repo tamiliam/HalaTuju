@@ -217,8 +217,9 @@ def offer_pathway_switch(application):
     if prev is None:
         return None
     lc, pc = student_offer_check(live), student_offer_check(prev)
+    from .institution_same import institutions_differ   # the same university written two ways is no switch
     if _field_status(pc['programme'], lc['programme']) == 'clash' \
-            or _field_status(pc['institution'], lc['institution']) == 'clash':
+            or institutions_differ(pc['institution'], lc['institution']):
         return {'from_programme': pc['programme'], 'from_institution': pc['institution'],
                 'to_programme': lc['programme'], 'to_institution': lc['institution']}
     return None
