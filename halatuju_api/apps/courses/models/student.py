@@ -136,7 +136,7 @@ class StudentProfile(models.Model):
     # Asasi / Diploma — the past, never the destination above. Profile-only (like `school`): the
     # apply form writes it back through `profile_sync`; NOT a pathway field, so neither the two-way
     # pathway copy nor the pathway / verdict engines read it.
-    pre_u_studied_at = models.CharField(max_length=255, blank=True, default='')
+    pre_u_studied_at = models.CharField(max_length=255, blank=True, default='', db_default='')
     # Pre-U sprint, review round 2: when the switch to SPM cleared the held results. A tertiary
     # completion from a browser is then taken only if it was completed later (`results_switch`).
     held_results_cleared_at = models.DateTimeField(null=True, blank=True)

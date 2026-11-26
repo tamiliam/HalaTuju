@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### feat: pre-U sprint - Secondary School, where they completed pre-U, the STPM Angka Giliran, and the switch to SPM (2026-11-26)
 
 Branch preu-school, not pushed. Migration: 0102_angka_giliran_11_pre_u_studied_at (additive). Services: both.
+- **Migration safety:** `pre_u_studied_at` now has a database default (`db_default=''`, as courses 0084 / 0088) so the old server's profile inserts still work between the hand migration and the deploy; the hand SQL and ledger row are in the 0102 docstring; a test pins the default.
 - **Labels:** "School" is now "Secondary School" (ms "Sekolah Menengah", ta "இடைநிலைப் பள்ளி") on onboarding, apply
   and the profile; the apply tip reads "The secondary school where you sat for SPM."; "(optional)" is gone from the
   onboarding profile. The officer label was already "Secondary school" in all three locales (not renamed).

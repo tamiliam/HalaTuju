@@ -121,3 +121,14 @@ it('a server that still holds STPM results keeps the local copies', async () => 
   await waitFor(() => expect(localStorage.getItem(KEY_GRADES)).not.toBeNull())
   expect(localStorage.getItem(KEY_STPM_CGPA)).toBe('3.42')
 })
+
+it('an unparseable cleared-at stamp skips the drop, so no local data is lost', async () => {
+  localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
+  localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
+  localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A' }))
+  mockProfile = { ...SERVER_SWITCHED, held_results_cleared_at: 'not-a-date' }
+  render(<AuthProvider><div>app</div></AuthProvider>)
+  await waitFor(() => expect(localStorage.getItem(KEY_GRADES)).not.toBeNull())
+  expect(localStorage.getItem(KEY_RESULTS_EXAM_TYPE)).toBe('stpm')
+  expect(JSON.parse(localStorage.getItem(KEY_STPM_GRADES) as string)).toEqual({ PA: 'A' })
+})

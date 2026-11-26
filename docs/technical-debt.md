@@ -9851,10 +9851,22 @@ compares against). **Fix:** add the marker and refuse an older device's tertiary
 and third-route Continue buttons store when the form was completed, and both sync doors send it as
 `results_completed_at`. On a stamped profile the server drops a tertiary completion (with its exam, list and
 results) unless it was completed after the stamp, and the login hydrate drops the browser's older copies BEFORE
-the pending-move-up check. What remains is small: the completion time comes from the student's own clock, so a
-device whose clock runs behind by more than the time since the switch has its real move back dropped (they enter
-it again); and an STPM form started after the switch but not yet finished is cleared if the profile re-loads
-mid-form.
+the pending-move-up check. What remains is small: a device whose clock runs behind has its real move back dropped, and an old web release
+loses a write (both below).
+
+**Remainder: clock behind.** If a switched student's phone clock is behind by more than the time since the switch,
+a genuine move back to STPM is dropped by the server (`results_switch.py`, around line 121). `/onboarding/profile`
+reloads the profile after the sync (`page.tsx`, around line 227), so the login hydrate (`auth-context.tsx`, around
+lines 291-295) erases the STPM grades they just entered, with no message. Who: only switched students moving back
+with a badly wrong clock. Recovery: set the phone to automatic time and enter the results again. The data errs
+towards SPM, their last explicit choice; eligibility never runs on stale data.
+
+**Remainder: old web release.** A cached old tab sends no completion time, so on a switched profile its tertiary
+write is dropped. This is the safe direction: no corruption, and never-switched profiles are unchanged.
+
+**Clock-free fix idea.** On Continue, store the stamp this browser last saw and send it back; the server accepts the
+completion only if it matches the current stamp. Alternatively send the browser's "now" with each sync and correct
+the skew server-side.
 
 ### [TD-769] Pre-U sprint: a wrong "pre-U studied at" can be replaced but never blanked - low
 
