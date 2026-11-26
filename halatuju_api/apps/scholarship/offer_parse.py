@@ -356,6 +356,8 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # Phase 6 (same day, same unreleased version): 'usm', `diagnose_usm` (`offer_parse_usm`), its unlabelled IC
 # corroborate-only (source 'other').
 # Phase 7 (same day, same unreleased version): 'umk', `diagnose_umk` (`offer_parse_umk`), the IC guard as usual.
+# Phase 8 (same day, same unreleased version): 'unisza', `diagnose_unisza` (`offer_parse_unisza`), its unlabelled IC
+# corroborate-only (source 'other').
 PARSER_VERSION = '2.5.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
@@ -488,13 +490,14 @@ def family_of(text: str) -> str:
     """The family `diagnose` reads ``text`` as: a government family ('stpm', 'matriculation', 'polytechnic'),
     else 'ums' for the UMS offer title, else 'uitm' for a UiTM offer, else 'uum' for a UUM admissions letter, else
     'um' for a UM admissions letter, else 'upsi' for a UPSI one (OCR-13), else 'unimas' for a UNIMAS one,
-    else 'uthm' for a UTHM one, else 'ukm' for a UKM one, else 'utem' for a UTeM one, else 'usm' for a USM one, else 'umk' for a UMK one (OCR-14), else ''. ONE helper for `diagnose` and `offer_exact._ums_family` (S1c), so the lane switch and the
+    else 'uthm' for a UTHM one, else 'ukm' for a UKM one, else 'utem' for a UTeM one, else 'usm' for a USM one, else 'umk' for a UMK one, else 'unisza' for a UniSZA one (OCR-14), else ''. ONE helper for `diagnose` and `offer_exact._ums_family` (S1c), so the lane switch and the
     parser never disagree on which letter is a UMS letter."""
     from .offer_parse_uitm import is_uitm
     from .offer_parse_um import is_um
     from .offer_parse_unimas import is_unimas
     from .offer_parse_ukm import is_ukm
     from .offer_parse_umk import is_umk
+    from .offer_parse_unisza import is_unisza
     from .offer_parse_university import is_ums
     from .offer_parse_upsi import is_upsi
     from .offer_parse_uthm import is_uthm
@@ -505,7 +508,8 @@ def family_of(text: str) -> str:
     return _detect(up) or ('ums' if is_ums(up) else 'uitm' if is_uitm(up) else 'uum' if is_uum(up)
                            else 'um' if is_um(up) else 'upsi' if is_upsi(up) else 'unimas' if is_unimas(up)
                            else 'uthm' if is_uthm(up) else 'ukm' if is_ukm(up) else 'utem' if is_utem(up)
-                           else 'usm' if is_usm(up) else 'umk' if is_umk(up) else '')
+                           else 'usm' if is_usm(up) else 'umk' if is_umk(up)
+                           else 'unisza' if is_unisza(up) else '')
 
 
 def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_texts=None) -> dict:
@@ -528,7 +532,7 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
         return _rules_exit(_diagnose_ums(out, text, page1_text, layout, page_texts),
                            layout if layout.strip() else text)
-    if fam in ('uitm', 'uum', 'um', 'upsi', 'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk'):     # OCR-13/14: their branches live in `offer_parse_lanes`
+    if fam in ('uitm', 'uum', 'um', 'upsi', 'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk', 'unisza'):     # OCR-13/14: their branches live in `offer_parse_lanes`
         from . import offer_parse_lanes as lanes
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
         branch = getattr(lanes, f'diagnose_{fam}')

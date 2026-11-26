@@ -147,7 +147,7 @@ def page1_layout_of(eval_dir, key, route):
     page1 = page1_text_layer(data, 'application/pdf')
     if not page1.strip():
         return ''
-    lanes = ('uitm', 'uum', 'um', 'upsi', 'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk')
+    lanes = ('uitm', 'uum', 'um', 'upsi', 'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk', 'unisza')
     lane = offer_parse.family_of(pdf_text_layer(data)) in lanes   # as `offer_exact`: the whole text
     return pdf_page1_layout(data) if is_ums(page1.upper()) or lane else ''
 

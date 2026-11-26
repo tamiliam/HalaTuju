@@ -125,7 +125,8 @@ UNIMAS and UTHM print no IC (owner, 26 Nov: "Same as UUM"): a blank IC there sho
 the UNIMAS rules reader (`offer_parse_unimas`, lane 'ua:UNIMAS', off by default; current layout degree letters
 only); phase 3 the UTHM one (`offer_parse_uthm`, lane 'ua:UTHM'); phase 4 the UKM one (`offer_parse_ukm`, 'ua:UKM',
 IC read); phase 5 the UTeM one ('ua:UTeM'); phase 6 the USM one ('ua:USM'); phase 7 the UMK one ('ua:UMK', IC read);
-all off, degree letters only. This reader stays the fallback; the other four (UMPSA, UniMAP, UniSZA, UPM) come here.
+phase 8 the UniSZA one ('ua:UniSZA'); all off, degree letters only. This reader stays the fallback; the other three
+(UMPSA, UniMAP, UPM) come here.
 Prompt and schema unchanged.
 
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
