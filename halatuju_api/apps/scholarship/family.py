@@ -7,6 +7,7 @@ two legacy columns in sync as OUTPUTS (not inputs):
 
   - ``first_in_family``    → derived: True iff no sibling is in/through tertiary.
   - ``parents_occupation`` → derived: a human summary built from the roster.
+  - ``earner_tick_conflicts`` → #84: where an income-step "working" tick disagrees with it.
 
 Keeping the legacy columns populated means every downstream reader
 (``profile_engine``, ``anomaly_engine``, ``submission_review``) keeps working with
@@ -284,6 +285,64 @@ def earning_members(application):
         role, occ = member.get('role', ''), member.get('occupation', '')
         if role in ('guardian', 'brother', 'sister') and occ and occ not in NON_EARNING and role not in out:
             out.append(role)
+    return out
+
+
+#: The income wizard's five "who is working" members, in its own order.
+WORKING_MEMBER_ROLES = ('father', 'mother', 'guardian', 'brother', 'sister')
+
+
+def _roster_occupations(application, member):
+    """The occupation codes the family details hold for *member* — one for father/mother, every
+    matching entry of the pool for guardian/brother/sister. ``None`` when the details do not list
+    the member at all (father/mother: no name AND no occupation; others: no entry of that role)."""
+    if member in ('father', 'mother'):
+        name = (getattr(application, f'{member}_name', '') or '').strip()
+        occ = (getattr(application, f'{member}_occupation', '') or '').strip()
+        return [occ] if (name or occ) else None
+    found = [(m.get('occupation', '') or '').strip()
+             for m in (getattr(application, 'other_family_members', None) or [])
+             if isinstance(m, dict) and m.get('role') == member]
+    return found or None
+
+
+def earner_tick_conflicts(application):
+    """Request #84 (2026-11-25): THE ONE RULE for "a tick on the income step's who-is-working
+    question disagrees with the family details". For each of the five members, what a tick WOULD
+    disagree with: ``{'kind': 'not_working', 'occupation': <code>}`` when every listing of that
+    member carries a NON_EARNING occupation (unemployed, homemaker, retired, unable, deceased,
+    no_contact), or ``{'kind': 'not_listed'}`` when the details do not list them. A member who
+    agrees, or whose listing has no occupation (or 'other'), is absent — the details say nothing
+    against the tick. ``{}`` when no structured roster is filled in at all (nothing to compare).
+
+    A WARNING only: it never unticks, and what is owed (the blockers, the verdict) does not read
+    it. Pure; served to the student's income step (asked before a disagreeing tick is saved) and,
+    narrowed to the saved ticks by ``earner_tick_warnings``, to the officer's family card."""
+    if not has_structured_roster(application):
+        return {}
+    out = {}
+    for member in WORKING_MEMBER_ROLES:
+        occs = _roster_occupations(application, member)
+        if occs is None:
+            out[member] = {'kind': 'not_listed'}
+        elif all(o in NON_EARNING for o in occs):
+            out[member] = {'kind': 'not_working', 'occupation': occs[0]}
+    return out
+
+
+def earner_tick_warnings(application):
+    """The SAVED salary-route ticks that ``earner_tick_conflicts`` disagrees with, in the order
+    ticked: ``[{'member', 'kind'[, 'occupation']}]``. ``[]`` off the salary route (the STR route's
+    one earner is whose STR it is, which a non-working parent may well hold)."""
+    if getattr(application, 'income_route', '') != 'salary':
+        return []
+    conflicts = earner_tick_conflicts(application)
+    ticked = getattr(application, 'income_working_members', None) or []
+    out, seen = [], set()
+    for member in ticked if isinstance(ticked, list) else []:
+        if member in conflicts and member not in seen:
+            seen.add(member)
+            out.append({'member': member, **conflicts[member]})
     return out
 
 

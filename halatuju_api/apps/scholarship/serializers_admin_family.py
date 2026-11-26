@@ -24,6 +24,7 @@ and ``documents`` (the same rows the cockpit is sent), so it costs no query.
 anyone the page gate lets open the cockpit already sees the household income, the roster and the
 documents these values come from. Nothing here reaches a sponsor or finance serializer.
 """
+from .family import earner_tick_warnings
 from .vision import name_match
 
 
@@ -53,7 +54,8 @@ def guardian_ic_name_match(guardians, documents):
 
 
 class ServesTheFamilyAnswers:
-    """Adds ``income_declared``, ``income_nonearning`` and ``guardian_ic_name_match`` to the
+    """Adds ``income_declared``, ``income_nonearning``, ``guardian_ic_name_match`` and (#84)
+    ``earner_tick_warnings`` to the
     officer's detail payload, after every named field and just before the gift's ``programme``
     (``ServesTheGift`` sits outside this mixin, so ``programme`` stays the last key —
     ``test_gift_context`` pins both the extra keys and that order)."""
@@ -64,4 +66,7 @@ class ServesTheFamilyAnswers:
         data['income_nonearning'] = _plain_dict(getattr(instance, 'income_nonearning', None))
         data['guardian_ic_name_match'] = guardian_ic_name_match(
             data.get('guardians'), data.get('documents'))
+        # Request #84: the saved "working" ticks the family details disagree with, so the card
+        # warns instead of a plain "Earns" (one rule: ``family.earner_tick_conflicts``). Pure.
+        data['earner_tick_warnings'] = earner_tick_warnings(instance)
         return data

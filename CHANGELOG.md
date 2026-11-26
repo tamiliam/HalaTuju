@@ -7,6 +7,29 @@ All notable changes to this project will be documented in this file.
 ### fix: TD-701 - the white check pastes in greyscale (2026-11-26)
 - `income_declaration.approval_page_white`: a transparent page is pasted as an 'L' page with the alpha channel as mask, not four full-size RGBA copies (16 MP RGBA: peak about 192 MB over baseline down to 47 MB); HEIF is no longer opened. Verdicts unchanged. `results_doc` MODEL_VERSION 1.35.0 to 1.36.0 (registry entry added). Tests: `test_td701_white_memory.py`. TD-701 FIXED.
 
+### fix: sprint #84 - a working tick the family details disagree with (2026-11-25)
+
+Branch req84-earner-ticks, not pushed. Migration: none. Services: both. Brief:
+`docs/plans/2026-11-25-req84-earner-ticks-brief.md`; ruling in `docs/decisions.md` (25 Nov 2026, #84).
+- **One rule:** `family.earner_tick_conflicts` (per member: `not_working` with the roster's occupation, or `not_listed`);
+  `family.earner_tick_warnings` for the saved salary-route ticks. Served on the student payload
+  (`earner_tick_conflicts`) and the officer payload (`earner_tick_warnings`).
+- **Student:** the income step asks before saving a disagreeing tick (`EarnerTickCheck.tsx`) and keeps a note beside a
+  saved one. New strings `scholarship.docs.income.wizard.earnerCheck.*` and
+  `admin.scholarship.familyAnswers.tickDisagrees` / `tickNotListed`; Malay and Tamil are drafts for Sol's read.
+- **Officer:** the Family & finances card warns instead of a plain "Earns".
+- **Unchanged:** blockers and the verdict (pinned); no version bump. 31 of 167 open salary-route cases benefit.
+- **Review round 1:** the promise now holds after submission too: the Action Centre's income-route switch (the only
+  place a submitted student changes the ticks) asks the same question before holding a disagreeing tick
+  (`earner_tick_conflicts` passed page → `ActionCentre` → `IncomeRouteSwitch`). The question takes focus (confirm button;
+  labelled and described) and returns it to the toggle; it is dropped when the member stops disagreeing or the income
+  route changes. Open cases: the officer warning on all 31; the student sees the question or note only where they edit
+  ticks (income step before submission, the switch after), never a note on ticks already saved after submission. No new
+  strings. Tests: `IncomeRouteSwitch.earnerTicks.test.tsx` (new), `EarnerTickCheck.test.tsx` (+3).
+- **Review round 2:** the question opens on "No" (Enter twice never confirms unread) and Escape answers "No"; the
+  switch holds its Confirm while a question is open; on the income step only a tick that changes stops the roster sync
+  (a "No" does not). New `IncomeWizard.earnerTicks.test.tsx` mounts the real wizard; TD-NEW-earner-tick-followups logs the rest. No new strings.
+
 ### feat: sprint S4b - the Scholars switches on the Permissions tab, Resend served (2026-11-25)
 
 Branch access-s4-scholars, not pushed. Migration: none. Services: web. The server half is S4a (above).

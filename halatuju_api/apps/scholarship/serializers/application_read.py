@@ -37,6 +37,7 @@ class ApplicationReadSerializer(StudentMaintenanceFields, serializers.ModelSeria
     completeness = serializers.SerializerMethodField()
     requirements = serializers.SerializerMethodField()
     income_shown = serializers.SerializerMethodField()
+    earner_tick_conflicts = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     # The address decision/comms emails are actually sent to (resolved at submit).
     notify_email = serializers.EmailField(read_only=True)
@@ -95,7 +96,7 @@ class ApplicationReadSerializer(StudentMaintenanceFields, serializers.ModelSeria
             # ApplicationDetailsUpdateSerializer + save_application_details).
             'address', 'postal_code', 'city', 'preferred_state',
             'funding_need', 'completeness', 'requirements', 'notify_email', 'contact_phone',
-            'income_shown',
+            'income_shown', 'earner_tick_conflicts',
             'form_data', 'intake_snapshot',
         ]
 
@@ -116,6 +117,13 @@ class ApplicationReadSerializer(StudentMaintenanceFields, serializers.ModelSeria
         and the proof that an absent key is safe."""
         from ..income_shown import income_shown_map, student_income_members
         return income_shown_map(obj, student_income_members(obj))
+
+    def get_earner_tick_conflicts(self, obj):
+        """Request #84 — for each of the five "who is working" members, what a tick would disagree
+        with in the family details (``family.earner_tick_conflicts``, the one rule). The income
+        step looks a member up here before saving a tick; it never re-derives the rule. Pure."""
+        from ..family import earner_tick_conflicts
+        return earner_tick_conflicts(obj)
 
     def get_spm_a_count(self, obj):
         from ..shortlisting import count_spm_a_grades

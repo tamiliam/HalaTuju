@@ -43,6 +43,7 @@ import IncomeClusterCoach from '../IncomeClusterCoach'
 import MemberIncomeGroup from '../scholarship/MemberIncomeGroup'
 import { docKey, CollapsibleSection } from './cards'
 import { useFailedSaves, SaveFailedAlert, ANSWER_FIELDS } from './failedSaves'
+import { useEarnerTickCheck } from './EarnerTickCheck'
 
 // ── Income wizard (Check-1 item 3) ────────────────────────────────────────
 // A few questions → the dynamic document checklist (compulsory + optional), drift-test: halatuju-web/src/lib/__tests__/incomeWizardDrift.test.ts
@@ -330,11 +331,10 @@ export default function IncomeWizard({
   // Salary route — toggle a working household member in/out of the multi-select.
   const MEMBER_OPTIONS: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
   const members = ans.income_working_members
-  const toggleMember = (m: WorkingMember) => {
-    setTouchedMembers(true)   // #1: the student is now choosing — stop syncing from the roster
-    const next = members.includes(m) ? members.filter((x) => x !== m) : [...members, m]
-    save({ income_working_members: next })
-  }
+  // #84: a tick the family details disagree with is asked about before it is saved (EarnerTickCheck).
+  // #1: only a tick that actually changes (a direct save or "Yes") stops the roster sync; "No" does not.
+  const tickCheck = useEarnerTickCheck({ conflicts: app.earner_tick_conflicts, members, t, route: ans.income_route,
+    saveMembers: (next) => { setTouchedMembers(true); save({ income_working_members: next }) } })
 
   // STR-route checklist display order: income evidence first, then the earner IC,
   // then the relationship doc.
@@ -410,7 +410,7 @@ export default function IncomeWizard({
             {MEMBER_OPTIONS.map((m) => {
               const on = members.includes(m)
               return (
-                <button key={m} type="button" onClick={() => toggleMember(m)}
+                <button key={m} type="button" onClick={(e) => tickCheck.toggle(m, e.currentTarget)}
                   className={`min-h-11 text-sm px-4 py-2 rounded-full border transition-colors ${
                     on ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
                        : 'text-ground-600 border-ground-300 hover:border-primary-400'}`}>
@@ -419,6 +419,7 @@ export default function IncomeWizard({
               )
             })}
           </div>
+          {tickCheck.node}
         </Question>
       )}
 
