@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: criteria Sprint 3b - every reader reads the stored tree (TD-772), no silent default bars, a new year stores its tree (TD-774) (2026-11-26)
+
+Branch criteria-s3b, not pushed. Services: api, web. Migration: 0220_cohort_no_default_bars (state-only; sqlmigrate prints a no-op). Verdict engine 2026-11-26.5.
+- **Readers (TD-772):** new `criteria_read.column_values` reads the old column values out of the tree. Moved onto it: the admin intake rows (`views_admin.gifts._cohort_row`, which the `intake_years` serialiser reuses), the seed's threshold report, `courses/profile_claim` (both born-in readers via `birth_state.cohort_rule`). The sponsor pool's only reader (`sponsors._held_by_birth_state_rule`) already read the tree. `org_config` reads the tree through `criteria_read.asks_post_spm_results` (comment fixed). `eval/replay/vocab_engine` is a word list, not a reader. `shortlisting.evaluate_columns` stays on the columns (the replay yardstick).
+- **No silent bars:** `ScholarshipCohort` no longer defaults min_spm_a_count 4, min_spm_bplus_count 5, min_stpm_pngk 2.9, per_capita_ceiling 1584 (state-only migration; no row changes). The test factory, the eval fixtures and `bursary_e2e` state them (`criteria_new.FORMER_MODEL_DEFAULTS`); the seed states its settled bars.
+- **New year (decision 2026-11-26):** the admin year create and the seed store `from_legacy` of the values given at create time (`criteria_new.stamp_new`); a blank is no rule. The admin PATCH locks the row (`select_for_update`) inside a transaction.
+- **A refused stored tree fails one row, visibly:** the rejection chip shows "rules error" (en/ms/ta, web drift list updated); the IC lock is held with a reason; `rescore_pending_decisions` skips that intake whole (logged, listed under `refused_intakes`, printed by the command) and carries on.
+- **Income:** `income_headroom` reads the 'all' join (over when either line fails, graded on the stricter line) and bands a household size of 0 or below 'unknown'. The per-person-only refusal reason no longer says "> RMNone" (both gates, `shortlisting.income_above`). The officer line "is over this gift's income limit" now reads "is not under" (en/ms/ta).
+- **Tests:** new `test_criteria_readers.py` (live intakes 1/3/4/5 read the same NULL or stored through every reader; a stored tree wins over contradicting columns; refused-tree chip, hold and rescore; 'all' and size bands; the seed stores and reports its tree). `test_criteria_storage` create test now expects a stored tree.
+
 ### fix: criteria Sprint 3a - officer income band matches the gate (TD-771), stored trees checked on read (TD-774), flaky test times (TD-775) (2026-11-26)
 
 Branch criteria-s3a, not pushed. Services: api. No migration. Verdict engine 2026-11-26.3.
