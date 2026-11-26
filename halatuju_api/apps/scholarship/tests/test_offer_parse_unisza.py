@@ -3,9 +3,9 @@ brackets after the name on the "Nama :" row, so it is read from that one place a
 CORROBORATE-ONLY under the usual IC guard (`offer_exact.exact_read`; UniSZA is NOT in
 `offer_exact.ISSUER_PRINTS_NO_IC`), kept only when it is exactly the profile IC. Any other IC-like number refuses; the
 reference and its bracketed number are never stored; the reporting date is read only from its labelled row after the
-registration sentence, never guessed. NO note is excused (owner decision 26 Nov): the template's "berhak menarik
-balik tawaran" note refuses (``not_an_offer``), so the default synthetic letter here leaves it out. Synthetic letters
-only (made-up names, numbers and addresses)."""
+registration sentence, never guessed. ONE note is excused (owner, 27 Nov; OCR-14b-1): the template's exact "berhak
+menarik balik tawaran" note is taken out once before the withdrawal check; any other withdrawal wording still refuses
+(``not_an_offer``). Synthetic letters only (made-up names, numbers and addresses)."""
 import datetime
 from unittest import mock
 
@@ -41,7 +41,11 @@ FEES = ('Makluman Yuran Pengajian :',
 NOTES = ('2. Tawaran ini adalah MUKTAMAD dan tidak boleh dirayu.', '3. Sila bawa dokumen asal semasa pendaftaran.')
 FOOTER = ('Sekian, terima kasih.', 'Saya yang menjalankan amanah,', 'QARIM VELTO BIN DURAN', 'Pendaftar',
           'Universiti Sultan Zainal Abidin')
-#: The template's own note: "menarik balik" with its condition AFTER it. No excuse is made for it (owner, 26 Nov).
+#: The template's own note, word for word: excused once (owner, 27 Nov).
+NOTE = ('4. Adalah dimaklumkan bahawa Pengurusan Universiti berhak menarik balik tawaran kemasukan ini sekiranya '
+        'terdapat perkara-perkara yang tidak memenuhi syarat-syarat kelayakan yang telah ditetapkan oleh Senat '
+        'Universiti.')
+#: A near copy of that note (other wording): never excused.
 WITHDRAW_NOTE = ('4. Adalah dimaklumkan bahawa Pengurusan Universiti berhak menarik balik tawaran kemasukan ini '
                  'sekiranya terdapat perkara yang tidak memenuhi syarat kelayakan.')
 _DAYS = ('ISNIN', 'SELASA', 'RABU', 'KHAMIS', 'JUMAAT', 'SABTU', 'AHAD')
@@ -137,13 +141,23 @@ class UniszaLockTest(SimpleTestCase):
                 self.assertIsNotNone(run(lay)['locked'], why(run(lay)))
         self.assertEqual(run(layout(title=semester))['locked']['intake'], 'SEMESTER 1 SESI 2026/2027')
 
-    def test_the_templates_withdrawal_note_refuses_with_no_excuse(self):
-        """Owner decision 26 Nov: no new excuses. Every measured UniSZA letter prints this note, so every one goes to
-        the AI today, as before."""
-        d = run(layout(extra=(WITHDRAW_NOTE,)))
-        self.assertIsNone(d['locked'])
-        self.assertEqual(d['guard'], 'not_an_offer')
-        self.assertEqual(unisza_letter_refusal(plain(layout(extra=(WITHDRAW_NOTE,))), NRIC), 'not_an_offer')
+    def test_the_templates_exact_note_is_excused_once(self):
+        """Owner, 27 Nov: the one measured note is taken out once; the letter locks as without it."""
+        d = run(layout(extra=(NOTE,)))
+        self.assertIsNotNone(d['locked'], why(d))
+        self.assertEqual(unisza_letter_refusal(plain(layout(extra=(NOTE,))), NRIC), '')
+        wrapped = tuple(NOTE.replace(' sekiranya ', '|sekiranya   ', 1).split('|'))   # wrapped over two lines
+        self.assertIsNotNone(run(layout(extra=wrapped))['locked'])
+
+    def test_any_other_withdrawal_wording_still_refuses(self):
+        """The exact note plus a real withdrawal sentence refuses; so do a second copy and a near copy."""
+        for extra in ((NOTE, '5. Tawaran ini telah ditarik balik.'), (NOTE, NOTE), (WITHDRAW_NOTE,),
+                      (NOTE, '5. Tawaran ini dibatalkan.')):
+            with self.subTest(extra=len(extra)):
+                d = run(layout(extra=extra))
+                self.assertIsNone(d['locked'])
+                self.assertEqual(d['guard'], 'not_an_offer')
+                self.assertEqual(unisza_letter_refusal(plain(layout(extra=extra)), NRIC), 'not_an_offer')
 
     def test_reference_and_its_numbers_are_never_stored(self):
         lock = run()['locked']

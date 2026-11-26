@@ -37,6 +37,23 @@ Branch criteria-api, not pushed. Services: api. No migration. Verdict engine 202
 - **TD-774:** (2) a stored list, string or number is refused (`tree_of`, `_stored_tree_refused`), never read from the columns; (3) the IC-hold text says the intake needs a technical correction; (4) each intake row carries `rules_error_open` (open with refused rules) for a "close now" prompt.
 - **Tests:** new `test_criteria_api.py` (both routes, every bad class, the 409s, audit, 403/404, no-op for intakes 1/3/4/5 with every reader the same); `test_criteria_storage` rebuild test now stores a tree the columns can say, plus a 409 test.
 
+### feat: OCR-14b-1 - UMPSA rules lane (OFF), and the UniSZA withdrawal-note excuse (2026-11-27)
+
+Branch ocr-14b-unis, not pushed. Migration: none. Services: api. The new lane stays OFF (`OCR_FIRST_LANES` unchanged).
+- **UMPSA lane (`ua:UMPSA`, `offer_parse_umpsa`):** reads the 2026/27 Sarjana Muda page 1 (name and labelled IC,
+  programme, intake, offer date, reporting date "TARIKH PENDAFTARAN KOLEJ KEDIAMAN"). Refuses the 2024 layout, a
+  Diploma, any later page with text, a second IC, a stray date, a portal page and any change to the head, table or
+  subsidy block. Wired into `offer_parse.family_of`/`diagnose`, `offer_parse_lanes`, `offer_exact` (lane module, UMS
+  refusal family, ink check), `eval/offer_read_check.RULES_LANES`, `eval/offer_replay` and the owner-words comment.
+- **Two narrow UMPSA excuses, each one exact text taken out once:** the MAKLUMAT PENTING "Tawaran ini akan terbatal ..."
+  paragraph (owner decision 27 Nov, as UTeM/USM), and the page-1 print note "Nota: Sila cetak dan bawa Surat Tawaran
+  ini ..." from the portal tell. Any other cancel/withdraw wording, a second copy or another portal tell refuses.
+- **UniSZA (owner decision 27 Nov):** the template's one withdrawal note ("Adalah dimaklumkan bahawa Pengurusan
+  Universiti berhak menarik balik ...") is excused once; any other withdrawal wording still refuses.
+- **Versions:** offer_parse 2.6.0, offer_reader 2.13.0 (reader digest unchanged).
+- **Tests:** new `test_offer_parse_umpsa.py`; `test_offer_parse_unisza.py` (note excused once; note plus a real
+  withdrawal refuses); version strings in five older tests.
+
 ### fix: criteria Sprint 3b - every reader reads the stored tree (TD-772), no silent default bars, a new year stores its tree (TD-774) (2026-11-26)
 
 Branch criteria-s3b, not pushed. Services: api, web. Migration: 0220_cohort_no_default_bars (state-only; sqlmigrate prints a no-op). Verdict engine 2026-11-26.5.

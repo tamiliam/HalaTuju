@@ -35,10 +35,10 @@ The reporting date is read ONLY from that labelled row straight after that sente
 does any date on the page but the offer date and that row. Any later page with text refuses (``later_page``).
 Confirmation letters ("PENGESAHAN") refuse (``status_letter``). The campus row is not read (the campus stays blank).
 
-NO EXCUSE IS MADE (owner decision 26 Nov). Every measured UniSZA letter prints the note "Adalah dimaklumkan bahawa
-Pengurusan Universiti berhak menarik balik tawaran kemasukan ini sekiranya ..."; the shared withdrawal check
-(`offer_ums_refusal._withdrawn_one`) reads its "menarik balik" as a withdrawal, so today every such letter refuses
-(``not_an_offer``) and the AI reads it, as before. The note is not taken out here.
+ONE EXCUSE (owner, 27 Nov: the same as UTeM, USM and UMPSA; OCR-14b-1). Every measured UniSZA letter prints the note
+`_NOTE_WORDS` ("Adalah dimaklumkan bahawa Pengurusan Universiti berhak menarik balik tawaran kemasukan ini sekiranya
+..."); the shared withdrawal check (`offer_ums_refusal._withdrawn_one`) reads its "menarik balik" as a withdrawal.
+That exact note is taken out ONCE before the withdrawal check; any other withdrawal or cancel wording still refuses.
 """
 import re
 
@@ -91,6 +91,12 @@ _FEES = 'KOS PENGAJIAN YURAN PENGAJIAN YURAN DITANGGUNG KERAJAAN YURAN PENDAFTAR
 _RM = r'RM ?(?:\d{1,3}(?:,\d{3})+|\d{1,6})\.\d{2}'    # measured: with and without the thousands comma
 _FEE_LINE = re.compile(r'^' + ' '.join([_RM] * 4) + r'$')
 _NOTE_START = re.compile(r'^\d{1,2}\. \S')
+#: The one conditional withdrawal note every measured letter prints (owner, 27 Nov). Taken out ONCE before the
+#: withdrawal check; any other withdrawal wording still refuses.
+_NOTE_WORDS = ('Adalah dimaklumkan bahawa Pengurusan Universiti berhak menarik balik tawaran kemasukan ini sekiranya '
+               'terdapat perkara-perkara yang tidak memenuhi syarat-syarat kelayakan yang telah ditetapkan oleh Senat '
+               'Universiti.')
+_UNISZA_NOTE = re.compile(r'\s{1,40}'.join(re.escape(w) for w in _NOTE_WORDS.split()))
 
 
 def is_unisza(up: str) -> bool:
@@ -313,8 +319,8 @@ def read_unisza(source: str):
 
 def unisza_letter_refusal(text: str, nric: str) -> str:
     """The whole letter (every page): 'too_long', 'status_letter', 'second_ic' (`unisza_ic_elsewhere`),
-    'not_an_offer' (`offer_ums_refusal._withdrawn_one`, the head being the lines up to the title; NO note is taken
-    out: owner decision 26 Nov), or ''."""
+    'not_an_offer' (`offer_ums_refusal._withdrawn_one` once the one measured note `_UNISZA_NOTE` is taken out, once;
+    the head being the lines up to the title), or ''."""
     text = text or ''
     folded = fold_lookalikes(text)
     if len(text) > MAX_LETTER_CHARS or len(folded) > MAX_LETTER_CHARS:
@@ -326,7 +332,7 @@ def unisza_letter_refusal(text: str, nric: str) -> str:
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     at = next((i for i, ln in enumerate(lines) if _one_space(ln).upper().startswith('TAWARAN KEMASUKAN')), -1)
     head = lines[:at + 1] if at >= 0 else []
-    return 'not_an_offer' if any(_withdrawn_one(one, hd) for one, hd in
+    return 'not_an_offer' if any(_withdrawn_one(_UNISZA_NOTE.sub(' ', one, count=1), hd) for one, hd in
                                  ((text, head), (folded, [fold_lookalikes(h) for h in head]))) else ''
 
 
