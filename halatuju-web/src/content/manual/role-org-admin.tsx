@@ -381,9 +381,10 @@ export const roleOrgAdmin: ManualChapter = {
         for, which organisations its &ldquo;Who referred you?&rdquo; list offers — and whether that list also
         offers <strong>Facebook / WhatsApp</strong> and <strong>Halatuju.xyz</strong>; <strong>Other</strong> is
         always there; <strong>Academic results</strong> is always required, like household income: the SPM
-        results slip, or STPM-level results for a degree course where the intake sets a minimum STPM CGPA —
-        leave that minimum blank on <strong>Rules</strong> and the intake is SPM-only, with STPM-level holders tested
-        on their SPM grades — and its intake year — a source
+        results slip, or STPM-level results for a degree course where the intake sets a minimum CGPA — switch
+        the post-SPM results group off on <strong>Rules</strong> and the intake is SPM-only, with STPM-level holders
+        tested on their SPM grades; each rule there has its own switch, and an intake whose rules cannot be read
+        shows a prompt to close it — and its intake year — a source
         switched on in <strong>Sources</strong> joins no gift until you switch it on there),
         <strong> Payments</strong> and <strong>Spending</strong> —
         <strong> appears only once you are inside a gift</strong>. Open <strong>Programmes</strong> and choose a

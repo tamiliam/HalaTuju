@@ -345,6 +345,10 @@ export {
 export type {
   ProgrammeRequirements, AdminApplyCopyBlock, AdminApplyCopy, AdminProgramme, AdminIntakeYear,
 } from './admin-api/programmes'
+export {
+  getIntakeYearCriteria, saveIntakeYearCriteria, getProgrammeCriteria, saveProgrammeCriteria,
+} from './admin-api/criteria'
+export type { CriteriaPayload } from './admin-api/criteria'
 
 // The source console (source sign-in S3 + S4): a signed-in SOURCE user's own pages, under
 // `admin/source/` only — a source screen imports from here and never from the staff modules.

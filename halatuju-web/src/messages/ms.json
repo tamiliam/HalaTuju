@@ -8656,6 +8656,85 @@
       "goToYear": "Cipta tahun pengambilan",
       "rulesError": "Syarat yang disimpan bagi pengambilan ini tidak dapat dibaca, jadi kotak di bawah kosong dan tidak boleh disimpan. Ia perlu dibetulkan secara teknikal: sila hubungi pasukan teknikal."
     },
+    "criteria": {
+      "results": "Keputusan",
+      "join": {
+        "label": "Pelajar mesti lulus",
+        "own": "yang sepadan dengan keputusannya",
+        "all": "semua ini",
+        "any": "salah satu daripada ini"
+      },
+      "post": {
+        "title": "Keputusan lepas SPM",
+        "pngk": "PNGK / CGPA minimum",
+        "pngkHint": "Daripada 4.00.",
+        "meritHint": "Daripada 100, berdasarkan PNGK / CGPA."
+      },
+      "spm": {
+        "title": "Keputusan SPM",
+        "meritHint": "Merit UPU, daripada 100.",
+        "passAll": "Tiada ujian SPM dihidupkan, jadi setiap pemegang SPM lulus."
+      },
+      "merit": "Mata merit minimum",
+      "grades": {
+        "title": "Gred SPM",
+        "first": "Sekurang-kurangnya",
+        "next": "dan sekurang-kurangnya",
+        "subjectsAt": "subjek pada gred",
+        "orBetter": "atau lebih baik",
+        "count": "Bilangan subjek",
+        "grade": "Gred",
+        "remove": "Buang peraturan gred ini",
+        "add": "+ Tambah peraturan gred",
+        "none": "Tiada peraturan gred. Tambah satu, atau biarkan kosong untuk menerima apa-apa gred SPM."
+      },
+      "income": {
+        "title": "Pendapatan isi rumah",
+        "household": "Pendapatan isi rumah paling tinggi (RM sebulan)",
+        "perPerson": "Pendapatan per orang di bawah (RM)",
+        "perPersonHint": "Menyelamatkan isi rumah besar yang melebihi had."
+      },
+      "bornIn": {
+        "title": "Tempat lahir",
+        "hint": "Dibaca daripada nombor kad pengenalan. Biarkan semua negeri dimatikan untuk menerima pelajar yang lahir di mana-mana."
+      },
+      "startYears": "Kursus bermula pada",
+      "startYearsHint": "Tahun dipisahkan dengan koma, cth. 2025, 2026. Pelajar di luar tahun ini ditandakan untuk penyemak, tidak pernah ditolak. Biarkan kosong untuk menerima apa-apa tahun mula.",
+      "foot": "Matikan ujian untuk berhenti menggunakannya. Bahagian tanpa ujian yang dihidupkan tidak digunakan.",
+      "notReady": "Tetapan kriteria untuk pengambilan ini belum sedia. Peraturan yang dipaparkan ialah peraturan yang berkuat kuasa hari ini dan terus digunakan; anda boleh mengubahnya di sini apabila tetapan sudah sedia.",
+      "cannotShow": "Peraturan ini mengandungi sesuatu yang tidak dapat dipaparkan oleh skrin ini, jadi ia tidak boleh diubah di sini. Sila hubungi pasukan teknikal.",
+      "reload": "Muat semula",
+      "closePrompt": "Peraturan untuk pengambilan yang dibuka ini tidak dapat dibaca. Tutup pengambilan ini untuk menghentikan permohonan baharu, kemudian hubungi pasukan teknikal.",
+      "createRulesFailed": "Tahun pengambilan telah dicipta, tetapi kriterianya tidak disimpan. Buka tab Peraturan untuk menetapkannya.",
+      "problem": {
+        "pngkBlank": "Masukkan PNGK / CGPA minimum, atau matikannya.",
+        "pngkRange": "PNGK / CGPA minimum mestilah antara 0 dan 4.00.",
+        "meritBlank": "Masukkan mata merit minimum, atau matikannya.",
+        "meritRange": "Mata merit minimum mestilah antara 0 dan 100.",
+        "countBlank": "Masukkan bilangan subjek dalam setiap peraturan gred, atau buang peraturan itu.",
+        "countRange": "Bilangan subjek mestilah nombor bulat dari 0 hingga 20.",
+        "incomeBlank": "Masukkan jumlah pendapatan, atau matikannya.",
+        "incomeRange": "Pendapatan mestilah nombor bulat dalam ringgit, paling tinggi RM100,000.",
+        "years": "Tahun mula kursus mestilah tahun penuh antara 2000 dan 2100, dipisahkan dengan koma.",
+        "empty": "Hidupkan sekurang-kurangnya satu ujian. Tanpa sebarang ujian, setiap pelajar akan lulus.",
+        "voidSpmDoor": "Dengan \"salah satu daripada ini\", keputusan SPM memerlukan peraturan gred melebihi 0, atau setiap pemegang SPM akan lulus. Tambah satu, atau matikan keputusan SPM.",
+        "voidSpmGroup": "Keputusan SPM memerlukan peraturan gred atau mata merit melebihi 0, atau setiap pemegang SPM akan lulus. Tambah satu, atau matikan keputusan SPM.",
+        "postNoFloor": "Keputusan lepas SPM memerlukan PNGK / CGPA minimum. Hidupkannya, atau matikan keputusan lepas SPM.",
+        "resultsNoTest": "Keputusan yang dihidupkan tidak menyemak apa-apa. Tambah ujian, atau matikannya."
+      },
+      "error": {
+        "generic": "Perubahan tidak dapat disimpan. Tiada perubahan dibuat.",
+        "badCriteria": "Kriteria ini ditolak. Tiada perubahan dibuat. Sebabnya disenaraikan di bawah.",
+        "rulesError": "Peraturan yang disimpan untuk pengambilan ini tidak dapat dibaca. Ia memerlukan pembetulan teknikal. Tiada perubahan dibuat.",
+        "notBuilt": "Tetapan kriteria untuk pengambilan ini belum sedia, jadi tiada perubahan dibuat.",
+        "ruleYearChanged": "Tahun pengambilan lain telah mula menerima permohonan, jadi ini kini peraturannya. Semak dan simpan sekali lagi.",
+        "criteriaChanged": "Orang lain telah mengubah peraturan ini. Muat semula untuk melihat yang terkini.",
+        "beyondColumns": "Peraturan ini hanya boleh diubah dalam editor kriteria.",
+        "notFound": "Tahun pengambilan ini tidak ditemui. Muat semula halaman.",
+        "forbidden": "Anda tiada kebenaran untuk mengubah kriteria ini.",
+        "network": "Pelayan tidak dapat dihubungi. Semak sambungan anda dan cuba lagi."
+      }
+    },
     "people": {
       "title": "Pasukan",
       "desc": "Semua orang yang sudah berada dalam organisasi ini — apa yang mereka pikul, dan siapa yang masih mempunyai akses.",

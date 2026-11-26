@@ -57,8 +57,10 @@ import InfoBox from '@/components/InfoBox'
 import Sheet from '@/components/Sheet'
 import { formatDate } from '@/lib/formatDate'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
-import RequirementFields from '@/components/admin/RequirementFields'
+import CriteriaEditor from '@/components/admin/CriteriaEditor'
+import { stateToTree, EMPTY_STATE, type EditorState } from '@/lib/criteriaTree'
 import {
+  getIntakeYearCriteria, saveIntakeYearCriteria,
   getAdminIntakeYears, createAdminIntakeYear, updateAdminIntakeYear, finishAdminIntakeYear,
   type AdminIntakeYear,
 } from '@/lib/admin-api'
@@ -66,8 +68,7 @@ import { Menu, MenuHeading, MenuItem } from '@/components/admin/Menu'
 // ⚠ In `lib`, not beside the page: a page module may carry NO export beyond its default, and
 // `next build` is the only gate that says so (Layer 1 F7c, three times).
 import {
-  draftToRequirements, EMPTY_REQUIREMENTS, outsideWindow, todayIso, windowState,
-  type RequirementDraft, type WindowState,
+  outsideWindow, todayIso, windowState, type WindowState,
 } from '@/lib/intakeYears'
 
 const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
@@ -190,7 +191,10 @@ export default function IntakeYearTab() {
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
-  const [draft, setDraft] = useState<RequirementDraft>(EMPTY_REQUIREMENTS)
+  // The new year's criteria (criteria editor Sprint 4). Created with no requirement keys, the
+  // server stamps an empty tree; a non-empty one is then saved through the criteria API.
+  const [draft, setDraft] = useState<EditorState>(EMPTY_STATE)
+  const [rulesNotice, setRulesNotice] = useState('')
   /** The round being edited, and the boxes for it. Null = the dialog is shut. */
   const [editing, setEditing] = useState<AdminIntakeYear | null>(null)
   const [edit, setEdit] = useState(EMPTY_EDIT)
@@ -249,19 +253,34 @@ export default function IntakeYearTab() {
     } finally { setBusy(false) }
   }
 
+  const newTree = useMemo(() => stateToTree(draft), [draft])
+  const newTreeEmpty = newTree.tree.all.length === 0 && !newTree.tree.flag
+  const newProblems = newTreeEmpty ? [] : newTree.problems
+
   const create = async () => {
-    if (programmeId === null) return
-    const ok = await run(() => createAdminIntakeYear(programmeId, {
+    if (programmeId === null || newProblems.length) return
+    setRulesNotice('')
+    const made: { year?: AdminIntakeYear } = {}
+    const ok = await run(async () => { made.year = await createAdminIntakeYear(programmeId, {
       code: form.code.trim().toLowerCase(), name: form.name.trim(), year: Number(form.year),
       // ⚠ A BLANK BOX SENDS null, NOT '' — "no window stated" is a real answer and must reach the
       // server as one. Sending an empty string would make an unstated window look like a failed
       // parse; sending nothing at all would make it impossible to CLEAR one later.
       opens_on: form.opens_on || null,
       closes_on: form.closes_on || null,
-      ...draftToRequirements(draft),
-    }, { token: token! }))
-    if (ok) {
-      setOpen(false); setForm(EMPTY_FORM); setDraft(EMPTY_REQUIREMENTS)
+    }, { token: token! }) })
+    if (!ok) return
+    setOpen(false); setForm(EMPTY_FORM); setDraft(EMPTY_STATE)
+    // The year exists now whatever happens next; a criteria save that fails says so plainly
+    // rather than undoing the year.
+    if (!newTreeEmpty && made.year) {
+      try {
+        const cur = await getIntakeYearCriteria(made.year.id, { token: token! })
+        await saveIntakeYearCriteria(made.year.id, newTree.tree, cur.digest, { token: token! })
+        await load()
+      } catch {
+        setRulesNotice(t('admin.criteria.createRulesFailed'))
+      }
     }
   }
 
@@ -343,6 +362,15 @@ export default function IntakeYearTab() {
       </div>
 
       {error && <div className="mt-4"><InfoBox kind="block">{error}</InfoBox></div>}
+      {rulesNotice && <div className="mt-4" data-testid="create-rules-failed"><InfoBox kind="warning">{rulesNotice}</InfoBox></div>}
+
+      {/* An OPEN round whose stored rules cannot be read holds every application: ask for it to be
+          closed (criteria Sprint 3 serves `rules_error_open` on the row). */}
+      {years.filter((y) => y.rules_error_open).map((y) => (
+        <div key={`rules-error-${y.id}`} className="mt-4" data-testid={`rules-error-open-${y.code}`}>
+          <InfoBox kind="block"><strong>{y.name}.</strong> {t('admin.criteria.closePrompt')}</InfoBox>
+        </div>
+      ))}
 
       {programme && (
         <>
@@ -475,7 +503,7 @@ export default function IntakeYearTab() {
             </button>
             {/* The label carries the promise: creating never opens. */}
             <button type="button" onClick={create}
-              disabled={busy || !form.name.trim() || !form.year.trim()
+              disabled={busy || !form.name.trim() || !form.year.trim() || newProblems.length > 0
                 || !CODE_OK.test(form.code.trim().toLowerCase())}
               className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
               {t('admin.years.createClosed')}
@@ -534,11 +562,15 @@ export default function IntakeYearTab() {
 
             <hr className="mt-5 border-ground-100" />
             <p className="mt-4 text-sm font-semibold text-ground-700">{t('admin.years.reqTitle')}</p>
-            <p className="mt-0.5 text-xs text-ground-500">{t('admin.years.reqHint')}</p>
 
             <div className="mt-3">
-              <RequirementFields draft={draft} onChange={setDraft} idPrefix="new" />
+              <CriteriaEditor state={draft} onChange={setDraft} idPrefix="new" />
             </div>
+            {newProblems.length > 0 && (
+              <ul className="mt-3 list-disc pl-5 text-sm text-critical-600" data-testid="new-problems">
+                {newProblems.map((p) => <li key={p}>{t(`admin.criteria.problem.${p}`)}</li>)}
+              </ul>
+            )}
 
             {error && <p className="mt-3 text-sm text-critical-600">{error}</p>}
         </Sheet>

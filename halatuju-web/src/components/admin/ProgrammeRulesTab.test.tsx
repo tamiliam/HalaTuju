@@ -1,25 +1,22 @@
 /**
  * @jest-environment jsdom
  *
- * Programme → Configuration → Rules, rendered (shape sprint, 2026-09-03).
+ * Programme → Configuration → Rules, rendered (criteria editor Sprint 4).
  *
- * This is the most behaviour-sensitive surface the sprint adds: it edits the thresholds
- * `shortlisting.evaluate()` reads LIVE, so a mistake here changes who gets a bursary. Three things
- * are pinned, and each one is a bug that would otherwise be invisible:
- *
- *  1. WHAT IT SENDS. The B+ requirement is shown as an EXTRA and stored as a TOTAL. A screen that
- *     loads 5 and saves 5 turns "4 plus 1" into "4 plus 5" — nine subjects — on the first save
- *     after opening the page, with nobody touching a box.
- *  2. WHICH YEAR. The open round, else the newest. Editing last year's rules while this year's
- *     round is taking applications would change nothing and look like it had.
- *  3. THAT IT SAYS SO. The tab carries a warning the neighbouring tab does not, because "what we
- *     ask for" is frozen per student at submit and these are not.
+ * The tab edits the rule year's stored criteria TREE (`getProgrammeCriteria` /
+ * `saveProgrammeCriteria`), which the gate reads live. Pinned:
+ *  1. Each live intake (1, 3, 4, 5) loads with its switches ON and the right values.
+ *  2. A save sends the whole tree, the year shown (`intake_id`) and the digest it was given.
+ *  3. Every refusal says so: each API error code has its own message; an intake whose tree is not
+ *     built yet is read-only with a calm notice; another admin's save offers a reload.
+ *  4. Every on/off is the site Toggle (role="switch"), never a tick box.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import ProgrammeRulesTab, { ruleYear } from './ProgrammeRulesTab'
 import * as api from '@/lib/admin-api'
-import { act as actA15 } from '@testing-library/react'
+import { LIVE_TREES, TREE_1, TREE_3, TREE_5 } from '@/test/criteriaShapes'
+import type { CriteriaTree } from '@/lib/criteriaTree'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, vars?: Record<string, string>) =>
@@ -35,450 +32,234 @@ const mockApi = api as jest.Mocked<typeof api>
 const programme = (over: Partial<api.AdminProgramme> = {}): api.AdminProgramme => ({
   id: 1, code: 'bp', name_en: 'BrightPath Bursary', name_ms: '', name_ta: '',
   is_active: true, lifecycle: 'active', intake_years: 1, applications: 41, awarded: 12,
-  open_year: 2026,
-  // Held by its 41 applications — the server's answer, which is what the Delete control reads.
-  delete_blocked_by: 'has_applications', delete_blocked_count: 41,
+  open_year: 2026, delete_blocked_by: 'has_applications', delete_blocked_count: 41,
   apply_url: 'https://halatuju.xyz/scholarship/apply?p=bp',
   apply_copy: {}, apply_copy_sensitive: [], ...over,
 })
 
-const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => ({
-  id: 10, code: 'bp-2026', name: 'Intake 2026', year: 2026, is_open: true, is_active: true,
-  applications: 41,
-  // ⚠ NULL, AND THAT IS THE PRODUCTION SHAPE — every row predating these columns has no stated
-  // window, the live 2026 intake among them, and nothing was backfilled. The dates DESCRIBE; they
-  // open nothing, so a round without them is normal and this fixture stays a normal round.
-  opens_on: null, closes_on: null,
-  // The four served fields the round badge and the finish dialog read. `state` is computed
-  // server-side (`views_admin.round_state`) — never derived here.
-  state: 'closed', finished_at: null, finished_by: '', unsubmitted: 0,
-  // BrightPath's LIVE rule: four at A- plus one more at B+, stored as a strong TOTAL of five.
-  requirements: {
-    min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: null, min_stpm_pngk: null,
-    min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
-    allowed_birth_states: [],
-  },
-  ...over,
+const payload = (criteria: CriteriaTree | null, over: Partial<api.CriteriaPayload> = {}): api.CriteriaPayload => ({
+  intake: { id: 10, code: 'bp-2026', name: 'Intake 2026', year: 2026, is_open: true },
+  stored: true, criteria, rules_error: false, beyond_columns: false, digest: 'd1', ...over,
 })
 
-const withYears = (years: api.AdminIntakeYear[], programmes = [programme()]) => {
-  mockApi.getAdminProgrammes.mockResolvedValue({ programmes })
-  mockApi.getAdminIntakeYears.mockResolvedValue({
-    programme: { id: 1, code: 'bp', name_en: 'BrightPath Bursary', is_active: true },
-    years,
-  })
+const withCriteria = (p: api.CriteriaPayload) => {
+  mockApi.getAdminProgrammes.mockResolvedValue({ programmes: [programme()] })
+  mockApi.getProgrammeCriteria.mockResolvedValue(p)
+  mockApi.saveProgrammeCriteria.mockResolvedValue({ ...p, changed: true })
 }
 
-/**
- * ⚠ WAITS FOR THE DATA, NOT THE CONTAINER. The first draft waited for `rules-tab` alone, which
- * appears before the years have arrived — so every assertion ran against empty boxes and the whole
- * file failed for one reason wearing eight faces. Waiting on the year line is waiting on the load
- * that fills the boxes.
- */
+const apiError = (code: string, status = 409, body: Record<string, unknown> = {}) =>
+  Object.assign(new Error(code), { code, status, body: { error: code, code, ...body } })
+
+/** Waits for the DATA (the year line), not the container, which appears before the load. */
 const loaded = async () => {
   render(<ProgrammeRulesTab />)
   await waitFor(() => expect(screen.getByTestId('rules-year')).toBeTruthy())
 }
 
-const box = (id: string) => document.getElementById(id) as HTMLButtonElement
-const save = () => screen.getByText('common.save') as HTMLButtonElement
+const sw = (id: string) => screen.getByTestId(`${id}-switch`)
+const isOn = (id: string) => sw(id).getAttribute('aria-checked') === 'true'
+const value = (id: string) => (screen.getByTestId(`${id}-value`) as HTMLInputElement).value
+const save = () => fireEvent.click(screen.getByText('common.save'))
 
-beforeEach(() => {
-  jest.clearAllMocks()
-  mockApi.updateAdminIntakeYear.mockResolvedValue(year())
-})
+beforeEach(() => { jest.clearAllMocks() })
 
-describe('which round it is editing', () => {
-  it('prefers the round taking applications over the newest one', () => {
-    const open2025 = year({ id: 1, year: 2025, is_open: true })
-    const closed2027 = year({ id: 2, year: 2027, is_open: false })
-    expect(ruleYear([closed2027, open2025])?.id).toBe(1)
-  })
-
-  it('falls back to the newest when nothing is open', () => {
-    const a = year({ id: 1, year: 2025, is_open: false })
-    const b = year({ id: 2, year: 2027, is_open: false })
-    expect(ruleYear([a, b])?.id).toBe(2)
-  })
-
-  it('has no answer for a gift with no rounds — and that is a real state', () => {
+describe('ruleYear', () => {
+  it('is the open year, else the newest', () => {
+    const y = (id: number, yr: number, open: boolean) => ({ id, year: yr, is_open: open }) as api.AdminIntakeYear
     expect(ruleYear([])).toBeNull()
-  })
-
-  it('names the round on screen, so nobody edits a year they cannot see', async () => {
-    withYears([year()])
-    await loaded()
-    expect(screen.getByTestId('rules-year').textContent).toContain('2026')
+    expect(ruleYear([y(1, 2027, false), y(2, 2026, true)])?.id).toBe(2)
+    expect(ruleYear([y(1, 2025, false), y(2, 2026, false)])?.id).toBe(2)
   })
 })
 
-describe('what the boxes show', () => {
-  it('shows the B+ requirement as the EXTRA, not the stored total', async () => {
-    withYears([year()])
-    await loaded()
-    expect(box('rules-a').value).toBe('4')
-    expect(box('rules-b').value).toBe('1')   // stored 5, shown as 1 more than the four A-
+describe('each live intake loads with its switches ON', () => {
+  it('intake 1: SPM grades only, income', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    expect(isOn('rules-spm')).toBe(true)
+    expect(isOn('rules-post')).toBe(false)
+    expect((screen.getByTestId('grade-row-0-count') as HTMLInputElement).value).toBe('4')
+    expect((screen.getByTestId('grade-row-0-grade') as HTMLSelectElement).value).toBe('A-')
+    expect((screen.getByTestId('grade-row-1-count') as HTMLInputElement).value).toBe('5')
+    expect((screen.getByTestId('grade-row-1-grade') as HTMLSelectElement).value).toBe('B+')
+    expect([isOn('rules-household'), value('rules-household')]).toEqual([true, '5860'])
+    expect([isOn('rules-per-person'), value('rules-per-person')]).toEqual([true, '1584'])
   })
 
-  it('leaves an unapplied test as an empty box', async () => {
-    withYears([year()])
+  it('intake 3: 0 counts and a 0 merit are ON with value 0; born in Sabah and Labuan', async () => {
+    withCriteria(payload(TREE_3)); await loaded()
+    expect([isOn('rules-post'), isOn('rules-pngk'), value('rules-pngk')]).toEqual([true, true, '2'])
+    expect((screen.getByTestId('grade-row-0-count') as HTMLInputElement).value).toBe('0')
+    expect((screen.getByTestId('grade-row-1-count') as HTMLInputElement).value).toBe('0')
+    expect((screen.getByTestId('grade-row-2-count') as HTMLInputElement).value).toBe('3')
+    expect([isOn('rules-spm-merit'), value('rules-spm-merit')]).toEqual([true, '0'])
+    expect(screen.getByTestId('rules-born-sabah').getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByTestId('rules-born-wp_labuan').getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByTestId('rules-born-johor').getAttribute('aria-checked')).toBe('false')
+    // Both groups on: the join is shown, on "the one for their results".
+    expect(screen.getByTestId('rules-results-join-own').getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('intake 4: PNGK 2.0 or 3 credits', async () => {
+    withCriteria(payload(LIVE_TREES['4'])); await loaded()
+    expect([isOn('rules-pngk'), value('rules-pngk')]).toEqual([true, '2'])
+    expect((screen.getByTestId('grade-row-0-grade') as HTMLSelectElement).value).toBe('C')
+    expect(value('rules-per-person')).toBe('1000')
+  })
+
+  it('intake 5: SPM results OFF, course-start years shown', async () => {
+    withCriteria(payload(TREE_5)); await loaded()
+    expect(isOn('rules-spm')).toBe(false)
+    expect([isOn('rules-post'), value('rules-pngk')]).toEqual([true, '3'])
+    expect((screen.getByTestId('rules-start-years') as HTMLInputElement).value).toBe('2025, 2026')
+    expect(screen.getByTestId('rules-born-sabah').getAttribute('aria-checked')).toBe('false')
+    expect(screen.getByTestId('rules-born-perak').getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('shows a count at A, B and C+ (blank on the old form)', async () => {
+    withCriteria(payload({ all: [{ section: 'results', own: [{ route: 'spm', all: [
+      { test: 'grade_count', at_least: 1, grade_or_better: 'A' },
+      { test: 'grade_count', at_least: 2, grade_or_better: 'B' },
+      { test: 'grade_count', at_least: 3, grade_or_better: 'C+' },
+    ] }] }] }))
     await loaded()
-    expect(box('rules-p').value).toBe('')    // STPM PNGK: null = the test does not run
-    expect(box('rules-m').value).toBe('')
+    expect([0, 1, 2].map((i) => [
+      (screen.getByTestId(`grade-row-${i}-count`) as HTMLInputElement).value,
+      (screen.getByTestId(`grade-row-${i}-grade`) as HTMLSelectElement).value,
+    ])).toEqual([['1', 'A'], ['2', 'B'], ['3', 'C+']])
   })
 })
 
-describe('what it sends', () => {
-  // ⚠ THE ONE THAT PREVENTS A LIVE DEFECT. Nudge the A- count and save: the B+ box was never
-  // touched, and what must reach the server is the TOTAL that box implies — not the 1 on screen,
-  // and not the 5 it was loaded from if the A- count moved beneath it.
-  it('sends the TOTAL strong count, recomputed from what is on screen', async () => {
-    withYears([year()])
-    await loaded()
-
-    fireEvent.change(box('rules-a'), { target: { value: '3' } })
-    fireEvent.click(save())
-
-    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
-    const [id, body] = mockApi.updateAdminIntakeYear.mock.calls[0]
-    expect(id).toBe(10)
-    expect(body.min_spm_a_count).toBe(3)
-    expect(body.min_spm_bplus_count).toBe(4)   // 3 at A- plus the same 1 more
-  })
-
-  it('unticking a test clears it to null — not to zero', async () => {
-    withYears([year()])
-    await loaded()
-
-    fireEvent.change(box('rules-i'), { target: { value: '' } })
-    fireEvent.click(save())
-
-    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
-    expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].income_ceiling).toBeNull()
+describe('on/off is the site Toggle', () => {
+  it('no tick boxes anywhere; switches are role="switch"', async () => {
+    withCriteria(payload(TREE_3)); await loaded()
+    expect(document.querySelectorAll('input[type="checkbox"]')).toHaveLength(0)
+    expect(screen.getAllByRole('switch').length).toBeGreaterThan(16)
+    expect(sw('rules-pngk').tagName).toBe('BUTTON')
   })
 })
 
-// Request #30. ⚠ THE C BOX IS A TOTAL ON SCREEN, unlike the B+ box beside it: the owner sets
-// "6 at C or better" with the A's and B's included, so it must reach the server as typed, and a
-// blank box (every live round today) must reach it as null — not applied — never as zero.
-describe('the C-or-better requirement', () => {
-  const withCredits = (n: number | null) => withYears([year({
-    requirements: { ...year().requirements, min_spm_credit_count: n },
-  })])
-
-  it('shows a blank round as an empty box and a set one as its TOTAL', async () => {
-    withCredits(null)
-    const { unmount } = render(<ProgrammeRulesTab />)
-    await waitFor(() => expect(screen.getByTestId('rules-year')).toBeTruthy())
-    expect(box('rules-cr').value).toBe('')
-    // Under a B+ box whose hint says "in addition to those above", it must say it is a total.
-    expect(screen.getByText('admin.years.req.spmCHint')).toBeTruthy()
-    unmount()
-
-    withCredits(6)
-    await loaded()
-    expect(box('rules-cr').value).toBe('6')
-    expect(box('rules-b').value).toBe('1')   // the B+ box is still shown as its extra
+describe('the save', () => {
+  it('sends the whole tree, the year shown and the digest', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    fireEvent.change(screen.getByTestId('rules-household-value'), { target: { value: '6000' } })
+    save()
+    await waitFor(() => expect(mockApi.saveProgrammeCriteria).toHaveBeenCalledTimes(1))
+    const [pid, intakeId, tree, digest] = mockApi.saveProgrammeCriteria.mock.calls[0]
+    expect([pid, intakeId, digest]).toEqual([1, 10, 'd1'])
+    expect(tree).toEqual({ all: [TREE_1.all[0], { section: 'income', any: [
+      { test: 'household_income_max', rm: 6000 }, { test: 'income_per_person_under', rm: 1584 }] }] })
+    await waitFor(() => expect(screen.getByText('admin.rules.saved')).toBeTruthy())
   })
 
-  it('sends the number typed, and leaves the A- and B+ rules as they were', async () => {
-    withCredits(null)
-    await loaded()
-    fireEvent.change(box('rules-cr'), { target: { value: '6' } })
-    fireEvent.click(save())
-    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
-    const body = mockApi.updateAdminIntakeYear.mock.calls[0][1]
-    expect(body.min_spm_credit_count).toBe(6)
-    expect([body.min_spm_a_count, body.min_spm_bplus_count]).toEqual([4, 5])
+  it('an unchanged screen cannot save; a problem keeps Save asleep and says why', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    const btn = screen.getByText('common.save') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    fireEvent.change(screen.getByTestId('rules-household-value'), { target: { value: '' } })
+    expect(btn.disabled).toBe(true)
+    expect(within(screen.getByTestId('rules-problems')).getByText('admin.criteria.problem.incomeBlank')).toBeTruthy()
   })
 
-  // ⚠ request #30 review: 'six' used to leave as NaN → null → "untick", and the screen said
-  // Saved. It must leave as the text, and the server's refusal must reach the screen.
-  it('a typo is sent as typed and the refusal is SHOWN, never "Saved"', async () => {
-    mockApi.updateAdminIntakeYear.mockRejectedValueOnce(
-      Object.assign(new Error('bad_requirement'), { code: 'bad_requirement' }))
-    withCredits(6)
-    await loaded()
-    fireEvent.change(box('rules-cr'), { target: { value: 'six' } })
-    fireEvent.click(save())
-    await waitFor(() => expect(screen.getByText('admin.years.error.generic')).toBeTruthy())
-    expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].min_spm_credit_count).toBe('six')
-    expect(screen.queryByText('admin.rules.saved')).toBeNull()
-  })
-
-  it('unticking it sends null — not applied, never zero', async () => {
-    withCredits(6)
-    await loaded()
-    fireEvent.change(box('rules-cr'), { target: { value: '' } })
-    fireEvent.click(save())
-    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
-    expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].min_spm_credit_count).toBeNull()
+  it('adds and removes a grade rule', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    fireEvent.click(screen.getByTestId('rules-add-grade'))
+    fireEvent.change(screen.getByTestId('grade-row-2-count'), { target: { value: '7' } })
+    fireEvent.click(screen.getByTestId('grade-row-0-remove'))
+    save()
+    await waitFor(() => expect(mockApi.saveProgrammeCriteria).toHaveBeenCalledTimes(1))
+    const tree = mockApi.saveProgrammeCriteria.mock.calls[0][2]
+    expect(tree.all[0]).toEqual({ section: 'results', own: [{ route: 'spm', all: [
+      { test: 'grade_count', at_least: 5, grade_or_better: 'B+' },
+      { test: 'grade_count', at_least: 7, grade_or_better: 'C' }] }] })
   })
 })
 
-// H3 (#597). The course-start years: the text is the switch, and the list is sent whole on every
-// save, so emptying the box reaches the server as [] (the rule off).
-describe('the "Course started in" requirement', () => {
-  const withStart = (y: number[] | undefined) => withYears([year({
-    requirements: { ...year().requirements, allowed_start_years: y },
-  })])
-  const box = () => document.getElementById('rules-sy') as HTMLInputElement
-
-  it('shows the stored years and the hint', async () => {
-    withStart([2025, 2026])
-    await loaded()
-    expect(box().value).toBe('2025, 2026')
-    expect(screen.getByText('admin.years.req.startYearsHint')).toBeTruthy()
+describe('every refusal has its message', () => {
+  it.each([
+    ['bad_criteria', 400, 'badCriteria'], ['rules_error', 409, 'rulesError'],
+    ['criteria_not_built', 409, 'notBuilt'], ['rule_year_changed', 409, 'ruleYearChanged'],
+    ['criteria_changed', 409, 'criteriaChanged'], ['not_found', 404, 'notFound'],
+    ['criteria_required', 400, 'generic'], ['unknown_field', 400, 'generic'],
+    ['intake_id_required', 400, 'generic'], ['network_failure', 0, 'network'],
+  ])('%s', async (code, status, key) => {
+    withCriteria(payload(TREE_1)); await loaded()
+    mockApi.saveProgrammeCriteria.mockRejectedValueOnce(apiError(code, status))
+    fireEvent.change(screen.getByTestId('rules-household-value'), { target: { value: '6000' } })
+    save()
+    await waitFor(() => expect(screen.getByTestId('rules-save-error').textContent)
+      .toBe(`admin.criteria.error.${key}`))
   })
 
-  it('sends the typed years, and leaves every other rule as it was', async () => {
-    withStart(undefined)
-    await loaded()
-    expect(box().value).toBe('')
-    fireEvent.change(box(), { target: { value: '2025, 2026' } })
-    fireEvent.click(save())
-    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
-    const body = mockApi.updateAdminIntakeYear.mock.calls[0][1]
-    expect(body.allowed_start_years).toEqual([2025, 2026])
-    expect([body.min_spm_a_count, body.min_spm_bplus_count]).toEqual([4, 5])
+  it('a 403 says the admin may not change them', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    mockApi.saveProgrammeCriteria.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 403 }))
+    fireEvent.change(screen.getByTestId('rules-household-value'), { target: { value: '6000' } })
+    save()
+    await waitFor(() => expect(screen.getByTestId('rules-save-error').textContent)
+      .toBe('admin.criteria.error.forbidden'))
   })
 
-  it('emptying the box sends an EMPTY list — the rule off', async () => {
-    withStart([2025])
-    await loaded()
-    fireEvent.change(box(), { target: { value: '' } })
-    fireEvent.click(save())
-    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
-    expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].allowed_start_years).toEqual([])
-  })
-})
-
-// Request #31. ⚠ NOTHING TICKED IS THE RULE OFF, and the list is sent whole on every save, so
-// unticking the last state must reach the server as [] — clearing the rule — never as "no change".
-describe('the "Born in" requirement', () => {
-  const withStates = (s: string[]) => withYears([year({
-    requirements: { ...year().requirements, allowed_birth_states: s },
-  })])
-  const tick = (key: string) => document.getElementById(`rules-born-${key}`) as HTMLButtonElement
-
-  it('offers all sixteen states and shows the stored ones ticked', async () => {
-    withStates(['sabah'])
-    await loaded()
-    expect(document.querySelectorAll('[id^="rules-born-"]')).toHaveLength(16)
-    expect(tick('sabah').getAttribute('aria-checked')).toBe('true')
-    expect(tick('sarawak').getAttribute('aria-checked')).toBe('false')
-    expect(screen.getByText('admin.years.req.bornInHint')).toBeTruthy()
+  it('bad_criteria lists the server problems', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    mockApi.saveProgrammeCriteria.mockRejectedValueOnce(apiError('bad_criteria', 400, { problems: ['spm: too many'] }))
+    fireEvent.change(screen.getByTestId('rules-household-value'), { target: { value: '6000' } })
+    save()
+    await waitFor(() => expect(within(screen.getByTestId('rules-server-problems')).getByText('spm: too many')).toBeTruthy())
   })
 
-  it('sends the ticked states, and leaves every other rule as it was', async () => {
-    withStates([])
-    await loaded()
-    fireEvent.click(tick('sarawak'))
-    fireEvent.click(tick('sabah'))
-    fireEvent.click(save())
-    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
-    const body = mockApi.updateAdminIntakeYear.mock.calls[0][1]
-    expect(body.allowed_birth_states).toEqual(['sabah', 'sarawak'])
-    expect([body.min_spm_a_count, body.min_spm_bplus_count]).toEqual([4, 5])
-  })
-
-  it('unticking the last state sends an EMPTY list — the rule off', async () => {
-    withStates(['sabah'])
-    await loaded()
-    fireEvent.click(tick('sabah'))
-    fireEvent.click(save())
-    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
-    expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].allowed_birth_states).toEqual([])
-  })
-
-  it('wakes Save on a tick and puts it back to sleep when the tick is undone', async () => {
-    withStates(['sabah'])
-    await loaded()
-    expect(save().disabled).toBe(true)
-    fireEvent.click(tick('sarawak'))
-    expect(save().disabled).toBe(false)
-    fireEvent.click(tick('sarawak'))
-    expect(save().disabled).toBe(true)
-  })
-
-  it('a refused save is SHOWN, never "Saved"', async () => {
-    mockApi.updateAdminIntakeYear.mockRejectedValueOnce(
-      Object.assign(new Error('bad_requirement'), { code: 'bad_requirement' }))
-    withStates([])
-    await loaded()
-    fireEvent.click(tick('sabah'))
-    fireEvent.click(save())
-    await waitFor(() => expect(screen.getByText('admin.years.error.generic')).toBeTruthy())
-    expect(screen.queryByText('admin.rules.saved')).toBeNull()
-  })
-
-  // TD-373. A hand-edited key the sixteen do not offer is ENFORCED by the server (it fails every
-  // IC), so it must be on screen: an extra box, ticked, labelled with the key as stored.
-  describe('a stored key that is not one of the sixteen', () => {
-    // Quoted, so a stored 'Sabah' is never mistaken for the Sabah box beside it.
-    const extra = () => screen.getByLabelText('"Sabah"') as HTMLButtonElement
-
-    it('is shown ticked beside the sixteen, under its raw key', async () => {
-      withStates(['Sabah'])
-      await loaded()
-      expect(extra().getAttribute('aria-checked')).toBe('true')
-      expect(tick('sabah').getAttribute('aria-checked')).toBe('false')
-      expect(document.querySelectorAll('[id^="rules-born-"]')).toHaveLength(17)
-    })
-
-    it('saved with it still ticked, it is sent as stored — and the refusal is shown', async () => {
-      mockApi.updateAdminIntakeYear.mockRejectedValueOnce(
-        Object.assign(new Error('bad_requirement'), { code: 'bad_requirement' }))
-      withStates(['Sabah'])
-      await loaded()
-      fireEvent.click(tick('sabah'))
-      fireEvent.click(save())
-      await waitFor(() => expect(screen.getByText('admin.years.error.generic')).toBeTruthy())
-      expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].allowed_birth_states)
-        .toEqual(['sabah', 'Sabah'])
-    })
-
-    it('unticked, it is gone from the save — the rule the admin can see is the rule sent', async () => {
-      withStates(['Sabah'])
-      await loaded()
-      fireEvent.click(extra())
-      expect(screen.queryByLabelText('"Sabah"')).toBeNull()
-      fireEvent.click(tick('sabah'))
-      fireEvent.click(save())
-      await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
-      expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].allowed_birth_states)
-        .toEqual(['sabah'])
-    })
+  it('criteria_changed offers a reload that fetches the latest', async () => {
+    withCriteria(payload(TREE_1)); await loaded()
+    mockApi.saveProgrammeCriteria.mockRejectedValueOnce(apiError('criteria_changed'))
+    fireEvent.change(screen.getByTestId('rules-household-value'), { target: { value: '6000' } })
+    save()
+    await waitFor(() => expect(screen.getByTestId('rules-stale')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('rules-reload'))
+    await waitFor(() => expect(mockApi.getProgrammeCriteria).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(screen.queryByTestId('rules-stale')).toBeNull())
+    expect(value('rules-household')).toBe('5860')
   })
 })
 
-describe('the Save rule', () => {
-  // The platform's nothing-to-save standard (request #6). ⚠ The dangerous direction is the
-  // opposite of the bug: a Save wrongly ASLEEP strands real work, so the wake case is asserted
-  // too, not just the sleep.
-  it('sleeps with nothing changed and wakes on a real edit', async () => {
-    withYears([year()])
-    await loaded()
-    expect(save().disabled).toBe(true)
-
-    fireEvent.change(box('rules-a'), { target: { value: '5' } })
-    expect(save().disabled).toBe(false)
+describe('states that cannot be edited', () => {
+  it('not built yet: a calm notice, the rules shown, Save asleep', async () => {
+    withCriteria(payload(TREE_1, { stored: false })); await loaded()
+    expect(screen.getByTestId('rules-not-built').textContent).toContain('admin.criteria.notReady')
+    expect(value('rules-household')).toBe('5860')
+    expect((screen.getByTestId('rules-household-value') as HTMLInputElement).disabled).toBe(true)
+    expect((screen.getByText('common.save') as HTMLButtonElement).disabled).toBe(true)
   })
 
-  // ⚠ THE CLAIM MOVED, IT DID NOT GO (owner, 2026-09-07: *"there is no need to say 'Nothing to
-  // save' as the colour of the button is supposed to convey that message"*). This tab was the only
-  // one of four printing that sentence in full beside the button; the other three carried it as a
-  // hover title. So the sentence must be ABSENT and the tooltip must be PRESENT — asserting only
-  // the absence would pass just as well if the reason had been thrown away entirely.
-  it('says nothing when idle, and carries the reason as a tooltip instead', async () => {
-    withYears([year()])
-    await loaded()
-    expect(screen.queryByText('common.nothingToSave')).toBeNull()
-    expect(screen.getByTestId('save-outcome').textContent).toBe('')
-    expect(save().title).toBe('common.nothingToSave')
-
-    fireEvent.change(box('rules-a'), { target: { value: '5' } })
-    expect(save().title).toBe('')
-    expect(screen.getByTestId('save-outcome').textContent).toBe('common.unsavedChanges')
+  it('stored rules that cannot be read: the block notice and no editor', async () => {
+    withCriteria(payload(null, { rules_error: true })); await loaded()
+    expect(screen.getByTestId('rules-error')).toBeTruthy()
+    expect(screen.queryByTestId('rules-editor')).toBeNull()
+    expect((screen.getByText('common.save') as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('puts the save in the shared bar, not loose beside the fields', async () => {
-    withYears([year()])
+  it('a tree the screen cannot show is not saved over', async () => {
+    withCriteria(payload({ all: [{ section: 'merit', all: [{ test: 'min_merit', value: 80 }] }] }))
     await loaded()
-    expect(screen.getByTestId('save-bar').contains(save())).toBe(true)
+    expect(screen.getByTestId('rules-cannot-show')).toBeTruthy()
+    expect((screen.getByText('common.save') as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('sleeps again when the edit is put back', async () => {
-    withYears([year()])
-    await loaded()
-    fireEvent.change(box('rules-a'), { target: { value: '5' } })
-    fireEvent.change(box('rules-a'), { target: { value: '4' } })
-    expect(save().disabled).toBe(true)
-  })
-})
-
-describe('what it refuses to draw', () => {
-  it('says a gift with no round has nowhere to keep its rules, and offers no Save', async () => {
-    withYears([])
-    render(<ProgrammeRulesTab />)
+  it('no intake year: points to the Intake year tab', async () => {
+    mockApi.getAdminProgrammes.mockResolvedValue({ programmes: [programme()] })
+    mockApi.getProgrammeCriteria.mockRejectedValue(apiError('no_intake_year', 404))
+    const goToYear = jest.fn()
+    render(<ProgrammeRulesTab goToYear={goToYear} />)
     await waitFor(() => expect(screen.getByText('admin.rules.noYear')).toBeTruthy())
-    expect(screen.queryByText('common.save')).toBeNull()
-  })
-
-  // ⚠ NEVER PICKS SILENTLY. Two gifts and no choice made must ASK — an admin who believes they
-  // are editing Sabah's rules while looking at BrightPath's would change a live programme.
-  it('asks which gift when there is more than one and none is chosen', async () => {
-    withYears([year()], [programme(), programme({ id: 2, code: 'sabah', name_en: 'Sabah' })])
-    render(<ProgrammeRulesTab />)
-    await waitFor(() => expect(screen.getByTestId('choose-programme')).toBeTruthy())
-    expect(screen.queryByTestId('rules-tab')).toBeNull()
-    expect(mockApi.getAdminIntakeYears).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('rules-go-to-year'))
+    expect(goToYear).toHaveBeenCalled()
   })
 })
 
-describe('what it says', () => {
-  // The asymmetry this tab exists to make honest: "what we ask for" is frozen per student at
-  // submit (`requirements_snapshot`); these thresholds are read live. Two settings on one screen
-  // with different blast radius must not look like the same kind of switch.
-  it('warns that a rule change is NOT frozen for students already in', async () => {
-    withYears([year()])
-    await loaded()
-    expect(screen.getByText('admin.rules.liveWarning')).toBeTruthy()
-  })
-})
-
-// A3.15: the loader reads the latest `t` through a ref instead of listing it (it used to carry a lint
-// suppression). The mock above hands back a NEW `t` on every render, so a loader that listed `t`
-// would read again on each re-render below; one that does not, reads exactly as often as before.
-describe('the loader does not re-read when `t` changes identity (A3.15)', () => {
-  it('getAdminIntakeYears is called the same number of times after three more renders', async () => {
-    const view = render(<ProgrammeRulesTab />)
-    await waitFor(() => expect(mockApi.getAdminIntakeYears).toHaveBeenCalled())
-    await actA15(async () => {})
-    const before = mockApi.getAdminIntakeYears.mock.calls.length
-    view.rerender(<ProgrammeRulesTab />)
-    view.rerender(<ProgrammeRulesTab />)
-    view.rerender(<ProgrammeRulesTab />)
-    await actA15(async () => {})
-    expect(mockApi.getAdminIntakeYears).toHaveBeenCalledTimes(before)
-  })
-})
-
-// TD-774 (criteria Sprint 3b, adversarial review R2): a row whose STORED rules the server could
-// not read arrives with every value null. Those blank boxes are not "no rules", so the tab says so
-// and its Save never wakes - typing one value must not send a nearly open rule set.
-describe('an intake whose stored rules cannot be read', () => {
-  const refused = () => year({
-    requirements: {
-      min_spm_a_count: null, min_spm_bplus_count: null, min_spm_credit_count: null,
-      min_stpm_pngk: null, min_merit_score: null, income_ceiling: null, per_capita_ceiling: null,
-      allowed_birth_states: [], allowed_start_years: [], rules_error: true,
-    },
-  })
-
-  it('shows the warning and keeps Save asleep after an edit', async () => {
-    withYears([refused()])
-    await loaded()
-    expect(screen.getByTestId('rules-error').textContent).toContain('admin.rules.rulesError')
-    fireEvent.change(box('rules-i'), { target: { value: '5860' } })
-    expect(save().disabled).toBe(true)
-    fireEvent.click(save())
-    expect(mockApi.updateAdminIntakeYear).not.toHaveBeenCalled()
-  })
-
-  it('a readable intake shows no such warning', async () => {
-    withYears([year()])
-    await loaded()
-    expect(screen.queryByTestId('rules-error')).toBeNull()
-  })
-
-  it('names the refusal when the server answers rules_error', async () => {
-    mockApi.updateAdminIntakeYear.mockRejectedValueOnce(
-      Object.assign(new Error('rules_error'), { code: 'rules_error' }))
-    withYears([year()])
-    await loaded()
-    fireEvent.change(box('rules-a'), { target: { value: '3' } })
-    fireEvent.click(save())
-    await waitFor(() => expect(screen.getByText('admin.years.error.rulesError')).toBeTruthy())
+describe('owner copy rules', () => {
+  it('no "route" and no B40 label in the keys the editor renders', async () => {
+    withCriteria(payload(TREE_3)); await loaded()
+    const text = screen.getByTestId('rules-tab').textContent ?? ''
+    expect(text.toLowerCase()).not.toContain('route')
+    expect(text).not.toContain('B40')
   })
 })

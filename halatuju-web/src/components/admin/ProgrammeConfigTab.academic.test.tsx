@@ -11,7 +11,6 @@
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import ProgrammeConfigTab from './ProgrammeConfigTab'
-import RequirementFields from './RequirementFields'
 import * as api from '@/lib/admin-api'
 
 jest.mock('next/link', () => ({
@@ -107,12 +106,3 @@ describe('Academic results row', () => {
   })
 })
 
-describe('the intake STPM floor', () => {
-  it('says that blank makes the intake SPM-only', () => {
-    const draft = { aCount: '', spmExtra: '', credits: '', pngk: '', merit: '', income: '',
-      perPerson: '', birthStates: [], startYears: '' }
-    render(<RequirementFields draft={draft} onChange={jest.fn()} idPrefix="t" />)
-    const field = screen.getByText('admin.years.req.pngk').closest('label') as HTMLElement
-    expect(within(field).getByText('admin.years.req.pngkHint')).toBeTruthy()
-  })
-})

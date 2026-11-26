@@ -8656,6 +8656,85 @@
       "goToYear": "Create an intake year",
       "rulesError": "The stored rules for this intake cannot be read, so the boxes below are blank and cannot be saved. They need a technical correction: please contact the technical team."
     },
+    "criteria": {
+      "results": "Results",
+      "join": {
+        "label": "Student must pass",
+        "own": "the one for their results",
+        "all": "all of these",
+        "any": "any one of these"
+      },
+      "post": {
+        "title": "Post-SPM results",
+        "pngk": "Minimum PNGK / CGPA",
+        "pngkHint": "Out of 4.00.",
+        "meritHint": "Out of 100, from the PNGK / CGPA."
+      },
+      "spm": {
+        "title": "SPM results",
+        "meritHint": "UPU merit, out of 100.",
+        "passAll": "No SPM test is on, so every SPM holder passes."
+      },
+      "merit": "Minimum merit point",
+      "grades": {
+        "title": "SPM grades",
+        "first": "At least",
+        "next": "and at least",
+        "subjectsAt": "subjects at",
+        "orBetter": "or better",
+        "count": "Number of subjects",
+        "grade": "Grade",
+        "remove": "Remove this grade rule",
+        "add": "+ Add a grade rule",
+        "none": "No grade rule. Add one, or leave it empty to accept any SPM grades."
+      },
+      "income": {
+        "title": "Household income",
+        "household": "Household income at most (RM per month)",
+        "perPerson": "Income per person under (RM)",
+        "perPersonHint": "Rescues a large household above the ceiling."
+      },
+      "bornIn": {
+        "title": "Born in",
+        "hint": "Read from the IC number. Leave every state switched off to accept students born anywhere."
+      },
+      "startYears": "Course started in",
+      "startYearsHint": "Years separated by commas, e.g. 2025, 2026. A student outside these years is flagged for the reviewer, never declined. Leave empty to accept any start year.",
+      "foot": "Switch a test off to stop applying it. A section with no test switched on is not applied.",
+      "notReady": "The criteria settings for this intake are not ready yet. The rules shown are the ones in force today and they keep applying; you can change them here once the settings are ready.",
+      "cannotShow": "These rules include something this screen cannot show, so they cannot be changed here. Please contact the technical team.",
+      "reload": "Reload",
+      "closePrompt": "The rules for this open intake cannot be read. Close this intake to stop new applications, then contact the technical team.",
+      "createRulesFailed": "The intake year was created, but its criteria were not saved. Open the Rules tab to set them.",
+      "problem": {
+        "pngkBlank": "Enter the minimum PNGK / CGPA, or switch it off.",
+        "pngkRange": "The minimum PNGK / CGPA must be between 0 and 4.00.",
+        "meritBlank": "Enter the minimum merit point, or switch it off.",
+        "meritRange": "The minimum merit point must be between 0 and 100.",
+        "countBlank": "Enter the number of subjects in every grade rule, or remove the rule.",
+        "countRange": "The number of subjects must be a whole number from 0 to 20.",
+        "incomeBlank": "Enter the income amount, or switch it off.",
+        "incomeRange": "Income must be a whole number of ringgit, at most RM100,000.",
+        "years": "Course-start years must be whole years between 2000 and 2100, separated by commas.",
+        "empty": "Switch on at least one test. With none on, every student would pass.",
+        "voidSpmDoor": "With \"any one of these\", the SPM results need a grade rule above 0, or every SPM holder would pass. Add one, or switch SPM results off.",
+        "voidSpmGroup": "The SPM results need a grade rule or a merit point above 0, or every SPM holder would pass. Add one, or switch SPM results off.",
+        "postNoFloor": "Post-SPM results need a minimum PNGK / CGPA. Switch it on, or switch post-SPM results off.",
+        "resultsNoTest": "The results switched on check nothing. Add a test, or switch them off."
+      },
+      "error": {
+        "generic": "The change could not be saved. No changes were made.",
+        "badCriteria": "These criteria were refused. No changes were made. The reasons are listed below.",
+        "rulesError": "The stored rules for this intake cannot be read. They need a technical correction. No changes were made.",
+        "notBuilt": "The criteria settings for this intake are not ready yet, so no changes were made.",
+        "ruleYearChanged": "Another intake year started taking applications, so these are now its rules. Check them and save again.",
+        "criteriaChanged": "Someone else changed these rules. Reload to see the latest.",
+        "beyondColumns": "These rules can only be changed in the criteria editor.",
+        "notFound": "This intake year could not be found. Reload the page.",
+        "forbidden": "You do not have permission to change these criteria.",
+        "network": "The server could not be reached. Check your connection and try again."
+      }
+    },
     "people": {
       "title": "Team",
       "desc": "Everybody who is already in this organisation — what they carry, and who still has access.",

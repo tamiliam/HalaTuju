@@ -17,9 +17,14 @@
 // that moment on, and a re-run re-bands. Two settings, one screen, different blast radius — say so
 // rather than letting them look like the same kind of switch.
 //
-// ⚠ THE VALUE IS THE SWITCH. Unticking a requirement clears it, and a cleared requirement is NOT
-// APPLIED — the defect S2a found was every threshold being NOT NULL with a default, so BrightPath
-// carried an STPM floor it never asked for, applied to nine live applicants for a whole intake.
+// ⚠ A SWITCHED-OFF TEST IS NOT APPLIED — the defect S2a found was every threshold being NOT NULL
+// with a default, so BrightPath carried an STPM floor it never asked for.
+//
+// CRITERIA EDITOR SPRINT 4: the screen edits the rule year's stored criteria TREE through the
+// programme criteria API (`getProgrammeCriteria` / `saveProgrammeCriteria`), not the seven columns.
+// The save names the year shown (`intake_id`), so a year opened meanwhile is never edited by
+// mistake (409 rule_year_changed -> reload). An intake whose tree is not built yet shows its rules
+// read-only with a calm notice (criteria_not_built: trees are built on live by a separate command).
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
@@ -28,21 +33,21 @@ import { useLatest } from '@/lib/useLatest'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
-import RequirementFields from '@/components/admin/RequirementFields'
+import CriteriaEditor from '@/components/admin/CriteriaEditor'
 import SaveBar, { SAVE_BAR_PRIMARY } from '@/components/admin/SaveBar'
 import {
-  getAdminIntakeYears, updateAdminIntakeYear, type AdminIntakeYear,
+  getProgrammeCriteria, saveProgrammeCriteria, type AdminIntakeYear, type CriteriaPayload,
 } from '@/lib/admin-api'
 import {
-  draftToRequirements, requirementsToDraft, sameDraft, EMPTY_REQUIREMENTS, type RequirementDraft,
-} from '@/lib/intakeYears'
+  canShow, errorKey, sameTree, stateToTree, treeToState, EMPTY_STATE, type EditorState,
+} from '@/lib/criteriaTree'
 
 type Outcome = { kind: 'idle' } | { kind: 'saved' } | { kind: 'error'; message: string }
 
 /**
  * WHICH round's rules. The one taking applications, else the newest — the round an admin means
- * when they say "our rules". Returns null when the gift has no year yet, which is a real state on
- * a gift created five minutes ago and must be said, not defaulted around.
+ * when they say "our rules". Returns null when the gift has no year yet. The server's
+ * `criteria_tree.rule_year` is this exactly; the tab now asks the server, this stays for callers.
  */
 export function ruleYear(years: readonly AdminIntakeYear[]): AdminIntakeYear | null {
   if (years.length === 0) return null
@@ -57,84 +62,85 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
   const { t } = useT()
   const { programme, programmes, loading, mustChoose, select } = useSelectedProgramme()
 
-  const [years, setYears] = useState<AdminIntakeYear[]>([])
-  const [draft, setDraft] = useState<RequirementDraft>(EMPTY_REQUIREMENTS)
-  const [saved, setSaved] = useState<RequirementDraft>(EMPTY_REQUIREMENTS)
+  const [payload, setPayload] = useState<CriteriaPayload | null>(null)
+  const [noYear, setNoYear] = useState(false)
+  const [draft, setDraft] = useState<EditorState>(EMPTY_STATE)
+  const [saved, setSaved] = useState<EditorState>(EMPTY_STATE)
   const [busy, setBusy] = useState(false)
   const [outcome, setOutcome] = useState<Outcome>({ kind: 'idle' })
+  /** The server's own reasons for refusing a tree (bad_criteria), shown as it sends them. */
+  const [serverProblems, setServerProblems] = useState<string[]>([])
+  /** Another admin saved first (409 criteria_changed): offer a reload, never overwrite. */
+  const [stale, setStale] = useState(false)
   /**
-   * ⚠ ITS OWN LOADING FLAG, AND NOT THE ONE FROM `useSelectedProgramme`. That one goes false as
-   * soon as the PROGRAMMES have arrived, which is strictly earlier than the YEARS — so keying the
-   * empty state on it made the tab announce "this gift has no intake year yet" for a moment on
-   * every load, about a gift with a live round. An empty card is never merely useless: it asserts
-   * something, and here it asserted something false (lessons.md, 2026-08-18). Caught by the
-   * rendered test, invisible to any source-shape guard.
+   * ⚠ ITS OWN LOADING FLAG, AND NOT THE ONE FROM `useSelectedProgramme`: that one goes false as
+   * soon as the PROGRAMMES have arrived, strictly earlier than the rules — keying the empty state
+   * on it announced "no intake year" for a moment about a gift with a live round (lessons.md,
+   * 2026-08-18).
    */
-  const [yearsLoading, setYearsLoading] = useState(true)
+  const [rulesLoading, setRulesLoading] = useState(true)
 
   const programmeId = programme?.id ?? null
-  const year = useMemo(() => ruleYear(years), [years])
-  // TD-774 (adversarial review R2): the server could not read this intake's STORED rules, so the
-  // row arrives with every value null. Those blank boxes are NOT "no rules" - saving them would
-  // store a nearly open rule set - so the tab says so and never saves (the server refuses too).
-  const rulesError = year?.requirements?.rules_error === true
+  const year = payload?.intake ?? null
+  const rulesError = payload?.rules_error === true
+  const notBuilt = payload !== null && !rulesError && !payload.stored
+  const unshowable = payload !== null && !rulesError && !canShow(payload.criteria)
+  const locked = rulesError || notBuilt || unshowable
 
   const tRef = useLatest(t)   // read inside the loader so a language switch does not re-run it
-  const load = useCallback(async () => {
-    if (!token || programmeId === null) { setYears([]); return }
-    setYearsLoading(true)
+  const load = useCallback(async (keepOutcome = false) => {
+    if (!token || programmeId === null) { setPayload(null); return }
+    setRulesLoading(true)
     try {
-      const d = await getAdminIntakeYears(programmeId, { token })
-      setYears(d.years)
-      const target = ruleYear(d.years)
-      const asDraft = requirementsToDraft(target?.requirements)
-      setDraft(asDraft)
-      setSaved(asDraft)
-      setOutcome({ kind: 'idle' })
-    } catch {
-      setOutcome({ kind: 'error', message: tRef.current('admin.years.loadFailed') })
+      const d = await getProgrammeCriteria(programmeId, { token })
+      setPayload(d); setNoYear(false)
+      const s = treeToState(d.criteria)
+      setDraft(s); setSaved(s); setServerProblems([]); setStale(false)
+      if (!keepOutcome) setOutcome({ kind: 'idle' })
+    } catch (e) {
+      const code = (e as { code?: string })?.code
+      if (code === 'no_intake_year') { setNoYear(true); setPayload(null) }
+      else setOutcome({ kind: 'error', message: tRef.current('admin.years.loadFailed') })
     } finally {
-      setYearsLoading(false)
+      setRulesLoading(false)
     }
   }, [token, programmeId, tRef])
 
   useEffect(() => { void load() }, [load])
 
-  // The platform's nothing-to-save standard (request #6): a Save with no edit behind it is a
-  // control that promises something. ⚠ The dangerous direction is the opposite of the bug — a
-  // Save wrongly ASLEEP strands real work — so this compares the draft with what was LOADED, and
-  // any difference at all wakes it.
-  const dirty = useMemo(() => !sameDraft(draft, saved), [draft, saved])
+  // Nothing-to-save standard (request #6): compare with what was LOADED; any difference wakes Save.
+  const dirty = useMemo(() => !sameTree(draft, saved), [draft, saved])
+  // What would stop a save, worked out as the admin types: Save sleeps and the reasons show, so a
+  // tree the server would refuse is never sent (an unchanged screen shows no reasons).
+  const problems = useMemo(() => (dirty ? stateToTree(draft).problems : []), [dirty, draft])
 
-  /**
-   * What the bar says. ⚠ IDLE-AND-CLEAN RETURNS `null` — the greyed button already carries that
-   * fact, and the console's four save bars used to repeat it in four different sentences. Every
-   * OTHER state has a line, which is the half of the closed-union rule that must not be lost.
-   */
   const statusLine = () => {
     if (outcome.kind === 'saved') {
       return <span className="font-medium text-positive-700">{t('admin.rules.saved')}</span>
     }
     if (outcome.kind === 'error') {
-      return <span className="font-medium text-critical-600">{outcome.message}</span>
+      return <span className="font-medium text-critical-600" data-testid="rules-save-error">{outcome.message}</span>
     }
     return dirty ? t('common.unsavedChanges') : null
   }
 
   const save = async () => {
-    if (!year || !token || rulesError) return
+    if (!year || !token || programmeId === null || locked) return
+    const { tree, problems: local } = stateToTree(draft)
+    if (local.length) return
     setBusy(true); setOutcome({ kind: 'idle' })
     try {
-      await updateAdminIntakeYear(year.id, draftToRequirements(draft), { token })
-      await load()
+      await saveProgrammeCriteria(programmeId, year.id, tree, payload?.digest, { token })
+      await load(true)
       setOutcome({ kind: 'saved' })
     } catch (e) {
-      const code = (e as { code?: string })?.code
-      setOutcome({
-        kind: 'error',
-        message: t(`admin.years.error.${code === 'bad_year' ? 'badYear'
-          : code === 'rules_error' ? 'rulesError' : 'generic'}`),
-      })
+      const err = e as { code?: string; status?: number; body?: { problems?: unknown } }
+      setOutcome({ kind: 'error', message: t(errorKey(err?.code, err?.status)) })
+      const sent = err?.body?.problems
+      setServerProblems(Array.isArray(sent) ? sent.filter((p): p is string => typeof p === 'string') : [])
+      if (err?.code === 'criteria_changed') setStale(true)
+      // Another year started taking applications: show the rules of the year that is now in force.
+      if (err?.code === 'rule_year_changed') await load(true)
     } finally {
       setBusy(false)
     }
@@ -150,16 +156,9 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
     )
   }
 
-  // A gift with no round yet. Say what is missing and where it is made, rather than drawing seven
-  // empty boxes that would save nowhere. ⚠ Only once the YEARS have actually been asked for —
-  // see `yearsLoading`.
-  //
-  // ⚠ IT CARRIES A BUTTON NOW (2026-09-06), AND THE SENTENCE ALONE WAS THE DEFECT. This box has
-  // always named the Intake year tab in prose; the owner's report was that the flow is
-  // "disconnected", and a dead end that TELLS you where to go is still a dead end — the person
-  // has to re-read it, find the tab and cross the screen. It points; it does not create a year
-  // for them (PF-1: suggesting is help, choosing is a guess).
-  if (programme && !loading && !yearsLoading && years.length === 0) {
+  // A gift with no round yet: say what is missing and point to where it is made (PF-1: it points;
+  // it does not create a year for them). Only once the rules have actually been asked for.
+  if (programme && !loading && !rulesLoading && noYear) {
     return (
       <div className="mt-6">
         <InfoBox kind="info">{t('admin.rules.noYear')}</InfoBox>
@@ -175,16 +174,13 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
 
   return (
     <div className="mt-6" data-testid="rules-tab">
-      <p className="text-sm text-ground-600">{t('admin.rules.subtitle')}</p>
-
       {year && (
-        <p className="mt-1 text-sm font-medium text-ground-800" data-testid="rules-year">
+        <p className="text-sm font-medium text-ground-800" data-testid="rules-year">
           {t('admin.rules.editing', { year: String(year.year), name: year.name })}
         </p>
       )}
 
-      {/* ⚠ NOT the same caution the config tab shows. That one warns about a live intake; this one
-          warns that the change is NOT frozen for anybody, which is a different and larger claim. */}
+      {/* ⚠ The change is NOT frozen for anybody already in - a larger claim than a live-intake note. */}
       <div className="mt-4">
         <InfoBox kind="warning">{t('admin.rules.liveWarning')}</InfoBox>
       </div>
@@ -194,19 +190,49 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
           <InfoBox kind="block">{t('admin.rules.rulesError')}</InfoBox>
         </div>
       )}
+      {notBuilt && (
+        <div className="mt-4" data-testid="rules-not-built">
+          <InfoBox kind="info">{t('admin.criteria.notReady')}</InfoBox>
+        </div>
+      )}
+      {unshowable && !notBuilt && (
+        <div className="mt-4" data-testid="rules-cannot-show">
+          <InfoBox kind="block">{t('admin.criteria.cannotShow')}</InfoBox>
+        </div>
+      )}
 
-      <div className="mt-4">
-        <RequirementFields draft={draft} onChange={setDraft} idPrefix="rules" />
-      </div>
+      {!rulesError && payload && (
+        <div className="mt-4">
+          <CriteriaEditor state={draft} onChange={setDraft} disabled={locked} idPrefix="rules" />
+        </div>
+      )}
 
-      <p className="mt-3 text-xs text-ground-500">{t('admin.rules.untickNote')}</p>
+      {problems.length > 0 && (
+        <ul className="mt-3 list-disc pl-5 text-sm text-critical-600" data-testid="rules-problems">
+          {problems.map((p) => <li key={p}>{t(`admin.criteria.problem.${p}`)}</li>)}
+        </ul>
+      )}
 
-      {/* ⚠ THE SHARED BAR, AND THIS TAB WAS THE REASON IT EXISTS. It shipped with the button on
-          the LEFT, no bar, and "Nothing to save — no changes have been made" printed beside it in
-          full while the other three tabs carried that same fact as a hover title. The sentence is
-          gone; the button still sleeps, which is the half of request #6's ruling that matters. */}
+      {serverProblems.length > 0 && (
+        <ul className="mt-3 list-disc pl-5 text-sm text-critical-600" data-testid="rules-server-problems">
+          {serverProblems.map((p) => <li key={p}>{p}</li>)}
+        </ul>
+      )}
+
+      {stale && (
+        <div className="mt-3" data-testid="rules-stale">
+          <InfoBox kind="warning">{t('admin.criteria.error.criteriaChanged')}</InfoBox>
+          <button type="button" onClick={() => { void load() }} data-testid="rules-reload"
+            className="mt-2 rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-800">
+            {t('admin.criteria.reload')}
+          </button>
+        </div>
+      )}
+
+      <p className="mt-3 text-xs text-ground-500">{t('admin.criteria.foot')}</p>
+
       <SaveBar status={statusLine()}>
-        <button type="button" onClick={save} disabled={busy || !dirty || !year || rulesError}
+        <button type="button" onClick={save} disabled={busy || !dirty || !year || locked || problems.length > 0}
           title={!dirty ? t('common.nothingToSave') : undefined}
           className={SAVE_BAR_PRIMARY}>
           {t('common.save')}

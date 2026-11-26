@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: criteria Sprint 4 - the criteria editor screen (2026-11-27)
+
+Branch criteria-ui, not pushed. Services: web. No migration.
+- **CriteriaEditor** replaces RequirementFields on Rules and in the new-intake dialog: results groups (post-SPM CGPA with its merit; SPM grade rows "at least N at GRADE or better" with UPU merit) joined own/all/any; income ceiling and per-person joined all/any; born-in states (none switched on = anywhere); the course-start flag (flags, never declines). Every on/off is the site Toggle. All seven grades show (A, B and C+ were blank before).
+- **Saves** send the tree plus the GET digest; 409 criteria_changed shows a reload. Every API error code has a message; the server's problems list always shows. Boxes the server would refuse (blank or out-of-range values, a post-SPM group with no CGPA floor, results with no test, the void-SPM traps, an empty tree) disable Save with the reason.
+- **Notices:** criteria_not_built is a calm notice with the editor locked; a refused stored tree, or one the screen cannot show exactly, locks Save. Intake rows with rules_error_open show a close-this-intake prompt.
+- **i18n:** new admin.criteria block in en/ms/ta. Manual (org admin) updated.
+
 ### fix: criteria Sprint 3 review R1 (2026-11-27)
 
 Branch criteria-api, not pushed. Services: api. No migration. Verdict engine 2026-11-27.2 (the fingerprint changed). Web: the Sprint 4 editor must send `digest`.

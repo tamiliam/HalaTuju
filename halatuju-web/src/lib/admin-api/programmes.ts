@@ -155,6 +155,9 @@ export interface AdminIntakeYear {
   is_active: boolean
   applications: number
   requirements: ProgrammeRequirements
+  /** An OPEN round whose stored rules cannot be read: every application is held until the rules
+   *  are corrected, so the row asks the admin to close the round (criteria Sprint 3). */
+  rules_error_open?: boolean
   /** ⚠ THE ROUND'S STATED WINDOW, AND IT DESCRIBES — IT OPENS NOTHING (owner, 2026-09-06).
    *  `is_open` is the switch and stays the switch; these two say when the round is MEANT to run.
    *  `null` means no window was stated, which is a normal round — render a dash, not an error. */

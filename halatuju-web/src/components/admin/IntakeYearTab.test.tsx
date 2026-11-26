@@ -434,33 +434,74 @@ describe('the date boxes', () => {
 
 // Request #31: the create form carries the "Born in" group too, and a new round created with
 // nothing ticked is created with the rule OFF — an empty list, sent, never a missing key.
-describe('creating a round with a birth-state rule', () => {
+describe('creating a round with criteria (criteria editor Sprint 4)', () => {
   const fill = () => {
     fireEvent.click(screen.getByText('+ admin.years.new'))
     fireEvent.change(document.getElementById('y-year') as HTMLInputElement, { target: { value: '2027' } })
     fireEvent.change(document.getElementById('y-code') as HTMLInputElement, { target: { value: 'bp-2027' } })
     fireEvent.change(document.getElementById('y-name') as HTMLInputElement, { target: { value: 'Intake 2027' } })
   }
+  const stamped = {
+    intake: { id: 11, code: 'bp-2027', name: 'Intake 2027', year: 2027, is_open: false },
+    stored: true, criteria: { all: [] }, rules_error: false, beyond_columns: false, digest: 'd0',
+  }
 
-  beforeEach(() => { mockApi.createAdminIntakeYear.mockResolvedValue(year({ id: 11, code: 'bp-2027' })) })
-
-  it('sends the ticked states in the server order', async () => {
-    await loaded()
-    fill()
-    fireEvent.click(document.getElementById('new-born-sarawak') as HTMLInputElement)
-    fireEvent.click(document.getElementById('new-born-sabah') as HTMLInputElement)
-    fireEvent.click(screen.getByText('admin.years.createClosed'))
-    await waitFor(() => expect(mockApi.createAdminIntakeYear).toHaveBeenCalled())
-    expect(mockApi.createAdminIntakeYear.mock.calls[0][1].allowed_birth_states)
-      .toEqual(['sabah', 'sarawak'])
+  beforeEach(() => {
+    mockApi.createAdminIntakeYear.mockResolvedValue(year({ id: 11, code: 'bp-2027' }))
+    mockApi.getIntakeYearCriteria.mockResolvedValue(stamped)
+    mockApi.saveIntakeYearCriteria.mockResolvedValue({ ...stamped, changed: true })
   })
 
-  it('sends an empty list when nothing is ticked', async () => {
+  it('creates the year with no requirement keys, then saves the tree with its digest', async () => {
+    await loaded()
+    fill()
+    fireEvent.click(screen.getByTestId('new-born-sarawak'))
+    fireEvent.click(screen.getByTestId('new-born-sabah'))
+    fireEvent.click(screen.getByText('admin.years.createClosed'))
+    await waitFor(() => expect(mockApi.saveIntakeYearCriteria).toHaveBeenCalled())
+    const body = mockApi.createAdminIntakeYear.mock.calls[0][1] as Record<string, unknown>
+    expect(Object.keys(body).sort()).toEqual(['closes_on', 'code', 'name', 'opens_on', 'year'])
+    const [id, tree, digest] = mockApi.saveIntakeYearCriteria.mock.calls[0]
+    expect([id, digest]).toEqual([11, 'd0'])
+    expect(tree).toEqual({ all: [{ section: 'born_in', any: ['sabah', 'sarawak'] }] })
+  })
+
+  it('saves no criteria when nothing is switched on', async () => {
     await loaded()
     fill()
     fireEvent.click(screen.getByText('admin.years.createClosed'))
     await waitFor(() => expect(mockApi.createAdminIntakeYear).toHaveBeenCalled())
-    expect(mockApi.createAdminIntakeYear.mock.calls[0][1].allowed_birth_states).toEqual([])
+    expect(mockApi.saveIntakeYearCriteria).not.toHaveBeenCalled()
+  })
+
+  it('says so when the year is made but its criteria are not', async () => {
+    mockApi.saveIntakeYearCriteria.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_criteria' }))
+    await loaded()
+    fill()
+    fireEvent.click(screen.getByTestId('new-born-sabah'))
+    fireEvent.click(screen.getByText('admin.years.createClosed'))
+    await waitFor(() => expect(screen.getByTestId('create-rules-failed').textContent)
+      .toContain('admin.criteria.createRulesFailed'))
+  })
+
+  it('a half-filled test keeps Create asleep and says why', async () => {
+    await loaded()
+    fill()
+    fireEvent.click(screen.getByTestId('new-household-switch'))
+    expect((screen.getByText('admin.years.createClosed') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByTestId('new-problems').textContent).toContain('admin.criteria.problem.incomeBlank')
+  })
+})
+
+describe('an open round whose rules cannot be read', () => {
+  it('asks for the round to be closed', async () => {
+    mockApi.getAdminIntakeYears.mockResolvedValue({
+      programme: { id: 1, code: 'bp', name_en: 'BrightPath Bursary', is_active: true },
+      years: [year({ rules_error_open: true })],
+    })
+    render(<IntakeYearTab />)
+    await waitFor(() => expect(screen.getByTestId(`rules-error-open-${year().code}`).textContent)
+      .toContain('admin.criteria.closePrompt'))
   })
 })
 
