@@ -131,7 +131,11 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         """Case 1048: a declaration in the salary-slip slot does not SHOW the read's payslip-only warnings
         (no employer / no pay period — a declaration has neither by design). A copy is shown; the stored
-        read is never edited (`income_engine.declaration_name.shown_warnings`)."""
+        read is never edited (`income_engine.declaration_name.shown_warnings`).
+
+        Chip standard S0 (display only): the server's chips + pill, worked out from THIS payload
+        (no query of its own), and ``read_at`` = the later of the two read stamps (null if neither).
+        ONE override only: a second ``to_representation`` in this class silently replaces this one."""
         data = super().to_representation(instance)
         vf = data.get('vision_fields')
         if isinstance(vf, dict) and isinstance(vf.get('warnings'), list) and vf['warnings']:
@@ -139,6 +143,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             kept = shown_warnings(instance, vf['warnings'])
             if kept is not vf['warnings']:
                 data['vision_fields'] = {**vf, 'warnings': kept}
+        data['chips'], data['chip_pill'] = _served_chips(instance, data)
+        data['read_at'] = _read_at(instance)
         return data
 
     def get_download_url(self, obj):
@@ -383,14 +389,6 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         place a doc under the right person even when it was uploaded without a tag."""
         from ..income_engine import resolved_member_for
         return resolved_member_for(obj.application, obj)
-
-    def to_representation(self, instance):
-        """Chip standard S0 (display only): the server's chips + pill, worked out from THIS payload
-        (no query of its own), and ``read_at`` = the later of the two read stamps (null if neither)."""
-        data = super().to_representation(instance)
-        data['chips'], data['chip_pill'] = _served_chips(instance, data)
-        data['read_at'] = _read_at(instance)
-        return data
 
 
 class SignUploadSerializer(serializers.Serializer):

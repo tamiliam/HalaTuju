@@ -287,6 +287,29 @@ class PayslipOnlyWarningTests(SimpleTestCase):
             data = ApplicantDocumentSerializer().to_representation(doc)
         self.assertIs(data['vision_fields'], doc.vision_fields)
 
+    def test_the_filter_and_the_chips_share_one_payload(self):
+        # Chip S0 regression: a second to_representation in the class replaced this filter.
+        from rest_framework import serializers as drf
+        from apps.scholarship.serializers.documents import ApplicantDocumentSerializer
+        doc = _doc()
+        doc.vision_fields['warnings'] = [self.EMPLOYER, self.HANDWRITTEN]
+        with mock.patch.object(drf.ModelSerializer, 'to_representation',
+                               lambda self, inst: {'id': 1, 'vision_fields': inst.vision_fields}):
+            data = ApplicantDocumentSerializer().to_representation(doc)
+        self.assertEqual(data['vision_fields']['warnings'], [self.HANDWRITTEN])
+        self.assertIn('chips', data)
+        self.assertIn('chip_pill', data)
+        self.assertIn('read_at', data)
+
+    def test_the_serializer_class_defines_to_representation_once(self):
+        import ast
+        import inspect
+        from apps.scholarship.serializers import documents
+        tree = ast.parse(inspect.getsource(documents))
+        cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'ApplicantDocumentSerializer')
+        defs = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'to_representation']
+        self.assertEqual(len(defs), 1)
+
 
 class StoredVerdictUnchangedTests(SimpleTestCase):
     """Review round 1: the STORED student verdict is not softened. A declaration near miss still stores
