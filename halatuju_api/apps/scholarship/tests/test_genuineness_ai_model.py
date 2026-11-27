@@ -89,7 +89,7 @@ class TestTheSettingOnCalls38(SimpleTestCase):
 
     def test_still_malformed_after_the_retry_is_todays_no_signal(self):
         for name, call, good, _ok, fail in SITES:
-            missing = {k: v for k, v in good.items() if k != list(good)[-1]}   # a required key missing
+            missing = {k: v for k, v in good.items() if k != list(good)[0]}   # a required (not soft) key missing
             with self.subTest(site=name), _img(), patch(SEAM, return_value=missing) as m:
                 self.assertEqual(call(), fail)
                 self.assertEqual(m.call_count, ai_model.MAX_CALLS)
@@ -120,6 +120,80 @@ class TestTheSettingOnCalls38(SimpleTestCase):
         with _img(), patch(SEAM, side_effect=[['x'], GOOD_VISUAL]) as m:
             self.assertEqual(results_doc.results_visual_markers(b'img'), {'has_qr': True, 'has_crest': False})
             self.assertEqual(m.call_count, 2)
+
+
+@override_settings(GENUINENESS_MODEL=M38)
+class TestReviewRound1(SimpleTestCase):
+    """Review r1: the name sent, a soft reason, and two refusals labelled as refusals."""
+
+    def test_the_name_is_sent_stripped_and_lower_case(self):
+        with override_settings(GENUINENESS_MODEL='  Gemini-3.8-Flash '):
+            self.assertEqual(ai_model.chosen_model(), M38)
+            with _img(), patch(SEAM, return_value=GOOD_IC) as m:
+                ic.ic_genuineness(b'img', 'image/jpeg')
+            self.assertEqual(m.call_args.kwargs['models'], [M38])
+        with _img(), patch(SEAM, return_value=GOOD_IC) as m:
+            ic.ic_genuineness(b'img', 'image/jpeg', model=' GEMINI-3.8-FLASH')
+        self.assertEqual(m.call_args.kwargs['models'], [M38])
+
+    def test_a_junk_setting_falls_back_to_the_env_var_then_the_default(self):
+        for junk in ('gemini-2.5-flash', 123, 'typo'):
+            with self.subTest(junk=junk), override_settings(GENUINENESS_MODEL=junk), \
+                    self.assertLogs(ai_model.logger, 'WARNING'):
+                with patch.dict('os.environ', {'GENUINENESS_MODEL': 'Gemini-3.8-Flash'}):
+                    self.assertEqual(ai_model.chosen_model(), M38)
+                with patch.dict('os.environ', {'GENUINENESS_MODEL': 'gemini-2.5-flash'}):
+                    self.assertEqual(ai_model.chosen_model(), '')
+                self.assertEqual(ai_model.chosen_model(), '')
+
+    def test_a_missing_or_null_reason_keeps_the_verdict(self):
+        for reason in ('<missing>', None, 1):
+            ic_answer, doc_answer = dict(GOOD_IC, verdict='suspect'), dict(GOOD_DOC, verdict='suspect')
+            sample_answer = dict(GOOD_SAMPLE, is_sample=True)
+            for a in (ic_answer, doc_answer, sample_answer):
+                if reason == '<missing>':
+                    a.pop('reason')
+                else:
+                    a['reason'] = reason
+            with self.subTest(reason=reason), _img():
+                with patch(SEAM, return_value=ic_answer) as m:
+                    self.assertEqual(ic.ic_genuineness(b'img', 'image/jpeg')['status'], 'suspect')
+                    self.assertEqual(m.call_count, 1)
+                with patch(SEAM, return_value=doc_answer) as m:
+                    r = supporting_doc.doc_genuineness(b'img', 'image/jpeg', 'str')
+                    self.assertEqual((r['status'], r['reason'], m.call_count), ('suspect', '', 1))
+                with patch(SEAM, return_value=sample_answer) as m:
+                    self.assertIs(sample_stamp._ask_model(b'img', 'image/jpeg'), True)
+                    self.assertEqual(m.call_count, 1)
+
+    def test_a_soft_reason_never_rescues_a_bad_verdict(self):
+        with _img(), patch(SEAM, return_value={**GOOD_IC, 'verdict': 'perhaps', 'reason': None}) as m:
+            self.assertEqual(ic.ic_genuineness(b'img', 'image/jpeg'), {})
+            self.assertEqual(m.call_count, 2)
+
+    def test_two_refusals_are_a_refusal_not_malformed(self):
+        refused = {'_error': DOCUMENT_FAILED + ': blocked'}
+        malformed = {**GOOD_IC, 'verdict': 'perhaps'}
+        for replies, is_malformed in (([refused, refused], False), ([malformed, refused], False),
+                                      ([refused, malformed], True)):
+            with self.subTest(replies=[('refused' if r is refused else 'malformed') for r in replies]), \
+                    patch(SEAM, side_effect=replies) as m:
+                r = ai_model.ask('p', ic._IC_GENUINENESS_SCHEMA, image=b'i', mime_type='image/jpeg',
+                                 verdicts=set(ic._GENUINENESS_STATUS))
+                self.assertEqual(m.call_count, 2)
+                self.assertTrue(r['_error'].startswith(DOCUMENT_FAILED))
+                self.assertEqual(ai_model.MALFORMED in r['_error'], is_malformed)
+
+
+class TestTheDefaultPathTakesNoNewRule(SimpleTestCase):
+    def test_the_default_answer_is_the_seams_own_object(self):
+        """Unset: no soft reason, no check, no copy — the seam's answer comes back as it is."""
+        answer = {**GOOD_IC, 'reason': None}
+        with patch(SEAM, return_value=answer) as m:
+            got = ai_model.ask('p', ic._IC_GENUINENESS_SCHEMA, image=b'i', mime_type='image/jpeg',
+                               verdicts=set(ic._GENUINENESS_STATUS))
+        self.assertIs(got, answer)
+        self.assertIs(m.call_args.args[1], ic._IC_GENUINENESS_SCHEMA)
 
 
 class TestTheForcedModel(SimpleTestCase):

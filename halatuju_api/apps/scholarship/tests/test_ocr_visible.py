@@ -461,4 +461,4 @@ class TheOtherLayerReaders(SimpleTestCase):
         self.assertLessEqual(len(pdf_pages._LAYER_MEMO), pdf_pages._LAYER_MEMO_SIZE)
 
     def test_model_version(self):
-        self.assertEqual(MODEL_VERSION, '1.36.0')   # S-visible took 1.31.0; OCR-11 (empty read) 1.32.0 to 1.35.0; TD-701 1.36.0
+        self.assertEqual(MODEL_VERSION, '1.37.0')   # S-visible 1.31.0; OCR-11 1.32.0 to 1.35.0; TD-701 1.36.0; OCR-16 1.37.0

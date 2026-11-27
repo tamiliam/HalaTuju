@@ -2,6 +2,7 @@
 (IC 000000-00-0000). It must make no AI call in a dry run, write nothing, keep to its caps and stops, and print
 counts and document ids only."""
 from contextlib import ExitStack
+from decimal import Decimal
 from io import StringIO
 from unittest.mock import patch
 
@@ -11,7 +12,7 @@ from django.test import TestCase
 from apps.scholarship.genuineness import ic
 from apps.scholarship.management.commands import eval_genuineness_38 as ev
 from apps.scholarship.models import ApplicantDocument, ApplicantDocumentOcrText
-from apps.scholarship.read_errors import CASCADE_FAILED
+from apps.scholarship.read_errors import CASCADE_FAILED, DOCUMENT_FAILED
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 
 SEAM = 'apps.scholarship.vision._call_gemini_json'
@@ -156,6 +157,122 @@ class TestTheRun(_Docs):
         text, _m, _ = self.run_cmd('--run', '--checks', 'ic', '--limit', '1', '--max-cost-usd', '1.00')
         for secret in (SECRET_REASON, STORED_REASON, IC_NUMBER, 'GEMINI_API_KEY'):
             self.assertNotIn(secret, text)
+
+
+def _by_schema(ic_answer=None, sample=None, visual=None, doc=None):
+    """A seam that answers by the schema it is asked with (each check has its own keys)."""
+    def seam(prompt, schema, **k):
+        props = schema['properties']
+        if 'has_qr_code' in props:
+            return visual if visual is not None else {'has_qr_code': True, 'has_jata_negara_crest': True}
+        if 'is_sample' in props:
+            return sample if sample is not None else {'is_sample': False, 'reason': SECRET_REASON}
+        if 'is_official' in props:
+            return doc or {'is_official': True, 'is_expected_type': True, 'doc_seen': 'x', 'verdict': 'genuine',
+                           'reason': SECRET_REASON}
+        return ic_answer or _ic_answer()
+    return {'side_effect': seam}
+
+
+class TestReviewRound1(_Docs):
+    """Review r1: fakes read only by their own check, the slip scored as live, the gates, refusals, cost."""
+    RUN = ('--run', '--limit', '50', '--max-cost-usd', '1.00')
+
+    def test_a_typed_fake_ic_is_never_read_by_the_sample_check(self):
+        fake = self.doc('ic', status='suspect', verification='rejected')
+        text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'ic,sample', '--fake-ids', str(fake.pk),
+                                   seam=_by_schema(ic_answer=_ic_answer('suspect')))
+        self.assertIn('sample: 0 to read', text)
+        self.assertIn('sample new_not_genuine_on_accepted 0, genuine_on_known_fake 0', text)
+        self.assertIn('ic new_not_genuine_on_accepted 0, genuine_on_known_fake 0', text)
+
+    def test_sample_fakes_go_to_the_sample_check_only(self):
+        fake = self.doc('str', sample_check_version='1.0.0')
+        text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'supporting,sample', '--sample-fake-ids', str(fake.pk),
+                                   seam=_by_schema())
+        self.assertIn(f'[sample] genuine_on_known_fake ids: {fake.pk}', text)
+        self.assertIn('supporting new_not_genuine_on_accepted 0, genuine_on_known_fake 0', text)
+
+    def test_a_fake_no_chosen_check_reads_is_listed(self):
+        stray = self.doc('offer_letter')
+        text, _m, _ = self.run_cmd('--checks', 'ic', '--fake-ids', str(stray.pk))
+        self.assertIn(f'known fakes no chosen check reads: {stray.pk}', text)
+
+    def _slip(self, verification='verified', text=None):
+        d = self.doc('results_slip', verification=verification)
+        d.vision_fields['authenticity'].update({'probability': 0.9, 'present': ['QR CODE', 'JATA NEGARA'],
+                                                'missing': []})
+        ApplicantDocument.objects.filter(pk=d.pk).update(vision_fields=d.vision_fields)
+        if text:
+            ApplicantDocumentOcrText.objects.create(document=d, text=text, source='vision_ocr', reader='test',
+                                                    stored_at=d.uploaded_at)
+        return d
+
+    def test_a_slip_with_no_markers_is_scored_as_live_with_both_absent(self):
+        self._slip(text='SIJIL PELAJARAN MALAYSIA 000000-00-0000')
+        bad = {'has_qr_code': 'yes', 'has_jata_negara_crest': True}          # malformed twice: no markers
+        with patch('apps.scholarship.genuineness.results_doc.signature_genuineness',
+                   return_value={'status': 'suspect', 'probability': 0.4}) as sg:
+            text, m, _ = self.run_cmd(*self.RUN, '--checks', 'results_slip', seam=_by_schema(visual=bad))
+        self.assertEqual(m.call_count, 2)
+        self.assertEqual((sg.call_args.kwargs['has_qr'], sg.call_args.kwargs['has_crest']), (False, False))
+        self.assertIn('rescored_from_text 1, not_gated_no_text 0', text)
+        self.assertIn('[results_slip] new_not_genuine_on_accepted ids:', text)
+
+    def test_a_slip_without_stored_text_is_counted_not_gated_and_its_markers_compared(self):
+        slip = self._slip()
+        text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'results_slip',
+                                   seam=_by_schema(visual={'has_qr_code': False, 'has_jata_negara_crest': True}))
+        self.assertIn(f'[results_slip] not_gated_no_text ids: {slip.pk}', text)
+        self.assertIn('marker_agree 1, marker_disagree 1, marker_lost_on_accepted 1', text)
+        self.assertIn('results_slip new_not_genuine_on_accepted 0, genuine_on_known_fake 0, '
+                      'marker_lost_on_accepted 1', text)
+
+    def test_every_accepted_document_flagged_counts_whatever_its_stored_value(self):
+        was_suspect = self.doc('ic', status='suspect', verification='verified')
+        was_genuine = self.doc('ic', verification='verified')
+        text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'ic', seam=_by_schema(ic_answer=_ic_answer('suspect')))
+        self.assertIn('new_not_genuine_on_accepted 2, new_not_genuine_on_accepted_stored_genuine 1', text)
+        self.assertIn(f'[ic] new_not_genuine_on_accepted ids: {was_suspect.pk},{was_genuine.pk}', text)
+
+    def test_malformed_on_fakes_and_on_rejected_is_on_the_gates_line(self):
+        fake, rejected = self.doc('ic'), self.doc('ic', verification='rejected')
+        text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'ic', '--fake-ids', str(fake.pk),
+                                   seam=_by_schema(ic_answer={**_ic_answer(), 'verdict': 'perhaps'}))
+        self.assertIn('(also: malformed_on_known_fake 1, malformed_on_rejected 1)', text)
+        self.assertIn(f'[ic] malformed_on_rejected ids: {rejected.pk}', text)
+
+    def test_two_refusals_count_as_document_refused(self):
+        self.doc('ic')
+        text, m, _ = self.run_cmd(*self.RUN, '--checks', 'ic', seam={'return_value': {'_error': DOCUMENT_FAILED + ': x'}})
+        self.assertEqual(m.call_count, 2)
+        self.assertIn('malformed_after_retry 0, document_refused 1', text)
+
+    def test_reported_tokens_meter_the_cap_with_the_flat_price_as_floor(self):
+        from apps.scholarship import usage
+        for _ in range(3):
+            self.doc('ic')
+
+        def costly(prompt, schema, **k):
+            usage.record_usage(usage.GEMINI, model=k['models'][0], input_tokens=10, output_tokens=200_000)
+            return _ic_answer()
+        text, m, _ = self.run_cmd(*self.RUN, '--checks', 'ic', seam={'side_effect': costly})
+        self.assertEqual(m.call_count, 1)                    # US$1.00 of tokens: the next one could pass the cap
+        self.assertIn('charged up to US$1.0000', text)
+        self.assertIn('STOPPED: the next document could pass the cap', text)
+        self.assertEqual(ev.call_cost((10, 20)), ev.USD_PER_CALL_38)       # tiny token counts: the floor
+        self.assertEqual(ev.call_cost(None), ev.USD_PER_CALL_38)
+
+    def test_the_forced_model_is_sent_lower_case(self):
+        self.doc('ic')
+        _t, m, _ = self.run_cmd(*self.RUN, '--checks', 'ic', '--model', 'Gemini-3.8-Flash')
+        self.assertEqual(m.call_args.kwargs['models'], ['gemini-3.8-flash'])
+
+    def test_the_runbook_suggests_two_dollars_and_names_the_assumed_price(self):
+        help_text = ev.Command().create_parser('manage.py', 'eval_genuineness_38').format_help()
+        self.assertIn('--max-cost-usd 2.00', ' '.join(help_text.split()))
+        self.assertIn('ASSUMED upper bound of US$0.008', ' '.join(help_text.split()))
+        self.assertEqual(ev.MAX_COST_USD, Decimal('5.00'))
 
 
 class TestTheSamplePlan(_Docs):

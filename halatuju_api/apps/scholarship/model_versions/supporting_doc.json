@@ -7,6 +7,8 @@
   "1.1.0": {
     "digest": "01a1f94297de4482b89ed74f4fc0dccefcca0b1e676f39c6cfc2a1c82babe403",
     "note": "2026-11-28: OCR-16. The read goes through genuineness/ai_model.ask behind the GENUINENESS_MODEL setting. Default (unset) = the 2.5 Flash cascade exactly as before: same prompt, same schema, one call, same parsed result, so no stored answer changes while the setting is unset. Set to a 3.8 Flash name (the slip allow-list): that one model, the verdict word a closed enum, the answer checked for every required key and type, one retry, and a still-malformed answer gives the same no-signal outcome as an AI failure today. The stamp moves with the code, not with the setting.",
-    "also_ok": []
+    "also_ok": [
+      {"digest": "cbfd869284e29786f2ba0c7690162df0d7afb36abb9b16c52c5594786105a3db", "note": "Review r1 of OCR-16 (2026-11-28): genuineness/ai_model.py only. The default (setting unset) 2.5 path is unchanged byte for byte, so no stored answer can change. The 3.8 path, never run live (the setting is unset and the eval writes nothing), now sends the stripped lower-case name, falls back from a junk Django setting to the env var, reads a missing or null reason as empty text, and keeps two refusals labelled refused."}
+    ]
   }
 }

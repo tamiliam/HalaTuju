@@ -10,12 +10,16 @@ Gemini through `ask` here, behind ONE setting:
     `offer_reader.retry_model` precedent). EMPTY (the default) keeps today's call exactly: the 2.5
     Flash cascade (`profile_engine.FLASH_25_CASCADE`), one call, no retry.
   * set to a 3.8 Flash name (the slip read's allow-list, `slip_read.is_slip_model`) → that ONE
-    model, every answer CHECKED against the schema (each required key present with its JSON type,
-    a verdict one of the known words), one retry on a malformed answer or a document refusal
-    (DOCUMENT_FAILED), no retry on a service error (our side). Still malformed after the retry → a
-    DOCUMENT_FAILED error, which every caller already turns into "no signal" (never a penalty).
-  * any other value (a 2.5 name, a typo, a Lite variant) is refused with a warning and the checks
-    stay on the 2.5 cascade — never an unvetted model on a document verdict.
+    model, sent as its stripped lower-case name, every answer CHECKED against the schema (each
+    required key present with its JSON type, a verdict one of the known words), one retry on a
+    malformed answer or a document refusal (DOCUMENT_FAILED), no retry on a service error (our
+    side). Still malformed after the retry → a DOCUMENT_FAILED error marked MALFORMED; refused twice
+    → the refusal itself. Every caller already turns either into "no signal" (never a penalty).
+    The free-text `reason` alone is soft (review r1): missing, null or not text, it reads '' and
+    the verdict stands — a fake must not slip to no signal because the model gave no reason.
+  * any other value (a 2.5 name, a typo, a Lite variant, a non-text value) is refused with a
+    warning; a refused Django setting falls back to the env var, then to the 2.5 cascade — never an
+    unvetted model on a document verdict.
 
 The paid eval (`manage.py eval_genuineness_38`) forces the 3.8 path per call with `model=`.
 """
@@ -33,21 +37,24 @@ MAX_CALLS = 2
 #: The reason stored with a 3.8 answer that failed the check (the retry's too).
 MALFORMED = 'MALFORMED_GENUINENESS_ANSWER'
 
+#: Free-text keys a 3.8 answer may leave out, null or mistype: read as '' and the verdict stands.
+SOFT_KEYS = ('reason',)
+
 _JSON_TYPES = {'boolean': bool, 'string': str}
 
 
 def chosen_model() -> str:
-    """The 3.8 Flash model the checks ask, or '' for today's 2.5 cascade (the default)."""
+    """The 3.8 Flash model the checks ask (stripped, lower case), or '' for today's 2.5 cascade (the
+    default). The Django setting first; a refused one falls back to the env var, then to ''."""
     from django.conf import settings
     from ..vision.slip_read import is_slip_model
-    model = (str(getattr(settings, SETTING, '') or '').strip()
-             or os.environ.get(SETTING, '').strip())
-    if not model:
-        return ''
-    if is_slip_model(model):
-        return model
-    logger.warning('%s=%s refused (only a 3.8 Flash name may read genuineness); using 2.5 Flash',
-                   SETTING, model)
+    for where, raw in (('setting', getattr(settings, SETTING, '')), ('env', os.environ.get(SETTING, ''))):
+        model = str(raw or '').strip().lower()
+        if not model:
+            continue
+        if is_slip_model(model):
+            return model
+        logger.warning('%s (%s) refused: only a 3.8 Flash name may read genuineness', SETTING, where)
     return ''
 
 
@@ -86,6 +93,14 @@ def _with_enum(schema, verdicts):
     return {**schema, 'properties': props}
 
 
+def _soften(answer, schema):
+    """A 3.8 answer whose free-text `SOFT_KEYS` are missing, null or not text: those read ''."""
+    if not isinstance(answer, dict):
+        return answer
+    soft = [k for k in SOFT_KEYS if k in schema.get('properties', {}) and not isinstance(answer.get(k), str)]
+    return {**answer, **dict.fromkeys(soft, '')} if soft else answer
+
+
 def ask(prompt, schema, *, image, mime_type, model=None, verdicts=None) -> dict:
     """Ask one genuineness question → the parsed answer, or ``{'_error': ...}``. `model=None` reads
     `GENUINENESS_MODEL`; the eval passes a 3.8 name to force that path. `verdicts` is the set of
@@ -93,14 +108,17 @@ def ask(prompt, schema, *, image, mime_type, model=None, verdicts=None) -> dict:
     from apps.scholarship import vision   # lazy: the callers' patch seam stays vision._call_gemini_json
     from ..profile_engine import FLASH_25_CASCADE
     from ..vision.slip_read import is_slip_model
-    model = chosen_model() if model is None else model
+    if model is None:
+        model = chosen_model()
+    elif isinstance(model, str):                            # a forced name, sent as the setting is
+        model = model.strip().lower()
     if not model:                                           # today's call, byte for byte
         return vision._call_gemini_json(prompt, schema, image=image, mime_type=mime_type,
                                         models=FLASH_25_CASCADE)
     if not is_slip_model(model):                            # a forced model must be 3.8 Flash too
         return {'_error': cascade_failure([(str(model), 'refused: not a 3.8 Flash model')])}
     schema38 = _with_enum(schema, verdicts)
-    problems = []
+    last = None
     for _ in range(MAX_CALLS):
         answer = vision._call_gemini_json(prompt, schema38, image=image, mime_type=mime_type,
                                           models=[model])
@@ -108,9 +126,11 @@ def ask(prompt, schema, *, image, mime_type, model=None, verdicts=None) -> dict:
         if err:
             if not str(err).startswith(DOCUMENT_FAILED):    # our side: not retried here
                 return answer
-            problems = ['document_failed']
+            last = answer                                   # refused: retried; refused twice stays refused
             continue
+        answer = _soften(answer, schema)
         problems = answer_problems(answer, schema, verdicts)
         if not problems:
             return answer
-    return {'_error': document_failure([(model, f"{MALFORMED}: {', '.join(problems)}")])}
+        last = {'_error': document_failure([(model, f"{MALFORMED}: {', '.join(problems)}")])}
+    return last

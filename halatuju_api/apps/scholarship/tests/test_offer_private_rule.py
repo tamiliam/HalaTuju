@@ -53,8 +53,9 @@ class TheReasonOpeningsAreUnchanged(SimpleTestCase):
 
     def test_no_model_version_bump(self):
         # The IPTS change kept 1.29.0; OCR-first S-visible then took 1.31.0 for its own change (an invisible layer),
-        # and OCR-11 1.32.0 for its own (a read that found nothing is a failed read).
-        self.assertEqual(MODEL_VERSION, '1.36.0')
+        # and OCR-11 1.32.0 for its own (a read that found nothing is a failed read); TD-701 1.36.0 and
+        # OCR-16 1.37.0 (the QR + crest read behind GENUINENESS_MODEL) for theirs.
+        self.assertEqual(MODEL_VERSION, '1.37.0')
 
     def test_engine_version_floor(self):
         self.assertGreaterEqual(VERDICT_ENGINE_VERSION, '2026-11-18.2')

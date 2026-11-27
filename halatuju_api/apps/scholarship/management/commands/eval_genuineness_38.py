@@ -5,32 +5,41 @@ service. It forces the 3.8 path (`ai_model.ask` with `model=`) on a sample of li
 
   * ic           — `ic.ic_genuineness` on live ic / parent_ic rows with a stored MyKad verdict;
   * results_slip — `results_doc.results_visual_markers` (QR + crest) on live results slips with a stored
-                   signature verdict. Where the private OCR store holds the slip's text the verdict is
-                   re-scored (`signature_genuineness`) with the new markers; every slip also compares each
-                   marker the stored verdict scored;
+                   signature verdict, re-scored as live does (`vision.authenticity._auth_results_slip`): with
+                   the slip's stored OCR text, `signature_genuineness` with the new markers (both absent when
+                   3.8 gave none); without stored text live gives no verdict, so the slip is NOT GATED
+                   (`not_gated_no_text`) and only its markers are compared with the stored ones;
   * supporting   — `supporting_doc.doc_genuineness` on live str / birth_certificate / epf rows whose stored
                    verdict is the holistic read (no probability);
   * sample       — `sample_stamp._ask_model` on stored-flagged samples, then rows with a sample word in their
                    stored text, then rows the check stamped clean.
 
-Each sample takes `--fake-ids` (known fakes, e.g. the typed-fake class) first, then reviewer-rejected rows, then
-rows the stored verdict flagged, then the newest. It reports per check: agreement with the stored 2.5 verdict,
-agreement with the reviewer (verified = genuine, rejected = not), NEW not-genuine on a reviewer-accepted row the
-2.5 verdict called genuine (must be 0), genuine on a known fake (must be 0), malformed answers after the retry,
-document refusals and service errors.
+Known fakes come first in each sample. `--fake-ids` (typed or forged fakes) go ONLY through the check of their
+own document type (never the sample check: a fake MyKad is rightly "not a SAMPLE stamp");
+`--sample-fake-ids` (stamped SAMPLE / CONTOH uploads) go ONLY through the sample check. A known fake that no
+chosen check samples is listed. Then reviewer-rejected rows, then rows the stored verdict flagged, then the
+newest. It reports per check: agreement with the stored 2.5 verdict, agreement with the reviewer (verified =
+genuine, rejected = not), malformed answers after the retry, document refusals, service errors and THE GATES
+(each must be 0): a not-genuine 3.8 verdict on ANY reviewer-accepted row (whatever its stored value; the subset
+whose stored value was genuine is shown too), genuine on a known fake, and for the slip a marker the stored
+verdict had found that 3.8 lost on an accepted row. Malformed answers on known fakes and on reviewer-rejected
+rows are shown beside the gates (a fake that reads as no signal is not a pass).
 
 WRITES NOTHING: no verdict, no vision_fields, no genuineness field, no read state (a guard refuses every
 document save during the run). The one row is the seam's own billing meter, a PLATFORM row
 (`usage_context(source=USAGE_SOURCE)`, no organisation, no application), as in `capture_parent_ic_text`.
 
 DRY RUN BY DEFAULT: counts and the estimated cost only; no download, no AI call. `--run` needs `--limit`
-(documents, at most `MAX_LIMIT`) and `--max-cost-usd` (at most `MAX_COST_USD`); it stops before the document
-that could pass the cap, and after `FAIL_FAST` AI service errors (or Storage fetch failures) in a row.
+(documents, at most `MAX_LIMIT`) and `--max-cost-usd` (at most `MAX_COST_USD`; suggested 2.00); it stops before
+the document that could pass the cap, and after `FAIL_FAST` AI service errors (or Storage fetch failures) in a
+row. COST: 3.8 Flash has no price row, so each call is charged at an ASSUMED upper bound of US$0.008
+(`USD_PER_CALL_38`). When a Gemini response reports its token counts the call is charged at those tokens at the
+assumed 3.8 prices (`PRICE_38_ASSUMED`) when that is higher; the flat US$0.008 is the floor.
 
 PRIVATE: prints counts and document ids only; never a name, an IC number, document text, model free text or a key.
 
     python manage.py eval_genuineness_38                                                   # dry run
-    python manage.py eval_genuineness_38 --run --limit 300 --max-cost-usd 3.00 --fake-ids 12,34
+    python manage.py eval_genuineness_38 --run --limit 300 --max-cost-usd 2.00 --fake-ids 12,34 --sample-fake-ids 56
 """
 import logging
 from contextlib import contextmanager
@@ -56,14 +65,15 @@ SAMPLE = {'ic': 100, 'results_slip': 100, 'supporting': 60, 'sample': 40}
 CHECKS = tuple(SAMPLE)
 MAX_LIMIT = 400
 MAX_COST_USD = Decimal('5.00')
+SUGGESTED_COST_USD = Decimal('2.00')
 FAIL_FAST = 5
 PROGRESS_EVERY = 50
 IDS_SHOWN = 50
-#: Per 3.8 Flash call, an UPPER bound: twice the S5 gate's 2.5 per-call figure (`eval/slip_s5_gate.py`
-#: USD_PER_CALL_38_MAX). 3.8 Flash has no row in `eval/offer_fresh_gemini.PRICES`; this is ASSUMED, so the
-#: cap can only stop early. Each document reserves `ai_model.MAX_CALLS` calls before it is read.
+#: Per 3.8 Flash call, an ASSUMED upper bound: twice the S5 gate's 2.5 per-call figure (`eval/slip_s5_gate.py`
+#: USD_PER_CALL_38_MAX). 3.8 Flash has no row in `eval/offer_fresh_gemini.PRICES`. It is the FLOOR of each
+#: call's charge: a response that reports more tokens is charged at them (`call_cost`).
 USD_PER_CALL_38 = Decimal('0.008')
-#: The token prices assumed for 3.8 Flash (US$ per 1M tokens; the S5 gate's PRICE_38_ASSUMED), shown only.
+#: The token prices assumed for 3.8 Flash (US$ per 1M tokens; the S5 gate's PRICE_38_ASSUMED).
 PRICE_38_ASSUMED = {'input': 0.60, 'output': 5.00}
 
 _TYPES = {'ic': ('ic', 'parent_ic'), 'results_slip': ('results_slip',),
@@ -73,10 +83,13 @@ _VISUAL = {'has_qr': 'QR CODE', 'has_crest': 'JATA NEGARA'}
 
 COUNTERS = ('docs', 'calls', 'answered', 'no_signal', 'service_error', 'malformed_after_retry',
             'document_refused', 'fetch_failed', 'error', 'agree_stored', 'disagree_stored',
-            'agree_reviewer', 'disagree_reviewer', 'new_not_genuine_on_accepted', 'genuine_on_known_fake',
-            'rescored_from_text', 'marker_agree', 'marker_disagree', 'marker_lost_on_accepted')
+            'agree_reviewer', 'disagree_reviewer', 'new_not_genuine_on_accepted',
+            'new_not_genuine_on_accepted_stored_genuine', 'genuine_on_known_fake',
+            'malformed_on_known_fake', 'malformed_on_rejected', 'rescored_from_text', 'not_gated_no_text',
+            'marker_agree', 'marker_disagree', 'marker_lost_on_accepted')
 ID_LISTS = ('disagree_stored', 'new_not_genuine_on_accepted', 'genuine_on_known_fake',
-            'malformed_after_retry', 'service_error', 'marker_lost_on_accepted')
+            'malformed_after_retry', 'malformed_on_known_fake', 'malformed_on_rejected', 'document_refused',
+            'service_error', 'not_gated_no_text', 'marker_lost_on_accepted')
 
 
 def _live(types):
@@ -105,26 +118,38 @@ def stored_value(check, doc_type, vf):
     return canonical_status(auth.get('status'), doc_type)
 
 
-def genuineness_sample(checks, fake_ids, sizes=None):
+def fakes_for(check, fake_ids, sample_fake_ids):
+    """The known fakes one check reads: sample-stamp fakes for the sample check, the others for the rest."""
+    return set(sample_fake_ids) if check == 'sample' else set(fake_ids)
+
+
+def genuineness_sample(checks, fake_ids, sizes=None, sample_fake_ids=()):
     """{check: [document id, ...]} in priority order: known fakes, rejected, flagged, newest."""
     sizes = sizes or SAMPLE
     words = _sample_word_ids() if 'sample' in checks else set()
     out = {}
     for check in checks:
+        fakes = fakes_for(check, fake_ids, sample_fake_ids)
         qs = (ApplicantDocument.live(ApplicantDocument.objects.exclude(storage_path='')) if check == 'sample'
               else _live(_TYPES[check]))
         rows = []
         for pk, doc_type, vs, vf in qs.values_list('pk', 'doc_type', 'verification_status', 'vision_fields').iterator():
             stored = stored_value(check, doc_type, vf)
-            if not stored and pk not in fake_ids and not (check == 'sample' and pk in words):
+            if not stored and pk not in fakes and not (check == 'sample' and pk in words):
                 continue
             flagged = stored not in ('', 'genuine')
-            rank = (0 if pk in fake_ids else 1 if vs == 'rejected' else 2 if flagged
+            rank = (0 if pk in fakes else 1 if vs == 'rejected' else 2 if flagged
                     else 3 if check == 'sample' and pk in words else 4)
             rows.append((rank, -pk))
         rows.sort()
         out[check] = [-neg for _rank, neg in rows[:sizes[check]]]
     return out
+
+
+def unsampled_fakes(by_check, fake_ids, sample_fake_ids):
+    """Known fakes no chosen check will read (another type, not live, or their check not chosen)."""
+    typed = set().union(*(ids for c, ids in by_check.items() if c != 'sample'))
+    return sorted((set(fake_ids) - typed) | (set(sample_fake_ids) - set(by_check.get('sample', ()))))
 
 
 def interleave(by_check):
@@ -134,6 +159,16 @@ def interleave(by_check):
         order.extend((check, ids[i]) for check, ids in by_check.items() if i < len(ids))
         i += 1
     return order
+
+
+def call_cost(tokens):
+    """One 3.8 call's charge: the flat assumed US$0.008, or its reported tokens at the assumed prices if higher."""
+    tin, tout = (usage._int_or_none(v) for v in (tokens or (None, None)))
+    if tin is None and tout is None:
+        return USD_PER_CALL_38
+    metered = (Decimal(tin or 0) * Decimal(str(PRICE_38_ASSUMED['input']))
+               + Decimal(tout or 0) * Decimal(str(PRICE_38_ASSUMED['output']))) / Decimal(1_000_000)
+    return max(USD_PER_CALL_38, metered)
 
 
 def _new_value(check, doc, image, model, text):
@@ -149,20 +184,33 @@ def _new_value(check, doc, image, model, text):
         v = sample_stamp._ask_model(image, ct, model=model)
         return ('' if v is None else 'sample' if v else 'genuine'), {}
     markers = results_doc.results_visual_markers(image, ct, model=model)
-    if not markers or not (text or '').strip():
-        return '', markers
-    sg = results_doc.signature_genuineness(text, has_qr=markers['has_qr'], has_crest=markers['has_crest'])
+    if not (text or '').strip():
+        return '', markers           # live gives no verdict without OCR text: not gated (counted apart)
+    # As live (`_auth_results_slip`): no markers from the model reads as both absent, never as no verdict.
+    sg = results_doc.signature_genuineness(text, has_qr=markers.get('has_qr', False),
+                                           has_crest=markers.get('has_crest', False))
     return canonical_status(sg.get('status'), doc.doc_type), markers
 
 
 @contextmanager
 def _traced(trace):
-    """Count every 3.8 call and keep each ask's outcome class (never its text); refuse document writes."""
-    real_call, real_ask = getattr(vision, '_call_gemini_json'), ai_model.ask
+    """Count and price every 3.8 call, keep each ask's outcome class (never its text); refuse document writes."""
+    real_call, real_ask, real_meter = getattr(vision, '_call_gemini_json'), ai_model.ask, usage.record_usage
 
     def counted(*a, **k):
         trace['calls'] += 1
-        return real_call(*a, **k)
+        trace['tokens'] = None
+        try:
+            return real_call(*a, **k)
+        finally:
+            cost = call_cost(trace['tokens'])
+            trace['usd'] += cost
+            trace['peak'] = max(trace['peak'], cost)
+
+    def metered(service, *a, **k):
+        if service == usage.GEMINI:
+            trace['tokens'] = (k.get('input_tokens'), k.get('output_tokens'))
+        return real_meter(service, *a, **k)
 
     def asked(*a, **k):
         r = real_ask(*a, **k)
@@ -175,13 +223,14 @@ def _traced(trace):
         raise RuntimeError('eval_genuineness_38 writes nothing')
 
     with mock.patch.object(vision, '_call_gemini_json', counted), mock.patch.object(ai_model, 'ask', asked), \
+            mock.patch.object(usage, 'record_usage', metered), \
             mock.patch.object(ApplicantDocument, 'save', refuse), \
             mock.patch.object(ApplicantDocumentOcrText, 'save', refuse):
         yield
 
 
 def tally_the_read(tally, check, doc, stored, new, markers, fake_ids):
-    """Add one read to the tally. Ids only, never content."""
+    """Add one read to the tally. `fake_ids` are this check's known fakes. Ids only, never content."""
     t, ids = tally[check]['n'], tally[check]['ids']
     pk, vs = doc.pk, doc.verification_status
     if new:
@@ -193,9 +242,11 @@ def tally_the_read(tally, check, doc, stored, new, markers, fake_ids):
             ids['disagree_stored'].append(pk)
     if new and vs in ('verified', 'rejected'):
         t['agree_reviewer' if (new == 'genuine') == (vs == 'verified') else 'disagree_reviewer'] += 1
-    if new not in ('', 'genuine') and vs == 'verified' and stored == 'genuine':
+    if new not in ('', 'genuine') and vs == 'verified':      # the gate: whatever the stored value was
         t['new_not_genuine_on_accepted'] += 1
         ids['new_not_genuine_on_accepted'].append(pk)
+        if stored == 'genuine':
+            t['new_not_genuine_on_accepted_stored_genuine'] += 1
     if new == 'genuine' and pk in fake_ids:
         t['genuine_on_known_fake'] += 1
         ids['genuine_on_known_fake'].append(pk)
@@ -212,34 +263,52 @@ def tally_the_read(tally, check, doc, stored, new, markers, fake_ids):
                 ids['marker_lost_on_accepted'].append(pk)
 
 
+def _add(tally, check, key, pk):
+    tally[check]['n'][key] += 1
+    if key in tally[check]['ids']:
+        tally[check]['ids'][key].append(pk)
+
+
 class Command(BaseCommand):
     help = ('OCR-16: the four genuineness checks on 3.8 Flash against the stored 2.5 verdicts and the reviewer. '
-            'Writes nothing. DRY RUN unless --run (which needs --limit and --max-cost-usd).')
+            'Writes nothing. DRY RUN unless --run (which needs --limit and --max-cost-usd; suggested '
+            f'--max-cost-usd {SUGGESTED_COST_USD}). Each call is charged at an ASSUMED upper bound of '
+            f'US${USD_PER_CALL_38} (3.8 Flash has no price row), or at its reported tokens when higher.')
 
     def add_arguments(self, parser):
         parser.add_argument('--run', action='store_true', help='Call 3.8 Flash. Without it: counts only.')
         parser.add_argument('--limit', type=int, default=None, help=f'At most this many documents (1 to {MAX_LIMIT}).')
-        parser.add_argument('--max-cost-usd', default=None, help=f'Stop before the cap (at most {MAX_COST_USD}).')
+        parser.add_argument('--max-cost-usd', default=None,
+                            help=f'Stop before the cap (suggested {SUGGESTED_COST_USD}, at most {MAX_COST_USD}).')
         parser.add_argument('--checks', default=','.join(CHECKS), help='Comma list of: ' + ', '.join(CHECKS))
-        parser.add_argument('--fake-ids', default='', help='Comma list of known-fake document ids (read first).')
+        parser.add_argument('--fake-ids', default='',
+                            help='Comma list of known-fake document ids, read first and ONLY by the check of '
+                                 'their own type (ic, results_slip, supporting), never by the sample check.')
+        parser.add_argument('--sample-fake-ids', default='',
+                            help='Comma list of known SAMPLE-stamp document ids, read first by the sample check only.')
         parser.add_argument('--model', default=DEFAULT_MODEL, help='A 3.8 Flash name (the slip allow-list).')
 
     def handle(self, *args, **opts):
-        limit, cap, checks, fakes = self._checked(opts)
-        order = interleave(genuineness_sample(checks, fakes))
+        limit, cap, checks, fakes, sample_fakes, model = self._checked(opts)
+        by_check = genuineness_sample(checks, fakes, sample_fake_ids=sample_fakes)
+        order = interleave(by_check)
         todo = order[:limit] if limit else order
         out = self.stdout.write
         out(f'eval_genuineness_38: {"RUN" if opts["run"] else "DRY RUN (no download, no AI call, no write)"}')
-        out(f'  model forced: {opts["model"]}; service setting {ai_model.SETTING}: '
+        out(f'  model forced: {model}; service setting {ai_model.SETTING}: '
             f'{ai_model.chosen_model() or "unset (2.5 Flash cascade)"}')
         for check in checks:
             out(f'  {check}: {sum(1 for c, _ in todo if c == check)} to read')
-        out(f'  known fakes given: {len(fakes)}')
+        out(f'  known fakes given: {len(fakes)} by type, {len(sample_fakes)} sample-stamp')
+        missed = unsampled_fakes(by_check, fakes, sample_fakes)
+        if missed:
+            out(f'  known fakes no chosen check reads: {",".join(map(str, missed[:IDS_SHOWN]))}')
         out(f'  estimated calls: {len(todo)} to {ai_model.MAX_CALLS * len(todo)} (one retry at most)')
         out(f'  estimated cost: up to US${(USD_PER_CALL_38 * ai_model.MAX_CALLS * len(todo)).quantize(Decimal("0.01"))}'
-            f' at an ASSUMED US${USD_PER_CALL_38} per call')
+            f' at an ASSUMED upper bound of US${USD_PER_CALL_38} per call (3.8 Flash has no price row; a run '
+            'charges reported tokens when higher)')
         if opts['run']:
-            self._run(todo, cap, opts['model'], fakes, checks)
+            self._run(todo, cap, model, (fakes, sample_fakes), checks)
 
     def _checked(self, opts):
         limit, raw_cap = opts['limit'], opts['max_cost_usd']
@@ -250,35 +319,36 @@ class Command(BaseCommand):
             raise CommandError('--checks takes: ' + ', '.join(CHECKS))
         try:
             fakes = {int(x) for x in opts['fake_ids'].split(',') if x.strip()}
+            sample_fakes = {int(x) for x in opts['sample_fake_ids'].split(',') if x.strip()}
         except ValueError:
-            raise CommandError('--fake-ids takes document ids, e.g. 12,34.') from None
-        if not is_slip_model(opts['model']):
+            raise CommandError('--fake-ids and --sample-fake-ids take document ids, e.g. 12,34.') from None
+        model = str(opts['model'] or '').strip().lower()
+        if not is_slip_model(model):
             raise CommandError('--model must be a 3.8 Flash name.')
         if not opts['run']:
-            return limit, None, checks, fakes
+            return limit, None, checks, fakes, sample_fakes, model
         if limit is None or raw_cap is None:
             raise CommandError('--run needs --limit and --max-cost-usd.')
         try:
             cap = Decimal(str(raw_cap))
         except InvalidOperation:
-            raise CommandError('--max-cost-usd must be a number, e.g. 3.00.') from None
+            raise CommandError(f'--max-cost-usd must be a number, e.g. {SUGGESTED_COST_USD}.') from None
         if not (cap.is_finite() and Decimal('0') < cap <= MAX_COST_USD):
             raise CommandError(f'--max-cost-usd must be above 0 and at most {MAX_COST_USD}.')
-        return limit, cap, checks, fakes
+        return limit, cap, checks, fakes, sample_fakes, model
 
-    def _run(self, todo, cap, model, fakes, checks):
+    def _run(self, todo, cap, model, known, checks):
         tally = {c: {'n': dict.fromkeys(COUNTERS, 0), 'ids': {k: [] for k in ID_LISTS}} for c in checks}
-        trace = {'calls': 0, 'outcome': ''}
+        trace = {'calls': 0, 'outcome': '', 'usd': Decimal('0'), 'peak': USD_PER_CALL_38, 'tokens': None}
         texts = dict(ApplicantDocumentOcrText.objects.filter(
             document_id__in=[pk for c, pk in todo if c == 'results_slip']).values_list('document_id', 'text'))
         streak, stopped, done = {'service': 0, 'fetch': 0}, '', 0
         with _traced(trace):
             for check, pk in todo:
-                spent = USD_PER_CALL_38 * trace['calls']
-                if spent + USD_PER_CALL_38 * ai_model.MAX_CALLS > cap:
+                if trace['usd'] + trace['peak'] * ai_model.MAX_CALLS > cap:
                     stopped = f'the next document could pass the cap US${cap}'
                     break
-                stopped = self._one(tally, trace, streak, check, pk, model, fakes, texts)
+                stopped = self._one(tally, trace, streak, check, pk, model, fakes_for(check, *known), texts)
                 done += 1
                 if done % PROGRESS_EVERY == 0:
                     logger.info('eval_genuineness_38: %s documents, %s calls', done, trace['calls'])
@@ -289,7 +359,7 @@ class Command(BaseCommand):
     def _one(self, tally, trace, streak, check, pk, model, fakes, texts):
         t = tally[check]['n']
         t['docs'] += 1
-        before = trace['calls']
+        before, vs = trace['calls'], ''
         trace['outcome'] = ''
         try:
             doc = ApplicantDocument.objects.filter(pk=pk).first()
@@ -299,11 +369,13 @@ class Command(BaseCommand):
                 streak['fetch'] += 1
                 return f'{FAIL_FAST} fetches in a row failed (check Storage)' if streak['fetch'] >= FAIL_FAST else ''
             streak['fetch'] = 0
+            vs = doc.verification_status
+            text = texts.get(pk) or ''
             with usage.usage_context(source=USAGE_SOURCE):     # a PLATFORM meter row
-                new, markers = _new_value(check, doc, image, model, texts.get(pk))
+                new, markers = _new_value(check, doc, image, model, text)
             stored = stored_value(check, doc.doc_type, doc.vision_fields)
-            if check == 'results_slip' and markers and (texts.get(pk) or '').strip():
-                t['rescored_from_text'] += 1
+            if check == 'results_slip':
+                _add(tally, check, 'rescored_from_text' if text.strip() else 'not_gated_no_text', pk)
             tally_the_read(tally, check, doc, stored, new, markers, fakes)
         except Exception as e:    # one document never stops the run; the type only, never the message
             logger.warning('eval_genuineness_38: doc %s failed (%s)', pk, type(e).__name__)
@@ -312,9 +384,12 @@ class Command(BaseCommand):
             t['calls'] += trace['calls'] - before
         outcome = trace['outcome']
         if outcome:
-            t[outcome] += 1
-            if outcome in tally[check]['ids']:
-                tally[check]['ids'][outcome].append(pk)
+            _add(tally, check, outcome, pk)
+        if outcome == 'malformed_after_retry':
+            if pk in fakes:
+                _add(tally, check, 'malformed_on_known_fake', pk)
+            if vs == 'rejected':
+                _add(tally, check, 'malformed_on_rejected', pk)
         streak['service'] = streak['service'] + 1 if outcome == 'service_error' else 0
         if streak['service'] >= FAIL_FAST:
             return f'{FAIL_FAST} AI service errors in a row (check the key, quota or model name)'
@@ -322,7 +397,8 @@ class Command(BaseCommand):
 
     def _report(self, tally, trace, done, stopped):
         out = self.stdout.write
-        out(f'done: {done} documents, {trace["calls"]} calls, charged up to US${USD_PER_CALL_38 * trace["calls"]} (assumed)')
+        out(f'done: {done} documents, {trace["calls"]} calls, charged up to US${trace["usd"].quantize(Decimal("0.0001"))}'
+            f' (assumed: US${USD_PER_CALL_38} a call at least, reported tokens at the assumed 3.8 prices when higher)')
         if stopped:
             out(f'STOPPED: {stopped}')
         for check, row in tally.items():
@@ -333,6 +409,13 @@ class Command(BaseCommand):
                 if ids:
                     out(f'[{check}] {key} ids: {",".join(map(str, ids[:IDS_SHOWN]))}'
                         + (f' (+{len(ids) - IDS_SHOWN} more)' if len(ids) > IDS_SHOWN else ''))
-        gates = {c: (r['n']['new_not_genuine_on_accepted'], r['n']['genuine_on_known_fake']) for c, r in tally.items()}
-        out('GATES (both must be 0): ' + '; '.join(f'{c} new_not_genuine_on_accepted {a}, genuine_on_known_fake {b}'
-                                                    for c, (a, b) in gates.items()))
+        out('GATES (each must be 0): ' + '; '.join(self._gate_line(c, r['n']) for c, r in tally.items()))
+
+    @staticmethod
+    def _gate_line(check, n):
+        line = (f'{check} new_not_genuine_on_accepted {n["new_not_genuine_on_accepted"]}, '
+                f'genuine_on_known_fake {n["genuine_on_known_fake"]}')
+        if check == 'results_slip':
+            line += f', marker_lost_on_accepted {n["marker_lost_on_accepted"]}'
+        return (line + f' (also: malformed_on_known_fake {n["malformed_on_known_fake"]}, '
+                f'malformed_on_rejected {n["malformed_on_rejected"]})')
