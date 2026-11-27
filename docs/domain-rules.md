@@ -58,7 +58,12 @@ The current state of PF-1 (the apply link) and M1 (the application screen); the 
 superseded Next Sprint sections below and in `docs/decisions.md` (2026-07-28, 2026-10-05).
 
 * **`GET /api/v1/scholarship/intake/?programme=<code>`** (public, `ScholarshipIntakeView`) answers
-  `{open, cohort_name, programme_code, choices, apply_copy}`. `programme_code` is the CANONICAL code of
+  `{open, cohort_name, programme_code, choices, apply_copy, results_routes}`. `results_routes`
+  (2026-11-28, TD-773) is which results the named round's criteria tree judges: `'spm'`,
+  `'post_spm'`, `'both'` (each student is judged on their own results), `'either'`, or null when there
+  is no round, no results rule, or a stored tree `validate_tree` refuses. It is read by `criteria_read.results_routes` from the same tree the gate
+  reads, and it is DISPLAY ONLY: /apply Step 3 uses it for the post-SPM caution and the PNGK/CGPA
+  hint, and nothing gates on it. Tests: `test_intake_results_routes.py`. `programme_code` is the CANONICAL code of
   the round `cohort_name` names (an alias resolves to the live code); `''` when ambiguous, closed,
   unknown, or the programme is inactive. `choices` is filled only when several rounds are open and
   nothing named one. Tests: `apps/scholarship/tests/test_open_cohort_scope.py`.

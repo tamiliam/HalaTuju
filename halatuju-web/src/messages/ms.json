@@ -963,6 +963,10 @@
       "placeholder": "Cari atau taip nama",
       "useAsTyped": "Tiada dalam senarai? Guna \"{typed}\" seperti yang ditaip"
     },
+    "resultsSaveFailed": {
+      "title": "Kami tidak dapat menyimpan keputusan anda",
+      "body": "Keputusan baharu anda belum disimpan. Semak sambungan internet anda, kemudian tekan “{button}” sekali lagi."
+    },
     "nav": "{programmeName}",
     "finishSignIn": "Selesaikan log masuk",
     "apply": {
@@ -10345,6 +10349,13 @@
     "help": {
       "higher_results": "Gambar atau PDF slip keputusan atau transkrip rasmi anda, yang menunjukkan PNGK anda.",
       "results_slip_optional": "Gambar atau PDF slip keputusan SPM rasmi anda. Pilihan bagi pemohon STPM, Matrikulasi, Asasi dan Diploma."
+    },
+    "resultsNote": {
+      "postSpmTitle": "Program ini memerlukan keputusan selepas SPM",
+      "postSpmBody": "Program ini untuk pelajar yang sudah ada keputusan STPM, Matrikulasi, Asasi atau Diploma. Kami hanya ada keputusan SPM anda.",
+      "postSpmAdd": "Jika anda ada keputusan ini, tambahkannya dengan menekan pautan “{link}” di atas. Jika anda belum ada keputusan ini, program ini bukan untuk anda kali ini.",
+      "pngkOnly": "Untuk program ini, kami hanya melihat PNGK anda. Gred SPM anda tidak dikira.",
+      "cgpaOnly": "Untuk program ini, kami hanya melihat PNGK Keseluruhan anda. Gred SPM anda tidak dikira."
     },
     "sample": {
       "link": "See a sample",

@@ -56,6 +56,9 @@ export default function ProfileInputPage() {
   // the student just answered it on "About Me". Set only from those sources, never from typing,
   // so the box cannot vanish under a student who is filling it in.
   const [schoolKnown, setSchoolKnown] = useState<boolean>(false)
+  // The sync was tried and failed: this page stays, keeps what was typed, and says so (a red box
+  // above the buttons). Cleared on the next press; a press that saves moves on as normal.
+  const [saveFailed, setSaveFailed] = useState(false)
 
   // Back = the results form this student came from (S2b: three forms now, not one).
   const [backPath, setBackPath] = useState(resultsEditPath('spm'))
@@ -107,8 +110,11 @@ export default function ProfileInputPage() {
   // What is saved: the answer for a Malaysian, null for a Foreign student (the server agrees).
   const savedBumiputera = malaysian ? bumiputera : null
 
+  const continueLabel = returnPath ? t('onboarding.saveAndReturn') : returning ? t('onboarding.saveReturnToApplication') : t('onboarding.seeRecommendations')
+
   const handleContinue = async () => {
     if (!isComplete) return
+    setSaveFailed(false)
 
     // Preserve CoQ score set on grades page
     const existing = localStorage.getItem(KEY_PROFILE)
@@ -212,8 +218,10 @@ export default function ProfileInputPage() {
       // and saved their SPM grades (`lib/resultsSwitch`). It also drops this browser's STPM fields.
       const sentClear = applyHeldClear(syncPayload, sessionStorage, localStorage)
 
+      let synced = false
       try {
         await syncProfileSafely(syncPayload, { token })
+        synced = true
         localStorage.removeItem(KEY_STPM_KOKO_CONFIRMED)
         const refused = sentClear && !syncPayload.clear_held_results
         settleHeldClear(sessionStorage, localStorage, sentClear && !refused)
@@ -226,7 +234,10 @@ export default function ProfileInputPage() {
         }
         await refreshProfile()
       } catch {
-        // Continue even if sync fails — localStorage has the data
+        // The results never reached the server: moving on would show the old ones (the apply page
+        // reads the server's). Stay, keep what was typed, and say so. A failure AFTER the save (the
+        // profile re-read) still moves on — the results are saved.
+        if (!synced) { setSaveFailed(true); return }
       }
     }
 
@@ -445,6 +456,13 @@ export default function ProfileInputPage() {
           </div>
         </div>
 
+        {saveFailed && (
+          <div role="alert" className="mb-4 rounded-xl border border-critical-200 bg-critical-50 px-4 py-3 text-sm">
+            <p className="font-medium text-critical-800">{t('scholarship.resultsSaveFailed.title')}</p>
+            <p className="mt-1 text-critical-700">{t('scholarship.resultsSaveFailed.body', { button: continueLabel })}</p>
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="flex justify-between items-center">
           <Link
@@ -458,7 +476,7 @@ export default function ProfileInputPage() {
             disabled={!isComplete}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {returnPath ? t('onboarding.saveAndReturn') : returning ? t('onboarding.saveReturnToApplication') : t('onboarding.seeRecommendations')}
+            {continueLabel}
           </button>
         </div>
       </div>

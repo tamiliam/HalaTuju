@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .. import apply_copy, gift_sources, whatsapp
+from .. import apply_copy, criteria_read, gift_sources, whatsapp
 from ..services import AmbiguousOpenCohort, resolve_open_cohort, resolve_programme_by_code
 
 
@@ -123,7 +123,8 @@ class ScholarshipIntakeView(APIView):
             # Applications ARE open but nothing says which round: name none, offer the choice.
             # ⚠ NO COPY/CODE ON PURPOSE — no gift is chosen yet; the page re-reads once picked.
             return Response({'open': True, 'cohort_name': '', 'programme_code': '',
-                             'choices': _open_round_choices(), 'apply_copy': {}, 'sources': []})
+                             'choices': _open_round_choices(), 'apply_copy': {}, 'sources': [],
+                             'results_routes': None})
 
         # No code + exactly one open round → that round's gift owns the page the student is on.
         if not copy and cohort is not None and cohort.programme_id:
@@ -143,4 +144,6 @@ class ScholarshipIntakeView(APIView):
             # Who-referred-you choices of THAT gift ([] when none can be named) — `gift_sources`.
             'sources': gift_sources.public_sources(p),
             'fixed_sources': gift_sources.offered_fixed_codes(p),   # request #44; all three when no gift
+            # Step 3's notes (TD-773): which results this round lets through. Display only; None when closed.
+            'results_routes': criteria_read.results_routes(cohort),
         })

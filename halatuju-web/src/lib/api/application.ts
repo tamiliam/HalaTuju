@@ -208,6 +208,10 @@ export interface IntakeChoice {
   name: string
 }
 
+/** The intake's `results_routes` (TD-773): 'spm' = all on SPM grades; 'post_spm' = post-SPM results
+ *  needed; 'both' = each on their own results; 'either' = either passes; null = no results rule. */
+export type ResultsRoutes = 'spm' | 'post_spm' | 'both' | 'either' | null
+
 /** PUBLIC — whether NEW applications are open (drives the landing Apply button + the
  *  apply page). Existing applicants continue via their own application regardless.
  *
@@ -235,6 +239,9 @@ export async function getScholarshipIntake(programme?: string): Promise<{
   /** The fixed choices THIS gift offers, in form order (request #44) — `other` always. Absent from
    *  an older api: the form then offers all three (`offeredFixedCodes`). */
   fixed_sources?: string[]
+  /** TD-773: which results the round lets through, read from its criteria tree (display only;
+   *  null when closed, ambiguous or there is no results rule; absent from an older api). */
+  results_routes?: ResultsRoutes
 }> {
   // ⚠ THE PROGRAMME CODE IS NOT OPTIONAL IN PRACTICE — pass it whenever the URL carries one.
   // Without it this asks "is anything open ANYWHERE?", which is a different question: with one

@@ -41,7 +41,7 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 
-import { getScholarshipIntake, type IntakeChoice } from '@/lib/api'
+import { getScholarshipIntake, type IntakeChoice, type ResultsRoutes } from '@/lib/api'
 import type { ServedCopy } from '@/lib/applyCopy'
 import type { ReferralSource } from '@/lib/referralSources'
 import { applyPagePath } from '@/lib/applyPagePath'
@@ -94,6 +94,9 @@ export interface ApplyGift {
   referralRefused: boolean
   /** Re-read the sources after a `referral_source_not_offered` refusal and raise `referralRefused`. */
   refuseReferral: () => Promise<void>
+  /** TD-773: which results the open round lets through (the intake's `results_routes`, read from the
+   *  criteria tree). Display only — Step 3's notes. null = none sent, closed, or not yet known. */
+  resultsRoutes: ResultsRoutes
 }
 
 /** A submit the server refused because it could not tell which gift (PF-1's 409). The page answers
@@ -126,6 +129,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
   const [sources, setSources] = useState<ReferralSource[] | null>(null)
   const [fixedSources, setFixedSources] = useState<string[] | null>(null)
   const [referralRefused, setReferralRefused] = useState(false)
+  const [resultsRoutes, setResultsRoutes] = useState<ResultsRoutes>(null)
   // Bumped by `change` so the intake is asked again even when the URL code was already '' (a 409
   // on a bare visit) — setting '' to '' would not re-run the effect.
   const [asked, setAsked] = useState(0)
@@ -142,7 +146,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
     // Never show (or submit) one gift's name or code while another is in force.
     setCopy(undefined); setName(''); setServed(''); setChoices([]); setCanChange(false)
     setSettled(false); setClosed(false); setOthersOpen(false); setNoneOpen(false); setFailed(false)
-    setSources(null); setFixedSources(null); setReferralRefused(false)
+    setSources(null); setFixedSources(null); setReferralRefused(false); setResultsRoutes(null)
     // ⚠ THE GIFT'S CODE GOES WITH THE QUESTION. Without it this asks "is anything open ANYWHERE?"
     // — a student on a closed gift's poster was shown the whole form and refused only at submit.
     getScholarshipIntake(urlCode).then((r) => {
@@ -159,6 +163,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
         return
       }
       setName(r.cohort_name || '')
+      setResultsRoutes(r.results_routes ?? null)
       const resolved = (r.programme_code || '').trim()
       setServed(resolved)
       // Remembered so a detour / sign-in round trip comes back to THIS gift, not a fresh resolve.
@@ -232,6 +237,6 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
 
   return {
     code, copy, choices, name, canChange, settled, closed, othersOpen, noneOpen, pick, change, recheck,
-    failed, retry, named: urlCode, sources, fixedSources, referralRefused, refuseReferral,
+    failed, retry, named: urlCode, sources, fixedSources, referralRefused, refuseReferral, resultsRoutes,
   }
 }

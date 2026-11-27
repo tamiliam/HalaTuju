@@ -9914,9 +9914,11 @@ or re-ask `pre_u_studied_at` when the completed tertiary kind changes. *(A - S)*
 
 **What it was.** Commit f3b831e82 ("fix: TD-721 - an intake with a PNGK floor rejects SPM-only students", 25 Nov 2026) is only on the branch `spmgate`, which was never merged. No TD-721 entry was ever written here. The roadmap lists it as "TD-721 (spmgate f3b831e82)". **Why retired.** The criteria tree solves the same trap by its shape, not with a patch to the gate. `from_legacy` builds no SPM group when an intake has a PNGK floor and no SPM bar, so an SPM-only student is not judged on a CGPA they cannot have. That stored shape is applied with the owner's yes at `build_criteria_trees --apply`, and the criteria editor (Sprint 3 API, Sprint 4 web) lets an admin set the groups directly. **Do not merge** `spmgate`. Delete the branch once the criteria editor is live.
 
-### [TD-773] Criteria Sprint 2: /apply Step 3 does not say that a post-SPM holder is judged on the CGPA only - low
+### [TD-773] Criteria Sprint 2: /apply Step 3 does not say that a post-SPM holder is judged on the CGPA only - low ✅ RESOLVED (Step 3 results sprint, 2026-11-28)
 
 **Raised in criteria Sprint 2 (see CHANGELOG).** Under ruling B a post-SPM holder on intakes 3 and 4 is never passed by their SPM grades, but the apply form does not say so. **Fix:** a hint on Step 3, after a Stitch mock-up and the owner's approval. *(A - S)*
+
+**Resolved:** the intake answer now carries `results_routes` (read from the criteria tree; display only). When it is `'both'`, Step 3 shows a post-SPM holder a blue note: the PNGK only for STPM, and the overall CGPA for Matriculation, Asasi and Diploma. The same sprint adds a caution box for an SPM-only holder on a `'post_spm'` gift. Tests: `LazyResultsRouteNote.test.tsx`, `apply/page.resultsRoutes.test.tsx`, `test_intake_results_routes.py`.
 
 ### [TD-775] Flaky tests: equal timestamps on Windows (clock ticks) - low ✅ RESOLVED (criteria Sprint 3a, 2026-11-26)
 

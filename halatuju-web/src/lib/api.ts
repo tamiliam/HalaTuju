@@ -103,7 +103,7 @@ export {
 } from './api/application'
 export type {
   FundingNeed, ApplicationCompleteness, ApplicationRequirements, ScholarshipApplication,
-  IntakeChoice, ApplyCopyBlock, ApplyGateAnswer,
+  IntakeChoice, ResultsRoutes, ApplyCopyBlock, ApplyGateAnswer,
 } from './api/application'
 
 // Interview scheduling, from the student's side.

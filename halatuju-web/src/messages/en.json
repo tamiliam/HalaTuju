@@ -963,6 +963,10 @@
       "placeholder": "Search or type the name",
       "useAsTyped": "Not in the list? Use \"{typed}\" as typed"
     },
+    "resultsSaveFailed": {
+      "title": "We could not save your results",
+      "body": "Your new results are not saved yet. Check your internet connection, then press “{button}” again."
+    },
     "nav": "{programmeName}",
     "finishSignIn": "Finish signing in",
     "apply": {
@@ -10345,6 +10349,13 @@
     "help": {
       "higher_results": "A photo or PDF of your official results slip or transcript, showing your CGPA.",
       "results_slip_optional": "A photo or PDF of your official SPM results slip. Optional for STPM, Matriculation, Asasi and Diploma applicants."
+    },
+    "resultsNote": {
+      "postSpmTitle": "This gift needs results from after SPM",
+      "postSpmBody": "This gift is for students who already have STPM, Matriculation, Asasi or Diploma results. We only have your SPM results.",
+      "postSpmAdd": "If you have these results, add them by clicking the “{link}” link above. If you do not have them yet, this gift is not for you this time.",
+      "pngkOnly": "For this gift, we look at your PNGK only. Your SPM grades do not count.",
+      "cgpaOnly": "For this gift, we look at your overall CGPA only. Your SPM grades do not count."
     },
     "sample": {
       "link": "See a sample",

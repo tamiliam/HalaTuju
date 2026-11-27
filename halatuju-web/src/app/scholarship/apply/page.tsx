@@ -12,6 +12,7 @@ import InfoTip from '@/components/InfoTip'
 import FieldLabel from '@/components/FieldLabel'
 import PreUStudiedAtField from '@/components/scholarship/LazyPreUStudiedAtField'   // pre-U sprint (fetched when drawn)
 import Toggle from '@/components/Toggle'
+import ResultsRouteNote, { resultsRouteNote } from '@/components/scholarship/LazyResultsRouteNote'   // TD-773 (fetched when drawn)
 import { submitScholarshipApplication, claimNric } from '@/lib/api'
 import { isThirdRoute, type Qualification } from '@/lib/qualification'
 import { showsPreUStudiedAt } from '@/lib/preUStudiedAt'
@@ -27,6 +28,7 @@ import {
   nricChanged,
   setApplyReturn,
   clearApplyReturn,
+  popOnboardingReturn,
   CALL_LANGUAGE_OPTIONS,
   MALAYSIAN_STATES,
   HELP_OPTIONS,
@@ -218,6 +220,7 @@ export default function ScholarshipApplyPage() {
   // edits survive the detour (the form only commits on submit).
   const goEditResults = () => {
     writeApplyDraft(form, { uid, programme: gift.code }, 'results')
+    popOnboardingReturn()   // a stale profile return would win over this one at the last step
     setApplyReturn()
     router.push('/onboarding/exam-type')
   }
@@ -393,6 +396,7 @@ export default function ScholarshipApplyPage() {
   if (gate.state === 'already_applied') return wrap(<LazyApplyNotice kind="applied" onSeeOpen={gift.canChange ? gift.change : undefined} />)
   // ── status === 'ready', allowed by the gate (or it could not answer) → the tabbed form ──
   const academic = profileAcademicSummary(profile)
+  const resultsNote = resultsRouteNote(gift.resultsRoutes, academic.examType, academic.hasData)   // display only
   const tabIndex = TAB_ORDER.indexOf(tab)
   const isLast = tabIndex === TAB_ORDER.length - 1
 
@@ -560,6 +564,7 @@ export default function ScholarshipApplyPage() {
             <button type="button" onClick={goEditResults} className="btn-primary inline-block">{t('scholarship.apply.noResultsCta')}</button>
           </div>
         )}
+        {resultsNote && <ResultsRouteNote kind={resultsNote} />}
         {showsPreUStudiedAt(academic.examType) && (<div className="mt-5">
           <PreUStudiedAtField variant="apply" resultsHeld={academic.examType} value={form.preUStudiedAt} onChange={(v) => update('preUStudiedAt', v)} />
         </div>)}

@@ -5,7 +5,7 @@ rules (`results_route.gift_asks_higher`), the means test (`income_engine.amounts
 fingerprint (`verdict_context.intake_values`) and the born-in surfaces (`birth_state.cohort_rule`)
 read it through here, so none of them can drift from the shortlist. Pure: no DB, no network.
 """
-from .criteria import _mode, _num, _year_flag, birth_states, section, start_years, tree_of
+from .criteria import StoredTreeRefused, _mode, _num, _year_flag, birth_states, section, start_years, tree_of
 
 
 def pngk_floor(cohort):
@@ -26,6 +26,36 @@ def asks_post_spm_results(cohort):
     """True when the intake has a post-SPM group with a floor: `results_route.gift_asks_higher`'s
     question ("does this gift ask for higher results?"). Today: ``min_stpm_pngk is not None``."""
     return pngk_floor(cohort) is not None
+
+
+def results_routes(cohort):
+    """Which results the intake's results section lets through, for the apply page's Step 3 notes
+    (TD-773). DISPLAY ONLY: read from the tree the gate reads (`tree_of`), never from intake
+    numbers, and it changes no verdict. As `criteria.results_ok` judges:
+
+    * ``'spm'`` - no post-SPM group: everyone is judged on SPM grades (a post-SPM holder too, D16c).
+    * ``'post_spm'`` - post-SPM results are NEEDED: an SPM-only holder cannot pass ('own' / 'any'
+      with no SPM group, or 'all' with a post-SPM group, where both groups bind).
+    * ``'both'`` - 'own' with both groups: a post-SPM holder on the PNGK / CGPA only, an SPM holder
+      on the SPM grades only.
+    * ``'either'`` - 'any' with both groups: either group lets a student through.
+    * ``None`` - no results rule, no intake, or a stored tree `validate_tree` refuses (TD-774: it is
+      logged by `tree_of`; a note must not guess at rules nobody can read)."""
+    if cohort is None:
+        return None
+    try:
+        results = section(tree_of(cohort), 'results')
+    except StoredTreeRefused:
+        return None
+    if not results:
+        return None
+    mode, groups = _mode(results)
+    routes = {g.get('route') for g in groups or []}
+    if 'post_spm' not in routes:
+        return 'spm' if 'spm' in routes else None
+    if 'spm' not in routes or mode == 'all':
+        return 'post_spm'
+    return 'both' if mode == 'own' else 'either'
 
 
 def income_ceilings(cohort):

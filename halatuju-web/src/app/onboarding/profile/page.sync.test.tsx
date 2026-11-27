@@ -17,6 +17,7 @@ import {
   KEY_STPM_KOKO_CONFIRMED, KEY_CLEAR_HELD_PENDING,
 } from '@/lib/storage'
 import { confirmSpmSwitch, markSpmSaved } from '@/lib/resultsSwitch'
+import { setApplyReturn } from '@/lib/scholarship'
 
 const push = jest.fn()
 
@@ -24,7 +25,10 @@ jest.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
 let mockAuthProfile: Record<string, unknown> | null = null
 const mockShowToast = jest.fn()
 jest.mock('@/lib/i18n', () => ({
-  useT: () => ({ t: (k: string, p?: Record<string, string>) => (p?.route ? `${k}|${p.route}` : k), locale: 'en' }),
+  useT: () => ({
+    t: (k: string, p?: Record<string, string>) => (p?.route ? `${k}|${p.route}` : p?.button ? `${k}|${p.button}` : k),
+    locale: 'en',
+  }),
 }))
 jest.mock('@/lib/auth-context', () => ({
   useAuth: () => ({
@@ -149,6 +153,57 @@ it('any other failure is not retried', async () => {
   await finish()
   await act(async () => { await Promise.resolve() })
   expect(syncMock).toHaveBeenCalledTimes(1)
+})
+
+// Step 3 sprint C: a sync that was tried and failed keeps the student here, with what she typed,
+// and says so above the buttons. Before, the page moved on silently and the apply form showed the
+// OLD results (it reads the server's).
+describe('a failed save stays on the page and says so', () => {
+  const fail = () => syncMock.mockRejectedValueOnce(Object.assign(new Error('API error: 500'), { status: 500 }))
+  const button = () => screen.getByRole('button', { name: /onboarding\.seeRecommendations/ })
+
+  it('the failure: a red alert above the buttons, no navigation, the button still pressable', async () => {
+    fail()
+    localStorage.setItem(KEY_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_GRADES, JSON.stringify(SPM))
+    await finish()
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('scholarship.resultsSaveFailed.title')
+    expect(alert.textContent).toContain('scholarship.resultsSaveFailed.body|onboarding.seeRecommendations')
+    expect(push).not.toHaveBeenCalled()
+    expect((button() as HTMLButtonElement).disabled).toBe(false)
+    expect(localStorage.getItem(KEY_GRADES)).toBe(JSON.stringify(SPM))      // what she typed is kept
+  })
+
+  it('a retry that saves clears the alert and moves on as normal', async () => {
+    fail()
+    await finish()
+    await screen.findByRole('alert')
+    await act(async () => { fireEvent.click(button()) })
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))
+    expect(syncMock).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('names the button it shows: back to the application', async () => {
+    setApplyReturn()
+    fail()
+    render(<ProfileInputPage />)
+    await waitFor(() => expect(getProfile).toHaveBeenCalled())
+    await act(async () => { await Promise.resolve() })
+    const back = screen.getByRole('button', { name: /onboarding\.saveReturnToApplication/ })
+    await act(async () => { fireEvent.click(back) })
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('scholarship.resultsSaveFailed.body|onboarding.saveReturnToApplication')
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('a save that works shows no alert', async () => {
+    await finish()
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
 })
 
 it('C4: a score just saved on the STPM step is sent as confirmed, once; a resend is not', async () => {
