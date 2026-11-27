@@ -108,6 +108,32 @@ def sheet_text(raw, doc_class, data: bytes) -> list:
         doc.close()
 
 
+def empty_pages(raw, pdf, req) -> dict:
+    """OCR-14b-3 review round 1, the child's ``empty`` op: {empty: [page index, ...]}, each asked page (``req``
+    pages) on which pdfium sees NO page object and no annotation (`pdf_rules_pages.fully_blank_page2`). A page count
+    other than pypdf's (``req`` count) lists none; a page pdfium cannot read is not listed (not empty)."""
+    out = []
+    if len(pdf) != int(req['count']):
+        return {'empty': out}
+    for i in req['pages']:
+        try:
+            page = pdf[int(i)]
+        except MemoryError:   # the whole child stops (`pdfium_worker.OUT_OF_MEMORY`)
+            raise
+        except Exception:
+            continue
+        try:
+            if raw.FPDFPage_CountObjects(page.raw) == 0 and raw.FPDFPage_GetAnnotCount(page.raw) == 0:
+                out.append(int(i))
+        except MemoryError:
+            raise
+        except Exception:     # a page pdfium cannot count is not empty
+            pass
+        finally:
+            page.close()
+    return {'empty': out}
+
+
 def outside(box: tuple, area: tuple) -> bool:
     """True when ``box`` reaches past ``area`` by more than `EDGE_PT` on any side, or its centre is not in ``area``
     (a small box wholly off the page, within `EDGE_PT` of the edge), or it is not a number at all."""

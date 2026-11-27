@@ -3,6 +3,7 @@ drawing, no annotation; `pdf_rules_pages.fully_blank_page2`). Page 1, page 3 on,
 are checked as before. The PDFs here are built in the test (made-up text only); the owner's real samples are checked
 by the eval replay, not here (they are local only)."""
 import io
+import types
 from unittest import mock
 
 from django.test import SimpleTestCase, override_settings
@@ -94,16 +95,92 @@ class FullyBlankPage2Test(SimpleTestCase):
     """What counts as FULLY blank, on real PDF bytes."""
 
     def test_a_page_with_no_content_or_empty_content_is_fully_blank(self):
-        for spec in ({'ops': None}, {'ops': b''}, {'ops': b'\n  \n'}):
-            with self.subTest(spec=spec):
+        for case, spec in (('no_contents', {'ops': None}), ('empty', {'ops': b''}), ('spaces', {'ops': b'\n  \n'})):
+            with self.subTest(case=case):
                 data = letter(spec)
                 self.assertEqual(pdf_rules_page_texts(data, MAX_LAYER_PAGES)[1:], [''])
                 self.assertTrue(blank(data))
 
-    def test_state_only_operators_and_an_empty_form_paint_nothing(self):
+    def test_state_only_operators_paint_nothing(self):
         self.assertTrue(blank(letter({'ops': b'q 1 0 0 1 0 0 cm 0 g 1 w Q'})))
-        self.assertTrue(blank(letter({'ops': b'/X0 Do', 'xobjects': {'/X0': ('form', b'')}})))
-        self.assertTrue(blank(letter({'ops': b'q /X0 Do Q', 'xobjects': {'/X0': ('form', b'q 0 g Q')}})))
+
+    def test_an_empty_form_is_a_page_object_to_pdfium(self):
+        """Review round 1: pypdf finds nothing painted, but pdfium lists the form as a page object: not blank."""
+        for case, spec in (('empty_form', {'ops': b'/X0 Do', 'xobjects': {'/X0': ('form', b'')}}),
+                           ('state_form', {'ops': b'q /X0 Do Q', 'xobjects': {'/X0': ('form', b'q 0 g Q')}})):
+            with self.subTest(case=case):
+                data = letter(spec)
+                self.assertEqual(pdf_rules_page_texts(data, MAX_LAYER_PAGES)[1:], [''])
+                self.assertTrue(pdf_rules_pages._paints_nothing(*self._page2(data)))   # pypdf alone: blank
+                self.assertFalse(blank(data))
+
+    @staticmethod
+    def _page2(data):
+        from apps.scholarship import pdf_pages
+        reader = pdf_pages._open_pdf(data)
+        page = reader.pages[1]
+        return page['/Contents'].get_object(), pdf_pages._resources(page), reader, {}, pdf_pages._Budget(), 0
+
+    def test_pdfium_must_see_page_2_empty_too(self):
+        """Review round 1: the second, independent check. pdfium missing, failing or spent (`pdfium_run.ask` None),
+        or seeing anything on page 2, is not blank."""
+        data = letter({'ops': b''})
+        self.assertTrue(blank(data))
+        real, asked = pdf_rules_pages.pdfium_run.ask, []
+
+        def only_empty(answer):            # the shared S-visible read (``paints``) still asks the real child
+            def ask(data_, ops):
+                if ops[0]['op'] != 'empty':
+                    return real(data_, ops)
+                asked.append(ops)
+                if isinstance(answer, Exception):
+                    raise answer
+                return answer
+            return ask
+        for case, answer in (('none', None), ('nothing', []), ('not_empty', [{'empty': []}]), ('error', [{}]),
+                             ('other_page', [{'empty': [0]}]), ('raises', RuntimeError('no pdfium'))):
+            asked.clear()
+            with self.subTest(case=case), mock.patch.object(pdf_rules_pages.pdfium_run, 'ask', only_empty(answer)):
+                self.assertFalse(blank(data))
+                self.assertEqual(asked, [[{'op': 'empty', 'pages': [1], 'count': 2}]])
+
+    def test_the_pdfium_child_counts_objects_and_annotations(self):
+        from apps.scholarship import pdfium_run
+        ops = [{'op': 'empty', 'pages': [0, 1], 'count': 2}]
+        self.assertEqual(pdfium_run.ask(letter({'ops': b''}), ops), [{'empty': [1]}])
+        self.assertEqual(pdfium_run.ask(letter({'ops': b'0 0 1 1 re f'}), ops), [{'empty': []}])
+        self.assertEqual(pdfium_run.ask(letter({'ops': b'', 'annots': [_link()]}), ops), [{'empty': []}])
+        self.assertEqual(pdfium_run.ask(letter({'ops': b''}), [{'op': 'empty', 'pages': [1], 'count': 3}]),
+                         [{'empty': []}])                                  # another page count than pypdf's
+
+    def test_empty_pages_refuses_on_any_pdfium_doubt(self):
+        from apps.scholarship.pdfium_place import empty_pages
+
+        class Page:
+            raw = 'p'
+
+            def close(self):
+                pass
+
+        def fake_raw(objects, annots=0):                         # pdfium's own call names, as attributes
+            def count(page):
+                if isinstance(objects, Exception):
+                    raise objects
+                return objects
+            return types.SimpleNamespace(**{'FPDFPage_CountObjects': count,
+                                            'FPDFPage_GetAnnotCount': lambda page: annots})
+
+        pdf = [Page(), Page()]
+        req = {'pages': [1], 'count': 2}
+        self.assertEqual(empty_pages(fake_raw(0), pdf, req), {'empty': [1]})
+        for case, raw in (('objects', fake_raw(1)), ('annots', fake_raw(0, 1)),
+                          ('error', fake_raw(ValueError('x'))), ('minus', fake_raw(-1))):
+            with self.subTest(case=case):
+                self.assertEqual(empty_pages(raw, pdf, req), {'empty': []})
+        self.assertEqual(empty_pages(fake_raw(0), pdf, {'pages': [5], 'count': 2}), {'empty': []})   # no such page
+        self.assertEqual(empty_pages(fake_raw(0), pdf, {'pages': [1], 'count': 3}), {'empty': []})
+        with self.assertRaises(MemoryError):
+            empty_pages(fake_raw(MemoryError()), pdf, req)
 
     def test_one_tiny_white_rectangle_is_not_blank(self):
         for ops in (b'1 g 0 0 0.1 0.1 re f', b'1 1 1 rg 0 0 1 1 re f', b'0 0 m 1 1 l S', b'0 0 1 1 re W n',
@@ -128,8 +205,8 @@ class FullyBlankPage2Test(SimpleTestCase):
         self.assertFalse(blank(letter({'ops': b'/Nope Do'})))          # a Do naming nothing
 
     def test_any_annotation_is_not_blank(self):
-        for annots in ([_link()], [_link(ap=True)], []):
-            with self.subTest(annots=annots):
+        for case, annots in (('link', [_link()]), ('link_ap', [_link(ap=True)]), ('empty_list', [])):
+            with self.subTest(case=case):            # a plain label: pypdf objects do not cross pytest-xdist
                 self.assertFalse(blank(letter({'ops': b'', 'annots': annots})))
 
     def test_only_page_2_is_judged(self):

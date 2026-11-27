@@ -60,7 +60,9 @@ def fully_blank_page2(data: bytes, page_texts) -> bool:
     pypdf's raw text exactly '' (no whitespace run; pdfium placed no text object on it, `pdf_pdfium_check` rule f),
     the page lists no /Annots at all (not even a plain /Link or an empty list), and every operator on it, read by the
     shared parser (`pdf_pages._parsed_ops`, with its byte, token and operator guards and a budget), is one that paints
-    nothing (`_PAINTS_NOTHING`; a Form XObject is walked, depth-bounded). Any failure is False."""
+    nothing (`_PAINTS_NOTHING`; a Form XObject is walked, depth-bounded). Review round 1: then pdfium too, on its
+    own, must see NO page object and no annotation on page 2 (the child's ``empty`` op, `pdfium_place.empty_pages`);
+    no pdfium, a pdfium error or a spent budget (`pdfium_run.ask` None) is not blank. Any failure is False."""
     pages = list(page_texts or ())
     if len(pages) < 2 or pages[1] != '':
         return False
@@ -75,8 +77,11 @@ def fully_blank_page2(data: bytes, page_texts) -> bool:
             return False
         contents = page.get('/Contents')
         contents = contents.get_object() if contents is not None else None
-        return pdf_pages._is_null(contents) or _paints_nothing(contents, pdf_pages._resources(page), reader, {},
-                                                               pdf_pages._Budget(), 0)
+        if not (pdf_pages._is_null(contents) or _paints_nothing(contents, pdf_pages._resources(page), reader, {},
+                                                                pdf_pages._Budget(), 0)):
+            return False
+        answer = pdfium_run.ask(data, [{'op': 'empty', 'pages': [1], 'count': len(reader.pages)}])
+        return bool(answer) and isinstance(answer[0], dict) and answer[0].get('empty') == [1]
     except Exception as e:  # undecidable is not blank: the page refuses as before
         logger.warning('PDF page 2 blank check failed: %s', e)
         return False

@@ -63,13 +63,13 @@ MAX_CHARS = 20_000
 MAX_LINES = 250
 MAX_LETTER_CHARS = 10 * MAX_CHARS
 
-_BASE_MAX = 60                                  # the page's base indent (measured: 42)
+_BASE_IN = range(36, 49)                        # the page's base indent (measured: 42)
 _HEAD_IN = range(30, 46)                        # the head rows past the base (measured: 38)
 _ROW_IN = range(2, 5)                           # the table rows past the base (measured: 3)
 _COLON_AT = range(18, 31)                       # a row's colon past its indent (measured: 25)
 _VALUE_GAP = range(2, 9)                        # a row's value past its colon (measured: 6)
 _TITLE_WORDS = 'TAWARAN KEMASUKAN KE UNIVERSITI MALAYSIA PERLIS (UniMAP) BAGI SIDANG AKADEMIK'
-_TITLE_LINE = re.compile(r'\S+(?: {1,4}\S+)*')  # the title's words, its gaps wide but bounded (measured: 3)
+_TITLE_LINE = re.compile(r'\S+(?: {3}\S+)*')     # the title's words, every gap as measured (3)
 _SESSION = re.compile(r'^(20\d{2})/(20\d{2})$')
 _REFERENCE = re.compile(r'^UniMAP/AMD/\d{1,4}/\d{1,2}/(UR\d{7})/[A-Z]{1,2}/[A-Z]{1,2}/[A-Z]{3,5}(20\d{2})'
                         r'\(\d{1,6}\)$')
@@ -85,11 +85,33 @@ _TABLE = (('Program Pengajian', 2), ('Kod Program', 0), ('Fakulti', 0), ('No. Ma
 _REGISTER_INTRO = 'Di bawah adalah butiran berkaitan dengan proses pendaftaran diri :'
 _REGISTER = (('Tarikh Pendaftaran', 0), ('Masa Pendaftaran', 0), ('Lokasi Pendaftaran', 4))
 REPORT_LABEL = 'Tarikh Pendaftaran'
-_WIDE = ' ' * 9                                 # no value prints a gap this wide (measured: up to 6)
+#: Review round 1: a value line's gaps, as measured. A justified line (the programme's first, a Lokasi line) spreads
+#: its gaps evenly (measured 5-6 and 2), never past `_GAP_MAX`; a paragraph's LAST line (and a one-line value) is
+#: never stretched (measured: single spaces). Anything else may be a second column: refuse.
+_GAP_MAX = 6
+_GAP = re.compile(r'(?<=\S) +(?=\S)')
 _PROGRAMME = re.compile(r"^SARJANA MUDA [A-Z(][A-Z&,'.()\-]*(?: [A-Z&(][A-Z&,'.()\-]*)*$")
 _FACULTY = re.compile(r"^FAKULTI [A-Z][A-Z&,'.()\-]*(?: [A-Z&][A-Z&,'.()\-]*)*$")
 _CODE = re.compile(r'^UR\d{7}$')
-_ANY_CODE = re.compile(r'(?<![A-Za-z0-9])[A-Z]{2}\d{7}(?![0-9])')
+#: Review round 1: anything like a programme code on one line, in any case, its letters and digits split by spaces,
+#: dots or dashes, with every letter glued before it (a money amount taken out first, `_MONEY`); 6+ digits count.
+_CODE_LIKE = re.compile(r'(?<![A-Za-z])((?:[A-Za-z][ .\-]?){0,23}[A-Za-z])[ .\-]*(\d(?:[ .\-]?\d)*)')
+_MONEY = re.compile(r'(?<![A-Za-z])RM ?\d{1,3}(?:,\d{3})*(?:\.\d{2})+(?!\d)', re.I)
+#: Review round 1: a day and month with NO year (the shared `_ANY_DATE` and `_SHORT_DATE` need one): d/m, d-m, d.m
+#: (day 1-31, month 1-12; a time like 8.30 is no month), or a day with a month name, either way round.
+_MONTH = (r'(?:JANUARI|JANUARY|JAN|FEBRUARI|FEBRUARY|FEB|MAC|MARCH|MAR|APRIL|APR|MEI|MAY|JUNE|JUN|JULAI|JULY|JUL|'
+          r'OGOS|OGO|AUGUST|AUG|SEPTEMBER|SEPT|SEP|OKTOBER|OCTOBER|OKT|OCT|NOVEMBER|NOV|DISEMBER|DECEMBER|DIS|DEC)')
+_DAY = r'(?:[12]\d|3[01]|0?[1-9])'
+_DAY_MONTH = re.compile(r'(?<![\d.,/\-])' + _DAY + r' ?[/.\-] ?(?:1[0-2]|0?[1-9])(?!\d|[.,]\d)'
+                        r'|(?<![\d.,])' + _DAY + r' ?(?:(?:HB|TH|ST|ND|RD)\.? ?)?' + _MONTH + r'(?![A-Z])'
+                        r'|(?<![A-Z])' + _MONTH + r'\.? ?' + _DAY + r'(?![\d.,/]?\d)')
+#: Review round 1: a field label printed outside its fixed place (an address or footer line).
+_LABEL = re.compile(r'(?<![A-Z])(?:NAMA|K ?/ ?P|KAD PENGENALAN|MYKAD|NO\.? ?(?:IC|KP)|PROGRAM|KOD|SESI|SIDANG|TARIKH|'
+                    r'FAKULTI|MATRIK|TEMPOH|YURAN|MASA|LOKASI|PENDAFTARAN|RUJUKAN|KAMPUS|KURSUS|BIDANG|PENGAJIAN|'
+                    r'DIPINDA|PINDAAN|AMBILAN|SEMESTER|IJAZAH|PELAJAR|JURUSAN)(?![A-Z])')
+#: A name's link word: in the footer only on the one signer line, "(...)".
+_LINK = re.compile(r'(?<![A-Z])(?:A ?/ ?L|A ?/ ?P|BIN|BINTI|BT|BTE|ANAK)(?![A-Z])|@')
+_FOOTER_MAX = 9                                 # the lines after "Sekian, terima kasih" (measured: 7)
 _MATRIC = re.compile(r'^\d{9}$')                # as measured; never stored
 _NUMBERS = ('SATU', 'DUA', 'TIGA', 'EMPAT', 'LIMA', 'ENAM', 'TUJUH')
 _TERM = re.compile(r'^([A-Z]{3,5}) \(([1-7])\) TAHUN \((\d{1,2}) SEMESTER\)$')
@@ -128,19 +150,29 @@ def _unimap_at(lines, base, extra=0) -> bool:
 
 
 def _unimap_row(line: str, colon: int, start: int):
-    """(label, value) of a table line whose colon is at column ``colon`` and value starts at column ``start``, the
-    label one column and the value with no gap wider than `_WIDE`; else None."""
+    """(label, value as printed) of a table line whose colon is at column ``colon`` and value starts at column
+    ``start``, the label one column; else None. The value's spacing is `_unimap_spaced`'s."""
     if len(line) <= start or line[colon] != ':' or line[colon + 1:start].strip() or line[start] == ' ':
         return None
     label, value = line[:colon], line[start:]
-    if not label.strip() or len(_cols(label)) != 1 or _WIDE in value.strip() or ':' in label:
+    if not label.strip() or len(_cols(label)) != 1 or ':' in label:
         return None
-    return _one_space(label), _one_space(value)
+    return _one_space(label), value.strip()
 
 
 def _unimap_wrapped(line: str, start: int) -> bool:
-    """A value's wrapped line: starting exactly at column ``start``, no gap wider than `_WIDE`."""
-    return _indent(line) == start and _WIDE not in line.strip()
+    """A value's wrapped line: starting exactly at column ``start`` (its spacing is `_unimap_spaced`'s)."""
+    return _indent(line) == start
+
+
+def _unimap_spaced(parts) -> bool:
+    """A value's lines as printed, set as measured (`_GAP_MAX`): plain spaces only, no colon, each line's gaps even
+    (widest minus narrowest at most 1) and at most `_GAP_MAX`, the last line single-spaced."""
+    for part in parts:
+        gaps = [len(g) for g in _GAP.findall(part)]
+        if re.search(r'[^\S ]', part) or ':' in part or (gaps and (max(gaps) - min(gaps) > 1 or max(gaps) > _GAP_MAX)):
+            return False
+    return all(len(g) == 1 for g in _GAP.findall(parts[-1]))
 
 
 def _unimap_title_at(lines) -> tuple:
@@ -154,7 +186,7 @@ def _unimap_title_at(lines) -> tuple:
     base = _indent(lines[at])
     first, second = lines[at].strip(), lines[at + 1].strip()
     m = _SESSION.match(second)
-    if (base > _BASE_MAX or not _unimap_at(lines[at:at + 2], base) or not _TITLE_LINE.fullmatch(first)
+    if (base not in _BASE_IN or not _unimap_at(lines[at:at + 2], base) or not _TITLE_LINE.fullmatch(first)
             or _one_space(first) != _TITLE_WORDS or not m):
         return none
     return at, base, 'SIDANG AKADEMIK ' + second, int(m.group(1)), int(m.group(2))
@@ -187,9 +219,9 @@ def _unimap_head(lines, at, base):
     return name, printed_ic, offer_date, code, ref_year, ''
 
 
-def _unimap_rows(lines, i, want, colon, start, rows):
-    """Read the rows ``want`` ((label, most wrapped lines) in order) from line ``i`` into ``rows``: (next line,
-    {label: line index}), (-1, {}) on any doubt."""
+def _unimap_rows(lines, i, want, colon, start, rows, wraps):
+    """Read the rows ``want`` ((label, most wrapped lines) in order) from line ``i`` into ``rows``, each wrapped
+    line's index into ``wraps``: (next line, {label: line index}), (-1, {}) on any doubt (`_unimap_spaced`)."""
     where = {}
     for label, most in want:
         got = _unimap_row(lines[i], colon, start) if i < len(lines) else None
@@ -197,43 +229,76 @@ def _unimap_rows(lines, i, want, colon, start, rows):
             return -1, {}
         where[label], parts, i = i, [got[1]], i + 1
         while i < len(lines) and len(parts) <= most and _unimap_wrapped(lines[i], start):
-            parts.append(_one_space(lines[i]))
+            parts.append(lines[i].strip())
+            wraps.append(i)
             i += 1
-        rows[label] = ' '.join(parts)
+        if not _unimap_spaced(parts):
+            return -1, {}
+        rows[label] = _one_space(' '.join(parts))
     return i, where
 
 
 def _unimap_table(lines, at, base):
-    """({label: value}, index of the reporting row, reason): the greeting, `_TABLE` in order, the registration
-    intro, `_REGISTER` in order, then the cost block and the closing notes, every step as measured."""
-    rows = {}
+    """({label: value}, places, reason): the greeting, `_TABLE` in order, the registration intro, `_REGISTER` in
+    order, then the cost block and the closing notes, every step as measured. ``places``: the fixed places the
+    reader read ('at' the title, 'report' and 'time' the rows, 'wraps' the wrapped value lines, 'end' the first
+    line after the notes); {} on a refusal."""
+    rows, wraps = {}, []
     g = at + 4
     if g >= len(lines) or not _unimap_at(lines[at + 2:g], base) or _one_space(' '.join(lines[at + 2:g])) != _GREETING:
-        return rows, -1, 'no_table'
+        return rows, {}, 'no_table'
     row_in = _indent(lines[g])
     colon = lines[g].find(':')
     start = colon + 1 + len(lines[g][colon + 1:]) - len(lines[g][colon + 1:].lstrip()) if colon > 0 else -1
     if row_in - base not in _ROW_IN or colon - row_in not in _COLON_AT or start - colon not in _VALUE_GAP:
-        return rows, -1, 'table_shape'
-    i, _ = _unimap_rows(lines, g, _TABLE, colon, start, rows)
+        return rows, {}, 'table_shape'
+    i, _ = _unimap_rows(lines, g, _TABLE, colon, start, rows, wraps)
     if i < 0 or i >= len(lines) or _one_space(lines[i]) != _REGISTER_INTRO or not _unimap_at(lines[i:i + 1], base):
-        return rows, -1, 'table_shape'
-    i, where = _unimap_rows(lines, i + 1, _REGISTER, colon, start, rows)
+        return rows, {}, 'table_shape'
+    i, where = _unimap_rows(lines, i + 1, _REGISTER, colon, start, rows, wraps)
     if i < 0:
-        return rows, -1, 'reporting_shape'
+        return rows, {}, 'reporting_shape'
     block = lines[i:i + 10]
     tidy = [_one_space(ln) for ln in block]
     costs = [_COST_ROW.match(t) for t in tidy[4:6]] if len(tidy) == 10 else []
     if (len(tidy) != 10 or tidy[0] != _COST_INTRO or not _unimap_at(block[:1], base) or tuple(tidy[1:4]) != _COST_HEAD
             or any(_indent(ln) <= row_in for ln in block[1:6]) or not all(costs) or not _unimap_at(block[6:7], row_in)
             or tidy[6] != _COST_NOTE or tuple(tidy[7:10]) != _NOTES or not _unimap_at(block[7:10], base)):
-        return rows, -1, 'table_shape'
+        return rows, {}, 'table_shape'
     one, two = costs
     years = two.group(2).upper()
     if (one.group(1) or one.group(2) != 'Satu' or one.group(3) != '1' or not two.group(1)
             or years not in _NUMBERS or _NUMBERS.index(years) + 1 != int(two.group(3))):
-        return rows, -1, 'table_shape'      # "Satu (1) Tahun", then "* <Word> (n) Tahun", its word its number
-    return rows, where[REPORT_LABEL], ''
+        return rows, {}, 'table_shape'      # "Satu (1) Tahun", then "* <Word> (n) Tahun", its word its number
+    return rows, {'at': at, 'report': where[REPORT_LABEL], 'time': where['Masa Pendaftaran'], 'wraps': wraps,
+                  'end': i + 10}, ''
+
+
+def _both_upper(line: str) -> list:
+    """The line one-spaced and upper-cased, as printed and with look-alike letters folded."""
+    return [_one_space(one).upper() for one in (line, fold_lookalikes(line))]
+
+
+def _unimap_free_text(lines, places, name: str) -> str:
+    """Review round 1: the lines the reader read no field from. The footer (after the notes) at most `_FOOTER_MAX`
+    lines ('footer_shape'); no colon in an address, wrapped or footer line, no field label (`_LABEL`) in an address or
+    footer line, a name's link word (`_LINK`) in the footer only on its one "(...)" signer line ('stray_field'); the
+    read name nowhere but its own line ('second_name'); else ''."""
+    at, end = places['at'], places['end']
+    address, footer, wraps = lines[4:at - 2], lines[end:], [lines[k] for k in places['wraps']]
+    if len(footer) > _FOOTER_MAX:
+        return 'footer_shape'
+    up = _both_upper
+    signer = [ln for ln in footer if ln.strip()[:1] == '(' or ln.strip()[-1:] == ')']
+    if (any(':' in t for ln in address + footer + wraps for t in up(ln))
+            or any(_LABEL.search(t) for ln in address + footer for t in up(ln))
+            or len(signer) > 1 or any(not (s.strip()[:1] == '(' and s.strip()[-1:] == ')') for s in signer)
+            or any(_LINK.search(t) for ln in footer if ln not in signer for t in up(ln))):
+        return 'stray_field'
+    said = re.compile(r'(?<![A-Z])' + re.escape(_one_space(name).upper()) + r'(?![A-Z])')
+    if name and any(said.search(t) for k, ln in enumerate(lines) if k != 2 for t in up(ln)):
+        return 'second_name'
+    return ''
 
 
 def _unimap_values(rows, code) -> tuple:
@@ -272,15 +337,25 @@ def _unimap_dates_sane(years, offer_date: str, printed: str, ref_year: int) -> b
 
 
 def _unimap_read(lines):
-    """Every reader step on page 1's layout lines: (years, intake, head, (reporting index, reason), values); None
-    before the title holds."""
+    """Every reader step on page 1's layout lines: (years, intake, head, (places, reason), values); None before the
+    title holds."""
     at, base, intake, y1, y2 = _unimap_title_at(lines)
     if at < 0:
         return None
     head = _unimap_head(lines, at, base)
-    rows, report_at, why_table = _unimap_table(lines, at, base)
+    rows, places, why_table = _unimap_table(lines, at, base)
     values = _unimap_values(rows, head[3]) if not why_table and not head[5] else ('', '', '', '')
-    return (y1, y2), intake, head, (report_at, why_table), values
+    return (y1, y2), intake, head, (places, why_table), values
+
+
+def _unimap_codes(line: str) -> list:
+    """Every code-like token on one line (`_CODE_LIKE`, 6+ digits), as its letters upper-cased then its digits."""
+    out = []
+    for m in _CODE_LIKE.finditer(_MONEY.sub(' ', line)):
+        digits = re.sub(r'\D', '', m.group(2))
+        if len(digits) >= 6:
+            out.append(re.sub(r'[^A-Za-z]', '', m.group(1)).upper() + digits)
+    return out
 
 
 def read_unimap(source: str):
@@ -296,7 +371,7 @@ def read_unimap(source: str):
     got = _unimap_read(lines)
     if got is None:
         return None, 'no_title'
-    years, intake, (name, printed_ic, offer_date, code, ref_year, why_head), (report_at, why_table), values = got
+    years, intake, (name, printed_ic, offer_date, code, ref_year, why_head), (places, why_table), values = got
     programme, printed, reported, why_values = values
     nric = _norm_nric(printed_ic) if printed_ic else ''
     fields = {
@@ -312,17 +387,22 @@ def read_unimap(source: str):
     rest = [ln for k, ln in enumerate(lines) if k != 3]
     if unimap_ic_elsewhere('\n'.join(rest), '') or unimap_ic_elsewhere(source, nric):
         return fields, 'second_ic'
-    if any(c != code for c in _ANY_CODE.findall(folded)) or _ANY_CODE.findall(folded).count(code) != 2:
+    codes = [c for ln in folded.splitlines() for c in _unimap_codes(ln)]
+    if any(c != code for c in codes + [c for ln in source.splitlines() for c in _unimap_codes(ln)]) \
+            or codes.count(code) != 2:
         return fields, 'second_code'          # the reference's and the Kod Program row's, nowhere else
     if '{' in source or '}' in source:
         return fields, 'placeholder'          # an unfilled template field
     flat = _one_space(folded).upper()
     if _NOT_DEGREE_WORD.search(flat) or flat.count('SARJANA MUDA') != 1:
         return fields, 'not_degree'           # the programme row only
-    known = {0, 1, report_at}                   # the fixed lines the reader read, never a line found by its words
-    if any(_ANY_DATE.search(_one_space(ln)) or _SHORT_DATE.search(_one_space(ln))
-           for k, ln in enumerate(lines) if k not in known):
+    known = {0, 1, places['report'], places['time']}   # the fixed lines read, never a line found by its words
+    if any(_ANY_DATE.search(t) or _SHORT_DATE.search(t) or _DAY_MONTH.search(t.upper())
+           for k, ln in enumerate(lines) if k not in known for t in (_one_space(ln), _one_space(fold_lookalikes(ln)))):
         return fields, 'stray_date'           # a date the reader did not read: never guessed, never skipped
+    why_free = _unimap_free_text(lines, places, name)
+    if why_free:
+        return fields, why_free
     empty = [k for k in ('candidate_name', 'candidate_nric', 'programme', 'intake', 'reporting_date') if not fields[k]]
     if empty:
         return fields, 'empty:' + ','.join(empty)
@@ -423,7 +503,7 @@ def _unimap_printed(page1_layout: str) -> tuple:
     got = _unimap_read(_uum_lines(page1_layout))
     if got is None:
         return '', ''
-    _years, _intake, head, (_r, why_table), values = got
+    _years, _intake, head, (_places, why_table), values = got
     return (head[1] if not head[5] else ''), (values[1] if not why_table and not values[3] else '')
 
 

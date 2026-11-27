@@ -6,7 +6,7 @@ and writes the answers to stdout (a JSON line, then the PNG bytes it names). Ope
 ``paints`` (pdf_pdfium_check's per-object painted-text check), ``render`` (each page its own PNG), ``stack`` (pages
 stacked into one PNG), ``words`` (page 1's word boxes for the SPM certificate reader), ``layout`` (page 1's pypdf
 layout text for the UMS offer reader), ``ink`` (each page-1 character's own ink on the rendered page, S-visible 2:
-`pdf_ink`).
+`pdf_ink`), ``empty`` (the pages on which pdfium sees no object and no annotation, `pdfium_place.empty_pages`).
 
 Why a child: rounds 5-7 modelled what pdfium costs (load whitelists, render caps) and ran it under one process-wide
 lock, and every review still found a tiny crafted PDF that kept pdfium busy for 10-40 s — freezing every upload in
@@ -504,7 +504,8 @@ def _ink(pdf, req):
 
 
 _OPS ={'count': lambda pdf, req, blobs: {'count': len(pdf)}, 'paints': _op_paints, 'render': _op_render,
-        'stack': _op_stack, 'words': _op_words, 'layout': _op_layout, 'ink': _op_ink}
+        'stack': _op_stack, 'words': _op_words, 'layout': _op_layout, 'ink': _op_ink,
+        'empty': lambda pdf, req, blobs: _pl.empty_pages(__import__('pypdfium2.raw').raw, pdf, req)}
 #: The request's PDF bytes, for an operation that reads them with pypdf (``layout``, ``ink``).
 _DATA = [b'']
 

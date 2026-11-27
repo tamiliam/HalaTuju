@@ -35,7 +35,7 @@ ROWS = (('Program Pengajian', PROGRAMME_ROW), ('Kod Program', (CODE,)),
 REGISTER_INTRO = 'Di bawah adalah butiran berkaitan dengan proses pendaftaran diri :'
 REPORT = '26 SEPTEMBER 2026 (SABTU)'
 REGISTER = (('Tarikh Pendaftaran', (REPORT,)), ('Masa Pendaftaran', ('8.30 PAGI HINGGA 4.30 PETANG',)),
-            ('Lokasi Pendaftaran', ('DEWAN UTAMA, KAMPUS CONTOH', '(Rujuk  Panduan  Am  Pendaftaran')))
+            ('Lokasi Pendaftaran', ('DEWAN UTAMA, KAMPUS CONTOH', '(Rujuk  Panduan  Am  Pendaftaran', 'Pelajar Baharu)')))
 COSTS = ('Sebagai makluman, kos pengajian adalah seperti berikut:',
          ' ' * 81 + 'Kos Yang Ditanggung' + ' ' * 17 + 'Kos Yang',
          ' ' * 48 + 'Tempoh Pengajian' + ' ' * 20 + 'Oleh Pelajar (RM)' + ' ' * 14 + 'Ditanggung' + ' ' * 12
@@ -125,9 +125,12 @@ class UnimapLockTest(SimpleTestCase):
         long_venue = rows_with(REGISTER, 'Lokasi Pendaftaran', ('DEWAN UTAMA', 'KAMPUS CONTOH', 'PERLIS',
                                                                 '(Rujuk Panduan', 'Sidang Akademik 2026/2027)'))
         no_wrap = rows_with(REGISTER, 'Lokasi Pendaftaran', ('DEWAN UTAMA',))
+        times = rows_with(REGISTER, 'Masa Pendaftaran', ('9.12 PAGI HINGGA 12.10 TENGAH HARI',))   # read, not a date
+        shifted = ['\n'.join((' ' * 6 + ln) for ln in layout().splitlines()),            # base 48
+                   '\n'.join(ln[6:] for ln in layout().splitlines())]                    # base 36
         for lay in (layout(address=ADDRESS[:2]), layout(address=ADDRESS + ('MALAYSIA',)), layout(rows=one_line),
                     layout(rows=two_wraps), layout(register=long_venue), layout(register=no_wrap),
-                    layout(title=(' '.join(TITLE[0].split()), TITLE[1]))):
+                    layout(register=times), *shifted):
             with self.subTest(lines=lay.count('\n'), size=len(lay)):
                 self.assertIsNotNone(run(lay)['locked'], why(run(lay)))
 
@@ -160,7 +163,24 @@ class UnimapRefusalTest(SimpleTestCase):
         for lay in (flat, layout(title=one_line), layout(title=(TITLE[0].replace('   ', '     '), TITLE[1]))):
             with self.subTest(size=len(lay)):
                 self.assertIsNone(run(lay)['locked'])
-        self.assertEqual(read_unimap(flat)[1], 'no_head')
+        self.assertEqual(read_unimap(flat)[1], 'no_title')        # review round 1: base 0 is below the margin
+
+    def test_the_title_gaps_and_the_margin_are_as_measured(self):
+        """Review round 1: every title gap exactly 3 (measured); the base indent 36-48 (measured 42), so a page at
+        the left margin (0) or far in refuses before any field is read."""
+        words = TITLE[0].split('   ')
+        mixed = '   '.join(words[:3]) + '  ' + '   '.join(words[3:])
+        for case, title in (('gap1', ' '.join(words)), ('gap2', '  '.join(words)), ('gap4', '    '.join(words)),
+                            ('mixed', mixed)):
+            with self.subTest(case=case):
+                self.assertEqual(read_unimap(layout(title=(title, TITLE[1]))), (None, 'no_title'))
+                self.assertIsNone(run(layout(title=(title, TITLE[1])))['locked'])
+        for case, lay in (('margin0', '\n'.join(ln[42:] for ln in layout().splitlines())),
+                          ('base35', '\n'.join(ln[7:] for ln in layout().splitlines())),
+                          ('base49', '\n'.join(' ' * 7 + ln for ln in layout().splitlines()))):
+            with self.subTest(case=case):
+                self.assertEqual(read_unimap(lay), (None, 'no_title'))
+                self.assertIsNone(run(lay)['locked'])
 
     def test_any_change_to_the_table_or_head_refuses(self):
         moved = '\n'.join(ln.replace(' ' * 45 + 'Fakulti', ' ' * 46 + 'Fakulti') for ln in layout().splitlines())
@@ -199,12 +219,75 @@ class UnimapRefusalTest(SimpleTestCase):
                 self.assertIsNone(d['locked'])
                 self.assertEqual(d['guard'], 'stray_date')
 
+    def test_a_day_and_month_with_no_year_refuses(self):
+        """Review round 1: the shared date patterns need a year; "PADA 27/9" and its kin refuse too, wherever the
+        reader read no date."""
+        for case, text in (('slash', 'DEWAN UTAMA / PADA 27/9'), ('dash', 'PADA 27-9'), ('dot', 'PADA 27.9'),
+                           ('spaced', 'PADA 27 / 09'), ('name', 'PADA 27 SEPT'), ('hb', 'PADA 27 HB SEPTEMBER'),
+                           ('lower', 'pada 3 okt'), ('month_first', 'PADA SEPT 27'), ('malay', 'Pada 1 Mac')):
+            with self.subTest(case=case, where='venue'):
+                venue = rows_with(REGISTER, 'Lokasi Pendaftaran', (text,))
+                self.assertEqual(read_unimap(layout(register=venue))[1], 'stray_date')
+                self.assertIsNone(run(layout(register=venue))['locked'])
+            with self.subTest(case=case, where='footer'):
+                self.assertEqual(read_unimap(layout(footer=FOOTER + (text,)))[1], 'stray_date')
+
     def test_a_second_ic_or_code_refuses(self):
         for extra, reason in (('Penjaga: 750505-03-1234', 'second_ic'), (IC, 'second_ic'),
                               ('Kod lain UR6599002', 'second_code'), ('Kod ' + CODE, 'second_code')):
             with self.subTest(reason=reason, size=len(extra)):
                 self.assertEqual(read_unimap(layout(extra=(extra,)))[1], reason)
                 self.assertIsNone(run(layout(extra=(extra,)))['locked'])
+
+    def test_a_code_in_any_spelling_refuses(self):
+        """Review round 1: any case, any space, dash or dot inside, letters glued before it; the read code a third
+        time refuses too."""
+        for case, text in (('spaced', 'Kod Program : UR 6599002'), ('glued', 'XUR6599002'), ('lower', 'ur6599002'),
+                           ('dash', 'UR-6599002'), ('dots', 'U.R. 659-9002'), ('same_spaced', 'UR 6599001'),
+                           ('same_lower', 'ur6599001'), ('same_glued', 'XUR6599001'), ('eight', 'UR65990012'),
+                           ('six', 'UR659900')):
+            with self.subTest(case=case):
+                self.assertEqual(read_unimap(layout(footer=FOOTER + (text,)))[1], 'second_code')
+                self.assertIsNone(run(layout(footer=FOOTER + (text,)))['locked'])
+
+    def test_a_value_with_a_second_column_refuses(self):
+        """Review round 1: gaps as measured (even, at most 6; a last line single-spaced), never a 9-space cut."""
+        def programme(*parts):
+            return layout(rows=rows_with(ROWS, 'Program Pengajian', parts))
+        first = PROGRAMME_ROW[0]
+        for case, lay in (('wrap8', programme(first, 'KEPUJIAN        AWAM')),
+                          ('wrap6', programme(first, 'KEPUJIAN      AWAM')),
+                          ('wrap2', programme(first, 'KEPUJIAN  AWAM')),
+                          ('uneven', programme('SARJANA  MUDA      KEJURUTERAAN', 'KEPUJIAN')),
+                          ('seven', programme('SARJANA       MUDA       KEJURUTERAAN', 'KEPUJIAN')),
+                          ('one_line_wide', programme('SARJANA MUDA SAINS        AWAM')),
+                          ('faculty', layout(rows=rows_with(ROWS, 'Fakulti', ('FAKULTI  KEJURUTERAAN ELEKTRIK',)))),
+                          ('venue_colon', layout(register=rows_with(REGISTER, 'Lokasi Pendaftaran',
+                                                                    ('DEWAN UTAMA', 'Nama : ALFEN BIN QORDA'))))):
+            with self.subTest(case=case):
+                self.assertIn(read_unimap(lay)[1], ('table_shape', 'reporting_shape'))
+                self.assertIsNone(run(lay)['locked'])
+
+    def test_a_field_outside_its_place_refuses(self):
+        """Review round 1: nothing after the notes, in the address or in a wrapped line may print a field."""
+        for case, lay, reason in (
+                ('amended', layout(footer=FOOTER + ('Program Pengajian dipinda : KEJURUTERAAN AWAM',)), 'stray_field'),
+                ('amended_no_colon', layout(footer=FOOTER + ('Program Pengajian dipinda KEJURUTERAAN AWAM',)),
+                 'stray_field'),
+                ('name_row', layout(footer=FOOTER + ('Nama : ALFEN BIN QORDA',)), 'stray_field'),
+                ('name_line', layout(footer=FOOTER + ('ALFEN BIN QORDA',)), 'stray_field'),
+                ('two_signers', layout(footer=FOOTER + ('(ALFEN BIN QORDA)',)), 'stray_field'),
+                ('half_paren', layout(footer=FOOTER[:2] + ('(QARIM VELTO BIN DURAN',) + FOOTER[3:]), 'stray_field'),
+                ('ic_label', layout(footer=FOOTER + ('No. K/P pelajar',)), 'stray_field'),
+                ('session', layout(footer=FOOTER + ('Sesi kemasukan baharu',)), 'stray_field'),
+                ('address_label', layout(address=ADDRESS + ('PROGRAM KHAS',)), 'stray_field'),
+                ('address_colon', layout(address=ADDRESS[:3] + ('U/P : ENCIK QORDA',)), 'stray_field'),
+                ('name_again', layout(address=ADDRESS + (NAME.replace(' A/L ', ' ').upper(),),
+                                      name=NAME.replace(' A/L ', ' ')), 'second_name'),
+                ('long_footer', layout(footer=FOOTER + ('Perlis',) * 5), 'footer_shape')):
+            with self.subTest(case=case):
+                self.assertEqual(read_unimap(lay)[1], reason)
+                self.assertIsNone(run(lay)['locked'])
 
     def test_a_later_page_refuses_even_when_blank(self):
         """No excuse: a page 2 with text refuses ``later_page``; a BLANK page 2 refuses ``hidden_page`` by the shared
