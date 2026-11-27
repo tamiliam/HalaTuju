@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: editor fixes - criteria editor layout, ruling A (on the per-person income line passes) (2026-11-28)
+
+Branch editor-fixes-r (editor-fixes rebased onto main; its phase 3, QC's verdict and the case page phone pills, is already live as the cosmetic-qc entry below and is not repeated). Services: api, web. No migration.
+- **Criteria editor:** "Student must pass" joins sit on the right and show only when both results groups are on; the course-start box sits beside its label; no "SPM grades" header; grade-rule boxes as wide as the rest; joins run strict to loose; new copy for the SPM merit hint ("Out of 100, from the grades and Co-curricular marks."), the per-person label "Income per person at most (RM per month)" (hint removed) and "their highest result". A void SPM door under 'any' is still refused before save.
+- **Ruling A:** ON the per-person income line passes ("at most RM X") at every judge site: `criteria.income_ok`, `shortlisting._income_ok`, `amounts.income_headroom` (zero headroom on the line). `VERDICT_ENGINE_VERSION` 2026-11-28.3 (built as 2026-11-27.4, never released). Decided cases never change; a pending case on the line is re-scored under the new rule (not held). A read-only count before landing found 0 applications on the line (1,065 checked, 27 Nov). See docs/decisions.md 2026-11-27.
+
 ### feat: case 1048 - topic-coded salary-slip warnings (2026-11-28, branch warning-topics, not pushed)
 
 The word filter for a declaration's payslip-only notes kept failing, because the AI words its warnings differently on every Re-run. Owner's choice (28 Nov): the reader tags each warning with a topic code, and the display hides by code. Api only; no migration; display only (no verdict, chip, score, genuineness or money reads a topic).

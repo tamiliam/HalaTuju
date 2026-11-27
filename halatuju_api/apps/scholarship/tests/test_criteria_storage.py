@@ -223,6 +223,45 @@ class TestRescoreHoldsWhatTheTreeWouldChange(TestCase):
         self.assertEqual(result['rescored'], 1)
 
 
+class TestRescoreAppliesRulingAOnTheLine(TestCase):
+    """Ruling A (owner, 27 Nov 2026): a household exactly ON the per-person line passes. A PENDING
+    application on the line that the old rule rejected is RE-SCORED to a pass, never held: both
+    judges (the tree and the columns yardstick) moved together, so the hold does not apply.
+    Decided (released) cases are never touched by `rescore_pending_decisions`."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = make_cohort(code='line-shape', min_stpm_pngk=3.0, min_spm_a_count=None,
+                                 min_spm_bplus_count=None, income_ceiling=5860, per_capita_ceiling=1584)
+        ScholarshipCohort.objects.filter(pk=cls.cohort.pk).update(criteria=criteria.from_legacy(cls.cohort))
+        cls.cohort.refresh_from_db()
+
+    def _pending_rejected_by_the_old_rule(self, income):
+        student = make_student(household_income=income, household_size=5, receives_str=False,
+                               exam_type='stpm', stpm_cgpa=3.5, spm_prereq_grades=MID,
+                               results_exam_type='stpm', completed_qualifications=['spm', 'stpm'])
+        app = make_application(cohort=self.cohort, student=student, consent_to_contact=True,
+                               intends_tertiary_2026=True)
+        per_capita = income / 5
+        ScholarshipApplication.objects.filter(pk=app.pk).update(
+            verdict='rejected', bucket='',
+            shortlist_reason=f'income RM{income} > RM5860 and per-capita RM{per_capita:.0f} >= RM1584')
+        return app
+
+    def test_a_pending_case_on_the_line_is_rescored_to_a_pass(self):
+        on_line = self._pending_rejected_by_the_old_rule(7920)       # 7,920 / 5 = RM1,584 exactly
+        above = self._pending_rejected_by_the_old_rule(7925)         # RM1,585 a person: still fails
+        result = rescore_pending_decisions()
+        self.assertEqual(result['held'], [])
+        self.assertEqual([(c['id'], c['from'], c['to']) for c in result['changed']],
+                         [(on_line.id, 'rejected', 'shortlisted')])
+        on_line.refresh_from_db()
+        above.refresh_from_db()
+        self.assertEqual((on_line.verdict, on_line.bucket), ('shortlisted', 'B'))
+        self.assertIn('<= RM1584 (per-person line)', on_line.shortlist_reason)
+        self.assertEqual(above.verdict, 'rejected')
+
+
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestTheOldFormRebuildsTheTree(TestCase):
     @classmethod
