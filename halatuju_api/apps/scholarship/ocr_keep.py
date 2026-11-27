@@ -1,8 +1,10 @@
 """OCR-first S0b: keep the text a read saw on a document (``ApplicantDocumentOcrText``).
 
 The read pipeline used to throw the OCR text away once it had read the fields, so a new rule could only be
-tried on live documents by paying for a second read. ``keep`` stores it at the two places every read already
-has it (``vision.ocr.ocr_document_full`` and ``vision.ocr.ocr_document``): no new OCR or model call.
+tried on live documents by paying for a second read. ``keep`` stores it at the places every read already
+has it (``vision.ocr.ocr_document_full`` and ``vision.ocr.ocr_document``; since OCR-15 also the IC and
+parent IC read, ``vision.ic.run_vision_for_document``): no new OCR or model call. The one exception is
+OCR-15's owner-approved one-off ``capture_parent_ic_text`` command (Cloud Vision only, never Gemini).
 
 PRIVATE: no serializer, admin or export names the table (a test pins the modules that may), and the text is
 never copied into ``vision_fields``. Deleted with the document (CASCADE).

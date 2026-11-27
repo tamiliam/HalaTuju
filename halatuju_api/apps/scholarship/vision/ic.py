@@ -12,6 +12,7 @@ from ..genuineness.bands import keep_stored_authenticity
 from ..read_errors import IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL, is_ai_service_error
 from .names import canonical_name_tokens, name_match, nric_match, same_raw_words
 from .ocr import _doc_usage_ctx
+from .. import ocr_keep        # OCR-15: the IC read's Vision text is kept (private; see ocr_keep.py)
 from .. import vision as _v   # seams resolve on the package: one patch target reaches every caller
 
 logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name as before the split
@@ -127,6 +128,9 @@ def _merge_ic_reads(det: dict, g: dict, profile, own_card: bool = False) -> dict
 #: answering (third pass L1).
 IC_SECOND_READING = 'ic_second_reading'
 
+#: OCR-15: the ``reader`` an IC or parent IC read stores its Vision text under (``ocr_keep``).
+IC_TEXT_READER = 'run_vision_for_document'
+
 
 def _image_hash(image: bytes) -> str:
     return hashlib.sha256(image).hexdigest()
@@ -191,7 +195,9 @@ def run_vision_for_document(doc, *, fresh=False) -> dict:
         if image is None:
             result = {'nric': '', 'name': '', 'address': '', 'error': 'could not fetch image'}
         else:
-            result = _v.extract_mykad(image, doc.content_type)   # Cloud Vision OCR (doc_extract)
+            seen = []   # OCR-15: the Vision text this read saw; kept privately, never in `result`
+            result = _v.extract_mykad(image, doc.content_type, text_out=seen)   # Cloud Vision OCR (doc_extract)
+            ocr_keep.keep(doc, ''.join(seen), source=ocr_keep.VISION_OCR, reader=IC_TEXT_READER)   # never fails
             if not result.get('error'):
                 profile = getattr(doc.application, 'profile', None)
                 own_card = getattr(doc, 'doc_type', '') == 'ic'   # D4: the student's own card only

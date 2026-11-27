@@ -125,11 +125,15 @@ def _vision_words(data: bytes, content_type: str = '') -> dict:
         return {'words': [], 'text': '', 'error': str(e)[:200]}
 
 
-def extract_mykad(data: bytes, content_type: str = '') -> dict:
+def extract_mykad(data: bytes, content_type: str = '', *, text_out: Optional[list] = None) -> dict:
     """
     OCR a MyKad and return ``{'nric', 'name', 'address', 'error'}``. Accepts an
     image OR a PDF (a scanned MyKad — never a text PDF, so it is rasterised to an
     image first). Never raises.
+
+    ``text_out`` (OCR-15): a list the caller passes to receive the Vision text this read saw, so the
+    IC read can keep it privately (``ocr_keep``) with no second call. The text is NEVER put in the
+    returned dict (that dict reaches callers that answer the client).
     """
     if not data:
         return {'nric': '', 'name': '', 'address': '', 'error': 'empty image'}
@@ -142,6 +146,8 @@ def extract_mykad(data: bytes, content_type: str = '') -> dict:
     if r['error']:
         return {'nric': '', 'name': '', 'address': '', 'error': r['error']}
     text = r['text']
+    if text_out is not None:
+        text_out.append(text or '')
     nric = _extract_nric(text)
     name = _extract_name(text, nric)
     address = _extract_address(text)
