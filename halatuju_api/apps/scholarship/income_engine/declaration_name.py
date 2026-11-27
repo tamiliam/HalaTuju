@@ -29,8 +29,9 @@ A/P, S/O, D/O, BIN, BINTI, BT as `vision._canonical_name_seq` already drops them
   match once the connectors are gone — is a near miss too);
 * **one part more on one side**: that extra part is the ONLY inner part (never the first or the last
   word) that is on the allowlist of misread connectors (ALE, AIL, NL for A/L; AIP, NP for A/P; and the
-  exact SO, DO, BNT only when the other name prints a connector). It drops, and the rest must agree in
-  printed order as above. Two extra parts, or any other extra part, are never close.
+  exact BNT only when the other name prints a connector; SO and DO only when it prints S/O, D/O, A/L or
+  A/P of the same sex — review round 4). It drops, and the rest must agree in printed order as above. Two
+  extra parts, or any other extra part, are never close.
 
 Review round 3: the order is fixed (own name first, father's after), and a reversal is judged with this
 module's own allowance too ("RAJAN A/L KUMARIM" is not "KUMARAN A/L RAJAN"). A connector GLUED onto a
@@ -93,9 +94,8 @@ MAX_EDITS = 2
 #: `_canonical_name_seq` keeps BN (it is not in `vision._NAME_NOISE`); it is a connector here.
 _ALSO_DROPPED = frozenset({'bn'})
 
-#: Review round 3 (blocker 2): the slash-less connector forms that may be GLUED onto a name part
-#: ("KUMARIAL" = KUMARI + AL, "KUMARANAP", "APARUMUGAM"). Every connector this module knows.
-_GLUED_CONNECTORS = ('binti', 'bin', 'bnt', 'bte', 'bt', 'bn', 'al', 'ap', 'so', 'do')
+#: The connectors that may be GLUED onto a name part: ``_GLUED_CONNECTORS``, built below from the same
+#: sets as the sex signs and the droppable-misread allowlist, so the lists can never drift apart.
 
 
 def _parts(name: str) -> list:
@@ -105,19 +105,21 @@ def _parts(name: str) -> list:
 
 def _swallows_glued_connector(x: str, y: str) -> bool:
     """Review round 3 (blocker 2): True when one part ends (or starts) with a connector that the other
-    part does not, and taking that connector off brings the two parts CLOSER: the agreement would only
-    come from swallowing glued connector letters, whose sex is then never read ("KUMARIAL" against
-    "KUMARI", "KUMARANAP" against "KUMARAN", "APARUMUGAM" against "ARUMUGAM"). Such a pair never agrees,
-    whatever the sex. Checked on every pair before any edit allowance (the tolerant matcher's too)."""
+    part does not, and taking that connector off brings the two parts no further apart: the agreement
+    may then come from swallowing glued connector letters, whose sex is never read ("KUMARIAL" against
+    "KUMARI", "KUMARANAP" against "KUMARAN", "APARUMUGAM" against "ARUMUGAM"). Review round 4: "no
+    further apart", not only "closer", so "KUMARANP" (KUMARA + a glued NP) against "KUMARAN" counts too.
+    Such a pair never agrees, whatever the sex. Checked on every pair before any edit allowance (the
+    tolerant matcher's too)."""
     from ..vision import _levenshtein
     for p, q in ((x, y), (y, x)):
         base = _levenshtein(p, q)
         for c in _GLUED_CONNECTORS:
             if len(p) - len(c) >= 2 and p.endswith(c) and not q.endswith(c) \
-                    and _levenshtein(p[:-len(c)], q) < base:
+                    and _levenshtein(p[:-len(c)], q) <= base:
                 return True
             if len(p) - len(c) >= 2 and p.startswith(c) and not q.startswith(c) \
-                    and _levenshtein(p[len(c):], q) < base:
+                    and _levenshtein(p[len(c):], q) <= base:
                 return True
     return False
 
@@ -157,12 +159,14 @@ _MISREAD_CONNECTORS = {'ale': 'm', 'ail': 'm', 'nl': 'm', 'aip': 'f', 'np': 'f'}
 _EXACT_CONNECTORS = {'so': 'm', 'do': 'f', 'bnt': 'f'}
 
 
-def _without_misread_connector(longer: list, other_has_connector: bool):
+def _without_misread_connector(longer: list, other_has_connector: bool, other_slash_signs=frozenset()):
     """``(longer without its ONE droppable inner part, that part's sex)``, or ``(None, '')`` when there is
-    not exactly one (never the first or the last word)."""
+    not exactly one (never the first or the last word). BNT drops beside any printed connector; SO and DO
+    only beside a printed slash connector of their own sex (review round 4: never beside BIN or BINTI)."""
     droppable = dict(_MISREAD_CONNECTORS)
     if other_has_connector:
-        droppable.update(_EXACT_CONNECTORS)
+        droppable.update({w: s for w, s in _EXACT_CONNECTORS.items()
+                          if w not in ('so', 'do') or s in other_slash_signs})
     hits = [i for i in range(1, len(longer) - 1) if longer[i] in droppable]
     if len(hits) != 1:
         return None, ''
@@ -175,18 +179,37 @@ def _without_misread_connector(longer: list, other_has_connector: bool):
 #: are read BEFORE any misread logic, so an exact SO is never "one edit from DO".
 _MALE = frozenset({'a/l', 'al', 's/o', 'so', 'bin', 'bn'})
 _FEMALE = frozenset({'a/p', 'ap', 'd/o', 'do', 'binti', 'bt', 'bte', 'bnt'})
+#: Review round 3 (blocker 2), round 4 (blocker 1): the slash-less connector forms that may be GLUED onto
+#: a name part ("KUMARIAL" = KUMARI + AL, "KUMARANAP", "APARUMUGAM", "DEVINL", "KUMARANNP"): every exact
+#: slash-less sex sign above, and every word the allowlist lets drop as a misread connector.
+_GLUED_CONNECTORS = tuple(sorted(
+    {c for c in _MALE | _FEMALE if '/' not in c} | set(_MISREAD_CONNECTORS) | set(_EXACT_CONNECTORS),
+    key=lambda c: (-len(c), c)))
+#: SO and DO are real Chinese/Vietnamese name parts too: they drop only beside a printed SLASH connector
+#: of the same sex (review round 4, minor 3), never beside BIN, BINTI, BT or BNT.
+_SLASH_SIGNS = {'a/l': 'm', 's/o': 'm', 'a/p': 'f', 'd/o': 'f'}
 #: A slash connector glued on BOTH sides ("KUMARANA/PRAJAN"), which `vision._split_glued_markers` (one
 #: side only) leaves whole. Slash forms only, as there: a '/' never occurs inside a real name.
 _GLUED_BOTH_SIDES = re.compile(r'([a-z])(a/[lp]|[ds]/o)([a-z])')
 
 
-def _gender_signs(name: str) -> set:
-    """'m' and/or 'f' for each connector the name prints (slash spacing and glue tidied first)."""
+def _tokens(name: str) -> list:
+    """The name's words, slash spacing and glue tidied (so "A / L" and "KUMARANA/PRAJAN" read A/L)."""
     from ..vision import _split_glued_markers
     tidy = re.sub(r'\s*/\s*', '/', str(name or '').lower())
     tidy = _split_glued_markers(_GLUED_BOTH_SIDES.sub(r'\1 \2 \3', tidy))
+    return re.findall(r'[a-z]+(?:/[a-z]+)?', tidy)
+
+
+def _slash_signs(name: str) -> set:
+    """'m' and/or 'f' for each SLASH connector (A/L, S/O, A/P, D/O) the name prints."""
+    return {_SLASH_SIGNS[t] for t in _tokens(name) if t in _SLASH_SIGNS}
+
+
+def _gender_signs(name: str) -> set:
+    """'m' and/or 'f' for each connector the name prints (slash spacing and glue tidied first)."""
     signs = set()
-    for tok in re.findall(r'[a-z]+(?:/[a-z]+)?', tidy):
+    for tok in _tokens(name):
         if tok in _MALE:
             signs.add('m')
         elif tok in _FEMALE:
@@ -223,9 +246,12 @@ def near_miss(extracted, reference) -> bool:
         return _agree(a, b)
     if abs(len(a) - len(b)) != 1:
         return False
+    other = reference
     if len(a) < len(b):
         a, b, sa, sb = b, a, sb, sa                   # `a` is the side with the extra word
-    a, sex = _without_misread_connector(a, other_has_connector=bool(sb))
+        other = extracted
+    a, sex = _without_misread_connector(a, other_has_connector=bool(sb),
+                                        other_slash_signs=_slash_signs(other))
     if a is None:
         return False
     if _opposite_sex({sex}, sb) or _opposite_sex({sex}, sa):
@@ -272,7 +298,7 @@ _TOPICS = (
 _ABSENCES = (
     'not stated', 'not given', 'not shown', 'not provided', 'not specified', 'not indicated', 'not listed',
     'not mentioned', 'not included', 'not present', 'not recorded', 'not written', 'not filled in',
-    'not filled', 'not found', 'not available', 'not declared', 'missing', 'absent', 'none',
+    'not filled', 'not available', 'not declared', 'missing', 'absent', 'none',
     'no', 'n/a', 'nil', 'omitted', 'unspecified', 'unstated', 'without', 'lack', 'lacks', 'lacking',
     'tiada', 'tidak dinyatakan', 'tidak dicatat', 'tidak dicatatkan', 'tidak tercatat', 'tidak ditulis',
     'tidak diisi', 'tidak ada', 'tidak disertakan', 'tanpa',
@@ -309,7 +335,9 @@ _KEEP_STEMS = ('tamper', 'alter', 'forg', 'fake', 'palsu', 'ubah', 'chop', 'stam
                'mencurigakan', 'inconsistent', 'differ', 'berbeza', 'mismatch', 'relative', 'saudara',
                # review round 3 (minor 6): the employer may be there but covered over or unreadable
                'visib', 'unclear', 'cover', 'blank', 'cut', 'crop', 'legib', 'unread', 'obscur', 'hidden',
-               'smudg', 'fade', 'jelas', 'kabur', 'tutup', 'kosong', 'potong', 'dibaca')
+               'smudg', 'fade', 'jelas', 'kabur', 'tutup', 'kosong', 'potong', 'dibaca',
+               # review round 4 (minor 2): "not found" may mean the employer was covered over
+               'not found', 'dijumpai', 'ditemui')
 #: ...and these as whole words (too short to match inside other words): IC, I/C, I.C., KP, K/P, K.P., COP.
 _KEEP_WORDS = re.compile(r'\b(?:ic|kp|cop|i\s*/\s*c|k\s*/\s*p|i\s*\.\s*c|k\s*\.\s*p)\b')
 #: "the employer's NAME" is still about the employer, not about who the earner is.

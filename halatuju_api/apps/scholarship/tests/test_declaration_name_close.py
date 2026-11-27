@@ -780,3 +780,92 @@ class R3OnlyMisreadConnectorsDropTests(SimpleTestCase):
 
     def test_a_misread_against_its_own_side_connector_of_the_other_sex(self):
         self.assertFalse(near_miss('KAVITHA A/P NL KANDASAMY', 'KAVITHA KANDASAMY'))
+
+
+class R4GluedMisreadConnectorTests(SimpleTestCase):
+    """Round 4, blocker 1: a MISREAD connector (NL, NP, ALE, AIL, AIP) glued onto a part is never swallowed."""
+
+    def test_the_four_review_pairs_are_not_close(self):
+        self.assertFalse(near_miss('DEVINL RAJAN', 'DEVI A/P RAJAN'))
+        self.assertFalse(near_miss('KUMARINL RAJAN', 'KUMARI A/P RAJAN'))
+        self.assertFalse(near_miss('KUMARANNP RAJAN', 'KUMARAN A/L RAJAN'))
+        self.assertFalse(near_miss('KUMARANP RAJAN', 'KUMARAN A/L RAJAN'))
+
+    def test_near_variants_are_not_close(self):
+        for read, ic in (('devinl rajan', 'devi a/p rajan'), ('Devinl  Rajan.', 'DEVI A / P RAJAN'),
+                         ('kumarinl rajan', 'KUMARI A / P RAJAN'), ('kumarannp rajan', 'kumaran a / l rajan'),
+                         ('Kumaranp  Rajan', 'KUMARAN A / L RAJAN'), ('DEVI A/P RAJAN', 'DEVINL RAJAN'),
+                         ('KUMARAN A/L RAJAN', 'KUMARANP RAJAN'), ('DEVINL RAJAN', 'DEVI RAJAN'),
+                         ('KUMARANP RAJAN', 'KUMARAN RAJAN'), ('KUMARANAIL RAJAN', 'KUMARAN A/L RAJAN'),
+                         ('KUMARANALE RAJAN', 'KUMARAN A/L RAJAN'), ('KAVITHAAIP RAJAN', 'KAVITHA A/P RAJAN'),
+                         ('KAVITHANP RAJAN', 'KAVITHA A/P RAJAN'), ('DEVI NPRAJAN', 'DEVI A/P RAJAN'),
+                         ('KUMARAN NLRAJAN', 'KUMARAN A/L RAJAN')):
+            self.assertFalse(near_miss(read, ic), (read, ic))
+
+    def test_every_droppable_misread_connector_is_also_a_glued_connector(self):
+        glued = set(declaration_name._GLUED_CONNECTORS)
+        self.assertLessEqual(set(declaration_name._MISREAD_CONNECTORS), glued)
+        self.assertLessEqual(set(declaration_name._EXACT_CONNECTORS), glued)
+        slashless = {c for c in declaration_name._MALE | declaration_name._FEMALE if '/' not in c}
+        self.assertLessEqual(slashless, glued)
+
+    def test_the_swallow_guard_catches_a_glued_misread(self):
+        swallows = declaration_name._swallows_glued_connector
+        for x, y in (('devinl', 'devi'), ('kumarinl', 'kumari'), ('kumarannp', 'kumaran'),
+                     ('kumaranp', 'kumaran'), ('kumaran', 'kumaranp'), ('nprajan', 'rajan')):
+            self.assertTrue(swallows(x, y), (x, y))
+
+    def test_genuine_misreads_are_still_close(self):
+        self.assertTrue(near_miss('ABIGALE BINTI OSMAN', 'ABIGAIL BINTI OSMAN'))
+        self.assertTrue(near_miss('ALFONZO A/L KANDASAMY', 'ALFONSO A/L KANDASAMY'))
+        self.assertTrue(near_miss('RICARDA A/P KANDASAMY', 'RICARDO A/P KANDASAMY'))
+        self.assertTrue(near_miss(MISREAD_2, IC_NAME))
+        self.assertTrue(near_miss('MURUGAPPAN NL KANDASAMY', IC_NAME))
+
+
+class R4NotFoundIsKeptTests(SimpleTestCase):
+    """Round 4, minor 2: "not found" may mean the employer was covered over, so the warning stays."""
+
+    KEEP = ('Employer not found', 'employer  not found.', 'EMPLOYER NOT FOUND', 'Pay period not found',
+            'Employer name not found on the document', 'Majikan tidak dijumpai', 'majikan  tidak dijumpai',
+            'Nama majikan tidak ditemui', 'Tempoh gaji tidak dijumpai', 'Employer missing; pay period not found')
+
+    def test_not_found_warnings_are_kept(self):
+        for w in self.KEEP:
+            self.assertFalse(payslip_only_warning(w), w)
+
+    def test_a_declaration_keeps_them(self):
+        ws = list(self.KEEP) + ['Employer not stated']
+        self.assertEqual(shown_warnings(_doc(), ws), list(self.KEEP))
+
+    def test_not_found_is_no_absence_word(self):
+        self.assertNotIn('not found', declaration_name._ABSENCES)
+        self.assertNotIn('tidak dijumpai', declaration_name._ABSENCES)
+        self.assertNotIn('tidak ditemui', declaration_name._ABSENCES)
+
+
+class R4SoDoOnlyBesideASlashConnectorTests(SimpleTestCase):
+    """Round 4, minor 3: SO and DO drop only beside a printed S/O, D/O, A/L or A/P of the same sex."""
+
+    def test_the_two_review_pairs_are_not_close(self):
+        self.assertFalse(near_miss('NGUYEN SO KEAT', 'NGUYEN BIN KEAT'))
+        self.assertFalse(near_miss('LIM DO KEAT', 'LIM BINTI KEAT'))
+
+    def test_near_variants_are_not_close(self):
+        for read, ic in (('nguyen so keat', 'nguyen bin keat'), ('Nguyen  So  Keat', 'NGUYEN  BIN  KEAT'),
+                         ('NGUYEN BIN KEAT', 'NGUYEN SO KEAT'), ('NGUYEN SO KEAT', 'NGUYEN BN KEAT'),
+                         ('lim do keat', 'lim binti keat'), ('LIM DO KEAT', 'LIM BT KEAT'),
+                         ('LIM DO KEAT', 'LIM BTE KEAT'), ('LIM DO KEAT', 'LIM BNT KEAT'),
+                         ('LIM BINTI KEAT', 'LIM DO KEAT'), ('KUMARAN SO RAJAN', 'KUMARAN BIN RAJAN'),
+                         ('KAVITHA DO RAJAN', 'KAVITHA BINTI RAJAN'), ('KUMARAN SO RAJAN', 'KUMARAN A/P RAJAN'),
+                         ('KAVITHA DO RAJAN', 'KAVITHA A/L RAJAN'), ('KAVITHA DO RAJAN', 'KAVITHA S/O RAJAN')):
+            self.assertFalse(near_miss(read, ic), (read, ic))
+
+    def test_beside_a_same_sex_slash_connector_they_still_drop(self):
+        for read, ic in (('KUMARAN SO RAJAN', 'KUMARAN S/O RAJAN'), ('kumaran so rajan', 'KUMARAN S / O RAJAN'),
+                         ('KUMARAN SO RAJAN', 'KUMARAN A/L RAJAN'), ('KUMARAN A/L RAJAN', 'KUMARAN SO RAJAN'),
+                         ('KAVITHA DO RAJAN', 'KAVITHA D/O RAJAN'), ('kavitha do rajan', 'KAVITHA A / P RAJAN')):
+            self.assertTrue(near_miss(read, ic), (read, ic))
+
+    def test_bnt_is_unchanged(self):
+        self.assertTrue(near_miss('AMINAH BNT YUSOF', 'AMINAH BINTI YUSOF'))
