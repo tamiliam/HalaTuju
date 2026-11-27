@@ -11,6 +11,9 @@
 import type { ReactNode } from 'react'
 import type { ApplicantDocument } from '@/lib/api'
 
+import { DocChip } from '@/components/DocChip'
+import { CHIP_SYMBOL, STATE_COLOURS, kindToState, servedChip, type ChipState } from '@/lib/docChips'
+
 import type { ICCheckKind } from './checklists'
 
 // ── Offer-letter clinical facts (Check-1 Pathway) ────────────────────────
@@ -33,31 +36,21 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   const chk = doc.pathway_check
   if (!chk) return null
 
-  const badge = (s: PathStatus, tone?: ICCheckKind) => {
+  const badge = (s: PathStatus, tone?: ICCheckKind, key?: string) => {
     const kind = tone ?? pathBadgeKind(s)
-    const cls: Record<ICCheckKind, string> = {
-      match: 'bg-positive-50 text-positive-700 ring-positive-200',
-      partial: 'bg-caution-50 text-caution-700 ring-caution-200',
-      mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
-      unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
-      none: 'bg-ground-50 text-ground-500 ring-ground-200',
-    }
+    const sc = key ? servedChip(doc, key) : undefined
     // Owner chip rule (2026-11-26): a by-design missing IC shows a grey chip with the field name
     // only, never the words "Not printed"; 'not_printed' is the API word, not a label.
     const text = s === 'not_printed'
       ? t('scholarship.docs.pathwayCheck.ic')
       : t(`scholarship.docs.pathwayCheck.status.${s}`)
     return (
-      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
-        {text}
-      </span>
+      <DocChip state={sc ? sc.state : kindToState(kind)}>
+        {sc?.label ? t(sc.label) : text}
+      </DocChip>
     )
   }
-  const fromLetter = (
-    <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
-      {t('scholarship.docs.pathwayCheck.fromLetter')}
-    </span>
-  )
+  const fromLetter = null
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-ground-700">
@@ -87,8 +80,8 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
 
   return (
     <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
-      {row(t('scholarship.docs.pathwayCheck.name'), chk.candidate_name, badge(chk.name))}
-      {row(t('scholarship.docs.pathwayCheck.ic'), chk.candidate_nric, badge(chk.ic))}
+      {row(t('scholarship.docs.pathwayCheck.name'), chk.candidate_name, badge(chk.name, undefined, 'name'))}
+      {row(t('scholarship.docs.pathwayCheck.ic'), chk.candidate_nric, badge(chk.ic, undefined, 'ic'))}
       {pathRow('programme', chk.programme)}
       {pathRow('institution', chk.institution)}
       {dataRow('issuer', chk.issuer)}
@@ -145,18 +138,13 @@ function assistTone(verdict: string): 'good' | 'warn' | 'info' {
 }
 
 export function SupportingDocChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
-  const palette: Record<string, string> = {
-    good: 'bg-positive-50 text-positive-800 ring-positive-200',
-    warn: 'bg-caution-50 text-caution-800 ring-caution-200',
-    info: 'bg-ground-50 text-ground-700 ring-ground-200',
-    'name-missing': 'bg-caution-50 text-caution-800 ring-caution-200',
-    'address-missing': 'bg-caution-50 text-caution-800 ring-caution-200',
-    unreadable: 'bg-ground-50 text-ground-700 ring-ground-200',
-  }
-  const chip = (tone: string, icon: string, text: string) => (
+  // The one colour map: good = green, the warnings = amber, the rest grey.
+  const toneState = (tone: string): ChipState =>
+    tone === 'good' ? 'green' : tone === 'info' || tone === 'unreadable' ? 'grey' : 'amber'
+  const chip = (tone: string, text: string) => (
     <div className="mt-2">
-      <span className={`inline-flex items-start gap-1.5 rounded-full px-3 py-1.5 text-xs ring-1 ${palette[tone]}`}>
-        <span aria-hidden>{icon}</span>
+      <span className={`inline-flex items-start gap-1.5 rounded-full px-3 py-1.5 text-xs ring-1 ${STATE_COLOURS[toneState(tone)].chip}`}>
+        {CHIP_SYMBOL[toneState(tone)] && <span aria-hidden>{CHIP_SYMBOL[toneState(tone)]}</span>}
         <span>{text}</span>
       </span>
       <p className="mt-1 text-xs text-ground-400">{t('scholarship.docs.vision.note')}</p>
@@ -166,11 +154,10 @@ export function SupportingDocChip({ doc, t }: { doc: ApplicantDocument; t: (key:
   const av = doc.vision_fields?.student_verdict
   if (av) {
     const tone = assistTone(av)
-    return chip(tone, tone === 'good' ? '✓' : tone === 'info' ? 'ⓘ' : '⚠', t(`scholarship.docs.assist.${av}`))
+    return chip(tone, t(`scholarship.docs.assist.${av}`))
   }
   // Fallback: the deterministic name/address presence chip.
   const variant = supportingChipVariant(doc)
   if (!variant) return null
-  return chip(variant, variant === 'good' ? '✓' : variant === 'unreadable' ? 'ⓘ' : '⚠',
-    t(`scholarship.docs.match.${variant}`))
+  return chip(variant, t(`scholarship.docs.match.${variant}`))
 }

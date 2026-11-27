@@ -1,12 +1,15 @@
 'use client'
 import { useEffect } from 'react'
 import { useT } from '@/lib/i18n'
+import DocChecksPanel, { type DocChecks } from '@/components/DocChecksPanel'
 
 export interface ViewerDoc {
   label: string
   filename: string
   url: string
   kind: 'image' | 'pdf' | 'unsupported'
+  /** The served chips, pill and times for the Checks panel beside the file (officer drawer only). */
+  checks?: DocChecks
 }
 
 /**
@@ -65,6 +68,7 @@ export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onC
             aria-label={t('admin.scholarship.docsDrawer.viewer.close')}
             className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-md text-ground-400 hover:bg-ground-100 hover:text-ground-700">✕</button>
         </div>
+        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <div className="flex-1 overflow-auto bg-ground-100">
           {doc.kind === 'image' && (
             // eslint-disable-next-line @next/next/no-img-element -- a signed document URL shown at its natural size; next/image would resize and re-encode a document a reviewer must read as uploaded
@@ -90,6 +94,8 @@ export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onC
               {newTab}
             </div>
           )}
+        </div>
+        {doc.checks && <DocChecksPanel checks={doc.checks} />}
         </div>
       </div>
     </div>

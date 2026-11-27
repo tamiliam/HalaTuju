@@ -258,6 +258,46 @@ export function CollapsibleSection({
 
 // ── Single-type upload card ───────────────────────────────────────────────
 
+/**
+ * WHICH CHECKLIST A DOCUMENT GETS, exported so the jest parity test renders THIS, not a copy. The FIRST
+ * read IC on a card gets `ICChecklist` (in `SingleDocCard`); every other document comes here. `lazyHigher`
+ * false leaves the two lazy higher-results components out (a test without a token).
+ */
+export function DocChecks({ doc: d, t, token, onChanged, lazyHigher = true }: {
+  doc: ApplicantDocument
+  t: (key: string, vars?: Record<string, string>) => string
+  token: string | null; onChanged?: () => void; lazyHigher?: boolean
+}) {
+  return (
+    <>
+    {d.doc_type === 'results_slip' && d.academic_check?.higher_kind ? (
+      lazyHigher ? <LazySlipHigherNote doc={d} chk={d.academic_check} token={token} onChanged={onChanged} /> : null
+    ) : d.doc_type === 'results_slip' && d.academic_check ? (
+      <ResultsSlipChecklist doc={d} t={t} />
+    ) : d.doc_type === 'higher_results' && d.higher_check ? (
+      lazyHigher ? <LazyHigherDetails doc={d} chk={d.higher_check} token={token} onChanged={onChanged} /> : null
+    ) : d.doc_type === 'offer_letter' && d.pathway_check ? (
+      <OfferLetterChecklist doc={d} t={t} />
+    ) : d.doc_type === 'parent_ic' && d.income_ic_check ? (
+      <IncomeIcChecklist doc={d} t={t} />
+    ) : (d.doc_type === 'salary_slip' || d.doc_type === 'epf') && d.income_proof_check ? (
+      <IncomeProofChecklist doc={d} t={t} />
+    ) : d.doc_type === 'str' && d.str_check ? (
+      <StrChecklist doc={d} t={t} />
+    ) : (d.doc_type === 'water_bill' || d.doc_type === 'electricity_bill') && d.utility_check ? (
+      <UtilityChecklist doc={d} t={t} />
+    ) : d.doc_type === 'birth_certificate' && d.bc_check ? (
+      <BcChecklist doc={d} t={t} />
+    ) : d.doc_type === 'guardianship_letter' && d.guardianship_check ? (
+      <GuardianshipChecklist doc={d} t={t} />
+    ) : (
+      <SupportingDocChip doc={d} t={t} />
+    )}
+      <GenuinenessNote doc={d} t={t} />
+    </>
+  )
+}
+
 export function SingleDocCard({
   docType,
   docs,
@@ -360,32 +400,7 @@ export function SingleDocCard({
       )}
       {existing.filter((d) => d !== visionDoc).map((d) => (
         <div key={`m${d.id}`}>
-          {/* The results slip + offer letter get clinical fact-checklists; every
-              other supporting doc keeps the single soft chip. */}
-          {d.doc_type === 'results_slip' && d.academic_check?.higher_kind ? (
-            <LazySlipHigherNote doc={d} chk={d.academic_check} token={token} onChanged={onChanged} />
-          ) : d.doc_type === 'results_slip' && d.academic_check ? (
-            <ResultsSlipChecklist doc={d} t={t} />
-          ) : d.doc_type === 'higher_results' && d.higher_check ? (
-            <LazyHigherDetails doc={d} chk={d.higher_check} token={token} onChanged={onChanged} />
-          ) : d.doc_type === 'offer_letter' && d.pathway_check ? (
-            <OfferLetterChecklist doc={d} t={t} />
-          ) : d.doc_type === 'parent_ic' && d.income_ic_check ? (
-            <IncomeIcChecklist doc={d} t={t} />
-          ) : (d.doc_type === 'salary_slip' || d.doc_type === 'epf') && d.income_proof_check ? (
-            <IncomeProofChecklist doc={d} t={t} />
-          ) : d.doc_type === 'str' && d.str_check ? (
-            <StrChecklist doc={d} t={t} />
-          ) : (d.doc_type === 'water_bill' || d.doc_type === 'electricity_bill') && d.utility_check ? (
-            <UtilityChecklist doc={d} t={t} />
-          ) : d.doc_type === 'birth_certificate' && d.bc_check ? (
-            <BcChecklist doc={d} t={t} />
-          ) : d.doc_type === 'guardianship_letter' && d.guardianship_check ? (
-            <GuardianshipChecklist doc={d} t={t} />
-          ) : (
-            <SupportingDocChip doc={d} t={t} />
-          )}
-          <GenuinenessNote doc={d} t={t} />
+          <DocChecks doc={d} t={t} token={token} onChanged={onChanged} />
           {!suppressCoach && <DocumentHelpCoach doc={d} token={token} t={t} lang={lang} />}
         </div>
       ))}

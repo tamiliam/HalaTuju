@@ -8,22 +8,23 @@
  */
 import {
   groupDocumentsByFact,
-  documentPill,
-  documentFacts,
   utilityBillValues,
   schoolLeavingValues,
   incomeSubSections,
   docIconFor,
   earnerMemberFor,
   viewerKind,
-  type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
 import type { AdminScholarshipDetail, AdminApplicantDocument } from '@/lib/admin-api'
 import type { ViewerDoc } from '@/components/DocViewer'
 
+import { PILL_STATE, STATE_COLOURS } from '@/lib/docChips'
+import { DocPill } from '@/components/DocChip'
+
 import { missingHigherKind, type T } from './shared'
 import { PHONE_PILL_SM, PHONE_PILL_XS } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
+import { ChipLine, NotesIcon, ReadTime, ReasonLines, drawerChips, drawerPill } from './docChipRow'
 
 export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunVision }: {
   app: AdminScholarshipDetail
@@ -45,14 +46,6 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
         {(() => {
           const groups = groupDocumentsByFact(app.documents)
           const sectionKeys = ['identity', 'academic', 'pathway', 'income', 'additional', 'other'] as const
-          const pillClass = (p: 'verified' | 'check' | 'unread') => {
-            if (p === 'verified') return 'bg-positive-100 text-positive-700'
-            if (p === 'check') return 'bg-caution-100 text-caution-700'
-            return 'bg-ground-100 text-ground-500'
-          }
-          // The doc-type icon sits in a badge tinted by the SAME verdict as the pill.
-          const iconBadge = (p: 'verified' | 'check' | 'unread') =>
-            p === 'verified' ? 'bg-positive-50' : p === 'check' ? 'bg-caution-50' : 'bg-ground-100'
           const trunc = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
           // Standard, student-independent label per doc type (the actual filename is shown
           // muted in brackets below). parent_ic → "Mother's IC" etc. when the earner is known.
@@ -94,53 +87,10 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
             setViewerDoc({
               label: docLabel(d), filename: d.original_filename || '', url: d.download_url,
               kind: viewerKind(d.content_type || '', d.original_filename || ''),
+              checks: { chips: drawerChips(d), pill: drawerPill(d), readAt: d.read_at ?? null, uploadedAt: d.uploaded_at ?? null },
             })
           }
-          const factClass = (s: FactStatus) =>
-            s === 'verified' ? 'text-positive-700' : s === 'partial' ? 'text-caution-700'
-              : s === 'not' ? 'text-critical-600' : 'text-ground-400'
           const subLabel = 'text-xs md:text-[10px] font-semibold uppercase tracking-widest text-ground-400 mb-1.5'
-          // Line 2: the coloured fact-labels — only the facts THIS document provides. A results slip
-          // also surfaces the SPM exam YEAR, an offer letter its intake (course-start) YEAR — coloured
-          // by currency vs the cohort (green = current, amber = off), so the officer sees at a glance
-          // whether the slip/offer belongs to this round.
-          const yearChip = (d: AdminApplicantDocument): { text: string; status: string } | null => {
-            if (d.doc_type === 'results_slip' && d.academic_check?.exam_year)
-              return { text: t('admin.scholarship.docsDrawer.examYear', { year: d.academic_check.exam_year }),
-                       status: d.academic_check.exam_year_status || '' }
-            if (d.doc_type === 'higher_results' && d.higher_check?.exam_year)
-              return { text: t('admin.scholarship.docsDrawer.stpmExamYear', { year: d.higher_check.exam_year }),
-                       status: d.higher_check.exam_year_status || '' }
-            if (d.doc_type === 'offer_letter' && d.pathway_check?.intake_year)
-              return { text: t('admin.scholarship.docsDrawer.intakeYear', { year: d.pathway_check.intake_year }),
-                       status: d.pathway_check.intake_year_status || '' }
-            return null
-          }
-          const yearClass = (s: string) =>
-            s === 'current' ? 'text-positive-700' : s === 'off' ? 'text-caution-700' : 'text-ground-500'
-          const factLine = (d: AdminApplicantDocument) => {
-            const facts = documentFacts(d)
-            const yc = yearChip(d)
-            if (facts.length === 0 && !yc) return null
-            return (
-              <p className="mt-0.5 flex flex-wrap items-center text-[11px]">
-                {facts.map((f, i) => (
-                  <span key={`${f.key}-${i}`} className="flex items-center">
-                    {i > 0 && <span className="text-ground-300 mx-1.5">·</span>}
-                    <span className={`font-medium ${factClass(f.status)}`}>
-                      {t(`admin.scholarship.docsDrawer.fact.${f.key}`)}
-                    </span>
-                  </span>
-                ))}
-                {yc && (
-                  <span className="flex items-center">
-                    {facts.length > 0 && <span className="text-ground-300 mx-1.5">·</span>}
-                    <span className={`font-medium ${yearClass(yc.status)}`}>{yc.text}</span>
-                  </span>
-                )}
-              </p>
-            )
-          }
           // Placeholder label for a missing compulsory income doc (+ the member, salary route).
           const slotLabel = (docType: string, member: string) => {
             const base = t(`admin.scholarship.docsDrawer.type.${docType}`)
@@ -154,10 +104,11 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
           // income evidence and cannot carry it. The row still shows — the officer must see what
           // the family sent — with a red "not usable" line naming why, and the Missing row beside.
           const docRow = (d: AdminApplicantDocument, unusable = '') => {
-            const p = documentPill(d)
+            const p = drawerPill(d)
+            const chips = drawerChips(d)
             return (
               <li key={d.id} className="flex items-start gap-2 py-2.5 md:rounded-lg md:border md:border-ground-100 md:p-2.5 md:hover:bg-ground-50">
-                <span className={`shrink-0 mt-0.5 flex h-7 w-7 items-center justify-center rounded-md text-sm ${iconBadge(p)}`} aria-hidden>
+                <span className={`shrink-0 mt-0.5 flex h-7 w-7 items-center justify-center rounded-md text-sm ${STATE_COLOURS[PILL_STATE[p]].badge}`} aria-hidden>
                   {docIconFor(d.doc_type)}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -173,9 +124,8 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                         {docLabel(d)}
                       </span>
                     )}
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${PHONE_PILL_SM} ${pillClass(p)}`}>
-                      {t(`admin.scholarship.docsDrawer.pill.${p}`)}
-                    </span>
+                    <DocPill pill={p}>{t(`admin.scholarship.docsDrawer.pill.${p}`)}</DocPill>
+                    <NotesIcon count={undefined} t={t} />
                     {/* Capture confidence: read deterministically (fixed labels) or by AI? Shown on
                         every read doc — field-extracted docs AND the identity ICs (read via the MyKad
                         OCR path). The stored `capture` tag wins; when absent (older extractions) the
@@ -210,11 +160,12 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                     })()}
                   </div>
                   {d.original_filename && (
-                    <p className="text-xs md:text-[11px] text-ground-400 truncate max-w-[230px] max-md:max-w-full max-md:whitespace-normal max-md:break-all" title={d.original_filename}>
-                      ({trunc(d.original_filename, 30)})
+                    <p className="text-xs md:text-[11px] text-ground-400 break-all" title={d.original_filename}>
+                      ({trunc(d.original_filename, 30)}) <ReadTime readAt={d.read_at} t={t} />
                     </p>
                   )}
-                  {factLine(d)}
+                  <ChipLine chips={chips} t={t} />
+                  <ReasonLines chips={chips} t={t} />
                   {/* TD-157: a Singapore payslip is counted in ringgit — say at what, and at which rate. */}
                   {d.sgd_conversion && (
                     <p className="mt-0.5 text-xs md:text-[11px] text-ground-600" data-testid="sgd-conversion">

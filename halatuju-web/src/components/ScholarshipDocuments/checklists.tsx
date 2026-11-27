@@ -12,6 +12,8 @@
 import type { ReactNode } from 'react'
 import type { ApplicantDocument } from '@/lib/api'
 import { formatNric } from '@/lib/scholarship'
+import { DocChip } from '@/components/DocChip'
+import { kindToState, servedChip } from '@/lib/docChips'
 
 // ── Vision OCR chip (S13 — soft signal under the IC upload) ──────────────
 
@@ -33,18 +35,13 @@ function icVerdictKind(verdict: string): ICCheckKind {
 export function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
   if (!doc.vision_run_at) return null
 
-  const badge = (kind: ICCheckKind) => {
-    const cls: Record<ICCheckKind, string> = {
-      match: 'bg-positive-50 text-positive-700 ring-positive-200',
-      partial: 'bg-caution-50 text-caution-700 ring-caution-200',
-      mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
-      unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
-      none: 'bg-ground-50 text-ground-500 ring-ground-200',
-    }
+  // The SERVED chip (state + word) when the payload has one for this row; else today's rule (fallback).
+  const badge = (kind: ICCheckKind, key: string) => {
+    const sc = servedChip(doc, key)
     return (
-      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
-        {t(`scholarship.docs.icCheck.${kind}`)}
-      </span>
+      <DocChip state={sc ? sc.state : kindToState(kind)}>
+        {sc?.label ? t(sc.label) : t(`scholarship.docs.icCheck.${kind}`)}
+      </DocChip>
     )
   }
 
@@ -67,15 +64,13 @@ export function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: strin
   return (
     <>
       <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
-        {row(t('scholarship.docs.icCheck.icNo'), formatNric(doc.vision_nric || ''), badge(icVerdictKind(doc.vision_nric_verdict)))}
-        {row(t('scholarship.docs.icCheck.name'), doc.vision_name, badge(icVerdictKind(doc.vision_name_verdict)))}
+        {row(t('scholarship.docs.icCheck.icNo'), formatNric(doc.vision_nric || ''), badge(icVerdictKind(doc.vision_nric_verdict), 'icNo'))}
+        {row(t('scholarship.docs.icCheck.name'), doc.vision_name, badge(icVerdictKind(doc.vision_name_verdict), 'name'))}
         {doc.vision_address
           ? row(
               t('scholarship.docs.icCheck.address'),
               doc.vision_address,
-              <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
-                {t('scholarship.docs.icCheck.fromIc')}
-              </span>,
+              null,
             )
           : null}
       </div>
@@ -106,11 +101,6 @@ export function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key:
   // their IC" before any proof exists. (The relationship to the student lives on the birth
   // certificate now, voiced by Cikgu Gopal — not on this card.)
   const proofDoc = chk.proof_kind ? t(`scholarship.docs.type.${chk.proof_kind}`) : ''
-  const ring: Record<'match' | 'mismatch' | 'none', string> = {
-    match: 'bg-positive-50 text-positive-700 ring-positive-200',
-    mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
-    none: 'bg-ground-50 text-ground-500 ring-ground-200',
-  }
   const matchTag = (status?: string) => {
     const kind = status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : 'none'
     // TD-742 (ruling 3): a truly wrong card stays red for the student, said against the birth
@@ -124,16 +114,12 @@ export function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key:
           ? t('scholarship.docs.incomeIcCheck.proofMismatch', { doc: proofDoc })
           : t('scholarship.docs.icCheck.fromTheirIc')
     return (
-      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${ring[kind]}`}>
+      <DocChip state={kindToState(kind)}>
         {label}
-      </span>
+      </DocChip>
     )
   }
-  const neutralTag = (
-    <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
-      {t('scholarship.docs.icCheck.fromTheirIc')}
-    </span>
-  )
+  const neutralTag = null
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-ground-700">
@@ -175,13 +161,6 @@ export function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   const chk = doc.income_proof_check
   if (!chk) return null
 
-  const cls: Record<ICCheckKind, string> = {
-    match: 'bg-positive-50 text-positive-700 ring-positive-200',
-    partial: 'bg-caution-50 text-caution-700 ring-caution-200',
-    mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
-    unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
-    none: 'bg-ground-50 text-ground-500 ring-ground-200',
-  }
   // A status pill vs the member's IC. 'no_ref' (that IC not uploaded / not read) is a
   // neutral nudge, never a problem.
   const vsIc = (status: string) => {
@@ -195,16 +174,12 @@ export function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
           ? t('scholarship.docs.incomeProofCheck.mismatchIc')
           : t('scholarship.docs.incomeProofCheck.addIc')
     return (
-      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
+      <DocChip state={kindToState(kind)}>
         {label}
-      </span>
+      </DocChip>
     )
   }
-  const fromDoc = (
-    <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
-      {t('scholarship.docs.incomeProofCheck.fromDoc')}
-    </span>
-  )
+  const fromDoc = null
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-ground-700">
@@ -236,24 +211,13 @@ export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: 
   const chk = doc.utility_check
   if (!chk) return null
 
-  const cls: Record<ICCheckKind, string> = {
-    match: 'bg-positive-50 text-positive-700 ring-positive-200',
-    partial: 'bg-caution-50 text-caution-700 ring-caution-200',
-    mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
-    unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
-    none: 'bg-ground-50 text-ground-500 ring-ground-200',
-  }
   const addrPill =
     chk.address_status === 'found'
-      ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls.match}`}>{t('scholarship.docs.utilityCheck.addressOk')}</span>
+      ? <DocChip state={kindToState('match')}>{t('scholarship.docs.utilityCheck.addressOk')}</DocChip>
       : chk.address_status === 'not_found'
-        ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls.mismatch}`}>{t('scholarship.docs.utilityCheck.addressMismatch')}</span>
-        : <span className={`shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200`}>{t('scholarship.docs.incomeProofCheck.fromDoc')}</span>
-  const fromDoc = (
-    <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
-      {t('scholarship.docs.incomeProofCheck.fromDoc')}
-    </span>
-  )
+        ? <DocChip state={kindToState('mismatch')}>{t('scholarship.docs.utilityCheck.addressMismatch')}</DocChip>
+        : null
+  const fromDoc = null
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-ground-700">
@@ -320,15 +284,8 @@ export function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: stri
   const chk = doc.str_check
   if (!chk) return null
 
-  const cls: Record<ICCheckKind, string> = {
-    match: 'bg-positive-50 text-positive-700 ring-positive-200',
-    partial: 'bg-caution-50 text-caution-700 ring-caution-200',
-    mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
-    unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
-    none: 'bg-ground-50 text-ground-500 ring-ground-200',
-  }
   const pill = (kind: ICCheckKind, label: string) => (
-    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>{label}</span>
+    <DocChip state={kindToState(kind)}>{label}</DocChip>
   )
   const vsIc = (status: string) => {
     const shown = displayPill(status, t)
@@ -392,13 +349,6 @@ export function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: stri
 
 // ── Relationship-proof checklists (Check-1 Income): birth cert + guardianship ──
 
-const REL_PILL: Record<ICCheckKind, string> = {
-  match: 'bg-positive-50 text-positive-700 ring-positive-200',
-  partial: 'bg-caution-50 text-caution-700 ring-caution-200',
-  mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
-  unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
-  none: 'bg-ground-50 text-ground-500 ring-ground-200',
-}
 
 function relPill(status: string, t: (k: string) => string): ReactNode {
   const kind: ICCheckKind =
@@ -417,7 +367,7 @@ function relPill(status: string, t: (k: string) => string): ReactNode {
               : status === 'check_both' ? t('scholarship.docs.relCheck.checkBoth')   // #78: both read, both slightly off
                 : status === 'not_read' ? t('scholarship.docs.incomeProofCheck.notRead')   // TD-742: grey
                   : t('scholarship.docs.relCheck.reviewing')
-  return <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${REL_PILL[kind]}`}>{label}</span>
+  return <DocChip state={kindToState(kind)}>{label}</DocChip>
 }
 
 function relRow(label: string, value: string, right: ReactNode): ReactNode {
@@ -491,21 +441,15 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   const chk = doc.academic_check
   if (!chk) return null
 
-  const badge = (s: SlipStatus) => {
+  const badge = (s: SlipStatus, key: string) => {
     const labelKey = slipStatusLabelKey(s)
     if (!labelKey) return null
     const kind = slipBadgeKind(s)
-    const cls: Record<ICCheckKind, string> = {
-      match: 'bg-positive-50 text-positive-700 ring-positive-200',
-      partial: 'bg-caution-50 text-caution-700 ring-caution-200',
-      mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
-      unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
-      none: 'bg-ground-50 text-ground-500 ring-ground-200',
-    }
+    const sc = servedChip(doc, key)
     return (
-      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
-        {t(labelKey)}
-      </span>
+      <DocChip state={sc ? sc.state : kindToState(kind)}>
+        {sc?.label ? t(sc.label) : t(labelKey)}
+      </DocChip>
     )
   }
 
@@ -543,7 +487,7 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
 
   return (
     <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
-      {row(t('scholarship.docs.slipCheck.name'), chk.candidate_name, badge(chk.name))}
+      {row(t('scholarship.docs.slipCheck.name'), chk.candidate_name, badge(chk.name, 'name'))}
       {chk.subjects !== 'not_compared' && row(
         // Only show the "(entered/total)" count when there's a real subjects mismatch;
         // for match / couldn't-read / pending it's noise (and "(0/0)" looks broken).
@@ -551,16 +495,14 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
           ? `${t('scholarship.docs.slipCheck.subjects')} (${entered}/${chk.slip_count})`
           : t('scholarship.docs.slipCheck.subjects'),
         subjectsValue,
-        badge(chk.subjects),
+        badge(chk.subjects, 'subjects'),
       )}
-      {chk.results !== 'not_compared' && row(t('scholarship.docs.slipCheck.results'), resultsValue, badge(chk.results))}
+      {chk.results !== 'not_compared' && row(t('scholarship.docs.slipCheck.results'), resultsValue, badge(chk.results, 'results'))}
       {chk.exam_year || chk.exam
         ? row(
             t('scholarship.docs.slipCheck.exam'),
             chk.exam || chk.exam_year,
-            <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
-              {t('scholarship.docs.slipCheck.fromSlip')}
-            </span>,
+            null,
           )
         : null}
     </div>

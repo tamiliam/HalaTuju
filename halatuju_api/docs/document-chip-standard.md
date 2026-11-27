@@ -108,7 +108,7 @@ Checked (round 1 review): no served year can be a float. Every served year is a 
   - **Verified**: all checked chips green.
   - **Unread**: nothing checked yet.
 
-  Today there is no Problem pill: red and amber both give `check`.
+  The officer pill serves `problem` since Phase 1b (a red year chip alone is not one). The student `pill_for` is unchanged.
 - **Chip text** is the field name only. The genuineness chip's text is **Type**.
 - **Officer drawer**: one short line per amber or red chip, in fixed words (English, Malay, Tamil). Grey and green chips get no line. Names, IC numbers and addresses appear only in the opened document. AI notes that belong to no chip show as a grey speech bubble with a count.
 - **Read time**: short in the drawer ("read 25 Nov, 09:12"), with the year added only when it is not this year. The opened document always shows the full date and the upload time.

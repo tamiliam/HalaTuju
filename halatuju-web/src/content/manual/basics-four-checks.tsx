@@ -60,7 +60,15 @@ export const basicsFourChecks: ManualChapter = {
         copy under <strong>Old / Replaced</strong> also compares it with the live copy for the same person and
         request, and keeps the better one (not for an offer letter, a salary slip or a copy marked as a sample:
         ask for those again). The
-        system&rsquo;s reading is a <em>starting point, not the last word</em> — a person always decides.</>
+        system&rsquo;s reading is a <em>starting point, not the last word</em> — a person always decides.
+        <br /><br />Each document carries one <strong>pill</strong>: <strong>Verified</strong> (every check is
+        green), <strong>Check</strong> (something is amber and needs your eye), <strong>Problem</strong> (red:
+        at least one check failed), or <strong>Unread</strong> (nothing has been read yet). Each check on a
+        document is a small chip with a symbol: a tick (&#10003;) is green, an exclamation mark (!) is amber and a
+        cross (&#10005;) is red. A grey chip has no symbol: it was not read, or it is just a value. Under the
+        file name the drawer shows when the document was last read (for example &ldquo;read 25 Nov, 09:12&rdquo;;
+        the year appears only when it is not this year) or &ldquo;not read yet&rdquo;. Open a document and the
+        <strong> Checks</strong> panel beside it lists every check with the full read and upload times.</>
       ),
       img: '/reviewer-guide/step4-documents.png',
       alt: 'A student document opened for viewing',

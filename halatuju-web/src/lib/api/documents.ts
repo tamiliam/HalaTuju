@@ -8,6 +8,8 @@ import { uploadContentType } from '../uploadContentType'
 
 // ── Documents / referee / consent (Sprint 5b) ───────────────────────────
 
+import type { ChipPillWord, DocChipData } from '@/lib/docChips'
+
 export interface ApplicantDocument {
   id: number
   doc_type: string
@@ -33,6 +35,10 @@ export interface ApplicantDocument {
   vision_name: string
   vision_address: string  // extracted IC address — a soft data point (often outdated), not a check
   vision_run_at: string | null
+  // Document chip standard: the SERVED chips, pill and read time (absent on an old payload).
+  chips?: DocChipData[]
+  chip_pill?: ChipPillWord
+  read_at?: string | null
   vision_error: string
   // Server-computed match verdicts (empty when Vision hasn't run)
   vision_nric_verdict: '' | 'match' | 'mismatch' | 'unreadable'

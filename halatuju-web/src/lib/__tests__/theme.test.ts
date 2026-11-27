@@ -1295,3 +1295,20 @@ describe('the F6 semantic corrections the codemod could not make', () => {
     expect(offenders).toEqual([])
   })
 })
+
+describe('the document chip colour map is ONE table (chip standard S1b)', () => {
+  const read = (f: string) => fs.readFileSync(path.join(process.cwd(), f), 'utf8')
+  const SCREENS = [
+    'src/app/admin/scholarship/[id]/view/DocumentsDrawer.tsx',
+    'src/components/ScholarshipDocuments/checklists.tsx',
+    'src/components/ScholarshipDocuments/checklistsPathway.tsx',
+  ]
+  it.each(SCREENS)('%s keeps no colour table of its own', (f) => {
+    const src = read(f)
+    expect(src).not.toMatch(/\b(factClass|pillClass|yearClass|REL_PILL)\b/)
+  })
+  it('the map holds the four chip states and the Problem pill', () => {
+    const src = read('src/lib/docChips.ts')
+    for (const s of ['green', 'amber', 'red', 'grey', 'problem']) expect(src).toContain(s + ':')
+  })
+})

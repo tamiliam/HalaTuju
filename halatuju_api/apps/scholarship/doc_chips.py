@@ -30,7 +30,7 @@ A chip is a dict:
 
 STATES = {'verified': 'green', 'partial': 'amber', 'not': 'red', 'unknown': 'grey'}
 STUDENT_ACTIONS = ('none', 'reupload', 'fix_entry', 'add_doc', 'we_check')
-PILLS = ('verified', 'check', 'unread')
+PILLS = ('verified', 'check', 'problem', 'unread')
 
 _VERIFIED = frozenset({'match', 'found', 'ok', 'current'})
 _PARTIAL = frozenset({'partial', 'uncertain', 'pending', 'stale', 'unconfirmed', 'check',
@@ -463,9 +463,11 @@ def chips_for(payload):
 
 
 def pill_for(chips):
-    """``documentPill``: ignore year chips and grey chips; none left → 'unread'; all green →
-    'verified'; else 'check'."""
+    """The pill: ignore year chips and grey chips; none left -> 'unread'; any red FACT chip ->
+    'problem'; all green -> 'verified'; else 'check'."""
     counted = [c for c in chips if c['kind'] != 'year' and c['state'] != 'grey']
     if not counted:
         return 'unread'
+    if any(c['state'] == 'red' and c['kind'] == 'fact' for c in counted):
+        return 'problem'
     return 'verified' if all(c['state'] == 'green' for c in counted) else 'check'

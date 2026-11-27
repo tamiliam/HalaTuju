@@ -12,6 +12,8 @@ import type {
 import { API_BASE, adminMutate } from './client'
 import type { ApiOptions } from './client'
 
+import type { ChipPillWord, DocChipData } from '@/lib/docChips'
+
 export interface AdminApplicantDocument {
   id: number
   doc_type: string
@@ -22,6 +24,7 @@ export interface AdminApplicantDocument {
   // cockpit places a doc by `resolved_member || household_member`.
   resolved_member?: string
   original_filename: string
+  uploaded_at?: string
   content_type: string
   size: number
   verification_status: string
@@ -32,6 +35,10 @@ export interface AdminApplicantDocument {
   vision_name: string
   vision_address: string
   vision_run_at: string | null
+  // Document chip standard: the SERVED chips, pill and read time (absent on an old payload).
+  chips?: DocChipData[]
+  chip_pill?: ChipPillWord
+  read_at?: string | null
   vision_error: string
   vision_nric_verdict: '' | 'match' | 'mismatch' | 'unreadable'
   vision_name_verdict: '' | 'match' | 'partial' | 'mismatch' | 'unreadable'

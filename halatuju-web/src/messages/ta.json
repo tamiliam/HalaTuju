@@ -5413,7 +5413,17 @@
           "pdfPhone": "PDF உங்கள் தொலைபேசியின் சொந்தப் பார்வையாளரில் திறக்கும்: எல்லாப் பக்கங்களும், பெரிதாக்கவும் முடியும்.",
           "openPdf": "PDF-ஐத் திற"
         },
+        "readAt": "read {date}",
+        "readAtNone": "not read yet",
+        "notesHint": "{count} AI notes - open the document",
+        "checks": {
+          "title": "Checks",
+          "readAt": "Read {datetime}",
+          "uploadedAt": "Uploaded {datetime}",
+          "empty": "No checks on this document yet"
+        },
         "pill": {
+          "problem": "Problem",
           "verified": "உறுதி",
           "check": "சரிபார்க்க",
           "unread": "படிக்கவில்லை",

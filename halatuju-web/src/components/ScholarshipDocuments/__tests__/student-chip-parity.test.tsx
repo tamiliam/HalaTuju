@@ -7,47 +7,29 @@
  * checked against the same `student_cases` by `test_doc_chips_student.py`. This half renders today's
  * student components (checklists.tsx, checklistsPathway.tsx) with a stub `t` that returns the i18n
  * key, and reads every badge off the DOM: its colour, its word, and the row it sits on. No component
- * changes. So the server can only serve what the student sees today, or one side goes red.
+ * change in the cases. So the server can only serve what the student sees today, or one side goes red.
  *
- * `checks` below is the per-document branch of `cards.tsx` (the `checks` block), copied because it
- * sits inside the card component; the identity card that has been read takes `ICChecklist`. The lazy
+ * `checks` below renders the real `DocChecks` dispatch exported from `cards.tsx`; the identity card that
+ * has been read takes `ICChecklist`. The lazy
  * higher-results components are not drawn here (the server does not port them either).
  */
 import { render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import type { ApplicantDocument } from '@/lib/api'
 import { readApi } from '@/test/apiSource'
-import {
-  BcChecklist, GenuinenessNote, GuardianshipChecklist, ICChecklist, IncomeIcChecklist,
-  IncomeProofChecklist, ResultsSlipChecklist, StrChecklist, UtilityChecklist,
-} from '../checklists'
-import { OfferLetterChecklist, SupportingDocChip } from '../checklistsPathway'
+import { ICChecklist } from '../checklists'
+import { DocChecks } from '../cards'
 
 type Chip = { key: string; status: string; state: string; kind: string; label: string }
 type Case = { name: string; doc: Record<string, unknown>; chips: Chip[] }
 
 const t = (key: string) => key
 
+/** The REAL dispatch from `cards.tsx` (not a copy): a read IC card gets `ICChecklist`; the lazy higher
+ *  results are left out (`lazyHigher={false}`), as the server does not port them either. */
 function checks(d: ApplicantDocument): ReactNode {
   if (d.doc_type === 'ic' && d.vision_run_at) return <ICChecklist doc={d} t={t} />
-  const body =
-    d.doc_type === 'results_slip' && d.academic_check?.higher_kind ? null
-      : d.doc_type === 'results_slip' && d.academic_check ? <ResultsSlipChecklist doc={d} t={t} />
-        : d.doc_type === 'higher_results' && d.higher_check ? null
-          : d.doc_type === 'offer_letter' && d.pathway_check ? <OfferLetterChecklist doc={d} t={t} />
-            : d.doc_type === 'parent_ic' && d.income_ic_check ? <IncomeIcChecklist doc={d} t={t} />
-              : (d.doc_type === 'salary_slip' || d.doc_type === 'epf') && d.income_proof_check ? <IncomeProofChecklist doc={d} t={t} />
-                : d.doc_type === 'str' && d.str_check ? <StrChecklist doc={d} t={t} />
-                  : (d.doc_type === 'water_bill' || d.doc_type === 'electricity_bill') && d.utility_check ? <UtilityChecklist doc={d} t={t} />
-                    : d.doc_type === 'birth_certificate' && d.bc_check ? <BcChecklist doc={d} t={t} />
-                      : d.doc_type === 'guardianship_letter' && d.guardianship_check ? <GuardianshipChecklist doc={d} t={t} />
-                        : <SupportingDocChip doc={d} t={t} />
-  return (
-    <>
-      {body}
-      <GenuinenessNote doc={d} t={t} />
-    </>
-  )
+  return <DocChecks doc={d} t={t} token={null} lazyHigher={false} />
 }
 
 const STATUS: Record<string, string> = { green: 'verified', amber: 'partial', red: 'not', grey: 'unknown' }
@@ -69,17 +51,16 @@ function rowKey(badge: Element): string {
 /** Every badge, in screen order, as the server's chip shape. */
 function drawn(container: HTMLElement): Chip[] {
   const out: Chip[] = []
-  container.querySelectorAll('span.rounded-full.ring-1, p.text-caution-800').forEach((el) => {
-    const state = stateOf(el)
+  container.querySelectorAll('span[data-chip], span.inline-flex.ring-1, p.text-caution-800').forEach((el) => {
+    const state = el.getAttribute('data-chip') ?? stateOf(el)
     if (el.tagName === 'P') {
       out.push({ key: 'genuineness', status: STATUS[state], state, kind: 'note', label: el.textContent ?? '' })
-    } else if (el.className.includes('inline-flex')) {            // SupportingDocChip: icon, then words
+    } else if (!el.hasAttribute('data-chip')) {            // SupportingDocChip: icon, then words
       const label = el.lastElementChild?.textContent ?? ''
       const key = label.startsWith('scholarship.docs.assist.') ? 'assist' : 'match'
       out.push({ key, status: STATUS[state], state, kind: 'fact', label })
     } else {
-      const kind = el.className.includes('font-semibold') ? 'fact' : 'plain'
-      out.push({ key: rowKey(el), status: STATUS[state], state, kind, label: el.textContent ?? '' })
+      out.push({ key: rowKey(el), status: STATUS[state], state, kind: 'fact', label: (el.textContent ?? '').replace(/^[✓!✕]/, '') })
     }
   })
   return out
@@ -94,6 +75,8 @@ describe("student chip parity (today's student checklists vs the shared fixture)
 
   test.each(cases.map((c) => [c.name, c] as const))('%s', (_name, c) => {
     const { container } = render(<>{checks(c.doc as unknown as ApplicantDocument)}</>)
-    expect(drawn(container)).toEqual(c.chips)
+    // The approved look draws a plain copied value as the value only (no "from the document" tag), so the
+    // plain chips are not drawn: every OTHER served chip is, in the same order, state and word.
+    expect(drawn(container)).toEqual(c.chips.filter((x) => x.kind !== 'plain'))
   })
 })

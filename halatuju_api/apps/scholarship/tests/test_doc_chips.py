@@ -47,7 +47,10 @@ class ParityFixtureTests(SimpleTestCase):
                 got = doc_chips.chips_for(case['doc'])
                 trimmed = [{k: c[k] for k in ('key', 'status', 'state', 'kind', 'value') if k in c} for c in got]
                 self.assertEqual(trimmed, case['chips'])
-                self.assertEqual(doc_chips.pill_for(got), case['pill'])
+                # The fixture pill is TODAY's web (no Problem). The one change: a red fact chip is 'problem'.
+                red = any(c['state'] == 'red' and c['kind'] == 'fact' for c in case['chips'])
+                want = 'problem' if case['pill'] == 'check' and red else case['pill']
+                self.assertEqual(doc_chips.pill_for(got), want)
 
     def test_every_chip_has_the_standard_shape(self):
         for case in _cases():
@@ -77,7 +80,13 @@ class PillTests(SimpleTestCase):
     def test_all_green_is_verified_and_any_amber_or_red_is_check(self):
         self.assertEqual(doc_chips.pill_for([self.chip('green'), self.chip('grey')]), 'verified')
         self.assertEqual(doc_chips.pill_for([self.chip('green'), self.chip('amber')]), 'check')
-        self.assertEqual(doc_chips.pill_for([self.chip('red')]), 'check')
+        self.assertEqual(doc_chips.pill_for([self.chip('red')]), 'problem')
+        self.assertEqual(doc_chips.pill_for([self.chip('red'), self.chip('amber')]), 'problem')
+        self.assertEqual(doc_chips.pill_for([self.chip('green'), self.chip('red')]), 'problem')
+
+    def test_a_red_year_chip_alone_is_not_a_problem(self):
+        self.assertEqual(doc_chips.pill_for([self.chip('green'), self.chip('red', 'year')]), 'verified')
+        self.assertEqual(doc_chips.pill_for([self.chip('red', 'year')]), 'unread')
 
 
 _JUNK = (['match'], {'status': 'match'}, 5, 3.5, True, 'x', None, [], {}, [{'key': 'amount'}])
