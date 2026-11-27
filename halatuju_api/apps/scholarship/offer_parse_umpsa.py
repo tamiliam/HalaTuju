@@ -15,7 +15,7 @@ Page 1, as measured on the owner's 2 text samples in this layout (masked shapes 
 left margin):
 
 * "RUJ. KAMI (OUR REF) : UMPSA NN.NN/NNN-N/N/N" then "TARIKH : D MONTH YYYY" (the offer date);
-* "NAME (NO. K/P: IC)" (`offer_parse_uitm.name_ended` must prove the name ended on the next line), one to four
+* "NAME (NO. K/P: IC)" (`offer_parse_uitm.name_ended` must prove the name ended on the next line), two to four
   address lines, "Saudara/i,";
 * the title "TAWARAN KEMASUKAN KE PROGRAM SARJANA MUDA UNIVERSITI MALAYSIA PAHANG AL-SULTAN ABDULLAH SEMESTER I,
   SESI AKADEMIK YYYY/YYYY" on two lines (the intake is what follows "AL-SULTAN ABDULLAH ");
@@ -30,16 +30,24 @@ left margin):
 
 The reporting date is read ONLY from that labelled row (the date the corpus answers record: the physical
 registration, not the online pre-registration). Any date on the page but the offer date, the pre-registration range
-and that row refuses. Any later page with text refuses (``later_page``). UMPSA prints no programme code.
+and that row refuses; those are skipped only at the fixed places the reader read them (the head's second line, the
+table's TARIKH PRA-PENDAFTARAN row and its wrapped lines, the reporting row), never a line found by its words. Any later page with text refuses (``later_page``). UMPSA prints no programme code.
 
 THE OWNER WORDS. The owner phrase "TARIKH PENDAFTARAN KOLEJ KEDIAMAN" is ONE label the layout splits: its last word
 wraps under it, after the row's value. `umpsa_owner_text` joins it back ONLY when the reporting row and the lone
 "KEDIAMAN" line under it are exactly as measured; every other owner phrase is checked on the layout as it is.
 
-ONE EXCUSE (owner, 27 Nov: "A, same as UTeM and USM"). Every measured letter prints the conditional note
-`_NOTE_WORDS` under "MAKLUMAT PENTING" ("Tawaran ini akan terbatal sekiranya ... tidak sah ... juga terbatal
-sekiranya ..."); the shared withdrawal check reads its "tidak sah" and "juga terbatal" as a withdrawal. That exact
-paragraph is taken out ONCE before the withdrawal check; any other withdrawal or cancel wording still refuses.
+TWO EXCUSES, both owner-approved on 27 Nov ("A, same as UTeM and USM"), each one exact text taken out once:
+
+* the paragraph. Every measured letter prints the conditional note `_NOTE_WORDS` under "MAKLUMAT PENTING"
+  ("Tawaran ini akan terbatal sekiranya ... tidak sah ... juga terbatal sekiranya ..."); the shared withdrawal check
+  reads its "tidak sah" and "juga terbatal" as a withdrawal. That exact paragraph is taken out ONCE before the
+  withdrawal check; a second copy, and any other withdrawal or cancel wording, still refuses;
+* the print note. Every measured letter ends page 1 with `_PRINT_WORDS`, whose "Sila cetak" the shared portal tell
+  reads as a portal page. It is taken out before the portal check ONLY at its measured place (`umpsa_portal`): the
+  last-but-one line of page 1's layout, alone on its line, indented, right after the signature block and with the
+  computer-print line after it. The
+  same note anywhere else, or a second copy, still refuses as a portal page.
 """
 import re
 
@@ -104,9 +112,16 @@ _NOTE_WORDS = ('Tawaran ini akan terbatal sekiranya terdapat sebarang maklumat y
                'sekiranya calon tidak hadir mendaftar pada tarikh yang ditetapkan.')
 _UMPSA_NOTE = re.compile(r'\s{1,40}'.join(re.escape(w) for w in _NOTE_WORDS.split()))
 #: The one print note every measured letter ends page 1 with, which `offer_parse._PORTAL_TELL` ("SILA CETAK") reads
-#: as a portal page (the UKM and UNIMAS precedent). Taken out before the portal check, once (`umpsa_portal`).
+#: as a portal page (the UKM and UNIMAS precedent). Taken out before the portal check, once, and only at its
+#: measured place (`umpsa_portal`, `_print_note_in_place`).
 _PRINT_WORDS = 'Nota: Sila cetak dan bawa Surat Tawaran ini semasa hadir ke Kampus.'
 _PRINT_NOTE = re.compile(r'\s{1,40}'.join(re.escape(w) for w in _PRINT_WORDS.split()))
+#: The line every measured letter prints after the print note: the last line of page 1's layout.
+_COMPUTER_WORDS = 'Surat Tawaran ini adalah cetakan komputer dan tandatangan tidak diperlukan.'
+#: The print note's indent on page 1's layout (spaces before it). Measured: 43 and 46 on the two text letters.
+_PRINT_INDENT = range(40, 50)
+#: The signature block's last line, the line every measured letter prints right before the print note.
+_SIGN_LAST = 'Universiti Malaysia Pahang Al-Sultan Abdullah'
 
 
 def is_umpsa(up: str) -> bool:
@@ -116,12 +131,32 @@ def is_umpsa(up: str) -> bool:
     return INSTITUTION in up and 'TAWARAN KEMASUKAN KE PROGRAM' in up
 
 
-def umpsa_portal(text: str) -> bool:
+def _print_note_in_place(page1_layout: str) -> bool:
+    """True when page 1's layout prints the print note exactly once, at its measured place: the last-but-one
+    non-empty line, the note alone on it, indented as measured (`_PRINT_INDENT`), right after the signature block's
+    last line (`_SIGN_LAST`) and with the computer-print line (`_COMPUTER_WORDS`) the last line after it."""
+    lines = [ln for ln in (page1_layout or '').splitlines() if ln.strip()]
+    hits = [i for i, ln in enumerate(lines) if _PRINT_NOTE.search(ln)]
+    if len(lines) < 3 or hits != [len(lines) - 2]:
+        return False
+    sign, note, last = lines[-3:]
+    return (_one_space(sign) == _SIGN_LAST and _one_space(note) == _PRINT_WORDS and _indent(note) in _PRINT_INDENT
+            and _one_space(last) == _COMPUTER_WORDS)
+
+
+def umpsa_portal(text: str, page1_layout: str) -> bool:
     """True when ``text`` (the whole letter) carries a portal tell (`offer_parse._PORTAL_TELL`) once the one print
-    note (`_PRINT_NOTE`) is taken out; a letter that prints it more than once counts as a portal page."""
+    note (`_PRINT_NOTE`) is taken out. It is taken out only when ``text`` prints it exactly once and page 1's
+    layout prints it at its measured place (`_print_note_in_place`); anywhere else, or twice, its "Sila cetak"
+    stays and counts as a portal page. With no layout (a scan) the note has no place to check, but such a letter
+    refuses (``no_layout``) right after, so it is taken out once there and the refusal keeps its own reason."""
     from .offer_parse import _PORTAL_TELL
-    rest, n = _PRINT_NOTE.subn(' ', text or '')
-    return n > 1 or bool(_PORTAL_TELL.search(rest))
+    text = text or ''
+    rest, n = _PRINT_NOTE.subn(' ', text)
+    placed = _print_note_in_place(page1_layout) if (page1_layout or '').strip() else True
+    if n != 1 or not placed:
+        rest = text
+    return bool(_PORTAL_TELL.search(rest))
 
 
 def umpsa_ic_copies(text: str, nric: str) -> int:
@@ -189,8 +224,18 @@ def _umpsa_head(lines, at):
 
 
 def _umpsa_table(lines, at, years):
-    """({label: value}, index of the reporting row, reason): the greeting, `_TABLE` in order (the pre-registration
-    note's wrapped lines), KAMPUS, the reporting row and its "KEDIAMAN" line, then the subsidy block and "Nota:"."""
+    """({label: value}, index of the reporting row, indices of the pre-registration row and its wrapped lines,
+    reason): the greeting, `_TABLE` in order (the pre-registration note's wrapped lines), KAMPUS, the reporting row
+    and its "KEDIAMAN" line, then the subsidy block and "Nota:". The indices are the fixed positions the reader
+    read ((), -1 unless every step holds)."""
+    rows, report_at, why = _umpsa_table_rows(lines, at, years)
+    if why:
+        return rows, -1, (), why
+    return rows, report_at, tuple(range(at + 4 + len(_TABLE) - 1, report_at - 1)), ''
+
+
+def _umpsa_table_rows(lines, at, years):
+    """`_umpsa_table` without the read lines: (rows, index of the reporting row, reason)."""
     g = at + 4
     if (g > len(lines) or not _left(lines[at + 2:g])
             or _one_space(' '.join(lines[at + 2:g])) != _GREETING.format(*years)):
@@ -273,15 +318,15 @@ def _dates_sane(years, offer_date: str, printed: str, rng) -> bool:
 
 
 def _umpsa_read(lines):
-    """Every reader step on page 1's layout lines: (years, intake, head, (reporting index, reason), values, rows);
-    None before the title holds."""
+    """Every reader step on page 1's layout lines: (years, intake, head, (reporting index, reason), values, rows,
+    the pre-registration row's and its wrapped lines' indices); None before the title holds."""
     at, intake, y1, y2 = _umpsa_title_at(lines)
     if at < 0:
         return None
     head = _umpsa_head(lines, at)
-    rows, report_at, why_table = _umpsa_table(lines, at, (y1, y2))
+    rows, report_at, range_at, why_table = _umpsa_table(lines, at, (y1, y2))
     values = _values(rows) if not why_table else ('', '', '', '')
-    return (y1, y2), intake, head, (report_at, why_table), values, rows
+    return (y1, y2), intake, head, (report_at, why_table), values, rows, range_at
 
 
 def read_umpsa(source: str):
@@ -297,7 +342,7 @@ def read_umpsa(source: str):
     got = _umpsa_read(lines)
     if got is None:
         return None, 'no_title'
-    years, intake, (name, printed_ic, offer_date, why_head), (report_at, why_table), values, rows = got
+    years, intake, (name, printed_ic, offer_date, why_head), (report_at, why_table), values, rows, range_at = got
     programme, printed, reported, why_values = values
     nric = _norm_nric(printed_ic) if printed_ic else ''
     fields = {
@@ -318,8 +363,7 @@ def read_umpsa(source: str):
     flat = _one_space(folded).upper()
     if _NOT_DEGREE_WORD.search(flat) or flat.count('SARJANA MUDA') != 3:
         return fields, 'not_degree'           # the title, the greeting and the programme row only
-    range_at = [k for k, ln in enumerate(lines) if _one_space(ln).startswith('TARIKH PRA-PENDAFTARAN')]
-    known = {0, 1, report_at, *range_at, *(k + 1 for k in range_at), *(k + 2 for k in range_at)}
+    known = {0, 1, report_at, *range_at}        # the fixed lines the reader read, never a line found by its words
     if any(_ANY_DATE.search(_one_space(ln)) or _SHORT_DATE.search(_one_space(ln))
            for k, ln in enumerate(lines) if k not in known):
         return fields, 'stray_date'           # a date the reader did not read: never guessed, never skipped
@@ -382,7 +426,7 @@ def diagnose_umpsa(out: dict, text: str, page1_text: str, page1_layout: str, pag
     from .offer_owner_words import missing
     from .offer_parse_university import name_in_plain
     from .offer_ums_refusal import foreign_letters, page_texts_refusal
-    out['portal'] = umpsa_portal(text)
+    out['portal'] = umpsa_portal(text, page1_layout)
     if out['portal']:
         return out
     if not page1_layout.strip():
@@ -435,7 +479,7 @@ def _printed(page1_layout: str) -> tuple:
     got = _umpsa_read(_uum_lines(page1_layout))
     if got is None:
         return '', ''
-    _years, _intake, head, (_r, why_table), values, _rows = got
+    _years, _intake, head, (_r, why_table), values, _rows, _range_at = got
     return (head[1] if not head[3] else ''), (values[1] if not why_table and not values[3] else '')
 
 

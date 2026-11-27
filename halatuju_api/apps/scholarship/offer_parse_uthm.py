@@ -38,7 +38,7 @@ import re
 from .offer_parse import _name_ok
 from .offer_parse_uitm import NOT_DEGREE, name_ended
 from .offer_parse_um import um_not_degree
-from .offer_parse_uum import _LINKERS, _WORD_DATE, _cols, _indent, _one_space, _uum_lines, _ymd, ic_printed
+from .offer_parse_uum import _LINKERS, _MONTH, _WORD_DATE, _cols, _indent, _one_space, _uum_lines, _ymd, ic_printed
 from .offer_ums_refusal import _SQUEEZE_OUT, _withdrawn_one, fold_lookalikes, status_said
 
 LANE = 'ua:UTHM'
@@ -75,7 +75,13 @@ _MONTHS = ('JANUARI', 'FEBRUARI', 'MAC', 'APRIL', 'MEI', 'JUN', 'JULAI', 'OGOS',
            'NOVEMBER', 'DISEMBER')
 _DAYS = ('ISNIN', 'SELASA', 'RABU', 'KHAMIS', 'JUMAAT', 'SABTU', 'AHAD')    # Monday first (`date.weekday`)
 _REPORT_VALUE = re.compile(r'^(\d{1,2}) ([A-Z]{3,9}) (20\d{2}) \(([A-Z]{4,6})\)$')
-_ANY_DATE = re.compile(_WORD_DATE + r'|(?<!\d)\d{1,2}\s?[/.-]\s?\d{1,2}\s?[/.-]\s?(?:20)?\d{2}(?!\d)', re.IGNORECASE)
+#: Any date the stray-date checks must see (every lane that imports it: UTHM, UKM, UMK, UTeM, USM, UniSZA, UMPSA).
+#: OCR-14b-1 fix 1 widened it (only more refusals): "11hb Oktober 2026" / "11 haribulan Oktober", a day and month
+#: with no year ("11 Oktober"), a month and year with no day ("Oktober 2026") and year-first numbers ("2026-10-11").
+_ANY_DATE = re.compile(_WORD_DATE + r'|(?<!\d)\d{1,2}\s?[/.-]\s?\d{1,2}\s?[/.-]\s?(?:20)?\d{2}(?!\d)'
+                       r'|(?<!\d)\d{1,2}\s{0,2}(?:hb\.?|haribulan)?\s{0,2}' + _MONTH + r'(?![a-z])'
+                       r'|(?<![a-z])' + _MONTH + r'\.?,?\s{0,2}20\d{2}(?!\d)'
+                       r'|(?<!\d)20\d{2}\s?[/.-]\s?\d{1,2}\s?[/.-]\s?\d{1,2}(?!\d)', re.IGNORECASE)
 _NOT_DEGREE_WORD = re.compile(r'(?<![A-Z])(?:DIPLOMA|ASASI|PERSEDIAAN|FOUNDATION|SIJIL)(?![A-Z])')
 
 

@@ -37,8 +37,12 @@ _NOT_AN_OFFER = re.compile(r'\b(?:PEMBATALAN|PENANGGUHAN|PENOLAKAN|TARIK\s{1,3}B
 #: (TIDAK SAH, DIGUGURKAN, DIMANSUHKAN, LUPUT, GAGAL) and round 2 (DITAMATKAN ... DITARIK). Measured: no cached
 #: UMS letter prints any of them on ANY page (their conditional clause says "Kegagalan", "terbatal").
 #: Owner words review round 2: TIDAK (AKAN / LAGI / DAPAT / BOLEH) DITERUSKAN; "DITERUSKAN" is in none of them.
-_WITHDRAWN = re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}TARIK\s{1,3}(?:BALIK|SEMULA)|'
+#: OCR-14b-1 fix 1: TIDAK LAYAK ("Anda tidak layak.") on every lane, also as the stem TIDAKLAYAK. Measured: no
+#: owner-sample letter of any folder prints it in any spacing (raw or folded); in the eval snapshots one OCR text
+#: does, a letter labelled not an offer (STPM family), which no lane locks.
+_WITHDRAWN =re.compile(r'\b(?:(?:DI\s{0,3})?BATAL(?:KAN)?|PEMBATALAN|DI\s{0,3}TARIK\s{1,3}(?:BALIK|SEMULA)|'
                         r'DI\s{0,3}TOLAK|TIDAK\s{1,3}LAGI\s{1,3}SAH|SURAT\s{1,3}TIDAK\s{1,3}BERJAYA|TIDAK\s{1,3}SAH|'
+                        r'TIDAK\s{1,3}LAYAK|'
                         r'DIGUGURKAN|DIMANSUHKAN|LUPUT|GAGAL|'
                         r'DITAMATKAN|PENAMATAN|TIDAK\s{1,3}(?:LAGI\s{1,3})?BERKUAT\s{0,3}KUASA|WITHDRAWN|CANCELL?ED|'
                         r'REVOKED|TIDAK\s{1,3}AKTIF|TIDAK\s{1,3}TERPAKAI|DITARIK|'
@@ -67,7 +71,8 @@ _WITHDRAWN_STEMS = ('DIBATALKAN', 'PEMBATALAN', 'TIDAKBERJAYA', 'DITARIKBALIK', 
                     'CANCELLED', 'CANCELED', 'REVOKED', 'TIDAKAKTIF', 'TIDAKTERPAKAI', 'TIDAKDITERUSKAN',
                     'TIDAKAKANDITERUSKAN', 'TIDAKLAGIDITERUSKAN', 'TIDAKDAPATDITERUSKAN', 'TIDAKBOLEHDITERUSKAN',
                     'TIDAKAKANLAGIDITERUSKAN', 'TIDAKDAPATLAGIDITERUSKAN', 'TIDAKBOLEHLAGIDITERUSKAN',
-                    'TANGGUH', 'AKANDIMAKLUMKAN', 'AKANDIUMUMKAN', 'AKANDITETAPKAN', 'AKANDIBERITAHU') + _NOT_OFFICIAL_STEMS
+                    'TANGGUH', 'AKANDIMAKLUMKAN', 'AKANDIUMUMKAN', 'AKANDITETAPKAN', 'AKANDIBERITAHU',
+                    'TIDAKLAYAK') + _NOT_OFFICIAL_STEMS
 #: Review round 3 (LOW-2): every character that is not a letter or digit is taken out ("D/I/B/A/T/A/L/K/A/N").
 _SQUEEZE_OUT = re.compile(r'[\W_]')
 #: Owner words review round 2 (fix 2): Cyrillic and Greek letters that look like Latin ones, folded to their

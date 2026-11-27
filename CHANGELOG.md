@@ -48,6 +48,12 @@ Branch ocr-14b-unis, not pushed. Migration: none. Services: api. The new lane st
 - **Two narrow UMPSA excuses, each one exact text taken out once:** the MAKLUMAT PENTING "Tawaran ini akan terbatal ..."
   paragraph (owner decision 27 Nov, as UTeM/USM), and the page-1 print note "Nota: Sila cetak dan bawa Surat Tawaran
   ini ..." from the portal tell. Any other cancel/withdraw wording, a second copy or another portal tell refuses.
+- **Review round 1 fixes:** the stray-date check skips only the lines the reader read, at their fixed places (a
+  second "TARIKH PRA-PENDAFTARAN" line no longer hides a date); the print note is excused only at its measured place
+  (last-but-one line of page 1, alone, indented, the computer-print line after it); a second full copy of the
+  paragraph refuses; on every lane, "tidak layak" is a withdrawal word and the stray-date patterns also see
+  "11hb Oktober 2026", "Oktober 2026", "11 Oktober" and "2026-10-11"; docstring and version note say 2-4 address
+  lines and two excuses.
 - **UniSZA (owner decision 27 Nov):** the template's one withdrawal note ("Adalah dimaklumkan bahawa Pengurusan
   Universiti berhak menarik balik ...") is excused once; any other withdrawal wording still refuses.
 - **Versions:** offer_parse 2.6.0, offer_reader 2.13.0 (reader digest unchanged).

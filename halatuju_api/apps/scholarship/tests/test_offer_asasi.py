@@ -105,7 +105,8 @@ class TestNoUniversityLock(SimpleTestCase):
 
     def test_asasi_anywhere_on_the_visible_page_refuses(self):
         """Not only in the programme: a line of boilerplate saying Asasi refuses too."""
-        letter = ums().replace('Saudara/i akan', 'Calon program asasi tidak layak.\nSaudara/i akan')
+        # OCR-14b-1: the made-up line no longer says "tidak layak" (now a withdrawal word that refuses first).
+        letter = ums().replace('Saudara/i akan', 'Calon program asasi sila ambil perhatian.\nSaudara/i akan')
         self.assertEqual(_digital(letter)['guard'], 'asasi_ai_read')
 
     def test_the_visible_page_judges(self):

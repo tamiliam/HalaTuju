@@ -183,6 +183,30 @@ class UmpsaRefusalTest(SimpleTestCase):
         d = run(layout(extra=('Taklimat pada 6 Oktober 2026.',)))
         self.assertEqual(d['guard'], 'stray_date')
 
+    def test_a_second_pre_registration_label_hides_no_date(self):
+        """Fix 1 (review r1 blocker): only the table's own pre-registration row and its wrapped lines are skipped,
+        at their fixed places; a second line that starts the same way, and the lines after it, are checked."""
+        for extra in (('TARIKH PRA-PENDAFTARAN BAHARU :', 'TARIKH PENDAFTARAN KOLEJ KEDIAMAN : 11 OKTOBER 2026'),
+                      ('TARIKH PRA-PENDAFTARAN DIPINDA', 'Tarikh pendaftaran baharu ialah 11 Oktober 2026.'),
+                      (row('TARIKH PRA-PENDAFTARAN', '1 OKTOBER 2026 - 2 OKTOBER 2026'),)):
+            with self.subTest(extra=extra[0][:30]):
+                d = run(layout(extra=extra))
+                self.assertIsNone(d['locked'])
+                self.assertEqual(d['guard'], 'stray_date')
+                self.assertEqual(read_umpsa(layout(extra=extra))[1], 'stray_date')
+
+    def test_every_written_date_form_is_a_stray_date(self):
+        """Fix 5(b): the shared stray-date patterns also see "11hb", a month and year, a day and month, year
+        first, and the month abbreviations in those forms."""
+        for line in ('Pendaftaran pada 11hb Oktober 2026.', 'Pendaftaran pada 11 haribulan Oktober 2026.',
+                     'Pendaftaran diubah ke Oktober 2026.', 'Pendaftaran diubah ke 11 Oktober.',
+                     'Pendaftaran 2026-10-11.', 'Pendaftaran 2026/10/11.', 'Pendaftaran 11hb Okt.',
+                     'Pendaftaran Okt 2026.', 'Pendaftaran 11 Okt.', 'Pendaftaran 11 OKT 2026.'):
+            with self.subTest(line=line):
+                d = run(layout(extra=(line,)))
+                self.assertIsNone(d['locked'])
+                self.assertEqual(d['guard'], 'stray_date')
+
     def test_a_second_ic_refuses(self):
         for extra in ('Penjaga: 750505-03-1234', 'NO. K/P: ' + IC):
             with self.subTest(extra=extra[:8]):
@@ -217,20 +241,97 @@ class UmpsaExcuseTest(SimpleTestCase):
                 self.assertEqual(d['guard'], 'not_an_offer')
                 self.assertEqual(umpsa_letter_refusal(plain(layout(extra=(extra,))), NRIC), 'not_an_offer')
 
+    def test_a_second_full_copy_of_the_paragraph_refuses(self):
+        """Fix 4(a): the paragraph is taken out once; a second full copy, on one line or wrapped as measured,
+        refuses."""
+        full = ' '.join(' '.join(IMPORTANT[1:4]).split())
+        for extra in ((full,), IMPORTANT[1:4], IMPORTANT):
+            with self.subTest(lines=len(extra)):
+                d = run(layout(extra=extra))
+                self.assertIsNone(d['locked'])
+                self.assertEqual(d['guard'], 'not_an_offer')
+
+    def test_tidak_layak_refuses(self):
+        """Fix 5(a): "tidak layak" is a withdrawal word on every lane, in any spacing."""
+        for extra in ('Anda tidak layak.', 'Status: TIDAK LAYAK', 'T I D A K  L A Y A K', 'tidak.layak'):
+            with self.subTest(extra=extra):
+                d = run(layout(extra=(extra,)))
+                self.assertIsNone(d['locked'])
+                self.assertEqual(d['guard'], 'not_an_offer')
+
     def test_a_changed_note_refuses(self):
         changed = (IMPORTANT[0], IMPORTANT[1], IMPORTANT[2].replace('tidak  tepat', 'salah'), *IMPORTANT[3:])
         self.assertEqual(run(layout(important=changed))['guard'], 'not_an_offer')
 
     def test_the_print_note_is_excused_once_from_the_portal_tell(self):
-        text = plain(layout())
-        self.assertFalse(umpsa_portal(text))
-        self.assertTrue(umpsa_portal(text + '\nNota: Sila cetak dan bawa Surat Tawaran ini semasa hadir ke Kampus.'))
-        self.assertTrue(umpsa_portal(text + '\nSila cetak slip ini'))
+        lay = layout()
+        text = plain(lay)
+        self.assertFalse(umpsa_portal(text, lay))
+        self.assertTrue(umpsa_portal(text + '\nNota: Sila cetak dan bawa Surat Tawaran ini semasa hadir ke Kampus.',
+                                     lay))
+        self.assertTrue(umpsa_portal(text + '\nSila cetak slip ini', lay))
+        self.assertFalse(umpsa_portal(text, ''))        # a scan: refuses as no_layout right after
         for line in ('Sila cetak slip ini', 'SEMAKAN TAWARAN', 'Tahniah! Anda layak menerima tawaran'):
             with self.subTest(line=line):
                 d = run(layout(extra=(line,)))
                 self.assertIsNone(d['locked'])
                 self.assertTrue(d['portal'])
+
+    def test_the_print_note_is_excused_only_in_its_own_place(self):
+        """Fix 4(b): only at its measured place, the last-but-one line of page 1, alone on its line, the
+        computer-print line after it. The same note anywhere else (and none at its place) refuses as a portal."""
+        note = FOOTER[-2]
+        without = tuple(f for f in FOOTER if f != note)
+        moved = {'in_the_nota_block': layout(nota=NOTA + (note.strip(),), footer=without),
+                 'above_the_signature': layout(footer=(note,) + without),
+                 'after_the_last_line': layout(footer=without + (note,)),
+                 'in_the_body': layout(extra=(note.strip(),), footer=without),
+                 'at_the_margin': layout(footer=without[:-1] + (note.strip(), without[-1])),
+                 'on_a_line_with_more': layout(footer=without[:-1] + (note + ' Terima kasih.', without[-1])),
+                 'too_far_in': layout(footer=without[:-1] + (' ' * 60 + note.strip(), without[-1])),
+                 'no_computer_line_after': layout(footer=without[:-1] + (note, without[-1].replace('komputer', 'mesin'))),
+                 'not_after_the_signature': layout(footer=without[:-2] + (without[-2] + ' Kuantan', note, without[-1]))}
+        for name, lay in moved.items():
+            with self.subTest(name):
+                d = run(lay)
+                self.assertIsNone(d['locked'])
+                self.assertTrue(d['portal'])
+        self.assertIsNotNone(run()['locked'])
+
+
+class SharedChecksTest(SimpleTestCase):
+    """Fix 5: the shared withdrawal and stray-date checks, stricter on every lane that uses them."""
+
+    def test_tidak_layak_is_a_withdrawal_on_every_lane(self):
+        from apps.scholarship.offer_ums_refusal import _withdrawn_one
+        for s in ('Anda tidak layak.', 'TIDAK  LAYAK', 'T I D A K  L A Y A K', 'tidak-layak'):
+            with self.subTest(s=s):
+                self.assertTrue(_withdrawn_one(s, []))
+        self.assertFalse(_withdrawn_one('Anda layak menerima tawaran ini.', []))
+
+    def test_unisza_note_plus_tidak_layak_refuses(self):
+        from apps.scholarship.tests import test_offer_parse_unisza as unisza
+        self.assertIsNotNone(unisza.run(unisza.layout(extra=(unisza.NOTE,)))['locked'])
+        d = unisza.run(unisza.layout(extra=(unisza.NOTE, '5. Anda tidak layak.')))
+        self.assertIsNone(d['locked'])
+        self.assertEqual(d['guard'], 'not_an_offer')
+
+    def test_the_stray_date_patterns_see_every_written_form(self):
+        from apps.scholarship.offer_parse_umk import _SHORT_DATE
+        from apps.scholarship.offer_parse_uthm import _ANY_DATE
+        for s in ('11hb Oktober 2026', '11 hb. Oktober 2026', '11 haribulan Oktober 2026', 'Oktober 2026',
+                  'OKTOBER, 2026', '11 Oktober', '11 OKTOBER', '2026-10-11', '2026/10/11', '2026.10.11',
+                  '11 October', 'October 2026', '11/10/2026', '11 Oktober 2026'):
+            with self.subTest(s=s):
+                self.assertTrue(_ANY_DATE.search(s))
+        for s in ('11hb Okt', '11 Okt', 'Okt 2026', 'OGOS 2026', '3 Ogo.', '11 OKT 2026', 'Sept 2026'):
+            with self.subTest(s=s):
+                self.assertTrue(_SHORT_DATE.search(s))
+        for s in ('SEPENUH MASA', 'TAHUN 1', '4 TAHUN', 'SESI AKADEMIK 2026/2027', 'NO 12, JALAN MAWAR 3',
+                  '26300 KUANTAN', 'UMPSA 12.34/567-8/9/1', 'MARKAH 2026', 'Sepanjang 2026', '30,000.00',
+                  '12 MARKAH', '8.00 PAGI - 12.00 PETANG'):
+            with self.subTest(s=s):
+                self.assertFalse(_ANY_DATE.search(s) or _SHORT_DATE.search(s))
 
 
 class UmpsaOwnerWordsTest(SimpleTestCase):

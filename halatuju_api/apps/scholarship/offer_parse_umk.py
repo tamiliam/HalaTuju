@@ -90,8 +90,14 @@ _TIME_ROW = re.compile(r'^Masa ?: ?' + _HOUR + ' hingga ' + _HOUR + r'$')
 _PLACE_ROW = re.compile(r'^Tempat ?:')
 #: A date with a month abbreviation, English or Malay ("15 OCT 2026", "3 Ogo. 26"), which `_ANY_DATE` does not
 #: read; with it, any date on page 1 but the offer date and the reporting row refuses.
+#: OCR-14b-1 fix 1 widened it (only more refusals; UMK, UniSZA and UMPSA use it): an abbreviation after "hb" /
+#: "haribulan" ("11hb Okt"), with no year ("11 Okt") or no day ("Okt 2026"); the abbreviation itself only (a longer
+#: word that starts like one, "SEPENUH", is not a month), the full names being `offer_parse_uthm._ANY_DATE`'s.
+_ABBR = r'(?:JAN|FEB|MAR|MAC|APR|MAY|MEI|JUN|JUL|AUG|OGO|OGOS|SEP|SEPT|OCT|OKT|NOV|DEC|DIS)\.?(?![A-Z])'
 _SHORT_DATE = re.compile(r'(?<!\d)\d{1,2} ?(?:JAN|FEB|MAR|MAC|APR|MAY|MEI|JUN|JUL|AUG|OGO|SEP|OCT|OKT|NOV|DEC|DIS)'
-                         r'[A-Z]*\.? ?(?:20)?\d{2}(?!\d)', re.IGNORECASE)
+                         r'[A-Z]*\.? ?(?:20)?\d{2}(?!\d)'
+                         r'|(?<!\d)\d{1,2} ?(?:HB\.?|HARIBULAN)? ?' + _ABBR
+                         + r'|(?<![A-Z])' + _ABBR + r',? ?20\d{2}(?!\d)', re.IGNORECASE)
 
 
 def is_umk(up: str) -> bool:
