@@ -33,17 +33,26 @@ A/P, S/O, D/O, BIN, BINTI, BT as `vision._canonical_name_seq` already drops them
   Two extra parts, or an extra part that is not connector-like, are never close.
 
 A reversed patronymic (a father and a son) is never close. A different given name is still 'mismatch'.
+Review round 1: opposite-sex connectors (A/L or S/O or BIN against A/P or D/O or BINTI/BT) are never
+close, even though both drop out of the comparison; a misread connector counts as the one sex it is
+within one edit of (ALE, AIL, NL are A/L).
 
 **2. The payslip-only warnings do not show on a declaration.** The read's free-text ``warnings`` (the
 AI's notes, stored at read time and shown to the officer) say "no employer" and "no pay period" on
 almost every declaration — a declaration has neither, by design. ``shown_warnings`` hides exactly those
 two kinds at DISPLAY time (the serializer); the stored read is never edited, and no warning feeds a
-verdict, a blocker or the money.
+verdict, a blocker or the money. Review round 1: it is an ALLOWLIST. A warning is hidden only when EVERY
+part of it (split on ';') is purely an ABSENCE of the employer or the pay period ("employer not stated",
+"tiada majikan", "tempoh gaji tidak dinyatakan"). A part that speaks of tampering, forgery, a chop,
+stamp, signature, endorsement, the penghulu, a correction, the applicant, a name or an IC keeps the
+whole warning, and so does any part that is not an absence note.
 
 It sits in ``income_engine/`` so the verdict-engine fingerprint covers it: BUMP
 ``verdict_engine.VERDICT_ENGINE_VERSION`` on any change to the rule.
 """
 from __future__ import annotations
+
+import re
 
 #: The SHOWN status word (``display_name_status`` only). Never a decision value.
 CLOSE = 'close'
@@ -98,9 +107,45 @@ def _connector_like(tok: str) -> bool:
 
 
 def _without_misread_connector(longer: list):
-    """``longer`` without its ONE connector-like inner part, or None when there is not exactly one."""
+    """``(longer without its ONE connector-like inner part, that part)``, or ``(None, '')`` when there is
+    not exactly one."""
     hits = [i for i in range(1, len(longer) - 1) if _connector_like(longer[i])]
-    return longer[:hits[0]] + longer[hits[0] + 1:] if len(hits) == 1 else None
+    if len(hits) != 1:
+        return None, ''
+    return longer[:hits[0]] + longer[hits[0] + 1:], longer[hits[0]]
+
+
+#: Review round 1 (should-fix 4): the connectors carry a sex. A son (A/L, S/O, BIN) is never 'close' to a
+#: daughter (A/P, D/O, BINTI), even though both connectors drop out of the comparison.
+_MALE = frozenset({'a/l', 'al', 's/o', 'bin', 'bn'})
+_FEMALE = frozenset({'a/p', 'ap', 'd/o', 'binti', 'bt', 'bte'})
+
+
+def _gender_signs(name: str) -> set:
+    """'m' and/or 'f' for each connector the name prints (slash spacing and glue tidied first)."""
+    from ..vision import _split_glued_markers
+    tidy = _split_glued_markers(re.sub(r'\s*/\s*', '/', str(name or '').lower()))
+    signs = set()
+    for tok in re.findall(r'[a-z]+(?:/[a-z]+)?', tidy):
+        if tok in _MALE:
+            signs.add('m')
+        elif tok in _FEMALE:
+            signs.add('f')
+    return signs
+
+
+def _misread_sign(tok: str) -> set:
+    """The sex of a misread connector (ALE, AIL, NL read for A/L) when it is within one edit of ONE sex's
+    connectors only; empty when it is near both or neither."""
+    from ..vision import _levenshtein
+    plain = lambda forms: {f.replace('/', '') for f in forms}           # noqa: E731
+    near = {sex for sex, forms in (('m', plain(_MALE)), ('f', plain(_FEMALE)))
+            if any(_levenshtein(tok, f) <= 1 for f in forms)}
+    return near if len(near) == 1 else set()
+
+
+def _opposite_sex(sa: set, sb: set) -> bool:
+    return bool(sa) and bool(sb) and sa.isdisjoint(sb)
 
 
 def _in_order(a: list, b: list) -> bool:
@@ -118,14 +163,21 @@ def near_miss(extracted, reference) -> bool:
     a, b = _parts(extracted), _parts(reference)
     if _near_miss_reversal(extracted, reference):
         return False
+    sa, sb = _gender_signs(extracted), _gender_signs(reference)
+    if _opposite_sex(sa, sb):
+        return False                                  # A/L against A/P, S/O against D/O, BIN against BINTI
     if len(a) == len(b):
         return _same_count(a, b)
     if abs(len(a) - len(b)) != 1:
         return False
     if len(a) > len(b):
-        a = _without_misread_connector(a)
+        a, dropped = _without_misread_connector(a)
+        sa = sa | _misread_sign(dropped)
     else:
-        b = _without_misread_connector(b)
+        b, dropped = _without_misread_connector(b)
+        sb = sb | _misread_sign(dropped)
+    if _opposite_sex(sa, sb):
+        return False                                  # a misread A/L against a printed A/P
     return a is not None and b is not None and _in_order(a, b)
 
 
@@ -147,22 +199,46 @@ _EMPLOYER_WORDS = ('employer', 'majikan', 'company', 'syarikat')
 _PERIOD_WORDS = ('period', 'pay month', 'salary month', 'month of pay', 'pay date', 'tempoh',
                  'bulan gaji', 'month/year', 'month and year')
 #: ...that ALSO speaks of identity or approval is kept whole: those are substantive on a declaration.
-_KEEP_WORDS = ('name', 'nric', 'kad pengenalan', 'mykad', 'ic number', 'ic no', 'identity',
-               'signature', 'signed', 'sign ', 'stamp', 'tandatangan', 'approv', 'cop rasmi')
+#: Any of these anywhere in a part keeps the whole warning (substring: the safe direction, so "signed",
+#: "menandatangani", "forged", "diubah", "unendorsed" all count).
+_KEEP_STEMS = ('tamper', 'alter', 'forg', 'fake', 'palsu', 'ubah', 'chop', 'stamp', 'sign', 'tandatangan',
+               'endorse', 'penghulu', 'overwrit', 'written over', 'correction', 'fluid', 'applicant',
+               'pemohon', 'themselves', 'himself', 'herself', 'sendiri', 'name', 'nama', 'nric', 'mykad',
+               'identity', 'pengenalan', 'approv', 'lulus', 'sah', 'cert', 'witness', 'saksi', 'suspicious',
+               'mencurigakan', 'inconsistent', 'differ', 'berbeza', 'mismatch', 'relative', 'saudara')
+#: ...and these as whole words (too short to match inside other words): IC, I/C, KP, COP.
+_KEEP_WORDS = re.compile(r'\b(ic|i\s*/\s*c|kp|cop)\b')
 #: "the employer's NAME" is still about the employer, not about who the earner is.
 _EMPLOYER_NAME_PHRASES = ("employer's name", 'employer name', 'name of the employer', 'name of employer',
                           "company's name", 'company name', 'name of the company', 'name of company',
                           'nama majikan', 'nama syarikat')
+#: The ABSENCE words (English and Malay). A hideable part must carry one.
+_ABSENT = re.compile(
+    r"\b(not (?:stated|given|shown|provided|specified|indicated|listed|mentioned|included|present|"
+    r"recorded|written|filled|found|visible|available)|missing|absent|none|no|n/a|nil|blank|omitted|"
+    r"unspecified|unstated|without|lacks?|tiada|tidak (?:dinyatakan|dicatat|dicatatkan|tercatat|ditulis|"
+    r"diisi|ada|disertakan|dinyatakan)|kosong|tanpa)\b")
+
+
+def _hideable_part(part: str) -> bool:
+    """One ';' part: purely an absence of the employer or the pay period, and nothing else."""
+    s = part.strip().lower()
+    if not s:
+        return True                                   # an empty piece between two ';' says nothing
+    for phrase in _EMPLOYER_NAME_PHRASES:
+        s = s.replace(phrase, 'employer')
+    if any(k in s for k in _KEEP_STEMS) or _KEEP_WORDS.search(s):
+        return False
+    return any(k in s for k in _EMPLOYER_WORDS + _PERIOD_WORDS) and bool(_ABSENT.search(s))
 
 
 def payslip_only_warning(warning) -> bool:
-    """True for a warning about the employer or the pay period alone (nothing about who or approval)."""
-    s = str(warning or '').lower()
-    if not any(k in s for k in _EMPLOYER_WORDS + _PERIOD_WORDS):
+    """True only when EVERY ';' part of the warning is a pure absence of the employer or the pay period
+    (the allowlist above). Anything else, or anything mixed, is kept."""
+    s = str(warning or '')
+    if not s.strip():
         return False
-    for phrase in _EMPLOYER_NAME_PHRASES:
-        s = s.replace(phrase, 'employer')
-    return not any(k in s for k in _KEEP_WORDS)
+    return all(_hideable_part(p) for p in s.split(';'))
 
 
 def shown_warnings(doc, warnings):

@@ -97,6 +97,32 @@ class ConnectorDropTests(SimpleTestCase):
         self.assertFalse(near_miss('KANDASAMY ALE MURUGAPPAN', IC_NAME))
         self.assertFalse(near_miss('KANDASAMY ALE MURUGAPPAN', self.IC_NO_AL))
 
+    # Review round 1, should-fix 4: a son's connector is never 'close' to a daughter's.
+    def test_guard_a_l_against_a_p_is_never_close(self):
+        self.assertFalse(near_miss('KAVITHA A/L KANDASAMY', 'KAVITHA A/P KANDASAMY'))
+        self.assertFalse(near_miss('KAVITHA A/P KANDASAMY', 'KAVITHA A/L KANDASAMY'))
+        self.assertFalse(near_miss('KAVITHA A / L KANDASANI', 'KAVITHA A/P KANDASAMY'))
+        self.assertFalse(near_miss('KAVITHAA/L KANDASAMY', 'KAVITHA A/P KANDASAMY'))   # glued marker
+
+    def test_guard_s_o_against_d_o_is_never_close(self):
+        self.assertFalse(near_miss('KAVITHA S/O KANDASAMY', 'KAVITHA D/O KANDASAMY'))
+        self.assertFalse(near_miss('KAVITHA D/O KANDASAMY', 'KAVITHA S/O KANDASAMY'))
+        self.assertFalse(near_miss('KAVITHA S/O KANDASAMY', 'KAVITHA A/P KANDASAMY'))
+
+    def test_guard_bin_against_binti_is_never_close(self):
+        self.assertFalse(near_miss('NURUL BIN OSMAN', 'NURUL BINTI OSMAN'))
+        self.assertFalse(near_miss('NURUL BN OSMAN', 'NURUL BT OSMAN'))
+
+    def test_guard_a_misread_a_l_against_a_printed_a_p(self):
+        self.assertFalse(near_miss('KAVITHA ALE KANDASAMY', 'KAVITHA A/P KANDASAMY'))
+        self.assertFalse(near_miss('KAVITHA A/P KANDASAMY', 'KAVITHA NL KANDASAMY'))
+
+    def test_same_sex_connectors_stay_close(self):
+        self.assertTrue(near_miss('MURUGAPPAN S/O KANDASANI', IC_NAME))
+        self.assertTrue(near_miss('MURUGAPPAN ALE KANDASANI', IC_NAME))
+        self.assertTrue(near_miss('KAVITHA D/O KANDASANI', 'KAVITHA A/P KANDASAMY'))
+        self.assertTrue(near_miss('NURUL BTE OSMAN', 'NURUL BINTI OSMAN'))
+
     def test_declaration_with_a_misread_connector_softens_and_a_typed_payslip_does_not(self):
         read = 'MURUGAPPAN ALE KANDASANI'
         self.assertEqual(soften(_doc(name=read), 'mismatch', read, self.IC_NO_AL), CLOSE)
@@ -132,6 +158,39 @@ class PayslipOnlyWarningTests(SimpleTestCase):
         self.assertIs(shown_warnings(_doc(seen=''), ws), ws)
         self.assertIs(shown_warnings(_doc(doc_type='epf'), ws), ws)
         self.assertIsNone(shown_warnings(_doc(), None))
+
+    # Review round 1, blocker 3: the filter is an ALLOWLIST of pure absence notes.
+    MUST_KEEP = ('Company chop missing', 'Majikan tidak menandatangani', 'Employer did not sign',
+                 'Company letterhead looks forged', 'Majikan palsu', 'Pay period looks altered / tampered',
+                 'Tempoh gaji telah diubah', 'Employer is the applicant themselves',
+                 'Employer: none; amount written over (correction fluid)',
+                 'No penghulu endorsement; employer missing',
+                 'Employer not stated; IC number not visible', 'Tiada cop majikan',
+                 'No KP shown; pay period missing', 'Employer not stated; the form is handwritten',
+                 'Employer stamp not visible', 'Pay period not stated but the amount was overwritten',
+                 'Employer missing; name of the earner differs')
+    MUST_HIDE = ('Employer not stated', 'No employer name', 'Pay period missing', 'Tiada majikan',
+                 'Tempoh gaji tidak dinyatakan', "Employer's name is not provided",
+                 'Employer: none', 'Pay period not specified', 'Pay period not indicated',
+                 'No employer; no pay period', 'Employer not stated; pay period missing',
+                 'Nama majikan tidak dicatat', 'Pay period: N/A')
+
+    def test_substantive_warnings_are_kept(self):
+        for w in self.MUST_KEEP:
+            self.assertFalse(payslip_only_warning(w), w)
+
+    def test_pure_absence_warnings_are_hidden(self):
+        for w in self.MUST_HIDE:
+            self.assertTrue(payslip_only_warning(w), w)
+
+    def test_an_employer_or_period_note_that_is_not_an_absence_is_kept(self):
+        for w in ('Employer is a relative', 'Pay period is March to April', 'Majikan ialah syarikat sendiri',
+                  'Company details look inconsistent'):
+            self.assertFalse(payslip_only_warning(w), w)
+
+    def test_a_declaration_shows_every_substantive_warning(self):
+        ws = list(self.MUST_KEEP) + list(self.MUST_HIDE)
+        self.assertEqual(shown_warnings(_doc(), ws), list(self.MUST_KEEP))
 
     def test_the_serializer_shows_a_filtered_copy_and_never_edits_the_stored_read(self):
         from rest_framework import serializers as drf
