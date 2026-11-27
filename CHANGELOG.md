@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: OCR-19 - PISMP rules lane (OFF) (2026-11-27)
+
+New `offer_parse_pismp` reads a digital IPG (Institut Pendidikan Guru Malaysia) PISMP offer letter, 2026 layout, lane `ua:PISMP`, OFF (never in OCR_FIRST_LANES). Owner's words and anchors only: name after NAMA, labelled IC after NO. KAD PENGENALAN, programme IJAZAH SARJANA MUDA PERGURUAN from the title plus BIDANG PENGKHUSUSAN, campus after TEMPAT PENGAJIAN, reporting date after TARIKH PENDAFTARAN, intake AMBILAN YYYY from the title (checked against AMBILAN/KELUARAN). Refuses on a missing anchor, a second row, the wrong order, missing closing words, the old layout, scans and photos. `family_of` tries PISMP last, so no other lane changes. offer_parse 2.7.0. Owner samples: 0 of 9 lock today (the 3 new-layout text letters refuse `not_an_offer` on the template's conditions list; with that one check set aside they lock with every scored field matching the answers). Monthly count: the existing dry-run lane table (`rules_read`) now counts PISMP. Replay of the 287-letter corpus, base vs new: identical (148 locked, 138 fallback, 1 no text; every family unchanged).
+
 ### fix: api build timeout 2700s to 4200s (2026-11-27)
 
 No migration, no app code. The 11:00 publish of 25fc95422 timed out: the api build a7bb99db ran its test step for over 45 minutes (42 on 26 Nov) and Cloud Build stopped it at the 2700s limit, so Push, Deploy and SyncReleaseJob never ran. The web build of the same commit went live; the api stayed on 3cb093b75 (halatuju-api-01325-twl). `halatuju_api/cloudbuild.yaml` `timeout` goes to 4200s (70 minutes). Takes effect on the next api build. Follow-up: the suite is growing; make it faster before it nears the new limit.

@@ -103,7 +103,7 @@ def merge_over(prior_fields, govt: dict, rules_lane: str = '') -> dict:
 
 def _lane_module(family: str):
     """The rules-lane reader module for a university family (`offer_parse.family_of`): 'ums', 'uitm', 'uum',
-    'um', 'upsi' (OCR-13), 'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk' or 'unisza' (OCR-14), 'umpsa' (OCR-14b), 'unimap' (OCR-14b-2); None for any other family. Each module gives LANE,
+    'um', 'upsi' (OCR-13), 'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk' or 'unisza' (OCR-14), 'umpsa' (OCR-14b), 'unimap' (OCR-14b-2), 'pismp' (OCR-19); None for any other family. Each module gives LANE,
     ``ink_targets`` and its reader."""
     if family == 'ums':
         from . import offer_parse_university as mod
@@ -147,12 +147,15 @@ def _lane_module(family: str):
     if family == 'unimap':
         from . import offer_parse_unimap as mod
         return mod
+    if family == 'pismp':
+        from . import offer_parse_pismp as mod
+        return mod
     return None
 
 
 def _rules_family(text) -> str:
     """The university rules family `offer_parse.diagnose` reads ``text`` as ('ums', 'uitm', 'uum', 'um', 'upsi',
-    'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk', 'unisza', 'umpsa', 'unimap'), else ''."""
+    'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk', 'unisza', 'umpsa', 'unimap', 'pismp'), else ''."""
     from .offer_parse import family_of
     fam = family_of(text)
     return fam if _lane_module(fam) is not None else ''
@@ -162,14 +165,14 @@ def _note_ums_refusal(why, text, reason: str) -> None:
     """Fill ``why`` (the caller's dict, or None) with a rules read's refusal (review round 2): the lane and
     ``read_<reason>`` ('read_no_layout', 'read_not_an_offer', 'read_empty:programme', ...), the same shape as
     `rules_lane_verdict`'s ``rules_fallback``. A letter with the UMS title (as before), or one `family_of` reads
-    as UiTM, UUM, UM, UPSI (OCR-13), UNIMAS, UTHM, UKM, UTeM, USM, UMK, UniSZA (OCR-14), UMPSA (OCR-14b) or UniMAP (OCR-14b-2); a letter no rules lane exists for records nothing."""
+    as UiTM, UUM, UM, UPSI (OCR-13), UNIMAS, UTHM, UKM, UTeM, USM, UMK, UniSZA (OCR-14), UMPSA (OCR-14b), UniMAP (OCR-14b-2) or PISMP (OCR-19); a letter no rules lane exists for records nothing."""
     from .offer_parse_university import LANE, is_ums
     if not isinstance(why, dict):
         return
     if is_ums((text or '').upper()):
         why.update(lane=LANE, reason=f'read_{reason}')
     elif _rules_family(text) in ('uitm', 'uum', 'um', 'upsi', 'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk', 'unisza',
-                                 'umpsa', 'unimap'):
+                                 'umpsa', 'unimap', 'pismp'):
         why.update(lane=_lane_module(_rules_family(text)).LANE, reason=f'read_{reason}')
 
 
@@ -325,7 +328,7 @@ def _not_inked(ex, image, layout, lane) -> list:
     try:                                         # each lane's own `ink_targets` (OCR-13)
         from .pdf_ink import ink_missing, page1_ink
         families = ('ums', 'uitm', 'uum', 'um', 'upsi', 'unimas', 'uthm', 'ukm', 'utem', 'usm', 'umk', 'unisza',
-                    'umpsa', 'unimap')
+                    'umpsa', 'unimap', 'pismp')
         mod = next((m for m in map(_lane_module, families) if m.LANE == lane), None)
         if mod is None:
             return ['no_targets']
@@ -336,7 +339,8 @@ def _not_inked(ex, image, layout, lane) -> list:
                    or getattr(mod, 'usm_ink_targets', None) or getattr(mod, 'umk_ink_targets', None)
                    or getattr(mod, 'unisza_ink_targets', None)
                    or getattr(mod, 'umpsa_ink_targets', None)
-                   or mod.unimap_ink_targets)    # own names (one-home rule)
+                   or getattr(mod, 'unimap_ink_targets', None)
+                   or mod.pismp_ink_targets)     # own names (one-home rule)
         phrases, values = targets(ex.get('fields'), layout)
         return ink_missing(page1_ink(image), phrases, values, lane=lane)   # a Type3 font: `TYPE3_LANES`
     except Exception:  # fail closed: the AI reads the letter, as it always could

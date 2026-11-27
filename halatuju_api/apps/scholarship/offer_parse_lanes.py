@@ -1,5 +1,5 @@
 """OCR-13/14: the UiTM, UUM, UM, UPSI, UNIMAS, UTHM, UKM, UTeM, USM, UMK and UniSZA branches of `offer_parse.diagnose`, here
-rather than in `offer_parse` (its 600-line cap); UMPSA's (OCR-14b) and UniMAP's (OCR-14b-2) live in their own modules (`diagnose_umpsa`, `diagnose_unimap`). No behaviour change in the move (UiTM, UUM). `diagnose` passes each result through
+rather than in `offer_parse` (its 600-line cap); UMPSA's (OCR-14b) and UniMAP's (OCR-14b-2) and PISMP's (OCR-19) live in their own modules (`diagnose_umpsa`, `diagnose_unimap`, `diagnose_pismp`). No behaviour change in the move (UiTM, UUM). `diagnose` passes each result through
 `offer_parse._rules_exit` (Asasi)."""
 from __future__ import annotations
 
@@ -554,3 +554,10 @@ def diagnose_unimap(out: dict, text: str, page1_text: str, page1_layout: str, pa
     file's 600-line cap). ``blank_page2``: the bytes proved page 2 fully blank (OCR-14b-3)."""
     from .offer_parse_unimap import diagnose_unimap as branch
     return branch(out, text, page1_text, page1_layout, page_texts, blank_page2)
+
+
+def diagnose_pismp(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
+    """The PISMP branch of `diagnose` (OCR-19): `offer_parse_pismp.diagnose_pismp` (its own module, this file's
+    600-line cap)."""
+    from .offer_parse_pismp import diagnose_pismp as branch
+    return branch(out, text, page1_text, page1_layout, page_texts)

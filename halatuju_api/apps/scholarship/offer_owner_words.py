@@ -150,6 +150,14 @@ OWNER_WORDS = {
         'Tahniah diucapkan kepada saudara/i kerana ditawarkan tempat', 'Program & Kod Program',
         'Tempoh Program (Tahun)', 'Tarikh', 'Tawaran ini adalah MUKTAMAD',
     ),
+    # OCR-19 (owner, 27 Nov): Institut Pendidikan Guru Malaysia, the PISMP teacher-training offer, in letter order,
+    # then the closing words. Read by `offer_parse_pismp` (the lane is off by default). The older layout
+    # ("TAWARAN MENGIKUTI ...", no AMBILAN/KELUARAN row) misses 6 and 9 and goes to the AI.
+    'ua:PISMP': (
+        'IPGM', 'INSTITUT PENDIDIKAN GURU MALAYSIA', 'Ruj. Kami', 'NAMA', 'NO. KAD PENGENALAN',
+        'TAWARAN RASMI MENGIKUTI PROGRAM IJAZAH SARJANA MUDA PERGURUAN', 'BIDANG PENGKHUSUSAN', 'TEMPOH PENGAJIAN',
+        'AMBILAN/KELUARAN', 'TEMPAT PENGAJIAN', 'TARIKH PENDAFTARAN', 'Tawaran ini akan TERBATAL dengan sendirinya',
+    ),
 }
 
 #: Per issuer (rules lane): the phrase numbers NOT required on a PDF read from its TEXT LAYER, because that
