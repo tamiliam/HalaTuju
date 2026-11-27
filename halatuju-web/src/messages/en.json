@@ -5617,7 +5617,8 @@
         },
         "or": "or"
       },
-      "newNote": "New note"
+      "newNote": "New note",
+      "returnedByQc": "Returned by QC"
     },
     "students": "Students",
     "invite": "Invite",

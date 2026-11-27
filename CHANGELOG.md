@@ -171,6 +171,15 @@ Branch fix-1048-declaration, not pushed. Services: api. Verdict engine 2026-11-2
 - A declaration in the salary-slip slot no longer SHOWS the read's pure-absence "no employer" / "no pay period" warnings (`ApplicantDocumentSerializer.to_representation` via `declaration_name.shown_warnings`; display only, stored reads unchanged). Review round 1: an ALLOWLIST, judged per ';' part. Anything about tampering, forgery, a chop/cop/stamp, a signature, endorsement, the penghulu, a correction, the applicant, a name or an IC/KP is always kept, and so is any part that is not an absence note. Review round 2: "nothing left over". The warning splits on ; , . and the whole words "and"/"dan"; a part hides only when, after the employer or pay-period words, the absence words and the filler words go, nothing is left; every part must hide. I.C., K/P, k.p. and i/c keep it; a missing date is not payslip-only and is kept.
 - Tests: `tests/test_declaration_name_close.py` (made-up names: case 1048's shape incl. a misread A/L, the guards, the sex guard, the warnings filter, the serializer, decision equivalence, the SHOW_CLOSE switch off and on, the stored verdict through the real read/store path, and a token grep that no module but link_display uses soften/near_miss/SHOW_CLOSE).
 - Not in this change: the web amber pill and label for `close`, the FAQ text (web, later sprint).
+### fix: sprint #81 #86 - the reviewer's turn: Returned by QC mark, case link, missing step, saved quiz kept (2026-11-27)
+
+Branch req81-86-reviewer-turn, not pushed. Migration: none. Services: both. Requests #81 and #86, bugs, no charge.
+- **My open** now lists a case that is the interviewer's turn: no verdict yet, QC sent it back, or the verdict was saved but the case did not reach QC (`review_sla.REVIEWERS_TURN`). A QC send-back shows a "Returned by QC" mark (served `returned_by_qc`; My open and the admin list). A decided case has no due date or band and shows them empty. Nudges and overdue bands are unchanged.
+- **Email:** the sent-back email links to the case (`dashboard_link` carries `/admin/scholarship/<id>` for `qc_returned` only; no template data change).
+- **Approve held back:** the message names the missing step (keys `decision.notSubmittedMissing`, `missingStep.*`).
+- **Saved interest quiz is kept** on sign-in: an empty set never overwrites saved answers (server `quiz_signals.keep_saved`, and the web no longer caches or sends `{}`).
+- Words: `admin.scholarship.returnedByQc` (en final; ms and ta drafts for Sol). Tests: `MineReturnedByQc.test.tsx`, `test_qc_returned_case_link.py`, `test_quiz_signals_kept.py`, `missingSteps.test.ts`.
+- Logged: TD-NEW-reopen-no-nudge, TD-NEW-reopen-rejected-not-on-list, TD-NEW-login-no-return. Decision: `docs/decisions.md` 2026-11-27.
 
 ### fix: false "Course switched" note when the same university is written two ways (2026-11-26)
 

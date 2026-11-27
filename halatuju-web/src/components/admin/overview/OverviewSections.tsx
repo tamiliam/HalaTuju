@@ -29,6 +29,7 @@ import TableFrame, { TH, TH_RIGHT } from '@/components/admin/TableFrame'
 import type { ProgrammeOverview } from '@/lib/admin-api'
 import { APPLICATION_STATUSES, statusLabelKey } from '@/lib/applicationStatus'
 import { formatDate } from '@/lib/formatDate'
+import ReturnedByQcMark from '@/components/admin/ReturnedByQcMark'
 import { AiPredictionSection } from './AiPredictionSection'
 import type { SectionProps, Translate } from './sectionTypes'
 import {
@@ -401,13 +402,16 @@ export function MineSection({ data, t }: SectionProps) {
                 <div key={c.id} className="rounded-lg border border-ground-200 p-2.5">
                   <div className="text-sm font-semibold text-ground-900">
                     {c.ref} {c.applicant_name}
+                    <ReturnedByQcMark show={c.returned_by_qc} label={t('admin.scholarship.returnedByQc')} />
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-ground-600">
                     <span>{t(statusLabelKey(c.status))}</span>
-                    <span>{t(`${K}.mine.dueBy`, { date: formatDate(c.due_at) })}</span>
-                    <span className={`rounded-full px-2 py-0.5 font-semibold ${bandTone(c.band)}`}>
-                      {t(`${K}.band.${c.band}`)}
-                    </span>
+                    {c.due_at && <span>{t(`${K}.mine.dueBy`, { date: formatDate(c.due_at) })}</span>}
+                    {c.band && (
+                      <span className={`rounded-full px-2 py-0.5 font-semibold ${bandTone(c.band)}`}>
+                        {t(`${K}.band.${c.band}`)}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -429,6 +433,7 @@ export function MineSection({ data, t }: SectionProps) {
                     <tr key={c.id} className="border-b border-ground-100 last:border-b-0">
                       <td className="px-4 py-2 font-medium text-ground-900">
                         {c.ref} {c.applicant_name}
+                        <ReturnedByQcMark show={c.returned_by_qc} label={t('admin.scholarship.returnedByQc')} />
                       </td>
                       <td className="px-4 py-2 text-ground-700">{t(statusLabelKey(c.status))}</td>
                       <td className="px-4 py-2 tabular-nums text-ground-700">
@@ -436,9 +441,11 @@ export function MineSection({ data, t }: SectionProps) {
                       </td>
                       <td className="px-4 py-2">
                         <span className="tabular-nums text-ground-700">{formatDate(c.due_at)}</span>
-                        <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ${bandTone(c.band)}`}>
-                          {t(`${K}.band.${c.band}`)}
-                        </span>
+                        {c.band && (
+                          <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ${bandTone(c.band)}`}>
+                            {t(`${K}.band.${c.band}`)}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

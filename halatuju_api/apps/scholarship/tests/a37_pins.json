@@ -737,6 +737,7 @@
     "decision_reopened_at",
     "rejection_category",
     "new_note",
+    "returned_by_qc",
     "rejection_chip"
    ],
    "AdminGraduationMessageSerializer": [

@@ -47,6 +47,8 @@ export async function addReviewerNote(id: number, body: string, options?: ApiOpt
  * has not seen (the "New note" mark). */
 export interface NewNoteListFields {
   new_note?: boolean
+  /** #86: SERVED - an open QC send-back (the "Returned by QC" mark). */
+  returned_by_qc?: boolean
 }
 
 /** The bell line's numbers (#73): how many STUDENTS have a note from the other side the caller has not seen. */

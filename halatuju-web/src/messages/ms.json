@@ -5617,7 +5617,8 @@
         },
         "or": "atau"
       },
-      "newNote": "Nota baharu"
+      "newNote": "Nota baharu",
+      "returnedByQc": "Dikembalikan oleh QC"
     },
     "students": "Pelajar",
     "invite": "Jemputan",

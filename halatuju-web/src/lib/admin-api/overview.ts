@@ -84,8 +84,11 @@ export interface OverviewMyCase {
   applicant_name: string
   status: string
   assigned_at: string
-  due_at: string
-  band: OverviewBand
+  /** A case whose verdict is already saved (QC send-back, a held Approve) has no clock: no due date, no band. */
+  due_at: string | null
+  band: OverviewBand | null
+  /** #86: SERVED - an open QC send-back. Never worked out in the browser. */
+  returned_by_qc?: boolean
 }
 /** ⚠ The QC row is NOT the reviewer row: it carries `since` / `waiting_days`, never a band. */
 export interface OverviewQcCase {
