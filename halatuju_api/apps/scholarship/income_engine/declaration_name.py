@@ -193,7 +193,7 @@ _SLASH_SIGNS = {'a/l': 'm', 's/o': 'm', 'a/p': 'f', 'd/o': 'f'}
 _GLUED_BOTH_SIDES = re.compile(r'([a-z])(a/[lp]|[ds]/o)([a-z])')
 
 
-def _tokens(name: str) -> list:
+def _name_words(name: str) -> list:
     """The name's words, slash spacing and glue tidied (so "A / L" and "KUMARANA/PRAJAN" read A/L)."""
     from ..vision import _split_glued_markers
     tidy = re.sub(r'\s*/\s*', '/', str(name or '').lower())
@@ -203,13 +203,13 @@ def _tokens(name: str) -> list:
 
 def _slash_signs(name: str) -> set:
     """'m' and/or 'f' for each SLASH connector (A/L, S/O, A/P, D/O) the name prints."""
-    return {_SLASH_SIGNS[t] for t in _tokens(name) if t in _SLASH_SIGNS}
+    return {_SLASH_SIGNS[t] for t in _name_words(name) if t in _SLASH_SIGNS}
 
 
 def _gender_signs(name: str) -> set:
     """'m' and/or 'f' for each connector the name prints (slash spacing and glue tidied first)."""
     signs = set()
-    for tok in _tokens(name):
+    for tok in _name_words(name):
         if tok in _MALE:
             signs.add('m')
         elif tok in _FEMALE:
