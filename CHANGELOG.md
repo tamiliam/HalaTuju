@@ -48,6 +48,7 @@ Sprint OCR-16. Branch ocr-16-genuineness, not pushed. Migration: none. Services:
   - **Slip fakes.** A known-fake slip whose 3.8 marker read failed (refused, malformed or a service error) counts as `unanswered_known_fake`, even though it is still scored from its text.
   - **Dry run.** The line listing known fakes no chosen check reads says a run would fail the gates.
   - **Tests.** test_eval_genuineness_38.py (TestReviewRound3).
+- **Full-suite guard fixes (2026-11-28).** Tests only, no digest moved: the eval joins the OCR-text guard's allowed list (it reads stored text in memory, prints ids only; no read accessor exists), and the Gemini schema scan now also sees `ai_model.ask` call sites and walks each check's 3.8 schema as sent.
 
 ### feat: OCR-15 phase 1 - the parent IC's text is kept, plus a one-off Vision capture (2026-11-27)
 

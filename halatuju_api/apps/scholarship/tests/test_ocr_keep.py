@@ -269,6 +269,8 @@ class TestPrivate(_Base):
         'scholarship/management/commands/rescore_salary_statutory.py',
         # OCR-15: the owner-approved one-off parent IC capture (writes only through ocr_keep.keep).
         'scholarship/management/commands/capture_parent_ic_text.py',
+        # OCR-16: the paid eval reads stored text in memory (slip score, sample words), prints ids only, refuses its saves.
+        'scholarship/management/commands/eval_genuineness_38.py',
         'scholarship/vision/ocr.py',
         'scholarship/vision/ic.py',   # OCR-15: the IC / parent IC read keeps its Vision text
     }

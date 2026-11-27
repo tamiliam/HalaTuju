@@ -38,13 +38,46 @@ def _all_schemas():
         'offer_reader.LATER_SCHEMA': offer_reader.LATER_SCHEMA,
         'higher_results.SCHEMA': higher_results.SCHEMA,
     })
+    out.update({f'ai_model.ask[3.8]({k})': v for k, v in _schemas_sent_on_38().items()})
     return out
 
 
-#: Every `_call_gemini_json(prompt, <schema>)` call site in apps/ (tests excluded): file → the
-#: schema expressions it passes. 'schema' is a variable: `_FIELD_SCHEMAS` (gemini_read) and
-#: OFFER_SCHEMA / LATER_SCHEMA (offer_reader), all in `_all_schemas`.
+#: OCR-16: the four genuineness checks, by the name the 3.8 walk files their schema under.
+_CHECKS_38 = ('ic', 'results_doc', 'sample_stamp', 'supporting_doc')
+
+
+def _schemas_sent_on_38():
+    """{check: schema} as `ai_model.ask` SENDS it on the 3.8 path (`_with_enum` adds the verdict enum), caught
+    at the mocked `vision._call_gemini_json`. A service error ends each ask after one call. No network."""
+    from unittest import mock
+
+    from apps.scholarship import vision
+    from apps.scholarship.genuineness import ic, results_doc, sample_stamp, supporting_doc
+    model = 'gemini-3.8-flash'
+    runs = {
+        'ic': lambda: ic.ic_genuineness(b'x', 'image/png', model=model),
+        'results_doc': lambda: results_doc.results_visual_markers(b'x', 'image/png', model=model),
+        'sample_stamp': lambda: sample_stamp._ask_model(b'x', 'image/png', model=model),
+        'supporting_doc': lambda: supporting_doc.doc_genuineness(b'x', 'image/png', 'str', model=model),
+    }
+    sent = {}
+    for name in _CHECKS_38:
+        def caught(prompt, schema, *a, _name=name, **k):
+            sent[_name] = schema
+            return {'_error': 'service down'}
+        with mock.patch.object(vision, '_as_image_for_gemini', return_value=(b'x', 'image/png')), \
+                mock.patch.object(vision, '_call_gemini_json', caught):
+            runs[name]()
+    return sent
+
+
+#: Every `_call_gemini_json(prompt, <schema>)` call site in apps/ (tests excluded), and (OCR-16) every
+#: `ai_model.ask(prompt, <schema>)` call site: file → the schema expressions it passes. 'schema' is a
+#: variable: `_FIELD_SCHEMAS` (gemini_read), OFFER_SCHEMA / LATER_SCHEMA (offer_reader), and in ai_model
+#: the schema an ask site passes (the four genuineness entries) or, on 3.8, 'schema38' (that schema with
+#: the verdict enum, walked as sent by `_schemas_sent_on_38`); all in `_all_schemas`.
 _CALL_SITES = {
+    'scholarship/genuineness/ai_model.py': {'schema', 'schema38'},
     'scholarship/gap_engine.py': {'GAP_SCHEMA'},
     'scholarship/help_engine.py': {'_RELEVANCE_SCHEMA'},
     'scholarship/income_declaration.py': {'_APPROVAL_SCHEMA'},
@@ -56,6 +89,27 @@ _CALL_SITES = {
     'scholarship/genuineness/supporting_doc.py': {'_DOC_GENUINENESS_SCHEMA'},
     'scholarship/vision/gemini_read.py': {'_IC_GEMINI_SCHEMA', 'schema'},
 }
+
+
+def _ai_model_names(tree):
+    """(names bound to `ai_model.ask`, names bound to the `ai_model` module) by the imports of one module."""
+    asks, modules = set(), set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if (node.module or '').split('.')[-1] == 'ai_model' and alias.name == 'ask':
+                    asks.add(alias.asname or alias.name)
+                elif alias.name == 'ai_model':
+                    modules.add(alias.asname or alias.name)
+    return asks, modules
+
+
+def _is_ai_model_ask(func, asks, modules):
+    """True for a call of `ask` imported from ai_model, or of `ai_model.ask`."""
+    if isinstance(func, ast.Name):
+        return func.id in asks
+    return (isinstance(func, ast.Attribute) and func.attr == 'ask' and isinstance(func.value, ast.Name)
+            and func.value.id in modules)
 
 
 def _scan_call_sites():
@@ -70,11 +124,12 @@ def _scan_call_sites():
             rel = os.path.relpath(path, _APPS).replace(os.sep, '/')
             with open(path, encoding='utf-8') as fh:
                 tree = ast.parse(fh.read(), filename=rel)
+            asks, modules = _ai_model_names(tree)
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
                     continue
                 fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, 'id', '')
-                if fn == '_call_gemini_json':
+                if fn == '_call_gemini_json' or _is_ai_model_ask(node.func, asks, modules):
                     arg = node.args[1] if len(node.args) > 1 else next(
                         (k.value for k in node.keywords if k.arg == 'schema'), None)
                     sites.setdefault(rel, set()).add(ast.unparse(arg) if arg is not None else '<none>')
@@ -85,6 +140,8 @@ def _scan_call_sites():
 
 
 class EverySchemaIsOneGeminiAccepts(SimpleTestCase):
+    maxDiff = None   # a missing call site must show by name
+
     def test_no_schema_has_an_empty_or_non_string_enum_member(self):
         """The bug the paid gate found: '' in the slip grade enum (and any non-string member)."""
         for name, schema in _all_schemas().items():
@@ -99,6 +156,22 @@ class EverySchemaIsOneGeminiAccepts(SimpleTestCase):
 
     def test_the_slip_schema_is_walked(self):
         self.assertIn('_FIELD_SCHEMAS[results_slip]', _all_schemas())
+
+    def test_the_38_genuineness_schemas_are_walked_as_sent(self):
+        """OCR-16: all four checks' 3.8 schemas are caught; the IC and supporting ones carry the verdict enum."""
+        sent = _schemas_sent_on_38()
+        self.assertEqual(set(sent), set(_CHECKS_38))
+        for name in ('ic', 'supporting_doc'):
+            self.assertTrue(sent[name]['properties']['verdict'].get('enum'), name)
+
+    def test_the_scan_sees_an_ai_model_ask_however_it_is_imported(self):
+        src = ('from .ai_model import ask as a\nfrom apps.scholarship.genuineness import ai_model\n'
+               'a(p, S1, image=i)\nai_model.ask(p, schema=S2, image=i)\nother.ask(p, S3)\n')
+        tree = ast.parse(src)
+        asks, modules = _ai_model_names(tree)
+        hits = {ast.unparse(n.args[1] if len(n.args) > 1 else n.keywords[0].value) for n in ast.walk(tree)
+                if isinstance(n, ast.Call) and _is_ai_model_ask(n.func, asks, modules)}
+        self.assertEqual(hits, {'S1', 'S2'})
 
 
 class TheSchemaCheck(SimpleTestCase):
