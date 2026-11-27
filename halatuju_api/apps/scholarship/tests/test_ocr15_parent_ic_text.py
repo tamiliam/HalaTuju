@@ -9,7 +9,9 @@ Every Vision and Gemini seam is mocked; no network. The card text and the IC num
   * the command's dry run makes no download, no Vision call and no write; ``--run`` needs ``--limit`` and
     ``--max-cost-usd``, stores only through ``ocr_keep.keep``, skips stored, superseded and queued
     documents, stops at the limit and the cost cap, counts a failing document and carries on, never calls
-    Gemini, and changes nothing else in the database; its output carries ids and counts only.
+    Gemini, and changes nothing else in the database; its output carries ids and counts only;
+  * it stops on 5 Vision service errors or 5 failed fetches IN A ROW, never on bad files; it prints and logs a
+    progress line every 50; its meter row is a platform row (no organisation, no application).
 """
 from io import StringIO
 from unittest import mock
@@ -277,10 +279,97 @@ class TestTheRun(_CommandBase):
         self.assertIn(f'no_text ids: {d.pk}', out)
         self.assertIsNone(self.kept(d))
 
-    def test_it_stops_when_the_first_reads_all_fail(self):
+    def test_it_stops_on_five_vision_service_errors_in_a_row(self):
         for _ in range(cmd.FAIL_FAST + 2):
             self.doc()
-        out, fetch, _, _ = self._run('--limit', '50', '--max-cost-usd', '1', text='', error='403 made up')
+        out, fetch, _, _ = self._run('--limit', '50', '--max-cost-usd', '1', text='', error='403 made up denied')
         self.assertEqual(fetch.call_count, cmd.FAIL_FAST)
-        self.assertIn('STOPPED: the first', out)
+        self.assertIn('STOPPED: 5 reads in a row failed with a Vision service error', out)
+        self.assertIn(f'service_error: {cmd.FAIL_FAST}', out)
         self.assertIn('not reached: 2', out)
+
+    def test_bad_files_never_stop_it_even_at_the_start(self):
+        docs = [self.doc() for _ in range(cmd.FAIL_FAST + 2)]
+        out, fetch, _, _ = self._run('--limit', '50', '--max-cost-usd', '1', text='', error='Bad image data.')
+        self.assertEqual(fetch.call_count, len(docs))
+        self.assertNotIn('STOPPED', out)
+        self.assertIn(f'read_failed: {len(docs)}', out)
+        self.assertIn('not reached: 0', out)
+
+    def test_a_good_read_between_service_errors_resets_the_streak(self):
+        docs = [self.doc() for _ in range(2 * cmd.FAIL_FAST)]
+        good = docs[cmd.FAIL_FAST - 1]
+        ApplicantDocument.objects.filter(pk=good.pk).update(storage_path='good')
+
+        def seam(image):
+            ok = image == b'GOOD'
+            return {'text': CARD_TEXT if ok else '', 'words': [], 'error': None if ok else '429 made up quota'}
+        with mock.patch(V + '_fetch_image_bytes', side_effect=lambda p: b'GOOD' if p == 'good' else b'IMG'), \
+                mock.patch(V + '_vision_document_text', side_effect=seam), _now_on_commit():
+            out = self.run_cmd('--run', '--limit', '50', '--max-cost-usd', '1')
+        # 4 service errors, 1 good read (reset), then 5 more errors: the stop falls on the 10th, not the 5th
+        self.assertIn('STOPPED: 5 reads in a row', out)
+        self.assertIn('stored: 1', out)
+        self.assertIn(f'service_error: {2 * cmd.FAIL_FAST - 1}', out)
+        self.assertIn('not reached: 0', out)
+
+    def test_it_stops_on_five_failed_fetches_in_a_row(self):
+        for _ in range(cmd.FAIL_FAST + 2):
+            self.doc()
+        out, fetch, seam, _ = self._run('--limit', '50', '--max-cost-usd', '1', fetch=None)
+        self.assertEqual(fetch.call_count, cmd.FAIL_FAST)
+        seam.assert_not_called()
+        self.assertIn('STOPPED: 5 fetches in a row failed', out)
+        self.assertIn('not reached: 2', out)
+
+    def test_a_good_fetch_resets_the_fetch_streak(self):
+        docs = [self.doc() for _ in range(cmd.FAIL_FAST + 3)]
+        ApplicantDocument.objects.filter(pk=docs[cmd.FAIL_FAST - 1].pk).update(storage_path='good')
+        with mock.patch(V + '_fetch_image_bytes', side_effect=lambda p: b'IMG' if p == 'good' else None), \
+                _vision(), _now_on_commit():
+            out = self.run_cmd('--run', '--limit', '50', '--max-cost-usd', '1')
+        self.assertNotIn('STOPPED', out)   # 4 failed, 1 good, then only 3 more failed
+        self.assertIn(f'fetch_failed: {len(docs) - 1}', out)
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=False, IC_GEMINI_FALLBACK_ENABLED=False)
+class TestProgressAndMetering(_CommandBase):
+    def test_a_progress_line_every_50_documents_with_counts_only(self):
+        for _ in range(cmd.PROGRESS_EVERY * 2 + 3):
+            self.doc()
+        with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'), _vision(), _now_on_commit(), \
+                self.assertLogs('apps.scholarship.management.commands.capture_parent_ic_text', 'INFO') as logs:
+            out = self.run_cmd('--run', '--limit', '200', '--max-cost-usd', '1')
+        lines = [ln for ln in out.splitlines() if 'progress' in ln]
+        self.assertEqual(lines, [f'capture_parent_ic_text: progress {n} of 103: stored {n}; units {n}'
+                                 for n in (50, 100)])
+        logged = ' '.join(logs.output)
+        self.assertIn('progress 50 of 103', logged)
+        self.assertIn('progress 100 of 103', logged)
+        for private in (FAKE_NRIC, FAKE_NAME, 'KAD PENGENALAN', 'blob'):
+            self.assertNotIn(private, out + logged)
+
+    def test_the_meter_row_is_a_platform_row(self):
+        """The real meter write (``usage.record_usage`` inside the Vision seam) runs; only the Google
+        client below it is a stand-in, so nothing reaches the network."""
+        from apps.scholarship import usage
+        from apps.scholarship.models import UsageEvent
+        doc = self.doc()
+        self.assertIsNotNone(self.app.owning_organisation_id)   # the row would have had an org to inherit
+        resp = mock.MagicMock()
+        resp.error.message = ''
+        resp.full_text_annotation.text = CARD_TEXT
+        resp.text_annotations = []
+        with mock.patch(V + '_fetch_image_bytes', return_value=b'IMG'), \
+                mock.patch('google.cloud.vision.ImageAnnotatorClient') as client, _now_on_commit():
+            client.return_value.document_text_detection.return_value = resp
+            self.run_cmd('--run', '--limit', '5', '--max-cost-usd', '1')
+        client.return_value.document_text_detection.assert_called_once()
+        row = UsageEvent.objects.get()
+        self.assertEqual((row.service, row.source), (usage.VISION_OCR, 'ocr15_parent_ic_capture'))
+        self.assertIsNone(row.organisation_id)
+        self.assertIsNone(row.application_id)
+        self.assertEqual(self.kept(doc).reader, 'capture_parent_ic_text')
+        month = timezone.localtime(row.created_at).strftime('%Y-%m')
+        org_view = usage.monthly_usage(month, restrict_org_id=self.app.owning_organisation_id)
+        self.assertEqual(org_view['organisations'][0]['totals']['events'], 0)   # the tenant sees none of it

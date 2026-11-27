@@ -14,15 +14,20 @@ re-run skips every document already stored, and each one is checked again just b
 
 DRY RUN BY DEFAULT: counts only (how many would be read, the Vision units, the estimated cost); no download,
 no Vision call, no write. ``--run`` reads, and needs ``--limit`` (documents, at most ``MAX_LIMIT``) and
-``--max-cost-usd`` (at most ``MAX_COST_USD``); it stops before the read that would pass the cap, and stops if
-the first ``FAIL_FAST`` reads all fail (a missing key or permission, not a bad card).
+``--max-cost-usd`` (at most ``MAX_COST_USD``); it stops before the read that would pass the cap. It also stops
+when ``FAIL_FAST`` reads in a row fail with a Vision SERVICE error (``read_errors.is_ocr_service_error``: the
+key, quota, permission or network, not the file), or ``FAIL_FAST`` fetches in a row fail (a Storage outage).
+An ordinary bad file (a PDF that will not rasterise, a HEIC, a blank photo) never stops it. Every
+``PROGRESS_EVERY`` documents it prints and logs a progress line (counts only), so a killed task leaves a record.
 
 Writes ONLY through ``ocr_keep.keep``. Never Gemini; never the document, its vision_fields, verdicts,
 genuineness or statuses. The one other row is the Vision seam's own billing meter (``usage.record_usage``,
-one ``UsageEvent`` per call, as every Vision call logs), tagged ``source='ocr15_parent_ic_capture'``.
+one ``UsageEvent`` per call, as every Vision call logs), tagged ``source='ocr15_parent_ic_capture'``. That row
+is a PLATFORM row (no organisation, no application): this is the platform's own research, so it must not land
+in a partner organisation's monthly usage (``usage.monthly_usage``) for its admins to see.
 
 PRIVATE: prints and logs counts and document ids at most; never a name, an IC number or the text. A document
-that fails is counted under a reason code and never stops the run.
+that fails is counted under a reason code and, short of the two stops above, never stops the run.
 
     python manage.py capture_parent_ic_text                                         # dry run
     python manage.py capture_parent_ic_text --run --limit 600 --max-cost-usd 1.00   # the capture
@@ -35,6 +40,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.scholarship import ocr_keep, usage, vision
 from apps.scholarship.models import ApplicantDocument, ApplicantDocumentOcrText
+from apps.scholarship.read_errors import is_ocr_service_error
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +51,15 @@ USAGE_SOURCE = 'ocr15_parent_ic_capture'
 UNIT_PRICE_USD = Decimal('0.0015')
 MAX_LIMIT = 1000
 MAX_COST_USD = Decimal('5.00')
-FAIL_FAST = 5
+FAIL_FAST = 5          # this many service errors in a row, or fetch failures in a row, stop the run
+PROGRESS_EVERY = 50    # a progress line (counts only) every this many documents
 
 STORED, ALREADY_STORED, GONE = 'stored', 'already_stored', 'gone'
 FETCH_FAILED, READ_FAILED, NO_TEXT = 'fetch_failed', 'read_failed', 'no_text'
+SERVICE_FAILED = 'service_error'   # Vision itself failed (key, quota, permission, network), not the file
 WRITE_FAILED, ERROR = 'write_failed', 'error'
-OUTCOMES = (STORED, ALREADY_STORED, GONE, FETCH_FAILED, READ_FAILED, NO_TEXT, WRITE_FAILED, ERROR)
-_FAILED = (READ_FAILED, ERROR)
+OUTCOMES = (STORED, ALREADY_STORED, GONE, FETCH_FAILED, READ_FAILED, SERVICE_FAILED, NO_TEXT, WRITE_FAILED,
+            ERROR)
 
 
 def live_parent_ics():
@@ -78,14 +86,17 @@ def capture_parent_ic(doc_id):
         if ApplicantDocumentOcrText.objects.filter(document_id=doc_id).exists():
             return ALREADY_STORED, 0   # a live read kept it since the list was made
         seen = []
-        with usage.usage_context(application=doc.application, source=USAGE_SOURCE):
+        # A PLATFORM meter row: no application and no organisation, so this research never reaches a
+        # partner's monthly usage. Nothing encloses this call to inherit an organisation from.
+        with usage.usage_context(source=USAGE_SOURCE):
             image = vision._fetch_image_bytes(doc.storage_path)
             if not image:
                 return FETCH_FAILED, 0
             units = 1
             result = vision.extract_mykad(image, doc.content_type, text_out=seen)
-        if result.get('error'):
-            return READ_FAILED, units
+        err = result.get('error')
+        if err:
+            return (SERVICE_FAILED if is_ocr_service_error(err) else READ_FAILED), units
         text = ''.join(seen)
         if not text.strip():
             return NO_TEXT, units
@@ -99,6 +110,27 @@ def capture_parent_ic(doc_id):
 
 def _cost(units) -> Decimal:
     return (UNIT_PRICE_USD * units).quantize(Decimal('0.0001'))
+
+
+def _streak_stop(streak, code, used):
+    """Move the two in-a-row counters on one outcome; the reason to stop, or ''. A fetch failure counts
+    toward the Storage streak and a Vision service error toward the service streak; a document that was
+    fetched (``used``) and read any other way resets the streak it broke. A skipped document (gone,
+    already stored) moves neither, and an ordinary bad file never counts."""
+    if code == FETCH_FAILED:
+        streak[FETCH_FAILED] += 1
+    elif used:
+        streak[FETCH_FAILED] = 0
+        streak[SERVICE_FAILED] = streak[SERVICE_FAILED] + 1 if code == SERVICE_FAILED else 0
+    if streak[SERVICE_FAILED] >= FAIL_FAST:
+        return f'{FAIL_FAST} reads in a row failed with a Vision service error (check the key, quota or permission)'
+    if streak[FETCH_FAILED] >= FAIL_FAST:
+        return f'{FAIL_FAST} fetches in a row failed (check Storage)'
+    return ''
+
+
+def _counts_line(counts) -> str:
+    return ', '.join(f'{code} {n}' for code, n in counts.items() if n) or 'none'
 
 
 class Command(BaseCommand):
@@ -154,8 +186,9 @@ class Command(BaseCommand):
     def _run(self, todo, cap):
         counts = dict.fromkeys(OUTCOMES, 0)
         failed_ids = {code: [] for code in OUTCOMES if code not in (STORED, ALREADY_STORED)}
-        units, stopped, attempted = 0, '', 0
-        for doc_id in todo:
+        units, stopped = 0, ''
+        streak = {FETCH_FAILED: 0, SERVICE_FAILED: 0}
+        for done, doc_id in enumerate(todo, 1):
             if _cost(units + 1) > cap:
                 stopped = f'cost cap US${cap} (next read would pass it)'
                 break
@@ -164,10 +197,10 @@ class Command(BaseCommand):
             counts[code] += 1
             if code in failed_ids:
                 failed_ids[code].append(doc_id)
-            if used:
-                attempted += 1
-            if attempted == FAIL_FAST and sum(counts[c] for c in _FAILED) == FAIL_FAST:
-                stopped = f'the first {FAIL_FAST} reads all failed (check the Vision key or permission)'
+            stopped = _streak_stop(streak, code, used)
+            if done % PROGRESS_EVERY == 0:
+                self._progress(done, len(todo), counts, units)
+            if stopped:
                 break
         out = self.stdout.write
         out('capture_parent_ic_text: done' + (f' - STOPPED: {stopped}' if stopped else ''))
@@ -179,3 +212,10 @@ class Command(BaseCommand):
             if doc_ids:
                 out(f'  {code} ids: {", ".join(str(i) for i in doc_ids)}')
         logger.info('capture_parent_ic_text: %s', {k: v for k, v in counts.items() if v})
+
+    def _progress(self, done, total, counts, units):
+        """Counts only: a task killed mid-run (timeout, OOM) still leaves how far it got in the log."""
+        line = f'capture_parent_ic_text: progress {done} of {total}: {_counts_line(counts)}; units {units}'
+        self.stdout.write(line)
+        self.stdout.flush()
+        logger.info(line)
