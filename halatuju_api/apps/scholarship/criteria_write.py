@@ -134,7 +134,7 @@ def columns_for(tree):
 
 def says_more_than_columns(tree):
     """True when the columns cannot say ``tree`` (`from_legacy` of `columns_for` is a different
-    tree): an 'all' income join, a post-SPM merit, a grade count at A, B or C+, an SPM group that
+    tree): an 'all' income join, a post-SPM merit, a grade count at A+, A, B or C+, an SPM group that
     is empty where `from_legacy` would leave it out. Order alone never counts (`same_tree`). Such
     a tree is saved whole; the OLD form then refuses to rebuild it (409 ``rules_beyond_columns``, TD-774)."""
     return not same_tree(from_legacy(SimpleNamespace(**columns_for(tree))), tree)

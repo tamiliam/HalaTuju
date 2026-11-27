@@ -203,7 +203,7 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
         # is built from the boxes sent (`stamp_new` below), so a key left OUT would mean "no rule"
         # without anyone having said so - an empty POST would make an open intake. An explicit null
         # still means "no rule" (that IS a statement); a missing key is refused, naming the keys.
-        # The web editor always sends all of them (`criteriaTree.columnsFor`, keys `REQUIREMENT_KEYS`).
+        # The web editor sends the whole tree instead (below), never these keys.
         #
         # CRITERIA FIX ROUND 3 (review R2, blocker 1): the body may carry the WHOLE tree instead
         # (``criteria``, the editor's), checked by the criteria PATCH's own check
