@@ -150,7 +150,8 @@ def income_proof_display(doc, chk):
     name_st, nric_st = _not_read(chk.get('name'), nric, name_st, nric_st, unread)
     # Case 1048: the SHOWN word only. A near miss on a handwritten declaration that is still a
     # 'mismatch' after every rule above shows 'close' (amber: a person must look). The decision
-    # field `chk['name_status']` stays 'mismatch', so every gate still treats it as one.
+    # field `chk['name_status']` stays 'mismatch', so every gate still treats it as one. Review round 2:
+    # a no-op until NRIC chip Sprint 3 turns on `declaration_name.SHOW_CLOSE`.
     from .income_engine.declaration_name import soften
     name_st = soften(doc, name_st, name, ic_name)
     return {'display_name_status': name_st, 'display_nric_status': nric_st}

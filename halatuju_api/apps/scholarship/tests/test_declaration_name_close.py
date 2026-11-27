@@ -4,15 +4,20 @@ All names here are made up. The shape is case 1048's: a father's "Surat Akuan Pe
 in the salary-slip slot, read as a declaration, whose handwritten name the AI misread by one or two
 letters in one part. A typed payslip with the same misread still says 'mismatch'.
 """
+import json
+import re
 from types import SimpleNamespace
 from unittest import mock
 
 from django.test import SimpleTestCase
 
 from apps.scholarship.doc_red_keys import person_red
-from apps.scholarship.income_engine import identity_checks
+from apps.scholarship.income_engine import declaration_name, identity_checks
 from apps.scholarship.income_engine.declaration_name import (
     CLOSE, for_decisions, near_miss, payslip_only_warning, shown_warnings, soften)
+
+#: The tests of what 'close' WOULD show run with the switch on (NRIC chip Sprint 3's setting).
+show_close_on = mock.patch.object(declaration_name, 'SHOW_CLOSE', True)
 
 IC_NAME = 'MURUGAPPAN A/L KANDASAMY'
 MISREAD_1 = 'MURUGAPAN A/L KANDASAMY'      # one letter dropped in a long part
@@ -123,6 +128,41 @@ class ConnectorDropTests(SimpleTestCase):
         self.assertTrue(near_miss('KAVITHA D/O KANDASANI', 'KAVITHA A/P KANDASAMY'))
         self.assertTrue(near_miss('NURUL BTE OSMAN', 'NURUL BINTI OSMAN'))
 
+    # Review round 2: the slash-less exact forms carry their sex before any misread logic.
+    def test_guard_d_o_against_a_slashless_so(self):
+        self.assertFalse(near_miss('KUMARAN D/O RAJAN', 'KUMARAN SO RAJAN'))
+        self.assertFalse(near_miss('KUMARAN SO RAJAN', 'KUMARAN D/O RAJAN'))
+
+    def test_guard_a_slashless_do_against_s_o(self):
+        self.assertFalse(near_miss('KUMARAN DO RAJAN', 'KUMARAN S/O RAJAN'))
+        self.assertFalse(near_miss('KUMARAN DO RAJAN', 'KUMARAN SO RAJAN'))
+
+    def test_guard_bnt_against_bin(self):
+        self.assertFalse(near_miss('AMINAH BNT YUSOF', 'AMINAH BIN YUSOF'))
+        self.assertFalse(near_miss('AMINAH BNT YUSOF', 'AMINAH BN YUSOF'))
+
+    def test_guard_a_connector_glued_on_both_sides(self):
+        self.assertFalse(near_miss('KUMARANA/PRAJAN', 'KUMARAN A/L RAJAN'))
+        self.assertFalse(near_miss('KUMARAN A/L RAJAN', 'KUMARANA / PRAJAN'))
+        self.assertFalse(near_miss('KUMARAND/ORAJAN', 'KUMARAN S/O RAJAN'))
+
+    def test_guard_a_misread_word_near_both_sexes_against_a_clear_sex(self):
+        for word in ('ALP', 'APL', 'BO'):
+            self.assertFalse(near_miss(f'KUMARAN {word} RAJAN', 'KUMARAN A/L RAJAN'), word)
+            self.assertFalse(near_miss(f'KUMARAN {word} RAJAN', 'KUMARAN A/P RAJAN'), word)
+            self.assertFalse(near_miss('KUMARAN S/O RAJAN', f'KUMARAN {word} RAJAN'), word)
+
+    def test_guard_ah_is_a_name_part_not_a_misread_connector(self):
+        self.assertFalse(near_miss('TAN AH SENG', 'TAN SENG'))
+        self.assertFalse(near_miss('TAN SENG', 'TAN AH SENG'))
+
+    def test_same_sex_slashless_forms_stay_close(self):
+        self.assertTrue(near_miss('KUMARAN SO RAJAN', 'KUMARAN S/O RAJAN'))
+        self.assertTrue(near_miss('KUMARAN DO RAJAN', 'KUMARAN D/O RAJAN'))
+        self.assertTrue(near_miss('AMINAH BNT YUSOF', 'AMINAH BINTI YUSOF'))
+        self.assertTrue(near_miss('KUMARANA/LRAJAN', 'KUMARAN A/L RAJAN'))
+
+    @show_close_on
     def test_declaration_with_a_misread_connector_softens_and_a_typed_payslip_does_not(self):
         read = 'MURUGAPPAN ALE KANDASANI'
         self.assertEqual(soften(_doc(name=read), 'mismatch', read, self.IC_NO_AL), CLOSE)
@@ -189,8 +229,41 @@ class PayslipOnlyWarningTests(SimpleTestCase):
             self.assertFalse(payslip_only_warning(w), w)
 
     def test_a_declaration_shows_every_substantive_warning(self):
-        ws = list(self.MUST_KEEP) + list(self.MUST_HIDE)
-        self.assertEqual(shown_warnings(_doc(), ws), list(self.MUST_KEEP))
+        ws = list(self.MUST_KEEP + self.R2_KEEP) + list(self.MUST_HIDE + self.R2_HIDE)
+        self.assertEqual(shown_warnings(_doc(), ws), list(self.MUST_KEEP + self.R2_KEEP))
+
+    # Review round 2: "nothing left over" — split on ; , . and/dan; every part must be pure absence.
+    R2_KEEP = ('Employer not stated.  Figure crossed out', 'Employer not stated (whited out area)',
+               'employer not stated, I.C. no unclear', 'employer not stated, k/p unreadable',
+               'Tiada majikan dan tiada tarikh', 'No employer stated and the date is missing')
+    R2_HIDE = ('Month of income not stated', 'Pay slip period absent')
+
+    def test_r2_a_left_over_word_keeps_the_warning(self):
+        for w in self.R2_KEEP:
+            self.assertFalse(payslip_only_warning(w), w)
+
+    def test_r2_month_of_income_and_pay_slip_period_are_hidden(self):
+        for w in self.R2_HIDE:
+            self.assertTrue(payslip_only_warning(w), w)
+
+    def test_r2_the_ic_forms_keep_the_warning(self):
+        for ic in ('I.C.', 'K/P', 'k.p.', 'i/c', 'IC', 'KP', 'I / C', 'K.P'):
+            self.assertFalse(payslip_only_warning(f'Employer not stated; {ic} missing'), ic)
+            self.assertFalse(payslip_only_warning(f'No {ic}'), ic)
+
+    def test_r2_a_missing_date_is_not_payslip_only(self):
+        for w in ('Date missing', 'Pay date not stated', 'Tiada tarikh', 'Employer not stated, no date',
+                  'Tarikh tidak dinyatakan'):
+            self.assertFalse(payslip_only_warning(w), w)
+
+    def test_r2_and_dan_split_only_as_whole_words(self):
+        # "and"/"dan" inside a word ("standard", "pendapatan") is not a split, and not a filler either.
+        self.assertTrue(payslip_only_warning('No employer and no pay period'))
+        self.assertTrue(payslip_only_warning('Tiada majikan dan tempoh gaji tidak dinyatakan'))
+        self.assertFalse(payslip_only_warning('Employer not stated, standard form'))
+        self.assertFalse(payslip_only_warning('Employer is not a company'))   # a bare "not" is no absence
+        self.assertFalse(payslip_only_warning('Employer stated'))             # no absence at all
+        self.assertFalse(payslip_only_warning('Salary not stated'))           # the amount is not a topic
 
     def test_the_serializer_shows_a_filtered_copy_and_never_edits_the_stored_read(self):
         from rest_framework import serializers as drf
@@ -235,16 +308,48 @@ class StoredVerdictUnchangedTests(SimpleTestCase):
         from apps.scholarship.vision.judge import doc_student_verdict
         self.assertNotIn('doc_seen', inspect.signature(doc_student_verdict).parameters)
 
-    def test_the_read_has_no_second_judging_step(self):
-        from apps.scholarship.vision import field_extraction
-        self.assertFalse(hasattr(field_extraction, '_soften_declaration_name'))
+    def _read_and_store(self, name, seen, show_close):
+        """The REAL read/store path (run_field_extraction_for_document -> _read_labelled_doc -> the
+        approval read -> _build_read_result -> add_read_authenticity -> _store_field_read) on a made-up
+        declaration; only the OCR, the Gemini read, the approval call and the save are stand-ins."""
+        from contextlib import nullcontext
+        from django.test import override_settings
+        from apps.scholarship import vision as v
+        from apps.scholarship.vision import authenticity, field_extraction
+        saved = []
+        doc = SimpleNamespace(id=1, doc_type='salary_slip', application=None, application_id=None,
+                              storage_path='made/up.jpg', content_type='image/jpeg', vision_fields={},
+                              vision_fields_run_at=None, save=lambda **kw: saved.append(kw))
+        ex = {'fields': {'name': name, 'gross_income': '1200'}, 'warnings': ['Employer not stated'], 'error': ''}
+        with override_settings(DOC_GENUINENESS_CHECK_ENABLED=True), \
+                mock.patch.object(declaration_name, 'SHOW_CLOSE', show_close), \
+                mock.patch.object(field_extraction, '_doc_usage_ctx', lambda d: nullcontext()), \
+                mock.patch.object(v, 'ocr_document', return_value={'text': 'SURAT AKUAN PENDAPATAN', 'error': ''}), \
+                mock.patch('apps.scholarship.doc_parse.parse_by_labels', return_value=None), \
+                mock.patch.object(v, 'extract_document_fields', return_value=ex), \
+                mock.patch.object(field_extraction, '_read_approval', side_effect=lambda d, e, t, f: e), \
+                mock.patch.object(authenticity, '_auth_income_doc',
+                                  return_value={'doc_seen': seen, 'status': 'suspect'}):
+            field_extraction.run_field_extraction_for_document(doc, names=self.NAMES)
+        self.assertTrue(saved)
+        return doc.vision_fields
 
-    def test_no_stored_close_word_exists(self):
-        from apps.scholarship.income_engine import declaration_name
-        self.assertFalse(hasattr(declaration_name, 'NAME_CLOSE_VERDICT'))
-        self.assertFalse(hasattr(declaration_name, 'stored_verdict_close'))
+    def test_the_real_read_stores_name_mismatch_for_a_declaration_near_miss(self):
+        for show_close in (False, True):
+            for name in (MISREAD_2, 'MURUGAPPAN ALE KANDASANI'):
+                stored = self._read_and_store(name, 'declaration', show_close)
+                self.assertEqual(stored['authenticity']['doc_seen'], 'declaration')
+                self.assertEqual(stored['student_verdict'], 'name_mismatch', (name, show_close))
+                self.assertEqual(stored['warnings'], ['Employer not stated'])   # the stored read is never filtered
+                self.assertNotIn('close', json.dumps(stored).lower())
+
+    def test_the_stored_verdict_is_the_typed_payslip_twin(self):
+        decl = self._read_and_store(MISREAD_2, 'declaration', True)
+        typed = self._read_and_store(MISREAD_2, 'private', True)
+        self.assertEqual(decl['student_verdict'], typed['student_verdict'])
 
 
+@show_close_on
 class SoftenScopeTests(SimpleTestCase):
     def test_declaration_near_miss_is_close(self):
         self.assertEqual(soften(_doc(), 'mismatch', MISREAD_2, IC_NAME), CLOSE)
@@ -303,6 +408,7 @@ class _Patched:
             p.stop()
 
 
+@show_close_on
 class DecisionEquivalenceTests(SimpleTestCase):
     """A declaration whose name SHOWS 'close' gets every decision a 'mismatch' gets: the same check,
     person-red, Action Centre state, cluster gate (so the income gate, the verdict band and the route
@@ -397,12 +503,118 @@ class DecisionEquivalenceTests(SimpleTestCase):
             shown = link_display.income_proof_display(doc, chk)
         self.assertNotEqual(shown['display_name_status'], CLOSE)
 
-    def test_no_decision_module_calls_soften(self):
-        # soften lives in income_engine (the verdict fingerprint covers it) but only the display
-        # module may call it.
+
+class NoDecisionCallerTests(SimpleTestCase):
+    """Review round 2: soften, near_miss and SHOW_CLOSE live in income_engine (the verdict fingerprint
+    covers them) but only the display module may use them. A grep over apps/scholarship of every import
+    and call form; the test files are allowed."""
+
+    ALLOWED = {'link_display.py', 'income_engine/declaration_name.py'}
+    #: The one other module that may import from declaration_name, and the one name it may take.
+    WARNINGS_ONLY = {'serializers/documents.py'}
+
+    def _sources(self):
         import pathlib
         root = pathlib.Path(__file__).resolve().parents[1]
-        callers = sorted(p.relative_to(root).as_posix() for p in root.rglob('*.py')
-                         if 'tests' not in p.parts and p.name != 'declaration_name.py'
-                         and 'declaration_name import soften' in p.read_text(encoding='utf-8'))
-        self.assertEqual(callers, ['link_display.py'])
+        for p in sorted(root.rglob('*.py')):
+            rel = p.relative_to(root).as_posix()
+            if 'tests' in p.relative_to(root).parts:
+                continue
+            yield rel, p.read_text(encoding='utf-8')
+
+    def test_no_module_but_the_display_names_soften_near_miss_or_show_close(self):
+        # Code only: comments and strings are blanked first (English prose says "do not soften").
+        import io
+        import tokenize
+        users = []
+        for rel, src in self._sources():
+            if rel in self.ALLOWED:
+                continue
+            names = {t.string for t in tokenize.generate_tokens(io.StringIO(src).readline)
+                     if t.type == tokenize.NAME}
+            if names & {'soften', 'SHOW_CLOSE'} or (
+                    'near_miss' in names and 'declaration_name' in src):
+                users.append(rel)
+        self.assertEqual(users, [])
+
+    def test_only_the_allowed_modules_import_declaration_name(self):
+        importers = {}
+        # A bracketed import captures "(" and so fails the name check below: the safe direction.
+        pattern = re.compile(r'(?:from\s+[.\w]*declaration_name\s+import\s+([^\n#]+)'
+                             r'|from\s+[.\w]*income_engine\s+import\s+[^\n]*\bdeclaration_name\b'
+                             r'|import\s+[.\w]*declaration_name\b'
+                             r'|import_module\([^)]*declaration_name'
+                             r'|__import__\([^)]*declaration_name)', re.M)
+        for rel, src in self._sources():
+            if rel in self.ALLOWED:
+                continue
+            for m in pattern.finditer(src):
+                importers.setdefault(rel, []).append((m.group(1) or m.group(0)).strip())
+        self.assertEqual(set(importers), self.WARNINGS_ONLY)
+        for rel in self.WARNINGS_ONLY:
+            self.assertEqual(importers[rel], ['shown_warnings'], rel)
+
+    def test_the_grep_would_catch_each_import_form(self):
+        # The guard itself: each way to reach soften would be seen.
+        import io
+        import tokenize
+        for src in ('from .income_engine.declaration_name import soften\n',
+                    'from .income_engine import declaration_name as dn\nx = dn.soften(1, 2, 3, 4)\n',
+                    'import apps.scholarship.income_engine.declaration_name as dn\ny = dn.SHOW_CLOSE\n',
+                    'from ..income_engine.declaration_name import (\n    near_miss,\n)\n'):
+            names = {t.string for t in tokenize.generate_tokens(io.StringIO(src).readline)
+                     if t.type == tokenize.NAME}
+            self.assertTrue(names & {'soften', 'SHOW_CLOSE'} or 'near_miss' in names, src)
+
+
+class ShowCloseSwitchTests(SimpleTestCase):
+    """Review round 2: the API must not SERVE 'close' until the web can draw it (NRIC chip Sprint 3)."""
+
+    def _payload(self, seen):
+        from apps.scholarship import link_display
+        doc = _doc(seen=seen)
+        extra = [mock.patch.object(link_display, '_member_ic_doc', return_value=_ic()),
+                 mock.patch.object(link_display, 'ic_second_opinion_deferred', return_value=False),
+                 mock.patch.object(link_display, '_anchor', return_value=None)]
+        with _Patched(extra):
+            chk = identity_checks.student_income_proof_check(doc)
+            return json.dumps({**chk, **link_display.income_proof_display(doc, chk)}, sort_keys=True,
+                              default=str).encode('utf-8')
+
+    def test_the_switch_is_off_in_code(self):
+        self.assertIs(declaration_name.SHOW_CLOSE, False)
+        import inspect
+        src = inspect.getsource(declaration_name)
+        self.assertNotIn('environ', src)
+        self.assertNotIn('getenv', src)
+        self.assertNotIn('settings', src)
+
+    def test_switch_off_the_payload_is_byte_identical_to_base(self):
+        # Base cb6a81b33 had no soften step at all: the display was the chain/deferral/not-read result,
+        # which is the typed-payslip twin's payload and the payload with soften taken out.
+        with mock.patch.object(declaration_name, 'SHOW_CLOSE', False):
+            decl = self._payload('declaration')
+            typed = self._payload(TYPED)
+        with mock.patch.object(declaration_name, 'soften', lambda doc, status, *a: status):
+            base = self._payload('declaration')
+        self.assertEqual(decl, base)
+        self.assertEqual(decl, typed)
+        self.assertEqual(json.loads(decl)['display_name_status'], 'mismatch')
+        self.assertNotIn(b'close', decl)
+
+    def test_switch_off_soften_changes_nothing(self):
+        with mock.patch.object(declaration_name, 'SHOW_CLOSE', False):
+            self.assertEqual(soften(_doc(), 'mismatch', MISREAD_2, IC_NAME), 'mismatch')
+
+    def test_switch_on_the_payload_shows_close(self):
+        with show_close_on:
+            decl = json.loads(self._payload('declaration'))
+            typed = json.loads(self._payload(TYPED))
+        self.assertEqual((decl['name_status'], decl['display_name_status']), ('mismatch', CLOSE))
+        self.assertEqual(typed['display_name_status'], 'mismatch')
+
+    def test_the_warning_filter_does_not_read_the_switch(self):
+        ws = ['Employer not stated', 'The document is handwritten']
+        for on in (False, True):
+            with mock.patch.object(declaration_name, 'SHOW_CLOSE', on):
+                self.assertEqual(shown_warnings(_doc(), ws), ['The document is handwritten'])
