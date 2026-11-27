@@ -261,7 +261,9 @@ Scope growth: planned as one lens, about 10 files. It took three phases (A, B, C
 
 **Owner decision (25 Nov 2026): WAIT for clean cases.** Round 3 runs only when 50 decided cases from 19 Nov 2026 onward exist (32 on 25 Nov). No scorecard split is built. Until then every report marks the old score as "weak". Round 3 does not start early.
 
-**Next step.** Round 3, at 50 decided cases from 19 Nov 2026 onward (32 on 25 Nov; 42 on 26 Nov).
+**Round 3 (27 Nov 2026). Hand counts, no rule change.** The replay job does not exist yet (none of the replay owner steps is done), so the owner chose hand counts. The hand method matched the live AI prediction card exactly on all 223 decided cases. On the 50 clean cases (decided from 19 Nov 2026): 200 facts, 248 of 400 points, 62%; the group sizes add up. Groups by points lost: "Probable, reviewer passed" 31 facts, 31 lost (Academic 17, Income 14; top doubt codes `str_not_current` 10, `income_declared_probable` 5, `academic_grade_uncertain` 5); "Certain, reviewer failed" 7 facts, 84 lost (too small); "Unsure, reviewer passed" 8 facts, 16 lost (too small). Round 2's group ("Rule not met, reviewer passed") has no clean facts: it came only from the old answers. Owner decision (27 Nov 2026): stop round 3 here, with no cause hunt, because much other work runs at the same time. Result: no rule change.
+
+**Next step.** Round 4, when the owner asks (more clean cases, or after the first lens run). Hand counts until the replay job exists.
 
 **Routine (approved by the owner on 26 Nov 2026).** Two parts:
 - The workflow `Settings/_workflows/halatuju-close-the-gap.md` (in the workspace repo, not in this repo). It fixes the method of a round: count the clean cases, the score run, the 3 largest error groups, the owner's pick, one reader for the cause, a second reader for the sums, the "does it pay" test, the close.
