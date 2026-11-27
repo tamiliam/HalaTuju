@@ -1,5 +1,5 @@
 """OCR-13/14: the UiTM, UUM, UM, UPSI, UNIMAS, UTHM, UKM, UTeM, USM, UMK and UniSZA branches of `offer_parse.diagnose`, here
-rather than in `offer_parse` (its 600-line cap); UMPSA's (OCR-14b) lives in its own module (`diagnose_umpsa`). No behaviour change in the move (UiTM, UUM). `diagnose` passes each result through
+rather than in `offer_parse` (its 600-line cap); UMPSA's (OCR-14b) and UniMAP's (OCR-14b-2) live in their own modules (`diagnose_umpsa`, `diagnose_unimap`). No behaviour change in the move (UiTM, UUM). `diagnose` passes each result through
 `offer_parse._rules_exit` (Asasi)."""
 from __future__ import annotations
 
@@ -545,4 +545,11 @@ def diagnose_umpsa(out: dict, text: str, page1_text: str, page1_layout: str, pag
     """The UMPSA branch of `diagnose` (OCR-14b-1): `offer_parse_umpsa.diagnose_umpsa` (its own module, this file's
     600-line cap)."""
     from .offer_parse_umpsa import diagnose_umpsa as branch
+    return branch(out, text, page1_text, page1_layout, page_texts)
+
+
+def diagnose_unimap(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
+    """The UniMAP branch of `diagnose` (OCR-14b-2): `offer_parse_unimap.diagnose_unimap` (its own module, this
+    file's 600-line cap)."""
+    from .offer_parse_unimap import diagnose_unimap as branch
     return branch(out, text, page1_text, page1_layout, page_texts)

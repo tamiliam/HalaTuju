@@ -129,6 +129,7 @@ phase 8 the UniSZA one ('ua:UniSZA'); all off, degree letters only. This reader 
 (UMPSA, UniMAP, UPM) come here. Prompt and schema unchanged.
 2.13.0 - OCR-14b-1 (2026-11-27). offer_parse 2.6.0: the UMPSA rules reader (`offer_parse_umpsa`, 'ua:UMPSA', off;
 2026/27 degree letters only, IC read); the UniSZA withdrawal note excused (owner, 27 Nov). Prompt and schema unchanged.
+OCR-14b-2 (same version): the UniMAP rules reader (`offer_parse_unimap`, 'ua:UniMAP', off; degree letters).
 
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in

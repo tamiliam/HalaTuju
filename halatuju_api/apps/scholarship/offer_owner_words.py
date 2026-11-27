@@ -95,9 +95,9 @@ OWNER_WORDS = {
         'Jabatan Perkhidmatan Akademik',
     ),
     # OCR-14 (owner, 20 Nov; memory halatuju_owner_words). The lanes stay OFF. UNIMAS, UTHM, UKM, UTeM, USM, UMK,
-    # UniSZA and UMPSA have layout readers (`offer_parse_unimas` phase 2, `offer_parse_uthm` 3, `offer_parse_ukm` 4,
+    # UniSZA, UMPSA and UniMAP have layout readers (`offer_parse_unimas` phase 2, `offer_parse_uthm` 3, `offer_parse_ukm` 4,
     # `offer_parse_utem` 5, `offer_parse_usm` 6, `offer_parse_umk` 7, `offer_parse_unisza` 8, `offer_parse_umpsa`
-    # OCR-14b-1); the rest later. Universities with no owner words stay AI.
+    # OCR-14b-1, `offer_parse_unimap` OCR-14b-2); the rest later. Universities with no owner words stay AI.
     'ua:UKM': (            # Universiti Kebangsaan Malaysia. 4 as printed (owner yes, 20 Nov).
         'PUSAT PENGURUSAN AKADEMIK', 'Rujukan', 'TAWARAN KEMASUKAN',
         'Dengan sukacitanya saya bagi pihak Universiti Kebangsaan Malaysia', 'NO. KAD PENGENALAN',

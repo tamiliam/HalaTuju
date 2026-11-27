@@ -41,6 +41,20 @@ Branch criteria-api, not pushed. Services: api. No migration. Verdict engine 202
 - **TD-774:** (2) a stored list, string or number is refused (`tree_of`, `_stored_tree_refused`), never read from the columns; (3) the IC-hold text says the intake needs a technical correction; (4) each intake row carries `rules_error_open` (open with refused rules) for a "close now" prompt.
 - **Tests:** new `test_criteria_api.py` (both routes, every bad class, the 409s, audit, 403/404, no-op for intakes 1/3/4/5 with every reader the same); `test_criteria_storage` rebuild test now stores a tree the columns can say, plus a 409 test.
 
+### feat: OCR-14b-2 - UniMAP rules lane (OFF) (2026-11-27)
+
+Branch ocr-14b-unis, not pushed. Migration: none. Services: api. The new lane stays OFF (`OCR_FIRST_LANES` unchanged).
+- **UniMAP lane (`ua:UniMAP`, `offer_parse_unimap`):** reads the Sarjana Muda page 1 (name, unlabelled IC kept as
+  corroborate-only like UniSZA, programme, programme code, intake "SIDANG AKADEMIK", offer date, reporting date
+  "Tarikh Pendaftaran"). The title's wide word gaps are allowed, 1-4 spaces only. Refuses a Diploma, any other
+  layout, any later page with text, a blank page among the first three (shared drawn-page check), a second IC, a
+  second programme code, a stray date (fixed-place skips only), a portal tell and any change to the head, table,
+  registration or cost block. No excuses added. Wired into `offer_parse.family_of`/`diagnose`, `offer_parse_lanes`,
+  `offer_exact` (lane module, UMS refusal family, ink check), `eval/offer_read_check.RULES_LANES`,
+  `eval/offer_replay` and the owner-words comment.
+- **Versions:** offer_parse 2.6.0 digest refreshed in place (unreleased); offer_reader 2.13.0 unchanged.
+- **Tests:** new `test_offer_parse_unimap.py` (made-up text only).
+
 ### feat: OCR-14b-1 - UMPSA rules lane (OFF), and the UniSZA withdrawal-note excuse (2026-11-27)
 
 Branch ocr-14b-unis, not pushed. Migration: none. Services: api. The new lane stays OFF (`OCR_FIRST_LANES` unchanged).
