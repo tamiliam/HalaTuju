@@ -12,7 +12,7 @@ from apps.scholarship import offer_exact, offer_parse
 from apps.scholarship.offer_owner_words import missing
 from apps.scholarship.offer_parse_unimap import INK_LABELS, INK_OPTIONAL, LANE, NOT_PRINTED, REPORT_LABEL, is_unimap
 from apps.scholarship.offer_parse_unimap import read_unimap, unimap_ink_targets, unimap_later_pages
-from apps.scholarship.offer_parse_unimap import unimap_letter_refusal
+from apps.scholarship.offer_parse_unimap import TEMPLATE_PINS, _pin_digest, unimap_letter_refusal
 
 BASE = ' ' * 42
 NAME = 'ZORBEX QUENTARO A/L ALFEN'
@@ -34,8 +34,9 @@ ROWS = (('Program Pengajian', PROGRAMME_ROW), ('Kod Program', (CODE,)),
         ('Tempoh Pengajian', ('EMPAT (4) TAHUN (8 SEMESTER)',)), ('Yuran Dikenakan', ('RM 2,200.00.00 (SEMESTER 1)',)))
 REGISTER_INTRO = 'Di bawah adalah butiran berkaitan dengan proses pendaftaran diri :'
 REPORT = '26 SEPTEMBER 2026 (SABTU)'
+VENUE = ('DEWAN UTAMA, KAMPUS CONTOH', '(Rujuk  Panduan  Am  Pendaftaran  Pelajar', 'Baharu, Sidang 2026/2027)')
 REGISTER = (('Tarikh Pendaftaran', (REPORT,)), ('Masa Pendaftaran', ('8.30 PAGI HINGGA 4.30 PETANG',)),
-            ('Lokasi Pendaftaran', ('DEWAN UTAMA, KAMPUS CONTOH', '(Rujuk  Panduan  Am  Pendaftaran', 'Pelajar Baharu)')))
+            ('Lokasi Pendaftaran', VENUE))
 COSTS = ('Sebagai makluman, kos pengajian adalah seperti berikut:',
          ' ' * 81 + 'Kos Yang Ditanggung' + ' ' * 17 + 'Kos Yang',
          ' ' * 48 + 'Tempoh Pengajian' + ' ' * 20 + 'Oleh Pelajar (RM)' + ' ' * 14 + 'Ditanggung' + ' ' * 12
@@ -50,6 +51,25 @@ NOTES = ('2. Sila rujuk Lampiran A, B, C, D dan E serta lengkapkan butiran berka
          'Sekian, terima kasih')
 FOOTER = ("'MALAYSIA MADANI'", "'BERKHIDMAT UNTUK NEGARA'", ' ' * 4 + '(QARIM VELTO BIN DURAN)',
           ' ' * 7 + 'Timbalan Pendaftar Kanan', ' ' * 4 + 'Pusat Pengurusan Akademik')
+#: Review round 2: the module pins the MEASURED footer and venue (`TEMPLATE_PINS`, digests only); these tests run
+#: against the synthetic ones above, pinned the same way (`synthetic_pins`, started for the whole module).
+SYNTHETIC_PINS = {'footer': frozenset({_pin_digest(FOOTER)}), 'venue': frozenset({_pin_digest(VENUE, '2026/2027')})}
+REAL_PINS = dict(TEMPLATE_PINS)
+
+
+def synthetic_pins():
+    return mock.patch.dict(TEMPLATE_PINS, SYNTHETIC_PINS)
+
+
+_PINS = synthetic_pins()
+
+
+def setUpModule():
+    _PINS.start()
+
+
+def tearDownModule():
+    _PINS.stop()
 
 
 def head(label, value):
@@ -122,15 +142,12 @@ class UnimapLockTest(SimpleTestCase):
         one_line = rows_with(ROWS, 'Program Pengajian', ('SARJANA MUDA SAINS KOMPUTER',))
         two_wraps = rows_with(ROWS, 'Program Pengajian', ('SARJANA   MUDA   TEKNOLOGI', 'KEJURUTERAAN ELEKTRIK',
                                                           'DENGAN KEPUJIAN'))
-        long_venue = rows_with(REGISTER, 'Lokasi Pendaftaran', ('DEWAN UTAMA', 'KAMPUS CONTOH', 'PERLIS',
-                                                                '(Rujuk Panduan', 'Sidang Akademik 2026/2027)'))
-        no_wrap = rows_with(REGISTER, 'Lokasi Pendaftaran', ('DEWAN UTAMA',))
+        justified = rows_with(REGISTER, 'Lokasi Pendaftaran', (VENUE[0], VENUE[1].replace('  ', '   '), VENUE[2]))
         times = rows_with(REGISTER, 'Masa Pendaftaran', ('9.12 PAGI HINGGA 12.10 TENGAH HARI',))   # read, not a date
         shifted = ['\n'.join((' ' * 6 + ln) for ln in layout().splitlines()),            # base 48
                    '\n'.join(ln[6:] for ln in layout().splitlines())]                    # base 36
         for lay in (layout(address=ADDRESS[:2]), layout(address=ADDRESS + ('MALAYSIA',)), layout(rows=one_line),
-                    layout(rows=two_wraps), layout(register=long_venue), layout(register=no_wrap),
-                    layout(register=times), *shifted):
+                    layout(rows=two_wraps), layout(register=justified), layout(register=times), *shifted):
             with self.subTest(lines=lay.count('\n'), size=len(lay)):
                 self.assertIsNotNone(run(lay)['locked'], why(run(lay)))
 
@@ -210,27 +227,31 @@ class UnimapRefusalTest(SimpleTestCase):
             with self.subTest(size=len(lay)):
                 self.assertIsNone(run(lay)['locked'])
 
-    def test_a_stray_date_refuses(self):
+    def test_a_stray_date_changes_the_template(self):
+        """Review round 2: there is no free text, so a date anywhere but its place changes the pinned template."""
         venue = rows_with(REGISTER, 'Lokasi Pendaftaran', ('DEWAN UTAMA', 'Taklimat 27 September 2026'))
         for lay in (layout(extra=('Taklimat pada 6 Oktober 2026.',)), layout(register=venue),
                     layout(footer=FOOTER + ('Kangar, 11 Okt.',))):
             with self.subTest(size=len(lay)):
                 d = run(lay)
                 self.assertIsNone(d['locked'])
-                self.assertEqual(d['guard'], 'stray_date')
+                self.assertEqual(read_unimap(lay)[1], 'template_changed')
 
     def test_a_day_and_month_with_no_year_refuses(self):
-        """Review round 1: the shared date patterns need a year; "PADA 27/9" and its kin refuse too, wherever the
-        reader read no date."""
-        for case, text in (('slash', 'DEWAN UTAMA / PADA 27/9'), ('dash', 'PADA 27-9'), ('dot', 'PADA 27.9'),
-                           ('spaced', 'PADA 27 / 09'), ('name', 'PADA 27 SEPT'), ('hb', 'PADA 27 HB SEPTEMBER'),
-                           ('lower', 'pada 3 okt'), ('month_first', 'PADA SEPT 27'), ('malay', 'Pada 1 Mac')):
-            with self.subTest(case=case, where='venue'):
-                venue = rows_with(REGISTER, 'Lokasi Pendaftaran', (text,))
-                self.assertEqual(read_unimap(layout(register=venue))[1], 'stray_date')
-                self.assertIsNone(run(layout(register=venue))['locked'])
-            with self.subTest(case=case, where='footer'):
-                self.assertEqual(read_unimap(layout(footer=FOOTER + (text,)))[1], 'stray_date')
+        """Review rounds 1 and 2: a day and a month in any spelling, with no year, in the footer or the venue (as the
+        whole venue or as a wrapped line) changes the pinned template."""
+        for text in ('DEWAN UTAMA / PADA 27/9', 'PADA 27-9', 'PADA 27.9', 'PADA 27 / 09', 'PADA 27 SEPT',
+                     'PADA 27 HB SEPTEMBER', 'pada 3 okt', 'PADA SEPT 27', 'Pada 1 Mac',
+                     'PADA 27-SEPT', '27/SEP', 'SEPT-27', '27.SEP', '27TH OF SEPT', '9/27', '27_9', '27\\9', '27 9',
+                     'DUA PULUH TUJUH SEPTEMBER'):
+            for where, lay in (('venue', layout(register=rows_with(REGISTER, 'Lokasi Pendaftaran', (text,)))),
+                               ('wrap', layout(register=rows_with(REGISTER, 'Lokasi Pendaftaran',
+                                                                  (VENUE[0], text, *VENUE[1:])))),
+                               ('footer', layout(footer=FOOTER + (text,))),
+                               ('footer_mid', layout(footer=FOOTER[:2] + (text,) + FOOTER[2:]))):
+                with self.subTest(text=text, where=where):
+                    self.assertEqual(read_unimap(lay)[1], 'template_changed')
+                    self.assertIsNone(run(lay)['locked'])
 
     def test_a_second_ic_or_code_refuses(self):
         for extra, reason in (('Penjaga: 750505-03-1234', 'second_ic'), (IC, 'second_ic'),
@@ -244,11 +265,34 @@ class UnimapRefusalTest(SimpleTestCase):
         time refuses too."""
         for case, text in (('spaced', 'Kod Program : UR 6599002'), ('glued', 'XUR6599002'), ('lower', 'ur6599002'),
                            ('dash', 'UR-6599002'), ('dots', 'U.R. 659-9002'), ('same_spaced', 'UR 6599001'),
-                           ('same_lower', 'ur6599001'), ('same_glued', 'XUR6599001'), ('eight', 'UR65990012'),
-                           ('six', 'UR659900')):
+                           ('same_lower', 'ur6599001'), ('same_glued', 'XUR6599001'), ('eight', 'UR65990012')):
             with self.subTest(case=case):
                 self.assertEqual(read_unimap(layout(footer=FOOTER + (text,)))[1], 'second_code')
                 self.assertIsNone(run(layout(footer=FOOTER + (text,)))['locked'])
+        self.assertEqual(read_unimap(layout(footer=FOOTER + ('UR659900',)))[1], 'template_changed')   # six digits
+
+    def test_a_code_with_any_mark_inside_refuses_in_the_address_footer_or_venue(self):
+        """Review round 2 backstop: every character but a letter or a digit taken out and O read as 0, a code-like
+        run (two letters, seven digits) anywhere but its fixed places refuses, in the address, the footer and a
+        wrapped Lokasi line alike, and split across two lines too."""
+        for text in ('UR/6599002', 'UR_6599002', 'UR,6599002', 'UR+6599002', "UR'6599002", 'UR(6599002',
+                     'UR–6599002', 'A' * 25 + 'UR6599002', 'UR6599OO2', 'UR 6599OO2'):
+            for where, lay in (
+                    ('address', layout(address=ADDRESS[:1] + ('TAMAN ' + text + ' INDAH',) + ADDRESS[2:])),
+                    ('address_end', layout(address=ADDRESS[:3] + (text + ' PERLIS',))),
+                    ('footer', layout(footer=FOOTER + (text,))),
+                    ('wrap', layout(register=rows_with(REGISTER, 'Lokasi Pendaftaran', (VENUE[0], text, *VENUE[1:])))),
+                    ('venue', layout(register=rows_with(REGISTER, 'Lokasi Pendaftaran', (text + ' ' + VENUE[0],
+                                                                                         *VENUE[1:]))))):
+                with self.subTest(text=text, where=where):
+                    self.assertEqual(read_unimap(lay)[1], 'second_code')
+                    self.assertIsNone(run(lay)['locked'])
+        for where, lay in (('address', layout(address=ADDRESS[:1] + ('TAMAN UR', '6599002 JALAN') + ADDRESS[2:])),
+                           ('footer', layout(footer=FOOTER + ('UR', '6599002'))),
+                           ('wrap', layout(register=rows_with(REGISTER, 'Lokasi Pendaftaran',
+                                                              (VENUE[0] + ' UR', '6599002', *VENUE[1:]))))):
+            with self.subTest(where=where, split=True):
+                self.assertEqual(read_unimap(lay)[1], 'second_code')
 
     def test_a_value_with_a_second_column_refuses(self):
         """Review round 1: gaps as measured (even, at most 6; a last line single-spaced), never a 9-space cut."""
@@ -269,25 +313,107 @@ class UnimapRefusalTest(SimpleTestCase):
                 self.assertIsNone(run(lay)['locked'])
 
     def test_a_field_outside_its_place_refuses(self):
-        """Review round 1: nothing after the notes, in the address or in a wrapped line may print a field."""
+        """Review rounds 1 and 2: nothing after the notes and no wrapped line may print anything but the pinned
+        template; the address only upper-case words and numbers with no year and no other person."""
+        def venue(*parts):
+            return layout(register=rows_with(REGISTER, 'Lokasi Pendaftaran', parts))
         for case, lay, reason in (
-                ('amended', layout(footer=FOOTER + ('Program Pengajian dipinda : KEJURUTERAAN AWAM',)), 'stray_field'),
+                ('amended', layout(footer=FOOTER + ('Program Pengajian dipinda : KEJURUTERAAN AWAM',)),
+                 'template_changed'),
                 ('amended_no_colon', layout(footer=FOOTER + ('Program Pengajian dipinda KEJURUTERAAN AWAM',)),
-                 'stray_field'),
-                ('name_row', layout(footer=FOOTER + ('Nama : ALFEN BIN QORDA',)), 'stray_field'),
-                ('name_line', layout(footer=FOOTER + ('ALFEN BIN QORDA',)), 'stray_field'),
-                ('two_signers', layout(footer=FOOTER + ('(ALFEN BIN QORDA)',)), 'stray_field'),
-                ('half_paren', layout(footer=FOOTER[:2] + ('(QARIM VELTO BIN DURAN',) + FOOTER[3:]), 'stray_field'),
-                ('ic_label', layout(footer=FOOTER + ('No. K/P pelajar',)), 'stray_field'),
-                ('session', layout(footer=FOOTER + ('Sesi kemasukan baharu',)), 'stray_field'),
-                ('address_label', layout(address=ADDRESS + ('PROGRAM KHAS',)), 'stray_field'),
-                ('address_colon', layout(address=ADDRESS[:3] + ('U/P : ENCIK QORDA',)), 'stray_field'),
+                 'template_changed'),
+                ('name_row', layout(footer=FOOTER + ('Nama : ALFEN BIN QORDA',)), 'template_changed'),
+                ('name_line', layout(footer=FOOTER + ('ALFEN BIN QORDA',)), 'template_changed'),
+                ('name_no_link', layout(footer=FOOTER + ('ALFEN QORDA',)), 'template_changed'),
+                ('two_signers', layout(footer=FOOTER + ('(ALFEN BIN QORDA)',)), 'template_changed'),
+                ('half_paren', layout(footer=FOOTER[:2] + ('(QARIM VELTO BIN DURAN',) + FOOTER[3:]),
+                 'template_changed'),
+                ('no_footer', layout(footer=()), 'template_changed'),
+                ('ic_label', layout(footer=FOOTER + ('No. K/P pelajar',)), 'template_changed'),
+                ('session', layout(footer=FOOTER + ('Sesi kemasukan baharu',)), 'template_changed'),
+                ('long_footer', layout(footer=FOOTER + ('Perlis',) * 5), 'template_changed'),
+                ('venue_date', venue(*VENUE[:2], 'Tarikh baharu SABTU depan'), 'template_changed'),
+                ('venue_programme', venue(VENUE[0], 'PROGRAM DIGANTI KEJURUTERAAN AWAM', *VENUE[1:]),
+                 'template_changed'),
+                ('venue_name', venue(VENUE[0], 'ALFEN BIN QORDA', *VENUE[1:]), 'template_changed'),
+                ('venue_short', venue(VENUE[0], VENUE[2]), 'template_changed'),
+                ('venue_session', venue(*VENUE[:2], VENUE[2].replace('2026/2027', '2025/2026')), 'second_code'),
+                ('venue_session_alone', venue(*VENUE[:2], VENUE[2] + ' 2026/2028'),
+                 'template_changed'),
+                ('address_colon', layout(address=ADDRESS[:3] + ('U/P : ENCIK QORDA',)), 'address_shape'),
+                ('address_care_of', layout(address=ADDRESS[:3] + ('D/A AHMAD BIN ALI',)), 'address_shape'),
+                ('address_care_of_spaced', layout(address=ADDRESS[:3] + ('D / A AHMAD',)), 'address_shape'),
+                ('address_bin', layout(address=ADDRESS[:3] + ('AHMAD BIN ALI',)), 'address_shape'),
+                ('address_year', layout(address=ADDRESS[:3] + ('27 SEPT 2026',)), 'address_shape'),
+                ('address_lower', layout(address=ADDRESS[:3] + ('Taman Contoh',)), 'address_shape'),
                 ('name_again', layout(address=ADDRESS + (NAME.replace(' A/L ', ' ').upper(),),
-                                      name=NAME.replace(' A/L ', ' ')), 'second_name'),
-                ('long_footer', layout(footer=FOOTER + ('Perlis',) * 5), 'footer_shape')):
+                                      name=NAME.replace(' A/L ', ' ')), 'second_name')):
             with self.subTest(case=case):
                 self.assertEqual(read_unimap(lay)[1], reason)
                 self.assertIsNone(run(lay)['locked'])
+
+    def test_an_address_of_unit_numbers_and_field_words_still_locks(self):
+        """Review round 2: the address is never read, so a unit number, a month-like word and a word that names a
+        field elsewhere are all fine there, at any line, beside the postcode too; so is a cost with no comma."""
+        for text in ('NO 12-3, JALAN MAWAR', 'JALAN 2/5', 'NO. 5-1 BLOK A', 'KAMPUNG MAC 3', 'BLOK 2/3', 'ARAS 1-2',
+                     'TAMAN MASA', 'JALAN KAMPUS', 'LOT 123456'):
+            for where, address in (('first', (text,) + ADDRESS[1:]), ('before_postcode', ADDRESS[:1] + (text,)
+                                                                      + ADDRESS[2:])):
+                with self.subTest(text=text, where=where):
+                    lay = layout(address=address)
+                    self.assertEqual(read_unimap(lay)[1], '')
+                    self.assertIsNotNone(run(lay)['locked'], why(run(lay)))
+        costs = COSTS[:4] + (COSTS[4].replace('RM 3,000.00', 'RM 3000.00'),) + COSTS[5:]
+        self.assertIsNotNone(run(layout(costs=costs))['locked'], why(run(layout(costs=costs))))
+
+    def test_the_pin_refuses_a_one_character_change_anywhere_in_the_fixed_text(self):
+        """Review round 2: a synthetic copy of the pinned structure (the footer and the venue, pinned), and the fixed
+        lines read as exact text (salutation, greeting, registration intro, cost block, notes): one character
+        changed or taken out anywhere refuses."""
+        def changed(text, k, cut):
+            return text[:k] + ('' if cut else ('Q' if text[k] != 'Q' else 'Z')) + text[k + 1:]
+        cases = []
+        for n, line in enumerate(FOOTER):
+            for k in (k for k, c in enumerate(line) if c != ' '):
+                for cut in (False, True):
+                    cases.append(('footer', layout(footer=FOOTER[:n] + (changed(line, k, cut),) + FOOTER[n + 1:])))
+        for n, line in enumerate(VENUE):
+            for k in (k for k, c in enumerate(line) if c != ' '):
+                for cut in (False, True):
+                    parts = VENUE[:n] + (changed(line, k, cut),) + VENUE[n + 1:]
+                    cases.append(('venue', layout(register=rows_with(REGISTER, 'Lokasi Pendaftaran', parts))))
+        for n, line in enumerate(GREETING):
+            for k in (k for k, c in enumerate(line) if c != ' '):
+                cases.append(('greeting', layout(greeting=GREETING[:n] + (changed(line, k, False),) + GREETING[n + 1:])))
+        for n, line in enumerate(NOTES):
+            for k in (k for k, c in enumerate(line) if c != ' '):
+                cases.append(('notes', layout(notes=NOTES[:n] + (changed(line, k, False),) + NOTES[n + 1:])))
+        for n in (0, 1, 2, 3, 6):
+            for k in (k for k, c in enumerate(COSTS[n]) if c != ' '):
+                cases.append(('costs', layout(costs=COSTS[:n] + (changed(COSTS[n], k, False),) + COSTS[n + 1:])))
+        for k in range(len('Saudara/i,')):
+            cases.append(('salutation', layout().replace('Saudara/i,', changed('Saudara/i,', k, False))))
+        for k in (k for k, c in enumerate(REGISTER_INTRO) if c != ' '):
+            cases.append(('intro', layout().replace(REGISTER_INTRO, changed(REGISTER_INTRO, k, False))))
+        self.assertGreater(len(cases), 800)
+        pinned = 0
+        for where, lay in cases:
+            reason = read_unimap(lay)[1]
+            pinned += reason == 'template_changed'
+            if reason == '':
+                self.fail(f'{where}: a one-character change locked')
+        self.assertGreater(pinned, 300)        # the footer and the venue refuse by the pin itself
+
+    def test_the_measured_pins_are_digests_and_refuse_the_synthetic_letter(self):
+        """The module ships the MEASURED pins: one sha256 each, never text; the synthetic letter is not them."""
+        for key in ('footer', 'venue'):
+            with self.subTest(key=key):
+                self.assertEqual(len(REAL_PINS[key]), 1)
+                self.assertTrue(all(len(d) == 64 and set(d) <= set('0123456789abcdef') for d in REAL_PINS[key]))
+                self.assertFalse(REAL_PINS[key] & SYNTHETIC_PINS[key])
+        with mock.patch.dict(TEMPLATE_PINS, REAL_PINS):
+            self.assertEqual(read_unimap(layout())[1], 'template_changed')
+            self.assertIsNone(run()['locked'])
 
     def test_a_later_page_refuses_even_when_blank(self):
         """No excuse: a page 2 with text refuses ``later_page``; a BLANK page 2 refuses ``hidden_page`` by the shared
@@ -308,8 +434,8 @@ class UnimapRefusalTest(SimpleTestCase):
             with self.subTest(line=line):
                 self.assertTrue(run(layout(extra=(line,)))['portal'])
         for line in ('Tawaran ini telah ditarik balik.', 'Tawaran ini dibatalkan.', 'Anda tidak layak.'):
-            with self.subTest(line=line):
-                d = run(layout(extra=(line,)))
+            with self.subTest(line=line), mock.patch.dict(TEMPLATE_PINS, {'footer': {_pin_digest((line, *FOOTER))}}):
+                d = run(layout(extra=(line,)))        # pinned as if measured: the guard itself must refuse
                 self.assertIsNone(d['locked'])
                 self.assertEqual(d['guard'], 'not_an_offer')
                 self.assertEqual(unimap_letter_refusal(plain(layout(extra=(line,))), NRIC), 'not_an_offer')
@@ -321,7 +447,9 @@ class UnimapOwnerWordsTest(SimpleTestCase):
         self.assertEqual(missing(LANE, layout(), text_pdf=True), [])
 
     def test_a_missing_owner_phrase_refuses(self):
-        d = run(layout(footer=FOOTER[:-1]))
+        self.assertEqual(read_unimap(layout(footer=FOOTER[:-1]))[1], 'template_changed')
+        with mock.patch.dict(TEMPLATE_PINS, {'footer': {_pin_digest(FOOTER[:-1])}}):   # the owner words refuse too
+            d = run(layout(footer=FOOTER[:-1]))
         self.assertIsNone(d['locked'])
         self.assertEqual(d['guard'], 'owner_words_missing')
 

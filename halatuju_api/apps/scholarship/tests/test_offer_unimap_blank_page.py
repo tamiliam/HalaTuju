@@ -15,6 +15,16 @@ from apps.scholarship.pdf_rules_pages import fully_blank_page2, pdf_rules_page_t
 from apps.scholarship.tests import test_offer_parse_unimap as um
 from apps.scholarship.tests import test_offer_parse_unisza as us
 
+_PINS = um.synthetic_pins()     # review round 2: the synthetic letter's footer and venue pinned, as in `um`
+
+
+def setUpModule():
+    _PINS.start()
+
+
+def tearDownModule():
+    _PINS.stop()
+
 
 def _page1() -> bytes:
     from reportlab.pdfgen import canvas

@@ -72,6 +72,12 @@ Branch ocr-14b-unis, not pushed. Migration: none. Services: api. The new lane st
   and base indent 36-48; the blank page 2 also needs pdfium (child process, new `empty` op) to see no page object
   and no annotation. subTest labels are plain strings (xdist could not send pypdf objects). Lane still OFF;
   offer_parse 2.6.0 digest refreshed in place.
+- **OCR-14b-3 review round 2 (UniMAP: no free text):** the footer and the registration venue are pinned to the
+  measured letter (`TEMPLATE_PINS`, sha256 digests only; the venue's session must be the title's), so any extra,
+  missing or changed character refuses; the name and each address line have a strict shape (no year, no link word
+  such as BIN or D/A); a backstop refuses two letters and seven digits anywhere but the fixed places once marks are
+  taken out and O is read as 0; unit numbers, field words in the address and a cost with no comma now lock. Lane
+  still OFF; offer_parse 2.6.0 digest refreshed in place.
 
 ### feat: OCR-14b-1 - UMPSA rules lane (OFF), and the UniSZA withdrawal-note excuse (2026-11-27)
 
