@@ -67,6 +67,9 @@ _HEAD_LABELS = ('RUJ. KAMI', 'NAMA', 'NO. KAD PENGENALAN')
 _NAME = re.compile(r"^[A-Z][A-Z'.\-]*(?: (?:[A-Z][A-Z'.\-]*|A/L|A/P|@))*$")
 _IC = re.compile(r'^(\d{6})-?(\d{2})-?(\d{4})$')
 _BIDANG = re.compile(r"^[A-Z][A-Z&,'()\-]*(?: [A-Z&(][A-Z&,'()\-]*){0,9}$")
+# Review round 1 (fork 2, chose B): a specialism that says "none" (TIADA, TIDAK BERKENAAN / BERKAITAN, "-", N/A) is
+# not read. A closed catalogue-backed specialism list is owed before the lane goes on.
+_NO_BIDANG = re.compile(r'(?<![A-Z])(?:TIADA|TIDAK|N ?/ ?A|NA|NIL)(?![A-Z])|^[\W_]*$', re.IGNORECASE)
 _SESSION = re.compile(r'^(20\d{2})/(20\d{2})$')
 _CAMPUS = re.compile(r"^INSTITUT PENDIDIKAN GURU (KAMPUS [A-Z][A-Z'.\-]*(?: [A-Z][A-Z'.\-]*){0,5})$")
 _ADDRESS = re.compile(r"^[A-Z0-9][A-Z0-9 ,./'()&\-]*$")
@@ -230,7 +233,8 @@ def _pismp_read(lines) -> tuple:
         'candidate_nric': _norm_nric(''.join(ic_m.groups())) if ic_m else '',
         'candidate_nric_source': 'label' if ic_m else 'none',
         'programme': PROGRAMME, 'programme_code': '',
-        'bidang_pengkhususan': bidang if _BIDANG.match(bidang) and distinctive_tokens(bidang) else '',
+        'bidang_pengkhususan': (bidang if _BIDANG.match(bidang) and distinctive_tokens(bidang)
+                                and not _NO_BIDANG.search(bidang) else ''),
         'institution': INSTITUTION, 'campus': campus_m.group(1) if campus_m else '', 'stream': '',
         'intake': f'AMBILAN {title_m.group(1)}' if title_m and _SESSION.match(session) else '',
         'reporting_date': house_date(table[REPORT_LABEL]) if report_m else '',

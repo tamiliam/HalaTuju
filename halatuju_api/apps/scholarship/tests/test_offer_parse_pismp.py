@@ -459,6 +459,14 @@ class PismpReviewRound1Test(SimpleTestCase):
             with self.subTest(bidang=bidang):
                 self.assertEqual(run(layout(tab=table(bidang=bidang)))['empty_required'], ['bidang_pengkhususan'])
 
+    def test_a_specialism_that_says_none_is_not_read(self):
+        # fork 2 (chose B): lane-local refusal until a catalogue-backed specialism list exists
+        for bidang in ('TIADA', 'TIDAK BERKENAAN', 'TIDAK BERKAITAN', '-', 'N/A', 'N / A', 'TIADA (PENDIDIKAN MUZIK)'):
+            with self.subTest(bidang=bidang):
+                d = run(layout(tab=table(bidang=bidang)))
+                self.assertIsNone(d['locked'])
+                self.assertEqual(d['empty_required'], ['bidang_pengkhususan'])
+
     def test_the_lane_words_refuse_anywhere_outside_the_block(self):
         lines = ('Surat ini membatalkan surat terdahulu.', 'Penempatan tuan/puan dipinda.',
                  'Surat tawaran ini menggugurkan tawaran asal.', 'KEPUTUSAN RAYUAN', 'PENANGGUHAN', 'PENOLAKAN',
