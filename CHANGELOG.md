@@ -78,6 +78,9 @@ Branch ocr-14b-unis, not pushed. Migration: none. Services: api. The new lane st
   such as BIN or D/A); a backstop refuses two letters and seven digits anywhere but the fixed places once marks are
   taken out and O is read as 0; unit numbers, field words in the address and a cost with no comma now lock. Lane
   still OFF; offer_parse 2.6.0 digest refreshed in place.
+- **Version log fix (offer_parse 2.7.0):** 2.6.0 was already live at 3ac61cc19, so the UniMAP work above must not
+  refresh it in place. The 2.6.0 entry is back to its live digest and note; the UniMAP change is now 2.7.0
+  (`PARSER_VERSION`, the same code digest). No behaviour change.
 
 ### feat: OCR-14b-1 - UMPSA rules lane (OFF), and the UniSZA withdrawal-note excuse (2026-11-27)
 

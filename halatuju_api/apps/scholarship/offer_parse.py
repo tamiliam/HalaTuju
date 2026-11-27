@@ -359,9 +359,9 @@ _REQUIRED_STREAM = ('stpm', 'matriculation')
 # Phase 8 (same day, same unreleased version): 'unisza', `diagnose_unisza` (`offer_parse_unisza`), its unlabelled IC
 # corroborate-only (source 'other').
 # 2.6.0 (OCR-14b-1): 'umpsa', `diagnose_umpsa` (`offer_parse_umpsa`), the IC guard as usual; the UniSZA withdrawal
-# note excused (owner, 27 Nov). OCR-14b-2 (same unreleased version): 'unimap', `diagnose_unimap`
+# note excused (owner, 27 Nov). 2.7.0 (OCR-14b-2/3; 2.6.0 was live): 'unimap', `diagnose_unimap`
 # (`offer_parse_unimap`), its unlabelled IC corroborate-only (source 'other').
-PARSER_VERSION = '2.6.0'
+PARSER_VERSION = '2.7.0'
 # A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
 # tell that the positional block pairing has shifted if it turns up in a text slot.
 _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)
