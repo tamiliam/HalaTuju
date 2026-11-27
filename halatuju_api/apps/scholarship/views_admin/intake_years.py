@@ -198,7 +198,7 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
         # is built from the boxes sent (`stamp_new` below), so a key left OUT would mean "no rule"
         # without anyone having said so - an empty POST would make an open intake. An explicit null
         # still means "no rule" (that IS a statement); a missing key is refused, naming the keys.
-        # The web create form always sends all of them (`intakeYears.draftToRequirements`).
+        # The web editor always sends all of them (`criteriaTree.columnsFor`, keys `REQUIREMENT_KEYS`).
         missing = [f for f in (*REQUIREMENT_FIELDS, BIRTH_STATES_FIELD, START_YEARS_FIELD)
                    if f not in request.data]
         if missing:

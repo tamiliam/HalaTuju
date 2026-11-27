@@ -387,6 +387,14 @@ class TestFenceCoverageCompleteness(TestCase):
         # Same fence as its sibling — the cohort is reached through `_programmes_for(admin)`, so a
         # round belonging to another tenant is a 404, never a 403.
         'AdminIntakeYearFinishView': 'sabah-s2b-intake-years-fenced',
+        # Criteria Sprint 3 - the criteria tree API (`views_admin/criteria_tree.py`). The base is
+        # a `_ProgrammeScopedBase`; the intake route reaches its year through
+        # `programme__in=_programmes_for(admin)`, the rule-year route through `_programme_or_404`.
+        # The fence runs BEFORE the body is read, so another tenant's intake or gift is a 404
+        # whatever is sent (`test_criteria_api.TestWhoMay`).
+        '_CriteriaBase': 'sabah-s2b-intake-years-fenced',
+        'AdminIntakeYearCriteriaView': 'sabah-s2b-intake-years-fenced',
+        'AdminProgrammeCriteriaView': 'sabah-s2b-programmes-fenced',
         # nav/IA N3a — the breadcrumb switchers. LIST-fenced on the same
         # owning_organisation the fence itself uses, so it cannot widen anything: super sees
         # every active org/programme, everyone else exactly their own, `partner` nothing (a

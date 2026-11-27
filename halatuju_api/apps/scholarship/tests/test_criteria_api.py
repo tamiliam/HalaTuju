@@ -390,6 +390,31 @@ class TestWhoMay(_Base):
                 self.assertEqual(self.client.patch(url, [1], format='json').status_code, 404)
                 self.assertEqual(self.client.patch(url, {'criteria': GOOD}, format='json').status_code, 404)
 
+    def test_the_org_fence_holds_on_a_full_save_and_a_super_reaches_the_same_row(self):
+        """The org fence (test_org_fence classifies both views as fenced): a save with the right
+        digest and a valid tree still cannot reach another organisation's intake or gift on either
+        route, and changes nothing. A platform super reads the same row, so the 404 is the fence."""
+        other = make_programme()
+        self.assertNotEqual(other.organisation_id, self.programme.organisation_id)
+        c = make_cohort(programme=other, is_open=False, **columns_of(COHORT_4))
+        ScholarshipCohort.objects.filter(pk=c.pk).update(criteria=criteria.from_legacy(c))
+        before = ScholarshipCohort.objects.get(pk=c.pk).criteria
+        body = {'criteria': GOOD, 'digest': criteria_write.digest(before),
+                'intake_id': c.id}
+        for url in (self._url(c), self._rule_url(other)):
+            with self.subTest(url=url):
+                sent = body if 'programmes' in url else {k: body[k] for k in ('criteria', 'digest')}
+                r = self.client.patch(url, sent, format='json')
+                self.assertEqual(r.status_code, 404)
+                self.assertNotIn('criteria', r.data)
+        self.assertEqual(ScholarshipCohort.objects.get(pk=c.pk).criteria, before)
+        boss = authed_client(make_admin('org_admin', super_admin=True))
+        for url in (self._url(c), self._rule_url(other)):
+            with self.subTest(super=url):
+                r = boss.get(url)
+                self.assertEqual(r.status_code, 200)
+                self.assertEqual(r.data['intake']['id'], c.id)
+
 
 class TestTheOldFormAndItems1And4(_Base):
     def test_item_1_a_tree_the_columns_cannot_say_is_not_rebuilt(self):
