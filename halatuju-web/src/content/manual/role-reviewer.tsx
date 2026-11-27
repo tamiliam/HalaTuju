@@ -244,7 +244,7 @@ export const roleReviewer: ManualChapter = {
           <span className="block"><strong>Pathway</strong> — a real offer for a course this programme funds: a public
           IPTA or ILKA, the right start year, not already funded, not abroad.</span>
           <span className="block"><strong>Income</strong> — the family is within the gift&rsquo;s own income cut-off: household
-          income at most the gift&rsquo;s limit, or (above that) income per person under its per-person limit.</span>
+          income at most the gift&rsquo;s limit, or (above that) income per person at most its per-person limit.</span>
           <span className="mt-2 block">Every Fail asks <strong>Why?</strong> The reason is about the student, never
           about the AI. Tap one: <em>Proof is missing/unclear</em>, <em>Document looks false/altered</em>,
           <em> Document(s) show something different</em>, <em>Interview revealed something different</em>,

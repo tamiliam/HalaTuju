@@ -703,8 +703,9 @@ class TestIncomeHeadroom(SimpleTestCase):
 
 class TestIncomeHeadroomMatchesTheGate(SimpleTestCase):
     """TD-771 (owner ruling, 26 Nov 2026): the officer band says 'over' exactly when the gate
-    (`criteria.income_ok`) refuses - income passes on EITHER the gift's household line (ON the
-    line passes) OR its per-person line (ON the line does not). The lines are each gift's own."""
+    (`criteria.income_ok`) refuses - income passes on EITHER the gift's household line OR its
+    per-person line. Ruling A (owner, 27 Nov 2026): ON either line passes; 1 sen above fails.
+    The lines are each gift's own."""
 
     def _band(self, gross, size, cohort):
         app = _app([_bill('salary_slip', {'gross_income': str(gross)})], household_size=size)
@@ -725,25 +726,29 @@ class TestIncomeHeadroomMatchesTheGate(SimpleTestCase):
                 if want != 'any':
                     self.assertEqual(band, want)
 
-    def test_td771_example_intake_1_five_people_on_7920_is_over(self):
-        # RM7,920 / 5 = RM1,584: exactly ON the per-person line (not met) and above RM5,860.
+    def test_ruling_a_intake_1_five_people_on_7920_passes(self):
+        # RM7,920 / 5 = RM1,584: exactly ON the per-person line (ruling A: met) and above RM5,860.
+        # 1 sen per person above (RM7,920.05) is over.
         intake_1 = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=1584)
-        self._check(intake_1, [(7920, 5, 'over'), (7919, 5, 'unsure'), (7921, 5, 'over')])
+        self._check(intake_1, [(7920, 5, 'unsure'), (7919, 5, 'unsure'), (7920.05, 5, 'over'),
+                               (7921, 5, 'over')])
 
     def test_household_line_passes_on_the_line(self):
         # Two people: the household line (RM5,860) is the more generous one.
         intake_1 = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=1584)
         self._check(intake_1, [(5859, 2, 'unsure'), (5860, 2, 'unsure'), (5861, 2, 'over')])
 
-    def test_per_person_line_does_not_pass_on_the_line(self):
-        # Intake 5's own lines (RM5,860 / RM900): 7 people on RM6,300 is RM900 each, ON the line.
+    def test_per_person_line_passes_on_the_line(self):
+        # Intake 5's own lines (RM5,860 / RM900): 7 people on RM6,300 is RM900 each, ON the line
+        # (ruling A: passes); RM6,300.07 is 1 sen each above it.
         intake_5 = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=900)
-        self._check(intake_5, [(6299, 7, 'any'), (6300, 7, 'over'), (6301, 7, 'over')])
+        self._check(intake_5, [(6299, 7, 'any'), (6300, 7, 'any'), (6300.07, 7, 'over'),
+                               (6301, 7, 'over')])
 
     def test_a_gift_with_only_the_per_person_line(self):
         pc_only = SimpleNamespace(income_ceiling=None, per_capita_ceiling=1584)
-        self._check(pc_only, [(6335, 4, 'unsure'), (6336, 4, 'over'), (6337, 4, 'over'),
-                              (1000, 4, 'probable')])
+        self._check(pc_only, [(6335, 4, 'unsure'), (6336, 4, 'unsure'), (6336.04, 4, 'over'),
+                              (6337, 4, 'over'), (1000, 4, 'probable')])
 
     def test_a_gift_with_only_the_household_line_is_judged_on_that_line(self):
         # Criteria S3a (owner, 26 Nov 2026): no per-person line - the band is judged on the
@@ -770,8 +775,9 @@ class TestIncomeHeadroomMatchesTheGate(SimpleTestCase):
         self.assertEqual(self._band(2000, 4, nothing), 'unknown')
 
     def test_the_lines_are_read_from_the_stored_tree(self):
-        # A stored tree wins over the columns: its per-person line RM1,000 makes 5 on RM5,000
-        # (RM1,000 each, ON the line) 'over' once the household line RM4,000 is also failed.
+        # A stored tree wins over the columns: its per-person line RM1,000 makes 5 on RM5,001
+        # (RM1,000.20 each, above the line) 'over' once the household line RM4,000 is also failed.
+        # 5 on RM5,000 is ON that line, which passes (ruling A).
         import json
         from apps.scholarship import criteria
         columns = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=1584)
@@ -779,8 +785,10 @@ class TestIncomeHeadroomMatchesTheGate(SimpleTestCase):
                                                            per_capita_ceiling=1000)))
         stored = SimpleNamespace(**dict(vars(columns), criteria=json.loads(json.dumps(tree))))
         self.assertEqual(self._band(5000, 5, columns), 'probable')
-        self.assertEqual(self._band(5000, 5, stored), 'over')
-        self.assertFalse(self._gate_ok(5000, 5, stored))
+        self.assertEqual(self._band(5001, 5, stored), 'over')
+        self.assertFalse(self._gate_ok(5001, 5, stored))
+        self.assertNotEqual(self._band(5000, 5, stored), 'over')
+        self.assertTrue(self._gate_ok(5000, 5, stored))
 
 
 class TestThinMarginIsTheGiftsOwnLine(SimpleTestCase):

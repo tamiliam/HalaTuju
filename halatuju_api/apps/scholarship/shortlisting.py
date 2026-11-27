@@ -24,7 +24,7 @@ The rule (settled 2026-05-24 — see docs/scholarship/b40-decision-redesign-plan
                    else gross household income <= income_ceiling (the DOSM B40 line)
                    → PASS (bucket B);
                    else (above the B40 ceiling) the large-family safety net:
-                   per-capita (household_income / household_size) < per_capita_ceiling
+                   per-capita (household_income / household_size) <= per_capita_ceiling
                    → PASS (bucket B); else REJECT
   → SHORTLIST if all pass, else REJECT.  No score, no weights, no hardship flags.
   (2026-06: anyone at/under the B40 gross ceiling is in; per-capita now only rescues
@@ -247,7 +247,8 @@ def _income_ok(profile, cohort):
       • Gross household income <= the B40 ``income_ceiling`` → PASS (bucket B):
         anyone at or below the DOSM B40 line is in, regardless of household size.
       • Above the B40 ceiling → the large-family safety net: per-capita
-        (income / size) < ``per_capita_ceiling`` → PASS (bucket B); else REJECT (need).
+        (income / size) <= ``per_capita_ceiling`` → PASS (bucket B; on the line passes, ruling A,
+        27 Nov 2026); else REJECT (need).
     """
     ceiling = cohort.income_ceiling
     pc_ceiling = cohort.per_capita_ceiling
@@ -284,12 +285,16 @@ def _income_ok(profile, cohort):
     if not size or size <= 0:
         return False, '', f'{income_above(inc, ceiling)} and household size not provided'
     per_capita = inc / size
-    if per_capita < pc_ceiling:
+    # Ruling A (owner, 27 Nov 2026): ON the per-person line passes ("at most RM Y"). Changed here
+    # too, though this is the replay's yardstick: `criteria.income_ok` and this must agree, or the
+    # replay reports a false difference at the line and `rescore_pending_decisions` HOLDS every
+    # pending row on it (new != old) instead of re-scoring it to the ruled answer.
+    if per_capita <= pc_ceiling:
         above = f' > RM{ceiling} but' if ceiling is not None else ','
         return True, 'B', (f'income RM{inc:.0f}{above} per-capita '
-                           f'RM{per_capita:.0f} < RM{pc_ceiling} (per-person line)')
+                           f'RM{per_capita:.0f} <= RM{pc_ceiling} (per-person line)')
     return False, '', (f'{income_above(inc, ceiling)} and per-capita '
-                       f'RM{per_capita:.0f} >= RM{pc_ceiling}')
+                       f'RM{per_capita:.0f} > RM{pc_ceiling}')
 
 
 def income_above(inc, ceiling):

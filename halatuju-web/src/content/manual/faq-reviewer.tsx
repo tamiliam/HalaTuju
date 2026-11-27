@@ -226,8 +226,8 @@ export const REVIEWER_FAQ: QA[] = [
         applicant&rsquo;s age and address with no status (red &ldquo;Not an STR document&rdquo;); if the status isn&rsquo;t clearly
         &ldquo;Lulus&rdquo;, ask for the MySTR Semakan Status / Dashboard, or the approval letter.
         <strong> Salary route:</strong> payslips / EPF, judged against the gift&rsquo;s own income cut-off:
-        household income at most the gift&rsquo;s limit, or (above that) income per person under its per-person
-        limit. Either one passes; exactly on the per-person limit does not. A household close to the cut-off
+        household income at most the gift&rsquo;s limit, or (above that) income per person at most its per-person
+        limit. Either one passes, and exactly on either limit passes. A household close to the cut-off
         (less than one person&rsquo;s share of the gift&rsquo;s limit to spare) shows amber, because one
         undeclared earner could tip it over. A gift with only one of the two limits is judged on that one.
         When it&rsquo;s genuinely borderline, that&rsquo;s what the interview is for — don&rsquo;t force a verdict on weak
@@ -301,7 +301,7 @@ export const REVIEWER_FAQ: QA[] = [
         are real. <strong>Pathway</strong>: a real offer for a course this programme funds (a public IPTA or ILKA,
         the right start year, not already funded, not abroad). <strong>Income</strong>: the family is within the
         gift&rsquo;s own income cut-off (household income at most the gift&rsquo;s limit, or, above that, income
-        per person under its per-person limit).</>,
+        per person at most its per-person limit).</>,
     },
     {
       q: <>Which reasons can I give when I <strong>Fail</strong> a fact?</>,

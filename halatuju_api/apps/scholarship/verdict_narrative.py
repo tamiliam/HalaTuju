@@ -81,7 +81,7 @@ _CODE_GLOSS = {
     'income_salary_unsure': ("gross household income ~RM{amount}/month sits NEAR this gift's income limit — not a clear pass; the "
                              'household composition (its size, and whether another member works) sets the true gross and per-capita'),
     'income_above_b40_line': "per-capita income RM{amount} is OVER this gift's income limit (RM{ceiling}) — income does not support the application",
-    'income_per_capita_ok': "per-capita income RM{amount} is below this gift's income limit (RM{ceiling})",
+    'income_per_capita_ok': "per-capita income RM{amount} is at most this gift's income limit (RM{ceiling})",
     'income_unverified_needs_interview': 'income cannot be document-verified (informal / no payslip) — confirm at interview',
     'income_not_means_tested': ('this gift applies NO household income limit, so income is not an eligibility test here — '
                                 'do not reason about a threshold, and do not treat the absence of one as a pass'),

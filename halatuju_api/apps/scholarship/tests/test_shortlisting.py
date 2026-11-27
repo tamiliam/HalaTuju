@@ -78,7 +78,7 @@ class TestShortlistingEngine(TestCase):
         self.assertEqual(evaluate(app(household_income=7000, household_size=5), cohort()).verdict, 'shortlisted')
 
     def test_above_ceiling_high_per_capita_rejected(self):
-        # RM8,000 household, 2 people → above the B40 line AND per-capita RM4,000 >= RM1,584.
+        # RM8,000 household, 2 people → above the B40 line AND per-capita RM4,000 > RM1,584.
         self.assertEqual(evaluate(app(household_income=8000, household_size=2), cohort()).verdict, 'rejected')
 
     def test_t20_rejected(self):

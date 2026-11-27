@@ -338,12 +338,15 @@ class TestIncome(SimpleTestCase):
         self.assertEqual(criteria.income_ok(prof(household_income=5860), s),
                          (True, 'B', 'household income RM5860 <= RM5860 (household line)'))
         self.assertEqual(criteria.income_ok(prof(household_income=7000, household_size=5), s),
-                         (True, 'B', 'income RM7000 > RM5860 but per-capita RM1400 < RM1584 (per-person line)'))
+                         (True, 'B', 'income RM7000 > RM5860 but per-capita RM1400 <= RM1584 (per-person line)'))
         for r in (criteria.income_ok(prof(household_income=5860), s),
                   criteria.income_ok(prof(household_income=7000, household_size=5), s)):
             self.assertNotIn('B40', r[2])
+        # Ruling A (owner, 27 Nov 2026): ON the per-person line passes; 1 sen above fails.
         self.assertEqual(criteria.income_ok(prof(household_income=7920, household_size=5), s),
-                         (False, '', 'income RM7920 > RM5860 and per-capita RM1584 >= RM1584'))
+                         (True, 'B', 'income RM7920 > RM5860 but per-capita RM1584 <= RM1584 (per-person line)'))
+        self.assertEqual(criteria.income_ok(prof(household_income=7920.05, household_size=5), s),
+                         (False, '', 'income RM7920 > RM5860 and per-capita RM1584 > RM1584'))
         self.assertEqual(criteria.income_ok(prof(household_income=7000, household_size=None), s),
                          (False, '', 'income RM7000 > RM5860 and household size not provided'))
         for inc in (None, 0):
@@ -354,17 +357,17 @@ class TestIncome(SimpleTestCase):
         self.assertEqual(criteria.income_ok(prof(household_income=5861), self.sec('all', self.CEIL)),
                          (False, '', 'income RM5861 > RM5860'))
         self.assertEqual(criteria.income_ok(prof(household_income=6000, household_size=4), self.sec('any', self.PP)),
-                         (True, 'B', 'income RM6000, per-capita RM1500 < RM1584 (per-person line)'))
+                         (True, 'B', 'income RM6000, per-capita RM1500 <= RM1584 (per-person line)'))
         self.assertEqual(criteria.income_ok(prof(household_income=6000, household_size=None), self.sec('any', self.PP)),
                          (False, '', 'income RM6000 and household size not provided'))
         # Sprint 3b: a per-person-only refusal names no household line ("> RMNone" is gone), and
         # the columns gate words it identically.
         self.assertEqual(criteria.income_ok(prof(household_income=8000, household_size=4), self.sec('any', self.PP)),
-                         (False, '', 'income RM8000 and per-capita RM2000 >= RM1584'))
+                         (False, '', 'income RM8000 and per-capita RM2000 > RM1584'))
         from apps.scholarship.shortlisting import _income_ok
         only_pp = SimpleNamespace(income_ceiling=None, per_capita_ceiling=1584)
         self.assertEqual(_income_ok(prof(household_income=8000, household_size=4), only_pp),
-                         (False, '', 'income RM8000 and per-capita RM2000 >= RM1584'))
+                         (False, '', 'income RM8000 and per-capita RM2000 > RM1584'))
         self.assertEqual(_income_ok(prof(household_income=6000, household_size=None), only_pp),
                          (False, '', 'income RM6000 and household size not provided'))
 
@@ -372,11 +375,53 @@ class TestIncome(SimpleTestCase):
         s = self.sec('all', self.CEIL, self.PP)
         self.assertEqual(criteria.income_ok(prof(household_income=5000, household_size=4), s)[:2], (True, 'B'))
         self.assertEqual(criteria.income_ok(prof(household_income=5000, household_size=3), s),
-                         (False, '', 'income RM5000 <= RM5860 but per-capita RM1667 >= RM1584'))
+                         (False, '', 'income RM5000 <= RM5860 but per-capita RM1667 > RM1584'))
         self.assertEqual(criteria.income_ok(prof(household_income=7000, household_size=9), s),
                          (False, '', 'income RM7000 > RM5860'))
         self.assertEqual(criteria.income_ok(prof(household_income=5000, household_size=None), s),
                          (False, '', 'income RM5000 <= RM5860 but household size not provided'))
+
+
+class TestPerPersonLineBoundary(SimpleTestCase):
+    """Ruling A (owner, 27 Nov 2026): the per-person test is "at most RM Y". Exactly ON the line
+    passes, 1 sen above fails, below passes - in both joins, with and without a household line,
+    and in the columns gate (`shortlisting._income_ok`, the replay yardstick) identically."""
+    CEIL = {'test': 'household_income_max', 'rm': 5860}
+    PP = {'test': 'income_per_person_under', 'rm': 1584}
+
+    def _cases(self):
+        # household size 1, so the income IS the per-person figure (1 sen = 0.01).
+        return ((1584, True), (1584.01, False), (1583.99, True))
+
+    def test_tree_gate_every_shape(self):
+        shapes = {'any pp only': {'section': 'income', 'any': [self.PP]},
+                  'all pp only': {'section': 'income', 'all': [self.PP]},
+                  'any both (above household line)': {'section': 'income', 'any': [
+                      {'test': 'household_income_max', 'rm': 1000}, self.PP]},
+                  'all both': {'section': 'income', 'all': [{'test': 'household_income_max', 'rm': 5860}, self.PP]}}
+        for name, s in shapes.items():
+            for inc, ok in self._cases():
+                with self.subTest(shape=name, income=inc):
+                    self.assertEqual(criteria.income_ok(prof(household_income=inc, household_size=1), s)[0], ok)
+
+    def test_columns_gate_agrees(self):
+        from apps.scholarship.shortlisting import _income_ok
+        for ceiling in (None, 1000):
+            cohort = SimpleNamespace(income_ceiling=ceiling, per_capita_ceiling=1584)
+            for inc, ok in self._cases():
+                with self.subTest(ceiling=ceiling, income=inc):
+                    p = prof(household_income=inc, household_size=1)
+                    got = _income_ok(p, cohort)
+                    self.assertEqual(got[0], ok)
+                    tree = {'section': 'income', 'any': [{'test': 'household_income_max', 'rm': ceiling}, self.PP]
+                            if ceiling is not None else [self.PP]}
+                    self.assertEqual(criteria.income_ok(p, tree), got)
+
+    def test_intake_1_five_people_on_7920_passes(self):
+        s = {'section': 'income', 'any': [self.CEIL, self.PP]}
+        self.assertTrue(criteria.income_ok(prof(household_income=7920, household_size=5), s)[0])
+        self.assertTrue(criteria.income_ok(prof(household_income=7919, household_size=5), s)[0])
+        self.assertFalse(criteria.income_ok(prof(household_income=7920.05, household_size=5), s)[0])
 
 
 class TestBornInAndFlag(SimpleTestCase):

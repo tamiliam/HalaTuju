@@ -183,8 +183,9 @@ def income_headroom(application, members):
                    wage to breach → confident-enough for 🔵 (interview confirms; GREEN is reserved
                    for a corroborated household, which the family roster will later supply).
 
-    The income test holds while gross ≤ the gift's household line OR gross ÷ size < its
-    per-person line (TD-771: on the household line passes, on the per-person line does not) —
+    The income test holds while gross ≤ the gift's household line OR gross ÷ size ≤ its
+    per-person line (ruling A, 27 Nov 2026: on EITHER line passes; TD-771 had the per-person
+    line fail on the line) —
     the household line is primary, the per-person line a safety net above it. ``breach_room`` is how much more monthly
     income would tip the household out; grading by it is what separates #13 (thin → unsure) from the
     SARA case (large → probable). ``ctx`` carries the figures for the verdict copy / interview note."""
@@ -192,7 +193,8 @@ def income_headroom(application, members):
     # `criteria.income_ceilings`), so every figure is the gift's own rule, never a universal one.
     # TD-771 (owner ruling, 26 Nov 2026): the income test passes on EITHER line, exactly as the
     # gate (`criteria.income_ok`) reads it - the household line passes ON the line (at most RM X),
-    # the per-person line does NOT (income per person must be UNDER RM Y). 'over' only when BOTH
+    # and since ruling A (owner, 27 Nov 2026) so does the per-person line (at most RM Y; it was
+    # "under RM Y" until then). 'over' only when BOTH
     # fail. Criteria S3a (owner, 26 Nov 2026): a gift with only ONE of the two lines is judged on
     # that line alone (it used to band 'unknown' without a per-person line), and the 'thin'
     # yardstick is the gift's own per-person figure (`_per_person_line`), never a fixed RM1,584.
@@ -214,8 +216,8 @@ def income_headroom(application, members):
     ceiling = min(lines) if both else max(lines)
     breach_room = ceiling - gross
     # Under 'all' the binding per-person share is the STRICTER of the two (the household line
-    # divided by the size, or the per-person line), so the officer copy "per-capita RM a is not
-    # under RM b" is true whichever line failed.
+    # divided by the size, or the per-person line), so the officer copy "per-capita RM a is above
+    # RM b" is true whichever line failed.
     per_person_line = (min(float(pc_ceiling), float(gross_ceiling) / size) if both
                        else _per_person_line(gross_ceiling, pc_ceiling, size))
     ctx = {'gross': int(round(gross)), 'per_capita': int(round(pc)), 'size': size,
@@ -224,7 +226,9 @@ def income_headroom(application, members):
     # `gross` is pc x size, so round away the float noise before comparing it with a ringgit line.
     # Absent line = not tested, exactly as the gate (`criteria.income_ok`) reads `None`.
     passes_household = gross_ceiling is not None and round(gross, 6) <= gross_ceiling
-    passes_per_person = pc_ceiling is not None and pc < pc_ceiling
+    # Ruling A: on the per-person line passes. `pc` is a sum over members divided by the size, so
+    # round away float noise first, as `gross` is above.
+    passes_per_person = pc_ceiling is not None and round(pc, 6) <= pc_ceiling
     if not ((passes_household and passes_per_person) if both else (passes_household or passes_per_person)):
         return 'over', ctx
     if not all_known or breach_room < per_person_line:

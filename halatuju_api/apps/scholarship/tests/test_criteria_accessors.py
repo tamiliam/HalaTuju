@@ -75,13 +75,13 @@ class TestAccessorsMatchTheColumns(SimpleTestCase):
                                          birth_state.meets_rule(nric, c.allowed_birth_states))
 
     def test_income_headroom_is_unchanged_at_and_around_each_line(self):
-        """Every band and figure as the column reader gave them, with TD-771's ruling applied
-        (26 Nov): per-person exactly ON its line is not met, so with the household line also
-        failed the band is 'over', as the gate refuses it."""
+        """Every band and figure as the column reader gave them, with ruling A applied
+        (27 Nov, replacing TD-771's boundary): per-person exactly ON its line is met, so the
+        band is never 'over' there; 1 sen above it, with the household line also failed, is."""
         for name in ('cohort_1', 'cohort_3', 'cohort_4', 'cohort_5', 'defaults', 'programme_7',
                      'pc_only', 'gross_only', 'nothing'):
             c = SHAPES[name]
-            for pc_value in (500, 899, 900, 1000, 1180, 1465, 1584, 1585, 2000, None):
+            for pc_value in (500, 899, 900, 900.01, 1000, 1180, 1465, 1584, 1584.01, 1585, 2000, None):
                 with mock.patch.object(amounts, 'income_per_capita', return_value=(pc_value, True)):
                     want = self._column_headroom(c, pc_value)
                     for how, read in _both(c):
@@ -104,7 +104,7 @@ class TestAccessorsMatchTheColumns(SimpleTestCase):
                'breach_room': int(round(room)), 'all_known': True,
                'gross_ceiling': int(gross_ceiling or 0), 'per_capita_ceiling': int(per_person)}
         household_ok = gross_ceiling is not None and gross <= gross_ceiling
-        per_person_ok = pc_ceiling is not None and pc < pc_ceiling
+        per_person_ok = pc_ceiling is not None and pc <= pc_ceiling     # ruling A: ON the line passes
         if not household_ok and not per_person_ok:
             return 'over', ctx
         return ('unsure' if room < per_person else 'probable'), ctx

@@ -1968,12 +1968,20 @@ class TestCodeHealthS4IncomeConsistency(TestCase):
         self.assertEqual(f['status'], 'verified')
         self.assertIn('income_per_capita_ok', _codes(f['evidence']))
 
-    def test_exactly_on_the_per_person_line_is_over(self):
-        # TD-771 (owner ruling, 26 Nov 2026), reversing #14's boundary: per person exactly
-        # RM1,584 (gross 6,336 > 5,860, so only the per-person line could pass it) is NOT under
-        # the line - the gate refuses it, so the officer band is 'over' too.
+    def test_exactly_on_the_per_person_line_is_not_over(self):
+        # Ruling A (owner, 27 Nov 2026), reversing TD-771's boundary: per person exactly
+        # RM1,584 (gross 6,336 > 5,860, so only the per-person line could pass it) is AT MOST
+        # the line - the gate passes it, so the officer band is not 'over' either.
         app = self._app(size=4)
         self._father(app, 'RM6,336')
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertNotIn('income_above_b40_line', _codes(f['unresolved']))
+
+    def test_one_sen_per_person_above_the_line_is_over(self):
+        # RM6,336.04 / 4 = RM1,584.01: 1 sen above the per-person line, and above the household line.
+        app = self._app(size=4)
+        self._father(app, 'RM6,336.04')
         f = _facts(app)['income']
         self.assertEqual(f['status'], 'gap')
         self.assertIn('income_above_b40_line', _codes(f['unresolved']))

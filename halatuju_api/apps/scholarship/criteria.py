@@ -370,10 +370,12 @@ def income_ok(profile, section):
         if not size or size <= 0:
             return False, '', f'income RM{inc:.0f} <= RM{ceiling} but household size not provided'
         per_capita = inc / size
-        if per_capita >= pc_ceiling:
-            return False, '', f'income RM{inc:.0f} <= RM{ceiling} but per-capita RM{per_capita:.0f} >= RM{pc_ceiling}'
+        # Ruling A (owner, 27 Nov 2026): ON the per-person line passes ("at most RM Y"), as the
+        # household line always did. Only ABOVE it fails.
+        if per_capita > pc_ceiling:
+            return False, '', f'income RM{inc:.0f} <= RM{ceiling} but per-capita RM{per_capita:.0f} > RM{pc_ceiling}'
         return True, 'B', (f'household income RM{inc:.0f} <= RM{ceiling} and per-capita '
-                           f'RM{per_capita:.0f} < RM{pc_ceiling}')
+                           f'RM{per_capita:.0f} <= RM{pc_ceiling}')
     # 'any' (and a single test, where they agree): today's rule; the reasons name the gift's own
     # lines, never "B40" (S3a), worded as `shortlisting._income_ok` (replay_criteria compares).
     if ceiling is not None and inc <= ceiling:
@@ -383,10 +385,10 @@ def income_ok(profile, section):
     if not size or size <= 0:
         return False, '', f'{income_above(inc, ceiling)} and household size not provided'
     per_capita = inc / size
-    if per_capita < pc_ceiling:
+    if per_capita <= pc_ceiling:    # Ruling A: on the per-person line passes
         above = f' > RM{ceiling} but' if ceiling is not None else ','
-        return True, 'B', f'income RM{inc:.0f}{above} per-capita RM{per_capita:.0f} < RM{pc_ceiling} (per-person line)'
-    return False, '', f'{income_above(inc, ceiling)} and per-capita RM{per_capita:.0f} >= RM{pc_ceiling}'
+        return True, 'B', f'income RM{inc:.0f}{above} per-capita RM{per_capita:.0f} <= RM{pc_ceiling} (per-person line)'
+    return False, '', f'{income_above(inc, ceiling)} and per-capita RM{per_capita:.0f} > RM{pc_ceiling}'
 
 
 # ── The whole tree ──────────────────────────────────────────────────────────────────────────
