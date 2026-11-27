@@ -217,7 +217,7 @@ class TestModelVersionStamp(_Base):
 
     def test_ic_result_carries_the_model_version(self):
         from apps.scholarship.genuineness import ic
-        self.assertEqual(ic.MODEL_VERSION, '1.0.0')
+        self.assertEqual(ic.MODEL_VERSION, '1.1.0')     # OCR-16
         with patch('apps.scholarship.vision._call_gemini_json',
                    return_value={'verdict': 'suspect', 'has_chip': False, 'reason': 'typed'}):
             r = vision.ic_genuineness(b'img', 'image/png')
@@ -227,7 +227,7 @@ class TestModelVersionStamp(_Base):
 
     def test_supporting_doc_result_carries_the_model_version(self):
         from apps.scholarship.genuineness import supporting_doc
-        self.assertEqual(supporting_doc.MODEL_VERSION, '1.0.0')
+        self.assertEqual(supporting_doc.MODEL_VERSION, '1.1.0')     # OCR-16
         with patch('apps.scholarship.vision._call_gemini_json',
                    return_value={'verdict': 'wrong_type', 'is_official': False,
                                  'is_expected_type': False, 'doc_seen': 'MyKad', 'reason': 'r'}):

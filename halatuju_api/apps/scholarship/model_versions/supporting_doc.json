@@ -3,5 +3,10 @@
     "digest": "95327c4e3f1c47d29fa2e1ba723d59d2b7247560b77cbe1ecae8e7e9ccb1b1c3",
     "note": "First version (LL3 phase 2, 2026-11-19): the holistic supporting-document genuineness read. In live use it is reached only as the STR fallback (an STR the signature scorer leaves unrecognised); birth_certificate and epf go through the signature path, not this model. Now stamped as model_version on each new result. Older stored results carry no version (no back-fill).",
     "also_ok": []
+  },
+  "1.1.0": {
+    "digest": "01a1f94297de4482b89ed74f4fc0dccefcca0b1e676f39c6cfc2a1c82babe403",
+    "note": "2026-11-28: OCR-16. The read goes through genuineness/ai_model.ask behind the GENUINENESS_MODEL setting. Default (unset) = the 2.5 Flash cascade exactly as before: same prompt, same schema, one call, same parsed result, so no stored answer changes while the setting is unset. Set to a 3.8 Flash name (the slip allow-list): that one model, the verdict word a closed enum, the answer checked for every required key and type, one retry, and a still-malformed answer gives the same no-signal outcome as an AI failure today. The stamp moves with the code, not with the setting.",
+    "also_ok": []
   }
 }

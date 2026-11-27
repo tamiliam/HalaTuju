@@ -49,6 +49,9 @@ def _cascade(dotted):
     if dotted == 'profile_engine.FLASH_25_CASCADE':
         from apps.scholarship.profile_engine import FLASH_25_CASCADE
         return list(FLASH_25_CASCADE)
+    if dotted == 'genuineness.genuineness_models()':     # OCR-16: GENUINENESS_MODEL, 2.5 by default
+        from apps.scholarship.genuineness.ai_model import genuineness_models
+        return genuineness_models()
     if dotted == 'vision.doc_read_cascade(results_slip)':
         from apps.scholarship.vision import doc_read_cascade
         return doc_read_cascade('results_slip')
@@ -89,19 +92,19 @@ JOBS = [
      'module': 'apps/scholarship/offer_reader.py'},
     {'key': 'ic_genuine', 'label': 'Is this MyKad genuine',
      'seam': SEAM_JSON, 'provider': GEMINI,
-     'source': BY_CASCADE, 'from': 'profile_engine.FLASH_25_CASCADE',   # kept on 2.5 (Phase 2 A)
+     'source': BY_CASCADE, 'from': 'genuineness.genuineness_models()',   # OCR-16 setting
      'module': 'apps/scholarship/genuineness/ic.py'},
     {'key': 'results_genuine', 'label': 'Is this results slip genuine',
      'seam': SEAM_JSON, 'provider': GEMINI,
-     'source': BY_CASCADE, 'from': 'profile_engine.FLASH_25_CASCADE',   # kept on 2.5 (Phase 2 A)
+     'source': BY_CASCADE, 'from': 'genuineness.genuineness_models()',   # OCR-16 setting
      'module': 'apps/scholarship/genuineness/results_doc.py'},
     {'key': 'doc_genuine', 'label': 'Is this supporting document genuine',
      'seam': SEAM_JSON, 'provider': GEMINI,
-     'source': BY_CASCADE, 'from': 'profile_engine.FLASH_25_CASCADE',   # kept on 2.5 (Phase 2 A)
+     'source': BY_CASCADE, 'from': 'genuineness.genuineness_models()',   # OCR-16 setting
      'module': 'apps/scholarship/genuineness/supporting_doc.py'},
     {'key': 'sample_stamp', 'label': 'Is this upload a stamped sample document',   # H9
      'seam': SEAM_JSON, 'provider': GEMINI,
-     'source': BY_CASCADE, 'from': 'profile_engine.FLASH_25_CASCADE',
+     'source': BY_CASCADE, 'from': 'genuineness.genuineness_models()',   # OCR-16 setting
      'module': 'apps/scholarship/genuineness/sample_stamp.py'},
     {'key': 'income_approval', 'label': 'Who approved this informal income document',   # #374 / ruling 2A
      'seam': SEAM_JSON, 'provider': GEMINI,

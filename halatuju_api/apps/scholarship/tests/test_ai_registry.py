@@ -38,6 +38,10 @@ _NOT_A_JOB = {
     # meters every call, exactly as each copy did, so nothing escapes attribution by being here.
     # Its `generate_with_fallback` (Gemini Phase 1) only calls those seams again, once per model.
     'apps/scholarship/gemini.py',
+    # OCR-16: the one shared ask of the four genuineness jobs (ic_genuine, results_genuine,
+    # doc_genuine, sample_stamp), each registered by its own module. It picks their model from
+    # GENUINENESS_MODEL (the registry reads that live) and starts nothing of its own.
+    'apps/scholarship/genuineness/ai_model.py',
 }
 
 
@@ -161,14 +165,27 @@ class TestItResolvesRatherThanRemembers(TestCase):
                 self.assertEqual(jobs[key]['fallbacks'][0], 'gemini-2.5-flash')
 
     def test_the_jobs_the_owner_kept_on_2_5_still_start_there(self):
-        """THE EXCEPTIONS. Genuineness was not tested on 3.8: the three genuineness jobs stay on
-        2.5 Flash first, exactly as before."""
+        """THE EXCEPTIONS. Genuineness was not tested on 3.8: the four genuineness jobs stay on
+        2.5 Flash first, exactly as before, while GENUINENESS_MODEL is unset (OCR-16 default)."""
         jobs = {j['key']: j for j in ai_registry.snapshot()}
-        for key in ('ic_genuine', 'results_genuine', 'doc_genuine'):
+        for key in ('ic_genuine', 'results_genuine', 'doc_genuine', 'sample_stamp'):
             with self.subTest(job=key):
                 self.assertEqual(jobs[key]['model'], 'gemini-2.5-flash')
                 self.assertEqual(jobs[key]['fallbacks'], ['gemini-2.5-flash-lite'])
                 self.assertNotIn('gemini-3.8-flash', [jobs[key]['model']] + jobs[key]['fallbacks'])
+
+    def test_the_genuineness_jobs_show_the_setting_live(self):
+        """OCR-16: once GENUINENESS_MODEL names 3.8 Flash, the screen shows the four checks on that
+        one model with no fallback; a refused value (a 2.5 name) leaves them on 2.5."""
+        with override_settings(GENUINENESS_MODEL='gemini-3.8-flash'):
+            jobs = {j['key']: j for j in ai_registry.snapshot()}
+        with override_settings(GENUINENESS_MODEL='gemini-2.5-pro'):
+            refused = {j['key']: j for j in ai_registry.snapshot()}
+        for key in ('ic_genuine', 'results_genuine', 'doc_genuine', 'sample_stamp'):
+            with self.subTest(job=key):
+                self.assertEqual(jobs[key]['model'], 'gemini-3.8-flash')
+                self.assertEqual(jobs[key]['fallbacks'], [])
+                self.assertEqual(refused[key]['model'], 'gemini-2.5-flash')
 
     def test_the_results_slip_read_is_on_3_8_only(self):
         """OCR-first S5: the SPM slip read moved off 2.5 to 3.8 Flash ONLY — checked answers and

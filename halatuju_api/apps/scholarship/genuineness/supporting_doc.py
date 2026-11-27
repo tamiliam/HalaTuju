@@ -22,9 +22,12 @@ so the module-level import isn't circular and the test patch target stays valid)
 # ``model_version``. History:
 #   1.0.0 (2026-11-19, LL3) — first stamped version; the behaviour already in use (str /
 #                        birth_certificate / epf, 2.5 Flash first). Older results carry no version.
+#   1.1.0 (2026-11-28, OCR-16) — the read goes through `ai_model.ask`: behind `GENUINENESS_MODEL` (default
+#                        empty = the 2.5 call exactly as before), or on 3.8 Flash with the answer checked, the
+#                        verdict a closed enum and one retry. Prompts, doc rules and the status map unchanged.
 # Guarded by `tests/test_model_versions.py`: a logic change here needs a bump + a
 # `model_versions/supporting_doc.json` entry.
-MODEL_VERSION = '1.0.0'
+MODEL_VERSION = '1.1.0'
 
 _GENUINENESS_DOCS = {
     'str': {'screenshot_ok': True,
@@ -49,11 +52,12 @@ _DOC_GENUINENESS_SCHEMA = {'type': 'object', 'properties': {
 _DOC_GENUINENESS_STATUS = {'genuine': 'genuine', 'suspect': 'suspect', 'wrong_type': 'not_type'}
 
 
-def doc_genuineness(data: bytes, content_type: str, doc_type: str) -> dict:
+def doc_genuineness(data: bytes, content_type: str, doc_type: str, *, model=None) -> dict:
     """Soft genuineness fingerprint for a standardised supporting document →
     ``{status, doc_seen, reason, model_version}`` or ``{}``. ``status`` ∈ canonical ``genuine`` /
     ``suspect`` / ``not_<doc_type>``. NEVER raises; an AI outage / unsupported type
-    returns ``{}`` (no signal). The reviewer is the authority."""
+    returns ``{}`` (no signal). The reviewer is the authority. `model` forces a 3.8 Flash model
+    (the paid eval); None reads `GENUINENESS_MODEL` (`ai_model`)."""
     from apps.scholarship import vision   # lazy: avoids a circular import; keeps the patch seam
     cfg = _GENUINENESS_DOCS.get(doc_type)
     if not cfg:
@@ -71,11 +75,11 @@ def doc_genuineness(data: bytes, content_type: str, doc_type: str) -> dict:
               "document actually appears to be (short). verdict — 'genuine' (a real official document of "
               "the expected type), 'suspect' (the right type but typed/printed/fabricated, not an official "
               "copy), or 'wrong_type' (a different document than expected). reason — one sentence.")
-    # Stays on 2.5 Flash first (Gemini Phase 2 Option A, owner 2026-11-14): genuineness was not in
-    # the 3.8 eval, so its verdicts keep the model they were validated on.
-    from apps.scholarship.profile_engine import FLASH_25_CASCADE
-    r = vision._call_gemini_json(prompt, _DOC_GENUINENESS_SCHEMA, image=img, mime_type=mime,
-                                 models=FLASH_25_CASCADE)
+    # OCR-16: 2.5 Flash by default (the model these verdicts were validated on); 3.8 Flash only once
+    # `GENUINENESS_MODEL` names it, after the paid eval and the owner's yes.
+    from .ai_model import ask
+    r = ask(prompt, _DOC_GENUINENESS_SCHEMA, image=img, mime_type=mime, model=model,
+            verdicts=set(_DOC_GENUINENESS_STATUS))
     if not isinstance(r, dict) or r.get('_error'):
         return {}
     status = _DOC_GENUINENESS_STATUS.get((r.get('verdict') or '').strip().lower(), '')

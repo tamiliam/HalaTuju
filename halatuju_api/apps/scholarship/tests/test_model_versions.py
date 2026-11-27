@@ -60,6 +60,10 @@ _TRANSPORT = (
     'KNOWN GAP. The shared Gemini call and image/PDF preparation used by every AI job. The prompt, '
     "schema and cascade are this model's own files and pins; a change to how the image is "
     "prepared or the call is made can still move answers without a bump.")
+_ERROR_TEXT = (
+    'The error strings of the shared Gemini call (the CASCADE_FAILED / DOCUMENT_FAILED prefix and each '
+    "model's message), which genuineness/ai_model.py also writes. Every genuineness caller reads only "
+    'whether an error is there (no signal), never its text, so these cannot move an answer.')
 _COURSES = (
     'KNOWN GAP. The courses app catalogue API (labels, families, qualification rules): another '
     'app, much of it data that changes without a deploy at all.')
@@ -73,6 +77,8 @@ _VERDICT_SECOND_LEVEL = [f'apps/scholarship/{name}.py:*' for name in (
     'wrong_slip')]
 _VISION = 'apps/scholarship/vision/__init__.py'
 _G = 'apps/scholarship/genuineness'
+_GEN_AI_ERRORS = {f'apps/scholarship/gemini.py:{n} via {_G}/ai_model.py': _ERROR_TEXT
+                  for n in ('cascade_failure', 'document_failure')}
 _NOT_REACHED_FROM_MISFILED_AS = (
     "Named in the pinned results_doc.misfiled_as closure, but only on branches misfiled_as never "
     "takes: it scores STR with doc_type='str', whose identity path returns before the band, the "
@@ -132,20 +138,24 @@ _KNOWN_GAPS = {
         **{f'{_G}/declaration_doc.py:{n} via {_APPROVAL_PIN}': _OTHER_MODELS_FILE for n in (
             'DECLARATION', 'income_doc_genuineness')},
         f'apps/scholarship/higher_results.py:extract via {_HIGHER_PIN}': _OTHER_MODELS_FILE,
+        **_GEN_AI_ERRORS,
     },
     'school_leaving_doc': {f'{dep} via {_MISFILED_AS_PIN}': _NOT_REACHED_FROM_MISFILED_AS
                            for dep in _MISFILED_AS_UNREACHED},
     'ic': {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
+        **_GEN_AI_ERRORS,
     },
     'supporting_doc': {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
+        **_GEN_AI_ERRORS,
     },
     'sample_stamp': {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
         f'{_VISION}:_as_image_for_gemini': _TRANSPORT,
+        **_GEN_AI_ERRORS,
     },
     'offer_reader': {
         f'{_VISION}:_call_gemini_json': _TRANSPORT,
@@ -210,6 +220,10 @@ _KNOWN_GAPS_OUTSIDE_THE_WALK = {
     'apps/scholarship/income_engine/amounts.py:SGD_TO_MYR_RATE':
         'A setting: the SGD to MYR rate behind Singapore salaries. Changing it moves verdict '
         'engine income answers with no bump.',
+    'apps/scholarship/genuineness/ai_model.py:GENUINENESS_MODEL':
+        'A setting (Django setting or env var, OCR-16) that moves the four genuineness reads (ic, '
+        'results_doc, supporting_doc, sample_stamp) from the 2.5 cascade to one 3.8 Flash model. Not '
+        'in any digest: switching it changes their answers with no bump.',
     'apps/scholarship/genuineness/sample_stamp.py:SAMPLE_CHECK_ENABLED':
         'An env var that turns the sample check on or off. Not in any digest.',
     'apps/scholarship/genuineness/__init__.py:def assess':

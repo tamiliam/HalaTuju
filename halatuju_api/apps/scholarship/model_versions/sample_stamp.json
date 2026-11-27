@@ -3,5 +3,10 @@
     "digest": "515d50d6ae98c3f739fefcb88c1c01b07419dc846d557791b5dc9bb74ec52e48",
     "note": "Register began (LL3, 2026-11-18): the version already in use, fingerprinted as the source stood that day.",
     "also_ok": []
+  },
+  "1.1.0": {
+    "digest": "070c9248a8e97eef72ab6ec5d4fe29238a3f20253ddc81b7f8df6ff7a65bcb55",
+    "note": "2026-11-28: OCR-16. The read goes through genuineness/ai_model.ask behind the GENUINENESS_MODEL setting. Default (unset) = the 2.5 Flash cascade exactly as before: same prompt, same schema, one call, same parsed result, so no stored answer changes while the setting is unset. Set to a 3.8 Flash name (the slip allow-list): that one model, the verdict word a closed enum, the answer checked for every required key and type, one retry, and a still-malformed answer gives the same no-signal outcome as an AI failure today. The stamp moves with the code, not with the setting. (No verdict word here: is_sample is a boolean.)",
+    "also_ok": []
   }
 }

@@ -18,7 +18,9 @@ import re
 
 logger = logging.getLogger(__name__)
 
-SAMPLE_CHECK_VERSION = '1.0.0'
+# 1.1.0 (2026-11-28, OCR-16): the read goes through `ai_model.ask` — behind `GENUINENESS_MODEL` (default
+# empty = the 2.5 call exactly as before), or on 3.8 Flash with the answer checked and one retry.
+SAMPLE_CHECK_VERSION = '1.1.0'
 SAMPLE_DOC_SEEN = 'sample_document'
 SAMPLE_REASON = 'Looks like a sample document (stamped SAMPLE / CONTOH), not a real one.'
 
@@ -59,14 +61,15 @@ def has_sample_word(text: str) -> bool:
     return bool(text and _SAMPLE_WORD.search(text))
 
 
-def _ask_model(image: bytes, content_type: str):
-    """True / False from the model, or None when there is no answer (outage, unsupported image)."""
+def _ask_model(image: bytes, content_type: str, model=None):
+    """True / False from the model, or None when there is no answer (outage, unsupported image).
+    `model` forces a 3.8 Flash model (the paid eval); None reads `GENUINENESS_MODEL` (`ai_model`)."""
     from apps.scholarship import vision
-    from apps.scholarship.profile_engine import FLASH_25_CASCADE
+    from .ai_model import ask
     img, mime = vision._as_image_for_gemini(image, content_type)
     if img is None:
         return None
-    r = vision._call_gemini_json(_PROMPT, _SCHEMA, image=img, mime_type=mime, models=FLASH_25_CASCADE)
+    r = ask(_PROMPT, _SCHEMA, image=img, mime_type=mime, model=model)
     if not isinstance(r, dict) or r.get('_error') or 'is_sample' not in r:
         return None
     return bool(r.get('is_sample'))

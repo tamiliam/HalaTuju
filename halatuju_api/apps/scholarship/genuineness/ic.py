@@ -11,8 +11,11 @@ so the module-level import isn't circular and the test patch target stays valid)
 # Version of the IC genuineness model, stored on every result as ``model_version``. History:
 #   1.0.0 (2026-11-19, LL3) — first stamped version; the behaviour in use since 2026-06-12 (8 markers,
 #                        2.5 Flash first). Results stored before this carry no version (no back-fill).
+#   1.1.0 (2026-11-28, OCR-16) — the read goes through `ai_model.ask`: behind `GENUINENESS_MODEL` (default
+#                        empty = the 2.5 call exactly as before), or on 3.8 Flash with the answer checked, the
+#                        verdict a closed enum and one retry. Prompt, markers and the status map unchanged.
 # Guarded by `tests/test_model_versions.py`: a logic change here needs a bump + a `model_versions/ic.json` entry.
-MODEL_VERSION = '1.0.0'
+MODEL_VERSION = '1.1.0'
 
 _IC_GENUINENESS_MARKERS = ('has_kad_pengenalan', 'has_malaysia', 'has_identity_card',
                            'has_mykad', 'has_warganegara', 'has_face_photo', 'has_chip',
@@ -37,22 +40,23 @@ _IC_GENUINENESS_PROMPT = (
 _GENUINENESS_STATUS = {'genuine': 'genuine', 'suspect': 'suspect', 'not_an_ic': 'not_ic'}
 
 
-def ic_genuineness(data: bytes, content_type: str = '') -> dict:
+def ic_genuineness(data: bytes, content_type: str = '', *, model=None) -> dict:
     """Soft genuineness fingerprint for an IC image → ``{status, markers, reason, model_version}``
     or ``{}``.
     ``status`` ∈ canonical ``genuine`` / ``suspect`` / ``not_ic`` (or '' if unclassified).
     NEVER raises; an AI outage / unreadable image returns ``{}`` — NO signal, because we must not
     penalise a student for OUR failure. This only informs the Identity prediction + a pre-interview
-    flag; the reviewer is the authority (verification-assurance roadmap)."""
+    flag; the reviewer is the authority (verification-assurance roadmap). `model` forces a 3.8
+    Flash model (the paid eval); None reads `GENUINENESS_MODEL` (`ai_model`)."""
     from apps.scholarship import vision   # lazy: avoids a circular import; keeps the patch seam
-    from apps.scholarship.profile_engine import FLASH_25_CASCADE
+    from .ai_model import ask
     img, mime = vision._as_image_for_gemini(data, content_type)
     if img is None:
         return {}
-    # Stays on 2.5 Flash first (Gemini Phase 2 Option A, owner 2026-11-14): genuineness was not
-    # in the 3.8 eval, so its verdicts keep the model they were validated on.
-    r = vision._call_gemini_json(_IC_GENUINENESS_PROMPT, _IC_GENUINENESS_SCHEMA, image=img, mime_type=mime,
-                                 models=FLASH_25_CASCADE)
+    # OCR-16: 2.5 Flash by default (the model these verdicts were validated on); 3.8 Flash only once
+    # `GENUINENESS_MODEL` names it, after the paid eval and the owner's yes.
+    r = ask(_IC_GENUINENESS_PROMPT, _IC_GENUINENESS_SCHEMA, image=img, mime_type=mime, model=model,
+            verdicts=set(_GENUINENESS_STATUS))
     if not isinstance(r, dict) or r.get('_error'):
         return {}
     return {

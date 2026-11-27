@@ -33,5 +33,10 @@
     "digest": "0ff1b84828b1c978c707c653e5add7b67ff08ef3cca418d58808b62a3358921b",
     "note": "2026-11-26: TD-701. The white check (income_declaration.approval_page_white) pastes a transparent page in greyscale (an L page with the alpha channel as mask; a P image with transparency converts to RGBA first) instead of building four full-size RGBA copies (16 MP RGBA: about 192 MB over baseline before, 47 MB now), and HEIF is dropped from the formats it opens (HEIC is already converted to JPEG at upload), so a HEIF page is not judged white and gets the paid read. Verdicts for JPEG/PNG/GIF/BMP/WEBP are unchanged.",
     "also_ok": []
+  },
+  "1.37.0": {
+    "digest": "a35492150faa8000b924728b03f730c2ab934f7d92fab23c50448069639657dc",
+    "note": "2026-11-28: OCR-16. The QR + crest read (results_visual_markers) only. The read goes through genuineness/ai_model.ask behind the GENUINENESS_MODEL setting. Default (unset) = the 2.5 Flash cascade exactly as before: same prompt, same schema, one call, same parsed result, so no stored answer changes while the setting is unset. Set to a 3.8 Flash name (the slip allow-list): that one model, the verdict word a closed enum, the answer checked for every required key and type, one retry, and a still-malformed answer gives the same no-signal outcome as an AI failure today. The stamp moves with the code, not with the setting. The text-side signature scoring is unchanged.",
+    "also_ok": []
   }
 }

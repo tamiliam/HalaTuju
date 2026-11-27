@@ -45,6 +45,9 @@ _APP = 'apps/scholarship'
 _G = f'{_APP}/genuineness'
 _AI_REGISTRY = 'halatuju/ai_registry.py'
 _FLASH_25 = (f'{_APP}/profile_engine.py', 'FLASH_25_CASCADE')
+# OCR-16: the four genuineness AI reads ask through one helper (GENUINENESS_MODEL); it and its pins sit in each.
+_GEN_AI = f'{_G}/ai_model.py'
+_GEN_AI_PINS = [_FLASH_25, (f'{_APP}/vision/slip_read.py', 'is_slip_model'), (f'{_APP}/read_errors.py', 'DOCUMENT_FAILED')]
 
 #: Folder of the append-only version logs, relative to the API root.
 VERSIONS_DIR = f'{_APP}/model_versions'
@@ -71,8 +74,8 @@ MODELS = {
         'files': [f'{_G}/{name}.py' for name in (
             'results_doc', 'stpm_doc', 'matric_poly_doc', 'bands', 'epf_app_doc',
             'offer_signatures', 'offer_rulings', 'offer_issuers', 'offer_reading', 'offer_text',
-            'offer_confirmations', 'offer_confirm_checks', 'offer_agency')] + [_AI_REGISTRY],
-        'pins': [_FLASH_25] + [(f'{_APP}/results_kind.py', n) for n in ('detect', 'prints_polytechnic', '_NOT_ISSUERS')]
+            'offer_confirmations', 'offer_confirm_checks', 'offer_agency', 'ai_model')] + [_AI_REGISTRY],
+        'pins': _GEN_AI_PINS + [(f'{_APP}/results_kind.py', n) for n in ('detect', 'prints_polytechnic', '_NOT_ISSUERS')]
         + [(f'{_APP}/{f}.py', n) for f, n in (('vision/judge', '_any_field_filled'), ('read_errors', 'EMPTY_ANSWER'),
            ('vision/field_extraction', '_read_higher_results'), ('income_declaration', 'read_approval'))],
     },
@@ -104,22 +107,19 @@ MODELS = {
                  (f'{_G}/bands.py', 'GENUINE_MIN'),
                  (f'{_G}/stpm_doc.py', 'STPM_LISTS'), (f'{_G}/offer_issuers.py', 'PRIVATE_ARM_OPENING')],
     },
-    # LL3 phase 2: the two AI genuineness reads that had no version. Both call Gemini on the
-    # 2.5 Flash cascade, so they carry the AI register and the cascade pin like sample_stamp.
+    # LL3 phase 2: the two AI genuineness reads that had no version; like sample_stamp (OCR-16: via ai_model).
     'ic': {
         'constant': (f'{_G}/ic.py', 'MODEL_VERSION'),
-        'files': [f'{_G}/ic.py', _AI_REGISTRY],
-        'pins': [_FLASH_25],
+        'files': [f'{_G}/ic.py', _GEN_AI, _AI_REGISTRY], 'pins': list(_GEN_AI_PINS),
     },
     'supporting_doc': {
         'constant': (f'{_G}/supporting_doc.py', 'MODEL_VERSION'),
-        'files': [f'{_G}/supporting_doc.py', _AI_REGISTRY],
-        'pins': [_FLASH_25],
+        'files': [f'{_G}/supporting_doc.py', _GEN_AI, _AI_REGISTRY], 'pins': list(_GEN_AI_PINS),
     },
     'sample_stamp': {
         'constant': (f'{_G}/sample_stamp.py', 'SAMPLE_CHECK_VERSION'),
-        'files': [f'{_G}/sample_stamp.py', _AI_REGISTRY],
-        'pins': [_FLASH_25, (f'{_G}/bands.py', 'stored_authenticity')],
+        'files': [f'{_G}/sample_stamp.py', _GEN_AI, _AI_REGISTRY],
+        'pins': _GEN_AI_PINS + [(f'{_G}/bands.py', 'stored_authenticity')],
     },
     'offer_reader': {
         'constant': (f'{_APP}/offer_reader.py', 'OFFER_READER_VERSION'),
