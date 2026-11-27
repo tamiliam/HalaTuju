@@ -44,3 +44,57 @@ def pdf_page1_layout(data: bytes) -> str:
         return ''
     same = Counter(re.sub(r'\s', '', layout)) == Counter(re.sub(r'\s', '', plain))
     return layout if same else ''
+
+
+#: OCR-14b-3: the operators a FULLY blank page may hold. Each paints nothing: graphics-state save, restore and
+#: settings, colour choice and marked content. `Do` is allowed only for a Form XObject whose own operators pass the
+#: same test. No text object (not even an empty BT/ET), no path, no paint, no shading, no image.
+_PAINTS_NOTHING = frozenset((b'q', b'Q', b'cm', b'w', b'J', b'j', b'M', b'd', b'ri', b'i', b'g', b'G', b'rg', b'RG',
+                             b'k', b'K', b'cs', b'CS', b'sc', b'scn', b'SC', b'SCN', b'BMC', b'BDC', b'EMC', b'MP',
+                             b'DP'))
+
+
+def fully_blank_page2(data: bytes, page_texts) -> bool:
+    """True only when the letter's page 2 is FULLY blank (OCR-14b-3, the UniMAP excuse; owner decision B1, 27 Nov):
+    its drawn text (``page_texts``, `pdf_rules_page_texts`) is '', the shared S-visible read judged it DRAWN with
+    pypdf's raw text exactly '' (no whitespace run; pdfium placed no text object on it, `pdf_pdfium_check` rule f),
+    the page lists no /Annots at all (not even a plain /Link or an empty list), and every operator on it, read by the
+    shared parser (`pdf_pages._parsed_ops`, with its byte, token and operator guards and a budget), is one that paints
+    nothing (`_PAINTS_NOTHING`; a Form XObject is walked, depth-bounded). Any failure is False."""
+    pages = list(page_texts or ())
+    if len(pages) < 2 or pages[1] != '':
+        return False
+    try:
+        read = pdf_pages._layer(data, 0)
+        if not (read.visible and read.texts and len(read.seen) >= 2 and read.seen[1] == pdf_pages.DRAWN
+                and read.texts[1] == ''):
+            return False
+        reader = pdf_pages._open_pdf(data)
+        page = reader.pages[1]
+        if '/Annots' in page:
+            return False
+        contents = page.get('/Contents')
+        contents = contents.get_object() if contents is not None else None
+        return pdf_pages._is_null(contents) or _paints_nothing(contents, pdf_pages._resources(page), reader, {},
+                                                               pdf_pages._Budget(), 0)
+    except Exception as e:  # undecidable is not blank: the page refuses as before
+        logger.warning('PDF page 2 blank check failed: %s', e)
+        return False
+
+
+def _paints_nothing(content, resources, reader, cache: dict, budget, depth: int) -> bool:
+    from pypdf.generic import StreamObject
+    xobjects = pdf_pages._resolved(resources, '/XObject') if isinstance(resources, dict) else None
+    for operands, operator in pdf_pages._parsed_ops(content, reader, cache, budget):
+        if operator == b'Do':
+            xobj = xobjects.get(operands[0]) if isinstance(xobjects, dict) and operands else None
+            xobj = xobj.get_object() if xobj is not None else None
+            if (not isinstance(xobj, StreamObject) or pdf_pages._resolved(xobj, '/Subtype') != '/Form'
+                    or depth >= pdf_pages._MAX_FORM_DEPTH):
+                return False
+            budget.spend('operations', pdf_pages._DO_COST)
+            if not _paints_nothing(xobj, pdf_pages._resources(xobj) or resources, reader, cache, budget, depth + 1):
+                return False
+        elif operator not in _PAINTS_NOTHING:
+            return False
+    return True

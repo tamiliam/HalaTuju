@@ -54,6 +54,16 @@ Branch ocr-14b-unis, not pushed. Migration: none. Services: api. The new lane st
   `eval/offer_replay` and the owner-words comment.
 - **Versions:** offer_parse 2.6.0 digest refreshed in place (unreleased); offer_reader 2.13.0 unchanged.
 - **Tests:** new `test_offer_parse_unimap.py` (made-up text only).
+- **OCR-14b-3, one excuse for UniMAP (owner decision B1):** a real UniMAP letter has an empty second page, which
+  the shared drawn-page check refused as a hidden page. UniMAP alone now lets page 2 be blank, but only when the
+  PDF itself proves it is fully blank: no text at all (not even spaces or invisible text), no picture, no drawing
+  (no filled or stroked shape, clip, shading or drawing form), and no annotation of any kind. The proof
+  (`pdf_rules_pages.fully_blank_page2`) reuses the shared content-stream reader and its limits; any doubt means
+  "not blank" and the letter refuses as before. Page 1, page 3 on, a 1-page letter, two blank pages and every other
+  lane (UniSZA, UMS and the rest) are checked exactly as before; no shared check was loosened. Wired through
+  `offer_exact.blank_page2_excused` (it reads the bytes only for a lane that makes the excuse), `offer_parse.diagnose`
+  and the eval replay and dry run. The lane stays OFF. offer_parse 2.6.0 digest refreshed in place again.
+  New `test_offer_unimap_blank_page.py` (made-up PDFs for the attacks; the local owner sample when present).
 
 ### feat: OCR-14b-1 - UMPSA rules lane (OFF), and the UniSZA withdrawal-note excuse (2026-11-27)
 

@@ -518,7 +518,7 @@ def family_of(text: str) -> str:
                            else 'unimap' if is_unimap(up) else '')
 
 
-def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_texts=None) -> dict:
+def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_texts=None, blank_page2=False) -> dict:
     """The parser's whole walk, for `parse_govt_offer` and the eval (`offer_replay`): ``{family,
     titled, portal, fields (the read before the exit checks, or None), empty_required, guard, locked}``
     — ``locked`` is the lock (the field dict) or None.
@@ -527,7 +527,8 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
     layer (`offer_exact` decides — review H1). The identity is read from it, AND from ``text``: when the
     two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``).
     ``page1_layout`` is that page's LAYOUT text (`pdf_rules_pages.pdf_page1_layout`) — read by the UMS family
-    only (`_diagnose_ums`), with ``page_texts`` (`pdf_pages.pdf_page_texts`: each page's drawn text, render-mode visible)."""
+    only (`_diagnose_ums`), with ``page_texts`` (`pdf_pages.pdf_page_texts`: each page's drawn text, render-mode visible).
+    ``blank_page2`` (`offer_exact.blank_page2_excused`) reaches the UniMAP branch only (OCR-14b-3)."""
     text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or ''))   # no-break spaces as spaces; no zero-width
     page1_text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_text or ''))
     up = text.upper()
@@ -542,7 +543,8 @@ def diagnose(text: str, page1_text: str = None, page1_layout: str = '', page_tex
         from . import offer_parse_lanes as lanes
         layout = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_layout or ''))
         branch = getattr(lanes, f'diagnose_{fam}')
-        return _rules_exit(branch(out, text, page1_text, layout, page_texts), layout if layout.strip() else text)
+        extra = (bool(blank_page2),) if fam == 'unimap' else ()      # OCR-14b-3: the one lane with the excuse
+        return _rules_exit(branch(out, text, page1_text, layout, page_texts, *extra), layout if layout.strip() else text)
     if not fam:
         return out
     return _rules_exit(_diagnose_govt(out, fam, text, page1_text, up), page1_text if page1_text.strip() else text)

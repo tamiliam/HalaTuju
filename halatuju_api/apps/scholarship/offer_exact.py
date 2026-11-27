@@ -183,7 +183,7 @@ def _guard_reason(d: dict) -> str:
 
 
 def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profile_nric='',
-               page1_layout='', why=None, page_texts=None) -> dict | None:
+               page1_layout='', why=None, page_texts=None, blank_page2=False) -> dict | None:
     """The Exact read from what production derived: ``from_text_layer`` — ``text`` is a digital PDF's own
     text layer — and that PDF's ``page1_layer`` (and its LAYOUT text, ``page1_layout``, which only the UMS
     family reads — OCR-first S1). ``prior`` is the stored ``vision_fields``. A university lock names its
@@ -191,7 +191,7 @@ def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profi
     UMS letter does not lock, ``why`` (a dict, if given) gets the lane and the reason (`_note_ums_refusal`),
     and the missing owner phrases' NUMBERS (``owner_words_missing``; never text). ``page_texts``: that PDF's
     drawn text per page (render-mode visible; `pdf_pages.pdf_page_texts`), read by the UMS family only (S1c
-    owner words)."""
+    owner words). ``blank_page2``: `blank_page2_excused` proved page 2 fully blank (OCR-14b-3, UniMAP only)."""
     from .offer_ic import guard_nric
     from .offer_parse import diagnose
     if from_text_layer and not (page1_layer or '').strip():
@@ -199,7 +199,8 @@ def exact_read(text, *, from_text_layer=False, page1_layer='', prior=None, profi
         return None                              # page 1 is a scan: no page-1 identity to read (H2)
     page1 = page1_layer if from_text_layer else ''
     d = diagnose(text, page1_text=page1 or None, page1_layout=page1_layout if from_text_layer else '',
-                 page_texts=page_texts if from_text_layer else None)
+                 page_texts=page_texts if from_text_layer else None,
+                 blank_page2=bool(blank_page2) and from_text_layer)
     govt = d['locked']
     if govt is None:
         _note_ums_refusal(why, text, _guard_reason(d))
@@ -289,13 +290,14 @@ def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_n
         if isinstance(why, dict):
             why.update(lane=mod.LANE, reason='lane_off')
         return None
-    layout, page_texts = '', None
+    layout, page_texts, blank2 = '', None, False
     if lane_on and from_layer and page1.strip():
         from .pdf_pages import MAX_LAYER_PAGES
         from .pdf_rules_pages import pdf_page1_layout, pdf_rules_page_texts
         layout, page_texts = pdf_page1_layout(image), pdf_rules_page_texts(image, MAX_LAYER_PAGES)
+        blank2 = blank_page2_excused(mod, image, page_texts)
     ex = exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric,
-                    page1_layout=layout, why=why, page_texts=page_texts)
+                    page1_layout=layout, why=why, page_texts=page_texts, blank_page2=blank2)
     lane = (ex or {}).get('rules_lane') or ''
     if lane and lane in ocr_first_lanes() and from_layer:
         missing = _not_inked(ex, image, layout, lane)
@@ -304,6 +306,16 @@ def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_n
                 why.update(lane=lane, reason='not_inked', ink_missing=missing)
             return None
     return ex
+
+
+def blank_page2_excused(mod, data, page_texts) -> bool:
+    """OCR-14b-3: True only for a lane module that makes the blank-page-2 excuse (``BLANK_PAGE2_EXCUSE``, UniMAP
+    alone) AND whose letter's bytes prove page 2 fully blank (`pdf_rules_pages.fully_blank_page2`). Every other
+    lane never reads the bytes for it, so its answer cannot change."""
+    if not getattr(mod, 'BLANK_PAGE2_EXCUSE', False) or not page_texts:
+        return False
+    from . import pdf_rules_pages
+    return pdf_rules_pages.fully_blank_page2(data, page_texts) is True
 
 
 def _not_inked(ex, image, layout, lane) -> list:

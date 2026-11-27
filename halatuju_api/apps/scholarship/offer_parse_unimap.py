@@ -33,10 +33,12 @@ indent (the title's; measured 42):
 The reporting date is read ONLY from the Tarikh Pendaftaran row. Any date on the page but the reference, the offer
 date and that row refuses; those are skipped only at the fixed places the reader read them, never a line found by
 its words. Every page after page 1 with text refuses (``later_page``); a blank page refuses too, by the shared drawn
-page check (``hidden_page``, `offer_ums_refusal.page_texts_refusal`): NO EXCUSE is made for it.
+page check (``hidden_page``, `offer_ums_refusal.page_texts_refusal`), with ONE excuse (OCR-14b-3, owner decision B1,
+27 Nov; `BLANK_PAGE2_EXCUSE`): page 2 may be blank when the letter's BYTES prove it fully blank
+(`pdf_rules_pages.fully_blank_page2`: no text, no image, no drawing, no annotation), passed in as ``blank_page2``.
+A blank page 1, a blank page 3, a page 2 the bytes did not prove blank, and every other lane refuse as before.
 
-No excuse of any kind: the portal tell, the withdrawal check and the owner words run on the letter as it is.
-"""
+No other excuse: the portal tell, the withdrawal check and the owner words run on the letter as it is."""
 import re
 
 from .offer_parse import _norm_nric, house_date
@@ -52,6 +54,9 @@ from .offer_ums_refusal import _SQUEEZE_OUT, _withdrawn_one, fold_lookalikes, st
 LANE = 'ua:UniMAP'
 INSTITUTION = 'UNIVERSITI MALAYSIA PERLIS'
 ISSUER = 'Pusat Pengurusan Akademik, Universiti Malaysia Perlis'
+#: OCR-14b-3: this lane alone excuses a FULLY blank page 2; `offer_exact.blank_page2_excused` reads the bytes only
+#: for a lane module that sets it.
+BLANK_PAGE2_EXCUSE = True
 
 #: Page 1 is short; past these no rule runs (the UMS bounds).
 MAX_CHARS = 20_000
@@ -350,13 +355,15 @@ def unimap_later_pages(pages) -> str:
     return 'later_page' if any((p or '').strip() for p in pages or ()) else ''
 
 
-def diagnose_unimap(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None) -> dict:
+def diagnose_unimap(out: dict, text: str, page1_text: str, page1_layout: str, page_texts=None,
+                    blank_page2: bool = False) -> dict:
     """The UniMAP branch of `offer_parse.diagnose` (via `offer_parse_lanes`), in `diagnose_umpsa`'s order: a portal
     page refuses (`offer_parse._PORTAL_TELL`, no excuse); a scan refuses (``no_layout``); the drawn page texts
     (``hidden_page``); `read_unimap`; the owner phrases; the whole letter (`unimap_letter_refusal`);
     ``foreign_letters``; ``name_not_plain``; the read IC not printed exactly once in page 1's plain layer
     (``ic_not_plain``); any other IC-like number in page 1's plain layer or any page text (``ic_printed``); last,
-    any later page with text."""
+    any later page with text. ``blank_page2`` (the bytes proved page 2 fully blank, `BLANK_PAGE2_EXCUSE`) excuses
+    that one page from the drawn page check, and only when its text is ''; nothing else changes."""
     from .offer_parse import _PORTAL_TELL, _SPACES, _ZERO_WIDTH, PARSER_VERSION
     from .offer_owner_words import missing
     from .offer_parse_university import name_in_plain
@@ -374,7 +381,8 @@ def diagnose_unimap(out: dict, text: str, page1_text: str, page1_layout: str, pa
     fields, reason = read_unimap(page1_layout)
     out['fields'], out['titled'] = fields, fields is not None
     nric = (fields or {}).get('candidate_nric', '')
-    early = page_texts_refusal(pages)
+    excused = blank_page2 is True and len(pages) >= 2 and pages[1] == ''          # OCR-14b-3: the one excuse
+    early = page_texts_refusal([pages[0], 'blank page 2 (excused)'] + pages[2:] if excused else pages)
     if not early and not reason:
         out['owner_words_missing'] = missing(LANE, page1_layout, text_pdf=True)
         early = 'owner_words_missing' if out['owner_words_missing'] else ''
