@@ -24,8 +24,11 @@ genuine, rejected = not), malformed answers after the retry, document refusals, 
 whose stored value was genuine is shown too), genuine on a known fake, a known fake left WITHOUT a verdict
 (`unanswered_known_fake`, with its ids: fetch failed, call errored, refused or malformed twice, a slip with no
 stored text, or not reached before a stop or the limit), and for the slip a marker the stored verdict had found
-that 3.8 lost on an accepted row. A known fake no chosen check reads fails the gates too. The last line says
-GATES MET or GATES NOT MET. An answer that is unreadable (not JSON) twice counts as malformed, not refused.
+that 3.8 lost on an accepted row. A slip fake whose marker read errored is unanswered too (scored from text
+alone). A known fake no chosen check reads fails the gates, and so does an incomplete run: a stop (cost cap,
+service errors, fetch failures), a chosen check with 0 answers, or a reviewer-accepted row in the planned sample
+(what `--limit` chose) left untested by a stop, a fetch failure, an error or a service error
+(`unanswered_accepted`). The last line says GATES MET or GATES NOT MET. An answer that is unreadable (not JSON) twice counts as malformed, not refused.
 Malformed answers on known fakes and on reviewer-rejected rows are shown beside the gates.
 
 WRITES NOTHING: no verdict, no vision_fields, no genuineness field, no read state (a guard refuses every
@@ -89,14 +92,17 @@ COUNTERS = ('docs', 'calls', 'answered', 'no_signal', 'service_error', 'malforme
             'agree_reviewer', 'disagree_reviewer', 'new_not_genuine_on_accepted',
             'new_not_genuine_on_accepted_stored_genuine', 'genuine_on_known_fake',
             'malformed_on_known_fake', 'malformed_on_rejected', 'unanswered_known_fake', 'rescored_from_text',
-            'not_gated_no_text', 'marker_agree', 'marker_disagree', 'marker_lost_on_accepted')
+            'not_gated_no_text', 'marker_agree', 'marker_disagree', 'marker_lost_on_accepted', 'unanswered_accepted')
 ID_LISTS = ('disagree_stored', 'new_not_genuine_on_accepted', 'genuine_on_known_fake', 'unanswered_known_fake',
             'malformed_after_retry', 'malformed_on_known_fake', 'malformed_on_rejected', 'document_refused',
-            'service_error', 'not_gated_no_text', 'marker_lost_on_accepted')
-#: The counts that must be 0 per check (the GATES line); `unanswered_known_fake` = a known fake with no verdict.
+            'service_error', 'not_gated_no_text', 'marker_lost_on_accepted', 'unanswered_accepted')
+#: The counts that must be 0 per check (the GATES line); `unanswered_known_fake` = a known fake with no verdict,
+#: `unanswered_accepted` = a reviewer-accepted row of the planned sample that 3.8 was never fairly asked about.
 GATE_KEYS = {c: ('new_not_genuine_on_accepted', 'genuine_on_known_fake')
-             + (('marker_lost_on_accepted',) if c == 'results_slip' else ()) + ('unanswered_known_fake',)
-             for c in CHECKS}
+             + (('marker_lost_on_accepted',) if c == 'results_slip' else ())
+             + ('unanswered_known_fake', 'unanswered_accepted') for c in CHECKS}
+#: The gate counts whose ids go on the GATES line.
+GATE_IDS = ('unanswered_known_fake', 'unanswered_accepted')
 
 
 def _live(types):
@@ -326,7 +332,8 @@ class Command(BaseCommand):
         out(f'  known fakes given: {len(fakes)} by type, {len(sample_fakes)} sample-stamp')
         missed = unsampled_fakes(by_check, fakes, sample_fakes)
         if missed:
-            out(f'  known fakes no chosen check reads: {",".join(map(str, missed[:IDS_SHOWN]))}')
+            out(f'  known fakes no chosen check reads: {",".join(map(str, missed[:IDS_SHOWN]))}'
+                ' (a run would fail the gates)')
         out(f'  estimated calls: {len(todo)} to {ai_model.MAX_CALLS * len(todo)} (one retry at most)')
         out(f'  estimated cost: up to US${(USD_PER_CALL_38 * ai_model.MAX_CALLS * len(todo)).quantize(Decimal("0.01"))}'
             f' at an ASSUMED upper bound of US${USD_PER_CALL_38} per call (3.8 Flash has no price row; a run '
@@ -362,11 +369,13 @@ class Command(BaseCommand):
         return limit, cap, checks, fakes, sample_fakes, model
 
     def _run(self, todo, cap, model, known, by_check, missed):
-        tally = {c: {'n': dict.fromkeys(COUNTERS, 0), 'ids': {k: [] for k in ID_LISTS}, 'fakes_answered': set()}
-                 for c in by_check}
+        tally = {c: {'n': dict.fromkeys(COUNTERS, 0), 'ids': {k: [] for k in ID_LISTS}, 'fakes_answered': set(),
+                     'settled': set()} for c in by_check}
         trace = {'calls': 0, 'outcome': '', 'usd': Decimal('0'), 'peak': USD_PER_CALL_38, 'tokens': None}
         texts = dict(ApplicantDocumentOcrText.objects.filter(
             document_id__in=[pk for c, pk in todo if c == 'results_slip']).values_list('document_id', 'text'))
+        accepted = set(ApplicantDocument.objects.filter(pk__in={pk for _c, pk in todo}, verification_status='verified')
+                       .values_list('pk', flat=True))
         streak, stopped, done = {'service': 0, 'fetch': 0}, '', 0
         with _traced(trace):
             for check, pk in todo:
@@ -383,12 +392,15 @@ class Command(BaseCommand):
         for check, ids in unanswered_fakes(by_check, known, answered).items():
             tally[check]['n']['unanswered_known_fake'] = len(ids)
             tally[check]['ids']['unanswered_known_fake'] = ids
+        for check, pk in todo:      # the planned sample: --limit's cut is fine, a stop or a failure is not
+            if pk in accepted and pk not in tally[check]['settled']:
+                _add(tally, check, 'unanswered_accepted', pk)
         self._report(tally, trace, done, stopped, missed)
 
     def _one(self, tally, trace, streak, check, pk, model, fakes, texts):
         t = tally[check]['n']
         t['docs'] += 1
-        before, vs = trace['calls'], ''
+        before, vs, read = trace['calls'], '', False
         trace['outcome'] = ''
         try:
             doc = ApplicantDocument.objects.filter(pk=pk).first()
@@ -406,6 +418,7 @@ class Command(BaseCommand):
             if check == 'results_slip':
                 _add(tally, check, 'rescored_from_text' if text.strip() else 'not_gated_no_text', pk)
             tally_the_read(tally, check, doc, stored, new, markers, fakes)
+            read = True
         except Exception as e:    # one document never stops the run; the type only, never the message
             logger.warning('eval_genuineness_38: doc %s failed (%s)', pk, type(e).__name__)
             t['error'] += 1
@@ -419,12 +432,16 @@ class Command(BaseCommand):
                 _add(tally, check, 'malformed_on_known_fake', pk)
             if vs == 'rejected':
                 _add(tally, check, 'malformed_on_rejected', pk)
+        if outcome and check == 'results_slip':      # a slip fake scored from text alone: its 3.8 read failed
+            tally[check]['fakes_answered'].discard(pk)
+        if read and outcome != 'service_error':      # 3.8 gave this document its own answer (or a slip, no text)
+            tally[check]['settled'].add(pk)
         streak['service'] = streak['service'] + 1 if outcome == 'service_error' else 0
         if streak['service'] >= FAIL_FAST:
             return f'{FAIL_FAST} AI service errors in a row (check the key, quota or model name)'
         return ''
 
-    def _report(self, tally, trace, done, stopped, missed=()):
+    def _report(self, tally, trace, done, stopped, missed):
         out = self.stdout.write
         out(f'done: {done} documents, {trace["calls"]} calls, charged up to US${trace["usd"].quantize(Decimal("0.0001"))}'
             f' (assumed: US${USD_PER_CALL_38} a call at least, reported tokens at the assumed 3.8 prices when higher)')
@@ -438,17 +455,18 @@ class Command(BaseCommand):
                 if ids:
                     out(f'[{check}] {key} ids: {",".join(map(str, ids[:IDS_SHOWN]))}'
                         + (f' (+{len(ids) - IDS_SHOWN} more)' if len(ids) > IDS_SHOWN else ''))
-        lines = [self._gate_line(c, r['n'], r['ids']['unanswered_known_fake']) for c, r in tally.items()]
+        lines = [self._gate_line(c, r['n'], r['ids']) for c, r in tally.items()]
         out('GATES (each must be 0): ' + '; '.join(lines)
             + f'; known_fake_no_check_reads {len(missed)}' + _ids_in(missed))
         failed = [f'{c} {k}' for c, r in tally.items() for k in GATE_KEYS[c] if r['n'][k]]
         failed += ['known_fake_no_check_reads'] if missed else []
+        failed += [f'{c} answered 0' for c, r in tally.items() if not r['n']['answered']]
+        failed += [f'run stopped: {stopped}'] if stopped else []
         out(('GATES NOT MET: ' + ', '.join(failed)) if failed else 'GATES MET')
 
     @staticmethod
-    def _gate_line(check, n, unanswered=()):
-        line = ', '.join(f'{k} {n[k]}' + (_ids_in(unanswered) if k == 'unanswered_known_fake' else '')
-                         for k in GATE_KEYS[check])
+    def _gate_line(check, n, ids):
+        line = ', '.join(f'{k} {n[k]}' + (_ids_in(ids[k]) if k in GATE_IDS else '') for k in GATE_KEYS[check])
         return (f'{check} {line} (also: malformed_on_known_fake {n["malformed_on_known_fake"]}, '
                 f'malformed_on_rejected {n["malformed_on_rejected"]})')
 

@@ -43,6 +43,11 @@ Sprint OCR-16. Branch ocr-16-genuineness, not pushed. Migration: none. Services:
   - **Unreadable twice is malformed.** An answer that is not JSON twice (`unparseable model response`) is now labelled `malformed_after_retry`, so it counts in `malformed_on_known_fake` and `malformed_on_rejected`. Two real refusals stay `document_refused`. The fix is in the eval's labelling (`outcome_of`), not in `ai_model.py`.
   - **Runbook.** The example run is `--limit 240 --max-cost-usd 2.00`.
   - **Tests.** test_eval_genuineness_38.py (TestReviewRound2).
+- **Review round 3 (2026-11-28).** The eval only (and these notes); `ai_model.py` and the four checks are not touched, so no digest moved.
+  - **A stopped or empty run never meets the gates.** A stop (cost cap, five service errors or five fetch failures in a row) adds `run stopped: <reason>` to GATES NOT MET; a chosen check with no answers adds `<check> answered 0`; a reviewer-accepted row in the planned sample (what `--limit` chose) left untested by a stop, a fetch failure, an error or a service error counts as `unanswered_accepted`, with its ids on the GATES line. A `--limit` cut is not a failure.
+  - **Slip fakes.** A known-fake slip whose 3.8 marker read failed (refused, malformed or a service error) counts as `unanswered_known_fake`, even though it is still scored from its text.
+  - **Dry run.** The line listing known fakes no chosen check reads says a run would fail the gates.
+  - **Tests.** test_eval_genuineness_38.py (TestReviewRound3).
 
 ### feat: OCR-15 phase 1 - the parent IC's text is kept, plus a one-off Vision capture (2026-11-27)
 

@@ -39,6 +39,16 @@ class _Docs(TestCase):
             application=app, doc_type=doc_type, storage_path=f'test/{doc_type}', content_type='image/jpeg',
             verification_status=verification, vision_fields=vf)
 
+    def _slip(self, verification='verified', text=None):
+        d = self.doc('results_slip', verification=verification)
+        d.vision_fields['authenticity'].update({'probability': 0.9, 'present': ['QR CODE', 'JATA NEGARA'],
+                                                'missing': []})
+        ApplicantDocument.objects.filter(pk=d.pk).update(vision_fields=d.vision_fields)
+        if text:
+            ApplicantDocumentOcrText.objects.create(document=d, text=text, source='vision_ocr', reader='test',
+                                                    stored_at=d.uploaded_at)
+        return d
+
     def run_cmd(self, *args, seam=None, fetch=b'img'):
         out = StringIO()
         with ExitStack() as stack:
@@ -198,16 +208,6 @@ class TestReviewRound1(_Docs):
         text, _m, _ = self.run_cmd('--checks', 'ic', '--fake-ids', str(stray.pk))
         self.assertIn(f'known fakes no chosen check reads: {stray.pk}', text)
 
-    def _slip(self, verification='verified', text=None):
-        d = self.doc('results_slip', verification=verification)
-        d.vision_fields['authenticity'].update({'probability': 0.9, 'present': ['QR CODE', 'JATA NEGARA'],
-                                                'missing': []})
-        ApplicantDocument.objects.filter(pk=d.pk).update(vision_fields=d.vision_fields)
-        if text:
-            ApplicantDocumentOcrText.objects.create(document=d, text=text, source='vision_ocr', reader='test',
-                                                    stored_at=d.uploaded_at)
-        return d
-
     def test_a_slip_with_no_markers_is_scored_as_live_with_both_absent(self):
         self._slip(text='SIJIL PELAJARAN MALAYSIA 000000-00-0000')
         bad = {'has_qr_code': 'yes', 'has_jata_negara_crest': True}          # malformed twice: no markers
@@ -320,7 +320,7 @@ class TestReviewRound2(_Docs):
         fake = self.doc('ic', status='suspect')
         text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'ic', '--fake-ids', str(fake.pk),
                                    seam=_by_schema(ic_answer=_ic_answer('suspect')))
-        self.assertIn('genuine_on_known_fake 0, unanswered_known_fake 0 (also:', text)
+        self.assertIn('genuine_on_known_fake 0, unanswered_known_fake 0, unanswered_accepted 0 (also:', text)
         self.assertIn('known_fake_no_check_reads 0', text)
         self.assertTrue(text.rstrip().endswith('GATES MET'))
 
@@ -347,6 +347,93 @@ class TestReviewRound2(_Docs):
         self.assertEqual(ev.outcome_of({'_error': DOCUMENT_FAILED + ': m: blocked'}), 'document_refused')
         self.assertEqual(ev.outcome_of({'_error': CASCADE_FAILED + ': m: 429'}), 'service_error')
         self.assertEqual(ev.outcome_of({'verdict': 'genuine'}), '')
+
+
+class TestReviewRound3(_Docs):
+    """Review r3: a stopped or empty run never meets the gates; a slip fake whose marker read failed is unanswered."""
+    RUN = ('--run', '--limit', '50', '--max-cost-usd', '1.00')
+    DOWN = {'_error': CASCADE_FAILED + ': 429'}
+
+    @staticmethod
+    def last(text):
+        return text.rstrip().splitlines()[-1]
+
+    def test_five_service_errors_and_no_answer_do_not_meet_the_gates(self):
+        for _ in range(6):
+            self.doc('ic')
+        text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'ic', seam={'return_value': self.DOWN})
+        self.assertIn('STOPPED: 5 AI service errors in a row', text)
+        self.assertTrue(self.last(text).startswith('GATES NOT MET: '))
+        self.assertIn('ic answered 0', self.last(text))
+        self.assertIn('run stopped: 5 AI service errors in a row', self.last(text))
+
+    def test_a_cap_stop_before_the_first_document_does_not_meet_the_gates(self):
+        self.doc('ic', verification='verified')
+        text, m, _ = self.run_cmd('--run', '--checks', 'ic', '--limit', '5', '--max-cost-usd', '0.01')
+        m.assert_not_called()
+        self.assertIn('done: 0 documents', text)
+        self.assertIn('ic answered 0', self.last(text))
+        self.assertIn('run stopped: the next document could pass the cap', self.last(text))
+        self.assertIn('unanswered_accepted 1 [', text)
+
+    def test_a_fake_answered_then_service_errors_leave_accepted_rows_unanswered(self):
+        fake = self.doc('ic', status='suspect')
+        accepted = [self.doc('ic', verification='verified') for _ in range(6)]
+        replies = iter([_ic_answer('suspect')] + [self.DOWN] * 10)
+        text, m, _ = self.run_cmd(*self.RUN, '--checks', 'ic', '--fake-ids', str(fake.pk),
+                                  seam={'side_effect': lambda *a, **k: next(replies)})
+        self.assertEqual(m.call_count, 1 + ev.FAIL_FAST)
+        self.assertIn('unanswered_known_fake 0, unanswered_accepted 6 [', text)
+        got = text.split('[ic] unanswered_accepted ids: ')[1].split('\n')[0]
+        self.assertEqual(sorted(int(x) for x in got.split(',')), sorted(d.pk for d in accepted))
+        self.assertIn('GATES NOT MET: ic unanswered_accepted, run stopped:', self.last(text))
+
+    def test_the_limit_cutting_the_sample_is_not_a_failure(self):
+        for _ in range(3):
+            self.doc('ic', verification='verified')
+        text, _m, _ = self.run_cmd('--run', '--checks', 'ic', '--limit', '1', '--max-cost-usd', '1.00')
+        self.assertIn('unanswered_accepted 0', text)
+        self.assertEqual(self.last(text), 'GATES MET')
+
+    def test_a_full_clean_run_meets_the_gates(self):
+        self.doc('ic', verification='verified')
+        self.doc('str', verification='verified', sample_check_version='1.0.0')
+        self._slip(text='SIJIL PELAJARAN MALAYSIA')
+        with patch('apps.scholarship.genuineness.results_doc.signature_genuineness',
+                   return_value={'status': 'genuine', 'probability': 0.9}):
+            text, _m, _ = self.run_cmd(*self.RUN, seam=_by_schema())
+        for check in ev.CHECKS:
+            self.assertIn(f'[{check}] docs 1, calls 1, answered 1', text)
+        self.assertNotIn('STOPPED', text)
+        self.assertEqual(self.last(text), 'GATES MET')
+
+    def test_a_slip_fake_whose_marker_read_failed_is_unanswered(self):
+        bad_markers = {'malformed': {'has_qr_code': 'yes', 'has_jata_negara_crest': True},
+                       'refused': {'_error': DOCUMENT_FAILED + ': x'}, 'service error': self.DOWN}
+        for why, visual in bad_markers.items():
+            with self.subTest(why=why):
+                fake = self._slip(verification='rejected', text='SIJIL PELAJARAN MALAYSIA')
+                with patch('apps.scholarship.genuineness.results_doc.signature_genuineness',
+                           return_value={'status': 'suspect', 'probability': 0.4}):
+                    text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'results_slip', '--fake-ids', str(fake.pk),
+                                               seam=_by_schema(visual=visual))
+                self.assertIn(f'unanswered_known_fake 1 [{fake.pk}]', text)
+                self.assertIn('GATES NOT MET: results_slip unanswered_known_fake', self.last(text))
+                fake.delete()
+
+    def test_a_slip_fake_with_good_markers_is_answered(self):
+        fake = self._slip(verification='rejected', text='SIJIL PELAJARAN MALAYSIA')
+        with patch('apps.scholarship.genuineness.results_doc.signature_genuineness',
+                   return_value={'status': 'suspect', 'probability': 0.4}):
+            text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'results_slip', '--fake-ids', str(fake.pk),
+                                       seam=_by_schema())
+        self.assertIn('unanswered_known_fake 0', text)
+        self.assertEqual(self.last(text), 'GATES MET')
+
+    def test_the_dry_run_says_a_stray_fake_would_fail_the_gates(self):
+        stray = self.doc('offer_letter')
+        text, _m, _ = self.run_cmd('--checks', 'ic', '--fake-ids', str(stray.pk))
+        self.assertIn(f'known fakes no chosen check reads: {stray.pk} (a run would fail the gates)', text)
 
 
 class TestTheSamplePlan(_Docs):
