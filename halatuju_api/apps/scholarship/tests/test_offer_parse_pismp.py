@@ -28,23 +28,50 @@ TITLE = ('TAWARAN RASMI MENGIKUTI PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP) 
 INTRO = ('Dengan segala hormatnya saya merujuk perkara di atas.',
          '2. Sukacita dimaklumkan bahawa tuan/puan ditawarkan mengikuti program seperti butiran berikut:')
 CLOSING = '4. Tawaran ini akan TERBATAL dengan sendirinya sekiranya tuan/puan:'
+#: The one PENGESAHAN clause the template prints, inside its conditions list (made-up words around it).
+CLAUSE = '6. Yuran dibayar walaupun pengesahan tersebut diterima selepas melapor diri.'
 #: A made-up conditions list in the template's shape (the closing words, GAGAL items, a right to withdraw): never
 #: the real block. The module pins the MEASURED block by digest; these tests pin this one the same way.
 COND = ('3. Tuan/puan dikehendaki melapor diri pada tarikh yang ditetapkan.', CLOSING,
         '  a) gagal melapor diri pada tarikh yang ditetapkan;', '  b) gagal mengemukakan dokumen asal.',
-        '5. Pihak institut berhak menarik balik tawaran ini pada bila-bila masa.')
+        '5. Pihak institut berhak menarik balik tawaran ini pada bila-bila masa.', CLAUSE)
 SIGN = ('Sekian, terima kasih.', '(QARIM VELTO BIN DURAN)', 'Bagi pihak Rektor')
 NOTES = COND + SIGN
+#: The head and table values in the measured shapes (made up): the reference, the offer date, the candidate's
+#: address row, the salutation, the two table values never read.
+RUJ = 'ABC1234/56DE789F/01-23/(4567)'
+OFFER_DATE = '01 Jul 2026'
+HEADS = (('Ruj. Kami', RUJ), ('Tarikh', OFFER_DATE), ('NAMA', NAME), ('NO. KAD PENGENALAN', IC))
+ADDRESS_LABEL = 'ALAMAT SURAT'
+HOME = 'NO. 1, JALAN CONTOH, 02000 PEKAN CONTOH, PERLIS'
+SALUTATION = 'Tuan/Puan,'
+MOD = 'SEPENUH MASA CONTOH'
+TEMPOH = '6 TAHUN ( 1 TAHUN AWAL DAN 5 TAHUN PROGRAM CONTOH PENUH )'
 SYNTHETIC_PINS = frozenset({(len(COND), _pin_digest(COND))})
 REAL_PINS = pismp.CONDITIONS_PINS
+#: Review round 1: the synthetic template pinned the way the module pins the measured one.
+SYNTHETIC_TEMPLATE = {
+    'letterhead': frozenset({(len(LETTERHEAD), _pin_digest(LETTERHEAD))}),
+    'address_label': frozenset({_pin_digest([ADDRESS_LABEL])}),
+    'salutation': frozenset({_pin_digest([SALUTATION])}),
+    'title': frozenset({_pin_digest(TITLE, '2026')}),
+    'intro': frozenset({(len(INTRO), _pin_digest(INTRO))}),
+    'mod': frozenset({_pin_digest([MOD])}),
+    'tempoh': frozenset({_pin_digest([TEMPOH])}),
+    'tail': frozenset({(len(NOTES), _pin_digest(NOTES))}),
+}
+REAL_TEMPLATE = pismp.TEMPLATE_PINS
 _PINS = mock.patch.object(pismp, 'CONDITIONS_PINS', SYNTHETIC_PINS)
+_TEMPLATE = mock.patch.object(pismp, 'TEMPLATE_PINS', SYNTHETIC_TEMPLATE)
 
 
 def setUpModule():
     _PINS.start()
+    _TEMPLATE.start()
 
 
 def tearDownModule():
+    _TEMPLATE.stop()
     _PINS.stop()
 
 
@@ -62,7 +89,7 @@ def address_line(value):
 
 def table(bidang=BIDANG, session=SESSION, campus=CAMPUS_ROW, address=ADDRESS, report=REPORT, rows=None):
     rows = rows if rows is not None else (
-        ('BIDANG PENGKHUSUSAN', bidang), ('MOD PENGAJIAN', 'SEPENUH MASA'), ('TEMPOH PENGAJIAN', '6 TAHUN'),
+        ('BIDANG PENGKHUSUSAN', bidang), ('MOD PENGAJIAN', MOD), ('TEMPOH PENGAJIAN', TEMPOH),
         ('AMBILAN/KELUARAN', session), ('TEMPAT PENGAJIAN', campus), ('TARIKH PENDAFTARAN', report))
     out = []
     for label, value in rows:
@@ -73,14 +100,16 @@ def table(bidang=BIDANG, session=SESSION, campus=CAMPUS_ROW, address=ADDRESS, re
 
 
 def layout(name=NAME, ic=IC, title=TITLE, tab=None, notes=NOTES, heads=None, letterhead=LETTERHEAD, extra=(),
-           after=()):
-    """``extra``: lines between the table and the conditions block; ``after``: lines straight after the block."""
-    heads = heads if heads is not None else (('Ruj. Kami', 'IPGM.600-2/1/3 JLD.9 (12)'), ('Tarikh', '1 Julai 2026'),
-                                             ('NAMA', name), ('NO. KAD PENGENALAN', ic))
+           after=(), home=HOME, intro=INTRO):
+    """``extra``: lines between the table and the conditions block; ``after``: lines straight after the block;
+    ``home``: the candidate's address row after the IC (None: no such row)."""
+    heads = heads if heads is not None else (('Ruj. Kami', RUJ), ('Tarikh', OFFER_DATE), ('NAMA', name),
+                                             ('NO. KAD PENGENALAN', ic))
     if after:
         notes = notes[:len(COND)] + tuple(after) + notes[len(COND):]
-    lines = [*(BASE + x for x in letterhead), *(head(k, v) for k, v in heads), BASE + 'Tuan/Puan,',
-             *(BASE + x for x in title), *(BASE + x for x in INTRO), *(tab if tab is not None else table()),
+    lines = [*(BASE + x for x in letterhead), *(head(k, v) for k, v in heads),
+             *([head(ADDRESS_LABEL, home)] if home is not None else []), BASE + SALUTATION,
+             *(BASE + x for x in title), *(BASE + x for x in intro), *(tab if tab is not None else table()),
              *(BASE + x for x in (*extra, *notes))]
     return '\n'.join(lines)
 
@@ -155,10 +184,12 @@ class PismpRefusalTest(SimpleTestCase):
     def test_a_missing_owner_phrase_refuses(self):
         self.assertEqual(missing(LANE, layout(), text_pdf=True), [])
         self.assertEqual(len(OWNER_WORDS[LANE]), 12)
-        heads = (('Ruj. Kami', 'KPM.600-2/1/3'), ('NAMA', NAME), ('NO. KAD PENGENALAN', IC))
-        lay = layout(letterhead=LETTERHEAD[:3], heads=heads)                     # no IPGM anywhere
+        lay = layout(letterhead=LETTERHEAD[:3])                                   # no IPGM anywhere
         self.assertEqual(missing(LANE, lay, text_pdf=True), [1])
-        d = run(lay)
+        self.assertEqual(run(lay)['guard'], 'template_changed')                  # the letterhead pin first
+        pins = {**SYNTHETIC_TEMPLATE, 'letterhead': frozenset({(3, _pin_digest(LETTERHEAD[:3]))})}
+        with mock.patch.object(pismp, 'TEMPLATE_PINS', pins):
+            d = run(lay)
         self.assertIsNone(d['locked'])
         self.assertEqual(d['guard'], 'owner_words_missing')
 
@@ -251,9 +282,9 @@ class PismpRefusalTest(SimpleTestCase):
         self.assertEqual(pismp_letter_refusal(plain(layout()), IC), '')
 
     def test_the_one_pengesahan_clause_is_excused_once(self):
-        clause = 'walaupun pengesahan tersebut diterima selepas melapor diri.'
-        self.assertIsNotNone(run(layout(after=(clause,)))['locked'])
-        self.assertEqual(read_pismp(layout(after=(clause, clause)))[1], 'status_letter')
+        self.assertIn('walaupun pengesahan tersebut diterima selepas melapor diri', CLAUSE)
+        self.assertIsNotNone(run()['locked'])                                    # the clause is in the block
+        self.assertEqual(read_pismp(layout(after=(CLAUSE,)))[1], 'status_letter')
         self.assertEqual(read_pismp(layout(after=('Borang pengesahan',)))[1], 'status_letter')
 
     def test_a_scan_or_a_later_page_refuses(self):
@@ -335,6 +366,123 @@ class PismpConditionsBlockTest(SimpleTestCase):
         """The shared withdrawal check is untouched: the same block refuses through `letter_refusal`."""
         from apps.scholarship.offer_ums_refusal import letter_refusal
         self.assertEqual(letter_refusal(plain(layout())), 'not_an_offer')
+
+
+class PismpReviewRound1Test(SimpleTestCase):
+    """Review round 1: every failing input of the reviewer's notes refuses (synthetic letters only)."""
+
+    def refuses(self, lay, reason):
+        d = run(lay)
+        self.assertIsNone(d['locked'])
+        self.assertEqual(read_pismp(lay)[1], reason)
+
+    def test_a_campus_that_wraps_refuses(self):
+        for campus, cont in (('INSTITUT PENDIDIKAN GURU KAMPUS SULTAN', 'MIZAN'),
+                             ("INSTITUT PENDIDIKAN GURU KAMPUS DATO' RAZALI", 'ISMAIL,'),
+                             ('INSTITUT PENDIDIKAN GURU KAMPUS PENDIDIKAN', 'TEKNIK')):
+            with self.subTest(words=len(campus.split())):
+                self.refuses(layout(tab=table(campus=campus, address=(cont,) + ADDRESS)), 'address_shape')
+        # a campus line so long that the first address word could not have fitted on it
+        long_campus = 'INSTITUT PENDIDIKAN GURU KAMPUS ABCDEFGHIJ KLMNOPQRST UVWXYZ'
+        self.refuses(layout(tab=table(campus=long_campus)), 'address_shape')
+        self.assertIsNotNone(run(layout(tab=table(campus='INSTITUT PENDIDIKAN GURU KAMPUS ABCDEF')))['locked'])
+
+    def test_free_text_must_be_the_pinned_template(self):
+        cases = {
+            'intro: other date': layout(intro=(INTRO[0], 'Tarikh lapor diri: 9 OGOS 2026.')),
+            'intro: other campus': layout(intro=(INTRO[0], '2. Tuan/puan ditawarkan ke IPG KAMPUS LAIN.')),
+            'intro: other bidang': layout(intro=(INTRO[0], 'BIDANG PENGKHUSUSAN KEDUA PENDIDIKAN SEJARAH')),
+            'sign-off: other date': layout(notes=NOTES + ('Tarikh lapor diri: 15 OGOS 2026',)),
+            'sign-off: other campus': layout(notes=NOTES + ('Sila lapor diri di INSTITUT PENDIDIKAN GURU KAMPUS LAIN.',)),
+            'sign-off: other bidang': layout(notes=NOTES + ('Bidang: PENDIDIKAN SEJARAH',)),
+            'sign-off: spaced label': layout(notes=NOTES + ('N A M A : QARIM DURAN',)),
+            'letterhead changed': layout(letterhead=LETTERHEAD[:3] + ('LAMAN WEB : WWW.LAIN.EXAMPLE',)),
+            'title: two AMBILAN': layout(title=(TITLE[0] + ' AMBILAN 2027',)),
+            'title: PINDAAN': layout(title=(TITLE[0] + ' (PINDAAN)',)),
+            'salutation changed': layout().replace(SALUTATION, 'Tuan/Puan QARIM,'),
+            'mod value changed': layout(tab=table(rows=(
+                ('BIDANG PENGKHUSUSAN', BIDANG), ('MOD PENGAJIAN', 'SEPARUH MASA'), ('TEMPOH PENGAJIAN', TEMPOH),
+                ('AMBILAN/KELUARAN', SESSION), ('TEMPAT PENGAJIAN', CAMPUS_ROW), ('TARIKH PENDAFTARAN', REPORT)))),
+            'address label changed': layout().replace(ADDRESS_LABEL, 'ALAMAT LAIN '),
+        }
+        for tag, lay in cases.items():
+            with self.subTest(tag=tag):
+                self.refuses(lay, 'template_changed')
+
+    def test_a_line_between_the_head_rows_or_before_the_title_refuses(self):
+        to_other = layout().replace(BASE + SALUTATION, head('Kepada', 'QARIM DURAN') + '\n' + BASE + SALUTATION)
+        self.refuses(to_other, 'head_shape')
+        self.refuses(layout(home=None), 'head_shape')
+
+    def test_the_head_values_have_the_measured_shapes(self):
+        for tag, heads in (('ruj', (('Ruj. Kami', 'IPGM.600-2/1/3 JLD.9 (12)'),) + HEADS[1:]),
+                           ('offer date after report', HEADS[:1] + (('Tarikh', '09 Ogo 2026'),) + HEADS[2:]),
+                           ('offer date long month', HEADS[:1] + (('Tarikh', '1 Julai 2026'),) + HEADS[2:]),
+                           ('offer date not a day', HEADS[:1] + (('Tarikh', '31 Jun 2026'),) + HEADS[2:]),
+                           ('offer date unknown month', HEADS[:1] + (('Tarikh', '01 Xyz 2026'),) + HEADS[2:])):
+            with self.subTest(tag=tag):
+                self.refuses(layout(heads=heads), 'head_shape')
+        for home in ('NO. 1, JALAN CONTOH, PEKAN CONTOH, PERLIS', 'NO. 1, JALAN 2026, 02000 PEKAN CONTOH',
+                     'D/A QARIM DURAN, 02000 PEKAN CONTOH', 'no. 1, jalan contoh, 02000 pekan'):
+            with self.subTest(home=len(home)):
+                self.refuses(layout(home=home), 'address_shape')
+
+    def test_no_other_date_outside_the_two_date_rows(self):
+        for addr in (('JALAN 9 OGOS,', '01000 KANGAR,', 'PERLIS'), ('LOT 1/8/26,', '01000 KANGAR,', 'PERLIS')):
+            with self.subTest(addr=len(addr[0])):
+                self.refuses(layout(tab=table(address=addr)), 'second_date')
+        self.refuses(layout(home='NO. 1, JALAN MEI, 02000 PEKAN CONTOH'), 'second_date')
+        # the backstop holds even where a pin would not: an intro pinned with a date in it
+        intro = (INTRO[0], 'Tarikh lapor diri: 9 OGOS 2026.')
+        pins = {**SYNTHETIC_TEMPLATE, 'intro': frozenset({(2, _pin_digest(intro))})}
+        with mock.patch.object(pismp, 'TEMPLATE_PINS', pins):
+            self.refuses(layout(intro=intro), 'second_date')
+        third = plain(layout(notes=NOTES + ('Tarikh lapor diri: 15 OGOS 2026',)))
+        self.assertEqual(pismp_letter_refusal(third, IC), 'second_date')
+        self.assertEqual(pismp_letter_refusal(plain(layout()), IC), '')
+
+    def test_no_other_campus_outside_the_campus_row(self):
+        for line in ('INSTITUT PENDIDIKAN GURU KAMPUS LAIN', 'IPG LAIN', 'K A M P U S LAIN'):
+            with self.subTest(line=line):
+                self.refuses(layout(tab=table(address=(line,) + ADDRESS[1:])), 'second_campus')
+        self.refuses(layout(name='ZORBEX KAMPUS QUENTARO'), 'second_campus')
+
+    def test_a_one_word_name_is_not_read(self):
+        for name in ('ALI', 'BIN', 'ALI BIN', 'ALI A/L', '@ ALI'):
+            with self.subTest(name=name):
+                d = run(layout(name=name))
+                self.assertIsNone(d['locked'])
+                self.assertEqual(d['empty_required'], ['candidate_name'])
+
+    def test_a_specialism_with_no_distinctive_word_is_not_read(self):
+        for bidang in ('PENDIDIKAN', 'PENDIDIKAN (SEKOLAH)'):
+            with self.subTest(bidang=bidang):
+                self.assertEqual(run(layout(tab=table(bidang=bidang)))['empty_required'], ['bidang_pengkhususan'])
+
+    def test_the_lane_words_refuse_anywhere_outside_the_block(self):
+        lines = ('Surat ini membatalkan surat terdahulu.', 'Penempatan tuan/puan dipinda.',
+                 'Surat tawaran ini menggugurkan tawaran asal.', 'KEPUTUSAN RAYUAN', 'PENANGGUHAN', 'PENOLAKAN',
+                 'MAKLUM BALAS', 'M A K L U M B A L A S')
+        for line in lines:
+            for where, lay in (('after the sign-off', layout(notes=NOTES + (line,))),
+                               ('below the title', layout(intro=(line, INTRO[1]))),
+                               ('above the title', layout(title=(line, *TITLE)))):
+                with self.subTest(line=line, where=where):
+                    self.assertIsNone(run(lay)['locked'])
+                    self.assertEqual(pismp_letter_refusal(plain(lay), IC), 'not_an_offer')
+
+    def test_the_measured_template_pins_are_digests_and_refuse_the_synthetic_letter(self):
+        self.assertEqual(set(REAL_TEMPLATE), set(SYNTHETIC_TEMPLATE))
+        for key, pins in REAL_TEMPLATE.items():
+            with self.subTest(key=key):
+                self.assertEqual(len(pins), 1)
+                pin, = pins
+                digest = pin[1] if isinstance(pin, tuple) else pin
+                self.assertTrue(len(digest) == 64 and set(digest) <= set('0123456789abcdef'))
+                self.assertFalse(pins & SYNTHETIC_TEMPLATE[key])
+        with mock.patch.object(pismp, 'TEMPLATE_PINS', REAL_TEMPLATE):
+            self.assertEqual(read_pismp(layout())[1], 'template_changed')
+            self.assertIsNone(run()['locked'])
 
 
 class PismpInkAndLaneTest(SimpleTestCase):

@@ -145,7 +145,8 @@ MODELS = {
         'pins': [(f'{_APP}/{f}.py', n) for f, n in (row.split(':') for row in (
             'vision/sanitize:_normalise_reporting_date card_display:looks_like_date card_display:looks_like_clause_number '
             'pathway_engine:parse_reporting_date offer_ic:guard_nric vision/names:nric_close vision/names:nric_match '
-            'offer_course_match:letter_institution offer_course_match:programme_line').split())],
+            'offer_course_match:letter_institution offer_course_match:programme_line '
+            'pathway_match:distinctive_tokens').split())],
     },
     'stpm_parse': {
         'constant': (f'{_APP}/stpm_parse.py', 'PARSER_VERSION'),

@@ -26,15 +26,22 @@ an older layout ("TAWARAN MENGIKUTI ...", no AMBILAN/KELUARAN row, other rows) m
 ``second_row``); the anchors in the owner's order (``wrong_order``); the closing words after the reporting date.
 The template's numbered conditions list (it holds the closing words and shared withdrawal words as conditions) is
 pinned by digest and excused once, in its place only (`CONDITIONS_PINS`, `_conditions_out`; owner fork 1, 27 Nov).
+
+Review round 1 (27 Nov): no free text is unchecked. Every other line is pinned by digest (`TEMPLATE_PINS`) or read
+by a strict shape (`_pismp_template`); no line prints a date but the two date rows, nor a campus outside the TEMPAT
+PENGAJIAN row and the pinned lines; a campus whose name may wrap refuses (`_pismp_table`); a one-word name or a
+specialism with no distinctive word is not read; the lane's own refusal words (`_REPLACED`). There is no closed list
+of IPG campuses or PISMP specialisms in the lane: neither has a home the parser can read (fork, 27 Nov).
 """
 import re
 
 from .offer_parse import _norm_nric, house_date
 from .offer_parse_ukm import _own_ic
 from .offer_parse_umpsa import _name_words_ok
-from .offer_parse_unimap import _pin_digest
+from .offer_parse_unimap import _LINK, _pin_digest
 from .offer_parse_uum import _one_space, _uum_lines, _ymd, ic_printed
 from .offer_ums_refusal import _SQUEEZE_OUT, _dotless, _squeeze, _withdrawn_one, fold_lookalikes, status_said
+from .pathway_match import distinctive_tokens
 
 LANE = 'ua:PISMP'
 INSTITUTION = 'INSTITUT PENDIDIKAN GURU'
@@ -84,8 +91,48 @@ CONDITIONS_PINS = frozenset({(26, 'a1c0b3a1b95914baf8219de0c216df92e9f004324e514
 _CLOSING_KEY = 'TAWARANINIAKANTERBATALDENGANSENDIRINYA'
 #: This lane only (owner fork 1): a replacement letter ("digantikan", "menggantikan", "pengganti") outside the block
 #: refuses too; the shared list has no such word and stays as it is. Measured 27 Nov: no word of any IPG sample
-#: holds GANTI (in any of the shared spacing forms, `_squeeze` / `_dotless`).
-_REPLACED = re.compile(r'GANTI', re.IGNORECASE)
+#: holds GANTI (in any of the shared spacing forms, `_squeeze` / `_dotless`). Review round 1: an amended, cancelling,
+#: appeal, deferral, rejection or reply letter too (DIPINDA, MEMBATALKAN, MENGGUGURKAN, RAYUAN, PENANGGUHAN,
+#: PENOLAKAN, MAKLUM BALAS), anywhere outside the pinned block (above the title or below it). Measured 27 Nov: the
+#: 2026 text letters print PENANGGUHAN (and PINDA, BATAL) inside the pinned block only; nothing outside it. The
+#: shared withdrawal list is untouched.
+_REPLACED = re.compile(r'GANTI|DIPINDA|MEMBATALKAN|MENGGUGURKAN|RAYUAN|PENANGGUHAN|PENOLAKAN|MAKLUM ?BALAS',
+                       re.IGNORECASE)
+#: Review round 1 (MUST): every page-1 layout line the reader reads no field from is the measured 2026 template, the
+#: same in 3 of 3 text letters (27 Nov), pinned like UniMAP's (`offer_parse_unimap.TEMPLATE_PINS`): a region as
+#: (line count, `_pin_digest`), one line or one value as its `_pin_digest`; never as text. The letterhead (every line
+#: above the Ruj. Kami row); the label of the candidate's address row (the line after the IC; its value has a strict
+#: shape, `_pismp_template`); the salutation (the line before the title); the title line, its AMBILAN year written
+#: "{session}" (so a second AMBILAN year, or any other word, refuses); the intro (the lines between the title and the
+#: table); the MOD PENGAJIAN and TEMPOH PENGAJIAN values (never read); the tail (every line after TARIKH
+#: PENDAFTARAN: the conditions list and the sign-off). Any change refuses (``template_changed``).
+TEMPLATE_PINS = {
+    'letterhead': frozenset({(7, 'ec7b4557b8912be06ea16c0eacfadcaabddad61b35af5b44aa4642003910c613')}),
+    'address_label': frozenset({'10e214c3b7bcd81d72802216974a8401df9b360e90c4cb10e40c7f93fa1c0930'}),
+    'salutation': frozenset({'2b4eb61fbd31ea9771db8271171f42ff0673eecddedd95c891e5136e98adf6ce'}),
+    'title': frozenset({'1c9ca8b12f21a71fcc05c7543c6f2f781276bfb3b7bc3d804932436448d7bb5d'}),
+    'intro': frozenset({(2, 'cfe31382ec6670f798c73a068cf120ad355777e28dbaf7d0553a70c97f37fbf3')}),
+    'mod': frozenset({'2e299216f46b5c68e7ed3a105cdc4356b5d263c3de0e043ba0646df3c206793e'}),
+    'tempoh': frozenset({'03e4a53124362370efb4874118b256ae351a162e5deec267e9b6b9bc3158b829'}),
+    'tail': frozenset({(36, '1c32862a337dd2542dd6d70b18b02e031bb381f0428b79416d4581cbdc5fc1cc')}),
+}
+#: The two head values with a variable part, as measured (3 of 3, shapes only): the reference, and the offer date
+#: ("DD Mon YYYY", a three-letter month, Malay or English; a real day, not after the reporting date).
+_RUJ_VALUE = re.compile(r'^[A-Z]{3}\d{4}/\d{2}[A-Z]{2}\d{3}[A-Z]/\d{2}-\d{2}/\(\d{4}\)$')
+_OFFER_DATE = re.compile(r'^(\d{2}) ([A-Z][a-z]{2}) (20\d{2})$')
+_SHORT_MONTH = {'jan': 1, 'feb': 2, 'mac': 3, 'mar': 3, 'apr': 4, 'mei': 5, 'may': 5, 'jun': 6, 'jul': 7, 'ogo': 8,
+                'ogs': 8, 'aug': 8, 'sep': 9, 'okt': 10, 'oct': 10, 'nov': 11, 'dis': 12, 'dec': 12}
+#: Review round 1 backstops (measured 27 Nov: 0 hits on any 2026 text letter outside the allowed places). A date:
+#: a month word, whole, Malay or English, long or short, or a numeric date. A campus: KAMPUS or IPG (whole words), or
+#: INSTITUT PENDIDIKAN GURU in any spacing.
+_MONTH_WORD = re.compile(r'(?<![A-Z])(?:JANUARI|JANUARY|JAN|FEBRUARI|FEBRUARY|FEB|MAC|MARCH|MAR|APRIL|APR|MEI|MAY|'
+                         r'JUNE|JUN|JULAI|JULY|JUL|OGOS|OGO|OGS|AUGUST|AUG|SEPTEMBER|SEPT|SEP|OKTOBER|OCTOBER|OKT|'
+                         r'OCT|NOVEMBER|NOV|DISEMBER|DECEMBER|DIS|DEC)(?![A-Z])')
+_NUM_DATE = re.compile(r'(?<!\d)(?:\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}[./-]\d{1,2}[./-]\d{1,2})(?!\d)')
+#: The plain layer prints exactly two dates, the offer date and the reporting date (measured 3 of 3).
+_DATES_PRINTED = 2
+_CAMPUS_WORD = re.compile(r'(?<![A-Z])(?:KAMPUS|IPG)(?![A-Z])')
+_CAMPUS_KEYS = ('KAMPUS', 'INSTITUTPENDIDIKANGURU')
 
 
 def is_pismp(up: str) -> bool:
@@ -137,13 +184,19 @@ def _pismp_table(lines, start: int, end: int) -> tuple:
     if tuple(labels) != _ROWS or len(colons) != 1:
         return values, 'template_changed'
     colon = colons.pop()
-    if not 1 <= len(address) <= _ADDRESS_LINES:
+    if not 2 <= len(address) <= _ADDRESS_LINES:
         return values, 'address_shape'
     for ln in address:                           # at the value column, address words, no year, no colon
         flat = _one_space(ln)
         if not colon < len(ln) - len(ln.lstrip()) <= colon + 3 or not _ADDRESS.match(flat) or _YEAR.search(flat):
             return values, 'address_shape'
-    if not any(_POSTCODE.search(ln) for ln in address):
+    # Review round 1: a campus name that wraps must never lock as a shorter campus. As measured (3 of 3), the
+    # postcode is on the SECOND address line and no other; and the first address word would have fitted on the
+    # campus line (the cell is at least as wide as the widest table line), so that line is not a wrap.
+    width = max(len(ln) for ln in lines[start:end + 1])
+    tempat = next(ln for ln in lines[start:end + 1] if (_pismp_row(ln) or ('',))[0] == 'TEMPAT PENGAJIAN')
+    if [k for k, ln in enumerate(address) if _POSTCODE.search(ln)] != [1] \
+            or len(tempat) + 1 + len(address[0].split()[0]) > width:
         return values, 'address_shape'
     return values, ''
 
@@ -169,11 +222,15 @@ def _pismp_read(lines) -> tuple:
     campus_m, report_m = _CAMPUS.match(table.get('TEMPAT PENGAJIAN', '')), _REPORT_VALUE.match(table.get(REPORT_LABEL, ''))
     ic_m = _IC.match(printed_ic)
     title_m = _TITLE_YEAR.search(_one_space(lines[at]).upper())
+    # Review round 1: a name of one word (link words such as A/L, BIN, @ not counted) is not read; a specialism with
+    # no distinctive word (`pathway_match.distinctive_tokens`: "PENDIDIKAN" alone) is not read.
+    own_words = [w for w in name.split() if not _LINK.fullmatch(w)]
     fields = {
-        'candidate_name': name if _NAME.match(name) and _name_words_ok(name) else '',
+        'candidate_name': name if _NAME.match(name) and _name_words_ok(name) and len(own_words) >= 2 else '',
         'candidate_nric': _norm_nric(''.join(ic_m.groups())) if ic_m else '',
         'candidate_nric_source': 'label' if ic_m else 'none',
-        'programme': PROGRAMME, 'programme_code': '', 'bidang_pengkhususan': bidang if _BIDANG.match(bidang) else '',
+        'programme': PROGRAMME, 'programme_code': '',
+        'bidang_pengkhususan': bidang if _BIDANG.match(bidang) and distinctive_tokens(bidang) else '',
         'institution': INSTITUTION, 'campus': campus_m.group(1) if campus_m else '', 'stream': '',
         'intake': f'AMBILAN {title_m.group(1)}' if title_m and _SESSION.match(session) else '',
         'reporting_date': house_date(table[REPORT_LABEL]) if report_m else '',
@@ -220,7 +277,74 @@ def read_pismp(source: str):
     rest = '\n'.join(ln for k, ln in enumerate(lines) if k != ic_at)
     if pismp_ic_elsewhere(rest, '') or pismp_ic_elsewhere(source, fields['candidate_nric']):
         return fields, 'second_ic'
-    return fields, ''
+    return fields, _pismp_template(lines, fields)
+
+
+def _dated(line: str) -> bool:
+    """True when ``line`` (raw or folded) prints a date: a month word or a numeric date (`_MONTH_WORD`, `_NUM_DATE`)."""
+    return any(_MONTH_WORD.search(t) or _NUM_DATE.search(t)
+               for t in (_one_space(one).upper() for one in (line, fold_lookalikes(line))))
+
+
+def _campus_said(line: str) -> bool:
+    """True when ``line`` (raw or folded) names a campus or an institute: KAMPUS or IPG, or KAMPUS / INSTITUT
+    PENDIDIKAN GURU in any spacing (`_CAMPUS_WORD`, `_CAMPUS_KEYS`)."""
+    for one in (line, fold_lookalikes(line)):
+        if _CAMPUS_WORD.search(_one_space(one).upper()) or any(k in _SQUEEZE_OUT.sub('', one.upper())
+                                                               for k in _CAMPUS_KEYS):
+            return True
+    return False
+
+
+def _pismp_template(lines, fields) -> str:
+    """Review round 1 (MUST): the lines the reader reads no field from. '' when every pinned region matches
+    `TEMPLATE_PINS` (else 'template_changed'); the head rows are the measured shapes (the Ruj. Kami value, then the
+    "Tarikh" row with a real offer date not after the reporting date, then NAMA and the IC, then the address row
+    and the salutation: else 'head_shape'); the address row's value is `_ADDRESS`'s shape with a postcode, no year
+    and no link word (else 'address_shape'); no line but the offer-date row and the TARIKH PENDAFTARAN row prints a
+    date ('second_date'); no line outside the pinned regions and the TEMPAT PENGAJIAN row names a campus or an
+    institute ('second_campus')."""
+    import datetime
+    found, at = _pismp_find(lines)
+    ix = {k: v[0] for k, v in found.items()}
+    ruj, nama, ic_at = (ix[k] for k in _HEAD_LABELS)
+    bidang_at, tempat_at, tarikh_at = ix['BIDANG PENGKHUSUSAN'], ix['TEMPAT PENGAJIAN'], ix[REPORT_LABEL]
+    year = fields['intake'].split()[-1]
+    value = {k: _pismp_row(lines[ix[k]])[1] for k in ('RUJ. KAMI', 'MOD PENGAJIAN', 'TEMPOH PENGAJIAN')}
+    pins = TEMPLATE_PINS
+    if nama != ruj + 2 or at != ic_at + 3:
+        return 'head_shape'
+    address = _pismp_row(lines[ic_at + 1])
+    if ((ruj, _pin_digest(lines[:ruj])) not in pins['letterhead']
+            or not address or _pin_digest([address[0]]) not in pins['address_label']
+            or _pin_digest([lines[at - 1]]) not in pins['salutation']
+            or _pin_digest([lines[at]], year) not in pins['title']
+            or (bidang_at - at - 1, _pin_digest(lines[at + 1:bidang_at])) not in pins['intro']
+            or _pin_digest([value['MOD PENGAJIAN']]) not in pins['mod']
+            or _pin_digest([value['TEMPOH PENGAJIAN']]) not in pins['tempoh']
+            or (len(lines) - tarikh_at - 1, _pin_digest(lines[tarikh_at + 1:])) not in pins['tail']):
+        return 'template_changed'
+    offer = _pismp_row(lines[ruj + 1])
+    offer_m = _OFFER_DATE.match(offer[1]) if offer and offer[0] == 'TARIKH' else None
+    report_m = _REPORT_VALUE.match(_pismp_row(lines[tarikh_at])[1])
+    try:
+        offered = datetime.date(int(offer_m.group(3)), _SHORT_MONTH[offer_m.group(2).lower()], int(offer_m.group(1)))
+    except (AttributeError, KeyError, ValueError):
+        offered = None
+    reported = _ymd(f'{report_m.group(1)} {report_m.group(2).title()} {report_m.group(3)}') if report_m else None
+    if not _RUJ_VALUE.match(value['RUJ. KAMI']) or offered is None or reported is None or offered > reported:
+        return 'head_shape'
+    tidy = [_one_space(one) for one in (address[1], fold_lookalikes(address[1]))]
+    if re.search(r'[^\S ]', lines[ic_at + 1]) or any(
+            not _ADDRESS.match(t) or _YEAR.search(t) or _LINK.search(t) or not _POSTCODE.search(t) for t in tidy):
+        return 'address_shape'
+    if any(_dated(ln) for k, ln in enumerate(lines) if k not in (ruj + 1, tarikh_at)):
+        return 'second_date'
+    pinned = set(range(ruj)) | {at - 1, at, tempat_at} | set(range(at + 1, bidang_at)) | set(range(tarikh_at + 1,
+                                                                                                    len(lines)))
+    if any(_campus_said(ln) for k, ln in enumerate(lines) if k not in pinned):
+        return 'second_campus'
+    return ''
 
 
 def _conditions_out(text: str):
@@ -246,8 +370,9 @@ def pismp_letter_refusal(text: str, nric: str) -> str:
     """The whole letter (every page): 'too_long', 'status_letter', 'second_ic', then the shared withdrawal check
     (`offer_ums_refusal._withdrawn_one`; the head being the lines up to the title) on the letter with its pinned
     conditions block taken out (`_conditions_out`), raw and folded: 'not_an_offer' when it fires on the letter as it
-    is with no pinned block, or on what is left; 'template_changed' when the block is not pinned and nothing else
-    fires; else ''."""
+    is with no pinned block, or on what is left (or the lane's own words, `_REPLACED`, do); 'template_changed' when
+    the block is not pinned and nothing else fires; 'second_date' when the letter prints more dates than the offer
+    date and the reporting date (`_DATES_PRINTED`; review round 1); else ''."""
     text = text or ''
     folded = fold_lookalikes(text)
     if len(text) > MAX_LETTER_CHARS or len(folded) > MAX_LETTER_CHARS:
@@ -264,7 +389,11 @@ def pismp_letter_refusal(text: str, nric: str) -> str:
     if any(rest is None for rest, _hd in rests):
         return 'not_an_offer' if any(_withdrawn_one(one, hd) for one, hd in forms) else 'template_changed'
     replaced = any(_REPLACED.search(f) for rest, _hd in rests for f in (rest, _squeeze(rest), *_dotless(rest)))
-    return 'not_an_offer' if replaced or any(_withdrawn_one(rest, hd) for rest, hd in rests) else ''
+    if replaced or any(_withdrawn_one(rest, hd) for rest, hd in rests):
+        return 'not_an_offer'
+    dates = [len(_MONTH_WORD.findall(up)) + len(_NUM_DATE.findall(up)) for up in
+             (_one_space(one).upper() for one in (text, folded))]
+    return 'second_date' if max(dates) > _DATES_PRINTED else ''
 
 
 def pismp_later_pages(pages) -> str:
