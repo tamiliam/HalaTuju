@@ -98,11 +98,14 @@ Saved to main. Services: web.
 
 ### fix: case 1048 - a near-miss name on a handwritten income declaration reads "close", not red (2026-11-27)
 
-Branch fix-1048-declaration, not pushed. Services: api. Verdict engine 2026-11-27.1.
+Branch fix-1048-declaration, not pushed. Services: api. Verdict engine 2026-11-27.3.
 - New `income_engine/declaration_name.py`: when a salary-slip-slot document was seen as a declaration (doc_seen = declaration) and its name is one small misread from the earner's IC (same number of parts, one part at most 2 letters off, 4+ letters, same first letter, not a reversed patronymic), `student_income_proof_check` and `link_display.income_proof_display` say name_status `close` instead of `mismatch`.
+- The patronymic connectors (A/L, A/P, S/O, D/O, BIN, BINTI, BT, BN) drop out on both sides first. One extra inner word of at most 3 letters that is one edit from a connector (a misread A/L such as ALE, AIL, NL) also drops, once, on one side; the rest must then agree in printed order. Two extra words, a non-connector extra word, a different father's name or two parts off stay `mismatch`.
 - `close` acts like `unreadable`: never red, never a match. Some applications may move from name_mismatch to review (owner accepted). Typed payslips, EPFs and `vision._tokens_close` are unchanged.
-- Tests: `tests/test_declaration_name_close.py` (case 1048's shape with made-up names; a typed payslip one letter off stays red).
-- Not in this change: the declaration's own read class (employer/period warnings), the web chip colour and label, the FAQ text (web).
+- The stored student verdict on the same rule is `name_close`, not `name_mismatch` (`vision/judge.doc_student_verdict` gains `doc_seen`; `vision/field_extraction` judges again once the genuineness read says declaration). Future reads only; no re-read, no migration. The backend coaches stay quiet on it.
+- A declaration in the salary-slip slot no longer SHOWS the read's "no employer" / "no pay period" warnings (`ApplicantDocumentSerializer.to_representation` via `declaration_name.shown_warnings`; display only, stored reads unchanged). No warning feeds a verdict, blocker or money; other warnings are kept.
+- Tests: `tests/test_declaration_name_close.py` (made-up names: case 1048's shape incl. a misread A/L, the guards, the warnings filter, the serializer, the stored verdict).
+- Not in this change: the web chip colour and label for `close` / `name_close`, the web verdict type, the FAQ text (web, NRIC Sprint 3).
 
 ### fix: false "Course switched" note when the same university is written two ways (2026-11-26)
 

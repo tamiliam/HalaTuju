@@ -96,6 +96,19 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'superseded_at', 'superseded_by',
         ]
 
+    def to_representation(self, instance):
+        """Case 1048: a declaration in the salary-slip slot does not SHOW the read's payslip-only warnings
+        (no employer / no pay period — a declaration has neither by design). A copy is shown; the stored
+        read is never edited (`income_engine.declaration_name.shown_warnings`)."""
+        data = super().to_representation(instance)
+        vf = data.get('vision_fields')
+        if isinstance(vf, dict) and isinstance(vf.get('warnings'), list) and vf['warnings']:
+            from ..income_engine.declaration_name import shown_warnings
+            kept = shown_warnings(instance, vf['warnings'])
+            if kept is not vf['warnings']:
+                data['vision_fields'] = {**vf, 'warnings': kept}
+        return data
+
     def get_download_url(self, obj):
         from ..storage import create_signed_download_url, resolve_org_for_path
         # org-fence (Sprint 4, belt-and-braces): refuse to sign a doc whose key-org
