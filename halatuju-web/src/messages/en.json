@@ -8672,7 +8672,7 @@
       "results": "Results",
       "join": {
         "label": "Student must pass",
-        "own": "the one for their results",
+        "own": "their highest result",
         "all": "all of these",
         "any": "any one of these"
       },
@@ -8684,12 +8684,11 @@
       },
       "spm": {
         "title": "SPM results",
-        "meritHint": "UPU merit, out of 100.",
+        "meritHint": "Out of 100, from the grades and Co-curricular marks.",
         "passAll": "No SPM test is on, so every SPM holder passes."
       },
       "merit": "Minimum merit point",
       "grades": {
-        "title": "SPM grades",
         "first": "At least",
         "next": "and at least",
         "subjectsAt": "subjects at",
@@ -8703,8 +8702,7 @@
       "income": {
         "title": "Household income",
         "household": "Household income at most (RM per month)",
-        "perPerson": "Income per person under (RM)",
-        "perPersonHint": "Rescues a large household above the ceiling."
+        "perPerson": "Income per person at most (RM per month)"
       },
       "bornIn": {
         "title": "Born in",

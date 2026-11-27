@@ -96,7 +96,7 @@ describe('each live intake loads with its switches ON', () => {
     expect(screen.getByTestId('rules-born-sabah').getAttribute('aria-checked')).toBe('true')
     expect(screen.getByTestId('rules-born-wp_labuan').getAttribute('aria-checked')).toBe('true')
     expect(screen.getByTestId('rules-born-johor').getAttribute('aria-checked')).toBe('false')
-    // Both groups on: the join is shown, on "the one for their results".
+    // Both groups on: the join is shown, on "their highest result".
     expect(screen.getByTestId('rules-results-join-own').getAttribute('aria-checked')).toBe('true')
   })
 

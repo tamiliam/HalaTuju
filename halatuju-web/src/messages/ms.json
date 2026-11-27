@@ -8672,7 +8672,7 @@
       "results": "Keputusan",
       "join": {
         "label": "Pelajar mesti lulus",
-        "own": "yang sepadan dengan keputusannya",
+        "own": "their highest result",
         "all": "semua ini",
         "any": "salah satu daripada ini"
       },
@@ -8684,12 +8684,11 @@
       },
       "spm": {
         "title": "Keputusan SPM",
-        "meritHint": "Merit UPU, daripada 100.",
+        "meritHint": "Out of 100, from the grades and Co-curricular marks.",
         "passAll": "Tiada ujian SPM dihidupkan, jadi setiap pemegang SPM lulus."
       },
       "merit": "Mata merit minimum",
       "grades": {
-        "title": "Gred SPM",
         "first": "Sekurang-kurangnya",
         "next": "dan sekurang-kurangnya",
         "subjectsAt": "subjek pada gred",
@@ -8703,8 +8702,7 @@
       "income": {
         "title": "Pendapatan isi rumah",
         "household": "Pendapatan isi rumah paling tinggi (RM sebulan)",
-        "perPerson": "Pendapatan per orang di bawah (RM)",
-        "perPersonHint": "Menyelamatkan isi rumah besar yang melebihi had."
+        "perPerson": "Income per person at most (RM per month)"
       },
       "bornIn": {
         "title": "Tempat lahir",

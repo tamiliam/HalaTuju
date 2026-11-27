@@ -19,6 +19,8 @@ import { GRADES, nextGrade, serverProblemKey, type Problem, type EditorState, ty
 
 type T = (key: string, vars?: Record<string, string>) => string
 
+// One width for every value box on the right of a row (tests, grade rules, course start: owner,
+// 2026-11-27), so the boxes line up down the screen.
 const INPUT = 'w-28 rounded-lg border border-ground-300 px-3 py-2 text-sm disabled:bg-ground-100 disabled:text-ground-400'
 
 function TestCard({ on, onToggle, title, hint, value, onValue, testId, disabled }: {
@@ -43,7 +45,8 @@ function JoinChoice<J extends string>({ value, options, onChange, t, testId, dis
   value: J; options: readonly J[]; onChange: (v: J) => void; t: T; testId: string; disabled?: boolean
 }) {
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm" data-testid={testId}>
+    // On the right of the row, like the other inputs (owner, 2026-11-27).
+    <div className="mt-2 flex flex-wrap items-center justify-end gap-2 text-sm" data-testid={testId}>
       <span className="text-ground-600">{t('admin.criteria.join.label')}</span>
       <div role="radiogroup" aria-label={t('admin.criteria.join.label')} className="inline-flex flex-wrap rounded-lg border border-ground-300 p-0.5">
         {options.map((o) => (
@@ -66,11 +69,11 @@ function GradeRowLine({ row, index, onChange, onRemove, t, disabled }: {
       <span>{t(index === 0 ? 'admin.criteria.grades.first' : 'admin.criteria.grades.next')}</span>
       <input type="text" inputMode="numeric" value={row.count} disabled={disabled}
         aria-label={t('admin.criteria.grades.count')} data-testid={`grade-row-${index}-count`}
-        onChange={(e) => onChange({ ...row, count: e.target.value })} className="w-16 rounded-lg border border-ground-300 px-2 py-1.5 text-sm" />
+        onChange={(e) => onChange({ ...row, count: e.target.value })} className={INPUT} />
       <span>{t('admin.criteria.grades.subjectsAt')}</span>
       <select value={row.grade} disabled={disabled} aria-label={t('admin.criteria.grades.grade')}
         data-testid={`grade-row-${index}-grade`} onChange={(e) => onChange({ ...row, grade: e.target.value as Grade })}
-        className="rounded-lg border border-ground-300 px-2 py-1.5 text-sm">
+        className={INPUT}>
         {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
       </select>
       <span>{t('admin.criteria.grades.orBetter')}</span>
@@ -120,8 +123,9 @@ export function ServerProblemList({ problems, testId }: { problems: string[]; te
   )
 }
 
-const RESULTS_JOINS: readonly ResultsJoin[] = ['own', 'all', 'any']
-const INCOME_JOINS: readonly IncomeJoin[] = ['any', 'all']
+// Strict to loose (owner, 2026-11-27): all of these | their highest result | any one of these.
+export const RESULTS_JOINS: readonly ResultsJoin[] = ['all', 'own', 'any']
+export const INCOME_JOINS: readonly IncomeJoin[] = ['all', 'any']
 
 export default function CriteriaEditor({ state, onChange, disabled = false, idPrefix = 'crit' }: {
   state: EditorState; onChange: (s: EditorState) => void; disabled?: boolean; idPrefix?: string
@@ -151,9 +155,8 @@ export default function CriteriaEditor({ state, onChange, disabled = false, idPr
           </Group>
           <Group title={t('admin.criteria.spm.title')} on={state.spmOn} disabled={disabled}
             testId={`${idPrefix}-spm`} onToggle={(v) => set({ spmOn: v })}>
-            <div className="rounded-xl border border-ground-200 p-3">
-              <p className="text-sm font-medium text-ground-800">{t('admin.criteria.grades.title')}</p>
-              <div className="mt-2 space-y-2">
+            <div className="rounded-xl border border-ground-200 p-3" data-testid={`${idPrefix}-grades`}>
+              <div className="space-y-2">
                 {state.rows.map((r, i) => (
                   <GradeRowLine key={i} row={r} index={i} t={t} disabled={disabled}
                     onChange={(nr) => setRow(i, nr)}
@@ -188,7 +191,6 @@ export default function CriteriaEditor({ state, onChange, disabled = false, idPr
             value={state.household} testId={`${idPrefix}-household`} disabled={disabled}
             onToggle={(v) => set({ householdOn: v })} onValue={(v) => set({ household: v })} />
           <TestCard on={state.perPersonOn} title={t('admin.criteria.income.perPerson')}
-            hint={t('admin.criteria.income.perPersonHint')}
             value={state.perPerson} testId={`${idPrefix}-per-person`} disabled={disabled}
             onToggle={(v) => set({ perPersonOn: v })} onValue={(v) => set({ perPerson: v })} />
         </div>
@@ -212,19 +214,17 @@ export default function CriteriaEditor({ state, onChange, disabled = false, idPr
       </section>
 
       {/* The course-start card: no heading (owner), its own switch (v9). It only flags a student,
-          never declines. */}
-      <div className="flex flex-wrap items-start gap-3 rounded-xl border border-ground-200 p-3" data-testid={`${idPrefix}-start`}>
+          never declines. Laid out like a TestCard: the box sits on the right of its label. */}
+      <div className="flex items-start gap-3 rounded-xl border border-ground-200 p-3" data-testid={`${idPrefix}-start`}>
         <Toggle on={state.startOn} onChange={(v) => set({ startOn: v })} label={t('admin.criteria.startYears')}
           disabled={disabled} testId={`${idPrefix}-start-switch`} />
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1 text-sm font-medium text-ground-800">
-            <label htmlFor={`${idPrefix}-start-years`}>{t('admin.criteria.startYears')}</label>
-            <InfoTip text={t('admin.criteria.startYearsHint')} />
-          </p>
-          <input id={`${idPrefix}-start-years`} type="text" value={state.startYears} disabled={disabled || !state.startOn}
-            onChange={(e) => set({ startYears: e.target.value })} data-testid={`${idPrefix}-start-years`}
-            className="mt-2 w-full max-w-xs rounded-lg border border-ground-300 px-3 py-2 text-sm disabled:bg-ground-100 disabled:text-ground-400" />
-        </div>
+        <p className="flex min-w-0 flex-1 items-center gap-1 text-sm font-medium text-ground-800">
+          <label htmlFor={`${idPrefix}-start-years`}>{t('admin.criteria.startYears')}</label>
+          <InfoTip text={t('admin.criteria.startYearsHint')} />
+        </p>
+        <input id={`${idPrefix}-start-years`} type="text" value={state.startYears} disabled={disabled || !state.startOn}
+          onChange={(e) => set({ startYears: e.target.value })} data-testid={`${idPrefix}-start-years`}
+          className={INPUT} />
       </div>
     </div>
   )
