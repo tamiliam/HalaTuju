@@ -13,7 +13,7 @@
 import { render, screen, within } from '@testing-library/react'
 
 import CriteriaEditor, { INCOME_JOINS, RESULTS_JOINS } from './CriteriaEditor'
-import { EMPTY_STATE, type EditorState } from '@/lib/criteriaTree'
+import { EMPTY_STATE, stateToTree, type EditorState } from '@/lib/criteriaTree'
 import en from '@/messages/en.json'
 
 jest.mock('@/lib/i18n', () => ({
@@ -86,6 +86,16 @@ describe('8. the results join shows only when both results groups are on', () =>
   ])('post %s, SPM %s -> shown %s', (postOn, spmOn, shown) => {
     draw({ postOn, spmOn })
     expect(screen.queryByTestId('ed-results-join') !== null).toBe(shown)
+  })
+
+  it('never lets a void SPM door through: both groups on under "any" with no grade rule is refused', () => {
+    // criteria.py VOID_SPM_DOOR: the join only shows with both groups on, and then the editor's own
+    // check (stateToTree) blocks the save, so hiding the join opens no way round the server rule.
+    const both = { ...EMPTY_STATE, postOn: true, pngkOn: true, pngk: '2', spmOn: true, rows: [] }
+    expect(stateToTree({ ...both, resultsJoin: 'any' }).problems).toContain('voidSpmDoor')
+    expect(stateToTree({ ...both, resultsJoin: 'any', rows: [{ count: '1', grade: 'C' }] }).problems)
+      .not.toContain('voidSpmDoor')
+    expect(stateToTree({ ...both, spmOn: false, resultsJoin: 'any' }).problems).not.toContain('voidSpmDoor')
   })
 })
 

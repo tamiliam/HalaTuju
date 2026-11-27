@@ -733,6 +733,18 @@ class TestIncomeHeadroomMatchesTheGate(SimpleTestCase):
         self._check(intake_1, [(7920, 5, 'unsure'), (7919, 5, 'unsure'), (7920.05, 5, 'over'),
                                (7921, 5, 'over')])
 
+    def test_on_the_per_person_line_has_zero_headroom_not_negative(self):
+        # Ruling A, the headroom side: ON the line is a pass with exactly RM0 of room left; 1 sen
+        # per person above it is 'over'. Below the line the room is positive.
+        intake_1 = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=1584)
+        for gross, size, band, room in ((7920, 5, 'unsure', 0), (7919, 5, 'unsure', 1), (6336, 4, 'unsure', 0)):
+            with self.subTest(gross=gross, size=size):
+                app = _app([_bill('salary_slip', {'gross_income': str(gross)})], household_size=size)
+                app.cohort = intake_1
+                got_band, ctx = income_headroom(app, ['father'])
+                self.assertEqual((got_band, ctx['breach_room']), (band, room))
+        self.assertEqual(self._band(7920.05, 5, intake_1), 'over')
+
     def test_household_line_passes_on_the_line(self):
         # Two people: the household line (RM5,860) is the more generous one.
         intake_1 = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=1584)

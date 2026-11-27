@@ -370,9 +370,7 @@ def income_ok(profile, section):
         if not size or size <= 0:
             return False, '', f'income RM{inc:.0f} <= RM{ceiling} but household size not provided'
         per_capita = inc / size
-        # Ruling A (owner, 27 Nov 2026): ON the per-person line passes ("at most RM Y"), as the
-        # household line always did. Only ABOVE it fails.
-        if per_capita > pc_ceiling:
+        if per_capita > pc_ceiling:     # Ruling A (owner, 27 Nov 2026): ON the per-person line passes
             return False, '', f'income RM{inc:.0f} <= RM{ceiling} but per-capita RM{per_capita:.0f} > RM{pc_ceiling}'
         return True, 'B', (f'household income RM{inc:.0f} <= RM{ceiling} and per-capita '
                            f'RM{per_capita:.0f} <= RM{pc_ceiling}')
