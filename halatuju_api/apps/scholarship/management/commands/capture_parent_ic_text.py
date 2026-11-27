@@ -18,7 +18,8 @@ no Vision call, no write. ``--run`` reads, and needs ``--limit`` (documents, at 
 when ``FAIL_FAST`` reads in a row fail with a Vision SERVICE error (``read_errors.is_ocr_service_error``: the
 key, quota, permission or network, not the file), ``FAIL_FAST`` fetches in a row fail (a Storage outage), or
 ``FAIL_FAST`` saves in a row fail (``write_failed`` or ``error``: a broken private store would otherwise spend
-the whole cap and keep nothing; a stored document resets it, skips and bad files leave it). An ordinary bad file (a PDF that will not rasterise, a HEIC, a blank photo) never stops it. Every
+the whole cap and keep nothing; a stored document resets it, skips and bad files leave it). An ordinary bad
+file (a PDF that will not rasterise, a HEIC, a blank photo) never stops it. Every
 ``PROGRESS_EVERY`` documents it prints and logs a progress line (counts only), so a killed task leaves a record.
 
 Writes ONLY through ``ocr_keep.keep``. Never Gemini; never the document, its vision_fields, verdicts,
