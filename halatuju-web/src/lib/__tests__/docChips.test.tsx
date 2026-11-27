@@ -39,11 +39,18 @@ describe('the one colour map', () => {
 describe('DocChip and DocPill', () => {
   test.each([['green', '✓'], ['amber', '!'], ['red', '✕']] as const)('%s draws %s', (state, sym) => {
     render(<DocChip state={state}>Name</DocChip>)
-    expect(document.querySelector(`[data-chip="${state}"]`)?.textContent).toBe(`${sym}Name`)
+    expect(document.querySelector(`[data-chip="${state}"]`)?.textContent).toBe(`${sym}Name${state}`)   // the last part is the sr-only state word (the mock t echoes the key tail)
   })
   test('grey has no symbol', () => {
     render(<DocChip state="grey">IC No</DocChip>)
-    expect(document.querySelector('[data-chip="grey"]')?.textContent).toBe('IC No')
+    expect(document.querySelector('[data-chip="grey"]')?.textContent).toBe('IC Nogrey')
+  })
+  test('every chip says its state in words for a screen reader, in one sr-only span', () => {
+    render(<DocChip state="amber">Name</DocChip>)
+    const w = document.querySelector('[data-chip="amber"] [data-chip-state]') as HTMLElement
+    expect(w.className).toContain('sr-only')
+    expect(w.textContent).toBe('amber')
+    expect(document.querySelectorAll('[data-chip-state]').length).toBe(1)
   })
   test('a plain value is the value only, with no ring', () => {
     render(<DocChip state="grey" plain>RM 2,350</DocChip>)
@@ -70,6 +77,22 @@ describe('read time', () => {
     render(<ReadTime readAt={null} t={t} />)
     expect(screen.getByText('readAtNone')).toBeTruthy()
   })
+  test('nothing is shown when read_at is absent (an old payload) or does not parse', () => {
+    expect(render(<ReadTime readAt={undefined} t={t} />).container.innerHTML).toBe('')
+    expect(render(<ReadTime readAt="nope" t={t} />).container.innerHTML).toBe('')
+  })
+  test('the read time does not wrap', () => {
+    render(<ReadTime readAt={new Date(2026, 10, 25, 9, 12).toISOString()} t={t} now={new Date(2026, 10, 28)} />)
+    expect((document.querySelector('[data-read-at]') as HTMLElement).className).toContain('whitespace-nowrap')
+  })
+  test('the month follows the language', () => {
+    const iso = new Date(2026, 10, 25, 9, 12).toISOString()
+    const now = new Date(2026, 10, 28)
+    expect(formatReadTime(iso, { now, locale: 'ms' })).toMatch(/25 Nov.*09:12/)
+    const ta = formatReadTime(iso, { now, locale: 'ta' })
+    expect(ta).not.toContain('Nov')
+    expect(ta).toContain('09:12')
+  })
 })
 
 describe('the drawer draws the served chips and falls back without them', () => {
@@ -85,6 +108,14 @@ describe('the drawer draws the served chips and falls back without them', () => 
     const old = { id: 2, doc_type: 'ic' } as unknown as AdminApplicantDocument
     expect(Array.isArray(drawerChips(old))).toBe(true)
     expect(drawerPill(old)).not.toBe('problem')
+  })
+  test('an EMPTY served chip list (the server chip code failed) falls back, for the chips and the pill', () => {
+    const failed = { id: 3, doc_type: 'ic', chips: [], chip_pill: 'unread', vision_run_at: '2026-11-01T00:00:00Z' } as unknown as AdminApplicantDocument
+    expect(drawerChips(failed)).not.toBe(failed.chips)
+    expect(drawerPill(failed)).toBe(drawerPill({ id: 3, doc_type: 'ic', vision_run_at: '2026-11-01T00:00:00Z' } as unknown as AdminApplicantDocument))
+  })
+  test('servedChip falls back on an empty chip list too', () => {
+    expect(servedChip({ chips: [] }, 'name')).toBeUndefined()
   })
   test('servedChip finds a fact chip by key only', () => {
     expect(servedChip({ chips: [chip('name', 'green'), chip('name', 'amber', { kind: 'year' })] }, 'name')?.state).toBe('green')
@@ -112,5 +143,14 @@ describe('the shells', () => {
     render(<DocChecksPanel checks={{ chips: [], pill: 'unread', readAt: null, uploadedAt: null }} />)
     expect(screen.getByText('empty')).toBeTruthy()
     expect(screen.getByText('readAtNone')).toBeTruthy()
+  })
+  test('the Checks panel says the state through the translated word (one span, inside the chip) and nothing for an old payload', () => {
+    render(<DocChecksPanel checks={{ chips: [chip('name', 'red')], pill: 'problem', readAt: undefined }} />)
+    expect(document.querySelector('[data-check="red"] [data-chip-state]')?.textContent).toBe('red')   // mock echoes the key tail
+    expect(screen.queryByText('readAtNone')).toBeNull()
+  })
+  test('the Checks panel scrolls on a phone', () => {
+    render(<DocChecksPanel checks={{ chips: [], pill: 'unread', readAt: null }} />)
+    expect((document.querySelector('[data-checks-panel]') as HTMLElement).className).toContain('max-md:max-h-[40dvh]')
   })
 })

@@ -27,6 +27,7 @@ import {
 import { OfferLetterChecklist, SupportingDocChip } from './checklistsPathway'
 import { LazyHigherDetails, LazyKindLine, LazySlipHigherNote } from './LazyHigherResults'
 import { DocSample } from '@/components/DocSample'
+import { docDone } from './docDone'
 
 // Busy/filter key for a doc card. Salary-route income docs are scoped to a household
 // member, so two members' salary slips don't share one busy spinner or file list.
@@ -167,34 +168,6 @@ function FileChip({
 // uploaded. Anything amber / red / pending / suspect stays OPEN so the student still
 // sees what needs doing. Income-cluster docs are excluded at the call site (the shared
 // cluster coach speaks across them) via `suppressCoach`.
-
-function docIsGenuine(doc: ApplicantDocument): boolean {
-  const s = doc.authenticity?.status
-  return !s || s === 'genuine'   // canonical: '' / 'genuine' vs suspect / not_<type>
-}
-
-function docDone(docType: string, doc: ApplicantDocument | undefined): boolean {
-  if (!doc) return false
-  switch (docType) {
-    case 'ic':
-      return !!doc.vision_run_at
-        && doc.vision_name_verdict === 'match'
-        && doc.vision_nric_verdict === 'match'
-        && docIsGenuine(doc)
-    case 'results_slip': {
-      const c = doc.academic_check
-      return !!c && c.name === 'match' && c.subjects === 'match' && c.results === 'match'
-        && docIsGenuine(doc)
-    }
-    // (`higher_results` never folds: the approved mock keeps its card open with the one-line read.)
-    // Nothing to verify — uploaded IS finished.
-    case 'photo':
-    case 'statement_of_intent':
-      return true
-    default:
-      return false   // everything else keeps today's always-open card
-  }
-}
 
 // ── Collapsible section ───────────────────────────────────────────────────
 // Folds a whole stage behind a summary so the Documents tab never reads as a wall of

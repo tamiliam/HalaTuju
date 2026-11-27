@@ -35,7 +35,7 @@ const mount = async (academic: AcademicCheck, verdict = buildVerdict()) => {
 describe('an entered subject the slip does not show', () => {
   it('⚠ REDS THE SUBJECTS CHIP when the server serves an extra-only mismatch', async () => {
     await mount(check({ subjects: 'mismatch', extra: ['Fizik'] }))
-    expect(screen.getByText(SUBJECTS_CHIP).className).toContain('text-critical-600')
+    expect(screen.getByText(SUBJECTS_CHIP).className).toContain('text-critical-700')
   })
 
   it('and the control: a clean slip check keeps the chip green', async () => {

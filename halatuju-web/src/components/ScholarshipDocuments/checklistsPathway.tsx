@@ -50,8 +50,7 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
       </DocChip>
     )
   }
-  const fromLetter = null
-  const row = (label: string, value: string, right: ReactNode) => (
+  const row = (label: string, value: string, right?: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-ground-700">
         <span className="font-medium text-ground-600">{label}: </span>
@@ -62,7 +61,7 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   )
   // Soft data point — only shown when the field was actually read.
   const dataRow = (labelKey: string, value: string) =>
-    value ? row(t(`scholarship.docs.pathwayCheck.${labelKey}`), value, fromLetter) : null
+    value ? row(t(`scholarship.docs.pathwayCheck.${labelKey}`), value) : null
 
   // The offer is for a genuinely different college/programme than declared. We mark the two rows
   // AMBER, never red (owner's chip table, 2026-11-02: a different pathway is not a fault in the
@@ -74,7 +73,7 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
       ? row(
           t(`scholarship.docs.pathwayCheck.${labelKey}`),
           value,
-          isMismatch ? badge('mismatch', 'partial') : fromLetter,
+          isMismatch ? badge('mismatch', 'partial') : undefined,
         )
       : null
 

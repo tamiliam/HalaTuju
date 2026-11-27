@@ -237,9 +237,9 @@ export const REVIEWER_FAQ: QA[] = [
       q: <>What do the <strong>Problem</strong>, <strong>Check</strong> and <strong>Unread</strong> pills on a document mean, and what are the ticks and crosses?</>,
       a: <><strong>Problem</strong> (red) means at least one check on the document failed. <strong>Check</strong>
         (amber) means nothing failed but something needs your eye. <strong>Verified</strong> means every check is
-        green, and <strong>Unread</strong> means the document has not been read yet. A chip shows a tick (green),
-        an exclamation mark (amber) or a cross (red); a grey chip has no symbol and simply shows a value or says
-        the check could not be made. The drawer shows when the document was read (the year only when it is not
+        green, and <strong>Unread</strong> means nothing could be checked yet. A chip shows a tick (green),
+        an exclamation mark (amber) or a cross (red); a grey chip has no symbol and means not checked yet, or
+        nothing to compare. A plain value is the value shown with no colour. The drawer shows when the document was read (the year only when it is not
         this year), and the <strong>Checks</strong> panel beside an opened document lists every check with the
         full read and upload times. The reading is a starting point: a person decides.</>,
     },

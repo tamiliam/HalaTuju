@@ -87,7 +87,7 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
             setViewerDoc({
               label: docLabel(d), filename: d.original_filename || '', url: d.download_url,
               kind: viewerKind(d.content_type || '', d.original_filename || ''),
-              checks: { chips: drawerChips(d), pill: drawerPill(d), readAt: d.read_at ?? null, uploadedAt: d.uploaded_at ?? null },
+              checks: { chips: drawerChips(d), pill: drawerPill(d), readAt: d.read_at, uploadedAt: d.uploaded_at ?? null },
             })
           }
           const subLabel = 'text-xs md:text-[10px] font-semibold uppercase tracking-widest text-ground-400 mb-1.5'
@@ -159,9 +159,11 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                       )
                     })()}
                   </div>
-                  {d.original_filename && (
-                    <p className="text-xs md:text-[11px] text-ground-400 break-all" title={d.original_filename}>
-                      ({trunc(d.original_filename, 30)}) <ReadTime readAt={d.read_at} t={t} />
+                  {(d.original_filename || d.read_at !== undefined) && (
+                    <p className="text-xs md:text-[11px] text-ground-400 break-all" title={d.original_filename || undefined}>
+                      {d.original_filename && <>({trunc(d.original_filename, 30)})</>}
+                      {d.original_filename && d.read_at !== undefined && ' · '}
+                      <ReadTime readAt={d.read_at} t={t} />
                     </p>
                   )}
                   <ChipLine chips={chips} t={t} />

@@ -27,6 +27,12 @@ export interface ServedChips {
   read_at?: string | null
 }
 
+/** The i18n key of each state's spoken word (for DocChip's sr-only text). */
+export const STATE_WORD_KEY: Record<ChipState, string> = {
+  green: 'common.chipState.green', amber: 'common.chipState.amber',
+  red: 'common.chipState.red', grey: 'common.chipState.grey',
+}
+
 export const CHIP_SYMBOL: Record<ChipState, string> = { green: '✓', amber: '!', red: '✕', grey: '' }
 
 /** The ONE colour map. `chip` = the rounded tag, `text` = a bare fact word, `badge` = the icon
@@ -59,21 +65,26 @@ export function kindToState(kind: 'match' | 'partial' | 'mismatch' | 'unreadable
   return kind === 'match' ? 'green' : kind === 'partial' ? 'amber' : kind === 'mismatch' ? 'red' : 'grey'
 }
 
-/** The served fact chip for one row of a student checklist, or undefined (fall back to today's rule). */
-export function servedChip(doc: ServedChips, key: string): DocChipData | undefined {
-  return doc.chips?.find((c) => c.key === key && c.kind === 'fact')
-}
+const INTL_LOCALE: Record<string, string> = { en: 'en-GB', ms: 'ms-MY', ta: 'ta-IN' }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const two = (n: number) => String(n).padStart(2, '0')
-
-/** "25 Nov, 09:12", with the year ("25 Nov 2026, 09:12") only when it is not the current year;
- *  `full` always shows the year. null / unparseable -> ''. Local time, 24-hour. */
-export function formatReadTime(iso: string | null | undefined, opts: { full?: boolean; now?: Date } = {}): string {
+/** "25 Nov, 09:12" in the active language, with the year ("25 Nov 2026, 09:12") only when it is not
+ *  the current year; `full` always shows the year. null / unparseable -> ''. Local time, 24-hour. */
+export function formatReadTime(
+  iso: string | null | undefined,
+  opts: { full?: boolean; now?: Date; locale?: string } = {},
+): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  const year = (opts.now ?? new Date()).getFullYear()
-  const showYear = opts.full || d.getFullYear() !== year
-  return `${d.getDate()} ${MONTHS[d.getMonth()]}${showYear ? ` ${d.getFullYear()}` : ''}, ${two(d.getHours())}:${two(d.getMinutes())}`
+  const tag = INTL_LOCALE[opts.locale ?? 'en'] ?? 'en-GB'
+  const showYear = opts.full || d.getFullYear() !== (opts.now ?? new Date()).getFullYear()
+  const date = new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short', ...(showYear ? { year: 'numeric' } : {}) }).format(d)
+  const time = new Intl.DateTimeFormat(tag, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d)
+  return `${date}, ${time}`
+}
+
+/** The served fact chip for one row of a student checklist, or undefined (fall back to today's rule).
+ *  A payload whose chip list is empty (the server's chip code failed) also falls back. */
+export function servedChip(doc: ServedChips, key: string): DocChipData | undefined {
+  return doc.chips?.length ? doc.chips.find((c) => c.key === key && c.kind === 'fact') : undefined
 }

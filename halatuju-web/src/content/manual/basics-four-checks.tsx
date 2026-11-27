@@ -63,9 +63,9 @@ export const basicsFourChecks: ManualChapter = {
         system&rsquo;s reading is a <em>starting point, not the last word</em> — a person always decides.
         <br /><br />Each document carries one <strong>pill</strong>: <strong>Verified</strong> (every check is
         green), <strong>Check</strong> (something is amber and needs your eye), <strong>Problem</strong> (red:
-        at least one check failed), or <strong>Unread</strong> (nothing has been read yet). Each check on a
+        at least one check failed), or <strong>Unread</strong> (nothing could be checked yet). Each check on a
         document is a small chip with a symbol: a tick (&#10003;) is green, an exclamation mark (!) is amber and a
-        cross (&#10005;) is red. A grey chip has no symbol: it was not read, or it is just a value. Under the
+        cross (&#10005;) is red. A grey chip has no symbol: it means not checked yet, or nothing to compare. A plain value is the value shown with no colour. Under the
         file name the drawer shows when the document was last read (for example &ldquo;read 25 Nov, 09:12&rdquo;;
         the year appears only when it is not this year) or &ldquo;not read yet&rdquo;. Open a document and the
         <strong> Checks</strong> panel beside it lists every check with the full read and upload times.</>

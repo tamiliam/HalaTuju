@@ -119,8 +119,7 @@ export function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key:
       </DocChip>
     )
   }
-  const neutralTag = null
-  const row = (label: string, value: string, right: ReactNode) => (
+  const row = (label: string, value: string, right?: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-ground-700">
         <span className="font-medium text-ground-600">{label}: </span>
@@ -136,7 +135,7 @@ export function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key:
       {chk.nric ? row(t('scholarship.docs.icCheck.icNo'), formatNric(chk.nric),
         matchTag(chk.display_proof_nric_status ?? chk.proof_nric_status)) : null}
       {row(t('scholarship.docs.icCheck.name'), chk.name, matchTag(chk.display_proof_name_status ?? chk.proof_name_status))}
-      {chk.address ? row(t('scholarship.docs.icCheck.address'), chk.address, neutralTag) : null}
+      {chk.address ? row(t('scholarship.docs.icCheck.address'), chk.address) : null}
     </div>
   )
 }
@@ -179,8 +178,7 @@ export function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
       </DocChip>
     )
   }
-  const fromDoc = null
-  const row = (label: string, value: string, right: ReactNode) => (
+  const row = (label: string, value: string, right?: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-ground-700">
         <span className="font-medium text-ground-600">{label}: </span>
@@ -197,7 +195,7 @@ export function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
       {chk.nric ? row(t('scholarship.docs.incomeProofCheck.icNo'), formatNric(chk.nric),
         vsIc(chk.display_nric_status ?? chk.nric_status)) : null}
       {chk.points.map((p) => (
-        <div key={p.key}>{row(t(`scholarship.docs.incomeProofCheck.${p.key}`), p.value, fromDoc)}</div>
+        <div key={p.key}>{row(t(`scholarship.docs.incomeProofCheck.${p.key}`), p.value)}</div>
       ))}
     </div>
   )
@@ -217,8 +215,7 @@ export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: 
       : chk.address_status === 'not_found'
         ? <DocChip state={kindToState('mismatch')}>{t('scholarship.docs.utilityCheck.addressMismatch')}</DocChip>
         : null
-  const fromDoc = null
-  const row = (label: string, value: string, right: ReactNode) => (
+  const row = (label: string, value: string, right?: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-ground-700">
         <span className="font-medium text-ground-600">{label}: </span>
@@ -231,8 +228,8 @@ export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: 
   return (
     <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {row(t('scholarship.docs.utilityCheck.address'), chk.address, addrPill)}
-      {chk.monthly_bill ? row(t('scholarship.docs.utilityCheck.monthlyBill'), chk.monthly_bill, fromDoc) : null}
-      {chk.unpaid_balance ? row(t('scholarship.docs.utilityCheck.unpaidBalance'), chk.unpaid_balance, fromDoc) : null}
+      {chk.monthly_bill ? row(t('scholarship.docs.utilityCheck.monthlyBill'), chk.monthly_bill) : null}
+      {chk.unpaid_balance ? row(t('scholarship.docs.utilityCheck.unpaidBalance'), chk.unpaid_balance) : null}
     </div>
   )
 }

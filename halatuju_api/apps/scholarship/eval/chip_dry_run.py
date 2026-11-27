@@ -14,6 +14,10 @@ What it counts, per document type (live documents only, superseded rows skipped)
   state_changed          officer chips whose state differs between ``old`` and ``new`` (compared key
                          by key, in order; a chip present on one side only counts too)
   pill_changed           documents whose officer pill differs between ``old`` and ``new``
+  problem_pills          documents whose officer pill is 'problem' under the NEW pill rule
+  check_to_problem       documents whose ``old`` chips read 'check' under the FROZEN pre-Problem pill rule and
+                         whose ``new`` chips read 'problem': the "Check -> Problem" moves. ``pill_changed`` cannot show them
+                         (it runs the same, new, ``pill_for`` on both sides, so it is 0 by construction)
   student_chips          chips on the STUDENT payload (``ApplicantDocumentSerializer``)
   student_state_changed  the same, between ``student_old`` and ``student_new``, on the student payload
   student_pill_changed   the same for the student pill (the student draws no pill today)
@@ -97,6 +101,15 @@ def _payloads(doc):
         return ApplicantDocumentSerializer(doc).data, AdminApplicantDocumentSerializer(doc).data
 
 
+def _frozen_pill_for(chips):
+    """The officer pill rule BEFORE 'problem' existed (Sprint 0), frozen here so the dry run can count
+    how many documents move Check -> Problem. Never imported by anything else."""
+    counted = [c for c in chips if c['kind'] != 'year' and c['state'] != 'grey']
+    if not counted:
+        return 'unread'
+    return 'verified' if all(c['state'] == 'green' for c in counted) else 'check'
+
+
 def _changed(a, b):
     """Chips whose state differs, key by key in order; a chip on one side only counts as changed."""
     n = max(len(a), len(b))
@@ -127,6 +140,9 @@ def count_changes(applications, old=None, new=None, student_old=None, student_ne
             row['chips'] += len(officer['chips'])
             row['state_changed'] += _changed(o, n)
             row['pill_changed'] += int(doc_chips.pill_for(o) != doc_chips.pill_for(n))
+            new_pill = doc_chips.pill_for(n)
+            row['problem_pills'] += int(new_pill == 'problem')
+            row['check_to_problem'] += int(_frozen_pill_for(o) == 'check' and new_pill == 'problem')
             so, sn = student_old(student), student_new(student)
             row['student_chips'] += len(student['chips'])
             row['student_state_changed'] += _changed(so, sn)
@@ -158,6 +174,7 @@ def render_counts(result):
     for doc_type, row in result['per_type'].items():
         lines.append(f"{doc_type:22} docs {row.get('docs', 0):5}  chips {row.get('chips', 0):6}  "
                      f"state_changed {row.get('state_changed', 0):5}  pill_changed {row.get('pill_changed', 0):5}  "
+                     f"problem_pills {row.get('problem_pills', 0):5}  check_to_problem {row.get('check_to_problem', 0):5}  "
                      f"student_chips {row.get('student_chips', 0):6}  "
                      f"student_state_changed {row.get('student_state_changed', 0):5}  "
                      f"student_pill_changed {row.get('student_pill_changed', 0):5}")

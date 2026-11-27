@@ -24,7 +24,8 @@ class ChipDryRunTests(TestCase):
         self.assertEqual(result['chip_fallbacks'], 0)                # N6: a clean run proves 0 fallbacks
         # an unread card: the officer sees two grey chips, the student no checklist yet
         self.assertEqual(result['per_type']['ic'], {'docs': 1, 'chips': 2, 'state_changed': 0,
-                                                    'pill_changed': 0, 'student_chips': 0,
+                                                    'pill_changed': 0, 'problem_pills': 0,
+                                                    'check_to_problem': 0, 'student_chips': 0,
                                                     'student_state_changed': 0, 'student_pill_changed': 0})
         self.assertEqual(result['per_type']['photo']['docs'], 1)
 
@@ -51,6 +52,22 @@ class ChipDryRunTests(TestCase):
         self.assertEqual(result['per_type']['ic']['state_changed'], 2)
         self.assertEqual(result['per_type']['ic']['pill_changed'], 1)     # unread -> check
         self.assertEqual(result['per_type']['photo']['state_changed'], 0)
+
+    def test_documents_that_move_check_to_problem_are_counted(self):
+        def amber(payload):
+            return [{**c, 'state': 'amber'} for c in doc_chips.chips_for(payload)]
+
+        def red(payload):
+            return [{**c, 'state': 'red'} for c in doc_chips.chips_for(payload)]
+        result = chip_dry_run.run_dry(old=amber, new=red, allow_sqlite=True)
+        ic = result['per_type']['ic']
+        self.assertEqual((ic['problem_pills'], ic['check_to_problem']), (1, 1))
+        # pill_changed runs the new rule on both sides: amber is Check, red is Problem, so it is 1 here,
+        # but with old = today's chips it is 0 for a document that was already red (see below)
+        self.assertEqual(result['per_type']['photo']['check_to_problem'], 0)
+        # an unread document that turns red is a problem pill but NOT a Check -> Problem move
+        unread = chip_dry_run.run_dry(new=red, allow_sqlite=True)['per_type']['ic']
+        self.assertEqual((unread['problem_pills'], unread['check_to_problem']), (1, 0))
 
     def test_it_runs_inside_the_read_only_rollback(self):
         seen = []
@@ -148,5 +165,5 @@ class ChipDryRunTests(TestCase):
         self.assertRegex(lines[0], r'^applications \d+  bands_identical (True|False)  chip_fallbacks \d+$')
         for line in lines[1:]:
             self.assertRegex(line, r'^[a-z_]+\s+docs\s+\d+\s+chips\s+\d+\s+state_changed\s+\d+\s+'
-                                   r'pill_changed\s+\d+\s+student_chips\s+\d+\s+'
+                                   r'pill_changed\s+\d+\s+problem_pills\s+\d+\s+check_to_problem\s+\d+\s+student_chips\s+\d+\s+'
                                    r'student_state_changed\s+\d+\s+student_pill_changed\s+\d+$')

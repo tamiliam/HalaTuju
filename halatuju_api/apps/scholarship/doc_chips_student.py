@@ -4,7 +4,8 @@ DISPLAY ONLY, like ``doc_chips`` (the officer's chips): nothing here decides a v
 award or eligibility, no engine may import it (``tests/test_doc_chips_import_fence.py``), and it reads
 the student SERIALIZER OUTPUT only, so it runs no DB query.
 
-Sprint 1 reproduces TODAY's student screen exactly: each rule is a line-for-line port of the badges
+Sprint 1 reproduces TODAY's student states and badge words (a plain value, a grey chip with no words, is
+not drawn by the student screen any more): each rule is a line-for-line port of the badges
 the student checklists draw under an upload card, checked against the web by the shared parity
 fixture (``tests/fixtures/doc_chip_parity.json`` ``student_cases``):
 
@@ -372,8 +373,11 @@ def chips_for(payload):
 
 def pill_for(chips):
     """The student has no pill today, so nothing draws this. It is the officer's rule on the student's
-    status badges (plain tags and notes left out), so a later sprint has one to start from."""
+    status badges (plain tags and notes left out): none left -> 'unread'; any red -> 'problem'; all
+    green -> 'verified'; else 'check'. Kept in step with ``doc_chips.pill_for``."""
     counted = [c for c in chips if c['kind'] == 'fact' and c['state'] != 'grey']
     if not counted:
         return 'unread'
+    if any(c['state'] == 'red' for c in counted):
+        return 'problem'
     return 'verified' if all(c['state'] == 'green' for c in counted) else 'check'

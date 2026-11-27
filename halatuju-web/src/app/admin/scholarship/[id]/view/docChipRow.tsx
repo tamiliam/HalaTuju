@@ -7,6 +7,7 @@
  * FALLBACK: `documentFacts` / `documentPill` and the year rule below. The fallback is deleted in
  * Sprint 9. Colours come from `@/lib/docChips` only.
  */
+import { useT } from '@/lib/i18n'
 import { documentFacts, documentPill } from '@/lib/officerCockpit'
 import type { AdminApplicantDocument } from '@/lib/admin-api'
 import { STATE_COLOURS, formatReadTime, type ChipPillWord, type ChipState, type DocChipData } from '@/lib/docChips'
@@ -19,7 +20,7 @@ const YEAR_STATE: Record<string, ChipState> = { current: 'green', off: 'amber' }
 
 /** The chips to draw: the served ones, or today's functions when the payload has none. */
 export function drawerChips(d: AdminApplicantDocument): DocChipData[] {
-  if (Array.isArray(d.chips)) return d.chips
+  if (d.chips?.length) return d.chips
   const out: DocChipData[] = documentFacts(d).map((f) => ({
     key: f.key, status: f.status, state: FACT_STATE[f.status] ?? 'grey', student_action: 'none',
     reason: '', kind: 'fact',
@@ -37,9 +38,11 @@ export function drawerChips(d: AdminApplicantDocument): DocChipData[] {
   return out
 }
 
-/** The pill to draw: the served one, or today's function (which has no Problem) as a fallback. */
+/** The pill to draw: the served one, or today's function (which has no Problem) as a fallback.
+ *  An empty served chip list means the server's chip code failed (it serves `[]` and 'unread'), so
+ *  the pill falls back with the chips. */
 export function drawerPill(d: AdminApplicantDocument): ChipPillWord {
-  return d.chip_pill ?? documentPill(d)
+  return d.chips?.length && d.chip_pill ? d.chip_pill : documentPill(d)
 }
 
 export function chipText(c: DocChipData, t: T): string {
@@ -78,11 +81,27 @@ export function ReasonLines({ chips, t, words = REASON_WORDS }: {
   )
 }
 
-/** "read 25 Nov, 09:12" after the file name; "not read yet" when the document was never read. */
-export function ReadTime({ readAt, t, now }: { readAt: string | null | undefined; t: T; now?: Date }) {
-  const when = formatReadTime(readAt, { now })
+/** The active language for dates. `useT` throws outside the provider (a bare render in a unit test);
+ *  the app always has it. */
+function useDateLocale(): string | undefined {
+  try {
+    return useT().locale
+  } catch {
+    return undefined
+  }
+}
+
+/** "read 25 Nov, 09:12"; "not read yet" ONLY when `read_at` is null. Nothing when it is undefined
+ *  (an old payload) or does not parse. */
+export function ReadTime({ readAt, t, now, locale }: {
+  readAt: string | null | undefined; t: T; now?: Date; locale?: string
+}) {
+  const active = useDateLocale()
+  if (readAt === undefined) return null
+  const when = formatReadTime(readAt, { now, locale: locale ?? active })
+  if (readAt !== null && !when) return null
   return (
-    <span className="text-ground-400" data-read-at>
+    <span className="whitespace-nowrap text-ground-400" data-read-at>
       {when ? t('admin.scholarship.docsDrawer.readAt', { date: when }) : t('admin.scholarship.docsDrawer.readAtNone')}
     </span>
   )

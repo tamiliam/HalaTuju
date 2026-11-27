@@ -1,5 +1,11 @@
 {
   "common": {
+    "chipState": {
+      "green": "sepadan",
+      "amber": "perlu dilihat",
+      "red": "tidak sepadan",
+      "grey": "belum disemak"
+    },
     "appName": "HalaTuju",
     "continue": "Teruskan",
     "back": "Kembali",
@@ -5413,17 +5419,17 @@
           "pdfPhone": "PDF dibuka dalam pemapar telefon anda sendiri: setiap halaman, dan anda boleh zum.",
           "openPdf": "Buka PDF"
         },
-        "readAt": "read {date}",
-        "readAtNone": "not read yet",
-        "notesHint": "{count} AI notes - open the document",
+        "readAt": "dibaca {date}",
+        "readAtNone": "belum dibaca",
+        "notesHint": "{count} nota AI - buka dokumen",
         "checks": {
-          "title": "Checks",
-          "readAt": "Read {datetime}",
-          "uploadedAt": "Uploaded {datetime}",
-          "empty": "No checks on this document yet"
+          "title": "Semakan",
+          "readAt": "Dibaca {datetime}",
+          "uploadedAt": "Dimuat naik {datetime}",
+          "empty": "Belum ada semakan pada dokumen ini"
         },
         "pill": {
-          "problem": "Problem",
+          "problem": "Masalah",
           "verified": "Disahkan",
           "check": "Semak",
           "unread": "Belum dibaca",

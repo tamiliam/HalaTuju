@@ -1,5 +1,11 @@
 {
   "common": {
+    "chipState": {
+      "green": "பொருந்துகிறது",
+      "amber": "பார்க்க வேண்டும்",
+      "red": "பொருந்தவில்லை",
+      "grey": "சரிபார்க்கப்படவில்லை"
+    },
     "appName": "HalaTuju",
     "continue": "தொடரவும்",
     "back": "பின்னால்",
@@ -5413,17 +5419,17 @@
           "pdfPhone": "PDF உங்கள் தொலைபேசியின் சொந்தப் பார்வையாளரில் திறக்கும்: எல்லாப் பக்கங்களும், பெரிதாக்கவும் முடியும்.",
           "openPdf": "PDF-ஐத் திற"
         },
-        "readAt": "read {date}",
-        "readAtNone": "not read yet",
-        "notesHint": "{count} AI notes - open the document",
+        "readAt": "படிக்கப்பட்டது {date}",
+        "readAtNone": "இன்னும் படிக்கப்படவில்லை",
+        "notesHint": "{count} AI குறிப்புகள் - ஆவணத்தைத் திற",
         "checks": {
-          "title": "Checks",
-          "readAt": "Read {datetime}",
-          "uploadedAt": "Uploaded {datetime}",
-          "empty": "No checks on this document yet"
+          "title": "சரிபார்ப்புகள்",
+          "readAt": "படிக்கப்பட்டது {datetime}",
+          "uploadedAt": "பதிவேற்றப்பட்டது {datetime}",
+          "empty": "இந்த ஆவணத்தில் இன்னும் சரிபார்ப்புகள் இல்லை"
         },
         "pill": {
-          "problem": "Problem",
+          "problem": "சிக்கல்",
           "verified": "உறுதி",
           "check": "சரிபார்க்க",
           "unread": "படிக்கவில்லை",

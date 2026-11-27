@@ -57,7 +57,7 @@ One server module, `apps/scholarship/doc_chips.py`, builds every document's chip
 - `kind` is fact (a status badge) / plain (a grey "from the document" tag) / note (the amber genuineness note);
 - `label` is today's badge word as its full i18n key. The student's word cannot be worked out from the colour, so it travels with the chip. `label` is **student-only**: officer chips (`doc_chips`) never carry it, so the web chip type must mark it optional (`label?: string`);
 - `student_action` is `none` everywhere;
-- `pill_for` is the officer rule over `fact` chips only. The student draws no pill today.
+- `pill_for` is the officer rule over `fact` chips only, including `problem` for any red one. The student draws no pill today.
 
 **Parity.** The shared fixture gains 60 synthetic `student_cases`. `tests/test_doc_chips_student.py` checks the server; `halatuju-web/src/components/ScholarshipDocuments/__tests__/student-chip-parity.test.tsx` renders today's student checklists on the same cases (with a stub `t`) and reads every badge off the screen: colour, word and row. No component was changed.
 
@@ -90,7 +90,7 @@ Checked (round 1 review): no served year can be a float. Every served year is a 
 
 **Loud fallback (N6).** When working out the chips raises, the serializer still serves `chips = []`, `chip_pill = 'unread'`. It now logs at ERROR, once per process per exception type, with the document id and the exception type name only, and bumps `serializers.documents.CHIP_FALLBACKS['count']` on every fallback.
 
-**Dry run.** `chip_dry_run` counts both audiences: `chips`, `state_changed`, `pill_changed` (officer, `old` / `new`) and `student_chips`, `student_state_changed`, `student_pill_changed` (student, `student_old` / `student_new`). Sprint 0's `student_differs` is gone: the audiences now differ on purpose. While it re-reads the bands, EVERY public function of both modules (`chips_for`, `pill_for`, `fact_chips`, `fact_status`, `year_chip`, `genuineness_note_key`) is rigged to raise. It also reports `chip_fallbacks`, how far `CHIP_FALLBACKS['count']` moved during the run (N6), so a clean run proves 0 fallbacks as well as 0 changes.
+**Dry run.** `chip_dry_run` counts both audiences: `chips`, `state_changed`, `pill_changed` (officer, `old` / `new`), `problem_pills` and `check_to_problem` (officer documents that read Problem, and that moved from Check under a frozen pre-Problem rule) and `student_chips`, `student_state_changed`, `student_pill_changed` (student, `student_old` / `student_new`). Sprint 0's `student_differs` is gone: the audiences now differ on purpose. While it re-reads the bands, EVERY public function of both modules (`chips_for`, `pill_for`, `fact_chips`, `fact_status`, `year_chip`, `genuineness_note_key`) is rigged to raise. It also reports `chip_fallbacks`, how far `CHIP_FALLBACKS['count']` moved during the run (N6), so a clean run proves 0 fallbacks as well as 0 changes.
 
 ## The standard (target, from the approved mock-up)
 
@@ -108,10 +108,10 @@ Checked (round 1 review): no served year can be a float. Every served year is a 
   - **Verified**: all checked chips green.
   - **Unread**: nothing checked yet.
 
-  The officer pill serves `problem` since Phase 1b (a red year chip alone is not one). The student `pill_for` is unchanged.
-- **Chip text** is the field name only. The genuineness chip's text is **Type**.
+  The officer pill serves `problem` since Phase 1b (a red year chip alone is not one). The student `pill_for` follows the same rule (any red fact chip is `problem`); nothing draws it today.
+- **Chip text** is the field name only. The genuineness chip's text is **Type**. (The student screen still draws today's words, for example "Matches"; moving them to the field name only waits for the student action lines in a later sprint.) Each chip also carries one hidden state word for screen readers (matches, needs a look, does not match, not checked), in English, Malay and Tamil.
 - **Officer drawer**: one short line per amber or red chip, in fixed words (English, Malay, Tamil). Grey and green chips get no line. Names, IC numbers and addresses appear only in the opened document. AI notes that belong to no chip show as a grey speech bubble with a count.
-- **Read time**: short in the drawer ("read 25 Nov, 09:12"), with the year added only when it is not this year. The opened document always shows the full date and the upload time.
+- **Read time**: short in the drawer, after the file name and a '·' ("read 25 Nov, 09:12"), in the active language, with the year added only when it is not this year. The file name is still cut to 30 characters; the read time shows even when there is no file name. Nothing is shown for an old payload with no `read_at`; "not read yet" only when `read_at` is null. The opened document always shows the full date and the upload time.
 - **Student screen**: under each amber or red chip, an action line saying who acts and what to do. That is the `student_action` field, which is `none` until a later sprint fills it.
 
 ## Per type: today → target

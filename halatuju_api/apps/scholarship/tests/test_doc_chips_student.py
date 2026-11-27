@@ -77,10 +77,16 @@ class StudentPillTests(SimpleTestCase):
                          'verified')
         self.assertEqual(S.pill_for([self._c('amber', 'note')]), 'unread')
 
-    def test_all_green_is_verified_and_any_amber_or_red_is_check(self):
+    def test_all_green_is_verified_and_any_amber_is_check(self):
         self.assertEqual(S.pill_for([self._c('green'), self._c('green')]), 'verified')
         self.assertEqual(S.pill_for([self._c('green'), self._c('amber')]), 'check')
-        self.assertEqual(S.pill_for([self._c('red')]), 'check')
+
+    def test_any_red_fact_chip_is_problem_like_the_officer_rule(self):
+        self.assertEqual(S.pill_for([self._c('red')]), 'problem')
+        self.assertEqual(S.pill_for([self._c('green'), self._c('amber'), self._c('red')]), 'problem')
+        self.assertEqual(S.pill_for([self._c('red', 'note')]), 'unread')      # a note never counts
+        for chips in ([self._c('red')], [self._c('amber')], [self._c('green')], [self._c('grey')]):
+            self.assertEqual(S.pill_for(chips), doc_chips.pill_for(chips))
 
     def test_every_fixture_pill_is_an_officer_pill_word(self):
         for case in _cases():

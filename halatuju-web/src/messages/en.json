@@ -1,5 +1,11 @@
 {
   "common": {
+    "chipState": {
+      "green": "matches",
+      "amber": "needs a look",
+      "red": "does not match",
+      "grey": "not checked"
+    },
     "appName": "HalaTuju",
     "continue": "Continue",
     "back": "Back",
