@@ -1,0 +1,2860 @@
+{
+ "_about": "Document chip standard S0 parity fixture. SYNTHETIC data only (no real names, IC numbers or documents). pytest checks doc_chips.chips_for / pill_for against it; jest checks the web functions of today (cockpitDocFacts documentFacts / documentPill, DocumentsDrawer factClass / yearChip / yearClass) against the SAME cases. A case changes only when the web colour of today changes.",
+ "cases": [
+  {
+   "name": "ic matched",
+   "doc": {
+    "id": 1,
+    "doc_type": "ic",
+    "vision_name_verdict": "match",
+    "vision_nric_verdict": "match",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "ic name differs, number matches",
+   "doc": {
+    "id": 2,
+    "doc_type": "ic",
+    "vision_name_verdict": "check_name",
+    "vision_nric_verdict": "mismatch"
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "ic not read yet",
+   "doc": {
+    "id": 3,
+    "doc_type": "ic",
+    "vision_name_verdict": null,
+    "vision_nric_verdict": null
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "ic wrong type caps",
+   "doc": {
+    "id": 4,
+    "doc_type": "ic",
+    "vision_name_verdict": "match",
+    "vision_nric_verdict": "match",
+    "authenticity": {
+     "status": "not_ic",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "ic suspect keeps reads",
+   "doc": {
+    "id": 5,
+    "doc_type": "ic",
+    "vision_name_verdict": "match",
+    "vision_nric_verdict": "check_near",
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "genuine",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "ic final owed grey",
+   "doc": {
+    "id": 6,
+    "doc_type": "ic",
+    "vision_name_verdict": "not_read",
+    "vision_nric_verdict": "no_ref",
+    "authenticity": {
+     "status": "final_owed",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "finalOwed",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "parent ic father readable",
+   "doc": {
+    "id": 7,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": true,
+     "member": "father",
+     "name_status": "match"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "relationship",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "parent ic mother readable",
+   "doc": {
+    "id": 8,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": true,
+     "member": "mother",
+     "name_status": "mismatch"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "parent ic brother check_both",
+   "doc": {
+    "id": 9,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": true,
+     "member": "brother",
+     "name_status": "check_both"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "relationship",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "parent ic unreadable",
+   "doc": {
+    "id": 10,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": false,
+     "member": "father",
+     "name_status": "unknown"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "relationship",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "parent ic wrong card display flag",
+   "doc": {
+    "id": 11,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": true,
+     "member": "father",
+     "display_wrong_card": true,
+     "wrong_card": false,
+     "name_status": "match"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "wrong_card",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "parent ic display flag false beats legacy",
+   "doc": {
+    "id": 12,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": true,
+     "member": "sister",
+     "display_wrong_card": false,
+     "wrong_card": true,
+     "name_status": "partial"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "relationship",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "parent ic legacy wrong card",
+   "doc": {
+    "id": 13,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": true,
+     "member": "mother",
+     "wrong_card": true
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "wrong_card",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "parent ic wrong type caps",
+   "doc": {
+    "id": 14,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": true,
+     "member": "father",
+     "name_status": "match"
+    },
+    "authenticity": {
+     "status": "not_ic",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "parent ic no check",
+   "doc": {
+    "id": 15,
+    "doc_type": "parent_ic",
+    "income_ic_check": null,
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [],
+   "pill": "unread"
+  },
+  {
+   "name": "slip all match, year current",
+   "doc": {
+    "id": 16,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "name": "match",
+     "subjects": "match",
+     "results": "match",
+     "exam_year": "2025",
+     "exam_year_status": "current"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "subjects",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "results",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "examYear",
+     "status": "verified",
+     "state": "green",
+     "kind": "year",
+     "value": "2025"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "slip subjects mismatch, year off",
+   "doc": {
+    "id": 17,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "name": "match",
+     "subjects": "mismatch",
+     "results": "not_compared",
+     "exam_year": "2023",
+     "exam_year_status": "off"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "subjects",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "results",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "examYear",
+     "status": "partial",
+     "state": "amber",
+     "kind": "year",
+     "value": "2023"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "slip year no cohort",
+   "doc": {
+    "id": 18,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "name": "partial",
+     "subjects": "match",
+     "results": "match",
+     "exam_year": "2025",
+     "exam_year_status": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "subjects",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "results",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "examYear",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "year",
+     "value": "2025"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "slip higher kind",
+   "doc": {
+    "id": 19,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "name": "match",
+     "higher_kind": "stpm",
+     "subjects": "match",
+     "results": "match"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "type",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "slip wrong type caps",
+   "doc": {
+    "id": 20,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "name": "match",
+     "subjects": "match",
+     "results": "match",
+     "exam_year": "2025",
+     "exam_year_status": "current"
+    },
+    "authenticity": {
+     "status": "not_results_slip",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "subjects",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "results",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "examYear",
+     "status": "verified",
+     "state": "green",
+     "kind": "year",
+     "value": "2025"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "slip suspect",
+   "doc": {
+    "id": 21,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "name": "match",
+     "subjects": "uncertain",
+     "results": "match"
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "subjects",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "results",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "genuine",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "slip not read",
+   "doc": {
+    "id": 22,
+    "doc_type": "results_slip",
+    "academic_check": null
+   },
+   "chips": [],
+   "pill": "unread"
+  },
+  {
+   "name": "higher all match",
+   "doc": {
+    "id": 23,
+    "doc_type": "higher_results",
+    "higher_check": {
+     "name": "match",
+     "kind_status": "match",
+     "cgpa_status": "match",
+     "grades_status": "match",
+     "exam_year": "2025",
+     "exam_year_status": "current"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "type",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "results",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "stpmExamYear",
+     "status": "verified",
+     "state": "green",
+     "kind": "year",
+     "value": "2025"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "higher type mismatch is red",
+   "doc": {
+    "id": 24,
+    "doc_type": "higher_results",
+    "higher_check": {
+     "name": "match",
+     "kind_status": "mismatch",
+     "cgpa_status": "partial"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "type",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "higher type any other word is red",
+   "doc": {
+    "id": 25,
+    "doc_type": "higher_results",
+    "higher_check": {
+     "name": "unknown",
+     "kind_status": "unreadable",
+     "cgpa_status": "not_compared",
+     "grades_status": "",
+     "exam_year": "2024",
+     "exam_year_status": "off"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "type",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "stpmExamYear",
+     "status": "partial",
+     "state": "amber",
+     "kind": "year",
+     "value": "2024"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "higher type blank grey",
+   "doc": {
+    "id": 26,
+    "doc_type": "higher_results",
+    "higher_check": {
+     "name": "pending",
+     "kind_status": "",
+     "cgpa_status": "mismatch"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "type",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "higher no cap on wrong type",
+   "doc": {
+    "id": 27,
+    "doc_type": "higher_results",
+    "higher_check": {
+     "name": "match",
+     "kind_status": "match",
+     "cgpa_status": "match"
+    },
+    "authenticity": {
+     "status": "not_stpm_results",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "type",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "higher suspect",
+   "doc": {
+    "id": 28,
+    "doc_type": "higher_results",
+    "higher_check": {
+     "name": "match",
+     "kind_status": "match",
+     "cgpa_status": "match"
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "type",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "genuine",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "offer genuine full",
+   "doc": {
+    "id": 29,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "name": "match",
+     "ic": "match",
+     "pathway": "match",
+     "reporting_date": "2026-07-01",
+     "intake_year": "2026",
+     "intake_year_status": "current"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "pathway",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "official",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "reportingDate",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "intakeYear",
+     "status": "verified",
+     "state": "green",
+     "kind": "year",
+     "value": "2026"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "offer ic unreadable amber",
+   "doc": {
+    "id": 30,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "name": "match",
+     "ic": "unreadable",
+     "pathway": "differs",
+     "reporting_date": ""
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "pathway",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "official",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "reportingDate",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "offer ic not printed grey",
+   "doc": {
+    "id": 31,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "name": "match",
+     "ic": "not_printed",
+     "pathway": "none",
+     "pathway_set_by_offer": true,
+     "reporting_date": "1 Julai"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "pathway",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "official",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "reportingDate",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "offer fake",
+   "doc": {
+    "id": 32,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "name": "mismatch",
+     "ic": "mismatch",
+     "pathway": "match",
+     "reporting_date": "x",
+     "intake_year": "2024",
+     "intake_year_status": "off"
+    },
+    "authenticity": {
+     "status": "not_offer_letter",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "pathway",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "official",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "reportingDate",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "intakeYear",
+     "status": "partial",
+     "state": "amber",
+     "kind": "year",
+     "value": "2024"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "offer likely genuine amber official",
+   "doc": {
+    "id": 33,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "name": "match",
+     "ic": "match",
+     "reporting_date": "x"
+    },
+    "authenticity": {
+     "status": "likely_genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "official",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "reportingDate",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "offer pending pending",
+   "doc": {
+    "id": 34,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "name": "pending",
+     "ic": "pending"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "offer switched",
+   "doc": {
+    "id": 35,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "name": "match",
+     "ic": "match",
+     "reporting_date": "x",
+     "switched_from": "Course A"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "official",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "reportingDate",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "switched",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "str current match",
+   "doc": {
+    "id": 36,
+    "doc_type": "str",
+    "str_check": {
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "current"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "str unreadable: status amber, current grey",
+   "doc": {
+    "id": 37,
+    "doc_type": "str",
+    "str_check": {
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "unreadable"
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "str stale",
+   "doc": {
+    "id": 38,
+    "doc_type": "str",
+    "str_check": {
+     "name_status": "match",
+     "nric_status": "no_ref",
+     "current_status": "stale"
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "str future",
+   "doc": {
+    "id": 39,
+    "doc_type": "str",
+    "str_check": {
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "future"
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "str unconfirmed",
+   "doc": {
+    "id": 40,
+    "doc_type": "str",
+    "str_check": {
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "unconfirmed"
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "str not approved",
+   "doc": {
+    "id": 41,
+    "doc_type": "str",
+    "str_check": {
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "not_approved"
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "str rejected",
+   "doc": {
+    "id": 42,
+    "doc_type": "str",
+    "str_check": {
+     "name_status": "mismatch",
+     "nric_status": "mismatch",
+     "current_status": "rejected"
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "str display words first",
+   "doc": {
+    "id": 43,
+    "doc_type": "str",
+    "str_check": {
+     "display_name_status": "not_read",
+     "name_status": "match",
+     "display_nric_status": "",
+     "nric_status": "match",
+     "current_status": "current"
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "str wrong type caps",
+   "doc": {
+    "id": 44,
+    "doc_type": "str",
+    "str_check": {
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "current"
+    },
+    "authenticity": {
+     "status": "not_str",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "str no check, suspect",
+   "doc": {
+    "id": 45,
+    "doc_type": "str",
+    "str_check": null,
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "genuine",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "pay slip read",
+   "doc": {
+    "id": 46,
+    "doc_type": "salary_slip",
+    "income_proof_check": {
+     "name_status": "match",
+     "nric_status": "match",
+     "nric": "000000000000",
+     "points": [
+      {
+       "key": "gross_income",
+       "value": "RM1,500"
+      },
+      {
+       "key": "period",
+       "value": "Okt 2026"
+      }
+     ]
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "period",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "pay slip figure refused (admin only)",
+   "doc": {
+    "id": 47,
+    "doc_type": "salary_slip",
+    "figure_refused": true,
+    "income_proof_check": {
+     "name_status": "match",
+     "nric": "",
+     "points": [
+      {
+       "key": "amount",
+       "value": "900"
+      }
+     ]
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "amount_unusable",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "period",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "pay slip ic mismatch",
+   "doc": {
+    "id": 48,
+    "doc_type": "salary_slip",
+    "income_proof_check": {
+     "display_name_status": "check_name",
+     "name_status": "mismatch",
+     "display_nric_status": "mismatch",
+     "nric_status": "match",
+     "nric": "111111111111",
+     "points": [
+      {
+       "key": "net_income",
+       "value": "  "
+      },
+      {
+       "key": "period",
+       "value": ""
+      }
+     ]
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no_mismatch",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "period",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "pay slip no ic, unreadable",
+   "doc": {
+    "id": 49,
+    "doc_type": "salary_slip",
+    "vision_fields": {
+     "student_verdict": "unreadable"
+    },
+    "income_proof_check": {
+     "name_status": "unreadable",
+     "nric": "",
+     "points": []
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no_unreadable",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "period",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "pay slip no ic, incomplete",
+   "doc": {
+    "id": 50,
+    "doc_type": "salary_slip",
+    "vision_fields": {
+     "student_verdict": "incomplete"
+    },
+    "income_proof_check": {
+     "name_status": "match",
+     "nric": null,
+     "points": null
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "period",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "pay slip wrong type caps",
+   "doc": {
+    "id": 51,
+    "doc_type": "salary_slip",
+    "vision_fields": {
+     "student_verdict": "wrong_doc"
+    },
+    "income_proof_check": {
+     "name_status": "match",
+     "nric_status": "mismatch",
+     "nric": "222222222222",
+     "points": [
+      {
+       "key": "amount",
+       "value": "1000"
+      }
+     ]
+    },
+    "authenticity": {
+     "status": "not_salary_slip",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "period",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "pay slip no check, wrong type",
+   "doc": {
+    "id": 52,
+    "doc_type": "salary_slip",
+    "income_proof_check": null,
+    "authenticity": {
+     "status": "not_salary_slip",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "epf read",
+   "doc": {
+    "id": 53,
+    "doc_type": "epf",
+    "income_proof_check": {
+     "name_status": "match",
+     "nric_status": "match",
+     "nric": "333333333333",
+     "points": [
+      {
+       "key": "avgContribution",
+       "value": "220"
+      },
+      {
+       "key": "totalAccumulated",
+       "value": "15000"
+      },
+      {
+       "key": "statementDate",
+       "value": "2026-06-30"
+      }
+     ]
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "contribution",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "balance",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "epf figure refused, suspect",
+   "doc": {
+    "id": 54,
+    "doc_type": "epf",
+    "figure_refused": true,
+    "income_proof_check": {
+     "name_status": "partial",
+     "nric_status": "unknown",
+     "nric": "444444444444",
+     "points": [
+      {
+       "key": "totalAccumulated",
+       "value": ""
+      }
+     ]
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "contribution_unusable",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "balance",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "genuine",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "bc all match",
+   "doc": {
+    "id": 55,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "child_status": "match",
+     "mother_status": "match",
+     "father_status": "match"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "child",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "mother",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "father",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "bc display mother first",
+   "doc": {
+    "id": 56,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "child_status": "check_one",
+     "display_mother_status": "not_read",
+     "mother_status": "mismatch",
+     "father_status": "no_ref"
+    }
+   },
+   "chips": [
+    {
+     "key": "child",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "mother",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "father",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "bc unreadable",
+   "doc": {
+    "id": 57,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "unreadable": true,
+     "child_status": "no_ref"
+    }
+   },
+   "chips": [
+    {
+     "key": "unreadable",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "bc unreadable wrong type",
+   "doc": {
+    "id": 58,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "unreadable": true
+    },
+    "authenticity": {
+     "status": "not_birth_certificate",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "unreadable",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "bc wrong type caps",
+   "doc": {
+    "id": 59,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "child_status": "match",
+     "mother_status": "match",
+     "father_status": "match"
+    },
+    "authenticity": {
+     "status": "not_birth_certificate",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "child",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "mother",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "father",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "guardian match",
+   "doc": {
+    "id": 60,
+    "doc_type": "guardianship_letter",
+    "guardianship_check": {
+     "guardian_status": "match",
+     "ward_status": "partial"
+    }
+   },
+   "chips": [
+    {
+     "key": "guardian",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ward",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "guardian unreadable",
+   "doc": {
+    "id": 61,
+    "doc_type": "guardianship_letter",
+    "guardianship_check": {
+     "unreadable": true
+    }
+   },
+   "chips": [
+    {
+     "key": "unreadable",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "semester partial green, not_found red",
+   "doc": {
+    "id": 62,
+    "doc_type": "semester_result",
+    "semester_check": {
+     "name_status": "partial",
+     "nric_status": "not_found",
+     "cgpa": "3.45"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "semester mismatch, no cgpa",
+   "doc": {
+    "id": 63,
+    "doc_type": "semester_result",
+    "semester_check": {
+     "name_status": "match",
+     "nric_status": "mismatch",
+     "cgpa": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "leaving good",
+   "doc": {
+    "id": 64,
+    "doc_type": "school_leaving_cert",
+    "school_leaving_check": {
+     "school_status": "match",
+     "name_status": "match",
+     "nric_status": "match",
+     "kelakuan_status": "good"
+    }
+   },
+   "chips": [
+    {
+     "key": "school",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "behaviour",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "leaving concern",
+   "doc": {
+    "id": 65,
+    "doc_type": "school_leaving_cert",
+    "school_leaving_check": {
+     "school_status": "partial",
+     "name_status": "no_ref",
+     "nric_status": "mismatch",
+     "kelakuan_status": "concern"
+    }
+   },
+   "chips": [
+    {
+     "key": "school",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "behaviour",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "leaving bad",
+   "doc": {
+    "id": 66,
+    "doc_type": "school_leaving_cert",
+    "school_leaving_check": {
+     "school_status": "mismatch",
+     "name_status": "match",
+     "nric_status": "match",
+     "kelakuan_status": "bad"
+    }
+   },
+   "chips": [
+    {
+     "key": "school",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "behaviour",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "leaving unread conduct",
+   "doc": {
+    "id": 67,
+    "doc_type": "school_leaving_cert",
+    "school_leaving_check": {
+     "school_status": "",
+     "name_status": "",
+     "nric_status": "",
+     "kelakuan_status": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "school",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "behaviour",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "support read with amount",
+   "doc": {
+    "id": 68,
+    "doc_type": "income_support_doc",
+    "support_doc_check": {
+     "read_status": "read",
+     "amount": "RM800"
+    }
+   },
+   "chips": [
+    {
+     "key": "evidence",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "support not read",
+   "doc": {
+    "id": 69,
+    "doc_type": "income_support_doc",
+    "support_doc_check": {
+     "read_status": "unreadable",
+     "amount": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "evidence",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "water current reasonable arrears",
+   "doc": {
+    "id": 70,
+    "doc_type": "water_bill",
+    "utility_check": {
+     "address_status": "found",
+     "current_status": "current",
+     "reasonable_status": "reasonable",
+     "outstanding_status": "arrears"
+    }
+   },
+   "chips": [
+    {
+     "key": "address",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "reasonable",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "outstanding",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "electricity ageing high",
+   "doc": {
+    "id": 71,
+    "doc_type": "electricity_bill",
+    "utility_check": {
+     "address_status": "unconfirmed",
+     "current_status": "ageing",
+     "reasonable_status": "high"
+    }
+   },
+   "chips": [
+    {
+     "key": "address",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "ageing",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "reasonable",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "electricity stale mismatch",
+   "doc": {
+    "id": 72,
+    "doc_type": "electricity_bill",
+    "utility_check": {
+     "address_status": "mismatch",
+     "current_status": "stale",
+     "reasonable_status": "partial"
+    }
+   },
+   "chips": [
+    {
+     "key": "address",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "stale",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "reasonable",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "water unknown everything",
+   "doc": {
+    "id": 73,
+    "doc_type": "water_bill",
+    "utility_check": {
+     "address_status": "",
+     "current_status": "unknown",
+     "reasonable_status": "unknown"
+    }
+   },
+   "chips": [
+    {
+     "key": "address",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "reasonable",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "water wrong type caps",
+   "doc": {
+    "id": 74,
+    "doc_type": "water_bill",
+    "utility_check": {
+     "address_status": "found",
+     "current_status": "current",
+     "reasonable_status": "reasonable",
+     "outstanding_status": "arrears"
+    },
+    "authenticity": {
+     "status": "not_water_bill",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "address",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "reasonable",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "electricity no check, wrong type",
+   "doc": {
+    "id": 75,
+    "doc_type": "electricity_bill",
+    "utility_check": null,
+    "authenticity": {
+     "status": "not_electricity_bill",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "wrongType",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "photo no signal",
+   "doc": {
+    "id": 76,
+    "doc_type": "photo"
+   },
+   "chips": [],
+   "pill": "unread"
+  },
+  {
+   "name": "statement suspect",
+   "doc": {
+    "id": 77,
+    "doc_type": "statement_of_intent",
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "genuine",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  }
+ ]
+}

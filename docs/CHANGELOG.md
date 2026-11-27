@@ -1,5 +1,19 @@
 # Changelog — HalaTuju
 
+## Document chip standard Sprint 0: one server chip module (2026-11-27, branch chip-std-s0, not pushed)
+
+### Added
+- **`apps/scholarship/doc_chips.py`**: `chips_for` / `pill_for` port today's officer-drawer chips exactly (`cockpitDocFacts.ts`, `offerFacts.ts`, `higherResultsFacts.ts`, and the drawer's year chip). Display only, with no database queries.
+- **Served keys**: `ApplicantDocumentSerializer` (and the officer serializer, which inherits it) now carries `chips`, `chip_pill` and `read_at`. Nothing reads them yet, so there is no visible change.
+- **Guards**:
+  - A shared parity fixture, `tests/fixtures/doc_chip_parity.json` (77 synthetic cases), checked by pytest and by jest (`doc-chip-parity.test.ts`) against today's web.
+  - An import fence: no engine reaches `doc_chips` (static and runtime checks).
+- **`eval/chip_dry_run.py`**: counts per document type which chips would change, plus a verdict-band identity check. It runs in one read-only transaction that is always rolled back. It is tested on the test database only and is hand-run on the owner's word.
+- **`docs/document-chip-standard.md`**: the standard, a per-type today → target table, the odd findings in today's code, the Case 1048 note (Sprint 3), and the next step (student checklist port).
+
+### Unchanged
+- Verdicts, engines, `MODEL_VERSION`, and the golden verdict pins and digests. No UI change.
+
 ## Audit fix A3.16a: mirror drift guards (2026-11-11, branch a316a, not pushed)
 
 ### Added

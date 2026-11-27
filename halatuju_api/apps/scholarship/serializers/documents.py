@@ -1,6 +1,7 @@
 """Applicant-document serializers: read, sign-upload, create and the Action Centre resolution items."""
 
 from rest_framework import serializers
+from ..doc_chips import chips_for, pill_for
 from ..models import ApplicantDocument, ResolutionItem
 
 
@@ -351,6 +352,16 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         place a doc under the right person even when it was uploaded without a tag."""
         from ..income_engine import resolved_member_for
         return resolved_member_for(obj.application, obj)
+
+    def to_representation(self, instance):
+        """Chip standard S0 (display only): the server's chips + pill, worked out from THIS payload
+        (no query of its own), and ``read_at`` = the later of the two read stamps (null if neither)."""
+        data = super().to_representation(instance)
+        data['chips'] = chips_for(data)
+        data['chip_pill'] = pill_for(data['chips'])
+        stamps = [t for t in (instance.vision_run_at, instance.vision_fields_run_at) if t is not None]
+        data['read_at'] = serializers.DateTimeField().to_representation(max(stamps)) if stamps else None
+        return data
 
 
 class SignUploadSerializer(serializers.Serializer):
