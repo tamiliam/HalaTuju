@@ -48,6 +48,42 @@ class ChipDryRunTests(TestCase):
         with self.assertRaises(dr.WriteRefused):
             chip_dry_run.run_dry()
 
+    def test_the_guard_trips_if_build_verdict_reaches_the_chips_through_the_serializer(self):
+        """The rig is on the MODULE the serializer calls through, so a verdict path that serialized a
+        document (the only road to the chips) is refused, and the serializer's fallback cannot hide it."""
+        from apps.scholarship import verdict_engine
+        from apps.scholarship.serializers import ApplicantDocumentSerializer
+        real = verdict_engine.build_verdict
+        calls = []
+
+        def leaky(application):
+            calls.append(1)
+            if len(calls) > 1:                      # the AFTER pass, inside the guard
+                ApplicantDocumentSerializer(application.documents.first()).data
+            return real(application)
+        with mock.patch.object(verdict_engine, 'build_verdict', leaky):
+            with self.assertRaises(chip_dry_run.ChipsRefused):
+                chip_dry_run.run_dry(allow_sqlite=True)
+
+    def test_the_guard_trips_on_a_direct_call_too(self):
+        with self.assertRaises(chip_dry_run.ChipsRefused):
+            with chip_dry_run._chips_refused():
+                doc_chips.pill_for([])
+
+    def test_the_guard_trips_even_when_the_caller_swallows_the_raise(self):
+        with self.assertRaises(chip_dry_run.ChipsRefused):
+            with chip_dry_run._chips_refused():
+                try:
+                    doc_chips.chips_for({'doc_type': 'ic'})
+                except BaseException:               # a verdict path that hid it is still caught
+                    pass
+
+    def test_the_guard_is_off_again_afterwards(self):
+        real = doc_chips.chips_for
+        with chip_dry_run._chips_refused():
+            pass
+        self.assertIs(doc_chips.chips_for, real)
+
     def test_superseded_rows_are_skipped_and_output_is_counts_only(self):
         ApplicantDocument.objects.filter(doc_type='photo').update(superseded_at=timezone.now())
         result = chip_dry_run.run_dry(allow_sqlite=True)

@@ -2855,6 +2855,740 @@
     }
    ],
    "pill": "check"
+  },
+  {
+   "name": "parent_ic empty check object",
+   "doc": {
+    "id": 78,
+    "doc_type": "parent_ic",
+    "income_ic_check": {}
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "results_slip empty check object",
+   "doc": {
+    "id": 79,
+    "doc_type": "results_slip",
+    "academic_check": {}
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "subjects",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "results",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "higher_results empty check object",
+   "doc": {
+    "id": 80,
+    "doc_type": "higher_results",
+    "higher_check": {}
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "type",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "offer_letter empty check object",
+   "doc": {
+    "id": 81,
+    "doc_type": "offer_letter",
+    "pathway_check": {}
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "reportingDate",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "str empty check object",
+   "doc": {
+    "id": 82,
+    "doc_type": "str",
+    "str_check": {}
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "status",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "salary_slip empty check object",
+   "doc": {
+    "id": 83,
+    "doc_type": "salary_slip",
+    "income_proof_check": {}
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "period",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "epf empty check object",
+   "doc": {
+    "id": 84,
+    "doc_type": "epf",
+    "income_proof_check": {}
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "contribution",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "balance",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "birth_certificate empty check object",
+   "doc": {
+    "id": 85,
+    "doc_type": "birth_certificate",
+    "bc_check": {}
+   },
+   "chips": [
+    {
+     "key": "child",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "mother",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "father",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "guardianship_letter empty check object",
+   "doc": {
+    "id": 86,
+    "doc_type": "guardianship_letter",
+    "guardianship_check": {}
+   },
+   "chips": [
+    {
+     "key": "guardian",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "ward",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "semester_result empty check object",
+   "doc": {
+    "id": 87,
+    "doc_type": "semester_result",
+    "semester_check": {}
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "school_leaving_cert empty check object",
+   "doc": {
+    "id": 88,
+    "doc_type": "school_leaving_cert",
+    "school_leaving_check": {}
+   },
+   "chips": [
+    {
+     "key": "school",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "behaviour",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "income_support_doc empty check object",
+   "doc": {
+    "id": 89,
+    "doc_type": "income_support_doc",
+    "support_doc_check": {}
+   },
+   "chips": [
+    {
+     "key": "evidence",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "water_bill empty check object",
+   "doc": {
+    "id": 90,
+    "doc_type": "water_bill",
+    "utility_check": {}
+   },
+   "chips": [
+    {
+     "key": "address",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "current",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "reasonable",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "ic empty authenticity object",
+   "doc": {
+    "id": 91,
+    "doc_type": "ic",
+    "vision_name_verdict": "match",
+    "vision_nric_verdict": "match",
+    "authenticity": {}
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "parent_ic readable an empty list, member a list",
+   "doc": {
+    "id": 92,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": [],
+     "member": [
+      "father"
+     ],
+     "name_status": "match"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "parent_ic readable 1, wrong_card an empty object",
+   "doc": {
+    "id": 93,
+    "doc_type": "parent_ic",
+    "income_ic_check": {
+     "readable": 1,
+     "wrong_card": {}
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "wrong_card",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "results_slip status words not strings",
+   "doc": {
+    "id": 94,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "name": [
+      "match"
+     ],
+     "subjects": {
+      "k": "match"
+     },
+     "results": 5,
+     "exam_year": 2025,
+     "exam_year_status": [
+      "current"
+     ]
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "subjects",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "results",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "examYear",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "year",
+     "value": "2025"
+    }
+   ],
+   "pill": "unread"
+  },
+  {
+   "name": "higher_results kind and grades not strings",
+   "doc": {
+    "id": 95,
+    "doc_type": "higher_results",
+    "higher_check": {
+     "name": "match",
+     "kind_status": {},
+     "cgpa_status": [
+      "match"
+     ],
+     "grades_status": []
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "type",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "results",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "offer_letter flags not strings",
+   "doc": {
+    "id": 96,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "name": "match",
+     "ic": "match",
+     "pathway": [
+      "x"
+     ],
+     "pathway_set_by_offer": {},
+     "reporting_date": 0,
+     "switched_from": [],
+     "intake_year": 0
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "pathway",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "reportingDate",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "switched",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "salary_slip numeric zero values",
+   "doc": {
+    "id": 97,
+    "doc_type": "salary_slip",
+    "income_proof_check": {
+     "name_status": "match",
+     "nric": 0,
+     "points": [
+      {
+       "key": "amount",
+       "value": 0
+      },
+      {
+       "key": "period",
+       "value": "Jan 2026"
+      }
+     ]
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
+     "key": "period",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "birth_certificate unreadable an empty list",
+   "doc": {
+    "id": 98,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "unreadable": []
+    }
+   },
+   "chips": [
+    {
+     "key": "unreadable",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "school_leaving_cert behaviour word a list",
+   "doc": {
+    "id": 99,
+    "doc_type": "school_leaving_cert",
+    "school_leaving_check": {
+     "school_status": "match",
+     "name_status": "match",
+     "nric_status": "match",
+     "kelakuan_status": [
+      "good"
+     ]
+    }
+   },
+   "chips": [
+    {
+     "key": "school",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "behaviour",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
+  },
+  {
+   "name": "semester_result cgpa zero",
+   "doc": {
+    "id": 100,
+    "doc_type": "semester_result",
+    "semester_check": {
+     "name_status": "match",
+     "nric_status": "partial",
+     "cgpa": 0
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "ic_no",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "cgpa",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    }
+   ],
+   "pill": "verified"
   }
  ]
 }

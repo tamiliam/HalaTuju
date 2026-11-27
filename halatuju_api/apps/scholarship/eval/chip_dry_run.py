@@ -21,9 +21,18 @@ today's web exactly, so both default to ``doc_chips.chips_for`` and every ``stat
 construction; a later sprint passes its frozen "today" as ``old`` and its target rules as ``new``.
 
 Verdict bands: every application's four fact bands (``build_verdict`` → ``_fact_band``) are taken BEFORE
-the documents are serialized, then AFTER, with ``doc_chips.chips_for`` / ``pill_for`` rigged to raise if
-any verdict path calls them. ``bands_identical`` is True only when every band of every application is
-the same. Output is counts only — never a name, an IC, an id or a value read off a document.
+the documents are serialized, then AFTER, with ``doc_chips.chips_for`` / ``pill_for`` rigged to raise
+``ChipsRefused``. The serializer calls the chips through the MODULE (``doc_chips.chips_for``), so the
+rig bites there too, and ``ChipsRefused`` is a ``BaseException`` so the serializer's display-only
+fallback (which catches ``Exception``) cannot swallow it. What a clean run proves, for the data it
+read and no more: (1) serializing the documents left every band as it was, and (2) ``build_verdict``
+on that data never reached the chip functions, directly or through the document serializer. Code paths
+that data does not exercise are the import fence's job (``tests/test_doc_chips_import_fence.py``).
+``bands_identical`` is True only when every band of every application is the same. Output is counts
+only — never a name, an IC, an id or a value read off a document.
+
+Cost: one documents query per application, the two serializers' own reads per document, and
+``build_verdict`` twice per application, over EVERY application. Hand-run only, never at peak time.
 
 Usage (operator, owner's word only):  python manage.py shell -c "from apps.scholarship.eval.chip_dry_run
 import main; main()"
@@ -39,15 +48,26 @@ def _bands(application):
     return tuple((f.get('fact'), _fact_band(f)) for f in build_verdict(application))
 
 
+class ChipsRefused(BaseException):
+    """A verdict path called the chip module. A BaseException on purpose: the document serializer's
+    display-only fallback catches ``Exception`` and must not swallow this."""
+
+
 @contextlib.contextmanager
 def _chips_refused():
-    """Any call into the chip module from a verdict path raises (it is display only)."""
+    """Any call into the chip module while this is open raises ``ChipsRefused`` (it is display
+    only). The calls are also counted, so a caller that swallowed even a BaseException is caught on
+    the way out."""
     from apps.scholarship import doc_chips
+    calls = []
 
     def refuse(*_a, **_k):
-        raise AssertionError('chip_dry_run: a verdict path called doc_chips')
+        calls.append(1)
+        raise ChipsRefused('chip_dry_run: a verdict path called doc_chips')
     with mock.patch.object(doc_chips, 'chips_for', refuse), mock.patch.object(doc_chips, 'pill_for', refuse):
         yield
+    if calls:
+        raise ChipsRefused(f'chip_dry_run: a verdict path called doc_chips {len(calls)} time(s)')
 
 
 def _payloads(doc):

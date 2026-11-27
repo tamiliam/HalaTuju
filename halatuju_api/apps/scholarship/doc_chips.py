@@ -39,10 +39,25 @@ _NOT = frozenset({'mismatch', 'unreadable', 'not_found', 'rejected'})
 _PATRONYMIC_MEMBER = frozenset({'father', 'brother', 'sister'})
 
 
-# ── small helpers (JS semantics: `a ?? b`, `(s || '').trim()`) ──────────────────────────────
+# ── small helpers (JS semantics: `!c`, `a ?? b`, `(s || '').trim()`) ────────────────────────
+# Where the web would THROW (``.trim()`` / ``.startsWith()`` on a non-string, ``.some()`` on a
+# non-list, a check object that is a truthy non-object), these helpers pick a quiet answer instead
+# and never raise; those cases are pinned in ``test_doc_chips.py`` alone, not the shared fixture.
 
 def _get(obj, key):
     return obj.get(key) if isinstance(obj, dict) else None
+
+
+def _truthy(v):
+    """JS truthiness: null, false, 0 and '' are falsy, but an EMPTY list or dict is truthy."""
+    return True if isinstance(v, (list, dict)) else bool(v)
+
+
+def _check_obj(doc, key):
+    """A check object, or None. The web tests ``!c``, so an empty ``{}`` is still a check (its
+    fields all read as missing); anything that is not a dict counts as no check."""
+    c = _get(doc, key)
+    return c if isinstance(c, dict) else None
 
 
 def _coalesce(a, b):
@@ -51,9 +66,13 @@ def _coalesce(a, b):
 
 
 def _trim(v):
-    if isinstance(v, str):
-        return v.strip()
-    return str(v) if v else ''
+    """JS ``(v || '').trim()``: only a string is trimmed; any other value reads as blank."""
+    return v.strip() if isinstance(v, str) else ''
+
+
+def _word(v):
+    """A status word for a table lookup: a non-string never matches (JS ``===`` / ``switch``)."""
+    return v if isinstance(v, str) else None
 
 
 def _chip(key, status, reason, kind='fact', value=None):
@@ -68,6 +87,7 @@ def _chip(key, status, reason, kind='fact', value=None):
 
 def fact_status(s):
     """``factStatus``: the assorted check words onto one tone; anything unlisted is grey."""
+    s = _word(s)
     if s in _VERIFIED:
         return 'verified'
     if s in _PARTIAL:
@@ -129,11 +149,11 @@ def _reasonable_status(s):
 def _genuineness_chip(doc):
     """``genuinenessFact``: a not-genuine verdict as its own chip; None when genuine / no signal."""
     s = _get(_get(doc, 'authenticity'), 'status')
-    if not s or s in ('genuine', 'likely_genuine'):
+    if not _truthy(s) or s in ('genuine', 'likely_genuine'):
         return None
     if s == 'final_owed':
         return _chip('finalOwed', 'unknown', s)
-    if s.startswith('not_'):
+    if isinstance(s, str) and s.startswith('not_'):   # a non-string word: the web throws; amber here
         return _chip('wrongType', 'not', s)
     return _chip('genuine', 'partial', s)
 
@@ -157,18 +177,18 @@ def _ic_chips(doc, gf, cap):
 
 
 def _parent_ic(doc, gf, cap):
-    c = _get(doc, 'income_ic_check')
-    if not c:
+    c = _check_obj(doc, 'income_ic_check')
+    if c is None:
         return []
-    readable = bool(_get(c, 'readable'))
+    readable = _truthy(_get(c, 'readable'))
     read = 'verified' if readable else 'not'
     why = 'readable' if readable else 'not_readable'
     chips = [_fc('name', cap, gf, read, why), _fc('ic_no', cap, gf, read, why)]
     if gf:
         chips.append(gf)
-    elif _coalesce(_get(c, 'display_wrong_card'), _get(c, 'wrong_card')):
+    elif _truthy(_coalesce(_get(c, 'display_wrong_card'), _get(c, 'wrong_card'))):
         chips.append(_chip('wrong_card', 'partial', 'wrong_card'))
-    elif _get(c, 'member') in _PATRONYMIC_MEMBER:
+    elif _word(_get(c, 'member')) in _PATRONYMIC_MEMBER:
         ns = _get(c, 'name_status')
         chips.append(_chip('relationship', fact_status(ns), ns))
     return chips
@@ -176,16 +196,16 @@ def _parent_ic(doc, gf, cap):
 
 def _higher_results(c, gf):
     """``higherResultsFacts``: no genuineness cap here (today's code); the Genuine chip is appended."""
-    if not c:
+    if c is None:
         return []
     kind = _get(c, 'kind_status')
     chips = [
         _chip('name', fact_status(_get(c, 'name')), _get(c, 'name')),
-        _chip('type', 'verified' if kind == 'match' else ('not' if kind else 'unknown'), kind),
+        _chip('type', 'verified' if kind == 'match' else ('not' if _truthy(kind) else 'unknown'), kind),
         _chip('cgpa', fact_status(_get(c, 'cgpa_status')), _get(c, 'cgpa_status')),
     ]
     grades = _get(c, 'grades_status')
-    if grades:
+    if _truthy(grades):
         chips.append(_chip('results', fact_status(grades), grades))
     if gf:
         chips.append(gf)
@@ -193,10 +213,10 @@ def _higher_results(c, gf):
 
 
 def _results_slip(doc, gf, cap):
-    c = _get(doc, 'academic_check')
-    if not c:
+    c = _check_obj(doc, 'academic_check')
+    if c is None:
         return []
-    if _get(c, 'higher_kind'):          # S4 (#43): a higher result on the SPM slot
+    if _truthy(_get(c, 'higher_kind')):          # S4 (#43): a higher result on the SPM slot
         nm = _get(c, 'name')
         chips = [_fc('name', cap, gf, fact_status(nm), nm), _chip('type', 'not', 'higher_kind')]
     else:
@@ -207,11 +227,11 @@ def _results_slip(doc, gf, cap):
 
 def _offer_letter(doc):
     """``offerFacts``: the owner's offer chip table. No Genuine chip; 'Official' carries it."""
-    c = _get(doc, 'pathway_check')
-    if not c:
+    c = _check_obj(doc, 'pathway_check')
+    if c is None:
         return []
     auth = _get(_get(doc, 'authenticity'), 'status')
-    fake = bool(auth) and auth.startswith('not_')
+    fake = isinstance(auth, str) and auth.startswith('not_')
 
     def identity(s):
         return 'partial' if s == 'unreadable' else fact_status(s)
@@ -219,22 +239,22 @@ def _offer_letter(doc):
     name, ic = _get(c, 'name'), _get(c, 'ic')
     chips = [_chip('name', identity(name), name), _chip('ic_no', identity(ic), ic)]
     pathway = _get(c, 'pathway')
-    if pathway:
-        green = not fake and (pathway == 'match' or bool(_get(c, 'pathway_set_by_offer')))
+    if _truthy(pathway):
+        green = not fake and (pathway == 'match' or _truthy(_get(c, 'pathway_set_by_offer')))
         chips.append(_chip('pathway', 'verified' if green else 'partial', pathway))
-    if auth:
+    if _truthy(auth):
         chips.append(_chip('official', 'verified' if auth == 'genuine' else ('not' if fake else 'partial'), auth))
     if not (name == 'pending' and ic == 'pending'):
         dated = bool(_trim(_get(c, 'reporting_date')))
         chips.append(_chip('reportingDate', 'verified' if dated else 'partial', 'read' if dated else 'not_printed'))
-    if _get(c, 'switched_from'):
+    if _truthy(_get(c, 'switched_from')):
         chips.append(_chip('switched', 'partial', 'switched_from'))
     return chips
 
 
 def _str(doc, gf, cap):
-    c = _get(doc, 'str_check')
-    if not c:
+    c = _check_obj(doc, 'str_check')
+    if c is None:
         return [gf] if gf else []
     ns = _coalesce(_get(c, 'display_name_status'), _get(c, 'name_status'))
     nr = _coalesce(_get(c, 'display_nric_status'), _get(c, 'nric_status'))
@@ -250,10 +270,11 @@ def _str(doc, gf, cap):
 
 def _income_proof(doc, gf, cap):
     dt = _get(doc, 'doc_type')
-    c = _get(doc, 'income_proof_check')
-    if not c:
+    c = _check_obj(doc, 'income_proof_check')
+    if c is None:
         return [gf] if gf else []
-    points = _get(c, 'points') or []
+    points = _get(c, 'points')
+    points = points if isinstance(points, list) else []
 
     def has(k):
         return any(_get(p, 'key') == k and _trim(_get(p, 'value')) for p in points)
@@ -287,10 +308,10 @@ def _income_proof(doc, gf, cap):
 
 
 def _birth_certificate(doc, gf, cap):
-    c = _get(doc, 'bc_check')
-    if not c:
+    c = _check_obj(doc, 'bc_check')
+    if c is None:
         return []
-    if _get(c, 'unreadable'):
+    if _truthy(_get(c, 'unreadable')):
         return [_chip('unreadable', 'partial', 'unreadable')] + ([gf] if gf else [])
     ms = _coalesce(_get(c, 'display_mother_status'), _get(c, 'mother_status'))
     chips = [
@@ -302,10 +323,10 @@ def _birth_certificate(doc, gf, cap):
 
 
 def _guardianship(doc):
-    c = _get(doc, 'guardianship_check')
-    if not c:
+    c = _check_obj(doc, 'guardianship_check')
+    if c is None:
         return []
-    if _get(c, 'unreadable'):
+    if _truthy(_get(c, 'unreadable')):
         return [_chip('unreadable', 'partial', 'unreadable')]
     return [_chip(k, fact_status(_get(c, f'{k}_status')), _get(c, f'{k}_status')) for k in ('guardian', 'ward')]
 
@@ -313,8 +334,8 @@ def _guardianship(doc):
 def _semester(doc):
     """Owner 2026-07-05: Name + IC No green on match OR partial, red on anything else (incl.
     not_found); CGPA green when read, grey otherwise."""
-    c = _get(doc, 'semester_check')
-    if not c:
+    c = _check_obj(doc, 'semester_check')
+    if c is None:
         return []
 
     def id_match(s):
@@ -329,19 +350,19 @@ def _semester(doc):
 
 
 def _school_leaving(doc):
-    c = _get(doc, 'school_leaving_check')
-    if not c:
+    c = _check_obj(doc, 'school_leaving_check')
+    if c is None:
         return []
     k = _get(c, 'kelakuan_status')
-    behaviour = {'good': 'verified', 'concern': 'partial', 'bad': 'not'}.get(k, 'unknown')
+    behaviour = {'good': 'verified', 'concern': 'partial', 'bad': 'not'}.get(_word(k), 'unknown')
     return [_chip(key, fact_status(_get(c, f)), _get(c, f))
             for key, f in (('school', 'school_status'), ('name', 'name_status'), ('ic_no', 'nric_status'))
             ] + [_chip('behaviour', behaviour, k)]
 
 
 def _support_doc(doc):
-    c = _get(doc, 'support_doc_check')
-    if not c:
+    c = _check_obj(doc, 'support_doc_check')
+    if c is None:
         return []
     rs = _get(c, 'read_status')
     chips = [_chip('evidence', 'verified' if rs == 'read' else 'not', rs)]
@@ -351,8 +372,8 @@ def _support_doc(doc):
 
 
 def _utility(doc, gf, cap):
-    c = _get(doc, 'utility_check')
-    if not c:
+    c = _check_obj(doc, 'utility_check')
+    if c is None:
         return [gf] if gf else []
     addr, cur, rsn = _get(c, 'address_status'), _get(c, 'current_status'), _get(c, 'reasonable_status')
     chips = [
@@ -369,7 +390,7 @@ def fact_chips(doc):
     """``documentFacts``: the fact chips one document provides ([] = its check has not run)."""
     dt = _get(doc, 'doc_type')
     gf = _genuineness_chip(doc)
-    cap = bool(gf) and gf['status'] == 'not'
+    cap = gf is not None and gf['status'] == 'not'
     if dt == 'ic':
         return _ic_chips(doc, gf, cap)
     if dt == 'parent_ic':
@@ -377,7 +398,7 @@ def fact_chips(doc):
     if dt == 'results_slip':
         return _results_slip(doc, gf, cap)
     if dt == 'higher_results':
-        return _higher_results(_get(doc, 'higher_check'), gf)
+        return _higher_results(_check_obj(doc, 'higher_check'), gf)
     if dt == 'offer_letter':
         return _offer_letter(doc)
     if dt == 'str':
@@ -417,10 +438,11 @@ def year_chip(doc):
             continue
         c = _get(doc, check)
         year = _get(c, field)
-        if not year:
+        if not _truthy(year):
             return None
-        word = _get(c, f'{field}_status') or ''
-        return _chip(key, _YEAR_STATUS.get(word, 'unknown'), word, kind='year', value=str(year))
+        word = _get(c, f'{field}_status')
+        word = word if _truthy(word) else ''
+        return _chip(key, _YEAR_STATUS.get(_word(word), 'unknown'), word, kind='year', value=str(year))
     return None
 
 

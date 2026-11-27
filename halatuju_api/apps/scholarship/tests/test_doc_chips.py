@@ -6,6 +6,7 @@ runs today's web functions over the SAME cases), so the two sides can only agree
 import datetime
 import json
 import pathlib
+from unittest import mock
 
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
@@ -73,6 +74,80 @@ class PillTests(SimpleTestCase):
         self.assertEqual(doc_chips.pill_for([self.chip('red')]), 'check')
 
 
+_JUNK = (['match'], {'status': 'match'}, 5, 3.5, True, 'x', None, [], {}, [{'key': 'amount'}])
+_CHECK_KEYS = {
+    'parent_ic': 'income_ic_check', 'results_slip': 'academic_check', 'higher_results': 'higher_check',
+    'offer_letter': 'pathway_check', 'str': 'str_check', 'salary_slip': 'income_proof_check',
+    'epf': 'income_proof_check', 'birth_certificate': 'bc_check', 'guardianship_letter': 'guardianship_check',
+    'semester_result': 'semester_check', 'school_leaving_cert': 'school_leaving_check',
+    'income_support_doc': 'support_doc_check', 'water_bill': 'utility_check', 'electricity_bill': 'utility_check',
+}
+_FIELDS = (
+    'name', 'ic', 'nric', 'name_status', 'nric_status', 'display_name_status', 'display_nric_status',
+    'current_status', 'readable', 'wrong_card', 'display_wrong_card', 'member', 'higher_kind', 'subjects',
+    'results', 'kind_status', 'cgpa', 'cgpa_status', 'grades_status', 'pathway', 'pathway_set_by_offer',
+    'reporting_date', 'switched_from', 'points', 'unreadable', 'child_status', 'mother_status',
+    'display_mother_status', 'father_status', 'guardian_status', 'ward_status', 'kelakuan_status',
+    'school_status', 'read_status', 'amount', 'address_status', 'reasonable_status', 'outstanding_status',
+    'exam_year', 'exam_year_status', 'intake_year', 'intake_year_status',
+)
+
+
+class JunkPayloadTests(SimpleTestCase):
+    """Review finding 1: a junk value (a list or dict where a status word should be) never raises."""
+
+    def test_no_junk_value_anywhere_raises(self):
+        for dt in ('ic', 'photo', *_CHECK_KEYS):
+            for junk in _JUNK:
+                docs = [
+                    {'doc_type': dt, _CHECK_KEYS.get(dt, 'x_check'): junk, 'authenticity': junk},
+                    {'doc_type': dt, 'vision_name_verdict': junk, 'vision_nric_verdict': junk,
+                     'authenticity': {'status': junk}, 'vision_fields': {'student_verdict': junk},
+                     'figure_refused': junk, _CHECK_KEYS.get(dt, 'x_check'): {
+                         **{k: junk for k in _FIELDS}, 'points': [{'key': junk, 'value': junk}, junk]}},
+                ]
+                for doc in docs:
+                    with self.subTest(dt, junk=repr(junk)):
+                        chips = doc_chips.chips_for(doc)
+                        self.assertIn(doc_chips.pill_for(chips), doc_chips.PILLS)
+                        for chip in chips:
+                            self.assertEqual(chip['state'], doc_chips.STATES[chip['status']])
+
+    def test_a_payload_that_is_not_a_dict_has_no_chips(self):
+        for junk in _JUNK:
+            with self.subTest(junk=repr(junk)):
+                self.assertEqual(doc_chips.chips_for(junk), [])
+
+
+class WhereTheWebThrowsTests(SimpleTestCase):
+    """Finding 4: where today's web would THROW, the server picks a quiet answer. These stay out of the
+    shared parity fixture (the jest half cannot run them)."""
+
+    def keys(self, doc):
+        return [(c['key'], c['state']) for c in doc_chips.chips_for(doc)]
+
+    def test_a_check_that_is_not_a_dict_is_no_check(self):
+        self.assertEqual(self.keys({'doc_type': 'semester_result', 'semester_check': ['x']}), [])
+        self.assertEqual(self.keys({'doc_type': 'str', 'str_check': 'x'}), [])
+
+    def test_only_strings_are_trimmed(self):          # the web: (500 || '').trim() throws
+        self.assertEqual(self.keys({'doc_type': 'income_support_doc',
+                                    'support_doc_check': {'read_status': 'read', 'amount': 500}}),
+                         [('evidence', 'green')])
+        self.assertEqual(self.keys({'doc_type': 'semester_result', 'semester_check': {
+            'name_status': 'match', 'nric_status': 'match', 'cgpa': 3.5}})[-1], ('cgpa', 'grey'))
+
+    def test_points_that_are_not_a_list_read_as_none(self):   # the web: {}.some throws
+        doc = {'doc_type': 'salary_slip', 'income_proof_check': {'name_status': 'match',
+                                                                 'points': {'key': 'amount', 'value': '9'}}}
+        self.assertEqual(self.keys(doc), [('name', 'green'), ('amount', 'grey'), ('period', 'grey')])
+
+    def test_a_genuineness_word_that_is_not_a_string_is_amber(self):   # the web: [].startsWith throws
+        doc = {'doc_type': 'ic', 'vision_name_verdict': 'match', 'vision_nric_verdict': 'match',
+               'authenticity': {'status': ['not_ic']}}
+        self.assertEqual(self.keys(doc), [('name', 'green'), ('ic_no', 'green'), ('genuine', 'amber')])
+
+
 class ServedPayloadTests(TestCase):
     def setUp(self):
         self.app = make_application()
@@ -108,6 +183,47 @@ class ServedPayloadTests(TestCase):
                 d = self.doc('photo', vision_run_at=run_at, vision_fields_run_at=fields_run_at)
                 self.assertEqual(ApplicantDocumentSerializer(d).data['read_at'], field.to_representation(want))
                 d.delete()
+
+    def test_a_junk_check_through_the_serializer_never_raises(self):
+        junk = {'name': ['match'], 'subjects': {'k': 'match'}, 'results': 5, 'higher_kind': [],
+                'exam_year': ['2025'], 'exam_year_status': {'a': 1}}
+        with mock.patch.object(ApplicantDocumentSerializer, 'get_academic_check', lambda self, obj: junk), \
+                mock.patch.object(ApplicantDocumentSerializer, 'get_authenticity',
+                                  lambda self, obj: {'status': {'x': 1}}):
+            data = ApplicantDocumentSerializer(self.doc('results_slip')).data
+        self.assertIn(data['chip_pill'], doc_chips.PILLS)
+        self.assertTrue(all(isinstance(c, dict) for c in data['chips']))
+
+    def test_a_raise_in_the_chips_falls_back_and_logs_no_value(self):
+        d = self.doc('ic')
+        for target in ('chips_for', 'pill_for'):
+            def boom(*_a, **_k):
+                raise ValueError('SECRET NAME 900101-01-1234')
+            with self.subTest(target), mock.patch.object(doc_chips, target, boom), \
+                    self.assertLogs('apps.scholarship.serializers.documents', 'WARNING') as logs:
+                data = ApplicantDocumentSerializer(d).data
+                self.assertEqual((data['chips'], data['chip_pill']), ([], 'unread'))
+                self.assertIn('read_at', data)
+                line = '\n'.join(logs.output)
+                self.assertIn(str(d.pk), line)
+                self.assertIn('ValueError', line)
+                self.assertNotIn('SECRET', line)
+                self.assertNotIn('900101', line)
+
+    def test_a_raise_in_the_chips_never_breaks_the_admin_payload_either(self):
+        with mock.patch.object(doc_chips, 'chips_for', lambda *_a: 1 / 0), \
+                self.assertLogs('apps.scholarship.serializers.documents', 'WARNING'):
+            data = AdminApplicantDocumentSerializer(self.doc('ic')).data
+        self.assertEqual((data['chips'], data['chip_pill']), ([], 'unread'))
+
+    def test_read_at_never_raises(self):
+        d = self.doc('photo')
+        d.vision_run_at = 'junk'                           # in memory only: max() of a str and a datetime
+        d.vision_fields_run_at = timezone.now()
+        with self.assertLogs('apps.scholarship.serializers.documents', 'WARNING') as logs:
+            data = ApplicantDocumentSerializer(d).data
+        self.assertIsNone(data['read_at'])
+        self.assertIn('TypeError', '\n'.join(logs.output))
 
     def test_figure_refused_is_officer_only_so_the_amount_chip_may_differ(self):
         """Kept on purpose (S0 changes nothing): the student payload has no ``figure_refused``."""

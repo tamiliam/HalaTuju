@@ -21,20 +21,25 @@ One server module, `apps/scholarship/doc_chips.py`, builds every document's chip
 
 ### Guards
 
-- **Parity fixture**: `apps/scholarship/tests/fixtures/doc_chip_parity.json` holds 77 synthetic cases.
+- **Parity fixture**: `apps/scholarship/tests/fixtures/doc_chip_parity.json` holds 100 synthetic cases.
   - `tests/test_doc_chips.py` checks the server against it.
   - `halatuju-web/src/lib/__tests__/doc-chip-parity.test.ts` checks today's web against the same file. That means `documentFacts` / `documentPill`, plus the drawer's `factClass` / `yearChip` / `yearClass`, which the test lifts out of `DocumentsDrawer.tsx` with a stub `t`.
   - So the two sides can only agree or both go red.
-- **Display only**: `tests/test_doc_chips_import_fence.py` enforces it in three ways:
+  - The server follows JavaScript's idea of "empty": an empty `{}` check is still a check, an empty list is "true", and only text is trimmed. The fixture has cases for each.
+  - Where today's web would crash (for example `.trim()` on a number), the server gives a quiet answer instead. Those cases are tested on the server side only, because the web half cannot run them.
+- **Never breaks a read**: if working out the chips raises, the serializer logs the document id and the error type only (never a value), and serves `chips = []`, `chip_pill = 'unread'`. The same goes for `read_at`, which falls back to null. Without this, one bad value would turn a document list into an error page, and after an upload it would re-run the paid read.
+- **Display only**: `tests/test_doc_chips_import_fence.py` enforces it in four ways:
   - No engine file names `doc_chips`.
-  - Only the document serializer and the dry run import it.
+  - Only the document serializer and the dry run import it. This is checked across the whole api: every app and the `halatuju` project package.
   - A fresh interpreter that imports every engine never loads it.
+  - No engine reads `['chips']` / `.get('chips')` off a payload, or names `chip_pill` at all.
 
-  The test's docstring explains why a static transitive walk was not used: the package `__init__` files pull in the whole app.
+  "Engine" here also covers the modules next to the verdict: `resolution*`, `genuineness`, `link_display`, `higher_results`, `income_str_ownership`, and the eligibility and gift modules. The test's docstring explains why a static transitive walk was not used: the package `__init__` files pull in the whole app.
 - **Dry run**: `apps/scholarship/eval/chip_dry_run.py` runs `run_dry(old, new)` inside one read-only transaction that is always rolled back (`offer_s4_dry_run.read_only_rollback`).
   - It counts, per document type: documents, chips, chips whose state would change, pills that would change, and student/officer differences.
-  - It also checks that every application's verdict bands are identical, with the chip functions rigged to raise.
-  - It outputs counts only. It is unit-tested on the test database only and is hand-run only on the owner's word. Never point it at a live database from a checkout.
+  - It also checks that every application's verdict bands are identical. While it re-reads the bands, the chip functions are rigged to raise. The serializer calls them through the module, so the rig catches a verdict path that serializes a document too. This proves it for the data the run reads, not for code paths that data never reaches.
+  - It runs one documents query per application, plus the serializers' reads, over every application. So it is hand-run only, on the owner's word, never at a busy time.
+  - It outputs counts only. It is unit-tested on the test database only. Never point it at a live database from a checkout.
 
 ### Kept on purpose: student and officer can differ on one chip
 
@@ -102,6 +107,14 @@ One server module, `apps/scholarship/doc_chips.py`, builds every document's chip
 ## Case 1048 (Sprint 3)
 
 The OCR "name is close" fix (`SHOW_CLOSE` / `name_close`) is **not on main**. It lives only on the branch `fix-1048-declaration`. The near-match amber chip for this case belongs to Sprint 3. Rebase on that fix, or port it, when the name chips move to the standard.
+
+## Open for Sprint 1: the owner should confirm
+
+The **student** payload now carries the officer's chip words as well as `chip_pill`. These include `wrongType`, `genuine`, `relationship` and `wrong_card`.
+
+- Every one of them is worked out from data the student payload already carries. So nothing new is revealed.
+- But it is a new way of putting it. For example, a student could now read "wrong type" or "not sure it is genuine" as a single word.
+- No screen shows these yet. **Before Sprint 1 shows chips to students, the owner should confirm** which of these words a student may see.
 
 ## Next step
 

@@ -1,8 +1,39 @@
 """Applicant-document serializers: read, sign-upload, create and the Action Centre resolution items."""
 
+import logging
+
 from rest_framework import serializers
-from ..doc_chips import chips_for, pill_for
+from .. import doc_chips   # the module, not its names: the chip dry run's guard patches it here
 from ..models import ApplicantDocument, ResolutionItem
+
+logger = logging.getLogger(__name__)
+_READ_AT = serializers.DateTimeField()   # one instance, unbound: only its to_representation is used
+
+
+def _served_chips(instance, data):
+    """The chips + pill for one payload. Display only, so it can never break the read: any raise
+    (a junk value in a check object) logs the document id and the exception TYPE only (no value,
+    no traceback: a payload carries names and IC numbers) and serves no chips, 'unread'. A raise
+    here would turn a document list into a 500 and, in ``upload_read.judge``, re-run a paid read."""
+    try:
+        chips = doc_chips.chips_for(data)
+        return chips, doc_chips.pill_for(chips)
+    except Exception as exc:
+        logger.warning('doc_chips failed for document %s (%s); serving no chips',
+                       getattr(instance, 'pk', None), type(exc).__name__)
+        return [], 'unread'
+
+
+def _read_at(instance):
+    """The later of the two read stamps, or None (also None, never a raise, on anything odd)."""
+    try:
+        stamps = [t for t in (getattr(instance, 'vision_run_at', None),
+                              getattr(instance, 'vision_fields_run_at', None)) if t is not None]
+        return _READ_AT.to_representation(max(stamps)) if stamps else None
+    except Exception as exc:
+        logger.warning('read_at failed for document %s (%s)', getattr(instance, 'pk', None),
+                       type(exc).__name__)
+        return None
 
 
 # ── Documents / referee / consent (Sprint 5a) ────────────────────────────
@@ -357,10 +388,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         """Chip standard S0 (display only): the server's chips + pill, worked out from THIS payload
         (no query of its own), and ``read_at`` = the later of the two read stamps (null if neither)."""
         data = super().to_representation(instance)
-        data['chips'] = chips_for(data)
-        data['chip_pill'] = pill_for(data['chips'])
-        stamps = [t for t in (instance.vision_run_at, instance.vision_fields_run_at) if t is not None]
-        data['read_at'] = serializers.DateTimeField().to_representation(max(stamps)) if stamps else None
+        data['chips'], data['chip_pill'] = _served_chips(instance, data)
+        data['read_at'] = _read_at(instance)
         return data
 
 
