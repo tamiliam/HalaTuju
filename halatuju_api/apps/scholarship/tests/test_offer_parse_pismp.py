@@ -8,7 +8,9 @@ from unittest import mock
 from django.test import SimpleTestCase, override_settings
 
 from apps.scholarship import offer_exact, offer_parse
+from apps.scholarship import offer_parse_pismp as pismp
 from apps.scholarship.offer_owner_words import OWNER_WORDS, missing
+from apps.scholarship.offer_parse_unimap import _pin_digest
 from apps.scholarship.offer_parse_pismp import INK_LABELS, INK_OPTIONAL, LANE, NOT_PRINTED, REPORT_LABEL, is_pismp
 from apps.scholarship.offer_parse_pismp import pismp_ink_targets, pismp_later_pages, pismp_letter_refusal, read_pismp
 
@@ -25,9 +27,25 @@ LETTERHEAD = ('KEMENTERIAN PENDIDIKAN MALAYSIA', 'INSTITUT PENDIDIKAN GURU MALAY
 TITLE = ('TAWARAN RASMI MENGIKUTI PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP) AMBILAN 2026',)
 INTRO = ('Dengan segala hormatnya saya merujuk perkara di atas.',
          '2. Sukacita dimaklumkan bahawa tuan/puan ditawarkan mengikuti program seperti butiran berikut:')
-NOTES = ('3. Tuan/puan dikehendaki melapor diri pada tarikh yang ditetapkan.',
-         '4. Tawaran ini akan TERBATAL dengan sendirinya sekiranya tuan/puan tidak melapor diri.',
-         'Sekian, terima kasih.', '(QARIM VELTO BIN DURAN)', 'Bagi pihak Rektor')
+CLOSING = '4. Tawaran ini akan TERBATAL dengan sendirinya sekiranya tuan/puan:'
+#: A made-up conditions list in the template's shape (the closing words, GAGAL items, a right to withdraw): never
+#: the real block. The module pins the MEASURED block by digest; these tests pin this one the same way.
+COND = ('3. Tuan/puan dikehendaki melapor diri pada tarikh yang ditetapkan.', CLOSING,
+        '  a) gagal melapor diri pada tarikh yang ditetapkan;', '  b) gagal mengemukakan dokumen asal.',
+        '5. Pihak institut berhak menarik balik tawaran ini pada bila-bila masa.')
+SIGN = ('Sekian, terima kasih.', '(QARIM VELTO BIN DURAN)', 'Bagi pihak Rektor')
+NOTES = COND + SIGN
+SYNTHETIC_PINS = frozenset({(len(COND), _pin_digest(COND))})
+REAL_PINS = pismp.CONDITIONS_PINS
+_PINS = mock.patch.object(pismp, 'CONDITIONS_PINS', SYNTHETIC_PINS)
+
+
+def setUpModule():
+    _PINS.start()
+
+
+def tearDownModule():
+    _PINS.stop()
 
 
 def head(label, value):
@@ -54,9 +72,13 @@ def table(bidang=BIDANG, session=SESSION, campus=CAMPUS_ROW, address=ADDRESS, re
     return out
 
 
-def layout(name=NAME, ic=IC, title=TITLE, tab=None, notes=NOTES, heads=None, letterhead=LETTERHEAD, extra=()):
+def layout(name=NAME, ic=IC, title=TITLE, tab=None, notes=NOTES, heads=None, letterhead=LETTERHEAD, extra=(),
+           after=()):
+    """``extra``: lines between the table and the conditions block; ``after``: lines straight after the block."""
     heads = heads if heads is not None else (('Ruj. Kami', 'IPGM.600-2/1/3 JLD.9 (12)'), ('Tarikh', '1 Julai 2026'),
                                              ('NAMA', name), ('NO. KAD PENGENALAN', ic))
+    if after:
+        notes = notes[:len(COND)] + tuple(after) + notes[len(COND):]
     lines = [*(BASE + x for x in letterhead), *(head(k, v) for k, v in heads), BASE + 'Tuan/Puan,',
              *(BASE + x for x in title), *(BASE + x for x in INTRO), *(tab if tab is not None else table()),
              *(BASE + x for x in (*extra, *notes))]
@@ -223,23 +245,16 @@ class PismpRefusalTest(SimpleTestCase):
         self.assertEqual(read_pismp(layout(extra=('SURAT PENGESAHAN',)))[1], 'status_letter')
         for line in ('Tawaran ini telah ditarik balik.', 'Tawaran ini dibatalkan.'):
             with self.subTest(line=line):
-                d = run(layout(extra=(line,)))
+                d = run(layout(after=(line,)))
                 self.assertIsNone(d['locked'])
-                self.assertEqual(pismp_letter_refusal(plain(layout(extra=(line,))), IC), 'not_an_offer')
+                self.assertEqual(pismp_letter_refusal(plain(layout(after=(line,))), IC), 'not_an_offer')
         self.assertEqual(pismp_letter_refusal(plain(layout()), IC), '')
-
-    def test_the_conditions_list_refuses_with_no_excuse(self):
-        """No excuse yet (owner fork, OCR-19): a condition of the offer printed with a shared withdrawal word (the
-        IPG template's GAGAL) refuses as not_an_offer, as on every lane."""
-        d = run(layout(extra=('gagal hadir melapor diri pada tarikh yang ditetapkan;',)))
-        self.assertIsNone(d['locked'])
-        self.assertEqual(d['guard'], 'not_an_offer')
 
     def test_the_one_pengesahan_clause_is_excused_once(self):
         clause = 'walaupun pengesahan tersebut diterima selepas melapor diri.'
-        self.assertIsNotNone(run(layout(extra=(clause,)))['locked'])
-        self.assertEqual(read_pismp(layout(extra=(clause, clause)))[1], 'status_letter')
-        self.assertEqual(read_pismp(layout(extra=('Borang pengesahan',)))[1], 'status_letter')
+        self.assertIsNotNone(run(layout(after=(clause,)))['locked'])
+        self.assertEqual(read_pismp(layout(after=(clause, clause)))[1], 'status_letter')
+        self.assertEqual(read_pismp(layout(after=('Borang pengesahan',)))[1], 'status_letter')
 
     def test_a_scan_or_a_later_page_refuses(self):
         self.assertEqual(offer_parse.diagnose(plain(layout()), '', '', None)['guard'], 'no_layout')
@@ -249,6 +264,77 @@ class PismpRefusalTest(SimpleTestCase):
 
     def test_a_placeholder_refuses(self):
         self.assertEqual(read_pismp(layout(name='{NAMA}'))[1], 'placeholder')
+
+
+class PismpConditionsBlockTest(SimpleTestCase):
+    """Owner fork 1 (chose A): the template's conditions list is excused once, pinned by digest, in its place only."""
+
+    def refuses(self, lay):
+        d = run(lay)
+        self.assertIsNone(d['locked'])
+        return pismp_letter_refusal(plain(lay), IC)
+
+    def test_the_pinned_block_locks(self):
+        self.assertIsNotNone(run()['locked'], why(run()))
+        self.assertEqual(pismp_letter_refusal(plain(layout()), IC), '')
+        self.assertTrue(any(w in ' '.join(COND).upper() for w in ('GAGAL', 'TERBATAL', 'MENARIK BALIK')))
+
+    def test_one_word_changed_refuses(self):
+        for k, line in enumerate(COND):
+            words = line.split()
+            changed = ' '.join(words[:-1] + [words[-1].upper() + 'X'])
+            notes = COND[:k] + (changed,) + COND[k + 1:] + SIGN
+            with self.subTest(line=k):
+                self.assertEqual(self.refuses(layout(notes=notes)), 'not_an_offer')
+
+    def test_a_line_taken_out_or_added_inside_refuses(self):
+        for notes in (COND[:-1] + SIGN, COND[:2] + COND[3:] + SIGN, COND[:2] + ('  c) lain-lain.',) + COND[2:] + SIGN):
+            with self.subTest(lines=len(notes)):
+                self.assertEqual(self.refuses(layout(notes=notes)), 'not_an_offer')
+
+    def test_a_withdrawal_word_outside_the_block_refuses(self):
+        outside = ('Tuan/puan gagal memenuhi syarat.', 'Tawaran ini telah TERBATAL.', 'Tawaran ini DIBATALKAN.',
+                   'Surat ini DIGANTIKAN dengan surat baharu.', 'Surat ini menggantikan surat terdahulu.',
+                   'D I G A N T I K A N')
+        for line in outside:
+            with self.subTest(line=line, where='after the block'):
+                self.assertEqual(self.refuses(layout(after=(line,))), 'not_an_offer')
+            with self.subTest(line=line, where='after the sign-off'):
+                self.assertEqual(self.refuses(layout(notes=NOTES + (line,))), 'not_an_offer')
+        lay = layout().replace(INTRO[0], 'Tawaran terdahulu telah dibatalkan.')         # above the table
+        self.assertEqual(self.refuses(lay), 'not_an_offer')
+
+    def test_a_duplicated_block_refuses(self):
+        for notes in (COND + COND + SIGN, COND + SIGN + COND):
+            with self.subTest(lines=len(notes)):
+                self.assertEqual(self.refuses(layout(notes=notes)), 'not_an_offer')
+
+    def test_a_block_in_the_wrong_place_refuses(self):
+        gap = layout(extra=('Sila bawa dokumen asal.',))                    # a line between the table and the block
+        self.assertEqual(self.refuses(gap), 'not_an_offer')
+        early = layout(notes=SIGN).replace(INTRO[0], '\n'.join(BASE + x for x in COND))   # above the table
+        self.assertEqual(self.refuses(early), 'not_an_offer')
+        late = layout(notes=SIGN + COND)                                     # after the sign-off
+        self.assertEqual(self.refuses(late), 'not_an_offer')
+
+    def test_a_letter_with_no_block_and_no_withdrawal_word_is_a_changed_template(self):
+        clean = ('3. Tuan/puan dikehendaki melapor diri.', CLOSING + ' tidak melapor diri.')
+        self.assertEqual(self.refuses(layout(notes=clean + SIGN)), 'template_changed')
+
+    def test_the_measured_pin_is_a_digest_and_refuses_the_synthetic_letter(self):
+        """The module ships the MEASURED pin: (line count, one sha256), never text; the synthetic block is not it."""
+        self.assertEqual(len(REAL_PINS), 1)
+        (count, digest), = REAL_PINS
+        self.assertTrue(count > 0 and len(digest) == 64 and set(digest) <= set('0123456789abcdef'))
+        self.assertFalse(REAL_PINS & SYNTHETIC_PINS)
+        with mock.patch.object(pismp, 'CONDITIONS_PINS', REAL_PINS):
+            self.assertEqual(pismp_letter_refusal(plain(layout()), IC), 'not_an_offer')
+            self.assertIsNone(run()['locked'])
+
+    def test_no_other_lane_is_excused(self):
+        """The shared withdrawal check is untouched: the same block refuses through `letter_refusal`."""
+        from apps.scholarship.offer_ums_refusal import letter_refusal
+        self.assertEqual(letter_refusal(plain(layout())), 'not_an_offer')
 
 
 class PismpInkAndLaneTest(SimpleTestCase):

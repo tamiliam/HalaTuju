@@ -24,14 +24,17 @@ an older layout ("TAWARAN MENGIKUTI ...", no AMBILAN/KELUARAN row, other rows) m
 (`_ROWS`: every row label in that order, one colon column, the value column shared); anything else refuses
 (``template_changed``). Each anchor is printed ONCE as a row (two NAMA rows, two IC rows, two of any table row:
 ``second_row``); the anchors in the owner's order (``wrong_order``); the closing words after the reporting date.
+The template's numbered conditions list (it holds the closing words and shared withdrawal words as conditions) is
+pinned by digest and excused once, in its place only (`CONDITIONS_PINS`, `_conditions_out`; owner fork 1, 27 Nov).
 """
 import re
 
 from .offer_parse import _norm_nric, house_date
 from .offer_parse_ukm import _own_ic
 from .offer_parse_umpsa import _name_words_ok
+from .offer_parse_unimap import _pin_digest
 from .offer_parse_uum import _one_space, _uum_lines, _ymd, ic_printed
-from .offer_ums_refusal import _SQUEEZE_OUT, _withdrawn_one, fold_lookalikes, status_said
+from .offer_ums_refusal import _SQUEEZE_OUT, _dotless, _squeeze, _withdrawn_one, fold_lookalikes, status_said
 
 LANE = 'ua:PISMP'
 INSTITUTION = 'INSTITUT PENDIDIKAN GURU'
@@ -69,6 +72,20 @@ _TITLE_YEAR = re.compile(r'\(PISMP\) AMBILAN (20\d{2})(?!\d)')
 #: 27 Nov), in the squeezed form (letters and digits only): taken out ONCE before the bare PENGESAHAN check; a
 #: second copy, or PENGESAHAN anywhere else, still refuses (``status_letter``).
 _PENGESAHAN_CLAUSE = 'WALAUPUNPENGESAHANTERSEBUTDITERIMASELEPASMELAPORDIRI'
+#: Owner fork 1 (27 Nov, chose A): the 2026 template's numbered conditions list prints shared withdrawal words as
+#: conditions of the offer (the closing "akan TERBATAL dengan sendirinya sekiranya" with its GAGAL items, and a
+#: right to "menarik balik"). Measured on every 2026 text letter (3 of 3, one digest): it is the run of non-empty
+#: lines straight after the TARIKH PENDAFTARAN line, up to the sign-off, and holds the closing words. It is PINNED as
+#: (line count, `_pin_digest` of those lines), never as text, and taken out ONCE before the shared withdrawal check
+#: (`_conditions_out`). One changed character, a line added inside it or taken out, a second copy, the block
+#: anywhere else (any line between it and the TARIKH PENDAFTARAN line), or a withdrawal word anywhere outside it
+#: refuses. The old layout has another list (another digest): it refuses.
+CONDITIONS_PINS = frozenset({(26, 'a1c0b3a1b95914baf8219de0c216df92e9f004324e514a6770acd1fde2bf1b06')})
+_CLOSING_KEY = 'TAWARANINIAKANTERBATALDENGANSENDIRINYA'
+#: This lane only (owner fork 1): a replacement letter ("digantikan", "menggantikan", "pengganti") outside the block
+#: refuses too; the shared list has no such word and stays as it is. Measured 27 Nov: no word of any IPG sample
+#: holds GANTI (in any of the shared spacing forms, `_squeeze` / `_dotless`).
+_REPLACED = re.compile(r'GANTI', re.IGNORECASE)
 
 
 def is_pismp(up: str) -> bool:
@@ -206,9 +223,31 @@ def read_pismp(source: str):
     return fields, ''
 
 
+def _conditions_out(text: str):
+    """``text`` with the ONE pinned conditions block (`CONDITIONS_PINS`) taken out, or None when it is not there as
+    pinned: the TARIKH PENDAFTARAN line printed once, the block the very next non-empty lines, holding the closing
+    words, which the whole letter prints once."""
+    if _SQUEEZE_OUT.sub('', text.upper()).count(_CLOSING_KEY) != 1:
+        return None
+    lines = text.splitlines()
+    at = [i for i, ln in enumerate(lines) if REPORT_LABEL in _one_space(ln).upper()]
+    if len(at) != 1:
+        return None
+    after = [i for i in range(at[0] + 1, len(lines)) if lines[i].strip()]
+    for count, digest in CONDITIONS_PINS:
+        block = after[:count]
+        if (len(block) == count and _pin_digest([lines[i] for i in block]) == digest
+                and _CLOSING_KEY in _SQUEEZE_OUT.sub('', ' '.join(lines[i] for i in block).upper())):
+            return '\n'.join(lines[:block[0]] + lines[block[-1] + 1:])
+    return None
+
+
 def pismp_letter_refusal(text: str, nric: str) -> str:
-    """The whole letter (every page): 'too_long', 'status_letter', 'second_ic', 'not_an_offer'
-    (`offer_ums_refusal._withdrawn_one` on the letter as it is; the head being the lines up to the title), or ''."""
+    """The whole letter (every page): 'too_long', 'status_letter', 'second_ic', then the shared withdrawal check
+    (`offer_ums_refusal._withdrawn_one`; the head being the lines up to the title) on the letter with its pinned
+    conditions block taken out (`_conditions_out`), raw and folded: 'not_an_offer' when it fires on the letter as it
+    is with no pinned block, or on what is left; 'template_changed' when the block is not pinned and nothing else
+    fires; else ''."""
     text = text or ''
     folded = fold_lookalikes(text)
     if len(text) > MAX_LETTER_CHARS or len(folded) > MAX_LETTER_CHARS:
@@ -220,8 +259,12 @@ def pismp_letter_refusal(text: str, nric: str) -> str:
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     at = next((i for i, ln in enumerate(lines) if _one_space(ln).upper().startswith('TAWARAN')), -1)
     head = lines[:at + 1] if at >= 0 else []
-    return 'not_an_offer' if any(_withdrawn_one(one, hd) for one, hd in
-                                 ((text, head), (folded, [fold_lookalikes(h) for h in head]))) else ''
+    forms = ((text, head), (folded, [fold_lookalikes(h) for h in head]))
+    rests = [(_conditions_out(one), hd) for one, hd in forms]
+    if any(rest is None for rest, _hd in rests):
+        return 'not_an_offer' if any(_withdrawn_one(one, hd) for one, hd in forms) else 'template_changed'
+    replaced = any(_REPLACED.search(f) for rest, _hd in rests for f in (rest, _squeeze(rest), *_dotless(rest)))
+    return 'not_an_offer' if replaced or any(_withdrawn_one(rest, hd) for rest, hd in rests) else ''
 
 
 def pismp_later_pages(pages) -> str:
