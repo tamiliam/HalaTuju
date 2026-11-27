@@ -42,7 +42,10 @@ export function drawerChips(d: AdminApplicantDocument): DocChipData[] {
  *  An empty served chip list means the server's chip code failed (it serves `[]` and 'unread'), so
  *  the pill falls back with the chips. */
 export function drawerPill(d: AdminApplicantDocument): ChipPillWord {
-  return d.chips?.length && d.chip_pill ? d.chip_pill : documentPill(d)
+  if (d.chips?.length && d.chip_pill) return d.chip_pill
+  // Fallback: the pill follows the chips the row draws, so a red fact chip reads Problem.
+  if (drawerChips(d).some((c) => c.kind === 'fact' && c.state === 'red')) return 'problem'
+  return documentPill(d)
 }
 
 export function chipText(c: DocChipData, t: T): string {
@@ -55,7 +58,7 @@ export function ChipLine({ chips, t }: { chips: DocChipData[]; t: T }) {
   if (chips.length === 0) return null
   return (
     <p className="mt-1 flex flex-wrap items-center gap-1.5" data-chip-line>
-      {chips.map((c, i) => <DocChip key={`${c.key}-${i}`} state={c.state}>{chipText(c, t)}</DocChip>)}
+      {chips.map((c, i) => <DocChip key={`${c.key}-${i}`} state={c.state} spoken={c.kind !== 'year'}>{chipText(c, t)}</DocChip>)}
     </p>
   )
 }
@@ -89,6 +92,11 @@ function useDateLocale(): string | undefined {
   } catch {
     return undefined
   }
+}
+
+/** True when `ReadTime` will draw something: "not read yet" (null) or a time that parses. */
+export function readTimeShows(readAt: string | null | undefined): boolean {
+  return readAt === null || (readAt !== undefined && formatReadTime(readAt) !== '')
 }
 
 /** "read 25 Nov, 09:12"; "not read yet" ONLY when `read_at` is null. Nothing when it is undefined

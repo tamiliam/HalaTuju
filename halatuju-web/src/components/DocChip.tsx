@@ -16,11 +16,13 @@ function useStateWord(state: ChipState): string {
   }
 }
 
-export function DocChip({ state, children, plain = false }: {
+export function DocChip({ state, children, plain = false, spoken = true }: {
   state: ChipState
   children: ReactNode
   /** A plain copied value: the value only, no ring, never green. */
   plain?: boolean
+  /** Add the sr-only state word. False when the chip text is already a result word or a year. */
+  spoken?: boolean
 }) {
   const word = useStateWord(state)
   if (plain) return <span className="shrink-0 text-[11px] text-ground-600" data-chip="plain">{children}</span>
@@ -30,7 +32,7 @@ export function DocChip({ state, children, plain = false }: {
       className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${STATE_COLOURS[state].chip}`}>
       {sym && <span aria-hidden className="text-[9px] font-extrabold">{sym}</span>}
       {children}
-      {word && <span className="sr-only" data-chip-state>{word}</span>}
+      {spoken && word && <span className="sr-only" data-chip-state>{word}</span>}
     </span>
   )
 }

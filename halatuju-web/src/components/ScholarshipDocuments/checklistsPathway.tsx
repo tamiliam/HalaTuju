@@ -45,7 +45,7 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
       ? t('scholarship.docs.pathwayCheck.ic')
       : t(`scholarship.docs.pathwayCheck.status.${s}`)
     return (
-      <DocChip state={sc ? sc.state : kindToState(kind)}>
+      <DocChip spoken={false} state={sc ? sc.state : kindToState(kind)}>
         {sc?.label ? t(sc.label) : text}
       </DocChip>
     )

@@ -7,7 +7,7 @@ import { CHIP_SYMBOL, PILL_COLOURS, STATE_COLOURS, formatReadTime, kindToState, 
 import { DocChip, DocPill } from '@/components/DocChip'
 import DocChecksPanel from '@/components/DocChecksPanel'
 import {
-  ChipLine, NotesIcon, REASON_WORDS, ReadTime, ReasonLines, drawerChips, drawerPill,
+  ChipLine, NotesIcon, REASON_WORDS, ReadTime, ReasonLines, drawerChips, drawerPill, readTimeShows,
 } from '../../app/admin/scholarship/[id]/view/docChipRow'
 
 jest.mock('@/lib/i18n', () => ({
@@ -152,5 +152,45 @@ describe('the shells', () => {
   test('the Checks panel scrolls on a phone', () => {
     render(<DocChecksPanel checks={{ chips: [], pill: 'unread', readAt: null }} />)
     expect((document.querySelector('[data-checks-panel]') as HTMLElement).className).toContain('max-md:max-h-[40dvh]')
+  })
+})
+
+describe('round 2 review fixes', () => {
+  test('a student chip (spoken false) has no sr-only word; an officer field chip has one', () => {
+    const { container } = render(<><DocChip state="green" spoken={false}>Match</DocChip><DocChip state="green">Name</DocChip></>)
+    const chips = container.querySelectorAll('[data-chip]')
+    expect(chips[0].querySelector('[data-chip-state]')).toBeNull()
+    expect(chips[1].querySelector('[data-chip-state]')).not.toBeNull()
+  })
+  test('a year chip in the officer line is not spoken twice', () => {
+    render(<ChipLine chips={[chip('examYear', 'green', { kind: 'year', value: 2025 }), chip('name', 'green')]} t={t} />)
+    const all = document.querySelectorAll('[data-chip]')
+    expect(all[0].querySelector('[data-chip-state]')).toBeNull()
+    expect(all[1].querySelector('[data-chip-state]')).not.toBeNull()
+  })
+  test('the fallback pill reads Problem when a drawn fact chip is red', () => {
+    const d = { id: 3, doc_type: 'ic', chips: [], vision_name_verdict: 'mismatch' } as unknown as AdminApplicantDocument
+    expect(drawerChips(d).some((c) => c.kind === 'fact' && c.state === 'red')).toBe(true)
+    expect(drawerPill(d)).toBe('problem')
+  })
+  test('the separator before the read time shows only when the time shows', () => {
+    expect(readTimeShows(undefined)).toBe(false)
+    expect(readTimeShows('nope')).toBe(false)
+    expect(readTimeShows(null)).toBe(true)
+    expect(readTimeShows(new Date(2026, 10, 25, 9, 12).toISOString())).toBe(true)
+  })
+  test('the Tamil date has no double comma, with or without the year', () => {
+    const iso = new Date(2025, 10, 25, 9, 12).toISOString()
+    const withYear = formatReadTime(iso, { now: new Date(2026, 10, 28), locale: 'ta' })
+    const noYear = formatReadTime(iso, { now: new Date(2025, 10, 28), locale: 'ta' })
+    expect(withYear).not.toMatch(/,\s*,/)
+    expect(withYear).toMatch(/2025, 09:12$/)
+    expect(noYear).toMatch(/09:12$/)
+    expect(withYear).not.toMatch(/\.,\s*2025/)
+  })
+  test('the Tamil chip words', () => {
+    const ta = require('@/messages/ta.json')
+    expect(ta.common.chipState.amber).toBe('சரிபார்க்க வேண்டும்')
+    expect(ta.admin.scholarship.docsDrawer.notesHint).toContain('ஆவணத்தைத் திறக்கவும்')
   })
 })

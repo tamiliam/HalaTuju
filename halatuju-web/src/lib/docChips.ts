@@ -78,7 +78,9 @@ export function formatReadTime(
   if (Number.isNaN(d.getTime())) return ''
   const tag = INTL_LOCALE[opts.locale ?? 'en'] ?? 'en-GB'
   const showYear = opts.full || d.getFullYear() !== (opts.now ?? new Date()).getFullYear()
-  const date = new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short', ...(showYear ? { year: 'numeric' } : {}) }).format(d)
+  // ta-IN prints "25 நவ., 2025" (a comma after the month): drop it, so the join adds the only comma.
+  const date = new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short', ...(showYear ? { year: 'numeric' } : {}) })
+    .format(d).replace(/,\s*(?=\d{4}$)/, ' ')
   const time = new Intl.DateTimeFormat(tag, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d)
   return `${date}, ${time}`
 }

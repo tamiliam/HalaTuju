@@ -39,7 +39,7 @@ export function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: strin
   const badge = (kind: ICCheckKind, key: string) => {
     const sc = servedChip(doc, key)
     return (
-      <DocChip state={sc ? sc.state : kindToState(kind)}>
+      <DocChip spoken={false} state={sc ? sc.state : kindToState(kind)}>
         {sc?.label ? t(sc.label) : t(`scholarship.docs.icCheck.${kind}`)}
       </DocChip>
     )
@@ -114,7 +114,7 @@ export function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key:
           ? t('scholarship.docs.incomeIcCheck.proofMismatch', { doc: proofDoc })
           : t('scholarship.docs.icCheck.fromTheirIc')
     return (
-      <DocChip state={kindToState(kind)}>
+      <DocChip spoken={false} state={kindToState(kind)}>
         {label}
       </DocChip>
     )
@@ -173,7 +173,7 @@ export function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
           ? t('scholarship.docs.incomeProofCheck.mismatchIc')
           : t('scholarship.docs.incomeProofCheck.addIc')
     return (
-      <DocChip state={kindToState(kind)}>
+      <DocChip spoken={false} state={kindToState(kind)}>
         {label}
       </DocChip>
     )
@@ -211,9 +211,9 @@ export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: 
 
   const addrPill =
     chk.address_status === 'found'
-      ? <DocChip state={kindToState('match')}>{t('scholarship.docs.utilityCheck.addressOk')}</DocChip>
+      ? <DocChip spoken={false} state={kindToState('match')}>{t('scholarship.docs.utilityCheck.addressOk')}</DocChip>
       : chk.address_status === 'not_found'
-        ? <DocChip state={kindToState('mismatch')}>{t('scholarship.docs.utilityCheck.addressMismatch')}</DocChip>
+        ? <DocChip spoken={false} state={kindToState('mismatch')}>{t('scholarship.docs.utilityCheck.addressMismatch')}</DocChip>
         : null
   const row = (label: string, value: string, right?: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
@@ -282,7 +282,7 @@ export function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: stri
   if (!chk) return null
 
   const pill = (kind: ICCheckKind, label: string) => (
-    <DocChip state={kindToState(kind)}>{label}</DocChip>
+    <DocChip spoken={false} state={kindToState(kind)}>{label}</DocChip>
   )
   const vsIc = (status: string) => {
     const shown = displayPill(status, t)
@@ -364,7 +364,7 @@ function relPill(status: string, t: (k: string) => string): ReactNode {
               : status === 'check_both' ? t('scholarship.docs.relCheck.checkBoth')   // #78: both read, both slightly off
                 : status === 'not_read' ? t('scholarship.docs.incomeProofCheck.notRead')   // TD-742: grey
                   : t('scholarship.docs.relCheck.reviewing')
-  return <DocChip state={kindToState(kind)}>{label}</DocChip>
+  return <DocChip spoken={false} state={kindToState(kind)}>{label}</DocChip>
 }
 
 function relRow(label: string, value: string, right: ReactNode): ReactNode {
@@ -444,7 +444,7 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
     const kind = slipBadgeKind(s)
     const sc = servedChip(doc, key)
     return (
-      <DocChip state={sc ? sc.state : kindToState(kind)}>
+      <DocChip spoken={false} state={sc ? sc.state : kindToState(kind)}>
         {sc?.label ? t(sc.label) : t(labelKey)}
       </DocChip>
     )

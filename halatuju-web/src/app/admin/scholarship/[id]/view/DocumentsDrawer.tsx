@@ -24,7 +24,7 @@ import { DocPill } from '@/components/DocChip'
 
 import { missingHigherKind, type T } from './shared'
 import { PHONE_PILL_SM, PHONE_PILL_XS } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
-import { ChipLine, NotesIcon, ReadTime, ReasonLines, drawerChips, drawerPill } from './docChipRow'
+import { ChipLine, NotesIcon, ReadTime, ReasonLines, readTimeShows, drawerChips, drawerPill } from './docChipRow'
 
 export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunVision }: {
   app: AdminScholarshipDetail
@@ -162,7 +162,7 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                   {(d.original_filename || d.read_at !== undefined) && (
                     <p className="text-xs md:text-[11px] text-ground-400 break-all" title={d.original_filename || undefined}>
                       {d.original_filename && <>({trunc(d.original_filename, 30)})</>}
-                      {d.original_filename && d.read_at !== undefined && ' · '}
+                      {d.original_filename && readTimeShows(d.read_at) && ' · '}
                       <ReadTime readAt={d.read_at} t={t} />
                     </p>
                   )}
