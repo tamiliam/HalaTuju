@@ -892,3 +892,79 @@ class R4SoDoOnlyBesideASlashConnectorTests(SimpleTestCase):
 
     def test_bnt_is_unchanged(self):
         self.assertTrue(near_miss('AMINAH BNT YUSOF', 'AMINAH BINTI YUSOF'))
+
+
+# ── Case 1048 phone check (2026-11-28): the type note and the "specific" pay period ─────────────
+
+class TypeNoteAndSpecificPeriodTests(SimpleTestCase):
+    """The live read on case 1048 kept a warning that only said "this is a declaration, not a payslip"
+    and "a specific pay period is not stated". Both hide; anything beside them keeps the warning."""
+
+    LIVE = ('The document is an income declaration letter rather than a standard payslip, and no employer '
+            'name is provided.; A specific pay period is not stated.')
+    HIDE = (LIVE, 'The document is a declaration rather than a payslip',
+            'This is an income declaration, not a payslip', 'The form is a declaration form instead of a pay slip',
+            'It appears to be a declaration letter rather than an official pay-slip',
+            'The document is a declaration, and not a payslip',
+            'Dokumen ini ialah surat akuan pendapatan, bukan slip gaji', 'Ini adalah akuan, dan bukan slip gaji',
+            'A specific pay period is not stated', 'No exact pay period stated', 'Specific employer not stated')
+    KEEP = ('The document is not a declaration', 'The document is a declaration',
+            'The document is a declaration rather than a payslip, possibly forged',
+            'The document is a declaration rather than a payslip and the signature is missing',
+            'rather than a payslip and the signature is missing',
+            'A specific pay period is not stated and the stamp is unclear',
+            'The document is a handwritten declaration rather than a payslip',
+            'The document is a declaration rather than a payslip from the employer',
+            'The document is a declaration rather than a payslip; the applicant wrote it',
+            'The document is a declaration rather than a payslip; the IC number differs',
+            'The document is a declaration rather than a payslip and looks unusual',
+            'The document is a payslip rather than a declaration',
+            'Not a payslip', 'Rather than a standard payslip',
+            'The document is a declaration rather than a payslip; penghulu chop missing',
+            'The document is a declaration rather than a payslip; amount corrected',
+            'Dokumen ini ialah surat akuan pendapatan, bukan slip gaji, tiada cop',
+            'No clear employer stated', 'No clear pay period', 'Employer not clear',
+            'A specific pay period is not stated; the date is missing')
+
+    def test_the_live_1048_warning_is_hidden_in_full(self):
+        self.assertTrue(payslip_only_warning(self.LIVE))
+        self.assertEqual(shown_warnings(_doc(), [self.LIVE]), [])
+
+    def test_type_notes_and_specific_periods_hide(self):
+        for w in self.HIDE:
+            self.assertTrue(payslip_only_warning(w), w)
+
+    def test_anything_beside_them_keeps_the_warning(self):
+        for w in self.KEEP:
+            self.assertFalse(payslip_only_warning(w), w)
+
+    def test_clear_is_no_filler(self):
+        self.assertIn('specific', declaration_name._FILLER)
+        self.assertIn('exact', declaration_name._FILLER)
+        self.assertNotIn('clear', declaration_name._FILLER)
+
+    def test_a_typed_payslip_still_shows_the_type_note(self):
+        ws = [self.LIVE]
+        self.assertIs(shown_warnings(_doc(seen='private'), ws), ws)
+
+    def test_every_earlier_round_still_holds(self):
+        keep = (PayslipOnlyWarningTests.MUST_KEEP + PayslipOnlyWarningTests.R2_KEEP
+                + R3DocumentWordsAreNotFillerTests.KEEP + R3BarePeriodIsNotPayTests.KEEP
+                + R3CoveredOverIsKeptTests.KEEP + R4NotFoundIsKeptTests.KEEP)
+        hide = (PayslipOnlyWarningTests.MUST_HIDE + PayslipOnlyWarningTests.R2_HIDE
+                + R3DocumentWordsAreNotFillerTests.HIDE + R3BarePeriodIsNotPayTests.HIDE)
+        for w in keep:
+            self.assertFalse(payslip_only_warning(w), w)
+        for w in hide:
+            self.assertTrue(payslip_only_warning(w), w)
+
+    def test_the_serializer_hides_the_live_warning_and_keeps_the_stored_read(self):
+        from rest_framework import serializers as drf
+        from apps.scholarship.serializers.documents import ApplicantDocumentSerializer
+        doc = _doc()
+        doc.vision_fields['warnings'] = [self.LIVE, PayslipOnlyWarningTests.HANDWRITTEN]
+        with mock.patch.object(drf.ModelSerializer, 'to_representation',
+                               lambda self, inst: {'id': 1, 'vision_fields': inst.vision_fields}):
+            data = ApplicantDocumentSerializer().to_representation(doc)
+        self.assertEqual(data['vision_fields']['warnings'], [PayslipOnlyWarningTests.HANDWRITTEN])
+        self.assertEqual(doc.vision_fields['warnings'], [self.LIVE, PayslipOnlyWarningTests.HANDWRITTEN])

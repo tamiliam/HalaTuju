@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: case 1048 - the declaration warnings the officer still saw are hidden (2026-11-28)
+
+The owner's phone check on live failed: after Re-run, case 1048's handwritten income declaration (salary-slip slot, doc_seen = declaration) still showed "The document is an income declaration letter rather than a standard payslip, and no employer name is provided.; A specific pay period is not stated." Display only (`income_engine/declaration_name.payslip_only_warning`, used by `ApplicantDocumentSerializer` through `shown_warnings`). Two narrow additions: (1) a TYPE NOTE part, one that says only that the document is a declaration and not a payslip (English, and the plain Malay "dokumen ini ialah surat akuan pendapatan, bukan slip gaji"), hides when the WHOLE part matches; a comma or and/dan before "not a payslip" is joined first so the note is not split; (2) "specific" and "exact" join the filler words. "clear" stays out (No clear employer may mean unreadable, and unclear / tidak jelas are keep words), and "handwritten" is no part of the type note. The keep words still win over the whole warning, and any left-over word keeps it. Stored reads unchanged; no warning feeds a verdict. VERDICT_ENGINE_VERSION 2026-11-28.1 with a new register entry (2026-11-27.3 is live and untouched). No doc-recognition MODEL_VERSION moves (declaration_name is in no document scorer's files). New tests in `test_declaration_name_close.py` (`TypeNoteAndSpecificPeriodTests`): the live string hides in full; keeps for forged, signature, stamp, unclear, handwritten, applicant, IC, chop, correction, left-over words and the reversed note; every earlier round's lists still hold.
+
 ### feat: OCR-15 phase 1 - the parent IC's text is kept, plus a one-off Vision capture (2026-11-27)
 
 Sprint OCR-15 phase 1. Branch ocr-15-parent-ic, not pushed. Migration: none. Services: api. No MODEL_VERSION bump (the version guard passes).

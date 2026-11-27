@@ -307,11 +307,14 @@ _ABSENCES = (
 #: round 3 (blocker 1): no document word (slip, payslip, document, form, declaration): "Employer
 #: declaration missing" or "No company payslip" names a missing PAPER, which must stay. A document word
 #: is dropped only inside a place phrase ("on the document", "pada borang ini": ``_PLACE``).
+#: Case 1048 (2026-11-28): "specific" and "exact" describe the missing pay period or employer ("A specific
+#: pay period is not stated"). "clear" is NOT filler: "No clear employer stated" may mean the employer is
+#: there but unreadable, the note review round 3 keeps ("unclear", "tidak jelas").
 _FILLER = frozenset({
     'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'has', 'have', 'of', 'this',
     'any', 'stated', 'shown', 'given', 'provided',
     'specified', 'indicated', 'mentioned', 'listed', 'recorded', 'ini', 'yang',
-    'telah', 'dinyatakan',
+    'telah', 'dinyatakan', 'specific', 'exact',
 })
 #: Where the note was made: "on the document", "in this form", "pada borang ini", "di dalam dokumen".
 _PLACE = re.compile(
@@ -345,6 +348,29 @@ _EMPLOYER_NAME_PHRASES = ("employer's name", 'employer name', 'name of the emplo
                           "company's name", 'company name', 'name of the company', 'name of company',
                           'nama majikan', 'nama syarikat')
 _SPLIT = re.compile(r"[;,.]|\b(?:and|dan)\b")
+#: Case 1048 (2026-11-28): the TYPE NOTE. A part that says only that the document is a declaration and
+#: not a payslip ("The document is an income declaration letter rather than a standard payslip", "Dokumen
+#: ini ialah surat akuan pendapatan, bukan slip gaji") tells the officer nothing new: this filter runs only
+#: on a document already seen as a declaration. The WHOLE part must match: any other word keeps it, and
+#: the keep words above are checked first over the whole warning. "handwritten" is no part of it: "The
+#: document is handwritten" is a note review round 1 keeps.
+_EN_TAIL = (r"(?:rather\s+than|instead\s+of|not)\s+(?:an?\s+)?(?:(?:standard|formal|regular|official|typical)\s+)?"
+            r"(?:pay[\s-]?slip|salary\s+slip)")
+_MS_TAIL = r"bukan(?:nya)?\s+(?:sebuah\s+|satu\s+)?(?:slip\s+gaji|penyata\s+gaji)"
+_TYPE_NOTE = re.compile(
+    r"(?:(?:(?:the|this)\s+)?(?:uploaded\s+)?(?:document|form)|this|it)\s+(?:is|appears\s+to\s+be)\s+(?:an?\s+)?"
+    rf"(?:(?:income|salary)\s+)?declaration(?:\s+(?:letter|form))?\s+{_EN_TAIL}"
+    r"|(?:(?:dokumen|borang)(?:\s+ini)?|ini)\s+(?:ialah|adalah|merupakan)\s+(?:sebuah\s+|satu\s+)?(?:surat\s+)?"
+    rf"(?:akuan|pengakuan)(?:\s+(?:pendapatan|gaji))?\s+{_MS_TAIL}")
+#: "a declaration, not a payslip" / "akuan, bukan slip gaji": the comma (or and/dan) before the tail would
+#: split the type note in two, so it is joined first. A joined part can only hide as a whole type note:
+#: the tail's own words (not, rather than, bukan, payslip) are neither topic, absence nor filler.
+_TYPE_JOIN = re.compile(rf"(?:\s*,\s*(?:(?:and|dan)\s+)?|\s+(?:and|dan)\s+)(?=(?:{_EN_TAIL}|{_MS_TAIL})\b)")
+
+
+def _type_note(part: str) -> bool:
+    """One part that says only "this is a declaration, not a payslip" (the whole part, nothing else)."""
+    return bool(_TYPE_NOTE.fullmatch(' '.join(re.sub(r"[^a-z0-9/' ]", ' ', part).split())))
 
 
 def _hideable_part(part: str) -> bool:
@@ -359,7 +385,8 @@ def _hideable_part(part: str) -> bool:
 
 def payslip_only_warning(warning) -> bool:
     """True only when EVERY part of the warning is a pure absence of the employer or the pay period
-    (the "nothing left over" rule above). Anything else, or anything mixed, is kept."""
+    (the "nothing left over" rule above) or the declaration type note. Anything else, or anything mixed,
+    is kept."""
     s = ' '.join(str(warning or '').lower().replace('’', "'").split())
     if not s:
         return False
@@ -369,8 +396,9 @@ def payslip_only_warning(warning) -> bool:
         return False
     s = re.sub(r'\bmonth\s*(?:and|&)\s*year\b', 'month/year', s)
     s = re.sub(r'\bbulan\s*(?:dan|&)\s*tahun\b', 'bulan/tahun', s)
+    s = _TYPE_JOIN.sub(' ', s)
     parts = [p for p in _SPLIT.split(s) if p.strip()]
-    return bool(parts) and all(_hideable_part(p) for p in parts)
+    return bool(parts) and all(_type_note(p) or _hideable_part(p) for p in parts)
 
 
 def shown_warnings(doc, warnings):
