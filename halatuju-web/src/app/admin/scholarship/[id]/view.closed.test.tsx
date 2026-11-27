@@ -136,6 +136,8 @@ describe('a rejected case WITH a verdict — the trail is the audit record and s
     renderCockpit({ role: 'super', writes: true, stage: 'rejected' })
     await loaded()
     expect(screen.getByText('The evidence supports the conclusion recorded here.')).toBeTruthy()
+    // Owner, 28 Nov 2026: the box has no "Justification and conclusion" heading.
+    expect(screen.queryByText('admin.scholarship.recordVerdict.reasonLabel')).toBeNull()
     expect(screen.queryByPlaceholderText(
       'admin.scholarship.recordVerdict.reasonPlaceholder')).toBeNull()
     expect(screen.queryByRole('button',
@@ -146,6 +148,17 @@ describe('a rejected case WITH a verdict — the trail is the audit record and s
     renderCockpit({ role: 'super', writes: true, stage: 'rejected' })
     await loaded()
     expect(screen.getByText(INTERVIEW)).toBeTruthy()
+  })
+})
+
+describe('an open case — the justification box (owner, 28 Nov 2026)', () => {
+  it('has no visible heading but keeps its accessible name', async () => {
+    renderCockpit({ role: 'super', writes: true, stage: 'interviewing' })
+    await loaded()
+    const box = screen.getByLabelText('admin.scholarship.recordVerdict.reasonLabel')
+    expect(box.tagName).toBe('TEXTAREA')
+    const label = document.querySelector('label[for="verdict-reason"]')
+    expect(label?.className).toContain('sr-only')
   })
 })
 

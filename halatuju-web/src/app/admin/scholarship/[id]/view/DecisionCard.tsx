@@ -154,7 +154,7 @@ export function DecisionCard({
                 Estimated-need cards above; this card keeps the justification + who/when. */}
             {(verdictReason || '').trim() && (
               <div>
-                <p className="text-xs font-medium text-ground-600 mb-1">{t('admin.scholarship.recordVerdict.reasonLabel')}</p>
+                {/* No visible heading (owner, 28 Nov 2026): the box speaks for itself. */}
                 <div className="rounded-lg border border-info-100 bg-info-50/50 p-3">
                   <p className="whitespace-pre-line text-sm text-ground-800">{verdictReason}</p>
                 </div>
@@ -238,7 +238,8 @@ export function DecisionCard({
             proposed bursary now live in their own cards above this one. */}
         {/* Reason textarea */}
         <div>
-          <label className="block text-xs font-medium text-ground-600 mb-1">
+          {/* Owner, 28 Nov 2026: no visible heading. The label stays for screen readers only. */}
+          <label htmlFor="verdict-reason" className="sr-only">
             {t('admin.scholarship.recordVerdict.reasonLabel')}
           </label>
           <textarea
