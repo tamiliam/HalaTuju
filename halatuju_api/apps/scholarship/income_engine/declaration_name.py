@@ -23,14 +23,20 @@ as if the form named a stranger. The owner ruled:
 The near miss is deliberately narrow. First the patronymic connectors drop out on BOTH sides (A/L,
 A/P, S/O, D/O, BIN, BINTI, BT as `vision._canonical_name_seq` already drops them, plus BN). Then:
 
-* **same number of parts** (two or more): every part agrees under the tolerant matcher but at most ONE,
-  and that odd pair is at least ``MIN_PART_LETTERS`` long on both sides, shares its first letter and is
-  at most ``MAX_EDITS`` apart (no odd pair at all — an exact match once the connectors are gone — is a
-  near miss too);
+* **same number of parts** (two or more): part by part IN PRINTED ORDER, every part agrees under the
+  tolerant matcher but at most ONE, and that odd pair is at least ``MIN_PART_LETTERS`` long on both
+  sides, shares its first letter and is at most ``MAX_EDITS`` apart (no odd pair at all — an exact
+  match once the connectors are gone — is a near miss too);
 * **one part more on one side**: that extra part is the ONLY inner part (never the first or the last
-  word) of at most ``MAX_EXTRA_LETTERS`` letters that is within one edit of a connector (ALE, AIL, NL
-  for A/L). It drops, and the rest must agree IN PRINTED ORDER, with at most one odd pair as above.
-  Two extra parts, or an extra part that is not connector-like, are never close.
+  word) that is on the allowlist of misread connectors (ALE, AIL, NL for A/L; AIP, NP for A/P; and the
+  exact SO, DO, BNT only when the other name prints a connector). It drops, and the rest must agree in
+  printed order as above. Two extra parts, or any other extra part, are never close.
+
+Review round 3: the order is fixed (own name first, father's after), and a reversal is judged with this
+module's own allowance too ("RAJAN A/L KUMARIM" is not "KUMARAN A/L RAJAN"). A connector GLUED onto a
+part ("KUMARIAL", "KUMARANAP", "APARUMUGAM") never agrees with the bare part: its sex would go unread.
+Only the allowlisted words drop: real short name parts (AH, HO, LO, SOO, SOH, BAN, BUN, BEN, AN, AI, DOO,
+SIN, LIN) never do.
 
 A reversed patronymic (a father and a son) is never close. A different given name is still 'mismatch'.
 Review round 1: opposite-sex connectors (A/L or S/O or BIN against A/P or D/O or BINTI/BT) are never
@@ -50,7 +56,10 @@ its absence words and its filler words are taken out, nothing is left ("employer
 majikan", "tempoh gaji tidak dinyatakan"). Every part must be hideable. Anything about tampering, forgery,
 a chop, stamp, signature, endorsement, the penghulu, a correction, the applicant, a name or an IC/KP keeps
 the whole warning; so does any left-over word ("figure crossed out", "tiada tarikh": a missing DATE is
-not payslip-only). When unsure, the warning is kept.
+not payslip-only). When unsure, the warning is kept. Review round 3: a document word is no filler
+("Employer declaration missing" stays), a bare "period", "tempoh", "month/year" or "bulan/tahun" is no
+pay period (it may be the declaration's own date), and "not visible", "blank", "unclear", "covered",
+"cut", "tidak jelas", "kabur", "ditutup", "kosong", "terpotong" and the like keep the warning.
 
 **3. 'close' is not served yet.** ``SHOW_CLOSE`` (below) is False until NRIC chip Sprint 3 gives the web
 an amber pill for it; until then ``soften`` changes nothing and the API shows 'mismatch' as before.
@@ -81,11 +90,12 @@ def for_decisions(status: str) -> str:
 MIN_PART_LETTERS = 4
 MAX_EDITS = 2
 
-#: The connector forms an extra short part may be one edit from (A/L and A/P lose their slash).
-CONNECTORS = ('al', 'ap', 'so', 'do', 'bin', 'binti', 'bt', 'bn')
 #: `_canonical_name_seq` keeps BN (it is not in `vision._NAME_NOISE`); it is a connector here.
 _ALSO_DROPPED = frozenset({'bn'})
-MAX_EXTRA_LETTERS = 3
+
+#: Review round 3 (blocker 2): the slash-less connector forms that may be GLUED onto a name part
+#: ("KUMARIAL" = KUMARI + AL, "KUMARANAP", "APARUMUGAM"). Every connector this module knows.
+_GLUED_CONNECTORS = ('binti', 'bin', 'bnt', 'bte', 'bt', 'bn', 'al', 'ap', 'so', 'do')
 
 
 def _parts(name: str) -> list:
@@ -93,47 +103,70 @@ def _parts(name: str) -> list:
     return [t for t in _canonical_name_seq(name or '') if t not in _ALSO_DROPPED]
 
 
+def _swallows_glued_connector(x: str, y: str) -> bool:
+    """Review round 3 (blocker 2): True when one part ends (or starts) with a connector that the other
+    part does not, and taking that connector off brings the two parts CLOSER: the agreement would only
+    come from swallowing glued connector letters, whose sex is then never read ("KUMARIAL" against
+    "KUMARI", "KUMARANAP" against "KUMARAN", "APARUMUGAM" against "ARUMUGAM"). Such a pair never agrees,
+    whatever the sex. Checked on every pair before any edit allowance (the tolerant matcher's too)."""
+    from ..vision import _levenshtein
+    for p, q in ((x, y), (y, x)):
+        base = _levenshtein(p, q)
+        for c in _GLUED_CONNECTORS:
+            if len(p) - len(c) >= 2 and p.endswith(c) and not q.endswith(c) \
+                    and _levenshtein(p[:-len(c)], q) < base:
+                return True
+            if len(p) - len(c) >= 2 and p.startswith(c) and not q.startswith(c) \
+                    and _levenshtein(p[len(c):], q) < base:
+                return True
+    return False
+
+
 def _one_part_off(x: str, y: str) -> bool:
+    """The near-miss edit allowance for ONE pair of parts (owner C1: 4+ letters, same first letter, at
+    most 2 edits), never over glued connector letters."""
     from ..vision import _fold_name_token, _levenshtein
+    if _swallows_glued_connector(x, y):
+        return False
     x, y = _fold_name_token(x), _fold_name_token(y)
     return min(len(x), len(y)) >= MIN_PART_LETTERS and x[:1] == y[:1] and _levenshtein(x, y) <= MAX_EDITS
 
 
-def _same_count(a: list, b: list) -> bool:
-    """The rule for two names of the same number of parts (matched in any order, as before)."""
+def _agree(a: list, b: list, min_parts: int = 2) -> bool:
+    """Part by part IN PRINTED ORDER (review round 3, should-fix 3: own name first, father's after; never
+    any order): every pair agrees under the tolerant matcher but at most ONE, which is within the
+    near-miss allowance. No pair may agree by swallowing a glued connector."""
     from ..vision import _tokens_close
-    if len(a) < 2:
+    if len(a) != len(b) or len(a) < min_parts:
         return False
-    rest, odd = list(b), []
-    for x in a:
-        hit = next((i for i, y in enumerate(rest) if _tokens_close(x, y)), None)
-        if hit is None:
-            odd.append(x)
-        else:
-            rest.pop(hit)
-    if not odd:
-        return True                                   # exact once the connectors are gone
-    return len(odd) == 1 and len(rest) == 1 and _one_part_off(odd[0], rest[0])
+    if any(_swallows_glued_connector(x, y) for x, y in zip(a, b)):
+        return False
+    odd = [(x, y) for x, y in zip(a, b) if not _tokens_close(x, y)]
+    return not odd or (len(odd) == 1 and _one_part_off(*odd[0]))
 
 
-#: Review round 2: short REAL name parts that are one edit from a connector but are never a misread one.
-#: AH is a Chinese name part ("TAN AH SENG" is not "TAN SENG"), so it never drops.
-_NEVER_DROPPED = frozenset({'ah'})
+#: Review round 3 (should-fix 4): an ALLOWLIST of the extra short words that may drop as a misread
+#: connector, with the sex each one is. Not "any short word near a connector": that dropped real Chinese
+#: name parts (AH, HO, LO, SOO, SOH, BAN, BUN, BEN, AN, AI, DOO, and SIN, LIN, KIN, YIN one edit from
+#: BIN). Only these drop, and nothing else ever does:
+#:   * the misreads of A/L seen on handwritten forms (ALE, AIL, NL) and their A/P twins (AIP, NP) —
+#:     none of them is a name part; they drop even when the other name prints no connector;
+#:   * the slash-less exact connectors that ``_parts`` keeps (SO, DO, BNT) — SO and DO are also real
+#:     Chinese/Vietnamese name parts, so they drop ONLY when the other name prints a connector itself.
+_MISREAD_CONNECTORS = {'ale': 'm', 'ail': 'm', 'nl': 'm', 'aip': 'f', 'np': 'f'}
+_EXACT_CONNECTORS = {'so': 'm', 'do': 'f', 'bnt': 'f'}
 
 
-def _connector_like(tok: str) -> bool:
-    from ..vision import _levenshtein
-    return (tok not in _NEVER_DROPPED and len(tok) <= MAX_EXTRA_LETTERS
-            and any(_levenshtein(tok, c) <= 1 for c in CONNECTORS))
-
-
-def _without_misread_connector(longer: list):
-    """``(longer without its ONE connector-like inner part, that part)``, or ``(None, '')`` when there is
-    not exactly one."""
-    hits = [i for i in range(1, len(longer) - 1) if _connector_like(longer[i])]
+def _without_misread_connector(longer: list, other_has_connector: bool):
+    """``(longer without its ONE droppable inner part, that part's sex)``, or ``(None, '')`` when there is
+    not exactly one (never the first or the last word)."""
+    droppable = dict(_MISREAD_CONNECTORS)
+    if other_has_connector:
+        droppable.update(_EXACT_CONNECTORS)
+    hits = [i for i in range(1, len(longer) - 1) if longer[i] in droppable]
     if len(hits) != 1:
         return None, ''
-    return longer[:hits[0]] + longer[hits[0] + 1:], longer[hits[0]]
+    return longer[:hits[0]] + longer[hits[0] + 1:], droppable[longer[hits[0]]]
 
 
 #: Review round 1 (should-fix 4): the connectors carry a sex. A son (A/L, S/O, BIN) is never 'close' to a
@@ -161,55 +194,43 @@ def _gender_signs(name: str) -> set:
     return signs
 
 
-def _misread_sign(tok: str) -> set:
-    """The sex of the dropped short word: an exact slash-less form first (SO is male, DO female); else
-    every sex whose connectors it is within one edit of — {'m'} for ALE, AIL, NL; {'m', 'f'} for a word
-    near BOTH (ALP, APL, BO); empty when near neither."""
-    from ..vision import _levenshtein
-    plain = (('m', {f.replace('/', '') for f in _MALE}), ('f', {f.replace('/', '') for f in _FEMALE}))
-    exact = {sex for sex, forms in plain if tok in forms}
-    if exact:
-        return exact
-    return {sex for sex, forms in plain if any(_levenshtein(tok, f) <= 1 for f in forms)}
-
-
 def _opposite_sex(sa: set, sb: set) -> bool:
     return bool(sa) and bool(sb) and sa.isdisjoint(sb)
 
 
-def _in_order(a: list, b: list) -> bool:
-    """Part by part in printed order: all agree, or exactly one odd pair within the near-miss limits."""
-    from ..vision import _tokens_close
-    if len(a) != len(b) or len(a) < 2:
-        return False
-    odd = [(x, y) for x, y in zip(a, b) if not _tokens_close(x, y)]
-    return not odd or (len(odd) == 1 and _one_part_off(*odd[0]))
+def _reversed_within_allowance(extracted, reference) -> bool:
+    """Review round 3 (should-fix 3): `name_order.patronymic_reversed` judged with THIS module's own
+    allowance on each side of the connector (the same ``_agree`` the close check uses, one part or
+    more), so a father and a son with a 2-edit misread ("RAJAN A/L KUMARIM" / "KUMARAN A/L RAJAN") is a
+    reversal too."""
+    from ..name_order import patronymic_reversed
+
+    def matcher(x, y):
+        return 'match' if _agree(_parts(x), _parts(y), min_parts=1) else 'mismatch'
+    return patronymic_reversed(extracted, reference, matcher)
 
 
 def near_miss(extracted, reference) -> bool:
     """True when the two names differ only by a small misread (the rule above)."""
     from .buckets import _near_miss_reversal
     a, b = _parts(extracted), _parts(reference)
-    if _near_miss_reversal(extracted, reference):
+    if _near_miss_reversal(extracted, reference) or _reversed_within_allowance(extracted, reference):
         return False
     sa, sb = _gender_signs(extracted), _gender_signs(reference)
     if _opposite_sex(sa, sb):
         return False                                  # A/L against A/P, S/O against D/O, BIN against BINTI
     if len(a) == len(b):
-        return _same_count(a, b)
+        return _agree(a, b)
     if abs(len(a) - len(b)) != 1:
         return False
     if len(a) < len(b):
         a, b, sa, sb = b, a, sb, sa                   # `a` is the side with the extra word
-    a, dropped = _without_misread_connector(a)
+    a, sex = _without_misread_connector(a, other_has_connector=bool(sb))
     if a is None:
         return False
-    sex = _misread_sign(dropped)
-    if len(sex) > 1 and sb:
-        return False                                  # ALP / BO (near both sexes) against a clear A/L or A/P
-    if _opposite_sex(sa | sex, sb):
+    if _opposite_sex({sex}, sb) or _opposite_sex({sex}, sa):
         return False                                  # a misread A/L against a printed A/P
-    return _in_order(a, b)
+    return _agree(a, b)
 
 
 def soften(doc, status: str, extracted: str, reference: str) -> str:
@@ -237,29 +258,39 @@ _TOPICS = (
     'name of the employer', 'name of employer', "employer's name", 'employers name', 'employer name',
     'name of the company', 'name of company', "company's name", 'company name', 'nama majikan',
     'nama syarikat', 'employers', 'employer', 'majikan', 'company', 'syarikat',
-    # the pay period
+    # the pay period. Review round 3 (minor 5): only words that clearly say PAY. A bare "period",
+    # "tempoh", "month/year" or "bulan/tahun" may be the declaration's own date, so it is no topic.
     'pay slip period', 'payslip period', 'pay period', 'salary period', 'income period', 'period of pay',
-    'period of salary', 'period of income', 'period', 'month/year of salary', 'month/year of pay',
-    'month/year of income', 'month/year', 'pay month', 'salary month', 'income month', 'month of pay',
-    'month of salary', 'month of income', 'tempoh gaji', 'tempoh pendapatan', 'tempoh', 'bulan gaji',
-    'bulan pendapatan', 'bulan/tahun',
+    'period of salary', 'period of income', 'month/year of salary', 'month/year of pay',
+    'month/year of income', 'pay month', 'salary month', 'income month', 'month of pay',
+    'month of salary', 'month of income', 'tempoh gaji', 'tempoh pendapatan', 'bulan gaji',
+    'bulan pendapatan',
 )
 #: The ABSENCE words (English and Malay). A bare "not" is NOT one ("employer is not a company" stays).
+#: Review round 3 (minor 6): "not visible", "blank" and "kosong" are not absences: the employer may be
+#: there but covered over. They are keep words below.
 _ABSENCES = (
     'not stated', 'not given', 'not shown', 'not provided', 'not specified', 'not indicated', 'not listed',
     'not mentioned', 'not included', 'not present', 'not recorded', 'not written', 'not filled in',
-    'not filled', 'not found', 'not visible', 'not available', 'not declared', 'missing', 'absent', 'none',
-    'no', 'n/a', 'nil', 'blank', 'omitted', 'unspecified', 'unstated', 'without', 'lack', 'lacks', 'lacking',
+    'not filled', 'not found', 'not available', 'not declared', 'missing', 'absent', 'none',
+    'no', 'n/a', 'nil', 'omitted', 'unspecified', 'unstated', 'without', 'lack', 'lacks', 'lacking',
     'tiada', 'tidak dinyatakan', 'tidak dicatat', 'tidak dicatatkan', 'tidak tercatat', 'tidak ditulis',
-    'tidak diisi', 'tidak ada', 'tidak disertakan', 'kosong', 'tanpa',
+    'tidak diisi', 'tidak ada', 'tidak disertakan', 'tanpa',
 )
-#: The FILLER words that may stand beside a topic and an absence and say nothing of their own.
+#: The FILLER words that may stand beside a topic and an absence and say nothing of their own. Review
+#: round 3 (blocker 1): no document word (slip, payslip, document, form, declaration): "Employer
+#: declaration missing" or "No company payslip" names a missing PAPER, which must stay. A document word
+#: is dropped only inside a place phrase ("on the document", "pada borang ini": ``_PLACE``).
 _FILLER = frozenset({
-    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'has', 'have', 'on', 'in', 'of', 'this',
-    'any', 'slip', 'payslip', 'document', 'form', 'declaration', 'stated', 'shown', 'given', 'provided',
-    'specified', 'indicated', 'mentioned', 'listed', 'recorded', 'pada', 'di', 'dalam', 'ini', 'yang',
+    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'has', 'have', 'of', 'this',
+    'any', 'stated', 'shown', 'given', 'provided',
+    'specified', 'indicated', 'mentioned', 'listed', 'recorded', 'ini', 'yang',
     'telah', 'dinyatakan',
 })
+#: Where the note was made: "on the document", "in this form", "pada borang ini", "di dalam dokumen".
+_PLACE = re.compile(
+    r"\b(?:on|in|within)\s+(?:the\s+|this\s+)?(?:document|form|slip|payslip|pay\s+slip|declaration)\b"
+    r"|\b(?:pada|dalam|di\s+dalam|di)\s+(?:dokumen|borang|slip|surat\s+akuan|akuan)(?:\s+ini)?\b")
 
 
 def _phrases(words) -> re.Pattern:
@@ -275,7 +306,10 @@ _KEEP_STEMS = ('tamper', 'alter', 'forg', 'fake', 'palsu', 'ubah', 'chop', 'stam
                'endorse', 'penghulu', 'overwrit', 'written over', 'correction', 'fluid', 'applicant',
                'pemohon', 'themselves', 'himself', 'herself', 'sendiri', 'name', 'nama', 'nric', 'mykad',
                'identity', 'pengenalan', 'approv', 'lulus', 'sah', 'cert', 'witness', 'saksi', 'suspicious',
-               'mencurigakan', 'inconsistent', 'differ', 'berbeza', 'mismatch', 'relative', 'saudara')
+               'mencurigakan', 'inconsistent', 'differ', 'berbeza', 'mismatch', 'relative', 'saudara',
+               # review round 3 (minor 6): the employer may be there but covered over or unreadable
+               'visib', 'unclear', 'cover', 'blank', 'cut', 'crop', 'legib', 'unread', 'obscur', 'hidden',
+               'smudg', 'fade', 'jelas', 'kabur', 'tutup', 'kosong', 'potong', 'dibaca')
 #: ...and these as whole words (too short to match inside other words): IC, I/C, I.C., KP, K/P, K.P., COP.
 _KEEP_WORDS = re.compile(r'\b(?:ic|kp|cop|i\s*/\s*c|k\s*/\s*p|i\s*\.\s*c|k\s*\.\s*p)\b')
 #: "the employer's NAME" is still about the employer, not about who the earner is.
@@ -288,6 +322,7 @@ _SPLIT = re.compile(r"[;,.]|\b(?:and|dan)\b")
 def _hideable_part(part: str) -> bool:
     """One part: a topic, an absence, and NOTHING left over once they and the filler words are gone."""
     s = ' '.join(re.sub(r"[^a-z0-9/' ]", ' ', part).split())
+    s = ' '.join(_PLACE.sub(' ', s).split())
     if not (_TOPIC_RE.search(s) and _ABSENT_RE.search(s)):
         return False
     rest = _ABSENT_RE.sub(' ', _TOPIC_RE.sub(' ', s)).split()

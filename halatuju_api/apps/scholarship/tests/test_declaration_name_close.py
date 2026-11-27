@@ -618,3 +618,165 @@ class ShowCloseSwitchTests(SimpleTestCase):
         for on in (False, True):
             with mock.patch.object(declaration_name, 'SHOW_CLOSE', on):
                 self.assertEqual(shown_warnings(_doc(), ws), ['The document is handwritten'])
+
+
+# ── Review round 3: the six findings ─────────────────────────────────────────────────────────────
+
+class R3DocumentWordsAreNotFillerTests(SimpleTestCase):
+    """Blocker 1: a missing PAPER (the employer's declaration, form, document or payslip) must stay."""
+
+    KEEP = ('Employer declaration missing', 'Employer form not provided', 'Employer document missing',
+            'Company declaration not provided', 'No company payslip', 'EMPLOYER  DECLARATION  MISSING.',
+            'employer-form not provided', 'No employer slip', 'Tiada borang majikan',
+            'Employer letter missing', 'Company declaration form missing')
+    HIDE = ('No employer name shown on the document', 'Employer not stated on the form',
+            'Pay period missing in this declaration', 'Majikan tidak dinyatakan pada borang ini',
+            'Employer not stated on form')
+
+    def test_a_missing_paper_is_kept(self):
+        for w in self.KEEP:
+            self.assertFalse(payslip_only_warning(w), w)
+
+    def test_a_place_phrase_is_still_hidden(self):
+        for w in self.HIDE:
+            self.assertTrue(payslip_only_warning(w), w)
+
+    def test_the_filler_holds_no_document_word(self):
+        for word in ('slip', 'payslip', 'document', 'form', 'declaration'):
+            self.assertNotIn(word, declaration_name._FILLER)
+
+
+class R3BarePeriodIsNotPayTests(SimpleTestCase):
+    """Minor 5: a bare month/year or period may be the declaration's own date."""
+
+    KEEP = ('Month and year missing', 'Tiada bulan/tahun', 'Tempoh tidak dinyatakan', 'Period not stated',
+            'month & year not shown', 'Bulan dan tahun tidak dinyatakan', 'No period', 'TEMPOH: TIADA',
+            'Month/year missing')
+    HIDE = ('Pay period not stated', 'Salary month missing', 'Bulan gaji tidak dinyatakan',
+            'Tempoh gaji tiada', 'Month and year of salary not shown', 'Salary period: none')
+
+    def test_a_bare_period_is_kept(self):
+        for w in self.KEEP:
+            self.assertFalse(payslip_only_warning(w), w)
+
+    def test_a_pay_period_is_hidden(self):
+        for w in self.HIDE:
+            self.assertTrue(payslip_only_warning(w), w)
+
+
+class R3CoveredOverIsKeptTests(SimpleTestCase):
+    """Minor 6: an employer that is there but cannot be read may have been covered over."""
+
+    KEEP = ('Employer not visible', 'Employer blank', 'Employer unclear', 'Employer name covered',
+            'Employer cut off', 'Employer cropped', 'Employer illegible', 'Majikan tidak jelas',
+            'Nama majikan kabur', 'Majikan ditutup', 'Majikan kosong', 'Nama majikan terpotong',
+            'Pay period not visible', 'Pay period is blank', 'Tempoh gaji tidak jelas',
+            'Employer: BLANK', 'Employer not legible', 'employer unreadable', 'Employer obscured',
+            'No employer; pay period blank')
+
+    def test_covered_or_unreadable_is_kept(self):
+        for w in self.KEEP:
+            self.assertFalse(payslip_only_warning(w), w)
+
+    def test_the_round_2_hides_still_hide(self):
+        for w in (PayslipOnlyWarningTests.MUST_HIDE + PayslipOnlyWarningTests.R2_HIDE
+                  + (PayslipOnlyWarningTests.EMPLOYER, PayslipOnlyWarningTests.PERIOD,
+                     PayslipOnlyWarningTests.PERIOD_MS)):
+            self.assertTrue(payslip_only_warning(w), w)
+
+    def test_a_declaration_shows_the_r3_keeps(self):
+        keep = list(R3DocumentWordsAreNotFillerTests.KEEP + R3BarePeriodIsNotPayTests.KEEP + self.KEEP)
+        hide = list(R3DocumentWordsAreNotFillerTests.HIDE + R3BarePeriodIsNotPayTests.HIDE)
+        self.assertEqual(shown_warnings(_doc(), keep + hide), keep)
+
+
+class R3GluedConnectorTests(SimpleTestCase):
+    """Blocker 2: a slash-less connector glued onto a name part is never swallowed by the edit allowance."""
+
+    def test_the_three_review_pairs_are_not_close(self):
+        self.assertFalse(near_miss('KUMARIAL RAJAN', 'KUMARI A/P RAJAN'))
+        self.assertFalse(near_miss('DEVIAL RAJAN', 'DEVI A/P RAJAN'))
+        self.assertFalse(near_miss('KUMARANAP RAJAN', 'KUMARAN A/L RAJAN'))
+
+    def test_near_variants_are_not_close(self):
+        for read, ic in (('kumarial rajan', 'kumari a/p rajan'), ('Kumarial  Rajan.', 'KUMARI A / P RAJAN'),
+                         ('KUMARIAL RAJAN', 'KUMARI RAJAN'), ('KUMARI A/P RAJAN', 'KUMARIAL RAJAN'),
+                         ('DEVIAP RAJAN', 'DEVI A/P RAJAN'),                   # same sex: still swallowed
+                         ('KUMARANSO RAJAN', 'KUMARAN S/O RAJAN'), ('KUMARANDO RAJAN', 'KUMARAN S/O RAJAN'),
+                         ('KUMARANBIN RAJAN', 'KUMARAN BIN RAJAN'), ('AMINAHBT YUSOF', 'AMINAH BINTI YUSOF'),
+                         ('AMINAHBNT YUSOF', 'AMINAH BIN YUSOF'), ('AMINAHBINTI YUSOF', 'AMINAH BIN YUSOF'),
+                         ('DEVI APARUMUGAM', 'DEVI A/L ARUMUGAM'),             # glued at the front
+                         ('KUMARAAL RAJAN', 'KUMARA A/P RAJAN'),               # the tolerant matcher's 1 edit
+                         ('KUMARIAL ALE RAJAN', 'KUMARI A/P RAJAN')):
+            self.assertFalse(near_miss(read, ic), (read, ic))
+
+    def test_a_name_that_merely_ends_like_a_connector_still_works(self):
+        self.assertTrue(near_miss('GOPAL A/L KANDASANI', 'GOPAL A/L KANDASAMY'))
+        self.assertTrue(near_miss('NIRMALA A/P KANDASANI', 'NIRMALA A/P KANDASAMY'))
+        self.assertTrue(near_miss('DORAISAMY A/L KANDASANI', 'DORAISAMY A/L KANDASAMY'))
+        self.assertTrue(near_miss('ALAGAN A/L KANDASAMY', 'ALAGEN A/L KANDASAMY'))
+
+    def test_the_swallow_guard_itself(self):
+        swallows = declaration_name._swallows_glued_connector
+        self.assertTrue(swallows('kumarial', 'kumari'))
+        self.assertTrue(swallows('kumari', 'kumarial'))
+        self.assertTrue(swallows('aparumugam', 'arumugam'))
+        self.assertFalse(swallows('gopal', 'gopala'))
+        self.assertFalse(swallows('kamal', 'kamal'))
+
+
+class R3OrderAndReversalTests(SimpleTestCase):
+    """Should-fix 3: parts match in printed order; a reversal is judged with the near-miss allowance."""
+
+    def test_the_three_review_pairs_are_not_close(self):
+        self.assertFalse(near_miss('RAJAN A/L KUMARIM', 'KUMARAN A/L RAJAN'))
+        self.assertFalse(near_miss('RAJAN BIN KUMARIM', 'KUMARAN BIN RAJAN'))
+        self.assertFalse(near_miss('RAJAN KUMARIM', 'KUMARAN RAJAN'))
+
+    def test_near_variants_are_not_close(self):
+        for read, ic in (('rajan a/l kumarim', 'kumaran a/l rajan'), ('RAJAN S/O KUMARIM', 'KUMARAN A/L RAJAN'),
+                         ('KUMARAN A/L RAJAN', 'RAJAN A/L KUMARIM'), ('RAJAN ALE KUMARIM', 'KUMARAN A/L RAJAN'),
+                         ('RAJAN KUMARIM', 'KUMARAN A/L RAJAN'), ('RAJAN A / L KUMARAN', 'KUMARAN A/L RAJAN'),
+                         ('RAJAN KUMARAN', 'KUMARAN RAJAN'), ('RAJAN ALE KUMARAN', 'KUMARAN RAJAN')):
+            self.assertFalse(near_miss(read, ic), (read, ic))
+
+    def test_the_reversal_guard_uses_the_allowance(self):
+        self.assertTrue(declaration_name._reversed_within_allowance('RAJAN A/L KUMARIM', 'KUMARAN A/L RAJAN'))
+        self.assertFalse(declaration_name._reversed_within_allowance('KUMARAN A/L RAJIM', 'KUMARAN A/L RAJAN'))
+
+    def test_the_same_order_misread_is_still_close(self):
+        self.assertTrue(near_miss('KUMARIM A/L RAJAN', 'KUMARAN A/L RAJAN'))
+        self.assertTrue(near_miss('KUMARAN BIN RAJIM', 'KUMARAN BIN RAJAN'))
+        self.assertTrue(near_miss('KUMARIM RAJAN', 'KUMARAN RAJAN'))
+
+
+class R3OnlyMisreadConnectorsDropTests(SimpleTestCase):
+    """Should-fix 4: an allowlist of the words that may drop; real short name parts never do."""
+
+    def test_the_review_pairs_are_not_close(self):
+        self.assertFalse(near_miss('LIM SOO KEAT', 'LIM KIAT'))
+        self.assertFalse(near_miss('LIM HO KEAT', 'LIM KIAT'))
+
+    def test_no_real_short_name_part_drops(self):
+        for part in ('AH', 'HO', 'LO', 'SOO', 'SOH', 'BAN', 'BUN', 'BEN', 'AN', 'AI', 'DOO', 'SIN', 'LIN',
+                     'KIN', 'YIN', 'BO', 'KO', 'TO', 'GO', 'ALP', 'APL', 'ALI', 'ABU', 'BI', 'ah', 'Soo'):
+            self.assertFalse(near_miss(f'LIM {part} KEAT', 'LIM KEAT'), part)
+            self.assertFalse(near_miss('LIM KEAT', f'LIM {part} KEAT'), part)
+            self.assertFalse(near_miss(f'LIM {part} KEAT', 'LIM KIAT'), part)
+
+    def test_so_and_do_drop_only_beside_a_printed_connector(self):
+        self.assertFalse(near_miss('LIM SO KEAT', 'LIM KEAT'))
+        self.assertFalse(near_miss('LIM DO KEAT', 'LIM KEAT'))
+        self.assertTrue(near_miss('KUMARAN SO RAJAN', 'KUMARAN S/O RAJAN'))
+        self.assertTrue(near_miss('KUMARAN SO RAJAN', 'KUMARAN A/L RAJAN'))
+
+    def test_the_misread_connectors_still_drop(self):
+        for word in ('ALE', 'AIL', 'NL', 'ale'):
+            self.assertTrue(near_miss(f'MURUGAPPAN {word} KANDASANI', 'MURUGAPPAN KANDASAMY'), word)
+            self.assertTrue(near_miss(f'MURUGAPPAN {word} KANDASAMY', IC_NAME), word)
+        for word in ('AIP', 'NP'):
+            self.assertTrue(near_miss(f'KAVITHA {word} KANDASANI', 'KAVITHA A/P KANDASAMY'), word)
+            self.assertFalse(near_miss(f'KAVITHA {word} KANDASANI', 'KAVITHA A/L KANDASAMY'), word)
+
+    def test_a_misread_against_its_own_side_connector_of_the_other_sex(self):
+        self.assertFalse(near_miss('KAVITHA A/P NL KANDASAMY', 'KAVITHA KANDASAMY'))
