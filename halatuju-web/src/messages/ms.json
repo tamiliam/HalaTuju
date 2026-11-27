@@ -8685,7 +8685,6 @@
       "cannotShow": "Peraturan ini mengandungi sesuatu yang tidak dapat dipaparkan oleh skrin ini, jadi ia tidak boleh diubah di sini. Sila hubungi pasukan teknikal.",
       "reload": "Muat semula",
       "closePrompt": "Peraturan untuk pengambilan yang dibuka ini tidak dapat dibaca. Tutup pengambilan ini untuk menghentikan permohonan baharu, kemudian hubungi pasukan teknikal.",
-      "createRulesFailed": "Tahun pengambilan telah dicipta, tetapi kriterianya tidak disimpan. Buka tab Peraturan untuk menetapkannya.",
       "problem": {
         "gradeTwice": "Dua peraturan gred menggunakan gred yang sama. Tukar salah satu, atau buangnya.",
         "meritNeedsFloor": "Mata merit lepas SPM memerlukan PNGK / CGPA minimum dalam keputusan lepas SPM. Hidupkannya, atau matikan mata merit.",

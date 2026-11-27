@@ -4,6 +4,7 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
+import type { CriteriaTree } from '../criteriaTree'
 
 // ── Gift programmes and their intake years (Sabah S2b, 2026-09-02) ──────────────────────────────
 //
@@ -266,11 +267,13 @@ export async function getAdminIntakeYears(programmeId: number, options?: ApiOpti
 }
 
 /** Create an intake year. It arrives CLOSED — opening is what lets real students in, and gets its
- *  own deliberate press. Requirement keys may be omitted; a `null` unticks that test. */
+ *  own deliberate press. Its rules come EITHER as the whole `criteria` tree (the editor; stored with
+ *  the columns that say it, in one write, or nothing - criteria fix round 3) OR as every
+ *  requirement key (a `null` unticks that test). Both at once is refused, `criteria_with_requirements`. */
 export async function createAdminIntakeYear(
   programmeId: number,
   body: { code: string; name: string; year: number; opens_on?: string | null; closes_on?: string | null }
-    & Partial<RequirementsPayload>,
+    & ({ criteria: CriteriaTree } | Partial<RequirementsPayload>),
   options?: ApiOptions,
 ) {
   return adminMutate<AdminIntakeYear>(

@@ -58,9 +58,8 @@ import Sheet from '@/components/Sheet'
 import { formatDate } from '@/lib/formatDate'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
 import CriteriaEditor, { ServerProblemList } from '@/components/admin/CriteriaEditor'
-import { columnsFor, sameStoredTree, stateToTree, EMPTY_STATE, type EditorState } from '@/lib/criteriaTree'
+import { errorKey, stateToTree, EMPTY_STATE, type EditorState } from '@/lib/criteriaTree'
 import {
-  getIntakeYearCriteria, saveIntakeYearCriteria,
   getAdminIntakeYears, createAdminIntakeYear, updateAdminIntakeYear, finishAdminIntakeYear,
   type AdminIntakeYear,
 } from '@/lib/admin-api'
@@ -191,10 +190,8 @@ export default function IntakeYearTab() {
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
-  // The new year's criteria (criteria editor Sprint 4). Created with no requirement keys, the
-  // server stamps an empty tree; a non-empty one is then saved through the criteria API.
+  // The new year's criteria (criteria editor Sprint 4), sent whole in the create (fix round 3).
   const [draft, setDraft] = useState<EditorState>(EMPTY_STATE)
-  const [rulesNotice, setRulesNotice] = useState('')
   /** The server's bad_criteria problems for a refused create, in the admin's language. */
   const [createProblems, setCreateProblems] = useState<string[]>([])
   /** The round being edited, and the boxes for it. Null = the dialog is shut. */
@@ -248,10 +245,18 @@ export default function IntakeYearTab() {
                               // TD-774: an intake whose stored rules cannot be read is never opened.
                               : c === 'rules_error' ? 'rulesError' : 'generic'
 
+  /** A refusal in words. A refused tree (bad_criteria, its reasons listed under the editor) and a
+   *  dropped connection read in the criteria editor's own words (`criteriaTree.errorKey`). */
+  const messageKey = (e: unknown) => {
+    const code = (e as { code?: string } | null)?.code
+    return code === 'bad_criteria' || code === 'network_failure'
+      ? errorKey(code) : `admin.years.error.${errKey(code)}`
+  }
+
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true); setError('')
     try { await fn(); await load(); return true } catch (e) {
-      setError(t(`admin.years.error.${errKey((e as { code?: string })?.code)}`)); return false
+      setError(t(messageKey(e))); return false
     } finally { setBusy(false) }
   }
 
@@ -262,20 +267,21 @@ export default function IntakeYearTab() {
 
   const create = async () => {
     if (programmeId === null || newProblems.length) return
-    setRulesNotice(''); setCreateProblems([])
-    const made: { year?: AdminIntakeYear } = {}
+    setCreateProblems([])
+    // ⚠ ONE REQUEST, THE WHOLE TREE (criteria fix round 3). The columns cannot say every tree (an
+    // 'all' join, a count at A+, A, B or C+), so a create from columns then a PATCH could leave a
+    // year on LOOSER rules than shown. The server stores the year, the tree and its columns in one
+    // write, or nothing (views_admin/intake_years.py); a refusal names its reasons (bad_criteria).
     const ok = await run(async () => {
       try {
-        made.year = await createAdminIntakeYear(programmeId, {
+        await createAdminIntakeYear(programmeId, {
           code: form.code.trim().toLowerCase(), name: form.name.trim(), year: Number(form.year),
           // ⚠ A BLANK BOX SENDS null, NOT '' — "no window stated" is a real answer and must reach the
           // server as one. Sending an empty string would make an unstated window look like a failed
           // parse; sending nothing at all would make it impossible to CLEAR one later.
           opens_on: form.opens_on || null,
           closes_on: form.closes_on || null,
-          // ⚠ EVERY REQUIREMENT KEY IS SENT (views_admin/intake_years.py: a missing key is refused,
-          // missing_requirement). They are the editor's tree said in the columns (null / [] = off).
-          ...columnsFor(newTree.tree),
+          criteria: newTree.tree,
         }, { token: token! })
       } catch (e) {
         const sent = (e as { body?: { problems?: unknown } })?.body?.problems
@@ -283,23 +289,7 @@ export default function IntakeYearTab() {
         throw e
       }
     })
-    if (!ok) return
-    setOpen(false); setForm(EMPTY_FORM); setDraft(EMPTY_STATE)
-    // The columns cannot say every tree (an 'all' join, a post-SPM merit, a count at another
-    // grade). When the stored tree is not the editor's, the whole tree is PATCHed with the digest.
-    // The year exists now whatever happens next; a criteria save that fails says so plainly
-    // rather than undoing the year.
-    if (made.year) {
-      try {
-        const cur = await getIntakeYearCriteria(made.year.id, { token: token! })
-        if (!sameStoredTree(cur.criteria, newTree.tree)) {
-          await saveIntakeYearCriteria(made.year.id, newTree.tree, cur.digest, { token: token! })
-          await load()
-        }
-      } catch {
-        setRulesNotice(t('admin.criteria.createRulesFailed'))
-      }
-    }
+    if (ok) { setOpen(false); setForm(EMPTY_FORM); setDraft(EMPTY_STATE) }
   }
 
   const startEdit = (y: AdminIntakeYear) => {
@@ -380,7 +370,6 @@ export default function IntakeYearTab() {
       </div>
 
       {error && <div className="mt-4"><InfoBox kind="block">{error}</InfoBox></div>}
-      {rulesNotice && <div className="mt-4" data-testid="create-rules-failed"><InfoBox kind="warning">{rulesNotice}</InfoBox></div>}
 
       {/* An OPEN round whose stored rules cannot be read holds every application: ask for it to be
           closed (criteria Sprint 3 serves `rules_error_open` on the row). */}

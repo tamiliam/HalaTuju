@@ -432,57 +432,42 @@ describe('the date boxes', () => {
   })
 })
 
-// Request #31: the create form carries the "Born in" group too, and a new round created with
-// nothing ticked is created with the rule OFF — an empty list, sent, never a missing key.
-describe('creating a round with criteria (criteria editor Sprint 4)', () => {
+// Criteria fix round 3 (review R2, blocker 1): the create sends the editor's WHOLE tree in the
+// POST, and nothing else about the rules — the server stores the year, the tree and the columns in
+// one write, or nothing. No follow-up GET or PATCH: a create-then-PATCH could leave a year on
+// looser rules than the admin saw. (The request itself, through the real client: IntakeYearCreate.test.tsx.)
+describe('creating a round with criteria (criteria fix round 3)', () => {
   const fill = () => {
     fireEvent.click(screen.getByText('+ admin.years.new'))
     fireEvent.change(document.getElementById('y-year') as HTMLInputElement, { target: { value: '2027' } })
     fireEvent.change(document.getElementById('y-code') as HTMLInputElement, { target: { value: 'bp-2027' } })
     fireEvent.change(document.getElementById('y-name') as HTMLInputElement, { target: { value: 'Intake 2027' } })
   }
-  const stamped = {
-    intake: { id: 11, code: 'bp-2027', name: 'Intake 2027', year: 2027, is_open: false },
-    stored: true, criteria: { all: [] }, rules_error: false, beyond_columns: false, digest: 'd0',
-  }
 
   beforeEach(() => {
     mockApi.createAdminIntakeYear.mockResolvedValue(year({ id: 11, code: 'bp-2027' }))
-    mockApi.getIntakeYearCriteria.mockResolvedValue(stamped)
-    mockApi.saveIntakeYearCriteria.mockResolvedValue({ ...stamped, changed: true })
   })
 
-  // The view's required key list (views_admin/intake_years.py: REQUIREMENT_FIELDS plus the two
-  // list keys). A create missing any one is refused, missing_requirement.
-  const VIEW_REQUIRED = [
-    'min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count', 'min_stpm_pngk', 'min_merit_score',
-    'income_ceiling', 'per_capita_ceiling', 'allowed_birth_states', 'allowed_start_years',
-  ]
   const bodyOf = () => mockApi.createAdminIntakeYear.mock.calls[0][1] as Record<string, unknown>
+  const noFollowUp = () => {
+    expect(mockApi.getIntakeYearCriteria).not.toHaveBeenCalled()
+    expect(mockApi.saveIntakeYearCriteria).not.toHaveBeenCalled()
+    expect(mockApi.updateAdminIntakeYear).not.toHaveBeenCalled()
+  }
 
-  it('sends every requirement key the view requires, from the editor (null or [] when off)', async () => {
-    const born = { all: [{ section: 'born_in', any: ['sabah', 'sarawak'] }] }
-    mockApi.getIntakeYearCriteria.mockResolvedValue({ ...stamped, criteria: born })
+  it('sends the tree and no requirement column', async () => {
     await loaded()
     fill()
     fireEvent.click(screen.getByTestId('new-born-sarawak'))
     fireEvent.click(screen.getByTestId('new-born-sabah'))
     fireEvent.click(screen.getByText('admin.years.createClosed'))
-    await waitFor(() => expect(mockApi.getIntakeYearCriteria).toHaveBeenCalled())
-    expect(Object.keys(bodyOf()).sort())
-      .toEqual(['closes_on', 'code', 'name', 'opens_on', 'year', ...VIEW_REQUIRED].sort())
-    expect(bodyOf()).toMatchObject({
-      allowed_birth_states: ['sabah', 'sarawak'], allowed_start_years: [], min_stpm_pngk: null,
-      min_spm_credit_count: null, income_ceiling: null, per_capita_ceiling: null, min_merit_score: null,
-    })
-    // The columns said the whole tree, so nothing more is sent.
-    expect(mockApi.saveIntakeYearCriteria).not.toHaveBeenCalled()
+    await waitFor(() => expect(mockApi.createAdminIntakeYear).toHaveBeenCalledTimes(1))
+    expect(Object.keys(bodyOf()).sort()).toEqual(['closes_on', 'code', 'criteria', 'name', 'opens_on', 'year'])
+    expect(bodyOf().criteria).toEqual({ all: [{ section: 'born_in', any: ['sabah', 'sarawak'] }] })
+    noFollowUp()
   })
 
-  it('PATCHes the whole tree with its digest when the columns cannot say it', async () => {
-    // An 'all' income join has no column: the create stores 'any', so the editor's tree follows.
-    mockApi.getIntakeYearCriteria.mockResolvedValue({ ...stamped, criteria: { all: [
-      { section: 'income', any: [{ test: 'household_income_max', rm: 5000 }, { test: 'income_per_person_under', rm: 900 }] }] } })
+  it('a tree the columns cannot say goes whole in the one request', async () => {
     await loaded()
     fill()
     fireEvent.click(screen.getByTestId('new-household-switch'))
@@ -491,12 +476,12 @@ describe('creating a round with criteria (criteria editor Sprint 4)', () => {
     fireEvent.change(screen.getByTestId('new-per-person-value'), { target: { value: '900' } })
     fireEvent.click(screen.getByTestId('new-income-join-all'))
     fireEvent.click(screen.getByText('admin.years.createClosed'))
-    await waitFor(() => expect(mockApi.saveIntakeYearCriteria).toHaveBeenCalled())
-    expect(bodyOf()).toMatchObject({ income_ceiling: 5000, per_capita_ceiling: 900 })
-    const [id, tree, digest] = mockApi.saveIntakeYearCriteria.mock.calls[0]
-    expect([id, digest]).toEqual([11, 'd0'])
-    expect(tree).toEqual({ all: [{ section: 'income', all: [
+    await waitFor(() => expect(mockApi.createAdminIntakeYear).toHaveBeenCalledTimes(1))
+    expect(bodyOf().criteria).toEqual({ all: [{ section: 'income', all: [
       { test: 'household_income_max', rm: 5000 }, { test: 'income_per_person_under', rm: 900 }] }] })
+    expect(bodyOf()).not.toHaveProperty('income_ceiling')
+    noFollowUp()
+    await waitFor(() => expect(screen.queryByText('admin.years.createClosed')).toBeNull())
   })
 
   it('refuses an empty tree on screen: Create sleeps and says why', async () => {
@@ -522,16 +507,24 @@ describe('creating a round with criteria (criteria editor Sprint 4)', () => {
     expect(screen.getByTestId('new-server-problems').textContent).not.toContain('the tree checks nothing')
     expect(screen.getByTestId('new-server-problems-technical').textContent).toContain('admin.criteria.technical')
     expect(screen.getByTestId('new-server-problems-technical').textContent).toContain('zzz new rule')
+    // The headline is the criteria editor's own refusal, not "could not be saved".
+    expect(screen.getAllByText('admin.criteria.error.badCriteria').length).toBeGreaterThan(0)
+    noFollowUp()
   })
 
-  it('says so when the year is made but its criteria are not', async () => {
-    mockApi.saveIntakeYearCriteria.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_criteria' }))
+  it.each([
+    ['code_taken', 'admin.years.error.codeTaken'],
+    ['window_backwards', 'admin.years.error.windowBackwards'],
+    ['network_failure', 'admin.criteria.error.network'],
+    ['missing_requirement', 'admin.years.error.generic'],
+  ])('a %s refusal reads as %s, and nothing follows', async (code, key) => {
+    mockApi.createAdminIntakeYear.mockRejectedValue(Object.assign(new Error('x'), { code, status: 400, body: {} }))
     await loaded()
     fill()
     fireEvent.click(screen.getByTestId('new-born-sabah'))
     fireEvent.click(screen.getByText('admin.years.createClosed'))
-    await waitFor(() => expect(screen.getByTestId('create-rules-failed').textContent)
-      .toContain('admin.criteria.createRulesFailed'))
+    await waitFor(() => expect(screen.getAllByText(key).length).toBeGreaterThan(0))
+    noFollowUp()
   })
 
   it('a half-filled test keeps Create asleep and says why', async () => {

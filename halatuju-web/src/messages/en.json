@@ -8685,7 +8685,6 @@
       "cannotShow": "These rules include something this screen cannot show, so they cannot be changed here. Please contact the technical team.",
       "reload": "Reload",
       "closePrompt": "The rules for this open intake cannot be read. Close this intake to stop new applications, then contact the technical team.",
-      "createRulesFailed": "The intake year was created, but its criteria were not saved. Open the Rules tab to set them.",
       "problem": {
         "gradeTwice": "Two grade rules use the same grade. Change one of them, or remove it.",
         "meritNeedsFloor": "A post-SPM merit point needs a minimum PNGK / CGPA in the post-SPM results. Switch that on, or switch the merit point off.",

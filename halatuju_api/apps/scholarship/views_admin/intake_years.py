@@ -175,7 +175,12 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
         p, err = self._programme_or_404(admin, pk)
         if err:
             return err
+        # Criteria fix round 3: the year, its tree, its columns and its audit lines are ONE write.
+        # Every refusal below returns before the save, and a failing save rolls the whole back.
+        with transaction.atomic():
+            return self._create(request, admin, p)
 
+    def _create(self, request, admin, p):
         from ..models import ScholarshipCohort
         code = (request.data.get('code') or '').strip().lower()
         name = (request.data.get('name') or '').strip()
@@ -199,16 +204,36 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
         # without anyone having said so - an empty POST would make an open intake. An explicit null
         # still means "no rule" (that IS a statement); a missing key is refused, naming the keys.
         # The web editor always sends all of them (`criteriaTree.columnsFor`, keys `REQUIREMENT_KEYS`).
-        missing = [f for f in (*REQUIREMENT_FIELDS, BIRTH_STATES_FIELD, START_YEARS_FIELD)
-                   if f not in request.data]
-        if missing:
-            return Response({'error': 'missing_requirement', 'code': 'missing_requirement',
-                             'fields': missing}, status=status.HTTP_400_BAD_REQUEST)
-
-        reqs, bad = _requirements_from(request.data)
-        if bad:
-            return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
-                            status=status.HTTP_400_BAD_REQUEST)
+        #
+        # CRITERIA FIX ROUND 3 (review R2, blocker 1): the body may carry the WHOLE tree instead
+        # (``criteria``, the editor's), checked by the criteria PATCH's own check
+        # (`criteria_tree.tree_refusal`) and stored with the columns that say it
+        # (`criteria_tree.set_tree`). The columns cannot say every tree (an 'all' income join, a
+        # grade count at A+, A, B or C+), so a create from the columns alone could store LOOSER
+        # rules than the admin saw. With a tree, no requirement key may be sent too - two
+        # statements of the rules that might disagree are refused (``criteria_with_requirements``),
+        # never reconciled. Without one, today's behaviour, unchanged.
+        from . import criteria_tree
+        keys = (*REQUIREMENT_FIELDS, BIRTH_STATES_FIELD, START_YEARS_FIELD)
+        tree = request.data.get('criteria') if 'criteria' in request.data else None
+        if 'criteria' in request.data:
+            both = [f for f in keys if f in request.data]
+            if both:
+                return Response({'error': 'criteria_with_requirements', 'code': 'criteria_with_requirements',
+                                 'fields': both}, status=status.HTTP_400_BAD_REQUEST)
+            refused = criteria_tree.tree_refusal(tree)
+            if refused:
+                return refused
+            reqs = {}
+        else:
+            missing = [f for f in keys if f not in request.data]
+            if missing:
+                return Response({'error': 'missing_requirement', 'code': 'missing_requirement',
+                                 'fields': missing}, status=status.HTTP_400_BAD_REQUEST)
+            reqs, bad = _requirements_from(request.data)
+            if bad:
+                return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
+                                status=status.HTTP_400_BAD_REQUEST)
 
         window, bad_window = _window_from(request.data)
         if bad_window:
@@ -232,12 +257,17 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
         # a box left blank is no rule - the model has no silent bars any more), so a year created
         # after `build_criteria_trees --apply` is never left NULL with the old meaning by accident.
         from .. import criteria_new
-        problems = criteria_new.stamp_new(c)
-        if problems:
-            return _tree_refusal(problems)
+        if 'criteria' in request.data:
+            criteria_tree.set_tree(c, tree)
+        else:
+            problems = criteria_new.stamp_new(c)
+            if problems:
+                return _tree_refusal(problems)
         c.save(force_insert=True)
         logger.info('AUDIT intake_year_created cohort=%s programme=%s by=%s',
                     c.code, p.code, admin.email or '')
+        if 'criteria' in request.data:
+            criteria_tree.audit_tree_set(c, None, tree, admin)
         return Response(_cohort_row(c), status=status.HTTP_201_CREATED)
 
 

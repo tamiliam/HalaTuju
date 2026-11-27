@@ -55,6 +55,35 @@ def _compact(tree):
     return json.dumps(tree, sort_keys=True, separators=(',', ':'))
 
 
+def tree_refusal(tree):
+    """400 ``bad_criteria`` (with ``problems``) for a tree `criteria_write.write_problems` refuses,
+    else None. THE one check on an admin's tree, run by both routes that store one: this PATCH and
+    the intake-year create (`intake_years.AdminIntakeYearListView`, criteria fix round 3)."""
+    problems = criteria_write.write_problems(tree)
+    return _err('bad_criteria', problems=problems) if problems else None
+
+
+def set_tree(c, tree):
+    """Put ``tree`` and the columns that say it (`criteria_write.columns_for`) on ``c``; never
+    saves. Returns the fields that changed (columns in `COLUMNS` order, then ``criteria``)."""
+    columns = criteria_write.columns_for(tree)
+    moved = [f for f in COLUMNS if getattr(c, f) != columns[f]]
+    changed = moved + (['criteria'] if c.criteria != tree else [])
+    if 'criteria' in changed:   # an equal tree is left as stored (its digest stays the same)
+        c.criteria = tree
+    for f in moved:
+        setattr(c, f, columns[f])
+    return changed
+
+
+def audit_tree_set(c, old, tree, admin):
+    """FROM WHAT, TO WHAT (TD-203's lesson, as `intake_year_requirements_set`): the whole old and
+    new tree, compact JSON with sorted keys, so two lines compare by eye. ``old`` is None (``null``)
+    for a year created with its tree."""
+    logger.info('AUDIT intake_year_criteria_set cohort=%s old=%s new=%s by=%s',
+                c.code, _compact(old), _compact(tree), admin.email or '')
+
+
 def criteria_payload(c):
     """The GET / PATCH answer for one intake (field list in the module docstring of the tests and
     in CHANGELOG). ``criteria`` is the tree the gate reads: the stored one, else (``stored`` false)
@@ -129,10 +158,7 @@ class _CriteriaBase(_ProgrammeScopedBase):
             return _err('digest_required')
         # A bad tree is a 400 whatever the intake's state - never saved (`write_problems`).
         tree = data['criteria']
-        problems = criteria_write.write_problems(tree)
-        if problems:
-            return _err('bad_criteria', problems=problems)
-        err = self._check_target(request, c)
+        err = tree_refusal(tree) or self._check_target(request, c)
         if err:
             return err
         if data['digest'] != criteria_write.digest(c.criteria):
@@ -145,20 +171,12 @@ class _CriteriaBase(_ProgrammeScopedBase):
             return _err('criteria_not_built', status.HTTP_409_CONFLICT)
 
         old = c.criteria
-        columns = criteria_write.columns_for(tree)
-        moved = [f for f in COLUMNS if getattr(c, f) != columns[f]]
-        changed = moved + (['criteria'] if old != tree else [])
+        changed = set_tree(c, tree)
         if changed:
-            c.criteria = tree
-            for f in moved:
-                setattr(c, f, columns[f])
             c.save(update_fields=changed)
             logger.info('AUDIT intake_year_updated cohort=%s fields=%s by=%s',
                         c.code, ','.join(changed), admin.email or '')
-            # FROM WHAT, TO WHAT (TD-203's lesson, as `intake_year_requirements_set`): the whole
-            # old and new tree, compact JSON with sorted keys, so two lines compare by eye.
-            logger.info('AUDIT intake_year_criteria_set cohort=%s old=%s new=%s by=%s',
-                        c.code, _compact(old), _compact(tree), admin.email or '')
+            audit_tree_set(c, old, tree, admin)
         return Response({**criteria_payload(c), 'changed': bool(changed)})
 
 

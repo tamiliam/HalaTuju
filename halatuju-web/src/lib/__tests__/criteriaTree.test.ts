@@ -1,7 +1,7 @@
 // The criteria tree <-> editor boxes (criteria editor Sprint 4).
 import {
-  canShow, columnsFor, errorKey, nextGrade, sameStoredTree, sameTree, serverProblemKey, stateToTree,
-  treeToState, EMPTY_STATE, GRADES, REQUIREMENT_KEYS, type CriteriaTree,
+  canShow, errorKey, nextGrade, sameTree, serverProblemKey, stateToTree,
+  treeToState, EMPTY_STATE, GRADES, type CriteriaTree,
 } from '../criteriaTree'
 import { LIVE_TREES, PENINSULA, TREE_3, TREE_5 } from '@/test/criteriaShapes'
 
@@ -162,30 +162,5 @@ describe('the server refusal reasons, in the admin language', () => {
   })
   it('an unknown string has no key (shown under technical detail)', () => {
     expect(serverProblemKey('results: something brand new')).toBeNull()
-  })
-})
-
-describe('the create body: the tree said in the requirement columns', () => {
-  it('an empty tree sends every key, as no rule', () => {
-    const c = columnsFor({ all: [] })
-    expect(Object.keys(c).sort()).toEqual([...REQUIREMENT_KEYS].sort())
-    expect(c.allowed_birth_states).toEqual([])
-    expect(c.allowed_start_years).toEqual([])
-    expect(c.min_stpm_pngk).toBeNull()
-  })
-  it('intake 3 and intake 5 read as their columns', () => {
-    expect(columnsFor(TREE_3)).toMatchObject({
-      min_spm_a_count: 0, min_spm_bplus_count: 0, min_spm_credit_count: 3, min_stpm_pngk: 2,
-      min_merit_score: 0, allowed_birth_states: ['sabah', 'wp_labuan'],
-    })
-    expect(columnsFor(TREE_5)).toMatchObject({
-      min_stpm_pngk: 3, income_ceiling: 5860, per_capita_ceiling: 900, allowed_start_years: [2025, 2026],
-    })
-  })
-  it('order alone does not make two stored trees differ', () => {
-    const shuffled: CriteriaTree = { all: [TREE_3.all[2], TREE_3.all[0], TREE_3.all[1], TREE_3.all[3]] }
-    expect(sameStoredTree(shuffled, TREE_3)).toBe(true)
-    expect(sameStoredTree(null, TREE_3)).toBe(false)
-    expect(sameStoredTree(TREE_5, TREE_3)).toBe(false)
   })
 })
