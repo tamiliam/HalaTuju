@@ -12,7 +12,7 @@ from django.test import SimpleTestCase
 from apps.scholarship.doc_red_keys import person_red
 from apps.scholarship.income_engine import identity_checks
 from apps.scholarship.income_engine.declaration_name import (
-    CLOSE, NAME_CLOSE_VERDICT, near_miss, payslip_only_warning, shown_warnings, soften)
+    CLOSE, for_decisions, near_miss, payslip_only_warning, shown_warnings, soften)
 
 IC_NAME = 'MURUGAPPAN A/L KANDASAMY'
 MISREAD_1 = 'MURUGAPAN A/L KANDASAMY'      # one letter dropped in a long part
@@ -156,52 +156,34 @@ class PayslipOnlyWarningTests(SimpleTestCase):
         self.assertIs(data['vision_fields'], doc.vision_fields)
 
 
-class StoredVerdictTests(SimpleTestCase):
-    """Task 3: the stored student verdict says 'name_close', not 'name_mismatch', on the same rule."""
+class StoredVerdictUnchangedTests(SimpleTestCase):
+    """Review round 1: the STORED student verdict is not softened. A declaration near miss still stores
+    'name_mismatch', exactly as a typed payslip does, so no consumer of the stored verdict can read it
+    as clean (and the verdict cannot depend on the order of the read's steps)."""
 
     NAMES = ['ANITHA A/P MURUGAPPAN', IC_NAME]          # the student, then a guardian
 
-    def _verdict(self, name, seen, doc_type='salary_slip'):
+    def _verdict(self, name, doc_type='salary_slip'):
         from apps.scholarship.vision.judge import doc_student_verdict
-        return doc_student_verdict(doc_type, {'name': name, 'gross_income': '1200'},
-                                   names=self.NAMES, doc_seen=seen)
+        return doc_student_verdict(doc_type, {'name': name, 'gross_income': '1200'}, names=self.NAMES)
 
-    def test_declaration_near_miss_stores_name_close(self):
-        self.assertEqual(self._verdict(MISREAD_2, 'declaration'), NAME_CLOSE_VERDICT)
-        self.assertEqual(self._verdict('MURUGAPPAN ALE KANDASANI', 'declaration'), NAME_CLOSE_VERDICT)
+    def test_a_near_miss_stores_name_mismatch(self):
+        self.assertEqual(self._verdict(MISREAD_2), 'name_mismatch')
+        self.assertEqual(self._verdict('MURUGAPPAN ALE KANDASANI'), 'name_mismatch')
 
-    def test_typed_payslip_or_unknown_kind_stays_name_mismatch(self):
-        self.assertEqual(self._verdict(MISREAD_2, 'private'), 'name_mismatch')
-        self.assertEqual(self._verdict(MISREAD_2, ''), 'name_mismatch')
+    def test_the_judge_takes_no_doc_seen(self):
+        import inspect
+        from apps.scholarship.vision.judge import doc_student_verdict
+        self.assertNotIn('doc_seen', inspect.signature(doc_student_verdict).parameters)
 
-    def test_a_stranger_or_another_doc_type_stays_name_mismatch(self):
-        self.assertEqual(self._verdict(STRANGER, 'declaration'), 'name_mismatch')
-        self.assertEqual(self._verdict(MISREAD_2, 'declaration', doc_type='epf'), 'name_mismatch')
+    def test_the_read_has_no_second_judging_step(self):
+        from apps.scholarship.vision import field_extraction
+        self.assertFalse(hasattr(field_extraction, '_soften_declaration_name'))
 
-    def test_a_matching_name_is_still_ok(self):
-        self.assertEqual(self._verdict(IC_NAME, 'declaration'), 'ok')
-
-    def test_the_read_judges_again_once_it_knows_the_form_is_a_declaration(self):
-        from apps.scholarship.vision.field_extraction import _soften_declaration_name
-        doc = SimpleNamespace(doc_type='salary_slip')
-        result = {'fields': {'name': MISREAD_2, 'gross_income': '1200'}, 'student_verdict': 'name_mismatch',
-                  'authenticity': {'doc_seen': 'declaration'}}
-        _soften_declaration_name(doc, result, names=self.NAMES)
-        self.assertEqual(result['student_verdict'], NAME_CLOSE_VERDICT)
-        typed = {**result, 'student_verdict': 'name_mismatch', 'authenticity': {'doc_seen': 'private'}}
-        _soften_declaration_name(doc, typed, names=self.NAMES)
-        self.assertEqual(typed['student_verdict'], 'name_mismatch')
-        no_auth = {'fields': result['fields'], 'student_verdict': 'name_mismatch'}
-        _soften_declaration_name(doc, no_auth, names=self.NAMES)
-        self.assertEqual(no_auth['student_verdict'], 'name_mismatch')
-
-    def test_name_close_is_quiet_in_the_help_coach_and_never_ok(self):
-        from apps.scholarship.help_engine import VERDICT_GUIDANCE
-        from apps.scholarship.help_verdict import _help_other_document
-        self.assertNotIn(NAME_CLOSE_VERDICT, VERDICT_GUIDANCE)
-        doc = SimpleNamespace(vision_fields={'student_verdict': NAME_CLOSE_VERDICT},
-                              vision_name_match='', vision_address_match='')
-        self.assertEqual(_help_other_document(doc), '')
+    def test_no_stored_close_word_exists(self):
+        from apps.scholarship.income_engine import declaration_name
+        self.assertFalse(hasattr(declaration_name, 'NAME_CLOSE_VERDICT'))
+        self.assertFalse(hasattr(declaration_name, 'stored_verdict_close'))
 
 
 class SoftenScopeTests(SimpleTestCase):
@@ -220,42 +202,148 @@ class SoftenScopeTests(SimpleTestCase):
         self.assertEqual(soften(_doc(), 'mismatch', STRANGER, IC_NAME), 'mismatch')
 
     def test_other_statuses_pass_through(self):
-        for st in ('match', 'no_ref', 'unreadable'):
+        for st in ('match', 'no_ref', 'unreadable', 'not_read'):
             self.assertEqual(soften(_doc(), st, MISREAD_2, IC_NAME), st)
 
+    def test_for_decisions_maps_close_to_mismatch_only(self):
+        self.assertEqual(for_decisions(CLOSE), 'mismatch')
+        for st in ('match', 'mismatch', 'no_ref', 'unreadable', 'not_read', ''):
+            self.assertEqual(for_decisions(st), st)
 
-class IncomeProofCheckTests(SimpleTestCase):
-    """The real check, with its database lookups replaced by a made-up father's IC."""
 
-    def _check(self, doc):
-        ic = SimpleNamespace(vision_name=IC_NAME, vision_nric='')
-        with mock.patch.object(identity_checks, '_proof_member', return_value='father'), \
-                mock.patch.object(identity_checks, '_member_ic_doc', return_value=ic), \
-                mock.patch.object(identity_checks, 'ic_second_opinion_deferred', return_value=False), \
-                mock.patch.object(identity_checks, 'chain_verified_earner', return_value=False), \
-                mock.patch('apps.scholarship.income_declaration.approval_missing', return_value=()):
-            return identity_checks.student_income_proof_check(doc)
+# ── Review round 1, blockers 1 and 2: 'close' behaves EXACTLY like 'mismatch' for every decision ──
 
-    def test_case_1048_shape_reads_close_and_is_not_red(self):
-        chk = self._check(_doc())
-        self.assertEqual(chk['name_status'], CLOSE)
-        self.assertFalse(person_red('salary_slip', chk))
+TYPED = 'private'        # a printed payslip with the same misread: the 'mismatch' twin
 
-    def test_typed_payslip_one_edit_still_reads_mismatch_and_red(self):
-        # 'KANDASAMI' vs 'KANDASAMY' passes the tolerant matcher (9 letters, 1 edit); a short part
-        # one letter off does not — and on a typed payslip it stays red.
-        doc = _doc(seen='private', name='MURUGAPPAN A/L KANDASAMY RAJU')
-        ic = SimpleNamespace(vision_name='MURUGAPPAN A/L KANDASAMY RAJA', vision_nric='')
-        with mock.patch.object(identity_checks, '_proof_member', return_value='father'), \
-                mock.patch.object(identity_checks, '_member_ic_doc', return_value=ic), \
-                mock.patch.object(identity_checks, 'ic_second_opinion_deferred', return_value=False), \
-                mock.patch.object(identity_checks, 'chain_verified_earner', return_value=False), \
-                mock.patch('apps.scholarship.income_declaration.approval_missing', return_value=()):
+
+def _ic():
+    return SimpleNamespace(vision_name=IC_NAME, vision_nric='', vision_run_at=None)
+
+
+def _proof_patches(ic):
+    return [mock.patch.object(identity_checks, '_proof_member', return_value='father'),
+            mock.patch.object(identity_checks, '_member_ic_doc', return_value=ic),
+            mock.patch.object(identity_checks, 'ic_second_opinion_deferred', return_value=False),
+            mock.patch.object(identity_checks, 'chain_verified_earner', return_value=False),
+            mock.patch('apps.scholarship.income_declaration.approval_missing', return_value=())]
+
+
+class _Patched:
+    """Runs the real decision code with its database lookups replaced by a made-up father's IC."""
+
+    def __init__(self, extra=()):
+        self.patches = _proof_patches(_ic()) + list(extra)
+
+    def __enter__(self):
+        for p in self.patches:
+            p.start()
+        return self
+
+    def __exit__(self, *exc):
+        for p in reversed(self.patches):
+            p.stop()
+
+
+class DecisionEquivalenceTests(SimpleTestCase):
+    """A declaration whose name SHOWS 'close' gets every decision a 'mismatch' gets: the same check,
+    person-red, Action Centre state, cluster gate (so the income gate, the verdict band and the route
+    switch, which all read it), coach and consent blocker. Only display_name_status differs."""
+
+    def _both(self, fn):
+        out = []
+        for seen in ('declaration', TYPED):
+            out.append(fn(_doc(seen=seen)))
+        return out
+
+    def test_the_decision_check_says_mismatch_for_both(self):
+        with _Patched():
+            decl, typed = self._both(identity_checks.student_income_proof_check)
+        self.assertEqual(decl['name_status'], 'mismatch')
+        self.assertEqual(decl, typed)
+        self.assertNotIn(CLOSE, decl.values())
+
+    def test_person_red_is_the_same(self):
+        with _Patched():
+            decl, typed = self._both(lambda d: person_red('salary_slip',
+                                                          identity_checks.student_income_proof_check(d)))
+        self.assertTrue(decl)
+        self.assertEqual(decl, typed)
+
+    def test_the_action_centre_holds_it_as_a_mismatch(self):
+        # resolution.doc_match_verdict -> _income_proof: never 'ok' (None), so the request is not
+        # closed (resolution.py), the file is not "usable" (promotion.py), and upload_read sends
+        # match_verdict 'mismatch'.
+        from apps.scholarship.resolution_doc_match import _income_proof
+        with _Patched():
+            decl, typed = self._both(lambda d: _income_proof(d, 'salary_slip'))
+        self.assertEqual(decl, 'mismatch')
+        self.assertEqual(decl, typed)
+
+    def test_the_cluster_gate_refuses_both(self):
+        # member_cluster_complete feeds salary_income_satisfied -> the verdict band (verdict_engine),
+        # the route switch (assignment) and the submit gate. 'close' must not clear it.
+        from apps.scholarship.income_engine import evidence
+        out = []
+        for seen in ('declaration', TYPED):
+            doc = _doc(seen=seen)
+            extra = [mock.patch.object(evidence, '_member_ic_doc', return_value=_ic()),
+                     mock.patch.object(evidence, 'student_income_ic_check',
+                                       return_value={'readable': True, 'name_status': 'match'}),
+                     mock.patch.object(evidence, 'member_income_evidenced', return_value=True),
+                     mock.patch.object(evidence, '_cluster_docs', return_value=[doc]),
+                     mock.patch.object(evidence, 'relationship_doc_for', return_value=None)]
+            with _Patched(extra):
+                out.append(evidence.member_cluster_complete(object(), 'father'))
+        self.assertEqual(out, [False, False])
+
+    def test_the_coach_is_the_person_mismatch_coach_for_both(self):
+        from apps.scholarship.income_engine import advice
+        out = []
+        for seen in ('declaration', TYPED):
+            doc = _doc(seen=seen)
+            extra = [mock.patch.object(advice, '_cluster_docs',
+                                       side_effect=lambda a, m, dt, d=doc: [d] if dt == 'salary_slip' else []),
+                     mock.patch.object(advice, '_member_ic_doc', return_value=_ic()),
+                     mock.patch.object(advice, 'student_income_ic_check',
+                                       return_value={'readable': True, 'name_status': 'match'})]
+            with _Patched(extra):
+                out.append(advice.income_cluster_advice(SimpleNamespace(income_route='salary'), 'father'))
+        self.assertEqual(out, ['income_proof_person_mismatch'] * 2)
+
+    def test_only_the_shown_status_says_close(self):
+        from apps.scholarship import link_display
+        shown = []
+        for seen in ('declaration', TYPED):
+            doc = _doc(seen=seen)
+            extra = [mock.patch.object(link_display, '_member_ic_doc', return_value=_ic()),
+                     mock.patch.object(link_display, 'ic_second_opinion_deferred', return_value=False),
+                     mock.patch.object(link_display, '_anchor', return_value=None)]
+            with _Patched(extra):
+                chk = identity_checks.student_income_proof_check(doc)
+                shown.append({**chk, **link_display.income_proof_display(doc, chk)})
+        decl, typed = shown
+        self.assertEqual((decl['name_status'], decl['display_name_status']), ('mismatch', CLOSE))
+        self.assertEqual((typed['name_status'], typed['display_name_status']), ('mismatch', 'mismatch'))
+
+    def test_a_deferred_card_shows_no_ref_not_close(self):
+        # TD-390 turns a 'mismatch' into 'no_ref' when the card is half-read; 'close' must follow the
+        # same rule, so the softening runs only on what is STILL a mismatch at the end.
+        from apps.scholarship import link_display
+        doc = _doc()
+        extra = [mock.patch.object(link_display, '_member_ic_doc', return_value=_ic()),
+                 mock.patch.object(link_display, 'ic_second_opinion_deferred', return_value=True),
+                 mock.patch.object(link_display, '_anchor', return_value=None)]
+        with _Patched(extra):
             chk = identity_checks.student_income_proof_check(doc)
-        self.assertEqual(chk['name_status'], 'mismatch')
-        self.assertTrue(person_red('salary_slip', chk))
+            shown = link_display.income_proof_display(doc, chk)
+        self.assertNotEqual(shown['display_name_status'], CLOSE)
 
-    def test_close_is_never_a_match_for_the_consumers(self):
-        chk = self._check(_doc())
-        self.assertNotIn('match', (chk['name_status'], chk['nric_status']))
-        self.assertNotIn('mismatch', (chk['name_status'], chk['nric_status']))
+    def test_no_decision_module_calls_soften(self):
+        # soften lives in income_engine (the verdict fingerprint covers it) but only the display
+        # module may call it.
+        import pathlib
+        root = pathlib.Path(__file__).resolve().parents[1]
+        callers = sorted(p.relative_to(root).as_posix() for p in root.rglob('*.py')
+                         if 'tests' not in p.parts and p.name != 'declaration_name.py'
+                         and 'declaration_name import soften' in p.read_text(encoding='utf-8'))
+        self.assertEqual(callers, ['link_display.py'])

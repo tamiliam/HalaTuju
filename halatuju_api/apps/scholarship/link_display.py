@@ -141,14 +141,18 @@ def income_proof_display(doc, chk):
     ic_name, ic_nric, deferred = _card(ic)
     if _off_chain(ic_nric, anchor):
         ic, ic_name, ic_nric, deferred = None, '', '', False
-    from .income_engine.declaration_name import soften
-    name_st = soften(doc, _name_bucket(name, ic_name), name, ic_name)   # case 1048: 'close'
+    name_st = _name_bucket(name, ic_name)
     nric_st = 'no_ref' if not (nric and ic_nric) else ('match' if nric_match(nric, ic_nric) else 'mismatch')
     if deferred:                                   # TD-390: half a read proves no mismatch
         name_st, nric_st = ('no_ref' if s == 'mismatch' else s for s in (name_st, nric_st))
     name_st, nric_st = _with_chain(name, nric, name_st, nric_st, anchor)
     unread = (ic is not None and (deferred or not ic_name), ic is not None and (deferred or not ic_nric))
     name_st, nric_st = _not_read(chk.get('name'), nric, name_st, nric_st, unread)
+    # Case 1048: the SHOWN word only. A near miss on a handwritten declaration that is still a
+    # 'mismatch' after every rule above shows 'close' (amber: a person must look). The decision
+    # field `chk['name_status']` stays 'mismatch', so every gate still treats it as one.
+    from .income_engine.declaration_name import soften
+    name_st = soften(doc, name_st, name, ic_name)
     return {'display_name_status': name_st, 'display_nric_status': nric_st}
 
 

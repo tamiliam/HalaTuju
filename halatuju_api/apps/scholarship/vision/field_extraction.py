@@ -394,19 +394,4 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
     result = _build_read_result(doc, ex, names=names, postcode=postcode, city=city, street=street,
                                 check_address=check_address)
     add_read_authenticity(doc, result, ocr=ocr, image=image, image_fn=_image)
-    _soften_declaration_name(doc, result, names=names, postcode=postcode, city=city, street=street,
-                             check_address=check_address)
     return _store_field_read(doc, result)
-
-
-def _soften_declaration_name(doc, result, **judge_kwargs):
-    """Case 1048: the verdict was judged before the genuineness read said what the document IS. Once it
-    says a salary-slip-slot upload is a handwritten 'declaration', a near-miss 'name_mismatch' is judged
-    again with that knowledge (`doc_student_verdict(doc_seen=...)`), and may become 'name_close'."""
-    if result.get('student_verdict') != 'name_mismatch' or doc.doc_type != 'salary_slip':
-        return
-    from ..genuineness.bands import stored_authenticity
-    seen = stored_authenticity(result).get('doc_seen') or ''
-    if seen:
-        result['student_verdict'] = doc_student_verdict(doc.doc_type, result.get('fields') or {},
-                                                        doc_seen=seen, **judge_kwargs)

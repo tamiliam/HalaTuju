@@ -63,14 +63,9 @@ def _bank_verdict(fields, student_name) -> str:
     return 'ok'
 
 
-def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street='', check_address=False,
-                        doc_seen='') -> str:
+def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street='', check_address=False) -> str:
     """Deterministic verdict from the Gemini-extracted fields (never hallucinated):
-    'ok' | 'name_mismatch' | 'name_close' | 'address_mismatch' | 'incomplete' | 'wrong_doc'.
-
-    ``doc_seen`` is the read's ``authenticity.doc_seen``. Case 1048: a salary-slip-slot read seen as a
-    handwritten 'declaration' whose name is only a near miss stores 'name_close', not 'name_mismatch'
-    (`income_engine.declaration_name`); every other document keeps the strict name check."""
+    'ok' | 'name_mismatch' | 'address_mismatch' | 'incomplete' | 'wrong_doc'."""
     if doc_type == 'bank_statement':
         # The holder must be the STUDENT only — names[0] is the applicant (guardians follow).
         return _bank_verdict(fields, names[0] if names else '')
@@ -102,9 +97,6 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street
         if extracted_name:
             matched = any(name_match(extracted_name, n) in ('match', 'partial') for n in names if n)
             if not matched:
-                from ..income_engine.declaration_name import NAME_CLOSE_VERDICT, stored_verdict_close
-                if stored_verdict_close(doc_type, doc_seen, extracted_name, names):
-                    return NAME_CLOSE_VERDICT
                 return 'name_mismatch'
     if check_address:
         addr = (fields.get('address') or '').strip()

@@ -8,9 +8,13 @@ things went wrong on it, and this module holds the fix for both.
 tolerant matcher (`vision._tokens_close`: five letters or more, one edit) and the Name chip went red
 as if the form named a stranger. The owner ruled:
 
-* a near miss on a declaration gets its own word, ``CLOSE``. Its LOGIC is the same as 'unreadable' — a
-  person must look — and never 'mismatch' (no red, no "wrong person" coach) and never 'match' (it does
-  not link the earner, credit the evidence or clear a gate);
+* a near miss on a declaration SHOWS its own word, ``CLOSE`` (amber: a person must look);
+* review round 1 (owner rule): 'close' must NEVER count as clean or ok anywhere. So it is a DISPLAY word
+  only. ``soften`` is called by `link_display.income_proof_display` alone, on ``display_name_status``.
+  The decision field ``student_income_proof_check()['name_status']`` stays 'mismatch', so every gate,
+  resolution, promotion, income-satisfaction, verdict band, route switch, coach and blocker treats the
+  form exactly as before (``for_decisions`` is the mapping for any future caller that holds a shown
+  word). The stored student verdict is not changed either: it stays 'name_mismatch';
 * the matcher is NOT loosened anywhere else. A typed or printed payslip one letter off still says
   'mismatch'. The change is scoped to a salary-slip-slot document the read saw as a declaration
   (``income_declaration.is_declaration``: ``doc_seen == 'declaration'``), which is our only proxy for
@@ -41,14 +45,14 @@ It sits in ``income_engine/`` so the verdict-engine fingerprint covers it: BUMP
 """
 from __future__ import annotations
 
-#: The status word. Consumers compare name_status with 'match' / 'mismatch' only, so this word falls
-#: through exactly like 'no_ref' / 'unreadable' everywhere (see the consumer tests).
+#: The SHOWN status word (``display_name_status`` only). Never a decision value.
 CLOSE = 'close'
 
-#: The STORED student verdict (`vision.doc_student_verdict`) for the same near miss. Consumers of the
-#: stored verdict compare with 'ok' (read and clean) or 'name_mismatch' (the wrong-person coach), so this
-#: word is neither: it never credits a document and never coaches "this is not you".
-NAME_CLOSE_VERDICT = 'name_close'
+
+def for_decisions(status: str) -> str:
+    """The decision value of a name status: 'close' is 'mismatch' for every gate and decision (owner
+    rule, review round 1). Every other status is returned unchanged."""
+    return 'mismatch' if status == CLOSE else status
 
 MIN_PART_LETTERS = 4
 MAX_EDITS = 2
@@ -126,23 +130,15 @@ def near_miss(extracted, reference) -> bool:
 
 
 def soften(doc, status: str, extracted: str, reference: str) -> str:
-    """``CLOSE`` in place of 'mismatch' for a near-miss name on a declaration in the salary-slip slot;
-    every other status, document type or name is returned unchanged."""
+    """The SHOWN name status: ``CLOSE`` in place of 'mismatch' for a near-miss name on a declaration in
+    the salary-slip slot; every other status, document type or name is returned unchanged. DISPLAY
+    ONLY (`link_display.income_proof_display`): never call it on a decision field."""
     if status != 'mismatch' or getattr(doc, 'doc_type', '') != 'salary_slip':
         return status
     if not near_miss(extracted, reference):
         return status
     from ..income_declaration import is_declaration
     return CLOSE if is_declaration(doc) else status
-
-
-def stored_verdict_close(doc_type: str, doc_seen: str, extracted: str, names) -> bool:
-    """For `vision.doc_student_verdict`: a salary-slip-slot read seen as a declaration whose name is a
-    near miss of one of the reference names. The caller then stores ``NAME_CLOSE_VERDICT``."""
-    from ..income_declaration import DECLARATION
-    if doc_type != 'salary_slip' or (doc_seen or '').strip().lower() != DECLARATION:
-        return False
-    return any(near_miss(extracted, n) for n in names if n)
 
 
 # ── 2. The payslip-only warnings ─────────────────────────────────────────────────────────────────
