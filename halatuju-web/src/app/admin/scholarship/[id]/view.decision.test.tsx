@@ -296,6 +296,19 @@ describe('every interview question needs an answer before the reviewer decides',
     expect(screen.queryByText('admin.scholarship.recordVerdict.finaliseOk')).toBeNull()
   })
 
+  it('#81: an Approve the completeness gate holds back names the missing step, not the general line',
+     async () => {
+    const { api, app, press } = await pressSaveAndFinalise()
+    api.recordVerdict.mockResolvedValue({ ...app,
+      completeness: { ...app.completeness, quiz_done: false, complete: false },
+      finalise_result: { ok: true } } as never)
+    press()
+    expect((await screen.findAllByText('admin.scholarship.decision.notSubmittedMissing')).length)
+      .toBeGreaterThan(0)
+    expect(screen.queryByText('admin.scholarship.decision.notSubmittedIncomplete')).toBeNull()
+    expect(api.verifyAcceptApplication).not.toHaveBeenCalled()
+  })
+
   it('#75 re-check 4: a verdict message never follows the officer to the next case', async () => {
     const { api, app, press, rerender } = await pressSaveAndFinalise()
     api.recordVerdict.mockResolvedValue({ ...app, completeness: { complete: true },

@@ -15,9 +15,12 @@ import { interviewRefusalText } from '@/lib/interviewCompleteness'
 import { qcRefusalText } from './QcPanel'
 import type { CockpitCtx } from './cockpitCtx'
 import { reasonsToSend } from '@/lib/failReasons'
+import { useT } from '@/lib/i18n'
+import { notSubmittedIncompleteText } from './missingSteps'
 
 export function useVerdict(ctx: CockpitCtx, genLang: string) {
   const { id, token, t, app, setApp, setProfile, setBusy, setError } = ctx
+  const { contentLocale } = useT()   // #81: the missing steps are joined the way the words' language does it
   // Sprint 5 — Officer cockpit
   const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
   const [verdictReason, setVerdictReason] = useState('')
@@ -139,7 +142,8 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
       if (outcome === 'accepted') {
         setVerdictMsg(t('admin.scholarship.decision.savedAndAccepted')); setVerdictMsgTone('ok')
       } else if (outcome === 'not_submitted_incomplete') {
-        setVerdictMsg(t('admin.scholarship.decision.notSubmittedIncomplete')); setVerdictMsgTone('warn')
+        // #81: name the step(s) the server's completeness gate still marks not done.
+        setVerdictMsg(notSubmittedIncompleteText(t, result.completeness, contentLocale)); setVerdictMsgTone('warn')
       } else if (outcome === 'not_submitted_status') {
         setVerdictMsg(t('admin.scholarship.decision.notSubmittedStatus')); setVerdictMsgTone('warn')
       } else if (finalise) {

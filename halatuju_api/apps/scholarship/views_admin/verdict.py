@@ -258,15 +258,17 @@ class AdminSubmitDeclineView(_AdminBase):
 
 def _email_reviewer(app, kind, comments):
     """Send the assigned reviewer the QC's comments: ``kind`` 'returned' (for revision) or
-    'rejected' (by QC). Called only after the decision's transaction has committed."""
+    'rejected' (by QC). Called only after the decision's transaction has committed. A returned
+    case carries its own link (#86); a rejected one is closed, so it keeps the dashboard link."""
     from .. import emails
     send = getattr(emails, f'send_qc_{kind}_email')   # read at call time, so a test can patch it
     reviewer = app.assigned_to
     if reviewer is not None and getattr(reviewer, 'email', ''):
+        extra = {'case_id': app.id} if kind == 'returned' else {}
         send(to_email=reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
              ref=pool.pool_ref(app.id),
              applicant_name=getattr(getattr(app, 'profile', None), 'name', '') or '',
-             qc_comments=comments)
+             qc_comments=comments, **extra)
 
 
 def _accept_refusal(request, app):

@@ -5132,6 +5132,17 @@
         "title": "Recommendation",
         "savedAndAccepted": "Assessment saved — applicant accepted.",
         "notSubmittedIncomplete": "Assessment saved, but NOT sent to QC — this applicant still has required steps outstanding.",
+        "notSubmittedMissing": "Assessment saved, but NOT sent to QC — still missing: {steps}.",
+        "missingStep": {
+          "quiz": "the interest quiz",
+          "details": "the student's story",
+          "funding": "the funding needs",
+          "documents": "the required documents",
+          "consent": "the consent form",
+          "address": "the home address",
+          "guardianDocs": "the guardian's documents",
+          "family": "the family details"
+        },
         "notSubmittedStatus": "Assessment saved, but NOT sent to QC — this case is past the stage where it can be submitted.",
         "declineSentToQc": "Decline recorded — sent to QC for confirmation."
       },

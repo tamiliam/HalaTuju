@@ -5132,6 +5132,17 @@
         "title": "Cadangan",
         "savedAndAccepted": "Penilaian disimpan — pemohon diterima.",
         "notSubmittedIncomplete": "Penilaian disimpan, tetapi TIDAK dihantar ke QC — pemohon ini masih mempunyai langkah wajib yang belum selesai.",
+        "notSubmittedMissing": "Penilaian disimpan, tetapi TIDAK dihantar ke QC — masih belum lengkap: {steps}.",
+        "missingStep": {
+          "quiz": "kuiz minat",
+          "details": "kisah pelajar",
+          "funding": "keperluan pembiayaan",
+          "documents": "dokumen yang diperlukan",
+          "consent": "borang persetujuan",
+          "address": "alamat rumah",
+          "guardianDocs": "dokumen penjaga",
+          "family": "butiran keluarga"
+        },
         "notSubmittedStatus": "Penilaian disimpan, tetapi TIDAK dihantar ke QC — kes ini sudah melepasi peringkat yang boleh dihantar.",
         "declineSentToQc": "Penolakan direkodkan — dihantar ke QC untuk pengesahan."
       },

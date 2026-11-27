@@ -22,6 +22,15 @@ def _reviewer_dashboard_cta():
     return f'Open in your reviewer dashboard:\n{frontend}/admin/login'
 
 
+def _reviewer_case_cta(case_id):
+    """#86 (27 Nov 2026): the CTA pointed at ONE case. It rides in the shared `dashboard_link`
+    value, so a stored template (which holds `{dashboard_link}`) carries the case link with no
+    data change. No id -> the shared dashboard CTA, unchanged."""
+    if not case_id:
+        return _reviewer_dashboard_cta()
+    return f'Open the case in your reviewer dashboard:\n{_P.frontend_url}/admin/scholarship/{case_id}'
+
+
 def _reviewer_subject(base, ref):
     """Append the Scholar-code (ref) so reviewers can triage from the subject line."""
     return f'{base} — {ref}' if ref else base
@@ -335,13 +344,16 @@ def send_partner_welcome_email(to_email, name, role, temp_password=None, google=
         return False
 
 
-def send_qc_returned_email(to_email, reviewer_name, *, ref='', applicant_name='', qc_comments=''):
+def send_qc_returned_email(to_email, reviewer_name, *, ref='', applicant_name='', qc_comments='',
+                           case_id=None):
     """QC (2026-07): notify a reviewer that quality control has RETURNED their case for revision,
     carrying the QC's comments (what was missing / the gaps). English-only (internal staff), from
-    the monitored interview@ alias. Best-effort — a mail hiccup never breaks the QC action."""
+    the monitored interview@ alias. Best-effort — a mail hiccup never breaks the QC action.
+    `case_id` (#86): the link goes straight to that case, see `_reviewer_case_cta`."""
+    cta = _reviewer_case_cta(case_id)
     outcome = _reviewer_render('qc_returned', to_email, {
         'reviewer_name': reviewer_name, 'ref': ref, 'applicant_name': applicant_name,
-        'qc_comments': qc_comments,
+        'qc_comments': qc_comments, 'dashboard_link': cta,
     })
     if outcome is not _REVIEWER_LEGACY:
         return outcome is _REVIEWER_SENT
@@ -354,7 +366,7 @@ def send_qc_returned_email(to_email, reviewer_name, *, ref='', applicant_name=''
         f'What to address:\n{qc_comments}\n\n'
         f'Please review the points above, update your findings/verdict, and resubmit. Everything '
         f'you need is in your reviewer dashboard:\n\n'
-        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{cta}\n\n'
         f'{_REVIEWER_SIGNOFF}'
     )
     return _send_plain(to_email, _reviewer_subject('Case returned by QC — action needed', ref), body)
