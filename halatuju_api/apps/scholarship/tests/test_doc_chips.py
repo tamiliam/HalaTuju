@@ -8,14 +8,19 @@ import json
 import pathlib
 from unittest import mock
 
-from django.test import SimpleTestCase, TestCase
+from django.db import connection
+from django.test import SimpleTestCase, TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.scholarship import doc_chips, doc_chips_student
 from apps.scholarship.serializers import documents as documents_ser
 from apps.scholarship.serializers import ApplicantDocumentSerializer
 from apps.scholarship.sgd_conversion import AdminApplicantDocumentSerializer
-from apps.scholarship.tests.factories import create_document, make_application
+from apps.scholarship.models import ApplicantDocument
+from apps.scholarship.tests.factories import (
+    TEST_JWT_SECRET, authed_client, create_document, make_admin, make_application, make_cohort,
+)
 
 FIXTURE = pathlib.Path(__file__).resolve().parent / 'fixtures' / 'doc_chip_parity.json'
 CHIP_KEYS = {'key', 'status', 'state', 'student_action', 'reason', 'kind'}
@@ -282,3 +287,41 @@ class ServedPayloadTests(TestCase):
         officer = {c['key']: c['state'] for c in doc_chips.chips_for({**doc, 'figure_refused': True})}
         self.assertEqual(student.get('amount'), 'green')
         self.assertEqual(officer.get('amount_unusable'), 'amber')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   DOC_GENUINENESS_CHECK_ENABLED=False)
+class OfficerRerunPayloadTests(TestCase):
+    """S1 review round 1: the officer's Re-run answers with the OFFICER's payload (officer chips),
+    not the student's, at no extra query."""
+
+    def setUp(self):
+        cohort = make_cohort()
+        self.reviewer = make_admin('reviewer', owning_org=cohort.owning_organisation)
+        self.app = make_application('assigned', cohort=cohort, reviewer=self.reviewer)
+        self.ic = create_document(self.app, 'ic', storage_path='s', vision_run_at=timezone.now())
+
+    def test_the_rerun_response_serves_the_officer_chips(self):
+        with mock.patch('apps.scholarship.reextract.reextract_document', return_value=True):
+            resp = authed_client(self.reviewer).post(
+                f'/api/v1/admin/scholarship/applications/{self.app.id}/documents/{self.ic.id}/re-run-vision/',
+                {}, format='json')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual([c['key'] for c in data['chips']], ['name', 'ic_no'])     # officer keys
+        self.assertEqual(data['chips'], doc_chips.chips_for(data))
+        self.assertIn('figure_refused', data)
+        self.assertIn('sgd_conversion', data)
+
+    def test_the_officer_payload_costs_no_more_queries_than_the_student_one(self):
+        create_document(self.app, 'salary_slip', storage_path='p', vision_run_at=timezone.now(),
+                        vision_fields={'fields': {'net_pay': '1000', 'currency': 'SGD'}})
+        for doc_id in ApplicantDocument.objects.filter(application=self.app).values_list('pk', flat=True):
+            counts = []
+            for serializer in (ApplicantDocumentSerializer, AdminApplicantDocumentSerializer):
+                doc = ApplicantDocument.objects.get(pk=doc_id)           # fresh: nothing cached
+                with CaptureQueriesContext(connection) as ctx:
+                    serializer(doc).data
+                counts.append(len(ctx.captured_queries))
+            with self.subTest(doc_id=doc_id):
+                self.assertEqual(counts[0], counts[1])

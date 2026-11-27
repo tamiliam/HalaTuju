@@ -13,9 +13,11 @@ chip standard S1). Five locks, because no single one is enough here:
 4. NO READ-BACK (static): no engine names the string ``'chips'`` (N3: bare too, not only as
    ``['chips']`` / ``.get('chips')``) or anything naming ``chip_pill``, so a serialized document's
    chips can never feed a verdict even without an import. Docstrings are skipped (N7).
-5. NO PAYLOAD MAKER (static, N2): no engine imports ``serializers``, ``sgd_conversion`` or
+5. NO PAYLOAD MAKER (static, N2): no engine imports, from inside the api (a relative import, or a path
+   under ``apps`` / ``halatuju``), any module whose path has a part starting with ``serializers``
+   (``serializers``, ``serializers_admin``, ``serializers_org_requests`` ...), or ``sgd_conversion`` or
    ``upload_read``, where the chips are served (``PAYLOAD_IMPORT_ALLOWLIST``: one reason per file;
-   empty today).
+   empty today). DRF's own ``rest_framework.serializers`` is not a payload maker and is not flagged.
 
 Why not a static transitive walk: every package ``__init__`` here re-exports its package, so the
 static closure of the engines (lazy imports included) is ~590 files, the whole app, serializers too.
@@ -49,15 +51,19 @@ _ENGINE = re.compile(
 _NOT_ENGINES = {'tests', 'migrations', 'management', 'views', 'views_admin', 'emails', 'eval'}
 ALLOWED_IMPORTERS = {'apps/scholarship/serializers/documents.py', 'apps/scholarship/eval/chip_dry_run.py'}
 _CHIP_MODULES = {'doc_chips', 'doc_chips_student'}
-_CHIP_FILES = {m + '.py' for m in _CHIP_MODULES}            # the chip family itself (student imports officer)
+# The chip family itself (the student module imports the officer one), by FULL path: a file elsewhere
+# that merely shares the name is still scanned.
+_CHIP_PATHS = {f'apps/scholarship/{m}.py' for m in _CHIP_MODULES}
 _CHIP_NAMES = _CHIP_MODULES | {'chips_for', 'pill_for'}     # N1: names that only the chip modules give
 _CHIP_KEYS = {'chips', 'chip_pill'}
 # Engine files allowed to read a 'chips' key, each with its reason. Empty today.
 CHIP_READ_ALLOWLIST: dict = {}
-# N2: an engine never imports the payload makers (serializers, the officer serializer in
-# sgd_conversion, upload_read), since those are where the chips are served. Each engine file allowed
-# one of them, with why.
-_PAYLOAD_MODULES = {'serializers', 'sgd_conversion', 'upload_read'}
+# N2: an engine never imports the payload makers (any ``serializers*`` module of the api, the officer
+# serializer in sgd_conversion, upload_read), since those are where the chips are served. Each engine
+# file allowed one of them, with why.
+_PAYLOAD_PREFIX = 'serializers'
+_PAYLOAD_MODULES = {'sgd_conversion', 'upload_read'}
+_API_PACKAGES = set(SCAN_ROOTS)                             # an absolute path inside the api starts here
 PAYLOAD_IMPORT_ALLOWLIST: dict = {}
 
 
@@ -127,8 +133,31 @@ def _names_doc_chips(tree):
     return any(m in v for v in _strings(tree) for m in _CHIP_MODULES)
 
 
+def _api_import_paths(tree):
+    """Each import INSIDE the api (relative, or absolute under ``apps`` / ``halatuju``) as its dotted
+    parts, the imported name included. Third-party imports (``rest_framework.serializers``) are left out."""
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            base = [p for p in (node.module or '').split('.') if p]
+            if node.level == 0 and (not base or base[0] not in _API_PACKAGES):
+                continue
+            for a in node.names:
+                yield base + [a.name]
+        elif isinstance(node, ast.Import):
+            for a in node.names:
+                parts = a.name.split('.')
+                if parts[0] in _API_PACKAGES:
+                    yield parts
+
+
 def _imports_a_payload_maker(tree):
-    return bool(_PAYLOAD_MODULES & set(_imports(tree)))
+    return any(p.startswith(_PAYLOAD_PREFIX) or p in _PAYLOAD_MODULES
+               for parts in _api_import_paths(tree) for p in parts)
+
+
+def _skipped_by_the_importer_scan(rel):
+    """The tests, the migrations and the chip family itself (by full path, never by bare file name)."""
+    return bool({'tests', 'migrations'} & set(rel.parts)) or _posix(rel) in _CHIP_PATHS
 
 
 def _reads_chips(tree):
@@ -168,7 +197,7 @@ class DocChipsImportFenceTests(SimpleTestCase):
     def test_only_the_serializer_and_the_dry_run_import_doc_chips(self):
         importers = set()
         for rel in _py_files():
-            if {'tests', 'migrations'} & set(rel.parts) or rel.name in _CHIP_FILES:
+            if _skipped_by_the_importer_scan(rel):
                 continue
             if _names_doc_chips(_tree(rel)):
                 importers.add(_posix(rel))
@@ -217,6 +246,33 @@ class DocChipsImportFenceTests(SimpleTestCase):
             with self.subTest(src):
                 self.assertTrue(_imports_a_payload_maker(ast.parse(src)))
         self.assertFalse(_imports_a_payload_maker(ast.parse('from rest_framework import fields')))
+
+    def test_n2_every_serializers_module_of_the_api_is_a_payload_maker(self):
+        for src in ('from .serializers_admin import AdminApplicationDetailSerializer',
+                    'from .. import serializers_org_requests', 'from ..serializers_admin import X',
+                    'from apps.scholarship.serializers_admin import X',
+                    'import apps.scholarship.serializers_org_requests',
+                    'from apps.scholarship import serializers_admin',
+                    'from halatuju.serializers_x import Y'):
+            with self.subTest(src):
+                self.assertTrue(_imports_a_payload_maker(ast.parse(src)))
+
+    def test_n2_drf_serializers_is_not_a_payload_maker(self):
+        for src in ('from rest_framework import serializers', 'import rest_framework.serializers',
+                    'from rest_framework.serializers import ModelSerializer',
+                    'from rest_framework import serializers as s'):
+            with self.subTest(src):
+                self.assertFalse(_imports_a_payload_maker(ast.parse(src)))
+
+    def test_the_importer_scan_skips_the_chip_files_by_full_path_only(self):
+        for rel in ('apps/scholarship/doc_chips.py', 'apps/scholarship/doc_chips_student.py',
+                    'apps/scholarship/tests/test_x.py', 'apps/courses/migrations/0001_x.py'):
+            with self.subTest(rel):
+                self.assertTrue(_skipped_by_the_importer_scan(pathlib.PurePosixPath(rel)))
+        for rel in ('apps/courses/doc_chips.py', 'apps/scholarship/views/doc_chips_student.py',
+                    'halatuju/doc_chips.py'):
+            with self.subTest(rel):                      # same bare name, another place: still scanned
+                self.assertFalse(_skipped_by_the_importer_scan(pathlib.PurePosixPath(rel)))
 
     def test_importing_every_engine_never_loads_doc_chips(self):
         modules = ['.'.join(p.with_suffix('').parts).replace('.__init__', '') for p in engine_files()]

@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from .. import pool, profile_finalise
 from ..models import ApplicantDocument, SponsorProfile
-from ..serializers import ApplicantDocumentSerializer
+from ..sgd_conversion import AdminApplicantDocumentSerializer
 from ..serializers_admin import SponsorProfileSerializer
 from ..staff_lifecycle import PAST_AWARD, case_stage
 from .applications import _detail_payload
@@ -58,7 +58,10 @@ class AdminRunVisionView(_AdminBase):
             from ..upload_read import rejudge_after_rerun
             if rejudge_after_rerun(doc):
                 doc.refresh_from_db()
-        return Response(ApplicantDocumentSerializer(doc).data)
+        # Chip standard S1: the OFFICER's payload (officer chips, and the officer-only fields), the same
+        # serializer the cockpit's document list uses. No extra query: the document's application,
+        # which those fields read, is already loaded by the base payload.
+        return Response(AdminApplicantDocumentSerializer(doc).data)
 
 
 class AdminGenerateProfileView(_AdminBase):

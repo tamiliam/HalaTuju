@@ -55,7 +55,7 @@ One server module, `apps/scholarship/doc_chips.py`, builds every document's chip
 **The student module.** `apps/scholarship/doc_chips_student.py` ports the badges today's student checklists draw under an upload card (`checklists.tsx`, `checklistsPathway.tsx`, and the dispatch in `cards.tsx`), rule for rule. Its chip is the officer shape plus one key:
 
 - `kind` is fact (a status badge) / plain (a grey "from the document" tag) / note (the amber genuineness note);
-- `label` is today's badge word as its full i18n key. The student's word cannot be worked out from the colour, so it travels with the chip;
+- `label` is today's badge word as its full i18n key. The student's word cannot be worked out from the colour, so it travels with the chip. `label` is **student-only**: officer chips (`doc_chips`) never carry it, so the web chip type must mark it optional (`label?: string`);
 - `student_action` is `none` everywhere;
 - `pill_for` is the officer rule over `fact` chips only. The student draws no pill today.
 
@@ -75,15 +75,22 @@ One server module, `apps/scholarship/doc_chips.py`, builds every document's chip
 | Pill | none drawn | served and drawn |
 | Unread IC | no checklist until read (`[]`) | two grey chips |
 
-Not ported: a higher result on the SPM slot and the higher results' own checklist are drawn by lazy components outside the two files. For those the student module serves only the genuineness note.
+**Known gaps (for Phase 1b).** The server works from ONE document at a time, so it cannot see what a screen decides from the whole card or from another code path. Each of these must be closed (or the screen kept on its own drawing for that case) before Phase 1b moves the student screen onto the served chips:
 
-**Harder fence (N1, N2, N3, N7).** The import fence now covers both modules and flags a `doc_chips` / `chips_for` / `pill_for` Name or Attribute in an engine (N1), any engine import of `serializers` / `sgd_conversion` / `upload_read` (N2, allowlist with a reason each; empty today), the bare string `'chips'` or anything naming `chip_pill` (N3), and skips docstrings when scanning strings (N7). Only the document serializer and the dry run may name a chip module.
+1. **Higher results.** A higher result on the SPM slot and the higher results' own checklist are drawn by lazy components outside the two files. For those the student module serves only the genuineness note.
+2. **A second read IC on one card.** `cards.tsx` (`visionDoc = existing.find((d) => d.vision_run_at)`) gives `ICChecklist` only to the FIRST read IC on a card; a second read IC there gets `SupportingDocChip` + `GenuinenessNote`. The server (`doc_chips_student.chips_for`) gives every read IC the IC checklist.
+3. **The no-app income fallback.** `IncomeProofCard` (used from `ScholarshipDocuments.tsx` when there is no application, rendered in `cards.tsx`) draws only `SupportingDocChip` for `str` / `salary_slip` / `epf`, never their checklists. The server serves those types' checklists.
+4. **The jest dispatch is a copy.** `student-chip-parity.test.tsx` (`checks`) copies the `cards.tsx` dispatch rather than rendering `cards.tsx`, so a change to the dispatch in `cards.tsx` would not fail it. Phase 1b should render the real card, or pin the dispatch.
+
+**Harder fence (N1, N2, N3, N7).** The import fence now covers both modules and flags a `doc_chips` / `chips_for` / `pill_for` Name or Attribute in an engine (N1), any engine import from inside the api of a module path with a part starting `serializers` (so `serializers_admin` and `serializers_org_requests` too), or of `sgd_conversion` / `upload_read` (N2, allowlist with a reason each; empty today; DRF's `rest_framework.serializers` is not flagged), the bare string `'chips'` or anything naming `chip_pill` (N3), and skips docstrings when scanning strings (N7). Only the document serializer and the dry run may name a chip module; the importer scan skips the chip files themselves by full path (`apps/scholarship/doc_chips*.py`), so a same-named file elsewhere is still scanned.
 
 **Year chip (N5).** A year counts only when it is a str or an int (never a bool, float, dict or list). The web would draw such junk as text ("true"); the serializer only ever serves a str or an int, so the fixture is unaffected and no colour changes.
 
+Checked (round 1 review): no served year can be a float. Every served year is a **string** today. `stpm_parse` holds the STPM year as an int inside the parser (`_cert_year`, `stpm_columns`), but stores it as `str(year)`; the served `higher_check.exam_year` then goes through `higher_results._stpm_exam_year` (a `20dd` string or `''`) or `exam_years.stored_transcript_year` (a string). `academic_check.exam_year` (`academic_engine`, a regex group or `''`), `pathway_check.intake_year` (`pathway_engine`, the same) and `wrong_slip` (`''`) are strings too. The rule is not widened to floats: JavaScript draws `2025.0` as "2025" while Python's `str(2025.0)` is "2025.0", so a float would not draw the same.
+
 **Loud fallback (N6).** When working out the chips raises, the serializer still serves `chips = []`, `chip_pill = 'unread'`. It now logs at ERROR, once per process per exception type, with the document id and the exception type name only, and bumps `serializers.documents.CHIP_FALLBACKS['count']` on every fallback.
 
-**Dry run.** `chip_dry_run` counts both audiences: `chips`, `state_changed`, `pill_changed` (officer, `old` / `new`) and `student_chips`, `student_state_changed`, `student_pill_changed` (student, `student_old` / `student_new`). Sprint 0's `student_differs` is gone: the audiences now differ on purpose. While it re-reads the bands, both modules' `chips_for` / `pill_for` are rigged to raise.
+**Dry run.** `chip_dry_run` counts both audiences: `chips`, `state_changed`, `pill_changed` (officer, `old` / `new`) and `student_chips`, `student_state_changed`, `student_pill_changed` (student, `student_old` / `student_new`). Sprint 0's `student_differs` is gone: the audiences now differ on purpose. While it re-reads the bands, EVERY public function of both modules (`chips_for`, `pill_for`, `fact_chips`, `fact_status`, `year_chip`, `genuineness_note_key`) is rigged to raise. It also reports `chip_fallbacks`, how far `CHIP_FALLBACKS['count']` moved during the run (N6), so a clean run proves 0 fallbacks as well as 0 changes.
 
 ## The standard (target, from the approved mock-up)
 
@@ -147,7 +154,7 @@ The OCR "name is close" fix (`SHOW_CLOSE` / `name_close`) is **not on main**. It
 
 Sprint 0 noted that the student payload carried the officer's chip words (`wrongType`, `genuine`, `relationship`, `wrong_card`). Closed by the audience split: the student payload now serves only the student's chips, which carry exactly the words today's student screen already shows. `test_the_student_payload_carries_no_officer_chip_word` pins it.
 
-Still open: `views_admin/profiles.py` (an officer re-run response) uses the student serializer, so it serves student chips. Nothing reads them there yet; phase 1b should decide. The sponsor and upload-read payloads also take the student audience.
+Closed in the round 1 fixes: the officer's Re-run response (`views_admin/profiles.py`) now answers with `AdminApplicantDocumentSerializer`, so it serves officer chips (and the two officer-only fields, at no extra query). The web discards that body and refetches the case, so nothing on screen changes. Still open: the sponsor and upload-read payloads take the student audience; phase 1b should decide.
 
 ## Next step
 

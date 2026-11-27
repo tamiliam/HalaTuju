@@ -14,6 +14,12 @@
 - **`eval/chip_dry_run.py`**: counts both audiences (`student_chips`, `student_state_changed`, `student_pill_changed`); its guard rigs both chip modules. `student_differs` removed.
 - **`docs/document-chip-standard.md`**: the audience split, the student module, the student vs officer table, and what is not ported.
 
+### Fixed (adversarial review round 1)
+- **Officer Re-run response** (`views_admin/profiles.py`): answers with `AdminApplicantDocumentSerializer`, so it serves officer chips, not student ones. No extra query (pinned by a test); the web discards the body and refetches, so nothing on screen changes.
+- **Import fence**: N2 now flags any engine import from inside the api of a module path with a part starting `serializers` (`serializers_admin`, `serializers_org_requests`), never DRF's `rest_framework.serializers`. The importer scan skips the chip files by full path, not bare file name. Each new lock is proven on a synthetic snippet.
+- **Dry run**: reports `chip_fallbacks` (the `CHIP_FALLBACKS` change over the run), so a clean run proves 0 fallbacks. Its guard refuses EVERY public function of both chip modules (`fact_chips`, `year_chip` and the rest), and its message names both modules.
+- **Docs**: three more Phase 1b parity gaps listed (a second read IC on one card, the no-app `IncomeProofCard` fallback, the jest dispatch copy); `label` documented as student-only and optional in the web type; the N5 year-type check written up (every served year is a string; no float source).
+
 ### Unchanged
 - Verdicts, engines, `MODEL_VERSION`, and the golden verdict pins and digests. No UI change; no web component edited.
 
