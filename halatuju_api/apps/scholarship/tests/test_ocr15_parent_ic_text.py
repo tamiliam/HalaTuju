@@ -10,9 +10,11 @@ Every Vision and Gemini seam is mocked; no network. The card text and the IC num
     ``--max-cost-usd``, stores only through ``ocr_keep.keep``, skips stored, superseded and queued
     documents, stops at the limit and the cost cap, counts a failing document and carries on, never calls
     Gemini, and changes nothing else in the database; its output carries ids and counts only;
-  * it stops on 5 Vision service errors or 5 failed fetches IN A ROW, never on bad files; it prints and logs a
+  * it stops on 5 Vision service errors, 5 failed fetches or 5 failed saves (write_failed or error) IN A ROW,
+    never on bad files; a stored document resets the save count; it prints and logs a
     progress line every 50; its meter row is a platform row (no organisation, no application).
 """
+import re
 from io import StringIO
 from unittest import mock
 
@@ -330,6 +332,67 @@ class TestTheRun(_CommandBase):
             out = self.run_cmd('--run', '--limit', '50', '--max-cost-usd', '1')
         self.assertNotIn('STOPPED', out)   # 4 failed, 1 good, then only 3 more failed
         self.assertIn(f'fetch_failed: {len(docs) - 1}', out)
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=False, IC_GEMINI_FALLBACK_ENABLED=False)
+class TestTheFailedSaveStop(_CommandBase):
+    """A broken private store (``ocr_keep.keep`` never raises) turns every billed read into write_failed or
+    error: 5 in a row stop the run, so it cannot spend the whole cap and keep nothing."""
+    STOP_LINE = 'capture_parent_ic_text: done - STOPPED: 5 saves in a row failed (check the private text store)'
+
+    def _run_with_broken_store(self, keep_effect):
+        def seam(image):
+            ok = image != b'BAD'
+            return {'text': CARD_TEXT if ok else '', 'words': [], 'error': None if ok else 'Bad image data.'}
+        with mock.patch(V + '_fetch_image_bytes', side_effect=lambda p: b'BAD' if p == 'bad' else b'IMG') as f, \
+                mock.patch(V + '_vision_document_text', side_effect=seam), \
+                mock.patch.object(ocr_keep, 'keep', side_effect=keep_effect), _now_on_commit(), \
+                self.assertLogs('apps.scholarship.management.commands.capture_parent_ic_text', 'INFO') as logs:
+            out = self.run_cmd('--run', '--limit', '50', '--max-cost-usd', '1')
+        return out, f, ' '.join(logs.output)
+
+    def test_it_stops_after_five_failed_saves_in_a_row(self):
+        for _ in range(cmd.FAIL_FAST + 2):
+            self.doc()
+        calls = []
+
+        def broken(doc, text, **kw):   # nothing kept; every other call raises, so error counts as well
+            calls.append(doc.pk)
+            if len(calls) % 2 == 0:
+                raise RuntimeError('made up store failure')
+        out, fetch, _ = self._run_with_broken_store(broken)
+        self.assertEqual(fetch.call_count, cmd.FAIL_FAST)
+        self.assertIn(self.STOP_LINE, out)
+        self.assertIn('write_failed: 3', out)
+        self.assertIn('error: 2', out)
+        self.assertIn('not reached: 2', out)
+        self.assertFalse(ApplicantDocumentOcrText.objects.exists())
+
+    def test_a_stored_doc_resets_the_count_and_a_bad_file_neither_counts_nor_resets(self):
+        docs = [self.doc() for _ in range(2 * cmd.FAIL_FAST + 1)]
+        good, bad = docs[cmd.FAIL_FAST - 1], docs[cmd.FAIL_FAST + 1]
+        ApplicantDocument.objects.filter(pk=bad.pk).update(storage_path='bad')
+        real = ocr_keep.keep
+        out, fetch, _ = self._run_with_broken_store(
+            lambda doc, text, **kw: real(doc, text, **kw) if doc.pk == good.pk else None)
+        # 4 failed, 1 stored (reset), 1 failed, 1 bad file (no change), 4 failed: the stop falls on the 11th
+        self.assertEqual(fetch.call_count, len(docs))
+        self.assertIn(self.STOP_LINE, out)
+        self.assertIn('stored: 1', out)
+        self.assertIn('read_failed: 1', out)
+        self.assertIn(f'write_failed: {2 * cmd.FAIL_FAST - 1}', out)
+        self.assertIn('not reached: 0', out)
+        self.assertIsNotNone(self.kept(good))
+
+    def test_the_stop_line_has_counts_only(self):
+        docs = [self.doc() for _ in range(cmd.FAIL_FAST)]
+        out, _, logged = self._run_with_broken_store(lambda doc, text, **kw: None)
+        stop = [ln for ln in out.splitlines() if 'STOPPED' in ln]
+        self.assertEqual(stop, [self.STOP_LINE])
+        self.assertEqual(re.findall(r'\d+', stop[0]), [str(cmd.FAIL_FAST)])   # the count, never an id
+        self.assertIn(f'write_failed ids: {", ".join(str(d.pk) for d in docs)}', out)   # ids only in their list
+        for private in (FAKE_NRIC, FAKE_NAME, 'KAD PENGENALAN', 'blob'):
+            self.assertNotIn(private, out + logged)
 
 
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=False, IC_GEMINI_FALLBACK_ENABLED=False)

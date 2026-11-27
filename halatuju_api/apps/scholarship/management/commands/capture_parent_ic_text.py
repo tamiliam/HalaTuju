@@ -16,8 +16,9 @@ DRY RUN BY DEFAULT: counts only (how many would be read, the Vision units, the e
 no Vision call, no write. ``--run`` reads, and needs ``--limit`` (documents, at most ``MAX_LIMIT``) and
 ``--max-cost-usd`` (at most ``MAX_COST_USD``); it stops before the read that would pass the cap. It also stops
 when ``FAIL_FAST`` reads in a row fail with a Vision SERVICE error (``read_errors.is_ocr_service_error``: the
-key, quota, permission or network, not the file), or ``FAIL_FAST`` fetches in a row fail (a Storage outage).
-An ordinary bad file (a PDF that will not rasterise, a HEIC, a blank photo) never stops it. Every
+key, quota, permission or network, not the file), ``FAIL_FAST`` fetches in a row fail (a Storage outage), or
+``FAIL_FAST`` saves in a row fail (``write_failed`` or ``error``: a broken private store would otherwise spend
+the whole cap and keep nothing; a stored document resets it, skips and bad files leave it). An ordinary bad file (a PDF that will not rasterise, a HEIC, a blank photo) never stops it. Every
 ``PROGRESS_EVERY`` documents it prints and logs a progress line (counts only), so a killed task leaves a record.
 
 Writes ONLY through ``ocr_keep.keep``. Never Gemini; never the document, its vision_fields, verdicts,
@@ -27,7 +28,7 @@ is a PLATFORM row (no organisation, no application): this is the platform's own 
 in a partner organisation's monthly usage (``usage.monthly_usage``) for its admins to see.
 
 PRIVATE: prints and logs counts and document ids at most; never a name, an IC number or the text. A document
-that fails is counted under a reason code and, short of the two stops above, never stops the run.
+that fails is counted under a reason code and, short of the three stops above, never stops the run.
 
     python manage.py capture_parent_ic_text                                         # dry run
     python manage.py capture_parent_ic_text --run --limit 600 --max-cost-usd 1.00   # the capture
@@ -51,13 +52,14 @@ USAGE_SOURCE = 'ocr15_parent_ic_capture'
 UNIT_PRICE_USD = Decimal('0.0015')
 MAX_LIMIT = 1000
 MAX_COST_USD = Decimal('5.00')
-FAIL_FAST = 5          # this many service errors in a row, or fetch failures in a row, stop the run
+FAIL_FAST = 5          # this many service errors, fetch failures or failed saves in a row stop the run
 PROGRESS_EVERY = 50    # a progress line (counts only) every this many documents
 
 STORED, ALREADY_STORED, GONE = 'stored', 'already_stored', 'gone'
 FETCH_FAILED, READ_FAILED, NO_TEXT = 'fetch_failed', 'read_failed', 'no_text'
 SERVICE_FAILED = 'service_error'   # Vision itself failed (key, quota, permission, network), not the file
 WRITE_FAILED, ERROR = 'write_failed', 'error'
+SAVE_FAILURES = (WRITE_FAILED, ERROR)   # a billed read whose text was not kept; streak key WRITE_FAILED
 OUTCOMES = (STORED, ALREADY_STORED, GONE, FETCH_FAILED, READ_FAILED, SERVICE_FAILED, NO_TEXT, WRITE_FAILED,
             ERROR)
 
@@ -113,19 +115,26 @@ def _cost(units) -> Decimal:
 
 
 def _streak_stop(streak, code, used):
-    """Move the two in-a-row counters on one outcome; the reason to stop, or ''. A fetch failure counts
+    """Move the three in-a-row counters on one outcome; the reason to stop, or ''. A fetch failure counts
     toward the Storage streak and a Vision service error toward the service streak; a document that was
-    fetched (``used``) and read any other way resets the streak it broke. A skipped document (gone,
-    already stored) moves neither, and an ordinary bad file never counts."""
+    fetched (``used``) and read any other way resets the streak it broke. A failed save (``write_failed``
+    or ``error``) counts toward the save streak and only a stored document resets it. A skipped document
+    (gone, already stored) moves none, and an ordinary bad file never counts."""
     if code == FETCH_FAILED:
         streak[FETCH_FAILED] += 1
     elif used:
         streak[FETCH_FAILED] = 0
         streak[SERVICE_FAILED] = streak[SERVICE_FAILED] + 1 if code == SERVICE_FAILED else 0
+    if code in SAVE_FAILURES:
+        streak[WRITE_FAILED] += 1
+    elif code == STORED:
+        streak[WRITE_FAILED] = 0
     if streak[SERVICE_FAILED] >= FAIL_FAST:
         return f'{FAIL_FAST} reads in a row failed with a Vision service error (check the key, quota or permission)'
     if streak[FETCH_FAILED] >= FAIL_FAST:
         return f'{FAIL_FAST} fetches in a row failed (check Storage)'
+    if streak[WRITE_FAILED] >= FAIL_FAST:
+        return f'{FAIL_FAST} saves in a row failed (check the private text store)'
     return ''
 
 
@@ -187,7 +196,7 @@ class Command(BaseCommand):
         counts = dict.fromkeys(OUTCOMES, 0)
         failed_ids = {code: [] for code in OUTCOMES if code not in (STORED, ALREADY_STORED)}
         units, stopped = 0, ''
-        streak = {FETCH_FAILED: 0, SERVICE_FAILED: 0}
+        streak = {FETCH_FAILED: 0, SERVICE_FAILED: 0, WRITE_FAILED: 0}
         for done, doc_id in enumerate(todo, 1):
             if _cost(units + 1) > cap:
                 stopped = f'cost cap US${cap} (next read would pass it)'
