@@ -199,6 +199,22 @@ describe('a failed save stays on the page and says so', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
+  it('a network failure (no status) stays with the alert too', async () => {
+    syncMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await finish()
+    expect((await screen.findByRole('alert')).textContent).toContain('scholarship.resultsSaveFailed.title')
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('a 400 (the server refused the values; a retry never helps) moves on as before, with no alert', async () => {
+    syncMock.mockRejectedValueOnce(Object.assign(new Error('API error: 400'), {
+      status: 400, fieldErrors: { higher_cgpa: ['out of range'] },
+    }))
+    await finish()
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
   it('a save that works shows no alert', async () => {
     await finish()
     await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))

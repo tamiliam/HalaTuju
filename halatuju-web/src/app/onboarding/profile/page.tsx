@@ -233,11 +233,13 @@ export default function ProfileInputPage() {
           showToast(t('onboarding.switchSpmLocked', { route }), 'error')
         }
         await refreshProfile()
-      } catch {
+      } catch (err) {
         // The results never reached the server: moving on would show the old ones (the apply page
-        // reads the server's). Stay, keep what was typed, and say so. A failure AFTER the save (the
-        // profile re-read) still moves on — the results are saved.
-        if (!synced) { setSaveFailed(true); return }
+        // reads the server's). On a network failure or a 5xx, a retry can work: stay, keep what was
+        // typed, and say so. A 4xx (the server refused the values) moves on as before, since a retry
+        // never helps. A failure AFTER the save (the profile re-read) still moves on.
+        const status = (err as { status?: number } | null)?.status
+        if (!synced && (typeof status !== 'number' || status >= 500)) { setSaveFailed(true); return }
       }
     }
 
