@@ -225,9 +225,10 @@ export const REVIEWER_FAQ: QA[] = [
         so the usual order decides: a dated page first, then the newest), nor an application details page that lists the
         applicant&rsquo;s age and address with no status (red &ldquo;Not an STR document&rdquo;); if the status isn&rsquo;t clearly
         &ldquo;Lulus&rdquo;, ask for the MySTR Semakan Status / Dashboard, or the approval letter.
-        <strong> Salary route:</strong> payslips / EPF, judged against the gift&rsquo;s own income cut-off:
-        household income at most the gift&rsquo;s limit, or (above that) income per person at most its per-person
-        limit. Either one passes, and exactly on either limit passes. A household close to the cut-off
+        <strong> Salary route:</strong> payslips / EPF, judged against the gift&rsquo;s own income cut-off, which has
+        two tests: household income at most the gift&rsquo;s limit, and income per person at most its per-person
+        limit. Usually passing either one is enough; a gift set to &ldquo;all of these&rdquo; needs both.
+        Exactly on a limit counts as a pass. A household close to the cut-off
         (less than one person&rsquo;s share of the gift&rsquo;s limit to spare) shows amber, because one
         undeclared earner could tip it over. A gift with only one of the two limits is judged on that one.
         When it&rsquo;s genuinely borderline, that&rsquo;s what the interview is for — don&rsquo;t force a verdict on weak

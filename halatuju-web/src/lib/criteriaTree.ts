@@ -173,7 +173,11 @@ export function stateToTree(s: EditorState): { tree: CriteriaTree; problems: Pro
   meritTest(s.spmOn && s.spmMeritOn, s.spmMerit, 'min_upu_merit')
   meritTest(s.postOn && s.postMeritOn, s.postMerit, 'min_merit')
 
-  if (groups.length) sections.push({ section: 'results', [s.resultsJoin]: groups })
+  // With one group (or one income test) the join row is hidden and every join means the same, so
+  // the standard join is saved - the one from_legacy writes ('own' / 'any', criteria.py) - never
+  // a join left over from when both were on (review round 1, item 3).
+  const resultsJoin: ResultsJoin = groups.length > 1 ? s.resultsJoin : 'own'
+  if (groups.length) sections.push({ section: 'results', [resultsJoin]: groups })
   if (merit.length) sections.push({ section: 'merit', all: merit })
 
   const income: Json[] = []
@@ -186,7 +190,8 @@ export function stateToTree(s: EditorState): { tree: CriteriaTree; problems: Pro
   }
   rm(s.householdOn, s.household, 'household_income_max')
   rm(s.perPersonOn, s.perPerson, 'income_per_person_under')
-  if (income.length) sections.push({ section: 'income', [s.incomeJoin]: income })
+  const incomeJoin: IncomeJoin = income.length > 1 ? s.incomeJoin : 'any'
+  if (income.length) sections.push({ section: 'income', [incomeJoin]: income })
 
   // toggleBirthState returns the keys in the screen's fixed order; removing '' changes nothing else.
   const states = toggleBirthState(s.bornIn, '', false)
@@ -237,7 +242,12 @@ function canonical(tree: CriteriaTree): string {
     } else if (sec.section === 'merit' || sec.section === 'income') {
       list = [...items].sort((a, b) => TEST_ORDER.indexOf(a.test as string) - TEST_ORDER.indexOf(b.test as string))
     }
-    return { ...sec, [mode]: list }
+    // One item: every join means the same (criteria.results_ok / income_ok), so it compares as the
+    // standard join and an older tree saved with another join still shows.
+    const single = list.length === 1 && (sec.section === 'results' || sec.section === 'income')
+    const join = single ? (sec.section === 'results' ? 'own' : 'any') : mode
+    const rest = Object.fromEntries(Object.entries(sec).filter(([k]) => k !== mode))
+    return { ...rest, [join]: list }
   }).sort((a, b) => SECTION_ORDER.indexOf(a.section as string) - SECTION_ORDER.indexOf(b.section as string))
   const out: CriteriaTree = { all }
   if (asList(tree?.flag).length) out.flag = tree.flag

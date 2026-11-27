@@ -112,6 +112,37 @@ describe('the boxes the server would refuse', () => {
     expect(stateToTree({ ...both, resultsJoin: 'any' }).problems).toContain('voidSpmDoor')
     expect(stateToTree({ ...both, resultsJoin: 'own' }).problems).toContain('voidSpmGroup')
     expect(stateToTree({ ...both, resultsJoin: 'own', spmMeritOn: true, spmMerit: '80' }).problems).toEqual([])
+    // Only when both groups are on: one group alone is never a void door, whatever the hidden join.
+    expect(stateToTree({ ...both, postOn: false, resultsJoin: 'any', rows: [{ count: '1', grade: 'C' as const }] })
+      .problems).toEqual([])
+    expect(stateToTree({ ...both, spmOn: false, resultsJoin: 'any' }).problems).toEqual([])
+  })
+  it('one results group saves the standard join "own", whatever the hidden join row says', () => {
+    const post = { ...base, postOn: true, pngkOn: true, pngk: '3' }
+    const spm = { ...base, spmOn: true, rows: [{ count: '5', grade: 'C' as const }] }
+    for (const s of [post, spm]) {
+      for (const resultsJoin of ['own', 'all', 'any'] as const) {
+        const results = stateToTree({ ...s, resultsJoin }).tree.all.find((x) => x.section === 'results')
+        expect(Object.keys(results ?? {}).sort()).toEqual(['own', 'section'])
+      }
+    }
+    const two = stateToTree({ ...post, spmOn: true, rows: [{ count: '5', grade: 'C' as const }], resultsJoin: 'all' })
+    expect(two.tree.all.find((x) => x.section === 'results')).toHaveProperty('all')
+  })
+  it('one income test saves the standard join "any"; two keep the chosen join', () => {
+    const household = { ...base, incomeJoin: 'all' as const }
+    const perPerson = { ...EMPTY_STATE, perPersonOn: true, perPerson: '1584', incomeJoin: 'all' as const }
+    for (const s of [household, perPerson]) {
+      const income = stateToTree(s).tree.all.find((x) => x.section === 'income')
+      expect(Object.keys(income ?? {}).sort()).toEqual(['any', 'section'])
+    }
+    const both = stateToTree({ ...household, perPersonOn: true, perPerson: '1584' })
+    expect(both.tree.all.find((x) => x.section === 'income')).toHaveProperty('all')
+  })
+  it('an older tree saved with a non-standard join on one item still shows', () => {
+    expect(canShow({ all: [{ section: 'income', all: [{ test: 'household_income_max', rm: 5860 }] }] })).toBe(true)
+    expect(canShow({ all: [{ section: 'results', all: [{ route: 'spm', all: [
+      { test: 'grade_count', at_least: 5, grade_or_better: 'C' }] }] }] })).toBe(true)
   })
   it('years are sorted and once each', () => {
     expect(stateToTree({ ...base, startOn: true, startYears: '2026, 2025 2026' }).tree.flag)

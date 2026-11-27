@@ -137,7 +137,7 @@
     "also_ok": []
   },
   "2026-11-28.3": {
-    "digest": "67bb03506312bc25321c0a20c66fac4f08037c015915ef538b2706951e1ab89d",
+    "digest": "5b8c84e661dbd14e707a5f8411a55d2f791e65429fa77fa03ae69cb7c66d5d10",
     "note": "Editor fixes, ruling A (owner, 27 Nov 2026; built as 2026-11-27.4 on an older base, never released, renumbered above 2026-11-28.2 on the rebase): the per-person income test is \"at most RM Y\". Exactly ON a gift's per-person line now PASSES (TD-771 had it fail); 1 sen above fails. criteria.income_ok (the gate), shortlisting._income_ok (the columns yardstick read by the replay and the rescore guard) and income_engine.amounts.income_headroom (the officer band) move together, so a household exactly on the per-person line and above the household line is eligible and no longer banded over. The household line is unchanged (ON it already passed). Refusal and pass reasons now read <= / > for the per-person line.",
     "also_ok": []
   }
