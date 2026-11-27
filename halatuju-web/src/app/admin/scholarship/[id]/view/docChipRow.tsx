@@ -58,7 +58,7 @@ export function ChipLine({ chips, t }: { chips: DocChipData[]; t: T }) {
   if (chips.length === 0) return null
   return (
     <p className="mt-1 flex flex-wrap items-center gap-1.5" data-chip-line>
-      {chips.map((c, i) => <DocChip key={`${c.key}-${i}`} state={c.state} spoken={c.kind !== 'year'}>{chipText(c, t)}</DocChip>)}
+      {chips.map((c, i) => <DocChip key={`${c.key}-${i}`} state={c.state}>{chipText(c, t)}</DocChip>)}
     </p>
   )
 }

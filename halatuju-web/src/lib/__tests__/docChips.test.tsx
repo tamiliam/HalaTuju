@@ -9,6 +9,7 @@ import DocChecksPanel from '@/components/DocChecksPanel'
 import {
   ChipLine, NotesIcon, REASON_WORDS, ReadTime, ReasonLines, drawerChips, drawerPill, readTimeShows,
 } from '../../app/admin/scholarship/[id]/view/docChipRow'
+import { OfferLetterChecklist } from '@/components/ScholarshipDocuments/checklistsPathway'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, p?: Record<string, string>) => k.split('.').slice(-1)[0] + (p ? `|${Object.values(p).join(',')}` : '') }),
@@ -162,10 +163,10 @@ describe('round 2 review fixes', () => {
     expect(chips[0].querySelector('[data-chip-state]')).toBeNull()
     expect(chips[1].querySelector('[data-chip-state]')).not.toBeNull()
   })
-  test('a year chip in the officer line is not spoken twice', () => {
-    render(<ChipLine chips={[chip('examYear', 'green', { kind: 'year', value: 2025 }), chip('name', 'green')]} t={t} />)
+  test('an officer year chip says its state (its text has no state word)', () => {
+    render(<ChipLine chips={[chip('examYear', 'amber', { kind: 'year', value: 2025 }), chip('name', 'green')]} t={t} />)
     const all = document.querySelectorAll('[data-chip]')
-    expect(all[0].querySelector('[data-chip-state]')).toBeNull()
+    expect(all[0].querySelector('[data-chip-state]')?.textContent).toBe('amber')
     expect(all[1].querySelector('[data-chip-state]')).not.toBeNull()
   })
   test('the fallback pill reads Problem when a drawn fact chip is red', () => {
@@ -192,5 +193,18 @@ describe('round 2 review fixes', () => {
     const ta = require('@/messages/ta.json')
     expect(ta.common.chipState.amber).toBe('சரிபார்க்க வேண்டும்')
     expect(ta.admin.scholarship.docsDrawer.notesHint).toContain('ஆவணத்தைத் திறக்கவும்')
+  })
+})
+
+describe('round 3 review fixes', () => {
+  test('student offer chips: a result word is not spoken; the field-name-only IC chip (not printed) is', () => {
+    const doc = { id: 9, doc_type: 'offer_letter', pathway_check: {
+      name: 'match', ic: 'not_printed', candidate_name: '', candidate_nric: '', programme: '', institution: '',
+      issuer: '', offer_date: '', intake: '', address: '' } } as unknown as Parameters<typeof OfferLetterChecklist>[0]['doc']
+    const { container } = render(<OfferLetterChecklist doc={doc} t={(k: string) => k.split('.').slice(-1)[0]} />)
+    const chips = container.querySelectorAll('[data-chip]')
+    expect(chips[0].textContent).toBe('✓match')   // aria-hidden symbol + the result word, nothing more
+    expect(chips[0].querySelector('[data-chip-state]')).toBeNull()
+    expect(chips[1].querySelector('[data-chip-state]')?.textContent).toBe('grey')
   })
 })
