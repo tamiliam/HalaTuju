@@ -493,6 +493,98 @@ class PismpReviewRound1Test(SimpleTestCase):
             self.assertIsNone(run()['locked'])
 
 
+#: Review round 2 (M1): placeholder specialisms that locked as the specialism.
+PLACEHOLDER_BIDANG = ('BELUM DITENTUKAN', 'AKAN DITENTUKAN KEMUDIAN', 'AKAN DIMAKLUMKAN', 'KOSONG', 'NONE',
+                      'NOT APPLICABLE', 'TBA', 'TBC', 'XXXXX', 'SILA RUJUK LAMPIRAN', 'LIHAT LAMPIRAN A',
+                      'SEPERTI DI ATAS', 'MENUNGGU KEPUTUSAN', 'DALAM PROSES', 'BIDANG PENGKHUSUSAN',
+                      'IJAZAH SARJANA MUDA PERGURUAN', 'KURSUS PERSEDIAAN PROGRAM IJAZAH', 'PROGRAM PERSEDIAAN',
+                      'SEKOLAH RENDAH', 'UMUM', 'PENDIDIKAN (SEKOLAH RENDAH)', 'PENDIDIKAN MATEMATIK XXXXX',
+                      'PENDIDIKAN MATEMATIK -', 'PENDIDIKAN MATEMATIK (TBA)')
+#: Review round 2 (S2) and the allow-list: a mixed, amended or unknown specialism.
+MIXED_BIDANG = ('PENDIDIKAN MATEMATIK ATAU PENDIDIKAN SAINS', 'PENDIDIKAN SAINS (DITUKAR DARIPADA MATEMATIK)',
+                'PENDIDIKAN SAINS (PINDAAN)', 'PENDIDIKAN SAINS GUGUR', 'PENDIDIKAN SAINS DIBATALKAN',
+                'PENDIDIKAN MATEMATIK, PENDIDIKAN SAINS', 'PENDIDIKAN MATEMATIK (MAJOR) SAINS (MINOR)',
+                'PENDIDIKAN MATEMATIK (ELEKTIF SAINS)', 'PENDIDIKAN BAHASA PUNJABI', 'PENDIDIKAN SAINS DITARIK BALIK',
+                'PENDIDIKAN KHAS (MASALAH PENDENGARAN DAN MASALAH PENGLIHATAN)', 'PENDIDIKAN SAINS (KAMPUS LAIN)')
+#: Review round 2 (M1): placeholder campuses after INSTITUT PENDIDIKAN GURU.
+PLACEHOLDER_CAMPUS = ('KAMPUS TIADA', 'KAMPUS TIDAK BERKENAAN', 'KAMPUS BELUM DITETAPKAN', 'KAMPUS SEPERTI DI LAMPIRAN',
+                      'KAMPUS KAMPUS', 'KAMPUS AKAN DIMAKLUMKAN', 'KAMPUS -', 'KAMPUS X', 'KAMPUS XXXXX',
+                      'KAMPUS MALAYSIA', 'KAMPUS PENDIDIKAN', 'KAMPUS', 'KAMPUS CONTOH TBA', 'KAMPUS IPG CONTOH')
+#: The two S1 inputs: a campus name that wraps onto the first address line, the postcode on the second line, as the
+#: real letters print it (3 of 3: the first address line has no digit and no street word, so no shape tells them
+#: apart). They lock today; only the closed IPG campus list (owed by the owner) can refuse them.
+WRAPPED_CAMPUS = (('INSTITUT PENDIDIKAN GURU KAMPUS TUANKU', ('BAINUN', '14000 BUKIT MERTAJAM,', 'PULAU PINANG')),
+                  ("INSTITUT PENDIDIKAN GURU KAMPUS DATO' RAZALI", ('ISMAIL', '21030 KUALA NERUS,', 'TERENGGANU')))
+OWED_CAMPUS_LIST = ('owed before the lane goes on: the closed IPG campus list (owner); no shape tells a wrapped '
+                    'campus word from the real first address line')
+
+
+class PismpReviewRound2Test(SimpleTestCase):
+    """Review round 2: the specialism is a closed allow-list naming one subject, the none-words refuse a specialism
+    and a campus name (synthetic letters only)."""
+
+    def empty(self, field, **kw):
+        d = run(layout(tab=table(**kw)))
+        self.assertIsNone(d['locked'])
+        self.assertEqual(d['empty_required'], [field])
+
+    def test_a_placeholder_specialism_is_not_read(self):
+        for bidang in PLACEHOLDER_BIDANG:
+            with self.subTest(bidang=bidang):
+                self.empty('bidang_pengkhususan', bidang=bidang)
+
+    def test_a_mixed_amended_or_unknown_specialism_is_not_read(self):
+        for bidang in MIXED_BIDANG:
+            with self.subTest(bidang=bidang):
+                self.empty('bidang_pengkhususan', bidang=bidang)
+
+    def test_a_known_specialism_reads(self):
+        for bidang in ('PENDIDIKAN MATEMATIK (SEKOLAH RENDAH)', 'PENGAJARAN BAHASA INGGERIS SEBAGAI BAHASA KEDUA (TESL)',
+                       'PENDIDIKAN KHAS (MASALAH PENDENGARAN)', 'PENDIDIKAN KHAS', 'PENDIDIKAN AWAL KANAK-KANAK',
+                       'REKA BENTUK DAN TEKNOLOGI (SEKOLAH RENDAH)', 'PENDIDIKAN BAHASA TAMIL (SJKT)', 'SAINS KOMPUTER',
+                       'BIMBINGAN DAN KAUNSELING', 'PENDIDIKAN ISLAM (SEKOLAH RENDAH)', 'PENDIDIKAN SENI VISUAL'):
+            with self.subTest(bidang=bidang):
+                d = run(layout(tab=table(bidang=bidang)))
+                self.assertIsNotNone(d['locked'], why(d))
+                self.assertEqual(d['locked']['bidang_pengkhususan'], bidang)
+
+    def test_the_catalogue_names_read_but_an_elektif(self):
+        """The vocabulary is built from the catalogue's PISMP rows: every name reads but an ELEKTIF (a second
+        subject), which refuses."""
+        import json
+        import os
+        path = os.path.join(os.path.dirname(offer_parse.__file__), '..', 'courses', 'fixtures', 'courses.json')
+        with open(path, encoding='utf-8') as fh:
+            names = [' '.join(x['fields']['course'].upper().split()) for x in json.load(fh)
+                     if str(x['pk']).startswith('50PD')]
+        self.assertTrue(names)
+        for name in names:
+            with self.subTest(k=names.index(name)):
+                self.assertEqual(pismp._bidang_ok(name), 'ELEKTIF' not in name)
+
+    def test_a_placeholder_campus_is_not_read(self):
+        for campus in PLACEHOLDER_CAMPUS:
+            with self.subTest(campus=campus):
+                self.empty('campus', campus='INSTITUT PENDIDIKAN GURU ' + campus)
+
+    def test_a_real_campus_shape_reads(self):
+        for campus in ('KAMPUS PENDIDIKAN TEKNIK', "KAMPUS DATO' RAZALI ISMAIL", 'KAMPUS BAHASA MELAYU',
+                       'KAMPUS ILMU KHAS', 'KAMPUS TUN HUSSEIN ONN'):
+            with self.subTest(campus=campus):
+                d = run(layout(tab=table(campus='INSTITUT PENDIDIKAN GURU ' + campus)))
+                self.assertIsNotNone(d['locked'], why(d))
+                self.assertEqual(d['locked']['campus'], campus)
+
+    def test_owed_a_wrapped_campus_still_reads_short(self):
+        """The known gap (the code standard bans xfail, so this asserts it): this FAILS once the closed campus list
+        lands, and must then flip to assert that both inputs refuse."""
+        for k, (campus, address) in enumerate(WRAPPED_CAMPUS):
+            with self.subTest(k=k, owed=OWED_CAMPUS_LIST):
+                lock = run(layout(tab=table(campus=campus, address=address)))['locked']
+                self.assertIsNotNone(lock)
+                self.assertEqual(lock['campus'], campus.split('GURU ', 1)[1])
+
+
 class PismpInkAndLaneTest(SimpleTestCase):
     def test_ink_targets_cover_every_printed_value(self):
         lock = run()['locked']

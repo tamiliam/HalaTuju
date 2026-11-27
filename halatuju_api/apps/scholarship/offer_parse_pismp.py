@@ -30,8 +30,12 @@ pinned by digest and excused once, in its place only (`CONDITIONS_PINS`, `_condi
 Review round 1 (27 Nov): no free text is unchecked. Every other line is pinned by digest (`TEMPLATE_PINS`) or read
 by a strict shape (`_pismp_template`); no line prints a date but the two date rows, nor a campus outside the TEMPAT
 PENGAJIAN row and the pinned lines; a campus whose name may wrap refuses (`_pismp_table`); a one-word name or a
-specialism with no distinctive word is not read; the lane's own refusal words (`_REPLACED`). There is no closed list
-of IPG campuses or PISMP specialisms in the lane: neither has a home the parser can read (fork, 27 Nov).
+specialism with no distinctive word is not read; the lane's own refusal words (`_REPLACED`).
+
+Review round 2 (27 Nov): the specialism is a closed, lane-local allow-list (`_SUBJECTS`, built from the catalogue's
+PISMP rows): every word known, exactly one subject; the none-words (`_NO_BIDANG`, `_says_none`) refuse a specialism
+and a campus name. There is no closed list of IPG campuses: a campus word that wraps onto the first address line
+still reads as a shorter campus (owed: the owner's campus list, before the lane goes on).
 """
 import re
 
@@ -68,8 +72,38 @@ _NAME = re.compile(r"^[A-Z][A-Z'.\-]*(?: (?:[A-Z][A-Z'.\-]*|A/L|A/P|@))*$")
 _IC = re.compile(r'^(\d{6})-?(\d{2})-?(\d{4})$')
 _BIDANG = re.compile(r"^[A-Z][A-Z&,'()\-]*(?: [A-Z&(][A-Z&,'()\-]*){0,9}$")
 # Review round 1 (fork 2, chose B): a specialism that says "none" (TIADA, TIDAK BERKENAAN / BERKAITAN, "-", N/A) is
-# not read. A closed catalogue-backed specialism list is owed before the lane goes on.
-_NO_BIDANG = re.compile(r'(?<![A-Z])(?:TIADA|TIDAK|N ?/ ?A|NA|NIL)(?![A-Z])|^[\W_]*$', re.IGNORECASE)
+# not read. Review round 2: the one home of the lane's none-words, for the specialism AND the campus name: a
+# placeholder (BELUM / AKAN DITENTUKAN, KOSONG, TBA, SILA RUJUK / LIHAT LAMPIRAN, SEPERTI DI ATAS, DALAM PROSES,
+# MENUNGGU KEPUTUSAN), a row label or the degree title, a mixed or amended value (ATAU, DITUKAR, PINDAAN, GUGUR,
+# BATAL), a second KAMPUS. Whole words, and the stems a Malay affix wraps (DI-TENTU-KAN, DI-TETAP-KAN, ...).
+_NO_BIDANG = re.compile(
+    r'(?<![A-Z])(?:TIADA|TIDAK|N ?/ ?A|NA|NIL|NONE|NOT|APPLICABLE|TBA|TBC|TBD|BELUM|AKAN|KEMUDIAN|KOSONG|SILA|LIHAT|'
+    r'LAMPIRAN|SEPERTI|ATAS|PROSES|KEPUTUSAN|BIDANG|PENGKHUSUSAN|IJAZAH|SARJANA|MUDA|PERGURUAN|PERSEDIAAN|KURSUS|'
+    r'PROGRAM|ATAU|KAMPUS|INSTITUT|GURU|IPG|IPGM)(?![A-Z])|TENTU|TETAP|DIMAKLUM|RUJUK|TUKAR|PINDA|GUGUR|BATAL|TUNGGU|'
+    r'^[\W_]*$', re.IGNORECASE)
+#: Review round 2 (lead's design): the specialism is an ALLOW-list. Every word of it is a subject word or a filler
+#: word below, and it names exactly ONE subject (longest phrase first; TESL is BAHASA INGGERIS). Built from the
+#: catalogue's 73 PISMP rows (`courses.json`, 50PD*) and the 3 measured 2026 letters (27 Nov, counts only): 66 of 73
+#: names read, the 7 ELEKTIF (a second subject) refuse; the 3 letters read. PENDIDIKAN, SEKOLAH, RENDAH and the school
+#: types are fillers, never a subject. An unknown word or subject refuses (safe).
+_SUBJECTS = {
+    'MATEMATIK': 'MATEMATIK', 'SAINS': 'SAINS', 'SAINS KOMPUTER': 'SAINS KOMPUTER', 'BAHASA MELAYU': 'BAHASA MELAYU',
+    'BAHASA INGGERIS': 'BAHASA INGGERIS', 'TESL': 'BAHASA INGGERIS', 'BAHASA TAMIL': 'BAHASA TAMIL',
+    'BAHASA CINA': 'BAHASA CINA', 'BAHASA ARAB': 'BAHASA ARAB', 'PENDIDIKAN ISLAM': 'PENDIDIKAN ISLAM',
+    'PENDIDIKAN MORAL': 'PENDIDIKAN MORAL', 'PENDIDIKAN JASMANI': 'PENDIDIKAN JASMANI',
+    'PENDIDIKAN KESIHATAN': 'PENDIDIKAN KESIHATAN', 'MUZIK': 'MUZIK', 'SENI VISUAL': 'SENI VISUAL',
+    'PENDIDIKAN KHAS': 'PENDIDIKAN KHAS', 'PRASEKOLAH': 'PRASEKOLAH', 'SEJARAH': 'SEJARAH',
+    'REKA BENTUK DAN TEKNOLOGI': 'REKA BENTUK DAN TEKNOLOGI', 'BIMBINGAN DAN KAUNSELING': 'BIMBINGAN DAN KAUNSELING',
+    'KAJIAN SOSIAL': 'KAJIAN SOSIAL', 'GEOGRAFI': 'GEOGRAFI', 'BAHASA IBAN': 'BAHASA IBAN',
+    'PENDIDIKAN AWAL KANAK KANAK': 'PENDIDIKAN AWAL KANAK KANAK',
+    **{f'{k}MASALAH {m}': f'MASALAH {m}' for k in ('', 'PENDIDIKAN KHAS ')
+       for m in ('PEMBELAJARAN', 'PENDENGARAN', 'PENGLIHATAN')},
+}
+_FILLER = frozenset({'PENDIDIKAN', 'PENGAJARAN', 'SEKOLAH', 'RENDAH', 'MENENGAH', 'DAN', 'SEBAGAI', 'BAHASA', 'KEDUA',
+                     'KEBANGSAAN', 'JENIS', 'SK', 'SJK', 'SJKC', 'SJKT', 'C', 'T', 'KHAS'})
+_BIDANG_WORDS = _FILLER | {w for phrase in _SUBJECTS for w in phrase.split()}
+#: A campus name word that names no campus (review round 2: KAMPUS MALAYSIA, KAMPUS PENDIDIKAN, KAMPUS X).
+_CAMPUS_GENERIC = frozenset({'MALAYSIA', 'PENDIDIKAN', 'UMUM', 'BARU', 'LAMA', 'UTAMA', 'CAWANGAN', 'NEGERI'})
 _SESSION = re.compile(r'^(20\d{2})/(20\d{2})$')
 _CAMPUS = re.compile(r"^INSTITUT PENDIDIKAN GURU (KAMPUS [A-Z][A-Z'.\-]*(?: [A-Z][A-Z'.\-]*){0,5})$")
 _ADDRESS = re.compile(r"^[A-Z0-9][A-Z0-9 ,./'()&\-]*$")
@@ -149,6 +183,42 @@ def pismp_ic_elsewhere(text: str, nric: str) -> bool:
     """True when ``text`` prints an IC-like number once ONE copy of the read IC is taken out (`ic_printed`)."""
     rest, copies = _own_ic(text, nric)
     return copies > 1 or ic_printed(rest)
+
+
+def _says_none(value: str) -> bool:
+    """True when ``value`` holds a none-word (`_NO_BIDANG`), or a word with no letters or of one repeated letter
+    ("-", "XXXXX"): a placeholder, never a value."""
+    letters = [re.sub(r'[^A-Z]', '', w) for w in value.upper().split()]
+    return bool(_NO_BIDANG.search(value)) or any(not w or (len(w) > 1 and len(set(w)) == 1) for w in letters)
+
+
+def bidang_subjects(value: str):
+    """The subjects ``value`` names (`_SUBJECTS`, longest phrase first), or None when a word of it is not in the
+    lane's closed vocabulary (`_BIDANG_WORDS`)."""
+    words = re.findall(r'[A-Z]+', value.upper())
+    if any(w not in _BIDANG_WORDS for w in words):
+        return None
+    longest, found, k = max(len(p.split()) for p in _SUBJECTS), set(), 0
+    while k < len(words):
+        n = next((n for n in range(longest, 0, -1) if ' '.join(words[k:k + n]) in _SUBJECTS), 0)
+        if n:
+            found.add(_SUBJECTS[' '.join(words[k:k + n])])
+        k += n or 1
+    return found
+
+
+def _bidang_ok(value: str) -> bool:
+    """The specialism reads: the measured shape, a distinctive word, no none-word, exactly one known subject."""
+    return bool(_BIDANG.match(value) and distinctive_tokens(value) and not _says_none(value)
+                and len(bidang_subjects(value) or ()) == 1)
+
+
+def _campus_ok(campus: str) -> bool:
+    """The campus ("KAMPUS <name>") reads: the name has no none-word (a second KAMPUS among them) and at least one
+    word of two or more letters that is not generic (`_CAMPUS_GENERIC`)."""
+    name = campus.split(' ', 1)[1] if ' ' in campus else ''
+    real = [w for w in re.findall(r"[A-Z]+", name) if len(w) > 1 and w not in _CAMPUS_GENERIC]
+    return bool(name) and not _says_none(name) and bool(real)
 
 
 def _pismp_row(line: str):
@@ -233,9 +303,9 @@ def _pismp_read(lines) -> tuple:
         'candidate_nric': _norm_nric(''.join(ic_m.groups())) if ic_m else '',
         'candidate_nric_source': 'label' if ic_m else 'none',
         'programme': PROGRAMME, 'programme_code': '',
-        'bidang_pengkhususan': (bidang if _BIDANG.match(bidang) and distinctive_tokens(bidang)
-                                and not _NO_BIDANG.search(bidang) else ''),
-        'institution': INSTITUTION, 'campus': campus_m.group(1) if campus_m else '', 'stream': '',
+        'bidang_pengkhususan': bidang if _bidang_ok(bidang) else '',
+        'institution': INSTITUTION, 'campus': campus_m.group(1) if campus_m and _campus_ok(campus_m.group(1)) else '',
+        'stream': '',
         'intake': f'AMBILAN {title_m.group(1)}' if title_m and _SESSION.match(session) else '',
         'reporting_date': house_date(table[REPORT_LABEL]) if report_m else '',
         'reporting_date_label': REPORT_LABEL if report_m else '', 'reporting_venue': '', 'offer_date': '',
