@@ -374,7 +374,8 @@ def chips_for(payload):
 def pill_for(chips):
     """The student has no pill today, so nothing draws this. It is the officer's rule on the student's
     status badges (plain tags and notes left out): none left -> 'unread'; any red -> 'problem'; all
-    green -> 'verified'; else 'check'. Kept in step with ``doc_chips.pill_for``."""
+    green -> 'verified'; else 'check'. Unlike ``doc_chips.pill_for`` (which skips only year chips),
+    this counts fact chips only."""
     counted = [c for c in chips if c['kind'] == 'fact' and c['state'] != 'grey']
     if not counted:
         return 'unread'
