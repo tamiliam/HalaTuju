@@ -41,6 +41,11 @@ def test_keep_saved_rule():
     assert keep_saved(SAVED, ALL_EMPTY) == SAVED
     assert keep_saved(SAVED, RETAKE) == RETAKE        # a set with answers always wins
     assert keep_saved({}, {}) == {}                   # nothing saved: nothing to protect
+    # review round 1: the gate reads `bool(signals)`, so a saved all-empty set is a DONE quiz there;
+    # an incoming `{}` (or None) must never flip it back, and a retake with answers still saves
+    assert keep_saved(ALL_EMPTY, {}) == ALL_EMPTY
+    assert keep_saved(ALL_EMPTY, None) == ALL_EMPTY
+    assert keep_saved(ALL_EMPTY, RETAKE) == RETAKE
 
 
 @pytest.mark.django_db
@@ -71,3 +76,30 @@ class TestSignInSyncKeepsTheQuiz:
         _saved_profile(signals={})
         _sync({'student_signals': SAVED})
         assert StudentProfile.objects.get(supabase_user_id='quiz-kept-user').student_signals == SAVED
+
+
+@pytest.mark.django_db
+class TestTheQuizEndpointNeverStoresAnEmptySet:
+    """Review round 1: `_persist_quiz_signals` reads `has_answers`, not truthiness, so a quiz that
+    yields only empty categories never overwrites a saved set; one with answers still saves."""
+
+    def _persist(self, signals, user_id='quiz-kept-user'):
+        from types import SimpleNamespace
+
+        from apps.courses.views.quiz import _persist_quiz_signals
+        _persist_quiz_signals(SimpleNamespace(user_id=user_id, supabase_user={}), signals)
+        return StudentProfile.objects.get(supabase_user_id=user_id).student_signals
+
+    def test_a_quiz_with_no_answered_signal_keeps_the_saved_set(self):
+        _saved_profile()
+        assert self._persist(ALL_EMPTY) == SAVED
+        assert self._persist({}) == SAVED
+
+    def test_a_quiz_with_answers_saves(self):
+        _saved_profile()
+        assert self._persist(RETAKE) == RETAKE
+
+    def test_the_sync_keeps_a_saved_all_empty_set(self):
+        _saved_profile(signals=ALL_EMPTY)
+        _sync({'student_signals': {}})
+        assert StudentProfile.objects.get(supabase_user_id='quiz-kept-user').student_signals == ALL_EMPTY

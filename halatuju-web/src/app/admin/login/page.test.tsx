@@ -143,3 +143,33 @@ describe('a failed security check shows plain words, never Supabase raw captcha 
     expect(screen.queryByText(/admin\.loginCaptcha\.google/)).toBeNull()
   })
 })
+
+describe('a signed-out visit returns to the page it came from (#86, review round 1)', () => {
+  afterEach(() => { window.history.pushState({}, '', '/'); window.sessionStorage.clear() })
+
+  it('a safe ?next= wins over the landing after a password sign-in', async () => {
+    window.history.pushState({}, '', '/admin/login?next=%2Fadmin%2Fscholarship%2F513')
+    signInAs({ app_metadata: {} })
+    await submit()
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/admin/scholarship/513'))
+  })
+
+  it('a hostile ?next= is ignored: the landing as before', async () => {
+    window.history.pushState({}, '', '/admin/login?next=%2F%2Fevil.example')
+    signInAs({ app_metadata: {} })
+    await submit()
+    await waitFor(() => expect(push).toHaveBeenCalled())
+    expect(push.mock.calls[0][0]).toMatch(/^\/admin/)
+    expect(push).not.toHaveBeenCalledWith('//evil.example')
+  })
+
+  it('the Google button keeps the page for the OAuth callback', async () => {
+    window.history.pushState({}, '', '/admin/login?next=%2Fadmin%2Fscholarship%2F513')
+    const supa = await import('@/lib/admin-supabase')
+    ;(supa.adminSignInWithGoogle as jest.Mock).mockResolvedValue({ data: {}, error: null })
+    render(<AdminLoginPage />)
+    fireEvent.click(screen.getByRole('button', { name: /admin.signInGoogle/ }))
+    const { takeRememberedAdminNext } = await import('@/lib/adminReturnPath')
+    await waitFor(() => expect(takeRememberedAdminNext()).toBe('/admin/scholarship/513'))
+  })
+})

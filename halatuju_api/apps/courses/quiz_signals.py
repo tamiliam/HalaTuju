@@ -10,8 +10,9 @@ The scholarship completeness gate reads `bool(profile.student_signals)`, so a su
 
 The rule lives here, read by `ProfileUpdateSerializer.validate_student_signals`, which is the one
 door for both `PUT /profile/` and `POST /profile/sync/`. The quiz endpoints save through
-`views.quiz._persist_quiz_signals`, which never stores an empty set either, so a deliberate
-retake (which always carries answers) still replaces the old one.
+`views.quiz._persist_quiz_signals`, which stores a set only when `has_answers` says it holds an
+answer, so a quiz that yields no signals never overwrites a saved set, and a deliberate retake
+(which always carries answers) still replaces the old one.
 """
 
 
@@ -23,8 +24,13 @@ def has_answers(signals):
 
 def keep_saved(saved, incoming):
     """What to store for ``incoming``: the ``saved`` set when ``incoming`` carries no answers and
-    ``saved`` does, otherwise ``incoming``. A set WITH answers always wins (a retake, another
-    device's newer quiz), so only an empty write over a real one is refused, silently."""
-    if not has_answers(incoming) and has_answers(saved):
+    anything is saved, otherwise ``incoming``. A set WITH answers always wins (a retake, another
+    device's newer quiz), so only an empty write over a saved one is refused, silently.
+
+    ⚠ "ANYTHING IS SAVED" IS `bool(saved)`, NOT `has_answers(saved)` (review round 1). The
+    completeness gate reads `bool(profile.student_signals)` as "quiz done", so a saved set of
+    all-empty categories is a DONE quiz there; protecting it only when it had answers would let an
+    incoming `{}` flip that gate back."""
+    if not has_answers(incoming) and saved:
         return saved
     return incoming

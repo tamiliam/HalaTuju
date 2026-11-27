@@ -179,7 +179,9 @@ Branch req81-86-reviewer-turn, not pushed. Migration: none. Services: both. Requ
 - **Approve held back:** the message names the missing step (keys `decision.notSubmittedMissing`, `missingStep.*`).
 - **Saved interest quiz is kept** on sign-in: an empty set never overwrites saved answers (server `quiz_signals.keep_saved`, and the web no longer caches or sends `{}`).
 - Words: `admin.scholarship.returnedByQc` (en final; ms and ta drafts for Sol). Tests: `MineReturnedByQc.test.tsx`, `test_qc_returned_case_link.py`, `test_quiz_signals_kept.py`, `missingSteps.test.ts`.
-- Logged: TD-NEW-reopen-no-nudge, TD-NEW-reopen-rejected-not-on-list, TD-NEW-login-no-return. Decision: `docs/decisions.md` 2026-11-27.
+- **Sign-in returns to the page:** a signed-out reviewer following the case link comes back to the case after password or Google sign-in (`lib/adminReturnPath.ts`, safe same-origin `/admin/` paths only).
+- Review round 1: the "Returned by QC" mark needs the reviewer's turn (not a resubmitted or declined case); a saved quiz set is never replaced by an empty one from the quiz endpoint either. Tests: `test_returned_by_qc_on_my_open.py`, `adminReturnPath.test.ts`, `layout.returnPath.test.tsx`.
+- Logged: TD-NEW-reopen-no-nudge, TD-NEW-reopen-rejected-not-on-list. Decision: `docs/decisions.md` 2026-11-27.
 
 ### fix: false "Course switched" note when the same university is written two ways (2026-11-26)
 

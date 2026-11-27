@@ -7,7 +7,7 @@ import type { Session } from '@supabase/supabase-js'
 import { getAdminSupabase, ADMIN_STORAGE_KEY } from '@/lib/admin-supabase'
 import { oauthOriginMismatchAtEntry } from '@/lib/oauthOrigin'
 import { enforceSingleScope } from '@/lib/sessionPolicy'
-import { adminLanding } from '@/lib/adminLanding'
+import { adminReturnTarget, takeRememberedAdminNext } from '@/lib/adminReturnPath'
 import { effectiveRole } from '@/lib/navigation'
 import { useT } from '@/lib/i18n'
 
@@ -104,8 +104,9 @@ export default function AdminAuthCallbackPage() {
         })
         // Reviewers/viewers have no partner-org dashboard — send them to their workspace
         // (Applications); org admins/super keep the dashboard; a reviewer with an
-        // incomplete profile is held on /admin/profile until they finish onboarding.
-        router.replace(adminLanding(role))
+        // incomplete profile is held on /admin/profile until they finish onboarding. #86: the page the
+        // login was sent from, kept across the OAuth hop, wins over the landing when it is safe.
+        router.replace(adminReturnTarget(role, takeRememberedAdminNext()))
         return
       } catch {
         setError(t('errors.adminVerifyFailed'))

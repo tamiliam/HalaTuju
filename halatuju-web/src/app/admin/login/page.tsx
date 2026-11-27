@@ -11,7 +11,7 @@ import {
 } from '@/lib/admin-supabase'
 import { enforceSingleScope, consumeSuperseded } from '@/lib/sessionPolicy'
 import { enforceCanonicalOrigin } from '@/lib/oauthOrigin'
-import { adminLanding } from '@/lib/adminLanding'
+import { adminReturnTarget, nextFromSearch, rememberAdminNext } from '@/lib/adminReturnPath'
 import { pendingPasswordChange, tempPasswordExpired } from '@/lib/invitations'
 import { useT } from '@/lib/i18n'
 import { captchaErrorText } from '@/lib/captchaAuth'
@@ -112,8 +112,9 @@ export default function AdminLoginPage() {
         }
         // Reviewers/viewers have no partner-org dashboard — send them to their workspace
         // (Applications); org admins/super keep the dashboard; a reviewer with an
-        // incomplete profile is held on /admin/profile until they finish onboarding.
-        router.push(adminLanding(role))
+        // incomplete profile is held on /admin/profile until they finish onboarding. #86: a safe
+        // `?next=` (the page that sent them here, e.g. an emailed case link) wins over the landing.
+        router.push(adminReturnTarget(role, nextFromSearch(window.location.search)))
         return
       } catch {
         setError(t('errors.adminVerifyFailed'))
@@ -128,6 +129,7 @@ export default function AdminLoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true)
     setError(null)
+    rememberAdminNext(nextFromSearch(window.location.search))   // #86: back through the OAuth hop
     const { error } = await adminSignInWithGoogle()
     if (error) {
       setError(error.message)

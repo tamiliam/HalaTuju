@@ -10080,6 +10080,3 @@ Sol's Malay and Tamil read. *(C - S)*
 
 **Raised 2026-11-27 (#81 + #86).** `REVIEWERS_TURN` excludes terminal statuses, so a decline that QC reopened while the case sits at `rejected` does not appear on the interviewer's list. Logged, not built; check how a reopen leaves `rejected` before widening. A super-admin reopen also shows the "Returned by QC" mark. **Fix:** decide whether a reopened `rejected` case returns to `interviewing`, or admit it in the rule. *(A - S)*
 
-### [TD-NEW-login-no-return] A signed-out reviewer following the email link lands on their role home after login, not the case - low
-
-**Raised 2026-11-27 (#86).** The sent-back email now links to `/admin/scholarship/<id>`, but a signed-out reviewer is sent to login and afterwards to their role home (`admin/layout.tsx:37`), not back to the case. **Fix:** carry the target through login (a safe, same-origin `next` path) and return to it. *(A - S)*

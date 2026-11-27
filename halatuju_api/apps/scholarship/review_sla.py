@@ -69,14 +69,22 @@ REVIEWERS_TURN = (
 
 
 def returned_by_qc(queryset):
-    """``queryset`` with ``returned_by_qc``: an OPEN reopen that took the case back from AWAITING QC
-    (`reopened_from='interviewed'`, the QC's send-back). Served for the "Returned by QC" mark on
-    My open (#86); one EXISTS column, no query per row."""
-    from django.db.models import Exists, OuterRef
+    """``queryset`` with ``returned_by_qc``: the case is the REVIEWER'S TURN (`REVIEWERS_TURN`) AND
+    an OPEN reopen took it back from AWAITING QC (`reopened_from='interviewed'`, the QC's send-back).
+    Served for the "Returned by QC" mark on My open and the admin list (#86); one column, no query
+    per row.
+
+    ⚠ THE TURN TEST IS PART OF THE FLAG (review round 1). A reopen can stay open while the case
+    moves on (`reopen.py` TD-486 note; a submit-decline does not close it), so the reopen alone
+    would mark a resubmitted (`interviewed`) or `rejected` case "Returned by QC" for ever. The list
+    and My open read this one column, so they share one rule."""
+    from django.db.models import BooleanField, Case, Exists, OuterRef, Value, When
 
     from .models import DecisionReopen
-    return queryset.annotate(returned_by_qc=Exists(DecisionReopen.objects.filter(
-        application=OuterRef('pk'), closed_at__isnull=True, reopened_from='interviewed')))
+    open_send_back = Exists(DecisionReopen.objects.filter(
+        application=OuterRef('pk'), closed_at__isnull=True, reopened_from='interviewed'))
+    return queryset.annotate(returned_by_qc=Case(
+        When(REVIEWERS_TURN, then=open_send_back), default=Value(False), output_field=BooleanField()))
 
 
 def clocks(org):

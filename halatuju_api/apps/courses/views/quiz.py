@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .. import quiz_signals
 from ..models import StudentProfile
 from ..quiz_data import get_quiz_questions, SUPPORTED_LANGUAGES
 from ..quiz_engine import process_quiz_answers
@@ -106,9 +107,10 @@ def _persist_quiz_signals(request, student_signals):
     persist the resulting ``student_signals`` so downstream features that read
     ``profile.student_signals`` — most notably the /scholarship/application
     completeness check — see the quiz as done. Silent no-op when there's no
-    user, an anonymous user, no profile yet, or no signals to save.
+    user, an anonymous user, no profile yet, or no answered signal to save
+    (`quiz_signals.has_answers`, #81: a quiz yielding none never overwrites a saved set).
     """
-    if not student_signals:
+    if not quiz_signals.has_answers(student_signals):
         return
     user_id = getattr(request, 'user_id', None)
     if not user_id:
