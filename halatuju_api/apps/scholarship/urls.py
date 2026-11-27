@@ -314,11 +314,8 @@ urlpatterns = [
     # Inert without the secret. See vircle_airtable.py for the flow.
     path('internal/vircle/airtable/', VircleAirtableUpdateView.as_view()),
 
-    # Payments module (P2): monthly Vircle payment runs. Admin/org_admin (+ finance for read
-    # and the finance-check signature, Sprint 14), org-fenced.
-    # NB the Sprint-14 brief wrote this path as 'admin/payments/funding-summary/'; it is
-    # registered under the module's established 'admin/scholarship/' prefix instead, so every
-    # payments route stays siblings. No external contract depends on the brief's spelling.
+    # Payments module (P2): monthly Vircle payment runs. Admin/org_admin (+ finance for read and the
+    # finance-check signature, Sprint 14), org-fenced. Under 'admin/scholarship/' like every payments route.
     path('admin/scholarship/payments/funding-summary/', AdminPaymentFundingSummaryView.as_view()),
     # Billing & usage v1 (Sprint 13a) — super/org_admin usage screen, flag-gated 404-first.
     path('admin/scholarship/billing/usage/', AdminBillingUsageView.as_view()),
@@ -388,11 +385,10 @@ urlpatterns = [
     path('admin/scholarship/payment-runs/<int:pk>/cancel/', AdminPaymentRunCancelView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/csv/', AdminPaymentRunCsvView.as_view()),
 
-    # Requests space (Sprint 15): the org-section "Requests" area (bug/feature → AI reviewer →
-    # owner-gated hours quotes). Ships DARK behind REQUESTS_ENABLED (every route 404s while off).
-    # Org-fenced; org_admin + super open the list/detail/count; the requestee actions
-    # (answer/defer/modify) are org_admin, approve/decline add super; the owner actions
-    # (triage/quote/requote/schedule/done/ai-rerun) are super-only. Service = org_requests.
+    # Requests space (Sprint 15, service org_requests): bug/feature → AI reviewer → owner-gated quotes.
+    # DARK behind REQUESTS_ENABLED (404 while off). Org-fenced. list/detail/count: org_admin + super;
+    # answer/defer/modify: org_admin; approve/decline: org_admin + super;
+    # triage/quote/requote/schedule/done/ai-rerun: super only.
     path('admin/scholarship/requests/', AdminOrgRequestListView.as_view()),
     path('admin/scholarship/requests/count/', AdminOrgRequestCountView.as_view()),
     path('admin/scholarship/requests/<int:pk>/', AdminOrgRequestDetailView.as_view()),

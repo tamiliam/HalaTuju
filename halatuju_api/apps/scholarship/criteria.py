@@ -573,13 +573,10 @@ class StoredTreeRefused(ValueError):
 
 
 def build_trees(cohorts, save):
-    """Sprint 2's fill: ``from_legacy`` for every intake whose ``criteria`` is NULL, refused whole
-    (ValueError naming ids and codes, nothing written) when any tree fails `validate_tree`.
-    ``save(cohort, tree)`` writes one row. Returns ``[(id, code)]`` filled. Used by migration
-    0219 and by the ``build_criteria_trees`` command (the old admin form rebuilds an already-stored
-    row with `from_legacy` on a requirement save - `views_admin.intake_years`; a NULL row stays NULL).
-    Stores plain `from_legacy` - NOT `tree_of`'s NULL fallback - so intake 5's CGPA trap switches
-    off HERE (the owner's yes for --apply), never at deploy."""
+    """Sprint 2's fill (migration 0219, ``build_criteria_trees``): ``save(cohort, from_legacy(c))``
+    for every NULL ``criteria``; returns ``[(id, code)]``. Refused whole (ValueError, ids and codes,
+    nothing written) if any tree fails `validate_tree`. Plain `from_legacy`, not `tree_of`'s NULL
+    fallback, so intake 5's CGPA trap switches off HERE (the owner's yes for --apply)."""
     todo = [c for c in cohorts if getattr(c, 'criteria', None) is None]
     bad = refused_trees(todo)
     if bad:
