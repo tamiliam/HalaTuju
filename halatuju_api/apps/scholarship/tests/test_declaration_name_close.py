@@ -309,6 +309,8 @@ class PayslipOnlyWarningTests(SimpleTestCase):
         cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'ApplicantDocumentSerializer')
         defs = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'to_representation']
         self.assertEqual(len(defs), 1)
+        from apps.scholarship.sgd_conversion import AdminApplicantDocumentSerializer
+        self.assertNotIn('to_representation', AdminApplicantDocumentSerializer.__dict__)
 
 
 class StoredVerdictUnchangedTests(SimpleTestCase):

@@ -155,6 +155,41 @@ def _imports_a_payload_maker(tree):
                for parts in _api_import_paths(tree) for p in parts)
 
 
+def _drf_names(tree):
+    """The local names bound from ``rest_framework`` (``from rest_framework import serializers``,
+    ``import rest_framework.serializers`` binds ``rest_framework``, ``from rest_framework.x import y``)."""
+    out = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.level == 0                 and (node.module or '').split('.')[0] == 'rest_framework':
+            out.update(a.asname or a.name for a in node.names)
+        elif isinstance(node, ast.Import):
+            out.update((a.asname or a.name.split('.')[0]) for a in node.names
+                       if a.name.split('.')[0] == 'rest_framework')
+    return out
+
+
+def _chain_root(node):
+    while isinstance(node, ast.Attribute):
+        node = node.value
+    return node.id if isinstance(node, ast.Name) else None
+
+
+def _is_payload_word(text):
+    return text.startswith(_PAYLOAD_PREFIX) or text in _PAYLOAD_MODULES
+
+
+def _reaches_a_payload_maker_dynamically(tree):
+    """N2 round 2: a payload maker reached WITHOUT an import statement: a non-docstring string naming
+    one (``importlib.import_module('apps.scholarship.serializers')``, ``__import__(...)``), or an
+    attribute of that name (``import apps.scholarship as s; s.serializers.X``). An attribute chain
+    rooted at a name bound from ``rest_framework`` is DRF's own ``serializers`` and passes."""
+    if any(w in v for v in _strings(tree) for w in (_PAYLOAD_PREFIX, *_PAYLOAD_MODULES)):
+        return True
+    drf = _drf_names(tree)
+    return any(isinstance(n, ast.Attribute) and _is_payload_word(n.attr) and _chain_root(n) not in drf
+               for n in ast.walk(tree))
+
+
 def _skipped_by_the_importer_scan(rel):
     """The tests, the migrations and the chip family itself (by full path, never by bare file name)."""
     return bool({'tests', 'migrations'} & set(rel.parts)) or _posix(rel) in _CHIP_PATHS
@@ -239,6 +274,30 @@ class DocChipsImportFenceTests(SimpleTestCase):
         bad = [_posix(p) for p in engine_files()
                if _posix(p) not in PAYLOAD_IMPORT_ALLOWLIST and _imports_a_payload_maker(_tree(p))]
         self.assertEqual(bad, [], 'an engine must never import serializers / sgd_conversion / upload_read')
+        dynamic = [_posix(p) for p in engine_files()
+                   if _posix(p) not in PAYLOAD_IMPORT_ALLOWLIST and _reaches_a_payload_maker_dynamically(_tree(p))]
+        self.assertEqual(dynamic, [], 'an engine must never reach a payload maker by string or attribute')
+
+    def test_n2_round2_the_dynamic_bypasses_are_caught(self):
+        for src in ("import importlib\nimportlib.import_module('apps.scholarship.serializers')",
+                    "__import__('apps.scholarship.sgd_conversion')",
+                    "x = 'apps.scholarship.upload_read'",
+                    "import apps.scholarship as s\ns.serializers.X",
+                    "import apps.scholarship as s\ns.serializers_admin.X",
+                    "import apps.scholarship as s\ns.sgd_conversion.f",
+                    "import apps.scholarship as s\ns.upload_read"):
+            with self.subTest(src):
+                self.assertTrue(_reaches_a_payload_maker_dynamically(ast.parse(src)))
+
+    def test_n2_round2_drf_forms_and_docstrings_pass(self):
+        for src in ("from rest_framework import serializers\nclass A(serializers.ModelSerializer): pass",
+                    "from rest_framework import serializers as s\nx = s.SerializerMethodField()",
+                    "import rest_framework.serializers\nrest_framework.serializers.ModelSerializer",
+                    "from rest_framework.serializers import ModelSerializer\nModelSerializer.Meta",
+                    "'''Never touches serializers or sgd_conversion.'''",
+                    "def f():\n    '''upload_read is not used here.'''\n    return 1"):
+            with self.subTest(src):
+                self.assertFalse(_reaches_a_payload_maker_dynamically(ast.parse(src)))
 
     def test_n2_the_payload_check_catches_each_shape(self):
         for src in ('from .serializers import X', 'from .. import serializers', 'from .sgd_conversion import f',
@@ -246,6 +305,12 @@ class DocChipsImportFenceTests(SimpleTestCase):
             with self.subTest(src):
                 self.assertTrue(_imports_a_payload_maker(ast.parse(src)))
         self.assertFalse(_imports_a_payload_maker(ast.parse('from rest_framework import fields')))
+
+        for src in ('from rest_framework import serializers', 'import rest_framework.serializers',
+                    'from rest_framework.serializers import ModelSerializer',
+                    'from rest_framework import serializers as s'):
+            with self.subTest(src):
+                self.assertFalse(_imports_a_payload_maker(ast.parse(src)))
 
     def test_n2_every_serializers_module_of_the_api_is_a_payload_maker(self):
         for src in ('from .serializers_admin import AdminApplicationDetailSerializer',

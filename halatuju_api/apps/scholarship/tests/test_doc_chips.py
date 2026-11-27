@@ -314,8 +314,12 @@ class OfficerRerunPayloadTests(TestCase):
         self.assertIn('sgd_conversion', data)
 
     def test_the_officer_payload_costs_no_more_queries_than_the_student_one(self):
-        create_document(self.app, 'salary_slip', storage_path='p', vision_run_at=timezone.now(),
-                        vision_fields={'fields': {'net_pay': '1000', 'currency': 'SGD'}})
+        # The conversion path must really run: gross_income (not net_pay) and an in-review status.
+        type(self.app).objects.filter(pk=self.app.pk).update(status='submitted')
+        slip = create_document(self.app, 'salary_slip', storage_path='p', vision_run_at=timezone.now(),
+                               vision_fields={'fields': {'gross_income': '1000', 'currency': 'SGD'}})
+        fresh = ApplicantDocument.objects.get(pk=slip.pk)
+        self.assertIsNotNone(AdminApplicantDocumentSerializer(fresh).data['sgd_conversion'])
         for doc_id in ApplicantDocument.objects.filter(application=self.app).values_list('pk', flat=True):
             counts = []
             for serializer in (ApplicantDocumentSerializer, AdminApplicantDocumentSerializer):

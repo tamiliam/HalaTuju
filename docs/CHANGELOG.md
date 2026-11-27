@@ -18,6 +18,7 @@
 - **Officer Re-run response** (`views_admin/profiles.py`): answers with `AdminApplicantDocumentSerializer`, so it serves officer chips, not student ones. No extra query (pinned by a test); the web discards the body and refetches, so nothing on screen changes.
 - **Import fence**: N2 now flags any engine import from inside the api of a module path with a part starting `serializers` (`serializers_admin`, `serializers_org_requests`), never DRF's `rest_framework.serializers`. The importer scan skips the chip files by full path, not bare file name. Each new lock is proven on a synthetic snippet.
 - **Dry run**: reports `chip_fallbacks` (the `CHIP_FALLBACKS` change over the run), so a clean run proves 0 fallbacks. Its guard refuses EVERY public function of both chip modules (`fact_chips`, `year_chip` and the rest), and its message names both modules.
+- **Review round 2 (tests only)**: the officer Re-run query test now really runs the SGD conversion (gross_income, in-review status, asserted non-null); import-fence N2 also flags a payload-maker name in a string or attribute (DRF forms pass); dry-run test lines wrapped; the one-override test also pins no `to_representation` on the officer serializer.
 - **Docs**: three more Phase 1b parity gaps listed (a second read IC on one card, the no-app `IncomeProofCard` fallback, the jest dispatch copy); `label` documented as student-only and optional in the web type; the N5 year-type check written up (every served year is a string; no float source).
 
 ### Unchanged

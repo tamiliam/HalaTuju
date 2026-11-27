@@ -87,7 +87,8 @@ class ChipDryRunTests(TestCase):
     def test_the_guard_trips_on_a_direct_call_too(self):
         for module in (doc_chips, doc_chips_student):
             for name in chip_dry_run.public_chip_functions(module):
-                with self.subTest(module.__name__, name=name),                         self.assertRaises(chip_dry_run.ChipsRefused) as caught:
+                with (self.subTest(module.__name__, name=name),
+                      self.assertRaises(chip_dry_run.ChipsRefused) as caught):
                     with chip_dry_run._chips_refused():
                         getattr(module, name)([])
                 self.assertIn('doc_chips / doc_chips_student', str(caught.exception))   # names both modules
@@ -108,13 +109,15 @@ class ChipDryRunTests(TestCase):
             if len(calls) > 1:
                 doc_chips.year_chip({'doc_type': 'str'})
             return real(application)
-        with mock.patch.object(verdict_engine, 'build_verdict', leaky),                 self.assertRaises(chip_dry_run.ChipsRefused):
+        with (mock.patch.object(verdict_engine, 'build_verdict', leaky),
+              self.assertRaises(chip_dry_run.ChipsRefused)):
             chip_dry_run.run_dry(allow_sqlite=True)
 
     def test_n6_a_chip_fallback_is_counted_by_the_run(self):
         def boom(*_a, **_k):
             raise ValueError('x')
-        with mock.patch.object(doc_chips_student, 'chips_for', boom),                 self.assertLogs('apps.scholarship.serializers.documents', 'ERROR') as logs:
+        with (mock.patch.object(doc_chips_student, 'chips_for', boom),
+              self.assertLogs('apps.scholarship.serializers.documents', 'ERROR') as logs):
             from apps.scholarship.serializers import documents as documents_ser
             documents_ser._CHIP_FALLBACK_LOGGED.discard('ValueError')
             result = chip_dry_run.run_dry(student_old=lambda p: [], student_new=lambda p: [],
