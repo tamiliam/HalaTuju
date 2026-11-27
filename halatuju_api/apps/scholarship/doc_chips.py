@@ -40,9 +40,13 @@ _PATRONYMIC_MEMBER = frozenset({'father', 'brother', 'sister'})
 
 
 # ── small helpers (JS semantics: `!c`, `a ?? b`, `(s || '').trim()`) ────────────────────────
-# Where the web would THROW (``.trim()`` / ``.startsWith()`` on a non-string, ``.some()`` on a
-# non-list, a check object that is a truthy non-object), these helpers pick a quiet answer instead
-# and never raise; those cases are pinned in ``test_doc_chips.py`` alone, not the shared fixture.
+# Where today's web would THROW on a junk value (``.trim()`` / ``.startsWith()`` on a non-string,
+# ``.some()`` on a non-list, a check object that is a truthy non-object), this port gives a quiet
+# answer instead: these helpers, ``_check_obj`` and the ``isinstance`` tests inside the rules
+# below. So ``chips_for`` is meant never to raise on a junk value (the serializer still falls back if
+# it does). Those cases cannot sit in the shared fixture (the jest half would throw), so they are
+# pinned in ``test_doc_chips.py`` alone. The year chip is the one place this port is STRICTER than
+# the web on junk: see ``year_chip``.
 
 def _get(obj, key):
     return obj.get(key) if isinstance(obj, dict) else None
@@ -438,7 +442,10 @@ def year_chip(doc):
             continue
         c = _get(doc, check)
         year = _get(c, field)
-        if not _truthy(year):
+        # N5: a year is a str or an int, nothing else (a bool is an int in Python: refused). The web
+        # would draw a junk value as text ("true", "[object Object]"); the serializer only ever
+        # serves a str or an int here, so the shared fixture (and today's screen) is the same.
+        if isinstance(year, bool) or not isinstance(year, (str, int)) or not _truthy(year):
             return None
         word = _get(c, f'{field}_status')
         word = word if _truthy(word) else ''

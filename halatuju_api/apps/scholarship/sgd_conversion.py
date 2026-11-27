@@ -67,6 +67,7 @@ class AdminApplicantDocumentSerializer(ApplicantDocumentSerializer):
     ``figure_refused`` (TD-323) — both officer-only, which is why they live here."""
     sgd_conversion = serializers.SerializerMethodField()
     figure_refused = serializers.SerializerMethodField()
+    chip_audience = 'officer'   # chip standard S1: the officer's chips (doc_chips), same keys
 
     class Meta(ApplicantDocumentSerializer.Meta):
         fields = ApplicantDocumentSerializer.Meta.fields + ['sgd_conversion', 'figure_refused']

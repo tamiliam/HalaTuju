@@ -11,7 +11,8 @@ from unittest import mock
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
-from apps.scholarship import doc_chips
+from apps.scholarship import doc_chips, doc_chips_student
+from apps.scholarship.serializers import documents as documents_ser
 from apps.scholarship.serializers import ApplicantDocumentSerializer
 from apps.scholarship.sgd_conversion import AdminApplicantDocumentSerializer
 from apps.scholarship.tests.factories import create_document, make_application
@@ -142,6 +143,15 @@ class WhereTheWebThrowsTests(SimpleTestCase):
                                                                  'points': {'key': 'amount', 'value': '9'}}}
         self.assertEqual(self.keys(doc), [('name', 'green'), ('amount', 'grey'), ('period', 'grey')])
 
+    def test_n5_a_year_counts_only_when_it_is_a_str_or_an_int(self):
+        """The web would draw a junk year as text ("true"); the server serves a str or an int only."""
+        for year, want in (('2025', '2025'), (2025, '2025'), (True, None), (2025.0, None),
+                           ({'y': 2025}, None), (['2025'], None), ('', None), (0, None)):
+            with self.subTest(year=repr(year)):
+                yc = doc_chips.year_chip({'doc_type': 'results_slip',
+                                          'academic_check': {'exam_year': year, 'exam_year_status': 'current'}})
+                self.assertEqual(yc and yc['value'], want)
+
     def test_a_genuineness_word_that_is_not_a_string_is_amber(self):   # the web: [].startsWith throws
         doc = {'doc_type': 'ic', 'vision_name_verdict': 'match', 'vision_nric_verdict': 'match',
                'authenticity': {'status': ['not_ic']}}
@@ -151,25 +161,43 @@ class WhereTheWebThrowsTests(SimpleTestCase):
 class ServedPayloadTests(TestCase):
     def setUp(self):
         self.app = make_application()
+        documents_ser._CHIP_FALLBACK_LOGGED.clear()      # the log-once memory is per process
 
     def doc(self, doc_type, **kw):
         return create_document(self.app, doc_type, storage_path='s', **kw)
 
     def test_student_and_admin_payloads_carry_the_three_keys(self):
-        d = self.doc('ic')
-        for serializer in (ApplicantDocumentSerializer, AdminApplicantDocumentSerializer):
+        """S1 audience split: the student's payload serves the STUDENT chips, the officer's the
+        OFFICER chips, under the same three keys."""
+        d = self.doc('ic', vision_run_at=timezone.now())
+        for serializer, module in ((ApplicantDocumentSerializer, doc_chips_student),
+                                   (AdminApplicantDocumentSerializer, doc_chips)):
             with self.subTest(serializer.__name__):
                 data = serializer(d).data
                 for key in ('chips', 'chip_pill', 'read_at'):
                     self.assertIn(key, data)
-                self.assertEqual(data['chips'], doc_chips.chips_for(data))
-                self.assertEqual(data['chip_pill'], doc_chips.pill_for(data['chips']))
+                self.assertEqual(data['chips'], module.chips_for(data))
+                self.assertEqual(data['chip_pill'], module.pill_for(data['chips']))
+                self.assertTrue(data['chips'])
+
+    def test_the_student_payload_carries_no_officer_chip_word(self):
+        """The S0 exposure note, closed: no officer-only key reaches the student's chips."""
+        d = self.doc('ic', vision_run_at=timezone.now())
+        student = ApplicantDocumentSerializer(d).data['chips']
+        officer = AdminApplicantDocumentSerializer(d).data['chips']
+        self.assertEqual([c['key'] for c in student], ['icNo', 'name'])
+        self.assertEqual([c['key'] for c in officer], ['name', 'ic_no'])
+        self.assertTrue(all('label' in c for c in student))
+        self.assertFalse(any('label' in c for c in officer))
 
     def test_an_unread_ic_serves_two_grey_chips_and_unread(self):
-        data = ApplicantDocumentSerializer(self.doc('ic')).data
+        d = self.doc('ic')
+        data = AdminApplicantDocumentSerializer(d).data
         self.assertEqual([(c['key'], c['state']) for c in data['chips']], [('name', 'grey'), ('ic_no', 'grey')])
         self.assertEqual(data['chip_pill'], 'unread')
         self.assertIsNone(data['read_at'])
+        student = ApplicantDocumentSerializer(d).data                 # the student sees no checklist yet
+        self.assertEqual((student['chips'], student['chip_pill']), ([], 'unread'))
 
     def test_read_at_is_the_later_of_the_two_read_stamps(self):
         early = timezone.make_aware(datetime.datetime(2026, 11, 1, 9, 0))
@@ -196,23 +224,44 @@ class ServedPayloadTests(TestCase):
 
     def test_a_raise_in_the_chips_falls_back_and_logs_no_value(self):
         d = self.doc('ic')
-        for target in ('chips_for', 'pill_for'):
-            def boom(*_a, **_k):
-                raise ValueError('SECRET NAME 900101-01-1234')
-            with self.subTest(target), mock.patch.object(doc_chips, target, boom), \
-                    self.assertLogs('apps.scholarship.serializers.documents', 'WARNING') as logs:
-                data = ApplicantDocumentSerializer(d).data
-                self.assertEqual((data['chips'], data['chip_pill']), ([], 'unread'))
-                self.assertIn('read_at', data)
-                line = '\n'.join(logs.output)
-                self.assertIn(str(d.pk), line)
-                self.assertIn('ValueError', line)
-                self.assertNotIn('SECRET', line)
-                self.assertNotIn('900101', line)
+        for serializer, module in ((ApplicantDocumentSerializer, doc_chips_student),
+                                   (AdminApplicantDocumentSerializer, doc_chips)):
+            for target in ('chips_for', 'pill_for'):
+                documents_ser._CHIP_FALLBACK_LOGGED.clear()
+
+                def boom(*_a, **_k):
+                    raise ValueError('SECRET NAME 900101-01-1234')
+                with self.subTest(serializer.__name__, target=target), mock.patch.object(module, target, boom), \
+                        self.assertLogs('apps.scholarship.serializers.documents', 'ERROR') as logs:
+                    data = serializer(d).data
+                    self.assertEqual((data['chips'], data['chip_pill']), ([], 'unread'))
+                    self.assertIn('read_at', data)
+                    line = '\n'.join(logs.output)
+                    self.assertIn(str(d.pk), line)
+                    self.assertIn('ValueError', line)
+                    self.assertNotIn('SECRET', line)
+                    self.assertNotIn('900101', line)
+
+    def test_n6_the_fallback_logs_once_per_exception_type_and_always_counts(self):
+        d = self.doc('ic')
+        before = documents_ser.CHIP_FALLBACKS['count']
+        with mock.patch.object(doc_chips_student, 'chips_for', lambda *_a: 1 / 0), \
+                mock.patch.object(documents_ser.logger, 'error') as error:
+            for _ in range(3):
+                self.assertEqual(ApplicantDocumentSerializer(d).data['chips'], [])
+        self.assertEqual(error.call_count, 1)                           # once, not three times
+        self.assertEqual(error.call_args.args[1:], (d.pk, 'ZeroDivisionError'))
+        with mock.patch.object(doc_chips_student, 'chips_for', lambda *_a: [][1]), \
+                mock.patch.object(documents_ser.logger, 'error') as error:
+            ApplicantDocumentSerializer(d).data
+            ApplicantDocumentSerializer(d).data
+        self.assertEqual(error.call_count, 1)                           # a new type logs once more
+        self.assertEqual(error.call_args.args[2], 'IndexError')
+        self.assertEqual(documents_ser.CHIP_FALLBACKS['count'], before + 5)
 
     def test_a_raise_in_the_chips_never_breaks_the_admin_payload_either(self):
         with mock.patch.object(doc_chips, 'chips_for', lambda *_a: 1 / 0), \
-                self.assertLogs('apps.scholarship.serializers.documents', 'WARNING'):
+                self.assertLogs('apps.scholarship.serializers.documents', 'ERROR'):
             data = AdminApplicantDocumentSerializer(self.doc('ic')).data
         self.assertEqual((data['chips'], data['chip_pill']), ([], 'unread'))
 

@@ -1,6 +1,6 @@
 # Document chip standard
 
-Status: Sprint 0 built on 2026-11-27 (branch `chip-std-s0`). It is display only, with no visible change and no verdict change.
+Status: Sprint 0 built on 2026-11-27 (branch `chip-std-s0`). Sprint 1 phase 1a (server only) built on 2026-11-28 (branch `chip-std-s1`). Both are display only, with no visible change and no verdict change.
 Approved look: `docs/document-chip-mockup-approved-2026-11-26.html`.
 
 ## What Sprint 0 adds
@@ -43,12 +43,47 @@ One server module, `apps/scholarship/doc_chips.py`, builds every document's chip
 
 ### Kept on purpose: student and officer can differ on one chip
 
-`figure_refused` is served only on the officer payload. So on a salary slip or EPF statement:
+`figure_refused` is served only on the officer payload. So on a salary slip or EPF statement the officer sees an amber **Amount / Contribution unusable** chip. Since Sprint 1 the student payload serves the student's own chips (below), which never had an Amount chip.
 
-- the officer sees an amber **Amount / Contribution unusable** chip;
-- the student payload shows the read figure (green when a figure was read).
+## What Sprint 1 phase 1a adds (server only)
 
-`chip_dry_run` counts this as `student_differs`. A later sprint decides what the student should see.
+**Audience split.** The two payloads now serve different chips under the same three keys (`chips`, `chip_pill`, `read_at`):
+
+- the student's `ApplicantDocumentSerializer` (`chip_audience = 'student'`) serves `doc_chips_student`;
+- the officer's `sgd_conversion.AdminApplicantDocumentSerializer` (`chip_audience = 'officer'`) serves `doc_chips`.
+
+**The student module.** `apps/scholarship/doc_chips_student.py` ports the badges today's student checklists draw under an upload card (`checklists.tsx`, `checklistsPathway.tsx`, and the dispatch in `cards.tsx`), rule for rule. Its chip is the officer shape plus one key:
+
+- `kind` is fact (a status badge) / plain (a grey "from the document" tag) / note (the amber genuineness note);
+- `label` is today's badge word as its full i18n key. The student's word cannot be worked out from the colour, so it travels with the chip;
+- `student_action` is `none` everywhere;
+- `pill_for` is the officer rule over `fact` chips only. The student draws no pill today.
+
+**Parity.** The shared fixture gains 60 synthetic `student_cases`. `tests/test_doc_chips_student.py` checks the server; `halatuju-web/src/components/ScholarshipDocuments/__tests__/student-chip-parity.test.tsx` renders today's student checklists on the same cases (with a stub `t`) and reads every badge off the screen: colour, word and row. No component was changed.
+
+**Student vs officer today** (copied as they are; nothing fixed):
+
+| Where | Student | Officer |
+|---|---|---|
+| Utility address not found | red | amber |
+| IC genuineness note | shown for anything but `genuine` (so `likely_genuine` too) | per the officer rules |
+| Birth certificate | no `unreadable` row | has one |
+| Offer letter | a pathway mismatch is amber on programme / institution; issuer, date and address are plain tags | adds Official and Reporting date chips |
+| STR stale / future | no status badge | an amber Current chip |
+| Results slip not SPM / not compared | no badge (not compared drops the row) | a chip on every row |
+| Year chips | none | `exam_year` / `intake_year` |
+| Pill | none drawn | served and drawn |
+| Unread IC | no checklist until read (`[]`) | two grey chips |
+
+Not ported: a higher result on the SPM slot and the higher results' own checklist are drawn by lazy components outside the two files. For those the student module serves only the genuineness note.
+
+**Harder fence (N1, N2, N3, N7).** The import fence now covers both modules and flags a `doc_chips` / `chips_for` / `pill_for` Name or Attribute in an engine (N1), any engine import of `serializers` / `sgd_conversion` / `upload_read` (N2, allowlist with a reason each; empty today), the bare string `'chips'` or anything naming `chip_pill` (N3), and skips docstrings when scanning strings (N7). Only the document serializer and the dry run may name a chip module.
+
+**Year chip (N5).** A year counts only when it is a str or an int (never a bool, float, dict or list). The web would draw such junk as text ("true"); the serializer only ever serves a str or an int, so the fixture is unaffected and no colour changes.
+
+**Loud fallback (N6).** When working out the chips raises, the serializer still serves `chips = []`, `chip_pill = 'unread'`. It now logs at ERROR, once per process per exception type, with the document id and the exception type name only, and bumps `serializers.documents.CHIP_FALLBACKS['count']` on every fallback.
+
+**Dry run.** `chip_dry_run` counts both audiences: `chips`, `state_changed`, `pill_changed` (officer, `old` / `new`) and `student_chips`, `student_state_changed`, `student_pill_changed` (student, `student_old` / `student_new`). Sprint 0's `student_differs` is gone: the audiences now differ on purpose. While it re-reads the bands, both modules' `chips_for` / `pill_for` are rigged to raise.
 
 ## The standard (target, from the approved mock-up)
 
@@ -108,14 +143,12 @@ One server module, `apps/scholarship/doc_chips.py`, builds every document's chip
 
 The OCR "name is close" fix (`SHOW_CLOSE` / `name_close`) is **not on main**. It lives only on the branch `fix-1048-declaration`. The near-match amber chip for this case belongs to Sprint 3. Rebase on that fix, or port it, when the name chips move to the standard.
 
-## Open for Sprint 1: the owner should confirm
+## Closed in Sprint 1: officer words on the student payload
 
-The **student** payload now carries the officer's chip words as well as `chip_pill`. These include `wrongType`, `genuine`, `relationship` and `wrong_card`.
+Sprint 0 noted that the student payload carried the officer's chip words (`wrongType`, `genuine`, `relationship`, `wrong_card`). Closed by the audience split: the student payload now serves only the student's chips, which carry exactly the words today's student screen already shows. `test_the_student_payload_carries_no_officer_chip_word` pins it.
 
-- Every one of them is worked out from data the student payload already carries. So nothing new is revealed.
-- But it is a new way of putting it. For example, a student could now read "wrong type" or "not sure it is genuine" as a single word.
-- No screen shows these yet. **Before Sprint 1 shows chips to students, the owner should confirm** which of these words a student may see.
+Still open: `views_admin/profiles.py` (an officer re-run response) uses the student serializer, so it serves student chips. Nothing reads them there yet; phase 1b should decide. The sponsor and upload-read payloads also take the student audience.
 
 ## Next step
 
-Port the student checklist (`checklists.tsx` and `checklistsPathway.tsx`) onto the served chips. The student screen will then read the same `chips` / `chip_pill` as the officer drawer. This was not in Sprint 0.
+Phase 1b: move the student screen onto the served chips (drawn from `label` / `state` / `kind`), with no visible change, then move the officer drawer onto `doc_chips`.

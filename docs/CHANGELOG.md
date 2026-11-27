@@ -1,5 +1,22 @@
 # Changelog — HalaTuju
 
+## Document chip standard Sprint 1 phase 1a: student chips on the server (2026-11-28, branch chip-std-s1, not pushed)
+
+### Added
+- **`apps/scholarship/doc_chips_student.py`**: ports the badges today's student checklists draw (`checklists.tsx`, `checklistsPathway.tsx`, the `cards.tsx` dispatch) rule for rule. Same chip shape as the officer's, `student_action` `none`, plus `label` (today's badge word as its i18n key). Display only, no database queries.
+- **Student parity**: 60 synthetic `student_cases` in the shared fixture, checked by `tests/test_doc_chips_student.py` and by jest (`student-chip-parity.test.tsx`), which renders today's student checklists and reads every badge off the screen.
+
+### Changed
+- **Audience split**: the student payload serves the student's chips and the officer payload (`AdminApplicantDocumentSerializer`) the officer's, under the same `chips` / `chip_pill` / `read_at` keys. The student payload no longer carries the officer's chip words (closes the Sprint 0 open question).
+- **Import fence**: covers both chip modules; also flags chip names used as code, any engine import of `serializers` / `sgd_conversion` / `upload_read`, and the bare string `'chips'`; docstrings are skipped.
+- **Year chip**: counts only a str or an int year (never a bool, float or dict). No colour changes.
+- **Chip fallback is loud**: still serves no chips and `unread`, but logs at ERROR once per process per exception type (document id and error type only) and counts every fallback.
+- **`eval/chip_dry_run.py`**: counts both audiences (`student_chips`, `student_state_changed`, `student_pill_changed`); its guard rigs both chip modules. `student_differs` removed.
+- **`docs/document-chip-standard.md`**: the audience split, the student module, the student vs officer table, and what is not ported.
+
+### Unchanged
+- Verdicts, engines, `MODEL_VERSION`, and the golden verdict pins and digests. No UI change; no web component edited.
+
 ## Document chip standard Sprint 0: one server chip module (2026-11-27, branch chip-std-s0, not pushed)
 
 ### Added

@@ -4,7 +4,7 @@ from unittest import mock
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.scholarship import doc_chips
+from apps.scholarship import doc_chips, doc_chips_student
 from apps.scholarship.eval import chip_dry_run
 from apps.scholarship.eval import offer_s4_dry_run as dr
 from apps.scholarship.models import ApplicantDocument
@@ -17,13 +17,31 @@ class ChipDryRunTests(TestCase):
         create_document(self.app, 'ic', storage_path='s')
         create_document(self.app, 'photo', storage_path='s')
 
-    def test_sprint_0_changes_no_chip_and_no_band(self):
+    def test_today_changes_no_chip_and_no_band_for_either_audience(self):
         result = chip_dry_run.run_dry(allow_sqlite=True)
         self.assertEqual(result['applications'], 1)
         self.assertTrue(result['bands_identical'])
+        # an unread card: the officer sees two grey chips, the student no checklist yet
         self.assertEqual(result['per_type']['ic'], {'docs': 1, 'chips': 2, 'state_changed': 0,
-                                                    'pill_changed': 0, 'student_differs': 0})
+                                                    'pill_changed': 0, 'student_chips': 0,
+                                                    'student_state_changed': 0, 'student_pill_changed': 0})
         self.assertEqual(result['per_type']['photo']['docs'], 1)
+
+    def test_both_audiences_are_counted_from_their_own_payload(self):
+        create_document(self.app, 'semester_result', storage_path='s', vision_name_match='found')
+        result = chip_dry_run.run_dry(allow_sqlite=True)
+        row = result['per_type']['semester_result']
+        self.assertEqual(row['student_chips'], 1)                    # the supporting-document chip
+        self.assertEqual((row['student_state_changed'], row['student_pill_changed']), (0, 0))
+
+    def test_a_student_target_rule_is_counted_on_the_student_side_only(self):
+        create_document(self.app, 'semester_result', storage_path='s', vision_name_match='found')
+
+        def target(payload):
+            return [{**c, 'state': 'red'} for c in doc_chips_student.chips_for(payload)]
+        row = chip_dry_run.run_dry(student_new=target, allow_sqlite=True)['per_type']['semester_result']
+        self.assertEqual(row['student_state_changed'], 1)
+        self.assertEqual(row['state_changed'], 0)
 
     def test_a_target_rule_is_counted_per_type(self):
         def target(payload):
@@ -66,9 +84,11 @@ class ChipDryRunTests(TestCase):
                 chip_dry_run.run_dry(allow_sqlite=True)
 
     def test_the_guard_trips_on_a_direct_call_too(self):
-        with self.assertRaises(chip_dry_run.ChipsRefused):
-            with chip_dry_run._chips_refused():
-                doc_chips.pill_for([])
+        for module in (doc_chips, doc_chips_student):
+            for name in ('chips_for', 'pill_for'):
+                with self.subTest(module.__name__, name=name), self.assertRaises(chip_dry_run.ChipsRefused):
+                    with chip_dry_run._chips_refused():
+                        getattr(module, name)([])
 
     def test_the_guard_trips_even_when_the_caller_swallows_the_raise(self):
         with self.assertRaises(chip_dry_run.ChipsRefused):
@@ -79,10 +99,10 @@ class ChipDryRunTests(TestCase):
                     pass
 
     def test_the_guard_is_off_again_afterwards(self):
-        real = doc_chips.chips_for
+        real = doc_chips.chips_for, doc_chips_student.chips_for, doc_chips_student.pill_for
         with chip_dry_run._chips_refused():
             pass
-        self.assertIs(doc_chips.chips_for, real)
+        self.assertEqual((doc_chips.chips_for, doc_chips_student.chips_for, doc_chips_student.pill_for), real)
 
     def test_superseded_rows_are_skipped_and_output_is_counts_only(self):
         ApplicantDocument.objects.filter(doc_type='photo').update(superseded_at=timezone.now())
@@ -92,4 +112,5 @@ class ChipDryRunTests(TestCase):
         self.assertRegex(lines[0], r'^applications \d+  bands_identical (True|False)$')   # no ids, no names
         for line in lines[1:]:
             self.assertRegex(line, r'^[a-z_]+\s+docs\s+\d+\s+chips\s+\d+\s+state_changed\s+\d+\s+'
-                                   r'pill_changed\s+\d+\s+student_differs\s+\d+$')
+                                   r'pill_changed\s+\d+\s+student_chips\s+\d+\s+'
+                                   r'student_state_changed\s+\d+\s+student_pill_changed\s+\d+$')

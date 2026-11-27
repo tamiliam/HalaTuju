@@ -3,24 +3,40 @@
 import logging
 
 from rest_framework import serializers
-from .. import doc_chips   # the module, not its names: the chip dry run's guard patches it here
+from .. import doc_chips, doc_chips_student   # the modules, not their names: the dry run's guard patches them here
 from ..models import ApplicantDocument, ResolutionItem
 
 logger = logging.getLogger(__name__)
 _READ_AT = serializers.DateTimeField()   # one instance, unbound: only its to_representation is used
+# Chip standard S1 (N6): a chip fallback is LOUD. Each failure bumps this counter; the FIRST failure of
+# each exception type in a process logs one error (document id + exception type name only).
+CHIP_FALLBACKS = {'count': 0}
+_CHIP_FALLBACK_LOGGED: set = set()
 
 
-def _served_chips(instance, data):
+def _chip_module(audience):
+    """The officer's chips (``doc_chips``) or the student's (``doc_chips_student``)."""
+    return doc_chips if audience == 'officer' else doc_chips_student
+
+
+def _served_chips(instance, data, audience='student'):
     """The chips + pill for one payload. Display only, so it can never break the read: any raise
-    (a junk value in a check object) logs the document id and the exception TYPE only (no value,
-    no traceback: a payload carries names and IC numbers) and serves no chips, 'unread'. A raise
-    here would turn a document list into a 500 and, in ``upload_read.judge``, re-run a paid read."""
+    (a junk value in a check object) serves no chips, 'unread'. A raise here would turn a document
+    list into a 500 and, in ``upload_read.judge``, re-run a paid read. The fallback is loud, never
+    quiet: ``CHIP_FALLBACKS['count']`` goes up every time, and the first raise of each exception
+    type logs ONE error with the document id and the exception TYPE name only (no value, no message,
+    no traceback: a payload carries names and IC numbers)."""
     try:
-        chips = doc_chips.chips_for(data)
-        return chips, doc_chips.pill_for(chips)
+        module = _chip_module(audience)
+        chips = module.chips_for(data)
+        return chips, module.pill_for(chips)
     except Exception as exc:
-        logger.warning('doc_chips failed for document %s (%s); serving no chips',
-                       getattr(instance, 'pk', None), type(exc).__name__)
+        CHIP_FALLBACKS['count'] += 1
+        kind = type(exc).__name__
+        if kind not in _CHIP_FALLBACK_LOGGED:
+            _CHIP_FALLBACK_LOGGED.add(kind)
+            logger.error('doc chips failed for document %s (%s); serving no chips',
+                         getattr(instance, 'pk', None), kind)
         return [], 'unread'
 
 
@@ -39,6 +55,10 @@ def _read_at(instance):
 # ── Documents / referee / consent (Sprint 5a) ────────────────────────────
 
 class ApplicantDocumentSerializer(serializers.ModelSerializer):
+    # Chip standard S1: whose chips this payload serves. The student's own payload serves the
+    # STUDENT chips; the officer's serializer (``sgd_conversion.AdminApplicantDocumentSerializer``)
+    # sets 'officer'. Same keys either way (chips, chip_pill, read_at).
+    chip_audience = 'student'
     download_url = serializers.SerializerMethodField()
     # S13: server-computed match verdicts (so client doesn't reimplement matchers).
     vision_nric_verdict = serializers.SerializerMethodField()
@@ -133,8 +153,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         (no employer / no pay period — a declaration has neither by design). A copy is shown; the stored
         read is never edited (`income_engine.declaration_name.shown_warnings`).
 
-        Chip standard S0 (display only): the server's chips + pill, worked out from THIS payload
-        (no query of its own), and ``read_at`` = the later of the two read stamps (null if neither).
+        Chip standard (display only): this audience's chips + pill (``chip_audience``), worked out from
+        THIS payload (no query of its own), and ``read_at`` = the later of the two read stamps (null if neither).
         ONE override only: a second ``to_representation`` in this class silently replaces this one."""
         data = super().to_representation(instance)
         vf = data.get('vision_fields')
@@ -143,7 +163,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             kept = shown_warnings(instance, vf['warnings'])
             if kept is not vf['warnings']:
                 data['vision_fields'] = {**vf, 'warnings': kept}
-        data['chips'], data['chip_pill'] = _served_chips(instance, data)
+        data['chips'], data['chip_pill'] = _served_chips(instance, data, self.chip_audience)
         data['read_at'] = _read_at(instance)
         return data
 

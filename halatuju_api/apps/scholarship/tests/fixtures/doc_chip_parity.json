@@ -3590,5 +3590,2454 @@
    ],
    "pill": "verified"
   }
+ ],
+ "_about_student": "Chip standard S1: student_cases, SYNTHETIC data only. pytest checks doc_chips_student.chips_for; jest renders today's student checklists on the SAME cases and reads the badges off the screen.",
+ "student_cases": [
+  {
+   "name": "student ic all match, address read",
+   "doc": {
+    "id": 9001,
+    "doc_type": "ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "vision_name": "SAMPLE NAME A",
+    "vision_nric": "000101010001",
+    "vision_address": "SAMPLE ADDRESS 1",
+    "vision_name_verdict": "match",
+    "vision_nric_verdict": "match",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.match"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.match"
+    },
+    {
+     "key": "address",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.icCheck.fromIc"
+    }
+   ]
+  },
+  {
+   "name": "student ic name partial, number mismatch",
+   "doc": {
+    "id": 9002,
+    "doc_type": "ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "vision_name": "SAMPLE NAME A",
+    "vision_nric": "000101010001",
+    "vision_address": "",
+    "vision_name_verdict": "partial",
+    "vision_nric_verdict": "mismatch",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.mismatch"
+    },
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.partial"
+    }
+   ]
+  },
+  {
+   "name": "student ic unreadable and pending",
+   "doc": {
+    "id": 9003,
+    "doc_type": "ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "vision_name": "SAMPLE NAME A",
+    "vision_nric": "000101010001",
+    "vision_address": "",
+    "vision_name_verdict": "unreadable",
+    "vision_nric_verdict": "pending",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.none"
+    },
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.unreadable"
+    }
+   ]
+  },
+  {
+   "name": "student ic suspect shows the ic note",
+   "doc": {
+    "id": 9004,
+    "doc_type": "ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "vision_name": "SAMPLE NAME A",
+    "vision_nric": "000101010001",
+    "vision_address": "",
+    "vision_name_verdict": "match",
+    "vision_nric_verdict": "match",
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.match"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.match"
+    },
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.icCheck.notGenuine"
+    }
+   ]
+  },
+  {
+   "name": "student ic likely_genuine still shows the note",
+   "doc": {
+    "id": 9005,
+    "doc_type": "ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "vision_name": "SAMPLE NAME A",
+    "vision_nric": "000101010001",
+    "vision_address": "",
+    "vision_name_verdict": "match",
+    "vision_nric_verdict": "match",
+    "authenticity": {
+     "status": "likely_genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.match"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.match"
+    },
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.icCheck.notGenuine"
+    }
+   ]
+  },
+  {
+   "name": "student ic sample stamp",
+   "doc": {
+    "id": 9006,
+    "doc_type": "ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "vision_name": "SAMPLE NAME A",
+    "vision_nric": "000101010001",
+    "vision_address": "",
+    "vision_name_verdict": "match",
+    "vision_nric_verdict": "match",
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": "sample_document"
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.match"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.match"
+    },
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.sampleDoc"
+    }
+   ]
+  },
+  {
+   "name": "student ic not read yet takes the supporting chip",
+   "doc": {
+    "id": 9007,
+    "doc_type": "ic",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "vision_name_match": "found"
+   },
+   "chips": [
+    {
+     "key": "match",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.match.good"
+    }
+   ]
+  },
+  {
+   "name": "student parent ic matches the str",
+   "doc": {
+    "id": 9008,
+    "doc_type": "parent_ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "income_ic_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "address": "SAMPLE ADDRESS 1",
+     "proof_kind": "str",
+     "proof_name_status": "match",
+     "proof_nric_status": "match"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeIcCheck.matchesProof"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeIcCheck.matchesProof"
+    },
+    {
+     "key": "address",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.icCheck.fromTheirIc"
+    }
+   ]
+  },
+  {
+   "name": "student parent ic clashes with the slip",
+   "doc": {
+    "id": 9009,
+    "doc_type": "parent_ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "income_ic_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "address": "",
+     "proof_kind": "salary_slip",
+     "proof_name_status": "mismatch",
+     "proof_nric_status": "mismatch"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeIcCheck.proofMismatch"
+    },
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeIcCheck.proofMismatch"
+    }
+   ]
+  },
+  {
+   "name": "student parent ic wrong card",
+   "doc": {
+    "id": 9010,
+    "doc_type": "parent_ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "income_ic_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "address": "",
+     "proof_kind": "",
+     "proof_name_status": "no_ref",
+     "proof_nric_status": "mismatch",
+     "display_wrong_card": true
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeIcCheck.wrongCard"
+    },
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.fromTheirIc"
+    }
+   ]
+  },
+  {
+   "name": "student parent ic no proof yet, no number",
+   "doc": {
+    "id": 9011,
+    "doc_type": "parent_ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "income_ic_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "",
+     "address": "",
+     "proof_kind": "",
+     "proof_name_status": "no_ref",
+     "proof_nric_status": "no_ref"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.fromTheirIc"
+    }
+   ]
+  },
+  {
+   "name": "student parent ic display word wins",
+   "doc": {
+    "id": 9012,
+    "doc_type": "parent_ic",
+    "vision_run_at": "2026-11-01T09:00:00+08:00",
+    "income_ic_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "address": "",
+     "proof_kind": "str",
+     "proof_name_status": "mismatch",
+     "proof_nric_status": "no_ref",
+     "display_proof_name_status": "match"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "icNo",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.icCheck.fromTheirIc"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeIcCheck.matchesProof"
+    }
+   ]
+  },
+  {
+   "name": "student parent ic not read yet",
+   "doc": {
+    "id": 9013,
+    "doc_type": "parent_ic",
+    "vision_run_at": null,
+    "income_ic_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "address": "",
+     "proof_kind": "",
+     "proof_name_status": "no_ref",
+     "proof_nric_status": "no_ref"
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.note"
+    }
+   ]
+  },
+  {
+   "name": "student slip name match, ic mismatch",
+   "doc": {
+    "id": 9014,
+    "doc_type": "salary_slip",
+    "income_proof_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "name_status": "match",
+     "nric_status": "mismatch",
+     "points": [
+      {
+       "key": "amount",
+       "value": "1500"
+      },
+      {
+       "key": "period",
+       "value": "10/2026"
+      }
+     ]
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "icNo",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.mismatchIc"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    },
+    {
+     "key": "period",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    }
+   ]
+  },
+  {
+   "name": "student slip not read name",
+   "doc": {
+    "id": 9015,
+    "doc_type": "salary_slip",
+    "income_proof_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "",
+     "name_status": "match",
+     "nric_status": "no_ref",
+     "points": [
+      {
+       "key": "amount",
+       "value": "1500"
+      },
+      {
+       "key": "period",
+       "value": "10/2026"
+      }
+     ],
+     "display_name_status": "not_read"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.notRead"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    },
+    {
+     "key": "period",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    }
+   ]
+  },
+  {
+   "name": "student slip check name and near number",
+   "doc": {
+    "id": 9016,
+    "doc_type": "salary_slip",
+    "income_proof_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "name_status": "check_name",
+     "nric_status": "check_near",
+     "points": [
+      {
+       "key": "amount",
+       "value": "1500"
+      },
+      {
+       "key": "period",
+       "value": "10/2026"
+      }
+     ]
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.checkName"
+    },
+    {
+     "key": "icNo",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.checkNumberOneDigit"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    },
+    {
+     "key": "period",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    }
+   ]
+  },
+  {
+   "name": "student slip no ref ic",
+   "doc": {
+    "id": 9017,
+    "doc_type": "salary_slip",
+    "income_proof_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "",
+     "name_status": "no_ref",
+     "nric_status": "no_ref",
+     "points": []
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.addIc"
+    }
+   ]
+  },
+  {
+   "name": "student epf suspect",
+   "doc": {
+    "id": 9018,
+    "doc_type": "epf",
+    "income_proof_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "",
+     "name_status": "match",
+     "nric_status": "no_ref",
+     "points": [
+      {
+       "key": "avgContribution",
+       "value": "200"
+      }
+     ]
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "avgContribution",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    },
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.note"
+    }
+   ]
+  },
+  {
+   "name": "student str current",
+   "doc": {
+    "id": 9019,
+    "doc_type": "str",
+    "str_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "status": "Lulus",
+     "year": "2026",
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "current"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "status",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.approved"
+    },
+    {
+     "key": "year",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.current"
+    }
+   ]
+  },
+  {
+   "name": "student str unconfirmed",
+   "doc": {
+    "id": 9020,
+    "doc_type": "str",
+    "str_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "status": "Lulus",
+     "year": "2026",
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "unconfirmed"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "status",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.approved"
+    },
+    {
+     "key": "year",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.unconfirmed"
+    }
+   ]
+  },
+  {
+   "name": "student str unknown",
+   "doc": {
+    "id": 9021,
+    "doc_type": "str",
+    "str_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "status": "Lulus",
+     "year": "2026",
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "unknown"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "status",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.unknown"
+    },
+    {
+     "key": "year",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.unknown"
+    }
+   ]
+  },
+  {
+   "name": "student str stale has no status badge",
+   "doc": {
+    "id": 9022,
+    "doc_type": "str",
+    "str_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "status": "Lulus",
+     "year": "2026",
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "stale"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "year",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.stale"
+    }
+   ]
+  },
+  {
+   "name": "student str future",
+   "doc": {
+    "id": 9023,
+    "doc_type": "str",
+    "str_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "status": "Lulus",
+     "year": "2026",
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "future"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "year",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.future"
+    }
+   ]
+  },
+  {
+   "name": "student str rejected",
+   "doc": {
+    "id": 9024,
+    "doc_type": "str",
+    "str_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "status": "Lulus",
+     "year": "2026",
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "rejected"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "icNo",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "status",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.rejected"
+    },
+    {
+     "key": "year",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.unknown"
+    }
+   ]
+  },
+  {
+   "name": "student str not approved, recipient not read",
+   "doc": {
+    "id": 9025,
+    "doc_type": "str",
+    "str_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "",
+     "status": "Lulus",
+     "year": "2026",
+     "name_status": "match",
+     "nric_status": "match",
+     "current_status": "not_approved",
+     "display_name_status": "not_read"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.notRead"
+    },
+    {
+     "key": "status",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.not_approved"
+    },
+    {
+     "key": "year",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.unknown"
+    }
+   ]
+  },
+  {
+   "name": "student str ic mismatch",
+   "doc": {
+    "id": 9026,
+    "doc_type": "str",
+    "str_check": {
+     "name": "SAMPLE EARNER",
+     "nric": "700101010001",
+     "status": "Lulus",
+     "year": "2026",
+     "name_status": "match",
+     "nric_status": "mismatch",
+     "current_status": "current"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "recipient",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.matchesIc"
+    },
+    {
+     "key": "icNo",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.mismatchIc"
+    },
+    {
+     "key": "status",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.approved"
+    },
+    {
+     "key": "year",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.strCheck.current"
+    }
+   ]
+  },
+  {
+   "name": "student str with no check takes the supporting chip",
+   "doc": {
+    "id": 9027,
+    "doc_type": "str",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "vision_fields": {
+     "student_verdict": "name_mismatch"
+    }
+   },
+   "chips": [
+    {
+     "key": "assist",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.assist.name_mismatch"
+    }
+   ]
+  },
+  {
+   "name": "student water bill address found, both figures",
+   "doc": {
+    "id": 9028,
+    "doc_type": "water_bill",
+    "utility_check": {
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "found",
+     "monthly_bill": "30.00",
+     "unpaid_balance": "12.00"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "address",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.addressOk"
+    },
+    {
+     "key": "monthlyBill",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    },
+    {
+     "key": "unpaidBalance",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    }
+   ]
+  },
+  {
+   "name": "student water bill address not found is red",
+   "doc": {
+    "id": 9029,
+    "doc_type": "water_bill",
+    "utility_check": {
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "not_found",
+     "monthly_bill": "",
+     "unpaid_balance": ""
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "address",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.addressMismatch"
+    }
+   ]
+  },
+  {
+   "name": "student electricity bill address unconfirmed is plain",
+   "doc": {
+    "id": 9030,
+    "doc_type": "electricity_bill",
+    "utility_check": {
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "unconfirmed",
+     "monthly_bill": "",
+     "unpaid_balance": ""
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "address",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+    }
+   ]
+  },
+  {
+   "name": "student bc all confirmed with father",
+   "doc": {
+    "id": 9031,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "child_name": "SAMPLE CHILD",
+     "child_status": "match",
+     "mother_name": "SAMPLE MOTHER",
+     "mother_nric": "",
+     "mother_status": "match",
+     "father_name": "SAMPLE FATHER",
+     "father_status": "match"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "child",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.confirmed"
+    },
+    {
+     "key": "mother",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.confirmed"
+    },
+    {
+     "key": "father",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.confirmed"
+    }
+   ]
+  },
+  {
+   "name": "student bc mismatch and one digit",
+   "doc": {
+    "id": 9032,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "child_name": "SAMPLE CHILD",
+     "child_status": "mismatch",
+     "mother_name": "SAMPLE MOTHER",
+     "mother_nric": "",
+     "mother_status": "check_near",
+     "father_name": "",
+     "father_status": "match"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "child",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.mismatch"
+    },
+    {
+     "key": "mother",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.checkNumberOneDigit"
+    }
+   ]
+  },
+  {
+   "name": "student bc check number, name, both",
+   "doc": {
+    "id": 9033,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "child_name": "SAMPLE CHILD",
+     "child_status": "check",
+     "mother_name": "SAMPLE MOTHER",
+     "mother_nric": "",
+     "mother_status": "check_name",
+     "father_name": "SAMPLE FATHER",
+     "father_status": "check_both"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "child",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.checkNumber"
+    },
+    {
+     "key": "mother",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.checkName"
+    },
+    {
+     "key": "father",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.checkBoth"
+    }
+   ]
+  },
+  {
+   "name": "student bc not read and pending",
+   "doc": {
+    "id": 9034,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "child_name": "SAMPLE CHILD",
+     "child_status": "not_read",
+     "mother_name": "SAMPLE MOTHER",
+     "mother_nric": "",
+     "mother_status": "pending",
+     "father_name": "",
+     "father_status": "match"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "child",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.incomeProofCheck.notRead"
+    },
+    {
+     "key": "mother",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.reviewing"
+    }
+   ]
+  },
+  {
+   "name": "student bc display mother word wins",
+   "doc": {
+    "id": 9035,
+    "doc_type": "birth_certificate",
+    "bc_check": {
+     "child_name": "SAMPLE CHILD",
+     "child_status": "match",
+     "mother_name": "SAMPLE MOTHER",
+     "mother_nric": "",
+     "mother_status": "mismatch",
+     "father_name": "",
+     "father_status": "match",
+     "display_mother_status": "match"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "child",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.confirmed"
+    },
+    {
+     "key": "mother",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.confirmed"
+    }
+   ]
+  },
+  {
+   "name": "student guardianship match and check",
+   "doc": {
+    "id": 9036,
+    "doc_type": "guardianship_letter",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "guardianship_check": {
+     "guardian_name": "SAMPLE GUARDIAN",
+     "guardian_nric": "",
+     "guardian_status": "match",
+     "ward_name": "SAMPLE NAME A",
+     "ward_status": "check"
+    }
+   },
+   "chips": [
+    {
+     "key": "guardian",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.confirmed"
+    },
+    {
+     "key": "ward",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.relCheck.checkNumber"
+    }
+   ]
+  },
+  {
+   "name": "student slip all match",
+   "doc": {
+    "id": 9037,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "name": "match",
+     "subjects": "match",
+     "results": "match",
+     "slip_count": 9,
+     "missing": [],
+     "extra": [],
+     "mismatched": [],
+     "uncertain": [],
+     "exam": "SPM",
+     "exam_year": "2025"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.match"
+    },
+    {
+     "key": "subjects",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.match"
+    },
+    {
+     "key": "results",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.match"
+    },
+    {
+     "key": "exam",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.slipCheck.fromSlip"
+    }
+   ]
+  },
+  {
+   "name": "student slip subjects missing and extra",
+   "doc": {
+    "id": 9038,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "name": "match",
+     "subjects": "mismatch",
+     "results": "mismatch",
+     "slip_count": 9,
+     "missing": [
+      "SAMPLE SUBJECT"
+     ],
+     "extra": [
+      "OTHER SUBJECT"
+     ],
+     "mismatched": [
+      {
+       "subject": "SAMPLE SUBJECT",
+       "typed": "A",
+       "slip": "B"
+      }
+     ],
+     "uncertain": [],
+     "exam": "SPM",
+     "exam_year": "2025"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.match"
+    },
+    {
+     "key": "subjects",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.mismatch"
+    },
+    {
+     "key": "results",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.mismatch"
+    },
+    {
+     "key": "exam",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.slipCheck.fromSlip"
+    }
+   ]
+  },
+  {
+   "name": "student slip uncertain results",
+   "doc": {
+    "id": 9039,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "name": "partial",
+     "subjects": "match",
+     "results": "uncertain",
+     "slip_count": 9,
+     "missing": [],
+     "extra": [],
+     "mismatched": [],
+     "uncertain": [
+      {
+       "subject": "SAMPLE SUBJECT"
+      }
+     ],
+     "exam": "SPM",
+     "exam_year": "2025"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.partial"
+    },
+    {
+     "key": "subjects",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.match"
+    },
+    {
+     "key": "results",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.uncertain"
+    },
+    {
+     "key": "exam",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.slipCheck.fromSlip"
+    }
+   ]
+  },
+  {
+   "name": "student slip not compared has no rows",
+   "doc": {
+    "id": 9040,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "name": "match",
+     "subjects": "not_compared",
+     "results": "not_compared",
+     "slip_count": 9,
+     "missing": [],
+     "extra": [],
+     "mismatched": [],
+     "uncertain": [],
+     "exam": "SPM",
+     "exam_year": "2025"
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.match"
+    },
+    {
+     "key": "exam",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.slipCheck.fromSlip"
+    }
+   ]
+  },
+  {
+   "name": "student slip not spm name, unreadable, pending",
+   "doc": {
+    "id": 9041,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "name": "not_spm",
+     "subjects": "unreadable",
+     "results": "pending",
+     "slip_count": 9,
+     "missing": [],
+     "extra": [],
+     "mismatched": [],
+     "uncertain": [],
+     "exam": "",
+     "exam_year": ""
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "subjects",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.unreadable"
+    },
+    {
+     "key": "results",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.pending"
+    }
+   ]
+  },
+  {
+   "name": "student slip suspect shows the note",
+   "doc": {
+    "id": 9042,
+    "doc_type": "results_slip",
+    "academic_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "name": "match",
+     "subjects": "match",
+     "results": "match",
+     "slip_count": 9,
+     "missing": [],
+     "extra": [],
+     "mismatched": [],
+     "uncertain": [],
+     "exam": "SPM",
+     "exam_year": "2025"
+    },
+    "authenticity": {
+     "status": "not_results_slip",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.match"
+    },
+    {
+     "key": "subjects",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.match"
+    },
+    {
+     "key": "results",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.slipCheck.status.match"
+    },
+    {
+     "key": "exam",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.slipCheck.fromSlip"
+    },
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.note"
+    }
+   ]
+  },
+  {
+   "name": "student slip with a higher result is not ported",
+   "doc": {
+    "id": 9043,
+    "doc_type": "results_slip",
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "academic_check": {
+     "higher_kind": "stpm",
+     "name": "match"
+    }
+   },
+   "chips": [
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.note"
+    }
+   ]
+  },
+  {
+   "name": "student higher results are not ported",
+   "doc": {
+    "id": 9044,
+    "doc_type": "higher_results",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "higher_check": {
+     "name": "match"
+    }
+   },
+   "chips": []
+  },
+  {
+   "name": "student offer all read",
+   "doc": {
+    "id": 9045,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "candidate_nric": "000101010001",
+     "name": "match",
+     "ic": "match",
+     "pathway": "match",
+     "programme": "SAMPLE PROGRAMME",
+     "institution": "SAMPLE INSTITUTE",
+     "issuer": "SAMPLE ISSUER",
+     "offer_date": "1 Oct 2026",
+     "intake": "",
+     "address": "SAMPLE ADDRESS 1",
+     "declared_programme": "",
+     "declared_institution": ""
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.match"
+    },
+    {
+     "key": "ic",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.match"
+    },
+    {
+     "key": "programme",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "institution",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "issuer",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "date",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "address",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    }
+   ]
+  },
+  {
+   "name": "student offer pathway mismatch is amber",
+   "doc": {
+    "id": 9046,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "candidate_nric": "000101010001",
+     "name": "match",
+     "ic": "partial",
+     "pathway": "mismatch",
+     "programme": "SAMPLE PROGRAMME",
+     "institution": "SAMPLE INSTITUTE",
+     "issuer": "",
+     "offer_date": "",
+     "intake": "",
+     "address": "",
+     "declared_programme": "OTHER PROGRAMME",
+     "declared_institution": ""
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.match"
+    },
+    {
+     "key": "ic",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.partial"
+    },
+    {
+     "key": "programme",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.mismatch"
+    },
+    {
+     "key": "institution",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.mismatch"
+    }
+   ]
+  },
+  {
+   "name": "student offer ic not printed, intake as date",
+   "doc": {
+    "id": 9047,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "candidate_nric": "000101010001",
+     "name": "uncertain",
+     "ic": "not_printed",
+     "pathway": "match",
+     "programme": "SAMPLE PROGRAMME",
+     "institution": "SAMPLE INSTITUTE",
+     "issuer": "",
+     "offer_date": "",
+     "intake": "2026",
+     "address": "",
+     "declared_programme": "",
+     "declared_institution": ""
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.uncertain"
+    },
+    {
+     "key": "ic",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.ic"
+    },
+    {
+     "key": "programme",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "institution",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "date",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    }
+   ]
+  },
+  {
+   "name": "student offer unreadable and pending",
+   "doc": {
+    "id": 9048,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "candidate_nric": "000101010001",
+     "name": "unreadable",
+     "ic": "pending",
+     "pathway": "match",
+     "programme": "",
+     "institution": "",
+     "issuer": "",
+     "offer_date": "",
+     "intake": "",
+     "address": "",
+     "declared_programme": "",
+     "declared_institution": ""
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.unreadable"
+    },
+    {
+     "key": "ic",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.pending"
+    }
+   ]
+  },
+  {
+   "name": "student offer suspect",
+   "doc": {
+    "id": 9049,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "candidate_nric": "000101010001",
+     "name": "match",
+     "ic": "match",
+     "pathway": "match",
+     "programme": "SAMPLE PROGRAMME",
+     "institution": "SAMPLE INSTITUTE",
+     "issuer": "",
+     "offer_date": "",
+     "intake": "",
+     "address": "",
+     "declared_programme": "",
+     "declared_institution": ""
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.match"
+    },
+    {
+     "key": "ic",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.match"
+    },
+    {
+     "key": "programme",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "institution",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.offerSuspect"
+    }
+   ]
+  },
+  {
+   "name": "student offer not an offer letter",
+   "doc": {
+    "id": 9050,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "candidate_nric": "000101010001",
+     "name": "match",
+     "ic": "match",
+     "pathway": "match",
+     "programme": "SAMPLE PROGRAMME",
+     "institution": "SAMPLE INSTITUTE",
+     "issuer": "",
+     "offer_date": "",
+     "intake": "",
+     "address": "",
+     "declared_programme": "",
+     "declared_institution": ""
+    },
+    "authenticity": {
+     "status": "not_offer_letter",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.match"
+    },
+    {
+     "key": "ic",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.match"
+    },
+    {
+     "key": "programme",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "institution",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.offerNotOffer"
+    }
+   ]
+  },
+  {
+   "name": "student offer sample stamp",
+   "doc": {
+    "id": 9051,
+    "doc_type": "offer_letter",
+    "pathway_check": {
+     "candidate_name": "SAMPLE NAME A",
+     "candidate_nric": "000101010001",
+     "name": "match",
+     "ic": "match",
+     "pathway": "match",
+     "programme": "SAMPLE PROGRAMME",
+     "institution": "SAMPLE INSTITUTE",
+     "issuer": "",
+     "offer_date": "",
+     "intake": "",
+     "address": "",
+     "declared_programme": "",
+     "declared_institution": ""
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": "sample_document"
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.match"
+    },
+    {
+     "key": "ic",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.pathwayCheck.status.match"
+    },
+    {
+     "key": "programme",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "institution",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "label": "scholarship.docs.pathwayCheck.fromLetter"
+    },
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.sampleDoc"
+    }
+   ]
+  },
+  {
+   "name": "student supporting assist ok",
+   "doc": {
+    "id": 9052,
+    "doc_type": "income_support_doc",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "vision_fields": {
+     "student_verdict": "ok"
+    }
+   },
+   "chips": [
+    {
+     "key": "assist",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.assist.ok"
+    }
+   ]
+  },
+  {
+   "name": "student supporting assist unreadable",
+   "doc": {
+    "id": 9053,
+    "doc_type": "income_support_doc",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "vision_fields": {
+     "student_verdict": "unreadable"
+    }
+   },
+   "chips": [
+    {
+     "key": "assist",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.assist.unreadable"
+    }
+   ]
+  },
+  {
+   "name": "student supporting name found, address missing",
+   "doc": {
+    "id": 9054,
+    "doc_type": "semester_result",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "vision_name_match": "found",
+    "vision_address_match": "not_found"
+   },
+   "chips": [
+    {
+     "key": "match",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.match.address-missing"
+    }
+   ]
+  },
+  {
+   "name": "student supporting name missing",
+   "doc": {
+    "id": 9055,
+    "doc_type": "semester_result",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "vision_name_match": "not_found"
+   },
+   "chips": [
+    {
+     "key": "match",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.match.name-missing"
+    }
+   ]
+  },
+  {
+   "name": "student supporting unreadable address",
+   "doc": {
+    "id": 9056,
+    "doc_type": "semester_result",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    },
+    "vision_name_match": "found",
+    "vision_address_match": "unreadable"
+   },
+   "chips": [
+    {
+     "key": "match",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact",
+     "label": "scholarship.docs.match.unreadable"
+    }
+   ]
+  },
+  {
+   "name": "student supporting nothing read",
+   "doc": {
+    "id": 9057,
+    "doc_type": "photo",
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": []
+  },
+  {
+   "name": "student semester page asks for the final",
+   "doc": {
+    "id": 9058,
+    "doc_type": "semester_result",
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": "poly_result_slip"
+    }
+   },
+   "chips": [
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.askFinal"
+    }
+   ]
+  },
+  {
+   "name": "student matric offer is not results",
+   "doc": {
+    "id": 9059,
+    "doc_type": "higher_results",
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": "matric_offer_letter"
+    }
+   },
+   "chips": [
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.notResults"
+    }
+   ]
+  },
+  {
+   "name": "student supporting doc not genuine note",
+   "doc": {
+    "id": 9060,
+    "doc_type": "school_leaving_cert",
+    "authenticity": {
+     "status": "not_school_leaving_cert",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "genuineness",
+     "status": "partial",
+     "state": "amber",
+     "kind": "note",
+     "label": "scholarship.docs.genuineness.note"
+    }
+   ]
+  }
  ]
 }

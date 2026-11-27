@@ -7,23 +7,27 @@ Safety: everything runs inside ``offer_s4_dry_run.read_only_rollback`` — ONE t
 ONLY`` on PostgreSQL, every write refused, Storage / Gemini / the usage meter shut, and always rolled
 back. Signed download URLs are not made (``get_download_url`` is stubbed to None).
 
-What it counts, per document type (live documents only, superseded rows skipped):
-  docs            documents seen
-  chips           chips on the OFFICER payload (``AdminApplicantDocumentSerializer``)
-  state_changed   chips whose state differs between ``old`` and ``new`` (compared key by key, in order;
-                  a chip present on one side only counts too)
-  pill_changed    documents whose pill differs between ``old`` and ``new``
-  student_differs chips whose state differs between the STUDENT payload and the OFFICER payload
-                  (``figure_refused`` is officer-only, so a salary slip / EPF Amount chip can differ)
+What it counts, per document type (live documents only, superseded rows skipped), for BOTH audiences
+(Sprint 1: the officer's payload serves ``doc_chips``, the student's ``doc_chips_student``):
+  docs                   documents seen
+  chips                  chips on the OFFICER payload (``AdminApplicantDocumentSerializer``)
+  state_changed          officer chips whose state differs between ``old`` and ``new`` (compared key
+                         by key, in order; a chip present on one side only counts too)
+  pill_changed           documents whose officer pill differs between ``old`` and ``new``
+  student_chips          chips on the STUDENT payload (``ApplicantDocumentSerializer``)
+  student_state_changed  the same, between ``student_old`` and ``student_new``, on the student payload
+  student_pill_changed   the same for the student pill (the student draws no pill today)
 
-``old`` and ``new`` are chip functions on a serialized document. Sprint 0's server chips reproduce
-today's web exactly, so both default to ``doc_chips.chips_for`` and every ``state_changed`` is 0 by
-construction; a later sprint passes its frozen "today" as ``old`` and its target rules as ``new``.
+``old`` / ``new`` (officer) and ``student_old`` / ``student_new`` (student) are chip functions on a
+serialized document. They default to the audience's own ``chips_for``, which reproduces today's screen
+exactly, so every ``*state_changed`` is 0 by construction; a later sprint passes its frozen "today" as
+the old one and its target rules as the new one. (Sprint 0's ``student_differs`` is gone: the two
+audiences now have different rules on purpose, so comparing them says nothing.)
 
 Verdict bands: every application's four fact bands (``build_verdict`` → ``_fact_band``) are taken BEFORE
-the documents are serialized, then AFTER, with ``doc_chips.chips_for`` / ``pill_for`` rigged to raise
-``ChipsRefused``. The serializer calls the chips through the MODULE (``doc_chips.chips_for``), so the
-rig bites there too, and ``ChipsRefused`` is a ``BaseException`` so the serializer's display-only
+the documents are serialized, then AFTER, with ``chips_for`` / ``pill_for`` of BOTH chip modules rigged
+to raise ``ChipsRefused``. The serializer calls the chips through the MODULE (``module.chips_for``), so
+the rig bites there too, and ``ChipsRefused`` is a ``BaseException`` so the serializer's display-only
 fallback (which catches ``Exception``) cannot swallow it. What a clean run proves, for the data it
 read and no more: (1) serializing the documents left every band as it was, and (2) ``build_verdict``
 on that data never reached the chip functions, directly or through the document serializer. Code paths
@@ -55,16 +59,19 @@ class ChipsRefused(BaseException):
 
 @contextlib.contextmanager
 def _chips_refused():
-    """Any call into the chip module while this is open raises ``ChipsRefused`` (it is display
+    """Any call into either chip module while this is open raises ``ChipsRefused`` (they are display
     only). The calls are also counted, so a caller that swallowed even a BaseException is caught on
     the way out."""
-    from apps.scholarship import doc_chips
+    from apps.scholarship import doc_chips, doc_chips_student
     calls = []
 
     def refuse(*_a, **_k):
         calls.append(1)
-        raise ChipsRefused('chip_dry_run: a verdict path called doc_chips')
-    with mock.patch.object(doc_chips, 'chips_for', refuse), mock.patch.object(doc_chips, 'pill_for', refuse):
+        raise ChipsRefused('chip_dry_run: a verdict path called the chip modules')
+    with contextlib.ExitStack() as stack:
+        for module in (doc_chips, doc_chips_student):
+            for name in ('chips_for', 'pill_for'):
+                stack.enter_context(mock.patch.object(module, name, refuse))
         yield
     if calls:
         raise ChipsRefused(f'chip_dry_run: a verdict path called doc_chips {len(calls)} time(s)')
@@ -84,12 +91,14 @@ def _changed(a, b):
                if i >= len(a) or i >= len(b) or (a[i]['key'], a[i]['state']) != (b[i]['key'], b[i]['state']))
 
 
-def count_changes(applications, old=None, new=None):
+def count_changes(applications, old=None, new=None, student_old=None, student_new=None):
     """The counts (see the module docstring) over ``applications``. Pure reads; call it inside
     ``read_only_rollback``."""
-    from apps.scholarship import doc_chips
+    from apps.scholarship import doc_chips, doc_chips_student
     old = old or doc_chips.chips_for
     new = new or doc_chips.chips_for
+    student_old = student_old or doc_chips_student.chips_for
+    student_new = student_new or doc_chips_student.chips_for
     per_type = defaultdict(Counter)
     apps_seen = bands_same = 0
     for application in applications:
@@ -103,7 +112,10 @@ def count_changes(applications, old=None, new=None):
             row['chips'] += len(officer['chips'])
             row['state_changed'] += _changed(o, n)
             row['pill_changed'] += int(doc_chips.pill_for(o) != doc_chips.pill_for(n))
-            row['student_differs'] += _changed(student['chips'], officer['chips'])
+            so, sn = student_old(student), student_new(student)
+            row['student_chips'] += len(student['chips'])
+            row['student_state_changed'] += _changed(so, sn)
+            row['student_pill_changed'] += int(doc_chips_student.pill_for(so) != doc_chips_student.pill_for(sn))
         with _chips_refused():
             after = _bands(application)
         bands_same += int(before == after)
@@ -115,12 +127,13 @@ def count_changes(applications, old=None, new=None):
     }
 
 
-def run_dry(old=None, new=None, *, allow_sqlite=False):
+def run_dry(old=None, new=None, student_old=None, student_new=None, *, allow_sqlite=False):
     """Every application, inside ONE read-only transaction that is always rolled back."""
     from apps.scholarship.eval.offer_s4_dry_run import read_only_rollback
     from apps.scholarship.models import ScholarshipApplication
     with read_only_rollback(allow_sqlite=allow_sqlite):
-        return count_changes(ScholarshipApplication.objects.order_by('pk').iterator(), old=old, new=new)
+        return count_changes(ScholarshipApplication.objects.order_by('pk').iterator(), old=old, new=new,
+                             student_old=student_old, student_new=student_new)
 
 
 def render_counts(result):
@@ -128,7 +141,9 @@ def render_counts(result):
     for doc_type, row in result['per_type'].items():
         lines.append(f"{doc_type:22} docs {row.get('docs', 0):5}  chips {row.get('chips', 0):6}  "
                      f"state_changed {row.get('state_changed', 0):5}  pill_changed {row.get('pill_changed', 0):5}  "
-                     f"student_differs {row.get('student_differs', 0):5}")
+                     f"student_chips {row.get('student_chips', 0):6}  "
+                     f"student_state_changed {row.get('student_state_changed', 0):5}  "
+                     f"student_pill_changed {row.get('student_pill_changed', 0):5}")
     return '\n'.join(lines)
 
 
