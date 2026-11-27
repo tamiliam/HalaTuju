@@ -10072,11 +10072,11 @@ Sol's Malay and Tamil read. *(C - S)*
 ### [TD-782] The OCR-20 stream-bound gate refused a genuine IIUM offer letter - medium
 
 **Raised 2026-11-28 from case 1057.** On 27 Nov the student's original offer letter PDF was refused three times by `pdf_dict_keys` STREAM_REFUSAL ('a stream the gate and the renderer may bound differently', OCR-20 round 3 part 2). The page was not rendered and the letter was stored unreadable. The student's re-save through an online PDF tool passed the same gate (`render_refusal` (1, None), text layer read). This is the only case of this refusal since 20 Nov. The owner rule is that a genuine document that does not go green is reputational harm. Logged, not built. **Fix:** get the original file (ask the student if Storage no longer holds it), find the stream form that trips the gate, and decide with the owner whether to admit it safely. Add the redacted fixture and a regression test. *(B - M)*
-### [TD-NEW-reopen-no-nudge] A QC-reopened case gets no verdict reminder - low
+### [TD-783] A QC-reopened case gets no verdict reminder - low
 
 **Raised 2026-11-27 (#81 + #86).** A reopened case is on My open (`REVIEWERS_TURN`) but the nudges and the due-soon / overdue bands still read `AWAITING_VERDICT`, which needs no saved verdict, so no reminder is sent. Deliberate: the `assigned_at` clock would mail "overdue" at once about a case the interviewer has only just got back. **Fix:** a clock that starts at `decision_reopened_at` for a reopened case, then let the nudges and bands read it. *(A - S)*
 
-### [TD-NEW-reopen-rejected-not-on-list] A reopened decline at terminal `rejected` is not on My open - low
+### [TD-784] A reopened decline at terminal `rejected` is not on My open - low
 
 **Raised 2026-11-27 (#81 + #86).** `REVIEWERS_TURN` excludes terminal statuses, so a decline that QC reopened while the case sits at `rejected` does not appear on the interviewer's list. Logged, not built; check how a reopen leaves `rejected` before widening. A super-admin reopen also shows the "Returned by QC" mark. **Fix:** decide whether a reopened `rejected` case returns to `interviewing`, or admit it in the rule. *(A - S)*
 
