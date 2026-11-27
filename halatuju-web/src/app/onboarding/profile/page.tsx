@@ -235,11 +235,14 @@ export default function ProfileInputPage() {
         await refreshProfile()
       } catch (err) {
         // The results never reached the server: moving on would show the old ones (the apply page
-        // reads the server's). On a network failure or a 5xx, a retry can work: stay, keep what was
-        // typed, and say so. A 4xx (the server refused the values) moves on as before, since a retry
-        // never helps. A failure AFTER the save (the profile re-read) still moves on.
-        const status = (err as { status?: number } | null)?.status
-        if (!synced && (typeof status !== 'number' || status >= 500)) { setSaveFailed(true); return }
+        // reads the server's). Only when a retry can work (a network failure: fetch throws a
+        // TypeError; a 5xx; a 408 or 429) stay, keep what was typed, and say so. Anything else (a
+        // refused value, the NRIC-required 403 with no status, a bad 200 body) moves on as before,
+        // since a retry never helps. A failure AFTER the save (the profile re-read) still moves on.
+        const status = (err as { status?: unknown } | null)?.status
+        const retryable = err instanceof TypeError
+          || (typeof status === 'number' && (status >= 500 || status === 408 || status === 429))
+        if (!synced && retryable) { setSaveFailed(true); return }
       }
     }
 

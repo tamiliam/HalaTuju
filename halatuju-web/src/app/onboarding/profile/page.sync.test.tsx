@@ -215,6 +215,29 @@ describe('a failed save stays on the page and says so', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
+  it('a 429 (too many requests; a retry can work) stays with the alert', async () => {
+    syncMock.mockRejectedValueOnce(Object.assign(new Error('API error: 429'), { status: 429 }))
+    await finish()
+    expect((await screen.findByRole('alert')).textContent).toContain('scholarship.resultsSaveFailed.title')
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  // Review round 2: api/client throws the NRIC-required 403 as a plain Error with NO status, and
+  // /profile/sync/ is not on the NRIC whitelist. Staying would trap a student with no NRIC for good.
+  it('the NRIC-required error (no status) moves on as before, with no alert', async () => {
+    syncMock.mockRejectedValueOnce(new Error('NRIC verification required'))
+    await finish()
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('a bad 200 body (SyntaxError) moves on as before, with no alert', async () => {
+    syncMock.mockRejectedValueOnce(new SyntaxError('Unexpected token < in JSON'))
+    await finish()
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
   it('a save that works shows no alert', async () => {
     await finish()
     await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'))
