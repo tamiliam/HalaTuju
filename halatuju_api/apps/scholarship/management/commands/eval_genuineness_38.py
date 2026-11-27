@@ -21,9 +21,12 @@ chosen check samples is listed. Then reviewer-rejected rows, then rows the store
 newest. It reports per check: agreement with the stored 2.5 verdict, agreement with the reviewer (verified =
 genuine, rejected = not), malformed answers after the retry, document refusals, service errors and THE GATES
 (each must be 0): a not-genuine 3.8 verdict on ANY reviewer-accepted row (whatever its stored value; the subset
-whose stored value was genuine is shown too), genuine on a known fake, and for the slip a marker the stored
-verdict had found that 3.8 lost on an accepted row. Malformed answers on known fakes and on reviewer-rejected
-rows are shown beside the gates (a fake that reads as no signal is not a pass).
+whose stored value was genuine is shown too), genuine on a known fake, a known fake left WITHOUT a verdict
+(`unanswered_known_fake`, with its ids: fetch failed, call errored, refused or malformed twice, a slip with no
+stored text, or not reached before a stop or the limit), and for the slip a marker the stored verdict had found
+that 3.8 lost on an accepted row. A known fake no chosen check reads fails the gates too. The last line says
+GATES MET or GATES NOT MET. An answer that is unreadable (not JSON) twice counts as malformed, not refused.
+Malformed answers on known fakes and on reviewer-rejected rows are shown beside the gates.
 
 WRITES NOTHING: no verdict, no vision_fields, no genuineness field, no read state (a guard refuses every
 document save during the run). The one row is the seam's own billing meter, a PLATFORM row
@@ -39,7 +42,7 @@ assumed 3.8 prices (`PRICE_38_ASSUMED`) when that is higher; the flat US$0.008 i
 PRIVATE: prints counts and document ids only; never a name, an IC number, document text, model free text or a key.
 
     python manage.py eval_genuineness_38                                                   # dry run
-    python manage.py eval_genuineness_38 --run --limit 300 --max-cost-usd 2.00 --fake-ids 12,34 --sample-fake-ids 56
+    python manage.py eval_genuineness_38 --run --limit 240 --max-cost-usd 2.00 --fake-ids 12,34 --sample-fake-ids 56
 """
 import logging
 from contextlib import contextmanager
@@ -53,7 +56,7 @@ from apps.scholarship import usage, vision
 from apps.scholarship.genuineness import ai_model
 from apps.scholarship.genuineness.bands import canonical_status, stored_authenticity
 from apps.scholarship.models import ApplicantDocument, ApplicantDocumentOcrText
-from apps.scholarship.read_errors import DOCUMENT_FAILED
+from apps.scholarship.read_errors import DOCUMENT_FAILED, UNPARSEABLE_RESPONSE
 from apps.scholarship.vision.slip_read import is_slip_model
 
 logger = logging.getLogger(__name__)
@@ -85,11 +88,15 @@ COUNTERS = ('docs', 'calls', 'answered', 'no_signal', 'service_error', 'malforme
             'document_refused', 'fetch_failed', 'error', 'agree_stored', 'disagree_stored',
             'agree_reviewer', 'disagree_reviewer', 'new_not_genuine_on_accepted',
             'new_not_genuine_on_accepted_stored_genuine', 'genuine_on_known_fake',
-            'malformed_on_known_fake', 'malformed_on_rejected', 'rescored_from_text', 'not_gated_no_text',
-            'marker_agree', 'marker_disagree', 'marker_lost_on_accepted')
-ID_LISTS = ('disagree_stored', 'new_not_genuine_on_accepted', 'genuine_on_known_fake',
+            'malformed_on_known_fake', 'malformed_on_rejected', 'unanswered_known_fake', 'rescored_from_text',
+            'not_gated_no_text', 'marker_agree', 'marker_disagree', 'marker_lost_on_accepted')
+ID_LISTS = ('disagree_stored', 'new_not_genuine_on_accepted', 'genuine_on_known_fake', 'unanswered_known_fake',
             'malformed_after_retry', 'malformed_on_known_fake', 'malformed_on_rejected', 'document_refused',
             'service_error', 'not_gated_no_text', 'marker_lost_on_accepted')
+#: The counts that must be 0 per check (the GATES line); `unanswered_known_fake` = a known fake with no verdict.
+GATE_KEYS = {c: ('new_not_genuine_on_accepted', 'genuine_on_known_fake')
+             + (('marker_lost_on_accepted',) if c == 'results_slip' else ()) + ('unanswered_known_fake',)
+             for c in CHECKS}
 
 
 def _live(types):
@@ -150,6 +157,23 @@ def unsampled_fakes(by_check, fake_ids, sample_fake_ids):
     """Known fakes no chosen check will read (another type, not live, or their check not chosen)."""
     typed = set().union(*(ids for c, ids in by_check.items() if c != 'sample'))
     return sorted((set(fake_ids) - typed) | (set(sample_fake_ids) - set(by_check.get('sample', ()))))
+
+
+def outcome_of(answer):
+    """The class of one `ai_model.ask` answer: '' (an answer), 'malformed_after_retry' (failed the check, or
+    unreadable JSON, after the retry), 'document_refused' (refused twice) or 'service_error'."""
+    err = str(answer.get('_error') or '') if isinstance(answer, dict) else ''
+    if not err:
+        return ''
+    if ai_model.MALFORMED in err or UNPARSEABLE_RESPONSE in err:
+        return 'malformed_after_retry'
+    return 'document_refused' if err.startswith(DOCUMENT_FAILED) else 'service_error'
+
+
+def unanswered_fakes(by_check, known, answered):
+    """{check: [id, ...]}: the known fakes a check was to read that got no verdict, for any reason."""
+    return {c: [pk for pk in ids if pk in fakes_for(c, *known) and pk not in answered.get(c, ())]
+            for c, ids in by_check.items()}
 
 
 def interleave(by_check):
@@ -214,9 +238,7 @@ def _traced(trace):
 
     def asked(*a, **k):
         r = real_ask(*a, **k)
-        err = str(r.get('_error') or '') if isinstance(r, dict) else ''
-        trace['outcome'] = ('' if not err else 'malformed_after_retry' if ai_model.MALFORMED in err
-                            else 'document_refused' if err.startswith(DOCUMENT_FAILED) else 'service_error')
+        trace['outcome'] = outcome_of(r)
         return r
 
     def refuse(*a, **k):
@@ -247,6 +269,8 @@ def tally_the_read(tally, check, doc, stored, new, markers, fake_ids):
         ids['new_not_genuine_on_accepted'].append(pk)
         if stored == 'genuine':
             t['new_not_genuine_on_accepted_stored_genuine'] += 1
+    if new and pk in fake_ids:
+        tally[check]['fakes_answered'].add(pk)
     if new == 'genuine' and pk in fake_ids:
         t['genuine_on_known_fake'] += 1
         ids['genuine_on_known_fake'].append(pk)
@@ -308,7 +332,7 @@ class Command(BaseCommand):
             f' at an ASSUMED upper bound of US${USD_PER_CALL_38} per call (3.8 Flash has no price row; a run '
             'charges reported tokens when higher)')
         if opts['run']:
-            self._run(todo, cap, model, (fakes, sample_fakes), checks)
+            self._run(todo, cap, model, (fakes, sample_fakes), by_check, missed)
 
     def _checked(self, opts):
         limit, raw_cap = opts['limit'], opts['max_cost_usd']
@@ -337,8 +361,9 @@ class Command(BaseCommand):
             raise CommandError(f'--max-cost-usd must be above 0 and at most {MAX_COST_USD}.')
         return limit, cap, checks, fakes, sample_fakes, model
 
-    def _run(self, todo, cap, model, known, checks):
-        tally = {c: {'n': dict.fromkeys(COUNTERS, 0), 'ids': {k: [] for k in ID_LISTS}} for c in checks}
+    def _run(self, todo, cap, model, known, by_check, missed):
+        tally = {c: {'n': dict.fromkeys(COUNTERS, 0), 'ids': {k: [] for k in ID_LISTS}, 'fakes_answered': set()}
+                 for c in by_check}
         trace = {'calls': 0, 'outcome': '', 'usd': Decimal('0'), 'peak': USD_PER_CALL_38, 'tokens': None}
         texts = dict(ApplicantDocumentOcrText.objects.filter(
             document_id__in=[pk for c, pk in todo if c == 'results_slip']).values_list('document_id', 'text'))
@@ -354,7 +379,11 @@ class Command(BaseCommand):
                     logger.info('eval_genuineness_38: %s documents, %s calls', done, trace['calls'])
                 if stopped:
                     break
-        self._report(tally, trace, done, stopped)
+        answered = {c: row['fakes_answered'] for c, row in tally.items()}
+        for check, ids in unanswered_fakes(by_check, known, answered).items():
+            tally[check]['n']['unanswered_known_fake'] = len(ids)
+            tally[check]['ids']['unanswered_known_fake'] = ids
+        self._report(tally, trace, done, stopped, missed)
 
     def _one(self, tally, trace, streak, check, pk, model, fakes, texts):
         t = tally[check]['n']
@@ -395,7 +424,7 @@ class Command(BaseCommand):
             return f'{FAIL_FAST} AI service errors in a row (check the key, quota or model name)'
         return ''
 
-    def _report(self, tally, trace, done, stopped):
+    def _report(self, tally, trace, done, stopped, missed=()):
         out = self.stdout.write
         out(f'done: {done} documents, {trace["calls"]} calls, charged up to US${trace["usd"].quantize(Decimal("0.0001"))}'
             f' (assumed: US${USD_PER_CALL_38} a call at least, reported tokens at the assumed 3.8 prices when higher)')
@@ -409,13 +438,21 @@ class Command(BaseCommand):
                 if ids:
                     out(f'[{check}] {key} ids: {",".join(map(str, ids[:IDS_SHOWN]))}'
                         + (f' (+{len(ids) - IDS_SHOWN} more)' if len(ids) > IDS_SHOWN else ''))
-        out('GATES (each must be 0): ' + '; '.join(self._gate_line(c, r['n']) for c, r in tally.items()))
+        lines = [self._gate_line(c, r['n'], r['ids']['unanswered_known_fake']) for c, r in tally.items()]
+        out('GATES (each must be 0): ' + '; '.join(lines)
+            + f'; known_fake_no_check_reads {len(missed)}' + _ids_in(missed))
+        failed = [f'{c} {k}' for c, r in tally.items() for k in GATE_KEYS[c] if r['n'][k]]
+        failed += ['known_fake_no_check_reads'] if missed else []
+        out(('GATES NOT MET: ' + ', '.join(failed)) if failed else 'GATES MET')
 
     @staticmethod
-    def _gate_line(check, n):
-        line = (f'{check} new_not_genuine_on_accepted {n["new_not_genuine_on_accepted"]}, '
-                f'genuine_on_known_fake {n["genuine_on_known_fake"]}')
-        if check == 'results_slip':
-            line += f', marker_lost_on_accepted {n["marker_lost_on_accepted"]}'
-        return (line + f' (also: malformed_on_known_fake {n["malformed_on_known_fake"]}, '
+    def _gate_line(check, n, unanswered=()):
+        line = ', '.join(f'{k} {n[k]}' + (_ids_in(unanswered) if k == 'unanswered_known_fake' else '')
+                         for k in GATE_KEYS[check])
+        return (f'{check} {line} (also: malformed_on_known_fake {n["malformed_on_known_fake"]}, '
                 f'malformed_on_rejected {n["malformed_on_rejected"]})')
+
+
+def _ids_in(ids):
+    """' [id,id,...]' for a non-empty id list on the GATES line (at most IDS_SHOWN), else ''."""
+    return f' [{",".join(map(str, list(ids)[:IDS_SHOWN]))}]' if ids else ''
