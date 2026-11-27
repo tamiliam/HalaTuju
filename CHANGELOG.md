@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: api build timeout 2700s to 4200s (2026-11-27)
+
+No migration, no app code. The 11:00 publish of 25fc95422 timed out: the api build a7bb99db ran its test step for over 45 minutes (42 on 26 Nov) and Cloud Build stopped it at the 2700s limit, so Push, Deploy and SyncReleaseJob never ran. The web build of the same commit went live; the api stayed on 3cb093b75 (halatuju-api-01325-twl). `halatuju_api/cloudbuild.yaml` `timeout` goes to 4200s (70 minutes). Takes effect on the next api build. Follow-up: the suite is growing; make it faster before it nears the new limit.
+
 ### feat: criteria Sprint 4 - the criteria editor screen (2026-11-27)
 
 Branch criteria-ui, not pushed. Services: web. No migration.

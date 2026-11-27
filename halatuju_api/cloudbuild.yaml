@@ -158,4 +158,8 @@ tags:
 # minutes was set first. By 2026-11-08 the suite alone took about 28 minutes, and build 5aad760c
 # timed out during Deploy after test, Build and Push were green. Forty-five minutes gives room for
 # the suite plus Deploy and SyncReleaseJob, and still stops a hung build before the hour.
-timeout: 2700s
+# By 2026-11-27 the suite alone passed 45 minutes (42 min on 26 Nov), and build a7bb99db (live
+# 25fc95422) timed out in the test step, so nothing was pushed or deployed. Seventy minutes gives
+# the growing suite room plus about four minutes for Push, Deploy and SyncReleaseJob. If the suite
+# nears this again, make the suite faster (or the worker bigger) rather than raising it again.
+timeout: 4200s
