@@ -585,6 +585,18 @@ describe('the phone menu (Mobile M6a)', () => {
     await waitFor(() => expect(order).toEqual(['signOut', 'replace /admin/login']))
   })
 
+  it('Log out marks the sign-out BEFORE the session ends, so the guard drops ?next= (review round 2)', async () => {
+    const { adminSignedOutHref } = jest.requireActual('@/lib/adminReturnPath')
+    const seen: string[] = []
+    // What the layout guard would answer at the moment SIGNED_OUT lands, on a case page.
+    signOutMock().mockImplementation(async () => { seen.push(adminSignedOutHref('/admin/scholarship/513')) })
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    fireEvent.click(screen.getByRole('button', { name: 'admin.shell.account' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: /header\.logout/ }))
+    await waitFor(() => expect(seen).toEqual(['/admin/login']))
+  })
+
   it('the phone row names the page from the registry, and the gift-less organisation under it', () => {
     asRole('org_admin', { owning_org_name: 'Yayasan Contoh' })
     render(<AppShell>content</AppShell>)

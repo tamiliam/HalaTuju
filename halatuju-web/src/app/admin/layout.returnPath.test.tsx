@@ -6,6 +6,7 @@
  */
 import { render } from '@testing-library/react'
 import AdminLayout from './layout'
+import { markAdminSigningOut } from '@/lib/adminReturnPath'
 
 const replace = jest.fn()
 jest.mock('next/navigation', () => ({
@@ -27,6 +28,21 @@ afterEach(() => window.history.pushState({}, '', '/'))
 
 it('carries the case page through sign-in', () => {
   window.history.pushState({}, '', '/admin/scholarship/513')
+  render(<AdminLayout><p>case</p></AdminLayout>)
+  expect(replace).toHaveBeenCalledWith('/admin/login?next=%2Fadmin%2Fscholarship%2F513')
+})
+
+it('a deliberate Log out goes to plain sign-in; a later expiry carries the page again (review round 2)', () => {
+  window.sessionStorage.setItem('halatuju_admin_next', '/admin/scholarship/513')
+  window.history.pushState({}, '', '/admin/scholarship/513')
+  markAdminSigningOut()   // what AppShell's Log out does before ending the session
+  const first = render(<AdminLayout><p>case</p></AdminLayout>)
+  expect(replace).toHaveBeenCalledWith('/admin/login')
+  expect(replace).not.toHaveBeenCalledWith(expect.stringContaining('next='))
+  expect(window.sessionStorage.getItem('halatuju_admin_next')).toBeNull()
+  first.unmount()
+
+  replace.mockReset()   // the mark is used once: a session that simply ends keeps the page
   render(<AdminLayout><p>case</p></AdminLayout>)
   expect(replace).toHaveBeenCalledWith('/admin/login?next=%2Fadmin%2Fscholarship%2F513')
 })

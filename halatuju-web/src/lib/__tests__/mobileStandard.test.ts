@@ -665,7 +665,8 @@ describe('rule 11 — the console shell on a phone', () => {
   })
   test('ONE sign-out, two doors: the body is exactly the account menu\'s, and both doors call it', () => {
     const src = shell()
-    expect(src).toContain("const signOut = async () => { await adminSignOut(); router.replace('/admin/login') }")
+    // #86 review round 2: the sign-out mark comes first, so the guard never carries `?next=` past a Log out.
+    expect(src).toContain("const signOut = async () => { markAdminSigningOut(); await adminSignOut(); router.replace('/admin/login') }")
     // Nothing else signs out: one call of adminSignOut in the shell, inside that line.
     expect((src.match(/adminSignOut\(/g) ?? []).length).toBe(1)
     expect(src).toContain('onSignOut={signOut}')

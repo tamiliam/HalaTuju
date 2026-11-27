@@ -17,6 +17,7 @@
  * `adminLanding(role)`.
  */
 import { adminLanding, mustCompleteProfile, type AdminRoleLike } from '@/lib/adminLanding'
+import { CHROMELESS } from '@/lib/navigation'
 
 const LOGIN = '/admin/login'
 const STORE_KEY = 'halatuju_admin_next'
@@ -29,8 +30,9 @@ export function safeAdminNext(value: string | null | undefined): string | null {
   if (/[\\%\s\u0000-\u001f\u007f]/.test(value) || value.includes('//')) return null
   const path = value.split(/[?#]/, 1)[0]
   if (path.split('/').some((seg) => seg === '.' || seg === '..')) return null
-  // The sign-in pages themselves are never a destination (a loop, not a page).
-  if (path === LOGIN || path.startsWith('/admin/auth/')) return null
+  // The chromeless sign-in pages (login, set-password, the OAuth callback — the layout's own list,
+  // with or without a trailing slash or subpath) are never a destination (a loop, not a page).
+  if (CHROMELESS.some((c) => path.startsWith(c.replace(/\/$/, '')))) return null
   let url: URL
   try { url = new URL(value, BASE) } catch { return null }
   if (url.origin !== BASE || !url.pathname.startsWith('/admin/')) return null
@@ -46,6 +48,33 @@ export function nextFromSearch(search: string): string | null {
 export function adminLoginHref(path: string): string {
   const next = safeAdminNext(path)
   return next ? `${LOGIN}?next=${encodeURIComponent(next)}` : LOGIN
+}
+
+/*
+ * ⚠ A DELIBERATE SIGN-OUT NEVER CARRIES `next` (review round 2). Log out ends the session, the
+ * layout's guard can re-render on the OLD page before AppShell's own replace and send the tab to
+ * `/admin/login?next=<the case>` — and that replace wins, so the next person to sign in on this tab
+ * would land on the previous user's case. AppShell marks the sign-out FIRST (`markAdminSigningOut`);
+ * the guard asks `adminSignedOutHref`, which consumes the mark and answers plain `/admin/login`. A
+ * session that simply ends (expiry, another tab, a sponsor sign-in) has no mark and keeps `next`.
+ * The mark lives in this tab's JS only and is honoured for a few seconds, so a sign-out that never
+ * reached the guard cannot swallow a later expiry's `next`.
+ */
+const SIGN_OUT_MARK_MS = 10_000
+let signingOutAt = 0
+
+/** Before a deliberate sign-out: the guard's next replace is plain login, and no `next` is kept. */
+export function markAdminSigningOut(): void {
+  signingOutAt = Date.now()
+  rememberAdminNext(null)
+}
+
+/** The guard's login URL: plain after a deliberate sign-out (the mark is used once), else
+ *  `adminLoginHref(path)`. */
+export function adminSignedOutHref(path: string): string {
+  const deliberate = signingOutAt > 0 && Date.now() - signingOutAt < SIGN_OUT_MARK_MS
+  signingOutAt = 0
+  return deliberate ? LOGIN : adminLoginHref(path)
 }
 
 /** Where a signed-in admin goes: the safe `next`, unless the first-login profile hold

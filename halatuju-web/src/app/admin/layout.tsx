@@ -8,7 +8,7 @@ import { AdminAuthProvider, useAdminAuth } from '@/lib/admin-auth-context'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import { adminLanding, mustCompleteProfile, outsiderMustLeave } from '@/lib/adminLanding'
-import { adminLoginHref } from '@/lib/adminReturnPath'
+import { adminSignedOutHref } from '@/lib/adminReturnPath'
 import { useT } from '@/lib/i18n'
 import { CHROMELESS } from '@/lib/navigation'
 import { AppShell } from '@/components/admin/AppShell'
@@ -35,8 +35,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (chromeless) return
     if (!isLoading && !isAdminAuthenticated) {
-      // #86: carry the page (an emailed case link) through sign-in; `adminLoginHref` keeps only a safe one.
-      router.replace(adminLoginHref(window.location.pathname + window.location.search))
+      // #86: carry the page (an emailed case link) through sign-in, only a safe one, and never after a
+      // deliberate Log out (`adminSignedOutHref`).
+      router.replace(adminSignedOutHref(window.location.pathname + window.location.search))
       return
     }
     // Hold a newly-invited reviewer on /admin/profile until their compulsory fields are filled

@@ -154,6 +154,14 @@ describe('a signed-out visit returns to the page it came from (#86, review round
     await waitFor(() => expect(push).toHaveBeenCalledWith('/admin/scholarship/513'))
   })
 
+  it('a pending temporary password wins over ?next= (review round 2)', async () => {
+    window.history.pushState({}, '', '/admin/login?next=%2Fadmin%2Fscholarship%2F513')
+    signInAs({ app_metadata: { must_change_password: true, temp_password_issued_at: daysAgo(1) } })
+    await submit()
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/admin/set-password'))
+    expect(push).not.toHaveBeenCalledWith('/admin/scholarship/513')
+  })
+
   it('a hostile ?next= is ignored: the landing as before', async () => {
     window.history.pushState({}, '', '/admin/login?next=%2F%2Fevil.example')
     signInAs({ app_metadata: {} })

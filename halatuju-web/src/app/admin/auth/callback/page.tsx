@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
@@ -16,8 +16,13 @@ export default function AdminAuthCallbackPage() {
   const { t } = useT()
   const [error, setError] = useState<string | null>(null)
   const [detail, setDetail] = useState<string>('')
+  // #86: the remembered `next`, taken (and so cleared) ONCE per mount, before any path can return —
+  // an error leaves nothing behind for a later sign-in, and the dev StrictMode second run of the
+  // effect reads this ref, not the already-emptied store.
+  const nextRef = useRef<string | null | undefined>(undefined)
 
   useEffect(() => {
+    if (nextRef.current === undefined) nextRef.current = takeRememberedAdminNext()
     /*
      * FIRST, before the client exists. Constructing it starts `detectSessionInUrl`, whose
      * exchange attempt DELETES the verifier whether it succeeds or fails — so after this line
@@ -106,7 +111,7 @@ export default function AdminAuthCallbackPage() {
         // (Applications); org admins/super keep the dashboard; a reviewer with an
         // incomplete profile is held on /admin/profile until they finish onboarding. #86: the page the
         // login was sent from, kept across the OAuth hop, wins over the landing when it is safe.
-        router.replace(adminReturnTarget(role, takeRememberedAdminNext()))
+        router.replace(adminReturnTarget(role, nextRef.current))
         return
       } catch {
         setError(t('errors.adminVerifyFailed'))

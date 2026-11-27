@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 
 import { getPendingSponsorCount, getAdminScopes, getPaymentRuns, type AdminScopes } from '@/lib/admin-api'
 import { adminSignOut } from '@/lib/admin-supabase'
+import { markAdminSigningOut } from '@/lib/adminReturnPath'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useNavProbes } from '@/lib/useNavProbes'
@@ -360,7 +361,8 @@ function Chrome(
 
   // ⚠ ONE SIGN-OUT, TWO DOORS (Mobile M6a). The account menu and the phone menu's Log out call THIS
   // function — the exact body the account menu always ran — so the two can never drift apart.
-  const signOut = async () => { await adminSignOut(); router.replace('/admin/login') }
+  // The mark first: a deliberate sign-out never carries `?next=` (review round 2, lib/adminReturnPath).
+  const signOut = async () => { markAdminSigningOut(); await adminSignOut(); router.replace('/admin/login') }
 
   const orgName = role?.owning_org_name ?? role?.org_name
   // The phone row's two lines: the page's own name from the registry, then the gift on a programme
