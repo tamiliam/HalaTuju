@@ -363,7 +363,9 @@ _KEEP_STEMS = ('tamper', 'alter', 'forg', 'fake', 'palsu', 'ubah', 'chop', 'stam
                'genuin', 'authentic', 'fabricat', 'counterfeit', 'bogus', 'ragu', 'tiru', 'husband', 'wife',
                'suami', 'isteri', 'brother', 'sister', 'daughter', 'neighbo', 'jiran', 'agree', 'tally',
                'add up', 'adds up', 'tepat', 'threshold', 'exceed', 'melebihi', 'rendah', 'twice', 'another',
-               'serupa', 'dua kali', 'halaman', 'screenshot', 'original', 'typed')
+               'serupa', 'dua kali', 'halaman', 'screenshot', 'original', 'typed',
+               # topic-codes review round 3: corrected, incomplete, a copy of another form, an uncle
+               'correct', 'incomplete', 'lengkap', 'identical', 'uncle', 'pakcik')
 #: ...and these as whole words (too short to match inside other words): IC, I/C, I.C., KP, K/P, K.P., COP;
 #: review round 1 of the topic codes: CAP, SAMA, IBU, LAMA ("alamat" is an address); READ and TERANG at a
 #: word start only ("already", "keterangan"); OFFICIAL unless it only names the payslip the type note means.
@@ -453,6 +455,14 @@ _DATE_WORDS = re.compile(r"\b(?:dated?|dates|undated|(?:ber)?tarikh|months?|bula
 #: The parts: the word filter's ; , . and/dan, plus : and the turn words (a "but ..." part is a new claim).
 _TAGGED_SPLIT = re.compile(r"[;,.:]|\b(?:and|dan|but|however|although|though|whereas|while|tetapi|tapi|namun|"
                            r"walaupun|manakala)\b")
+#: Topic-codes review round 3: "nothing left over". Once the topic and absence words are gone, every word
+#: left in a hiding part must be one of these (no word that can carry a claim of its own). "date" is safe
+#: here: a part that says a date is absent never reaches this test.
+_TAGGED_FILLER = _FILLER | frozenset((
+    'pay amount separate separately details information info figure document form declaration letter slip '
+    'payslip on in from for it there only shows show rather than does not page appear appears income salary '
+    'or nor either neither available filled date maklumat butiran pada dalam di borang dokumen surat akuan '
+    'amaun atau').split())
 
 
 def _beside_absence(s: str, m: re.Match) -> bool:
@@ -465,13 +475,16 @@ def _beside_absence(s: str, m: re.Match) -> bool:
 
 def _tagged_part_hides(part: str) -> bool:
     """One part: a payslip-only topic AND an absence (``_ABSENT_RE``, or a narrow one beside a pay period
-    or a payslip), and no date said to be absent."""
+    or a payslip), no date said to be absent, and nothing left over but ``_TAGGED_FILLER`` words."""
     p = ' '.join(re.sub(r"[^a-z0-9/' ]", ' ', part).split())
     if not _TAGGED_TOPIC_RE.search(p):
         return False
     if _ABSENT_RE.search(p):
-        return not _DATE_WORDS.search(_TAGGED_TOPIC_RE.sub(' ', p))
-    return bool(_RATHER_THAN.search(p) or (_SHOWS_ONLY.search(p) and _NARROW_TOPIC_RE.search(p)))
+        if _DATE_WORDS.search(_TAGGED_TOPIC_RE.sub(' ', p)):
+            return False
+    elif not (_RATHER_THAN.search(p) or (_SHOWS_ONLY.search(p) and _NARROW_TOPIC_RE.search(p))):
+        return False
+    return all(t in _TAGGED_FILLER for t in _ABSENT_RE.sub(' ', _TAGGED_TOPIC_RE.sub(' ', p)).split())
 
 
 def tagged_hides(warning) -> bool:

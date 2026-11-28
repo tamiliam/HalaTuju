@@ -337,6 +337,57 @@ class ReviewRound2EveryPartTests(SimpleTestCase):
             self.assertTrue(has_keep_word(w), w)
 
 
+class ReviewRound3NothingLeftOverTests(SimpleTestCase):
+    """Review round 3 (2026-11-28): a hiding part may hold only topic, absence and filler words. Any other
+    word (who wrote it, why it is missing, what it really is) shows the note under every payslip-only code."""
+
+    MUST_SHOW = (
+        "No employer is stated for an earner who is not the student's parent.",
+        'No employer is stated on this declaration written by the student.',
+        'No employer is stated on this form filled in by someone other than the earner.',
+        'No employer is stated on this form which is identical to the one uploaded for the other parent.',
+        'No employer is stated on what appears to be the same form uploaded for the other parent.',
+        'No take-home pay is shown because the lower part of the form is missing.',
+        'Employer details are missing because the lower part of the document was not captured.',
+        'Gross income is not shown with the amount appearing corrected by hand.',
+        'No employer is stated as the earner works for his uncle.',
+        'No employer is stated as the earner works for an in-law.',
+        "No employer is stated as the earner works in his grandparents' business.",
+        'The form appears incomplete with no employer stated.',
+        'The employer is not stated because the document is incomplete.',
+        'No payslip was provided as the uploaded document is a bank statement.',
+        'No pay period is given on this declaration which appears to be several years old.',
+        'No employer is stated on this photo of a computer screen.',
+        'Tiada majikan kerana pekerja bekerja dengan pakcik.',
+        'Majikan tidak dinyatakan kerana borang tidak lengkap.',
+        'Gaji kasar tidak dinyatakan pada borang yang diisi oleh orang lain.',
+        'No employer stated the figure was corrected',
+        'No pay slip the upload is unrelated',
+        'Tiada majikan pendapatan tinggi',
+        'No employer stated earner is a minor',
+        'The employer is given as a shop with no address.',
+        'The employer listed has no registration number.',
+    )
+
+    def test_a_left_over_word_shows_the_note_under_every_payslip_only_code(self):
+        for w in self.MUST_SHOW:
+            self.assertFalse(tagged_hides(w), w)
+            for code in sorted(wt.PAYSLIP_ONLY_TOPICS):
+                self.assertEqual(shown_warnings(_doc([code]), [w]), [w], (w, code))
+
+    def test_the_case_1048_and_pure_absence_notes_still_hide(self):
+        for w, code in ReviewRound1KeepFamiliesTests.CASE_1048:
+            self.assertTrue(tagged_hides(w), w)
+            self.assertEqual(shown_warnings(_doc([code]), [w]), [], w)
+        for w in ReviewRound2EveryPartTests.STILL_HIDE:
+            self.assertTrue(tagged_hides(w), w)
+
+    def test_the_new_keep_stems(self):
+        for w in ('Amount corrected, no employer', 'Incomplete form, no employer', 'Borang tidak lengkap',
+                  'Identical to another form', 'Works for an uncle', 'Bekerja dengan pakcik'):
+            self.assertTrue(has_keep_word(w), w)
+
+
 class OnlyTheReaderAndTheDisplayNameTheTopicsTests(SimpleTestCase):
     """No verdict, chip, score, genuineness or money may read a topic: only these modules may name them."""
 
