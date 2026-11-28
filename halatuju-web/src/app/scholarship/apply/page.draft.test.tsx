@@ -258,7 +258,7 @@ describe('the results changed on the detour', () => {
 
   it('SPM → STPM with an offer: the SPM pathway and programme are not sent — My Plans asks again', async () => {
     seedApplyDraft(withStudiedAt, 'support', 'bp', TEST_UID, 'spm')     // 'sure', poly, C1 under SPM
-    mountAs(STPM)
+    mountAs({ ...STPM, pre_u_institution: 'SMK Taman Desa' })           // her Form 6 school pre-fills
     await screen.findByTestId('apply-gift-line')
     await signAndSubmit('Priya')
     expect(submit).not.toHaveBeenCalled()
@@ -284,9 +284,23 @@ describe('the results changed on the detour', () => {
     await waitFor(() => expect(submit).toHaveBeenCalled())
     const sent = submit.mock.calls[0][0]
     expect(sent.top_choices).toEqual([])
+    expect(sent.pre_u_studied_at).toBe('')                                   // the old Form 6 school is not hers now
     expect(sent.pathways_considered).not.toContain('asasi')
     expect(sent.uncertainty_reasons).toEqual(['family'])
     expect(sent.uncertainty_note).toBe('my note')                            // hers whatever she holds
+  })
+
+  it('SPM → STPM: the empty "where you studied" in the draft does not hide the profile prefill', async () => {
+    seedApplyDraft(complete, 'results', 'bp', TEST_UID, 'spm')
+    mountAs({ ...STPM, pre_u_institution: 'SMK Seri Puteri' })
+    expect(await screen.findByDisplayValue('SMK Seri Puteri')).toBeTruthy()
+  })
+
+  it('the SAME results keep the typed "where you studied"', async () => {
+    seedApplyDraft({ ...complete, preUStudiedAt: 'My own school' }, 'results', 'bp', TEST_UID, 'stpm')
+    mountAs({ ...STPM, pre_u_institution: 'SMK Seri Puteri' })
+    expect(await screen.findByDisplayValue('My own school')).toBeTruthy()
+    expect(screen.queryByDisplayValue('SMK Seri Puteri')).toBeNull()
   })
 
   it('the SAME results: everything comes back and is sent, as before', async () => {

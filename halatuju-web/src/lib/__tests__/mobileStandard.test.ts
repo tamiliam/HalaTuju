@@ -241,7 +241,7 @@ describe('rule 10 — the apply form keeps its progress', () => {
 
   test('the page keeps a draft, restores it, and deletes it once sent', () => {
     expect(page).toMatch(/useApplyDraft\(form, uid, gift\.code, tab,/)
-    expect(page).toMatch(/readApplyDraft\(\{ uid, programme: gift\.code \}\)/)
+    expect(page).toMatch(/readApplyDraft\(\{ uid, programme: gift\.code, results: examType \}\)/)   // TD-785: keyed to the results too
     expect(page).toMatch(/await submitScholarshipApplication\([^)]*\)\s*\n\s*setSent\(true\); clearApplyDraft\(\)/)
   })
 

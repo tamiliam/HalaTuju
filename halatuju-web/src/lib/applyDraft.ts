@@ -36,11 +36,11 @@ export const APPLY_DRAFT_MAX_AGE_MS = 864e5   // 24 hours
 /** Never stored — see the header. */
 export const DRAFT_EXCLUDED = ['nric', 'declarationName', 'consentToContact'] as const
 export type DraftForm = Omit<ApplyFormState, typeof DRAFT_EXCLUDED[number]>
-/** The My Plans answers that belong to ONE results type (an SPM pathway, a degree, the leaning, the
- *  top 3). A draft typed under other results comes back WITHOUT them, so the form's fresh defaults
- *  show and she answers My Plans again; the note and other scholarships are hers whatever she holds. */
-export const PLAN_FIELDS = ['pathwayCertainty', 'chosenPathway', 'chosenProgramme', 'preUTrack', 'preUInstitution',
-  'uncertaintyReasons', 'pathwaysConsidered', 'topChoices', 'upuStatus', 'fieldOfStudy'] as const
+/** The answers that belong to ONE results type (My Plans: an SPM pathway, a degree, the leaning, the
+ *  top 3; and where she studied). A draft typed under other results comes back WITHOUT them, so the fresh defaults
+ *  show (the profile's prefill) and she answers My Plans again; the note and other scholarships are hers whatever she holds. */
+export const RESULTS_FIELDS = ['pathwayCertainty', 'chosenPathway', 'chosenProgramme', 'preUTrack', 'preUInstitution',
+  'uncertaintyReasons', 'pathwaysConsidered', 'topChoices', 'upuStatus', 'fieldOfStudy', 'preUStudiedAt'] as const
 
 interface Envelope { v: number; uid: string; programme: string; savedAt: number; step: string; rt?: string; form: ApplyFormState }
 
@@ -90,7 +90,7 @@ export function parse(): Envelope | null {
  * not returned either, but kept: she may go back to that programme (the chooser's "Change"). The
  * excluded fields are dropped again on the way out, so a hand-edited value cannot smuggle them in.
  * Typed under OTHER results (she changed them on the "Results wrong?" detour) → My Plans is dropped
- * too (`PLAN_FIELDS`): an SPM pathway must never be sent under STPM results. A draft from before the
+ * too (`RESULTS_FIELDS`): an SPM pathway must never be sent under STPM results. A draft from before the
  * results type was kept (no `rt`) comes back whole, as it always did.
  */
 export function readApplyDraft(owner: DraftOwner): { form: DraftForm; step: string } | null {
@@ -98,7 +98,7 @@ export function readApplyDraft(owner: DraftOwner): { form: DraftForm; step: stri
   if (!e || !owner.uid || e.uid !== owner.uid) { clearApplyDraft(); return null }
   const other = !!e.rt && !!owner.results && e.rt !== owner.results
   return e.programme === owner.programme
-    ? { form: strip(e.form, other ? [...DRAFT_EXCLUDED, ...PLAN_FIELDS] : DRAFT_EXCLUDED), step: String(e.step || '') } : null
+    ? { form: strip(e.form, other ? [...DRAFT_EXCLUDED, ...RESULTS_FIELDS] : DRAFT_EXCLUDED), step: String(e.step || '') } : null
 }
 
 /**

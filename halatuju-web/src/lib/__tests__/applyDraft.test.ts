@@ -7,7 +7,7 @@
  */
 import { act, renderHook } from '@testing-library/react'
 import {
-  APPLY_DRAFT_KEY, APPLY_DRAFT_MAX_AGE_MS, DRAFT_EXCLUDED, PLAN_FIELDS, clearApplyDraft,
+  APPLY_DRAFT_KEY, APPLY_DRAFT_MAX_AGE_MS, DRAFT_EXCLUDED, RESULTS_FIELDS, clearApplyDraft,
   readApplyDraft, useApplyDraft, writeApplyDraft,
 } from '@/lib/applyDraft'
 import { peekApplyDraft } from '@/lib/applyDraftPeek'
@@ -67,6 +67,7 @@ describe('the results type it was typed under', () => {
     pathwayCertainty: 'sure', chosenPathway: 'poly', preUTrack: 'sains', preUInstitution: 'KMPk',
     chosenProgramme: { courseId: 'C1', courseName: 'Diploma in Engineering', fieldKey: 'engineering' },
     uncertaintyReasons: ['family'], pathwaysConsidered: ['poly'], upuStatus: 'public_other', fieldOfStudy: 'engineering',
+    preUStudiedAt: 'SMK Taman Desa (Form 6)',
     topChoices: [{ courseId: 'D1', courseName: 'BSc', institution: 'UM' }],
     uncertaintyNote: 'my note', otherScholarships: ['jpa'], otherScholarshipsText: 'Yayasan',
   }
@@ -80,15 +81,15 @@ describe('the results type it was typed under', () => {
   it('OTHER results now: every My Plans answer is dropped — nothing else', () => {
     writeApplyDraft(TYPED, { ...HER, results: 'spm' }, 'results')
     const got = readApplyDraft({ ...HER, results: 'stpm' })?.form as Record<string, unknown>
-    for (const k of PLAN_FIELDS) expect([k, k in got]).toEqual([k, false])
+    for (const k of RESULTS_FIELDS) expect([k, k in got]).toEqual([k, false])
     expect(got.parentName).toBe('Rajan')
     expect(got.householdIncome).toBe('2400')
     expect(got.uncertaintyNote).toBe('my note')            // hers whatever she holds
     expect(got.otherScholarships).toEqual(['jpa'])
     expect(got.otherScholarshipsText).toBe('Yayasan')
     for (const k of DRAFT_EXCLUDED) expect(k in got).toBe(false)
-    expect(PLAN_FIELDS).toEqual(['pathwayCertainty', 'chosenPathway', 'chosenProgramme', 'preUTrack',
-      'preUInstitution', 'uncertaintyReasons', 'pathwaysConsidered', 'topChoices', 'upuStatus', 'fieldOfStudy'])
+    expect(RESULTS_FIELDS).toEqual(['pathwayCertainty', 'chosenPathway', 'chosenProgramme', 'preUTrack',
+      'preUInstitution', 'uncertaintyReasons', 'pathwaysConsidered', 'topChoices', 'upuStatus', 'fieldOfStudy', 'preUStudiedAt'])
   })
 
   it('the SAME results: everything comes back, as before', () => {
