@@ -20,13 +20,26 @@ today); inside one it runs only once the caller has committed, in its own transa
 checked at our COMMIT and caught here. It also means text is never kept for a read that rolled back.
 (``SET CONSTRAINTS ... IMMEDIATE`` would also work, but only on Postgres, it names a generated constraint,
 and it would stay IMMEDIATE for the rest of the caller's transaction.)
+
+THE ONE READ PATH (OCR-16, owner's choice 28 Nov 2026). Only the model and this module name the table: the
+owner-approved jobs that read the stored text call ``kept_texts``, ``ids_with_kept_text`` or
+``ids_with_kept_text_containing`` (a test pins exactly which modules may). Each takes the caller's document ids (a list, a set or an id
+queryset), so none reads the whole table, and returns only ids or the texts of the ids asked for. They never
+log or print text. ``writes_refused`` is the read-only jobs' write guard: inside it ``keep`` stores nothing
+and a direct save of the table raises.
 """
 import logging
+from contextlib import contextmanager
+from unittest import mock
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+#: Open ``writes_refused`` blocks; while above 0, ``keep`` and ``_write`` store nothing.
+_refusing = 0
 
 PDF_TEXT_LAYER = 'pdf_text_layer'
 VISION_OCR = 'vision_ocr'
@@ -54,7 +67,7 @@ def keep(doc, text, *, source, reader: str = '') -> bool:
     try:
         text = (text or '').replace('\x00', '')   # Postgres text cannot hold NUL
         doc_id = getattr(doc, 'pk', None)
-        if not text.strip() or not isinstance(doc_id, int):
+        if _refusing or not text.strip() or not isinstance(doc_id, int):
             return False
         values = {'text': capped(text), 'source': source or OTHER, 'reader': (reader or '')[:40]}
         transaction.on_commit(lambda: _write(doc_id, values), robust=True)
@@ -66,6 +79,8 @@ def keep(doc, text, *, source, reader: str = '') -> bool:
 
 def _write(doc_id: int, values: dict) -> None:
     """The write itself, in its own transaction. A document deleted before this ran stores nothing."""
+    if _refusing:
+        return    # handed on before a writes_refused block opened: still nothing is stored inside it
     try:
         from .models import ApplicantDocument, ApplicantDocumentOcrText
         with transaction.atomic():
@@ -79,3 +94,53 @@ def _write(doc_id: int, values: dict) -> None:
 
 def _log_failure(doc_id, error) -> None:
     logger.warning('ocr_keep: could not keep the OCR text for doc %s (%s)', doc_id, type(error).__name__)
+
+
+def _kept_rows(doc_ids):
+    """The stored rows of the caller's documents only; a missing filter is refused, never read as 'all'."""
+    if doc_ids is None or isinstance(doc_ids, (str, bytes, int)):
+        raise TypeError('ocr_keep reads need the document ids to read (a list, a set or an id queryset)')
+    from .models import ApplicantDocumentOcrText
+    return ApplicantDocumentOcrText.objects.filter(document_id__in=doc_ids)
+
+
+def kept_texts(doc_ids) -> dict:
+    """``{document id: stored text}`` for those of ``doc_ids`` that have text stored. The text stays in the
+    caller's memory: never log, print or save it."""
+    return dict(_kept_rows(doc_ids).values_list('document_id', 'text'))
+
+
+def ids_with_kept_text(doc_ids, *, reader: str = '') -> set:
+    """The ids of ``doc_ids`` that have text stored (by ``reader`` only, when given)."""
+    rows = _kept_rows(doc_ids)
+    if reader:
+        rows = rows.filter(reader=reader)
+    return set(rows.values_list('document_id', flat=True))
+
+
+def ids_with_kept_text_containing(words, doc_ids) -> set:
+    """The ids of ``doc_ids`` whose stored text holds any of ``words`` (ignoring case). No words, no ids."""
+    q = Q()
+    for word in words:
+        q |= Q(text__icontains=word)
+    if not q:
+        return set()
+    return set(_kept_rows(doc_ids).filter(q).values_list('document_id', flat=True))
+
+
+@contextmanager
+def writes_refused(who: str):
+    """A read-only job's guard: inside it ``keep`` stores nothing (returns False) and a direct save of the
+    table raises ``RuntimeError`` naming ``who``. Nests; the save is restored on the way out."""
+    from .models import ApplicantDocumentOcrText
+
+    def refuse(*a, **k):
+        raise RuntimeError(f'{who} writes no OCR text')
+
+    global _refusing
+    _refusing += 1
+    try:
+        with mock.patch.object(ApplicantDocumentOcrText, 'save', refuse):
+            yield
+    finally:
+        _refusing -= 1

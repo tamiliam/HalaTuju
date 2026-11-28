@@ -49,6 +49,7 @@ Sprint OCR-16. Branch ocr-16-genuineness, not pushed. Migration: none. Services:
   - **Dry run.** The line listing known fakes no chosen check reads says a run would fail the gates.
   - **Tests.** test_eval_genuineness_38.py (TestReviewRound3).
 - **Full-suite guard fixes (2026-11-28).** Tests only, no digest moved: the eval joins the OCR-text guard's allowed list (it reads stored text in memory, prints ids only; no read accessor exists), and the Gemini schema scan now also sees `ai_model.ask` call sites and walks each check's 3.8 schema as sent.
+- **One read path for the private OCR text (2026-11-28, owner's choice).** `ocr_keep` now holds the only reads of the table: `kept_texts(doc_ids)` (id to text), `ids_with_kept_text(doc_ids, reader='')` and `ids_with_kept_text_containing(words, doc_ids)` (ids only). Each needs the caller's document ids (no ids is refused, never "all") and logs nothing. `writes_refused(who)` is the read-only jobs' write guard: `keep` stores nothing and a direct save of the table raises. `rescore_salary_statutory`, `capture_parent_ic_text` and `eval_genuineness_38` moved onto these with the same results and counts, and no longer name the table. The guard test now has three lists: the table (its model and `ocr_keep` only), the read callers (exactly those three jobs, each with a reason) and the `keep` callers (unchanged). No genuineness code, no digest and no migration moved.
 
 ### feat: OCR-15 phase 1 - the parent IC's text is kept, plus a one-off Vision capture (2026-11-27)
 

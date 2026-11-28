@@ -22,7 +22,8 @@ the whole cap and keep nothing; a stored document resets it, skips and bad files
 file (a PDF that will not rasterise, a HEIC, a blank photo) never stops it. Every
 ``PROGRESS_EVERY`` documents it prints and logs a progress line (counts only), so a killed task leaves a record.
 
-Writes ONLY through ``ocr_keep.keep``. Never Gemini; never the document, its vision_fields, verdicts,
+Writes ONLY through ``ocr_keep.keep``, and asks which documents already have text only through
+``ocr_keep.ids_with_kept_text`` (ids, never text). Never Gemini; never the document, its vision_fields, verdicts,
 genuineness or statuses. The one other row is the Vision seam's own billing meter (``usage.record_usage``,
 one ``UsageEvent`` per call, as every Vision call logs), tagged ``source='ocr15_parent_ic_capture'``. That row
 is a PLATFORM row (no organisation, no application): this is the platform's own research, so it must not land
@@ -41,7 +42,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.scholarship import ocr_keep, usage, vision
-from apps.scholarship.models import ApplicantDocument, ApplicantDocumentOcrText
+from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.read_errors import is_ocr_service_error
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ def live_parent_ics():
 
 def parent_ic_capture_ids():
     """The ids this capture would read, by id: no stored text, not waiting in the read queue."""
-    stored = ApplicantDocumentOcrText.objects.values('document_id')
+    stored = ocr_keep.ids_with_kept_text(live_parent_ics().values('pk'))
     return list(live_parent_ics().exclude(pk__in=stored).exclude(read_state='pending')
                 .order_by('pk').values_list('pk', flat=True))
 
@@ -86,7 +87,7 @@ def capture_parent_ic(doc_id):
         doc = live_parent_ics().filter(pk=doc_id).select_related('application').first()
         if doc is None:
             return GONE, 0
-        if ApplicantDocumentOcrText.objects.filter(document_id=doc_id).exists():
+        if ocr_keep.ids_with_kept_text([doc_id]):
             return ALREADY_STORED, 0   # a live read kept it since the list was made
         seen = []
         # A PLATFORM meter row: no application and no organisation, so this research never reaches a
@@ -104,7 +105,7 @@ def capture_parent_ic(doc_id):
         if not text.strip():
             return NO_TEXT, units
         ocr_keep.keep(doc, text, source=ocr_keep.VISION_OCR, reader=READER)
-        kept = ApplicantDocumentOcrText.objects.filter(document_id=doc_id, reader=READER).exists()
+        kept = bool(ocr_keep.ids_with_kept_text([doc_id], reader=READER))
         return (STORED if kept else WRITE_FAILED), units
     except Exception as e:   # one document never stops the run; the type only, never the message
         logger.warning('capture_parent_ic_text: doc %s failed (%s)', doc_id, type(e).__name__)
@@ -163,7 +164,7 @@ class Command(BaseCommand):
         out = self.stdout.write
         out(f'capture_parent_ic_text: {"RUN" if opts["run"] else "DRY RUN (no download, no Vision call, no write)"}')
         out(f'  live parent ICs: {live.count()}')
-        out(f'  already stored: {live.filter(pk__in=ApplicantDocumentOcrText.objects.values("document_id")).count()}')
+        out(f'  already stored: {len(ocr_keep.ids_with_kept_text(live.values("pk")))}')
         out(f'  waiting in the read queue (skipped): {live.filter(read_state="pending").count()}')
         out(f'  without stored text: {len(ids)}')
         todo = ids[:limit] if limit else ids

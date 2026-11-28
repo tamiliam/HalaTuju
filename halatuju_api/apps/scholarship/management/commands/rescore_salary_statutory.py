@@ -14,7 +14,7 @@ Rows of that shape with NO model version (or one that does not parse) are listed
 never written.
 
 Per selected row:
-  * stored OCR text (`ApplicantDocumentOcrText`) — the 1.3.0 scorer is run on that text, as a fresh read
+  * stored OCR text (read through `ocr_keep.kept_texts`) — the 1.3.0 scorer is run on that text, as a fresh read
     would be (declaration check and whole-word rule included); written only when it answers
     genuine/private, otherwise the row is left as it is ("text fails").
   * no stored text — the stored marker COUNTS cannot tell a whole word from a substring, so the row is
@@ -35,8 +35,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.scholarship import ocr_keep
 from apps.scholarship.genuineness.salary_doc import MODEL_VERSION, decide, salary_genuineness
-from apps.scholarship.models import ApplicantDocument, ApplicantDocumentOcrText
+from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.vision.authenticity import _family_auth
 
 #: The 1.2.x models: income declarations recognised (1.2.0), but the no-wage reject before the statutory
@@ -127,8 +128,7 @@ def rescored_authenticity(doc, text, eye_checked=False):
 
 
 def _stored_text(doc_id):
-    return (ApplicantDocumentOcrText.objects.filter(document_id=doc_id)
-            .values_list('text', flat=True).first())
+    return ocr_keep.kept_texts([doc_id]).get(doc_id)
 
 
 def is_unknown_model(doc) -> bool:

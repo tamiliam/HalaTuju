@@ -261,23 +261,35 @@ class TestPrivate(_Base):
         names = {f.name for f in ApplicantDocument._meta.get_fields()}
         self.assertFalse({n for n in names if 'ocr' in n.lower()})
 
-    ALLOWED = {
+    #: (a) The only modules that may name the table (migrations aside): its model and ocr_keep.
+    TABLE = {
         'scholarship/models/__init__.py',
         'scholarship/models/documents.py',
         'scholarship/ocr_keep.py',
-        # #85: reads the stored text (in memory only, never printed) to re-score payslips without a read.
+    }
+    #: (b) The only modules that may call an ocr_keep READ function: owner-approved read-only jobs.
+    READERS = {
+        # #85: re-scores payslips on their stored text (in memory only, never printed), no read, no AI call.
         'scholarship/management/commands/rescore_salary_statutory.py',
-        # OCR-15: the owner-approved one-off parent IC capture (writes only through ocr_keep.keep).
+        # OCR-15: the one-off parent IC capture asks which documents already have text (ids only).
         'scholarship/management/commands/capture_parent_ic_text.py',
-        # OCR-16: the paid eval reads stored text in memory (slip score, sample words), prints ids only, refuses its saves.
+        # OCR-16: the paid eval scores slips on their text and finds sample words (ids printed only).
         'scholarship/management/commands/eval_genuineness_38.py',
+    }
+    #: (c) The modules that call ``ocr_keep.keep`` (unchanged by the read path).
+    KEEPERS = {
         'scholarship/vision/ocr.py',
         'scholarship/vision/ic.py',   # OCR-15: the IC / parent IC read keeps its Vision text
+        'scholarship/management/commands/capture_parent_ic_text.py',
     }
-    PATTERN = re.compile(r'ApplicantDocumentOcrText|applicant_document_ocr_text|ocr_keep')
+    TABLE_PATTERN = re.compile(r'ApplicantDocumentOcrText|applicant_document_ocr_text')
+    READ_PATTERN = re.compile(r'\b(?:kept_texts|ids_with_kept_text\w*)\b')
+    #: Naming ocr_keep at all (an import, an alias, a docstring) is for the modules above only.
+    MODULE_PATTERN = re.compile(r'ocr_keep')
 
-    def test_nothing_else_names_it(self):
-        """No serializer, admin, export or view may name the table: only these modules."""
+    @classmethod
+    def _naming(cls, pattern):
+        """The app modules (tests and migrations aside) whose source matches ``pattern``."""
         apps_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         found = set()
         for root, dirs, files in os.walk(apps_dir):
@@ -286,6 +298,105 @@ class TestPrivate(_Base):
                 if name.endswith('.py'):
                     path = os.path.join(root, name)
                     with open(path, encoding='utf-8') as fh:
-                        if self.PATTERN.search(fh.read()):
+                        if pattern.search(fh.read()):
                             found.add(os.path.relpath(path, apps_dir).replace(os.sep, '/'))
-        self.assertEqual(found, self.ALLOWED)
+        return found
+
+    def test_nothing_else_names_it(self):
+        """No serializer, admin, export, view or job may name the table: only its model and ocr_keep."""
+        self.assertEqual(self._naming(self.TABLE_PATTERN), self.TABLE)
+
+    def test_only_the_listed_jobs_call_the_read_path(self):
+        self.assertEqual(self._naming(self.READ_PATTERN) - {'scholarship/ocr_keep.py'}, self.READERS)
+
+    def test_only_the_listed_modules_name_ocr_keep(self):
+        """A new module cannot reach the text through an alias: naming ocr_keep at all needs a list."""
+        self.assertEqual(self._naming(self.MODULE_PATTERN),
+                         self.READERS | self.KEEPERS | {'scholarship/ocr_keep.py', 'scholarship/models/documents.py'})
+
+    def test_the_guard_patterns_catch_what_they_guard(self):
+        self.assertTrue(self.READ_PATTERN.search('ocr_keep.ids_with_kept_text_containing(w, ids)'))
+        self.assertTrue(self.READ_PATTERN.search('from apps.scholarship.ocr_keep import kept_texts'))
+        self.assertFalse(self.READ_PATTERN.search('ocr_keep.keep(doc, text, source=s)'))
+        self.assertFalse(self.TABLE_PATTERN.search('from apps.scholarship import ocr_keep'))
+
+
+class TestTheReadPath(_Base):
+    """OCR-16: the one approved read path. Synthetic text; each read is bounded by the caller's ids."""
+
+    def _store(self, text, reader='test'):
+        doc = self.doc()
+        with self.committed():
+            self.assertTrue(ocr_keep.keep(doc, text, source='other', reader=reader))
+        return doc
+
+    def test_kept_texts_returns_only_the_ids_asked_for(self):
+        a, b, plain = self._store('MADE UP A'), self._store('MADE UP B'), self.doc()
+        self.assertEqual(ocr_keep.kept_texts([a.pk, plain.pk]), {a.pk: 'MADE UP A'})
+        self.assertEqual(ocr_keep.kept_texts({a.pk, b.pk}), {a.pk: 'MADE UP A', b.pk: 'MADE UP B'})
+        self.assertEqual(ocr_keep.kept_texts([]), {})
+        self.assertEqual(ocr_keep.kept_texts(ApplicantDocument.objects.filter(pk=b.pk).values('pk')),
+                         {b.pk: 'MADE UP B'})
+
+    def test_ids_with_kept_text_and_by_reader(self):
+        a, b, plain = self._store('MADE UP A', reader='one'), self._store('MADE UP B', reader='two'), self.doc()
+        ids = [a.pk, b.pk, plain.pk]
+        self.assertEqual(ocr_keep.ids_with_kept_text(ids), {a.pk, b.pk})
+        self.assertEqual(ocr_keep.ids_with_kept_text(ids, reader='two'), {b.pk})
+        self.assertEqual(ocr_keep.ids_with_kept_text([plain.pk]), set())
+
+    def test_ids_with_kept_text_containing_any_word_ignoring_case(self):
+        a, b, c = self._store('MADE UP Sample STAMP'), self._store('made up contoh'), self._store('MADE UP')
+        ids = [a.pk, b.pk, c.pk]
+        self.assertEqual(ocr_keep.ids_with_kept_text_containing(('sample', 'contoh'), ids), {a.pk, b.pk})
+        self.assertEqual(ocr_keep.ids_with_kept_text_containing(('sample',), [b.pk, c.pk]), set())
+        self.assertEqual(ocr_keep.ids_with_kept_text_containing((), ids), set())   # no words is never "all"
+
+    def test_a_read_without_ids_is_refused(self):
+        self._store('MADE UP A')
+        for bad in (None, 5, '5'):
+            with self.subTest(bad=bad), self.assertRaises(TypeError):
+                ocr_keep.kept_texts(bad)
+            with self.subTest(bad=bad), self.assertRaises(TypeError):
+                ocr_keep.ids_with_kept_text(bad)
+            with self.subTest(bad=bad), self.assertRaises(TypeError):
+                ocr_keep.ids_with_kept_text_containing(('made',), bad)
+
+    def test_the_reads_never_log_the_text(self):
+        a = self._store('MADE UP SECRET')
+        with self.assertNoLogs('apps.scholarship.ocr_keep'):
+            ocr_keep.kept_texts([a.pk])
+            ocr_keep.ids_with_kept_text_containing(('secret',), [a.pk])
+
+
+class TestWritesRefused(_Base):
+    """OCR-16: the read-only jobs' write guard, owned here: no keep, no direct save, restored after."""
+
+    def test_keep_stores_nothing_inside_it(self):
+        doc = self.doc()
+        with ocr_keep.writes_refused('a made up job'), self.committed():
+            self.assertFalse(ocr_keep.keep(doc, 'MADE UP TEXT', source='other'))
+        self.assertIsNone(self.kept(doc))
+
+    def test_a_write_handed_on_before_it_stores_nothing_inside_it(self):
+        doc = self.doc()
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            self.assertTrue(ocr_keep.keep(doc, 'MADE UP TEXT', source='other'))
+        with ocr_keep.writes_refused('a made up job'):
+            for fn in callbacks:
+                fn()
+        self.assertIsNone(self.kept(doc))
+
+    def test_a_direct_save_raises_and_is_restored_after(self):
+        doc = self.doc()
+        with ocr_keep.writes_refused('a made up job'):
+            with self.assertRaisesMessage(RuntimeError, 'a made up job writes no OCR text'):
+                ApplicantDocumentOcrText.objects.create(document=doc, text='MADE UP', source='other')
+            with ocr_keep.writes_refused('nested'):
+                self.assertFalse(ocr_keep.keep(doc, 'MADE UP', source='other'))
+            self.assertFalse(ocr_keep.keep(doc, 'MADE UP', source='other'))   # still refused after the inner one
+        self.assertFalse(ApplicantDocumentOcrText.objects.exists())
+        with self.committed():
+            self.assertTrue(ocr_keep.keep(doc, 'MADE UP AFTER', source='other'))
+        self.assertEqual(self.kept(doc).text, 'MADE UP AFTER')
+        self.assertEqual(ocr_keep._refusing, 0)

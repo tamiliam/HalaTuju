@@ -449,3 +449,30 @@ class TestTheSamplePlan(_Docs):
 
     def test_interleave_keeps_every_check(self):
         self.assertEqual(ev.interleave({'ic': [1, 2], 'sample': [3]}), [('ic', 1), ('sample', 3), ('ic', 2)])
+
+    def test_the_sample_check_adds_live_rows_with_a_sample_word_in_their_stored_text(self):
+        worded, plain, no_file = self.doc('str', status=''), self.doc('str', status=''), self.doc('str', status='')
+        ApplicantDocument.objects.filter(pk=no_file.pk).update(storage_path='')
+        for d, text in ((worded, 'MADE UP CONTOH STAMP'), (plain, 'MADE UP'), (no_file, 'MADE UP SAMPLE')):
+            ApplicantDocumentOcrText.objects.create(document=d, text=text, source='vision_ocr', reader='test',
+                                                    stored_at=d.uploaded_at)
+        self.assertEqual(ev._sample_word_ids(), {worded.pk})
+        self.assertEqual(ev.genuineness_sample(['sample'], set())['sample'], [worded.pk])
+
+
+class TestTheOcrTextWriteGuard(_Docs):
+    """OCR-16: inside the run's guard (ocr_keep.writes_refused) keep() stores nothing and a direct save raises."""
+
+    def test_keep_and_a_direct_save_are_refused_during_the_run(self):
+        from apps.scholarship import ocr_keep
+        d = self.doc('ic')
+        trace = {'calls': 0, 'outcome': '', 'usd': Decimal('0'), 'peak': ev.USD_PER_CALL_38, 'tokens': None}
+        with ev._traced(trace):
+            self.assertFalse(ocr_keep.keep(d, 'MADE UP TEXT', source='other'))
+            with self.assertRaisesMessage(RuntimeError, 'eval_genuineness_38 writes no OCR text'):
+                ApplicantDocumentOcrText.objects.create(document=d, text='MADE UP', source='other',
+                                                        stored_at=d.uploaded_at)
+            with self.assertRaises(RuntimeError):
+                d.save()
+        self.assertFalse(ApplicantDocumentOcrText.objects.exists())
+        self.assertEqual(ocr_keep._refusing, 0)

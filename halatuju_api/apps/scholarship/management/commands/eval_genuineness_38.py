@@ -32,8 +32,10 @@ service errors, fetch failures), a chosen check with 0 answers, or a reviewer-ac
 Malformed answers on known fakes and on reviewer-rejected rows are shown beside the gates.
 
 WRITES NOTHING: no verdict, no vision_fields, no genuineness field, no read state (a guard refuses every
-document save during the run). The one row is the seam's own billing meter, a PLATFORM row
-(`usage_context(source=USAGE_SOURCE)`, no organisation, no application), as in `capture_parent_ic_text`.
+document save during the run, and `ocr_keep.writes_refused` every OCR-text save). It reads stored text only
+through `ocr_keep` (`kept_texts` for the slips, `ids_with_kept_text_containing` for the sample words). The one
+row is the seam's own billing meter, a PLATFORM row (`usage_context(source=USAGE_SOURCE)`, no organisation, no
+application), as in `capture_parent_ic_text`.
 
 DRY RUN BY DEFAULT: counts and the estimated cost only; no download, no AI call. `--run` needs `--limit`
 (documents, at most `MAX_LIMIT`) and `--max-cost-usd` (at most `MAX_COST_USD`; suggested 2.00); it stops before
@@ -53,12 +55,11 @@ from decimal import Decimal, InvalidOperation
 from unittest import mock
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db.models import Q
 
-from apps.scholarship import usage, vision
+from apps.scholarship import ocr_keep, usage, vision
 from apps.scholarship.genuineness import ai_model
 from apps.scholarship.genuineness.bands import canonical_status, stored_authenticity
-from apps.scholarship.models import ApplicantDocument, ApplicantDocumentOcrText
+from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.read_errors import DOCUMENT_FAILED, UNPARSEABLE_RESPONSE
 from apps.scholarship.vision.slip_read import is_slip_model
 
@@ -110,11 +111,14 @@ def _live(types):
     return ApplicantDocument.live(qs)
 
 
+def _sample_pool():
+    """The documents the sample check reads from: every live document with a file."""
+    return ApplicantDocument.live(ApplicantDocument.objects.exclude(storage_path=''))
+
+
 def _sample_word_ids():
-    q = Q()
-    for word in _SAMPLE_WORDS:
-        q |= Q(text__icontains=word)
-    return set(ApplicantDocumentOcrText.objects.filter(q).values_list('document_id', flat=True))
+    """The ids in the sample pool whose stored text holds a sample word (ids only, through ocr_keep)."""
+    return ocr_keep.ids_with_kept_text_containing(_SAMPLE_WORDS, _sample_pool().values('pk'))
 
 
 def stored_value(check, doc_type, vf):
@@ -143,8 +147,7 @@ def genuineness_sample(checks, fake_ids, sizes=None, sample_fake_ids=()):
     out = {}
     for check in checks:
         fakes = fakes_for(check, fake_ids, sample_fake_ids)
-        qs = (ApplicantDocument.live(ApplicantDocument.objects.exclude(storage_path='')) if check == 'sample'
-              else _live(_TYPES[check]))
+        qs = _sample_pool() if check == 'sample' else _live(_TYPES[check])
         rows = []
         for pk, doc_type, vs, vf in qs.values_list('pk', 'doc_type', 'verification_status', 'vision_fields').iterator():
             stored = stored_value(check, doc_type, vf)
@@ -252,8 +255,7 @@ def _traced(trace):
 
     with mock.patch.object(vision, '_call_gemini_json', counted), mock.patch.object(ai_model, 'ask', asked), \
             mock.patch.object(usage, 'record_usage', metered), \
-            mock.patch.object(ApplicantDocument, 'save', refuse), \
-            mock.patch.object(ApplicantDocumentOcrText, 'save', refuse):
+            mock.patch.object(ApplicantDocument, 'save', refuse), ocr_keep.writes_refused('eval_genuineness_38'):
         yield
 
 
@@ -372,8 +374,7 @@ class Command(BaseCommand):
         tally = {c: {'n': dict.fromkeys(COUNTERS, 0), 'ids': {k: [] for k in ID_LISTS}, 'fakes_answered': set(),
                      'settled': set()} for c in by_check}
         trace = {'calls': 0, 'outcome': '', 'usd': Decimal('0'), 'peak': USD_PER_CALL_38, 'tokens': None}
-        texts = dict(ApplicantDocumentOcrText.objects.filter(
-            document_id__in=[pk for c, pk in todo if c == 'results_slip']).values_list('document_id', 'text'))
+        texts = ocr_keep.kept_texts([pk for c, pk in todo if c == 'results_slip'])
         accepted = set(ApplicantDocument.objects.filter(pk__in={pk for _c, pk in todo}, verification_status='verified')
                        .values_list('pk', flat=True))
         streak, stopped, done = {'service': 0, 'fetch': 0}, '', 0
