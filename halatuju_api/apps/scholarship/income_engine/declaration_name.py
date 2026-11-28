@@ -71,7 +71,8 @@ differently on every Re-run. The salary-slip read now tags each warning with a t
 a valid code, still never a warning with a keep word. An untagged or older read falls back to the word
 filter for the whole list. Review round 1: under a payslip-only code a warning hides only when it also names
 an absence; no keep word (widened: signature, alteration, unreadable, mismatch, fake and family words) and
-no missing date. When in doubt it SHOWS.
+no missing date. When in doubt it SHOWS. Review round 2: a keep list is never complete, so the note hides
+only when EVERY part names a payslip-only topic and an absence (``tagged_hides``); else the word filter decides.
 
 It sits in ``income_engine/`` so the verdict-engine fingerprint covers it: BUMP
 ``verdict_engine.VERDICT_ENGINE_VERSION`` on any change to the rule.
@@ -287,19 +288,21 @@ def soften(doc, status: str, extracted: str, reference: str) -> str:
 #: whole warning hides only when every part is hideable. When unsure, the warning is kept.
 #:
 #: The topics. A DATE is not one: a declaration should carry a date, so "date missing" is never hidden.
-_TOPICS = (
-    # the employer
+_EMPLOYER_TOPICS = (
     'name of the employer', 'name of employer', "employer's name", 'employers name', 'employer name',
     'name of the company', 'name of company', "company's name", 'company name', 'nama majikan',
     'nama syarikat', 'employers', 'employer', 'majikan', 'company', 'syarikat',
-    # the pay period. Review round 3 (minor 5): only words that clearly say PAY. A bare "period",
-    # "tempoh", "month/year" or "bulan/tahun" may be the declaration's own date, so it is no topic.
-    'pay slip period', 'payslip period', 'pay period', 'salary period', 'income period', 'period of pay',
+)
+#: The pay period. Review round 3 (minor 5): only words that clearly say PAY. A bare "period", "tempoh",
+#: "month/year" or "bulan/tahun" may be the declaration's own date, so it is no topic.
+_PERIOD_TOPICS = (
+    'pay slip period','payslip period', 'pay period', 'salary period', 'income period', 'period of pay',
     'period of salary', 'period of income', 'month/year of salary', 'month/year of pay',
     'month/year of income', 'pay month', 'salary month', 'income month', 'month of pay',
     'month of salary', 'month of income', 'tempoh gaji', 'tempoh pendapatan', 'bulan gaji',
     'bulan pendapatan',
 )
+_TOPICS = _EMPLOYER_TOPICS + _PERIOD_TOPICS
 #: The ABSENCE words (English and Malay). A bare "not" is NOT one ("employer is not a company" stays).
 #: Review round 3 (minor 6): "not visible", "blank" and "kosong" are not absences: the employer may be
 #: there but covered over. They are keep words below.
@@ -355,12 +358,21 @@ _KEEP_STEMS = ('tamper', 'alter', 'forg', 'fake', 'palsu', 'ubah', 'chop', 'stam
                'manipul', 'pinda', 'padam', 'conteng', 'tindih', 'semula', 'blur', 'dark', 'gelap', 'quality',
                'faint', 'pudar', 'torn', 'koyak', 'rosak', 'damag', 'partial', 'match', 'sepadan', 'verif',
                'templat', 'sample', 'contoh', 'photocop', 'salinan', 'generat', 'invent', 'famil', 'father',
-               'mother', 'bapa', 'duplicat', 'b40', 'high', 'outdat')
+               'mother', 'bapa', 'duplicat', 'b40', 'high', 'outdat',
+               # topic-codes review round 2: genuineness, family, mismatch, income level, duplicate, page
+               'genuin', 'authentic', 'fabricat', 'counterfeit', 'bogus', 'ragu', 'tiru', 'husband', 'wife',
+               'suami', 'isteri', 'brother', 'sister', 'daughter', 'neighbo', 'jiran', 'agree', 'tally',
+               'add up', 'adds up', 'tepat', 'threshold', 'exceed', 'melebihi', 'rendah', 'twice', 'another',
+               'serupa', 'dua kali', 'halaman', 'screenshot', 'original', 'typed')
 #: ...and these as whole words (too short to match inside other words): IC, I/C, I.C., KP, K/P, K.P., COP;
 #: review round 1 of the topic codes: CAP, SAMA, IBU, LAMA ("alamat" is an address); READ and TERANG at a
 #: word start only ("already", "keterangan"); OFFICIAL unless it only names the payslip the type note means.
-_KEEP_WORDS = re.compile(r'\b(?:ic|kp|cop|cap|sama|ibu|lama|i\s*/\s*c|k\s*/\s*p|i\s*\.\s*c|k\s*\.\s*p)\b'
-                         r'|\b(?:read|terang)|official(?!\s+(?:pay[\s-]?slip|salary\s+slip))')
+#: Review round 2 of the topic codes: SON, ANAK, LOW whole words ("reason", "below"); ABANG, ADIK, KAKAK,
+#: HALF, PAGE at a word start ("behalf"); a page only as a PLACE ("from this page") is no keep word.
+_KEEP_WORDS = re.compile(r'\b(?:ic|kp|cop|cap|sama|ibu|lama|son|anak|low|i\s*/\s*c|k\s*/\s*p|i\s*\.\s*c|k\s*\.\s*p)\b'
+                         r'|\b(?:read|terang|abang|adik|kakak|half|page)'
+                         r'|official(?!\s+(?:pay[\s-]?slip|salary\s+slip))')
+_PAGE_PLACE = re.compile(r'\b(?:on|in|from|within)\s+(?:this|the)\s+page\b')
 #: "the employer's NAME" is still about the employer, not about who the earner is.
 _EMPLOYER_NAME_PHRASES = ("employer's name", 'employer name', 'name of the employer', 'name of employer',
                           "company's name", 'company name', 'name of the company', 'name of company',
@@ -410,7 +422,7 @@ def _normalised(warning) -> str:
 
 
 def _keeps(s: str) -> bool:
-    return any(k in s for k in _KEEP_STEMS) or bool(_KEEP_WORDS.search(s))
+    return any(k in s for k in _KEEP_STEMS) or bool(_KEEP_WORDS.search(_PAGE_PLACE.sub(' ', s)))
 
 
 #: Date phrases that say WHEN a paper was signed: "signing" holds the keep stem "sign", so a "the date is the
@@ -418,13 +430,29 @@ def _keeps(s: str) -> bool:
 #: check, but NEVER beside an absence ("signing date missing", "date signed: missing", "tiada"): a missing
 #: date shows. Review round 1: "signed on" is no date phrase ("not signed on behalf of the employer").
 _SIGNING_DATE_PHRASES = re.compile(r"\b(?:signing\s+date|date\s+of\s+signing|date\s+signed|signed\s+date)\b")
-_DATE_WORDS = re.compile(r"\b(?:date|tarikh)\b")
 _AFTER_GAP = re.compile(r"\s*[:\-]?\s*(?:(?:is|are|was|were|has|have|been|being|also)\s+){0,2}")
 _BEFORE_GAP = r"\s*[:\-]?\s*(?:(?:the|a|an|its)\s+)?$"
-#: The tagged path's own extra absences (never the word filter's): a note that the paper "shows only a
-#: declaration date rather than a pay period" says the pay period is absent. A bare "only" is none.
-_TAGGED_ABSENT_RE = re.compile(r"(?<![a-z0-9/'])(?:rather\s+than\s+an?|shows\s+only|only\s+an?\s+(?:[a-z]+\s+){0,3}"
-                               r"date)(?![a-z0-9/'])")
+#: Topic-codes review round 2: the tagged path judges PART BY PART. Every part must name a payslip-only TOPIC
+#: (the word filter's, plus the take-home, gross and payslip words the codes cover) and an ABSENCE.
+_PAPER_TOPICS = ('payslip', 'pay slip', 'salary slip', 'slip gaji', 'penyata gaji')
+_TAGGED_TOPIC_RE = _phrases(_TOPICS + _PAPER_TOPICS + (
+    'take home', 'net pay', 'net income', 'net salary', 'gross', 'gaji bersih', 'gaji kasar',
+    'pendapatan bersih', 'pendapatan kasar'))
+#: The narrow absences, only beside a pay period or a payslip: "... a signing date RATHER THAN a (specific)
+#: pay period", "the document SHOWS ONLY ...", "ONLY a declaration DATE". Never beside the employer ("the
+#: employer is a person rather than a company" is no absence), and never with no such topic at all.
+_NARROW_TOPIC = '(?:' + '|'.join(re.escape(t) for t in sorted(_PERIOD_TOPICS + _PAPER_TOPICS, key=len,
+                                                               reverse=True)) + ')'
+_RATHER_THAN = re.compile(rf"(?<![a-z0-9/'])rather\s+than\s+an?\s+(?:[a-z]+\s+){{0,3}}{_NARROW_TOPIC}"
+                          r"(?![a-z0-9/'])")
+_SHOWS_ONLY = re.compile(r"(?<![a-z0-9/'])(?:shows?\s+only|only\s+an?\s+(?:[a-z]+\s+){0,3}date)(?![a-z0-9/'])")
+_NARROW_TOPIC_RE = re.compile(rf"(?<![a-z0-9/']){_NARROW_TOPIC}(?![a-z0-9/'])")
+#: A part that says a DATE (or a month) is absent always shows: a declaration should carry one. The topic
+#: phrases ("pay month", "bulan gaji") are taken out first; they name the pay period, not a date.
+_DATE_WORDS = re.compile(r"\b(?:dated?|dates|undated|(?:ber)?tarikh|months?|bulan)\b")
+#: The parts: the word filter's ; , . and/dan, plus : and the turn words (a "but ..." part is a new claim).
+_TAGGED_SPLIT = re.compile(r"[;,.:]|\b(?:and|dan|but|however|although|though|whereas|while|tetapi|tapi|namun|"
+                           r"walaupun|manakala)\b")
 
 
 def _beside_absence(s: str, m: re.Match) -> bool:
@@ -435,19 +463,35 @@ def _beside_absence(s: str, m: re.Match) -> bool:
     return bool(re.search(_ABSENT_RE.pattern + _BEFORE_GAP, s[:m.start()]))
 
 
+def _tagged_part_hides(part: str) -> bool:
+    """One part: a payslip-only topic AND an absence (``_ABSENT_RE``, or a narrow one beside a pay period
+    or a payslip), and no date said to be absent."""
+    p = ' '.join(re.sub(r"[^a-z0-9/' ]", ' ', part).split())
+    if not _TAGGED_TOPIC_RE.search(p):
+        return False
+    if _ABSENT_RE.search(p):
+        return not _DATE_WORDS.search(_TAGGED_TOPIC_RE.sub(' ', p))
+    return bool(_RATHER_THAN.search(p) or (_SHOWS_ONLY.search(p) and _NARROW_TOPIC_RE.search(p)))
+
+
 def tagged_hides(warning) -> bool:
-    """The tagged path, for a warning under a payslip-only code: hide ONLY when it names an absence, no keep
-    word stands once the signing-date phrases (none beside an absence) are gone, and no DATE is said to be
-    missing ("tarikh tiada"). Or when the word filter alone would hide it (the type note). Else it SHOWS."""
+    """The tagged path, for a warning under a payslip-only code. A keep word anywhere (once the signing-date
+    phrases, none beside an absence, are gone) SHOWS it. Then it hides only when EVERY part
+    (``_TAGGED_SPLIT``) names a payslip-only topic and an absence, no part saying a date is absent; else the
+    word filter decides (``payslip_only_warning``, which never hides more than before). Topic-codes review
+    round 2: a keep list can never be complete, so a part about anything else shows the note."""
     s = _normalised(warning)
     if not s:
-        return False
-    if any(_beside_absence(s, m) for m in _DATE_WORDS.finditer(s)):
         return False
     stripped = _SIGNING_DATE_PHRASES.sub(lambda m: m.group(0) if _beside_absence(s, m) else ' ', s)
     if _keeps(stripped):
         return False
-    return bool(_ABSENT_RE.search(s) or _TAGGED_ABSENT_RE.search(s)) or payslip_only_warning(warning)
+    stripped = re.sub(r'\bmonth\s*(?:and|&)\s*year\b', 'month/year', stripped)
+    stripped = re.sub(r'\bbulan\s*(?:dan|&)\s*tahun\b', 'bulan/tahun', stripped)
+    parts = [p for p in _TAGGED_SPLIT.split(stripped) if p.strip()]
+    if parts and all(_tagged_part_hides(p) for p in parts):
+        return True
+    return payslip_only_warning(warning)
 
 
 def has_keep_word(warning) -> bool:
@@ -476,7 +520,7 @@ def shown_warnings(doc, warnings):
 
     Topic-coded (owner 2026-11-28): when the read tagged its warnings (``vision_fields['warning_topics']``,
     `vision.warning_topics.valid_topics`), warning i hides only when its topic is payslip-only AND
-    `tagged_hides` (it names an absence, no keep word, no missing date). When in doubt it SHOWS: a wrong
+    `tagged_hides` (no keep word; every part a payslip-only absence). When in doubt it SHOWS: a wrong
     code must never hide a note the reviewer needs. Topics missing, of the wrong length or with an unknown
     code: the word filter above, for the WHOLE list. The two are never mixed."""
     if getattr(doc, 'doc_type', '') != 'salary_slip' or not isinstance(warnings, list) or not warnings:

@@ -108,6 +108,19 @@ class TheSchemaAndPromptTests(SimpleTestCase):
         from apps.scholarship.vision.field_extraction import _EX_KEPT
         self.assertIn(wt.KEY, _EX_KEPT)
 
+    def test_an_empty_or_failed_read_keeps_no_topics(self):
+        """Review round 2: an empty answer or an error read stores no warnings, so no topics either."""
+        from apps.scholarship.vision.field_extraction import _build_read_result, _empty_answer_failed
+        doc = SimpleNamespace(doc_type='salary_slip')
+        empty = _empty_answer_failed({'fields': {'name': ''}, 'warnings': [NO_EMPLOYER], 'error': '',
+                                      wt.KEY: ['employer_missing'], 'exam_year_read': '2024'})
+        self.assertEqual(empty['warnings'], [])
+        for ex in (empty, {**empty, 'error': 'boom'}):             # empty answer, then any error read
+            failed = _build_read_result(doc, ex, names=[], postcode='', city='', street='', check_address=False)
+            self.assertEqual(failed['warnings'], [])
+            self.assertNotIn(wt.KEY, failed)
+            self.assertEqual(failed['exam_year_read'], '2024')     # the other kept keys stay
+
 
 class TheTaggedDisplayTests(SimpleTestCase):
     WS = [NO_EMPLOYER, NO_PERIOD, HANDWRITTEN]
@@ -263,6 +276,65 @@ class ReviewRound1KeepFamiliesTests(SimpleTestCase):
                   'Dokumen ini ialah surat akuan pendapatan, bukan slip gaji',
                   'The document is a declaration rather than a payslip'):
             self.assertEqual(shown_warnings(_doc(['not_a_payslip']), [w]), [], w)
+
+
+class ReviewRound2EveryPartTests(SimpleTestCase):
+    """Review round 2 (2026-11-28): a keep list is never complete. Under a payslip-only code a note hides only
+    when EVERY part names a payslip-only topic and an absence; else the word filter decides."""
+
+    MUST_SHOW = {
+        'missing date': ('The date of the declaration is not given.', 'Tarikh akuan tidak dinyatakan.',
+                         'Undated, with no employer listed.', 'The month of the declaration is not stated.',
+                         'No date or pay period given', 'Tidak bertarikh, tiada majikan'),
+        'fake': ('may not be genuine; no employer stated', 'looks fabricated, with no pay period',
+                 'Not authentic: no employer shown', 'Dokumen ini meragukan, tiada majikan',
+                 'Possibly counterfeit; the employer is missing'),
+        'family employer': ("The employer is the earner's husband; no pay period stated",
+                            'Majikan ialah suami; tiada tempoh gaji', 'the brother of the earner, no pay period',
+                            'The employer is the son; pay period missing'),
+        'mismatch': ('The amounts do not agree; no take-home shown', 'does not add up and net pay is missing',
+                     'Jumlah tidak tepat; tiada gaji bersih', 'does not tally; no net pay'),
+        'income level': ('exceeds the eligibility threshold; no supporting payslip',
+                         'Income looks too low; no employer given', 'Pendapatan melebihi had; tiada majikan'),
+        'duplicate': ('The same document appears twice, without a pay period',
+                      'also uploaded for another member; no employer shown',
+                      'Dokumen yang serupa dimuat naik dua kali; tiada majikan'),
+        'other': ('No employer; the declaration is by a neighbour, not the earner',
+                  'Tiada majikan; pendapatan dinyatakan RM 8,000 sebulan', 'Missing employer; page 2 is absent',
+                  'Shows only the top half of the page', 'No employer stated but the earner is a farmer'),
+        'no absence at all': ('The figure is typed rather than a handwritten amount.',
+                              'It is a screenshot rather than an original.',
+                              'Shows only a total rather than a monthly amount.',
+                              'The employer is a person rather than a company'),
+    }
+    #: Still hidden: the owner's case-1048 notes are in ReviewRound1KeepFamiliesTests; these are the forms
+    #: the part rule must not lose.
+    STILL_HIDE = ('Company details are missing from this page', 'No employer or pay period stated',
+                  'The date of signing is given rather than a pay period', 'Month and year of salary not shown',
+                  'Bulan gaji tidak dinyatakan', 'A separate take home pay amount is not shown; gross pay missing',
+                  'The document shows only a declaration date rather than a pay period')
+
+    def test_every_failure_wording_shows_under_every_payslip_only_code(self):
+        for family, notes in self.MUST_SHOW.items():
+            for w in notes:
+                self.assertFalse(tagged_hides(w), (family, w))
+                for code in sorted(wt.PAYSLIP_ONLY_TOPICS):
+                    self.assertEqual(shown_warnings(_doc([code]), [w]), [w], (family, w, code))
+
+    def test_the_pure_absence_forms_still_hide(self):
+        for w in self.STILL_HIDE:
+            self.assertTrue(tagged_hides(w), w)
+            self.assertEqual(shown_warnings(_doc(['pay_period_missing']), [w]), [], w)
+
+    def test_the_new_keep_words_never_touch_the_case_1048_notes(self):
+        for w, _ in ReviewRound1KeepFamiliesTests.CASE_1048:      # the signing one holds only the old "sign"
+            self.assertFalse(has_keep_word(w.replace('signing date', 'date')), w)
+        for w in ('The reason for no employer', 'Income below RM 2,000, no employer', 'On behalf of: none',
+                  'Personal employer missing', 'No employer on the page', 'Employer missing from the page'):
+            self.assertFalse(has_keep_word(w), w)          # son, low, half, page: whole word or word start
+        for w in ('The son is the employer', 'Gaji rendah', 'Anak menulis borang', 'Page 2 missing',
+                  'Income is low'):
+            self.assertTrue(has_keep_word(w), w)
 
 
 class OnlyTheReaderAndTheDisplayNameTheTopicsTests(SimpleTestCase):
@@ -462,6 +534,23 @@ class TheEvalRunTests(_Slips):
         self.assertIn('stopped mid-read', text)
         self.assertEqual(len(billed), 1)           # the 2nd and 3rd models are never called
         self.assertIn('read 0', text)
+
+    def test_a_long_prompt_is_reserved_and_refused_before_it_is_billed(self):
+        """Review round 2: one large row could pass the cap; the prompt's bytes bound its input, checked first."""
+        self.slip()
+        # The prompt keeps 6,000 characters of OCR text; 4-byte characters make it about 27k bytes, a reserve of
+        # about US$0.016: over a US$0.015 cap that the flat US$0.004 bound (and the per-document check) let pass.
+        long_text = '\U0001D417' * 6000
+        text, m, _ = self.run_cmd('--run', '--limit', '1', '--max-cost-usd', '0.015',
+                                  ocr={'text': long_text, 'error': None})
+        m.assert_not_called()
+        self.assertIn('stopped mid-read', text)
+        self.assertIn('read 0', text)
+        self.assertIn('charged up to US$0.0000', text)
+        trace = {'peak': ev.USD_PER_GEMINI_CALL}
+        self.assertEqual(ev.row_reserve(trace, 'short'), ev.USD_PER_GEMINI_CALL)
+        self.assertEqual(ev.row_reserve(trace, 'X' * 200_000), ev.gemini_cost((200_000, None)))
+        self.assertEqual(ev.row_reserve({'peak': ev.Decimal('0.5')}, 'short'), ev.Decimal('0.5'))
 
     def test_stops_before_the_cap(self):
         for _ in range(3):

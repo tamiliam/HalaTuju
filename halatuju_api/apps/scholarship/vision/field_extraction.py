@@ -334,7 +334,8 @@ def _build_read_result(doc, ex, *, names, postcode, city, street, check_address)
     """The stored record of a read: its fields and the student-facing verdict, or the error."""
     if ex['error']:   # OUR AI outage is a deferred read ('review_manually'), never the student's 'unreadable'
         svc = is_ai_service_error(ex['error'])
-        return {'fields': {}, 'warnings': [], 'student_verdict': 'review_manually' if svc else 'unreadable', **{k: ex[k] for k in ex if k in _EX_KEPT},
+        kept = {k: ex[k] for k in ex if k in _EX_KEPT and k != _WARNING_TOPICS_KEY}   # no warnings, no topics
+        return {'fields': {}, 'warnings': [], 'student_verdict': 'review_manually' if svc else 'unreadable', **kept,
                 'capture': ex.get('capture', 'ai'), 'error': ex['error'], 'service_error': svc}
     verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
                                   postcode=postcode, city=city, street=street,

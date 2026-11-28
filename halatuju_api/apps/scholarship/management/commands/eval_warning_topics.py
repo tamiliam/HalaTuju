@@ -23,7 +23,8 @@ the cap, and after `FAIL_FAST` service errors (or failed fetches) in a row. COST
 call can bill up to 3 cascade models, one row each) is charged at an ASSUMED upper bound of US$0.004 (or its
 reported tokens at the assumed prices when higher), each Vision OCR row at US$0.0015; a Gemini call that left no
 row is charged once at US$0.004. The cap is checked after EVERY row: the run stops (mid-read if need be) once the
-next row could pass it.
+next row could pass it. Before each call the next row is RESERVED (`row_reserve`: the prompt's bytes bound its
+input tokens, never below the largest row seen), so a long prompt is refused before it is billed.
 
 PRIVATE: prints counts and document ids only; never a name, an IC number, document text or model free text.
 
@@ -131,8 +132,16 @@ class CapReached(Exception):
 def _add_row_cost(trace, cost):
     trace['usd'] += cost
     trace['peak'] = max(trace['peak'], cost)
-    if trace['usd'] + trace['peak'] > trace['cap']:
+    if trace['usd'] + max(trace['peak'], trace['reserve']) > trace['cap']:
         trace['over'] = True
+
+
+def row_reserve(trace, prompt):
+    """Review round 2: what the NEXT row may cost, reserved BEFORE the call. The prompt's UTF-8 bytes bound
+    its input tokens (a token is at least one byte), priced as `gemini_cost`; never below the largest row
+    seen. The call sets no output ceiling, so the output part stays the flat US$0.004 bound."""
+    size = len(prompt.encode('utf-8')) if isinstance(prompt, str) else None
+    return max(trace['peak'], gemini_cost((size, None)))
 
 
 @contextmanager
@@ -142,8 +151,9 @@ def _traced(trace):
     real_call, real_meter, real_update = vision._call_gemini_json, usage.record_usage, QuerySet.update
 
     def counted(*a, **k):
-        if trace['over']:
-            raise CapReached
+        trace['reserve'] = row_reserve(trace, a[0] if a else k.get('prompt'))
+        if trace['over'] or trace['usd'] + trace['reserve'] > trace['cap']:
+            raise CapReached          # one large row (a long prompt) can never pass the cap
         trace['gemini'] += 1
         rows = trace['rows']
         try:
@@ -222,7 +232,7 @@ class Command(BaseCommand):
     def _run(self, todo, cap):
         n, ids = dict.fromkeys(COUNTERS, 0), {k: [] for k in ID_LISTS}
         trace = {'gemini': 0, 'vision': 0, 'rows': 0, 'usd': Decimal('0'), 'peak': USD_PER_GEMINI_CALL,
-                 'cap': cap, 'over': False}
+                 'reserve': USD_PER_GEMINI_CALL, 'cap': cap, 'over': False}
         streak, stopped = {'service': 0, 'fetch': 0}, ''
         with _traced(trace):
             for done, pk in enumerate(todo, 1):
