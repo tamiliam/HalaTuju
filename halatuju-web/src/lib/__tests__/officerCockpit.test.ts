@@ -579,44 +579,31 @@ describe('documentFacts', () => {
     }))).toEqual([{ key: 'unreadable', status: 'partial' }])
   })
 
-  it('utility bill → Address, Current, Reasonable (Outstanding only when arrears > charge)', () => {
+  it('utility bill → Name, Address, Date (chip Sprint 2; Reasonable / Outstanding are not chips)', () => {
     const util = (o: Partial<NonNullable<AdminApplicantDocument['utility_check']>>) =>
       ({ name: '', address: '', monthly_bill: '', unpaid_balance: '', address_status: '',
         current_status: 'unknown', bill_month: '', reasonable_status: 'unknown', reasonable_detail: '',
         outstanding_status: '', name_note: '', ...o } as NonNullable<AdminApplicantDocument['utility_check']>)
-    // Address found, recent bill, both bills cheap, arrears exceed the charge → all four green.
-    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({
-      address_status: 'found', current_status: 'current', reasonable_status: 'reasonable', outstanding_status: 'arrears' }) })))
+    const facts = (o: Partial<NonNullable<AdminApplicantDocument['utility_check']>>) =>
+      documentFacts(doc({ doc_type: 'water_bill', utility_check: util(o) }))
+    // A family holder, address found, a recent bill → all three green; arrears add no chip.
+    expect(facts({ name: 'SAMPLE HOLDER', address_status: 'found', current_status: 'current',
+      reasonable_status: 'reasonable', outstanding_status: 'arrears' }))
       .toEqual([
+        { key: 'name', status: 'verified' },
         { key: 'address', status: 'verified' },
-        { key: 'current', status: 'verified' },
-        { key: 'reasonable', status: 'verified' },
-        { key: 'outstanding', status: 'verified' },
+        { key: 'date', status: 'verified' },
       ])
-    // Recency is a 3-tier traffic light (owner 2026-07-10): current ≤3mo → green 'Current'; ageing
-    // 3–6mo → amber 'Ageing' (accepted, not re-asked); stale >6mo → red 'Outdated'. The LABEL changes
-    // with the tier so a red chip never reads the contradictory word "Current".
-    // Stale (>6mo) bill, only one bill, no arrears → red 'stale'; Reasonable grey, no Outstanding.
-    // Address 'unconfirmed' (couldn't confirm — bilingual town / abbreviation / partial OCR) is
-    // AMBER, not red: only a true 'mismatch' (a different home) is red.
-    expect(documentFacts(doc({ doc_type: 'electricity_bill', utility_check: util({
-      address_status: 'unconfirmed', current_status: 'stale', reasonable_status: 'partial', reasonable_detail: 'electricity_only' }) })))
-      .toEqual([
-        { key: 'address', status: 'partial' },
-        { key: 'stale', status: 'not' },
-        { key: 'reasonable', status: 'unknown' },
-      ])
-    // ageing (3–6mo) → amber 'Ageing'; current (≤3mo) → green 'Current'.
-    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ current_status: 'ageing' }) }))
-      .find((f) => f.key === 'ageing')?.status).toBe('partial')
-    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ current_status: 'current' }) }))
-      .find((f) => f.key === 'current')?.status).toBe('verified')
-    // Only a genuine 'mismatch' (different home) is red.
-    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ address_status: 'mismatch' }) }))
-      .find((f) => f.key === 'address')?.status).toBe('not')
-    // High combined consumption stays amber (soft proxy, never red).
-    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ reasonable_status: 'high' }) })).find((f) => f.key === 'reasonable')?.status)
-      .toBe('partial')
+    // No name on the bill → grey; 'unrelated' → red (even with no name served).
+    expect(facts({}).find((f) => f.key === 'name')?.status).toBe('unknown')
+    expect(facts({ name_note: 'unrelated' }).find((f) => f.key === 'name')?.status).toBe('not')
+    // ONE Date chip: current green, ageing amber, stale red, unknown AMBER.
+    const date = (s: string) => facts({ current_status: s as 'current' }).find((f) => f.key === 'date')?.status
+    expect([date('current'), date('ageing'), date('stale'), date('unknown')]).toEqual(['verified', 'partial', 'not', 'partial'])
+    // Address: only a genuine 'mismatch' is red; couldn't-confirm words are amber; blank is grey.
+    const addr = (s: string) => facts({ address_status: s }).find((f) => f.key === 'address')?.status
+    expect([addr('found'), addr('mismatch'), addr('unconfirmed'), addr('unreadable'), addr('not_found'), addr('')])
+      .toEqual(['verified', 'not', 'partial', 'partial', 'partial', 'unknown'])
   })
 
   it('returns [] when the check has not run', () => {
@@ -663,9 +650,8 @@ describe('documentFacts', () => {
       outstanding_status: '', name_note: '' } as NonNullable<AdminApplicantDocument['utility_check']>
     const facts = documentFacts(doc({ doc_type: 'electricity_bill', utility_check: util,
       authenticity: { status: 'not_electricity_bill', reason: 'water bill in the slot' } }))
-    expect(facts.find((f) => f.key === 'wrongType')?.status).toBe('not')
-    expect(facts.find((f) => f.key === 'address')?.status).toBe('not')   // capped — read off the wrong doc
-    expect(facts.find((f) => f.key === 'current')?.status).toBe('not')
+    // chip Sprint 2: on a bill the genuineness chip is the Type chip, drawn first
+    expect(facts.map((f) => [f.key, f.status])).toEqual([['type', 'not'], ['name', 'not'], ['address', 'not'], ['date', 'not']])
   })
 
   it('electricity bill scored genuine → no chip (renders normally)', () => {
@@ -674,7 +660,7 @@ describe('documentFacts', () => {
       outstanding_status: '', name_note: '' } as NonNullable<AdminApplicantDocument['utility_check']>
     const facts = documentFacts(doc({ doc_type: 'electricity_bill', utility_check: util,
       authenticity: { status: 'genuine', reason: '' } }))
-    expect(facts.some((f) => f.key === 'wrongType')).toBe(false)
+    expect(facts.some((f) => f.key === 'type' || f.key === 'wrongType')).toBe(false)
     expect(facts.find((f) => f.key === 'address')?.status).toBe('verified')
   })
 

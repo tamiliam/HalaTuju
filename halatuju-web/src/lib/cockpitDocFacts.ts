@@ -93,21 +93,28 @@ function strStatusFactStatus(s: string | undefined | null): FactStatus {
 }
 
 /**
- * Utility-bill recency → a THREE-tier traffic light on the officer chip (owner 2026-07-10), from
- * the backend `_utility_currency`:
- *   current (≤3 months)  → green  "Current"
- *   ageing  (3–6 months) → amber  "Ageing"   (accepted, not re-asked — the officer eyeballs it)
- *   stale   (>6 months)  → red    "Outdated"  (past the accept window → re-asked)
- *   unknown (no date)    → grey   "Current"   (recency can't be judged)
- * The LABEL changes with the tier so a red chip never reads the contradictory word "Current".
+ * Utility-bill DATE chip (chip Sprint 2, owner 2026-11-28): ONE chip "Date", from the backend
+ * `_utility_currency`. current (≤3 months) green; ageing (3–6 months) amber; stale (>6 months) red;
+ * anything else (no date on the bill) AMBER, because "date not shown" means a person must look.
+ * The server's twin is `doc_chips._bill_date_status`.
  */
-function utilityCurrencyFact(s: string | undefined | null): DocumentFactLabel {
+function utilityDateFact(s: string | undefined | null): DocumentFactLabel {
   switch (s) {
-    case 'current': return { key: 'current', status: 'verified' }
-    case 'ageing': return { key: 'ageing', status: 'partial' }
-    case 'stale': return { key: 'stale', status: 'not' }
-    default: return { key: 'current', status: 'unknown' }
+    case 'current': return { key: 'date', status: 'verified' }
+    case 'stale': return { key: 'date', status: 'not' }
+    default: return { key: 'date', status: 'partial' }
   }
+}
+
+/**
+ * Utility-bill NAME chip (chip Sprint 2): read from what `utility_check` serves. Red when the holder
+ * is 'unrelated' to the family; grey when the bill has no name; else green. Known gap: green also
+ * covers "no reference name to compare" (docs/document-chip-standard.md, Known gaps). The server's
+ * twin is `doc_chips._bill_name_status`.
+ */
+function utilityNameFact(name: unknown, note: unknown): DocumentFactLabel {
+  if (note === 'unrelated') return { key: 'name', status: 'not' }
+  return { key: 'name', status: typeof name === 'string' && name.trim() ? 'verified' : 'unknown' }
 }
 
 /**
@@ -130,17 +137,6 @@ function addressFactStatus(s: string | undefined | null): FactStatus {
 }
 
 const _PATRONYMIC_MEMBER = new Set(['father', 'brother', 'sister'])
-
-/**
- * Tone for the combined-utility "Reasonable" fact. A soft, noisy B40 proxy, so it never
- * shows red and only flags amber on genuinely HIGH consumption (> RM60/head — an
- * officer/interview signal). A normal household is green; one bill / no data is grey.
- */
-function reasonableStatus(s: string): FactStatus {
-  if (s === 'reasonable') return 'verified'
-  if (s === 'high') return 'partial'
-  return 'unknown'                       // 'partial' (one bill) + 'unknown' (no data) → grey
-}
 
 // A genuineness verdict that isn't 'genuine' → its own fact for the document. Two distinct tones
 // (owner 2026-07-07): a `not_<type>` (the scorer says it isn't that KIND of document at all — e.g.
@@ -366,21 +362,18 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // (an ELECTRICITY bill / MyKad / junk) — shows the red "Wrong type" chip like every other doc,
     // even if utility_check read some fields off the wrong document (those reads are then capped
     // red / dropped).
-    if (!c) return gf ? [gf] : []
-    // Address · Current · Reasonable always; Outstanding only when arrears > the charge
-    // (a real hardship signal, shown green). 'current'/'stale'/'unknown' map through
-    // factStatus directly (current→green, stale→amber, unknown→grey). Capped red when the
-    // genuineness fact is wrong-type — the reads came off the wrong document.
-    const facts: DocumentFactLabel[] = [
-      { key: 'address', status: cap ? 'not' : addressFactStatus(c.address_status) },
-      cap ? { key: 'current', status: 'not' } : utilityCurrencyFact(c.current_status),
-      { key: 'reasonable', status: cap ? 'not' : reasonableStatus(c.reasonable_status) },
+    // Chip Sprint 2 (owner 2026-11-28): Type (the genuineness chip) · Name · Address · Date. The amount
+    // is a plain value (the drawer's `drawerChips`); Reasonable and Outstanding are values in the
+    // opened document's Checks panel, never chips. A wrong type caps Name / Address / Date red.
+    const tf: DocumentFactLabel[] = gf ? [{ ...gf, key: 'type' }] : []
+    if (!c) return tf
+    const capIt = (f: DocumentFactLabel): DocumentFactLabel => (cap ? { key: f.key, status: 'not' } : f)
+    return [
+      ...tf,
+      capIt(utilityNameFact(c.name, c.name_note)),
+      capIt({ key: 'address', status: addressFactStatus(c.address_status) }),
+      capIt(utilityDateFact(c.current_status)),
     ]
-    if (!cap && c.outstanding_status === 'arrears') {
-      facts.push({ key: 'outstanding', status: 'verified' })
-    }
-    if (gf) facts.push(gf)
-    return facts
   }
   return gf ? [gf] : []
 }

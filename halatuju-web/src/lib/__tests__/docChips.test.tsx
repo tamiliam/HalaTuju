@@ -125,8 +125,8 @@ describe('the drawer draws the served chips and falls back without them', () => 
 })
 
 describe('the shells', () => {
-  test('no reason line while no fixed words exist', () => {
-    expect(Object.keys(REASON_WORDS)).toHaveLength(0)
+  test('no reason line for a chip with no fixed words', () => {
+    expect(REASON_WORDS['name.mismatch']).toBeUndefined()      // chip Sprint 2 fills the bill words only
     const { container } = render(<ReasonLines chips={[chip('name', 'red', { reason: 'mismatch' })]} t={t} />)
     expect(container.innerHTML).toBe('')
   })

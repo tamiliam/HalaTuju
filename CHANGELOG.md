@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: document chip standard, Sprint 2 (Phase A) - water and electricity bills (branch chip-std-s2, not pushed)
+
+Owner answers 28 Nov (all (a)). Display only: no engine, verdict, band, award or MODEL_VERSION change. Migration: none. Services: both.
+- **API:** `doc_chips._utility` serves Type (the genuineness chip), Name (`utility_check.name` / `name_note`: family green, no name grey, unrelated red), Address (found green, mismatch red, unconfirmed / unreadable / not_found amber), ONE Date (current green, ageing amber, stale red, unknown amber) and the amount as a `plain` chip (`value` = `monthly_bill`). Reasonable and Outstanding are no longer chips. A wrong type caps Name / Address / Date red and drops the amount. `doc_chips_student` serves the same colours with field-name labels and a `student_action` on every amber / red chip; the Type chip replaces the student genuineness note on a read bill; the unpaid balance tag is dropped.
+- **Web:** the fallbacks match the server (`cockpitDocFacts` bill branch, `drawerChips` plain amount, `UtilityChecklist` draws the four chips with the student's action line). `ChipLine` draws a plain chip as the value only. `REASON_WORDS` holds the fixed bill reason words (en / ms / ta).
+- **Tests:** `test_doc_chips_bills.py` (every address and date word, the name cases, the pinned Name edge, the wrong-type cap, the student action table, a dry run with bands identical); the parity fixture's bill cases (both audiences) rewritten with invented values; jest `billChips.test.tsx`; `officerCockpit.test.ts` bill cases.
+- **Known gap (owner item):** Name is green when there was no reference name to compare (docs/document-chip-standard.md, Known gaps 6).
+- **Phase B (not done):** the opened-document Checks panel (reason lines, compare values, the two moved drawer notes, Reasonable / Outstanding / period / arrears values), removing the drawer notes and values line, the Guide and FAQ.
+
 ### feat: editor fixes - criteria editor layout, ruling A (on the per-person income line passes) (2026-11-28)
 
 Branch editor-fixes-r (editor-fixes rebased onto main; its phase 3, QC's verdict and the case page phone pills, is already live as the cosmetic-qc entry below and is not repeated). Services: api, web. No migration.

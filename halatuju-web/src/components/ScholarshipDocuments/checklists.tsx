@@ -13,7 +13,7 @@ import type { ReactNode } from 'react'
 import type { ApplicantDocument } from '@/lib/api'
 import { formatNric } from '@/lib/scholarship'
 import { DocChip } from '@/components/DocChip'
-import { kindToState, servedChip } from '@/lib/docChips'
+import { kindToState, servedChip, type ChipState, type DocChipData } from '@/lib/docChips'
 
 // ── Vision OCR chip (S13 — soft signal under the IC upload) ──────────────
 
@@ -201,35 +201,85 @@ export function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   )
 }
 
-/** Utility bill checklist (Check-1 Income). The meaningful check is the home ADDRESS (these
- *  confirm where the family lives) — the bill is in a parent's name, so the name is a data
- *  point, never matched to the student. Monthly charge + any unpaid balance are shown (a high
- *  arrears is a soft hardship signal the coordinator weighs). */
+const BILL_ADDRESS: Record<string, ChipState> = { found: 'green', mismatch: 'red', unconfirmed: 'amber', unreadable: 'amber', not_found: 'amber' }
+const BILL_DATE: Record<string, ChipState> = { current: 'green', ageing: 'amber', stale: 'red' }
+const CHIP_STATUS: Record<ChipState, DocChipData['status']> = { green: 'verified', amber: 'partial', red: 'not', grey: 'unknown' }
+
+/** What the student does about an amber / red bill chip (owner table, chip Sprint 2). */
+function billAction(key: string, state: ChipState, reason: string, capped: boolean): DocChipData['student_action'] {
+  if (state !== 'amber' && state !== 'red') return 'none'
+  if (key === 'type' || capped) return 'reupload'
+  if (key === 'date') return reason === 'unknown' ? 'reupload' : 'add_doc'
+  if (state === 'red') return 'fix_entry'           // name or address
+  return 'we_check'
+}
+
+/** The bill's chips: the served ones, or (an old payload) the same rules as `doc_chips_student._utility_bill`. */
+export function utilityBillChips(doc: ApplicantDocument): DocChipData[] {
+  if (doc.chips?.length) return doc.chips
+  const chk = doc.utility_check
+  if (!chk) return []
+  const s: string | undefined = doc.authenticity?.status
+  const type: ChipState | null = !s || s === 'genuine' || s === 'likely_genuine' ? null
+    : s === 'final_owed' ? 'grey' : typeof s === 'string' && s.startsWith('not_') ? 'red' : 'amber'
+  const cap = type === 'red'
+  const make = (key: string, state: ChipState, reason: string): DocChipData => ({
+    key, status: CHIP_STATUS[state], state, student_action: billAction(key, state, reason, cap), reason,
+    kind: 'fact', label: `scholarship.docs.utilityCheck.${key}`,
+  })
+  const date = typeof chk.current_status === 'string' && BILL_DATE[chk.current_status] ? chk.current_status : 'unknown'
+  const facts: [string, ChipState, string][] = [
+    chk.name_note === 'unrelated' ? ['name', 'red', 'unrelated']
+      : typeof chk.name === 'string' && chk.name.trim() ? ['name', 'green', 'family'] : ['name', 'grey', 'no_name'],
+    ['address', BILL_ADDRESS[chk.address_status] ?? 'grey', chk.address_status ?? ''],
+    ['date', BILL_DATE[date] ?? 'amber', date],
+  ]
+  const out = type ? [make('type', type, String(s))] : []
+  for (const [key, state, reason] of facts) out.push(cap ? make(key, 'red', String(s)) : make(key, state, reason))
+  return out
+}
+
+/** The i18n key for a student action line on a bill chip. */
+function billActionKey(c: DocChipData): string {
+  const a = c.student_action
+  if (a === 'fix_entry') return `scholarship.docs.utilityCheck.action.${c.key === 'name' ? 'fixName' : 'fixAddress'}`
+  return `scholarship.docs.utilityCheck.action.${a === 'add_doc' ? 'addDoc' : a === 'we_check' ? 'weCheck' : 'reupload'}`
+}
+
+/** Utility bill checklist (Check-1 Income), chip Sprint 2 (owner 2026-11-28): Type, Name, Address and
+ *  Date chips (the field name only; colour and symbol carry the state), each amber / red one with the
+ *  line saying what the student does next; then the monthly charge as a plain value. The officer sees
+ *  the same colours. */
 export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
   const chk = doc.utility_check
   if (!chk) return null
-
-  const addrPill =
-    chk.address_status === 'found'
-      ? <DocChip spoken={false} state={kindToState('match')}>{t('scholarship.docs.utilityCheck.addressOk')}</DocChip>
-      : chk.address_status === 'not_found'
-        ? <DocChip spoken={false} state={kindToState('mismatch')}>{t('scholarship.docs.utilityCheck.addressMismatch')}</DocChip>
-        : null
-  const row = (label: string, value: string, right?: ReactNode) => (
-    <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="min-w-0 text-xs text-ground-700">
-        <span className="font-medium text-ground-600">{label}: </span>
-        <span className="break-words">{value || '—'}</span>
-      </p>
-      {right}
+  const chips = utilityBillChips(doc).filter((c) => c.kind === 'fact')
+  const capped = chips.some((c) => c.key === 'type' && c.state === 'red')
+  const value: Record<string, string | undefined> = { name: chk.name, address: chk.address, date: chk.bill_month }
+  const row = (label: string, val: string | undefined, right?: ReactNode, below?: ReactNode) => (
+    <div className="py-1.5">
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 text-xs text-ground-700">
+          <span className="font-medium text-ground-600">{label}: </span>
+          {val !== undefined ? <span className="break-words">{val || '—'}</span> : null}
+        </p>
+        {right}
+      </div>
+      {below}
     </div>
   )
 
   return (
     <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
-      {row(t('scholarship.docs.utilityCheck.address'), chk.address, addrPill)}
-      {chk.monthly_bill ? row(t('scholarship.docs.utilityCheck.monthlyBill'), chk.monthly_bill) : null}
-      {chk.unpaid_balance ? row(t('scholarship.docs.utilityCheck.unpaidBalance'), chk.unpaid_balance) : null}
+      {chips.map((c) => {
+        const label = t(c.label ?? `scholarship.docs.utilityCheck.${c.key}`)
+        const action = c.student_action !== 'none'
+          ? <p className="pb-0.5 text-[11px] text-ground-600" data-chip-action={c.student_action}>{t(billActionKey(c))}</p>
+          : null
+        return <div key={c.key}>{row(label, c.key === 'type' || capped ? undefined : value[c.key],
+          <DocChip spoken={false} state={c.state}>{label}</DocChip>, action)}</div>
+      })}
+      {chk.monthly_bill && !capped ? row(t('scholarship.docs.utilityCheck.monthlyBill'), chk.monthly_bill) : null}
     </div>
   )
 }

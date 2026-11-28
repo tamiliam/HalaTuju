@@ -1723,6 +1723,16 @@
         "fromDoc": "daripada dokumen"
       },
       "utilityCheck": {
+        "type": "Jenis",
+        "name": "Nama",
+        "date": "Tarikh",
+        "action": {
+          "reupload": "Muat naik bil penuh",
+          "fixName": "Beritahu kami siapa orang ini dalam senarai keluarga anda",
+          "fixAddress": "Betulkan alamat anda, atau muat naik bil untuk rumah anda",
+          "addDoc": "Tambah bil terkini anda",
+          "weCheck": "Kami akan menyemak perkara ini untuk anda"
+        },
         "address": "Alamat",
         "monthlyBill": "Bil bulan ini",
         "unpaidBalance": "Baki tertunggak",
@@ -5380,6 +5390,17 @@
         "holdTip": "Pelajar memuat naik beberapa kali tanpa dokumen yang boleh digunakan. Gelung dihentikan dan salinan terbaik mereka dikekalkan — sila semak yang ini secara peribadi."
       },
       "docsDrawer": {
+        "reason": {
+          "billNotFull": "Kelihatan seperti skrin bayaran, bukan bil penuh.",
+          "notWaterBill": "Bukan bil air.",
+          "notElectricityBill": "Bukan bil elektrik.",
+          "billOtherName": "Bil atas nama orang lain.",
+          "billAddressMismatch": "Alamat tidak sepadan dengan permohonan.",
+          "billAddressUnchecked": "Alamat tidak dapat disemak.",
+          "billDateAgeing": "Bil lebih lama daripada 3 bulan.",
+          "billDateStale": "Bil lebih lama daripada 6 bulan.",
+          "billDateUnknown": "Tarikh bil tidak ditunjukkan."
+        },
         "title": "Dokumen",
         "subtitle": "Dikumpulkan mengikut fakta pengesahan",
         "group": {
@@ -5440,6 +5461,7 @@
           "missing": "Tiada"
         },
         "fact": {
+          "date": "Tarikh",
           "name": "Nama",
           "ic_no": "No. IC",
           "ic_no_mismatch": "No. IC tidak sepadan dengan IC dalam rekod",

@@ -26,7 +26,9 @@ describe('document chip parity (today\'s web vs the shared fixture)', () => {
     const doc = c.doc as unknown as AdminApplicantDocument
     const web: Chip[] = drawerChips(doc).map((c) => (c.kind === 'year'
       ? { key: c.key, state: c.state, kind: 'year', value: String(c.value) }
-      : { key: c.key, status: c.status, state: c.state, kind: 'fact' }))
+      : c.kind === 'plain'
+        ? { key: c.key, status: c.status, state: c.state, kind: 'plain', value: String(c.value) }
+        : { key: c.key, status: c.status, state: c.state, kind: 'fact' }))
     // The year chip's status word is the server's own (the web keeps the raw 'current' / 'off').
     const want = c.chips.map((ch) => (ch.kind === 'year' ? { key: ch.key, state: ch.state, kind: ch.kind, value: ch.value } : ch))
     expect(web).toEqual(want)

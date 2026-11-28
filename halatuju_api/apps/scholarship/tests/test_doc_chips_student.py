@@ -52,7 +52,11 @@ class StudentParityFixtureTests(SimpleTestCase):
                 with self.subTest(case['name'], key=chip['key']):
                     self.assertEqual(set(chip), {'key', 'status', 'state', 'student_action', 'reason',
                                                  'kind', 'label'})
-                    self.assertEqual(chip['student_action'], 'none')
+                    # Sprint 2: the bills ask the student to act on an amber / red chip.
+                    if case['doc'].get('doc_type') in ('water_bill', 'electricity_bill'):
+                        self.assertIn(chip['student_action'], doc_chips.STUDENT_ACTIONS)
+                    else:
+                        self.assertEqual(chip['student_action'], 'none')
                     self.assertEqual(chip['state'], S.STATES[chip['status']])
                     self.assertIn(chip['kind'], ('fact', 'plain', 'note'))
                     self.assertIsInstance(chip['label'], str)

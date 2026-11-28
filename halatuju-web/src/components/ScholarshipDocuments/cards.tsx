@@ -266,7 +266,8 @@ export function DocChecks({ doc: d, t, token, onChanged, lazyHigher = true }: {
     ) : (
       <SupportingDocChip doc={d} t={t} />
     )}
-      <GenuinenessNote doc={d} t={t} />
+      {/* chip Sprint 2: on a read bill the Type chip carries this, so no second note */}
+      {(d.doc_type === 'water_bill' || d.doc_type === 'electricity_bill') && d.utility_check ? null : <GenuinenessNote doc={d} t={t} />}
     </>
   )
 }

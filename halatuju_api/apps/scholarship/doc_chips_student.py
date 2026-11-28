@@ -25,14 +25,17 @@ A chip is the officer dict plus ``label``:
                   ``match`` (the supporting-document chip) or ``genuineness`` (the amber note)
   status          verified / partial / not / unknown (the officer words, from the colour)
   state           green / amber / red / grey (today's student colour)
-  student_action  'none' for every chip in Sprint 1
+  student_action  'none' for every chip in Sprint 1, except the bills (Sprint 2): every amber or red
+                  bill chip carries what the student does next (reupload / fix_entry / add_doc /
+                  we_check)
   reason          the engine word the badge was drawn from
   kind            fact (a status badge) | plain (a grey "from the document" tag) | note (the amber
                   genuineness note)
   label           today's badge word, as its full i18n key (the student badge word is not
                   derivable from the colour, so it travels with the chip)
 """
-from .doc_chips import STATES, _check_obj, _coalesce, _get, _truthy, _word
+from .doc_chips import (STATES, _address_status, _bill_date_status, _bill_name_status, _check_obj,
+                        _coalesce, _genuineness_chip, _get, _trim, _truthy, _word)
 
 # ICCheckKind -> (status, state). 'unreadable' and 'none' are both grey (two greys on the web).
 _TONE = {'match': 'verified', 'partial': 'partial', 'mismatch': 'not', 'unreadable': 'unknown',
@@ -209,18 +212,48 @@ def _income_proof_checklist(c):
     return chips
 
 
-def _utility_checklist(c):
-    """``UtilityChecklist``. NB 'not_found' is RED here but amber in the officer drawer."""
-    a = _get(c, 'address_status')
-    if a == 'found':
-        chips = [_badge('address', 'match', a, _D + 'utilityCheck.addressOk')]
-    elif a == 'not_found':
-        chips = [_badge('address', 'mismatch', a, _D + 'utilityCheck.addressMismatch')]
-    else:
-        chips = [_plain('address', _D + 'incomeProofCheck.fromDoc', a)]
-    for key, field in (('monthlyBill', 'monthly_bill'), ('unpaidBalance', 'unpaid_balance')):
-        if _truthy(_get(c, field)):
-            chips.append(_plain(key, _D + 'incomeProofCheck.fromDoc'))
+_BILL_TYPES = ('water_bill', 'electricity_bill')
+_U = _D + 'utilityCheck.'
+# Sprint 2 (owner 2026-11-28): what the student does about each amber / red bill chip.
+_BILL_ACTION = {
+    ('name', 'red'): 'fix_entry',          # tell us who this person is in your family list
+    ('address', 'red'): 'fix_entry',       # correct your address, or upload a bill for your home
+    ('address', 'amber'): 'we_check',
+    ('date', 'red'): 'add_doc',            # add your latest bill
+}
+
+
+def _bill_action(key, state, reason, capped):
+    if state not in ('amber', 'red'):
+        return 'none'
+    if key == 'type' or capped:
+        return 'reupload'                  # upload the full bill
+    if key == 'date':
+        return 'reupload' if reason == 'unknown' else 'add_doc'
+    return _BILL_ACTION.get((key, state), 'we_check')
+
+
+def _bill_chip(key, status, reason, capped=False):
+    chip = _chip(key, status, reason, _U + key)
+    chip['student_action'] = _bill_action(key, chip['state'], chip['reason'], capped)
+    return chip
+
+
+def _utility_bill(doc, c):
+    """Sprint 2: the bill's chips, the officer's rules (``doc_chips._utility``) on the student screen:
+    Type, Name, Address, Date, then the amount as a plain value. A wrong type caps the rest red."""
+    gf = _genuineness_chip(doc)
+    cap = gf is not None and gf['status'] == 'not'
+    chips = [] if gf is None else [_bill_chip('type', gf['status'], gf['reason'])]
+    addr = _get(c, 'address_status')
+    for key, (status, reason) in (('name', _bill_name_status(c)),
+                                  ('address', (_address_status(addr), addr)),
+                                  ('date', _bill_date_status(c))):
+        if cap:
+            status, reason = 'not', gf['reason']
+        chips.append(_bill_chip(key, status, reason, capped=cap))
+    if _trim(_get(c, 'monthly_bill')) and not cap:
+        chips.append(_plain('monthlyBill', _D + 'incomeProofCheck.fromDoc'))
     return chips
 
 
@@ -346,10 +379,12 @@ def _listed(doc):
         (('offer_letter',), 'pathway_check', _offer_letter_checklist),
         (('salary_slip', 'epf'), 'income_proof_check', _income_proof_checklist),
         (('str',), 'str_check', _str_checklist),
-        (('water_bill', 'electricity_bill'), 'utility_check', _utility_checklist),
         (('birth_certificate',), 'bc_check', _birth_certificate_checklist),
         (('guardianship_letter',), 'guardianship_check', _guardianship_checklist),
     )
+    if dt in _BILL_TYPES and _truthy(_get(doc, 'utility_check')):
+        c = _check_obj(doc, 'utility_check')
+        return _utility_bill(doc, c) if c is not None else []
     if dt == 'parent_ic' and _truthy(_get(doc, 'income_ic_check')):
         c = _check_obj(doc, 'income_ic_check')
         return _income_ic_checklist(doc, c) if c is not None else []
@@ -368,6 +403,8 @@ def chips_for(payload):
         return []
     if _get(payload, 'doc_type') == 'ic' and _truthy(_get(payload, 'vision_run_at')):
         return _ic_checklist(payload)
+    if _get(payload, 'doc_type') in _BILL_TYPES and _check_obj(payload, 'utility_check') is not None:
+        return _listed(payload)                      # Sprint 2: the Type chip replaces the note
     return _listed(payload) + _genuineness_note(payload)
 
 

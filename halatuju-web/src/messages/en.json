@@ -1723,6 +1723,16 @@
         "fromDoc": "from the document"
       },
       "utilityCheck": {
+        "type": "Type",
+        "name": "Name",
+        "date": "Date",
+        "action": {
+          "reupload": "Upload the full bill",
+          "fixName": "Tell us who this person is in your family list",
+          "fixAddress": "Correct your address, or upload a bill for your home",
+          "addDoc": "Add your latest bill",
+          "weCheck": "We will check this for you"
+        },
         "address": "Address",
         "monthlyBill": "This month's bill",
         "unpaidBalance": "Unpaid balance",
@@ -5380,6 +5390,17 @@
         "holdTip": "The student re-uploaded several times without a usable document. The loop was stopped and their best copy kept live — please review this one personally."
       },
       "docsDrawer": {
+        "reason": {
+          "billNotFull": "Looks like a payment screen, not a full bill.",
+          "notWaterBill": "Not a water bill.",
+          "notElectricityBill": "Not an electricity bill.",
+          "billOtherName": "Bill is in another person's name.",
+          "billAddressMismatch": "Address doesn't match the application.",
+          "billAddressUnchecked": "Address could not be checked.",
+          "billDateAgeing": "Bill is older than 3 months.",
+          "billDateStale": "Bill is older than 6 months.",
+          "billDateUnknown": "Bill date not shown."
+        },
         "title": "Documents",
         "subtitle": "Grouped by verification fact",
         "group": {
@@ -5440,6 +5461,7 @@
           "missing": "Missing"
         },
         "fact": {
+          "date": "Date",
           "name": "Name",
           "ic_no": "IC No",
           "ic_no_mismatch": "IC No does not match the IC on file",

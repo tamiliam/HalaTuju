@@ -2621,57 +2621,75 @@
    "pill": "check"
   },
   {
-   "name": "water current reasonable arrears",
+   "name": "water current family name amount",
    "doc": {
     "id": 70,
     "doc_type": "water_bill",
     "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
+     "address": "SAMPLE ADDRESS 1",
      "address_status": "found",
      "current_status": "current",
+     "monthly_bill": "84.20",
+     "unpaid_balance": "12.00",
      "reasonable_status": "reasonable",
      "outstanding_status": "arrears"
     }
    },
    "chips": [
     {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
      "key": "address",
      "status": "verified",
      "state": "green",
      "kind": "fact"
     },
     {
-     "key": "current",
+     "key": "date",
      "status": "verified",
      "state": "green",
      "kind": "fact"
     },
     {
-     "key": "reasonable",
-     "status": "verified",
-     "state": "green",
-     "kind": "fact"
-    },
-    {
-     "key": "outstanding",
-     "status": "verified",
-     "state": "green",
-     "kind": "fact"
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "value": "84.20"
     }
    ],
    "pill": "verified"
   },
   {
-   "name": "electricity ageing high",
+   "name": "electricity ageing unconfirmed no name",
    "doc": {
     "id": 71,
     "doc_type": "electricity_bill",
     "utility_check": {
+     "name": "",
+     "name_note": "",
+     "address": "SAMPLE ADDRESS 1",
      "address_status": "unconfirmed",
      "current_status": "ageing",
-     "reasonable_status": "high"
+     "monthly_bill": "",
+     "unpaid_balance": "",
+     "reasonable_status": "high",
+     "outstanding_status": ""
     }
    },
    "chips": [
+    {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
     {
      "key": "address",
      "status": "partial",
@@ -2679,13 +2697,7 @@
      "kind": "fact"
     },
     {
-     "key": "ageing",
-     "status": "partial",
-     "state": "amber",
-     "kind": "fact"
-    },
-    {
-     "key": "reasonable",
+     "key": "date",
      "status": "partial",
      "state": "amber",
      "kind": "fact"
@@ -2694,17 +2706,29 @@
    "pill": "check"
   },
   {
-   "name": "electricity stale mismatch",
+   "name": "electricity stale mismatch unrelated",
    "doc": {
     "id": 72,
     "doc_type": "electricity_bill",
     "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "unrelated",
+     "address": "SAMPLE ADDRESS 1",
      "address_status": "mismatch",
      "current_status": "stale",
-     "reasonable_status": "partial"
+     "monthly_bill": "",
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
     }
    },
    "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
     {
      "key": "address",
      "status": "not",
@@ -2712,15 +2736,9 @@
      "kind": "fact"
     },
     {
-     "key": "stale",
+     "key": "date",
      "status": "not",
      "state": "red",
-     "kind": "fact"
-    },
-    {
-     "key": "reasonable",
-     "status": "unknown",
-     "state": "grey",
      "kind": "fact"
     }
    ],
@@ -2739,25 +2757,25 @@
    },
    "chips": [
     {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
      "key": "address",
      "status": "unknown",
      "state": "grey",
      "kind": "fact"
     },
     {
-     "key": "current",
-     "status": "unknown",
-     "state": "grey",
-     "kind": "fact"
-    },
-    {
-     "key": "reasonable",
-     "status": "unknown",
-     "state": "grey",
+     "key": "date",
+     "status": "partial",
+     "state": "amber",
      "kind": "fact"
     }
    ],
-   "pill": "unread"
+   "pill": "check"
   },
   {
    "name": "water wrong type caps",
@@ -2765,10 +2783,15 @@
     "id": 74,
     "doc_type": "water_bill",
     "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
+     "address": "SAMPLE ADDRESS 1",
      "address_status": "found",
      "current_status": "current",
-     "reasonable_status": "reasonable",
-     "outstanding_status": "arrears"
+     "monthly_bill": "84.20",
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
     },
     "authenticity": {
      "status": "not_water_bill",
@@ -2778,25 +2801,25 @@
    },
    "chips": [
     {
+     "key": "type",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact"
+    },
+    {
      "key": "address",
      "status": "not",
      "state": "red",
      "kind": "fact"
     },
     {
-     "key": "current",
-     "status": "not",
-     "state": "red",
-     "kind": "fact"
-    },
-    {
-     "key": "reasonable",
-     "status": "not",
-     "state": "red",
-     "kind": "fact"
-    },
-    {
-     "key": "wrongType",
+     "key": "date",
      "status": "not",
      "state": "red",
      "kind": "fact"
@@ -2818,7 +2841,7 @@
    },
    "chips": [
     {
-     "key": "wrongType",
+     "key": "type",
      "status": "not",
      "state": "red",
      "kind": "fact"
@@ -3207,25 +3230,25 @@
    },
    "chips": [
     {
+     "key": "name",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "fact"
+    },
+    {
      "key": "address",
      "status": "unknown",
      "state": "grey",
      "kind": "fact"
     },
     {
-     "key": "current",
-     "status": "unknown",
-     "state": "grey",
-     "kind": "fact"
-    },
-    {
-     "key": "reasonable",
-     "status": "unknown",
-     "state": "grey",
+     "key": "date",
+     "status": "partial",
+     "state": "amber",
      "kind": "fact"
     }
    ],
-   "pill": "unread"
+   "pill": "check"
   },
   {
    "name": "ic empty authenticity object",
@@ -3589,6 +3612,148 @@
     }
    ],
    "pill": "verified"
+  },
+  {
+   "name": "water address not_found is amber",
+   "doc": {
+    "id": 101,
+    "doc_type": "water_bill",
+    "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "not_found",
+     "current_status": "current",
+     "monthly_bill": "",
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "address",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "date",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "electricity address unreadable is amber",
+   "doc": {
+    "id": 102,
+    "doc_type": "electricity_bill",
+    "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "unreadable",
+     "current_status": "current",
+     "monthly_bill": "51.10",
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "address",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "date",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "value": "51.10"
+    }
+   ],
+   "pill": "check"
+  },
+  {
+   "name": "water suspect bill is an amber Type",
+   "doc": {
+    "id": 103,
+    "doc_type": "water_bill",
+    "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "found",
+     "current_status": "current",
+     "monthly_bill": "20.00",
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "type",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "address",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "date",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact"
+    },
+    {
+     "key": "amount",
+     "status": "unknown",
+     "state": "grey",
+     "kind": "plain",
+     "value": "20.00"
+    }
+   ],
+   "pill": "check"
   }
  ],
  "_about_student": "Chip standard S1: student_cases, SYNTHETIC data only. pytest checks doc_chips_student.chips_for; jest renders today's student checklists on the SAME cases and reads the badges off the screen.",
@@ -4720,15 +4885,20 @@
    ]
   },
   {
-   "name": "student water bill address found, both figures",
+   "name": "student water bill all green with amount",
    "doc": {
     "id": 9028,
     "doc_type": "water_bill",
     "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
      "address": "SAMPLE ADDRESS 1",
      "address_status": "found",
+     "current_status": "current",
      "monthly_bill": "30.00",
-     "unpaid_balance": "12.00"
+     "unpaid_balance": "12.00",
+     "reasonable_status": "",
+     "outstanding_status": ""
     },
     "authenticity": {
      "status": "genuine",
@@ -4738,11 +4908,25 @@
    },
    "chips": [
     {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.name"
+    },
+    {
      "key": "address",
      "status": "verified",
      "state": "green",
      "kind": "fact",
-     "label": "scholarship.docs.utilityCheck.addressOk"
+     "label": "scholarship.docs.utilityCheck.address"
+    },
+    {
+     "key": "date",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.date"
     },
     {
      "key": "monthlyBill",
@@ -4750,26 +4934,24 @@
      "state": "grey",
      "kind": "plain",
      "label": "scholarship.docs.incomeProofCheck.fromDoc"
-    },
-    {
-     "key": "unpaidBalance",
-     "status": "unknown",
-     "state": "grey",
-     "kind": "plain",
-     "label": "scholarship.docs.incomeProofCheck.fromDoc"
     }
    ]
   },
   {
-   "name": "student water bill address not found is red",
+   "name": "student water bill address mismatch is red",
    "doc": {
     "id": 9029,
     "doc_type": "water_bill",
     "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
      "address": "SAMPLE ADDRESS 1",
-     "address_status": "not_found",
+     "address_status": "mismatch",
+     "current_status": "current",
      "monthly_bill": "",
-     "unpaid_balance": ""
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
     },
     "authenticity": {
      "status": "genuine",
@@ -4778,25 +4960,44 @@
     }
    },
    "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.name"
+    },
     {
      "key": "address",
      "status": "not",
      "state": "red",
      "kind": "fact",
-     "label": "scholarship.docs.utilityCheck.addressMismatch"
+     "label": "scholarship.docs.utilityCheck.address"
+    },
+    {
+     "key": "date",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.date"
     }
    ]
   },
   {
-   "name": "student electricity bill address unconfirmed is plain",
+   "name": "student electricity bill address unconfirmed is amber",
    "doc": {
     "id": 9030,
     "doc_type": "electricity_bill",
     "utility_check": {
+     "name": "",
+     "name_note": "",
      "address": "SAMPLE ADDRESS 1",
      "address_status": "unconfirmed",
+     "current_status": "ageing",
      "monthly_bill": "",
-     "unpaid_balance": ""
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
     },
     "authenticity": {
      "status": "genuine",
@@ -4806,11 +5007,25 @@
    },
    "chips": [
     {
-     "key": "address",
+     "key": "name",
      "status": "unknown",
      "state": "grey",
-     "kind": "plain",
-     "label": "scholarship.docs.incomeProofCheck.fromDoc"
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.name"
+    },
+    {
+     "key": "address",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.address"
+    },
+    {
+     "key": "date",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.date"
     }
    ]
   },
@@ -6036,6 +6251,204 @@
      "state": "amber",
      "kind": "note",
      "label": "scholarship.docs.genuineness.note"
+    }
+   ]
+  },
+  {
+   "name": "student electricity bill unrelated holder is red",
+   "doc": {
+    "id": 9061,
+    "doc_type": "electricity_bill",
+    "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "unrelated",
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "found",
+     "current_status": "stale",
+     "monthly_bill": "",
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.name"
+    },
+    {
+     "key": "address",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.address"
+    },
+    {
+     "key": "date",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.date"
+    }
+   ]
+  },
+  {
+   "name": "student water bill date unknown is amber",
+   "doc": {
+    "id": 9062,
+    "doc_type": "water_bill",
+    "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "not_found",
+     "current_status": "unknown",
+     "monthly_bill": "",
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
+    },
+    "authenticity": {
+     "status": "genuine",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.name"
+    },
+    {
+     "key": "address",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.address"
+    },
+    {
+     "key": "date",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.date"
+    }
+   ]
+  },
+  {
+   "name": "student water bill wrong type caps",
+   "doc": {
+    "id": 9063,
+    "doc_type": "water_bill",
+    "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "found",
+     "current_status": "current",
+     "monthly_bill": "30.00",
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
+    },
+    "authenticity": {
+     "status": "not_water_bill",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "type",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.type"
+    },
+    {
+     "key": "name",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.name"
+    },
+    {
+     "key": "address",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.address"
+    },
+    {
+     "key": "date",
+     "status": "not",
+     "state": "red",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.date"
+    }
+   ]
+  },
+  {
+   "name": "student electricity bill suspect is an amber Type",
+   "doc": {
+    "id": 9064,
+    "doc_type": "electricity_bill",
+    "utility_check": {
+     "name": "SAMPLE HOLDER",
+     "name_note": "",
+     "address": "SAMPLE ADDRESS 1",
+     "address_status": "found",
+     "current_status": "current",
+     "monthly_bill": "",
+     "unpaid_balance": "",
+     "reasonable_status": "",
+     "outstanding_status": ""
+    },
+    "authenticity": {
+     "status": "suspect",
+     "reason": "",
+     "doc_seen": ""
+    }
+   },
+   "chips": [
+    {
+     "key": "type",
+     "status": "partial",
+     "state": "amber",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.type"
+    },
+    {
+     "key": "name",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.name"
+    },
+    {
+     "key": "address",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.address"
+    },
+    {
+     "key": "date",
+     "status": "verified",
+     "state": "green",
+     "kind": "fact",
+     "label": "scholarship.docs.utilityCheck.date"
     }
    ]
   }

@@ -24,8 +24,11 @@ A chip is a dict:
   state           green / amber / red / grey (today's web colour)
   student_action  'none' for every chip in Sprint 0 (allowed: none|reupload|fix_entry|add_doc|we_check)
   reason          the engine word the chip was coloured from
-  kind            fact | year
-  value           year chips only: the year read
+  kind            fact | year | plain (a value copied from the document, drawn as the value only)
+  value           year and plain chips only: the year read / the value copied
+
+Sprint 2 (utility bills, owner 2026-11-28) moved the water and electricity bills to the standard:
+Type, Name, Address, Date, and the amount as a plain value. See ``_utility``.
 """
 
 STATES = {'verified': 'green', 'partial': 'amber', 'not': 'red', 'unknown': 'grey'}
@@ -82,7 +85,7 @@ def _word(v):
 def _chip(key, status, reason, kind='fact', value=None):
     chip = {'key': key, 'status': status, 'state': STATES[status], 'student_action': 'none',
             'reason': '' if reason is None else str(reason), 'kind': kind}
-    if kind == 'year':
+    if kind in ('year', 'plain'):
         chip['value'] = value
     return chip
 
@@ -122,30 +125,12 @@ def _str_status_status(s):
     return 'unknown'
 
 
-def _utility_currency_chip(s, reason):
-    if s == 'current':
-        return _chip('current', 'verified', reason)
-    if s == 'ageing':
-        return _chip('ageing', 'partial', reason)
-    if s == 'stale':
-        return _chip('stale', 'not', reason)
-    return _chip('current', 'unknown', reason)
-
-
 def _address_status(s):
     if s == 'found':
         return 'verified'
     if s == 'mismatch':
         return 'not'
     if s in ('unconfirmed', 'unreadable', 'not_found'):
-        return 'partial'
-    return 'unknown'
-
-
-def _reasonable_status(s):
-    if s == 'reasonable':
-        return 'verified'
-    if s == 'high':
         return 'partial'
     return 'unknown'
 
@@ -375,19 +360,48 @@ def _support_doc(doc):
     return chips
 
 
+# Sprint 2: ONE Date chip. current green, ageing amber, stale red; anything else (unknown: no date
+# on the bill) is AMBER, because "date not shown" means a person must look.
+_BILL_DATE = {'current': 'verified', 'ageing': 'partial', 'stale': 'not'}
+
+
+def _bill_name_status(c):
+    """The bill's Name chip, read from what ``utility_check`` serves (no new query): red when the
+    holder is ``unrelated`` to the family, grey when the bill has no name, else green.
+    Known gap (docs/document-chip-standard.md, "Known gaps"): green also covers the rare case where
+    there was no reference name at all to compare against (a student profile with no name)."""
+    if _word(_get(c, 'name_note')) == 'unrelated':
+        return 'not', 'unrelated'
+    if _trim(_get(c, 'name')):
+        return 'verified', 'family'
+    return 'unknown', 'no_name'
+
+
+def _bill_date_status(c):
+    cur = _word(_get(c, 'current_status'))
+    word = cur if cur in _BILL_DATE else 'unknown'
+    return _BILL_DATE.get(word, 'partial'), word
+
+
 def _utility(doc, gf, cap):
+    """Sprint 2 (owner 2026-11-28): Type (the genuineness chip), Name, Address, Date, then the amount
+    as a plain value. Reasonable and Outstanding are no longer chips (the opened document shows them as
+    values). A wrong type caps Name, Address and Date red and drops the amount (read off the wrong
+    document)."""
+    tc = None if gf is None else dict(gf, key='type')
     c = _check_obj(doc, 'utility_check')
     if c is None:
-        return [gf] if gf else []
-    addr, cur, rsn = _get(c, 'address_status'), _get(c, 'current_status'), _get(c, 'reasonable_status')
-    chips = [
+        return [tc] if tc else []
+    addr = _get(c, 'address_status')
+    chips = ([tc] if tc else []) + [
+        _fc('name', cap, gf, *_bill_name_status(c)),
         _fc('address', cap, gf, _address_status(addr), addr),
-        _chip('current', 'not', gf['reason']) if cap else _utility_currency_chip(cur, cur),
-        _fc('reasonable', cap, gf, _reasonable_status(rsn), rsn),
+        _fc('date', cap, gf, *_bill_date_status(c)),
     ]
-    if not cap and _get(c, 'outstanding_status') == 'arrears':
-        chips.append(_chip('outstanding', 'verified', 'arrears'))
-    return chips + ([gf] if gf else [])
+    amount = _trim(_get(c, 'monthly_bill'))
+    if amount and not cap:
+        chips.append(_chip('amount', 'unknown', 'read', kind='plain', value=amount))
+    return chips
 
 
 def fact_chips(doc):

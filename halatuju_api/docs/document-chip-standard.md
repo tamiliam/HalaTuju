@@ -65,7 +65,7 @@ One server module, `apps/scholarship/doc_chips.py`, builds every document's chip
 
 | Where | Student | Officer |
 |---|---|---|
-| Utility address not found | red | amber |
+| Utility address not found | amber (Sprint 2: same as the officer) | amber |
 | IC genuineness note | shown for anything but `genuine` (so `likely_genuine` too) | per the officer rules |
 | Birth certificate | no `unreadable` row | has one |
 | Offer letter | a pathway mismatch is amber on programme / institution; issuer, date and address are plain tags | adds Official and Reporting date chips |
@@ -82,6 +82,7 @@ One server module, `apps/scholarship/doc_chips.py`, builds every document's chip
 3. **The no-app income fallback.** `IncomeProofCard` (used from `ScholarshipDocuments.tsx` when there is no application, rendered in `cards.tsx`) draws only `SupportingDocChip` for `str` / `salary_slip` / `epf`, never their checklists. The server serves those types' checklists.
 4. **The jest dispatch is a copy.** `student-chip-parity.test.tsx` (`checks`) copies the `cards.tsx` dispatch rather than rendering `cards.tsx`, so a change to the dispatch in `cards.tsx` would not fail it. Phase 1b should render the real card, or pin the dispatch.
 5. **Officer chips spoken twice (open, for the family sprints).** Some officer fact chips still carry a state word in their text, and the drawer adds the hidden state word too, so a screen reader hears it twice or hears two messages: `ic_no_mismatch` ("IC No does not match…" + "does not match"), `unreadable` ("Could not read" + "not checked"), `stale` ("Outdated"), `wrong_card`, `genuine`, `amount_unusable`, `contribution_unusable`. Each family sprint retires that text to the field name only (owner rule, 2026-11-26), which closes this for its chips.
+6. **Bill Name green with nothing to compare (owner item, Sprint 2).** The bill `name` chip reads `utility_check.name` / `name_note` only. The engine serves `name_note` '' both when the holder matches a family member AND when there was no reference name at all to compare against (rare: a student profile with no name, no family list, no parent IC). The chip cannot tell the two apart, so it shows green. Fixing it needs an engine signal (out of scope for a display sprint). Pinned by `tests/test_doc_chips_bills.py::OfficerBillChipTests::test_known_gap_name_is_green_with_nothing_to_compare`, so a later fix shows up.
 
 **Harder fence (N1, N2, N3, N7).** The import fence now covers both modules and flags a `doc_chips` / `chips_for` / `pill_for` Name or Attribute in an engine (N1), any engine import from inside the api of a module path with a part starting `serializers` (so `serializers_admin` and `serializers_org_requests` too), or of `sgd_conversion` / `upload_read` (N2, allowlist with a reason each; empty today; DRF's `rest_framework.serializers` is not flagged), the bare string `'chips'` or anything naming `chip_pill` (N3), and skips docstrings when scanning strings (N7). Only the document serializer and the dry run may name a chip module; the importer scan skips the chip files themselves by full path (`apps/scholarship/doc_chips*.py`), so a same-named file elsewhere is still scanned.
 
@@ -134,7 +135,7 @@ Checked (round 1 review): no served year can be a float. Every served year is a 
 | semester_result | `name`, `ic_no` (green on match or partial, red otherwise, including not_found), `cgpa` (green when read, else grey). | Name, IC No, CGPA, with near match = amber and not found = amber. |
 | school_leaving_cert | `school`, `name`, `ic_no`, `behaviour` (good / concern / bad). | Same fields under the standard colours. |
 | income_support_doc | `evidence` (green when read, else red), `amount` (green when read). | Evidence; the amount as a plain value (never green). |
-| water_bill / electricity_bill | `address`, `current` / `ageing` / `stale`, `reasonable`, `outstanding` (arrears), genuineness chip; a wrong type turns address/current/reasonable red. | Type, Name, Address, Date; the amount as a plain value. |
+| water_bill / electricity_bill | **Sprint 2 (owner 2026-11-28), both screens:** `type` (the genuineness chip), `name` (green = the holder is family, grey = no name on the bill, red = `unrelated`), `address` (found green, mismatch red, unconfirmed / unreadable / not_found amber), ONE `date` (current green, ageing amber, stale red, unknown amber), then `amount` as a plain value (`monthly_bill`). A wrong type caps name / address / date red and drops the amount. Reasonable and Outstanding are no longer chips; their values show in the opened document's Checks panel only. Student actions: Type and capped chips reupload; Name red fix_entry; Address red fix_entry, amber we_check; Date red / ageing add_doc, unknown reupload. | Type, Name, Address, Date; the amount as a plain value. |
 | photo and other types | The genuineness chip only, if there is a signal. | Type only. |
 
 ## Odd findings in today's code (copied as they are; not fixed in Sprint 0)

@@ -56,12 +56,12 @@ class ParityFixtureTests(SimpleTestCase):
         for case in _cases():
             for chip in doc_chips.chips_for(case['doc']):
                 with self.subTest(case['name'], key=chip['key']):
-                    want = CHIP_KEYS | ({'value'} if chip['kind'] == 'year' else set())
+                    want = CHIP_KEYS | ({'value'} if chip['kind'] in ('year', 'plain') else set())
                     self.assertEqual(set(chip), want)
                     self.assertEqual(chip['student_action'], 'none')          # Sprint 0: nothing asked yet
                     self.assertIn(chip['student_action'], doc_chips.STUDENT_ACTIONS)
                     self.assertEqual(chip['state'], doc_chips.STATES[chip['status']])
-                    self.assertIn(chip['kind'], ('fact', 'year'))
+                    self.assertIn(chip['kind'], ('fact', 'year', 'plain'))
                     self.assertIsInstance(chip['reason'], str)
 
 
