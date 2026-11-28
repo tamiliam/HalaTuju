@@ -17,6 +17,7 @@ import type { CockpitCtx } from './cockpitCtx'
 import { reasonsToSend } from '@/lib/failReasons'
 import { useT } from '@/lib/i18n'
 import { notSubmittedIncompleteText } from './missingSteps'
+import { handoffMissing, handoffReady } from '@/lib/handoff'
 
 export function useVerdict(ctx: CockpitCtx, genLang: string) {
   const { id, token, t, app, setApp, setProfile, setBusy, setError } = ctx
@@ -109,13 +110,13 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
         finalise,
         language: genLang,
       }, { token })
-      // Save verdict IS the decision: when the officer's verdict is a clear accept
-      // (Identity = Pass, nothing failed), the profile is complete, and the case is
-      // still live, accept in the same click. No separate IC-verify/lock step —
-      // identity was already verified at the consent gate.
+      // Save verdict IS the decision: when the server's hand-off says ready (owner 28 Nov:
+      // `handoff`, never `completeness.complete`) and the case is still live, accept in the
+      // same click. No separate IC-verify/lock step — identity was verified at the consent gate.
       let finalApp: AdminScholarshipDetail = result
       let accepted = false
-      const clearAccept = isClearAccept(!!result.completeness?.complete, result.status)
+      const ready = handoffReady(result)
+      const clearAccept = isClearAccept(ready, result.status)
       if (accept && clearAccept) {
         try {
           finalApp = await verifyAcceptApplication(id, {}, { token })
@@ -136,14 +137,14 @@ export function useVerdict(ctx: CockpitCtx, genLang: string) {
       const outcome = verdictSaveOutcome({
         acceptRequested: !!accept,
         accepted,
-        completenessComplete: !!result.completeness?.complete,
+        handoffReady: ready,
         status: result.status,
       })
       if (outcome === 'accepted') {
         setVerdictMsg(t('admin.scholarship.decision.savedAndAccepted')); setVerdictMsgTone('ok')
       } else if (outcome === 'not_submitted_incomplete') {
-        // #81: name the step(s) the server's completeness gate still marks not done.
-        setVerdictMsg(notSubmittedIncompleteText(t, result.completeness, contentLocale)); setVerdictMsgTone('warn')
+        // #81: name the step(s) the server's hand-off still marks not done — its own list only.
+        setVerdictMsg(notSubmittedIncompleteText(t, handoffMissing(result), contentLocale)); setVerdictMsgTone('warn')
       } else if (outcome === 'not_submitted_status') {
         setVerdictMsg(t('admin.scholarship.decision.notSubmittedStatus')); setVerdictMsgTone('warn')
       } else if (finalise) {

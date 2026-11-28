@@ -59,8 +59,9 @@ export const DECISION_FACTS = ['identity', 'academic', 'pathway', 'income'] as c
  * ⚠ The officer verdict is NOT a parameter, on purpose: there is no way to pass the ratings back
  * in. A comment asking a future caller not to is a request; removing the parameter is a rule.
  */
-export function isClearAccept(completenessComplete: boolean, status: string): boolean {
-  return !!completenessComplete && LIVE_STATES.includes(status)
+export function isClearAccept(handoffReady: boolean, status: string): boolean {
+  // `handoffReady` is the server's `handoff.ready` (owner 28 Nov), never `completeness.complete`.
+  return !!handoffReady && LIVE_STATES.includes(status)
 }
 
 /**
@@ -121,12 +122,13 @@ export type VerdictSaveOutcome =
 export function verdictSaveOutcome(input: {
   acceptRequested: boolean
   accepted: boolean
-  completenessComplete: boolean
+  /** The server's `handoff.ready` (`@/lib/handoff`), not `completeness.complete`. */
+  handoffReady: boolean
   status: string
 }): VerdictSaveOutcome {
   if (input.accepted) return 'accepted'
   if (!input.acceptRequested) return 'saved'
-  if (!input.completenessComplete) return 'not_submitted_incomplete'
+  if (!input.handoffReady) return 'not_submitted_incomplete'
   if (!LIVE_STATES.includes(input.status)) return 'not_submitted_status'
   // Asked, allowed, and still not accepted: the submit call itself threw. The caller has already
   // surfaced that error, so this must not overwrite it with a second, vaguer explanation.

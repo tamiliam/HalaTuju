@@ -88,6 +88,7 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
     # not offer a form the server will refuse (see services.officer_requests_state).
     officer_requests = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
+    handoff = serializers.SerializerMethodField()   # owner 28 Nov: the QC hand-off's own {ready, missing}
     consent_blockers = serializers.SerializerMethodField()
     # The "you haven't submitted yet" nudge state (drives the Blockers-box reminder button):
     # applicable / sent_at / available / available_at. Server-computed — the FE only renders it.
@@ -235,7 +236,7 @@ class AdminApplicationDetailSerializer(ServesTheHandover, ServesTheDetailBlocks,
             # its reveal date — drives the cockpit "scheduled — cancel/hold" banners.
             'pending_rejection_category', 'decline_due_at', 'award_due_at',
             # Phase C handoff + interview funnel
-            'profile_completed_at', 'completeness', 'consent_blockers', 'nudge', 'interview_session',
+            'profile_completed_at', 'completeness', 'handoff', 'consent_blockers', 'nudge', 'interview_session',
             'interview_gaps', 'interview_gaps_run_at', 'interview_schedule',
             'assigned_to_id', 'assigned_to_name', 'assigned_at', 'assignable', 'needs_new_holder',
             'may_unassign',

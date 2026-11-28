@@ -176,8 +176,8 @@ class TestTheRevertPath(_Base):
         # (c) the No-group holder holds nothing now, so a Delete is no longer refused for this case.
         self.assertEqual(staff_work.unfinished(self.old)['reviewers']['open_cases'], 0)
 
-        with mock.patch('apps.scholarship.views_admin.applications.application_completeness',
-                        return_value={'complete': True}):
+        with mock.patch('apps.scholarship.views_admin.applications.handoff_ready',
+                        return_value=(True, [])):
             r = authed_client(self.new).post(f'{BASE}/{app.pk}/verify-accept/', {}, format='json')
         self.assertEqual(r.status_code, 200, r.content[:300])
         app.refresh_from_db()

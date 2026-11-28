@@ -370,10 +370,10 @@ export interface AdminScholarshipDetail extends PreInterviewDetailFields, Served
   // Phase C
   profile_completed_at: string | null
   completeness: AdminCompleteness
-  // The exact consent gate (services.consent_blockers) — the SAME list the student's
-  // submission enforces, so the officer's Blockers card and the student can never
-  // disagree. Income codes are member-qualified ("parent_ic_missing:mother").
-  // Empty = nothing outstanding.
+  handoff?: { ready: boolean; missing: string[] }   // owner 28 Nov: the QC hand-off's own answer; see lib/handoff.ts
+  // The exact consent gate (services.consent_blockers) — the SAME list the student's submission
+  // enforces, so the officer's Blockers card and the student can never disagree. Income codes are
+  // member-qualified ("parent_ic_missing:mother"). Empty = nothing outstanding.
   consent_blockers: string[]
   // The "you haven't submitted yet" reminder state (server-computed — see nudge.nudge_state).
   // Drives the Blockers-box reminder button; null-safe.

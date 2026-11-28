@@ -238,11 +238,27 @@ class ServesTheDetailBlocks:
         )  # ordered -created_at
         return ResolutionItemSerializer(queue, many=True).data
 
+    def _completeness(self, obj):
+        """`application_completeness` ONCE per serialised application, kept on THIS serializer (never
+        on the model instance, so a later payload of the same object recomputes) — `completeness`
+        and `handoff` share it, so the hand-off costs the detail GET no extra query."""
+        cache = self.__dict__.setdefault('_completeness_by_obj', {})
+        if id(obj) not in cache:
+            from ..services import application_completeness
+            cache[id(obj)] = application_completeness(obj)
+        return cache[id(obj)]
+
     def get_completeness(self, obj):
         """Phase C: the 7-part completeness breakdown, so the admin can see
         exactly which steps a student still owes (drives the accept-gate UI)."""
-        from ..services import application_completeness
-        return application_completeness(obj)
+        return self._completeness(obj)
+
+    def get_handoff(self, obj):
+        """Owner 28 Nov: may Recommend hand the case to QC — `{ready, missing}`, the SAME rule
+        verify-accept enforces (`services.handoff_ready`). The cockpit decides from this, never from
+        `completeness.complete`, which stays the full answer for every other screen."""
+        from ..services import handoff_payload
+        return handoff_payload(obj, self._completeness(obj))
 
     def get_consent_blockers(self, obj):
         """The exact gate that must clear before a shortlisted student can submit — the SAME

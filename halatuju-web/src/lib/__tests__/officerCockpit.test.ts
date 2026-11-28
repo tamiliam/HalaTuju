@@ -1480,7 +1480,7 @@ describe('isClearAccept', () => {
 })
 
 describe('verdictSaveOutcome', () => {
-  const base = { acceptRequested: true, accepted: false, completenessComplete: true, status: 'interviewing' }
+  const base = { acceptRequested: true, accepted: false, handoffReady: true, status: 'interviewing' }
 
   it('accepted when the submit went through', () => {
     expect(verdictSaveOutcome({ ...base, accepted: true })).toBe('accepted')
@@ -1489,7 +1489,7 @@ describe('verdictSaveOutcome', () => {
     expect(verdictSaveOutcome({ ...base, acceptRequested: false })).toBe('saved')
   })
   it('names the outstanding steps when the profile is incomplete', () => {
-    expect(verdictSaveOutcome({ ...base, completenessComplete: false })).toBe('not_submitted_incomplete')
+    expect(verdictSaveOutcome({ ...base, handoffReady: false })).toBe('not_submitted_incomplete')
   })
   it('names the stage when the case is past submitting', () => {
     expect(verdictSaveOutcome({ ...base, status: 'active' })).toBe('not_submitted_status')

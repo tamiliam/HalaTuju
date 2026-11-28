@@ -214,8 +214,8 @@ class TestBestEffort(_Base):
             with self.subTest(label):
                 app = self.app('verdict_recorded', outcome='recommend', reviewer=self.reviewer)
                 with failure(), mock.patch(
-                        'apps.scholarship.views_admin.applications.application_completeness',
-                        return_value={'complete': True}):
+                        'apps.scholarship.views_admin.applications.handoff_ready',
+                        return_value=(True, [])):
                     resp = authed_client(self.reviewer).post(
                         _url(app, 'verify-accept/'), {'checklist': factories.VERIFY_CHECKLIST},
                         format='json')
@@ -407,8 +407,8 @@ class TestTheCaseActions(_Base):
 
     def test_verify_and_accept(self):
         app = self.app('verdict_recorded', outcome='recommend', reviewer=self.reviewer)
-        with mock.patch('apps.scholarship.views_admin.applications.application_completeness',
-                        return_value={'complete': True}):
+        with mock.patch('apps.scholarship.views_admin.applications.handoff_ready',
+                        return_value=(True, [])):
             resp = authed_client(self.reviewer).post(
                 _url(app, 'verify-accept/'), {'checklist': factories.VERIFY_CHECKLIST},
                 format='json')

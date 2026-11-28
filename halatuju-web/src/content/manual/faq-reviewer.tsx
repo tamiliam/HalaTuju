@@ -272,6 +272,16 @@ export const REVIEWER_FAQ: QA[] = [
         <strong> QC</strong>. The student becomes visible to sponsors only once QC accepts it.</>,
     },
     {
+      q: <>I approved, but it says &ldquo;NOT sent to QC — still missing&rdquo;. What is checked?</>,
+      a: <>Your verdict is saved; the case just cannot go to QC yet. Once the student has submitted and the case
+        is at interview, only what the student can still fix in the Action Centre is checked: the
+        <strong> documents</strong>, the <strong>consent form</strong> and the <strong>guardian&rsquo;s
+        documents</strong>. The line names which one is missing. The interest quiz, the story, the address, the
+        family details and the funding answers are not checked again then, because the student can no longer
+        change them. Before the interview stage (a case not submitted yet, or one still waiting for its
+        interview) everything is still checked in full.</>,
+    },
+    {
       q: <>What&rsquo;s the difference between rating Pass/Fail and approving?</>,
       a: <>The <strong>Pass/Fail</strong> on each fact records whether <em>that fact is right for the student</em>.
         <strong> Approve / Decline</strong> is your actual recommendation. They&rsquo;re separate: you can Pass all

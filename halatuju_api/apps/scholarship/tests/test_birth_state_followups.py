@@ -129,8 +129,8 @@ class TestCancellingAReopenReReadsTheRule(TestCase):
         """The reviewer verify-accepts the (new) IC again, which re-locks it — since the TD-376/377
         review a ruled case cannot return to `recommended` on an unlocked IC at all. The
         completeness gate is not what these tests are about, so it is held open."""
-        with mock.patch('apps.scholarship.views_admin.applications.application_completeness',
-                        return_value={'complete': True}):
+        with mock.patch('apps.scholarship.views_admin.applications.handoff_ready',
+                        return_value=(True, [])):
             r = self.client.post(
                 f'/api/v1/admin/scholarship/applications/{app.pk}/verify-accept/', {},
                 format='json')

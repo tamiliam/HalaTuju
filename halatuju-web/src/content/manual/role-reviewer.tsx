@@ -270,7 +270,15 @@ export const roleReviewer: ManualChapter = {
         SPACE breaks the rule for every gift).</span>
           <span className="mt-2 block rounded-lg border border-caution-200 bg-caution-50 p-3"><strong>Save is a
           one-way step from your side.</strong> It records the decision and sends the case on for QC; only a
-          super-admin can reopen it afterwards. Check the facts before you save.</span></>
+          super-admin can reopen it afterwards. Check the facts before you save.</span>
+          <span className="mt-2 block">An <strong>Approve</strong> goes on to QC only if the application is
+        complete enough. Once the student has submitted and the case is with you for interview, that means three
+        things the student can still fix in the Action Centre: the <strong>documents</strong>, the
+        <strong> consent form</strong> and the <strong>guardian&rsquo;s documents</strong>. The interest quiz, the
+        story, the address, the family details and the funding answers are not checked again at this stage.
+        Before the interview stage, everything is still checked in full. If
+        something is missing, the verdict is saved and a line names what is missing; the case stays with you
+        until it is fixed.</span></>
       ),
       img: '/reviewer-guide/step8-decision.png',
       alt: 'The Decision card with the four facts, amount slider and buttons',

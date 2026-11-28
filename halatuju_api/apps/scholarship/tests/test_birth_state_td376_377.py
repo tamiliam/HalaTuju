@@ -73,8 +73,8 @@ def _reverify(app, admin=None):
     open."""
     admin = admin or make_admin('super', super_admin=True)
     with override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET), \
-            mock.patch('apps.scholarship.views_admin.applications.application_completeness',
-                       return_value={'complete': True}):
+            mock.patch('apps.scholarship.views_admin.applications.handoff_ready',
+                       return_value=(True, [])):
         r = authed_client(admin).post(
             f'/api/v1/admin/scholarship/applications/{app.pk}/verify-accept/', {}, format='json')
     assert r.status_code == 200, r.content

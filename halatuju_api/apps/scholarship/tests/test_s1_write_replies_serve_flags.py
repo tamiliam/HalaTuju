@@ -59,8 +59,8 @@ class EachWriteReplyServesTheFlags(TestCase):
 
     def test_verify_accept(self):
         app = self.case(verdict_decided_at=timezone.now())
-        with patch('apps.scholarship.views_admin.applications.application_completeness',
-                   return_value={'complete': True}):
+        with patch('apps.scholarship.views_admin.applications.handoff_ready',
+                   return_value=(True, [])):
             self.assertServed(self.post(f'{APPS}{app.id}/verify-accept/'))
 
     def test_nudge(self):

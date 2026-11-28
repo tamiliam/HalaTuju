@@ -37,8 +37,8 @@ class TheReverifyAtAwaitingQc(TestCase):
         p = mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[])
         p.start()
         self.addCleanup(p.stop)
-        p = mock.patch('apps.scholarship.views_admin.applications.application_completeness',
-                       return_value={'complete': True})
+        p = mock.patch('apps.scholarship.views_admin.applications.handoff_ready',
+                       return_value=(True, []))
         p.start()
         self.addCleanup(p.stop)
         cohort = make_cohort(**ONLY_BIRTH, allowed_birth_states=['sabah'])

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: the QC hand-off re-checks only what can still be fixed (2026-11-28)
+
+Owner ruling, 28 Nov ("1"). Case 513 (submitted, interviewing, quiz wiped by #81) saved its verdict on every Approve but never moved to QC. Migration: none. Services: api, web.
+- **API:** new `services/handoff.py` (`handoff_parts`, `handoff_ready`, `handoff_payload`). A submitted case at interviewing or interviewed counts only documents, consent and guardian documents; every other case keeps the full `application_completeness` check. verify-accept uses it (the 400 adds `handoff_missing`); the admin detail and record-verdict payloads serve `handoff: {ready, missing}` with no extra query (completeness is worked out once per serializer). `completeness.py` is unchanged.
+- **Web:** `lib/handoff.ts` reads the served answer; `useVerdict` decides clear-accept from it, and the "NOT sent to QC - still missing" line names only the hand-off's own missing parts. `isClearAccept` and `verdictSaveOutcome` take `handoffReady`. An api without `handoff` falls back to `completeness.complete`.
+- **Guide and FAQ:** the reviewer Decision step and a new FAQ say what Approve checks at interview.
+- **Tests:** `test_handoff_recheck.py` (each part ignored or kept per status, not-submitted, the 513 shape end to end, consent and documents still refuse, a hash pin on completeness.py); seven tests that patched `application_completeness` now patch `handoff_ready`; jest `handoff.test.ts`, `missingSteps.test.ts`, two cockpit tests in `view.decision.test.tsx`.
+
 ### feat: OCR-17 - the 2.5 fallback tails are retired (2026-11-28, branch ocr-17-tails, not pushed)
 
 Api only. The fallback of every ordinary Flash job is now 3.8 Flash, then 3.6 Flash, then 3.5 Flash-Lite. No 2.5 model is left behind them (Google routes 2.5 Flash to 3.5 Flash-Lite from 1 December).

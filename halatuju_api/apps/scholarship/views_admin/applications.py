@@ -26,6 +26,7 @@ from ..services import (
     admin_reject,
     application_completeness,
     cancel_pending_decline,
+    handoff_ready,
     is_ready_for_assignment,
     org_admin_reject,
     set_reporting_date_by_officer,
@@ -326,14 +327,13 @@ class AdminVerifyAcceptView(_AdminBase):
                 {'error': 'Only a live shortlisted/in-review application can be accepted.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        # HARD completeness gate (no override): all compulsory parts must be present.
+        # HARD hand-off gate, no override; which parts count is `services/handoff.py` (owner 28 Nov).
         completeness = application_completeness(app)
-        if not completeness['complete']:
-            return Response(
-                {'error': 'This applicant has not completed every required step yet.',
-                 'code': 'incomplete_profile', 'completeness': completeness},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        ready, missing = handoff_ready(app, completeness)
+        if not ready:
+            return Response({'error': 'This applicant has not completed every required step yet.',
+                             'code': 'incomplete_profile', 'completeness': completeness,
+                             'handoff_missing': missing}, status=status.HTTP_400_BAD_REQUEST)
         # HARD audit gate (no override): the reviewer must have RECORDED their verdict
         # (audited the AI's four-fact verdict) before a case can be closed/accepted.
         # See the application-processing-pipeline plan, Check 3.

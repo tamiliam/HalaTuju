@@ -140,8 +140,8 @@ class TestQcRefusesAnApproveWithNoBursary(TestCase):
 
     def _verify_accept(self, app):
         # The completeness gate is not under test (the factory row is not a complete profile).
-        with mock.patch('apps.scholarship.views_admin.applications.application_completeness',
-                        return_value={'complete': True}):
+        with mock.patch('apps.scholarship.views_admin.applications.handoff_ready',
+                        return_value=(True, [])):
             return self._post(self.reviewer, app, 'verify-accept',
                               {'checklist': dict(VERIFY_CHECKLIST)})
 

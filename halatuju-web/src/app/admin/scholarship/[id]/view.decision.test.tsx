@@ -22,7 +22,7 @@
  *    the reviewer her verdict was not submitted, and the Save button offered to generate a final
  *    profile a decline does not produce. The wording must follow the RECORDED OUTCOME.
  */
-import { act, fireEvent, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 import { buildApplicationDetail, buildInterviewSession } from '@/test/adminApplicationDetail'
@@ -306,6 +306,29 @@ describe('every interview question needs an answer before the reviewer decides',
     expect((await screen.findAllByText('admin.scholarship.decision.notSubmittedMissing')).length)
       .toBeGreaterThan(0)
     expect(screen.queryByText('admin.scholarship.decision.notSubmittedIncomplete')).toBeNull()
+    expect(api.verifyAcceptApplication).not.toHaveBeenCalled()
+  })
+
+  it('owner 28 Nov: case 513 — the served hand-off is ready, so Approve submits though the quiz is gone',
+     async () => {
+    const { api, app, press } = await pressSaveAndFinalise()
+    api.recordVerdict.mockResolvedValue({ ...app,
+      completeness: { ...app.completeness, quiz_done: false, complete: false },
+      handoff: { ready: true, missing: [] }, finalise_result: { ok: true } } as never)
+    api.verifyAcceptApplication.mockResolvedValue({ ...app, status: 'interviewed' } as never)
+    press()
+    await waitFor(() => expect(api.verifyAcceptApplication).toHaveBeenCalled())
+    expect(screen.queryByText('admin.scholarship.decision.notSubmittedMissing')).toBeNull()
+  })
+
+  it('owner 28 Nov: a served hand-off that is not ready holds Approve back, whatever completeness says',
+     async () => {
+    const { api, app, press } = await pressSaveAndFinalise()
+    api.recordVerdict.mockResolvedValue({ ...app, completeness: { ...app.completeness, complete: true },
+      handoff: { ready: false, missing: ['consent_done'] }, finalise_result: { ok: true } } as never)
+    press()
+    expect((await screen.findAllByText('admin.scholarship.decision.notSubmittedMissing')).length)
+      .toBeGreaterThan(0)
     expect(api.verifyAcceptApplication).not.toHaveBeenCalled()
   })
 

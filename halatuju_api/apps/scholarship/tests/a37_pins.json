@@ -630,6 +630,7 @@
     "award_due_at",
     "profile_completed_at",
     "completeness",
+    "handoff",
     "consent_blockers",
     "nudge",
     "interview_session",
