@@ -19,9 +19,11 @@ PLATFORM row (`usage_context(source=USAGE_SOURCE)`).
 
 DRY RUN BY DEFAULT: counts and the estimated cost only; no download, no AI call. `--run` needs `--limit` (at
 most `MAX_LIMIT`) and `--max-cost-usd` (at most `MAX_COST_USD`); it stops before the document that could pass
-the cap, and after `FAIL_FAST` service errors (or failed fetches) in a row. COST: each Gemini call is charged at
-an ASSUMED upper bound of US$0.004 (or its reported tokens at the assumed prices when higher), each Vision OCR at
-US$0.0015.
+the cap, and after `FAIL_FAST` service errors (or failed fetches) in a row. COST: each METERED Gemini row (one
+call can bill up to 3 cascade models, one row each) is charged at an ASSUMED upper bound of US$0.004 (or its
+reported tokens at the assumed prices when higher), each Vision OCR row at US$0.0015; a Gemini call that left no
+row is charged once at US$0.004. The cap is checked after EVERY row: the run stops (mid-read if need be) once the
+next row could pass it.
 
 PRIVATE: prints counts and document ids only; never a name, an IC number, document text or model free text.
 
@@ -38,7 +40,7 @@ from django.db.models import QuerySet
 
 from apps.scholarship import usage, vision
 from apps.scholarship.income_declaration import is_declaration
-from apps.scholarship.income_engine.declaration_name import has_keep_word, payslip_only_warning
+from apps.scholarship.income_engine.declaration_name import has_keep_word, payslip_only_warning, tagged_hides
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.vision.warning_topics import KEY, PAYSLIP_ONLY_TOPICS, valid_topics
 
@@ -114,36 +116,53 @@ def tally_topics(n, ids, doc, new):
     n['declarations'] += 1
     n['declaration_warnings'] += len(warnings)
     by_words = sum(1 for w in warnings if payslip_only_warning(w))
-    by_topic = (sum(1 for w, t in zip(warnings, topics) if t in PAYSLIP_ONLY_TOPICS and not has_keep_word(w))
-                if ok else by_words)      # the display falls back to the words, whole list
+    by_topic = (sum(1 for w, t in zip(warnings, topics) if t in PAYSLIP_ONLY_TOPICS and tagged_hides(w))
+                if ok else by_words)      # the display's own rule; it falls back to the words, whole list
     n['hidden_by_topic'] += by_topic
     n['hidden_by_words'] += by_words
     if by_topic != by_words:
         ids['topics_hide_more' if by_topic > by_words else 'words_hide_more'].append(doc.pk)
 
 
+class CapReached(Exception):
+    """The next billed row could pass ``--max-cost-usd``: the run stops here (review round 1)."""
+
+
+def _add_row_cost(trace, cost):
+    trace['usd'] += cost
+    trace['peak'] = max(trace['peak'], cost)
+    if trace['usd'] + trace['peak'] > trace['cap']:
+        trace['over'] = True
+
+
 @contextmanager
 def _traced(trace):
-    """Count and price every Gemini call and Vision OCR (never their text); refuse every document write."""
+    """Count and price every metered Gemini row and Vision OCR (never their text), check the cap after each
+    row, and refuse every document write. One Gemini call can bill up to 3 cascade models: each row counts."""
     real_call, real_meter, real_update = vision._call_gemini_json, usage.record_usage, QuerySet.update
 
     def counted(*a, **k):
-        trace['tokens'] = None
+        if trace['over']:
+            raise CapReached
         trace['gemini'] += 1
+        rows = trace['rows']
         try:
             return real_call(*a, **k)
         finally:
-            cost = gemini_cost(trace['tokens'])
-            trace['usd'] += cost
-            trace['peak'] = max(trace['peak'], cost)
+            if trace['rows'] == rows:      # no metered row (every model failed, or a test seam): the flat bound
+                _add_row_cost(trace, USD_PER_GEMINI_CALL)
 
     def metered(service, *a, **k):
+        out = real_meter(service, *a, **k)        # the billed row is recorded first, always
         if service == usage.GEMINI:
-            trace['tokens'] = (k.get('input_tokens'), k.get('output_tokens'))
+            trace['rows'] += 1
+            _add_row_cost(trace, gemini_cost((k.get('input_tokens'), k.get('output_tokens'))))
+            if trace['over']:
+                raise CapReached          # outside the cascade's own try: the next model is never called
         elif service == usage.VISION_OCR:
             trace['vision'] += 1
-            trace['usd'] += USD_PER_VISION_OCR
-        return real_meter(service, *a, **k)
+            _add_row_cost(trace, USD_PER_VISION_OCR)   # the OCR seam swallows a raise; `counted` stops the Gemini call
+        return out
 
     def refuse(*a, **k):
         raise RuntimeError('eval_warning_topics writes nothing')
@@ -202,14 +221,18 @@ class Command(BaseCommand):
 
     def _run(self, todo, cap):
         n, ids = dict.fromkeys(COUNTERS, 0), {k: [] for k in ID_LISTS}
-        trace = {'gemini': 0, 'vision': 0, 'tokens': None, 'usd': Decimal('0'), 'peak': USD_PER_GEMINI_CALL}
+        trace = {'gemini': 0, 'vision': 0, 'rows': 0, 'usd': Decimal('0'), 'peak': USD_PER_GEMINI_CALL,
+                 'cap': cap, 'over': False}
         streak, stopped = {'service': 0, 'fetch': 0}, ''
         with _traced(trace):
             for done, pk in enumerate(todo, 1):
                 if trace['usd'] + trace['peak'] * MAX_GEMINI_CALLS + USD_PER_VISION_OCR > cap:
                     stopped = f'the next document could pass the cap US${cap}'
                     break
-                stopped = self._one(n, ids, streak, pk)
+                try:
+                    stopped = self._one(n, ids, streak, pk)
+                except CapReached:
+                    stopped = f'the next billed row could pass the cap US${cap} (stopped mid-read)'
                 if done % PROGRESS_EVERY == 0:
                     self.stdout.write(f'  progress: {done} documents, {trace["gemini"]} Gemini calls, '
                                       f'US${trace["usd"].quantize(Decimal("0.0001"))}')
@@ -241,6 +264,8 @@ class Command(BaseCommand):
                 streak['fetch'] = 0
                 text = (vision.extract_text(image, doc.content_type or '') or {}).get('text') or ''
                 new = vision.extract_document_fields(text, 'salary_slip') if text.strip() else None
+        except CapReached:
+            raise
         except Exception as e:    # one document never stops the run; the type only, never the message
             logger.warning('eval_warning_topics: doc %s failed (%s)', pk, type(e).__name__)
             n['error'] += 1

@@ -151,18 +151,24 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         """Case 1048: a declaration in the salary-slip slot does not SHOW the read's payslip-only warnings
         (no employer / no pay period — a declaration has neither by design). A copy is shown; the stored
-        read is never edited (`income_engine.declaration_name.shown_warnings`).
+        read is never edited (`income_engine.declaration_name.shown_warnings`). The read's topic codes
+        (``warning_topics``) are dropped from the served copy for every audience: display rules read them, no page.
 
         Chip standard (display only): this audience's chips + pill (``chip_audience``), worked out from
         THIS payload (no query of its own), and ``read_at`` = the later of the two read stamps (null if neither).
         ONE override only: a second ``to_representation`` in this class silently replaces this one."""
         data = super().to_representation(instance)
         vf = data.get('vision_fields')
-        if isinstance(vf, dict) and isinstance(vf.get('warnings'), list) and vf['warnings']:
-            from ..income_engine.declaration_name import shown_warnings
-            kept = shown_warnings(instance, vf['warnings'])
-            if kept is not vf['warnings']:
-                data['vision_fields'] = {**vf, 'warnings': kept}
+        if isinstance(vf, dict):
+            from ..vision.warning_topics import KEY as _TOPICS    # case 1048: the topic codes are never served
+            served = {k: v for k, v in vf.items() if k != _TOPICS} if _TOPICS in vf else vf
+            if isinstance(served.get('warnings'), list) and served['warnings']:
+                from ..income_engine.declaration_name import shown_warnings
+                kept = shown_warnings(instance, served['warnings'])     # reads the STORED topics
+                if kept is not served['warnings']:
+                    served = {**served, 'warnings': kept}
+            if served is not vf:
+                data['vision_fields'] = served
         data['chips'], data['chip_pill'] = _served_chips(instance, data, self.chip_audience)
         data['read_at'] = _read_at(instance)
         return data

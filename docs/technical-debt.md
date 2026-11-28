@@ -10098,3 +10098,15 @@ Sol's Malay and Tamil read. *(C - S)*
 
 **Raised 2026-11-28 (apply bundle trim review).** The first-load trim made `RESULTS_FIELDS` in `halatuju-web/src/lib/applyDraft.ts` a plain `string[]` instead of an `as const` tuple, so the type check no longer catches a misspelt field name. The exact-list test in `applyDraft.test.ts` still covers it. Logged, not built. **Fix:** type the list back to the draft's field names (a cast on the split result costs no bundle size), and keep the exact-list test. *(A - S)*
 
+### [TD-796] Topic codes are matched to warnings by position only - low
+
+**Raised 2026-11-28 (case 1048, review round 1).** The salary-slip read returns `warnings` and `warning_topics` as two parallel lists, and `declaration_name.shown_warnings` pairs them by position. A check catches a wrong length or an unknown code (the word filter then runs for the whole list), but not two codes in the wrong order: a model that tags note 2 with note 1's code could hide a payslip-only note it should have shown, or show one it could hide. The round-1 rule limits the harm (a hidden note must also carry an absence word and no keep word), and this is display only (no warning feeds a verdict). **Fix:** ask the read for one list of {text, topic} objects, so a code cannot drift from its note; or, cheaper, check that each code's own words appear in its note. *(A-S)*
+
+### [TD-797] The salary-slip topic prompt and schema are pinned by no register - low
+
+**Raised 2026-11-28 (case 1048, review round 1, nit 7).** `vision/warning_topics.PROMPT_LINE` / `TOPICS` and `vision/schemas._with_warning_topics` shape what the salary-slip read returns, but no model register pins them; the verdict_engine register pins only `KEY`, `PAYSLIP_ONLY_TOPICS` and `valid_topics` (what `shown_warnings` reads). Not pinned under `salary_doc` on purpose: `salary_doc.MODEL_VERSION` versions the genuineness SCORER, is stamped on every stored result and is what re-score jobs select rows by (`rescore_salary_statutory` FROM_MODEL / FIXED_IN; `read_retry` re-scores the govt rows from before 1.2.0), so a bump for a prompt change would mark new reads as a new scorer that never changed. `model_registry.py` is also at the 600-line cap. **Fix:** a salary-slip READ version (prompt + schema) with its own register, in a sprint that has room to split `model_registry.py`. *(A-S)*
+
+### [TD-798] The warning-topics guard does not scan the web app - low
+
+**Raised 2026-11-28 (case 1048, review round 1, nit 8).** `test_warning_topics` (the guard that only the reader, the display filter and the serializer that drops the key may name `warning_topics`) walks `halatuju_api` only. Since round 1 no serializer serves the key, so the web app cannot receive it today; but a later serializer change plus a web read would not be caught here. **Fix:** a web-side check (a jest or grep gate over `halatuju-web/src`) that no file names `warning_topics`, or one cross-repo guard run by `npm run gates`. *(A-S)*
+

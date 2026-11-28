@@ -69,7 +69,9 @@ an amber pill for it; until then ``soften`` changes nothing and the API shows 'm
 differently on every Re-run. The salary-slip read now tags each warning with a topic code
 (`vision/warning_topics.py`); ``shown_warnings`` hides the payslip-only TOPICS when every warning carries
 a valid code, still never a warning with a keep word. An untagged or older read falls back to the word
-filter for the whole list.
+filter for the whole list. Review round 1: under a payslip-only code a warning hides only when it also names
+an absence; no keep word (widened: signature, alteration, unreadable, mismatch, fake and family words) and
+no missing date. When in doubt it SHOWS.
 
 It sits in ``income_engine/`` so the verdict-engine fingerprint covers it: BUMP
 ``verdict_engine.VERDICT_ENGINE_VERSION`` on any change to the rule.
@@ -346,9 +348,19 @@ _KEEP_STEMS = ('tamper', 'alter', 'forg', 'fake', 'palsu', 'ubah', 'chop', 'stam
                'visib', 'unclear', 'cover', 'blank', 'cut', 'crop', 'legib', 'unread', 'obscur', 'hidden',
                'smudg', 'fade', 'jelas', 'kabur', 'tutup', 'kosong', 'potong', 'dibaca',
                # review round 4 (minor 2): "not found" may mean the employer was covered over
-               'not found', 'dijumpai', 'ditemui')
-#: ...and these as whole words (too short to match inside other words): IC, I/C, I.C., KP, K/P, K.P., COP.
-_KEEP_WORDS = re.compile(r'\b(?:ic|kp|cop|i\s*/\s*c|k\s*/\s*p|i\s*\.\s*c|k\s*\.\s*p)\b')
+               'not found', 'dijumpai', 'ditemui',
+               # topic-codes review round 1 (2026-11-28): a wrong code must never hide these families.
+               # Signature and stamp; alteration; unreadable; mismatch; fake or context.
+               'tanda tangan', 't/t', 'edit', 'modif', 'amend', 'chang', 'cross', 'white', 'tipp', 'eras',
+               'manipul', 'pinda', 'padam', 'conteng', 'tindih', 'semula', 'blur', 'dark', 'gelap', 'quality',
+               'faint', 'pudar', 'torn', 'koyak', 'rosak', 'damag', 'partial', 'match', 'sepadan', 'verif',
+               'templat', 'sample', 'contoh', 'photocop', 'salinan', 'generat', 'invent', 'famil', 'father',
+               'mother', 'bapa', 'duplicat', 'b40', 'high', 'outdat')
+#: ...and these as whole words (too short to match inside other words): IC, I/C, I.C., KP, K/P, K.P., COP;
+#: review round 1 of the topic codes: CAP, SAMA, IBU, LAMA ("alamat" is an address); READ and TERANG at a
+#: word start only ("already", "keterangan"); OFFICIAL unless it only names the payslip the type note means.
+_KEEP_WORDS = re.compile(r'\b(?:ic|kp|cop|cap|sama|ibu|lama|i\s*/\s*c|k\s*/\s*p|i\s*\.\s*c|k\s*\.\s*p)\b'
+                         r'|\b(?:read|terang)|official(?!\s+(?:pay[\s-]?slip|salary\s+slip))')
 #: "the employer's NAME" is still about the employer, not about who the earner is.
 _EMPLOYER_NAME_PHRASES = ("employer's name", 'employer name', 'name of the employer', 'name of employer',
                           "company's name", 'company name', 'name of the company', 'name of company',
@@ -402,9 +414,40 @@ def _keeps(s: str) -> bool:
 
 
 #: Date phrases that say WHEN a paper was signed: "signing" holds the keep stem "sign", so a "the date is the
-#: signing date, not a pay period" note would always show; the tagged path drops these before the keep check.
-_SIGNING_DATE_PHRASES = re.compile(
-    r"\b(?:signing\s+date|date\s+of\s+signing|date\s+signed|signed\s+date|signed\s+on)\b")
+#: signing date rather than a pay period" note would always show; the tagged path drops these before the keep
+#: check, but NEVER beside an absence ("signing date missing", "date signed: missing", "tiada"): a missing
+#: date shows. Review round 1: "signed on" is no date phrase ("not signed on behalf of the employer").
+_SIGNING_DATE_PHRASES = re.compile(r"\b(?:signing\s+date|date\s+of\s+signing|date\s+signed|signed\s+date)\b")
+_DATE_WORDS = re.compile(r"\b(?:date|tarikh)\b")
+_AFTER_GAP = re.compile(r"\s*[:\-]?\s*(?:(?:is|are|was|were|has|have|been|being|also)\s+){0,2}")
+_BEFORE_GAP = r"\s*[:\-]?\s*(?:(?:the|a|an|its)\s+)?$"
+#: The tagged path's own extra absences (never the word filter's): a note that the paper "shows only a
+#: declaration date rather than a pay period" says the pay period is absent. A bare "only" is none.
+_TAGGED_ABSENT_RE = re.compile(r"(?<![a-z0-9/'])(?:rather\s+than\s+an?|shows\s+only|only\s+an?\s+(?:[a-z]+\s+){0,3}"
+                               r"date)(?![a-z0-9/'])")
+
+
+def _beside_absence(s: str, m: re.Match) -> bool:
+    """True when an absence word sits right after or right before the match (a gap of is/was/:/the only)."""
+    after = s[m.end():]
+    if _ABSENT_RE.match(after, _AFTER_GAP.match(after).end()):
+        return True
+    return bool(re.search(_ABSENT_RE.pattern + _BEFORE_GAP, s[:m.start()]))
+
+
+def tagged_hides(warning) -> bool:
+    """The tagged path, for a warning under a payslip-only code: hide ONLY when it names an absence, no keep
+    word stands once the signing-date phrases (none beside an absence) are gone, and no DATE is said to be
+    missing ("tarikh tiada"). Or when the word filter alone would hide it (the type note). Else it SHOWS."""
+    s = _normalised(warning)
+    if not s:
+        return False
+    if any(_beside_absence(s, m) for m in _DATE_WORDS.finditer(s)):
+        return False
+    stripped = _SIGNING_DATE_PHRASES.sub(lambda m: m.group(0) if _beside_absence(s, m) else ' ', s)
+    if _keeps(stripped):
+        return False
+    return bool(_ABSENT_RE.search(s) or _TAGGED_ABSENT_RE.search(s)) or payslip_only_warning(warning)
 
 
 def has_keep_word(warning) -> bool:
@@ -432,9 +475,10 @@ def shown_warnings(doc, warnings):
     ones; any other document gets ``warnings`` back unchanged (the same object). Display only.
 
     Topic-coded (owner 2026-11-28): when the read tagged its warnings (``vision_fields['warning_topics']``,
-    `vision.warning_topics.valid_topics`), warning i hides only when its topic is payslip-only AND its text
-    has no keep word (a mis-tagged "altered" note still shows). Topics missing, of the wrong length or
-    with an unknown code: the word filter above, for the WHOLE list. The two are never mixed."""
+    `vision.warning_topics.valid_topics`), warning i hides only when its topic is payslip-only AND
+    `tagged_hides` (it names an absence, no keep word, no missing date). When in doubt it SHOWS: a wrong
+    code must never hide a note the reviewer needs. Topics missing, of the wrong length or with an unknown
+    code: the word filter above, for the WHOLE list. The two are never mixed."""
     if getattr(doc, 'doc_type', '') != 'salary_slip' or not isinstance(warnings, list) or not warnings:
         return warnings
     from ..income_declaration import is_declaration
@@ -444,6 +488,5 @@ def shown_warnings(doc, warnings):
     stored = getattr(doc, 'vision_fields', None)
     topics = stored.get(KEY) if isinstance(stored, dict) else None
     if valid_topics(warnings, topics):
-        return [w for w, t in zip(warnings, topics)
-                if t not in PAYSLIP_ONLY_TOPICS or _keeps(_SIGNING_DATE_PHRASES.sub(' ', _normalised(w)))]
+        return [w for w, t in zip(warnings, topics) if t not in PAYSLIP_ONLY_TOPICS or not tagged_hides(w)]
     return [w for w in warnings if not payslip_only_warning(w)]

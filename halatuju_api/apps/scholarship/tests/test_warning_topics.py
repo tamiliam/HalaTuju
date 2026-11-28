@@ -11,7 +11,8 @@ from django.core.management import CommandError, call_command
 from django.test import SimpleTestCase, TestCase
 
 from apps.scholarship import vision
-from apps.scholarship.income_engine.declaration_name import has_keep_word, payslip_only_warning, shown_warnings
+from apps.scholarship.income_engine.declaration_name import (has_keep_word, payslip_only_warning, shown_warnings,
+                                                              tagged_hides)
 from apps.scholarship.management.commands import eval_warning_topics as ev
 from apps.scholarship.models import ApplicantDocument, ApplicantDocumentOcrText
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
@@ -116,9 +117,16 @@ class TheTaggedDisplayTests(SimpleTestCase):
         self.assertEqual(shown_warnings(doc, self.WS), [HANDWRITTEN])
 
     def test_new_wording_the_word_filter_misses_is_hidden_by_its_code(self):
-        odd = 'Company details could not be located anywhere on this page'
+        odd = 'Company details are missing from this page'
         self.assertFalse(payslip_only_warning(odd))
         self.assertEqual(shown_warnings(_doc(['employer_missing']), [odd]), [])
+
+    def test_a_note_with_no_absence_word_shows_under_a_payslip_only_code(self):
+        """Review round 1: a code alone never hides; the note must also name an absence."""
+        for w in ('Company details could not be located anywhere on this page', 'The employer is a sole trader',
+                  'Gaji dibayar secara tunai', 'The pay period looks unusual for this kind of job'):
+            for code in sorted(wt.PAYSLIP_ONLY_TOPICS):
+                self.assertEqual(shown_warnings(_doc([code]), [w]), [w], (w, code))
 
     def test_a_keep_word_always_shows_even_under_a_payslip_only_code(self):
         ws = ['No employer chop or stamp', 'The pay period on the IC copy differs', 'Pay period looks altered']
@@ -152,19 +160,109 @@ class TheTaggedDisplayTests(SimpleTestCase):
 
     def test_a_signing_date_pay_period_note_is_hidden_under_its_code(self):
         """"signing" holds the keep stem "sign", but a date phrase that only says WHEN it was signed is not a
-        signature note: the declaration's "date is the signing date, not a pay period" note hides."""
+        signature note: the declaration's "signing date rather than a pay period" note hides."""
         w = 'The date shown is the declaration signing date rather than a specific pay period'
         self.assertTrue(has_keep_word(w))
         self.assertEqual(shown_warnings(_doc(['pay_period_missing']), [w]), [])
-        for phrase in ('date of signing', 'date signed', 'signed date', 'signed on'):
-            self.assertEqual(shown_warnings(_doc(['pay_period_missing']), [f'The {phrase} is not a pay period']), [],
-                             phrase)
+        for phrase in ('date of signing', 'date signed', 'signed date'):
+            note = f'The {phrase} is given rather than a pay period'
+            self.assertEqual(shown_warnings(_doc(['pay_period_missing']), [note]), [], phrase)
+
+    def test_a_missing_signing_date_or_any_missing_date_shows(self):
+        """Review round 1: the strip never runs beside an absence, and "signed on" is no date phrase."""
+        for w in ('Signing date missing', 'Date signed: missing', 'Date of signing is not given',
+                  'No signing date', 'Date of signing is missing and the pay period is not stated',
+                  'Tiada maklumat majikan; tarikh tiada', 'Tiada tarikh', 'Date missing',
+                  'The form was not signed on behalf of the employer', 'The date signed is not a pay period'):
+            for code in sorted(wt.PAYSLIP_ONLY_TOPICS):
+                self.assertEqual(shown_warnings(_doc([code]), [w]), [w], (w, code))
 
     def test_signature_notes_still_show_under_a_payslip_only_code(self):
         for w in ('The declaration is not signed', 'No signature or stamp', 'Signature missing',
                   'The signing date appears altered', 'Unsigned'):
             for code in ('pay_period_missing', 'employer_missing'):
                 self.assertEqual(shown_warnings(_doc([code]), [w]), [w], (w, code))
+
+
+class ReviewRound1KeepFamiliesTests(SimpleTestCase):
+    """Review round 1 (2026-11-28): the tagged path must NEVER hide a note the reviewer needs. One wrong code
+    plus a missing keep word used to hide it; now each family keeps it (English and Malay), whatever the code."""
+
+    #: Owner phone check on case 1048: these synthetic declaration notes HIDE under their payslip-only code.
+    CASE_1048 = (('No employer name is provided on this document.', 'employer_missing'),
+                 ('A separate take-home pay amount is not shown.', 'take_home_missing'),
+                 ('The document shows only a declaration signing date rather than a specific pay period.',
+                  'pay_period_missing'),
+                 ('No pay period is stated.', 'pay_period_missing'),
+                 ('Gross pay is not shown.', 'gross_missing'))
+    #: Each family, with an absence word in it, so the KEEP word is what shows it.
+    FAMILIES = {
+        'signature and stamp': ('Employer missing; no tanda tangan', 'Tiada tanda tangan majikan',
+                                'Cap majikan tiada', 'Employer missing, t/t not given'),
+        'alteration': ('Employer missing and the amount appears to have been edited',
+                       'Pay period modified, none given', 'Amount amended; employer missing',
+                       'Figures changed, no employer', 'Amount crossed out, no period',
+                       'Whited out area, employer missing', 'Tipp-ex used, employer missing',
+                       'Erased figure, no employer', 'Possibly manipulated; no employer',
+                       'Amaun dipinda, tiada majikan', 'Angka dipadam, tiada majikan',
+                       'Angka diconteng, tiada majikan', 'Angka ditindih, tiada majikan',
+                       'Ditulis semula, tiada majikan'),
+        'unreadable': ('Blurry image, employer missing', 'Dark scan, no employer', 'Gambar gelap, tiada majikan',
+                       'Poor quality, no employer', 'Faint print, no employer', 'Tulisan pudar, tiada majikan',
+                       'Gambar tidak terang', 'Gambar tidak terang, tiada majikan', 'Torn page, no employer',
+                       'Kertas koyak, tiada majikan', 'Dokumen rosak, tiada majikan', 'Damaged page, no employer',
+                       'Only a partial page, no employer', 'Hard to read, employer missing',
+                       'Not readable; no employer', 'Illegible amount, no employer'),
+        'mismatch': ('Amaun tidak sepadan', 'Amounts do not match, no employer',
+                     'Jumlah tidak sama, tiada majikan', 'Cannot verify the employer, none given'),
+        'fake and context': ('Looks like a template, no employer', 'Sample document, no employer',
+                             'Contoh borang sahaja', 'Contoh borang, tiada majikan', 'Photocopy only, no employer',
+                             'Salinan sahaja, tiada majikan', 'Computer generated, no employer',
+                             'Not an official document, no employer', 'Figures may be invented, no employer',
+                             'Written by a family member, no employer', 'The employer is the father',
+                             'The employer is the mother, no pay period', 'Majikan ialah bapa, tiada tempoh gaji',
+                             'Majikan ialah ibu, tiada tempoh gaji', 'Duplicate of another uploaded document',
+                             'Income is above the B40 line', 'Income looks high, no employer',
+                             'Outdated slip, no pay period', 'Slip lama, tiada tempoh gaji'),
+    }
+
+    def test_the_case_1048_notes_still_hide_under_their_code(self):
+        for w, code in self.CASE_1048:
+            self.assertTrue(tagged_hides(w), w)
+            self.assertEqual(shown_warnings(_doc([code]), [w]), [], w)
+        ws = [w for w, _ in self.CASE_1048] + [HANDWRITTEN]
+        self.assertEqual(shown_warnings(_doc([c for _, c in self.CASE_1048] + ['other']), ws), [HANDWRITTEN])
+
+    def test_every_family_shows_under_every_payslip_only_code(self):
+        for family, notes in self.FAMILIES.items():
+            for w in notes:
+                self.assertTrue(has_keep_word(w), (family, w))
+                for code in sorted(wt.PAYSLIP_ONLY_TOPICS):
+                    self.assertEqual(shown_warnings(_doc([code]), [w]), [w], (family, w, code))
+
+    def test_the_reviewers_cases_show_under_every_payslip_only_code(self):
+        for w in ('The form was not signed on behalf of the employer', 'Signing date missing',
+                  'Date of signing is missing and the pay period is not stated',
+                  'Tiada maklumat majikan; tarikh tiada', 'Tiada tanda tangan majikan', 'Cap majikan tiada',
+                  'appears to have been edited', 'Gambar tidak terang', 'Amaun tidak sepadan',
+                  'Duplicate of another uploaded document', 'Income is above the B40 line',
+                  'The employer is the father', 'Contoh borang sahaja'):
+            for code in sorted(wt.PAYSLIP_ONLY_TOPICS):
+                self.assertEqual(shown_warnings(_doc([code]), [w]), [w], (w, code))
+
+    def test_the_word_start_and_whole_word_keeps_are_not_substrings(self):
+        for w in ('Employer already missing', 'Alamat majikan tiada', 'Tiada keterangan majikan',
+                  'Employer not stated; berapa amaun',
+                  'It appears to be a declaration letter rather than an official pay-slip'):
+            self.assertFalse(has_keep_word(w), w)
+        for w in ('Unreadable', 'Readable only in part', 'Slip lama', 'Tidak sama', 'Cap tiada', 'Not official'):
+            self.assertTrue(has_keep_word(w), w)
+
+    def test_the_type_note_still_hides_under_not_a_payslip(self):
+        for w in ('This is an income declaration, not a payslip',
+                  'Dokumen ini ialah surat akuan pendapatan, bukan slip gaji',
+                  'The document is a declaration rather than a payslip'):
+            self.assertEqual(shown_warnings(_doc(['not_a_payslip']), [w]), [], w)
 
 
 class OnlyTheReaderAndTheDisplayNameTheTopicsTests(SimpleTestCase):
@@ -179,6 +277,7 @@ class OnlyTheReaderAndTheDisplayNameTheTopicsTests(SimpleTestCase):
         'halatuju_api/apps/scholarship/income_engine/declaration_name.py',
         'halatuju_api/apps/scholarship/management/commands/eval_warning_topics.py',
         'halatuju_api/apps/scholarship/model_registry.py',     # pins the module's text by path; reads no topic
+        'halatuju_api/apps/scholarship/serializers/documents.py',   # DROPS the key from every served copy
     })
     NAME = re.compile(r'warning_topics')
 
@@ -253,6 +352,24 @@ class TheEvalDryRunTests(_Slips):
                 self.run_cmd(*args)
 
 
+class NoTopicCodeIsServedTests(_Slips):
+    """Review round 1: the codes are for the display rule only; no payload (student or officer) carries them."""
+
+    def test_the_student_and_the_admin_payloads_have_no_topic_key(self):
+        from apps.scholarship.serializers.documents import ApplicantDocumentSerializer
+        from apps.scholarship.sgd_conversion import AdminApplicantDocumentSerializer
+        doc = self.slip()
+        doc.vision_fields = {**doc.vision_fields, 'warnings': [NO_EMPLOYER, HANDWRITTEN],
+                             wt.KEY: ['employer_missing', 'other']}
+        doc.save()
+        doc.refresh_from_db()
+        for ser in (ApplicantDocumentSerializer, AdminApplicantDocumentSerializer):
+            vf = ser(doc).data['vision_fields']
+            self.assertNotIn(wt.KEY, vf, ser.__name__)
+            self.assertEqual(vf['warnings'], [HANDWRITTEN], ser.__name__)     # still hidden by the stored code
+        self.assertEqual(doc.vision_fields[wt.KEY], ['employer_missing', 'other'])   # the stored read is untouched
+
+
 class TheEvalRunTests(_Slips):
     RUN = ('--run', '--limit', '60', '--max-cost-usd', '0.50')
 
@@ -280,7 +397,7 @@ class TheEvalRunTests(_Slips):
 
     def test_the_counts_a_to_d(self):
         decl, payslip = self.slip(), self.slip(seen='private')
-        odd = 'Company details could not be located anywhere on this page'
+        odd = 'Company details are missing from this page'
         answers = {decl.pk: _answer([odd, NO_PERIOD, 'No employer chop'],
                                     ['employer_missing', 'pay_period_missing', 'employer_missing'], name=''),
                    payslip.pk: _answer([HANDWRITTEN], ['nope'], gross_income='9999')}
@@ -315,6 +432,36 @@ class TheEvalRunTests(_Slips):
         text, _, _ = self.run_cmd(*self.RUN)
         self.assertEqual(text.count('progress:'), 1)
         self.assertIn('progress: 20 documents', text)
+
+    @staticmethod
+    def _cascade(rows, tokens=(None, None)):
+        """A fake seam that bills ``rows`` cascade models per call (one meter row each), as a fall-through does."""
+        billed = []
+
+        def seam(*a, **k):
+            for i in range(rows):
+                billed.append(i)        # the model answered (billed); its meter row follows
+                ev.usage.record_usage(ev.usage.GEMINI, model=f'm{i}', input_tokens=tokens[0], output_tokens=tokens[1])
+            return _answer([], [])
+        return seam, billed
+
+    def test_three_billed_rows_per_call_stop_the_run_before_the_cap(self):
+        for _ in range(5):
+            self.slip()
+        seam, billed = self._cascade(3)
+        text, m, _ = self.run_cmd('--run', '--limit', '5', '--max-cost-usd', '0.03', seam={'side_effect': seam})
+        self.assertIn('STOPPED: the next document could pass the cap', text)
+        self.assertEqual(m.call_count, 2)          # one cost per call would have run all 5 (15 rows, US$0.06)
+        self.assertEqual(len(billed), 6)
+        self.assertIn('charged up to US$0.0240', text)
+
+    def test_the_cap_is_checked_after_each_row_mid_read(self):
+        self.slip()
+        seam, billed = self._cascade(3, tokens=(10_000, 10_000))     # about US$0.056 a row
+        text, m, _ = self.run_cmd('--run', '--limit', '1', '--max-cost-usd', '0.06', seam={'side_effect': seam})
+        self.assertIn('stopped mid-read', text)
+        self.assertEqual(len(billed), 1)           # the 2nd and 3rd models are never called
+        self.assertIn('read 0', text)
 
     def test_stops_before_the_cap(self):
         for _ in range(3):

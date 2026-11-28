@@ -538,7 +538,8 @@ class NoDecisionCallerTests(SimpleTestCase):
     #: The other modules that may import from declaration_name, and the exact names each may take: the
     #: serializer's shown warnings, and (case 1048, 2026-11-28) the write-nothing topic eval's two word checks.
     WARNINGS_ONLY = {'serializers/documents.py': ['shown_warnings'],
-                     'management/commands/eval_warning_topics.py': ['has_keep_word, payslip_only_warning']}
+                     'management/commands/eval_warning_topics.py': ['has_keep_word, payslip_only_warning, '
+                                                                     'tagged_hides']}
 
     def _sources(self):
         import pathlib
