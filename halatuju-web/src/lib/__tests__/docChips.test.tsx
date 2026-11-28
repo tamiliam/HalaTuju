@@ -209,7 +209,7 @@ describe('round 3 review fixes', () => {
   })
   test('the served IC chip (label pathwayCheck.ic) draws its label and speaks its state', () => {
     const doc = { id: 10, doc_type: 'offer_letter',
-      chips: [chip('ic', 'grey', { status: 'not_printed', label: 'scholarship.docs.pathwayCheck.ic' } as Partial<DocChipData>)],
+      chips: [chip('ic', 'grey', { reason: 'not_printed', label: 'scholarship.docs.pathwayCheck.ic' })],
       pathway_check: {
         name: 'match', ic: 'not_printed', candidate_name: '', candidate_nric: '', programme: '', institution: '',
         issuer: '', offer_date: '', intake: '', address: '' } } as unknown as Parameters<typeof OfferLetterChecklist>[0]['doc']
