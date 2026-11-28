@@ -10086,3 +10086,15 @@ Sol's Malay and Tamil read. *(C - S)*
 
 **Raised 2026-11-28 (OCR-16 review).** `test_ocr_keep` checks by AST that each module uses only `keep`, the constants and its own read functions of `ocr_keep`. Three ways past it are known and not closed: (1) `from ..ocr_keep import keep` and then `keep.__globals__[...]` reaches the private read helpers, because a deeper attribute is checked only on the module alias, not on a name imported with `from`; (2) `importlib.import_module(...)` with the module path built from parts escapes both the AST check and the `MODULE_PATTERN` text check; (3) the "constants" rule allows every upper-case name in `vars(ocr_keep)`, so `ocr_keep.Q` (Django's `Q`, imported there) passes as a constant. None is used today; the guard is a tripwire for honest mistakes, and code review is the real gate. **Fix:** check deeper attributes on from-imported names too; fail any `importlib` / `__import__` in a module that names ocr_keep or the OCR text; list the real constants by name instead of the upper-case pattern. Show each fix failing on a synthetic source. *(A - S)*
 
+### [TD-787] A profile-stored pre_u_studied_at is still sent, hidden, after a move to SPM - low
+
+**Raised 2026-11-28 (TD-785 review round 2).** TD-785 makes the apply draft drop the where-she-studied answer when the results type changes. But the profile prefill can still carry an old `pre_u_studied_at` (an STPM or Form 6 school) for a student whose results are now SPM. The Results step does not show the field for SPM, so the old value is sent with the application without the student seeing it. Not new with TD-785. Logged, not built. **Fix:** do not send `pre_u_studied_at` when the results type has no where-she-studied question (or clear it on the profile when the results type changes), and add a test for the STPM to SPM case. *(A - S)*
+
+### [TD-788] admin-api/applications.ts is at its 600-line cap - low
+
+**Raised 2026-11-28 (case 513 hand-off review).** `halatuju-web/src/lib/admin-api/applications.ts` is exactly 600 lines. The cap check in `src/lib/__tests__/codeStandards.test.ts` fails only above 600, and the file is not on the growth list, so the next change that adds a line fails the check. The hand-off change kept the count only by reflowing a comment. Logged, not built. **Fix:** split the file by topic (for example the verdict and hand-off calls into their own module) before it next grows, with no behaviour change. *(A - S)*
+
+### [TD-789] RESULTS_FIELDS lost its as-const typing - low
+
+**Raised 2026-11-28 (apply bundle trim review).** The first-load trim made `RESULTS_FIELDS` in `halatuju-web/src/lib/applyDraft.ts` a plain `string[]` instead of an `as const` tuple, so the type check no longer catches a misspelt field name. The exact-list test in `applyDraft.test.ts` still covers it. Logged, not built. **Fix:** type the list back to the draft's field names (a cast on the split result costs no bundle size), and keep the exact-list test. *(A - S)*
+
