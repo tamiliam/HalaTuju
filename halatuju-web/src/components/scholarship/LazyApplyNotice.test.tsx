@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/react'
 import LazyApplyNotice from './LazyApplyNotice'
 
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
+jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 jest.mock('next/link', () => ({
   __esModule: true,
   default: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>,
@@ -20,5 +20,13 @@ describe('LazyApplyNotice', () => {
     expect(screen.queryByTestId('apply-already-others')).toBeNull()
     rerender(<LazyApplyNotice kind="applied" onSeeOpen={() => {}} />)
     expect(screen.getByTestId('apply-already-others')).toBeTruthy()
+  })
+
+  it("draws Step 3's results notes (TD-773) through the same chunk", async () => {
+    const { unmount } = render(<LazyApplyNotice kind="needsPostSpm" />)
+    expect(await screen.findByText('documentsTab.resultsNote.postSpmTitle')).toBeTruthy()
+    unmount()
+    render(<LazyApplyNotice kind="pngkOnly" />)
+    expect(await screen.findByText('documentsTab.resultsNote.pngkOnly')).toBeTruthy()
   })
 })

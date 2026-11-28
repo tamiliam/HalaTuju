@@ -39,8 +39,8 @@ export type DraftForm = Omit<ApplyFormState, typeof DRAFT_EXCLUDED[number]>
 /** The answers that belong to ONE results type (My Plans: an SPM pathway, a degree, the leaning, the
  *  top 3; and where she studied). A draft typed under other results comes back WITHOUT them, so the fresh defaults
  *  show (the profile's prefill) and she answers My Plans again; the note and other scholarships are hers whatever she holds. */
-export const RESULTS_FIELDS = ['pathwayCertainty', 'chosenPathway', 'chosenProgramme', 'preUTrack', 'preUInstitution',
-  'uncertaintyReasons', 'pathwaysConsidered', 'topChoices', 'upuStatus', 'fieldOfStudy', 'preUStudiedAt'] as const
+export const RESULTS_FIELDS = ('pathwayCertainty chosenPathway chosenProgramme preUTrack preUInstitution '
+  + 'uncertaintyReasons pathwaysConsidered topChoices upuStatus fieldOfStudy preUStudiedAt').split(' ')
 
 interface Envelope { v: number; uid: string; programme: string; savedAt: number; step: string; rt?: string; form: ApplyFormState }
 
@@ -96,9 +96,9 @@ export function parse(): Envelope | null {
 export function readApplyDraft(owner: DraftOwner): { form: DraftForm; step: string } | null {
   const e = parse()
   if (!e || !owner.uid || e.uid !== owner.uid) { clearApplyDraft(); return null }
-  const other = !!e.rt && !!owner.results && e.rt !== owner.results
   return e.programme === owner.programme
-    ? { form: strip(e.form, other ? [...DRAFT_EXCLUDED, ...RESULTS_FIELDS] : DRAFT_EXCLUDED), step: String(e.step || '') } : null
+    ? { form: strip(e.form, e.rt && owner.results && e.rt !== owner.results ? [...DRAFT_EXCLUDED, ...RESULTS_FIELDS] : DRAFT_EXCLUDED),
+      step: String(e.step || '') } : null
 }
 
 /**

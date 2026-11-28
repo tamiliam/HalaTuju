@@ -12,7 +12,7 @@ import InfoTip from '@/components/InfoTip'
 import FieldLabel from '@/components/FieldLabel'
 import PreUStudiedAtField from '@/components/scholarship/LazyPreUStudiedAtField'   // pre-U sprint (fetched when drawn)
 import Toggle from '@/components/Toggle'
-import ResultsRouteNote, { resultsRouteNote } from '@/components/scholarship/LazyResultsRouteNote'   // TD-773 (fetched when drawn)
+import { resultsRouteNote } from '@/lib/resultsRouteNote'   // TD-773: the note itself rides LazyApplyNotice's chunk
 import { submitScholarshipApplication, claimNric } from '@/lib/api'
 import { isThirdRoute, type Qualification } from '@/lib/qualification'
 import { showsPreUStudiedAt } from '@/lib/preUStudiedAt'
@@ -564,7 +564,7 @@ export default function ScholarshipApplyPage() {
             <button type="button" onClick={goEditResults} className="btn-primary inline-block">{t('scholarship.apply.noResultsCta')}</button>
           </div>
         )}
-        {resultsNote && <ResultsRouteNote kind={resultsNote} />}
+        {resultsNote && <LazyApplyNotice kind={resultsNote} />}
         {showsPreUStudiedAt(academic.examType) && (<div className="mt-5">
           <PreUStudiedAtField variant="apply" resultsHeld={academic.examType} value={form.preUStudiedAt} onChange={(v) => update('preUStudiedAt', v)} />
         </div>)}

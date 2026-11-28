@@ -10,10 +10,11 @@
 import { useEffect, useState } from 'react'
 
 import { useT } from '@/lib/i18n'
+import type { ResultsNoteKind } from './ResultsRouteNote'   // a type only: erased
 
 type Notice = typeof import('./ApplyNotice')['default']
 
-export default function LazyApplyNotice(props: { kind: 'closed' | 'applied'; onSeeOpen?: () => void }) {
+export default function LazyApplyNotice(props: { kind: 'closed' | 'applied' | ResultsNoteKind; onSeeOpen?: () => void }) {
   const { t } = useT()
   const [Loaded, setLoaded] = useState<Notice | null>(null)
   const [failed, setFailed] = useState(false)
