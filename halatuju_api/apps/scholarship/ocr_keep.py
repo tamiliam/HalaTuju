@@ -23,14 +23,14 @@ and it would stay IMMEDIATE for the rest of the caller's transaction.)
 
 THE ONE READ PATH (OCR-16, owner's choice 28 Nov 2026). Only the model and this module name the table: the
 owner-approved jobs that read the stored text call ``kept_texts``, ``ids_with_kept_text`` or
-``ids_with_kept_text_containing`` (a test pins exactly which modules may). Each takes the caller's document ids (a list, a set or an id
+``ids_with_kept_text_containing`` (a test pins, per job, exactly which of them it may call; every other
+module may use only ``keep`` and the constants). Each takes the caller's document ids (a list, a set or an id
 queryset), so none reads the whole table, and returns only ids or the texts of the ids asked for. They never
-log or print text. ``writes_refused`` is the read-only jobs' write guard: inside it ``keep`` stores nothing
-and a direct save of the table raises.
+log or print text. ``writes_refused`` is the paid eval's write guard (one-off command processes only): inside
+it ``keep`` stores nothing and a direct save of the table raises.
 """
 import logging
 from contextlib import contextmanager
-from unittest import mock
 
 from django.db import transaction
 from django.db.models import Q
@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 #: Open ``writes_refused`` blocks; while above 0, ``keep`` and ``_write`` store nothing.
 _refusing = 0
+_INHERITED = object()   # writes_refused: the model had no save of its own before the block
 
 PDF_TEXT_LAYER = 'pdf_text_layer'
 VISION_OCR = 'vision_ocr'
@@ -80,7 +81,7 @@ def keep(doc, text, *, source, reader: str = '') -> bool:
 def _write(doc_id: int, values: dict) -> None:
     """The write itself, in its own transaction. A document deleted before this ran stores nothing."""
     if _refusing:
-        return    # handed on before a writes_refused block opened: still nothing is stored inside it
+        return    # handed on before a writes_refused block and run inside it: this write is lost, not held
     try:
         from .models import ApplicantDocument, ApplicantDocumentOcrText
         with transaction.atomic():
@@ -130,17 +131,28 @@ def ids_with_kept_text_containing(words, doc_ids) -> set:
 
 @contextmanager
 def writes_refused(who: str):
-    """A read-only job's guard: inside it ``keep`` stores nothing (returns False) and a direct save of the
-    table raises ``RuntimeError`` naming ``who``. Nests; the save is restored on the way out."""
+    """A read-only job's guard: inside it ``keep`` stores nothing (returns False) and ``Model.save`` of the
+    table (so ``create``, ``get_or_create``, ``update_or_create``) raises ``RuntimeError`` naming ``who``.
+    It does NOT block ``QuerySet.update``/``delete``, ``bulk_create``/``bulk_update`` or raw SQL. Nests; the
+    save is restored on the way out.
+
+    PROCESS-WIDE: the counter and the swapped ``save`` are module and class state, so they hold for every
+    thread in the process. For one-off management-command processes only (a test pins its one caller,
+    ``eval_genuineness_38``), never a web or worker path."""
     from .models import ApplicantDocumentOcrText
 
     def refuse(*a, **k):
         raise RuntimeError(f'{who} writes no OCR text')
 
     global _refusing
+    own = ApplicantDocumentOcrText.__dict__.get('save', _INHERITED)   # an outer block's refuse, when nested
     _refusing += 1
+    ApplicantDocumentOcrText.save = refuse
     try:
-        with mock.patch.object(ApplicantDocumentOcrText, 'save', refuse):
-            yield
+        yield
     finally:
+        if own is _INHERITED:
+            del ApplicantDocumentOcrText.save   # back to Model.save
+        else:
+            ApplicantDocumentOcrText.save = own
         _refusing -= 1

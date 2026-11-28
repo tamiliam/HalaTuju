@@ -9,6 +9,7 @@ the text; no serializer carries it, and only the listed modules may name it.
 The write is handed to ``transaction.on_commit``, and a TestCase never commits, so each read runs inside
 ``self.committed()`` (``captureOnCommitCallbacks(execute=True)``), which runs the write as a commit would.
 """
+import ast
 import os
 import re
 from contextlib import ExitStack
@@ -267,58 +268,144 @@ class TestPrivate(_Base):
         'scholarship/models/documents.py',
         'scholarship/ocr_keep.py',
     }
-    #: (b) The only modules that may call an ocr_keep READ function: owner-approved read-only jobs.
+    #: (b) Each owner-approved read-only job and the ONLY ocr_keep read functions it may call.
     READERS = {
         # #85: re-scores payslips on their stored text (in memory only, never printed), no read, no AI call.
-        'scholarship/management/commands/rescore_salary_statutory.py',
+        'scholarship/management/commands/rescore_salary_statutory.py': {'kept_texts'},
         # OCR-15: the one-off parent IC capture asks which documents already have text (ids only).
-        'scholarship/management/commands/capture_parent_ic_text.py',
+        'scholarship/management/commands/capture_parent_ic_text.py': {'ids_with_kept_text'},
         # OCR-16: the paid eval scores slips on their text and finds sample words (ids printed only).
-        'scholarship/management/commands/eval_genuineness_38.py',
+        'scholarship/management/commands/eval_genuineness_38.py': {'kept_texts', 'ids_with_kept_text_containing'},
     }
-    #: (c) The modules that call ``ocr_keep.keep`` (unchanged by the read path).
+    #: (c) ``writes_refused`` is process-wide (module + class state): one-off command processes only.
+    WRITE_GUARD = {'scholarship/management/commands/eval_genuineness_38.py'}
+    #: (d) The modules that call ``ocr_keep.keep`` (unchanged by the read path).
     KEEPERS = {
         'scholarship/vision/ocr.py',
         'scholarship/vision/ic.py',   # OCR-15: the IC / parent IC read keeps its Vision text
         'scholarship/management/commands/capture_parent_ic_text.py',
     }
-    TABLE_PATTERN = re.compile(r'ApplicantDocumentOcrText|applicant_document_ocr_text')
-    READ_PATTERN = re.compile(r'\b(?:kept_texts|ids_with_kept_text\w*)\b')
+    #: The class name, its lower-case model label ('applicantdocumentocrtext', also inside Django's default
+    #: 'scholarship_applicantdocumentocrtext') and its db table, in any case (raw SQL, apps.get_model).
+    TABLE_PATTERN = re.compile(r'applicant_?document_?ocr_?text', re.IGNORECASE)
     #: Naming ocr_keep at all (an import, an alias, a docstring) is for the modules above only.
     MODULE_PATTERN = re.compile(r'ocr_keep')
 
+    @staticmethod
+    def _apps_dir():
+        return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
     @classmethod
-    def _naming(cls, pattern):
-        """The app modules (tests and migrations aside) whose source matches ``pattern``."""
-        apps_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        found = set()
+    def _app_sources(cls):
+        """``{module path: source}`` for the app modules (tests and migrations aside)."""
+        apps_dir, out = cls._apps_dir(), {}
         for root, dirs, files in os.walk(apps_dir):
             dirs[:] = [d for d in dirs if d not in ('tests', 'migrations', '__pycache__')]
             for name in files:
                 if name.endswith('.py'):
                     path = os.path.join(root, name)
                     with open(path, encoding='utf-8') as fh:
-                        if pattern.search(fh.read()):
-                            found.add(os.path.relpath(path, apps_dir).replace(os.sep, '/'))
-        return found
+                        out[os.path.relpath(path, apps_dir).replace(os.sep, '/')] = fh.read()
+        return out
+
+    @classmethod
+    def _naming(cls, pattern):
+        """The app modules whose source matches ``pattern``."""
+        return {path for path, src in cls._app_sources().items() if pattern.search(src)}
+
+    @staticmethod
+    def _ocr_keep_uses(source):
+        """Every ocr_keep attribute ``source`` uses, by its AST (comments and docstrings do not count): each
+        ``<alias>.<name>`` and ``from ...ocr_keep import <name>``. A use that is not a plain one-level
+        attribute (the bare module passed on or to getattr, ``alias.keep.__globals__``, ``import *``, a
+        dotted ``import ...ocr_keep``) is recorded under a name no list allows, so it always fails."""
+        tree = ast.parse(source)
+        parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
+        aliases, uses = set(), set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if (node.module or '').split('.')[-1] == 'ocr_keep':
+                    uses |= {a.name for a in node.names}            # '*' included: no list allows it
+                aliases |= {a.asname or a.name for a in node.names if a.name == 'ocr_keep'}
+            elif isinstance(node, ast.Import):
+                for a in node.names:
+                    if a.name.split('.')[-1] == 'ocr_keep':
+                        if a.asname:
+                            aliases.add(a.asname)
+                        else:
+                            uses.add('<dotted import>')
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and node.id in aliases:
+                parent = parents.get(node)
+                if not (isinstance(parent, ast.Attribute) and parent.value is node):
+                    uses.add('<bare module>')
+                elif isinstance(parents.get(parent), ast.Attribute):
+                    uses.add(f'{parent.attr}.<deeper>')
+                else:
+                    uses.add(parent.attr)
+        return uses
+
+    @classmethod
+    def _ocr_keep_breaches(cls, sources):
+        """``{module: (uses not on its line, its read functions it no longer uses)}``; empty when clean.
+        Every module may use ``keep`` and the constants; a reader job also its own read functions (and the
+        eval ``writes_refused``). Anything else (another read, a private name like ``_kept_rows``) fails."""
+        base = {'keep'} | {n for n in vars(ocr_keep) if re.fullmatch(r'[A-Z][A-Z0-9_]*', n)}
+        out = {}
+        for path, src in sources.items():
+            if path == 'scholarship/ocr_keep.py':
+                continue
+            allowed = cls.READERS.get(path, set()) | ({'writes_refused'} if path in cls.WRITE_GUARD else set())
+            used = cls._ocr_keep_uses(src) - base
+            if used != allowed:
+                out[path] = (used - allowed, allowed - used)
+        return out
 
     def test_nothing_else_names_it(self):
         """No serializer, admin, export, view or job may name the table: only its model and ocr_keep."""
         self.assertEqual(self._naming(self.TABLE_PATTERN), self.TABLE)
 
-    def test_only_the_listed_jobs_call_the_read_path(self):
-        self.assertEqual(self._naming(self.READ_PATTERN) - {'scholarship/ocr_keep.py'}, self.READERS)
+    def test_each_job_calls_only_its_own_reads_and_no_private_name(self):
+        self.assertEqual(self._ocr_keep_breaches(self._app_sources()), {})
 
     def test_only_the_listed_modules_name_ocr_keep(self):
         """A new module cannot reach the text through an alias: naming ocr_keep at all needs a list."""
         self.assertEqual(self._naming(self.MODULE_PATTERN),
-                         self.READERS | self.KEEPERS | {'scholarship/ocr_keep.py', 'scholarship/models/documents.py'})
+                         set(self.READERS) | self.KEEPERS | {'scholarship/ocr_keep.py', 'scholarship/models/documents.py'})
 
-    def test_the_guard_patterns_catch_what_they_guard(self):
-        self.assertTrue(self.READ_PATTERN.search('ocr_keep.ids_with_kept_text_containing(w, ids)'))
-        self.assertTrue(self.READ_PATTERN.search('from apps.scholarship.ocr_keep import kept_texts'))
-        self.assertFalse(self.READ_PATTERN.search('ocr_keep.keep(doc, text, source=s)'))
+    def test_the_table_pattern_catches_every_spelling(self):
+        for bad in ("apps.get_model('scholarship', 'applicantdocumentocrtext')",
+                    "apps.get_model('scholarship', 'ApplicantDocumentOcrText')",
+                    'SELECT text FROM APPLICANT_DOCUMENT_OCR_TEXT', 'select * from applicant_document_ocr_text',
+                    'FROM scholarship_applicantdocumentocrtext'):
+            with self.subTest(bad=bad):
+                self.assertTrue(self.TABLE_PATTERN.search(bad))
         self.assertFalse(self.TABLE_PATTERN.search('from apps.scholarship import ocr_keep'))
+        self.assertFalse(self.TABLE_PATTERN.search('applicant_documents'))
+
+    def test_the_use_check_fails_a_synthetic_bad_module(self):
+        """Synthetic sources only (no real module is edited): each getaround is caught."""
+        keeper, job = 'scholarship/vision/ocr.py', 'scholarship/management/commands/capture_parent_ic_text.py'
+        clean = 'from .. import ocr_keep\nocr_keep.keep(d, t, source=ocr_keep.VISION_OCR)\n'
+        self.assertEqual(self._ocr_keep_breaches({keeper: clean}), {})
+        for src, caught in (
+                ('from .. import ocr_keep\nocr_keep._kept_rows(ids)\n', '_kept_rows'),
+                ('from .. import ocr_keep as k\nk.kept_texts(ids)\n', 'kept_texts'),
+                ('from ..ocr_keep import _kept_rows\n', '_kept_rows'),
+                ('from apps.scholarship.ocr_keep import *\n', '*'),
+                ('from .. import ocr_keep\ngetattr(ocr_keep, "_kept_rows")(ids)\n', '<bare module>'),
+                ('from .. import ocr_keep\nocr_keep.keep.__globals__\n', 'keep.<deeper>'),
+                ('import apps.scholarship.ocr_keep\n', '<dotted import>'),
+                ('import apps.scholarship.ocr_keep as k\nk._refusing\n', '_refusing'),
+                ('from .. import ocr_keep\nwith ocr_keep.writes_refused("x"):\n    pass\n', 'writes_refused')):
+            with self.subTest(src=src):
+                self.assertEqual(self._ocr_keep_breaches({keeper: src})[keeper][0], {caught})
+        # A job calling a read function not on its line fails, and so does one that dropped its own.
+        bad_job = 'from apps.scholarship import ocr_keep\nocr_keep.kept_texts(ids)\n'
+        self.assertEqual(self._ocr_keep_breaches({job: bad_job})[job], ({'kept_texts'}, {'ids_with_kept_text'}))
+        # writes_refused anywhere but the eval fails, even in another reader job.
+        guarded = 'from apps.scholarship import ocr_keep\nocr_keep.ids_with_kept_text(i)\nocr_keep.writes_refused("x")\n'
+        self.assertEqual(self._ocr_keep_breaches({job: guarded})[job], ({'writes_refused'}, set()))
 
 
 class TestTheReadPath(_Base):
@@ -378,7 +465,8 @@ class TestWritesRefused(_Base):
             self.assertFalse(ocr_keep.keep(doc, 'MADE UP TEXT', source='other'))
         self.assertIsNone(self.kept(doc))
 
-    def test_a_write_handed_on_before_it_stores_nothing_inside_it(self):
+    def test_a_write_handed_on_before_it_and_run_inside_it_is_lost(self):
+        """Dropped, not held: nothing is stored inside the block, nor after it."""
         doc = self.doc()
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
             self.assertTrue(ocr_keep.keep(doc, 'MADE UP TEXT', source='other'))
@@ -399,4 +487,11 @@ class TestWritesRefused(_Base):
         with self.committed():
             self.assertTrue(ocr_keep.keep(doc, 'MADE UP AFTER', source='other'))
         self.assertEqual(self.kept(doc).text, 'MADE UP AFTER')
+        self.assertEqual(ocr_keep._refusing, 0)
+        self.assertNotIn('save', vars(ApplicantDocumentOcrText))   # back to the inherited Model.save
+
+    def test_restored_when_the_job_raises(self):
+        with self.assertRaises(ValueError), ocr_keep.writes_refused('a made up job'):
+            raise ValueError('made up')
+        self.assertNotIn('save', vars(ApplicantDocumentOcrText))
         self.assertEqual(ocr_keep._refusing, 0)
