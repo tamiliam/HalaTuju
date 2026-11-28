@@ -6,10 +6,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { updateScholarshipDetails, confirmScholarshipApplication, getScholarshipApplication, type ScholarshipApplication, type StudentProfile } from '@/lib/api'
-import {
-  applicationToDetailsForm, buildDetailsPayload, setOnboardingReturn,
-  showsActionCentre, type DetailsFormState,
-} from '@/lib/scholarship'
+import { setOnboardingReturn, showsActionCentre } from '@/lib/scholarship'
+import { applicationToDetailsForm, buildDetailsPayload, type DetailsFormState } from '@/lib/scholarshipDetails'
 import { firstTooLongField } from '@/lib/applyTooLong'
 import {
   STORY_FIELD_LABEL_KEYS,

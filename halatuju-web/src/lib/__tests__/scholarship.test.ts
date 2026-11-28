@@ -16,9 +16,6 @@ import {
   STPM_STREAMS,
   UNCERTAINTY_REASONS,
   nricChanged,
-  emptyDetailsForm,
-  applicationToDetailsForm,
-  buildDetailsPayload,
   DOC_TYPES,
   INCOME_PROOF_TYPES,
   formatFileSize,
@@ -36,6 +33,7 @@ import {
   liveApplications,
   LIVE_APPLICATION_STATES,
 } from '@/lib/scholarship'
+import { emptyDetailsForm, applicationToDetailsForm, buildDetailsPayload } from '@/lib/scholarshipDetails'
 import {
   documentRequirement,
   questionRequirement,
