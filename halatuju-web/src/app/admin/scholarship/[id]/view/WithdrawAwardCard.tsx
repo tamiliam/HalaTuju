@@ -24,6 +24,7 @@ import { formatDate } from '@/lib/formatDate'
 
 import { ReasonBox } from '@/components/admin/ReasonBox'
 import type { T } from './shared'
+import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 
 const K = 'admin.scholarship.withdrawAward'
 /** The server's `TEXT_MAX`: an explanation or a refusal reason past it is refused, never cut. */
@@ -80,7 +81,7 @@ const STATUS_TONE: Record<NonNullable<AwardWithdrawalRequest['status']>, Tone> =
 function Pill({ tone, children }: { tone: Tone; children: string }) {
   return (
     <span data-testid="withdrawal-pill"
-      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${TONE[tone]}`}>{children}</span>
+      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${PHONE_PILL_SM} ${TONE[tone]}`}>{children}</span>
   )
 }
 

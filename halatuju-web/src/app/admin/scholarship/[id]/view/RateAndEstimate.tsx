@@ -17,6 +17,7 @@ import {
   showsEstimateCard,
 } from '@/lib/officerCockpit'
 import { reportingDateBoxShown } from '@/lib/cockpitTrail'
+import { PHONE_PILL } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
@@ -124,7 +125,7 @@ export function RateAndEstimate({
             decisionLocked ? (
               <div key={fact} className="flex flex-wrap items-center justify-between gap-2 py-2.5 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:p-2.5">
                 <span className="text-sm font-medium text-ground-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${PHONE_PILL} ${
                   officerVerdict[fact] === 'pass' ? 'bg-positive-100 text-positive-700'
                   : officerVerdict[fact] === 'fail' ? 'bg-critical-100 text-critical-700' : 'bg-ground-100 text-ground-500'}`}>
                   {officerVerdict[fact] === 'pass' ? t('admin.scholarship.recordVerdict.factPass')
@@ -144,7 +145,7 @@ export function RateAndEstimate({
                     id={`rate-fact-${fact}-pass`}
                     onClick={() => { setFailReason(fact, ''); setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'pass' ? '' : 'pass' })) }}
                     disabled={!canWrite}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                    className={`rounded-full border px-3 py-1 text-xs font-medium ${PHONE_PILL} ${
                       officerVerdict[fact] === 'pass'
                         ? 'border-positive-fill bg-positive-fill text-positive-fill-ink'
                         : 'border-ground-300 text-ground-600 hover:border-positive-400'
@@ -160,7 +161,7 @@ export function RateAndEstimate({
                       setOfficerVerdict((v) => ({ ...v, [fact]: failing ? 'fail' : '' }))
                     }}
                     disabled={!canWrite}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                    className={`rounded-full border px-3 py-1 text-xs font-medium ${PHONE_PILL} ${
                       officerVerdict[fact] === 'fail'
                         ? 'border-critical-fill bg-critical-fill text-critical-fill-ink'
                         : 'border-ground-300 text-ground-600 hover:border-critical-400'
@@ -179,7 +180,7 @@ export function RateAndEstimate({
                           aria-pressed={(failReasons[fact] || DEFAULT_FAIL_REASON) === code}
                           onClick={() => setFailReason(fact, code)}
                           disabled={!canWrite}
-                          className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                          className={`rounded-full border px-3 py-1 text-xs font-medium ${PHONE_PILL} ${
                             (failReasons[fact] || DEFAULT_FAIL_REASON) === code
                               ? 'border-brand-fill bg-brand-fill text-brand-fill-ink'
                               : 'border-ground-300 text-ground-600 hover:border-ground-500'

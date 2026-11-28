@@ -1351,11 +1351,16 @@ const PILL_SITES: Record<string, number> = {
   'src/components/RequirementsCard.tsx': 4, 'src/components/CourseCard.tsx': 1,
   // Owner 2026-11-23: the list gains the rejection chip (+1); the header loses the birth-state banner (-1).
   // Owner 2026-11-25: the list shows the status only, the chip is gone again (-1).
-  'src/app/admin/scholarship/page.tsx': 3, 'src/app/admin/scholarship/[id]/view/CockpitHeader.tsx': 4,
+  // Editor fixes (27 Nov): the case page sweep adds the bucket count badge to the header (+1).
+  'src/app/admin/scholarship/page.tsx': 3, 'src/app/admin/scholarship/[id]/view/CockpitHeader.tsx': 5,
   'src/app/admin/organisation/team/page.tsx': 1, 'src/app/sponsor/(portal)/page.tsx': 2,
   'src/app/sponsor/(portal)/my-students/[id]/page.tsx': 2, 'src/app/sponsor/(portal)/students/page.tsx': 2,
   'src/components/admin/ScholarActivity.tsx': 1,   // sprint P1: the Activity tab's All · Notes · System filter
-  'src/app/admin/scholarship/[id]/view/FactsInDoubt.tsx': 1,   // LL2b: the "AI said" / "Reviewer said" pills
+  'src/app/admin/scholarship/[id]/view/FactsInDoubt.tsx': 2,   // LL2b: the "AI said" / "Reviewer said" pills; + the QC Pass/Fail choice
+  // Editor fixes (27 Nov): every text pill on the case page (casePagePills.test.ts sweeps for new ones).
+  'src/app/admin/scholarship/[id]/view/RateAndEstimate.tsx': 4, 'src/app/admin/scholarship/[id]/view/DocumentsDrawer.tsx': 4,
+  'src/app/admin/scholarship/[id]/view/OutstandingPanel.tsx': 1, 'src/app/admin/scholarship/[id]/view/PostAwardPanels.tsx': 6,
+  'src/app/admin/scholarship/[id]/view/WithdrawAwardCard.tsx': 1, 'src/components/source/shared.tsx': 1,
 }
 describe('rule 17 — pills on a phone use the shared pill style', () => {
   const lib = readWeb('src/lib/phonePill.ts', 'the one home of rule 17')

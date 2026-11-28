@@ -5264,7 +5264,7 @@
         "mayAlreadyBeSaved": "Your decision may already be saved. Reload the page and check before pressing again.",
         "finaliseNoInterview": "Submit the interview findings before saving an assessment.",
         "rateTitle": "Reviewer Assessment",
-        "rateHelp": "Pass = yes, this is true. Fail = no, or not proven.",
+        "rateHelp": "You are assessing the student: mark Pass if this fact is true for them, and Fail if it is not true or not proven.",
         "failedAcceptWarn": "One fact failed. Do you want to accept?",
         "failWhy": "Why?",
         "failReasonLabel": "Reason",
@@ -5316,7 +5316,7 @@
           "help": "The reviewer failed these facts. Either the AI had passed the fact, or the reviewer still recommended the student. You may give your own verdict on each fact. It is optional.",
           "aiSaid": "AI said",
           "reviewer": "Reviewer",
-          "yourVerdict": "Your verdict"
+          "yourVerdict": "QC's verdict"
         }
       },
       "caveats": {

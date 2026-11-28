@@ -30,6 +30,7 @@ import type {
 import type { BursaryAgreement } from '@/lib/api'
 
 import type { T } from './shared'
+import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 
 export function PostAwardPanels({
   app, t, busy, isSuper, canWrite, canTranche, canClosePreAward, mayOpenFile,
@@ -99,7 +100,7 @@ export function PostAwardPanels({
           data-testid="no-file-substate">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-ground-600">{t('admin.maintenance.title')}</span>
-            <span className="rounded-full bg-ground-100 px-2.5 py-0.5 text-xs font-semibold text-ground-700">
+            <span className={`rounded-full bg-ground-100 px-2.5 py-0.5 text-xs font-semibold text-ground-700 ${PHONE_PILL_SM}`}>
               {t(`admin.maintenance.substate.${app.maintenance_substate}`)}
             </span>
           </div>
@@ -163,7 +164,7 @@ export function PostAwardPanels({
                 {t('admin.scholarship.bursary.title')}
               </h2>
               {bursary?.status && (
-                <span className="rounded-full border border-ground-200 px-2.5 py-0.5 text-xs font-medium text-ground-600">
+                <span className={`rounded-full border border-ground-200 px-2.5 py-0.5 text-xs font-medium text-ground-600 ${PHONE_PILL_SM}`}>
                   {bursary.status}
                 </span>
               )}
@@ -233,7 +234,7 @@ export function PostAwardPanels({
                 {t('admin.disbursement.title')}
               </h2>
               {released > 0 && (
-                <span className="rounded-full border border-positive-200 bg-positive-50 px-2.5 py-0.5 text-xs font-medium text-positive-700">
+                <span className={`rounded-full border border-positive-200 bg-positive-50 px-2.5 py-0.5 text-xs font-medium text-positive-700 ${PHONE_PILL_SM}`}>
                   {t('admin.disbursement.totalReleased')} RM{released.toLocaleString()}
                 </span>
               )}
@@ -245,7 +246,7 @@ export function PostAwardPanels({
               <div className="space-y-2 md:rounded-lg md:border md:border-ground-100 md:bg-ground-50/60 md:p-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-ground-600">{t('admin.maintenance.title')}</span>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${PHONE_PILL_SM} ${
                     app.maintenance_substate === 'on_track' ? 'bg-positive-100 text-positive-700'
                     : app.maintenance_substate === 'probation' ? 'bg-caution-100 text-caution-700'
                     : app.maintenance_substate === 'on_hold' ? 'bg-critical-100 text-critical-700'
@@ -278,7 +279,7 @@ export function PostAwardPanels({
                           {d.label || `${t('admin.disbursement.tranche')} ${d.sequence}`}
                         </span>
                         <span className="text-sm font-semibold text-ground-900">RM{Math.round(Number(d.amount)).toLocaleString()}</span>
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${toneClass}`}>
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${PHONE_PILL_SM} ${toneClass}`}>
                           {t(`admin.disbursement.status.${d.status}`)}
                         </span>
                       </div>
@@ -352,7 +353,7 @@ export function PostAwardPanels({
           {app.status === 'closed' ? (
             <div className="space-y-1">
               <p className="flex items-center gap-1.5 text-sm text-ground-700">
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${PHONE_PILL_SM} ${
                   app.closure_reason === 'graduated' || app.closure_reason === 'completed'
                     ? 'bg-positive-100 text-positive-700' : 'bg-ground-200 text-ground-600'}`}>
                   {t(`admin.closure.reason.${app.closure_reason}`)}

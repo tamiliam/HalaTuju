@@ -63,7 +63,7 @@ export const roleQc: ManualChapter = {
         and the AI did not agree: the AI had passed the fact when the reviewer decided and the reviewer said
         Fail, or the reviewer said Fail but still recommended the student. Each fact has three rows: <strong>AI said</strong> (the same word as
         the AI prediction card for that fact), <strong>Reviewer</strong> (Fail, with the reviewer&rsquo;s reason
-        in brackets when one was given) and a <strong>Your verdict</strong> row with two buttons, <strong>Pass</strong> and <strong>Fail</strong>.
+        in brackets when one was given) and a <strong>QC&rsquo;s verdict</strong> row with two buttons, <strong>Pass</strong> and <strong>Fail</strong>.
         The word beside <strong>AI said</strong> is what the AI says now, and in a few cases it differs from what
         the AI said when the reviewer decided (for example, a new document arrived after that).
         Giving a verdict is optional. Nothing is chosen at the start; tap a button to choose it, tap the chosen

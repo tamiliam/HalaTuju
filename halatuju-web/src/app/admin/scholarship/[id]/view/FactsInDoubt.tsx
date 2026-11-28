@@ -5,7 +5,7 @@
  * SERVER put in doubt (`second_look.in_doubt`: the AI said green and the reviewer failed it, or the
  * reviewer failed it and still chose Approve). The QC may answer each fact with Pass or Fail; nothing
  * is chosen at the start, a second tap on the chosen button clears it, and a fact left alone records
- * nothing. Each fact shows three rows: AI said, Reviewer (Fail and its reason) and Your verdict. The
+ * nothing. Each fact shows three rows: AI said, Reviewer (Fail and its reason) and QC's verdict. The
  * reviewer's overall Recommend or Decline is not repeated here (the QC panel shows it). It never blocks,
  * delays or confirms a decision.
  *
@@ -15,7 +15,7 @@
  */
 import type { AdminScholarshipDetail, SecondLookFact } from '@/lib/admin-api'
 import { BAND_TONE, factBandOf, type FactBand, type FactTileTone } from '@/lib/cockpitVerdict'
-import { PHONE_PILL_SM } from '@/lib/phonePill'
+import { PHONE_PILL, PHONE_PILL_SM } from '@/lib/phonePill'
 
 import type { T } from './shared'
 
@@ -42,7 +42,7 @@ const TONE_PILL: Record<FactTileTone, string> = {
   red: `${PILL} border-critical-200 bg-critical-50 text-critical-700`,
 }
 const FAIL = `${PILL} border-critical-200 bg-critical-50 text-critical-700`
-const CHOICE = 'rounded-full border px-3 py-1 text-xs font-medium disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center'
+const CHOICE = `rounded-full border px-3 py-1 text-xs font-medium disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center ${PHONE_PILL}`
 
 /** The QC's Pass / Fail row (the look of the reviewer's own fact control), as a label + value pair
  *  inside the fact's grid. ONE place for its markup. Pass = 'disagreed', Fail = 'agreed'. */

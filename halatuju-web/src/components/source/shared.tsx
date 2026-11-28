@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
+import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { contractStageKey, stageLabelKey, stageTone } from '@/lib/sourceConsole'
 import type { SourceContract } from '@/lib/admin-api'
 
@@ -51,7 +52,7 @@ export const witnessHref = (id: number) => `/admin/scholarship/${id}?step=witnes
 
 export function StageBadge({ stage, t }: { stage: string; t: T }) {
   return (
-    <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${stageTone(stage)}`}>
+    <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${PHONE_PILL_SM} ${stageTone(stage)}`}>
       {t(stageLabelKey(stage))}
     </span>
   )

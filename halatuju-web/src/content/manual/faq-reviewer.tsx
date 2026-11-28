@@ -266,8 +266,9 @@ export const REVIEWER_FAQ: QA[] = [
       a: <>The <strong>Pass/Fail</strong> on each fact records whether <em>that fact is right for the student</em>.
         <strong> Approve / Decline</strong> is your actual recommendation. They&rsquo;re separate: you can Pass all
         four facts and still <strong>Decline</strong> — for instance, income verified but above the gift&rsquo;s income cut-off.
-        A Pass or Fail tap records the student&rsquo;s fact; it does not rate the AI. <strong>Pass</strong> = yes,
-        this is true. <strong>Fail</strong> = no, or not proven. Every Fail asks <strong>Why?</strong>, with
+        A Pass or Fail tap records the student&rsquo;s fact; it does not rate the AI. You are assessing
+        the student: mark <strong>Pass</strong> if this fact is true for them, and <strong>Fail</strong> if it is
+        not true or not proven. Every Fail asks <strong>Why?</strong>, with
         <em> Other</em> already chosen; change it if a better reason fits. If you Approve
         while a fact is on Fail, you see a warning, but you can still go ahead. QC then takes a second look at
         those facts (a Fail on a green fact, or a Fail you still approved) and may give their own

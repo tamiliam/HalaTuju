@@ -12,6 +12,7 @@ import { LATE_HIGHER_ASKS, itemCopy, localiseParams, titleSourceFor } from '@/li
 import type { AdminScholarshipDetail, AdminResolutionItem } from '@/lib/admin-api'
 
 import { REQUEST_CATEGORIES, REQ_CAT, type ResolvedReq, type T } from './shared'
+import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 
 /** The refusal codes `resolution-items/` answers with that have their own words. */
 const REQUEST_REFUSAL_CODES = ['querying_closed', 'prompt_required', 'bad_kind', 'bad_member', 'results_kind_required']
@@ -84,7 +85,7 @@ export function OutstandingPanel({
           {(() => {
             const n = app.resolution_items?.length ?? 0
             return n > 0 ? (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-caution-100 text-caution-700">
+              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold bg-caution-100 text-caution-700 ${PHONE_PILL_SM}`}>
                 {n} {n === 1 ? t('admin.scholarship.outstanding.itemOne') : t('admin.scholarship.outstanding.itemMany')}
               </span>
             ) : null

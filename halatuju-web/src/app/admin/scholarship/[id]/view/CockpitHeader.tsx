@@ -18,7 +18,7 @@ import { headerTimeline } from '@/lib/officerCockpit'
 import { stageStatus } from '@/lib/closeOffer'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
-import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
+import { PHONE_PILL_SM, PHONE_PILL_XS } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { SCHOLARSHIP_LIST_NAV, useListNav } from '@/lib/listNav'
 import { useListSteps } from '@/lib/useListSteps'
 
@@ -107,7 +107,7 @@ export function CockpitHeader({
             </button>
           )}
           {app.bucket && (
-            <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-caution-100 px-1.5 text-xs font-bold text-caution-700">{app.bucket}</span>
+            <span className={`inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-caution-100 px-1.5 text-xs font-bold text-caution-700 ${PHONE_PILL_XS}`}>{app.bucket}</span>
           )}
           {app.qualification && (
             <span className={`rounded-full border border-ground-200 px-2 py-0.5 text-xs font-medium text-ground-500 ${PHONE_PILL_SM}`}>{isThirdRoute(app.qualification) ? t(`admin.scholarship.qualificationLabel.${app.qualification}`) : app.qualification.toUpperCase()}</span>

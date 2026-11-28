@@ -23,6 +23,7 @@ import type { AdminScholarshipDetail, AdminApplicantDocument } from '@/lib/admin
 import type { ViewerDoc } from '@/components/DocViewer'
 
 import { missingHigherKind, type T } from './shared'
+import { PHONE_PILL_SM, PHONE_PILL_XS } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 
 export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunVision }: {
   app: AdminScholarshipDetail
@@ -172,7 +173,7 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                         {docLabel(d)}
                       </span>
                     )}
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${pillClass(p)}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${PHONE_PILL_SM} ${pillClass(p)}`}>
                       {t(`admin.scholarship.docsDrawer.pill.${p}`)}
                     </span>
                     {/* Capture confidence: read deterministically (fixed labels) or by AI? Shown on
@@ -195,7 +196,7 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                       return (
                         <span
                           title={t(`admin.scholarship.docsDrawer.capture.${cap}.hint`)}
-                          className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
+                          className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${PHONE_PILL_XS} ${
                             cap === 'deterministic'
                               // A CATEGORY: how the value was produced — read deterministically, or
                               // derived by a model. Two kinds, so the neutral one keeps the ground
@@ -301,7 +302,7 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                 <span className="text-sm font-medium text-ground-500">{slotLabel(s.docType, s.member)}</span>
                 <span className="text-xs md:text-[11px] text-ground-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
               </div>
-              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-critical-100 text-critical-600">
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold bg-critical-100 text-critical-600 ${PHONE_PILL_SM}`}>
                 {t('admin.scholarship.docsDrawer.pill.missing')}
               </span>
             </li>
@@ -359,7 +360,7 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                             </span>
                             <span className="text-xs md:text-[11px] text-ground-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
                           </div>
-                          <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-critical-100 text-critical-600">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold bg-critical-100 text-critical-600 ${PHONE_PILL_SM}`}>
                             {t('admin.scholarship.docsDrawer.pill.missing')}
                           </span>
                         </li>

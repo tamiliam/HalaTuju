@@ -11,6 +11,9 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import type { SecondLook } from '@/lib/admin-api'
+import en from '@/messages/en.json'
+import ms from '@/messages/ms.json'
+import ta from '@/messages/ta.json'
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 import { buildApplicationDetail } from '@/test/adminApplicationDetail'
 import { QcPanel } from './view/QcPanel'
@@ -53,7 +56,20 @@ const accept = () => fireEvent.click(screen.getByRole('button', { name: 'admin.s
 const sent = (api: ReturnType<typeof asQc>['api']) => api.recordQcDecision.mock.calls[0][1]
 
 describe('LL2b: the block on the QC panel', () => {
-  it('lists each fact in doubt: AI said, Reviewer, Your verdict, in that order', async () => {
+  it('the third row reads "QC\'s verdict" in English (editor fixes, 27 Nov)', () => {
+    expect(en.admin.scholarship.qcDecision.secondLook.yourVerdict).toBe("QC's verdict")
+    expect(en.admin.scholarship.recordVerdict.rateHelp).toBe(
+      'You are assessing the student: mark Pass if this fact is true for them, and Fail if it is not true or not proven.')
+  })
+
+  it('the Malay and Tamil files carry their own words, not the English copied in', () => {
+    for (const m of [ms, ta]) {
+      expect(m.admin.scholarship.qcDecision.secondLook.yourVerdict).not.toBe(en.admin.scholarship.qcDecision.secondLook.yourVerdict)
+      expect(m.admin.scholarship.recordVerdict.rateHelp).not.toBe(en.admin.scholarship.recordVerdict.rateHelp)
+    }
+  })
+
+  it("lists each fact in doubt: AI said, Reviewer, QC's verdict, in that order", async () => {
     asQc(TWO)
     await loaded()
     expect(within(block()!).getByText(`${K}.title`)).toBeTruthy()

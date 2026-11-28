@@ -5264,7 +5264,7 @@
         "mayAlreadyBeSaved": "Keputusan anda mungkin sudah disimpan. Muat semula halaman dan semak sebelum menekan sekali lagi.",
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan penilaian.",
         "rateTitle": "Penilaian Penyemak",
-        "rateHelp": "Lulus = ya, ini benar. Gagal = tidak, atau tidak dibuktikan.",
+        "rateHelp": "Anda menilai pelajar: tandakan Lulus jika fakta ini benar bagi mereka, dan Gagal jika tidak benar atau tidak dibuktikan.",
         "failedAcceptWarn": "Satu fakta gagal. Adakah anda mahu menerima?",
         "failWhy": "Mengapa?",
         "failReasonLabel": "Sebab",
@@ -5316,7 +5316,7 @@
           "help": "Penyemak menggagalkan fakta ini. Sama ada AI telah meluluskan fakta itu, atau penyemak tetap mengesyorkan pelajar itu. Anda boleh memberikan keputusan anda sendiri bagi setiap fakta. Ini tidak wajib.",
           "aiSaid": "Kata AI",
           "reviewer": "Penyemak",
-          "yourVerdict": "Keputusan anda"
+          "yourVerdict": "Keputusan QC"
         }
       },
       "caveats": {

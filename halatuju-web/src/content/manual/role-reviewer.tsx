@@ -235,8 +235,9 @@ export const roleReviewer: ManualChapter = {
       title: 'Your decision',
       body: (
         <>In the <strong>Reviewer Assessment</strong> box you tap <strong>Pass</strong> or
-        <strong> Fail</strong> for each fact. <strong>Pass</strong> = yes, this is true. <strong>Fail</strong> = no,
-        or not proven. It is separate from your recommendation.
+        <strong> Fail</strong> for each fact. You are assessing the student: mark <strong>Pass</strong> if this fact
+        is true for them, and <strong>Fail</strong> if it is not true or not proven. It is separate from your
+        recommendation.
           <span className="mt-2 block">Each fact is a statement you are asked to prove:</span>
           <span className="mt-1 block"><strong>Identity</strong> — the student is who they say they are.</span>
           <span className="block"><strong>Results</strong> — the results are real.</span>

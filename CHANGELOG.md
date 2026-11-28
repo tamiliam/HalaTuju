@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: QC's verdict wording, assessing help line, case page phone pills (2026-11-28)
+
+The cosmetic part of the editor sprint (phase 3), split out on the owner's word (28 Nov) so it can ship before the rest. Web only; no API change, no migration, no verdict change.
+- **QC:** "Your verdict" reads "QC's verdict"; the Reviewer Assessment help line, Guide (reviewer, QC and org admin) and FAQ use one sentence: "You are assessing the student: mark Pass if this fact is true for them, and Fail if it is not true or not proven."
+- **Case page phone pills:** the remaining text pills on the case page (rate and estimate, documents drawer, outstanding, post-award, withdraw card, cockpit bucket badge, facts in doubt, source stage) use the phone pill classes; rule 17's ledger counts them, and a new sweep (casePagePills.test.ts) fails on any new rounded-full text pill. Dots, the diff mark and calendar day cells stay round.
+- The criteria editor layout and the income-at-the-line rule (ruling A) stay on branch editor-fixes for a later train.
+
 ### fix: no "Justification and conclusion" heading on the recommendation box (2026-11-28)
 
 Owner request, 28 Nov: remove the "Justification and conclusion" heading from the recommendation box (`DecisionCard.tsx`). The read-only view (a decided case) loses the heading outright. The editable view keeps the label for screen readers only (`sr-only`, now tied to the box with `htmlFor="verdict-reason"`), so the box keeps its accessible name. The i18n key `admin.scholarship.recordVerdict.reasonLabel` stays in use. Display only; no API change. New tests in `view.closed.test.tsx`: no visible heading on a decided case; on an open case the box is still found by its name and the label is screen-reader only.
