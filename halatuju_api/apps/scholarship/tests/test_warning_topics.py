@@ -150,12 +150,21 @@ class TheTaggedDisplayTests(SimpleTestCase):
         doc = SimpleNamespace(doc_type='salary_slip', vision_fields=None)
         self.assertIs(shown_warnings(doc, self.WS), self.WS)      # no stored read: not seen as a declaration
 
-    def test_doubt_a_signing_date_note_still_shows_under_its_code(self):
-        """OWNER FORK, pinned as built: "signing" holds the keep stem "sign", so a declaration's "the date is
-        the signing date, not a pay period" note SHOWS even when tagged pay_period_missing."""
+    def test_a_signing_date_pay_period_note_is_hidden_under_its_code(self):
+        """"signing" holds the keep stem "sign", but a date phrase that only says WHEN it was signed is not a
+        signature note: the declaration's "date is the signing date, not a pay period" note hides."""
         w = 'The date shown is the declaration signing date rather than a specific pay period'
         self.assertTrue(has_keep_word(w))
-        self.assertEqual(shown_warnings(_doc(['pay_period_missing']), [w]), [w])
+        self.assertEqual(shown_warnings(_doc(['pay_period_missing']), [w]), [])
+        for phrase in ('date of signing', 'date signed', 'signed date', 'signed on'):
+            self.assertEqual(shown_warnings(_doc(['pay_period_missing']), [f'The {phrase} is not a pay period']), [],
+                             phrase)
+
+    def test_signature_notes_still_show_under_a_payslip_only_code(self):
+        for w in ('The declaration is not signed', 'No signature or stamp', 'Signature missing',
+                  'The signing date appears altered', 'Unsigned'):
+            for code in ('pay_period_missing', 'employer_missing'):
+                self.assertEqual(shown_warnings(_doc([code]), [w]), [w], (w, code))
 
 
 class OnlyTheReaderAndTheDisplayNameTheTopicsTests(SimpleTestCase):

@@ -401,6 +401,12 @@ def _keeps(s: str) -> bool:
     return any(k in s for k in _KEEP_STEMS) or bool(_KEEP_WORDS.search(s))
 
 
+#: Date phrases that say WHEN a paper was signed: "signing" holds the keep stem "sign", so a "the date is the
+#: signing date, not a pay period" note would always show; the tagged path drops these before the keep check.
+_SIGNING_DATE_PHRASES = re.compile(
+    r"\b(?:signing\s+date|date\s+of\s+signing|date\s+signed|signed\s+date|signed\s+on)\b")
+
+
 def has_keep_word(warning) -> bool:
     """True when the warning names anything that always keeps it (``_KEEP_STEMS``, ``_KEEP_WORDS``):
     tampering, a chop or signature, the applicant, a name or an IC, an unreadable or covered part, ..."""
@@ -438,5 +444,6 @@ def shown_warnings(doc, warnings):
     stored = getattr(doc, 'vision_fields', None)
     topics = stored.get(KEY) if isinstance(stored, dict) else None
     if valid_topics(warnings, topics):
-        return [w for w, t in zip(warnings, topics) if t not in PAYSLIP_ONLY_TOPICS or has_keep_word(w)]
+        return [w for w, t in zip(warnings, topics)
+                if t not in PAYSLIP_ONLY_TOPICS or _keeps(_SIGNING_DATE_PHRASES.sub(' ', _normalised(w)))]
     return [w for w in warnings if not payslip_only_warning(w)]
