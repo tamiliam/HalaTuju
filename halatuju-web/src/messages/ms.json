@@ -10354,7 +10354,7 @@
       "postSpmTitle": "Program ini memerlukan keputusan selepas SPM",
       "postSpmBody": "Program ini untuk pelajar yang sudah ada keputusan STPM, Matrikulasi, Asasi atau Diploma. Kami hanya ada keputusan SPM anda.",
       "postSpmAdd": "Jika anda ada keputusan ini, tambahkannya dengan menekan pautan “{link}” di atas. Jika anda belum ada keputusan ini, program ini bukan untuk anda kali ini.",
-      "pngkOnly": "Untuk program ini, kami menyemak PNGK anda, bukan gred SPM anda."
+      "pngkOnly": "Untuk program ini, kami menyemak PNGK anda, bukan gred SPM."
     },
     "sample": {
       "link": "See a sample",
