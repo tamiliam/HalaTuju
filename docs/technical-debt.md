@@ -10098,6 +10098,30 @@ Sol's Malay and Tamil read. *(C - S)*
 
 **Raised 2026-11-28 (apply bundle trim review).** The first-load trim made `RESULTS_FIELDS` in `halatuju-web/src/lib/applyDraft.ts` a plain `string[]` instead of an `as const` tuple, so the type check no longer catches a misspelt field name. The exact-list test in `applyDraft.test.ts` still covers it. Logged, not built. **Fix:** type the list back to the draft's field names (a cast on the split result costs no bundle size), and keep the exact-list test. *(A - S)*
 
+### [TD-790] The per-person income reasons show no decimals - low
+
+**Raised 2026-11-28 (editor fixes, Opus review round 2, item a).** Under ruling A a household exactly on the per-person line passes and 1 sen above fails, but the refusal and pass reasons show the per-person figure with no decimals, so a household a few sen over the line may read as if it were on it. Wording only; no verdict moves. **Fix:** print the per-person figure (and its line) to 2 decimals in the gate reasons of both engines (`criteria.income_ok`, `shortlisting._income_ok`), with a test on a 1-sen-over case. *(A - S)*
+
+### [TD-791] The criteria editor layout tests check class names - low
+
+**Raised 2026-11-28 (editor fixes, Opus review round 2, item b).** The phase 1 layout tests in `CriteriaEditor.test.tsx` assert Tailwind class names (row widths, right-hand placement), so a harmless style change breaks them and a real layout regression with the same classes passes. **Fix:** assert structure and roles (the join control sits in the row's trailing slot; the grade box shares the shared width token), or move the layout check to the mobile-check screenshots. *(W - S)*
+
+### [TD-792] The server's canonical tree does not treat a one-item join as standard - medium
+
+**Raised 2026-11-28 (editor fixes, Opus review round 2, item c).** The web's `criteriaTree.canonical()` reads a one-item results / income section as its standard join ("own" / "any"); the server's `criteria_write._canonical` (criteria_write.py line 143) does not. A stored older tree with a left-over join and the same tree saved from the editor compare as different on the server, so a save can meet a 409 (stale digest) or skip the hold guard. No verdict effect (a one-item section answers the same under any join). **Fix:** normalise a one-item section's join in `_canonical` exactly as the client does, with a test that the two digests agree. *(A - S)*
+
+### [TD-793] The verdict fingerprint moves on a one-item "all" to "any" normalise - low
+
+**Raised 2026-11-28 (editor fixes, Opus review round 2, item d).** `verdict_context.intake_values` (verdict_context.py line 312) hashes the income section's join as `income_mode` when it is not 'any'. A one-item income section stored as 'all' that the editor re-saves as 'any' moves the fingerprint although no answer can change. No verdict effect; it can only make a case look changed. **Fix:** hash `income_mode` only when the income section has two or more items (or hash the normalised join), with a test. Needs a `VERDICT_ENGINE_VERSION` bump (verdict_context is in the register). *(A - S)*
+
+### [TD-794] Switching on a second item keeps an old one-item join - low
+
+**Raised 2026-11-28 (editor fixes, Opus review round 2, item e).** `criteriaTree.treeToState` keeps the join a stored one-item section carries. When the admin switches a second item on, the editor shows (and would save) that left-over join rather than the standard one, so the gift may get a join the admin never chose. **Fix:** on loading a one-item section, set the join to its standard value in the state (as `stateToTree` now saves it), with a jest test that switching a second item on shows the standard join. *(W - S)*
+
+### [TD-795] No test pins "decided cases never change" under ruling A - low
+
+**Raised 2026-11-28 (editor fixes, Opus review round 2, item f).** The decisions entry says a decided (released) case keeps its verdict under ruling A, and `TestRescoreAppliesRulingAOnTheLine` pins the pending side, but no test shows a decided case exactly on the per-person line keeping its stored verdict after `rescore_pending_decisions`. **Fix:** add that test beside `TestRescoreAppliesRulingAOnTheLine` in `test_criteria_storage.py`. *(A - S)*
+
 ### [TD-796] Topic codes are matched to warnings by position only - low
 
 **Raised 2026-11-28 (case 1048, review round 1).** The salary-slip read returns `warnings` and `warning_topics` as two parallel lists, and `declaration_name.shown_warnings` pairs them by position. A check catches a wrong length or an unknown code (the word filter then runs for the whole list), but not two codes in the wrong order: a model that tags note 2 with note 1's code could hide a payslip-only note it should have shown, or show one it could hide. The round-1 rule limits the harm (a hidden note must also carry an absence word and no keep word), and this is display only (no warning feeds a verdict). **Fix:** ask the read for one list of {text, topic} objects, so a code cannot drift from its note; or, cheaper, check that each code's own words appear in its note. *(A-S)*
