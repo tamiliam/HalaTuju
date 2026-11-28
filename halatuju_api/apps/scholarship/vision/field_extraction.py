@@ -14,6 +14,7 @@ from ..read_errors import EMPTY_ANSWER, OCR_SERVICE_FAILED, is_ai_service_error,
 from .authenticity import add_read_authenticity
 from .judge import _any_field_filled, doc_student_verdict
 from .ocr import _doc_usage_ctx
+from .warning_topics import KEY as _WARNING_TOPICS_KEY
 from .. import vision as _v   # seams resolve on the package: one patch target reaches every caller
 
 logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name as before the split
@@ -181,10 +182,11 @@ def _offer_context(doc, page1_text):
 
 
 #: Keys of a read kept on the stored record beside its fields (S4: the offer reader's version + inputs;
-#: TD-735: a transcript's display-only year, `exam_year_read`, which no score or empty-read check sees).
+#: TD-735: a transcript's display-only year, `exam_year_read`, which no score or empty-read check sees;
+#: case 1048: the salary slip's display-only `warning_topics`, one code per warning).
 _EX_KEPT = ('parser_version', 'stpm_rows_from_entry', 'stpm_rows_sign_from_point', 'approval_read_error',
             'approval_read_until', 'offer_reader_version', 'offer_reader_inputs', '_slip_ocr_diag',
-            'exam_year_read')
+            'exam_year_read', _WARNING_TOPICS_KEY)
 
 
 

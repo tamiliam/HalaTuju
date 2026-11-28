@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: case 1048 - topic-coded salary-slip warnings (2026-11-28, branch warning-topics, not pushed)
+
+The word filter for a declaration's payslip-only notes kept failing, because the AI words its warnings differently on every Re-run. Owner's choice (28 Nov): the reader tags each warning with a topic code, and the display hides by code. Api only; no migration; display only (no verdict, chip, score, genuineness or money reads a topic).
+- **Reader (salary slip only):** new `vision/warning_topics.py` (10 codes; 5 are payslip-only: employer, pay period, take-home or gross missing, not a payslip). The salary-slip schema asks for `warning_topics` (enum) and the prompt gains one line. When the clean-up drops a warning, its topic goes with it; topics that were invalid on arrival are kept as they came, or dropped once a warning is dropped (a cut list could line up by accident). The topics never land in `fields`, and they are stored beside `warnings` on the read.
+- **Display:** `declaration_name.shown_warnings` on a declaration in the salary-slip slot hides warning i only when its topic is payslip-only AND its text has no keep word (`has_keep_word`, the same `_KEEP_STEMS`/`_KEEP_WORDS`). If topics are missing, the wrong length or hold an unknown code, the word filter applies to the whole list; the two paths never mix. Other documents are unchanged.
+- **Guard:** only the reader modules, `declaration_name`, the register and the eval may name `warning_topics` (test, with a synthetic failing case).
+- **Versions:** `VERDICT_ENGINE_VERSION` 2026-11-28.1 to 2026-11-28.2; the register pins `warning_topics` KEY, PAYSLIP_ONLY_TOPICS and valid_topics for the verdict engine. No other model's digest moved (offer_reader's pinned `_drop_expected_warnings` is unchanged).
+- **Paid eval:** new `eval_warning_topics` command (dry run by default; `--run` needs `--limit` of at most 100 and `--max-cost-usd` of at most 1.00). It re-reads the newest stored AI salary-slip reads in memory (text OCR, then the new prompt), writes nothing, and prints counts and ids only: field changes, valid topics, tagged vs word-filter hides on declarations, and keep-word warnings tagged payslip-only.
+- **Tests:** new `test_warning_topics.py`; tagged cases in `test_declaration_name_close.py`.
+
 ### feat: the QC hand-off re-checks only what can still be fixed (2026-11-28)
 
 Owner ruling, 28 Nov ("1"). Case 513 (submitted, interviewing, quiz wiped by #81) saved its verdict on every Approve but never moved to QC. Migration: none. Services: api, web.

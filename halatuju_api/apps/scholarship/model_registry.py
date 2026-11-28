@@ -67,7 +67,7 @@ MODELS = {
             ('offer_signatures', ('_IIUM_EN', '_UA_NAMES')), ('offer_confirmations', ('_NO_PRIVATE_WING',
              '_POLY_DEPARTMENTS', 'CONFIRMATION_SEEN')), ('results_doc', ('_PRIVATE_ARM_PHRASES',
              '_norm_fold_upper_alnum', '_private_arm_offer'))) for n in names]
-        + [(f'{_APP}/fact_bands.py', 'HIGHER_RESULTS_UNREADABLE'), (f'{_APP}/offer_exact.py', 'ISSUER_PRINTS_NO_IC')],
+        + [(f'{_APP}/fact_bands.py', 'HIGHER_RESULTS_UNREADABLE'), (f'{_APP}/offer_exact.py', 'ISSUER_PRINTS_NO_IC')] + [(f'{_APP}/vision/warning_topics.py', n) for n in ('KEY', 'PAYSLIP_ONLY_TOPICS', 'valid_topics')],  # case 1048: shown_warnings' topic codes
     },
     'results_doc': {
         'constant': (f'{_G}/results_doc.py', 'MODEL_VERSION'),

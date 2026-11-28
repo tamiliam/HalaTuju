@@ -185,6 +185,15 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
     return warnings
 
 
+def drop_expected_warnings_aligned(doc_type: str, warnings: list, topics):
+    """``(warnings, topics)``: `_drop_expected_warnings` one warning at a time (each of its rules looks at one
+    warning alone, so the kept list is the same), and each dropped warning's topic dropped with it, so the
+    pairs stay aligned (case 1048, `warning_topics.keep_aligned`; topics not valid on arrival are not fixed)."""
+    from .warning_topics import keep_aligned
+    kept = [i for i, w in enumerate(warnings) if _drop_expected_warnings(doc_type, [w])]
+    return keep_aligned(list(warnings), topics, kept)
+
+
 # ── SPM results slip: grade / subject clean-up (OCR-first S5, 2026-11-20) ──────────────────────
 # 3.8 Flash wrote malformed grades on 26 of 98 slips in the paid eval: "Aplus", stray JSON, tab and
 # CJK characters. These map the KNOWN harmless variants onto the one spelling the academic engine

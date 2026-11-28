@@ -535,8 +535,10 @@ class NoDecisionCallerTests(SimpleTestCase):
     and call form; the test files are allowed."""
 
     ALLOWED = {'link_display.py', 'income_engine/declaration_name.py'}
-    #: The one other module that may import from declaration_name, and the one name it may take.
-    WARNINGS_ONLY = {'serializers/documents.py'}
+    #: The other modules that may import from declaration_name, and the exact names each may take: the
+    #: serializer's shown warnings, and (case 1048, 2026-11-28) the write-nothing topic eval's two word checks.
+    WARNINGS_ONLY = {'serializers/documents.py': ['shown_warnings'],
+                     'management/commands/eval_warning_topics.py': ['has_keep_word, payslip_only_warning']}
 
     def _sources(self):
         import pathlib
@@ -575,9 +577,9 @@ class NoDecisionCallerTests(SimpleTestCase):
                 continue
             for m in pattern.finditer(src):
                 importers.setdefault(rel, []).append((m.group(1) or m.group(0)).strip())
-        self.assertEqual(set(importers), self.WARNINGS_ONLY)
-        for rel in self.WARNINGS_ONLY:
-            self.assertEqual(importers[rel], ['shown_warnings'], rel)
+        self.assertEqual(set(importers), set(self.WARNINGS_ONLY))
+        for rel, names in self.WARNINGS_ONLY.items():
+            self.assertEqual(importers[rel], names, rel)
 
     def test_the_grep_would_catch_each_import_form(self):
         # The guard itself: each way to reach soften would be seen.
@@ -970,3 +972,29 @@ class TypeNoteAndSpecificPeriodTests(SimpleTestCase):
             data = ApplicantDocumentSerializer().to_representation(doc)
         self.assertEqual(data['vision_fields']['warnings'], [PayslipOnlyWarningTests.HANDWRITTEN])
         self.assertEqual(doc.vision_fields['warnings'], [self.LIVE, PayslipOnlyWarningTests.HANDWRITTEN])
+
+
+class TaggedTopicsTests(SimpleTestCase):
+    """Owner 2026-11-28: a tagged read hides by topic CODE; the keep words still win; an untagged read is the
+    word filter above, unchanged (every earlier round's fixtures carry no topics)."""
+
+    def _tagged(self, topics):
+        doc = _doc()
+        doc.vision_fields['warning_topics'] = topics
+        return doc
+
+    def test_the_live_1048_note_hides_by_its_code(self):
+        live = TypeNoteAndSpecificPeriodTests.LIVE
+        self.assertEqual(shown_warnings(self._tagged(['not_a_payslip']), [live]), [])
+
+    def test_every_earlier_keep_word_warning_still_shows_under_a_payslip_only_code(self):
+        keep = [w for w in PayslipOnlyWarningTests.MUST_KEEP + TypeNoteAndSpecificPeriodTests.KEEP
+                if declaration_name.has_keep_word(w)]
+        self.assertGreater(len(keep), 10)
+        self.assertEqual(shown_warnings(self._tagged(['employer_missing'] * len(keep)), keep), keep)
+
+    def test_the_typed_payslip_shows_everything_even_when_tagged(self):
+        doc = self._tagged(['not_a_payslip'])
+        doc.vision_fields['authenticity']['doc_seen'] = 'private'
+        ws = [TypeNoteAndSpecificPeriodTests.LIVE]
+        self.assertIs(shown_warnings(doc, ws), ws)

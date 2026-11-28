@@ -13,7 +13,8 @@ from django.conf import settings
 from ..gemini import cascade_failure, document_failure
 from ..read_errors import UNPARSEABLE_RESPONSE, model_rejected_document
 from .schemas import _DOC_HINTS, _FIELD_SCHEMAS
-from .sanitize import _drop_expected_warnings, _sanitize_extracted_fields
+from .sanitize import _drop_expected_warnings, _sanitize_extracted_fields, drop_expected_warnings_aligned
+from .warning_topics import KEY as _TOPICS_KEY, PROMPT_LINE as _TOPICS_LINE
 from .. import vision as _v   # seams resolve on the package: one patch target reaches every caller
 
 logger = logging.getLogger(__package__)   # 'apps.scholarship.vision', one name as before the split
@@ -173,7 +174,7 @@ def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[byt
     schema = _FIELD_SCHEMAS.get(doc_type)
     if schema is None:
         return {'fields': {}, 'warnings': [], 'error': f'no extractor for {doc_type}'}
-    hint = _DOC_HINTS.get(doc_type, '')
+    hint = _DOC_HINTS.get(doc_type, '') + (_TOPICS_LINE if doc_type == 'salary_slip' else '')   # case 1048
     doc_label = doc_type.replace('_', ' ')
     if image is not None:
         img, mime = _as_image_for_gemini(image, content_type)
@@ -202,6 +203,10 @@ def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[byt
     data = call(doc_read_cascade(doc_type))
     if '_error' in data:
         return {'fields': {}, 'warnings': [], 'error': data['_error']}
-    warnings = _drop_expected_warnings(doc_type, data.pop('warnings', []) or [])
-    data = _sanitize_extracted_fields(doc_type, data)
-    return {'fields': data, 'warnings': warnings, 'error': ''}
+    raw, topics = data.pop('warnings', []) or [], data.pop(_TOPICS_KEY, None)   # topics never land in fields
+    if doc_type != 'salary_slip':
+        warnings = _drop_expected_warnings(doc_type, raw)
+        return {'fields': _sanitize_extracted_fields(doc_type, data), 'warnings': warnings, 'error': ''}
+    warnings, topics = drop_expected_warnings_aligned(doc_type, raw, topics)   # case 1048: pairs stay aligned
+    out = {'fields': _sanitize_extracted_fields(doc_type, data), 'warnings': warnings, 'error': ''}
+    return {**out, _TOPICS_KEY: topics} if topics is not None else out

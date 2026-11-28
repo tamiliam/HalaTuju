@@ -130,5 +130,10 @@
         "note": "Apply Step 3 results notes (TD-773, 2026-11-28): criteria_read.results_routes is a NEW display-only reader for the apply page (views/intake), added beside the existing readers; no existing function changes and nothing on the verdict path calls it, so no verdict, eligibility or money answer changes."
       }
     ]
+  },
+  "2026-11-28.2": {
+    "digest": "aaf3e7deaaf4350330021bc5a8aa9c72c08efa5a75af6111bc9090510c089d4c",
+    "note": "case 1048: topic-coded warnings (owner 2026-11-28). The salary-slip read also returns warning_topics, one code per warning from vision/warning_topics.TOPICS (schema enum, salary_slip only; kept aligned when the clean-up drops a warning). declaration_name.shown_warnings, on a document seen as a declaration in the salary-slip slot, hides warning i only when its topic is payslip-only (employer_missing, pay_period_missing, take_home_missing, gross_missing, not_a_payslip) AND its text has no keep word (has_keep_word, the same _KEEP_STEMS/_KEEP_WORDS). Topics missing, of the wrong length or with an unknown code: the word filter for the WHOLE list, never mixed. The register pins warning_topics KEY, PAYSLIP_ONLY_TOPICS and valid_topics. Display only: no warning feeds a verdict; no verdict, eligibility or money answer changes.",
+    "also_ok": []
   }
 }

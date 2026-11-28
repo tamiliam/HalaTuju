@@ -97,6 +97,14 @@ def _doc_schema(props: dict, required=None) -> dict:
     return schema
 
 
+def _with_warning_topics(schema: dict) -> dict:
+    """``schema`` plus ``warning_topics``: one closed topic code per warning (case 1048, salary slip ONLY;
+    `warning_topics.py`). A new dict: the shared `_doc_schema` and every other type are unchanged."""
+    from .warning_topics import KEY, TOPICS
+    topics = {'type': 'array', 'items': {'type': 'string', 'enum': list(TOPICS)}}
+    return {**schema, 'properties': {**schema['properties'], KEY: topics}}
+
+
 _FIELD_SCHEMAS = {
     # Income Check-1: read the earner's NRIC too, so a member-tagged slip can be
     # cross-checked against that member's IC (name + IC number), not the student.
@@ -105,9 +113,10 @@ _FIELD_SCHEMAS = {
     # longer proves B40. Covers both the MOF letter and the MySTR portal screenshot.
     'str': _doc_schema({'recipient_name': _STR, 'recipient_nric': _STR, 'status': _STR,
                         'year': _STR, 'amount': _STR, 'source_type': _STR_SOURCE}),
-    'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR, 'currency': _STR,
-                                'gross_income': _STR, 'net_income': _STR,
-                                'gross_income_ytd': _STR, 'period': _STR}),
+    'salary_slip': _with_warning_topics(_doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
+                                                     'currency': _STR, 'gross_income': _STR,
+                                                     'net_income': _STR, 'gross_income_ytd': _STR,
+                                                     'period': _STR})),
     'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR, 'employer_number': _STR,
                         'latest_balance': _STR, 'last_contribution': _STR,
                         'monthly_contribution': _STR, 'months_counted': _STR,

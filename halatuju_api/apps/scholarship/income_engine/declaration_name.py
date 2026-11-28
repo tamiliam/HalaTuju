@@ -65,6 +65,12 @@ pay period (it may be the declaration's own date), and "not visible", "blank", "
 **3. 'close' is not served yet.** ``SHOW_CLOSE`` (below) is False until NRIC chip Sprint 3 gives the web
 an amber pill for it; until then ``soften`` changes nothing and the API shows 'mismatch' as before.
 
+**4. Topic codes first (owner 2026-11-28).** The word list kept failing because the AI words each note
+differently on every Re-run. The salary-slip read now tags each warning with a topic code
+(`vision/warning_topics.py`); ``shown_warnings`` hides the payslip-only TOPICS when every warning carries
+a valid code, still never a warning with a keep word. An untagged or older read falls back to the word
+filter for the whole list.
+
 It sits in ``income_engine/`` so the verdict-engine fingerprint covers it: BUMP
 ``verdict_engine.VERDICT_ENGINE_VERSION`` on any change to the rule.
 """
@@ -383,16 +389,30 @@ def _hideable_part(part: str) -> bool:
     return all(t in _FILLER for t in rest)
 
 
+def _normalised(warning) -> str:
+    """The warning lower-cased, spaces tidied, "the employer's name" read as "employer"."""
+    s = ' '.join(str(warning or '').lower().replace('’', "'").split())
+    for phrase in _EMPLOYER_NAME_PHRASES:
+        s = s.replace(phrase, 'employer')
+    return s
+
+
+def _keeps(s: str) -> bool:
+    return any(k in s for k in _KEEP_STEMS) or bool(_KEEP_WORDS.search(s))
+
+
+def has_keep_word(warning) -> bool:
+    """True when the warning names anything that always keeps it (``_KEEP_STEMS``, ``_KEEP_WORDS``):
+    tampering, a chop or signature, the applicant, a name or an IC, an unreadable or covered part, ..."""
+    return _keeps(_normalised(warning))
+
+
 def payslip_only_warning(warning) -> bool:
     """True only when EVERY part of the warning is a pure absence of the employer or the pay period
     (the "nothing left over" rule above) or the declaration type note. Anything else, or anything mixed,
     is kept."""
-    s = ' '.join(str(warning or '').lower().replace('’', "'").split())
-    if not s:
-        return False
-    for phrase in _EMPLOYER_NAME_PHRASES:
-        s = s.replace(phrase, 'employer')
-    if any(k in s for k in _KEEP_STEMS) or _KEEP_WORDS.search(s):
+    s = _normalised(warning)
+    if not s or _keeps(s):
         return False
     s = re.sub(r'\bmonth\s*(?:and|&)\s*year\b', 'month/year', s)
     s = re.sub(r'\bbulan\s*(?:dan|&)\s*tahun\b', 'bulan/tahun', s)
@@ -403,10 +423,20 @@ def payslip_only_warning(warning) -> bool:
 
 def shown_warnings(doc, warnings):
     """The warnings to SHOW for ``doc``: a declaration in the salary-slip slot loses its payslip-only
-    ones; any other document gets ``warnings`` back unchanged (the same object). Display only."""
+    ones; any other document gets ``warnings`` back unchanged (the same object). Display only.
+
+    Topic-coded (owner 2026-11-28): when the read tagged its warnings (``vision_fields['warning_topics']``,
+    `vision.warning_topics.valid_topics`), warning i hides only when its topic is payslip-only AND its text
+    has no keep word (a mis-tagged "altered" note still shows). Topics missing, of the wrong length or
+    with an unknown code: the word filter above, for the WHOLE list. The two are never mixed."""
     if getattr(doc, 'doc_type', '') != 'salary_slip' or not isinstance(warnings, list) or not warnings:
         return warnings
     from ..income_declaration import is_declaration
     if not is_declaration(doc):
         return warnings
+    from ..vision.warning_topics import KEY, PAYSLIP_ONLY_TOPICS, valid_topics
+    stored = getattr(doc, 'vision_fields', None)
+    topics = stored.get(KEY) if isinstance(stored, dict) else None
+    if valid_topics(warnings, topics):
+        return [w for w, t in zip(warnings, topics) if t not in PAYSLIP_ONLY_TOPICS or has_keep_word(w)]
     return [w for w in warnings if not payslip_only_warning(w)]
