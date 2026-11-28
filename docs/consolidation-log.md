@@ -7,6 +7,8 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 _(cleared at the 2026-11-12 review - counter reset; the 37 small-lane entries are clustered in that review, and line by line in git at the commit before it)_
 
+- 2026-11-28 aa079ffd0 fix: apply draft drops My Plans answered under other results (TD-785) - web, lib/applyDraft.ts
+
 
 ## Sprints since the last review
 
