@@ -43,7 +43,8 @@ import {
 import { PRE_INTERVIEW_CATEGORY } from '@/lib/applicationStatus'
 import { nudgeButton } from '@/lib/blockers'
 import { showsNotesCard, showsDocumentsAndPredictionBoxes } from '@/lib/cockpitStages'
-import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
+import type { ViewerDoc } from '@/components/DocViewer'
+import { LazyDocViewer } from './view/LazyDocViewer'
 
 import { GroupLabel } from './view/shared'
 import { CockpitHeader } from './view/CockpitHeader'
@@ -280,7 +281,7 @@ function CaseCockpit({ id, prefs }: { id: number; prefs: {
   } = postAward
   return (
     <div className="space-y-4 pb-10">
-      <DocViewer doc={viewerDoc} onClose={() => setViewerDoc(null)} />
+      {viewerDoc && <LazyDocViewer doc={viewerDoc} onClose={() => setViewerDoc(null)} />}
       {q && (
         <ConfirmSheet
           t={t} title={t(q.title)} question={t(q.question)} confirmLabel={t(q.title)}
