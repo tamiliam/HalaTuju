@@ -397,3 +397,38 @@ A lane is still switched off again if reviewers overturn more than 2% of its fac
 | **Total paid evals (Gemini)** | **about 800** | **about US$3.50 to US$4 (about RM 16 to RM 18)**, plus US$0 to US$2 for Vision |
 
 **Running cost after the work:** each document that rules read saves about US$0.004 and one AI call. The bigger gains are certainty (the same answer every time), a hostel no longer recorded as the university, and no dependence on 2.5.
+
+## 9. Hours log (owner, 28 Nov 2026)
+
+**How the back-dated rows were made.** The hours to 28 Nov are an ESTIMATE, not a timesheet. A script read the git commit times and the session-record times (counts only, never the text), from 18 Nov 2026. It counts a 15-minute slot as active when a record or a commit names the sprint. A slot shared by several sprints is split between them. A record that names 3 or more sprints (a plan or a status report) counts for none. **Clock hours** count each slot once. **Agent hours** add up agents that worked at the same time, so they are larger. Idle time inside an active slot counts in full. Confidence: high = the sprint has its own OCR-n name or branch; medium = some old names are shared; low = the old short name (S0, S4, S5, S6) is matched only next to "OCR-first".
+
+| Sprint | Dates | Commits | Clock h | Agent h | Confidence |
+|---|---|---|---|---|---|
+| OCR-1 | 18-28 Nov | 4 | 4.1 | 9.5 | low |
+| OCR-2 | 18-28 Nov | 3 | 7.9 | 21.0 | medium |
+| OCR-3 | 18-28 Nov | 4 | 4.7 | 10.3 | low |
+| OCR-4 | 18 Nov | 16 | not measured | not measured | none: its old name "S-visible" is also OCR-9's; probably a few hours |
+| OCR-5 | 18-28 Nov | 2 | 5.1 | 17.6 | low |
+| OCR-6 | 21-27 Nov | 0 after 18 Nov | 2.3 | 6.9 | medium |
+| OCR-7 | 21-27 Nov | 4 | 1.4 | 3.7 | medium |
+| OCR-8 | 19-28 Nov | 21 | 11.2 | 28.3 | medium |
+| OCR-9 | 20-28 Nov | 17 | 9.9 | 22.9 | medium |
+| OCR-10 | 18-28 Nov | 7 | 6.0 | 12.7 | low |
+| OCR-11 | 21-28 Nov | 12 | 5.6 | 18.8 | high |
+| OCR-12 | 21-28 Nov | 18 | 12.8 | 42.7 | high |
+| OCR-13 | 21-28 Nov | 11 | 8.0 | 29.8 | high |
+| OCR-14 | 20-28 Nov | 72 | 11.4 | 49.7 | high |
+| OCR-15 | 27-28 Nov | 8 | 2.0 | 8.2 | high |
+| OCR-16 | 27-28 Nov | 7 | 1.6 | 9.0 | high |
+| OCR-17 | 21-28 Nov | 3 | 0.7 | 3.4 | medium |
+| OCR-18 | 23-27 Nov | 1 | 0.6 | 1.1 | medium |
+| OCR-19 | 23-28 Nov | 9 | 3.7 | 13.6 | high |
+| OCR-20 | 24-28 Nov | 18 | 5.5 | 20.4 | high |
+| TD-699 | 21-27 Nov | 1 | 0.4 | 0.9 | medium |
+| TD-701 | 21-28 Nov | 2 | 1.4 | 2.8 | medium |
+| TD-702 | 21-28 Nov | 5 | 6.6 | 17.5 | high |
+| TD-710 | 23-28 Nov | 14 | 11.7 | 37.9 | high |
+| TD-740 | 25-27 Nov | 13 | 3.4 | 13.5 | high |
+| **Total to 28 Nov (OCR-4 left out)** | 18-28 Nov | 272 | **about 128** | **about 402** | |
+
+Work before 18 Nov (the first planning) is not counted. **From now on:** at each OCR sprint close, the lead adds one row here with that sprint's clock hours and agent hours, in the same docs change.
