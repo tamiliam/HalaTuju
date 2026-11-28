@@ -1095,7 +1095,8 @@ describe('the F5 semantic corrections the codemod could not make', () => {
     // because `-600` measured **3.19** on a card; `critical-600` already passed at 4.83 and did
     // not move. The DISTINCTION — two different tones, so the officer can tell an unrelated name
     // from a routine warning — is what this pins, and it is unchanged.
-    const src = cockpit()
+    // Chip Sprint 2: the unrelated-name note moved from the drawer to the opened Checks panel, same tone.
+    const src = cockpit() + ' ' + read('src/components/DocChecksPanel.tsx')
     expect(src).toMatch(/text-critical-600[^]{0,400}utilityNote\.unrelated/)
     expect(src).toMatch(/text-caution-700[^]{0,120}vision_fields\.warnings/)
   })

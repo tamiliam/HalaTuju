@@ -5451,7 +5451,23 @@
           "title": "Checks",
           "readAt": "Read {datetime}",
           "uploadedAt": "Uploaded {datetime}",
-          "empty": "No checks on this document yet"
+          "empty": "No checks on this document yet",
+          "bill": {
+            "none": "Not shown",
+            "holder": "Name on the bill",
+            "appNames": "Names on the application",
+            "billAddress": "Address on the bill",
+            "appAddress": "Address on the application",
+            "billDate": "Bill date",
+            "dateRule": "Rule",
+            "dateRuleText": "Up to 3 months old is current; 3 to 6 months is older; over 6 months is out of date.",
+            "reasonableValue": {
+              "reasonable": "Reasonable",
+              "high": "High for the household size",
+              "partial": "Only one bill, cannot judge",
+              "unknown": "Not known"
+            }
+          }
         },
         "pill": {
           "problem": "Problem",

@@ -68,7 +68,18 @@ export const basicsFourChecks: ManualChapter = {
         cross (&#10005;) is red. A grey chip has no symbol: it means not checked yet, or nothing to compare. A plain value is the value shown with no colour. Under the
         file name the drawer shows when the document was last read (for example &ldquo;read 25 Nov, 09:12&rdquo;;
         the year appears only when it is not this year) or &ldquo;not read yet&rdquo;. Open a document and the
-        <strong> Checks</strong> panel beside it lists every check with the full read and upload times.</>
+        <strong> Checks</strong> panel beside it lists every check with the full read and upload times.
+        <br /><br /><strong>Water and electricity bills</strong> carry four chips and a plain amount:
+        <strong> Type</strong> (a full bill, not a payment screen or the wrong kind of bill),
+        <strong> Name</strong>, <strong>Address</strong> and <strong>Date</strong>. The amount is a plain
+        value with no colour. <strong>Name</strong> is green when the holder is the student or someone in the
+        family, grey when the bill shows no name, and red when it is in an unrelated person&rsquo;s name.
+        <strong> Address</strong> is green when it matches the application, red when it does not, and amber when
+        it could not be checked. <strong>Date</strong> is green up to 3 months old, amber from 3 to 6 months
+        (or when no date shows) and red over 6 months. Under an amber or red chip the drawer gives one short
+        reason. The drawer never shows the names or addresses: open the bill and the <strong>Checks</strong>
+        panel sets the bill beside the application, shows the date against the rule, and lists the amount,
+        <strong> Reasonable</strong>, <strong>Outstanding</strong> and period as plain values.</>
       ),
       img: '/reviewer-guide/step4-documents.png',
       alt: 'A student document opened for viewing',

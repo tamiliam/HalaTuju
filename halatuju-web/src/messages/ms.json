@@ -5451,7 +5451,23 @@
           "title": "Semakan",
           "readAt": "Dibaca {datetime}",
           "uploadedAt": "Dimuat naik {datetime}",
-          "empty": "Belum ada semakan pada dokumen ini"
+          "empty": "Belum ada semakan pada dokumen ini",
+          "bill": {
+            "none": "Tidak dipaparkan",
+            "holder": "Nama pada bil",
+            "appNames": "Nama dalam permohonan",
+            "billAddress": "Alamat pada bil",
+            "appAddress": "Alamat dalam permohonan",
+            "billDate": "Tarikh bil",
+            "dateRule": "Peraturan",
+            "dateRuleText": "Sehingga 3 bulan ialah terkini; 3 hingga 6 bulan agak lama; lebih 6 bulan sudah lapuk.",
+            "reasonableValue": {
+              "reasonable": "Munasabah",
+              "high": "Tinggi untuk saiz isi rumah",
+              "partial": "Satu bil sahaja, tidak dapat dinilai",
+              "unknown": "Tidak diketahui"
+            }
+          }
         },
         "pill": {
           "problem": "Masalah",

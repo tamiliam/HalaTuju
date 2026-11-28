@@ -8,7 +8,6 @@
  */
 import {
   groupDocumentsByFact,
-  utilityBillValues,
   schoolLeavingValues,
   incomeSubSections,
   docIconFor,
@@ -19,6 +18,7 @@ import {
 import type { AdminScholarshipDetail, AdminApplicantDocument } from '@/lib/admin-api'
 import type { ViewerDoc } from '@/components/DocViewer'
 
+import { billChecksFor } from '@/lib/billChecks'
 import { PILL_STATE, STATE_COLOURS } from '@/lib/docChips'
 import { DocPill } from '@/components/DocChip'
 
@@ -87,7 +87,8 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
             setViewerDoc({
               label: docLabel(d), filename: d.original_filename || '', url: d.download_url,
               kind: viewerKind(d.content_type || '', d.original_filename || ''),
-              checks: { chips: drawerChips(d), pill: drawerPill(d), readAt: d.read_at, uploadedAt: d.uploaded_at ?? null },
+              checks: { chips: drawerChips(d), pill: drawerPill(d), readAt: d.read_at, uploadedAt: d.uploaded_at ?? null,
+                bill: billChecksFor(d, app) },
             })
           }
           const subLabel = 'text-xs md:text-[10px] font-semibold uppercase tracking-widest text-ground-400 mb-1.5'
@@ -181,22 +182,6 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                       {t(`admin.scholarship.docsDrawer.notUsable.reason.${unusable}`)}
                     </p>
                   )}
-                  {/* Key values FIRST (directly under the facts), so every note falls below them —
-                      consistent for both water and electricity. */}
-                  {(() => {
-                    const vals = utilityBillValues(d)
-                    return vals.length > 0 ? (
-                      <p className="text-xs md:text-[11px] text-ground-500 mt-0.5">
-                        {vals.map((v, i) => (
-                          <span key={v.labelKey}>
-                            {i > 0 && <span className="text-ground-300"> · </span>}
-                            <span className="text-ground-400">{t(`admin.scholarship.docsDrawer.billValue.${v.labelKey}`)} </span>
-                            {v.value ?? t(`admin.scholarship.docsDrawer.billValue.${v.valueKey}`)}
-                          </span>
-                        ))}
-                      </p>
-                    ) : null
-                  })()}
                   {/* School-leaving cert values (owner 2026-07-15): the school name, the conduct
                       rating, and the co-curricular / leadership notes — under the School/Name/IC/
                       Behaviour chips. */}
@@ -214,22 +199,9 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                       </p>
                     ) : null
                   })()}
-                  {/* CRITICAL, not caution. The generic vision warnings two blocks below are
-                      `caution-600`; "this bill is in an unrelated person's name" is a different
-                      order of thing — it is evidence the document may not belong to this household
-                      at all. Orange used to hold them apart; sharing `caution` would have
-                      flattened the distinction an officer most needs to see. */}
-                  {d.utility_check?.name_note === 'unrelated' && (
-                    <p className="text-xs md:text-[11px] text-critical-600 mt-0.5">
-                      {t('admin.scholarship.docsDrawer.utilityNote.unrelated', { name: d.utility_check.name })}
-                    </p>
-                  )}
-                  {(d.utility_check?.reasonable_detail === 'water_only'
-                    || d.utility_check?.reasonable_detail === 'electricity_only') && (
-                    <p className="text-xs md:text-[11px] text-ground-400 mt-0.5">
-                      {t(`admin.scholarship.docsDrawer.utilityNote.${d.utility_check.reasonable_detail}`)}
-                    </p>
-                  )}
+                  {/* Chip Sprint 2: a bill's holder name, the unrelated-name note, the water/electricity-only note
+                      and its amount values moved to the opened Checks panel (`DocChecksPanel`); the drawer shows no
+                      name or address. */}
                   {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && !d.academic_check?.higher_kind && (
                     <p className="text-xs md:text-[11px] text-caution-700 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                   )}

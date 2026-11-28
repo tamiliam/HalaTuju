@@ -245,6 +245,19 @@ export const REVIEWER_FAQ: QA[] = [
         full read and upload times. The reading is a starting point: a person decides.</>,
     },
     {
+      q: <>What do the chips on a water or electricity bill mean, and where are the names and addresses?</>,
+      a: <>A bill shows <strong>Type</strong>, <strong>Name</strong>, <strong>Address</strong> and
+        <strong> Date</strong>, then the amount as a plain value. A wrong or incomplete type turns the other
+        chips red. <strong>Name</strong> is green when the holder is the student or a family member, grey when
+        the bill shows no name, and red when it is in an unrelated person&rsquo;s name.
+        <strong> Address</strong> is green on a match, red on a mismatch and amber when it could not be
+        checked. <strong>Date</strong> is green up to 3 months, amber from 3 to 6 months or when no date shows,
+        and red over 6 months. Amber and red chips carry a one-line reason. Names and addresses are not in the
+        drawer: open the bill and the <strong>Checks</strong> panel shows the bill beside the application, the
+        date against the rule, and the amount, <strong>Reasonable</strong>, <strong>Outstanding</strong> and
+        period as plain values, with the notes when only one of the two bills was given.</>,
+    },
+    {
       q: <>A row on an STR, payslip or EPF statement says <strong>Not read</strong>. And when does a parent&rsquo;s IC say <strong>Wrong card</strong>?</>,
       a: <><strong>Not read</strong> (grey) means we could not read one side of that check: either this document
         gave us nothing usable for that row, or the parent&rsquo;s IC it is checked against did not &mdash; a blank,
