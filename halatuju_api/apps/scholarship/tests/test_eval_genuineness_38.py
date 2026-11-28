@@ -538,12 +538,31 @@ class TestIdsDirectionAndHonestGates(_Docs):
         self.assertIn('known-fake gate NOT TESTED (0 testable fakes)', text)
         self.assertEqual(self.last(text), 'GATES MET (untested: reviewer gate, known-fake gate)')
 
-    def test_tested_gates_give_a_plain_met_and_a_failed_gate_stays_not_met(self):
+    def test_a_tested_gate_that_fails_stays_not_met_and_names_no_untested_gate(self):
         acc, fake = self.doc('ic', verification='verified'), self.doc('ic', status='suspect')
         text, _m, _ = self.run_cmd(*self.RUN, '--ids', f'{acc.pk},{fake.pk}', '--fake-ids', str(fake.pk),
                                    seam=_by_schema(ic_answer=_ic_answer('suspect')))
         self.assertNotIn('NOT TESTED', text)
         self.assertIn('GATES NOT MET: ic new_not_genuine_on_accepted', self.last(text))
+
+    def test_every_gate_tested_and_passed_ends_exactly_gates_met(self):
+        acc, fake = self.doc('ic', verification='verified'), self.doc('ic', status='suspect')
+        answers = {acc.pk: 'genuine', fake.pk: 'suspect'}
+        order = [acc.pk, fake.pk]
+        n = {'i': 0}
+        with patch.object(ev, 'interleave', side_effect=lambda by: [('ic', p) for p in order]):
+            text, _m, _ = self.run_cmd(*self.RUN, '--ids', f'{acc.pk},{fake.pk}', '--fake-ids', str(fake.pk),
+                                       seam={'side_effect': lambda *a, **k: _by_next(n, order, answers)})
+        self.assertNotIn('NOT TESTED', text)
+        self.assertEqual(self.last(text), 'GATES MET')
+
+    def test_a_run_that_reads_nothing_is_gates_not_met(self):
+        text, m, _ = self.run_cmd(*self.RUN, '--ids', '999999')
+        m.assert_not_called()
+        self.assertIn('GATES NOT MET', self.last(text))
+        self.assertIn('nothing was read', self.last(text))
+        text, _m, _ = self.run_cmd(*self.RUN, '--limit', '5')          # no ids and no documents at all
+        self.assertIn('nothing was read', self.last(text))
 
     def test_a_slip_fake_without_stored_text_stays_unanswered(self):
         fake = self._slip(verification='rejected')

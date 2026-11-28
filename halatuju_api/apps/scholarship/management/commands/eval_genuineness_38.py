@@ -524,6 +524,7 @@ class Command(BaseCommand):
         failed += ['known_fake_no_check_reads'] if missed else []
         failed += [f'{c} answered 0' for c, r in tally.items() if not r['n']['answered']]
         failed += [f'run stopped: {stopped}'] if stopped else []
+        failed += ['nothing was read (0 documents)'] if not done else []
         if failed:
             out('GATES NOT MET: ' + ', '.join(failed))
         elif untested:
