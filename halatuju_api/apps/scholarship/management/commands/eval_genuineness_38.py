@@ -28,8 +28,14 @@ that 3.8 lost on an accepted row. A slip fake whose marker read errored is unans
 alone). A known fake no chosen check reads fails the gates, and so does an incomplete run: a stop (cost cap,
 service errors, fetch failures), a chosen check with 0 answers, or a reviewer-accepted row in the planned sample
 (what `--limit` chose) left untested by a stop, a fetch failure, an error or a service error
-(`unanswered_accepted`). The last line says GATES MET or GATES NOT MET. An answer that is unreadable (not JSON) twice counts as malformed, not refused.
+(`unanswered_accepted`). The last line says GATES MET or GATES NOT MET. A gate with nothing to test is said so
+(`reviewer gate NOT TESTED (0 accepted rows)`, `known-fake gate NOT TESTED (0 testable fakes)`) and the last line
+then reads `GATES MET (untested: ...)`, never a plain GATES MET. An answer that is unreadable (not JSON) twice counts as malformed, not refused.
 Malformed answers on known fakes and on reviewer-rejected rows are shown beside the gates.
+Per check it also prints the DIRECTION of each disagreement with the stored verdict: counts per `stored -> new`
+and one `id: stored -> new` line per differing document (canonical statuses and ids only).
+`--ids 1,2,3` runs only those documents, each through the check of its own type (`--limit` then defaults to the
+id count); ids of a type no check reads, and ids that are not live documents, are listed and skipped.
 
 WRITES NOTHING: no verdict, no vision_fields, no genuineness field, no read state (a guard refuses every
 document save during the run, and `ocr_keep.writes_refused` every OCR-text save). It reads stored text only
@@ -47,9 +53,11 @@ assumed 3.8 prices (`PRICE_38_ASSUMED`) when that is higher; the flat US$0.008 i
 PRIVATE: prints counts and document ids only; never a name, an IC number, document text, model free text or a key.
 
     python manage.py eval_genuineness_38                                                   # dry run
+    python manage.py eval_genuineness_38 --run --ids 12,34,56 --max-cost-usd 0.60                # only these ids
     python manage.py eval_genuineness_38 --run --limit 240 --max-cost-usd 2.00 --fake-ids 12,34 --sample-fake-ids 56
 """
 import logging
+from collections import Counter
 from contextlib import contextmanager
 from decimal import Decimal, InvalidOperation
 from unittest import mock
@@ -76,6 +84,7 @@ SUGGESTED_COST_USD = Decimal('2.00')
 FAIL_FAST = 5
 PROGRESS_EVERY = 50
 IDS_SHOWN = 50
+CHANGES_SHOWN = 400
 #: Per 3.8 Flash call, an ASSUMED upper bound: twice the S5 gate's 2.5 per-call figure (`eval/slip_s5_gate.py`
 #: USD_PER_CALL_38_MAX). 3.8 Flash has no row in `eval/offer_fresh_gemini.PRICES`. It is the FLOOR of each
 #: call's charge: a response that reports more tokens is charged at them (`call_cost`).
@@ -160,6 +169,27 @@ def genuineness_sample(checks, fake_ids, sizes=None, sample_fake_ids=()):
         rows.sort()
         out[check] = [-neg for _rank, neg in rows[:sizes[check]]]
     return out
+
+
+def check_of_type(doc_type):
+    """The check that reads a document type ('' when none does; the sample check is never picked by type)."""
+    return next((c for c, types in _TYPES.items() if doc_type in types), '')
+
+
+def sample_of_ids(ids, checks):
+    """(by_check, unknown, unread): the given document ids routed to the check of their own type.
+    `unknown` = not a live document with a file; `unread` = a type no chosen check reads."""
+    found = dict(_sample_pool().filter(pk__in=ids).values_list('pk', 'doc_type'))
+    by_check, unread = {}, []
+    for pk in ids:
+        if pk not in found:
+            continue
+        check = check_of_type(found[pk])
+        if check and check in checks:
+            by_check.setdefault(check, []).append(pk)
+        else:
+            unread.append(pk)
+    return by_check, [pk for pk in ids if pk not in found], unread
 
 
 def unsampled_fakes(by_check, fake_ids, sample_fake_ids):
@@ -270,6 +300,7 @@ def tally_the_read(tally, check, doc, stored, new, markers, fake_ids):
         t['agree_stored' if same else 'disagree_stored'] += 1
         if not same:
             ids['disagree_stored'].append(pk)
+            tally[check]['changes'].append((pk, stored, new))
     if new and vs in ('verified', 'rejected'):
         t['agree_reviewer' if (new == 'genuine') == (vs == 'verified') else 'disagree_reviewer'] += 1
     if new not in ('', 'genuine') and vs == 'verified':      # the gate: whatever the stored value was
@@ -277,6 +308,8 @@ def tally_the_read(tally, check, doc, stored, new, markers, fake_ids):
         ids['new_not_genuine_on_accepted'].append(pk)
         if stored == 'genuine':
             t['new_not_genuine_on_accepted_stored_genuine'] += 1
+    if new and vs == 'verified':
+        tally[check]['accepted_tested'].add(pk)
     if new and pk in fake_ids:
         tally[check]['fakes_answered'].add(pk)
     if new == 'genuine' and pk in fake_ids:
@@ -318,11 +351,18 @@ class Command(BaseCommand):
                                  'their own type (ic, results_slip, supporting), never by the sample check.')
         parser.add_argument('--sample-fake-ids', default='',
                             help='Comma list of known SAMPLE-stamp document ids, read first by the sample check only.')
+        parser.add_argument('--ids', default='',
+                            help='Comma list of document ids: run ONLY these, each through the check of its own '
+                                 'type (--limit then defaults to the id count).')
         parser.add_argument('--model', default=DEFAULT_MODEL, help='A 3.8 Flash name (the slip allow-list).')
 
     def handle(self, *args, **opts):
-        limit, cap, checks, fakes, sample_fakes, model = self._checked(opts)
-        by_check = genuineness_sample(checks, fakes, sample_fake_ids=sample_fakes)
+        limit, cap, checks, fakes, sample_fakes, model, ids = self._checked(opts)
+        unknown, unread = [], []
+        if ids:
+            by_check, unknown, unread = sample_of_ids(ids, checks)
+        else:
+            by_check = genuineness_sample(checks, fakes, sample_fake_ids=sample_fakes)
         order = interleave(by_check)
         todo = order[:limit] if limit else order
         out = self.stdout.write
@@ -331,6 +371,12 @@ class Command(BaseCommand):
             f'{ai_model.chosen_model() or "unset (2.5 Flash cascade)"}')
         for check in checks:
             out(f'  {check}: {sum(1 for c, _ in todo if c == check)} to read')
+        if ids:
+            out(f'  --ids: {len(ids)} given, {len(todo)} to read')
+        if unread:
+            out(f'  --ids of a type no chosen check reads (skipped): {",".join(map(str, unread[:IDS_SHOWN]))}')
+        if unknown:
+            out(f'  --ids not live documents with a file (skipped): {",".join(map(str, unknown[:IDS_SHOWN]))}')
         out(f'  known fakes given: {len(fakes)} by type, {len(sample_fakes)} sample-stamp')
         missed = unsampled_fakes(by_check, fakes, sample_fakes)
         if missed:
@@ -345,6 +391,12 @@ class Command(BaseCommand):
 
     def _checked(self, opts):
         limit, raw_cap = opts['limit'], opts['max_cost_usd']
+        try:
+            ids = list(dict.fromkeys(int(x) for x in opts['ids'].split(',') if x.strip()))
+        except ValueError:
+            raise CommandError('--ids takes document ids, e.g. 12,34.') from None
+        if ids and limit is None:
+            limit = len(ids)
         if limit is not None and not 1 <= limit <= MAX_LIMIT:
             raise CommandError(f'--limit must be 1 to {MAX_LIMIT}.')
         checks = [c.strip() for c in opts['checks'].split(',') if c.strip()]
@@ -359,7 +411,7 @@ class Command(BaseCommand):
         if not is_slip_model(model):
             raise CommandError('--model must be a 3.8 Flash name.')
         if not opts['run']:
-            return limit, None, checks, fakes, sample_fakes, model
+            return limit, None, checks, fakes, sample_fakes, model, ids
         if limit is None or raw_cap is None:
             raise CommandError('--run needs --limit and --max-cost-usd.')
         try:
@@ -368,11 +420,11 @@ class Command(BaseCommand):
             raise CommandError(f'--max-cost-usd must be a number, e.g. {SUGGESTED_COST_USD}.') from None
         if not (cap.is_finite() and Decimal('0') < cap <= MAX_COST_USD):
             raise CommandError(f'--max-cost-usd must be above 0 and at most {MAX_COST_USD}.')
-        return limit, cap, checks, fakes, sample_fakes, model
+        return limit, cap, checks, fakes, sample_fakes, model, ids
 
     def _run(self, todo, cap, model, known, by_check, missed):
         tally = {c: {'n': dict.fromkeys(COUNTERS, 0), 'ids': {k: [] for k in ID_LISTS}, 'fakes_answered': set(),
-                     'settled': set()} for c in by_check}
+                     'settled': set(), 'changes': [], 'accepted_tested': set()} for c in by_check}
         trace = {'calls': 0, 'outcome': '', 'usd': Decimal('0'), 'peak': USD_PER_CALL_38, 'tokens': None}
         texts = ocr_keep.kept_texts([pk for c, pk in todo if c == 'results_slip'])
         accepted = set(ApplicantDocument.objects.filter(pk__in={pk for _c, pk in todo}, verification_status='verified')
@@ -396,7 +448,8 @@ class Command(BaseCommand):
         for check, pk in todo:      # the planned sample: --limit's cut is fine, a stop or a failure is not
             if pk in accepted and pk not in tally[check]['settled']:
                 _add(tally, check, 'unanswered_accepted', pk)
-        self._report(tally, trace, done, stopped, missed)
+        testable = sum(1 for c, planned in by_check.items() for pk in planned if pk in fakes_for(c, *known))
+        self._report(tally, trace, done, stopped, missed, testable)
 
     def _one(self, tally, trace, streak, check, pk, model, fakes, texts):
         t = tally[check]['n']
@@ -442,7 +495,7 @@ class Command(BaseCommand):
             return f'{FAIL_FAST} AI service errors in a row (check the key, quota or model name)'
         return ''
 
-    def _report(self, tally, trace, done, stopped, missed):
+    def _report(self, tally, trace, done, stopped, missed, testable_fakes):
         out = self.stdout.write
         out(f'done: {done} documents, {trace["calls"]} calls, charged up to US${trace["usd"].quantize(Decimal("0.0001"))}'
             f' (assumed: US${USD_PER_CALL_38} a call at least, reported tokens at the assumed 3.8 prices when higher)')
@@ -456,14 +509,37 @@ class Command(BaseCommand):
                 if ids:
                     out(f'[{check}] {key} ids: {",".join(map(str, ids[:IDS_SHOWN]))}'
                         + (f' (+{len(ids) - IDS_SHOWN} more)' if len(ids) > IDS_SHOWN else ''))
+        for check, row in tally.items():
+            self._direction(check, row['changes'])
         lines = [self._gate_line(c, r['n'], r['ids']) for c, r in tally.items()]
+        untested = []
+        if not any(r['accepted_tested'] for r in tally.values()):
+            untested.append('reviewer gate NOT TESTED (0 accepted rows)')
+        if not testable_fakes:
+            untested.append('known-fake gate NOT TESTED (0 testable fakes)')
         out('GATES (each must be 0): ' + '; '.join(lines)
-            + f'; known_fake_no_check_reads {len(missed)}' + _ids_in(missed))
+            + f'; known_fake_no_check_reads {len(missed)}' + _ids_in(missed)
+            + ''.join(f'; {u}' for u in untested))
         failed = [f'{c} {k}' for c, r in tally.items() for k in GATE_KEYS[c] if r['n'][k]]
         failed += ['known_fake_no_check_reads'] if missed else []
         failed += [f'{c} answered 0' for c, r in tally.items() if not r['n']['answered']]
         failed += [f'run stopped: {stopped}'] if stopped else []
-        out(('GATES NOT MET: ' + ', '.join(failed)) if failed else 'GATES MET')
+        if failed:
+            out('GATES NOT MET: ' + ', '.join(failed))
+        elif untested:
+            out('GATES MET (untested: ' + ', '.join(u.split(' NOT TESTED')[0] for u in untested) + ')')
+        else:
+            out('GATES MET')
+
+    def _direction(self, check, changes):
+        """Which way each disagreement went: counts per `stored -> new`, then one line per id (statuses, ids only)."""
+        if not changes:
+            return
+        out = self.stdout.write
+        counts = Counter((s, n) for _pk, s, n in changes)
+        out(f'[{check}] transitions: ' + ', '.join(f'{s} -> {n}: {c}' for (s, n), c in sorted(counts.items())))
+        for pk, s, n in changes[:CHANGES_SHOWN]:
+            out(f'[{check}] {pk}: {s} -> {n}')
 
     @staticmethod
     def _gate_line(check, n, ids):

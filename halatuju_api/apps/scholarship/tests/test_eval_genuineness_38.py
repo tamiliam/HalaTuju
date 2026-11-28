@@ -322,7 +322,7 @@ class TestReviewRound2(_Docs):
                                    seam=_by_schema(ic_answer=_ic_answer('suspect')))
         self.assertIn('genuine_on_known_fake 0, unanswered_known_fake 0, unanswered_accepted 0 (also:', text)
         self.assertIn('known_fake_no_check_reads 0', text)
-        self.assertTrue(text.rstrip().endswith('GATES MET'))
+        self.assertEqual(text.rstrip().split(chr(10))[-1], 'GATES MET (untested: reviewer gate)')
 
     def test_a_known_fake_no_chosen_check_reads_fails_the_gates(self):
         stray = self.doc('offer_letter')
@@ -393,7 +393,7 @@ class TestReviewRound3(_Docs):
             self.doc('ic', verification='verified')
         text, _m, _ = self.run_cmd('--run', '--checks', 'ic', '--limit', '1', '--max-cost-usd', '1.00')
         self.assertIn('unanswered_accepted 0', text)
-        self.assertEqual(self.last(text), 'GATES MET')
+        self.assertEqual(self.last(text), 'GATES MET (untested: known-fake gate)')
 
     def test_a_full_clean_run_meets_the_gates(self):
         self.doc('ic', verification='verified')
@@ -405,7 +405,7 @@ class TestReviewRound3(_Docs):
         for check in ev.CHECKS:
             self.assertIn(f'[{check}] docs 1, calls 1, answered 1', text)
         self.assertNotIn('STOPPED', text)
-        self.assertEqual(self.last(text), 'GATES MET')
+        self.assertEqual(self.last(text), 'GATES MET (untested: known-fake gate)')
 
     def test_a_slip_fake_whose_marker_read_failed_is_unanswered(self):
         bad_markers = {'malformed': {'has_qr_code': 'yes', 'has_jata_negara_crest': True},
@@ -428,7 +428,7 @@ class TestReviewRound3(_Docs):
             text, _m, _ = self.run_cmd(*self.RUN, '--checks', 'results_slip', '--fake-ids', str(fake.pk),
                                        seam=_by_schema())
         self.assertIn('unanswered_known_fake 0', text)
-        self.assertEqual(self.last(text), 'GATES MET')
+        self.assertEqual(self.last(text), 'GATES MET (untested: reviewer gate)')
 
     def test_the_dry_run_says_a_stray_fake_would_fail_the_gates(self):
         stray = self.doc('offer_letter')
@@ -476,3 +476,84 @@ class TestTheOcrTextWriteGuard(_Docs):
                 d.save()
         self.assertFalse(ApplicantDocumentOcrText.objects.exists())
         self.assertEqual(ocr_keep._refusing, 0)
+
+
+class TestIdsDirectionAndHonestGates(_Docs):
+    """OCR-16b: --ids, the direction of each disagreement, and gates that say when they tested nothing."""
+    RUN = ('--run', '--max-cost-usd', '1.00')
+
+    @staticmethod
+    def last(text):
+        return text.rstrip().split(chr(10))[-1]
+
+    def test_ids_runs_only_those_routes_by_type_and_lists_the_skipped(self):
+        keep_ic, keep_str = self.doc('ic'), self.doc('str')
+        self.doc('ic')                                   # not asked for
+        other = self.doc('bank_statement')                # a type no check reads
+        text, m, _ = self.run_cmd(*self.RUN, '--ids', f'{keep_ic.pk},{keep_str.pk},{other.pk},999999',
+                                  seam=_by_schema())
+        self.assertIn('--ids: 4 given, 2 to read', text)
+        self.assertIn(f'(skipped): {other.pk}', text)
+        self.assertIn('not live documents with a file (skipped): 999999', text)
+        self.assertIn('[ic] docs 1, calls 1', text)
+        self.assertIn('[supporting] docs 1, calls 1', text)
+        self.assertNotIn('[results_slip]', text)
+        self.assertEqual(m.call_count, 2)
+
+    def test_ids_limit_defaults_to_the_count_and_the_guards_stay(self):
+        d = self.doc('ic')
+        text, m, _ = self.run_cmd('--run', '--max-cost-usd', '1.00', '--ids', str(d.pk))
+        self.assertEqual(m.call_count, 1)
+        with self.assertRaises(CommandError):
+            self.run_cmd('--run', '--ids', str(d.pk))                      # no cap
+        with self.assertRaises(CommandError):
+            self.run_cmd('--run', '--ids', str(d.pk), '--limit', '401', '--max-cost-usd', '1')
+        with self.assertRaises(CommandError):
+            self.run_cmd('--run', '--ids', str(d.pk), '--max-cost-usd', '5.01')
+        with self.assertRaises(CommandError):
+            self.run_cmd('--ids', 'x')
+
+    def test_transitions_and_per_id_lines_for_a_mixed_answer_set(self):
+        flipped = [self.doc('ic', status='genuine') for _ in range(2)]
+        up = self.doc('ic', status='suspect')
+        same = self.doc('ic', status='genuine')
+        answers = {flipped[0].pk: 'suspect', flipped[1].pk: 'suspect', up.pk: 'genuine', same.pk: 'genuine'}
+        n = {'i': 0}
+        order = [flipped[0].pk, flipped[1].pk, up.pk, same.pk]
+        ids = ','.join(str(p) for p in order)
+        with patch.object(ev, 'interleave', side_effect=lambda by: [('ic', p) for p in order]):
+            text, _m, _ = self.run_cmd(*self.RUN, '--ids', ids,
+                                       seam={'side_effect': lambda *a, **k: _by_next(n, order, answers)})
+        self.assertIn('[ic] transitions: genuine -> suspect: 2, suspect -> genuine: 1', text)
+        for pk, was, now in ((flipped[0].pk, 'genuine', 'suspect'), (up.pk, 'suspect', 'genuine')):
+            self.assertIn(f'[ic] {pk}: {was} -> {now}', text)
+        self.assertNotIn(f'[ic] {same.pk}:', text)
+        self.assertNotIn(SECRET_REASON, text)
+        self.assertNotIn(STORED_REASON, text)
+
+    def test_zero_accepted_rows_and_zero_fakes_are_named_and_never_a_plain_met(self):
+        d = self.doc('ic')
+        text, _m, _ = self.run_cmd(*self.RUN, '--ids', str(d.pk))
+        self.assertIn('reviewer gate NOT TESTED (0 accepted rows)', text)
+        self.assertIn('known-fake gate NOT TESTED (0 testable fakes)', text)
+        self.assertEqual(self.last(text), 'GATES MET (untested: reviewer gate, known-fake gate)')
+
+    def test_tested_gates_give_a_plain_met_and_a_failed_gate_stays_not_met(self):
+        acc, fake = self.doc('ic', verification='verified'), self.doc('ic', status='suspect')
+        text, _m, _ = self.run_cmd(*self.RUN, '--ids', f'{acc.pk},{fake.pk}', '--fake-ids', str(fake.pk),
+                                   seam=_by_schema(ic_answer=_ic_answer('suspect')))
+        self.assertNotIn('NOT TESTED', text)
+        self.assertIn('GATES NOT MET: ic new_not_genuine_on_accepted', self.last(text))
+
+    def test_a_slip_fake_without_stored_text_stays_unanswered(self):
+        fake = self._slip(verification='rejected')
+        text, _m, _ = self.run_cmd(*self.RUN, '--ids', str(fake.pk), '--fake-ids', str(fake.pk), seam=_by_schema())
+        self.assertIn(f'unanswered_known_fake 1 [{fake.pk}]', text)
+        self.assertIn('GATES NOT MET', self.last(text))
+
+
+def _by_next(n, order, answers):
+    """The IC answer for the next document in the planned order (one call per document)."""
+    pk = order[n['i']]
+    n['i'] += 1
+    return _ic_answer(answers[pk])

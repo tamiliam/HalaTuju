@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### fix: OCR-16b - the 3.8 eval can run chosen ids, shows the direction of each change and says which gate it did not test (2026-11-28)
+
+Branch ocr-16b-eval, not pushed. Migration: none. Services: none (the eval command only; no live verdict path, prompt, MODEL_VERSION or digest changes).
+- **`eval_genuineness_38`:** `--ids 1,2,3` runs only those documents through the check of their own type (`--limit` defaults to the id count; the limit and cost guards stay; unread types and unknown ids are listed and skipped); per check it prints `stored -> new` transition counts and one `id: stored -> new` line per differing document (ids and statuses only); the GATES line names a gate with nothing to test (`reviewer gate NOT TESTED (0 accepted rows)`, `known-fake gate NOT TESTED (0 testable fakes)`) and the last line then reads `GATES MET (untested: ...)`, never a plain `GATES MET`. No gate loosened; a slip fake with no stored text stays `unanswered_known_fake`. Tests: test_eval_genuineness_38.py (TestIdsDirectionAndHonestGates; four older end-of-run asserts now expect the untested wording).
+- **TD:** reviewer per-document decisions are not stored in `verification_status` (every live row is 'pending'), so the reviewer gate has no real signal to read. Finding one is a separate item.
+
 ### feat: document chip standard, Sprint 2 (Phase A) - water and electricity bills (branch chip-std-s2, not pushed)
 
 Owner answers 28 Nov (all (a)). Display only: no engine, verdict, band, award or MODEL_VERSION change. Migration: none. Services: both.
