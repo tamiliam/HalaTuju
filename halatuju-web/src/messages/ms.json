@@ -1734,10 +1734,7 @@
           "weCheck": "Kami akan menyemak perkara ini untuk anda"
         },
         "address": "Alamat",
-        "monthlyBill": "Bil bulan ini",
-        "unpaidBalance": "Baki tertunggak",
-        "addressOk": "Sepadan dengan rumah anda",
-        "addressMismatch": "Tidak sepadan dengan rumah anda — semak semula"
+        "monthlyBill": "Bil bulan ini"
       },
       "relCheck": {
         "child": "Anak (anda)",
@@ -5391,7 +5388,6 @@
       },
       "docsDrawer": {
         "reason": {
-          "billNotFull": "Kelihatan seperti skrin bayaran, bukan bil penuh.",
           "notWaterBill": "Bukan bil air.",
           "notElectricityBill": "Bukan bil elektrik.",
           "billOtherName": "Bil atas nama orang lain.",
@@ -5493,8 +5489,6 @@
           "recipient": "Penerima",
           "status": "Status",
           "current": "Semasa",
-          "ageing": "Agak lama",
-          "stale": "Terlalu lama",
           "amount": "Jumlah",
           "period": "Tempoh",
           "contribution": "Caruman",

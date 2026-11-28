@@ -3780,6 +3780,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.match"
     },
@@ -3787,6 +3788,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.match"
     },
@@ -3794,6 +3796,7 @@
      "key": "address",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.icCheck.fromIc"
     }
@@ -3821,6 +3824,7 @@
      "key": "icNo",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.mismatch"
     },
@@ -3828,6 +3832,7 @@
      "key": "name",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.partial"
     }
@@ -3855,6 +3860,7 @@
      "key": "icNo",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.none"
     },
@@ -3862,6 +3868,7 @@
      "key": "name",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.unreadable"
     }
@@ -3889,6 +3896,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.match"
     },
@@ -3896,6 +3904,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.match"
     },
@@ -3903,6 +3912,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.icCheck.notGenuine"
     }
@@ -3930,6 +3940,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.match"
     },
@@ -3937,6 +3948,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.match"
     },
@@ -3944,6 +3956,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.icCheck.notGenuine"
     }
@@ -3971,6 +3984,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.match"
     },
@@ -3978,6 +3992,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.match"
     },
@@ -3985,6 +4000,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.sampleDoc"
     }
@@ -4007,6 +4023,7 @@
      "key": "match",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.match.good"
     }
@@ -4037,6 +4054,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeIcCheck.matchesProof"
     },
@@ -4044,6 +4062,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeIcCheck.matchesProof"
     },
@@ -4051,6 +4070,7 @@
      "key": "address",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.icCheck.fromTheirIc"
     }
@@ -4081,6 +4101,7 @@
      "key": "icNo",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeIcCheck.proofMismatch"
     },
@@ -4088,6 +4109,7 @@
      "key": "name",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeIcCheck.proofMismatch"
     }
@@ -4119,6 +4141,7 @@
      "key": "icNo",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeIcCheck.wrongCard"
     },
@@ -4126,6 +4149,7 @@
      "key": "name",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.fromTheirIc"
     }
@@ -4156,6 +4180,7 @@
      "key": "name",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.fromTheirIc"
     }
@@ -4187,6 +4212,7 @@
      "key": "icNo",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.icCheck.fromTheirIc"
     },
@@ -4194,6 +4220,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeIcCheck.matchesProof"
     }
@@ -4224,6 +4251,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.note"
     }
@@ -4261,6 +4289,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4268,6 +4297,7 @@
      "key": "icNo",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.mismatchIc"
     },
@@ -4275,6 +4305,7 @@
      "key": "amount",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.incomeProofCheck.fromDoc"
     },
@@ -4282,6 +4313,7 @@
      "key": "period",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.incomeProofCheck.fromDoc"
     }
@@ -4320,6 +4352,7 @@
      "key": "name",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.notRead"
     },
@@ -4327,6 +4360,7 @@
      "key": "amount",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.incomeProofCheck.fromDoc"
     },
@@ -4334,6 +4368,7 @@
      "key": "period",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.incomeProofCheck.fromDoc"
     }
@@ -4371,6 +4406,7 @@
      "key": "name",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.checkName"
     },
@@ -4378,6 +4414,7 @@
      "key": "icNo",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.checkNumberOneDigit"
     },
@@ -4385,6 +4422,7 @@
      "key": "amount",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.incomeProofCheck.fromDoc"
     },
@@ -4392,6 +4430,7 @@
      "key": "period",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.incomeProofCheck.fromDoc"
     }
@@ -4420,6 +4459,7 @@
      "key": "name",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.addIc"
     }
@@ -4453,6 +4493,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4460,6 +4501,7 @@
      "key": "avgContribution",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.incomeProofCheck.fromDoc"
     },
@@ -4467,6 +4509,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.note"
     }
@@ -4497,6 +4540,7 @@
      "key": "recipient",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4504,6 +4548,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4511,6 +4556,7 @@
      "key": "status",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.approved"
     },
@@ -4518,6 +4564,7 @@
      "key": "year",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.current"
     }
@@ -4548,6 +4595,7 @@
      "key": "recipient",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4555,6 +4603,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4562,6 +4611,7 @@
      "key": "status",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.approved"
     },
@@ -4569,6 +4619,7 @@
      "key": "year",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.unconfirmed"
     }
@@ -4599,6 +4650,7 @@
      "key": "recipient",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4606,6 +4658,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4613,6 +4666,7 @@
      "key": "status",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.unknown"
     },
@@ -4620,6 +4674,7 @@
      "key": "year",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.unknown"
     }
@@ -4650,6 +4705,7 @@
      "key": "recipient",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4657,6 +4713,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4664,6 +4721,7 @@
      "key": "year",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.stale"
     }
@@ -4694,6 +4752,7 @@
      "key": "recipient",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4701,6 +4760,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4708,6 +4768,7 @@
      "key": "year",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.future"
     }
@@ -4738,6 +4799,7 @@
      "key": "recipient",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4745,6 +4807,7 @@
      "key": "icNo",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4752,6 +4815,7 @@
      "key": "status",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.rejected"
     },
@@ -4759,6 +4823,7 @@
      "key": "year",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.unknown"
     }
@@ -4790,6 +4855,7 @@
      "key": "recipient",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.notRead"
     },
@@ -4797,6 +4863,7 @@
      "key": "status",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.not_approved"
     },
@@ -4804,6 +4871,7 @@
      "key": "year",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.unknown"
     }
@@ -4834,6 +4902,7 @@
      "key": "recipient",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.matchesIc"
     },
@@ -4841,6 +4910,7 @@
      "key": "icNo",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.mismatchIc"
     },
@@ -4848,6 +4918,7 @@
      "key": "status",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.approved"
     },
@@ -4855,6 +4926,7 @@
      "key": "year",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.strCheck.current"
     }
@@ -4879,6 +4951,7 @@
      "key": "assist",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.assist.name_mismatch"
     }
@@ -4911,6 +4984,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.name"
     },
@@ -4918,6 +4992,7 @@
      "key": "address",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.address"
     },
@@ -4925,6 +5000,7 @@
      "key": "date",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.date"
     },
@@ -4932,6 +5008,7 @@
      "key": "monthlyBill",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.incomeProofCheck.fromDoc"
     }
@@ -4964,6 +5041,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.name"
     },
@@ -4971,6 +5049,7 @@
      "key": "address",
      "status": "not",
      "state": "red",
+     "student_action": "fix_entry",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.address"
     },
@@ -4978,6 +5057,7 @@
      "key": "date",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.date"
     }
@@ -5010,6 +5090,7 @@
      "key": "name",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.name"
     },
@@ -5017,6 +5098,7 @@
      "key": "address",
      "status": "partial",
      "state": "amber",
+     "student_action": "we_check",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.address"
     },
@@ -5024,6 +5106,7 @@
      "key": "date",
      "status": "partial",
      "state": "amber",
+     "student_action": "add_doc",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.date"
     }
@@ -5054,6 +5137,7 @@
      "key": "child",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.confirmed"
     },
@@ -5061,6 +5145,7 @@
      "key": "mother",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.confirmed"
     },
@@ -5068,6 +5153,7 @@
      "key": "father",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.confirmed"
     }
@@ -5098,6 +5184,7 @@
      "key": "child",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.mismatch"
     },
@@ -5105,6 +5192,7 @@
      "key": "mother",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.checkNumberOneDigit"
     }
@@ -5135,6 +5223,7 @@
      "key": "child",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.checkNumber"
     },
@@ -5142,6 +5231,7 @@
      "key": "mother",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.checkName"
     },
@@ -5149,6 +5239,7 @@
      "key": "father",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.checkBoth"
     }
@@ -5179,6 +5270,7 @@
      "key": "child",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.incomeProofCheck.notRead"
     },
@@ -5186,6 +5278,7 @@
      "key": "mother",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.reviewing"
     }
@@ -5217,6 +5310,7 @@
      "key": "child",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.confirmed"
     },
@@ -5224,6 +5318,7 @@
      "key": "mother",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.confirmed"
     }
@@ -5252,6 +5347,7 @@
      "key": "guardian",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.confirmed"
     },
@@ -5259,6 +5355,7 @@
      "key": "ward",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.relCheck.checkNumber"
     }
@@ -5293,6 +5390,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.match"
     },
@@ -5300,6 +5398,7 @@
      "key": "subjects",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.match"
     },
@@ -5307,6 +5406,7 @@
      "key": "results",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.match"
     },
@@ -5314,6 +5414,7 @@
      "key": "exam",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.slipCheck.fromSlip"
     }
@@ -5358,6 +5459,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.match"
     },
@@ -5365,6 +5467,7 @@
      "key": "subjects",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.mismatch"
     },
@@ -5372,6 +5475,7 @@
      "key": "results",
      "status": "not",
      "state": "red",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.mismatch"
     },
@@ -5379,6 +5483,7 @@
      "key": "exam",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.slipCheck.fromSlip"
     }
@@ -5417,6 +5522,7 @@
      "key": "name",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.partial"
     },
@@ -5424,6 +5530,7 @@
      "key": "subjects",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.match"
     },
@@ -5431,6 +5538,7 @@
      "key": "results",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.uncertain"
     },
@@ -5438,6 +5546,7 @@
      "key": "exam",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.slipCheck.fromSlip"
     }
@@ -5472,6 +5581,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.match"
     },
@@ -5479,6 +5589,7 @@
      "key": "exam",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.slipCheck.fromSlip"
     }
@@ -5513,6 +5624,7 @@
      "key": "subjects",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.unreadable"
     },
@@ -5520,6 +5632,7 @@
      "key": "results",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.pending"
     }
@@ -5554,6 +5667,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.match"
     },
@@ -5561,6 +5675,7 @@
      "key": "subjects",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.match"
     },
@@ -5568,6 +5683,7 @@
      "key": "results",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.slipCheck.status.match"
     },
@@ -5575,6 +5691,7 @@
      "key": "exam",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.slipCheck.fromSlip"
     },
@@ -5582,6 +5699,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.note"
     }
@@ -5607,6 +5725,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.note"
     }
@@ -5659,6 +5778,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.match"
     },
@@ -5666,6 +5786,7 @@
      "key": "ic",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.match"
     },
@@ -5673,6 +5794,7 @@
      "key": "programme",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5680,6 +5802,7 @@
      "key": "institution",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5687,6 +5810,7 @@
      "key": "issuer",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5694,6 +5818,7 @@
      "key": "date",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5701,6 +5826,7 @@
      "key": "address",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     }
@@ -5737,6 +5863,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.match"
     },
@@ -5744,6 +5871,7 @@
      "key": "ic",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.partial"
     },
@@ -5751,6 +5879,7 @@
      "key": "programme",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.mismatch"
     },
@@ -5758,6 +5887,7 @@
      "key": "institution",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.mismatch"
     }
@@ -5794,6 +5924,7 @@
      "key": "name",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.uncertain"
     },
@@ -5801,6 +5932,7 @@
      "key": "ic",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.ic"
     },
@@ -5808,6 +5940,7 @@
      "key": "programme",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5815,6 +5948,7 @@
      "key": "institution",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5822,6 +5956,7 @@
      "key": "date",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     }
@@ -5858,6 +5993,7 @@
      "key": "name",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.unreadable"
     },
@@ -5865,6 +6001,7 @@
      "key": "ic",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.pending"
     }
@@ -5901,6 +6038,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.match"
     },
@@ -5908,6 +6046,7 @@
      "key": "ic",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.match"
     },
@@ -5915,6 +6054,7 @@
      "key": "programme",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5922,6 +6062,7 @@
      "key": "institution",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5929,6 +6070,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.offerSuspect"
     }
@@ -5965,6 +6107,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.match"
     },
@@ -5972,6 +6115,7 @@
      "key": "ic",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.match"
     },
@@ -5979,6 +6123,7 @@
      "key": "programme",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5986,6 +6131,7 @@
      "key": "institution",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -5993,6 +6139,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.offerNotOffer"
     }
@@ -6029,6 +6176,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.match"
     },
@@ -6036,6 +6184,7 @@
      "key": "ic",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.pathwayCheck.status.match"
     },
@@ -6043,6 +6192,7 @@
      "key": "programme",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -6050,6 +6200,7 @@
      "key": "institution",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "plain",
      "label": "scholarship.docs.pathwayCheck.fromLetter"
     },
@@ -6057,6 +6208,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.sampleDoc"
     }
@@ -6081,6 +6233,7 @@
      "key": "assist",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.assist.ok"
     }
@@ -6105,6 +6258,7 @@
      "key": "assist",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.assist.unreadable"
     }
@@ -6128,6 +6282,7 @@
      "key": "match",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.match.address-missing"
     }
@@ -6150,6 +6305,7 @@
      "key": "match",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.match.name-missing"
     }
@@ -6173,6 +6329,7 @@
      "key": "match",
      "status": "unknown",
      "state": "grey",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.match.unreadable"
     }
@@ -6207,6 +6364,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.askFinal"
     }
@@ -6228,6 +6386,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.notResults"
     }
@@ -6249,6 +6408,7 @@
      "key": "genuineness",
      "status": "partial",
      "state": "amber",
+     "student_action": "none",
      "kind": "note",
      "label": "scholarship.docs.genuineness.note"
     }
@@ -6281,6 +6441,7 @@
      "key": "name",
      "status": "not",
      "state": "red",
+     "student_action": "fix_entry",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.name"
     },
@@ -6288,6 +6449,7 @@
      "key": "address",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.address"
     },
@@ -6295,6 +6457,7 @@
      "key": "date",
      "status": "not",
      "state": "red",
+     "student_action": "add_doc",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.date"
     }
@@ -6327,6 +6490,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.name"
     },
@@ -6334,6 +6498,7 @@
      "key": "address",
      "status": "partial",
      "state": "amber",
+     "student_action": "we_check",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.address"
     },
@@ -6341,6 +6506,7 @@
      "key": "date",
      "status": "partial",
      "state": "amber",
+     "student_action": "reupload",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.date"
     }
@@ -6373,6 +6539,7 @@
      "key": "type",
      "status": "not",
      "state": "red",
+     "student_action": "reupload",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.type"
     },
@@ -6380,6 +6547,7 @@
      "key": "name",
      "status": "not",
      "state": "red",
+     "student_action": "reupload",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.name"
     },
@@ -6387,6 +6555,7 @@
      "key": "address",
      "status": "not",
      "state": "red",
+     "student_action": "reupload",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.address"
     },
@@ -6394,6 +6563,7 @@
      "key": "date",
      "status": "not",
      "state": "red",
+     "student_action": "reupload",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.date"
     }
@@ -6426,6 +6596,7 @@
      "key": "type",
      "status": "partial",
      "state": "amber",
+     "student_action": "reupload",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.type"
     },
@@ -6433,6 +6604,7 @@
      "key": "name",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.name"
     },
@@ -6440,6 +6612,7 @@
      "key": "address",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.address"
     },
@@ -6447,6 +6620,7 @@
      "key": "date",
      "status": "verified",
      "state": "green",
+     "student_action": "none",
      "kind": "fact",
      "label": "scholarship.docs.utilityCheck.date"
     }

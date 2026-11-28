@@ -70,7 +70,7 @@ export const basicsFourChecks: ManualChapter = {
         the year appears only when it is not this year) or &ldquo;not read yet&rdquo;. Open a document and the
         <strong> Checks</strong> panel beside it lists every check with the full read and upload times.
         <br /><br /><strong>Water and electricity bills</strong> carry four chips and a plain amount:
-        <strong> Type</strong> (a full bill, not a payment screen or the wrong kind of bill),
+        <strong> Type</strong> (the right kind of bill),
         <strong> Name</strong>, <strong>Address</strong> and <strong>Date</strong>. The amount is a plain
         value with no colour. <strong>Name</strong> is green when the holder is the student or someone in the
         family, grey when the bill shows no name, and red when it is in an unrelated person&rsquo;s name.

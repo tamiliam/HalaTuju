@@ -1734,10 +1734,7 @@
           "weCheck": "We will check this for you"
         },
         "address": "Address",
-        "monthlyBill": "This month's bill",
-        "unpaidBalance": "Unpaid balance",
-        "addressOk": "Matches your home",
-        "addressMismatch": "Doesn't match your home — re-check"
+        "monthlyBill": "This month's bill"
       },
       "relCheck": {
         "child": "Child (you)",
@@ -5391,7 +5388,6 @@
       },
       "docsDrawer": {
         "reason": {
-          "billNotFull": "Looks like a payment screen, not a full bill.",
           "notWaterBill": "Not a water bill.",
           "notElectricityBill": "Not an electricity bill.",
           "billOtherName": "Bill is in another person's name.",
@@ -5493,8 +5489,6 @@
           "recipient": "Recipient",
           "status": "Status",
           "current": "Current",
-          "ageing": "Ageing",
-          "stale": "Outdated",
           "amount": "Amount",
           "period": "Period",
           "contribution": "Contribution",

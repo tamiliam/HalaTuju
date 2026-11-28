@@ -20,7 +20,7 @@ import { readApi } from '@/test/apiSource'
 import { ICChecklist } from '../checklists'
 import { DocChecks } from '../cards'
 
-type Chip = { key: string; status: string; state: string; kind: string; label: string }
+type Chip = { key: string; status: string; state: string; student_action: string; kind: string; label: string }
 type Case = { name: string; doc: Record<string, unknown>; chips: Chip[] }
 
 const t = (key: string) => key
@@ -48,19 +48,24 @@ function rowKey(badge: Element): string {
   return label.replace(/:\s*$/, '').replace(/\s*\(.*$/, '').split('.').pop() ?? ''
 }
 
+/** The action line a bill chip's row draws (`data-chip-action`), 'none' when the row has none. */
+function actionOf(badge: Element): string {
+  return badge.closest('div[class*="py-1.5"]')?.parentElement?.querySelector('[data-chip-action]')?.getAttribute('data-chip-action') ?? 'none'
+}
+
 /** Every badge, in screen order, as the server's chip shape. */
 function drawn(container: HTMLElement): Chip[] {
   const out: Chip[] = []
   container.querySelectorAll('span[data-chip], span.inline-flex.ring-1, p.text-caution-800').forEach((el) => {
     const state = el.getAttribute('data-chip') ?? stateOf(el)
     if (el.tagName === 'P') {
-      out.push({ key: 'genuineness', status: STATUS[state], state, kind: 'note', label: el.textContent ?? '' })
+      out.push({ key: 'genuineness', status: STATUS[state], state, student_action: 'none', kind: 'note', label: el.textContent ?? '' })
     } else if (!el.hasAttribute('data-chip')) {            // SupportingDocChip: icon, then words
       const label = el.lastElementChild?.textContent ?? ''
       const key = label.startsWith('scholarship.docs.assist.') ? 'assist' : 'match'
-      out.push({ key, status: STATUS[state], state, kind: 'fact', label })
+      out.push({ key, status: STATUS[state], state, student_action: 'none', kind: 'fact', label })
     } else {
-      out.push({ key: rowKey(el), status: STATUS[state], state, kind: 'fact', label: (el.textContent ?? '').replace(/^[✓!✕]/, '') })
+      out.push({ key: rowKey(el), status: STATUS[state], state, student_action: actionOf(el), kind: 'fact', label: (el.textContent ?? '').replace(/^[✓!✕]/, '') })
     }
   })
   return out

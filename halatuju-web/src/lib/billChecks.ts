@@ -10,7 +10,7 @@ import { utilityBillValues } from '@/lib/cockpitDocFacts'
 export interface BillChecks {
   holder: string
   billAddress: string
-  /** The application's names: the student, the family list and every read parent IC. */
+  /** The application's names: the student, the family roster and every live read parent IC. */
   appNames: string[]
   appAddress: string
   /** 'MMM YYYY' read off the bill; '' when undated. */
@@ -31,11 +31,12 @@ export function isBill(d: AdminApplicantDocument): boolean {
 export function billChecksFor(d: AdminApplicantDocument, app: AdminScholarshipDetail): BillChecks | undefined {
   const c = d.utility_check
   if (!isBill(d) || !c) return undefined
-  const names = [app.name, ...(app.guardians ?? []).map((g) => g.name ?? '')]
+  // Same roster the engine reads (`_roster_candidates`): father, mother, named other-family members.
+  const names = [app.name, app.father_name ?? '', app.mother_name ?? '',
+    ...(app.other_family_members ?? []).map((m) => m?.name ?? '')]
   for (const doc of app.documents ?? []) {
-    if (doc.doc_type !== 'parent_ic') continue
-    const n = (doc.vision_fields?.fields as Record<string, unknown> | undefined)?.name
-    if (typeof n === 'string') names.push(n)
+    if (doc.doc_type !== 'parent_ic' || doc.superseded_at) continue
+    if (typeof doc.vision_name === 'string') names.push(doc.vision_name)
   }
   const seen = new Set<string>()
   const appNames = names.map((n) => (n || '').trim()).filter((n) => {

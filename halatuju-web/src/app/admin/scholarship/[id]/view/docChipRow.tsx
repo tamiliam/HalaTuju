@@ -74,7 +74,6 @@ export function ChipLine({ chips, t }: { chips: DocChipData[]; t: T }) {
  *  shown. Chip Sprint 2 fills the bill words (owner 2026-11-28); the family sprints add theirs. */
 const R = 'admin.scholarship.docsDrawer.reason.'
 export const REASON_WORDS: Record<string, string> = {
-  'type.suspect': `${R}billNotFull`,
   'type.not_water_bill': `${R}notWaterBill`,
   'type.not_electricity_bill': `${R}notElectricityBill`,
   'name.unrelated': `${R}billOtherName`,

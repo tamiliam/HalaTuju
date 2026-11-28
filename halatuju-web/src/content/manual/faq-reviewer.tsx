@@ -247,7 +247,7 @@ export const REVIEWER_FAQ: QA[] = [
     {
       q: <>What do the chips on a water or electricity bill mean, and where are the names and addresses?</>,
       a: <>A bill shows <strong>Type</strong>, <strong>Name</strong>, <strong>Address</strong> and
-        <strong> Date</strong>, then the amount as a plain value. A wrong or incomplete type turns the other
+        <strong> Date</strong>, then the amount as a plain value. Only a wrong type (the wrong kind of bill) turns the other
         chips red. <strong>Name</strong> is green when the holder is the student or a family member, grey when
         the bill shows no name, and red when it is in an unrelated person&rsquo;s name.
         <strong> Address</strong> is green on a match, red on a mismatch and amber when it could not be

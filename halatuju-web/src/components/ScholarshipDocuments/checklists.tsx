@@ -255,7 +255,7 @@ export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: 
   if (!chk) return null
   const chips = utilityBillChips(doc).filter((c) => c.kind === 'fact')
   const capped = chips.some((c) => c.key === 'type' && c.state === 'red')
-  const value: Record<string, string | undefined> = { name: chk.name, address: chk.address, date: chk.bill_month }
+  const value: Record<string, string | undefined> = { address: chk.address }
   const row = (label: string, val: string | undefined, right?: ReactNode, below?: ReactNode) => (
     <div className="py-1.5">
       <div className="flex items-start justify-between gap-2">
@@ -277,9 +277,9 @@ export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: 
           ? <p className="pb-0.5 text-[11px] text-ground-600" data-chip-action={c.student_action}>{t(billActionKey(c))}</p>
           : null
         return <div key={c.key}>{row(label, c.key === 'type' || capped ? undefined : value[c.key],
-          <DocChip spoken={false} state={c.state}>{label}</DocChip>, action)}</div>
+          <DocChip state={c.state}>{label}</DocChip>, action)}</div>
       })}
-      {chk.monthly_bill && !capped ? row(t('scholarship.docs.utilityCheck.monthlyBill'), chk.monthly_bill) : null}
+      {chk.monthly_bill?.trim() && !capped ? row(t('scholarship.docs.utilityCheck.monthlyBill'), chk.monthly_bill.trim()) : null}
     </div>
   )
 }

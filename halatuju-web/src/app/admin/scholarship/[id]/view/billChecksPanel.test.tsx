@@ -35,8 +35,12 @@ const bill = (o: Record<string, unknown> = {}) => ({
 })
 const app = (doc: unknown) => ({
   name: 'SAMPLE STUDENT', address: '2 JALAN LAIN', postal_code: '00000', city: 'KOTA UJIAN',
-  guardians: [{ name: 'SAMPLE GUARDIAN' }],
-  documents: [doc, { id: 9, doc_type: 'parent_ic', vision_fields: { fields: { name: 'SAMPLE PARENT' } } }], verdict: [],
+  father_name: 'SAMPLE FATHER', mother_name: '',
+  other_family_members: [{ role: 'guardian', name: 'SAMPLE GUARDIAN', occupation: 'x' }],
+  documents: [doc,
+    { id: 9, doc_type: 'parent_ic', vision_name: 'SAMPLE PARENT', superseded_at: null },
+    { id: 10, doc_type: 'parent_ic', vision_name: 'SAMPLE OLD PARENT', superseded_at: '2026-10-01T00:00:00Z' }],
+  verdict: [],
 }) as unknown as AdminScholarshipDetail
 
 function open(doc: unknown) {
@@ -65,11 +69,20 @@ describe('the Checks panel for a bill', () => {
     expect(doc?.checks?.bill).toBeTruthy()
     const { container } = render(<DocChecksPanel checks={doc!.checks!} />)
     const text = container.textContent || ''
-    for (const s of ['SAMPLE HOLDER', 'SAMPLE STUDENT', 'SAMPLE GUARDIAN', 'SAMPLE PARENT', '1 JALAN CONTOH',
+    for (const s of ['SAMPLE HOLDER', 'SAMPLE STUDENT', 'SAMPLE FATHER', 'SAMPLE GUARDIAN', 'SAMPLE PARENT', '1 JALAN CONTOH',
       '2 JALAN LAIN, 00000, KOTA UJIAN', 'Aug 2026', 'Up to 3 months old is current', '84.20', 'Reasonable', 'Outstanding',
       'Bill is in another name: SAMPLE HOLDER', 'Water bill only', 'Bill is older than 3 months.']) {
       expect(text).toContain(s)
     }
+  })
+
+  it('lists the father, the roster and the live parent ICs as the application names, not a replaced IC', () => {
+    const { click } = open(bill({ name: 'SAMPLE FATHER' }))
+    const doc = click()
+    const { container } = render(<DocChecksPanel checks={doc!.checks!} />)
+    const text = container.textContent || ''
+    expect(text).toContain('SAMPLE STUDENT · SAMPLE FATHER · SAMPLE GUARDIAN · SAMPLE PARENT')
+    expect(text).not.toContain('SAMPLE OLD PARENT')
   })
 
   it('draws nothing of the kind for a document that is not a bill', () => {

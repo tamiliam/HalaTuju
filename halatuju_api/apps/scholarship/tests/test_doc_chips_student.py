@@ -14,7 +14,7 @@ from apps.scholarship import doc_chips, doc_chips_student as S
 from apps.scholarship.tests.test_doc_chips import _CHECK_KEYS, _FIELDS, _JUNK
 
 FIXTURE = pathlib.Path(__file__).resolve().parent / 'fixtures' / 'doc_chip_parity.json'
-_PROJECTED = ('key', 'status', 'state', 'kind', 'label')
+_PROJECTED = ('key', 'status', 'state', 'student_action', 'kind', 'label')
 _STUDENT_FIELDS = _FIELDS + (
     'current_status', 'proof_kind', 'proof_name_status', 'proof_nric_status', 'display_proof_name_status',
     'display_proof_nric_status', 'display_wrong_card', 'display_name_status', 'guardian_name', 'ward_name',
