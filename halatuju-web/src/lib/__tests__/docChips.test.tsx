@@ -207,4 +207,15 @@ describe('round 3 review fixes', () => {
     expect(chips[0].querySelector('[data-chip-state]')).toBeNull()
     expect(chips[1].querySelector('[data-chip-state]')?.textContent).toBe('grey')
   })
+  test('the served IC chip (label pathwayCheck.ic) draws its label and speaks its state', () => {
+    const doc = { id: 10, doc_type: 'offer_letter',
+      chips: [chip('ic', 'grey', { status: 'not_printed', label: 'scholarship.docs.pathwayCheck.ic' } as Partial<DocChipData>)],
+      pathway_check: {
+        name: 'match', ic: 'not_printed', candidate_name: '', candidate_nric: '', programme: '', institution: '',
+        issuer: '', offer_date: '', intake: '', address: '' } } as unknown as Parameters<typeof OfferLetterChecklist>[0]['doc']
+    const { container } = render(<OfferLetterChecklist doc={doc} t={(k: string) => k.split('.').slice(-1)[0]} />)
+    const icChip = container.querySelectorAll('[data-chip]')[1]
+    expect(icChip.getAttribute('data-chip')).toBe('grey')
+    expect(icChip.textContent).toBe('icgrey')   // the served label + the spoken state word; grey has no symbol
+  })
 })

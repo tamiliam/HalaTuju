@@ -21,7 +21,7 @@ export function DocChip({ state, children, plain = false, spoken = true }: {
   children: ReactNode
   /** A plain copied value: the value only, no ring, never green. */
   plain?: boolean
-  /** Add the sr-only state word. False when the chip text is already a result word or a year. */
+  /** Add the sr-only state word. False when the chip text is already a result word. */
   spoken?: boolean
 }) {
   const word = useStateWord(state)
