@@ -124,6 +124,11 @@
   "2026-11-28.1": {
     "digest": "e84703ea822149988a4c17ce388b8a4457bea9e5a88b7f20ebee0efb7745cfda",
     "note": "Case 1048 owner phone check (2026-11-28; 2026-11-27.3 is live and is not re-recorded). The shown-warnings filter on a declaration in the salary-slip slot (income_engine/declaration_name.payslip_only_warning, DISPLAY ONLY via ApplicantDocumentSerializer) also hides (1) a TYPE NOTE: a part that says only that the document is a declaration and not a payslip (English: the document / form / this / it is or appears to be an (income or salary) declaration (letter or form) rather than / instead of / not a (standard, formal, regular, official or typical) payslip or salary slip; Malay: dokumen / borang (ini) / ini ialah / adalah / merupakan (surat) akuan or pengakuan (pendapatan or gaji) bukan(nya) slip gaji or penyata gaji), matched on the WHOLE part, with a comma or and/dan before the tail joined first; and (2) 'specific' and 'exact' as filler beside the employer or pay period. 'clear' is NOT filler (No clear employer may mean unreadable; unclear and tidak jelas stay keep words), and 'handwritten' is no part of the type note. The keep words still win over the whole warning (tampering, forgery, chop, cop, stamp, signature, endorsement, penghulu, correction, applicant, name, IC/KP) and any left-over word keeps it. Stored reads unchanged; no warning feeds a verdict; no verdict, eligibility or money answer changes.",
-    "also_ok": []
+    "also_ok": [
+      {
+        "digest": "e6743bdb0b4859f497b8708b37f118c87af53e756961cd10776e2f177ee93b42",
+        "note": "Apply Step 3 results notes (TD-773, 2026-11-28): criteria_read.results_routes is a NEW display-only reader for the apply page (views/intake), added beside the existing readers; no existing function changes and nothing on the verdict path calls it, so no verdict, eligibility or money answer changes."
+      }
+    ]
   }
 }
