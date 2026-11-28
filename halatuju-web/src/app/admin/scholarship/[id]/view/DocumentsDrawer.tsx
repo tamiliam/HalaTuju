@@ -124,7 +124,7 @@ export function DocumentsDrawer({ app, t, busy, canWrite, setViewerDoc, doReRunV
                         {docLabel(d)}
                       </span>
                     )}
-                    <DocPill pill={p}>{t(`admin.scholarship.docsDrawer.pill.${p}`)}</DocPill>
+                    <DocPill pill={p} className={PHONE_PILL_SM}>{t(`admin.scholarship.docsDrawer.pill.${p}`)}</DocPill>
                     <NotesIcon count={undefined} t={t} />
                     {/* Capture confidence: read deterministically (fixed labels) or by AI? Shown on
                         every read doc — field-extracted docs AND the identity ICs (read via the MyKad

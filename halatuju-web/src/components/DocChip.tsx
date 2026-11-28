@@ -37,9 +37,14 @@ export function DocChip({ state, children, plain = false, spoken = true }: {
   )
 }
 
-export function DocPill({ pill, children }: { pill: ChipPillWord; children: ReactNode }) {
+export function DocPill({ pill, children, className = '' }: {
+  pill: ChipPillWord
+  children: ReactNode
+  /** Extra classes from the caller, e.g. the case page's phone pill class (`@/lib/phonePill`). */
+  className?: string
+}) {
   return (
-    <span data-pill={pill} className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${PILL_COLOURS[pill]}`}>
+    <span data-pill={pill} className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${className} ${PILL_COLOURS[pill]}`}>
       {children}
     </span>
   )
