@@ -438,8 +438,21 @@ _BEFORE_GAP = r"\s*[:\-]?\s*(?:(?:the|a|an|its)\s+)?$"
 #: (the word filter's, plus the take-home, gross and payslip words the codes cover) and an ABSENCE.
 _PAPER_TOPICS = ('payslip', 'pay slip', 'salary slip', 'slip gaji', 'penyata gaji')
 _TAGGED_TOPIC_RE = _phrases(_TOPICS + _PAPER_TOPICS + (
-    'take home', 'net pay', 'net income', 'net salary', 'gross', 'gaji bersih', 'gaji kasar',
-    'pendapatan bersih', 'pendapatan kasar'))
+    'take home', 'net pay', 'net income', 'net salary', 'gross', 'gross income', 'gross salary', 'gross pay',
+    'gaji bersih', 'gaji kasar', 'pendapatan bersih', 'pendapatan kasar'))
+#: Last check (2026-11-28): "amount" / "amaun" is filler ONLY when the part's topic is take-home or gross.
+_AMOUNT_TOPIC_RE = _phrases(('take home', 'net pay', 'net income', 'net salary', 'gross', 'gross income',
+                             'gross salary', 'gross pay', 'gaji bersih', 'gaji kasar', 'pendapatan bersih',
+                             'pendapatan kasar'))
+#: ...and a document word ("declaration", "letter", "form", "surat", "borang" ...) is filler ONLY inside a
+#: place phrase ("on this document", "from this page", "pada borang ini"); anywhere else a note saying the
+#: letter or form is missing must show. The case-1048 lead-in is the one exact exception.
+_TAGGED_PLACE = re.compile(
+    r"\b(?:on|in|within|from|at)\s+(?:the\s+|this\s+)?(?:document|form|slip|payslip|pay\s+slip|declaration|letter|page)\b"
+    r"|\b(?:pada|dalam|di\s+dalam|di)\s+(?:dokumen|borang|slip|surat\s+akuan|akuan|surat)(?:\s+ini)?\b")
+_LEAD_IN = re.compile(r"^the document shows only an? declaration (?:signingdate|date)\b")
+_DECL_SIGNING = re.compile(r"\bdeclaration (?=signingdate\b)")
+_SIGNING_MARK = 'signingdate'
 #: The narrow absences, only beside a pay period or a payslip: "... a signing date RATHER THAN a (specific)
 #: pay period", "the document SHOWS ONLY ...", "ONLY a declaration DATE". Never beside the employer ("the
 #: employer is a person rather than a company" is no absence), and never with no such topic at all.
@@ -459,10 +472,9 @@ _TAGGED_SPLIT = re.compile(r"[;,.:]|\b(?:and|dan|but|however|although|though|whe
 #: left in a hiding part must be one of these (no word that can carry a claim of its own). "date" is safe
 #: here: a part that says a date is absent never reaches this test.
 _TAGGED_FILLER = _FILLER | frozenset((
-    'pay amount separate separately details information info figure document form declaration letter slip '
-    'payslip on in from for it there only shows show rather than does not page appear appears income salary '
-    'or nor either neither available filled date maklumat butiran pada dalam di borang dokumen surat akuan '
-    'amaun atau').split())
+    'pay separate separately details information info figure '
+    'payslip on in from for it there only shows show rather than does not page appear appears '
+    'or nor either neither available filled date maklumat butiran pada dalam di atau signingdate').split())
 
 
 def _beside_absence(s: str, m: re.Match) -> bool:
@@ -484,7 +496,10 @@ def _tagged_part_hides(part: str) -> bool:
             return False
     elif not (_RATHER_THAN.search(p) or (_SHOWS_ONLY.search(p) and _NARROW_TOPIC_RE.search(p))):
         return False
-    return all(t in _TAGGED_FILLER for t in _ABSENT_RE.sub(' ', _TAGGED_TOPIC_RE.sub(' ', p)).split())
+    rest = _ABSENT_RE.sub(' ', _TAGGED_TOPIC_RE.sub(' ', _DECL_SIGNING.sub(' ', _LEAD_IN.sub(' ', p))))
+    rest = _TAGGED_PLACE.sub(' ', rest).split()
+    amount_ok = bool(_AMOUNT_TOPIC_RE.search(p))
+    return all(t in _TAGGED_FILLER or (amount_ok and t in ('amount', 'amaun')) for t in rest)
 
 
 def tagged_hides(warning) -> bool:
@@ -501,7 +516,10 @@ def tagged_hides(warning) -> bool:
         return False
     stripped = re.sub(r'\bmonth\s*(?:and|&)\s*year\b', 'month/year', stripped)
     stripped = re.sub(r'\bbulan\s*(?:dan|&)\s*tahun\b', 'bulan/tahun', stripped)
-    parts = [p for p in _TAGGED_SPLIT.split(stripped) if p.strip()]
+    marked = _SIGNING_DATE_PHRASES.sub(lambda m: m.group(0) if _beside_absence(s, m) else _SIGNING_MARK, s)
+    marked = re.sub(r'\bmonth\s*(?:and|&)\s*year\b', 'month/year', marked)
+    marked = re.sub(r'\bbulan\s*(?:dan|&)\s*tahun\b', 'bulan/tahun', marked)
+    parts = [p for p in _TAGGED_SPLIT.split(marked) if p.strip()]
     if parts and all(_tagged_part_hides(p) for p in parts):
         return True
     return payslip_only_warning(warning)

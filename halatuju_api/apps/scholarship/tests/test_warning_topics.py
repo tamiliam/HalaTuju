@@ -388,6 +388,67 @@ class ReviewRound3NothingLeftOverTests(SimpleTestCase):
             self.assertTrue(has_keep_word(w), w)
 
 
+class LastCheckIncomeSalaryAndLetterWordsTests(SimpleTestCase):
+    """Last check (2026-11-28): "income", "salary" and the document words (letter, form, declaration, surat,
+    borang ...) are no filler (a place phrase excepted); "amount" is filler only beside a take-home or gross
+    topic. The fix may only make MORE notes show."""
+
+    MUST_SHOW = (
+        'No employer or income stated', 'No pay period or income stated', 'Amount not stated for the pay period',
+        'Income amount not stated for the pay period', 'No salary amount or employer',
+        'No income from the employer', 'None of the income is from the employer', 'No salary from the employer',
+        'No payslip for the income', 'Employer declaration letter missing', 'No employer letter',
+        'Company letter not provided', 'Tiada surat majikan', 'No income declaration form from the employer')
+    MUST_HIDE = (
+        'No employer name is provided on this document.', 'A separate take-home pay amount is not shown.',
+        'The document shows only a declaration signing date rather than a specific pay period.',
+        'No pay period is stated.', 'Gross pay is not shown.', 'Gross income not stated', 'Net salary not stated',
+        'Amaun gaji bersih tiada', 'No payslip from the employer')
+    #: Computed at the parent commit (9bc37e9af) over every note below, under every payslip-only code.
+    HIDDEN_AT_PARENT = frozenset({
+        'No employer or income stated', 'No pay period or income stated', 'Amount not stated for the pay period',
+        'Income amount not stated for the pay period', 'No salary amount or employer',
+        'No income from the employer', 'None of the income is from the employer', 'No salary from the employer',
+        'No payslip for the income', 'Employer declaration letter missing', 'No employer letter',
+        'Company letter not provided', 'Tiada surat majikan', 'No income declaration form from the employer',
+        'No employer name is provided on this document.', 'A separate take-home pay amount is not shown.',
+        'The document shows only a declaration signing date rather than a specific pay period.',
+        'No pay period is stated.', 'Gross pay is not shown.', 'Gross income not stated', 'Net salary not stated',
+        'Amaun gaji bersih tiada', 'No payslip from the employer',
+        'Company details are missing from this page', 'No employer or pay period stated',
+        'The date of signing is given rather than a pay period', 'Month and year of salary not shown',
+        'Bulan gaji tidak dinyatakan', 'A separate take home pay amount is not shown; gross pay missing',
+        'The document shows only a declaration date rather than a pay period'})
+
+    def test_the_new_wordings_show_under_every_payslip_only_code(self):
+        for w in self.MUST_SHOW:
+            self.assertFalse(tagged_hides(w), w)
+            for code in sorted(wt.PAYSLIP_ONLY_TOPICS):
+                self.assertEqual(shown_warnings(_doc([code]), [w]), [w], (w, code))
+
+    def test_the_pure_absences_still_hide_under_their_code(self):
+        for w in self.MUST_HIDE:
+            self.assertTrue(tagged_hides(w), w)
+            for code in sorted(wt.PAYSLIP_ONLY_TOPICS):
+                self.assertEqual(shown_warnings(_doc([code]), [w]), [], (w, code))
+
+    def test_amount_is_filler_only_beside_a_take_home_or_gross_topic(self):
+        for w in ('Gross amount not stated', 'Net pay amount not shown'):
+            self.assertTrue(tagged_hides(w), w)
+        for w in ('Employer amount missing', 'Amaun majikan tiada'):
+            self.assertFalse(tagged_hides(w), w)
+
+    def test_the_hidden_set_is_a_subset_of_the_parents(self):
+        notes = set(self.MUST_SHOW) | set(self.MUST_HIDE) | set(ReviewRound2EveryPartTests.STILL_HIDE)
+        notes |= {w for w, _ in ReviewRound1KeepFamiliesTests.CASE_1048}
+        notes |= set(ReviewRound3NothingLeftOverTests.MUST_SHOW)
+        notes |= {w for ws in ReviewRound2EveryPartTests.MUST_SHOW.values() for w in ws}
+        hidden = {w for w in notes for code in sorted(wt.PAYSLIP_ONLY_TOPICS)
+                  if shown_warnings(_doc([code]), [w]) == []}
+        self.assertLessEqual(hidden, self.HIDDEN_AT_PARENT)
+        self.assertEqual(hidden, set(self.MUST_HIDE) | set(ReviewRound2EveryPartTests.STILL_HIDE))
+
+
 class OnlyTheReaderAndTheDisplayNameTheTopicsTests(SimpleTestCase):
     """No verdict, chip, score, genuineness or money may read a topic: only these modules may name them."""
 
