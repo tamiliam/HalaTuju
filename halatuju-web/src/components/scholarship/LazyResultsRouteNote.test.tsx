@@ -26,9 +26,8 @@ describe('resultsRouteNote: which note Step 3 shows', () => {
     for (const k of KINDS.filter((x) => x !== 'spm')) expect(resultsRouteNote('post_spm', k, true)).toBeNull()
   })
 
-  it('both: the PNGK hint for STPM, the overall CGPA hint for Matriculation / Asasi / Diploma, none for SPM', () => {
-    expect(resultsRouteNote('both', 'stpm', true)).toBe('pngkOnly')
-    for (const k of ['matric', 'asasi', 'diploma']) expect(resultsRouteNote('both', k, true)).toBe('cgpaOnly')
+  it('both: the same PNGK hint for STPM, Matriculation, Asasi and Diploma, none for SPM', () => {
+    for (const k of ['stpm', 'matric', 'asasi', 'diploma']) expect(resultsRouteNote('both', k, true)).toBe('pngkOnly')
     expect(resultsRouteNote('both', 'spm', true)).toBeNull()
   })
 
@@ -57,9 +56,9 @@ describe('LazyResultsRouteNote: what it draws', () => {
     expect(note.querySelector('button, a')).toBeNull()
   })
 
-  it.each(['pngkOnly', 'cgpaOnly'] as const)('the %s hint: a small blue note', async (kind) => {
-    render(<LazyResultsRouteNote kind={kind} />)
-    const p = await screen.findByText(`documentsTab.resultsNote.${kind}`)
+  it('the PNGK hint: a small blue note', async () => {
+    render(<LazyResultsRouteNote kind="pngkOnly" />)
+    const p = await screen.findByText('documentsTab.resultsNote.pngkOnly')
     expect(p.className).toContain('bg-info-50')
   })
 })
@@ -76,12 +75,14 @@ describe('the words', () => {
     expect(n.postSpmAdd.replace('{link}', (en as unknown as Cat).scholarship.apply.resultsWrong)).toBe(
       'If you have these results, add them by clicking the “Results wrong? Edit them” link above. '
       + 'If you do not have them yet, this gift is not for you this time.')
-    expect(n.pngkOnly).toBe('For this gift, we look at your PNGK only. Your SPM grades do not count.')
+    expect(n.pngkOnly).toBe('For this gift, we check your PNGK, not your SPM grades.')
+    expect(n.cgpaOnly).toBeUndefined()
   })
 
   it.each([['en', en], ['ms', ms], ['ta', ta]] as const)('%s: every note is there and the link is named by its key', (_l, c) => {
     const n = note(c)
-    for (const k of ['postSpmTitle', 'postSpmBody', 'postSpmAdd', 'pngkOnly', 'cgpaOnly']) expect(n[k]).toBeTruthy()
+    for (const k of ['postSpmTitle', 'postSpmBody', 'postSpmAdd', 'pngkOnly']) expect(n[k]).toBeTruthy()
+    expect(n.cgpaOnly).toBeUndefined()
     expect(n.postSpmAdd).toContain('“{link}”')
   })
 })

@@ -25,8 +25,8 @@ export type { ResultsNoteKind }
 /**
  * Which note Step 3 shows, or null for none. `routes` is the server's `results_routes`:
  *  * 'post_spm' + an SPM-only holder -> the warning (A);
- *  * 'both' (each on their own results) + a post-SPM holder -> the hint (B): the PNGK for STPM, the
- *    overall CGPA for Matriculation / Asasi / Diploma (`third_route_overall`, the card's own number).
+ *  * 'both' (each on their own results) + a post-SPM holder (STPM, Matriculation, Asasi, Diploma) ->
+ *    the one hint (B): "we check your PNGK, not your SPM grades".
  * 'spm', 'either' and null show nothing; neither does a student with no results yet (that card
  * already asks for them).
  */
@@ -35,8 +35,7 @@ export function resultsRouteNote(routes: ResultsRoutes | undefined, examType: st
   if (!hasData) return null
   if (routes === 'post_spm') return examType === 'spm' ? 'needsPostSpm' : null
   if (routes !== 'both') return null
-  if (examType === 'stpm') return 'pngkOnly'
-  return isThirdRoute(examType) ? 'cgpaOnly' : null
+  return examType === 'stpm' || isThirdRoute(examType) ? 'pngkOnly' : null
 }
 
 export default function LazyResultsRouteNote({ kind }: { kind: ResultsNoteKind }) {

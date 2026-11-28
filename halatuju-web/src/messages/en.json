@@ -10354,8 +10354,7 @@
       "postSpmTitle": "This gift needs results from after SPM",
       "postSpmBody": "This gift is for students who already have STPM, Matriculation, Asasi or Diploma results. We only have your SPM results.",
       "postSpmAdd": "If you have these results, add them by clicking the “{link}” link above. If you do not have them yet, this gift is not for you this time.",
-      "pngkOnly": "For this gift, we look at your PNGK only. Your SPM grades do not count.",
-      "cgpaOnly": "For this gift, we look at your overall CGPA only. Your SPM grades do not count."
+      "pngkOnly": "For this gift, we check your PNGK, not your SPM grades."
     },
     "sample": {
       "link": "See a sample",

@@ -6,9 +6,8 @@
  * * `needsPostSpm` - a caution box: the gift needs results from after SPM and this student holds SPM
  *   only. It names the card's own "Results wrong? Edit them" link (passed in the language on
  *   screen, so the two always match). No button, and it never blocks Continue.
- * * `pngkOnly` / `cgpaOnly` - a small blue note: the gift judges each student on their own results,
- *   so a post-SPM holder is judged on the PNGK (STPM) or the overall CGPA (Matriculation, Asasi,
- *   Diploma) only.
+ * * `pngkOnly` - a small blue note: the gift judges each student on their own results, so every
+ *   post-SPM holder (STPM, Matriculation, Asasi, Diploma) is judged on the PNGK, not the SPM grades.
  *
  * Display only: which note shows is the server's `results_routes` (read from the criteria tree the
  * gate reads); nothing here changes a verdict.
@@ -20,7 +19,7 @@ import { useT } from '@/lib/i18n'
 import '@/lib/messagesDocuments'
 import { loadCatalogue } from '@/lib/messages'
 
-export type ResultsNoteKind = 'needsPostSpm' | 'pngkOnly' | 'cgpaOnly'
+export type ResultsNoteKind = 'needsPostSpm' | 'pngkOnly'
 
 /** Resolves once the on-screen language holds the Documents slice (English always does); never rejects. */
 export async function wordsReady(locale: string | undefined): Promise<void> {

@@ -5,7 +5,7 @@
  * intake's `results_routes` (read from the criteria tree the gate reads; display only):
  *  * A - a gift that needs post-SPM results, an SPM-only holder: a caution box under the card;
  *  * B - a gift that judges each student on their own results, a post-SPM holder: a small hint
- *    (the PNGK for STPM, the overall CGPA for Matriculation / Asasi / Diploma).
+ *    (the one PNGK hint, for STPM, Matriculation, Asasi and Diploma alike).
  * Neither blocks Continue. And D: "Results wrong? Edit them" clears a stale profile return first,
  * so the results editors come back HERE, not to wherever an older detour pointed.
  *
@@ -55,7 +55,6 @@ const NO_RESULTS = { ...sandboxProfileSpm, grades: {}, results_held: null }
 
 const WARN = 'documentsTab.resultsNote.postSpmTitle'
 const PNGK = 'documentsTab.resultsNote.pngkOnly'
-const CGPA = 'documentsTab.resultsNote.cgpaOnly'
 
 const openResults = async (profile: Record<string, unknown>, routes: string | null | undefined) => {
   (getScholarshipIntake as jest.Mock).mockResolvedValue(
@@ -74,7 +73,7 @@ const openResults = async (profile: Record<string, unknown>, routes: string | nu
 const settle = () => new Promise((r) => setTimeout(r, 0))
 const noNotes = async () => {
   await settle()
-  for (const k of [WARN, PNGK, CGPA]) expect(screen.queryByText(k)).toBeNull()
+  for (const k of [WARN, PNGK]) expect(screen.queryByText(k)).toBeNull()
 }
 
 beforeEach(() => {
@@ -116,10 +115,10 @@ describe('B: a gift that judges each student on their own results', () => {
     expect(screen.queryByText(WARN)).toBeNull()
   })
 
-  it.each(['matric', 'asasi', 'diploma'] as const)('tells a %s holder only the overall CGPA counts', async (kind) => {
+  it.each(['matric', 'asasi', 'diploma'] as const)('tells a %s holder the same PNGK hint', async (kind) => {
     await openResults(third(kind), 'both')
-    expect(await screen.findByText(CGPA)).toBeTruthy()
-    expect(screen.queryByText(PNGK)).toBeNull()
+    expect(await screen.findByText(PNGK)).toBeTruthy()
+    expect(screen.queryByText(WARN)).toBeNull()
   })
 
   it('says nothing to an SPM holder', async () => {
