@@ -24,14 +24,18 @@ PRICE_SOURCE = 'https://ai.google.dev/gemini-api/docs/pricing (paid tier, standa
 PRICES = {
     'gemini-2.5-flash': {'input': 0.30, 'output': 2.50, 'thinking': 2.50},
     'gemini-2.5-flash-lite': {'input': 0.10, 'output': 0.40, 'thinking': 0.40},
+    # OCR-17 (2026-11-28), https://aistudio.google.com/docs/pricing (paid tier, read 28 Nov 2026).
+    # 3.6 Flash is 0.75 / 3.75 only THROUGH 31 Dec 2026; from 1 Jan 2027 it is 1.50 / 7.50 - update then.
+    'gemini-3.6-flash': {'input': 0.75, 'output': 3.75, 'thinking': 3.75},
+    'gemini-3.5-flash-lite': {'input': 0.30, 'output': 2.50, 'thinking': 2.50},
 }
 STOP_CODES = (402, 429)
 #: MEASURED 2026-11-01 (S3 pilot, 10 letters, images 540x1204 up to 2114x2992 px, photos and
-#: PDF page renders): gemini-2.5-flash reported IMAGE = 258 prompt tokens for EVERY image — one
+#: PDF page renders): 2.5 Flash reported IMAGE = 258 prompt tokens for EVERY image — one
 #: tile, whatever the size (the documented tiling rule does not apply to this call's default
 #: media resolution). The estimate uses the measurement, not the documented rule.
 IMAGE_TOKENS_MEASURED = 258
-#: MEASURED 2026-11-01 (S4 probe, one SYNTHETIC 1654x2339 A4 page, gemini-2.5-flash): IMAGE = 258
+#: MEASURED 2026-11-01 (S4 probe, one SYNTHETIC 1654x2339 A4 page, 2.5 Flash): IMAGE = 258
 #: tokens at the default and at MEDIA_RESOLUTION_MEDIUM, 3,354 at MEDIA_RESOLUTION_HIGH (the S4
 #: reader's setting — "pan and scan"). The S4 estimate uses this per page image shown.
 IMAGE_TOKENS_HIGH_A4 = 3354

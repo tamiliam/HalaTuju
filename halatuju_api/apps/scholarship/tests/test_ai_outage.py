@@ -825,25 +825,25 @@ class TheOutageAlertCoversGeminiReads(TestCase):
 @override_settings(GEMINI_API_KEY='test-key')
 class TheCascadeErrorCarriesEveryModel(TestCase):
     def test_the_json_seam_reports_each_models_own_error(self):
-        client = _gemini_client({'gemini-3.8-flash': '3.8: 429 RESOURCE_EXHAUSTED', 'gemini-2.5-flash': _402,
-                                 'gemini-2.5-flash-lite': 'lite: 503 UNAVAILABLE'})
+        client = _gemini_client({'gemini-3.8-flash': '3.8: 429 RESOURCE_EXHAUSTED', 'gemini-3.6-flash': _402,
+                                 'gemini-3.5-flash-lite': 'lite: 503 UNAVAILABLE'})
         with patch('google.genai.Client', return_value=client):
             err = vision._call_gemini_json('prompt', {'type': 'object'})['_error']
-        self.assertEqual(client.asked, ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'])
+        self.assertEqual(client.asked, ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'])
         self.assertTrue(err.startswith('All AI models failed: gemini-3.8-flash: 3.8: 429'))
-        self.assertIn('gemini-2.5-flash: 402', err)
-        self.assertIn('gemini-2.5-flash-lite: lite: 503 UNAVAILABLE', err)
+        self.assertIn('gemini-3.6-flash: 402', err)
+        self.assertIn('gemini-3.5-flash-lite: lite: 503 UNAVAILABLE', err)
         self.assertLessEqual(len(err), 600)
 
     def test_the_prose_seam_reports_each_models_own_error(self):
         from apps.scholarship.profile_engine import _call_gemini_text
-        client = _gemini_client({'gemini-3.8-flash': '3.8 down', 'gemini-2.5-flash': _402,
-                                 'gemini-2.5-flash-lite': 'lite down'})
+        client = _gemini_client({'gemini-3.8-flash': '3.8 down', 'gemini-3.6-flash': _402,
+                                 'gemini-3.5-flash-lite': 'lite down'})
         with patch('google.genai.Client', return_value=client):
             err = _call_gemini_text('prompt', 'English')['error']
         self.assertIn('gemini-3.8-flash: 3.8 down', err)
-        self.assertIn('gemini-2.5-flash: 402', err)
-        self.assertIn('gemini-2.5-flash-lite: lite down', err)
+        self.assertIn('gemini-3.6-flash: 402', err)
+        self.assertIn('gemini-3.5-flash-lite: lite down', err)
 
     def test_long_errors_are_cut_so_every_model_still_shows(self):
         err = gemini.cascade_failure([('gemini-2.5-pro', 'x' * 5000), ('gemini-2.5-flash', _402 * 5),

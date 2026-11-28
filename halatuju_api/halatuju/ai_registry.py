@@ -175,7 +175,8 @@ JOBS = [
     # ⚠ FIXED means the model is written into the source: changing it needs a code change and a
     # deploy, not a setting. Shown as such rather than hidden, because "this one is different"
     # is exactly what an upgrade checklist owes its reader. Since Gemini Phase 2 Option A each is
-    # a cascade in its own module (3.8 Flash, then 2.5 Flash) — still in the source, still fixed.
+    # a cascade in its own module (3.8 Flash, 3.6 Flash, then 3.5 Flash-Lite since OCR-17) —
+    # still in the source, still fixed.
     {'key': 'course_careers', 'label': 'Mapping a course to careers (batch)',
      'seam': SEAM_OWN, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'map_course_careers.MODEL_CASCADE',

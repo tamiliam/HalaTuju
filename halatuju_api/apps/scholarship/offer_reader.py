@@ -129,7 +129,7 @@ phase 8 the UniSZA one ('ua:UniSZA'); all off, degree letters only. This reader 
 (UMPSA, UniMAP, UPM) come here. Prompt and schema unchanged.
 2.13.0 - OCR-14b-1 (2026-11-27). offer_parse 2.6.0: the UMPSA rules reader (`offer_parse_umpsa`, 'ua:UMPSA', off;
 2026/27 degree letters only, IC read); the UniSZA withdrawal note excused (owner, 27 Nov). Prompt and schema unchanged.
-OCR-14b-2 (same version): the UniMAP rules reader (`offer_parse_unimap`, 'ua:UniMAP', off; degree letters).
+OCR-14b-2 (same version): the UniMAP rules reader (`offer_parse_unimap`, 'ua:UniMAP', off; degree letters). 2.14.0 - OCR-17 (2026-11-28): MODEL_CASCADE 3.8, 3.6, 3.5-Lite (no 2.5); prompt, schema unchanged.
 
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in
@@ -146,7 +146,7 @@ import re
 logger = logging.getLogger(__name__)
 
 #: Semantic version of the AI offer reader — see the module docstring.
-OFFER_READER_VERSION = '2.13.0'
+OFFER_READER_VERSION = '2.14.0'
 #: Pages of a PDF shown to Gemini: an e-registration slip can sit in front of the offer and the
 #: reporting date can be on page 2 (owner notes, S1); later pages are mostly reply forms.
 MAX_PAGES = 3

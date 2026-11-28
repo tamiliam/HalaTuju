@@ -149,20 +149,20 @@ class TestItResolvesRatherThanRemembers(TestCase):
         from apps.scholarship.profile_engine import MODEL_CASCADE
         self.assertEqual([job['model']] + job['fallbacks'], list(MODEL_CASCADE))
 
-    def test_the_ordinary_flash_jobs_start_on_3_8_with_2_5_after_it(self):
+    def test_the_ordinary_flash_jobs_start_on_3_8_with_3_6_and_3_5_lite_after_it(self):
         """Gemini Phase 2 Option A (owner, 2026-11-14): every Flash job moves to 3.8 Flash first,
-        keeping 2.5 Flash and then 2.5 Flash-Lite as its fallbacks."""
+        then (OCR-17, 2026-11-28) 3.6 Flash and 3.5 Flash-Lite as its fallbacks; no 2.5 model."""
         jobs = {j['key']: j for j in ai_registry.snapshot()}
         for key in ('doc_read', 'offer_read', 'income_approval', 'interview_gaps', 'answer_relevance',
                     'spend_category', 'student_profile', 'profile_refine', 'doc_help',
                     'verdict_narrative', 'spend_summary', 'counsellor_report', 'apply_copy'):
             with self.subTest(job=key):
                 self.assertEqual(jobs[key]['model'], 'gemini-3.8-flash')
-                self.assertEqual(jobs[key]['fallbacks'], ['gemini-2.5-flash', 'gemini-2.5-flash-lite'])
+                self.assertEqual(jobs[key]['fallbacks'], ['gemini-3.6-flash', 'gemini-3.5-flash-lite'])
         for key in ('course_careers', 'stpm_headlines'):
             with self.subTest(job=key):
                 self.assertEqual(jobs[key]['model'], 'gemini-3.8-flash')
-                self.assertEqual(jobs[key]['fallbacks'][0], 'gemini-2.5-flash')
+                self.assertEqual(jobs[key]['fallbacks'], ['gemini-3.6-flash', 'gemini-3.5-flash-lite'])
 
     def test_the_jobs_the_owner_kept_on_2_5_still_start_there(self):
         """THE EXCEPTIONS. Genuineness was not tested on 3.8: the four genuineness jobs stay on

@@ -10,20 +10,16 @@ from apps.courses.models import StpmCourse
 
 BATCH_SIZE = 50
 
-#: 3.8 Flash first, then 2.5 Flash (Gemini Phase 2 Option A, owner 2026-11-14). A batch that fails
-#: on one model (an error, or no parseable JSON) is asked again on the next. The AI registry reads
-#: this list, so the screen shows the order the command actually tries.
-MODEL_CASCADE = ['gemini-3.8-flash', 'gemini-2.5-flash']
+#: 3.8 Flash first, then 3.6 Flash, then 3.5 Flash-Lite (OCR-17, 2026-11-28; the 2.5 tail is gone).
+#: A batch that fails on one model (an error, or no parseable JSON) is asked again on the next. The
+#: AI registry reads this list, so the screen shows the order the command actually tries.
+MODEL_CASCADE = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']
 
 
 def _config(model):
-    """The request config for ``model``. 2.5 Flash THINKS by default and its thinking tokens count
-    against max_output_tokens, which could leave the JSON truncated; a headline needs none, so its
-    budget is 0. 3.x is given no thinking setting (its knobs differ); it gets more output room
-    instead, so its thinking cannot crowd out the answer."""
-    if model.startswith('gemini-2.'):
-        return {'temperature': 0.9, 'max_output_tokens': 4096,
-                'thinking_config': {'thinking_budget': 0}}
+    """The request config for ``model``. Every model in the cascade is 3.x: it is given no thinking
+    setting (its knobs differ) and gets more output room, so its thinking cannot crowd out the
+    answer. (The old 2.x branch, thinking budget 0, went with the 2.5 tail in OCR-17.)"""
     return {'temperature': 0.9, 'max_output_tokens': 16384}
 
 

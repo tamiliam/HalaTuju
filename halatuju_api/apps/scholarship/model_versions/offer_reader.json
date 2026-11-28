@@ -43,5 +43,10 @@
         "note": "OCR-16 (2026-11-28): halatuju/ai_registry.py (one of the listed files) shows the four genuineness jobs through genuineness.genuineness_models(). Display only: the offer reader prompt, schema, model and answers are unchanged."
       }
     ]
+  },
+  "2.14.0": {
+    "digest": "c3f04015901ab87296db8dbf4c66e19bfa22dbd4cbed59418591bd7ad09d2bcf",
+    "note": "2026-11-28: OCR-17: the fallback tail of profile_engine.MODEL_CASCADE is now 3.8 Flash, 3.6 Flash, 3.5 Flash-Lite (no 2.5 model); the cascade is pinned, so the digest moved. Prompt, schema, inputs and clean-up unchanged.",
+    "also_ok": []
   }
 }

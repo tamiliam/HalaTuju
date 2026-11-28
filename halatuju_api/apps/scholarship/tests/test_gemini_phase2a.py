@@ -57,9 +57,10 @@ class _RealSeam(TestCase):
 
 
 class TheCascades(SimpleTestCase):
-    def test_the_default_cascade_is_3_8_then_the_2_5_cascade(self):
-        self.assertEqual(MODEL_CASCADE, ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'])
-        self.assertEqual(FLASH_25_CASCADE, ['gemini-2.5-flash', 'gemini-2.5-flash-lite'])
+    def test_the_default_cascade_is_3_8_3_6_3_5_lite(self):
+        self.assertEqual(MODEL_CASCADE, ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'])
+        self.assertEqual(FLASH_25_CASCADE, ['gemini-2.5-flash', 'gemini-2.5-flash-lite'])   # genuineness only
+        self.assertFalse(set(MODEL_CASCADE) & set(FLASH_25_CASCADE))
 
     def test_the_other_cascades_moved_too(self):
         from apps.courses.management.commands import generate_stpm_headlines, map_course_careers
@@ -68,7 +69,8 @@ class TheCascades(SimpleTestCase):
                               ('map_course_careers', map_course_careers.MODEL_CASCADE),
                               ('generate_stpm_headlines', generate_stpm_headlines.MODEL_CASCADE)):
             with self.subTest(cascade=name):
-                self.assertEqual(cascade[:2], ['gemini-3.8-flash', 'gemini-2.5-flash'])
+                self.assertEqual(cascade, ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'])
+                self.assertFalse([m for m in cascade if '2.5' in m])
 
     def test_the_apply_copy_default_is_3_8(self):
         from halatuju.settings import base
@@ -234,7 +236,7 @@ class TheOfferSecondRead(SimpleTestCase):
         self.assertEqual([c['part'] for c in shown['calls']], ['page_1', 'retry_images'])
         self.assertEqual([c['model'] for c in shown['calls']], [THREE_EIGHT, THREE_EIGHT])
         self.assertEqual(shown['pages'], 1)                                     # a retry is not a page
-        self.assertEqual(ex['offer_reader_version'], '2.13.0')
+        self.assertEqual(ex['offer_reader_version'], '2.14.0')
 
     def test_a_retry_that_comes_back_blank_too_keeps_the_blank_read_and_never_retries_again(self):
         for second in (BLANK, {'_error': 'All AI models failed: x'}):
@@ -563,7 +565,7 @@ class TheOfferSecondRead(SimpleTestCase):
 # ── The apply-copy draft and the batch commands ──────────────────────────────────────────────────
 
 class TheApplyCopyDraftFallsBack(SimpleTestCase):
-    def test_a_3_8_failure_moves_to_2_5(self):
+    def test_a_3_8_failure_moves_to_3_6(self):
         asked = []
         good = json.dumps({'title': 'T', 'intro': 'I', 'criteria': ['a']})
 
@@ -576,12 +578,12 @@ class TheApplyCopyDraftFallsBack(SimpleTestCase):
         with override_settings(APPLY_COPY_DRAFT_MODEL='gemini-3.8-flash'), \
                 patch('apps.scholarship.contracts._gemini_generate', side_effect=seam):
             block = acd.draft(programme, 'ms')
-        self.assertEqual(asked, ['gemini-3.8-flash', 'gemini-2.5-flash'])
+        self.assertEqual(asked, ['gemini-3.8-flash', 'gemini-3.6-flash'])
         self.assertEqual(block['criteria'], ['a'])
 
 
 class TheStpmHeadlinesCommandFallsBack(SimpleTestCase):
-    def test_a_3_8_failure_asks_2_5_with_its_own_config(self):
+    def test_a_3_8_failure_asks_3_6_with_the_same_config(self):
         from apps.courses.management.commands import generate_stpm_headlines as gsh
         client = MagicMock()
         seen = []
@@ -593,6 +595,6 @@ class TheStpmHeadlinesCommandFallsBack(SimpleTestCase):
             return SimpleNamespace(text='{"headlines": {"C1": "x"}}')
         client.models.generate_content.side_effect = generate_content
         self.assertEqual(gsh._ask(client, ['p']), {'C1': 'x'})
-        self.assertEqual([m for m, _ in seen], ['gemini-3.8-flash', 'gemini-2.5-flash'])
+        self.assertEqual([m for m, _ in seen], ['gemini-3.8-flash', 'gemini-3.6-flash'])
         self.assertNotIn('thinking_config', seen[0][1])
-        self.assertEqual(seen[1][1]['thinking_config'], {'thinking_budget': 0})
+        self.assertEqual(seen[1][1], seen[0][1])

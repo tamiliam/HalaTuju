@@ -42,7 +42,7 @@ class GenerateReportView(APIView):
     {
         "report_id": 1,
         "markdown": "...",
-        "model_used": "gemini-2.5-flash"
+        "model_used": "gemini-3.8-flash"
     }
     """
     permission_classes = [SupabaseIsAuthenticated]

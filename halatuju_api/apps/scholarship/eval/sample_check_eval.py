@@ -2,7 +2,7 @@
 SAMPLE from a real IC?
 
 A HAND-RUN measurement, never a test (the committed test mocks the model). It calls the real prompt
-through `genuineness/sample_stamp._ask_model` (gemini-2.5-flash first, as the live code does) on LOCAL
+through `genuineness/sample_stamp._ask_model` (2.5 Flash first, as the live code does) on LOCAL
 picture files only: no database write, no Storage access, no stored document is re-read. The usage
 meter (`usage.record_usage`, which would write a row) is replaced by an in-memory capture, which is
 also where the token counts come from. Output (answer + thinking tokens) is billed at the output

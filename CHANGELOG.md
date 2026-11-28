@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### feat: OCR-17 - the 2.5 fallback tails are retired (2026-11-28, branch ocr-17-tails, not pushed)
+
+Api only. The fallback of every ordinary Flash job is now 3.8 Flash, then 3.6 Flash, then 3.5 Flash-Lite. No 2.5 model is left behind them (Google routes 2.5 Flash to 3.5 Flash-Lite from 1 December).
+- **Cascades:** `profile_engine.MODEL_CASCADE` (about 15 jobs), the counsellor report, the career-mapping command and the STPM headline command all use the new list. `FLASH_25_CASCADE` stays, for the four genuineness checks only, until OCR-16's switch is on. The headline command's old 2.x thinking setting is gone with the 2.5 models.
+- **Version:** `OFFER_READER_VERSION` 2.13.0 to 2.14.0 (the cascade is pinned for it); new entry in `model_versions/offer_reader.json`. No prompt, schema or parser changed.
+- **Prices:** the paid-eval price table has rows for 3.6 Flash (0.75 in / 3.75 out per 1M tokens, through 31 Dec 2026; 1.50 / 7.50 from 1 Jan 2027, update then) and 3.5 Flash-Lite (0.30 / 2.50). 2.5 rows kept for the genuineness cascade and past eval runs. 3.8 Flash still has no row (as before).
+- **Cache:** the coach help cache key is built from the cascade, so it changes. It is an in-memory cache (6 hour life, no database rows) that a new deploy empties anyway, so nothing extra is paid.
+- **Migration:** `0221_usageevent_model_help_text` (help text only, nothing changes in the database).
+- **Tests:** new `test_ocr17_no_25_tail.py` (a guard that fails if `gemini-2.5` returns to api source outside a short exception list; the order of each cascade; every model failing gives the safe "AI unavailable" error). Older tests and the profile-prompt fixture follow the new list.
+
 ### feat: QC's verdict wording, assessing help line, case page phone pills (2026-11-28)
 
 The cosmetic part of the editor sprint (phase 3), split out on the owner's word (28 Nov) so it can ship before the rest. Web only; no API change, no migration, no verdict change.

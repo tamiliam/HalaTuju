@@ -30,11 +30,11 @@ from .prompts import get_prompt
 logger = logging.getLogger(__name__)
 
 # Gemini model cascade — try in order until one succeeds. 3.8 Flash first since Gemini Phase 2
-# Option A (owner, 2026-11-14); the 2.5 models are its fallbacks.
+# Option A (owner, 2026-11-14). OCR-17 (2026-11-28): no 2.5 tail; 3.6 Flash, then 3.5 Flash-Lite.
 MODEL_CASCADE = [
     'gemini-3.8-flash',
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',     # 2.0-flash retired (404) and removed, 2026-10-24
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
 ]
 
 # SPM subject display names for prompt formatting
