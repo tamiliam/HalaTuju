@@ -10,7 +10,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
-import { sandboxProfileSpm } from '@/sandbox/fixtures/scholarship'
+import { sandboxProfileSpm, sandboxProfileStpm } from '@/sandbox/fixtures/scholarship'
 import { getApplyGate, getScholarshipIntake, submitScholarshipApplication } from '@/lib/api'
 import { APPLY_DRAFT_KEY } from '@/lib/applyDraft'
 import { type ApplyFormState } from '@/lib/scholarship'
@@ -240,6 +240,72 @@ describe('the submit doors (Mobile M4)', () => {
     expect(footer.textContent).toContain('scholarship.apply.back')
     expect(footer.textContent).toContain('scholarship.apply.continue')
     expect(screen.getByTestId('apply-draft-note').textContent).toBe('scholarship.apply.commitNote')
+  })
+})
+
+// Step 4: back from "Results wrong? Edit them" with OTHER results, the draft's My Plans answers belong
+// to the old results — never sent. She answers My Plans again; everything else comes back.
+describe('the results changed on the detour', () => {
+  const STPM = { ...sandboxProfileStpm, results_held: 'stpm', nric: '080101-14-1234', nric_verified: true }
+  const mountAs = (prof: object) => render(
+    <AuthContext.Provider value={{ status: 'ready', profile: prof, token: 'tkn', session: testSession, showAuthGate: () => {} } as never}>
+      <ScholarshipApplyPage />
+    </AuthContext.Provider>,
+  )
+  const withStudiedAt = { ...complete, preUStudiedAt: 'SMK Taman Desa (Form 6)' }
+  const pressKey = async (key: string) =>
+    fireEvent.click((await screen.findByText(key)).closest('button') as HTMLButtonElement)
+
+  it('SPM → STPM with an offer: the SPM pathway and programme are not sent — My Plans asks again', async () => {
+    seedApplyDraft(withStudiedAt, 'support', 'bp', TEST_UID, 'spm')     // 'sure', poly, C1 under SPM
+    mountAs(STPM)
+    await screen.findByTestId('apply-gift-line')
+    await signAndSubmit('Priya')
+    expect(submit).not.toHaveBeenCalled()
+    // Every earlier step passed (the rest came back); only My Plans is asked again.
+    expect(await screen.findByText('scholarship.apply.error.pathwayCertainty')).toBeTruthy()
+    expect(screen.queryByText(/Diploma in Engineering/)).toBeNull()
+  })
+
+  it('STPM → SPM while waiting: no stale top 3 or leaning sent', async () => {
+    seedApplyDraft({ ...withStudiedAt, pathwayCertainty: 'uncertain', chosenPathway: '', chosenProgramme: null,
+      uncertaintyReasons: ['results'], pathwaysConsidered: ['asasi'], uncertaintyNote: 'my note',
+      topChoices: [1, 2, 3].map((n) => ({ courseId: `D${n}`, courseName: `Degree ${n}`, institution: 'UM' })),
+    }, 'support', 'bp', TEST_UID, 'stpm')
+    mountAs(profile)                                                         // SPM now
+    await screen.findByTestId('apply-gift-line')
+    await signAndSubmit('Priya')
+    expect(submit).not.toHaveBeenCalled()
+    expect(await screen.findByText('scholarship.apply.error.pathwayCertainty')).toBeTruthy()
+    await pressKey('scholarship.apply.plan.uncertain')                       // she answers again
+    await pressKey('scholarship.apply.plan.reason.family')
+    await pressKey('scholarship.apply.continue')
+    await signAndSubmit('Priya')
+    await waitFor(() => expect(submit).toHaveBeenCalled())
+    const sent = submit.mock.calls[0][0]
+    expect(sent.top_choices).toEqual([])
+    expect(sent.pathways_considered).not.toContain('asasi')
+    expect(sent.uncertainty_reasons).toEqual(['family'])
+    expect(sent.uncertainty_note).toBe('my note')                            // hers whatever she holds
+  })
+
+  it('the SAME results: everything comes back and is sent, as before', async () => {
+    seedApplyDraft(complete, 'support', 'bp', TEST_UID, 'spm')
+    mountAs(profile)
+    await screen.findByTestId('apply-gift-line')
+    await signAndSubmit('Priya')
+    await waitFor(() => expect(submit).toHaveBeenCalled())
+    expect(submit.mock.calls[0][0]).toMatchObject({ pathway_certainty: 'sure', chosen_pathway: 'poly' })
+    expect(submit.mock.calls[0][0].chosen_programme).toMatchObject({ course_id: 'C1' })
+  })
+
+  it('a draft from before the type was kept: everything comes back, as before', async () => {
+    seedApplyDraft(withStudiedAt, 'support', 'bp')                            // no results type stored
+    mountAs(STPM)
+    await screen.findByTestId('apply-gift-line')
+    await signAndSubmit('Priya')
+    await waitFor(() => expect(submit).toHaveBeenCalled())
+    expect(submit.mock.calls[0][0]).toMatchObject({ pathway_certainty: 'sure', chosen_pathway: 'poly' })
   })
 })
 

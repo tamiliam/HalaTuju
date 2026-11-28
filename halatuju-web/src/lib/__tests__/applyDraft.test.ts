@@ -7,7 +7,7 @@
  */
 import { act, renderHook } from '@testing-library/react'
 import {
-  APPLY_DRAFT_KEY, APPLY_DRAFT_MAX_AGE_MS, DRAFT_EXCLUDED, clearApplyDraft,
+  APPLY_DRAFT_KEY, APPLY_DRAFT_MAX_AGE_MS, DRAFT_EXCLUDED, PLAN_FIELDS, clearApplyDraft,
   readApplyDraft, useApplyDraft, writeApplyDraft,
 } from '@/lib/applyDraft'
 import { peekApplyDraft } from '@/lib/applyDraftPeek'
@@ -57,6 +57,63 @@ describe('what is stored', () => {
     const spy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('QuotaExceededError') })
     expect(() => writeApplyDraft(FORM, HER, 'family')).not.toThrow()
     spy.mockRestore()
+  })
+})
+
+// Step 4: the draft keeps the results type it was typed under. Back from "Results wrong?" with OTHER
+// results, My Plans comes back fresh (an SPM pathway is never sent under STPM results); all else stays.
+describe('the results type it was typed under', () => {
+  const PLANS: Partial<ApplyFormState> = {
+    pathwayCertainty: 'sure', chosenPathway: 'poly', preUTrack: 'sains', preUInstitution: 'KMPk',
+    chosenProgramme: { courseId: 'C1', courseName: 'Diploma in Engineering', fieldKey: 'engineering' },
+    uncertaintyReasons: ['family'], pathwaysConsidered: ['poly'], upuStatus: 'public_other', fieldOfStudy: 'engineering',
+    topChoices: [{ courseId: 'D1', courseName: 'BSc', institution: 'UM' }],
+    uncertaintyNote: 'my note', otherScholarships: ['jpa'], otherScholarshipsText: 'Yayasan',
+  }
+  const TYPED = { ...FORM, ...PLANS }
+
+  it('is stored with the draft', () => {
+    writeApplyDraft(TYPED, { ...HER, results: 'spm' }, 'results')
+    expect(JSON.parse(raw() as string).rt).toBe('spm')
+  })
+
+  it('OTHER results now: every My Plans answer is dropped — nothing else', () => {
+    writeApplyDraft(TYPED, { ...HER, results: 'spm' }, 'results')
+    const got = readApplyDraft({ ...HER, results: 'stpm' })?.form as Record<string, unknown>
+    for (const k of PLAN_FIELDS) expect([k, k in got]).toEqual([k, false])
+    expect(got.parentName).toBe('Rajan')
+    expect(got.householdIncome).toBe('2400')
+    expect(got.uncertaintyNote).toBe('my note')            // hers whatever she holds
+    expect(got.otherScholarships).toEqual(['jpa'])
+    expect(got.otherScholarshipsText).toBe('Yayasan')
+    for (const k of DRAFT_EXCLUDED) expect(k in got).toBe(false)
+    expect(PLAN_FIELDS).toEqual(['pathwayCertainty', 'chosenPathway', 'chosenProgramme', 'preUTrack',
+      'preUInstitution', 'uncertaintyReasons', 'pathwaysConsidered', 'topChoices', 'upuStatus', 'fieldOfStudy'])
+  })
+
+  it('the SAME results: everything comes back, as before', () => {
+    writeApplyDraft(TYPED, { ...HER, results: 'stpm' }, 'plans')
+    const got = readApplyDraft({ ...HER, results: 'stpm' })
+    expect(got?.step).toBe('plans')
+    expect(got?.form).toEqual(Object.fromEntries(Object.entries(TYPED).filter(([k]) =>
+      !(DRAFT_EXCLUDED as readonly string[]).includes(k))))
+  })
+
+  it('a draft from before the type was kept (none stored): everything comes back, as before', () => {
+    writeApplyDraft(TYPED, HER, 'plans')
+    expect('rt' in JSON.parse(raw() as string)).toBe(false)
+    expect(readApplyDraft({ ...HER, results: 'stpm' })?.form.chosenPathway).toBe('poly')
+  })
+
+  it('no type given on the read: everything comes back', () => {
+    writeApplyDraft(TYPED, { ...HER, results: 'spm' }, 'plans')
+    expect(readApplyDraft(HER)?.form.chosenPathway).toBe('poly')
+  })
+
+  it('the hook writes the type it is given', () => {
+    renderHook(() => useApplyDraft(TYPED, 'u1', 'bp', 'plans', true, 'matric'))
+    act(() => { jest.advanceTimersByTime(600) })
+    expect(JSON.parse(raw() as string).rt).toBe('matric')
   })
 })
 

@@ -36,19 +36,26 @@ export const APPLY_DRAFT_MAX_AGE_MS = 864e5   // 24 hours
 /** Never stored — see the header. */
 export const DRAFT_EXCLUDED = ['nric', 'declarationName', 'consentToContact'] as const
 export type DraftForm = Omit<ApplyFormState, typeof DRAFT_EXCLUDED[number]>
+/** The My Plans answers that belong to ONE results type (an SPM pathway, a degree, the leaning, the
+ *  top 3). A draft typed under other results comes back WITHOUT them, so the form's fresh defaults
+ *  show and she answers My Plans again; the note and other scholarships are hers whatever she holds. */
+export const PLAN_FIELDS = ['pathwayCertainty', 'chosenPathway', 'chosenProgramme', 'preUTrack', 'preUInstitution',
+  'uncertaintyReasons', 'pathwaysConsidered', 'topChoices', 'upuStatus', 'fieldOfStudy'] as const
 
-interface Envelope { v: number; uid: string; programme: string; savedAt: number; step: string; form: ApplyFormState }
+interface Envelope { v: number; uid: string; programme: string; savedAt: number; step: string; rt?: string; form: ApplyFormState }
 
 export interface DraftOwner {
   /** The signed-in student's user id (`session.user.id`). No id → nothing is read or written. */
   uid: string | null | undefined
   /** The programme code the form is for ('' when the form names none). */
   programme: string
+  /** The results type she holds now (`profileAcademicSummary().examType`), kept with the draft. */
+  results?: string
 }
 
-export function strip(form: ApplyFormState): DraftForm {
-  const out: Partial<ApplyFormState> = { ...form }
-  for (const k of DRAFT_EXCLUDED) delete out[k]
+export function strip(form: ApplyFormState, drop: readonly string[] = DRAFT_EXCLUDED): DraftForm {
+  const out: Record<string, unknown> = { ...form }
+  for (const k of drop) delete out[k]
   return out as DraftForm
 }
 
@@ -56,7 +63,7 @@ export function writeApplyDraft(form: ApplyFormState, owner: DraftOwner, step: s
   if (!owner.uid) return
   try {
     safeSession()?.setItem(APPLY_DRAFT_KEY, JSON.stringify({ v: 1, uid: owner.uid, programme: owner.programme,
-      savedAt: Date.now(), step, form: strip(form) }))
+      savedAt: Date.now(), step, rt: owner.results, form: strip(form) }))
   } catch { /* full or blocked: the form still works, it just keeps no draft */ }
 }
 
@@ -82,11 +89,16 @@ export function parse(): Envelope | null {
  * older than 24 h, unreadable — is DELETED, never returned. Her own draft for ANOTHER programme is
  * not returned either, but kept: she may go back to that programme (the chooser's "Change"). The
  * excluded fields are dropped again on the way out, so a hand-edited value cannot smuggle them in.
+ * Typed under OTHER results (she changed them on the "Results wrong?" detour) → My Plans is dropped
+ * too (`PLAN_FIELDS`): an SPM pathway must never be sent under STPM results. A draft from before the
+ * results type was kept (no `rt`) comes back whole, as it always did.
  */
 export function readApplyDraft(owner: DraftOwner): { form: DraftForm; step: string } | null {
   const e = parse()
   if (!e || !owner.uid || e.uid !== owner.uid) { clearApplyDraft(); return null }
-  return e.programme === owner.programme ? { form: strip(e.form), step: String(e.step || '') } : null
+  const other = !!e.rt && !!owner.results && e.rt !== owner.results
+  return e.programme === owner.programme
+    ? { form: strip(e.form, other ? [...DRAFT_EXCLUDED, ...PLAN_FIELDS] : DRAFT_EXCLUDED), step: String(e.step || '') } : null
 }
 
 /**
@@ -96,13 +108,13 @@ export function readApplyDraft(owner: DraftOwner): { form: DraftForm; step: stri
  * that has not fired by then never will.
  */
 export function useApplyDraft(form: ApplyFormState, uid: string | null | undefined, programme: string,
-  step: string, enabled: boolean): void {
+  step: string, enabled: boolean, results?: string): void {
   const latest = useRef(() => {})
-  latest.current = () => { if (enabled) writeApplyDraft(form, { uid, programme }, step) }
+  latest.current = () => { if (enabled) writeApplyDraft(form, { uid, programme, results }, step) }
   useEffect(() => {
     const id = setTimeout(() => latest.current(), 500)
     return () => clearTimeout(id)
-  }, [form, uid, programme, step, enabled])
+  }, [form, uid, programme, results, step, enabled])
   useEffect(() => {
     const flush = () => latest.current()
     const hidden = () => { if (document.visibilityState === 'hidden') flush() }

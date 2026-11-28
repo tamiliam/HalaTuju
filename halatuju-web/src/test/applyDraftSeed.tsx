@@ -13,8 +13,10 @@ export const TEST_UID = 'stu-apply-test'
 /** What `useAuth().session` carries for the seeded student. */
 export const testSession = { user: { id: TEST_UID } }
 
-export function seedApplyDraft(form: ApplyFormState, step: string, programme: string, uid = TEST_UID): void {
-  writeApplyDraft(form, { uid, programme }, step)
+/** `results`: the results type the draft was typed under (none = a draft from before it was kept). */
+export function seedApplyDraft(form: ApplyFormState, step: string, programme: string, uid = TEST_UID,
+  results?: string): void {
+  writeApplyDraft(form, { uid, programme, results }, step)
 }
 
 /** On the last step: switch consent on and sign with `name` (never restored from a draft). WAITS for the

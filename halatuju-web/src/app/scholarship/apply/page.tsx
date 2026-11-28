@@ -161,19 +161,19 @@ export default function ScholarshipApplyPage() {
     // Not while the chooser is up (several open, none picked): no programme yet to read a draft for.
     if (!profile?.nric || populatedRef.current || !gift.settled || gift.choices.length > 1 || !uid) return
     if (profile === staleProfileRef.current) return   // wait for the NEW account's profile
-    const draft = readApplyDraft({ uid, programme: gift.code })
+    const draft = readApplyDraft({ uid, programme: gift.code, results: examType })   // other results: no old My Plans
     const seeded = draft ? { ...profileToApplyDefaults(profile), ...draft.form } : profileToApplyDefaults(profile)
     setForm(seeded)
     baseFormRef.current = seeded
     fillerRef.current = uid
     if (draft && (TAB_ORDER as string[]).includes(draft.step)) setTab(draft.step as TabKey)
     populatedRef.current = true
-  }, [profile, gift.settled, gift.choices.length, gift.code, uid])
+  }, [profile, gift.settled, gift.choices.length, gift.code, uid, examType])
   // Kept as she types - only once she has changed something, never once the form is sent, and never
   // under any user id but the one that filled it.
   const [sent, setSent] = useState(false)
   useApplyDraft(form, uid, gift.code, tab,
-    populatedRef.current && !sent && baseFormRef.current !== form && fillerRef.current === (uid ?? null))
+    populatedRef.current && !sent && baseFormRef.current !== form && fillerRef.current === (uid ?? null), examType)
   // A form that will not be sent from here - already applied, programme closed, sent away - keeps no draft.
   useEffect(() => {
     if (gate.state === 'already_applied' || gift.closed || exit) clearApplyDraft()
@@ -219,7 +219,7 @@ export default function ScholarshipApplyPage() {
   // "a few more details"), then return here. Save THE DRAFT first (landing back on Results) so her
   // edits survive the detour (the form only commits on submit).
   const goEditResults = () => {
-    writeApplyDraft(form, { uid, programme: gift.code }, 'results')
+    writeApplyDraft(form, { uid, programme: gift.code, results: examType }, 'results')
     popOnboardingReturn()   // a stale profile return would win over this one at the last step
     setApplyReturn()
     router.push('/onboarding/exam-type')
