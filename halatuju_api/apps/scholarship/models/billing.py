@@ -41,7 +41,7 @@ class UsageEvent(models.Model):
                   'deletes its billing history).')
     service = models.CharField(max_length=20, choices=SERVICE_CHOICES)
     model = models.CharField(max_length=80, blank=True, default='',
-                             help_text='The provider model name (AI only), e.g. gemini-3.8-flash.')
+                             help_text='The provider model name (AI only), e.g. gemini-2.5-flash.')
     source = models.CharField(max_length=40, blank=True, default='',
                               help_text='The call-path tag, e.g. doc_extract, ic_fallback, '
                                         'profile_draft, report, or an email/whatsapp function tag.')

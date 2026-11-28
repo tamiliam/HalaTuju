@@ -10,7 +10,7 @@ WHAT CHANGED FROM THE UNVERSIONED READER (S3 measured it: 53 of 216 letters full
   * **Inputs.** Up to `MAX_PAGES` pages, ONE image per page (it was page 1 only), at
     `MEDIA_RESOLUTION` high — S3 found every image sent as 258 tokens, a low-detail view whatever
     its size; a 2026-11-01 probe on a synthetic A4 page measured 258 at the default and at medium,
-    3,354 at high (Gemini 2.5 "pan and scan"). A digital PDF's own text layer for those pages goes
+    3,354 at high (the 2.5 models' "pan and scan"). A digital PDF's own text layer for those pages goes
     beside the images (it was never shown), so spellings and numbers are read from real characters.
   * **Schema.** `institution` is the institution's NAME only; the new `campus` holds the campus /
     branch ('' when none); a hostel / residential college / reporting venue goes in neither but in
@@ -152,7 +152,7 @@ OFFER_READER_VERSION = '2.14.0'
 MAX_PAGES = 3
 #: The text layer shown beside the images, at most (3 pages of an offer is ~6-9k characters).
 MAX_TEXT_CHARS = 8000
-#: `GenerateContentConfig.media_resolution` for the PAGE-1 call. Gemini 2.5 takes it for the whole
+#: `GenerateContentConfig.media_resolution` for the PAGE-1 call. The 2.5 models take it for the whole
 #: call, and applies "pan and scan" only to a call with ONE image (measured, S4 pilot): so page 1 goes
 #: alone, and the later-pages call is sent at the default.
 MEDIA_RESOLUTION = 'MEDIA_RESOLUTION_HIGH'

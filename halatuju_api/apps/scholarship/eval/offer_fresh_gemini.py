@@ -27,6 +27,7 @@ PRICES = {
     # OCR-17 (2026-11-28), https://aistudio.google.com/docs/pricing (paid tier, read 28 Nov 2026).
     # 3.6 Flash is 0.75 / 3.75 only THROUGH 31 Dec 2026; from 1 Jan 2027 it is 1.50 / 7.50 - update then.
     'gemini-3.6-flash': {'input': 0.75, 'output': 3.75, 'thinking': 3.75},
+    # 3.5 Flash-Lite: read 28 Nov 2026; the same as 2.5 Flash's price.
     'gemini-3.5-flash-lite': {'input': 0.30, 'output': 2.50, 'thinking': 2.50},
 }
 STOP_CODES = (402, 429)

@@ -115,7 +115,7 @@ def gemini_tokens(resp):
     """(input, output) token counts from a genai response's usage_metadata, or
     (None, None). Never raises; a mocked response yields (None, None).
 
-    ⚠ TD-459: OUTPUT INCLUDES THE THINKING TOKENS. Gemini 2.5 reports them apart
+    ⚠ TD-459: OUTPUT INCLUDES THE THINKING TOKENS. The 2.5 Flash models report them apart
     (`thoughts_token_count`) and bills them at the output rate; on 216 offer reads they were
     ~84% of the billed output. So output = candidates + thoughts. A response with no thoughts
     reads exactly as before; one with thoughts and no candidates still counts the thoughts.

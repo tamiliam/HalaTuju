@@ -22,14 +22,23 @@ EXCEPTIONS = {
         1, 'the refusal guard: the offer reader will not ask a 2.5 model for a missing reporting date'),
     'apps/scholarship/eval/offer_fresh_gemini.py': (
         2, 'eval PRICES rows for 2.5, kept so past eval runs and the genuineness cascade still price'),
+    'apps/scholarship/models/billing.py': (
+        1, 'UsageEvent.model help text only; changing it needs a migration, so change it with the next real UsageEvent migration'),
     'apps/scholarship/eval/offer_fresh_read.py': (
         1, 'EST_MODEL: the dry-run estimate is built on the measured 2.5 Flash token counts'),
 }
-SKIP_DIRS = {'tests', 'migrations', 'node_modules', '__pycache__', 'venv', '.venv', 'docs'}
+SKIP_DIRS = {'tests', 'migrations', 'node_modules', '__pycache__', 'venv', '.venv', 'docs', 'fixtures',
+             'model_versions'}   # model_versions: released entries are append-only history and may name 2.5
+SUFFIXES = {'.py', '.json', '.yaml', '.yml', '.txt'}
+#: gemini-2.5, gemini_2_5, "gemini 2.5", any case; or a bare 2.5-flash(-lite) with a hyphen.
+#: A comment that says "2.5 Flash" (a space) does not match.
+PATTERN = re.compile(r'gemini[-_ ]?2[._-]?5|2\.5-flash', re.I)
 
 
 def _source_files():
-    for path in API_ROOT.rglob('*.py'):
+    for path in API_ROOT.rglob('*'):
+        if path.suffix not in SUFFIXES or not path.is_file():
+            continue
         rel = path.relative_to(API_ROOT)
         if SKIP_DIRS & set(rel.parts) or path.name.startswith('test_'):
             continue
@@ -41,7 +50,7 @@ class TheNoTwoPointFiveGuard(SimpleTestCase):
         found = {}
         for rel, path in _source_files():
             n = sum(1 for line in path.read_text(encoding='utf-8', errors='replace').splitlines()
-                    if re.search(r'gemini-2\.5', line, re.I))
+                    if PATTERN.search(line))
             if n:
                 found[rel] = n
         stray = {rel: n for rel, n in found.items() if rel not in EXCEPTIONS}
@@ -51,6 +60,12 @@ class TheNoTwoPointFiveGuard(SimpleTestCase):
                 self.assertTrue(reason)
                 self.assertLessEqual(found.get(rel, 0), allowed, f'more gemini-2.5 lines than allowed: {reason}')
                 self.assertGreater(found.get(rel, 0), 0, 'exception no longer needed: remove its row')
+
+    def test_the_matcher_catches_every_form(self):
+        for bad in ('models/gemini-2.5-flash', 'GEMINI-2.5-FLASH', "x = 'gemini_2_5'", 'M = "2.5-flash-lite"'):
+            with self.subTest(line=bad):
+                self.assertTrue(PATTERN.search(bad))
+        self.assertFalse(PATTERN.search('# 2.5 Flash is the old tail'))
 
     def test_the_genuineness_files_do_not_name_a_2_5_model_themselves(self):
         # they read FLASH_25_CASCADE; the string lives only in profile_engine
